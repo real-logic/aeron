@@ -172,7 +172,7 @@ public class RetransmitHandler
 
         if (isInvalid)
         {
-            invalidPackets.orderedIncrement();
+            invalidPackets.increment();
         }
 
         return isInvalid;

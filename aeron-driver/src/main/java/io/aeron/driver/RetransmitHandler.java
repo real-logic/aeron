@@ -82,7 +82,7 @@ public class RetransmitHandler
     {
         if (!isInvalid(termOffset, termLength))
         {
-            if (activeRetransmitsMap.size() < MAX_RETRANSMITS_DEFAULT && null == activeRetransmitsMap.get(termId, termOffset))
+            if (null == activeRetransmitsMap.get(termId, termOffset) && activeRetransmitsMap.size() < MAX_RETRANSMITS_DEFAULT)
             {
                 final RetransmitAction action = assignRetransmitAction();
                 action.termId = termId;
@@ -92,12 +92,12 @@ public class RetransmitHandler
                 final long delay = determineRetransmitDelay();
                 if (0 == delay)
                 {
-                    perform(action, retransmitSender);
-                    action.linger(determineLingerTimeout());
+                    retransmitSender.resend(termId, termOffset, action.length);
+                    action.linger(determineLingerTimeout(), nanoClock.nanoTime());
                 }
                 else
                 {
-                    action.delay(delay);
+                    action.delay(delay, nanoClock.nanoTime());
                 }
 
                 activeRetransmitsMap.put(termId, termOffset, action);
@@ -119,6 +119,7 @@ public class RetransmitHandler
 
         if (null != action && State.DELAYED == action.state)
         {
+            activeRetransmitsMap.remove(termId, termOffset);
             action.cancel();
             // do not go into linger
         }
@@ -144,7 +145,8 @@ public class RetransmitHandler
                     case DELAYED:
                         if (now > action.expire)
                         {
-                            action.onDelayTimeout(retransmitSender);
+                            retransmitSender.resend(action.termId, action.termOffset, action.length);
+                            action.linger(determineLingerTimeout(), nanoClock.nanoTime());
                             result++;
                         }
                         break;
@@ -152,7 +154,8 @@ public class RetransmitHandler
                     case LINGERING:
                         if (now > action.expire)
                         {
-                            action.onLingerTimeout();
+                            action.cancel();
+                            activeRetransmitsMap.remove(action.termId, action.termOffset);
                             result++;
                         }
                         break;
@@ -185,11 +188,6 @@ public class RetransmitHandler
         return lingerTimeoutGenerator.generateDelay();
     }
 
-    private void perform(final RetransmitAction action, final RetransmitSender retransmitSender)
-    {
-        retransmitSender.resend(action.termId, action.termOffset, action.length);
-    }
-
     private RetransmitAction assignRetransmitAction()
     {
         for (final RetransmitAction action : retransmitActionPool)
@@ -200,7 +198,7 @@ public class RetransmitHandler
             }
         }
 
-        throw new IllegalStateException("Maximum number of INACTIVE RetransmitActions reached");
+        throw new IllegalStateException("Maximum number of active RetransmitActions reached");
     }
 
     private enum State
@@ -210,7 +208,7 @@ public class RetransmitHandler
         INACTIVE
     }
 
-    final class RetransmitAction
+    static final class RetransmitAction
     {
         long expire;
         int termId;
@@ -218,33 +216,20 @@ public class RetransmitHandler
         int length;
         State state = State.INACTIVE;
 
-        public void delay(final long delay)
+        public void delay(final long delay, final long now)
         {
             state = State.DELAYED;
-            expire = nanoClock.nanoTime() + delay;
+            expire = now + delay;
         }
 
-        public void linger(final long timeout)
+        public void linger(final long timeout, final long now)
         {
             state = State.LINGERING;
-            expire = nanoClock.nanoTime() + timeout;
-        }
-
-        public void onDelayTimeout(final RetransmitSender retransmitSender)
-        {
-            perform(this, retransmitSender);
-            linger(determineLingerTimeout());
-        }
-
-        public void onLingerTimeout()
-        {
-            activeRetransmitsMap.remove(termId, termOffset);
-            state = State.INACTIVE;
+            expire = now + timeout;
         }
 
         public void cancel()
         {
-            activeRetransmitsMap.remove(termId, termOffset);
             state = State.INACTIVE;
         }
     }

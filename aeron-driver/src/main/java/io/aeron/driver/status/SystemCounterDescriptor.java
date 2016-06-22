@@ -24,7 +24,7 @@ import org.agrona.concurrent.status.CountersManager;
  */
 public enum SystemCounterDescriptor
 {
-    BYTES_SENT(0, "Bytes Sent"),
+    BYTES_SENT(0, "Bytes sent"),
     BYTES_RECEIVED(1, "Bytes received"),
     RECEIVER_PROXY_FAILS(2, "Failed offers to ReceiverProxy"),
     SENDER_PROXY_FAILS(3, "Failed offers to SenderProxy"),

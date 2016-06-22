@@ -43,7 +43,6 @@ class PublicationImagePadding1
 class PublicationImageConductorFields extends PublicationImagePadding1
 {
     long timeOfLastStatusChange;
-    long rebuildPosition;
 
     volatile long beginLossChange = -1;
     volatile long endLossChange = -1;
@@ -113,6 +112,7 @@ public class PublicationImage
     private final NanoClock clock;
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
     private final Position hwmPosition;
+    private final Position rebuildPosition;
     private final List<ReadablePosition> subscriberPositions;
     private final LossDetector lossDetector;
     private final AtomicCounter heartbeatsReceived;
@@ -138,6 +138,7 @@ public class PublicationImage
         final FeedbackDelayGenerator lossFeedbackDelayGenerator,
         final List<ReadablePosition> subscriberPositions,
         final Position hwmPosition,
+        final Position rebuildPosition,
         final NanoClock clock,
         final SystemCounters systemCounters,
         final InetSocketAddress sourceAddress)
@@ -151,6 +152,7 @@ public class PublicationImage
         this.rawLog = rawLog;
         this.subscriberPositions = subscriberPositions;
         this.hwmPosition = hwmPosition;
+        this.rebuildPosition = rebuildPosition;
         this.sourceAddress = sourceAddress;
         this.initialTermId = initialTermId;
 
@@ -181,8 +183,9 @@ public class PublicationImage
         final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
         lastStatusMessagePosition = initialPosition - (currentGain + 1);
         newStatusMessagePosition = lastStatusMessagePosition;
-        rebuildPosition = initialPosition;
+
         hwmPosition.setOrdered(initialPosition);
+        rebuildPosition.setOrdered(initialPosition);
     }
 
     /**
@@ -192,6 +195,7 @@ public class PublicationImage
     {
         rawLog.close();
         hwmPosition.close();
+        rebuildPosition.close();
         subscriberPositions.forEach(ReadablePosition::close);
     }
 
@@ -354,7 +358,7 @@ public class PublicationImage
             maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
 
-        final long oldRebuildPosition = this.rebuildPosition;
+        final long oldRebuildPosition = rebuildPosition.getVolatile();
         final long rebuildPosition = Math.max(oldRebuildPosition, maxSubscriberPosition);
 
         final int positionBitsToShift = this.positionBitsToShift;
@@ -371,7 +375,8 @@ public class PublicationImage
 
         final int rebuildTermOffset = (int)rebuildPosition & termLengthMask;
         final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + lossDetector.rebuildOffset();
-        this.rebuildPosition = newRebuildPosition;
+        this.rebuildPosition.proposeMaxOrdered(newRebuildPosition);
+
 
         final int newTermCount = (int)(newRebuildPosition >>> positionBitsToShift);
         final int oldTermCount = (int)(oldRebuildPosition >>> positionBitsToShift);
@@ -545,7 +550,7 @@ public class PublicationImage
      */
     long rebuildPosition()
     {
-        return rebuildPosition;
+        return rebuildPosition.getVolatile();
     }
 
     public void onTimeEvent(final long time, final DriverConductor conductor)
@@ -598,7 +603,7 @@ public class PublicationImage
             minSubscriberPosition = Math.min(minSubscriberPosition, subscriberPositions.get(i).getVolatile());
         }
 
-        return minSubscriberPosition >= rebuildPosition;
+        return minSubscriberPosition >= rebuildPosition.getVolatile();
     }
 
     private boolean isHeartbeat(final UnsafeBuffer buffer, final int length)

@@ -26,7 +26,7 @@ public class SendChannelStatus
     /**
      * Type id of a send channel status indicator.
      */
-    public static final int SEND_CHANNEL_STATUS_TYPE_ID = 5;
+    public static final int SEND_CHANNEL_STATUS_TYPE_ID = 6;
 
     /**
      * Human readable name for the counter.

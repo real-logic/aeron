@@ -39,9 +39,17 @@ public class SubscriberPos
         final long registrationId,
         final int sessionId,
         final int streamId,
-        final String channel)
+        final String channel,
+        final long joiningPosition)
     {
         return StreamPositionCounter.allocate(
-            NAME, SUBSCRIBER_POSITION_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
+            NAME,
+            SUBSCRIBER_POSITION_TYPE_ID,
+            countersManager,
+            registrationId,
+            sessionId,
+            streamId,
+            channel,
+            String.format("@%,d", joiningPosition));
     }
 }

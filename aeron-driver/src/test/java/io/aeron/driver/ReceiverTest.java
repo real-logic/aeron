@@ -86,6 +86,7 @@ public class ReceiverTest
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
     private final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
     private final Position mockHighestReceivedPosition = spy(new AtomicLongPosition());
+    private final Position mockRebuildPosition = spy(new AtomicLongPosition());
     private final ByteBuffer dataFrameBuffer = ByteBuffer.allocateDirect(2 * 1024);
     private final UnsafeBuffer dataBuffer = new UnsafeBuffer(dataFrameBuffer);
     private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
@@ -193,6 +194,7 @@ public class ReceiverTest
             mockFeedbackDelayGenerator,
             POSITIONS,
             mockHighestReceivedPosition,
+            mockRebuildPosition,
             clock,
             mockSystemCounters,
             SOURCE_ADDRESS);
@@ -271,6 +273,7 @@ public class ReceiverTest
                         mockFeedbackDelayGenerator,
                         POSITIONS,
                         mockHighestReceivedPosition,
+                        mockRebuildPosition,
                         clock,
                         mockSystemCounters,
                         SOURCE_ADDRESS));
@@ -335,6 +338,7 @@ public class ReceiverTest
                         mockFeedbackDelayGenerator,
                         POSITIONS,
                         mockHighestReceivedPosition,
+                        mockRebuildPosition,
                         clock,
                         mockSystemCounters,
                         SOURCE_ADDRESS));
@@ -402,6 +406,7 @@ public class ReceiverTest
                         mockFeedbackDelayGenerator,
                         POSITIONS,
                         mockHighestReceivedPosition,
+                        mockRebuildPosition,
                         clock,
                         mockSystemCounters,
                         SOURCE_ADDRESS));
@@ -473,6 +478,7 @@ public class ReceiverTest
                         mockFeedbackDelayGenerator,
                         POSITIONS,
                         mockHighestReceivedPosition,
+                        mockRebuildPosition,
                         clock,
                         mockSystemCounters,
                         SOURCE_ADDRESS));

@@ -15,29 +15,33 @@
  */
 package io.aeron.driver.status;
 
-import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.Position;
 
 /**
- * The status of a receive channel endpoint represented as a counter value.
+ * The highest position the Receiver has rebuilt up to on a session-channel-stream tuple while rebuilding the stream.
+ * The stream is complete up to this point.
  */
-public class ReceiveChannelStatus
+public class ReceiverPos
 {
     /**
-     * Type id of a receive channel status indicator.
+     * Type id of a receiver position counter.
      */
-    public static final int RECEIVE_CHANNEL_STATUS_TYPE_ID = 7;
+    public static final int RECEIVER_POS_TYPE_ID = 5;
 
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "recv-channel";
+    public static final String NAME = "rcv-pos";
 
-    public static AtomicCounter allocate(
+    public static Position allocate(
         final CountersManager countersManager,
+        final long registrationId,
+        final int sessionId,
+        final int streamId,
         final String channel)
     {
-        return ChannelEndpointStatus.allocate(
-            NAME, RECEIVE_CHANNEL_STATUS_TYPE_ID, countersManager, channel);
+        return StreamPositionCounter.allocate(
+            NAME, RECEIVER_POS_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
     }
 }

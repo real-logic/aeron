@@ -83,7 +83,34 @@ public class StreamPositionCounter
         final int streamId,
         final String channel)
     {
-        final String label = name + ": " + registrationId + ' ' + sessionId + ' ' + streamId + ' ' + channel;
+        return allocate(name, typeId, countersManager, registrationId, sessionId, streamId, channel, "");
+    }
+
+    /**
+     * Allocate a counter for tracking a position on a stream of messages.
+     *
+     * @param name            of the counter for the label.
+     * @param typeId          of the counter for classification.
+     * @param countersManager from which to allocated the underlying storage.
+     * @param registrationId  to be associated with the counter.
+     * @param sessionId       for the stream of messages.
+     * @param streamId        for the stream of messages.
+     * @param channel         for the stream of messages.
+     * @param suffix          for the label.
+     * @return a new {@link Position} for tracking the stream.
+     */
+    public static Position allocate(
+        final String name,
+        final int typeId,
+        final CountersManager countersManager,
+        final long registrationId,
+        final int sessionId,
+        final int streamId,
+        final String channel,
+        final String suffix)
+    {
+        final String label =
+            name + ": " + registrationId + ' ' + sessionId + ' ' + streamId + ' ' + channel + ' ' + suffix;
 
         final int counterId = countersManager.allocate(
             label,
@@ -126,6 +153,9 @@ public class StreamPositionCounter
 
             case SubscriberPos.SUBSCRIBER_POSITION_TYPE_ID:
                 return SubscriberPos.NAME;
+
+            case ReceiverPos.RECEIVER_POS_TYPE_ID:
+                return ReceiverPos.NAME;
 
             default:
                 return "<unknown>";

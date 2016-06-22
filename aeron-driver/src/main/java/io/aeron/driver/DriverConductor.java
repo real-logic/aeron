@@ -246,6 +246,7 @@ public class DriverConductor implements Agent
                 udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
                 subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
                 ReceiverHwm.allocate(countersManager, registrationId, sessionId, streamId, channel),
+                ReceiverPos.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 nanoClock,
                 context.systemCounters(),
                 sourceAddress);
@@ -350,7 +351,7 @@ public class DriverConductor implements Agent
                 (subscription) ->
                 {
                     final Position position = SubscriberPos.allocate(
-                        countersManager, subscription.registrationId(), sessionId, streamId, channel);
+                        countersManager, subscription.registrationId(), sessionId, streamId, channel, joiningPosition);
 
                     position.setOrdered(joiningPosition);
 
@@ -772,11 +773,12 @@ public class DriverConductor implements Agent
             .forEach(
                 (image) ->
                 {
+                    final long rebuildPosition = image.rebuildPosition();
                     final int sessionId = image.sessionId();
                     final Position position = SubscriberPos.allocate(
-                        countersManager, registrationId, sessionId, streamId, channel);
+                        countersManager, registrationId, sessionId, streamId, channel, rebuildPosition);
 
-                    position.setOrdered(image.rebuildPosition());
+                    position.setOrdered(rebuildPosition);
 
                     image.addSubscriber(position);
                     subscription.addImage(image, position);
@@ -796,9 +798,11 @@ public class DriverConductor implements Agent
         final DirectPublication publication = getOrAddDirectPublication(streamId, channel);
         final AeronClient client = getOrAddClient(clientId);
 
+        final long joiningPosition = publication.joiningPosition();
         final int sessionId = publication.sessionId();
-        final Position position = SubscriberPos.allocate(countersManager, registrationId, sessionId, streamId, IPC_CHANNEL);
-        position.setOrdered(publication.joiningPosition());
+        final Position position =
+            SubscriberPos.allocate(countersManager, registrationId, sessionId, streamId, IPC_CHANNEL, joiningPosition);
+        position.setOrdered(joiningPosition);
 
         final SubscriptionLink subscriptionLink = new SubscriptionLink(registrationId, streamId, publication, position, client);
 
@@ -839,12 +843,14 @@ public class DriverConductor implements Agent
 
     private void linkSpy(final NetworkPublication publication, final SubscriptionLink subscriptionLink)
     {
+        final long spyJoiningPosition = publication.spyJoiningPosition();
         final int streamId = publication.streamId();
         final int sessionId = publication.sessionId();
         final String channel = subscriptionLink.spiedChannel().originalUriString();
         final Position position =
-            SubscriberPos.allocate(countersManager, subscriptionLink.registrationId(), sessionId, streamId, channel);
-        position.setOrdered(publication.spyJoiningPosition());
+            SubscriberPos.allocate(
+                countersManager, subscriptionLink.registrationId(), sessionId, streamId, channel, spyJoiningPosition);
+        position.setOrdered(spyJoiningPosition);
 
         final List<SubscriberPosition> subscriberPositions = new ArrayList<>();
         subscriberPositions.add(new SubscriberPosition(subscriptionLink, position));

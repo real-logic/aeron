@@ -442,7 +442,14 @@ public class Configuration
      */
     public static int publicationTermWindowLength(final int termBufferLength)
     {
-        return 0 != PUBLICATION_TERM_WINDOW_LENGTH ? PUBLICATION_TERM_WINDOW_LENGTH : termBufferLength / 2;
+        int publicationTermWindowLength = termBufferLength / 4;
+
+        if (0 != PUBLICATION_TERM_WINDOW_LENGTH)
+        {
+            publicationTermWindowLength = Math.min(PUBLICATION_TERM_WINDOW_LENGTH, publicationTermWindowLength);
+        }
+
+        return publicationTermWindowLength;
     }
 
     /**
@@ -565,7 +572,14 @@ public class Configuration
      */
     public static int ipcPublicationTermWindowLength(final int termBufferLength)
     {
-        return 0 != IPC_PUBLICATION_TERM_WINDOW_LENGTH ? IPC_PUBLICATION_TERM_WINDOW_LENGTH : termBufferLength / 2;
+        int publicationTermWindowLength = termBufferLength / 4;
+
+        if (0 != IPC_PUBLICATION_TERM_WINDOW_LENGTH)
+        {
+            publicationTermWindowLength = Math.min(IPC_PUBLICATION_TERM_WINDOW_LENGTH, publicationTermWindowLength);
+        }
+
+        return publicationTermWindowLength;
     }
 
     /**

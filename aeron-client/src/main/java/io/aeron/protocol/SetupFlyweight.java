@@ -235,4 +235,27 @@ public class SetupFlyweight extends HeaderFlyweight
 
         return this;
     }
+
+    public String toString()
+    {
+        final StringBuilder sb = new StringBuilder();
+        final String formattedFlags = String.format("%1$8s", Integer.toBinaryString(flags())).replace(' ', '0');
+
+        sb.append("SETUP Message{")
+            .append("frame_length=").append(frameLength())
+            .append(" version=").append(version())
+            .append(" flags=").append(formattedFlags)
+            .append(" type=").append(headerType())
+            .append(" term_offset=").append(termOffset())
+            .append(" session_id=").append(sessionId())
+            .append(" stream_id=").append(streamId())
+            .append(" initial_term_id=").append(initialTermId())
+            .append(" active_term_id=").append(activeTermId())
+            .append(" term_length=").append(termLength())
+            .append(" mtu_length=").append(mtuLength())
+            .append(" ttl=").append(ttl())
+            .append("}");
+
+        return sb.toString();
+    }
 }

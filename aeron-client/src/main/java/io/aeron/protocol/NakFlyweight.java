@@ -165,4 +165,24 @@ public class NakFlyweight extends HeaderFlyweight
 
         return this;
     }
+
+    public String toString()
+    {
+        final StringBuilder sb = new StringBuilder();
+        final String formattedFlags = String.format("%1$8s", Integer.toBinaryString(flags())).replace(' ', '0');
+
+        sb.append("NAK Message{")
+            .append("frame_length=").append(frameLength())
+            .append(" version=").append(version())
+            .append(" flags=").append(formattedFlags)
+            .append(" type=").append(headerType())
+            .append(" term_offset=").append(termOffset())
+            .append(" session_id=").append(sessionId())
+            .append(" stream_id=").append(streamId())
+            .append(" term_id=").append(termId())
+            .append(" length=").append(length())
+            .append("}");
+
+        return sb.toString();
+    }
 }

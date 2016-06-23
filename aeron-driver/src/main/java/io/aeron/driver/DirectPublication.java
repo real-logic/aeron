@@ -66,7 +66,7 @@ public class DirectPublication implements DriverManagedResource
         final int termLength = rawLog.termLength();
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         this.termWindowLength = Configuration.ipcPublicationTermWindowLength(termLength);
-        this.tripGain = termWindowLength / 4;
+        this.tripGain = termWindowLength / 8;
         this.publisherLimit = publisherLimit;
         this.rawLog = rawLog;
     }
@@ -128,19 +128,17 @@ public class DirectPublication implements DriverManagedResource
             maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
 
-        long proposedLimit = 0;
-
         if (!subscriberPositions.isEmpty())
         {
-            proposedLimit = minSubscriberPosition + termWindowLength;
             LogBufferDescriptor.timeOfLastStatusMessage(rawLog.logMetaData(), nowInMillis);
-        }
 
-        if (proposedLimit > tripLimit)
-        {
-            publisherLimit.setOrdered(proposedLimit);
-            tripLimit = proposedLimit + tripGain;
-            workCount = 1;
+            final long proposedLimit = minSubscriberPosition + termWindowLength;
+            if (proposedLimit > tripLimit)
+            {
+                publisherLimit.setOrdered(proposedLimit);
+                tripLimit = proposedLimit + tripGain;
+                workCount = 1;
+            }
         }
 
         consumerPosition = maxSubscriberPosition;

@@ -435,24 +435,6 @@ public class Configuration
     public static final int MAX_UDP_PAYLOAD_LENGTH = 65507;
 
     /**
-     * How far ahead the publisher can get from the sender position.
-     *
-     * @param termBufferLength to be used when {@link #PUBLICATION_TERM_WINDOW_LENGTH} is not set.
-     * @return the length to be used for the publication window.
-     */
-    public static int publicationTermWindowLength(final int termBufferLength)
-    {
-        int publicationTermWindowLength = termBufferLength / 4;
-
-        if (0 != PUBLICATION_TERM_WINDOW_LENGTH)
-        {
-            publicationTermWindowLength = Math.min(PUBLICATION_TERM_WINDOW_LENGTH, publicationTermWindowLength);
-        }
-
-        return publicationTermWindowLength;
-    }
-
-    /**
      * Validate the the term buffer length is a power of two.
      *
      * @param length of the term buffer
@@ -463,6 +445,53 @@ public class Configuration
         {
             throw new IllegalStateException("Term buffer length must be a positive power of 2: " + length);
         }
+    }
+
+    /**
+     * How far ahead the publisher can get from the sender position.
+     *
+     * @param termBufferLength to be used when {@link #PUBLICATION_TERM_WINDOW_LENGTH} is not set.
+     * @return the length to be used for the publication window.
+     */
+    public static int publicationTermWindowLength(final int termBufferLength)
+    {
+        int publicationTermWindowLength = termBufferLength / 2;
+
+        if (0 != PUBLICATION_TERM_WINDOW_LENGTH)
+        {
+            publicationTermWindowLength = Math.min(PUBLICATION_TERM_WINDOW_LENGTH, publicationTermWindowLength);
+        }
+
+        return publicationTermWindowLength;
+    }
+
+    /**
+     * How far ahead the publisher can get from the sender position for IPC only.
+     *
+     * @param termBufferLength to be used when {@link #IPC_PUBLICATION_TERM_WINDOW_LENGTH} is not set.
+     * @return the length to be used for the publication window.
+     */
+    public static int ipcPublicationTermWindowLength(final int termBufferLength)
+    {
+        int publicationTermWindowLength = termBufferLength;
+
+        if (0 != IPC_PUBLICATION_TERM_WINDOW_LENGTH)
+        {
+            publicationTermWindowLength = Math.min(IPC_PUBLICATION_TERM_WINDOW_LENGTH, publicationTermWindowLength);
+        }
+
+        return publicationTermWindowLength;
+    }
+
+    /**
+     * How large the term buffer should be for IPC only.
+     *
+     * @param termBufferLength to be used when {@link #IPC_TERM_BUFFER_LENGTH} is not set.
+     * @return the length to be used for the term buffer in bytes
+     */
+    public static int ipcTermBufferLength(final int termBufferLength)
+    {
+        return 0 != IPC_TERM_BUFFER_LENGTH ? IPC_TERM_BUFFER_LENGTH : termBufferLength;
     }
 
     /**
@@ -551,35 +580,6 @@ public class Configuration
     public static ThreadingMode threadingMode()
     {
         return ThreadingMode.valueOf(getProperty(THREADING_MODE_PROP_NAME, THREADING_MODE_DEFAULT));
-    }
-
-    /**
-     * How large the term buffer should be for IPC only.
-     *
-     * @param termBufferLength to be used when {@link #IPC_TERM_BUFFER_LENGTH} is not set.
-     * @return the length to be used for the term buffer in bytes
-     */
-    public static int ipcTermBufferLength(final int termBufferLength)
-    {
-        return 0 != IPC_TERM_BUFFER_LENGTH ? IPC_TERM_BUFFER_LENGTH : termBufferLength;
-    }
-
-    /**
-     * How far ahead the publisher can get from the sender position for IPC only.
-     *
-     * @param termBufferLength to be used when {@link #IPC_PUBLICATION_TERM_WINDOW_LENGTH} is not set.
-     * @return the length to be used for the publication window.
-     */
-    public static int ipcPublicationTermWindowLength(final int termBufferLength)
-    {
-        int publicationTermWindowLength = termBufferLength / 4;
-
-        if (0 != IPC_PUBLICATION_TERM_WINDOW_LENGTH)
-        {
-            publicationTermWindowLength = Math.min(IPC_PUBLICATION_TERM_WINDOW_LENGTH, publicationTermWindowLength);
-        }
-
-        return publicationTermWindowLength;
     }
 
     /**

@@ -185,11 +185,11 @@ public class NetworkPublication
             setupMessageCheck(now, activeTermId, termOffset);
         }
 
-        final int bytesSent = sendData(now, senderPosition, termOffset);
+        int bytesSent = sendData(now, senderPosition, termOffset);
 
         if (0 == bytesSent)
         {
-            heartbeatMessageCheck(now, activeTermId, termOffset);
+            bytesSent = heartbeatMessageCheck(now, activeTermId, termOffset);
             senderPositionLimit = flowControl.onIdle(now);
         }
 
@@ -445,8 +445,10 @@ public class NetworkPublication
         }
     }
 
-    private void heartbeatMessageCheck(final long now, final int activeTermId, final int termOffset)
+    private int heartbeatMessageCheck(final long now, final int activeTermId, final int termOffset)
     {
+        int bytesSent = 0;
+
         if (now > (timeOfLastSendOrHeartbeat + PUBLICATION_HEARTBEAT_TIMEOUT_NS))
         {
             heartbeatBuffer.clear();
@@ -456,7 +458,7 @@ public class NetworkPublication
                 .termId(activeTermId)
                 .termOffset(termOffset);
 
-            final int bytesSent = channelEndpoint.send(heartbeatBuffer);
+            bytesSent = channelEndpoint.send(heartbeatBuffer);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
                 shortSends.increment();
@@ -465,6 +467,8 @@ public class NetworkPublication
             heartbeatsSent.orderedIncrement();
             timeOfLastSendOrHeartbeat = now;
         }
+
+        return bytesSent;
     }
 
     private boolean isUnreferencedAndPotentiallyInactive(final long now)

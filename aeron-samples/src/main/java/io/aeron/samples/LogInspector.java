@@ -38,6 +38,7 @@ public class LogInspector
 
     private static final String DATA_FORMAT = System.getProperty("aeron.log.inspector.data.format", "hex").toLowerCase();
     private static final boolean SKIP_DEFAULT_HEADER = Boolean.getBoolean("aeron.log.inspector.skipDefaultHeader");
+    private static final boolean SCAN_OVER_ZEROES = Boolean.getBoolean("aeron.log.inspector.scanOverZeroes");
 
     public static void main(final String[] args) throws Exception
     {
@@ -101,11 +102,17 @@ public class LogInspector
                 do
                 {
                     dataHeaderFlyweight.wrap(termBuffer, offset, termLength - offset);
-                    out.println(dataHeaderFlyweight.toString());
+                    out.println(offset + ": " + dataHeaderFlyweight.toString());
 
                     final int frameLength = dataHeaderFlyweight.frameLength();
                     if (frameLength < DataHeaderFlyweight.HEADER_LENGTH)
                     {
+                        if (0 == frameLength && SCAN_OVER_ZEROES)
+                        {
+                            offset += FrameDescriptor.FRAME_ALIGNMENT;
+                            continue;
+                        }
+
                         try
                         {
                             final int limit = min(termLength - (offset + HEADER_LENGTH), messageDumpLimit);

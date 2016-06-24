@@ -95,7 +95,7 @@ public:
      *
      * @see FragmentAssembler
      */
-    inline int poll(const fragment_handler_t fragmentHandler, int fragmentLimit)
+    inline int poll(const fragment_handler_t& fragmentHandler, int fragmentLimit)
     {
         int fragmentsRead = 0;
         const int length = std::atomic_load(&m_imagesLength);
@@ -133,7 +133,7 @@ public:
      * @param blockLengthLimit for each individual block.
      * @return the number of bytes consumed.
      */
-    inline long blockPoll(const block_handler_t blockHandler, int blockLengthLimit)
+    inline long blockPoll(const block_handler_t& blockHandler, int blockLengthLimit)
     {
         const int length = std::atomic_load(&m_imagesLength);
         Image *images = std::atomic_load(&m_images);

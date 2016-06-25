@@ -24,9 +24,11 @@ import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static org.agrona.IoUtil.mapExistingFile;
 
 /**
@@ -81,6 +83,7 @@ public final class Aeron implements AutoCloseable
             ctx.errorHandler,
             ctx.availableImageHandler,
             ctx.unavailableImageHandler,
+            ctx.imageMapMode,
             ctx.keepAliveInterval(),
             ctx.driverTimeoutMs(),
             ctx.interServiceTimeout(),
@@ -179,6 +182,7 @@ public final class Aeron implements AutoCloseable
         private long keepAliveInterval = KEEPALIVE_INTERVAL_NS;
         private long interServiceTimeout = INTER_SERVICE_TIMEOUT_NS;
         private long publicationConnectionTimeout = PUBLICATION_CONNECTION_TIMEOUT_MS;
+        private FileChannel.MapMode imageMapMode;
 
         /**
          * This is called automatically by {@link Aeron#connect(Aeron.Context)} and its overloads.
@@ -270,6 +274,11 @@ public final class Aeron implements AutoCloseable
                         (image) ->
                         {
                         };
+                }
+
+                if (null == imageMapMode)
+                {
+                    imageMapMode = READ_ONLY;
                 }
             }
             catch (final Exception ex)
@@ -476,6 +485,18 @@ public final class Aeron implements AutoCloseable
         public long publicationConnectionTimeout()
         {
             return publicationConnectionTimeout;
+        }
+
+        /**
+         * The file memory mapping mode for {@link Image}s.
+         *
+         * @param imageMapMode file memory mapping mode for {@link Image}s.
+         * @return this for a fluent API.
+         */
+        public Context imageMapMode(final FileChannel.MapMode imageMapMode)
+        {
+            this.imageMapMode = imageMapMode;
+            return this;
         }
 
         /**

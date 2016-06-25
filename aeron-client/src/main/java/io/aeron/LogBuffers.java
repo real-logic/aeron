@@ -40,7 +40,7 @@ public class LogBuffers implements AutoCloseable
     private final UnsafeBuffer[] atomicBuffers = new UnsafeBuffer[(PARTITION_COUNT * 2) + 1];
     private final MappedByteBuffer[] mappedByteBuffers;
 
-    public LogBuffers(final String logFileName)
+    public LogBuffers(final String logFileName, final FileChannel.MapMode mapMode)
     {
         try
         {
@@ -55,7 +55,7 @@ public class LogBuffers implements AutoCloseable
             // if log length exceeds MAX_INT we need multiple mapped buffers, (see FileChannel.map doc).
             if (logLength < Integer.MAX_VALUE)
             {
-                final MappedByteBuffer mappedBuffer = fileChannel.map(READ_WRITE, 0, logLength);
+                final MappedByteBuffer mappedBuffer = fileChannel.map(mapMode, 0, logLength);
                 mappedByteBuffers = new MappedByteBuffer[]{mappedBuffer};
 
                 final int metaDataSectionOffset = termLength * PARTITION_COUNT;

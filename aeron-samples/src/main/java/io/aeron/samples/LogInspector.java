@@ -28,6 +28,7 @@ import java.util.Date;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.lang.Math.min;
+import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 
 /**
  * Command line utility for inspecting a log buffer to see what terms and messages it contains.
@@ -52,7 +53,7 @@ public class LogInspector
         final String logFileName = args[0];
         final int messageDumpLimit = args.length >= 2 ? Integer.parseInt(args[1]) : Integer.MAX_VALUE;
 
-        try (final LogBuffers logBuffers = new LogBuffers(logFileName))
+        try (final LogBuffers logBuffers = new LogBuffers(logFileName, READ_ONLY))
         {
             out.println("======================================================================");
             out.format("%s Inspection dump for %s%n", new Date(), logFileName);

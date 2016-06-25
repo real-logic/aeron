@@ -33,9 +33,12 @@ import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
+import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
@@ -117,6 +120,7 @@ public class ClientConductorTest
             mockClientErrorHandler,
             mockAvailableImageHandler,
             mockUnavailableImageHandler,
+            READ_ONLY,
             KEEP_ALIVE_INTERVAL,
             AWAIT_TIMEOUT,
             TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS),
@@ -163,8 +167,10 @@ public class ClientConductorTest
         final LogBuffers logBuffersSession1 = mock(LogBuffers.class);
         final LogBuffers logBuffersSession2 = mock(LogBuffers.class);
 
-        when(logBuffersFactory.map(eq(SESSION_ID_1 + "-log"))).thenReturn(logBuffersSession1);
-        when(logBuffersFactory.map(eq(SESSION_ID_2 + "-log"))).thenReturn(logBuffersSession2);
+        when(logBuffersFactory.map(eq(SESSION_ID_1 + "-log"), eq(READ_WRITE))).thenReturn(logBuffersSession1);
+        when(logBuffersFactory.map(eq(SESSION_ID_2 + "-log"), eq(READ_WRITE))).thenReturn(logBuffersSession2);
+        when(logBuffersFactory.map(eq(SESSION_ID_1 + "-log"), eq(READ_ONLY))).thenReturn(logBuffersSession1);
+        when(logBuffersFactory.map(eq(SESSION_ID_2 + "-log"), eq(READ_ONLY))).thenReturn(logBuffersSession2);
 
         when(logBuffersSession1.atomicBuffers()).thenReturn(atomicBuffersSession1);
         when(logBuffersSession2.atomicBuffers()).thenReturn(atomicBuffersSession2);
@@ -197,7 +203,7 @@ public class ClientConductorTest
 
         conductor.addPublication(CHANNEL, STREAM_ID_1);
 
-        verify(logBuffersFactory).map(SESSION_ID_1 + "-log");
+        verify(logBuffersFactory).map(SESSION_ID_1 + "-log", READ_WRITE);
     }
 
     @Test(expected = DriverTimeoutException.class)
@@ -372,7 +378,7 @@ public class ClientConductorTest
         final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1);
         conductor.doWork();
 
-        verify(logBuffersFactory, times(1)).map(anyString());
+        verify(logBuffersFactory, times(1)).map(anyString(), any(FileChannel.MapMode.class));
         assertThat(publication.registrationId(), is(CORRELATION_ID));
     }
 
@@ -465,7 +471,7 @@ public class ClientConductorTest
         conductor.onAvailableImage(
             STREAM_ID_1, SESSION_ID_1, subscriberPositionMap, SESSION_ID_1 + "-log", SOURCE_INFO, CORRELATION_ID);
 
-        verify(logBuffersFactory).map(SESSION_ID_1 + "-log");
+        verify(logBuffersFactory).map(eq(SESSION_ID_1 + "-log"), any(FileChannel.MapMode.class));
     }
 
     @Test
@@ -501,7 +507,7 @@ public class ClientConductorTest
         conductor.onAvailableImage(
             STREAM_ID_2, SESSION_ID_2, subscriberPositionMap, SESSION_ID_2 + "-log", SOURCE_INFO, CORRELATION_ID_2);
 
-        verify(logBuffersFactory, never()).map(anyString());
+        verify(logBuffersFactory, never()).map(anyString(), any(FileChannel.MapMode.class));
         verify(mockAvailableImageHandler, never()).onAvailableImage(any(Image.class));
     }
 
@@ -510,7 +516,7 @@ public class ClientConductorTest
     {
         conductor.onUnavailableImage(STREAM_ID_2, CORRELATION_ID_2);
 
-        verify(logBuffersFactory, never()).map(anyString());
+        verify(logBuffersFactory, never()).map(anyString(), any(FileChannel.MapMode.class));
         verify(mockUnavailableImageHandler, never()).onUnavailableImage(any(Image.class));
     }
 

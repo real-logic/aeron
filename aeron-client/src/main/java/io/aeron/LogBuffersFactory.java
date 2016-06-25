@@ -15,6 +15,8 @@
  */
 package io.aeron;
 
+import java.nio.channels.FileChannel;
+
 /**
  * Interface for encapsulating the strategy of mapping {@link LogBuffers} at a giving file location.
  */
@@ -24,7 +26,8 @@ interface LogBuffersFactory
      * Map a log file into memory and wrap each section with a {@link org.agrona.concurrent.UnsafeBuffer}.
      *
      * @param logFileName to be mapped into memory.
+     * @param mapMode     to be used for the file.
      * @return a representation of the mapped log buffer.
      */
-    LogBuffers map(String logFileName);
+    LogBuffers map(String logFileName, FileChannel.MapMode mapMode);
 }

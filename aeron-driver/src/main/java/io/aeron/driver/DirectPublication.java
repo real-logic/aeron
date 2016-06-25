@@ -44,7 +44,6 @@ public class DirectPublication implements DriverManagedResource
     private final LogBufferPartition[] logPartitions;
     private final ArrayList<ReadablePosition> subscriberPositions = new ArrayList<>();
     private final RawLog rawLog;
-
     private final Position publisherLimit;
     private long consumerPosition = 0;
     private int refCount = 0;

@@ -186,16 +186,13 @@ public class DriverConductor implements Agent
         final ArrayList<NetworkPublication> networkPublications = this.networkPublications;
         for (int i = 0, size = networkPublications.size(); i < size; i++)
         {
-            final NetworkPublication publication = networkPublications.get(i);
-            workCount += publication.updatePublishersLimit() + publication.cleanLogBuffer();
+            workCount += networkPublications.get(i).updatePublishersLimit();
         }
 
         final ArrayList<DirectPublication> directPublications = this.directPublications;
         for (int i = 0, size = directPublications.size(); i < size; i++)
         {
-            final DirectPublication publication = directPublications.get(i);
-            workCount +=
-                publication.updatePublishersLimit(toDriverCommands.consumerHeartbeatTime()) + publication.cleanLogBuffer();
+            workCount += directPublications.get(i).updatePublishersLimit(toDriverCommands.consumerHeartbeatTime());
         }
 
         return workCount;

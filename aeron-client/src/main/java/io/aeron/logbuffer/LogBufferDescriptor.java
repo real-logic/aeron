@@ -63,16 +63,6 @@ public class LogBufferDescriptor
     // ********************************
 
     /**
-     * A term is currently clean or in use.
-     */
-    public static final int CLEAN = 0;
-
-    /**
-     * A term is dirty and requires cleaning.
-     */
-    public static final int NEEDS_CLEANING = 1;
-
-    /**
      * Offset within the term meta data where the tail value is stored.
      */
     public static final int TERM_TAIL_COUNTER_OFFSET;
@@ -372,17 +362,6 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Rotate to the previous partition in sequence for the term id.
-     *
-     * @param currentIndex partition index
-     * @return the previous partition index
-     */
-    public static int previousPartitionIndex(final int currentIndex)
-    {
-        return (currentIndex + (PARTITION_COUNT - 1)) % PARTITION_COUNT;
-    }
-
-    /**
      * Determine the partition index to be used given the initial term and active term ids.
      *
      * @param initialTermId at which the log buffer usage began
@@ -400,9 +379,9 @@ public class LogBufferDescriptor
      * @param termCount for the number of terms that have passed.
      * @return the partition index for the term count.
      */
-    public static int indexByTermCount(final int termCount)
+    public static int indexByTermCount(final long termCount)
     {
-        return termCount % PARTITION_COUNT;
+        return (int)(termCount % PARTITION_COUNT);
     }
 
     /**
@@ -562,10 +541,7 @@ public class LogBufferDescriptor
         final int newTermId)
     {
         final int nextIndex = nextPartitionIndex(activeIndex);
-        final int nextNextIndex = nextPartitionIndex(nextIndex);
-
         logPartitions[nextIndex].termId(newTermId);
-        logPartitions[nextNextIndex].statusOrdered(NEEDS_CLEANING);
         activePartitionIndex(logMetaDataBuffer, nextIndex);
     }
 

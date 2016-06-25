@@ -377,14 +377,12 @@ public class PublicationImage
         final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + lossDetector.rebuildOffset();
         this.rebuildPosition.proposeMaxOrdered(newRebuildPosition);
 
-
-        final int newTermCount = (int)(newRebuildPosition >>> positionBitsToShift);
-        final int oldTermCount = (int)(oldRebuildPosition >>> positionBitsToShift);
+        final long newTermCount = newRebuildPosition >>> positionBitsToShift;
+        final long oldTermCount = oldRebuildPosition >>> positionBitsToShift;
         if (newTermCount > oldTermCount)
         {
-            final int oldTermCountIndex = indexByTermCount(oldTermCount);
-            final UnsafeBuffer termBuffer = termBuffers[previousPartitionIndex(oldTermCountIndex)];
-            termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
+            final UnsafeBuffer dirtyTerm = termBuffers[indexByTermCount(newTermCount + 1)];
+            dirtyTerm.setMemory(0, dirtyTerm.capacity(), (byte)0);
         }
 
         if (minSubscriberPosition > (newStatusMessagePosition + currentGain))

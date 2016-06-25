@@ -46,6 +46,7 @@ public class DirectPublication implements DriverManagedResource
     private final RawLog rawLog;
     private final Position publisherLimit;
     private long consumerPosition = 0;
+    private long termCount = 0;
     private int refCount = 0;
     private boolean reachedEndOfLife = false;
 
@@ -113,7 +114,7 @@ public class DirectPublication implements DriverManagedResource
         subscriberPosition.close();
     }
 
-    public int updatePublishersLimit(final long nowInMillis)
+    int updatePublishersLimit(final long nowInMillis)
     {
         int workCount = 0;
         long minSubscriberPosition = Long.MAX_VALUE;
@@ -136,27 +137,21 @@ public class DirectPublication implements DriverManagedResource
             {
                 publisherLimit.setOrdered(proposedLimit);
                 tripLimit = proposedLimit + tripGain;
+
+                final long currentTermCount = proposedLimit >> positionBitsToShift;
+                if (currentTermCount > termCount)
+                {
+                    termCount = currentTermCount;
+                    final int dirtyIndex = indexByTermCount(currentTermCount + 1);
+                    final UnsafeBuffer dirtyTerm = logPartitions[dirtyIndex].termBuffer();
+                    dirtyTerm.setMemory(0, dirtyTerm.capacity(), (byte)0);
+                }
+
                 workCount = 1;
             }
         }
 
         consumerPosition = maxSubscriberPosition;
-
-        return workCount;
-    }
-
-    public int cleanLogBuffer()
-    {
-        int workCount = 0;
-
-        for (final LogBufferPartition partition : logPartitions)
-        {
-            if (partition.status() == NEEDS_CLEANING)
-            {
-                partition.clean();
-                workCount = 1;
-            }
-        }
 
         return workCount;
     }

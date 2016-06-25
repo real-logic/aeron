@@ -50,6 +50,7 @@ class NetworkPublicationPadding1
 
 class NetworkPublicationConductorFields extends NetworkPublicationPadding1
 {
+    long termCount = 0;
     long timeOfLastActivity = 0;
     long lastSenderPosition = 0;
     int refCount = 0;
@@ -223,27 +224,6 @@ public class NetworkPublication
         }
     }
 
-    /**
-     * This is performed on the {@link DriverConductor} thread
-     *
-     * @return amount of work done
-     */
-    int cleanLogBuffer()
-    {
-        int workCount = 0;
-
-        for (final LogBufferPartition partition : logPartitions)
-        {
-            if (partition.status() == NEEDS_CLEANING)
-            {
-                partition.clean();
-                workCount = 1;
-            }
-        }
-
-        return workCount;
-    }
-
     public void resend(final int termId, int termOffset, final int length)
     {
         final long senderPosition = this.senderPosition.get();
@@ -327,6 +307,15 @@ public class NetworkPublication
 
         if (publisherLimit.proposeMaxOrdered(candidatePublisherLimit))
         {
+            final long currentTermCount = candidatePublisherLimit >> positionBitsToShift;
+            if (currentTermCount > termCount)
+            {
+                termCount = currentTermCount;
+                final int dirtyIndex = indexByTermCount(currentTermCount + 1);
+                final UnsafeBuffer dirtyTerm = logPartitions[dirtyIndex].termBuffer();
+                dirtyTerm.setMemory(0, dirtyTerm.capacity(), (byte)0);
+            }
+
             workCount = 1;
         }
 

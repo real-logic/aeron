@@ -428,10 +428,7 @@ public class Publication implements AutoCloseable
         else if (termOffset == TermAppender.TRIPPED)
         {
             final int nextIndex = nextPartitionIndex(index);
-            final int nextNextIndex = nextPartitionIndex(nextIndex);
-
             termAppenders[nextIndex].tailTermId(TermAppender.termId(result) + 1);
-            termAppenders[nextNextIndex].statusOrdered(NEEDS_CLEANING);
             LogBufferDescriptor.activePartitionIndex(logMetaDataBuffer, nextIndex);
         }
 

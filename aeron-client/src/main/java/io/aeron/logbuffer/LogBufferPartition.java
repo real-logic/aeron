@@ -17,7 +17,6 @@ package io.aeron.logbuffer;
 
 import org.agrona.concurrent.UnsafeBuffer;
 
-import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
 
 /**
@@ -52,35 +51,6 @@ public class LogBufferPartition
     public UnsafeBuffer metaDataBuffer()
     {
         return metaDataBuffer;
-    }
-
-    /**
-     * Clean down the buffers for reuse by zeroing them out.
-     */
-    public void clean()
-    {
-        termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
-        metaDataBuffer.putInt(TERM_STATUS_OFFSET, CLEAN);
-    }
-
-    /**
-     * What is the current status of the buffer.
-     *
-     * @return the status of buffer as described in {@link LogBufferDescriptor}
-     */
-    public int status()
-    {
-        return metaDataBuffer.getIntVolatile(TERM_STATUS_OFFSET);
-    }
-
-    /**
-     * Set the status of the log buffer with StoreStore memory ordering semantics.
-     *
-     * @param status to be set for the log buffer.
-     */
-    public void statusOrdered(final int status)
-    {
-        metaDataBuffer.putIntOrdered(TERM_STATUS_OFFSET, status);
     }
 
     /**

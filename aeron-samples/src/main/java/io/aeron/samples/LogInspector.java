@@ -85,9 +85,8 @@ public class LogInspector
                 final long rawTail = metaDataBuffer.getLongVolatile(TERM_TAIL_COUNTER_OFFSET);
                 final long termOffset = rawTail & 0xFFFF_FFFFL;
                 out.format(
-                    "Index %d Term Meta Data status=%s termOffset=%d termId=%d rawTail=%d%n",
+                    "Index %d Term Meta Data termOffset=%d termId=%d rawTail=%d%n",
                     i,
-                    termStatus(metaDataBuffer),
                     termOffset,
                     termId(rawTail),
                     rawTail);
@@ -182,21 +181,5 @@ public class LogInspector
         }
 
         return chars;
-    }
-
-    private static String termStatus(final UnsafeBuffer metaDataBuffer)
-    {
-        final int status = metaDataBuffer.getInt(TERM_STATUS_OFFSET);
-        switch (status)
-        {
-            case CLEAN:
-                return "CLEAN";
-
-            case NEEDS_CLEANING:
-                return "NEEDS_CLEANING";
-
-            default:
-                return status + " <UNKNOWN>";
-        }
     }
 }

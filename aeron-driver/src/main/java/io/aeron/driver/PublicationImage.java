@@ -358,6 +358,11 @@ public class PublicationImage
             maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
 
+        if (minSubscriberPosition > (newStatusMessagePosition + currentGain))
+        {
+            newStatusMessagePosition = minSubscriberPosition;
+        }
+
         final long oldRebuildPosition = rebuildPosition.getVolatile();
         final long rebuildPosition = Math.max(oldRebuildPosition, maxSubscriberPosition);
 
@@ -383,11 +388,6 @@ public class PublicationImage
         {
             final UnsafeBuffer dirtyTerm = termBuffers[indexByTermCount(newTermCount + 1)];
             dirtyTerm.setMemory(0, dirtyTerm.capacity(), (byte)0);
-        }
-
-        if (minSubscriberPosition > (newStatusMessagePosition + currentGain))
-        {
-            newStatusMessagePosition = minSubscriberPosition;
         }
 
         return workCount;

@@ -391,10 +391,8 @@ private:
         else if (result.termOffset == TERM_APPENDER_TRIPPED)
         {
             const int nextIndex = LogBufferDescriptor::nextPartitionIndex(index);
-            const int nextNextIndex = LogBufferDescriptor::nextPartitionIndex(nextIndex);
 
             m_appenders[nextIndex]->tailTermId(result.termId + 1);
-            m_appenders[nextNextIndex]->statusOrdered(LogBufferDescriptor::NEEDS_CLEANING);
             LogBufferDescriptor::activePartitionIndex(m_logMetaDataBuffer, nextIndex);
         }
 

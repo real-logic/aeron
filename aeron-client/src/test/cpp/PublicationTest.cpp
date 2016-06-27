@@ -176,9 +176,6 @@ TEST_F(PublicationTest, shouldRotateWhenAppendTrips)
     EXPECT_EQ(m_publication->position(), initialPosition);
     EXPECT_EQ(m_publication->offer(m_srcBuffer), ADMIN_ACTION);
 
-    const int cleaningIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1 + 2);
-    EXPECT_EQ(m_metaDataBuffers[cleaningIndex].getInt32(LogBufferDescriptor::TERM_STATUS_OFFSET), LogBufferDescriptor::NEEDS_CLEANING);
-
     const int nextIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1 + 1);
     EXPECT_EQ(m_logMetaDataBuffer.getInt32(LogBufferDescriptor::LOG_ACTIVE_PARTITION_INDEX_OFFSET), nextIndex);
 
@@ -198,9 +195,6 @@ TEST_F(PublicationTest, shouldRotateWhenClaimTrips)
     BufferClaim bufferClaim;
     EXPECT_EQ(m_publication->position(), initialPosition);
     EXPECT_EQ(m_publication->tryClaim(SRC_BUFFER_LENGTH, bufferClaim), ADMIN_ACTION);
-
-    const int cleaningIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1 + 2);
-    EXPECT_EQ(m_metaDataBuffers[cleaningIndex].getInt32(LogBufferDescriptor::TERM_STATUS_OFFSET), LogBufferDescriptor::NEEDS_CLEANING);
 
     const int nextIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1 + 1);
     EXPECT_EQ(m_logMetaDataBuffer.getInt32(LogBufferDescriptor::LOG_ACTIVE_PARTITION_INDEX_OFFSET), nextIndex);

@@ -59,23 +59,6 @@ public:
         return m_metaDataBuffer;
     }
 
-    inline void clean()
-    {
-        m_termBuffer.setMemory(0, m_termBuffer.capacity(), 0);
-        m_metaDataBuffer.setMemory(0, m_metaDataBuffer.capacity(), 0);
-        statusOrdered(LogBufferDescriptor::CLEAN);
-    }
-
-    inline int status() const
-    {
-        return m_metaDataBuffer.getInt32Volatile(LogBufferDescriptor::TERM_STATUS_OFFSET);
-    }
-
-    inline void statusOrdered(std::int32_t status)
-    {
-        m_metaDataBuffer.putInt32Ordered(LogBufferDescriptor::TERM_STATUS_OFFSET, status);
-    }
-
     inline std::int32_t tailVolatile()
     {
         return std::min(m_metaDataBuffer.getInt32Volatile(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET),

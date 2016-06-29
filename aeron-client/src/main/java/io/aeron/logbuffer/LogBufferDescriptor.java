@@ -221,24 +221,6 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Check that meta data buffer is of sufficient length.
-     *
-     * @param buffer to be checked.
-     * @throws IllegalStateException if the buffer is not as expected.
-     */
-    public static void checkMetaDataBuffer(final UnsafeBuffer buffer)
-    {
-        final int capacity = buffer.capacity();
-        if (capacity < TERM_META_DATA_LENGTH)
-        {
-            final String s = String.format(
-                "Meta data buffer capacity less than min length of %d, capacity=%d",
-                TERM_META_DATA_LENGTH, capacity);
-            throw new IllegalStateException(s);
-        }
-    }
-
-    /**
      * Get the value of the initial Term id used for this log.
      *
      * @param logMetaDataBuffer containing the meta data.

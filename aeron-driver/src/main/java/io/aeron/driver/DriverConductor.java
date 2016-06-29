@@ -668,13 +668,11 @@ public class DriverConductor implements Agent
         final UdpChannel udpChannel,
         final long correlationId)
     {
-        final String canonicalForm = udpChannel.canonicalForm();
         final RawLog rawLog = rawLogFactory.newNetworkedImage(
-            canonicalForm, sessionId, streamId, correlationId, termBufferLength);
+            udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferLength);
 
-        final UnsafeBuffer header = createDefaultHeader(sessionId, streamId, initialTermId);
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
-        storeDefaultFrameHeader(logMetaData, header);
+        storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
         initialTermId(logMetaData, initialTermId);
         mtuLength(logMetaData, senderMtuLength);
         correlationId(logMetaData, correlationId);
@@ -688,17 +686,12 @@ public class DriverConductor implements Agent
     {
         final RawLog rawLog = rawLogFactory.newDirectPublication(sessionId, streamId, registrationId, termBufferLength);
 
-        final UnsafeBuffer header = createDefaultHeader(sessionId, streamId, initialTermId);
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
-        storeDefaultFrameHeader(logMetaData, header);
-
-        final UnsafeBuffer termMetaData = rawLog.partitions()[0].metaDataBuffer();
-        initialiseTailWithTermId(termMetaData, initialTermId);
-
+        storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
+        initialiseTailWithTermId(rawLog.partitions()[0].metaDataBuffer(), initialTermId);
         initialTermId(logMetaData, initialTermId);
 
-        final int mtuLength = computeMaxMessageLength(termBufferLength);
-        mtuLength(logMetaData, mtuLength);
+        mtuLength(logMetaData, computeMaxMessageLength(termBufferLength));
         correlationId(logMetaData, registrationId);
         timeOfLastStatusMessage(logMetaData, 0);
 

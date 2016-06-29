@@ -599,9 +599,7 @@ public class DriverConductor implements Agent
     private void onAddDirectPublication(final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final DirectPublication directPublication = getOrAddDirectPublication(streamId, channel);
-        final AeronClient client = getOrAddClient(clientId);
-
-        linkPublication(registrationId, directPublication, client);
+        linkPublication(registrationId, directPublication, getOrAddClient(clientId));
 
         clientProxy.onPublicationReady(
             registrationId,
@@ -640,16 +638,12 @@ public class DriverConductor implements Agent
         final long registrationId,
         final int termBufferLength)
     {
-        final String canonicalForm = udpChannel.canonicalForm();
         final RawLog rawLog = rawLogFactory.newNetworkPublication(
-            canonicalForm, sessionId, streamId, registrationId, termBufferLength);
+            udpChannel.canonicalForm(), sessionId, streamId, registrationId, termBufferLength);
 
-        final UnsafeBuffer header = createDefaultHeader(sessionId, streamId, initialTermId);
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
-        storeDefaultFrameHeader(logMetaData, header);
-
-        final UnsafeBuffer termMetaData = rawLog.partitions()[0].metaDataBuffer();
-        initialiseTailWithTermId(termMetaData, initialTermId);
+        storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
+        initialiseTailWithTermId(rawLog.partitions()[0].metaDataBuffer(), initialTermId);
 
         initialTermId(logMetaData, initialTermId);
         mtuLength(logMetaData, context.mtuLength());

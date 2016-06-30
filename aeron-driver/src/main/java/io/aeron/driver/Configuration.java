@@ -187,12 +187,12 @@ public class Configuration
     public static final String SOCKET_RCVBUF_LENGTH_PROP_NAME = "aeron.socket.so_rcvbuf";
 
     /**
-     * SO_RCVBUF length, 0 means use OS default.
+     * Default SO_RCVBUF length.
      */
     public static final int SOCKET_RCVBUF_LENGTH_DEFAULT = 128 * 1024;
 
     /**
-     * SO_RCVBUF length.
+     * SO_RCVBUF length, 0 means use OS default.
      */
     public static final int SOCKET_RCVBUF_LENGTH = getInteger(SOCKET_RCVBUF_LENGTH_PROP_NAME, SOCKET_RCVBUF_LENGTH_DEFAULT);
 
@@ -202,12 +202,12 @@ public class Configuration
     public static final String SOCKET_SNDBUF_LENGTH_PROP_NAME = "aeron.socket.so_sndbuf";
 
     /**
-     * SO_SNDBUF length, 0 means use OS default.
+     * Default SO_SNDBUF length.
      */
     public static final int SOCKET_SNDBUF_LENGTH_DEFAULT = 0;
 
     /**
-     * SO_SNDBUF length.
+     * SO_SNDBUF length, 0 means use OS default.
      */
     public static final int SOCKET_SNDBUF_LENGTH = getInteger(SOCKET_SNDBUF_LENGTH_PROP_NAME, SOCKET_SNDBUF_LENGTH_DEFAULT);
 

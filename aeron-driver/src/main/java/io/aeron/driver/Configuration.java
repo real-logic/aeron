@@ -42,87 +42,6 @@ public class Configuration
     private static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 
     /**
-     * Length (in bytes) of the log buffers for publication terms.
-     */
-    public static final String TERM_BUFFER_LENGTH_PROP_NAME = "aeron.term.buffer.length";
-
-    /**
-     * Length (in bytes) of the log buffers for terms.
-     */
-    public static final String TERM_BUFFER_MAX_LENGTH_PROP_NAME = "aeron.term.buffer.max.length";
-
-    /**
-     * Length (in bytes) of the conductor buffers between the media driver and the client.
-     */
-    public static final String CONDUCTOR_BUFFER_LENGTH_PROP_NAME = "aeron.conductor.buffer.length";
-
-    /**
-     * Length (in bytes) of the broadcast buffers from the media driver to the clients.
-     */
-    public static final String TO_CLIENTS_BUFFER_LENGTH_PROP_NAME = "aeron.clients.buffer.length";
-
-    /**
-     * Property name for length of the error buffer for the system counters.
-     */
-    public static final String COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME = "aeron.counters.buffer.length";
-
-    /**
-     * Property name for length of the memory mapped buffer for the distinct error log.
-     */
-    public static final String ERROR_BUFFER_LENGTH_PROP_NAME = "aeron.error.buffer.length";
-
-    /**
-     * Property name for length of the initial window which must be sufficient for Bandwidth Delay Produce (BDP).
-     */
-    public static final String INITIAL_WINDOW_LENGTH_PROP_NAME = "aeron.rcv.initial.window.length";
-
-    /**
-     * Property name for status message timeout in nanoseconds.
-     */
-    public static final String STATUS_MESSAGE_TIMEOUT_PROP_NAME = "aeron.rcv.status.message.timeout";
-
-    /**
-     * Property name for SO_RCVBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Produce (BDP).
-     */
-    public static final String SOCKET_RCVBUF_LENGTH_PROP_NAME = "aeron.socket.so_rcvbuf";
-
-    /**
-     * Property name for SO_SNDBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Produce (BDP).
-     */
-    public static final String SOCKET_SNDBUF_LENGTH_PROP_NAME = "aeron.socket.so_sndbuf";
-
-    /**
-     * Property name for IP_MULTICAST_TTL setting on UDP sockets.
-     */
-    public static final String SOCKET_MULTICAST_TTL_PROP_NAME = "aeron.socket.multicast.ttl";
-
-    /**
-     * Property name for linger timeout on {@link Publication}s.
-     */
-    public static final String PUBLICATION_LINGER_PROP_NAME = "aeron.publication.linger.timeout";
-
-    /**
-     * Property name for window limit on {@link Publication} side.
-     */
-    public static final String PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME = "aeron.publication.term.window.length";
-    public static final int PUBLICATION_TERM_WINDOW_LENGTH = getInteger(PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
-
-    /**
-     * Property name for {@link Aeron} client liveness timeout.
-     */
-    public static final String CLIENT_LIVENESS_TIMEOUT_PROP_NAME = "aeron.client.liveness.timeout";
-
-    /**
-     * Property name for {@link Image} liveness timeout.
-     */
-    public static final String IMAGE_LIVENESS_TIMEOUT_PROP_NAME = "aeron.image.liveness.timeout";
-
-    /**
-     * Property name for {@link Publication} unblock timeout.
-     */
-    public static final String PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME = "aeron.publication.unblock.timeout";
-
-    /**
      * Should term buffers be created as sparse files. Defaults to false.
      *
      * If a platform supports spare files then log buffer creation is faster with pages being allocated as
@@ -131,16 +50,6 @@ public class Configuration
     public static final String TERM_BUFFER_SPARSE_FILE_PROP_NAME = "aeron.term.buffer.sparse.file";
     public static final String TERM_BUFFER_SPARSE_FILE = getProperty(TERM_BUFFER_SPARSE_FILE_PROP_NAME);
 
-    /**
-     * Default term buffer length.
-     */
-    public static final int TERM_BUFFER_IPC_LENGTH_DEFAULT = 64 * 1024 * 1024;
-
-    /**
-     * Property name for term buffer length (in bytes) for IPC buffers.
-     */
-    public static final String IPC_TERM_BUFFER_LENGTH_PROP_NAME = "aeron.ipc.term.buffer.length";
-    public static final int IPC_TERM_BUFFER_LENGTH = getInteger(IPC_TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_IPC_LENGTH_DEFAULT);
 
     /**
      * Property name for window limit for IPC publications.
@@ -150,9 +59,9 @@ public class Configuration
         IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
 
     /**
-     * Default term buffer length.
+     * Length (in bytes) of the log buffers for terms.
      */
-    public static final int TERM_BUFFER_LENGTH_DEFAULT = 16 * 1024 * 1024;
+    public static final String TERM_BUFFER_MAX_LENGTH_PROP_NAME = "aeron.term.buffer.max.length";
 
     /**
      * Default term max buffer length. The maximum possible term length is 1GB.
@@ -160,11 +69,50 @@ public class Configuration
     public static final int TERM_BUFFER_LENGTH_MAX_DEFAULT = 1024 * 1024 * 1024;
 
     /**
+     * Length (in bytes) of the log buffers for publication terms.
+     */
+    public static final String TERM_BUFFER_LENGTH_PROP_NAME = "aeron.term.buffer.length";
+
+    /**
+     * Default term buffer length.
+     */
+    public static final int TERM_BUFFER_LENGTH_DEFAULT = 16 * 1024 * 1024;
+
+    /**
+     * Property name for term buffer length (in bytes) for IPC buffers.
+     */
+    public static final String IPC_TERM_BUFFER_LENGTH_PROP_NAME = "aeron.ipc.term.buffer.length";
+
+    /**
+     * Default IPC term buffer length.
+     */
+    public static final int TERM_BUFFER_IPC_LENGTH_DEFAULT = 64 * 1024 * 1024;
+
+    /**
+     * IPC Term buffer length in bytes.
+     */
+    public static final int IPC_TERM_BUFFER_LENGTH = getInteger(IPC_TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_IPC_LENGTH_DEFAULT);
+
+    /**
+     * Length (in bytes) of the conductor buffer for control commands from the clients to the media driver conductor.
+     */
+    public static final String CONDUCTOR_BUFFER_LENGTH_PROP_NAME = "aeron.conductor.buffer.length";
+
+    /**
      * Default buffer length for conductor buffers between the client and the media driver conductor.
      */
     public static final int CONDUCTOR_BUFFER_LENGTH_DEFAULT = (1024 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
+
+    /**
+     * Conductor buffer length in bytes.
+     */
     public static final int CONDUCTOR_BUFFER_LENGTH = getInteger(
         CONDUCTOR_BUFFER_LENGTH_PROP_NAME, CONDUCTOR_BUFFER_LENGTH_DEFAULT);
+
+    /**
+     * Length (in bytes) of the broadcast buffers from the media driver to the clients.
+     */
+    public static final String TO_CLIENTS_BUFFER_LENGTH_PROP_NAME = "aeron.clients.buffer.length";
 
     /**
      * Default buffer length for broadcast buffers from the media driver and the clients.
@@ -172,6 +120,11 @@ public class Configuration
     public static final int TO_CLIENTS_BUFFER_LENGTH_DEFAULT = (1024 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
     public static final int TO_CLIENTS_BUFFER_LENGTH = getInteger(
         TO_CLIENTS_BUFFER_LENGTH_PROP_NAME, TO_CLIENTS_BUFFER_LENGTH_DEFAULT);
+
+    /**
+     * Property name for length of the error buffer for the system counters.
+     */
+    public static final String COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME = "aeron.counters.buffer.length";
 
     /**
      * Length of the memory mapped buffers for the system counters file.
@@ -182,6 +135,10 @@ public class Configuration
 
     public static final int COUNTERS_METADATA_BUFFER_LENGTH = COUNTERS_VALUES_BUFFER_LENGTH * 2;
 
+    /**
+     * Property name for length of the memory mapped buffer for the distinct error log.
+     */
+    public static final String ERROR_BUFFER_LENGTH_PROP_NAME = "aeron.error.buffer.length";
     /**
      * Default buffer length for the error buffer for the media driver.
      */
@@ -242,6 +199,11 @@ public class Configuration
     public static final int MAX_RETRANSMITS_DEFAULT = 16;
 
     /**
+     * Property name for length of the initial window which must be sufficient for Bandwidth Delay Produce (BDP).
+     */
+    public static final String INITIAL_WINDOW_LENGTH_PROP_NAME = "aeron.rcv.initial.window.length";
+
+    /**
      * Default initial window length for flow control sender to receiver purposes
      *
      * Length of Initial Window
@@ -256,9 +218,19 @@ public class Configuration
     public static final int INITIAL_WINDOW_LENGTH_DEFAULT = 128 * 1024;
 
     /**
+     * Property name for status message timeout in nanoseconds.
+     */
+    public static final String STATUS_MESSAGE_TIMEOUT_PROP_NAME = "aeron.rcv.status.message.timeout";
+
+    /**
      * Max timeout between SMs.
      */
     public static final long STATUS_MESSAGE_TIMEOUT_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(200);
+
+    /**
+     * Property name for SO_RCVBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Produce (BDP).
+     */
+    public static final String SOCKET_RCVBUF_LENGTH_PROP_NAME = "aeron.socket.so_rcvbuf";
 
     /**
      * 0 means use OS default.
@@ -267,10 +239,20 @@ public class Configuration
     public static final int SOCKET_RCVBUF_LENGTH = getInteger(SOCKET_RCVBUF_LENGTH_PROP_NAME, SOCKET_RCVBUF_LENGTH_DEFAULT);
 
     /**
+     * Property name for SO_SNDBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Produce (BDP).
+     */
+    public static final String SOCKET_SNDBUF_LENGTH_PROP_NAME = "aeron.socket.so_sndbuf";
+
+    /**
      * 0 means use OS default.
      */
     public static final int SOCKET_SNDBUF_LENGTH_DEFAULT = 0;
     public static final int SOCKET_SNDBUF_LENGTH = getInteger(SOCKET_SNDBUF_LENGTH_PROP_NAME, SOCKET_SNDBUF_LENGTH_DEFAULT);
+
+    /**
+     * Property name for IP_MULTICAST_TTL setting on UDP sockets.
+     */
+    public static final String SOCKET_MULTICAST_TTL_PROP_NAME = "aeron.socket.multicast.ttl";
 
     /**
      * 0 means use OS default.
@@ -279,10 +261,20 @@ public class Configuration
     public static final int SOCKET_MULTICAST_TTL = getInteger(SOCKET_MULTICAST_TTL_PROP_NAME, SOCKET_MULTICAST_TTL_DEFAULT);
 
     /**
+     * Property name for linger timeout on {@link Publication}s.
+     */
+    public static final String PUBLICATION_LINGER_PROP_NAME = "aeron.publication.linger.timeout";
+
+    /**
      * Time for {@link Publication}s to linger before cleanup.
      */
     public static final long PUBLICATION_LINGER_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
     public static final long PUBLICATION_LINGER_NS = getLong(PUBLICATION_LINGER_PROP_NAME, PUBLICATION_LINGER_DEFAULT_NS);
+
+    /**
+     * Property name for {@link Aeron} client liveness timeout.
+     */
+    public static final String CLIENT_LIVENESS_TIMEOUT_PROP_NAME = "aeron.client.liveness.timeout";
 
     /**
      * Timeout for client liveness in nanoseconds.
@@ -292,6 +284,11 @@ public class Configuration
         CLIENT_LIVENESS_TIMEOUT_PROP_NAME, CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS);
 
     /**
+     * Property name for {@link Image} liveness timeout.
+     */
+    public static final String IMAGE_LIVENESS_TIMEOUT_PROP_NAME = "aeron.image.liveness.timeout";
+
+    /**
      * Timeout for {@link Image} liveness in nanoseconds.
      */
     public static final long IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
@@ -299,9 +296,28 @@ public class Configuration
         IMAGE_LIVENESS_TIMEOUT_PROP_NAME, IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS);
 
     /**
-     * Timeout for {@link Publication} unblock in nanoseconds
+     * Property name for window limit on {@link Publication} side.
+     */
+    public static final String PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME = "aeron.publication.term.window.length";
+
+    /**
+     * Publication term window length for flow control in bytes.
+     */
+    public static final int PUBLICATION_TERM_WINDOW_LENGTH = getInteger(PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
+
+    /**
+     * Property name for {@link Publication} unblock timeout.
+     */
+    public static final String PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME = "aeron.publication.unblock.timeout";
+
+    /**
+     * Timeout for {@link Publication} unblock in nanoseconds.
      */
     public static final long PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
+
+    /**
+     * Publication timeout for when to unblock a partially written message.
+     */
     public static final long PUBLICATION_UNBLOCK_TIMEOUT_NS = getLong(
         PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME, PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS);
 
@@ -399,8 +415,17 @@ public class Configuration
      * Length of the maximum transmission unit of the media driver's protocol
      */
     public static final String MTU_LENGTH_PROP_NAME = "aeron.mtu.length";
+
+    /**
+     * Default length is greater than typical Ethernet MTU so will fragment to save on system calls.
+     */
     public static final int MTU_LENGTH_DEFAULT = 4096;
     public static final int MTU_LENGTH = getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
+
+    /**
+     * Maximum UDP datagram payload size for IPv4. Jumbo datagrams from IPv6 are not supported.
+     */
+    public static final int MAX_UDP_PAYLOAD_LENGTH = 65507;
 
     /**
      * {@link ThreadingMode} to be used by the Aeron {@link MediaDriver}
@@ -428,11 +453,6 @@ public class Configuration
 
     public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER = getProperty(
         RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT);
-
-    /**
-     * Maximum UDP datagram payload size for IPv4. Jumbo datagrams from IPv6 are not supported.
-     */
-    public static final int MAX_UDP_PAYLOAD_LENGTH = 65507;
 
     /**
      * Validate the the term buffer length is a power of two.

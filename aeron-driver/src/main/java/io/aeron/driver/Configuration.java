@@ -39,8 +39,6 @@ import static io.aeron.driver.ThreadingMode.DEDICATED;
  */
 public class Configuration
 {
-    private static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
-
     /**
      * Should term buffers be created as sparse files. Defaults to false.
      *
@@ -49,13 +47,6 @@ public class Configuration
      */
     public static final String TERM_BUFFER_SPARSE_FILE_PROP_NAME = "aeron.term.buffer.sparse.file";
     public static final String TERM_BUFFER_SPARSE_FILE = getProperty(TERM_BUFFER_SPARSE_FILE_PROP_NAME);
-
-    /**
-     * Property name for window limit for IPC publications.
-     */
-    public static final String IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME = "aeron.ipc.publication.term.window.length";
-    public static final int IPC_PUBLICATION_TERM_WINDOW_LENGTH = getInteger(
-        IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
 
     /**
      * Length (in bytes) of the log buffers for terms.
@@ -143,59 +134,6 @@ public class Configuration
      */
     public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
     public static final int ERROR_BUFFER_LENGTH = getInteger(ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
-
-    /**
-     * Default group size estimate for NAK delay randomization.
-     */
-    public static final int NAK_GROUPSIZE_DEFAULT = 10;
-
-    /**
-     * Default group RTT estimate for NAK delay randomization in ms.
-     */
-    public static final int NAK_GRTT_DEFAULT = 10;
-
-    /**
-     * Default max backoff for NAK delay randomization in ms.
-     */
-    public static final long NAK_MAX_BACKOFF_DEFAULT = TimeUnit.MILLISECONDS.toNanos(60);
-
-    /**
-     * Multicast NAK delay is immediate initial with delayed subsequent delay.
-     */
-    public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR = new OptimalMulticastDelayGenerator(
-        NAK_MAX_BACKOFF_DEFAULT, NAK_GROUPSIZE_DEFAULT, NAK_GRTT_DEFAULT);
-
-    /**
-     * Default Unicast NAK delay in nanoseconds.
-     */
-    public static final long NAK_UNICAST_DELAY_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
-
-    /**
-     * Unicast NAK delay is immediate initial with delayed subsequent delay.
-     */
-    public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR = new StaticDelayGenerator(
-        NAK_UNICAST_DELAY_DEFAULT_NS, true);
-
-    /**
-     * Default delay for retransmission of data for unicast.
-     */
-    public static final long RETRANSMIT_UNICAST_DELAY_DEFAULT_NS = TimeUnit.NANOSECONDS.toNanos(0);
-
-    /**
-     * Source uses same for unicast and multicast. For ticks.
-     */
-    public static final FeedbackDelayGenerator RETRANSMIT_UNICAST_DELAY_GENERATOR = () -> RETRANSMIT_UNICAST_DELAY_DEFAULT_NS;
-
-    /**
-     * Default delay for linger for unicast.
-     */
-    public static final long RETRANSMIT_UNICAST_LINGER_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
-    public static final FeedbackDelayGenerator RETRANSMIT_UNICAST_LINGER_GENERATOR = () -> RETRANSMIT_UNICAST_LINGER_DEFAULT_NS;
-
-    /**
-     * Default max number of active retransmissions per connected stream.
-     */
-    public static final int MAX_RETRANSMITS_DEFAULT = 16;
 
     /**
      * Property name for length of the initial window which must be sufficient for Bandwidth Delay Produce (BDP).
@@ -304,6 +242,18 @@ public class Configuration
      */
     public static final int PUBLICATION_TERM_WINDOW_LENGTH = getInteger(PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
 
+
+    /**
+     * Property name for window limit for IPC publications.
+     */
+    public static final String IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME = "aeron.ipc.publication.term.window.length";
+
+    /**
+     * IPC Publication term window length for flow control in bytes.
+     */
+    public static final int IPC_PUBLICATION_TERM_WINDOW_LENGTH = getInteger(
+        IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
+
     /**
      * Property name for {@link Publication} unblock timeout.
      */
@@ -319,6 +269,8 @@ public class Configuration
      */
     public static final long PUBLICATION_UNBLOCK_TIMEOUT_NS = getLong(
         PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME, PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS);
+
+    private static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 
     public static final long AGENT_IDLE_MAX_SPINS = 20;
     public static final long AGENT_IDLE_MAX_YIELDS = 50;
@@ -362,26 +314,6 @@ public class Configuration
     public static final String SHARED_IDLE_STRATEGY_PROP_NAME = "aeron.shared.idle.strategy";
     public static final String SHARED_IDLE_STRATEGY = getProperty(
         SHARED_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
-
-    /**
-     * Capacity for the command queues used between driver agents.
-     */
-    public static final int CMD_QUEUE_CAPACITY = 1024;
-
-    /**
-     * Timeout on cleaning up pending SETUP state on subscriber.
-     */
-    public static final long PENDING_SETUPS_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
-
-    /**
-     * Timeout between SETUP frames for publications during initial setup phase.
-     */
-    public static final long PUBLICATION_SETUP_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(100);
-
-    /**
-     * Timeout between heartbeats for publications.
-     */
-    public static final long PUBLICATION_HEARTBEAT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(100);
 
     /**
      * {@link FlowControl} to be employed for unicast channels.
@@ -452,6 +384,79 @@ public class Configuration
 
     public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER = getProperty(
         RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT);
+
+    /**
+     * Capacity for the command queues used between driver agents.
+     */
+    public static final int CMD_QUEUE_CAPACITY = 1024;
+
+    /**
+     * Timeout on cleaning up pending SETUP state on subscriber.
+     */
+    public static final long PENDING_SETUPS_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
+
+    /**
+     * Timeout between SETUP frames for publications during initial setup phase.
+     */
+    public static final long PUBLICATION_SETUP_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(100);
+
+    /**
+     * Timeout between heartbeats for publications.
+     */
+    public static final long PUBLICATION_HEARTBEAT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(100);
+
+    /**
+     * Default group size estimate for NAK delay randomization.
+     */
+    public static final int NAK_GROUPSIZE_DEFAULT = 10;
+
+    /**
+     * Default group RTT estimate for NAK delay randomization in ms.
+     */
+    public static final int NAK_GRTT_DEFAULT = 10;
+
+    /**
+     * Default max backoff for NAK delay randomization in ms.
+     */
+    public static final long NAK_MAX_BACKOFF_DEFAULT = TimeUnit.MILLISECONDS.toNanos(60);
+
+    /**
+     * Multicast NAK delay is immediate initial with delayed subsequent delay.
+     */
+    public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR = new OptimalMulticastDelayGenerator(
+        NAK_MAX_BACKOFF_DEFAULT, NAK_GROUPSIZE_DEFAULT, NAK_GRTT_DEFAULT);
+
+    /**
+     * Default Unicast NAK delay in nanoseconds.
+     */
+    public static final long NAK_UNICAST_DELAY_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
+
+    /**
+     * Unicast NAK delay is immediate initial with delayed subsequent delay.
+     */
+    public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR = new StaticDelayGenerator(
+        NAK_UNICAST_DELAY_DEFAULT_NS, true);
+
+    /**
+     * Default delay for retransmission of data for unicast.
+     */
+    public static final long RETRANSMIT_UNICAST_DELAY_DEFAULT_NS = TimeUnit.NANOSECONDS.toNanos(0);
+
+    /**
+     * Source uses same for unicast and multicast. For ticks.
+     */
+    public static final FeedbackDelayGenerator RETRANSMIT_UNICAST_DELAY_GENERATOR = () -> RETRANSMIT_UNICAST_DELAY_DEFAULT_NS;
+
+    /**
+     * Default delay for linger for unicast.
+     */
+    public static final long RETRANSMIT_UNICAST_LINGER_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
+    public static final FeedbackDelayGenerator RETRANSMIT_UNICAST_LINGER_GENERATOR = () -> RETRANSMIT_UNICAST_LINGER_DEFAULT_NS;
+
+    /**
+     * Default max number of active retransmissions per connected stream.
+     */
+    public static final int MAX_RETRANSMITS_DEFAULT = 16;
 
     /**
      * Validate the the term buffer length is a power of two.
@@ -695,9 +700,8 @@ public class Configuration
     {
         if (mtuLength < 0 || mtuLength > MAX_UDP_PAYLOAD_LENGTH)
         {
-            throw new ConfigurationException(String.format(
-                "mtuLength must be a > 0 and <= " + MAX_UDP_PAYLOAD_LENGTH + ": mtuLength=%d",
-                mtuLength));
+            throw new ConfigurationException(
+                "mtuLength must be a > 0 and <= " + MAX_UDP_PAYLOAD_LENGTH + ": mtuLength=" + mtuLength);
         }
 
         if ((mtuLength % FrameDescriptor.FRAME_ALIGNMENT) != 0)

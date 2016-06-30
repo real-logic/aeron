@@ -3,7 +3,7 @@ Aeron
 
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/real-logic/Aeron?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) To chat with other Aeron users and the contributors.
 
-Efficient reliable UDP unicast, UDP multicast, and IPC message transport.
+Efficient reliable UDP unicast, UDP multicast, and IPC message transport. Java and C++ clients are available in this repository with .NET client available [here...](https://github.com/AdaptiveConsulting/Aeron.NET).
 
 Performance is the key focus. Aeron is designed to be the highest throughput with the lowest and most predictable latency possible of any messaging system. Aeron integrates with [Simple Binary Encoding (SBE)](https://github.com/real-logic/simple-binary-encoding) for the best possible performance in message encoding and decoding. Many of the data structures used in the creation of Aeron have been factored out to the [Agrona](https://github.com/real-logic/Agrona) project.
 
@@ -93,7 +93,7 @@ Full clean and build of all modules
 
 You require the following to build the C++ API for Aeron:
 
-* 2.8.4 or higher of [CMake](http://www.cmake.org/)
+* 3.0.2 or higher of [CMake](http://www.cmake.org/)
 * C++11 supported compiler for the supported platform
 * Requirements to build [HdrHistogram_c](https://github.com/HdrHistogram/HdrHistogram_c). HdrHistogram requires clang
 and `zlib.h` currently.

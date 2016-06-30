@@ -50,7 +50,6 @@ public class Configuration
     public static final String TERM_BUFFER_SPARSE_FILE_PROP_NAME = "aeron.term.buffer.sparse.file";
     public static final String TERM_BUFFER_SPARSE_FILE = getProperty(TERM_BUFFER_SPARSE_FILE_PROP_NAME);
 
-
     /**
      * Property name for window limit for IPC publications.
      */

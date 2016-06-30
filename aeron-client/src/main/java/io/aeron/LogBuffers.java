@@ -25,7 +25,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 
 /**
@@ -52,7 +51,6 @@ public class LogBuffers implements AutoCloseable
             checkTermLength(termLength);
             this.termLength = termLength;
 
-            // if log length exceeds MAX_INT we need multiple mapped buffers, (see FileChannel.map doc).
             if (logLength < Integer.MAX_VALUE)
             {
                 final MappedByteBuffer mappedBuffer = fileChannel.map(mapMode, 0, logLength);
@@ -78,12 +76,12 @@ public class LogBuffers implements AutoCloseable
                 final int metaDataSectionLength = (int)(logLength - metaDataSectionOffset);
 
                 final MappedByteBuffer metaDataMappedBuffer = fileChannel.map(
-                    READ_WRITE, metaDataSectionOffset, metaDataSectionLength);
+                    mapMode, metaDataSectionOffset, metaDataSectionLength);
                 mappedByteBuffers[mappedByteBuffers.length - 1] = metaDataMappedBuffer;
 
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {
-                    mappedByteBuffers[i] = fileChannel.map(READ_WRITE, termLength * (long)i, termLength);
+                    mappedByteBuffers[i] = fileChannel.map(mapMode, termLength * (long)i, termLength);
 
                     atomicBuffers[i] = new UnsafeBuffer(mappedByteBuffers[i]);
                     atomicBuffers[i + PARTITION_COUNT] = new UnsafeBuffer(

@@ -1063,6 +1063,12 @@ public final class MediaDriver implements AutoCloseable
             return errorHandler;
         }
 
+        public Context errorHandler(final ErrorHandler errorHandler)
+        {
+            this.errorHandler = errorHandler;
+            return this;
+        }
+
         public DistinctErrorLog errorLog()
         {
             return errorLog;

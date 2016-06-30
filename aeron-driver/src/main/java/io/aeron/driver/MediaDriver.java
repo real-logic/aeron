@@ -598,7 +598,7 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == threadingMode)
             {
-                threadingMode = Configuration.threadingMode();
+                threadingMode = Configuration.THREADING_MODE_DEFAULT;
             }
 
             if (null == unicastFlowControlSupplier)

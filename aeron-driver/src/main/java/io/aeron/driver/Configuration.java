@@ -40,12 +40,16 @@ import static io.aeron.driver.ThreadingMode.DEDICATED;
 public class Configuration
 {
     /**
+     * Property name for boolean value of term buffers should be created sparse.
+     */
+    public static final String TERM_BUFFER_SPARSE_FILE_PROP_NAME = "aeron.term.buffer.sparse.file";
+
+    /**
      * Should term buffers be created as sparse files. Defaults to false.
      *
      * If a platform supports spare files then log buffer creation is faster with pages being allocated as
      * needed. This can help for large numbers of channels/streams but can result in latency pauses.
      */
-    public static final String TERM_BUFFER_SPARSE_FILE_PROP_NAME = "aeron.term.buffer.sparse.file";
     public static final String TERM_BUFFER_SPARSE_FILE = getProperty(TERM_BUFFER_SPARSE_FILE_PROP_NAME);
 
     /**
@@ -108,6 +112,10 @@ public class Configuration
      * Default buffer length for broadcast buffers from the media driver and the clients.
      */
     public static final int TO_CLIENTS_BUFFER_LENGTH_DEFAULT = (1024 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
+
+    /**
+     * Length for broadcast buffers from the media driver and the clients.
+     */
     public static final int TO_CLIENTS_BUFFER_LENGTH = getInteger(
         TO_CLIENTS_BUFFER_LENGTH_PROP_NAME, TO_CLIENTS_BUFFER_LENGTH_DEFAULT);
 
@@ -117,9 +125,13 @@ public class Configuration
     public static final String COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME = "aeron.counters.buffer.length";
 
     /**
-     * Length of the memory mapped buffers for the system counters file.
+     * Default length of the memory mapped buffers for the system counters file.
      */
     public static final int COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
+
+    /**
+     * Length of the memory mapped buffers for the system counters file.
+     */
     public static final int COUNTERS_VALUES_BUFFER_LENGTH = getInteger(
         COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME, COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT);
 
@@ -129,10 +141,15 @@ public class Configuration
      * Property name for length of the memory mapped buffer for the distinct error log.
      */
     public static final String ERROR_BUFFER_LENGTH_PROP_NAME = "aeron.error.buffer.length";
+
     /**
      * Default buffer length for the error buffer for the media driver.
      */
     public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
+
+    /**
+     * Buffer length for the error buffer for the media driver.
+     */
     public static final int ERROR_BUFFER_LENGTH = getInteger(ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
 
     /**
@@ -170,9 +187,13 @@ public class Configuration
     public static final String SOCKET_RCVBUF_LENGTH_PROP_NAME = "aeron.socket.so_rcvbuf";
 
     /**
-     * 0 means use OS default.
+     * SO_RCVBUF length, 0 means use OS default.
      */
     public static final int SOCKET_RCVBUF_LENGTH_DEFAULT = 128 * 1024;
+
+    /**
+     * SO_RCVBUF length.
+     */
     public static final int SOCKET_RCVBUF_LENGTH = getInteger(SOCKET_RCVBUF_LENGTH_PROP_NAME, SOCKET_RCVBUF_LENGTH_DEFAULT);
 
     /**
@@ -181,9 +202,13 @@ public class Configuration
     public static final String SOCKET_SNDBUF_LENGTH_PROP_NAME = "aeron.socket.so_sndbuf";
 
     /**
-     * 0 means use OS default.
+     * SO_SNDBUF length, 0 means use OS default.
      */
     public static final int SOCKET_SNDBUF_LENGTH_DEFAULT = 0;
+
+    /**
+     * SO_SNDBUF length.
+     */
     public static final int SOCKET_SNDBUF_LENGTH = getInteger(SOCKET_SNDBUF_LENGTH_PROP_NAME, SOCKET_SNDBUF_LENGTH_DEFAULT);
 
     /**
@@ -192,9 +217,13 @@ public class Configuration
     public static final String SOCKET_MULTICAST_TTL_PROP_NAME = "aeron.socket.multicast.ttl";
 
     /**
-     * 0 means use OS default.
+     * Multicast TTL value, 0 means use OS default.
      */
     public static final int SOCKET_MULTICAST_TTL_DEFAULT = 0;
+
+    /**
+     * Multicast TTL value.
+     */
     public static final int SOCKET_MULTICAST_TTL = getInteger(SOCKET_MULTICAST_TTL_PROP_NAME, SOCKET_MULTICAST_TTL_DEFAULT);
 
     /**
@@ -203,9 +232,13 @@ public class Configuration
     public static final String PUBLICATION_LINGER_PROP_NAME = "aeron.publication.linger.timeout";
 
     /**
-     * Time for {@link Publication}s to linger before cleanup.
+     * Default time for {@link Publication}s to linger before cleanup.
      */
     public static final long PUBLICATION_LINGER_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
+
+    /**
+     * Time for {@link Publication}s to linger before cleanup.
+     */
     public static final long PUBLICATION_LINGER_NS = getLong(PUBLICATION_LINGER_PROP_NAME, PUBLICATION_LINGER_DEFAULT_NS);
 
     /**
@@ -214,9 +247,13 @@ public class Configuration
     public static final String CLIENT_LIVENESS_TIMEOUT_PROP_NAME = "aeron.client.liveness.timeout";
 
     /**
-     * Timeout for client liveness in nanoseconds.
+     * Default timeout for client liveness in nanoseconds.
      */
     public static final long CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(5000);
+
+    /**
+     * Timeout for client liveness in nanoseconds.
+     */
     public static final long CLIENT_LIVENESS_TIMEOUT_NS = getLong(
         CLIENT_LIVENESS_TIMEOUT_PROP_NAME, CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS);
 
@@ -226,9 +263,13 @@ public class Configuration
     public static final String IMAGE_LIVENESS_TIMEOUT_PROP_NAME = "aeron.image.liveness.timeout";
 
     /**
-     * Timeout for {@link Image} liveness in nanoseconds.
+     * Default timeout for {@link Image} liveness in nanoseconds.
      */
     public static final long IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
+
+    /**
+     * Timeout for {@link Image} liveness in nanoseconds.
+     */
     public static final long IMAGE_LIVENESS_TIMEOUT_NS = getLong(
         IMAGE_LIVENESS_TIMEOUT_PROP_NAME, IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS);
 
@@ -241,7 +282,6 @@ public class Configuration
      * Publication term window length for flow control in bytes.
      */
     public static final int PUBLICATION_TERM_WINDOW_LENGTH = getInteger(PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
-
 
     /**
      * Property name for window limit for IPC publications.
@@ -272,75 +312,111 @@ public class Configuration
 
     private static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 
-    public static final long AGENT_IDLE_MAX_SPINS = 20;
-    public static final long AGENT_IDLE_MAX_YIELDS = 50;
-    public static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
-    public static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
+    static final long AGENT_IDLE_MAX_SPINS = 20;
+    static final long AGENT_IDLE_MAX_YIELDS = 50;
+    static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
+    static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
+
+    /**
+     * Property name for {@link IdleStrategy} to be employed by {@link Sender} for {@link ThreadingMode#DEDICATED}.
+     */
+    public static final String SENDER_IDLE_STRATEGY_PROP_NAME = "aeron.sender.idle.strategy";
 
     /**
      * {@link IdleStrategy} to be employed by {@link Sender} for {@link ThreadingMode#DEDICATED}.
      */
-    public static final String SENDER_IDLE_STRATEGY_PROP_NAME = "aeron.sender.idle.strategy";
-    public static final String SENDER_IDLE_STRATEGY = getProperty(
-        SENDER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
+    public static final String SENDER_IDLE_STRATEGY = getProperty(SENDER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
+
+    /**
+     * Property name for {@link IdleStrategy} to be employed by {@link DriverConductor} for {@link ThreadingMode#DEDICATED}
+     * and {@link ThreadingMode#SHARED_NETWORK}.
+     */
+    public static final String CONDUCTOR_IDLE_STRATEGY_PROP_NAME = "aeron.conductor.idle.strategy";
 
     /**
      * {@link IdleStrategy} to be employed by {@link DriverConductor} for {@link ThreadingMode#DEDICATED}
      * and {@link ThreadingMode#SHARED_NETWORK}.
      */
-    public static final String CONDUCTOR_IDLE_STRATEGY_PROP_NAME = "aeron.conductor.idle.strategy";
-    public static final String CONDUCTOR_IDLE_STRATEGY = getProperty(
-        CONDUCTOR_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
+    public static final String CONDUCTOR_IDLE_STRATEGY = getProperty(CONDUCTOR_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
+
+    /**
+     * Property name for {@link IdleStrategy} to be employed by {@link Receiver} for {@link ThreadingMode#DEDICATED}.
+     */
+    public static final String RECEIVER_IDLE_STRATEGY_PROP_NAME = "aeron.receiver.idle.strategy";
 
     /**
      * {@link IdleStrategy} to be employed by {@link Receiver} for {@link ThreadingMode#DEDICATED}.
      */
-    public static final String RECEIVER_IDLE_STRATEGY_PROP_NAME = "aeron.receiver.idle.strategy";
-    public static final String RECEIVER_IDLE_STRATEGY = getProperty(
-        RECEIVER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
+    public static final String RECEIVER_IDLE_STRATEGY = getProperty(RECEIVER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
+
+    /**
+     * Property name for {@link IdleStrategy} to be employed by {@link Sender} and {@link Receiver} for
+     * {@link ThreadingMode#SHARED_NETWORK}.
+     */
+    public static final String SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME = "aeron.sharednetwork.idle.strategy";
 
     /**
      * {@link IdleStrategy} to be employed by {@link Sender} and {@link Receiver} for
      * {@link ThreadingMode#SHARED_NETWORK}.
      */
-    public static final String SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME = "aeron.sharednetwork.idle.strategy";
     public static final String SHARED_NETWORK_IDLE_STRATEGY = getProperty(
         SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
+
+    /**
+     * Property name for {@link IdleStrategy} to be employed by {@link Sender}, {@link Receiver}, and {@link DriverConductor}
+     * for {@link ThreadingMode#SHARED}.
+     */
+    public static final String SHARED_IDLE_STRATEGY_PROP_NAME = "aeron.shared.idle.strategy";
 
     /**
      * {@link IdleStrategy} to be employed by {@link Sender}, {@link Receiver}, and {@link DriverConductor}
      * for {@link ThreadingMode#SHARED}.
      */
-    public static final String SHARED_IDLE_STRATEGY_PROP_NAME = "aeron.shared.idle.strategy";
-    public static final String SHARED_IDLE_STRATEGY = getProperty(
-        SHARED_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
+    public static final String SHARED_IDLE_STRATEGY = getProperty(SHARED_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
+
+    /**
+     * Property name for {@link FlowControl} to be employed for unicast channels.
+     */
+    public static final String UNICAST_FLOW_CONTROL_STRATEGY_PROP_NAME = "aeron.unicast.flow.control.strategy";
 
     /**
      * {@link FlowControl} to be employed for unicast channels.
      */
-    public static final String UNICAST_FLOW_CONTROL_STRATEGY_PROP_NAME = "aeron.unicast.flow.control.strategy";
     public static final String UNICAST_FLOW_CONTROL_STRATEGY = getProperty(
         UNICAST_FLOW_CONTROL_STRATEGY_PROP_NAME, "io.aeron.driver.UnicastFlowControl");
 
     /**
-     * {@link FlowControl} to be employed for multicast channels.
+     * Property name for {@link FlowControl} to be employed for multicast channels.
      */
     public static final String MULTICAST_FLOW_CONTROL_STRATEGY_PROP_NAME = "aeron.multicast.flow.control.strategy";
+
+    /**
+     * {@link FlowControl} to be employed for multicast channels.
+     */
     public static final String MULTICAST_FLOW_CONTROL_STRATEGY = getProperty(
         MULTICAST_FLOW_CONTROL_STRATEGY_PROP_NAME, "io.aeron.driver.MaxMulticastFlowControl");
 
-
+    /**
+     * Property name for {@link FlowControlSupplier} to be employed for unicast channels.
+     */
     public static final String UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME = "aeron.unicast.FlowControl.supplier";
-    public static final String UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_DEFAULT =
-        "io.aeron.driver.DefaultUnicastFlowControlSupplier";
-    public static final String UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER = getProperty(
-        UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_DEFAULT);
 
+    /**
+     * {@link FlowControlSupplier} to be employed for unicast channels.
+     */
+    public static final String UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER = getProperty(
+        UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultUnicastFlowControlSupplier");
+
+    /**
+     * Property name for {@link FlowControlSupplier} to be employed for unicast channels.
+     */
     public static final String MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME = "aeron.multicast.FlowControl.supplier";
-    public static final String MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_DEFAULT =
-        "io.aeron.driver.DefaultMulticastFlowControlSupplier";
+
+    /**
+     * {@link FlowControlSupplier} to be employed for multicast channels.
+     */
     public static final String MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER = getProperty(
-        MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_DEFAULT);
+        MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultMulticastFlowControlSupplier");
 
     /**
      * Length of the maximum transmission unit of the media driver's protocol
@@ -351,6 +427,10 @@ public class Configuration
      * Default length is greater than typical Ethernet MTU so will fragment to save on system calls.
      */
     public static final int MTU_LENGTH_DEFAULT = 4096;
+
+    /**
+     * Length of the MTU to use for sending messages.
+     */
     public static final int MTU_LENGTH = getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
 
     /**
@@ -362,28 +442,35 @@ public class Configuration
      * {@link ThreadingMode} to be used by the Aeron {@link MediaDriver}
      */
     public static final String THREADING_MODE_PROP_NAME = "aeron.threading.mode";
-    public static final String THREADING_MODE_DEFAULT = DEDICATED.name();
+    static final ThreadingMode THREADING_MODE_DEFAULT = ThreadingMode.valueOf(
+        getProperty(THREADING_MODE_PROP_NAME, DEDICATED.name()));
 
     /**
      * How often to check liveness and cleanup
      */
     public static final long HEARTBEAT_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
 
+    /**
+     * Property name for {@link SendChannelEndpointSupplier}.
+     */
     public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME = "aeron.SendChannelEndpoint.supplier";
 
-    public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT =
-        "io.aeron.driver.DefaultSendChannelEndpointSupplier";
-
+    /**
+     *{@link SendChannelEndpointSupplier} to provide endpoint extension behaviour.
+     */
     public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER = getProperty(
-        SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, SEND_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT);
+        SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultSendChannelEndpointSupplier");
 
+    /**
+     * Property name for {@link ReceiveChannelEndpointSupplier}.
+     */
     public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME = "aeron.ReceiveChannelEndpoint.supplier";
 
-    public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT =
-        "io.aeron.driver.DefaultReceiveChannelEndpointSupplier";
-
+    /**
+     * {@link ReceiveChannelEndpointSupplier} to provide endpoint extension behaviour.
+     */
     public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER = getProperty(
-        RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT);
+        RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultReceiveChannelEndpointSupplier");
 
     /**
      * Capacity for the command queues used between driver agents.
@@ -451,6 +538,10 @@ public class Configuration
      * Default delay for linger for unicast.
      */
     public static final long RETRANSMIT_UNICAST_LINGER_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
+
+    /**
+     * Delay for linger for unicast.
+     */
     public static final FeedbackDelayGenerator RETRANSMIT_UNICAST_LINGER_GENERATOR = () -> RETRANSMIT_UNICAST_LINGER_DEFAULT_NS;
 
     /**
@@ -556,54 +647,49 @@ public class Configuration
         return idleStrategy;
     }
 
-    public static IdleStrategy senderIdleStrategy()
+    static IdleStrategy senderIdleStrategy()
     {
         return agentIdleStrategy(SENDER_IDLE_STRATEGY);
     }
 
-    public static IdleStrategy conductorIdleStrategy()
+    static IdleStrategy conductorIdleStrategy()
     {
         return agentIdleStrategy(CONDUCTOR_IDLE_STRATEGY);
     }
 
-    public static IdleStrategy receiverIdleStrategy()
+    static IdleStrategy receiverIdleStrategy()
     {
         return agentIdleStrategy(RECEIVER_IDLE_STRATEGY);
     }
 
-    public static IdleStrategy sharedNetworkIdleStrategy()
+    static IdleStrategy sharedNetworkIdleStrategy()
     {
         return agentIdleStrategy(SHARED_NETWORK_IDLE_STRATEGY);
     }
 
-    public static IdleStrategy sharedIdleStrategy()
+    static IdleStrategy sharedIdleStrategy()
     {
         return agentIdleStrategy(SHARED_IDLE_STRATEGY);
     }
 
-    public static int termBufferLength()
+    static int termBufferLength()
     {
         return getInteger(TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_LENGTH_DEFAULT);
     }
 
-    public static int maxTermBufferLength()
+    static int maxTermBufferLength()
     {
         return getInteger(TERM_BUFFER_MAX_LENGTH_PROP_NAME, TERM_BUFFER_LENGTH_MAX_DEFAULT);
     }
 
-    public static int initialWindowLength()
+    static int initialWindowLength()
     {
         return getInteger(INITIAL_WINDOW_LENGTH_PROP_NAME, INITIAL_WINDOW_LENGTH_DEFAULT);
     }
 
-    public static long statusMessageTimeout()
+    static long statusMessageTimeout()
     {
         return getLong(STATUS_MESSAGE_TIMEOUT_PROP_NAME, STATUS_MESSAGE_TIMEOUT_DEFAULT_NS);
-    }
-
-    public static ThreadingMode threadingMode()
-    {
-        return ThreadingMode.valueOf(getProperty(THREADING_MODE_PROP_NAME, THREADING_MODE_DEFAULT));
     }
 
     /**
@@ -612,7 +698,7 @@ public class Configuration
      *
      * @return the {@link SendChannelEndpointSupplier}.
      */
-    public static SendChannelEndpointSupplier sendChannelEndpointSupplier()
+    static SendChannelEndpointSupplier sendChannelEndpointSupplier()
     {
         SendChannelEndpointSupplier supplier = null;
         try
@@ -633,7 +719,7 @@ public class Configuration
      *
      * @return the {@link SendChannelEndpointSupplier}.
      */
-    public static ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier()
+    static ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier()
     {
         ReceiveChannelEndpointSupplier supplier = null;
         try
@@ -654,7 +740,7 @@ public class Configuration
      *
      * @return the {@link FlowControlSupplier}.
      */
-    public static FlowControlSupplier unicastFlowControlSupplier()
+    static FlowControlSupplier unicastFlowControlSupplier()
     {
         FlowControlSupplier supplier = null;
         try
@@ -675,7 +761,7 @@ public class Configuration
      *
      * @return the {@link FlowControlSupplier}.
      */
-    public static FlowControlSupplier multicastFlowControlSupplier()
+    static FlowControlSupplier multicastFlowControlSupplier()
     {
         FlowControlSupplier supplier = null;
         try

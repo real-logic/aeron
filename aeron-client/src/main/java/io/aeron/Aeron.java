@@ -59,10 +59,25 @@ public final class Aeron implements AutoCloseable
             }
         };
 
-    private static final long IDLE_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(4);
-    private static final long KEEPALIVE_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(500);
-    private static final long INTER_SERVICE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(10);
-    private static final long PUBLICATION_CONNECTION_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
+    /**
+     * Duration in nanoseconds for which the client conductor will sleep between duty cycles.
+     */
+    public static final long IDLE_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(4);
+
+    /**
+     * Default interval between sending keepalive control messages to the driver.
+     */
+    public static final long KEEPALIVE_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(500);
+
+    /**
+     * Default interval that if exceeded between duty cycles the conductor will consider itself a zombie and suicide.
+     */
+    public static final long INTER_SERVICE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(10);
+
+    /**
+     * Timeout after which if no status messages have been receiver then a publication is considered not connected.
+     */
+    public static final long PUBLICATION_CONNECTION_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
 
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;

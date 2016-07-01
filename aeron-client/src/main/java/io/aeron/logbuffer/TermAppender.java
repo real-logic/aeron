@@ -26,7 +26,6 @@ import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
 import static io.aeron.logbuffer.FrameDescriptor.frameFlags;
 import static io.aeron.logbuffer.FrameDescriptor.frameLengthOrdered;
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
-import static io.aeron.logbuffer.LogBufferDescriptor.TERM_STATUS_OFFSET;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static org.agrona.BitUtil.align;
@@ -110,16 +109,6 @@ public class TermAppender
     public void tailTermId(final int termId)
     {
         metaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, ((long)termId) << 32);
-    }
-
-    /**
-     * Set the status of the log buffer with StoreStore memory ordering semantics.
-     *
-     * @param status to be set for the log buffer.
-     */
-    public void statusOrdered(final int status)
-    {
-        metaDataBuffer.putIntOrdered(TERM_STATUS_OFFSET, status);
     }
 
     /**

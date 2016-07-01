@@ -22,9 +22,9 @@ import java.io.File;
 /**
  * Encodes the file mapping convention used by the media driver for log buffer backing files.
  *
- * Root directory is the "aeron.data.dir"
- * Source publications are under "${aeron.data.dir}/publications"
- * Rebuilt publications are under "${aeron.data.dir}/images"
+ * Root directory is the "aeron.dir"
+ * Source publications are under "${aeron.dir}/publications"
+ * Rebuilt publications are under "${aeron.dir}/images"
  *
  * Both publications and images share the same structure of "sessionId/streamId/consumptionTermId".
  */

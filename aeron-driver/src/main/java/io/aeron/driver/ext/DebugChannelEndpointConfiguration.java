@@ -18,6 +18,10 @@ package io.aeron.driver.ext;
 import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
 
+/**
+ * Configuration options to be applied when {@link DebugSendChannelEndpoint} and {@link DebugReceiveChannelEndpoint}
+ * are load.
+ */
 public class DebugChannelEndpointConfiguration
 {
     /**

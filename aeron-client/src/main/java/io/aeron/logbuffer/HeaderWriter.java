@@ -15,6 +15,7 @@
  */
 package io.aeron.logbuffer;
 
+import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
@@ -82,7 +83,9 @@ public class HeaderWriter
             streamAndTermIds = streamId | (reverseBytes(termId) & 0xFFFF_FFFFL);
         }
 
-        termBuffer.putLong(offset + FRAME_LENGTH_FIELD_OFFSET, lengthVersionFlagsType);
+        termBuffer.putLongOrdered(offset + FRAME_LENGTH_FIELD_OFFSET, lengthVersionFlagsType);
+        UnsafeAccess.UNSAFE.storeFence();
+
         termBuffer.putLong(offset + TERM_OFFSET_FIELD_OFFSET, termOffsetSessionId);
         termBuffer.putLong(offset + STREAM_ID_FIELD_OFFSET, streamAndTermIds);
     }

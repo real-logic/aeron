@@ -33,7 +33,7 @@ public class EventConfiguration
     /**
      * Event Buffer length system property name
      */
-    public static final String BUFFER_LENGTH_PROPERTY_NAME = "aeron.event.buffer.length";
+    public static final String BUFFER_LENGTH_PROP_NAME = "aeron.event.buffer.length";
 
     /**
      * Event tags system property name. This is either:
@@ -43,7 +43,7 @@ public class EventConfiguration
      * <li>"admin" which enables the codes specified by {@link #ADMIN_ONLY_EVENT_CODES}</li>
      * </ul>
      */
-    public static final String ENABLED_LOGGER_EVENT_CODES_PROPERTY_NAME = "aeron.event.log";
+    public static final String ENABLED_EVENT_CODES_PROP_NAME = "aeron.event.log";
 
     public static final Set<EventCode> ADMIN_ONLY_EVENT_CODES = EnumSet.of(
         CMD_IN_ADD_PUBLICATION,
@@ -68,7 +68,7 @@ public class EventConfiguration
     /**
      * Event Buffer default length (in bytes)
      */
-    public static final int BUFFER_LENGTH_DEFAULT = 65536;
+    public static final int BUFFER_LENGTH_DEFAULT = 2 * 1024 * 1024;
 
     /**
      * Maximum length of an event in bytes
@@ -94,12 +94,11 @@ public class EventConfiguration
 
     static
     {
-        ENABLED_EVENT_CODES =
-            makeTagBitSet(getEnabledEventCodes(System.getProperty(ENABLED_LOGGER_EVENT_CODES_PROPERTY_NAME)));
+        ENABLED_EVENT_CODES = makeTagBitSet(getEnabledEventCodes(System.getProperty(ENABLED_EVENT_CODES_PROP_NAME)));
 
         final int bufferLength =
             Integer.getInteger(
-                EventConfiguration.BUFFER_LENGTH_PROPERTY_NAME,
+                EventConfiguration.BUFFER_LENGTH_PROP_NAME,
                 EventConfiguration.BUFFER_LENGTH_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
 
         EVENT_RING_BUFFER = new ManyToOneRingBuffer(new UnsafeBuffer(ByteBuffer.allocateDirect(bufferLength)));

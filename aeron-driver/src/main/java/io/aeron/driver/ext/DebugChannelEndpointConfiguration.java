@@ -64,24 +64,24 @@ public class DebugChannelEndpointConfiguration
      */
     public static final String SEND_CONTROL_LOSS_SEED_PROP_NAME = "aeron.debug.send.control.loss.seed";
 
-    public static final long RECEIVE_DATA_LOSS_SEED = getLong(RECEIVE_DATA_LOSS_SEED_PROP_NAME, -1);
+    private static final long RECEIVE_DATA_LOSS_SEED = getLong(RECEIVE_DATA_LOSS_SEED_PROP_NAME, -1);
 
-    public static final double RECEIVE_DATA_LOSS_RATE =
+    private static final double RECEIVE_DATA_LOSS_RATE =
         Double.parseDouble(getProperty(RECEIVE_DATA_LOSS_RATE_PROP_NAME, "0.0"));
 
-    public static final long RECEIVE_CONTROL_LOSS_SEED = getLong(RECEIVE_CONTROL_LOSS_SEED_PROP_NAME, -1);
+    private static final long RECEIVE_CONTROL_LOSS_SEED = getLong(RECEIVE_CONTROL_LOSS_SEED_PROP_NAME, -1);
 
-    public static final double RECEIVE_CONTROL_LOSS_RATE =
+    private static final double RECEIVE_CONTROL_LOSS_RATE =
         Double.parseDouble(getProperty(RECEIVE_CONTROL_LOSS_RATE_PROP_NAME, "0.0"));
 
-    public static final long SEND_DATA_LOSS_SEED = getLong(SEND_DATA_LOSS_SEED_PROP_NAME, -1);
+    private static final long SEND_DATA_LOSS_SEED = getLong(SEND_DATA_LOSS_SEED_PROP_NAME, -1);
 
-    public static final double SEND_DATA_LOSS_RATE =
+    private static final double SEND_DATA_LOSS_RATE =
         Double.parseDouble(getProperty(SEND_DATA_LOSS_RATE_PROP_NAME, "0.0"));
 
-    public static final long SEND_CONTROL_LOSS_SEED = getLong(SEND_CONTROL_LOSS_SEED_PROP_NAME, -1);
+    private static final long SEND_CONTROL_LOSS_SEED = getLong(SEND_CONTROL_LOSS_SEED_PROP_NAME, -1);
 
-    public static final double SEND_CONTROL_LOSS_RATE =
+    private static final double SEND_CONTROL_LOSS_RATE =
         Double.parseDouble(getProperty(SEND_CONTROL_LOSS_RATE_PROP_NAME, "0.0"));
 
     public static LossGenerator lossGeneratorSupplier(final double lossRate, final long lossSeed)

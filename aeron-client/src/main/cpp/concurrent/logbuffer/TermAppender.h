@@ -85,11 +85,6 @@ public:
         m_metaDataBuffer.putInt64(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, ((static_cast<std::int64_t>(termId)) << 32));
     }
 
-    inline void statusOrdered(const std::int32_t status)
-    {
-        m_metaDataBuffer.putInt32Ordered(LogBufferDescriptor::TERM_STATUS_OFFSET, status);
-    }
-
     inline void claim(Result& result, const HeaderWriter& header, util::index_t length, BufferClaim& bufferClaim)
     {
         const util::index_t frameLength = length + DataFrameHeader::LENGTH;

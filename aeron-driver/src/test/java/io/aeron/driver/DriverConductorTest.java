@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.CommonContext;
 import io.aeron.DriverProxy;
 import io.aeron.driver.buffer.RawLogFactory;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
@@ -909,7 +910,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldTimeouSpy() throws Exception
+    public void shouldTimeoutSpy() throws Exception
     {
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
         final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
@@ -994,7 +995,7 @@ public class DriverConductorTest
 
     private static String spyForChannel(final String channel)
     {
-        return "aeron-spy:" + channel;
+        return CommonContext.SPY_PREFIX + channel;
     }
 
     private static long networkPublicationCorrelationId(final NetworkPublication publication)

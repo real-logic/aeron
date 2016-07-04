@@ -83,7 +83,7 @@ public class HeaderWriter
             streamAndTermIds = streamId | (reverseBytes(termId) & 0xFFFF_FFFFL);
         }
 
-        termBuffer.putLongOrdered(offset + FRAME_LENGTH_FIELD_OFFSET, lengthVersionFlagsType);
+        termBuffer.putLong(offset + FRAME_LENGTH_FIELD_OFFSET, lengthVersionFlagsType);
         UnsafeAccess.UNSAFE.storeFence();
 
         termBuffer.putLong(offset + TERM_OFFSET_FIELD_OFFSET, termOffsetSessionId);

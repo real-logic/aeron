@@ -23,6 +23,7 @@ import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 
+import java.io.File;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
@@ -210,94 +211,80 @@ public final class Aeron implements AutoCloseable
         {
             super.conclude();
 
-            try
+            if (null == epochClock)
             {
-                if (null == epochClock)
-                {
-                    epochClock = new SystemEpochClock();
-                }
-
-                if (null == nanoClock)
-                {
-                    nanoClock = new SystemNanoClock();
-                }
-
-                if (null == idleStrategy)
-                {
-                    idleStrategy = new SleepingIdleStrategy(IDLE_SLEEP_NS);
-                }
-
-                if (cncFile() != null)
-                {
-                    connectToDriver();
-                }
-
-                if (null == toClientBuffer)
-                {
-                    final BroadcastReceiver receiver = new BroadcastReceiver(
-                        CncFileDescriptor.createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer));
-                    toClientBuffer = new CopyBroadcastReceiver(receiver);
-                }
-
-                if (null == toDriverBuffer)
-                {
-                    toDriverBuffer = new ManyToOneRingBuffer(
-                        CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
-                }
-
-                if (countersMetaDataBuffer() == null)
-                {
-                    countersMetaDataBuffer(CncFileDescriptor.createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer));
-                }
-
-                if (countersValuesBuffer() == null)
-                {
-                    countersValuesBuffer(CncFileDescriptor.createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
-                }
-
-                interServiceTimeout = CncFileDescriptor.clientLivenessTimeout(cncMetaDataBuffer);
-
-                if (null == logBuffersFactory)
-                {
-                    logBuffersFactory = new MappedLogBuffersFactory();
-                }
-
-                if (null == errorHandler)
-                {
-                    errorHandler = DEFAULT_ERROR_HANDLER;
-                }
-
-                if (null == availableImageHandler)
-                {
-                    availableImageHandler =
-                        (image) ->
-                        {
-                        };
-                }
-
-                if (null == unavailableImageHandler)
-                {
-                    unavailableImageHandler =
-                        (image) ->
-                        {
-                        };
-                }
-
-                if (null == imageMapMode)
-                {
-                    imageMapMode = READ_ONLY;
-                }
+                epochClock = new SystemEpochClock();
             }
-            catch (final DriverTimeoutException ex)
-            {
-                System.err.printf("%n***%n*** Failed to connect to the Media Driver - is it currently running?%n***%n");
-                throw  ex;
-            }
-            catch (final Exception ex)
-            {
-                System.err.printf("%n***%n*** Failed to connect to the Media Driver - is it currently running?%n***%n");
 
-                throw new IllegalStateException("Could not initialise communication buffers", ex);
+            if (null == nanoClock)
+            {
+                nanoClock = new SystemNanoClock();
+            }
+
+            if (null == idleStrategy)
+            {
+                idleStrategy = new SleepingIdleStrategy(IDLE_SLEEP_NS);
+            }
+
+            if (cncFile() != null)
+            {
+                connectToDriver();
+            }
+
+            if (null == toClientBuffer)
+            {
+                final BroadcastReceiver receiver = new BroadcastReceiver(
+                    CncFileDescriptor.createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer));
+                toClientBuffer = new CopyBroadcastReceiver(receiver);
+            }
+
+            if (null == toDriverBuffer)
+            {
+                toDriverBuffer = new ManyToOneRingBuffer(
+                    CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
+            }
+
+            if (countersMetaDataBuffer() == null)
+            {
+                countersMetaDataBuffer(CncFileDescriptor.createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer));
+            }
+
+            if (countersValuesBuffer() == null)
+            {
+                countersValuesBuffer(CncFileDescriptor.createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
+            }
+
+            interServiceTimeout = CncFileDescriptor.clientLivenessTimeout(cncMetaDataBuffer);
+
+            if (null == logBuffersFactory)
+            {
+                logBuffersFactory = new MappedLogBuffersFactory();
+            }
+
+            if (null == errorHandler)
+            {
+                errorHandler = DEFAULT_ERROR_HANDLER;
+            }
+
+            if (null == availableImageHandler)
+            {
+                availableImageHandler =
+                    (image) ->
+                    {
+                    };
+            }
+
+            if (null == unavailableImageHandler)
+            {
+                unavailableImageHandler =
+                    (image) ->
+                    {
+                    };
+            }
+
+            if (null == imageMapMode)
+            {
+                imageMapMode = READ_ONLY;
             }
 
             return this;
@@ -526,10 +513,21 @@ public final class Aeron implements AutoCloseable
 
         private void connectToDriver()
         {
+            final long startMs = epochClock.time();
+            final File cncFile = cncFile();
+            while (!cncFile.exists())
+            {
+                if (epochClock.time() > (startMs + driverTimeoutMs()))
+                {
+                    throw new DriverTimeoutException("CnC file not found: " + cncFile.getName());
+                }
+
+                Thread.yield();
+            }
+
             cncByteBuffer = mapExistingFile(cncFile(), CncFileDescriptor.CNC_FILE);
             cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
 
-            final long startMs = epochClock.time();
             int cncVersion;
             while (0 == (cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0))))
             {

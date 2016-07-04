@@ -66,7 +66,7 @@ public class CncFileDescriptor
 {
     public static final String CNC_FILE = "cnc.dat";
 
-    public static final int CNC_VERSION = 4;
+    public static final int CNC_VERSION = 5;
 
     public static final int CNC_VERSION_FIELD_OFFSET;
     public static final int CNC_METADATA_OFFSET;
@@ -152,13 +152,13 @@ public class CncFileDescriptor
         final long clientLivenessTimeout,
         final int errorLogBufferLength)
     {
-        cncMetaDataBuffer.putInt(cncVersionOffset(0), CNC_VERSION);
         cncMetaDataBuffer.putInt(toDriverBufferLengthOffset(0), toDriverBufferLength);
         cncMetaDataBuffer.putInt(toClientsBufferLengthOffset(0), toClientsBufferLength);
         cncMetaDataBuffer.putInt(countersMetaDataBufferLengthOffset(0), counterMetaDataBufferLength);
         cncMetaDataBuffer.putInt(countersValuesBufferLengthOffset(0), counterValuesBufferLength);
         cncMetaDataBuffer.putLong(clientLivenessTimeoutOffset(0), clientLivenessTimeout);
         cncMetaDataBuffer.putInt(errorLogBufferLengthOffset(0), errorLogBufferLength);
+        cncMetaDataBuffer.putIntVolatile(cncVersionOffset(0), CNC_VERSION);
     }
 
     public static UnsafeBuffer createMetaDataBuffer(final ByteBuffer buffer)

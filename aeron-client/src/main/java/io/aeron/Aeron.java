@@ -189,7 +189,7 @@ public final class Aeron implements AutoCloseable
         private CopyBroadcastReceiver toClientBuffer;
         private RingBuffer toDriverBuffer;
         private MappedByteBuffer cncByteBuffer;
-        private DirectBuffer cncMetaDataBuffer;
+        private AtomicBuffer cncMetaDataBuffer;
         private LogBuffersFactory logBuffersFactory;
         private ErrorHandler errorHandler;
         private AvailableImageHandler availableImageHandler;
@@ -229,15 +229,7 @@ public final class Aeron implements AutoCloseable
 
                 if (cncFile() != null)
                 {
-                    cncByteBuffer = mapExistingFile(cncFile(), CncFileDescriptor.CNC_FILE);
-                    cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-
-                    final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
-
-                    if (CncFileDescriptor.CNC_VERSION != cncVersion)
-                    {
-                        throw new IllegalStateException("aeron cnc file version not understood: version=" + cncVersion);
-                    }
+                    connectToDriver();
                 }
 
                 if (null == toClientBuffer)
@@ -295,6 +287,11 @@ public final class Aeron implements AutoCloseable
                 {
                     imageMapMode = READ_ONLY;
                 }
+            }
+            catch (final DriverTimeoutException ex)
+            {
+                System.err.printf("%n***%n*** Failed to connect to the Media Driver - is it currently running?%n***%n");
+                throw  ex;
             }
             catch (final Exception ex)
             {
@@ -524,6 +521,29 @@ public final class Aeron implements AutoCloseable
                 IoUtil.unmap(cncByteBuffer);
 
                 super.close();
+            }
+        }
+
+        private void connectToDriver()
+        {
+            cncByteBuffer = mapExistingFile(cncFile(), CncFileDescriptor.CNC_FILE);
+            cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+
+            final long startMs = epochClock.time();
+            int cncVersion;
+            while (0 == (cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0))))
+            {
+                if (epochClock.time() > (startMs + driverTimeoutMs()))
+                {
+                    throw new DriverTimeoutException("CnC file is created by not initialised.");
+                }
+
+                Thread.yield();
+            }
+
+            if (CncFileDescriptor.CNC_VERSION != cncVersion)
+            {
+                throw new IllegalStateException("Aeron CnC file version not supported: version=" + cncVersion);
             }
         }
     }

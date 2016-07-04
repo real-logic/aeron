@@ -22,8 +22,9 @@ import java.nio.channels.FileChannel;
 /**
  * Function for handling a raw block of fragments from the log that are contained in the underlying file.
  *
- * If the underlying buffer is to be modify in the callback handler then the file needs to be mapped as
- * {@link java.nio.channels.FileChannel.MapMode#READ_WRITE} which can be set up via {@link io.aeron.Aeron.Context#imageMapMode}.
+ * If the underlying buffer is to be modified in the callback handler then the file needs to be mapped as
+ * {@link java.nio.channels.FileChannel.MapMode#READ_WRITE} via
+ * {@link io.aeron.Aeron.Context#imageMapMode(java.nio.channels.FileChannel.MapMode)}.
  */
 @FunctionalInterface
 public interface RawBlockHandler

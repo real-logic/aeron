@@ -21,6 +21,7 @@ import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.TermRebuilder;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.UnsafeAccess;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -113,7 +114,7 @@ public class PublicationImage
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
     private final Position hwmPosition;
     private final Position rebuildPosition;
-    private final List<ReadablePosition> subscriberPositions;
+    private ReadablePosition[] subscriberPositions;
     private final LossDetector lossDetector;
     private final AtomicCounter heartbeatsReceived;
     private final AtomicCounter statusMessagesSent;
@@ -150,7 +151,7 @@ public class PublicationImage
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.rawLog = rawLog;
-        this.subscriberPositions = subscriberPositions;
+        this.subscriberPositions = subscriberPositions.toArray(new ReadablePosition[0]);
         this.hwmPosition = hwmPosition;
         this.rebuildPosition = rebuildPosition;
         this.sourceAddress = sourceAddress;
@@ -196,7 +197,10 @@ public class PublicationImage
         rawLog.close();
         hwmPosition.close();
         rebuildPosition.close();
-        subscriberPositions.forEach(ReadablePosition::close);
+        for (final ReadablePosition position : subscriberPositions)
+        {
+            position.close();
+        }
     }
 
     public long correlationId()
@@ -350,10 +354,9 @@ public class PublicationImage
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
 
-        final List<ReadablePosition> subscriberPositions = this.subscriberPositions;
-        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+        for (final ReadablePosition subscriberPosition : subscriberPositions)
         {
-            final long position = subscriberPositions.get(i).getVolatile();
+            final long position = subscriberPosition.getVolatile();
             minSubscriberPosition = Math.min(minSubscriberPosition, position);
             maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
@@ -517,7 +520,7 @@ public class PublicationImage
      */
     void removeSubscriber(final ReadablePosition subscriberPosition)
     {
-        subscriberPositions.remove(subscriberPosition);
+        subscriberPositions = ArrayUtil.remove(subscriberPositions, subscriberPosition);
         subscriberPosition.close();
     }
 
@@ -528,7 +531,7 @@ public class PublicationImage
      */
     void addSubscriber(final ReadablePosition subscriberPosition)
     {
-        subscriberPositions.add(subscriberPosition);
+        subscriberPositions = ArrayUtil.add(subscriberPositions, subscriberPosition);
     }
 
     /**
@@ -538,7 +541,7 @@ public class PublicationImage
      */
     int subscriberCount()
     {
-        return subscriberPositions.size();
+        return subscriberPositions.length;
     }
 
     /**
@@ -595,10 +598,10 @@ public class PublicationImage
     private boolean isDrained()
     {
         long minSubscriberPosition = Long.MAX_VALUE;
-        final List<ReadablePosition> subscriberPositions = this.subscriberPositions;
-        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+
+        for (final ReadablePosition subscriberPosition : subscriberPositions)
         {
-            minSubscriberPosition = Math.min(minSubscriberPosition, subscriberPositions.get(i).getVolatile());
+            minSubscriberPosition = Math.min(minSubscriberPosition, subscriberPosition.getVolatile());
         }
 
         return minSubscriberPosition >= rebuildPosition.getVolatile();

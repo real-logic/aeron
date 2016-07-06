@@ -23,6 +23,7 @@ import io.aeron.logbuffer.LogBufferPartition;
 import io.aeron.logbuffer.LogBufferUnblocker;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.SetupFlyweight;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -32,8 +33,6 @@ import org.agrona.concurrent.status.ReadablePosition;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import static io.aeron.driver.Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS;
 import static io.aeron.driver.Configuration.PUBLICATION_LINGER_NS;
@@ -84,6 +83,8 @@ public class NetworkPublication
     extends NetworkPublicationPadding3
     implements RetransmitSender, DriverManagedResource
 {
+    private static final ReadablePosition[] EMPTY_POSITIONS = new ReadablePosition[0];
+
     private final int positionBitsToShift;
     private final int initialTermId;
     private final int termLengthMask;
@@ -112,7 +113,7 @@ public class NetworkPublication
     private final AtomicCounter retransmitsSent;
     private final AtomicCounter senderFlowControlLimits;
     private final AtomicCounter shortSends;
-    private final ArrayList<ReadablePosition> spyPositions = new ArrayList<>();
+    private ReadablePosition[] spyPositions = EMPTY_POSITIONS;
 
     public NetworkPublication(
         final SendChannelEndpoint channelEndpoint,
@@ -172,7 +173,10 @@ public class NetworkPublication
         rawLog.close();
         publisherLimit.close();
         senderPosition.close();
-        spyPositions.forEach(ReadablePosition::close);
+        for (final ReadablePosition position : spyPositions)
+        {
+            position.close();
+        }
     }
 
     public int send(final long now)
@@ -291,15 +295,13 @@ public class NetworkPublication
 
         long candidatePublisherLimit = hasHadFirstStatusMessage ? senderPosition.getVolatile() + termWindowLength : 0L;
 
-        if (!spyPositions.isEmpty())
+        if (0 != spyPositions.length)
         {
             long minSpyPosition = Long.MAX_VALUE;
 
-            final List<ReadablePosition> spyPositions = this.spyPositions;
-            for (int i = 0, size = spyPositions.size(); i < size; i++)
+            for (final ReadablePosition spyPosition : spyPositions)
             {
-                final long position = spyPositions.get(i).getVolatile();
-                minSpyPosition = Math.min(minSpyPosition, position);
+                minSpyPosition = Math.min(minSpyPosition, spyPosition.getVolatile());
             }
 
             candidatePublisherLimit = Math.min(candidatePublisherLimit, minSpyPosition + termWindowLength);
@@ -324,17 +326,17 @@ public class NetworkPublication
 
     boolean hasSpies()
     {
-        return !spyPositions.isEmpty();
+        return spyPositions.length > 0;
     }
 
     void addSpyPosition(final ReadablePosition spyPosition)
     {
-        spyPositions.add(spyPosition);
+        spyPositions = ArrayUtil.add(spyPositions, spyPosition);
     }
 
     void removeSpyPosition(final ReadablePosition spyPosition)
     {
-        spyPositions.remove(spyPosition);
+        spyPositions = ArrayUtil.remove(spyPositions, spyPosition);
         spyPosition.close();
     }
 
@@ -342,11 +344,9 @@ public class NetworkPublication
     {
         long maxSpyPosition = producerPosition();
 
-        final List<ReadablePosition> spyPositions = this.spyPositions;
-        for (int i = 0, size = spyPositions.size(); i < size; i++)
+        for (final ReadablePosition spyPosition : spyPositions)
         {
-            final long position = spyPositions.get(i).getVolatile();
-            maxSpyPosition = Math.max(maxSpyPosition, position);
+            maxSpyPosition = Math.max(maxSpyPosition, spyPosition.getVolatile());
         }
 
         return maxSpyPosition;

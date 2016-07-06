@@ -19,12 +19,10 @@ import io.aeron.driver.buffer.RawLog;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.LogBufferPartition;
 import io.aeron.logbuffer.LogBufferUnblocker;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.ReadablePosition;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 
@@ -33,6 +31,8 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
  */
 public class DirectPublication implements DriverManagedResource
 {
+    private static final ReadablePosition[] EMPTY_POSITIONS = new ReadablePosition[0];
+
     private final long correlationId;
     private final long tripGain;
     private long tripLimit = 0;
@@ -42,7 +42,7 @@ public class DirectPublication implements DriverManagedResource
     private final int positionBitsToShift;
     private final int initialTermId;
     private final LogBufferPartition[] logPartitions;
-    private final ArrayList<ReadablePosition> subscriberPositions = new ArrayList<>();
+    private ReadablePosition[] subscriberPositions = EMPTY_POSITIONS;
     private final RawLog rawLog;
     private final Position publisherLimit;
     private long consumerPosition = 0;
@@ -100,17 +100,20 @@ public class DirectPublication implements DriverManagedResource
     {
         rawLog.close();
         publisherLimit.close();
-        subscriberPositions.forEach(ReadablePosition::close);
+        for (final ReadablePosition position : subscriberPositions)
+        {
+            position.close();
+        }
     }
 
     public void addSubscription(final ReadablePosition subscriberPosition)
     {
-        subscriberPositions.add(subscriberPosition);
+        subscriberPositions = ArrayUtil.add(subscriberPositions, subscriberPosition);
     }
 
     public void removeSubscription(final ReadablePosition subscriberPosition)
     {
-        subscriberPositions.remove(subscriberPosition);
+        subscriberPositions = ArrayUtil.remove(subscriberPositions, subscriberPosition);
         subscriberPosition.close();
     }
 
@@ -120,15 +123,14 @@ public class DirectPublication implements DriverManagedResource
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = 0;
 
-        final List<ReadablePosition> subscriberPositions = this.subscriberPositions;
-        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+        for (final ReadablePosition subscriberPosition : subscriberPositions)
         {
-            final long position = subscriberPositions.get(i).getVolatile();
+            final long position = subscriberPosition.getVolatile();
             minSubscriberPosition = Math.min(minSubscriberPosition, position);
             maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
 
-        if (!subscriberPositions.isEmpty())
+        if (0 != subscriberPositions.length)
         {
             LogBufferDescriptor.timeOfLastStatusMessage(rawLog.logMetaData(), nowInMillis);
 
@@ -160,11 +162,9 @@ public class DirectPublication implements DriverManagedResource
     {
         long maxSubscriberPosition = producerPosition();
 
-        final List<ReadablePosition> subscriberPositions = this.subscriberPositions;
-        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+        for (final ReadablePosition subscriberPosition : subscriberPositions)
         {
-            final long position = subscriberPositions.get(i).getVolatile();
-            maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
+            maxSubscriberPosition = Math.max(maxSubscriberPosition, subscriberPosition.getVolatile());
         }
 
         return maxSubscriberPosition;

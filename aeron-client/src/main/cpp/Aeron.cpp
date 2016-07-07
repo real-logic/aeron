@@ -71,9 +71,32 @@ Aeron::~Aeron()
 
 inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
 {
+    const long startMs = currentTimeMillis();
+    while (MemoryMappedFile::getFileSize(context.cncFileName().c_str()) == -1)
+    {
+        if (currentTimeMillis() > (startMs + context.m_mediaDriverTimeout))
+        {
+            throw DriverTimeoutException(
+                util::strPrintf("CnC file not found: %s", context.cncFileName().c_str()), SOURCEINFO);
+        }
+
+        std::this_thread::yield();
+    }
+
     MemoryMappedFile::ptr_t cncBuffer = MemoryMappedFile::mapExisting(context.cncFileName().c_str());
 
-    std::int32_t cncVersion = CncFileDescriptor::cncVersion(cncBuffer);
+    std::int32_t cncVersion = 0;
+
+    while (0 == (cncVersion = CncFileDescriptor::cncVersion(cncBuffer)))
+    {
+        if (currentTimeMillis() > (startMs + context.m_mediaDriverTimeout))
+        {
+            throw DriverTimeoutException(
+                util::strPrintf("CnC file is created by not initialised.: %s", context.cncFileName().c_str()), SOURCEINFO);
+        }
+
+        std::this_thread::yield();
+    }
 
     if (CncFileDescriptor::CNC_VERSION != cncVersion)
     {

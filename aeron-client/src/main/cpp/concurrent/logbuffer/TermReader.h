@@ -21,7 +21,6 @@
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>
 #include "LogBufferDescriptor.h"
-#include "LogBufferPartition.h"
 #include "Header.h"
 
 namespace aeron {

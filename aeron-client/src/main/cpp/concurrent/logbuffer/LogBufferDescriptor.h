@@ -53,34 +53,33 @@ static const int PARTITION_COUNT = 3;
  *  +----------------------------+
  *  |           Term 2           |
  *  +----------------------------+
- *  |      Term Meta Data 0      |
- *  +----------------------------+
- *  |      Term Meta Data 1      |
- *  +----------------------------+
- *  |      Term Meta Data 2      |
- *  +----------------------------+
  *  |        Log Meta Data       |
  *  +----------------------------+
  * </pre>
  */
 
-static const util::index_t TERM_TAIL_COUNTER_OFFSET = (util::BitUtil::CACHE_LINE_LENGTH * 2);
-static const util::index_t TERM_STATUS_OFFSET = (util::BitUtil::CACHE_LINE_LENGTH * 2) * 2;
-static const util::index_t TERM_META_DATA_LENGTH = (util::BitUtil::CACHE_LINE_LENGTH * 2) * 3;
-
-static const util::index_t LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT * 2;
+static const util::index_t LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT;
 
 /**
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                       Tail Counter 0                          |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                       Tail Counter 1                          |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                       Tail Counter 2                          |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
  *  |                   Active Partition Index                      |
  *  +---------------------------------------------------------------+
  *  |                      Cache Line Padding                      ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
- *  |                       Time of Last SM                         |
+ *  |                 Time of Last Status Message                   |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                      Cache Line Padding                      ...
@@ -110,8 +109,9 @@ static const util::index_t LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = util::BitUtil::
 #pragma pack(4)
 struct LogMetaDataDefn
 {
+    std::int64_t termTailCounters[PARTITION_COUNT];
     std::int32_t activePartitionIndex;
-    std::int8_t pad1[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int32_t)];
+    std::int8_t pad1[(2 * util::BitUtil::CACHE_LINE_LENGTH) - ((PARTITION_COUNT * sizeof(std::int64_t)) + sizeof(std::int32_t))];
     std::int64_t timeOfLastStatusMessage;
     std::int8_t pad2[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int64_t)];
     std::int64_t correlationId;
@@ -121,6 +121,8 @@ struct LogMetaDataDefn
     std::int8_t pad3[(util::BitUtil::CACHE_LINE_LENGTH) - (5 * sizeof(std::int32_t))];
 };
 #pragma pack(pop)
+
+static const util::index_t TERM_TAIL_COUNTER_OFFSET = offsetof(LogMetaDataDefn, termTailCounters[0]);
 
 static const util::index_t LOG_ACTIVE_PARTITION_INDEX_OFFSET = offsetof(LogMetaDataDefn, activePartitionIndex);
 static const util::index_t LOG_TIME_OF_LAST_STATUS_MESSAGE_OFFSET = offsetof(LogMetaDataDefn, timeOfLastStatusMessage);
@@ -144,17 +146,6 @@ inline static void checkTermLength(std::int64_t termLength)
         throw util::IllegalStateException(
             util::strPrintf("Term length not a multiple of %d, length=%d",
                 FrameDescriptor::FRAME_ALIGNMENT, termLength), SOURCEINFO);
-    }
-}
-
-inline static void checkMetaDataBuffer(AtomicBuffer &buffer)
-{
-    const util::index_t capacity = buffer.capacity();
-    if (capacity < TERM_META_DATA_LENGTH)
-    {
-        throw util::IllegalStateException(
-            util::strPrintf("Meta Data buffer capacity less than min size of %d, capacity=%d",
-                TERM_META_DATA_LENGTH, capacity), SOURCEINFO);
     }
 }
 
@@ -230,13 +221,12 @@ inline static std::int64_t computeTermBeginPosition(
 
 inline static std::int64_t computeLogLength(std::int64_t termLength)
 {
-    return (termLength * PARTITION_COUNT) + (TERM_META_DATA_LENGTH * PARTITION_COUNT) + LOG_META_DATA_LENGTH;
+    return (termLength * PARTITION_COUNT) + LOG_META_DATA_LENGTH;
 }
 
 inline static std::int64_t computeTermLength(std::int64_t logLength)
 {
-    const std::int64_t metaDataSectionLength = (TERM_META_DATA_LENGTH * PARTITION_COUNT) + LOG_META_DATA_LENGTH;
-    return (logLength - metaDataSectionLength) / 3;
+    return (logLength - LOG_META_DATA_LENGTH) / PARTITION_COUNT;
 }
 
 inline static AtomicBuffer defaultFrameHeader(AtomicBuffer& logMetaDataBuffer)

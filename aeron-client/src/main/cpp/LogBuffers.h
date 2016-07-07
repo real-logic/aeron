@@ -44,7 +44,7 @@ public:
 
 private:
     std::vector<MemoryMappedFile::ptr_t> m_memoryMappedFiles;
-    AtomicBuffer m_buffers[(2 * LogBufferDescriptor::PARTITION_COUNT) + 1];
+    AtomicBuffer m_buffers[LogBufferDescriptor::PARTITION_COUNT + 1];
 };
 
 }

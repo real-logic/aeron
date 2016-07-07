@@ -26,13 +26,12 @@ using namespace aeron;
 using namespace std::placeholders;
 
 #define TERM_LENGTH (LogBufferDescriptor::TERM_MIN_LENGTH)
-#define TERM_META_DATA_LENGTH (LogBufferDescriptor::TERM_META_DATA_LENGTH)
 #define LOG_META_DATA_LENGTH (LogBufferDescriptor::LOG_META_DATA_LENGTH)
 #define SRC_BUFFER_LENGTH 1024
 
 static_assert(LogBufferDescriptor::PARTITION_COUNT==3, "partition count assumed to be 3 for these test");
 
-typedef std::array<std::uint8_t, ((TERM_LENGTH * 3) + (TERM_META_DATA_LENGTH * 3) + LOG_META_DATA_LENGTH)> term_buffer_t;
+typedef std::array<std::uint8_t, ((TERM_LENGTH * 3) + LOG_META_DATA_LENGTH)> term_buffer_t;
 typedef std::array<std::uint8_t, SRC_BUFFER_LENGTH> src_buffer_t;
 
 static const std::int32_t STREAM_ID = 10;
@@ -81,7 +80,6 @@ public:
         for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
         {
             m_termBuffers[i] = m_logBuffers->atomicBuffer(i);
-            m_metaDataBuffers[i] = m_logBuffers->atomicBuffer(i + LogBufferDescriptor::PARTITION_COUNT);
         }
 
         m_logMetaDataBuffer = m_logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX);
@@ -125,7 +123,6 @@ protected:
     AERON_DECL_ALIGNED(src_buffer_t m_src, 16);
 
     AtomicBuffer m_termBuffers[3];
-    AtomicBuffer m_metaDataBuffers[3];
     AtomicBuffer m_logMetaDataBuffer;
     AtomicBuffer m_srcBuffer;
 

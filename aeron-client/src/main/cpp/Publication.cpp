@@ -49,7 +49,8 @@ Publication::Publication(
          */
         m_appenders[i] = std::unique_ptr<TermAppender>(new TermAppender(
             buffers.atomicBuffer(i),
-            buffers.atomicBuffer(i + LogBufferDescriptor::PARTITION_COUNT)));
+            buffers.atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX),
+            i));
     }
 }
 

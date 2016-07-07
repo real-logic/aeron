@@ -111,10 +111,10 @@ public class LogBufferDescriptor
         int offset = 0;
         TERM_TAIL_COUNTERS_OFFSET = offset;
 
-        offset += (CACHE_LINE_LENGTH * 2);
+        offset += (SIZE_OF_LONG * PARTITION_COUNT);
         LOG_ACTIVE_PARTITION_INDEX_OFFSET = offset;
 
-        offset += (CACHE_LINE_LENGTH * 2);
+        offset = (CACHE_LINE_LENGTH * 2);
         LOG_TIME_OF_LAST_SM_OFFSET = offset;
 
         offset += (CACHE_LINE_LENGTH * 2);
@@ -144,9 +144,6 @@ public class LogBufferDescriptor
      *  +---------------------------------------------------------------+
      *  |                       Tail Counter 2                          |
      *  |                                                               |
-     *  +---------------------------------------------------------------+
-     *  |                      Cache Line Padding                      ...
-     * ...                                                              |
      *  +---------------------------------------------------------------+
      *  |                   Active Partition Index                      |
      *  +---------------------------------------------------------------+

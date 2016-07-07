@@ -36,12 +36,6 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  +----------------------------+
  *  |           Term 2           |
  *  +----------------------------+
- *  |      Term Meta Data 0      |
- *  +----------------------------+
- *  |      Term Meta Data 1      |
- *  +----------------------------+
- *  |      Term Meta Data 2      |
- *  +----------------------------+
  *  |        Log Meta Data       |
  *  +----------------------------+
  * </pre>
@@ -49,54 +43,28 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 public class LogBufferDescriptor
 {
     /**
-     * The number of partitions the log is divided into with pairs of term and term meta data buffers.
+     * The number of partitions the log is divided into.
      */
     public static final int PARTITION_COUNT = 3;
 
     /**
+     * Section index for which buffer contains the log meta data.
+     */
+    public static final int LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT;
+
+    /**
      * Minimum buffer length for a log term
      */
-    public static final int TERM_MIN_LENGTH = 64 * 1024; // TODO: make a sensible default
-
-    // ********************************
-    // *** Term Meta Data Constants ***
-    // ********************************
-
-    /**
-     * Offset within the term meta data where the tail value is stored.
-     */
-    public static final int TERM_TAIL_COUNTER_OFFSET;
-
-    /**
-     * Offset within the term meta data where current status is stored
-     */
-    public static final int TERM_STATUS_OFFSET;
-
-    /**
-     * Total length of the term meta data buffer in bytes.
-     */
-    public static final int TERM_META_DATA_LENGTH;
-
-    static
-    {
-        int offset = (CACHE_LINE_LENGTH * 2);
-        TERM_TAIL_COUNTER_OFFSET = offset;
-
-        offset += (CACHE_LINE_LENGTH * 2);
-        TERM_STATUS_OFFSET = offset;
-
-        offset += (CACHE_LINE_LENGTH * 2);
-        TERM_META_DATA_LENGTH = offset;
-    }
+    public static final int TERM_MIN_LENGTH = 64 * 1024;
 
     // *******************************
     // *** Log Meta Data Constants ***
     // *******************************
 
     /**
-     * Offset within the log meta data where the active term id is stored.
+     * Offset within the meta data where the tail values are stored.
      */
-    public static final int LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT * 2;
+    public static final int TERM_TAIL_COUNTERS_OFFSET;
 
     /**
      * Offset within the log meta data where the active partition index is stored.
@@ -134,13 +102,16 @@ public class LogBufferDescriptor
     public static final int LOG_DEFAULT_FRAME_HEADER_OFFSET;
 
     /**
-     * Offset at which the default frame headers begin.
+     * Maximum length of a frame header.
      */
     public static final int LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = CACHE_LINE_LENGTH * 2;
 
     static
     {
         int offset = 0;
+        TERM_TAIL_COUNTERS_OFFSET = offset;
+
+        offset += (CACHE_LINE_LENGTH * 2);
         LOG_ACTIVE_PARTITION_INDEX_OFFSET = offset;
 
         offset += (CACHE_LINE_LENGTH * 2);
@@ -165,6 +136,18 @@ public class LogBufferDescriptor
      *   0                   1                   2                   3
      *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
      *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     *  |                       Tail Counter 0                          |
+     *  |                                                               |
+     *  +---------------------------------------------------------------+
+     *  |                       Tail Counter 1                          |
+     *  |                                                               |
+     *  +---------------------------------------------------------------+
+     *  |                       Tail Counter 2                          |
+     *  |                                                               |
+     *  +---------------------------------------------------------------+
+     *  |                      Cache Line Padding                      ...
+     * ...                                                              |
+     *  +---------------------------------------------------------------+
      *  |                   Active Partition Index                      |
      *  +---------------------------------------------------------------+
      *  |                      Cache Line Padding                      ...
@@ -369,7 +352,7 @@ public class LogBufferDescriptor
     /**
      * Determine the partition index given a stream position.
      *
-     * @param position in the stream in bytes.
+     * @param position            in the stream in bytes.
      * @param positionBitsToShift number of times to right shift the position for term count
      * @return the partition index for the position
      */
@@ -446,10 +429,7 @@ public class LogBufferDescriptor
      */
     public static long computeLogLength(final int termLength)
     {
-        return
-            (termLength * PARTITION_COUNT) +
-            (TERM_META_DATA_LENGTH * PARTITION_COUNT) +
-            LOG_META_DATA_LENGTH;
+        return (termLength * PARTITION_COUNT) + LOG_META_DATA_LENGTH;
     }
 
     /**
@@ -460,9 +440,7 @@ public class LogBufferDescriptor
      */
     public static int computeTermLength(final long logLength)
     {
-        final long metaDataSectionLength = (TERM_META_DATA_LENGTH * (long)PARTITION_COUNT) + LOG_META_DATA_LENGTH;
-
-        return (int)((logLength - metaDataSectionLength) / PARTITION_COUNT);
+        return (int)((logLength - LOG_META_DATA_LENGTH) / PARTITION_COUNT);
     }
 
     /**
@@ -511,31 +489,27 @@ public class LogBufferDescriptor
     /**
      * Rotate the log and update the default headers for the new term.
      *
-     * @param logPartitions     for the partitions of the log.
-     * @param logMetaDataBuffer for the meta data.
-     * @param activeIndex       current active index.
-     * @param newTermId         to be used in the default headers.
+     * @param logMetaDataBuffer    for the meta data.
+     * @param activePartitionIndex current active index.
+     * @param termId               to be used in the default headers.
      */
-    public static void rotateLog(
-        final LogBufferPartition[] logPartitions,
-        final UnsafeBuffer logMetaDataBuffer,
-        final int activeIndex,
-        final int newTermId)
+    public static void rotateLog(final UnsafeBuffer logMetaDataBuffer, final int activePartitionIndex, final int termId)
     {
-        final int nextIndex = nextPartitionIndex(activeIndex);
-        logPartitions[nextIndex].termId(newTermId);
+        final int nextIndex = nextPartitionIndex(activePartitionIndex);
+        initialiseTailWithTermId(logMetaDataBuffer, nextIndex, termId);
         activePartitionIndex(logMetaDataBuffer, nextIndex);
     }
 
     /**
      * Set the initial value for the termId in the upper bits of the tail counter.
      *
-     * @param termMetaData  contain the tail counter.
-     * @param initialTermId to be set.
+     * @param logMetaData    contain the tail counter.
+     * @param partitionIndex to be initialised.
+     * @param termId         to be set.
      */
-    public static void initialiseTailWithTermId(final UnsafeBuffer termMetaData, final int initialTermId)
+    public static void initialiseTailWithTermId(final UnsafeBuffer logMetaData, final int partitionIndex, final int termId)
     {
-        termMetaData.putLong(TERM_TAIL_COUNTER_OFFSET, ((long)initialTermId) << 32);
+        logMetaData.putLong(TERM_TAIL_COUNTERS_OFFSET + (partitionIndex * SIZE_OF_LONG), ((long)termId) << 32);
     }
 
     /**
@@ -561,5 +535,29 @@ public class LogBufferDescriptor
         final long tail = rawTail & 0xFFFF_FFFFL;
 
         return (int)Math.min(tail, termLength);
+    }
+
+    /**
+     * Get the raw value of the tail for the given partition.
+     *
+     * @param logMetaDataBuffer containing the tail counters.
+     * @param partitionIndex    for the tail counter.
+     * @return the raw value of the tail for the current active partition.
+     */
+    public static long rawTailVolatile(final UnsafeBuffer logMetaDataBuffer, final int partitionIndex)
+    {
+        return logMetaDataBuffer.getLongVolatile(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex));
+    }
+
+    /**
+     * Get the raw value of the tail for the current active partition.
+     *
+     * @param logMetaDataBuffer containing the tail counters.
+     * @return the raw value of the tail for the current active partition.
+     */
+    public static long rawTailVolatile(final UnsafeBuffer logMetaDataBuffer)
+    {
+        final int partitionIndex = activePartitionIndex(logMetaDataBuffer);
+        return logMetaDataBuffer.getLongVolatile(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex));
     }
 }

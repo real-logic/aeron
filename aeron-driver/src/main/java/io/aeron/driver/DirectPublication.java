@@ -17,7 +17,6 @@ package io.aeron.driver;
 
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.logbuffer.LogBufferPartition;
 import io.aeron.logbuffer.LogBufferUnblocker;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -41,7 +40,7 @@ public class DirectPublication implements DriverManagedResource
     private final int termWindowLength;
     private final int positionBitsToShift;
     private final int initialTermId;
-    private final LogBufferPartition[] logPartitions;
+    private final UnsafeBuffer[] termBuffers;
     private ReadablePosition[] subscriberPositions = EMPTY_POSITIONS;
     private final RawLog rawLog;
     private final Position publisherLimit;
@@ -60,7 +59,7 @@ public class DirectPublication implements DriverManagedResource
         this.correlationId = correlationId;
         this.sessionId = sessionId;
         this.streamId = streamId;
-        this.logPartitions = rawLog.partitions();
+        this.termBuffers = rawLog.termBuffers();
         this.initialTermId = initialTermId(rawLog.logMetaData());
 
         final int termLength = rawLog.termLength();
@@ -145,7 +144,7 @@ public class DirectPublication implements DriverManagedResource
                 {
                     termCount = currentTermCount;
                     final int dirtyIndex = indexByTermCount(currentTermCount + 1);
-                    final UnsafeBuffer dirtyTerm = logPartitions[dirtyIndex].termBuffer();
+                    final UnsafeBuffer dirtyTerm = termBuffers[dirtyIndex];
                     dirtyTerm.setMemory(0, dirtyTerm.capacity(), (byte)0);
                 }
 
@@ -172,8 +171,7 @@ public class DirectPublication implements DriverManagedResource
 
     public long producerPosition()
     {
-        final UnsafeBuffer logMetaDataBuffer = rawLog.logMetaData();
-        final long rawTail = logPartitions[activePartitionIndex(logMetaDataBuffer)].rawTailVolatile();
+        final long rawTail = rawTailVolatile(rawLog.logMetaData());
         final int termOffset = termOffset(rawTail, rawLog.termLength());
 
         return computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);
@@ -224,6 +222,6 @@ public class DirectPublication implements DriverManagedResource
 
     public boolean unblockAtConsumerPosition()
     {
-        return LogBufferUnblocker.unblock(logPartitions, rawLog.logMetaData(), consumerPosition);
+        return LogBufferUnblocker.unblock(termBuffers, rawLog.logMetaData(), consumerPosition);
     }
 }

@@ -37,13 +37,12 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static io.aeron.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
 
 public class DirectPublicationTest
 {
     private static final int STREAM_ID = 10;
     private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
-    private static final int BUFFER_LENGTH = 1024 * 16;
+    private static final int BUFFER_LENGTH = 16 * 1024;
 
     private Position publisherLimit;
     private DirectPublication directPublication;
@@ -68,7 +67,7 @@ public class DirectPublicationTest
             new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH * 2)), counterBuffer);
 
         when(mockRawLogFactory.newDirectPublication(anyInt(), anyInt(), anyLong(), anyInt()))
-            .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH));
+            .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .toDriverCommands(fromClientCommands)
@@ -86,7 +85,6 @@ public class DirectPublicationTest
         driverProxy = new DriverProxy(fromClientCommands);
         driverConductor = new DriverConductor(ctx);
 
-        // have a conductor construct one for us
         driverProxy.addPublication(CommonContext.IPC_CHANNEL, STREAM_ID);
         driverConductor.doWork();
 

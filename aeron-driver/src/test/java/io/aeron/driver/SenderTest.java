@@ -43,12 +43,12 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
+import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.Mockito.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static io.aeron.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
 import static org.agrona.BitUtil.align;
 
 public class SenderTest
@@ -66,7 +66,7 @@ public class SenderTest
 
     private final ControlTransportPoller mockTransportPoller = mock(ControlTransportPoller.class);
 
-    private final RawLog rawLog = LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH);
+    private final RawLog rawLog = LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH);
 
     private TermAppender[] termAppenders;
     private NetworkPublication publication;
@@ -116,13 +116,13 @@ public class SenderTest
                 .senderCommandQueue(senderCommandQueue)
                 .nanoClock(() -> currentTimestamp));
 
-        final UnsafeBuffer termMetaData = rawLog.partitions()[0].metaDataBuffer();
-        LogBufferDescriptor.initialiseTailWithTermId(termMetaData, INITIAL_TERM_ID);
+        LogBufferDescriptor.initialiseTailWithTermId(rawLog.logMetaData(), 0, INITIAL_TERM_ID);
 
-        termAppenders = rawLog
-            .stream()
-            .map((log) -> new TermAppender(log.termBuffer(), log.metaDataBuffer()))
-            .toArray(TermAppender[]::new);
+        termAppenders = new TermAppender[PARTITION_COUNT];
+        for (int i = 0; i < PARTITION_COUNT; i++)
+        {
+            termAppenders[i] = new TermAppender(rawLog.termBuffers()[i], rawLog.logMetaData(), i);
+        }
 
         publication = new NetworkPublication(
             mockSendChannelEndpoint,

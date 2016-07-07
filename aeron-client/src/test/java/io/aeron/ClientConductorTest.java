@@ -32,11 +32,11 @@ import org.agrona.collections.Long2LongHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -52,16 +52,15 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
 public class ClientConductorTest
 {
     private static final int TERM_BUFFER_LENGTH = TERM_MIN_LENGTH;
-    private static final int NUM_BUFFERS = (PARTITION_COUNT * 2) + 1;
 
     protected static final int SESSION_ID_1 = 13;
     protected static final int SESSION_ID_2 = 15;
 
-    private static final int COUNTER_BUFFER_LENGTH = 1024;
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:40124";
     private static final int STREAM_ID_1 = 2;
     private static final int STREAM_ID_2 = 4;
     private static final int SEND_BUFFER_CAPACITY = 1024;
+    private static final int COUNTER_BUFFER_LENGTH = 1024;
 
     private static final long CORRELATION_ID = 2000;
     private static final long CORRELATION_ID_2 = 2002;
@@ -79,13 +78,13 @@ public class ClientConductorTest
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
 
-    private final UnsafeBuffer publicationReadyBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY));
-    private final UnsafeBuffer correlatedMessageBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY));
-    private final UnsafeBuffer errorMessageBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY));
+    private final UnsafeBuffer publicationReadyBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
+    private final UnsafeBuffer correlatedMessageBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
+    private final UnsafeBuffer errorMessageBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
 
     private final CopyBroadcastReceiver mockToClientReceiver = mock(CopyBroadcastReceiver.class);
 
-    private final UnsafeBuffer counterValuesBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(COUNTER_BUFFER_LENGTH));
+    private final UnsafeBuffer counterValuesBuffer = new UnsafeBuffer(allocateDirect(COUNTER_BUFFER_LENGTH));
 
     private final EpochClock epochClock = new SystemEpochClock();
     private final NanoClock nanoClock = new SystemNanoClock();
@@ -139,30 +138,23 @@ public class ClientConductorTest
 
         correlatedMessage.correlationId(CLOSE_CORRELATION_ID);
 
-        final UnsafeBuffer[] atomicBuffersSession1 = new UnsafeBuffer[NUM_BUFFERS];
-        final UnsafeBuffer[] atomicBuffersSession2 = new UnsafeBuffer[NUM_BUFFERS];
+        final UnsafeBuffer[] termBuffersSession1 = new UnsafeBuffer[PARTITION_COUNT];
+        final UnsafeBuffer[] termBuffersSession2 = new UnsafeBuffer[PARTITION_COUNT];
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            final UnsafeBuffer termBuffersSession1 = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
-            final UnsafeBuffer metaDataBuffersSession1 = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_META_DATA_LENGTH));
-            final UnsafeBuffer termBuffersSession2 = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
-            final UnsafeBuffer metaDataBuffersSession2 = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_META_DATA_LENGTH));
-
-            atomicBuffersSession1[i] = termBuffersSession1;
-            atomicBuffersSession1[i + PARTITION_COUNT] = metaDataBuffersSession1;
-            atomicBuffersSession2[i] = termBuffersSession2;
-            atomicBuffersSession2[i + PARTITION_COUNT] = metaDataBuffersSession2;
+            termBuffersSession1[i] = new UnsafeBuffer(allocateDirect(TERM_BUFFER_LENGTH));
+            termBuffersSession2[i] = new UnsafeBuffer(allocateDirect(TERM_BUFFER_LENGTH));
         }
 
-        atomicBuffersSession1[LOG_META_DATA_SECTION_INDEX] = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
-        atomicBuffersSession2[LOG_META_DATA_SECTION_INDEX] = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
+        final UnsafeBuffer logMetaDataSession1 = new UnsafeBuffer(allocateDirect(TERM_BUFFER_LENGTH));
+        final UnsafeBuffer logMetaDataSession2 = new UnsafeBuffer(allocateDirect(TERM_BUFFER_LENGTH));
 
         final MutableDirectBuffer header1 = DataHeaderFlyweight.createDefaultHeader(SESSION_ID_1, STREAM_ID_1, 0);
         final MutableDirectBuffer header2 = DataHeaderFlyweight.createDefaultHeader(SESSION_ID_2, STREAM_ID_2, 0);
 
-        LogBufferDescriptor.storeDefaultFrameHeader(atomicBuffersSession1[LOG_META_DATA_SECTION_INDEX], header1);
-        LogBufferDescriptor.storeDefaultFrameHeader(atomicBuffersSession2[LOG_META_DATA_SECTION_INDEX], header2);
+        LogBufferDescriptor.storeDefaultFrameHeader(logMetaDataSession1, header1);
+        LogBufferDescriptor.storeDefaultFrameHeader(logMetaDataSession2, header2);
 
         final LogBuffers logBuffersSession1 = mock(LogBuffers.class);
         final LogBuffers logBuffersSession2 = mock(LogBuffers.class);
@@ -172,8 +164,11 @@ public class ClientConductorTest
         when(logBuffersFactory.map(eq(SESSION_ID_1 + "-log"), eq(READ_ONLY))).thenReturn(logBuffersSession1);
         when(logBuffersFactory.map(eq(SESSION_ID_2 + "-log"), eq(READ_ONLY))).thenReturn(logBuffersSession2);
 
-        when(logBuffersSession1.atomicBuffers()).thenReturn(atomicBuffersSession1);
-        when(logBuffersSession2.atomicBuffers()).thenReturn(atomicBuffersSession2);
+        when(logBuffersSession1.termBuffers()).thenReturn(termBuffersSession1);
+        when(logBuffersSession2.termBuffers()).thenReturn(termBuffersSession2);
+
+        when(logBuffersSession1.metaDataBuffer()).thenReturn(logMetaDataSession1);
+        when(logBuffersSession2.metaDataBuffer()).thenReturn(logMetaDataSession2);
     }
 
     // --------------------------------

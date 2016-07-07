@@ -29,7 +29,6 @@ import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
-import io.aeron.logbuffer.LogBufferPartition;
 import io.aeron.logbuffer.TermReader;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
@@ -101,7 +100,7 @@ public class ReceiverTest
     private long currentTime = 0;
     private final NanoClock clock = () -> currentTime;
 
-    private final RawLog rawLog = LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH);
+    private final RawLog rawLog = LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH);
 
     private final Header header = new Header(INITIAL_TERM_ID, TERM_BUFFER_LENGTH);
     private UnsafeBuffer[] termBuffers;
@@ -146,10 +145,7 @@ public class ReceiverTest
         senderChannel.bind(senderAddress);
         senderChannel.configureBlocking(false);
 
-        termBuffers = rawLog
-            .stream()
-            .map(LogBufferPartition::termBuffer)
-            .toArray(UnsafeBuffer[]::new);
+        termBuffers = rawLog.termBuffers();
 
         context.systemCounters(mockSystemCounters);
 

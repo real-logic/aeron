@@ -17,6 +17,7 @@ package io.aeron.logbuffer;
 
 import io.aeron.ReservedValueSupplier;
 import org.agrona.DirectBuffer;
+import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import static io.aeron.logbuffer.FrameDescriptor.BEGIN_FRAG_FLAG;
@@ -26,8 +27,9 @@ import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
 import static io.aeron.logbuffer.FrameDescriptor.frameFlags;
 import static io.aeron.logbuffer.FrameDescriptor.frameLengthOrdered;
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
-import static io.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
+import static io.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTERS_OFFSET;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.align;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
@@ -56,39 +58,25 @@ public class TermAppender
      */
     public static final int FAILED = -2;
 
+    private final long tailAddressOffset;
+    private final byte[] tailBuffer;
     private final UnsafeBuffer termBuffer;
-    private final UnsafeBuffer metaDataBuffer;
 
     /**
      * Construct a view over a term buffer and state buffer for appending frames.
      *
      * @param termBuffer     for where messages are stored.
      * @param metaDataBuffer for where the state of writers is stored manage concurrency.
+     * @param partitionIndex for this will be the active appender.
      */
-    public TermAppender(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer)
+    public TermAppender(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer, final int partitionIndex)
     {
+        final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (partitionIndex * SIZE_OF_LONG);
+        metaDataBuffer.boundsCheck(tailCounterOffset, SIZE_OF_LONG);
+
         this.termBuffer = termBuffer;
-        this.metaDataBuffer = metaDataBuffer;
-    }
-
-    /**
-     * The log of messages for a term.
-     *
-     * @return the log of messages for a term.
-     */
-    public UnsafeBuffer termBuffer()
-    {
-        return termBuffer;
-    }
-
-    /**
-     * The meta data describing the term.
-     *
-     * @return the meta data describing the term.
-     */
-    public UnsafeBuffer metaDataBuffer()
-    {
-        return metaDataBuffer;
+        tailBuffer = metaDataBuffer.byteArray();
+        tailAddressOffset = metaDataBuffer.addressOffset() + tailCounterOffset;
     }
 
     /**
@@ -98,7 +86,7 @@ public class TermAppender
      */
     public long rawTailVolatile()
     {
-        return metaDataBuffer.getLongVolatile(TERM_TAIL_COUNTER_OFFSET);
+        return UnsafeAccess.UNSAFE.getLongVolatile(tailBuffer, tailAddressOffset);
     }
 
     /**
@@ -108,7 +96,7 @@ public class TermAppender
      */
     public void tailTermId(final int termId)
     {
-        metaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, ((long)termId) << 32);
+        UnsafeAccess.UNSAFE.putLong(tailBuffer, tailAddressOffset, ((long)termId) << 32);
     }
 
     /**
@@ -337,6 +325,6 @@ public class TermAppender
 
     private long getAndAddRawTail(final int alignedLength)
     {
-        return metaDataBuffer.getAndAddLong(TERM_TAIL_COUNTER_OFFSET, alignedLength);
+        return UnsafeAccess.UNSAFE.getAndAddLong(tailBuffer, tailAddressOffset, alignedLength);
     }
 }

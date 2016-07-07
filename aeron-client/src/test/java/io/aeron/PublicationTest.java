@@ -25,6 +25,7 @@ import org.agrona.concurrent.status.ReadablePosition;
 
 import java.nio.ByteBuffer;
 
+import static java.nio.ByteBuffer.allocateDirect;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -40,13 +41,12 @@ public class PublicationTest
     private static final int TERM_ID_1 = 1;
     private static final int CORRELATION_ID = 2000;
     private static final int SEND_BUFFER_CAPACITY = 1024;
+    public static final int PARTITION_INDEX = 0;
 
-    private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY);
+    private final ByteBuffer sendBuffer = allocateDirect(SEND_BUFFER_CAPACITY);
     private final UnsafeBuffer atomicSendBuffer = new UnsafeBuffer(sendBuffer);
-    private final UnsafeBuffer logMetaDataBuffer = spy(new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_META_DATA_LENGTH)));
+    private final UnsafeBuffer logMetaDataBuffer = spy(new UnsafeBuffer(allocateDirect(LOG_META_DATA_LENGTH)));
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
-    private final UnsafeBuffer[] termMetaDataBuffers = new UnsafeBuffer[PARTITION_COUNT];
-    private final UnsafeBuffer[] buffers = new UnsafeBuffer[(PARTITION_COUNT * 2) + 1];
 
     private final ClientConductor conductor = mock(ClientConductor.class);
     private final LogBuffers logBuffers = mock(LogBuffers.class);
@@ -57,21 +57,17 @@ public class PublicationTest
     public void setUp()
     {
         when(publicationLimit.getVolatile()).thenReturn(2L * SEND_BUFFER_CAPACITY);
-        when(logBuffers.atomicBuffers()).thenReturn(buffers);
+        when(logBuffers.termBuffers()).thenReturn(termBuffers);
         when(logBuffers.termLength()).thenReturn(TERM_MIN_LENGTH);
+        when(logBuffers.metaDataBuffer()).thenReturn(logMetaDataBuffer);
 
         initialTermId(logMetaDataBuffer, TERM_ID_1);
         timeOfLastStatusMessage(logMetaDataBuffer, 0);
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            termBuffers[i] = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_MIN_LENGTH));
-            termMetaDataBuffers[i] = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_META_DATA_LENGTH));
-
-            buffers[i] = termBuffers[i];
-            buffers[i + PARTITION_COUNT] = termMetaDataBuffers[i];
+            termBuffers[i] = new UnsafeBuffer(allocateDirect(TERM_MIN_LENGTH));
         }
-        buffers[LOG_META_DATA_SECTION_INDEX] = logMetaDataBuffer;
 
         publication = new Publication(
             conductor,
@@ -84,7 +80,7 @@ public class PublicationTest
 
         publication.incRef();
 
-        initialiseTailWithTermId(termMetaDataBuffers[0], TERM_ID_1);
+        initialiseTailWithTermId(logMetaDataBuffer, PARTITION_INDEX, TERM_ID_1);
     }
 
     @Test

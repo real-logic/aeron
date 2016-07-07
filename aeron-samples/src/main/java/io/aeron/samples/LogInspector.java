@@ -59,21 +59,20 @@ public class LogInspector
             out.format("%s Inspection dump for %s%n", new Date(), logFileName);
             out.println("======================================================================");
 
-            final UnsafeBuffer[] atomicBuffers = logBuffers.atomicBuffers();
             final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
+            final UnsafeBuffer[] termBuffers = logBuffers.termBuffers();
             final int termLength = logBuffers.termLength();
+            final UnsafeBuffer metaDataBuffer = logBuffers.metaDataBuffer();
 
-            final UnsafeBuffer logMetaDataBuffer = atomicBuffers[LOG_META_DATA_SECTION_INDEX];
-
-            out.format("Time of last SM: %s%n", new Date(timeOfLastStatusMessage(logMetaDataBuffer)));
-            out.format("Initial term id: %d%n", initialTermId(logMetaDataBuffer));
-            out.format("   Active index: %d%n", activePartitionIndex(logMetaDataBuffer));
+            out.format("Time of last SM: %s%n", new Date(timeOfLastStatusMessage(metaDataBuffer)));
+            out.format("Initial term id: %d%n", initialTermId(metaDataBuffer));
+            out.format("   Active index: %d%n", activePartitionIndex(metaDataBuffer));
             out.format("    Term length: %d%n", termLength);
-            out.format("     MTU length: %d%n%n", mtuLength(logMetaDataBuffer));
+            out.format("     MTU length: %d%n%n", mtuLength(metaDataBuffer));
 
             if (!SKIP_DEFAULT_HEADER)
             {
-                dataHeaderFlyweight.wrap(defaultFrameHeader(logMetaDataBuffer));
+                dataHeaderFlyweight.wrap(defaultFrameHeader(metaDataBuffer));
                 out.format("default %s%n", dataHeaderFlyweight);
             }
 
@@ -81,8 +80,7 @@ public class LogInspector
 
             for (int i = 0; i < PARTITION_COUNT; i++)
             {
-                final UnsafeBuffer metaDataBuffer = atomicBuffers[i + PARTITION_COUNT];
-                final long rawTail = metaDataBuffer.getLongVolatile(TERM_TAIL_COUNTER_OFFSET);
+                final long rawTail = rawTailVolatile(metaDataBuffer, 0);
                 final long termOffset = rawTail & 0xFFFF_FFFFL;
                 out.format(
                     "Index %d Term Meta Data termOffset=%d termId=%d rawTail=%d%n",
@@ -97,7 +95,7 @@ public class LogInspector
                 out.println("%n======================================================================");
                 out.format("Index %d Term Data%n%n", i);
 
-                final UnsafeBuffer termBuffer = atomicBuffers[i];
+                final UnsafeBuffer termBuffer = termBuffers[i];
                 int offset = 0;
                 do
                 {

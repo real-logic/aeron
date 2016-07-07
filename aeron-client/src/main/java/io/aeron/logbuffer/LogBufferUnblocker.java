@@ -27,20 +27,19 @@ public class LogBufferUnblocker
     /**
      * Attempt to unblock a log buffer at given position
      *
-     * @param logPartitions     for current blockedOffset
+     * @param termBuffers       for current blockedOffset
      * @param logMetaDataBuffer for log buffer
      * @param blockedPosition   to attempt to unblock
      * @return whether unblocked or not
      */
     public static boolean unblock(
-        final LogBufferPartition[] logPartitions, final UnsafeBuffer logMetaDataBuffer, final long blockedPosition)
+        final UnsafeBuffer[] termBuffers, final UnsafeBuffer logMetaDataBuffer, final long blockedPosition)
     {
-        final int termLength = logPartitions[0].termBuffer().capacity();
+        final int termLength = termBuffers[0].capacity();
         final int positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
-        final int activeIndex = indexByPosition(blockedPosition, positionBitsToShift);
-        final LogBufferPartition activePartition = logPartitions[activeIndex];
-        final UnsafeBuffer termBuffer = activePartition.termBuffer();
-        final long rawTail = activePartition.rawTailVolatile();
+        final int index = indexByPosition(blockedPosition, positionBitsToShift);
+        final UnsafeBuffer termBuffer = termBuffers[index];
+        final long rawTail = rawTailVolatile(logMetaDataBuffer, index);
         final int termId = termId(rawTail);
         final int tailOffset = termOffset(rawTail, termLength);
         final int blockedOffset = computeTermOffsetFromPosition(blockedPosition, positionBitsToShift);
@@ -50,7 +49,7 @@ public class LogBufferUnblocker
         switch (TermUnblocker.unblock(logMetaDataBuffer, termBuffer, blockedOffset, tailOffset, termId))
         {
             case UNBLOCKED_TO_END:
-                rotateLog(logPartitions, logMetaDataBuffer, activeIndex, termId + 1);
+                rotateLog(logMetaDataBuffer, index, termId + 1);
                 // fall through
             case UNBLOCKED:
                 result = true;

@@ -17,15 +17,14 @@ package io.aeron.driver;
 
 import io.aeron.CommonContext;
 import io.aeron.DriverProxy;
+import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.buffer.RawLogFactory;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.logbuffer.LogBufferPartition;
 import io.aeron.logbuffer.TermAppender;
-import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.SystemEpochClock;
@@ -49,7 +48,7 @@ import java.util.function.BooleanSupplier;
 
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
-import static io.aeron.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
+import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.eq;
@@ -112,11 +111,11 @@ public class DriverConductorTest
         System.gc();
 
         when(mockRawLogFactory.newNetworkPublication(anyObject(), anyInt(), anyInt(), anyInt(), anyInt()))
-            .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH));
+            .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH));
         when(mockRawLogFactory.newNetworkedImage(anyObject(), anyInt(), anyInt(), anyInt(), eq(TERM_BUFFER_LENGTH)))
-            .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH));
+            .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH));
         when(mockRawLogFactory.newDirectPublication(anyInt(), anyInt(), anyLong(), anyInt()))
-            .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH));
+            .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH));
 
         currentTime = 0;
 
@@ -420,12 +419,10 @@ public class DriverConductorTest
 
         final int termId = 101;
         final int index = LogBufferDescriptor.indexByTerm(termId, termId);
-        final LogBufferPartition[] partitions = publication.rawLog().partitions();
-        final TermAppender appender =
-            new TermAppender(partitions[index].termBuffer(), partitions[index].metaDataBuffer());
+        final RawLog rawLog = publication.rawLog();
+        final TermAppender appender = new TermAppender(rawLog.termBuffers()[index], rawLog.logMetaData(), index);
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[256]);
-        final HeaderWriter headerWriter =
-            new HeaderWriter(DataHeaderFlyweight.createDefaultHeader(publication.sessionId(), STREAM_ID_1, termId));
+        final HeaderWriter headerWriter = new HeaderWriter(createDefaultHeader(publication.sessionId(), STREAM_ID_1, termId));
 
         publication.onStatusMessage(termId, 0, 10, new InetSocketAddress("localhost", 4059));
 
@@ -913,7 +910,7 @@ public class DriverConductorTest
     public void shouldTimeoutSpy() throws Exception
     {
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
-        final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+        driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -932,7 +929,7 @@ public class DriverConductorTest
     public void shouldNotTimeoutSpyWithKeepalive() throws Exception
     {
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
-        final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+        driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
 
         driverConductor.doWork();
 

@@ -48,7 +48,7 @@ public class Image
     private volatile boolean isClosed;
 
     private final Position subscriberPosition;
-    private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
+    private final UnsafeBuffer[] termBuffers;
     private final Header header;
     private final ErrorHandler errorHandler;
     private final LogBuffers logBuffers;
@@ -83,13 +83,12 @@ public class Image
         this.sourceIdentity = sourceIdentity;
         this.correlationId = correlationId;
 
-        final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
-        System.arraycopy(buffers, 0, termBuffers, 0, PARTITION_COUNT);
+        termBuffers = logBuffers.termBuffers();
 
         final int termLength = logBuffers.termLength();
         this.termLengthMask = termLength - 1;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
-        header = new Header(LogBufferDescriptor.initialTermId(buffers[LOG_META_DATA_SECTION_INDEX]), positionBitsToShift);
+        header = new Header(LogBufferDescriptor.initialTermId(logBuffers.metaDataBuffer()), positionBitsToShift);
     }
 
     /**

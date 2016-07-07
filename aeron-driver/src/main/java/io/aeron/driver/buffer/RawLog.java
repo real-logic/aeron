@@ -15,11 +15,9 @@
  */
 package io.aeron.driver.buffer;
 
-import io.aeron.logbuffer.LogBufferPartition;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.stream.Stream;
 
 /**
  * Represents the collection of term and associated state buffers for the image between a publisher and subscriber
@@ -35,18 +33,11 @@ public interface RawLog extends AutoCloseable
     int termLength();
 
     /**
-     * A {@link Stream} of the {@link LogBufferPartition} buffers.
+     * An array of term buffer partitions.
      *
-     * @return a {@link Stream} of the {@link LogBufferPartition} buffers.
+     * @return an array of the term buffer partitions.
      */
-    Stream<? extends LogBufferPartition> stream();
-
-    /**
-     * An array of the {@link LogBufferPartition} buffers.
-     *
-     * @return an array of the {@link LogBufferPartition} buffers.
-     */
-    LogBufferPartition[] partitions();
+    UnsafeBuffer[] termBuffers();
 
     /**
      * The meta data storage for the overall log.

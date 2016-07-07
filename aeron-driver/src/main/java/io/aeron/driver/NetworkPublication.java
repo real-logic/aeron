@@ -19,7 +19,6 @@ import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.logbuffer.LogBufferPartition;
 import io.aeron.logbuffer.LogBufferUnblocker;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.SetupFlyweight;
@@ -96,7 +95,7 @@ public class NetworkPublication
     private volatile boolean hasHadFirstStatusMessage = false;
     private boolean hasReachedEndOfLife = false;
 
-    private final LogBufferPartition[] logPartitions;
+    private final UnsafeBuffer[] termBuffers;
     private final ByteBuffer[] sendBuffers;
     private final Position publisherLimit;
     private final Position senderPosition;
@@ -153,7 +152,7 @@ public class NetworkPublication
         retransmitsSent = systemCounters.get(RETRANSMITS_SENT);
         senderFlowControlLimits = systemCounters.get(SENDER_FLOW_CONTROL_LIMITS);
 
-        logPartitions = rawLog.partitions();
+        termBuffers = rawLog.termBuffers();
         sendBuffers = rawLog.sliceTerms();
 
         final int termLength = rawLog.termLength();
@@ -236,7 +235,7 @@ public class NetworkPublication
         if (termId == activeTermId || termId == (activeTermId - 1))
         {
             final int activeIndex = indexByTerm(initialTermId, termId);
-            final UnsafeBuffer termBuffer = logPartitions[activeIndex].termBuffer();
+            final UnsafeBuffer termBuffer = termBuffers[activeIndex];
             final ByteBuffer sendBuffer = sendBuffers[activeIndex];
 
             int remainingBytes = length;
@@ -314,7 +313,7 @@ public class NetworkPublication
             {
                 termCount = currentTermCount;
                 final int dirtyIndex = indexByTermCount(currentTermCount + 1);
-                final UnsafeBuffer dirtyTerm = logPartitions[dirtyIndex].termBuffer();
+                final UnsafeBuffer dirtyTerm = termBuffers[dirtyIndex];
                 dirtyTerm.setMemory(0, dirtyTerm.capacity(), (byte)0);
             }
 
@@ -373,7 +372,7 @@ public class NetworkPublication
             final int scanLimit = Math.min(availableWindow, mtuLength);
             final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
 
-            final long scanOutcome = scanForAvailability(logPartitions[activeIndex].termBuffer(), termOffset, scanLimit);
+            final long scanOutcome = scanForAvailability(termBuffers[activeIndex], termOffset, scanLimit);
             final int available = available(scanOutcome);
             if (available > 0)
             {
@@ -527,8 +526,7 @@ public class NetworkPublication
 
     public long producerPosition()
     {
-        final UnsafeBuffer logMetaDataBuffer = rawLog.logMetaData();
-        final long rawTail = logPartitions[activePartitionIndex(logMetaDataBuffer)].rawTailVolatile();
+        final long rawTail = rawTailVolatile(rawLog.logMetaData());
         final int termOffset = termOffset(rawTail, rawLog.termLength());
 
         return computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);
@@ -541,6 +539,6 @@ public class NetworkPublication
 
     public boolean unblockAtConsumerPosition()
     {
-        return LogBufferUnblocker.unblock(logPartitions, rawLog.logMetaData(), consumerPosition());
+        return LogBufferUnblocker.unblock(termBuffers, rawLog.logMetaData(), consumerPosition());
     }
 }

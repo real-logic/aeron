@@ -15,7 +15,6 @@
  */
 package io.aeron.driver.buffer;
 
-import io.aeron.logbuffer.LogBufferPartition;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.errors.DistinctErrorLog;
@@ -26,7 +25,6 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.stream.Stream;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
@@ -40,7 +38,7 @@ class MappedRawLog implements RawLog
     private static final int PAGE_LENGTH = 4096;
 
     private final int termLength;
-    private final LogBufferPartition[] partitions;
+    private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
     private final File logFile;
     private final MappedByteBuffer[] mappedBuffers;
     private final UnsafeBuffer logMetaDataBuffer;
@@ -55,7 +53,6 @@ class MappedRawLog implements RawLog
         this.termLength = termLength;
         this.errorLog = errorLog;
         this.logFile = location;
-        partitions = new LogBufferPartition[PARTITION_COUNT];
 
         try (final RandomAccessFile raf = new RandomAccessFile(logFile, "rw");
              final FileChannel logChannel = raf.getChannel())
@@ -71,16 +68,11 @@ class MappedRawLog implements RawLog
                     allocatePages(mappedBuffer, (int)logLength);
                 }
 
-                mappedBuffers = new MappedByteBuffer[]{mappedBuffer};
-                final int metaDataSectionOffset = termLength * PARTITION_COUNT;
+                mappedBuffers = new MappedByteBuffer[]{ mappedBuffer };
 
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {
-                    final int metaDataOffset = metaDataSectionOffset + (i * TERM_META_DATA_LENGTH);
-
-                    partitions[i] = new LogBufferPartition(
-                        new UnsafeBuffer(mappedBuffer, i * termLength, termLength),
-                        new UnsafeBuffer(mappedBuffer, metaDataOffset, TERM_META_DATA_LENGTH));
+                    termBuffers[i] = new UnsafeBuffer(mappedBuffer, i * termLength, termLength);
                 }
 
                 logMetaDataBuffer = new UnsafeBuffer(mappedBuffer, (int)(logLength - LOG_META_DATA_LENGTH), LOG_META_DATA_LENGTH);
@@ -88,12 +80,6 @@ class MappedRawLog implements RawLog
             else
             {
                 mappedBuffers = new MappedByteBuffer[PARTITION_COUNT + 1];
-                final long metaDataSectionOffset = termLength * (long)PARTITION_COUNT;
-                final int metaDataSectionLength = (int)(logLength - metaDataSectionOffset);
-
-                final MappedByteBuffer metaDataMappedBuffer = logChannel.map(
-                    READ_WRITE, metaDataSectionOffset, metaDataSectionLength);
-                mappedBuffers[mappedBuffers.length - 1] = metaDataMappedBuffer;
 
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {
@@ -103,13 +89,14 @@ class MappedRawLog implements RawLog
                         allocatePages(mappedBuffers[i], termLength);
                     }
 
-                    partitions[i] = new LogBufferPartition(
-                        new UnsafeBuffer(mappedBuffers[i]),
-                        new UnsafeBuffer(metaDataMappedBuffer, i * TERM_META_DATA_LENGTH, TERM_META_DATA_LENGTH));
+                    termBuffers[i] = new UnsafeBuffer(mappedBuffers[i]);
                 }
 
-                logMetaDataBuffer = new UnsafeBuffer(
-                    metaDataMappedBuffer, metaDataSectionLength - LOG_META_DATA_LENGTH, LOG_META_DATA_LENGTH);
+                final long metaDataSectionOffset = termLength * (long)PARTITION_COUNT;
+                final MappedByteBuffer metaDataMappedBuffer = logChannel.map(
+                    READ_WRITE, metaDataSectionOffset, LOG_META_DATA_LENGTH);
+                mappedBuffers[LOG_META_DATA_SECTION_INDEX] = metaDataMappedBuffer;
+                logMetaDataBuffer = new UnsafeBuffer(metaDataMappedBuffer);
             }
         }
         catch (final IOException ex)
@@ -136,14 +123,9 @@ class MappedRawLog implements RawLog
         }
     }
 
-    public Stream<LogBufferPartition> stream()
+    public UnsafeBuffer[] termBuffers()
     {
-        return Stream.of(partitions);
-    }
-
-    public LogBufferPartition[] partitions()
-    {
-        return partitions;
+        return termBuffers;
     }
 
     public UnsafeBuffer logMetaData()

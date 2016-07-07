@@ -84,12 +84,12 @@ public class Publication implements AutoCloseable
         final LogBuffers logBuffers,
         final long registrationId)
     {
-        final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
-        final UnsafeBuffer logMetaDataBuffer = buffers[LOG_META_DATA_SECTION_INDEX];
+        final UnsafeBuffer[] buffers = logBuffers.termBuffers();
+        final UnsafeBuffer logMetaDataBuffer = logBuffers.metaDataBuffer();
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            termAppenders[i] = new TermAppender(buffers[i], buffers[i + PARTITION_COUNT]);
+            termAppenders[i] = new TermAppender(buffers[i], logMetaDataBuffer, i);
         }
 
         final int termLength = logBuffers.termLength();
@@ -230,7 +230,7 @@ public class Publication implements AutoCloseable
             return CLOSED;
         }
 
-        final long rawTail = termAppenders[activePartitionIndex(logMetaDataBuffer)].rawTailVolatile();
+        final long rawTail = rawTailVolatile(logMetaDataBuffer);
         final int termOffset = termOffset(rawTail, logBuffers.termLength());
 
         return computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);

@@ -70,8 +70,8 @@ public class ImageTest
     private final ErrorHandler errorHandler = mock(ErrorHandler.class);
     private final Subscription subscription = mock(Subscription.class);
 
-    private UnsafeBuffer[] atomicBuffers = new UnsafeBuffer[(PARTITION_COUNT * 2) + 1];
     private UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
+    private UnsafeBuffer logMetaDataBuffer;
 
     @Before
     public void setUp()
@@ -80,16 +80,14 @@ public class ImageTest
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            atomicBuffers[i] = new UnsafeBuffer(allocateDirect(TERM_BUFFER_LENGTH));
-            termBuffers[i] = atomicBuffers[i];
-
-            atomicBuffers[i + PARTITION_COUNT] = new UnsafeBuffer(allocateDirect(TERM_META_DATA_LENGTH));
+            termBuffers[i] = new UnsafeBuffer(allocateDirect(TERM_BUFFER_LENGTH));
         }
 
-        atomicBuffers[LOG_META_DATA_SECTION_INDEX] = new UnsafeBuffer(allocateDirect(LOG_META_DATA_LENGTH));
+        logMetaDataBuffer = new UnsafeBuffer(allocateDirect(LOG_META_DATA_LENGTH));
 
-        when(logBuffers.atomicBuffers()).thenReturn(atomicBuffers);
+        when(logBuffers.termBuffers()).thenReturn(termBuffers);
         when(logBuffers.termLength()).thenReturn(TERM_BUFFER_LENGTH);
+        when(logBuffers.metaDataBuffer()).thenReturn(logMetaDataBuffer);
     }
 
     @Test

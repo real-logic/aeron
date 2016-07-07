@@ -643,7 +643,7 @@ public class DriverConductor implements Agent
 
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
         storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
-        initialiseTailWithTermId(rawLog.partitions()[0].metaDataBuffer(), initialTermId);
+        initialiseTailWithTermId(logMetaData, 0, initialTermId);
 
         initialTermId(logMetaData, initialTermId);
         mtuLength(logMetaData, context.mtuLength());
@@ -682,7 +682,7 @@ public class DriverConductor implements Agent
 
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
         storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
-        initialiseTailWithTermId(rawLog.partitions()[0].metaDataBuffer(), initialTermId);
+        initialiseTailWithTermId(logMetaData, 0, initialTermId);
         initialTermId(logMetaData, initialTermId);
 
         mtuLength(logMetaData, computeMaxMessageLength(termBufferLength));

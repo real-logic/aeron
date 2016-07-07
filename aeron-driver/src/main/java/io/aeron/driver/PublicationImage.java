@@ -111,7 +111,7 @@ public class PublicationImage
     private final InetSocketAddress sourceAddress;
     private final ReceiveChannelEndpoint channelEndpoint;
     private final NanoClock clock;
-    private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
+    private final UnsafeBuffer[] termBuffers;
     private final Position hwmPosition;
     private final Position rebuildPosition;
     private ReadablePosition[] subscriberPositions;
@@ -168,11 +168,7 @@ public class PublicationImage
         timeOfLastStatusChange = time;
         lastPacketTimestamp = time;
 
-        for (int i = 0; i < PARTITION_COUNT; i++)
-        {
-            termBuffers[i] = rawLog.partitions()[i].termBuffer();
-        }
-
+        termBuffers = rawLog.termBuffers();
         lossDetector = new LossDetector(lossFeedbackDelayGenerator, this);
 
         final int termLength = rawLog.termLength();

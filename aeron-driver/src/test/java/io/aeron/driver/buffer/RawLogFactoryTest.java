@@ -28,6 +28,7 @@ import org.agrona.concurrent.errors.DistinctErrorLog;
 import java.io.File;
 import java.io.IOException;
 
+import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -69,21 +70,23 @@ public class RawLogFactoryTest
         final RawLog rawLog = rawLogFactory.newNetworkPublication(
             canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, TERM_BUFFER_LENGTH);
 
-        rawLog.stream().forEach(
-            (partition) ->
-            {
-                final UnsafeBuffer term = partition.termBuffer();
+        assertThat(rawLog.termLength(), is(TERM_BUFFER_LENGTH));
 
-                assertThat(term.capacity(), is(TERM_BUFFER_LENGTH));
-                assertThat(term.getByte(0), is((byte)0));
-                assertThat(term.getByte(TERM_BUFFER_LENGTH - 1), is((byte)0));
+        final UnsafeBuffer[] termBuffers = rawLog.termBuffers();
+        assertThat(termBuffers.length, is(PARTITION_COUNT));
 
-                final UnsafeBuffer metaData = partition.metaDataBuffer();
+        for (final UnsafeBuffer termBuffer : termBuffers)
+        {
+            assertThat(termBuffer.capacity(), is(TERM_BUFFER_LENGTH));
+            assertThat(termBuffer.getByte(0), is((byte)0));
+            assertThat(termBuffer.getByte(TERM_BUFFER_LENGTH - 1), is((byte)0));
+        }
 
-                assertThat(metaData.capacity(), is(LogBufferDescriptor.TERM_META_DATA_LENGTH));
-                assertThat(metaData.getByte(0), is((byte)0));
-                assertThat(metaData.getByte(LogBufferDescriptor.TERM_META_DATA_LENGTH - 1), is((byte)0));
-            });
+        final UnsafeBuffer metaData = rawLog.logMetaData();
+
+        assertThat(metaData.capacity(), is(LogBufferDescriptor.LOG_META_DATA_LENGTH));
+        assertThat(metaData.getByte(0), is((byte)0));
+        assertThat(metaData.getByte(LogBufferDescriptor.LOG_META_DATA_LENGTH - 1), is((byte)0));
     }
 
     @Test
@@ -94,21 +97,23 @@ public class RawLogFactoryTest
         final RawLog rawLog = rawLogFactory.newNetworkedImage(
             canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferMaxLength);
 
-        rawLog.stream().forEach(
-            (partition) ->
-            {
-                final UnsafeBuffer term = partition.termBuffer();
+        assertThat(rawLog.termLength(), is(imageTermBufferMaxLength));
 
-                assertThat(term.capacity(), is(imageTermBufferMaxLength));
-                assertThat(term.getByte(0), is((byte)0));
-                assertThat(term.getByte(imageTermBufferMaxLength - 1), is((byte)0));
+        final UnsafeBuffer[] termBuffers = rawLog.termBuffers();
+        assertThat(termBuffers.length, is(PARTITION_COUNT));
 
-                final UnsafeBuffer metaData = partition.metaDataBuffer();
+        for (final UnsafeBuffer termBuffer : termBuffers)
+        {
+            assertThat(termBuffer.capacity(), is(imageTermBufferMaxLength));
+            assertThat(termBuffer.getByte(0), is((byte)0));
+            assertThat(termBuffer.getByte(imageTermBufferMaxLength - 1), is((byte)0));
+        }
 
-                assertThat(metaData.capacity(), is(LogBufferDescriptor.TERM_META_DATA_LENGTH));
-                assertThat(metaData.getByte(0), is((byte)0));
-                assertThat(metaData.getByte(LogBufferDescriptor.TERM_META_DATA_LENGTH - 1), is((byte)0));
-            });
+        final UnsafeBuffer metaData = rawLog.logMetaData();
+
+        assertThat(metaData.capacity(), is(LogBufferDescriptor.LOG_META_DATA_LENGTH));
+        assertThat(metaData.getByte(0), is((byte)0));
+        assertThat(metaData.getByte(LogBufferDescriptor.LOG_META_DATA_LENGTH - 1), is((byte)0));
     }
 
     @Test(expected = IllegalArgumentException.class)

@@ -47,7 +47,7 @@ public class Configuration
     /**
      * Should term buffers be created as sparse files. Defaults to false.
      *
-     * If a platform supports spare files then log buffer creation is faster with pages being allocated as
+     * If a platform supports sparse files then log buffer creation is faster with pages being allocated as
      * needed. This can help for large numbers of channels/streams but can result in latency pauses.
      */
     public static final String TERM_BUFFER_SPARSE_FILE = getProperty(TERM_BUFFER_SPARSE_FILE_PROP_NAME);

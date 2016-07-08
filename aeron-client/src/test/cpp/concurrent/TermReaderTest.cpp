@@ -28,7 +28,7 @@ using namespace aeron::concurrent;
 using namespace aeron;
 
 #define TERM_BUFFER_CAPACITY (LogBufferDescriptor::TERM_MIN_LENGTH)
-#define META_DATA_BUFFER_CAPACITY (LogBufferDescriptor::TERM_META_DATA_LENGTH)
+#define META_DATA_BUFFER_CAPACITY (LogBufferDescriptor::LOG_META_DATA_LENGTH)
 #define HDR_LENGTH (DataFrameHeader::LENGTH)
 #define TERM_BUFFER_UNALIGNED_CAPACITY (LogBufferDescriptor::TERM_MIN_LENGTH + FrameDescriptor::FRAME_ALIGNMENT - 1)
 #define INITIAL_TERM_ID 7

@@ -28,13 +28,15 @@ using namespace aeron::concurrent;
 using namespace aeron;
 
 #define TERM_BUFFER_CAPACITY (LogBufferDescriptor::TERM_MIN_LENGTH)
-#define META_DATA_BUFFER_CAPACITY (LogBufferDescriptor::TERM_META_DATA_LENGTH)
+#define META_DATA_BUFFER_CAPACITY (LogBufferDescriptor::LOG_META_DATA_LENGTH)
 #define MAX_FRAME_LENGTH (1024)
 
 #define MAX_PAYLOAD_LENGTH ((MAX_FRAME_LENGTH - DataFrameHeader::LENGTH))
 #define SRC_BUFFER_CAPACITY (2 * 1024)
 #define TERM_ID (101)
 #define RESERVED_VALUE (777L)
+#define PARTITION_INDEX (1)
+#define TERM_TAIL_OFFSET (LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET + (PARTITION_INDEX * sizeof(std::int64_t)))
 
 typedef std::array<std::uint8_t, TERM_BUFFER_CAPACITY> term_buffer_t;
 typedef std::array<std::uint8_t, META_DATA_BUFFER_CAPACITY> meta_data_buffer_t;
@@ -60,7 +62,7 @@ public:
         m_hdr(m_hdrBuffer, 0),
         m_src(m_srcBuffer, 0),
         m_headerWriter(m_hdr),
-        m_termAppender(m_termBuffer, m_metaDataBuffer)
+        m_termAppender(m_termBuffer, m_metaDataBuffer, PARTITION_INDEX)
     {
         m_logBuffer.fill(0);
         m_stateBuffer.fill(0);
@@ -101,7 +103,7 @@ TEST_F(TermAppenderTest, shouldAppendFrameToEmptyLog)
     testing::Sequence sequence;
     TermAppender::Result result;
 
-    EXPECT_CALL(m_metaDataBuffer, getAndAddInt64(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, alignedFrameLength))
+    EXPECT_CALL(m_metaDataBuffer, getAndAddInt64(TERM_TAIL_OFFSET, alignedFrameLength))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(packRawTail(TERM_ID, tail)));
@@ -132,7 +134,7 @@ TEST_F(TermAppenderTest, shouldAppendFrameTwiceToLog)
     testing::Sequence sequence1;
     testing::Sequence sequence2;
 
-    EXPECT_CALL(m_metaDataBuffer, getAndAddInt64(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, alignedFrameLength))
+    EXPECT_CALL(m_metaDataBuffer, getAndAddInt64(TERM_TAIL_OFFSET, alignedFrameLength))
         .Times(2)
         .WillOnce(testing::Return(packRawTail(TERM_ID, tail)))
         .WillOnce(testing::Return(packRawTail(TERM_ID, alignedFrameLength)));
@@ -181,7 +183,7 @@ TEST_F(TermAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemaini
     const util::index_t frameLength = TERM_BUFFER_CAPACITY - tailValue;
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_metaDataBuffer, getAndAddInt64(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, requiredFrameSize))
+    EXPECT_CALL(m_metaDataBuffer, getAndAddInt64(TERM_TAIL_OFFSET, requiredFrameSize))
         .Times(1)
         .WillOnce(testing::Return(packRawTail(TERM_ID, tailValue)));
 
@@ -209,7 +211,7 @@ TEST_F(TermAppenderTest, shouldFragmentMessageOverTwoFrames)
     util::index_t tail = 0;
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_metaDataBuffer, getAndAddInt64(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, requiredCapacity))
+    EXPECT_CALL(m_metaDataBuffer, getAndAddInt64(TERM_TAIL_OFFSET, requiredCapacity))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(packRawTail(TERM_ID, tail)));
@@ -263,7 +265,7 @@ TEST_F(TermAppenderTest, shouldClaimRegionForZeroCopyEncoding)
     BufferClaim bufferClaim;
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_metaDataBuffer, getAndAddInt64(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, alignedFrameLength))
+    EXPECT_CALL(m_metaDataBuffer, getAndAddInt64(TERM_TAIL_OFFSET, alignedFrameLength))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(packRawTail(TERM_ID, tail)));

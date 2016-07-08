@@ -22,7 +22,6 @@
 #include <concurrent/AtomicBuffer.h>
 #include "HeaderWriter.h"
 #include "LogBufferDescriptor.h"
-#include "LogBufferPartition.h"
 #include "BufferClaim.h"
 #include "DataFrameHeader.h"
 
@@ -59,9 +58,10 @@ public:
         std::int32_t termId;
     };
 
-    TermAppender(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer) :
+    TermAppender(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer, const int partitionIndex) :
         m_termBuffer(termBuffer),
-        m_metaDataBuffer(metaDataBuffer)
+        m_tailBuffer(metaDataBuffer),
+        m_tailOffset(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)))
     {
     }
 
@@ -70,19 +70,14 @@ public:
         return m_termBuffer;
     }
 
-    inline AtomicBuffer& metaDataBuffer()
-    {
-        return m_metaDataBuffer;
-    }
-
     inline std::int64_t rawTailVolatile() const
     {
-        return m_metaDataBuffer.getInt64Volatile(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET);
+        return m_tailBuffer.getInt64Volatile(m_tailOffset);
     }
 
     inline void tailTermId(const std::int32_t termId)
     {
-        m_metaDataBuffer.putInt64(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, ((static_cast<std::int64_t>(termId)) << 32));
+        m_tailBuffer.putInt64(m_tailOffset, ((static_cast<std::int64_t>(termId)) << 32));
     }
 
     inline void claim(Result& result, const HeaderWriter& header, util::index_t length, BufferClaim& bufferClaim)
@@ -209,7 +204,8 @@ public:
 
 private:
     AtomicBuffer& m_termBuffer;
-    AtomicBuffer& m_metaDataBuffer;
+    AtomicBuffer& m_tailBuffer;
+    const util::index_t m_tailOffset;
 
     inline static void handleEndOfLogCondition(
         Result& result,
@@ -236,7 +232,7 @@ private:
 
     inline std::int64_t getAndAddRawTail(const util::index_t alignedLength)
     {
-        return m_metaDataBuffer.getAndAddInt64(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, alignedLength);
+        return m_tailBuffer.getAndAddInt64(m_tailOffset, alignedLength);
     }
 };
 

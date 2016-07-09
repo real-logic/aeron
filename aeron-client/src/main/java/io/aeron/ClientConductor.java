@@ -19,6 +19,7 @@ import io.aeron.exceptions.ConductorServiceTimeoutException;
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.exceptions.RegistrationException;
 import org.agrona.ErrorHandler;
+import org.agrona.LangUtil;
 import org.agrona.ManagedResource;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.concurrent.Agent;
@@ -135,10 +136,8 @@ class ClientConductor implements Agent, DriverListener
         if (publication == null)
         {
             final long correlationId = driverProxy.addPublication(channel, streamId);
-            final long timeout = nanoClock.nanoTime() + driverTimeoutNs;
 
-            doWorkUntil(correlationId, timeout, channel);
-
+            awaitResponse(correlationId, channel, true);
             publication = activePublications.get(channel, streamId);
         }
 
@@ -155,10 +154,8 @@ class ClientConductor implements Agent, DriverListener
         {
             final long correlationId = driverProxy.removePublication(publication.registrationId());
 
-            final long timeout = nanoClock.nanoTime() + driverTimeoutNs;
-
             lingerResource(publication.managedResource());
-            doWorkUntil(correlationId, timeout, publication.channel());
+            awaitResponse(correlationId, publication.channel(), false);
         }
     }
 
@@ -167,12 +164,10 @@ class ClientConductor implements Agent, DriverListener
         verifyDriverIsActive();
 
         final long correlationId = driverProxy.addSubscription(channel, streamId);
-        final long timeout = nanoClock.nanoTime() + driverTimeoutNs;
-
         final Subscription subscription = new Subscription(this, channel, streamId, correlationId);
         activeSubscriptions.add(subscription);
 
-        doWorkUntil(correlationId, timeout, channel);
+        awaitResponse(correlationId, channel, true);
 
         return subscription;
     }
@@ -182,9 +177,8 @@ class ClientConductor implements Agent, DriverListener
         verifyDriverIsActive();
 
         final long correlationId = driverProxy.removeSubscription(subscription.registrationId());
-        final long timeout = nanoClock.nanoTime() + driverTimeoutNs;
 
-        doWorkUntil(correlationId, timeout, subscription.channel());
+        awaitResponse(correlationId, subscription.channel(), false);
 
         activeSubscriptions.remove(subscription);
     }
@@ -323,12 +317,29 @@ class ClientConductor implements Agent, DriverListener
         return workCount;
     }
 
-    private void doWorkUntil(final long correlationId, final long timeout, final String expectedChannel)
+    private void awaitResponse(final long correlationId, final String expectedChannel, final boolean slowOperation)
     {
         driverException = null;
+        final long timeout = nanoClock.nanoTime() + driverTimeoutNs;
 
         do
         {
+            if (slowOperation)
+            {
+                try
+                {
+                    Thread.sleep(1);
+                }
+                catch (final InterruptedException ex)
+                {
+                    LangUtil.rethrowUnchecked(ex);
+                }
+            }
+            else
+            {
+                Thread.yield();
+            }
+
             doWork(correlationId, expectedChannel);
 
             if (driverListener.lastReceivedCorrelationId() == correlationId)

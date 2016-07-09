@@ -48,7 +48,7 @@ class NetworkPublicationPadding1
 
 class NetworkPublicationConductorFields extends NetworkPublicationPadding1
 {
-    long termCount = 0;
+    long cleanedToPosition = 0;
     long timeOfLastActivity = 0;
     long lastSenderPosition = 0;
     int refCount = 0;
@@ -308,14 +308,7 @@ public class NetworkPublication
 
         if (publisherLimit.proposeMaxOrdered(candidatePublisherLimit))
         {
-            final long currentTermCount = candidatePublisherLimit >> positionBitsToShift;
-            if (currentTermCount > termCount)
-            {
-                termCount = currentTermCount;
-                final int dirtyIndex = indexByTermCount(currentTermCount + 1);
-                final UnsafeBuffer dirtyTerm = termBuffers[dirtyIndex];
-                dirtyTerm.setMemory(0, dirtyTerm.capacity(), (byte)0);
-            }
+            cleanBuffer(candidatePublisherLimit);
 
             workCount = 1;
         }
@@ -477,6 +470,23 @@ public class NetworkPublication
         }
 
         return result;
+    }
+
+    private void cleanBuffer(final long publisherLimit)
+    {
+        final long cleanedToPosition = this.cleanedToPosition;
+        final int bufferCapacity = termLengthMask + 1;
+        final long publisherLimitRange = publisherLimit - cleanedToPosition;
+        if (publisherLimitRange > bufferCapacity)
+        {
+            final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanedToPosition, positionBitsToShift)];
+            final int termOffset = (int)cleanedToPosition & termLengthMask;
+            final int bytesForCleaning = (int)(publisherLimitRange - bufferCapacity);
+            final int length = Math.min(bytesForCleaning, bufferCapacity - termOffset);
+
+            dirtyTerm.setMemory(termOffset, length, (byte)0);
+            this.cleanedToPosition = cleanedToPosition + length;
+        }
     }
 
     public void onTimeEvent(final long time, final DriverConductor conductor)

@@ -45,7 +45,7 @@ public class DirectPublication implements DriverManagedResource
     private final RawLog rawLog;
     private final Position publisherLimit;
     private long consumerPosition = 0;
-    private long termCount = 0;
+    private long cleanedToPosition = 0;
     private int refCount = 0;
     private boolean reachedEndOfLife = false;
 
@@ -139,14 +139,7 @@ public class DirectPublication implements DriverManagedResource
                 publisherLimit.setOrdered(proposedLimit);
                 tripLimit = proposedLimit + tripGain;
 
-                final long currentTermCount = proposedLimit >> positionBitsToShift;
-                if (currentTermCount > termCount)
-                {
-                    termCount = currentTermCount;
-                    final int dirtyIndex = indexByTermCount(currentTermCount + 1);
-                    final UnsafeBuffer dirtyTerm = termBuffers[dirtyIndex];
-                    dirtyTerm.setMemory(0, dirtyTerm.capacity(), (byte)0);
-                }
+                cleanBuffer(minSubscriberPosition);
 
                 workCount = 1;
             }
@@ -155,6 +148,22 @@ public class DirectPublication implements DriverManagedResource
         consumerPosition = maxSubscriberPosition;
 
         return workCount;
+    }
+
+    private void cleanBuffer(final long minConsumerPosition)
+    {
+        final long cleanedToPosition = this.cleanedToPosition;
+        final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanedToPosition, positionBitsToShift)];
+        final int bytesForCleaning = (int)(minConsumerPosition - cleanedToPosition);
+        final int bufferCapacity = dirtyTerm.capacity();
+        final int termOffset = (int)cleanedToPosition & (bufferCapacity - 1);
+        final int length = Math.min(bytesForCleaning, bufferCapacity - termOffset);
+
+        if (length > 0)
+        {
+            dirtyTerm.setMemory(termOffset, length, (byte)0);
+            this.cleanedToPosition = cleanedToPosition + length;
+        }
     }
 
     public long joiningPosition()

@@ -74,6 +74,7 @@ class PublicationImagePadding3 extends PublicationImageHotFields
 
 class PublicationImageStatusFields extends PublicationImagePadding3
 {
+    long cleanedToPosition = 0;
     volatile long newStatusMessagePosition;
     volatile PublicationImage.Status status = PublicationImage.Status.INIT;
 }
@@ -360,16 +361,13 @@ public class PublicationImage
         if (minSubscriberPosition > (newStatusMessagePosition + currentGain))
         {
             newStatusMessagePosition = minSubscriberPosition;
+            cleanBuffer(minSubscriberPosition);
         }
 
-        final long oldRebuildPosition = rebuildPosition.getVolatile();
-        final long rebuildPosition = Math.max(oldRebuildPosition, maxSubscriberPosition);
-
-        final int positionBitsToShift = this.positionBitsToShift;
-        final int index = indexByPosition(rebuildPosition, positionBitsToShift);
+        final long rebuildPosition = Math.max(this.rebuildPosition.getVolatile(), maxSubscriberPosition);
 
         final int workCount = lossDetector.scan(
-            termBuffers[index],
+            termBuffers[indexByPosition(rebuildPosition, positionBitsToShift)],
             rebuildPosition,
             hwmPosition.getVolatile(),
             now,
@@ -380,14 +378,6 @@ public class PublicationImage
         final int rebuildTermOffset = (int)rebuildPosition & termLengthMask;
         final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + lossDetector.rebuildOffset();
         this.rebuildPosition.proposeMaxOrdered(newRebuildPosition);
-
-        final long newTermCount = newRebuildPosition >>> positionBitsToShift;
-        final long oldTermCount = oldRebuildPosition >>> positionBitsToShift;
-        if (newTermCount > oldTermCount)
-        {
-            final UnsafeBuffer dirtyTerm = termBuffers[indexByTermCount(newTermCount + 1)];
-            dirtyTerm.setMemory(0, dirtyTerm.capacity(), (byte)0);
-        }
 
         return workCount;
     }
@@ -636,5 +626,21 @@ public class PublicationImage
         }
 
         return isFlowControlOverRun;
+    }
+
+    private void cleanBuffer(final long minConsumerPosition)
+    {
+        final long cleanedToPosition = this.cleanedToPosition;
+        final int bytesForCleaning = (int)(minConsumerPosition - cleanedToPosition);
+        final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanedToPosition, positionBitsToShift)];
+        final int termOffset = (int)cleanedToPosition & termLengthMask;
+        final int bufferCapacity = dirtyTerm.capacity();
+        final int length = Math.min(bytesForCleaning, bufferCapacity - termOffset);
+
+        if (length > 0)
+        {
+            dirtyTerm.setMemory(termOffset, length, (byte)0);
+            this.cleanedToPosition = cleanedToPosition + length;
+        }
     }
 }

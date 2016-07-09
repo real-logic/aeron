@@ -317,14 +317,14 @@ class ClientConductor implements Agent, DriverListener
         return workCount;
     }
 
-    private void awaitResponse(final long correlationId, final String expectedChannel, final boolean slowOperation)
+    private void awaitResponse(final long correlationId, final String expectedChannel, final boolean isSlowOperation)
     {
         driverException = null;
         final long timeout = nanoClock.nanoTime() + driverTimeoutNs;
 
         do
         {
-            if (slowOperation)
+            if (isSlowOperation)
             {
                 try
                 {

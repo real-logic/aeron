@@ -308,7 +308,7 @@ public class NetworkPublication
 
         if (publisherLimit.proposeMaxOrdered(candidatePublisherLimit))
         {
-            cleanBuffer(candidatePublisherLimit);
+            cleanBuffer(candidatePublisherLimit - termWindowLength);
 
             workCount = 1;
         }

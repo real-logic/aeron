@@ -45,7 +45,7 @@ public class DirectPublication implements DriverManagedResource
     private final RawLog rawLog;
     private final Position publisherLimit;
     private long consumerPosition = 0;
-    private long cleanedToPosition = 0;
+    private long cleanPosition = 0;
     private int refCount = 0;
     private boolean reachedEndOfLife = false;
 
@@ -152,17 +152,17 @@ public class DirectPublication implements DriverManagedResource
 
     private void cleanBuffer(final long minConsumerPosition)
     {
-        final long cleanedToPosition = this.cleanedToPosition;
-        final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanedToPosition, positionBitsToShift)];
-        final int bytesForCleaning = (int)(minConsumerPosition - cleanedToPosition);
+        final long cleanPosition = this.cleanPosition;
+        final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
+        final int bytesForCleaning = (int)(minConsumerPosition - cleanPosition);
         final int bufferCapacity = dirtyTerm.capacity();
-        final int termOffset = (int)cleanedToPosition & (bufferCapacity - 1);
+        final int termOffset = (int)cleanPosition & (bufferCapacity - 1);
         final int length = Math.min(bytesForCleaning, bufferCapacity - termOffset);
 
         if (length > 0)
         {
             dirtyTerm.setMemory(termOffset, length, (byte)0);
-            this.cleanedToPosition = cleanedToPosition + length;
+            this.cleanPosition = cleanPosition + length;
         }
     }
 

@@ -74,7 +74,7 @@ class PublicationImagePadding3 extends PublicationImageHotFields
 
 class PublicationImageStatusFields extends PublicationImagePadding3
 {
-    long cleanedToPosition = 0;
+    long cleanPosition = 0;
     volatile long newStatusMessagePosition;
     volatile PublicationImage.Status status = PublicationImage.Status.INIT;
 }
@@ -630,17 +630,17 @@ public class PublicationImage
 
     private void cleanBuffer(final long minConsumerPosition)
     {
-        final long cleanedToPosition = this.cleanedToPosition;
-        final int bytesForCleaning = (int)(minConsumerPosition - cleanedToPosition);
-        final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanedToPosition, positionBitsToShift)];
-        final int termOffset = (int)cleanedToPosition & termLengthMask;
+        final long cleanPosition = this.cleanPosition;
+        final int bytesForCleaning = (int)(minConsumerPosition - cleanPosition);
+        final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
+        final int termOffset = (int)cleanPosition & termLengthMask;
         final int bufferCapacity = dirtyTerm.capacity();
         final int length = Math.min(bytesForCleaning, bufferCapacity - termOffset);
 
         if (length > 0)
         {
             dirtyTerm.setMemory(termOffset, length, (byte)0);
-            this.cleanedToPosition = cleanedToPosition + length;
+            this.cleanPosition = cleanPosition + length;
         }
     }
 }

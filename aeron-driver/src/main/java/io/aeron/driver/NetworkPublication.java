@@ -48,7 +48,7 @@ class NetworkPublicationPadding1
 
 class NetworkPublicationConductorFields extends NetworkPublicationPadding1
 {
-    long cleanedToPosition = 0;
+    long cleanPosition = 0;
     long timeOfLastActivity = 0;
     long lastSenderPosition = 0;
     int refCount = 0;
@@ -474,20 +474,20 @@ public class NetworkPublication
 
     private void cleanBuffer(final long publisherLimit)
     {
-        final long cleanedToPosition = this.cleanedToPosition;
-        final long dirtyRange = publisherLimit - cleanedToPosition;
+        final long cleanPosition = this.cleanPosition;
+        final long dirtyRange = publisherLimit - cleanPosition;
         final int bufferCapacity = termLengthMask + 1;
         final int reservedRange = bufferCapacity * 2;
 
         if (dirtyRange > reservedRange)
         {
-            final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanedToPosition, positionBitsToShift)];
-            final int termOffset = (int)cleanedToPosition & termLengthMask;
+            final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
+            final int termOffset = (int)cleanPosition & termLengthMask;
             final int bytesForCleaning = (int)(dirtyRange - reservedRange);
             final int length = Math.min(bytesForCleaning, bufferCapacity - termOffset);
 
             dirtyTerm.setMemory(termOffset, length, (byte)0);
-            this.cleanedToPosition = cleanedToPosition + length;
+            this.cleanPosition = cleanPosition + length;
         }
     }
 

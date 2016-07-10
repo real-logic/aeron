@@ -477,13 +477,13 @@ public class NetworkPublication
         final long cleanedToPosition = this.cleanedToPosition;
         final long dirtyRange = publisherLimit - cleanedToPosition;
         final int bufferCapacity = termLengthMask + 1;
-        final int activeRange = bufferCapacity * 2;
+        final int reservedRange = bufferCapacity * 2;
 
-        if (dirtyRange > activeRange)
+        if (dirtyRange > reservedRange)
         {
             final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanedToPosition, positionBitsToShift)];
             final int termOffset = (int)cleanedToPosition & termLengthMask;
-            final int bytesForCleaning = (int)(dirtyRange - activeRange);
+            final int bytesForCleaning = (int)(dirtyRange - reservedRange);
             final int length = Math.min(bytesForCleaning, bufferCapacity - termOffset);
 
             dirtyTerm.setMemory(termOffset, length, (byte)0);

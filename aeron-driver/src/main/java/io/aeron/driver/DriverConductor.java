@@ -753,7 +753,10 @@ public class DriverConductor implements Agent
 
         publicationImages
             .stream()
-            .filter((image) -> image.matches(channelEndpoint, streamId) && (image.subscriberCount() > 0))
+            .filter((image) ->
+                image.matches(channelEndpoint, streamId) &&
+                (image.subscriberCount() > 0) &&
+                (image.status() == PublicationImage.Status.ACTIVE))
             .forEach(
                 (image) ->
                 {

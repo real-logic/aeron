@@ -613,6 +613,52 @@ public class DriverConductorTest
     }
 
     @Test
+    public void shouldNotSendAvailableImageWhileImageNotActiveOnAddSubscription() throws Exception
+    {
+        final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
+
+        final long subOneId = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ReceiveChannelEndpoint receiveChannelEndpoint =
+            driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
+        assertNotNull(receiveChannelEndpoint);
+
+        receiveChannelEndpoint.openChannel();
+
+        driverConductor.onCreatePublicationImage(
+            SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH,
+            mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
+
+        final ArgumentCaptor<PublicationImage> captor = ArgumentCaptor.forClass(PublicationImage.class);
+        verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor.capture());
+
+        final PublicationImage publicationImage = captor.getValue();
+
+        publicationImage.status(PublicationImage.Status.INACTIVE);
+
+        doWorkUntil(() -> nanoClock.nanoTime() >= IMAGE_LIVENESS_TIMEOUT_NS / 2);
+
+        driverProxy.sendClientKeepalive();
+
+        doWorkUntil(() -> nanoClock.nanoTime() >= IMAGE_LIVENESS_TIMEOUT_NS + 1000);
+
+        final long subTwoId = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final InOrder inOrder = inOrder(mockClientProxy);
+        inOrder.verify(mockClientProxy, times(1)).operationSucceeded(subOneId);
+        inOrder.verify(mockClientProxy, times(1)).onAvailableImage(
+            eq(publicationImage.correlationId()), eq(STREAM_ID_1), eq(SESSION_ID), anyObject(), anyObject(), anyString());
+        inOrder.verify(mockClientProxy, times(1)).onUnavailableImage(
+            eq(publicationImage.correlationId()), eq(STREAM_ID_1), anyString());
+        inOrder.verify(mockClientProxy, times(1)).operationSucceeded(subTwoId);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
     public void shouldBeAbleToAddSingleDirectPublicationPublication() throws Exception
     {
         final long id = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);

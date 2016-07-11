@@ -168,7 +168,7 @@ public:
      * @param sessionId associated with the Image.
      * @return Image associated with the given sessionId or nullptr if no Image exist.
      */
-    inline std::shared_ptr<Image> getImage(std::int32_t sessionId)
+    inline std::shared_ptr<Image> imageBySessionId(std::int32_t sessionId)
     {
         const int length = std::atomic_load(&m_imagesLength);
         Image* images = std::atomic_load(&m_images);
@@ -233,7 +233,7 @@ public:
     }
 
     /// @cond HIDDEN_SYMBOLS
-    bool hasImage(std::int32_t sessionId)
+    bool hasImage(std::int64_t correlationId)
     {
         const int length = std::atomic_load(&m_imagesLength);
         Image *images = std::atomic_load(&m_images);
@@ -241,7 +241,7 @@ public:
 
         for (int i = 0; i < length; i++)
         {
-            if (images[i].sessionId() == sessionId)
+            if (images[i].correlationId() == correlationId)
             {
                 isConnected = true;
                 break;

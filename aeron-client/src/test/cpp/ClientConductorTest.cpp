@@ -461,6 +461,7 @@ TEST_F(ClientConductorTest, shouldCallOnNewSubAfterOperationSuccess)
 TEST_F(ClientConductorTest, shouldCallNewConnectionAfterOnNewConnection)
 {
     std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t correlationId = id + 1;
     testing::Sequence sequence;
 
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
@@ -474,16 +475,17 @@ TEST_F(ClientConductorTest, shouldCallNewConnectionAfterOnNewConnection)
 
     m_conductor.onOperationSuccess(id);
     // must be able to handle newImage even if findSubscription not called
-    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, id);
+    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, correlationId);
 
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
     ASSERT_TRUE(sub != nullptr);
-    ASSERT_TRUE(sub->hasImage(SESSION_ID));
+    ASSERT_TRUE(sub->hasImage(correlationId));
 }
 
 TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfNoOperationSuccess)
 {
     std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t correlationId = id + 1;
 
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
         .Times(0);
@@ -493,7 +495,7 @@ TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfNoOperationSuccess)
     ImageBuffersReadyDefn::SubscriberPosition positions[] = { { 1, id } };
 
     // must be able to handle newImage even if findSubscription not called
-    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, id);
+    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, correlationId);
 
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
     ASSERT_TRUE(sub == nullptr);
@@ -502,6 +504,7 @@ TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfNoOperationSuccess)
 TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfUninterestingRegistrationId)
 {
     std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t correlationId = id + 1;
 
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
         .Times(1);
@@ -512,17 +515,17 @@ TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfUninterestingRegistratio
 
     m_conductor.onOperationSuccess(id);
     // must be able to handle newImage even if findSubscription not called
-    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, id);
+    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, correlationId);
 
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
     ASSERT_TRUE(sub != nullptr);
-    ASSERT_FALSE(sub->hasImage(SESSION_ID));
+    ASSERT_FALSE(sub->hasImage(correlationId));
 }
 
 TEST_F(ClientConductorTest, shouldCallInactiveConnecitonAfterInactiveConnection)
 {
     std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
-    std::int64_t connectionId = id + 1;
+    std::int64_t correlationId = id + 1;
     testing::Sequence sequence;
 
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
@@ -540,15 +543,15 @@ TEST_F(ClientConductorTest, shouldCallInactiveConnecitonAfterInactiveConnection)
     m_conductor.onOperationSuccess(id);
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
     m_conductor.onAvailableImage(
-        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, connectionId);
-    m_conductor.onUnavailableImage(STREAM_ID, connectionId);
-    EXPECT_FALSE(sub->hasImage(SESSION_ID));
+        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, correlationId);
+    m_conductor.onUnavailableImage(STREAM_ID, correlationId);
+    EXPECT_FALSE(sub->hasImage(correlationId));
 }
 
 TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfNoOperationSuccess)
 {
     std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
-    std::int64_t connectionId = id + 1;
+    std::int64_t correlationId = id + 1;
 
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
         .Times(0);
@@ -561,14 +564,14 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfNoOperationSuccess)
 
     // must be able to handle newImage even if findSubscription not called
     m_conductor.onAvailableImage(
-        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, connectionId);
-    m_conductor.onUnavailableImage(STREAM_ID, connectionId);
+        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, correlationId);
+    m_conductor.onUnavailableImage(STREAM_ID, correlationId);
 }
 
 TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfUinterestingConnectionCorrelationId)
 {
     std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
-    std::int64_t connectionId = id + 1;
+    std::int64_t correlationId = id + 1;
     testing::Sequence sequence;
 
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
@@ -585,9 +588,9 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfUinterestingConnect
     m_conductor.onOperationSuccess(id);
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
     m_conductor.onAvailableImage(
-        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, connectionId);
-    m_conductor.onUnavailableImage(STREAM_ID, connectionId + 1);
-    EXPECT_TRUE(sub->hasImage(SESSION_ID));
+        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, correlationId);
+    m_conductor.onUnavailableImage(STREAM_ID, correlationId + 1);
+    EXPECT_TRUE(sub->hasImage(correlationId));
 
     testing::Mock::VerifyAndClearExpectations(&m_handlers);  // avoid catching unavailable call on sub release
 }
@@ -595,7 +598,7 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfUinterestingConnect
 TEST_F(ClientConductorTest, shouldCallUnavailableImageIfSubscriptionReleased)
 {
     std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
-    std::int64_t connectionId = id + 1;
+    std::int64_t correlationId = id + 1;
     testing::Sequence sequence;
 
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
@@ -612,8 +615,8 @@ TEST_F(ClientConductorTest, shouldCallUnavailableImageIfSubscriptionReleased)
     m_conductor.onOperationSuccess(id);
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
     m_conductor.onAvailableImage(
-        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, connectionId);
-    EXPECT_TRUE(sub->hasImage(SESSION_ID));
+        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, correlationId);
+    EXPECT_TRUE(sub->hasImage(correlationId));
 }
 
 TEST_F(ClientConductorTest, shouldClosePublicationOnInterServiceTimeout)
@@ -669,6 +672,7 @@ TEST_F(ClientConductorTest, shouldCloseAllPublicationsAndSubscriptionsOnInterSer
 TEST_F(ClientConductorTest, shouldRemoveImageOnInterServiceTimeout)
 {
     std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t correlationId = id + 1;
 
     m_conductor.onOperationSuccess(id);
 
@@ -678,12 +682,12 @@ TEST_F(ClientConductorTest, shouldRemoveImageOnInterServiceTimeout)
 
     ImageBuffersReadyDefn::SubscriberPosition positions[] = { { 1, id } };
 
-    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, id);
-    ASSERT_TRUE(sub->hasImage(SESSION_ID));
+    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, correlationId);
+    ASSERT_TRUE(sub->hasImage(correlationId));
 
     m_conductor.onInterServiceTimeout(m_currentTime);
 
-    std::shared_ptr<Image> image = sub->getImage(SESSION_ID);
+    std::shared_ptr<Image> image = sub->imageBySessionId(SESSION_ID);
 
     EXPECT_TRUE(sub->isClosed());
     EXPECT_TRUE(image == nullptr);

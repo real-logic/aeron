@@ -215,7 +215,7 @@ class ClientConductor implements Agent, DriverListener
             streamId,
             (subscription) ->
             {
-                if (!subscription.hasImage(sessionId))
+                if (!subscription.hasImage(correlationId))
                 {
                     final long positionId = subscriberPositionMap.get(subscription.registrationId());
 

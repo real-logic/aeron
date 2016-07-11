@@ -493,7 +493,6 @@ public class ClientConductorTest
 
         verify(mockUnavailableImageHandler).onUnavailableImage(any(Image.class));
         assertTrue(subscription.hasNoImages());
-        assertFalse(subscription.hasImage(SESSION_ID_1));
     }
 
     @Test

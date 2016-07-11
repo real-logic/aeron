@@ -333,13 +333,13 @@ public class Subscription implements AutoCloseable
         return removedImage;
     }
 
-    boolean hasImage(final int sessionId)
+    boolean hasImage(final long correlationId)
     {
         boolean hasImage = false;
 
         for (final Image image : images)
         {
-            if (sessionId == image.sessionId())
+            if (correlationId == image.correlationId())
             {
                 hasImage = true;
                 break;

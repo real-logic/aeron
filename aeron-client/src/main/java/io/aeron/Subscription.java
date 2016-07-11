@@ -213,7 +213,7 @@ public class Subscription implements AutoCloseable
      * @param sessionId associated with the Image.
      * @return Image associated with the given sessionId or null if no Image exist.
      */
-    public Image getImage(final int sessionId)
+    public Image imageBySessionId(final int sessionId)
     {
         Image result = null;
 

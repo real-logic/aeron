@@ -319,7 +319,7 @@ void ClientConductor::onAvailableImage(
                 std::shared_ptr<Subscription> subscription = entry.m_subscription.lock();
 
                 if (subscription != nullptr &&
-                    !(subscription->hasImage(sessionId)))
+                    !(subscription->hasImage(correlationId)))
                 {
                     for (int i = 0; i < subscriberPositionCount; i++)
                     {

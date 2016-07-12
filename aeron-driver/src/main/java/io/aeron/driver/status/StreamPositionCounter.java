@@ -18,7 +18,6 @@ package io.aeron.driver.status;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.nio.charset.StandardCharsets;
@@ -27,7 +26,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * Allocates {@link Position} counters on a stream of messages. Positions tracked in bytes include:
+ * Allocates {@link UnsafeBufferPosition} counters on a stream of messages. Positions tracked in bytes include:
  * <ul>
  *     <li>{@link PublisherLimit}: Limit for flow controlling a {@link io.aeron.Publication} steam.</li>
  *     <li>{@link SenderPos}: Highest position on a {@link io.aeron.Publication} stream sent to the media.</li>
@@ -72,9 +71,9 @@ public class StreamPositionCounter
      * @param sessionId       for the stream of messages.
      * @param streamId        for the stream of messages.
      * @param channel         for the stream of messages.
-     * @return a new {@link Position} for tracking the stream.
+     * @return a new {@link UnsafeBufferPosition} for tracking the stream.
      */
-    public static Position allocate(
+    public static UnsafeBufferPosition allocate(
         final String name,
         final int typeId,
         final CountersManager countersManager,
@@ -97,9 +96,9 @@ public class StreamPositionCounter
      * @param streamId        for the stream of messages.
      * @param channel         for the stream of messages.
      * @param suffix          for the label.
-     * @return a new {@link Position} for tracking the stream.
+     * @return a new {@link UnsafeBufferPosition} for tracking the stream.
      */
-    public static Position allocate(
+    public static UnsafeBufferPosition allocate(
         final String name,
         final int typeId,
         final CountersManager countersManager,

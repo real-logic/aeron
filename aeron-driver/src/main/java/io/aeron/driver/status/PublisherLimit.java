@@ -16,7 +16,7 @@
 package io.aeron.driver.status;
 
 import org.agrona.concurrent.status.CountersManager;
-import org.agrona.concurrent.status.Position;
+import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 /**
  * The limit as a position in bytes applied to publishers on a session-channel-stream tuple. Publishers will experience
@@ -34,7 +34,7 @@ public class PublisherLimit
      */
     public static final String NAME = "pub-lmt";
 
-    public static Position allocate(
+    public static UnsafeBufferPosition allocate(
         final CountersManager countersManager,
         final long registrationId,
         final int sessionId,

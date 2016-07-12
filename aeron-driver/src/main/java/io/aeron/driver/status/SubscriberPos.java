@@ -16,7 +16,7 @@
 package io.aeron.driver.status;
 
 import org.agrona.concurrent.status.CountersManager;
-import org.agrona.concurrent.status.Position;
+import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 /**
  * The position an individual Subscriber has reached on a session-channel-stream tuple. It is possible to have multiple
@@ -34,7 +34,7 @@ public class SubscriberPos
      */
     public static final String NAME = "sub-pos";
 
-    public static Position allocate(
+    public static UnsafeBufferPosition allocate(
         final CountersManager countersManager,
         final long registrationId,
         final int sessionId,

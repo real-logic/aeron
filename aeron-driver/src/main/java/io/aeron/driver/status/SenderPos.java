@@ -16,7 +16,7 @@
 package io.aeron.driver.status;
 
 import org.agrona.concurrent.status.CountersManager;
-import org.agrona.concurrent.status.Position;
+import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 /**
  * The position the Sender has reached for sending data to the media on a session-channel-stream tuple.
@@ -33,7 +33,7 @@ public class SenderPos
      */
     public static final String NAME = "snd-pos";
 
-    public static Position allocate(
+    public static UnsafeBufferPosition allocate(
         final CountersManager countersManager,
         final long registrationId,
         final int sessionId,

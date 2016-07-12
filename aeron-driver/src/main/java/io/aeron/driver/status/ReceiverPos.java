@@ -16,7 +16,7 @@
 package io.aeron.driver.status;
 
 import org.agrona.concurrent.status.CountersManager;
-import org.agrona.concurrent.status.Position;
+import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 /**
  * The highest position the Receiver has rebuilt up to on a session-channel-stream tuple while rebuilding the stream.
@@ -34,7 +34,7 @@ public class ReceiverPos
      */
     public static final String NAME = "rcv-pos";
 
-    public static Position allocate(
+    public static UnsafeBufferPosition allocate(
         final CountersManager countersManager,
         final long registrationId,
         final int sessionId,

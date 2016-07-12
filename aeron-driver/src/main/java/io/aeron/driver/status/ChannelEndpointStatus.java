@@ -89,7 +89,6 @@ public class ChannelEndpointStatus
 
                 buffer.putInt(CHANNEL_OFFSET, length);
                 buffer.putBytes(CHANNEL_OFFSET + SIZE_OF_INT, channelBytes, 0, length);
-            }
-        );
+            });
     }
 }

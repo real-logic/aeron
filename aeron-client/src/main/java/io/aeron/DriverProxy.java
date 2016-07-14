@@ -41,7 +41,6 @@ public class DriverProxy
     private final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_BUFFER_CAPACITY));
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
-
     private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final RingBuffer toDriverCommandBuffer;

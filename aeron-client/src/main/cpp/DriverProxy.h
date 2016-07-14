@@ -76,6 +76,7 @@ public:
         {
             RemoveMessageFlyweight removeMessage(buffer, 0);
 
+            removeMessage.clientId(m_clientId);
             removeMessage.correlationId(correlationId);
             removeMessage.registrationId(registrationId);
 
@@ -117,6 +118,7 @@ public:
         {
             RemoveMessageFlyweight removeMessage(buffer, 0);
 
+            removeMessage.clientId(m_clientId);
             removeMessage.correlationId(correlationId);
             removeMessage.registrationId(registrationId);
 

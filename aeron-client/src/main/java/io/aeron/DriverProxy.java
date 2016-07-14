@@ -36,7 +36,7 @@ import static io.aeron.command.ControlProtocolEvents.*;
 public class DriverProxy
 {
     /** Maximum capacity of the write buffer */
-    public static final int MSG_BUFFER_CAPACITY = 4096;
+    public static final int MSG_BUFFER_CAPACITY = 1024;
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_BUFFER_CAPACITY));
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
@@ -68,7 +68,6 @@ public class DriverProxy
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
 
         publicationMessage.correlationId(correlationId);
-
         publicationMessage
             .streamId(streamId)
             .channel(channel);
@@ -84,6 +83,7 @@ public class DriverProxy
     public long removePublication(final long registrationId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+
         removeMessage
             .registrationId(registrationId)
             .correlationId(correlationId);
@@ -102,7 +102,6 @@ public class DriverProxy
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
 
         subscriptionMessage.correlationId(correlationId);
-
         subscriptionMessage
             .registrationCorrelationId(registrationId)
             .streamId(streamId)
@@ -119,6 +118,7 @@ public class DriverProxy
     public long removeSubscription(final long registrationId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+
         removeMessage
             .registrationId(registrationId)
             .correlationId(correlationId);

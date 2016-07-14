@@ -30,21 +30,19 @@ import static io.aeron.command.ControlProtocolEvents.*;
  * Separates the concern of communicating with the client conductor away from the rest of the client.
  *
  * Writes messages into the client conductor buffer.
+ *
+ * Note: this class is not thread safe and is expecting to be called under the {@link ClientConductor} main lock.
  */
 public class DriverProxy
 {
     /** Maximum capacity of the write buffer */
     public static final int MSG_BUFFER_CAPACITY = 4096;
 
-    private final long clientId;
     private final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_BUFFER_CAPACITY));
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
 
     private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
-    // the heartbeats come from the client conductor thread, so keep the flyweights and buffer separate
-    private final UnsafeBuffer keepaliveBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_BUFFER_CAPACITY));
-
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final RingBuffer toDriverCommandBuffer;
 
@@ -54,11 +52,11 @@ public class DriverProxy
 
         publicationMessage.wrap(buffer, 0);
         subscriptionMessage.wrap(buffer, 0);
-
-        correlatedMessage.wrap(keepaliveBuffer, 0);
+        correlatedMessage.wrap(buffer, 0);
         removeMessage.wrap(buffer, 0);
 
-        clientId = toDriverCommandBuffer.nextCorrelationId();
+        final long clientId = toDriverCommandBuffer.nextCorrelationId();
+        correlatedMessage.clientId(clientId);
     }
 
     public long timeOfLastDriverKeepalive()
@@ -70,9 +68,7 @@ public class DriverProxy
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
 
-        publicationMessage
-            .clientId(clientId)
-            .correlationId(correlationId);
+        publicationMessage.correlationId(correlationId);
 
         publicationMessage
             .streamId(streamId)
@@ -89,8 +85,9 @@ public class DriverProxy
     public long removePublication(final long registrationId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
-        removeMessage.correlationId(correlationId);
-        removeMessage.registrationId(registrationId);
+        removeMessage
+            .registrationId(registrationId)
+            .correlationId(correlationId);
 
         if (!toDriverCommandBuffer.write(REMOVE_PUBLICATION, buffer, 0, RemoveMessageFlyweight.length()))
         {
@@ -105,9 +102,7 @@ public class DriverProxy
         final long registrationId = -1;
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
 
-        subscriptionMessage
-            .clientId(clientId)
-            .correlationId(correlationId);
+        subscriptionMessage.correlationId(correlationId);
 
         subscriptionMessage
             .registrationCorrelationId(registrationId)
@@ -125,8 +120,9 @@ public class DriverProxy
     public long removeSubscription(final long registrationId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
-        removeMessage.correlationId(correlationId);
-        removeMessage.registrationId(registrationId);
+        removeMessage
+            .registrationId(registrationId)
+            .correlationId(correlationId);
 
         if (!toDriverCommandBuffer.write(REMOVE_SUBSCRIPTION, buffer, 0, RemoveMessageFlyweight.length()))
         {
@@ -138,11 +134,9 @@ public class DriverProxy
 
     public void sendClientKeepalive()
     {
-        correlatedMessage
-            .clientId(clientId)
-            .correlationId(0);
+        correlatedMessage.correlationId(0);
 
-        if (!toDriverCommandBuffer.write(CLIENT_KEEPALIVE, keepaliveBuffer, 0, CorrelatedMessageFlyweight.LENGTH))
+        if (!toDriverCommandBuffer.write(CLIENT_KEEPALIVE, buffer, 0, CorrelatedMessageFlyweight.LENGTH))
         {
             throw new IllegalStateException("could not write keepalive message");
         }

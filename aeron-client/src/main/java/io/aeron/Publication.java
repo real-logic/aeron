@@ -160,13 +160,26 @@ public class Publication implements AutoCloseable
     }
 
     /**
-     * Maximum message length supported in bytes.
+     * Maximum message length supported in bytes. Messages may be made of of multiple fragments if greater than
+     * MTU length.
      *
      * @return maximum message length supported in bytes.
      */
     public int maxMessageLength()
     {
         return maxMessageLength;
+    }
+
+    /**
+     * Maximum length of a message payload that fits within a message fragment.
+     *
+     * This is he MTU length minus the message fragment header length.
+     *
+     * @return maximum message fragment payload length.
+     */
+    public int maxPayloadLength()
+    {
+        return maxPayloadLength;
     }
 
     /**

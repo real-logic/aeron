@@ -129,6 +129,18 @@ public:
     }
 
     /**
+     * Maximum length of a message payload that fits within a message fragment.
+     *
+     * This is he MTU length minus the message fragment header length.
+     *
+     * @return maximum message fragment payload length.
+     */
+    inline util::index_t maxPayloadLength() const
+    {
+        return m_maxPayloadLength;
+    }
+
+    /**
      * Get the length in bytes for each term partition in the log buffer.
      *
      * @return the length in bytes for each term partition in the log buffer.

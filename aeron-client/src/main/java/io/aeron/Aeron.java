@@ -35,7 +35,7 @@ import static org.agrona.IoUtil.mapExistingFile;
 /**
  * Aeron entry point for communicating to the Media Driver for creating {@link Publication}s and {@link Subscription}s.
  * Use an {@link Aeron.Context} to configure the Aeron object.
- * <p>
+ *
  * A client application requires only one Aeron object per Media Driver.
  */
 public final class Aeron implements AutoCloseable
@@ -44,7 +44,7 @@ public final class Aeron implements AutoCloseable
      * The Default handler for Aeron runtime exceptions.
      * When a {@link io.aeron.exceptions.DriverTimeoutException} is encountered, this handler will
      * exit the program.
-     * <p>
+     *
      * The error handler can be overridden by supplying an {@link Aeron.Context} with a custom handler.
      *
      * @see Aeron.Context#errorHandler(ErrorHandler)
@@ -110,7 +110,7 @@ public final class Aeron implements AutoCloseable
 
     /**
      * Create an Aeron instance and connect to the media driver with a default {@link Context}.
-     * <p>
+     *
      * Threads required for interacting with the media driver are created and managed within the Aeron instance.
      *
      * @return the new {@link Aeron} instance connected to the Media Driver.
@@ -122,7 +122,7 @@ public final class Aeron implements AutoCloseable
 
     /**
      * Create an Aeron instance and connect to the media driver.
-     * <p>
+     *
      * Threads required for interacting with the media driver are created and managed within the Aeron instance.
      *
      * @param ctx for configuration of the client.
@@ -168,9 +168,7 @@ public final class Aeron implements AutoCloseable
 
     private Aeron start()
     {
-        final Thread thread = new Thread(conductorRunner);
-        thread.setName("aeron-client-conductor");
-        thread.start();
+        AgentRunner.startOnThread(conductorRunner);
 
         return this;
     }

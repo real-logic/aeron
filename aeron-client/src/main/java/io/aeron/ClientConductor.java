@@ -125,7 +125,7 @@ class ClientConductor implements Agent, DriverListener
 
     public String roleName()
     {
-        return "client-conductor";
+        return "aeron-client-conductor";
     }
 
     synchronized Publication addPublication(final String channel, final int streamId)

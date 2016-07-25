@@ -292,13 +292,7 @@ public final class MediaDriver implements AutoCloseable
 
     private MediaDriver start()
     {
-        runners.forEach(
-            (runner) ->
-            {
-                final Thread thread = new Thread(runner);
-                thread.setName(runner.agent().roleName());
-                thread.start();
-            });
+        runners.forEach(AgentRunner::startOnThread);
 
         return this;
     }

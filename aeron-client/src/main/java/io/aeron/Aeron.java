@@ -26,6 +26,7 @@ import org.agrona.concurrent.ringbuffer.RingBuffer;
 import java.io.File;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -168,7 +169,7 @@ public final class Aeron implements AutoCloseable
 
     private Aeron start()
     {
-        AgentRunner.startOnThread(conductorRunner);
+        AgentRunner.startOnThread(conductorRunner, ctx.threadFactory);
 
         return this;
     }
@@ -197,6 +198,7 @@ public final class Aeron implements AutoCloseable
         private long interServiceTimeout = INTER_SERVICE_TIMEOUT_NS;
         private long publicationConnectionTimeout = PUBLICATION_CONNECTION_TIMEOUT_MS;
         private FileChannel.MapMode imageMapMode;
+        private ThreadFactory threadFactory = Thread::new;
 
         /**
          * This is called automatically by {@link Aeron#connect(Aeron.Context)} and its overloads.
@@ -494,6 +496,27 @@ public final class Aeron implements AutoCloseable
         {
             this.imageMapMode = imageMapMode;
             return this;
+        }
+
+        /**
+         * Specify the thread factory to use when starting the conductor thread.
+         *
+         * @param threadFactory thread factory to construct the thread.
+         * @return this for a fluent API.
+         */
+        public Context threadFactory(ThreadFactory threadFactory)
+        {
+            this.threadFactory = threadFactory;
+            return this;
+        }
+
+        /**
+         * The thread factory to be use to construct the conductor thread
+         * @return the specified thread factory or {@link Thread#Thread(Runnable)} if none is provided
+         */
+        public ThreadFactory threadFactory()
+        {
+            return threadFactory;
         }
 
         /**

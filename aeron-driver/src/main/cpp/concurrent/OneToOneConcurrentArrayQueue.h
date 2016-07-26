@@ -42,7 +42,8 @@ public:
         {
             m_buffer[i].store(nullptr, std::memory_order_relaxed);
         }
-        m_buffer[m_capacity - 1].store(nullptr, std::memory_order_relaxed);
+
+        m_buffer[m_capacity - 1].store(nullptr, std::memory_order_acq_rel);
     }
 
     ~OneToOneConcurrentArrayQueue()
@@ -58,8 +59,9 @@ public:
         }
 
         std::int64_t currentTail =  m_tail.load(std::memory_order_seq_cst);
+        int index = (int) (currentTail & m_mask);
 
-        volatile std::atomic<T*>* source = &m_buffer[currentTail];
+        volatile std::atomic<T*>* source = &m_buffer[index];
         volatile T* ptr = source->load(std::memory_order_seq_cst);
         if (nullptr == ptr)
         {

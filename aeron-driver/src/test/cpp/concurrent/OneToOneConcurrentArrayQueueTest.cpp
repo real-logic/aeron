@@ -15,6 +15,7 @@
  */
 #include <gtest/gtest.h>
 #include <thread>
+#include <memory>
 
 #include "concurrent/OneToOneConcurrentArrayQueue.h"
 

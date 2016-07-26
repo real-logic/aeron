@@ -464,8 +464,8 @@ public final class MediaDriver implements AutoCloseable
         private int mtuLength;
 
         private boolean warnIfDirectoriesExist;
-        private ThreadingMode threadingMode;
         private boolean dirsDeleteOnStart;
+        private ThreadingMode threadingMode;
 
         private SendChannelEndpointSupplier sendChannelEndpointSupplier;
         private ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier;

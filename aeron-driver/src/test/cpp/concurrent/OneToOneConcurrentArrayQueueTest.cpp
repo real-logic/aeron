@@ -14,29 +14,59 @@
  * limitations under the License.
  */
 #include <gtest/gtest.h>
+#include <thread>
 
 #include "concurrent/OneToOneConcurrentArrayQueue.h"
 
-class OneToOneConcurrentArrayQueueTest : public testing::Test
+class OneToOneConcurrentArrayQueueTest : public testing::Test, public testing::WithParamInterface<int>
 {
 
 };
 
-TEST_F(OneToOneConcurrentArrayQueueTest, pollFetchsAllValuesOffered)
+TEST_P(OneToOneConcurrentArrayQueueTest, pollFetchsAllValuesOffered)
 {
-    aeron::driver::concurrent::OneToOneConcurrentArrayQueue<int> q(1024);
+    const int queueLength = GetParam();
 
-    const int iterations = 10;
-    int values[iterations];
+    aeron::driver::concurrent::OneToOneConcurrentArrayQueue<int> q(queueLength);
+
+    const int iterations = queueLength + queueLength / 3;
+    std::unique_ptr<int[]> values(new int[iterations]);
+
+    int *valueArray = values.get();
+
+    std::thread consumer(
+        [&q, &valueArray, iterations]()
+        {
+            int i = 0;
+
+            while (i < iterations)
+            {
+                int *value = q.poll();
+
+                if (nullptr != value)
+                {
+                    EXPECT_EQ(valueArray[i], *value);
+                    i++;
+                }
+
+                std::this_thread::yield();
+            }
+        });
 
     for (int i = 0; i < iterations; i++)
     {
         values[i] = i;
-        q.offer(&values[i]);
+
+        while (!q.offer(&valueArray[i]))
+        {
+            std::this_thread::yield();
+        }
     }
 
-    for (int i = 0; i < iterations; i++)
-    {
-        EXPECT_EQ(values[i], *q.poll());
-    }
+    consumer.join();
 }
+
+INSTANTIATE_TEST_CASE_P(
+    OneToOneConcurrentArrayQueueLengthTest,
+    OneToOneConcurrentArrayQueueTest,
+    testing::Range(2, (16 * 1024), 101));

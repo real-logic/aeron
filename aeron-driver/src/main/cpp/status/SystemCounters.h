@@ -46,6 +46,8 @@ public:
             }
 
             counts[descriptor.id()] = descriptor.newCounter(counterManager);
+
+            i++;
         }
     }
 

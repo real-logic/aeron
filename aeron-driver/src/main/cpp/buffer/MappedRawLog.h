@@ -20,8 +20,9 @@
 
 #include <sys/types.h>
 #include <cstdint>
+#include <vector>
+
 #include <concurrent/logbuffer/LogBufferDescriptor.h>
-#include <concurrent/logbuffer/LogBufferPartition.h>
 #include <concurrent/AtomicBuffer.h>
 #include <util/MemoryMappedFile.h>
 
@@ -44,9 +45,11 @@ private:
     const char* m_location;
     bool m_useSparseFiles;
     std::int32_t m_termLength;
-    LogBufferPartition m_partitions[LogBufferDescriptor::PARTITION_COUNT];
     std::vector<MemoryMappedFile::ptr_t> m_memoryMappedFiles;
+    AtomicBuffer m_buffers[LogBufferDescriptor::PARTITION_COUNT];
     AtomicBuffer m_logMetaDataBuffer;
+
+    static void allocatePages(std::uint8_t *mapping, size_t length);
 };
 
 }}}

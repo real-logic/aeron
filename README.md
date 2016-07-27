@@ -95,8 +95,7 @@ You require the following to build the C++ API for Aeron:
 
 * 3.0.2 or higher of [CMake](http://www.cmake.org/)
 * C++11 supported compiler for the supported platform
-* Requirements to build [HdrHistogram_c](https://github.com/HdrHistogram/HdrHistogram_c). HdrHistogram requires clang
-and `zlib.h` currently.
+* Requirements to build [HdrHistogram_c](https://github.com/HdrHistogram/HdrHistogram_c). HdrHistogram requires `zlib.h` currently.
 
 __NOTE__: Aeron is supported on Linux, Mac, and Windows. Windows builds require Visual Studio and are being developed
 with Visual Studio 2013 and 2015 with 64-bit builds only. Cygwin, MSys, etc. may work, but are not maintained at this time.

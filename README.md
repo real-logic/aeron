@@ -95,8 +95,7 @@ You require the following to build the C++ API for Aeron:
 
 * 3.0.2 or higher of [CMake](http://www.cmake.org/)
 * C++11 supported compiler for the supported platform
-* Requirements to build [HdrHistogram_c](https://github.com/HdrHistogram/HdrHistogram_c). HdrHistogram requires clang
-and `zlib.h` currently.
+* Requirements to build [HdrHistogram_c](https://github.com/HdrHistogram/HdrHistogram_c). HdrHistogram requires `zlib.h` currently.
 
 __NOTE__: Aeron is supported on Linux, Mac, and Windows. Windows builds require Visual Studio and are being developed
 with Visual Studio 2013 and 2015 with 64-bit builds only. Cygwin, MSys, etc. may work, but are not maintained at this time.
@@ -113,15 +112,26 @@ If you are comfortable with using CMake, then a full clean, build, and test look
     $ cmake --build . --clean-first
     $ ctest
 
+#### Documentation
+
 If you have doxygen installed and want to build the Doxygen doc, there is a nice `doc` target that can be used.
 
     $ make doc
     
+#### Packaging
+
 If you would like a packaged version of the compiled API, there is the `package` target that uses CPack. If the doc
 has been built previous to the packaging, it will be included. Packages created are "TGZ;STGZ", but can be changed
 by running `cpack` directly.
 
     $ make package
+
+#### C++ Driver
+
+__WARNING__: The C++ media driver is currently in development. Any C++ code in `aeron-driver` should be considered experimental
+and may not build or work correctly at this time.
+
+The driver can be added to the build and tests by enabling the CMake variable `BUILD_AERON_DRIVER` to `ON`.
 
 Running Samples
 ---------------

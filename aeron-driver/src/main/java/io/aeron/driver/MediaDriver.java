@@ -45,6 +45,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -186,7 +187,7 @@ public final class MediaDriver implements AutoCloseable
                         context.sharedIdleStrategy,
                         errorHandler,
                         errorCounter,
-                        new CompositeAgent(sender, receiver, conductor))
+                        new CompositeAgent(sender, receiver, conductor), context.sharedThreadFactory)
                 );
                 break;
 
@@ -196,17 +197,33 @@ public final class MediaDriver implements AutoCloseable
                         context.sharedNetworkIdleStrategy,
                         errorHandler,
                         errorCounter,
-                        new CompositeAgent(sender, receiver)),
-                    new AgentRunner(context.conductorIdleStrategy, errorHandler, errorCounter, conductor)
+                        new CompositeAgent(sender, receiver), context.sharedNetworkThreadFactory),
+                    new AgentRunner(context.conductorIdleStrategy,
+                        errorHandler,
+                        errorCounter,
+                        conductor,
+                        context.conductorThreadFactory)
                 );
                 break;
 
             default:
             case DEDICATED:
                 runners = Arrays.asList(
-                    new AgentRunner(context.senderIdleStrategy, errorHandler, errorCounter, sender),
-                    new AgentRunner(context.receiverIdleStrategy, errorHandler, errorCounter, receiver),
-                    new AgentRunner(context.conductorIdleStrategy, errorHandler, errorCounter, conductor)
+                    new AgentRunner(context.senderIdleStrategy,
+                        errorHandler,
+                        errorCounter,
+                        sender,
+                        context.senderThreadFactory),
+                    new AgentRunner(context.receiverIdleStrategy,
+                        errorHandler,
+                        errorCounter,
+                        receiver,
+                        context.receiverThreadFactory),
+                    new AgentRunner(context.conductorIdleStrategy,
+                        errorHandler,
+                        errorCounter,
+                        conductor,
+                        context.conductorThreadFactory)
                 );
         }
     }
@@ -466,6 +483,11 @@ public final class MediaDriver implements AutoCloseable
         private boolean warnIfDirectoriesExist;
         private boolean dirsDeleteOnStart;
         private ThreadingMode threadingMode;
+        private ThreadFactory conductorThreadFactory;
+        private ThreadFactory senderThreadFactory;
+        private ThreadFactory receiverThreadFactory;
+        private ThreadFactory sharedThreadFactory;
+        private ThreadFactory sharedNetworkThreadFactory;
 
         private SendChannelEndpointSupplier sendChannelEndpointSupplier;
         private ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier;
@@ -640,6 +662,31 @@ public final class MediaDriver implements AutoCloseable
                 {
                     termBufferSparseFile = Boolean.FALSE;
                 }
+            }
+
+            if (null == conductorThreadFactory)
+            {
+                conductorThreadFactory = Thread::new;
+            }
+
+            if (null == senderThreadFactory)
+            {
+                senderThreadFactory = Thread::new;
+            }
+
+            if (null == receiverThreadFactory)
+            {
+                receiverThreadFactory = Thread::new;
+            }
+
+            if (null == sharedThreadFactory)
+            {
+                sharedThreadFactory = Thread::new;
+            }
+
+            if (null == sharedNetworkThreadFactory)
+            {
+                sharedNetworkThreadFactory = Thread::new;
             }
         }
 
@@ -859,6 +906,36 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context senderThreadFactory(final ThreadFactory factory)
+        {
+            this.senderThreadFactory = factory;
+            return this;
+        }
+
+        public Context receiverThreadFactory(final ThreadFactory factory)
+        {
+            this.receiverThreadFactory = factory;
+            return this;
+        }
+
+        public Context conductorThreadFactory(final ThreadFactory factory)
+        {
+            this.conductorThreadFactory = factory;
+            return this;
+        }
+
+        public Context sharedThreadFactory(final ThreadFactory factory)
+        {
+            this.sharedThreadFactory = factory;
+            return this;
+        }
+
+        public Context sharedNetworkThreadFactory(final ThreadFactory factory)
+        {
+            this.sharedNetworkThreadFactory = factory;
+            return this;
+        }
+
         /**
          * Set whether or not this application will attempt to delete the Aeron directories when starting.
          *
@@ -990,6 +1067,31 @@ public final class MediaDriver implements AutoCloseable
         public IdleStrategy sharedIdleStrategy()
         {
             return sharedIdleStrategy;
+        }
+
+        public ThreadFactory senderThreadFactory()
+        {
+            return this.senderThreadFactory;
+        }
+
+        public ThreadFactory receiverThreadFactory()
+        {
+            return this.receiverThreadFactory;
+        }
+
+        public ThreadFactory conductorThreadFactory()
+        {
+            return this.conductorThreadFactory;
+        }
+
+        public ThreadFactory sharedThreadFactory()
+        {
+            return this.sharedThreadFactory;
+        }
+
+        public ThreadFactory sharedNetworkThreadFactory()
+        {
+            return this.sharedNetworkThreadFactory;
         }
 
         public ClientProxy clientProxy()

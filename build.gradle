@@ -454,7 +454,7 @@ project(':aeron-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        compile project(':aeron-client'), project(':aeron-driver')
+        compile project(':aeron-client'), project(':aeron-driver'), project(':aeron-samples')
     }
 
     uploadArchives {

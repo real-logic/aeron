@@ -125,7 +125,7 @@ public:
      */
     inline util::index_t maxMessageLength() const
     {
-        return FrameDescriptor::computeMaxMessageLength(termBufferLength());
+        return m_maxMessageLength;
     }
 
     /**
@@ -380,6 +380,7 @@ private:
     std::int32_t m_sessionId;
     std::int32_t m_initialTermId;
     std::int32_t m_maxPayloadLength;
+    std::int32_t m_maxMessageLength;
     std::int32_t m_positionBitsToShift;
     ReadablePosition<UnsafeBufferPosition> m_publicationLimit;
     std::atomic<bool> m_isClosed = { false };
@@ -413,7 +414,7 @@ private:
 
     void checkForMaxMessageLength(const util::index_t length)
     {
-        if (length > m_maxPayloadLength)
+        if (length > m_maxMessageLength)
         {
             throw util::IllegalStateException(
                 util::strPrintf("Encoded message exceeds maxMessageLength of %d, length=%d",

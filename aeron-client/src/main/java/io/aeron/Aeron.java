@@ -16,12 +16,14 @@
 package io.aeron;
 
 import io.aeron.exceptions.DriverTimeoutException;
-import org.agrona.*;
+import org.agrona.ErrorHandler;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.BroadcastReceiver;
 import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
+import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
@@ -165,6 +167,16 @@ public final class Aeron implements AutoCloseable
     public Subscription addSubscription(final String channel, final int streamId)
     {
         return conductor.addSubscription(channel, streamId);
+    }
+
+    /**
+     * Create and return a {@link CountersReader} for the Aeron media driver counters.
+     *
+     * @return new {@link CountersReader} for the Aeron media driver in use.
+     */
+    public CountersReader countersReader()
+    {
+        return new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer());
     }
 
     private Aeron start()

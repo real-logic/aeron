@@ -35,8 +35,7 @@ import org.agrona.concurrent.broadcast.BroadcastTransmitter;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.*;
 
 import java.io.*;
 import java.net.StandardSocketOptions;
@@ -1143,29 +1142,32 @@ public final class MediaDriver implements AutoCloseable
 
         private void concludeIdleStrategies()
         {
+            final StatusIndicator controllableIdleStrategyStatus =
+                new UnsafeBufferStatusIndicator(countersManager.valuesBuffer(), CONTROLLABLE_IDLE_STRATEGY.id());
+
             if (null == conductorIdleStrategy)
             {
-                conductorIdleStrategy(Configuration.conductorIdleStrategy());
+                conductorIdleStrategy(Configuration.conductorIdleStrategy(controllableIdleStrategyStatus));
             }
 
             if (null == senderIdleStrategy)
             {
-                senderIdleStrategy(Configuration.senderIdleStrategy());
+                senderIdleStrategy(Configuration.senderIdleStrategy(controllableIdleStrategyStatus));
             }
 
             if (null == receiverIdleStrategy)
             {
-                receiverIdleStrategy(Configuration.receiverIdleStrategy());
+                receiverIdleStrategy(Configuration.receiverIdleStrategy(controllableIdleStrategyStatus));
             }
 
             if (null == sharedNetworkIdleStrategy)
             {
-                sharedNetworkIdleStrategy(Configuration.sharedNetworkIdleStrategy());
+                sharedNetworkIdleStrategy(Configuration.sharedNetworkIdleStrategy(controllableIdleStrategyStatus));
             }
 
             if (null == sharedIdleStrategy)
             {
-                sharedIdleStrategy(Configuration.sharedIdleStrategy());
+                sharedIdleStrategy(Configuration.sharedIdleStrategy(controllableIdleStrategyStatus));
             }
         }
     }

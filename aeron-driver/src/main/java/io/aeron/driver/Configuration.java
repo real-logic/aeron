@@ -15,7 +15,9 @@
  */
 package io.aeron.driver;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.Image;
+import io.aeron.Publication;
 import io.aeron.driver.exceptions.ConfigurationException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.SendChannelEndpoint;
@@ -23,16 +25,18 @@ import io.aeron.logbuffer.FrameDescriptor;
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.ControllableIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+import org.agrona.concurrent.status.StatusIndicator;
 
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.driver.ThreadingMode.DEDICATED;
 import static java.lang.Integer.getInteger;
 import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
-import static io.aeron.driver.ThreadingMode.DEDICATED;
 
 /**
  * Configuration options for the {@link MediaDriver}.
@@ -316,6 +320,8 @@ public class Configuration
     static final long AGENT_IDLE_MAX_YIELDS = 50;
     static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
     static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
+
+    private static final String CONTROLLABLE_IDLE_STRATEGY = "org.agrona.concurrent.ControllableIdleStrategy";
 
     /**
      * Property name for {@link IdleStrategy} to be employed by {@link Sender} for {@link ThreadingMode#DEDICATED}.
@@ -623,7 +629,7 @@ public class Configuration
         }
     }
 
-    public static IdleStrategy agentIdleStrategy(final String name)
+    public static IdleStrategy agentIdleStrategy(final String name, final StatusIndicator controllableStatus)
     {
         IdleStrategy idleStrategy = null;
 
@@ -631,6 +637,11 @@ public class Configuration
         {
             idleStrategy = new BackoffIdleStrategy(
                 AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS, AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS);
+        }
+        else if (name.equals(CONTROLLABLE_IDLE_STRATEGY))
+        {
+            idleStrategy = new ControllableIdleStrategy(controllableStatus);
+            controllableStatus.setOrdered(ControllableIdleStrategy.PARK); // start out conservative
         }
         else
         {
@@ -647,29 +658,29 @@ public class Configuration
         return idleStrategy;
     }
 
-    static IdleStrategy senderIdleStrategy()
+    static IdleStrategy senderIdleStrategy(final StatusIndicator controllableStatus)
     {
-        return agentIdleStrategy(SENDER_IDLE_STRATEGY);
+        return agentIdleStrategy(SENDER_IDLE_STRATEGY, controllableStatus);
     }
 
-    static IdleStrategy conductorIdleStrategy()
+    static IdleStrategy conductorIdleStrategy(final StatusIndicator controllableStatus)
     {
-        return agentIdleStrategy(CONDUCTOR_IDLE_STRATEGY);
+        return agentIdleStrategy(CONDUCTOR_IDLE_STRATEGY, controllableStatus);
     }
 
-    static IdleStrategy receiverIdleStrategy()
+    static IdleStrategy receiverIdleStrategy(final StatusIndicator controllableStatus)
     {
-        return agentIdleStrategy(RECEIVER_IDLE_STRATEGY);
+        return agentIdleStrategy(RECEIVER_IDLE_STRATEGY, controllableStatus);
     }
 
-    static IdleStrategy sharedNetworkIdleStrategy()
+    static IdleStrategy sharedNetworkIdleStrategy(final StatusIndicator controllableStatus)
     {
-        return agentIdleStrategy(SHARED_NETWORK_IDLE_STRATEGY);
+        return agentIdleStrategy(SHARED_NETWORK_IDLE_STRATEGY, controllableStatus);
     }
 
-    static IdleStrategy sharedIdleStrategy()
+    static IdleStrategy sharedIdleStrategy(final StatusIndicator controllableStatus)
     {
-        return agentIdleStrategy(SHARED_IDLE_STRATEGY);
+        return agentIdleStrategy(SHARED_IDLE_STRATEGY, controllableStatus);
     }
 
     static int termBufferLength()

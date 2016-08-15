@@ -45,7 +45,8 @@ public enum SystemCounterDescriptor
     SENDER_FLOW_CONTROL_LIMITS(18, "Sender flow control limits applied"),
     UNBLOCKED_PUBLICATIONS(19, "Unblocked Publications"),
     UNBLOCKED_COMMANDS(20, "Unblocked Control Commands"),
-    POSSIBLE_TTL_ASYMMETRY(21, "Possible TTL Asymmetry");
+    POSSIBLE_TTL_ASYMMETRY(21, "Possible TTL Asymmetry"),
+    CONTROLLABLE_IDLE_STRATEGY(22, "ControllableIdleStrategy status");
 
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Others types can exist.

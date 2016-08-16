@@ -23,8 +23,6 @@ import org.agrona.concurrent.status.ReadablePosition;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-import static io.aeron.driver.Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
-
 /**
  * Subscription registration from a client used for liveness tracking
  */
@@ -38,6 +36,7 @@ public class SubscriptionLink implements DriverManagedResource
     private final DirectPublication directPublication;
     private final ReadablePosition directPublicationSubscriberPosition;
     private final UdpChannel spiedChannel;
+    private final long clientLivenessTimeoutNs;
 
     private NetworkPublication spiedPublication = null;
     private ReadablePosition spiedPosition = null;
@@ -48,7 +47,8 @@ public class SubscriptionLink implements DriverManagedResource
         final long registrationId,
         final ReceiveChannelEndpoint channelEndpoint,
         final int streamId,
-        final AeronClient aeronClient)
+        final AeronClient aeronClient,
+        long clientLivenessTimeoutNs)
     {
         this.registrationId = registrationId;
         this.channelEndpoint = channelEndpoint;
@@ -57,6 +57,7 @@ public class SubscriptionLink implements DriverManagedResource
         this.directPublication = null;
         this.directPublicationSubscriberPosition = null;
         this.spiedChannel = null;
+        this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
     }
 
     public SubscriptionLink(
@@ -64,7 +65,8 @@ public class SubscriptionLink implements DriverManagedResource
         final int streamId,
         final DirectPublication directPublication,
         final ReadablePosition subscriberPosition,
-        final AeronClient aeronClient)
+        final AeronClient aeronClient,
+        long clientLivenessTimeoutNs)
     {
         this.registrationId = registrationId;
         this.channelEndpoint = null; // will prevent matches between PublicationImages and DirectPublications
@@ -74,13 +76,15 @@ public class SubscriptionLink implements DriverManagedResource
         directPublication.incRef();
         this.directPublicationSubscriberPosition = subscriberPosition;
         this.spiedChannel = null;
+        this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
     }
 
     public SubscriptionLink(
         final long registrationId,
         final UdpChannel spiedChannel,
         final int streamId,
-        final AeronClient aeronClient)
+        final AeronClient aeronClient,
+        long clientLivenessTimeoutNs)
     {
         this.registrationId = registrationId;
         this.channelEndpoint = null;
@@ -89,6 +93,7 @@ public class SubscriptionLink implements DriverManagedResource
         this.directPublication = null;
         this.directPublicationSubscriberPosition = null;
         this.spiedChannel = spiedChannel;
+        this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
     }
 
     public long registrationId()
@@ -169,7 +174,7 @@ public class SubscriptionLink implements DriverManagedResource
 
     public void onTimeEvent(final long time, final DriverConductor conductor)
     {
-        if (time > (aeronClient.timeOfLastKeepalive() + CLIENT_LIVENESS_TIMEOUT_NS))
+        if (time > (aeronClient.timeOfLastKeepalive() + clientLivenessTimeoutNs))
         {
             reachedEndOfLife = true;
             conductor.cleanupSubscriptionLink(SubscriptionLink.this);

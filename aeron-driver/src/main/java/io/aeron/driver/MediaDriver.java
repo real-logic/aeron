@@ -44,6 +44,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -71,7 +72,11 @@ public final class MediaDriver implements AutoCloseable
      */
     public static final String DIRS_DELETE_ON_START_PROP_NAME = "aeron.dir.delete.on.start";
 
-    private final List<AgentRunner> runners;
+    private final AgentRunner sharedRunner;
+    private final AgentRunner sharedNetworkRunner;
+    private final AgentRunner conductorRunner;
+    private final AgentRunner receiverRunner;
+    private final AgentRunner senderRunner;
     private final Context ctx;
 
     /**
@@ -180,33 +185,36 @@ public final class MediaDriver implements AutoCloseable
         switch (context.threadingMode)
         {
             case SHARED:
-                runners = Collections.singletonList(
-                    new AgentRunner(
+                this.sharedRunner = new AgentRunner(
                         context.sharedIdleStrategy,
                         errorHandler,
                         errorCounter,
-                        new CompositeAgent(sender, receiver, conductor))
-                );
+                        new CompositeAgent(sender, receiver, conductor));
+                this.sharedNetworkRunner = null;
+                this.conductorRunner = null;
+                this.receiverRunner = null;
+                this.senderRunner = null;
                 break;
 
             case SHARED_NETWORK:
-                runners = Arrays.asList(
-                    new AgentRunner(
+                this.sharedNetworkRunner = new AgentRunner(
                         context.sharedNetworkIdleStrategy,
                         errorHandler,
                         errorCounter,
-                        new CompositeAgent(sender, receiver)),
-                    new AgentRunner(context.conductorIdleStrategy, errorHandler, errorCounter, conductor)
-                );
+                        new CompositeAgent(sender, receiver));
+                this.conductorRunner = new AgentRunner(context.conductorIdleStrategy, errorHandler, errorCounter, conductor);
+                this.sharedRunner = null;
+                this.receiverRunner = null;
+                this.senderRunner = null;
                 break;
 
             default:
             case DEDICATED:
-                runners = Arrays.asList(
-                    new AgentRunner(context.senderIdleStrategy, errorHandler, errorCounter, sender),
-                    new AgentRunner(context.receiverIdleStrategy, errorHandler, errorCounter, receiver),
-                    new AgentRunner(context.conductorIdleStrategy, errorHandler, errorCounter, conductor)
-                );
+                this.senderRunner = new AgentRunner(context.senderIdleStrategy, errorHandler, errorCounter, sender);
+                this.receiverRunner = new AgentRunner(context.receiverIdleStrategy, errorHandler, errorCounter, receiver);
+                this.conductorRunner = new AgentRunner(context.conductorIdleStrategy, errorHandler, errorCounter, conductor);
+                this.sharedNetworkRunner = null;
+                this.sharedRunner = null;
         }
     }
 
@@ -269,7 +277,26 @@ public final class MediaDriver implements AutoCloseable
     {
         try
         {
-            runners.forEach(AgentRunner::close);
+            if (null != this.sharedRunner)
+            {
+                this.sharedRunner.close();
+            }
+            if (null != this.sharedNetworkRunner)
+            {
+                this.sharedNetworkRunner.close();
+            }
+            if (null != this.receiverRunner)
+            {
+                this.receiverRunner.close();
+            }
+            if (null != this.senderRunner)
+            {
+                this.senderRunner.close();
+            }
+            if (null != this.conductorRunner)
+            {
+                this.conductorRunner.close();
+            }
             ctx.close();
         }
         catch (final Exception ex)
@@ -291,7 +318,26 @@ public final class MediaDriver implements AutoCloseable
 
     private MediaDriver start()
     {
-        runners.forEach(AgentRunner::startOnThread);
+        if (null != this.sharedRunner)
+        {
+            AgentRunner.startOnThread(this.sharedRunner, ctx.sharedThreadFactory);
+        }
+        if (null != this.sharedNetworkRunner)
+        {
+            AgentRunner.startOnThread(this.sharedNetworkRunner, ctx.sharedNetworkThreadFactory);
+        }
+        if (null != this.receiverRunner)
+        {
+            AgentRunner.startOnThread(this.receiverRunner, ctx.receiverThreadFactory);
+        }
+        if (null != this.senderRunner)
+        {
+            AgentRunner.startOnThread(this.senderRunner, ctx.senderThreadFactory);
+        }
+        if (null != this.conductorRunner)
+        {
+            AgentRunner.startOnThread(this.conductorRunner, ctx.conductorThreadFactory);
+        }
 
         return this;
     }
@@ -465,6 +511,11 @@ public final class MediaDriver implements AutoCloseable
         private boolean warnIfDirectoriesExist;
         private boolean dirsDeleteOnStart;
         private ThreadingMode threadingMode;
+        private ThreadFactory conductorThreadFactory;
+        private ThreadFactory senderThreadFactory;
+        private ThreadFactory receiverThreadFactory;
+        private ThreadFactory sharedThreadFactory;
+        private ThreadFactory sharedNetworkThreadFactory;
 
         private SendChannelEndpointSupplier sendChannelEndpointSupplier;
         private ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier;
@@ -639,6 +690,31 @@ public final class MediaDriver implements AutoCloseable
                 {
                     termBufferSparseFile = Boolean.FALSE;
                 }
+            }
+
+            if (null == conductorThreadFactory)
+            {
+                conductorThreadFactory = Thread::new;
+            }
+
+            if (null == senderThreadFactory)
+            {
+                senderThreadFactory = Thread::new;
+            }
+
+            if (null == receiverThreadFactory)
+            {
+                receiverThreadFactory = Thread::new;
+            }
+
+            if (null == sharedThreadFactory)
+            {
+                sharedThreadFactory = Thread::new;
+            }
+
+            if (null == sharedNetworkThreadFactory)
+            {
+                sharedNetworkThreadFactory = Thread::new;
             }
         }
 
@@ -858,6 +934,36 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context senderThreadFactory(final ThreadFactory factory)
+        {
+            this.senderThreadFactory = factory;
+            return this;
+        }
+
+        public Context receiverThreadFactory(final ThreadFactory factory)
+        {
+            this.receiverThreadFactory = factory;
+            return this;
+        }
+
+        public Context conductorThreadFactory(final ThreadFactory factory)
+        {
+            this.conductorThreadFactory = factory;
+            return this;
+        }
+
+        public Context sharedThreadFactory(final ThreadFactory factory)
+        {
+            this.sharedThreadFactory = factory;
+            return this;
+        }
+
+        public Context sharedNetworkThreadFactory(final ThreadFactory factory)
+        {
+            this.sharedNetworkThreadFactory = factory;
+            return this;
+        }
+
         /**
          * Set whether or not this application will attempt to delete the Aeron directories when starting.
          *
@@ -989,6 +1095,31 @@ public final class MediaDriver implements AutoCloseable
         public IdleStrategy sharedIdleStrategy()
         {
             return sharedIdleStrategy;
+        }
+
+        public ThreadFactory senderThreadFactory()
+        {
+            return this.senderThreadFactory;
+        }
+
+        public ThreadFactory receiverThreadFactory()
+        {
+            return this.receiverThreadFactory;
+        }
+
+        public ThreadFactory conductorThreadFactory()
+        {
+            return this.conductorThreadFactory;
+        }
+
+        public ThreadFactory sharedThreadFactory()
+        {
+            return this.sharedThreadFactory;
+        }
+
+        public ThreadFactory sharedNetworkThreadFactory()
+        {
+            return this.sharedNetworkThreadFactory;
         }
 
         public ClientProxy clientProxy()

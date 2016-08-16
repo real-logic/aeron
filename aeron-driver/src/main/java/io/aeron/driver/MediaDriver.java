@@ -27,6 +27,7 @@ import io.aeron.driver.media.ControlTransportPoller;
 import io.aeron.driver.media.DataTransportPoller;
 import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
 import io.aeron.driver.status.SystemCounters;
+import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
@@ -120,8 +121,8 @@ public final class MediaDriver implements AutoCloseable
     /**
      * Load system properties from a given set of filenames or URLs.
      *
-     * @see #loadPropertiesFile(String)
      * @param filenamesOrUrls that holds properties
+     * @see #loadPropertiesFile(String)
      */
     public static void loadPropertiesFiles(final String[] filenamesOrUrls)
     {
@@ -150,46 +151,46 @@ public final class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Construct a media driver with the given context.
+     * Construct a media driver with the given ctx.
      *
-     * @param context for the media driver parameters
+     * @param ctx for the media driver parameters
      */
-    private MediaDriver(final Context context)
+    private MediaDriver(final Context ctx)
     {
-        this.ctx = context;
+        this.ctx = ctx;
 
-        ensureDirectoryIsRecreated(context);
+        ensureDirectoryIsRecreated(ctx);
 
-        validateSufficientSocketBufferLengths(context);
+        validateSufficientSocketBufferLengths(ctx);
 
-        context
+        ctx
             .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
             .toConductorFromSenderCommandQueue(new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
             .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
             .conclude();
 
-        final Receiver receiver = new Receiver(context);
-        final Sender sender = new Sender(context);
-        final DriverConductor conductor = new DriverConductor(context);
+        final Receiver receiver = new Receiver(ctx);
+        final Sender sender = new Sender(ctx);
+        final DriverConductor conductor = new DriverConductor(ctx);
 
-        context.receiverProxy().receiver(receiver);
-        context.senderProxy().sender(sender);
-        context.fromReceiverDriverConductorProxy().driverConductor(conductor);
-        context.fromSenderDriverConductorProxy().driverConductor(conductor);
-        context.toDriverCommands().consumerHeartbeatTime(context.epochClock().time());
+        ctx.receiverProxy().receiver(receiver);
+        ctx.senderProxy().sender(sender);
+        ctx.fromReceiverDriverConductorProxy().driverConductor(conductor);
+        ctx.fromSenderDriverConductorProxy().driverConductor(conductor);
+        ctx.toDriverCommands().consumerHeartbeatTime(ctx.epochClock().time());
 
-        final AtomicCounter errorCounter = context.systemCounters().get(ERRORS);
-        final ErrorHandler errorHandler = context.errorHandler();
+        final AtomicCounter errorCounter = ctx.systemCounters().get(ERRORS);
+        final ErrorHandler errorHandler = ctx.errorHandler();
 
-        switch (context.threadingMode)
+        switch (ctx.threadingMode)
         {
             case SHARED:
                 this.sharedRunner = new AgentRunner(
-                        context.sharedIdleStrategy,
-                        errorHandler,
-                        errorCounter,
-                        new CompositeAgent(sender, receiver, conductor));
+                    ctx.sharedIdleStrategy,
+                    errorHandler,
+                    errorCounter,
+                    new CompositeAgent(sender, receiver, conductor));
                 this.sharedNetworkRunner = null;
                 this.conductorRunner = null;
                 this.receiverRunner = null;
@@ -198,11 +199,11 @@ public final class MediaDriver implements AutoCloseable
 
             case SHARED_NETWORK:
                 this.sharedNetworkRunner = new AgentRunner(
-                        context.sharedNetworkIdleStrategy,
-                        errorHandler,
-                        errorCounter,
-                        new CompositeAgent(sender, receiver));
-                this.conductorRunner = new AgentRunner(context.conductorIdleStrategy, errorHandler, errorCounter, conductor);
+                    ctx.sharedNetworkIdleStrategy,
+                    errorHandler,
+                    errorCounter,
+                    new CompositeAgent(sender, receiver));
+                this.conductorRunner = new AgentRunner(ctx.conductorIdleStrategy, errorHandler, errorCounter, conductor);
                 this.sharedRunner = null;
                 this.receiverRunner = null;
                 this.senderRunner = null;
@@ -210,9 +211,9 @@ public final class MediaDriver implements AutoCloseable
 
             default:
             case DEDICATED:
-                this.senderRunner = new AgentRunner(context.senderIdleStrategy, errorHandler, errorCounter, sender);
-                this.receiverRunner = new AgentRunner(context.receiverIdleStrategy, errorHandler, errorCounter, receiver);
-                this.conductorRunner = new AgentRunner(context.conductorIdleStrategy, errorHandler, errorCounter, conductor);
+                this.senderRunner = new AgentRunner(ctx.senderIdleStrategy, errorHandler, errorCounter, sender);
+                this.receiverRunner = new AgentRunner(ctx.receiverIdleStrategy, errorHandler, errorCounter, receiver);
+                this.conductorRunner = new AgentRunner(ctx.conductorIdleStrategy, errorHandler, errorCounter, conductor);
                 this.sharedNetworkRunner = null;
                 this.sharedRunner = null;
         }
@@ -230,23 +231,23 @@ public final class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Launch an isolated MediaDriver embedded in the current process with a provided configuration context and a generated
+     * Launch an isolated MediaDriver embedded in the current process with a provided configuration ctx and a generated
      * aeronDirectoryName (overwrites configured {@link Context#aeronDirectoryName()}) that can be retrieved by calling
      * aeronDirectoryName.
      *
      * If the aeronDirectoryName is configured then it will be used.
      *
-     * @param context containing the configuration options.
+     * @param ctx containing the configuration options.
      * @return the newly started MediaDriver.
      */
-    public static MediaDriver launchEmbedded(final Context context)
+    public static MediaDriver launchEmbedded(final Context ctx)
     {
-        if (CommonContext.AERON_DIR_PROP_DEFAULT.equals(context.aeronDirectoryName()))
+        if (CommonContext.AERON_DIR_PROP_DEFAULT.equals(ctx.aeronDirectoryName()))
         {
-            context.aeronDirectoryName(CommonContext.generateRandomDirName());
+            ctx.aeronDirectoryName(CommonContext.generateRandomDirName());
         }
 
-        return launch(context);
+        return launch(ctx);
     }
 
     /**
@@ -260,14 +261,14 @@ public final class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Launch a MediaDriver embedded in the current process and provided a configuration context.
+     * Launch a MediaDriver embedded in the current process and provided a configuration ctx.
      *
-     * @param context containing the configuration options.
+     * @param ctx containing the configuration options.
      * @return the newly created MediaDriver.
      */
-    public static MediaDriver launch(final Context context)
+    public static MediaDriver launch(final Context ctx)
     {
-        return new MediaDriver(context).start();
+        return new MediaDriver(ctx).start();
     }
 
     /**
@@ -275,34 +276,13 @@ public final class MediaDriver implements AutoCloseable
      */
     public void close()
     {
-        try
-        {
-            if (null != this.sharedRunner)
-            {
-                this.sharedRunner.close();
-            }
-            if (null != this.sharedNetworkRunner)
-            {
-                this.sharedNetworkRunner.close();
-            }
-            if (null != this.receiverRunner)
-            {
-                this.receiverRunner.close();
-            }
-            if (null != this.senderRunner)
-            {
-                this.senderRunner.close();
-            }
-            if (null != this.conductorRunner)
-            {
-                this.conductorRunner.close();
-            }
-            ctx.close();
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
+        CloseHelper.quietClose(sharedRunner);
+        CloseHelper.quietClose(sharedNetworkRunner);
+        CloseHelper.quietClose(receiverRunner);
+        CloseHelper.quietClose(senderRunner);
+        CloseHelper.quietClose(conductorRunner);
+
+        ctx.close();
     }
 
     /**
@@ -318,25 +298,29 @@ public final class MediaDriver implements AutoCloseable
 
     private MediaDriver start()
     {
-        if (null != this.sharedRunner)
+        if (null != sharedRunner)
         {
-            AgentRunner.startOnThread(this.sharedRunner, ctx.sharedThreadFactory);
+            AgentRunner.startOnThread(sharedRunner, ctx.sharedThreadFactory);
         }
-        if (null != this.sharedNetworkRunner)
+
+        if (null != sharedNetworkRunner)
         {
-            AgentRunner.startOnThread(this.sharedNetworkRunner, ctx.sharedNetworkThreadFactory);
+            AgentRunner.startOnThread(sharedNetworkRunner, ctx.sharedNetworkThreadFactory);
         }
-        if (null != this.receiverRunner)
+
+        if (null != receiverRunner)
         {
-            AgentRunner.startOnThread(this.receiverRunner, ctx.receiverThreadFactory);
+            AgentRunner.startOnThread(receiverRunner, ctx.receiverThreadFactory);
         }
-        if (null != this.senderRunner)
+
+        if (null != senderRunner)
         {
-            AgentRunner.startOnThread(this.senderRunner, ctx.senderThreadFactory);
+            AgentRunner.startOnThread(senderRunner, ctx.senderThreadFactory);
         }
-        if (null != this.conductorRunner)
+
+        if (null != conductorRunner)
         {
-            AgentRunner.startOnThread(this.conductorRunner, ctx.conductorThreadFactory);
+            AgentRunner.startOnThread(conductorRunner, ctx.conductorThreadFactory);
         }
 
         return this;

@@ -220,8 +220,8 @@ public final class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Launch an isolated MediaDriver embedded in the current process with a generated aeronDirectoryName that can be retrieved
-     * by calling aeronDirectoryName.
+     * Launch an isolated MediaDriver embedded in the current process with a generated aeronDirectoryName that can be
+     * retrieved by calling aeronDirectoryName.
      *
      * @return the newly started MediaDriver.
      */

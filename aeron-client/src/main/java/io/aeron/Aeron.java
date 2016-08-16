@@ -106,7 +106,7 @@ public final class Aeron implements AutoCloseable
             ctx.interServiceTimeout(),
             ctx.publicationConnectionTimeout());
 
-        conductorRunner = new AgentRunner(ctx.idleStrategy, ctx.errorHandler, null, conductor, ctx.threadFactory);
+        conductorRunner = new AgentRunner(ctx.idleStrategy, ctx.errorHandler, null, conductor);
     }
 
     /**
@@ -169,7 +169,7 @@ public final class Aeron implements AutoCloseable
 
     private Aeron start()
     {
-        AgentRunner.startOnThread(conductorRunner);
+        AgentRunner.startOnThread(conductorRunner, ctx.threadFactory);
 
         return this;
     }

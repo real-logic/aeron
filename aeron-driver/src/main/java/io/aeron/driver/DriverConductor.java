@@ -285,7 +285,7 @@ public class DriverConductor implements Agent
             subscriptionLinks
                 .stream()
                 .filter((link) -> link.matches(channelEndpoint, publication.streamId()))
-                .forEach((link) -> link.removeSpiedPublication(publication));
+                .forEach(SubscriptionLink::removeSpiedPublication);
         }
 
         if (channelEndpoint.sessionCount() == 0)
@@ -818,8 +818,8 @@ public class DriverConductor implements Agent
         final SendChannelEndpoint channelEndpoint = senderChannelEndpoint(udpChannel);
         final NetworkPublication publication = null == channelEndpoint ? null : channelEndpoint.getPublication(streamId);
         final AeronClient client = getOrAddClient(clientId);
-        final SubscriptionLink subscriptionLink =
-                new SubscriptionLink(registrationId, udpChannel, streamId, client, context.clientLivenessTimeoutNs());
+        final SubscriptionLink subscriptionLink = new SubscriptionLink(
+            registrationId, udpChannel, streamId, client, context.clientLivenessTimeoutNs());
 
         subscriptionLinks.add(subscriptionLink);
 
@@ -837,8 +837,7 @@ public class DriverConductor implements Agent
         final int streamId = publication.streamId();
         final int sessionId = publication.sessionId();
         final String channel = subscriptionLink.spiedChannel().originalUriString();
-        final Position position =
-            SubscriberPos.allocate(
+        final Position position = SubscriberPos.allocate(
                 countersManager, subscriptionLink.registrationId(), sessionId, streamId, channel, spyJoiningPosition);
         position.setOrdered(spyJoiningPosition);
 
@@ -949,8 +948,8 @@ public class DriverConductor implements Agent
             final int initialTermId = BitUtil.generateRandomisedId();
             final RawLog rawLog = newDirectPublicationLog(termLength, sessionId, streamId, initialTermId, registrationId);
 
-            final Position publisherLimit =
-                PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, IPC_CHANNEL);
+            final Position publisherLimit = PublisherLimit.allocate(
+                countersManager, registrationId, sessionId, streamId, IPC_CHANNEL);
 
             publication = new DirectPublication(registrationId, sessionId, streamId, publisherLimit, rawLog);
 

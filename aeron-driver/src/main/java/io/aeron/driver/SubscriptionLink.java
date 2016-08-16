@@ -151,7 +151,7 @@ public class SubscriptionLink implements DriverManagedResource
         spiedPosition = position;
     }
 
-    public void removeSpiedPublication(final NetworkPublication publication)
+    public void removeSpiedPublication()
     {
         spiedPublication = null;
         spiedPosition = null;

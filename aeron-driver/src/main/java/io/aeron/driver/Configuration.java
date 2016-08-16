@@ -629,30 +629,39 @@ public class Configuration
         }
     }
 
-    public static IdleStrategy agentIdleStrategy(final String name, final StatusIndicator controllableStatus)
+    /**
+     * Get the {@link IdleStrategy} that should be applied to {@link org.agrona.concurrent.Agent}s.
+     *
+     * @param strategyName       to be created.
+     * @param controllableStatus status indicator for what the strategy should do.
+     * @return the newly created IdleStrategy.
+     */
+    public static IdleStrategy agentIdleStrategy(final String strategyName, final StatusIndicator controllableStatus)
     {
         IdleStrategy idleStrategy = null;
 
-        if (name.equals(DEFAULT_IDLE_STRATEGY))
+        switch (strategyName)
         {
-            idleStrategy = new BackoffIdleStrategy(
-                AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS, AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS);
-        }
-        else if (name.equals(CONTROLLABLE_IDLE_STRATEGY))
-        {
-            idleStrategy = new ControllableIdleStrategy(controllableStatus);
-            controllableStatus.setOrdered(ControllableIdleStrategy.PARK); // start out conservative
-        }
-        else
-        {
-            try
-            {
-                idleStrategy = (IdleStrategy)Class.forName(name).newInstance();
-            }
-            catch (final Exception ex)
-            {
-                LangUtil.rethrowUnchecked(ex);
-            }
+            case DEFAULT_IDLE_STRATEGY:
+                idleStrategy = new BackoffIdleStrategy(
+                    AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS, AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS);
+                break;
+
+            case CONTROLLABLE_IDLE_STRATEGY:
+                idleStrategy = new ControllableIdleStrategy(controllableStatus);
+                controllableStatus.setOrdered(ControllableIdleStrategy.PARK);
+                break;
+
+            default:
+                try
+                {
+                    idleStrategy = (IdleStrategy)Class.forName(strategyName).newInstance();
+                }
+                catch (final Exception ex)
+                {
+                    LangUtil.rethrowUnchecked(ex);
+                }
+                break;
         }
 
         return idleStrategy;

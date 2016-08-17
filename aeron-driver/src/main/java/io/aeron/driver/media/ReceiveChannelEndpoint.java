@@ -127,7 +127,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         openDatagramChannel(statusIndicator);
     }
 
-    public void possibleTelAsymmetryEncountered()
+    public void possibleTtlAsymmetryEncountered()
     {
         possibleTtlAsymmetry.orderedIncrement();
     }

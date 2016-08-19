@@ -74,7 +74,7 @@ class PublicationImagePadding3 extends PublicationImageHotFields
 
 class PublicationImageStatusFields extends PublicationImagePadding3
 {
-    long cleanPosition = 0;
+    long cleanPosition;
     volatile long newStatusMessagePosition;
     volatile PublicationImage.Status status = PublicationImage.Status.INIT;
 }

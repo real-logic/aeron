@@ -181,7 +181,7 @@ public class PublicationImage
         final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
         lastStatusMessagePosition = initialPosition - (currentGain + 1);
         newStatusMessagePosition = lastStatusMessagePosition;
-        cleanPosition = newStatusMessagePosition;
+        cleanPosition = initialPosition;
 
         hwmPosition.setOrdered(initialPosition);
         rebuildPosition.setOrdered(initialPosition);

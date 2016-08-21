@@ -31,11 +31,11 @@ public class MemoryOrderingTest
 {
     public static final String CHANNEL = "aeron:udp?endpoint=localhost:54325";
     public static final int STREAM_ID = 1;
-    public static final int FRAGMENT_COUNT_LIMIT = 1;
-    public static final int MESSAGE_LENGTH = 512;
-    public static final int NUM_MESSAGES = 1_000_000;
+    public static final int FRAGMENT_COUNT_LIMIT = 256;
+    public static final int MESSAGE_LENGTH = 128;
+    public static final int NUM_MESSAGES = 2_000_000;
     public static final int BURST_LENGTH = 5;
-    public static final int INTER_BURST_DURATION = 20_000;
+    public static final int INTER_BURST_DURATION_NS = 10_000;
 
     volatile String failedMessage = null;
 
@@ -77,7 +77,7 @@ public class MemoryOrderingTest
 
                 if (i % BURST_LENGTH == 0)
                 {
-                    final long timeout = System.nanoTime() + INTER_BURST_DURATION;
+                    final long timeout = System.nanoTime() + INTER_BURST_DURATION_NS;
                     long now;
                     do
                     {

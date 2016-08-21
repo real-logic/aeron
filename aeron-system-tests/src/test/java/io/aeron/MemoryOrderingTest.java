@@ -16,7 +16,6 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;

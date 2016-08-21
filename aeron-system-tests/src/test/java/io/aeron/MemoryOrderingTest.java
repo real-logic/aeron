@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
@@ -37,6 +38,8 @@ public class MemoryOrderingTest
     public static final int BURST_LENGTH = 5;
     public static final int INTER_BURST_DURATION_NS = 10_000;
 
+    final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
+
     volatile String failedMessage = null;
 
     @Ignore
@@ -50,7 +53,6 @@ public class MemoryOrderingTest
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
-            final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
             final BusySpinIdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
             final Thread subscriberThread = new Thread(new Subscriber(subscription));

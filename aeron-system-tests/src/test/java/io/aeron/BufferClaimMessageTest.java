@@ -27,6 +27,8 @@ import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import java.nio.ByteBuffer;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.eq;
@@ -52,7 +54,7 @@ public class BufferClaimMessageTest
     public void shouldReceivePublishedMessageWithInterleavedAbort(final String channel) throws Exception
     {
         final BufferClaim bufferClaim = new BufferClaim();
-        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
         final MediaDriver.Context ctx = new MediaDriver.Context();
 
         try (final MediaDriver ignore = MediaDriver.launch(ctx);

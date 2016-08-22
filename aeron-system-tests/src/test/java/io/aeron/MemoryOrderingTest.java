@@ -32,8 +32,8 @@ public class MemoryOrderingTest
     public static final String CHANNEL = "aeron:udp?endpoint=localhost:54325";
     public static final int STREAM_ID = 1;
     public static final int FRAGMENT_COUNT_LIMIT = 256;
-    public static final int MESSAGE_LENGTH = 128;
-    public static final int NUM_MESSAGES = 2_000_000;
+    public static final int MESSAGE_LENGTH = 96;
+    public static final int NUM_MESSAGES = 1_000_000;
     public static final int BURST_LENGTH = 5;
     public static final int INTER_BURST_DURATION_NS = 10_000;
 
@@ -45,6 +45,7 @@ public class MemoryOrderingTest
     @Test(timeout = 10000)
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntact() throws Exception
     {
+        srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
         final MediaDriver.Context ctx = new MediaDriver.Context();
 
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
@@ -129,12 +130,15 @@ public class MemoryOrderingTest
 
                 final String msg = "Issue at message number transition: " + previousValue + " -> " + messageValue;
 
-                System.out.println(msg);
-                System.out.println("expected bytes: " + byteString(expectedValue));
-                System.out.println("received bytes: " + byteString(messageValue));
-
-                System.out.println("messageValue on second read: " + messageValueSecondRead);
-                System.out.println("messageValue on third read: " + buffer.getLong(offset));
+                System.out.println(msg + "\n" +
+                    "offset: "  + offset + "\n" +
+                    "length: "  + length + "\n" +
+                    "expected bytes: " + byteString(expectedValue) + "\n" +
+                    "received bytes: " + byteString(messageValue) + "\n" +
+                    "expected bits: " + Long.toBinaryString(expectedValue) + "\n" +
+                    "received bits: " + Long.toBinaryString(messageValue) + "\n" +
+                    "messageValue on second read: " + messageValueSecondRead + "\n" +
+                    "messageValue on third read: " + buffer.getLong(offset));
 
                 failedMessage = msg;
             }

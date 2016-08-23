@@ -22,13 +22,24 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.*;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.fail;
 
+@RunWith(Parameterized.class)
 public class MemoryOrderingTest
 {
+    @Parameterized.Parameters
+    public static List<Object[]> data()
+    {
+        return Arrays.asList(new Object[20][0]);
+    }
+
     public static final String CHANNEL = "aeron:udp?endpoint=localhost:54325";
     public static final int STREAM_ID = 1;
     public static final int FRAGMENT_COUNT_LIMIT = 256;

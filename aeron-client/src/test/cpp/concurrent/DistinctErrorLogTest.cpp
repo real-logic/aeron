@@ -197,4 +197,3 @@ TEST_F(DistinctErrorLogTest, shouldRecordTwoDistinctObservations)
 
     EXPECT_TRUE(m_errorLog.record(2, "description 2", "message"));
 }
-

@@ -180,5 +180,3 @@ TEST_F(CountersManagerTest, shouldStoreAndLoadValue)
     m_countersManager.setCounterValue(counterId, value);
     EXPECT_EQ(m_countersManager.getCounterValue(counterId), value);
 }
-
-

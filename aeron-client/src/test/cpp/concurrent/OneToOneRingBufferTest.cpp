@@ -494,4 +494,3 @@ TEST(OneToOneRingBufferConcurrentTest, shouldExchangeMessages)
         printf("EXCEPTION unknown\n");
     }
 }
-

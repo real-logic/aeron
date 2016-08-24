@@ -20,7 +20,6 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.*;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
@@ -32,8 +31,9 @@ public class MemoryOrderingTest
     public static final String CHANNEL = "aeron:udp?endpoint=localhost:54325";
     public static final int STREAM_ID = 1;
     public static final int FRAGMENT_COUNT_LIMIT = 256;
-    public static final int MESSAGE_LENGTH = 96;
-    public static final int NUM_MESSAGES = 1_000_000;
+    public static final int MESSAGE_LENGTH = 1024 - 32;
+    public static final int TERM_BUFFER_LENGTH = 1024 * 64;
+    public static final int NUM_MESSAGES = 100_000;
     public static final int BURST_LENGTH = 5;
     public static final int INTER_BURST_DURATION_NS = 10_000;
 
@@ -41,12 +41,12 @@ public class MemoryOrderingTest
 
     volatile String failedMessage = null;
 
-    @Ignore
     @Test(timeout = 10000)
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntact() throws Exception
     {
         srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
-        final MediaDriver.Context ctx = new MediaDriver.Context();
+        final MediaDriver.Context ctx = new MediaDriver.Context()
+            .publicationTermBufferLength(TERM_BUFFER_LENGTH);
 
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
              final Aeron aeron = Aeron.connect();

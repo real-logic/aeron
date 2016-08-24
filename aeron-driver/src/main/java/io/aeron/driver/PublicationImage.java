@@ -362,7 +362,7 @@ public class PublicationImage
         if (minSubscriberPosition > (newStatusMessagePosition + currentGain))
         {
             newStatusMessagePosition = minSubscriberPosition;
-            cleanBuffer(minSubscriberPosition);
+            cleanBufferTo(minSubscriberPosition - (termLengthMask + 1));
         }
 
         final long rebuildPosition = Math.max(this.rebuildPosition.getVolatile(), maxSubscriberPosition);
@@ -629,10 +629,10 @@ public class PublicationImage
         return isFlowControlOverRun;
     }
 
-    private void cleanBuffer(final long minConsumerPosition)
+    private void cleanBufferTo(final long cleanToPosition)
     {
         final long cleanPosition = this.cleanPosition;
-        final int bytesForCleaning = (int)(minConsumerPosition - cleanPosition);
+        final int bytesForCleaning = (int)(cleanToPosition - cleanPosition);
         final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
         final int termOffset = (int)cleanPosition & termLengthMask;
         final int bufferCapacity = dirtyTerm.capacity();

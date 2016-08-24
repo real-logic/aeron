@@ -33,7 +33,7 @@ public class MemoryOrderingTest
     public static final int FRAGMENT_COUNT_LIMIT = 256;
     public static final int MESSAGE_LENGTH = 1024 - 32;
     public static final int TERM_BUFFER_LENGTH = 1024 * 64;
-    public static final int NUM_MESSAGES = 100_000;
+    public static final int NUM_MESSAGES = 10_000;
     public static final int BURST_LENGTH = 5;
     public static final int INTER_BURST_DURATION_NS = 10_000;
 

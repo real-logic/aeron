@@ -513,6 +513,7 @@ project(':aeron-all') {
 
     shadowJar {
         classifier = ''
+        relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
     }
 
     artifacts {

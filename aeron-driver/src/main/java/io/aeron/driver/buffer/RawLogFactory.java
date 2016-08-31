@@ -15,10 +15,14 @@
  */
 package io.aeron.driver.buffer;
 
+import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.IoUtil;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.*;
 
 import static io.aeron.driver.buffer.FileMappingConvention.streamLocation;
 
@@ -32,6 +36,7 @@ public class RawLogFactory
     private final boolean useSparseFiles;
     private final File publicationsDir;
     private final File imagesDir;
+    private final FileStore fileStore;
 
     public RawLogFactory(
         final String dataDirectoryName,
@@ -49,6 +54,17 @@ public class RawLogFactory
         IoUtil.ensureDirectoryExists(publicationsDir, FileMappingConvention.PUBLICATIONS);
         IoUtil.ensureDirectoryExists(imagesDir, FileMappingConvention.IMAGES);
 
+        FileStore fs = null;
+        try
+        {
+            fs = Files.getFileStore(Paths.get(dataDirectoryName));
+        }
+        catch (final IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        fileStore = fs;
         this.maxTermBufferLength = imagesTermBufferMaxLength;
     }
 
@@ -110,11 +126,38 @@ public class RawLogFactory
         validateTermBufferLength(termBufferLength);
 
         final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
+        final long usableSpace =  getUsableSpace();
+        final long logLength = LogBufferDescriptor.computeLogLength(termBufferLength);
+
+        if (usableSpace < logLength)
+        {
+            throw new IllegalStateException("Insufficient usable storage for new log in " + fileStore);
+        }
+        else if (usableSpace < (logLength * 4))
+        {
+            System.out.println("Warning: low space warning in file store " + fileStore + " usable=" + usableSpace);
+        }
 
         return new MappedRawLog(location, useSparseFiles, termBufferLength, errorLog);
     }
 
-    private void validateTermBufferLength(int termBufferLength)
+    private long getUsableSpace()
+    {
+        long usableSpace = 0;
+
+        try
+        {
+            usableSpace = fileStore.getUsableSpace();
+        }
+        catch (final IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        return usableSpace;
+    }
+
+    private void validateTermBufferLength(final int termBufferLength)
     {
         if (termBufferLength < 0 || termBufferLength > maxTermBufferLength)
         {

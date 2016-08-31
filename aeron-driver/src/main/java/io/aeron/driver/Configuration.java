@@ -92,6 +92,22 @@ public class Configuration
     public static final int IPC_TERM_BUFFER_LENGTH = getInteger(IPC_TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_IPC_LENGTH_DEFAULT);
 
     /**
+     * Property name low file storage warning threshold.
+     */
+    public static final String LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME = "aeron.low.file.store.warning.threshold";
+
+    /**
+     * Default value for low file storage warning threshold.
+     */
+    public static final long LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT = TERM_BUFFER_LENGTH_DEFAULT * 4L;
+
+    /**
+     * Default value for low file storage warning threshold.
+     */
+    public static final long LOW_FILE_STORE_WARNING_THRESHOLD =
+        getLong(LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME, LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT);
+
+    /**
      * Length (in bytes) of the conductor buffer for control commands from the clients to the media driver conductor.
      */
     public static final String CONDUCTOR_BUFFER_LENGTH_PROP_NAME = "aeron.conductor.buffer.length";

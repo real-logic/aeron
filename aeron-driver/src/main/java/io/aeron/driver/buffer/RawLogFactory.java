@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 
+import static io.aeron.driver.Configuration.LOW_FILE_STORE_WARNING_THRESHOLD;
 import static io.aeron.driver.buffer.FileMappingConvention.streamLocation;
 
 /**
@@ -131,11 +132,13 @@ public class RawLogFactory
 
         if (usableSpace < logLength)
         {
-            throw new IllegalStateException("Insufficient usable storage for new log in " + fileStore);
+            throw new IllegalStateException(
+                "Insufficient usable storage for new log of length=" + logLength + " in " + fileStore);
         }
-        else if (usableSpace < (logLength * 4))
+        else if (usableSpace <= LOW_FILE_STORE_WARNING_THRESHOLD)
         {
-            System.out.println("Warning: low space warning in file store " + fileStore + " usable=" + usableSpace);
+            System.out.format("Warning: space is running low in %s threshold=%,d usable=%,d%n",
+                fileStore, LOW_FILE_STORE_WARNING_THRESHOLD, usableSpace);
         }
 
         return new MappedRawLog(location, useSparseFiles, termBufferLength, errorLog);

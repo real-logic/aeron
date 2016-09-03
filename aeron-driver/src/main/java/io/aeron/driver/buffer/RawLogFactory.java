@@ -126,20 +126,22 @@ public class RawLogFactory
     {
         validateTermBufferLength(termBufferLength);
 
-        final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
-        final long usableSpace =  getUsableSpace();
+        final long usableSpace = getUsableSpace();
         final long logLength = LogBufferDescriptor.computeLogLength(termBufferLength);
+
+        if (usableSpace <= LOW_FILE_STORE_WARNING_THRESHOLD)
+        {
+            System.out.format("Warning: space is running low in %s threshold=%,d usable=%,d%n",
+                fileStore, LOW_FILE_STORE_WARNING_THRESHOLD, usableSpace);
+        }
 
         if (usableSpace < logLength)
         {
             throw new IllegalStateException(
                 "Insufficient usable storage for new log of length=" + logLength + " in " + fileStore);
         }
-        else if (usableSpace <= LOW_FILE_STORE_WARNING_THRESHOLD)
-        {
-            System.out.format("Warning: space is running low in %s threshold=%,d usable=%,d%n",
-                fileStore, LOW_FILE_STORE_WARNING_THRESHOLD, usableSpace);
-        }
+
+        final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
 
         return new MappedRawLog(location, useSparseFiles, termBufferLength, errorLog);
     }

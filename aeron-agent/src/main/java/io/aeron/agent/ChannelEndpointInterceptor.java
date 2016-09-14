@@ -27,19 +27,18 @@ public class ChannelEndpointInterceptor
 {
     public static class SenderProxyInterceptor
     {
-
-        public static class RegisterSendChannelEndpoint {
-
+        public static class RegisterSendChannelEndpoint
+        {
             @Advice.OnMethodEnter
             public static void registerSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
             {
                 EventLogger.LOGGER.logChannelCreated(
-                   EventCode.SEND_CHANNEL_CREATION, channelEndpoint.udpChannel().description());
+                    EventCode.SEND_CHANNEL_CREATION, channelEndpoint.udpChannel().description());
             }
         }
 
-        public static class CloseSendChannelEndpoint {
-
+        public static class CloseSendChannelEndpoint
+        {
             @Advice.OnMethodEnter
             public static void closeSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
             {
@@ -51,9 +50,8 @@ public class ChannelEndpointInterceptor
 
     public static class ReceiverProxyInterceptor
     {
-
-        public static class RegisterReceiveChannelEndpoint {
-
+        public static class RegisterReceiveChannelEndpoint
+        {
             @Advice.OnMethodEnter
             public static void registerReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
             {
@@ -62,8 +60,8 @@ public class ChannelEndpointInterceptor
             }
         }
 
-        public static class CloseReceiveChannelEndpoint {
-
+        public static class CloseReceiveChannelEndpoint
+        {
             @Advice.OnMethodEnter
             public static void closeReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
             {
@@ -75,9 +73,8 @@ public class ChannelEndpointInterceptor
 
     public static class SendChannelEndpointInterceptor
     {
-
-        public static class Presend {
-
+        public static class Presend
+        {
             @Advice.OnMethodEnter
             public static void presend(final ByteBuffer buffer, final InetSocketAddress address)
             {
@@ -85,8 +82,8 @@ public class ChannelEndpointInterceptor
             }
         }
 
-        public static class Dispatch {
-
+        public static class Dispatch
+        {
             @Advice.OnMethodEnter
             public static void dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
             {
@@ -97,9 +94,8 @@ public class ChannelEndpointInterceptor
 
     public static class ReceiveChannelEndpointInterceptor
     {
-
-        public static class SendTo {
-
+        public static class SendTo
+        {
             @Advice.OnMethodEnter
             public static void sendTo(final ByteBuffer buffer, final InetSocketAddress address)
             {
@@ -107,8 +103,8 @@ public class ChannelEndpointInterceptor
             }
         }
 
-        public static class Dispatch {
-
+        public static class Dispatch
+        {
             @Advice.OnMethodEnter
             public static void dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
             {

@@ -25,9 +25,8 @@ public class CleanupInterceptor
 {
     public static class DriverConductorInterceptor
     {
-
-        public static class CleanupImage {
-
+        public static class CleanupImage
+        {
             @Advice.OnMethodEnter
             public static void cleanupImageInterceptor(final PublicationImage image)
             {
@@ -36,18 +35,18 @@ public class CleanupInterceptor
             }
         }
 
-        public static class CleanupPublication {
-
+        public static class CleanupPublication
+        {
             @Advice.OnMethodEnter
             public static void cleanupPublication(final NetworkPublication publication)
             {
                 EventLogger.LOGGER.logPublicationRemoval(
-                        publication.sendChannelEndpoint().originalUriString(), publication.sessionId(), publication.streamId());
+                    publication.sendChannelEndpoint().originalUriString(), publication.sessionId(), publication.streamId());
             }
         }
 
-        public static class CleanupSubscriptionLink {
-
+        public static class CleanupSubscriptionLink
+        {
             @Advice.OnMethodEnter
             public static void cleanupSubscriptionLink(final SubscriptionLink subscriptionLink)
             {
@@ -55,8 +54,6 @@ public class CleanupInterceptor
 
                 if (null != channelEndpoint)
                 {
-                    final int streamId = subscriptionLink.streamId();
-
                     EventLogger.LOGGER.logSubscriptionRemoval(
                         channelEndpoint.originalUriString(), subscriptionLink.streamId(), subscriptionLink.registrationId());
                 }

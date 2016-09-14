@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import net.bytebuddy.asm.Advice;
 import org.agrona.DirectBuffer;
 
 import static io.aeron.agent.EventCode.*;
@@ -23,6 +24,7 @@ import static io.aeron.command.ControlProtocolEvents.*;
 
 public class CmdInterceptor
 {
+    @Advice.OnMethodEnter
     public static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
     {
         switch (msgTypeId)

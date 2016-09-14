@@ -19,33 +19,47 @@ import io.aeron.driver.SubscriptionLink;
 import io.aeron.driver.NetworkPublication;
 import io.aeron.driver.PublicationImage;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
+import net.bytebuddy.asm.Advice;
 
 public class CleanupInterceptor
 {
     public static class DriverConductorInterceptor
     {
-        public static void cleanupImageInterceptor(final PublicationImage image)
-        {
-            EventLogger.LOGGER.logImageRemoval(
-                image.channelUriString(), image.sessionId(), image.streamId(), image.correlationId());
-        }
 
-        public static void cleanupPublication(final NetworkPublication publication)
-        {
-            EventLogger.LOGGER.logPublicationRemoval(
-                publication.sendChannelEndpoint().originalUriString(), publication.sessionId(), publication.streamId());
-        }
+        public static class CleanupImage {
 
-        public static void cleanupSubscriptionLink(final SubscriptionLink subscriptionLink)
-        {
-            final ReceiveChannelEndpoint channelEndpoint = subscriptionLink.channelEndpoint();
-
-            if (null != channelEndpoint)
+            @Advice.OnMethodEnter
+            public static void cleanupImageInterceptor(final PublicationImage image)
             {
-                final int streamId = subscriptionLink.streamId();
+                EventLogger.LOGGER.logImageRemoval(
+                    image.channelUriString(), image.sessionId(), image.streamId(), image.correlationId());
+            }
+        }
 
-                EventLogger.LOGGER.logSubscriptionRemoval(
-                    channelEndpoint.originalUriString(), subscriptionLink.streamId(), subscriptionLink.registrationId());
+        public static class CleanupPublication {
+
+            @Advice.OnMethodEnter
+            public static void cleanupPublication(final NetworkPublication publication)
+            {
+                EventLogger.LOGGER.logPublicationRemoval(
+                        publication.sendChannelEndpoint().originalUriString(), publication.sessionId(), publication.streamId());
+            }
+        }
+
+        public static class CleanupSubscriptionLink {
+
+            @Advice.OnMethodEnter
+            public static void cleanupSubscriptionLink(final SubscriptionLink subscriptionLink)
+            {
+                final ReceiveChannelEndpoint channelEndpoint = subscriptionLink.channelEndpoint();
+
+                if (null != channelEndpoint)
+                {
+                    final int streamId = subscriptionLink.streamId();
+
+                    EventLogger.LOGGER.logSubscriptionRemoval(
+                        channelEndpoint.originalUriString(), subscriptionLink.streamId(), subscriptionLink.registrationId());
+                }
             }
         }
     }

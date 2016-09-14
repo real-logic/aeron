@@ -16,9 +16,12 @@
 package io.aeron.agent;
 
 import io.aeron.driver.EventLog;
+import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.agent.builder.AgentBuilder;
+import net.bytebuddy.asm.Advice;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
+import net.bytebuddy.dynamic.scaffold.TypeValidation;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.SuperMethodCall;
 import net.bytebuddy.matcher.BooleanMatcher;
@@ -26,6 +29,7 @@ import net.bytebuddy.utility.JavaModule;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.SleepingIdleStrategy;
 
+import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.util.concurrent.TimeUnit;
 
@@ -40,6 +44,9 @@ public class EventLogAgent
         new AgentRunner(new SleepingIdleStrategy(SLEEP_PERIOD_NS), EventLogAgent::errorHandler, null, EVENT_LOG_READER_AGENT);
 
     private static final Thread EVENT_LOG_READER_THREAD = new Thread(EVENT_LOG_READER_AGENT_RUNNER);
+
+    private static volatile ClassFileTransformer logTransformer;
+    private static volatile Instrumentation instrumentation;
 
     private static final AgentBuilder.Listener LISTENER = new AgentBuilder.Listener()
     {
@@ -72,7 +79,7 @@ public class EventLogAgent
     {
     }
 
-    public static void premain(final String agentArgs, final Instrumentation instrumentation)
+    private static void agent(final boolean redefine, final Instrumentation instrumentation)
     {
         if (EventConfiguration.ENABLED_EVENT_CODES != 0)
         {
@@ -86,64 +93,43 @@ public class EventLogAgent
              *  ReceiveChannelEndpoint
              */
 
-            new AgentBuilder.Default()
+            EventLogAgent.instrumentation = instrumentation;
+
+            logTransformer = new AgentBuilder.Default(new ByteBuddy().with(TypeValidation.DISABLED))
                 .with(LISTENER)
+                .disableClassFormatChanges()
+                .with(redefine ? AgentBuilder.RedefinitionStrategy.RETRANSFORMATION : AgentBuilder.RedefinitionStrategy.DISABLED)
                 .type(nameEndsWith("DriverConductor"))
                 .transform(
                     (builder, typeDescription, classLoader) ->
                         builder
-                            .method(named("onClientCommand").and(new BooleanMatcher<>(true)))
-                            .intercept(MethodDelegation.to(CmdInterceptor.class)
-                                .andThen(SuperMethodCall.INSTANCE))
-                            .method(named("cleanupImage"))
-                            .intercept(MethodDelegation.to(CleanupInterceptor.DriverConductorInterceptor.class)
-                                .andThen(SuperMethodCall.INSTANCE))
-                            .method(named("cleanupPublication"))
-                            .intercept(MethodDelegation.to(CleanupInterceptor.DriverConductorInterceptor.class)
-                                .andThen(SuperMethodCall.INSTANCE))
-                            .method(named("cleanupSubscriptionLink"))
-                            .intercept(MethodDelegation.to(CleanupInterceptor.DriverConductorInterceptor.class)
-                                .andThen(SuperMethodCall.INSTANCE)))
+                                .visit(Advice.to(CmdInterceptor.class).on(named("onClientCommand")))
+                                .visit(Advice.to(CleanupInterceptor.DriverConductorInterceptor.CleanupImage.class).on(named("cleanupImage")))
+                                .visit(Advice.to(CleanupInterceptor.DriverConductorInterceptor.CleanupPublication.class).on(named("cleanupPublication")))
+                                .visit(Advice.to(CleanupInterceptor.DriverConductorInterceptor.CleanupSubscriptionLink.class).on(named("cleanupSubscriptionLink"))))
                 .type(nameEndsWith("ClientProxy"))
                 .transform(
                     (builder, typeDescription, classLoader) ->
-                        builder
-                            .method(named("transmit"))
-                            .intercept(MethodDelegation.to(CmdInterceptor.class)
-                                .andThen(SuperMethodCall.INSTANCE)))
+                        builder.visit(Advice.to(CmdInterceptor.class).on(named("transmit"))))
                 .type(nameEndsWith("SenderProxy"))
                 .transform(
                     (builder, typeDescription, classLoader) ->
                         builder
-                            .method(named("registerSendChannelEndpoint"))
-                            .intercept(MethodDelegation.to(ChannelEndpointInterceptor.SenderProxyInterceptor.class)
-                                .andThen(SuperMethodCall.INSTANCE))
-                            .method(named("closeSendChannelEndpoint"))
-                            .intercept(MethodDelegation.to(ChannelEndpointInterceptor.SenderProxyInterceptor.class)
-                                .andThen(SuperMethodCall.INSTANCE)))
+                                .visit(Advice.to(ChannelEndpointInterceptor.SenderProxyInterceptor.RegisterSendChannelEndpoint.class).on(named("registerSendChannelEndpoint")))
+                                .visit(Advice.to(ChannelEndpointInterceptor.SenderProxyInterceptor.CloseSendChannelEndpoint.class).on(named("closeSendChannelEndpoint"))))
                 .type(nameEndsWith("ReceiverProxy"))
                 .transform(
                     (builder, typeDescription, classLoader) ->
                         builder
-                            .method(named("registerReceiveChannelEndpoint"))
-                            .intercept(MethodDelegation.to(ChannelEndpointInterceptor.ReceiverProxyInterceptor.class)
-                                .andThen(SuperMethodCall.INSTANCE))
-                            .method(named("closeReceiveChannelEndpoint"))
-                            .intercept(MethodDelegation.to(ChannelEndpointInterceptor.ReceiverProxyInterceptor.class)
-                                .andThen(SuperMethodCall.INSTANCE)))
+                                .visit(Advice.to(ChannelEndpointInterceptor.ReceiverProxyInterceptor.RegisterReceiveChannelEndpoint.class).on(named("registerReceiveChannelEndpoint")))
+                                .visit(Advice.to(ChannelEndpointInterceptor.ReceiverProxyInterceptor.CloseReceiveChannelEndpoint.class).on(named("closeReceiveChannelEndpoint"))))
                 .type(inheritsAnnotation(EventLog.class))
                 .transform(
                     (builder, typeDescription, classLoader) ->
                         builder
-                            .method(named("presend"))
-                            .intercept(MethodDelegation.to(ChannelEndpointInterceptor.SendChannelEndpointInterceptor.class)
-                                .andThen(SuperMethodCall.INSTANCE))
-                            .method(named("sendTo"))
-                            .intercept(MethodDelegation.to(ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.class)
-                                .andThen(SuperMethodCall.INSTANCE))
-                            .method(named("dispatch"))
-                            .intercept(MethodDelegation.to(ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.class)
-                                .andThen(SuperMethodCall.INSTANCE)))
+                                .visit(Advice.to(ChannelEndpointInterceptor.SendChannelEndpointInterceptor.Presend.class).on(named("presend")))
+                                .visit(Advice.to(ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.SendTo.class).on(named("sendTo")))
+                                .visit(Advice.to(ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.Dispatch.class).on(named("dispatch"))))
                 .installOn(instrumentation);
 
             EVENT_LOG_READER_THREAD.setName("event log reader");
@@ -152,7 +138,30 @@ public class EventLogAgent
         }
     }
 
+    public static void premain(final String agentArgs, final Instrumentation instrumentation)
+    {
+        agent(false, instrumentation);
+    }
+
     public static void agentmain(final String agentArgs, final Instrumentation instrumentation)
     {
+        agent(true, instrumentation);
+    }
+
+    public static void removeTransformer() 
+    {
+        if (logTransformer != null)
+        {
+            instrumentation.removeTransformer(logTransformer);
+
+            instrumentation.removeTransformer(new AgentBuilder.Default()
+                    .type(nameEndsWith("DriverConductor")
+                        .or(nameEndsWith("ClientProxy"))
+                        .or(nameEndsWith("SenderProxy"))
+                        .or(nameEndsWith("ReceiverProxy"))
+                        .or(inheritsAnnotation(EventLog.class)))
+                    .transform(AgentBuilder.Transformer.NoOp.INSTANCE)
+                    .installOn(instrumentation));
+        }
     }
 }

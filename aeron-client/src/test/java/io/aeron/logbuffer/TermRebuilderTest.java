@@ -23,6 +23,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.lang.Integer.valueOf;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.mockito.Mockito.*;
@@ -48,13 +49,16 @@ public class TermRebuilderTest
         final int srcOffset = 0;
         final int length = 256;
         packet.putInt(srcOffset, length, LITTLE_ENDIAN);
-        when(termBuffer.getInt(0, LITTLE_ENDIAN)).thenReturn(length);
 
         TermRebuilder.insert(termBuffer, termOffset, packet, length);
 
         final InOrder inOrder = inOrder(termBuffer);
-        inOrder.verify(termBuffer).putBytes(termOffset, packet, srcOffset, length);
-        inOrder.verify(termBuffer).putIntOrdered(termOffset, length);
+        inOrder.verify(termBuffer).putBytes(
+            termOffset + HEADER_LENGTH, packet, srcOffset + HEADER_LENGTH, length - HEADER_LENGTH);
+        inOrder.verify(termBuffer).putLong(termOffset + 24, packet.getLong(24));
+        inOrder.verify(termBuffer).putLong(termOffset + 16, packet.getLong(16));
+        inOrder.verify(termBuffer).putLong(termOffset + 8, packet.getLong(8));
+        inOrder.verify(termBuffer).putLongOrdered(termOffset, packet.getLong(0));
     }
 
     @Test
@@ -68,12 +72,9 @@ public class TermRebuilderTest
         packet.putShort(typeOffset(srcOffset), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
         packet.putInt(srcOffset, frameLength, LITTLE_ENDIAN);
 
-        when(termBuffer.getInt(tail, LITTLE_ENDIAN)).thenReturn(frameLength);
-        when(termBuffer.getShort(typeOffset(tail), LITTLE_ENDIAN)).thenReturn((short)PADDING_FRAME_TYPE);
-
         TermRebuilder.insert(termBuffer, termOffset, packet, frameLength);
 
-        verify(termBuffer).putBytes(tail, packet, srcOffset, frameLength);
+        verify(termBuffer).putBytes(tail + HEADER_LENGTH, packet, srcOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH);
     }
 
     @Test
@@ -86,13 +87,9 @@ public class TermRebuilderTest
         final int termOffset = tail;
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocateDirect(alignedFrameLength));
 
-        when(termBuffer.getInt(0)).thenReturn(frameLength);
-        when(termBuffer.getInt(alignedFrameLength, LITTLE_ENDIAN)).thenReturn(frameLength);
-        when(termBuffer.getInt(alignedFrameLength * 2, LITTLE_ENDIAN)).thenReturn(frameLength);
-
         TermRebuilder.insert(termBuffer, termOffset, packet, alignedFrameLength);
 
-        verify(termBuffer).putBytes(tail, packet, srcOffset, alignedFrameLength);
+        verify(termBuffer).putBytes(tail + HEADER_LENGTH, packet, srcOffset + HEADER_LENGTH, alignedFrameLength - HEADER_LENGTH);
     }
 
     @Test
@@ -104,12 +101,10 @@ public class TermRebuilderTest
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocateDirect(alignedFrameLength));
         final int termOffset = alignedFrameLength * 2;
 
-        when(termBuffer.getInt(0, LITTLE_ENDIAN)).thenReturn(0);
-        when(termBuffer.getInt(alignedFrameLength, LITTLE_ENDIAN)).thenReturn(frameLength);
-
         TermRebuilder.insert(termBuffer, termOffset, packet, alignedFrameLength);
 
-        verify(termBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
+        verify(termBuffer).putBytes(
+            (alignedFrameLength * 2) + HEADER_LENGTH, packet, srcOffset + HEADER_LENGTH, alignedFrameLength - HEADER_LENGTH);
     }
 
     @Test
@@ -121,11 +116,9 @@ public class TermRebuilderTest
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocateDirect(alignedFrameLength));
         final int termOffset = alignedFrameLength * 2;
 
-        when(termBuffer.getInt(0, LITTLE_ENDIAN)).thenReturn(frameLength);
-        when(termBuffer.getInt(alignedFrameLength, LITTLE_ENDIAN)).thenReturn(0);
-
         TermRebuilder.insert(termBuffer, termOffset, packet, alignedFrameLength);
 
-        verify(termBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
+        verify(termBuffer).putBytes(
+            (alignedFrameLength * 2) + HEADER_LENGTH, packet, srcOffset + HEADER_LENGTH, alignedFrameLength - HEADER_LENGTH);
     }
 }

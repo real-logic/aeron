@@ -15,14 +15,13 @@
  */
 package io.aeron.logbuffer;
 
-import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static io.aeron.logbuffer.FrameDescriptor.frameLengthOrdered;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 /**
- * Rebuild a term buffer based on incoming frames that can be out-of-order.
+ * Rebuild a term buffer from received frames which can be out-of-order. The resulting data structure will only
+ * monotonically increase in state.
  */
 public class TermRebuilder
 {
@@ -36,11 +35,12 @@ public class TermRebuilder
      */
     public static void insert(final UnsafeBuffer termBuffer, final int termOffset, final UnsafeBuffer packet, final int length)
     {
-        final int firstFrameLength = packet.getInt(0, LITTLE_ENDIAN);
-        packet.putInt(0, 0);
-        UnsafeAccess.UNSAFE.storeFence();
+        termBuffer.putBytes(termOffset + HEADER_LENGTH, packet, HEADER_LENGTH, length - HEADER_LENGTH);
 
-        termBuffer.putBytes(termOffset, packet, 0, length);
-        frameLengthOrdered(termBuffer, termOffset, firstFrameLength);
+        termBuffer.putLong(termOffset + 24, packet.getLong(24));
+        termBuffer.putLong(termOffset + 16, packet.getLong(16));
+        termBuffer.putLong(termOffset + 8, packet.getLong(8));
+
+        termBuffer.putLongOrdered(termOffset, packet.getLong(0));
     }
 }

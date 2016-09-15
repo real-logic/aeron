@@ -21,6 +21,8 @@ import io.aeron.driver.PublicationImage;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import net.bytebuddy.asm.Advice;
 
+import static io.aeron.agent.EventLogger.LOGGER;
+
 public class CleanupInterceptor
 {
     public static class DriverConductorInterceptor
@@ -30,7 +32,7 @@ public class CleanupInterceptor
             @Advice.OnMethodEnter
             public static void cleanupImageInterceptor(final PublicationImage image)
             {
-                EventLogger.LOGGER.logImageRemoval(
+                LOGGER.logImageRemoval(
                     image.channelUriString(), image.sessionId(), image.streamId(), image.correlationId());
             }
         }
@@ -40,7 +42,7 @@ public class CleanupInterceptor
             @Advice.OnMethodEnter
             public static void cleanupPublication(final NetworkPublication publication)
             {
-                EventLogger.LOGGER.logPublicationRemoval(
+                LOGGER.logPublicationRemoval(
                     publication.sendChannelEndpoint().originalUriString(), publication.sessionId(), publication.streamId());
             }
         }
@@ -54,7 +56,7 @@ public class CleanupInterceptor
 
                 if (null != channelEndpoint)
                 {
-                    EventLogger.LOGGER.logSubscriptionRemoval(
+                    LOGGER.logSubscriptionRemoval(
                         channelEndpoint.originalUriString(), subscriptionLink.streamId(), subscriptionLink.registrationId());
                 }
             }

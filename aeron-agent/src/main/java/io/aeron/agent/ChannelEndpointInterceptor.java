@@ -23,6 +23,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
+import static io.aeron.agent.EventCode.*;
+import static io.aeron.agent.EventLogger.LOGGER;
+
 public class ChannelEndpointInterceptor
 {
     public static class SenderProxyInterceptor
@@ -32,8 +35,7 @@ public class ChannelEndpointInterceptor
             @Advice.OnMethodEnter
             public static void registerSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
             {
-                EventLogger.LOGGER.logChannelCreated(
-                    EventCode.SEND_CHANNEL_CREATION, channelEndpoint.udpChannel().description());
+                LOGGER.logChannelCreated(SEND_CHANNEL_CREATION, channelEndpoint.udpChannel().description());
             }
         }
 
@@ -42,8 +44,7 @@ public class ChannelEndpointInterceptor
             @Advice.OnMethodEnter
             public static void closeSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
             {
-                EventLogger.LOGGER.logChannelCreated(
-                    EventCode.SEND_CHANNEL_CLOSE, channelEndpoint.udpChannel().description());
+                LOGGER.logChannelCreated(SEND_CHANNEL_CLOSE, channelEndpoint.udpChannel().description());
             }
         }
     }
@@ -55,8 +56,7 @@ public class ChannelEndpointInterceptor
             @Advice.OnMethodEnter
             public static void registerReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
             {
-                EventLogger.LOGGER.logChannelCreated(
-                    EventCode.RECEIVE_CHANNEL_CREATION, channelEndpoint.udpChannel().description());
+                LOGGER.logChannelCreated(RECEIVE_CHANNEL_CREATION, channelEndpoint.udpChannel().description());
             }
         }
 
@@ -65,8 +65,7 @@ public class ChannelEndpointInterceptor
             @Advice.OnMethodEnter
             public static void closeReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
             {
-                EventLogger.LOGGER.logChannelCreated(
-                    EventCode.RECEIVE_CHANNEL_CLOSE, channelEndpoint.udpChannel().description());
+                LOGGER.logChannelCreated(RECEIVE_CHANNEL_CLOSE, channelEndpoint.udpChannel().description());
             }
         }
     }
@@ -78,7 +77,7 @@ public class ChannelEndpointInterceptor
             @Advice.OnMethodEnter
             public static void presend(final ByteBuffer buffer, final InetSocketAddress address)
             {
-                EventLogger.LOGGER.logFrameOut(buffer, address);
+                LOGGER.logFrameOut(buffer, address);
             }
         }
 
@@ -87,7 +86,7 @@ public class ChannelEndpointInterceptor
             @Advice.OnMethodEnter
             public static void dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
             {
-                EventLogger.LOGGER.logFrameIn(buffer, 0, length, srcAddress);
+                LOGGER.logFrameIn(buffer, 0, length, srcAddress);
             }
         }
     }
@@ -99,7 +98,7 @@ public class ChannelEndpointInterceptor
             @Advice.OnMethodEnter
             public static void sendTo(final ByteBuffer buffer, final InetSocketAddress address)
             {
-                EventLogger.LOGGER.logFrameOut(buffer, address);
+                LOGGER.logFrameOut(buffer, address);
             }
         }
 
@@ -108,7 +107,7 @@ public class ChannelEndpointInterceptor
             @Advice.OnMethodEnter
             public static void dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
             {
-                EventLogger.LOGGER.logFrameIn(buffer, 0, length, srcAddress);
+                LOGGER.logFrameIn(buffer, 0, length, srcAddress);
             }
         }
     }

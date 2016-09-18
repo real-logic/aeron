@@ -43,8 +43,8 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 ExternalProject_Add(
     gmock
-    URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/gmock-1.7.0.zip
-    URL_MD5 073b984d8798ea1594f5e44d85b20d66
+    URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-release-1.8.0.zip
+    URL_MD5 adfafc8512ab65fd3cf7955ef0100ff5
     INSTALL_COMMAND ""
 )
 
@@ -54,8 +54,8 @@ ExternalProject_Get_Property(gmock binary_dir)
 set(GMOCK_BINARY_DIR ${binary_dir})
 
 set(GMOCK_LIBS
-    ${GMOCK_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock${CMAKE_STATIC_LIBRARY_SUFFIX}
-    ${GMOCK_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock_main${CMAKE_STATIC_LIBRARY_SUFFIX}
+    ${GMOCK_BINARY_DIR}/${CMAKE_CFG_INTDIR}/googlemock/${CMAKE_STATIC_LIBRARY_PREFIX}gmock${CMAKE_STATIC_LIBRARY_SUFFIX}
+    ${GMOCK_BINARY_DIR}/${CMAKE_CFG_INTDIR}/googlemock/${CMAKE_STATIC_LIBRARY_PREFIX}gmock_main${CMAKE_STATIC_LIBRARY_SUFFIX}
 )
 
 ##########################################################
@@ -145,8 +145,8 @@ set(AERON_DRIVER_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/main/cpp")
 set(AERON_DRIVER_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/test/cpp")
 
 # gmock - includes gtest
-include_directories(${GMOCK_SOURCE_DIR}/include)
-include_directories(${GMOCK_SOURCE_DIR}/gtest/include)
+include_directories(${GMOCK_SOURCE_DIR}/googletest/include)
+include_directories(${GMOCK_SOURCE_DIR}/googlemock/include)
 
 # hdr_histogram
 include_directories(${HDRHISTOGRAM_SOURCE_DIR}/src)

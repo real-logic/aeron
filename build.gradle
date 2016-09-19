@@ -369,7 +369,7 @@ project(':aeron-agent') {
 
     dependencies {
         compile project(':aeron-client'), project(':aeron-driver')
-        compile "net.bytebuddy:byte-buddy:1.4.23"
+        compile "net.bytebuddy:byte-buddy:1.4.24"
     }
 
     jar {
@@ -377,7 +377,6 @@ project(':aeron-agent') {
             attributes(
                 "Premain-Class" : "io.aeron.agent.EventLogAgent",
                 "Agent-Class" : "io.aeron.agent.EventLogAgent",
-                "Can-Redefine-Classes" : "true",
                 "Can-Retransform-Classes" : "true")
         }
     }

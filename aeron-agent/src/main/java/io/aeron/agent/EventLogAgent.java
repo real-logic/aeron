@@ -18,6 +18,7 @@ package io.aeron.agent;
 import io.aeron.driver.EventLog;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.agent.builder.AgentBuilder;
+import net.bytebuddy.agent.builder.ResettableClassFileTransformer;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.scaffold.TypeValidation;
@@ -25,8 +26,10 @@ import net.bytebuddy.utility.JavaModule;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.SleepingIdleStrategy;
 
-import java.lang.instrument.ClassFileTransformer;
+import javax.management.*;
 import java.lang.instrument.Instrumentation;
+import java.lang.management.ManagementFactory;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static net.bytebuddy.asm.Advice.to;
@@ -42,7 +45,7 @@ public class EventLogAgent
 
     private static final Thread EVENT_LOG_READER_THREAD = new Thread(EVENT_LOG_READER_AGENT_RUNNER);
 
-    private static volatile ClassFileTransformer logTransformer;
+    private static volatile ResettableClassFileTransformer logTransformer;
     private static volatile Instrumentation instrumentation;
 
     private static final AgentBuilder.Listener LISTENER = new AgentBuilder.Listener()
@@ -89,8 +92,6 @@ public class EventLogAgent
              *  SendChannelEndpoint
              *  ReceiveChannelEndpoint
              */
-
-            EventLogAgent.instrumentation = instrumentation;
 
             logTransformer = new AgentBuilder.Default(new ByteBuddy().with(TypeValidation.DISABLED))
                 .with(LISTENER)
@@ -140,30 +141,72 @@ public class EventLogAgent
         }
     }
 
+    private static void init(final String agentArgs, final Instrumentation instrumentation)
+    {
+        EventLogAgent.instrumentation = instrumentation;
+        if (agentArgs != null && agentArgs.contains("mbean"))
+        {
+            try
+            {
+                final MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+                mBeanServer.registerMBean(new EventLogControl(), new ObjectName("io.aeron:type=EventLogControl"));
+            }
+            catch (final Exception exception)
+            {
+                System.out.println("Could not register MXBean");
+                exception.printStackTrace(System.out);
+            }
+        }
+
+    }
+
     public static void premain(final String agentArgs, final Instrumentation instrumentation)
     {
+        init(agentArgs, instrumentation);
         agent(false, instrumentation);
     }
 
     public static void agentmain(final String agentArgs, final Instrumentation instrumentation)
     {
+        init(agentArgs, instrumentation);
         agent(true, instrumentation);
     }
 
-    public static void removeTransformer()
+    static synchronized boolean enableLogging()
+    {
+        if (logTransformer == null)
+        {
+            agent(true, instrumentation);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    static synchronized boolean disableLogging()
     {
         if (logTransformer != null)
         {
-            instrumentation.removeTransformer(logTransformer);
-
-            instrumentation.removeTransformer(new AgentBuilder.Default()
-                .type(nameEndsWith("DriverConductor")
-                    .or(nameEndsWith("ClientProxy"))
-                    .or(nameEndsWith("SenderProxy"))
-                    .or(nameEndsWith("ReceiverProxy"))
-                    .or(inheritsAnnotation(EventLog.class)))
-                .transform(AgentBuilder.Transformer.NoOp.INSTANCE)
-                .installOn(instrumentation));
+            final ResettableClassFileTransformer.Reset reset = logTransformer.reset(instrumentation,
+                    AgentBuilder.RedefinitionStrategy.RETRANSFORMATION);
+            for (final Map.Entry<Class<?>, Throwable> error : reset.getErrors().entrySet())
+            {
+                System.out.format("Could not reset %s%n", error.getKey());
+                error.getValue().printStackTrace(System.out);
+            }
+            logTransformer = null;
+            return true;
         }
+        else
+        {
+            return false;
+        }
+    }
+
+    static boolean isLogging()
+    {
+        return logTransformer != null;
     }
 }

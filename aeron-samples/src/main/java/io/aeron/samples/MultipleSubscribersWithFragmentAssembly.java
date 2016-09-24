@@ -57,9 +57,9 @@ public class MultipleSubscribersWithFragmentAssembly
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
 
-        try (final Aeron aeron = Aeron.connect(ctx);
-             final Subscription subscription1 = aeron.addSubscription(CHANNEL, STREAM_ID_1);
-             final Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2))
+        try (Aeron aeron = Aeron.connect(ctx);
+             Subscription subscription1 = aeron.addSubscription(CHANNEL, STREAM_ID_1);
+             Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2))
         {
             final IdleStrategy idleStrategy = new BackoffIdleStrategy(
                 100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));

@@ -42,9 +42,9 @@ public class MultiplePublishersWithFragmentation
     {
         System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID_1 + " and stream Id " + STREAM_ID_2);
 
-        try (final Aeron aeron = Aeron.connect();
-             final Publication publication1 = aeron.addPublication(CHANNEL, STREAM_ID_1);
-             final Publication publication2 = aeron.addPublication(CHANNEL, STREAM_ID_2))
+        try (Aeron aeron = Aeron.connect();
+             Publication publication1 = aeron.addPublication(CHANNEL, STREAM_ID_1);
+             Publication publication2 = aeron.addPublication(CHANNEL, STREAM_ID_2))
         {
             int j = 1;
             int k = 1;

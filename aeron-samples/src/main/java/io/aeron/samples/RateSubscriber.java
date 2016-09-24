@@ -67,8 +67,8 @@ public class RateSubscriber
                 running.set(false);
             });
 
-        try (final Aeron aeron = Aeron.connect(ctx);
-             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+        try (Aeron aeron = Aeron.connect(ctx);
+             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             final Future future = executor.submit(
                 () -> SamplesUtil.subscriberLoop(rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));

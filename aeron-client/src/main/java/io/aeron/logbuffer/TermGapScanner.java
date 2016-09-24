@@ -47,7 +47,7 @@ public class TermGapScanner
          * @param offset at which the gap begins.
          * @param length of the gap in bytes.
          */
-        void onGap(final int termId, UnsafeBuffer buffer, int offset, int length);
+        void onGap(int termId, UnsafeBuffer buffer, int offset, int length);
     }
 
     /**

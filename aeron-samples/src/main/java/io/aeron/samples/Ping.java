@@ -71,13 +71,13 @@ public class Ping
         System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
         System.out.println("Message length of " + MESSAGE_LENGTH + " bytes");
 
-        try (final Aeron aeron = Aeron.connect(ctx))
+        try (Aeron aeron = Aeron.connect(ctx))
         {
             System.out.println(
                 "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS + " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
 
-            try (final Publication publication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
-                 final Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID))
+            try (Publication publication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
+                 Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID))
             {
                 LATCH.await();
 

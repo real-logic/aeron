@@ -62,8 +62,8 @@ public class BasicPublisher
         // the given channel and stream ID.
         // The Aeron and Publication classes implement "AutoCloseable" and will automatically
         // clean up resources when this try block is finished
-        try (final Aeron aeron = Aeron.connect(ctx);
-             final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
+        try (Aeron aeron = Aeron.connect(ctx);
+             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {

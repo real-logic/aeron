@@ -48,10 +48,10 @@ public class MemoryOrderingTest
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .publicationTermBufferLength(TERM_BUFFER_LENGTH);
 
-        try (final MediaDriver ignore = MediaDriver.launch(ctx);
-             final Aeron aeron = Aeron.connect();
-             final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
-             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+        try (MediaDriver ignore = MediaDriver.launch(ctx);
+             Aeron aeron = Aeron.connect();
+             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
+             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             final BusySpinIdleStrategy idleStrategy = new BusySpinIdleStrategy();
 

@@ -75,8 +75,8 @@ public class StreamingPublisher
         // Connect to media driver and add publication to send messages on the configured channel and stream ID.
         // The Aeron and Publication classes implement AutoCloseable, and will automatically
         // clean up resources when this try block is finished.
-        try (final Aeron aeron = Aeron.connect(context);
-             final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
+        try (Aeron aeron = Aeron.connect(context);
+             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
 

@@ -54,11 +54,11 @@ public class SpySubscriptionTest
         final MediaDriver.Context ctx = new MediaDriver.Context();
         final Aeron.Context aeronCtx = new Aeron.Context();
 
-        try (final MediaDriver ignore = MediaDriver.launch(ctx);
-             final Aeron aeron = Aeron.connect(aeronCtx);
-             final Publication publication = aeron.addPublication(channel, STREAM_ID);
-             final Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
-             final Subscription spy = aeron.addSubscription(spyForChannel(channel), STREAM_ID))
+        try (MediaDriver ignore = MediaDriver.launch(ctx);
+             Aeron aeron = Aeron.connect(aeronCtx);
+             Publication publication = aeron.addPublication(channel, STREAM_ID);
+             Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+             Subscription spy = aeron.addSubscription(spyForChannel(channel), STREAM_ID))
         {
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[PAYLOAD_LENGTH * 4]);
 

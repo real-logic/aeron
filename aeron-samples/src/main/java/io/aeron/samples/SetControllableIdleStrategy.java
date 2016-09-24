@@ -26,9 +26,8 @@ public class SetControllableIdleStrategy
 {
     public static void main(final String[] args) throws Exception
     {
-        try (final Aeron aeron = Aeron.connect())
+        try (Aeron aeron = Aeron.connect())
         {
-
             final CountersReader countersReader = aeron.countersReader();
             final MutableInteger id = new MutableInteger();
 

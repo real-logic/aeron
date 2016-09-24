@@ -37,12 +37,12 @@ public abstract class UdpTransportPoller extends TransportPoller
      * @param transport to associate with read
      * @return SelectionKey for registration for cancel
      */
-    public abstract SelectionKey registerForRead(final UdpChannelTransport transport);
+    public abstract SelectionKey registerForRead(UdpChannelTransport transport);
 
     /**
      * Cancel previous registration.
      *
      * @param transport to cancel read for
      */
-    public abstract void cancelRead(final UdpChannelTransport transport);
+    public abstract void cancelRead(UdpChannelTransport transport);
 }

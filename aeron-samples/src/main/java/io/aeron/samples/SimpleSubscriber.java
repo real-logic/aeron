@@ -75,8 +75,8 @@ public class SimpleSubscriber
         // dataHandler method, which will be called with new messages as they are received.
         // The Aeron and Subscription classes implement AutoCloseable, and will automatically
         // clean up resources when this try block is finished.
-        try (final Aeron aeron = Aeron.connect(ctx);
-             final Subscription subscription = aeron.addSubscription(channel, streamId))
+        try (Aeron aeron = Aeron.connect(ctx);
+             Subscription subscription = aeron.addSubscription(channel, streamId))
         {
             final IdleStrategy idleStrategy = new BackoffIdleStrategy(
                 100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));

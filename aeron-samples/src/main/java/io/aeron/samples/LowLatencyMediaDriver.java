@@ -37,7 +37,7 @@ public class LowLatencyMediaDriver
             .receiverIdleStrategy(new BusySpinIdleStrategy())
             .senderIdleStrategy(new BusySpinIdleStrategy());
 
-        try (final MediaDriver ignored = MediaDriver.launch(ctx))
+        try (MediaDriver ignored = MediaDriver.launch(ctx))
         {
             new SigIntBarrier().await();
 

@@ -52,7 +52,7 @@ public enum EventCode
     @FunctionalInterface
     private interface DissectFunction
     {
-        String dissect(final EventCode code, final MutableDirectBuffer buffer, final int offset);
+        String dissect(EventCode code, MutableDirectBuffer buffer, int offset);
     }
 
     private final long tagBit;

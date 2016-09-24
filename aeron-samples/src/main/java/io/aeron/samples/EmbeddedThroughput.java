@@ -60,10 +60,10 @@ public class EmbeddedThroughput
 
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        try (final MediaDriver ignore = MediaDriver.launch();
-             final Aeron aeron = Aeron.connect(context);
-             final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
-             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+        try (MediaDriver ignore = MediaDriver.launch();
+             Aeron aeron = Aeron.connect(context);
+             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
+             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             executor.execute(reporter);
             executor.execute(

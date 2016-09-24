@@ -91,7 +91,7 @@ public final class MediaDriver implements AutoCloseable
     {
         final Properties properties = new Properties(System.getProperties());
 
-        try (final InputStream in = MediaDriver.class.getClassLoader().getResourceAsStream(filenameOrUrl))
+        try (InputStream in = MediaDriver.class.getClassLoader().getResourceAsStream(filenameOrUrl))
         {
             properties.load(in);
         }
@@ -99,7 +99,7 @@ public final class MediaDriver implements AutoCloseable
         {
         }
 
-        try (final FileInputStream in = new FileInputStream(filenameOrUrl))
+        try (FileInputStream in = new FileInputStream(filenameOrUrl))
         {
             properties.load(in);
         }
@@ -107,7 +107,7 @@ public final class MediaDriver implements AutoCloseable
         {
         }
 
-        try (final InputStream in = new URL(filenameOrUrl).openStream())
+        try (InputStream in = new URL(filenameOrUrl).openStream())
         {
             properties.load(in);
         }
@@ -142,7 +142,7 @@ public final class MediaDriver implements AutoCloseable
     {
         loadPropertiesFiles(args);
 
-        try (final MediaDriver ignored = MediaDriver.launch())
+        try (MediaDriver ignored = MediaDriver.launch())
         {
             new SigIntBarrier().await();
 
@@ -328,7 +328,7 @@ public final class MediaDriver implements AutoCloseable
 
     private static void validateSufficientSocketBufferLengths(final Context ctx)
     {
-        try (final DatagramChannel probe = DatagramChannel.open())
+        try (DatagramChannel probe = DatagramChannel.open())
         {
             final int defaultSoSndBuf = probe.getOption(StandardSocketOptions.SO_SNDBUF);
 
@@ -412,7 +412,7 @@ public final class MediaDriver implements AutoCloseable
                 final File errorLogFile = new File(errorLogFilename);
                 int observations = 0;
 
-                try (final PrintStream stream = new PrintStream(errorLogFile, "UTF-8"))
+                try (PrintStream stream = new PrintStream(errorLogFile, "UTF-8"))
                 {
                     observations = ctx.saveErrorLog(stream);
                 }

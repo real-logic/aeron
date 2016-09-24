@@ -53,7 +53,7 @@ public class LogInspector
         final String logFileName = args[0];
         final int messageDumpLimit = args.length >= 2 ? Integer.parseInt(args[1]) : Integer.MAX_VALUE;
 
-        try (final LogBuffers logBuffers = new LogBuffers(logFileName, READ_ONLY))
+        try (LogBuffers logBuffers = new LogBuffers(logFileName, READ_ONLY))
         {
             out.println("======================================================================");
             out.format("%s Inspection dump for %s%n", new Date(), logFileName);

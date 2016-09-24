@@ -44,10 +44,10 @@ public class ControlledMessageTest
         final MediaDriver.Context ctx = new MediaDriver.Context();
         ctx.threadingMode(ThreadingMode.SHARED);
 
-        try (final MediaDriver ignore = MediaDriver.launch(ctx);
-             final Aeron aeron = Aeron.connect();
-             final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
-             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+        try (MediaDriver ignore = MediaDriver.launch(ctx);
+             Aeron aeron = Aeron.connect();
+             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
+             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[PAYLOAD_LENGTH * 4]);
 

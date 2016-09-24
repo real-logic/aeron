@@ -49,9 +49,9 @@ public class TermBufferLengthTest
         ctx.publicationTermBufferLength(TEST_TERM_LENGTH * 2);
         ctx.ipcTermBufferLength(TEST_TERM_LENGTH * 2);
 
-        try (final MediaDriver ignore = MediaDriver.launch(ctx);
-             final Aeron aeron = Aeron.connect();
-             final Publication publication = aeron.addPublication(channel, STREAM_ID))
+        try (MediaDriver ignore = MediaDriver.launch(ctx);
+             Aeron aeron = Aeron.connect();
+             Publication publication = aeron.addPublication(channel, STREAM_ID))
         {
             assertThat(publication.termBufferLength(), is(TEST_TERM_LENGTH));
         }

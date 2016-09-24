@@ -67,10 +67,10 @@ public class FragmentedMessageTest
 
         final FragmentAssembler adapter = new FragmentAssembler(mockFragmentHandler);
 
-        try (final MediaDriver ignore = MediaDriver.launch(ctx);
-             final Aeron aeron = Aeron.connect();
-             final Publication publication = aeron.addPublication(channel, STREAM_ID);
-             final Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
+        try (MediaDriver ignore = MediaDriver.launch(ctx);
+             Aeron aeron = Aeron.connect();
+             Publication publication = aeron.addPublication(channel, STREAM_ID);
+             Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
         {
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[ctx.mtuLength() * 4]);
             final int offset = 0;

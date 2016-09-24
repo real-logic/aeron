@@ -54,8 +54,8 @@ class MappedRawLog implements RawLog
         this.errorLog = errorLog;
         this.logFile = location;
 
-        try (final RandomAccessFile raf = new RandomAccessFile(logFile, "rw");
-             final FileChannel logChannel = raf.getChannel())
+        try (RandomAccessFile raf = new RandomAccessFile(logFile, "rw");
+             FileChannel logChannel = raf.getChannel())
         {
             final long logLength = computeLogLength(termLength);
             raf.setLength(logLength);

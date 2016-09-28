@@ -22,6 +22,23 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
+class SubscriptionLhsPadding
+{
+    @SuppressWarnings("unused")
+    long p1, p2, p3, p4, p5, p6, p7;
+}
+
+class SubscriptionHotFields extends SubscriptionLhsPadding
+{
+    int roundRobinIndex = 0;
+}
+
+class SubscriptionRhsPadding extends SubscriptionHotFields
+{
+    @SuppressWarnings("unused")
+    long p8, p9, p10, p11, p12, p13, p14;
+}
+
 /**
  * Aeron Subscriber API for receiving a reconstructed {@link Image} for a stream of messages from publishers on
  * a given channel and streamId pair.
@@ -39,13 +56,12 @@ import java.util.function.Consumer;
  *
  * @see FragmentAssembler
  */
-public class Subscription implements AutoCloseable
+public class Subscription extends SubscriptionRhsPadding implements AutoCloseable
 {
     private static final Image[] EMPTY_ARRAY = new Image[0];
 
     private final long registrationId;
     private final int streamId;
-    private int roundRobinIndex = 0;
     private volatile boolean isClosed = false;
 
     private volatile Image[] images = EMPTY_ARRAY;

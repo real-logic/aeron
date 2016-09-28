@@ -29,13 +29,34 @@ import java.util.function.Consumer;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_SENT;
 
+class SenderLhsPadding
+{
+    @SuppressWarnings("unused")
+    long p1, p2, p3, p4, p5, p6, p7;
+}
+
+class SenderHotFields extends SenderLhsPadding
+{
+    long controlPollTimeout;
+    int dutyCycleCounter;
+    int roundRobinIndex = 0;
+}
+
+class SenderRhsPadding extends SenderHotFields
+{
+    @SuppressWarnings("unused")
+    long p8, p9, p10, p11, p12, p13, p14;
+}
+
 /**
- * Agent that iterates over networkPublications for sending them to registered subscribers.
+ * Agent that iterates over {@link NetworkPublication}s for sending them to registered subscribers.
  */
-public class Sender implements Agent, Consumer<SenderCmd>
+public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCmd>
 {
     private static final NetworkPublication[] EMPTY_PUBLICATIONS = new NetworkPublication[0];
 
+    private final long statusMessageReadTimeout;
+    private final int dutyCycleRatio;
     private final ControlTransportPoller controlTransportPoller;
     private final OneToOneConcurrentArrayQueue<SenderCmd> commandQueue;
     private final DriverConductorProxy conductorProxy;
@@ -43,7 +64,6 @@ public class Sender implements Agent, Consumer<SenderCmd>
     private final NanoClock nanoClock;
 
     private NetworkPublication[] networkPublications = EMPTY_PUBLICATIONS;
-    private int roundRobinIndex = 0;
 
     public Sender(final MediaDriver.Context ctx)
     {
@@ -52,13 +72,26 @@ public class Sender implements Agent, Consumer<SenderCmd>
         this.conductorProxy = ctx.fromSenderDriverConductorProxy();
         this.totalBytesSent = ctx.systemCounters().get(BYTES_SENT);
         this.nanoClock = ctx.nanoClock();
+        this.statusMessageReadTimeout = ctx.statusMessageTimeout() / 2;
+        this.dutyCycleRatio = Configuration.sendToStatusMessagePollRatio();
     }
 
     public int doWork()
     {
         final int workCount = commandQueue.drain(this);
-        final int bytesSent = doSend(nanoClock.nanoTime());
-        final int bytesReceived = controlTransportPoller.pollTransports();
+
+        final long now = nanoClock.nanoTime();
+        final int bytesSent = doSend(now);
+
+        int bytesReceived = 0;
+
+        if (++dutyCycleCounter == dutyCycleRatio || now >= controlPollTimeout)
+        {
+            bytesReceived = controlTransportPoller.pollTransports();
+
+            dutyCycleCounter = 0;
+            controlPollTimeout = now + statusMessageReadTimeout;
+        }
 
         return workCount + bytesSent + bytesReceived;
     }

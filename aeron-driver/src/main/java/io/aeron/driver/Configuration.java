@@ -202,6 +202,16 @@ public class Configuration
     public static final long STATUS_MESSAGE_TIMEOUT_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(200);
 
     /**
+     * Property name for ratio of sending data to polling status messages in the Sender.
+     */
+    public static final String SEND_TO_STATUS_POLL_RATIO_PROP_NAME = "aeron.send.to.status.poll.ratio";
+
+    /**
+     * The ratio for sending data to polling status messages in the Sender.
+     */
+    public static final int SEND_TO_STATUS_POLL_RATIO_DEFAULT = 4;
+
+    /**
      * Property name for SO_RCVBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Produce (BDP).
      */
     public static final String SOCKET_RCVBUF_LENGTH_PROP_NAME = "aeron.socket.so_rcvbuf";
@@ -726,6 +736,11 @@ public class Configuration
     static long statusMessageTimeout()
     {
         return getLong(STATUS_MESSAGE_TIMEOUT_PROP_NAME, STATUS_MESSAGE_TIMEOUT_DEFAULT_NS);
+    }
+
+    static int sendToStatusMessagePollRatio()
+    {
+        return getInteger(SEND_TO_STATUS_POLL_RATIO_PROP_NAME, SEND_TO_STATUS_POLL_RATIO_DEFAULT);
     }
 
     /**

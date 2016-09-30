@@ -106,6 +106,7 @@ public class PublicationImage
     private final int initialTermId;
     private final int currentWindowLength;
     private final int currentGain;
+    private boolean reachedEndOfLife = false;
 
     private final RawLog rawLog;
     private final InetSocketAddress controlAddress;
@@ -122,8 +123,6 @@ public class PublicationImage
     private final AtomicCounter nakMessagesSent;
     private final AtomicCounter flowControlUnderRuns;
     private final AtomicCounter flowControlOverRuns;
-
-    private boolean reachedEndOfLife = false;
 
     public PublicationImage(
         final long correlationId,
@@ -386,10 +385,10 @@ public class PublicationImage
     /**
      * Insert frame into term buffer.
      *
-     * @param termId  for the data packet to insert into the appropriate term.
+     * @param termId     for the data packet to insert into the appropriate term.
      * @param termOffset for the start of the packet in the term.
-     * @param buffer for the data packet to insert into the appropriate term.
-     * @param length of the data packet
+     * @param buffer     for the data packet to insert into the appropriate term.
+     * @param length     of the data packet
      * @return number of bytes applied as a result of this insertion.
      */
     int insertPacket(final int termId, final int termOffset, final UnsafeBuffer buffer, final int length)
@@ -400,14 +399,14 @@ public class PublicationImage
         final long proposedPosition = packetPosition + length;
         final long windowPosition = lastStatusMessagePosition;
 
-        if (isHeartbeat(buffer, length))
+        if (isFlowControlUnderRun(windowPosition, packetPosition) || isFlowControlOverRun(windowPosition, proposedPosition))
+        {
+            bytesReceived = 0;
+        }
+        else if (isHeartbeat(buffer, length))
         {
             hwmCandidate(packetPosition);
             heartbeatsReceived.orderedIncrement();
-        }
-        else if (isFlowControlUnderRun(windowPosition, packetPosition) || isFlowControlOverRun(windowPosition, proposedPosition))
-        {
-            bytesReceived = 0;
         }
         else
         {

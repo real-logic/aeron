@@ -632,8 +632,7 @@ public class PublicationImage
         final int bytesForCleaning = (int)(cleanToPosition - cleanPosition);
         final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
         final int termOffset = (int)cleanPosition & termLengthMask;
-        final int bufferCapacity = dirtyTerm.capacity();
-        final int length = Math.min(bytesForCleaning, bufferCapacity - termOffset);
+        final int length = Math.min(bytesForCleaning, dirtyTerm.capacity() - termOffset);
 
         if (length > 0)
         {

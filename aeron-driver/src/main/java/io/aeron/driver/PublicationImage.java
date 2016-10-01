@@ -393,30 +393,28 @@ public class PublicationImage
      */
     int insertPacket(final int termId, final int termOffset, final UnsafeBuffer buffer, final int length)
     {
-        int bytesReceived = length;
-        final int positionBitsToShift = this.positionBitsToShift;
+        final boolean isHeartbeat = isHeartbeat(buffer, length);
         final long packetPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
-        final long proposedPosition = packetPosition + length;
+        final long proposedPosition = isHeartbeat ? packetPosition : packetPosition + length;
         final long windowPosition = lastStatusMessagePosition;
 
-        if (isFlowControlUnderRun(windowPosition, packetPosition) || isFlowControlOverRun(windowPosition, proposedPosition))
+        if (!isFlowControlUnderRun(windowPosition, packetPosition) &&
+            !isFlowControlOverRun(windowPosition, proposedPosition))
         {
-            bytesReceived = 0;
-        }
-        else if (isHeartbeat(buffer, length))
-        {
-            hwmCandidate(packetPosition);
-            heartbeatsReceived.orderedIncrement();
-        }
-        else
-        {
-            final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetPosition, positionBitsToShift)];
-            TermRebuilder.insert(termBuffer, termOffset, buffer, length);
+            if (isHeartbeat)
+            {
+                heartbeatsReceived.orderedIncrement();
+            }
+            else
+            {
+                final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetPosition, positionBitsToShift)];
+                TermRebuilder.insert(termBuffer, termOffset, buffer, length);
+            }
 
             hwmCandidate(proposedPosition);
         }
 
-        return bytesReceived;
+        return length;
     }
 
     /**

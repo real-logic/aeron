@@ -235,7 +235,7 @@ public class Image
 
         long position = subscriberPosition.get();
         int termOffset = (int)position & termLengthMask;
-        int offset = termOffset;
+        int resultingOffset = termOffset;
         int fragmentsRead = 0;
         final UnsafeBuffer termBuffer = activeTermBuffer(position);
 
@@ -244,15 +244,15 @@ public class Image
             final int capacity = termBuffer.capacity();
             do
             {
-                final int length = frameLengthVolatile(termBuffer, offset);
+                final int length = frameLengthVolatile(termBuffer, resultingOffset);
                 if (length <= 0)
                 {
                     break;
                 }
 
-                final int frameOffset = offset;
+                final int frameOffset = resultingOffset;
                 final int alignedLength = BitUtil.align(length, FRAME_ALIGNMENT);
-                offset += alignedLength;
+                resultingOffset += alignedLength;
 
                 if (!isPaddingFrame(termBuffer, frameOffset))
                 {
@@ -271,25 +271,25 @@ public class Image
                     else if (action == ABORT)
                     {
                         --fragmentsRead;
-                        offset = frameOffset;
+                        resultingOffset = frameOffset;
                         break;
                     }
                     else if (action == COMMIT)
                     {
                         position += alignedLength;
-                        termOffset = offset;
+                        termOffset = resultingOffset;
                         subscriberPosition.setOrdered(position);
                     }
                 }
             }
-            while (fragmentsRead < fragmentLimit && offset < capacity);
+            while (fragmentsRead < fragmentLimit && resultingOffset < capacity);
         }
         catch (final Throwable t)
         {
             errorHandler.onError(t);
         }
 
-        updatePosition(position, termOffset, offset);
+        updatePosition(position, termOffset, resultingOffset);
 
         return fragmentsRead;
     }

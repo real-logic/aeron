@@ -591,9 +591,9 @@ public class PublicationImage
         return minSubscriberPosition >= rebuildPosition.getVolatile();
     }
 
-    private boolean isHeartbeat(final UnsafeBuffer buffer, final int length)
+    private boolean isHeartbeat(final UnsafeBuffer packet, final int length)
     {
-        return length == DataHeaderFlyweight.HEADER_LENGTH && buffer.getInt(0) == 0;
+        return length == DataHeaderFlyweight.HEADER_LENGTH && packet.getInt(0) == 0;
     }
 
     private void hwmCandidate(final long proposedPosition)

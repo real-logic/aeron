@@ -85,7 +85,7 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
 
         int bytesReceived = 0;
 
-        if (++dutyCycleCounter == dutyCycleRatio || now >= controlPollTimeout)
+        if (0 == bytesSent || ++dutyCycleCounter == dutyCycleRatio || now >= controlPollTimeout)
         {
             bytesReceived = controlTransportPoller.pollTransports();
 

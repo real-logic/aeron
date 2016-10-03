@@ -342,8 +342,8 @@ public class Configuration
 
     private static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 
-    static final long AGENT_IDLE_MAX_SPINS = 20;
-    static final long AGENT_IDLE_MAX_YIELDS = 50;
+    static final long AGENT_IDLE_MAX_SPINS = 100;
+    static final long AGENT_IDLE_MAX_YIELDS = 100;
     static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
     static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
 

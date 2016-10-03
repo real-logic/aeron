@@ -46,9 +46,6 @@ public class MemoryOrderingTest
     {
         srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .conductorIdleStrategy(new YieldingIdleStrategy())
-            .senderIdleStrategy(new YieldingIdleStrategy())
-            .receiverIdleStrategy(new YieldingIdleStrategy())
             .publicationTermBufferLength(TERM_BUFFER_LENGTH);
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);

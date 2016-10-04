@@ -170,7 +170,7 @@ subprojects {
 
 project(':aeron-client') {
     dependencies {
-        compile 'org.agrona:Agrona:0.5.4'
+        compile 'org.agrona:Agrona:0.5.5-SNAPSHOT'
     }
 
     uploadArchives {

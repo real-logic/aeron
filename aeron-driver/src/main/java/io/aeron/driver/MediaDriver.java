@@ -27,10 +27,7 @@ import io.aeron.driver.media.ControlTransportPoller;
 import io.aeron.driver.media.DataTransportPoller;
 import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
 import io.aeron.driver.status.SystemCounters;
-import org.agrona.CloseHelper;
-import org.agrona.ErrorHandler;
-import org.agrona.IoUtil;
-import org.agrona.LangUtil;
+import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.BroadcastTransmitter;
 import org.agrona.concurrent.errors.DistinctErrorLog;
@@ -298,6 +295,11 @@ public final class MediaDriver implements AutoCloseable
 
     private MediaDriver start()
     {
+        if (SystemUtil.osName().startsWith("win") && !HighResolutionTimer.isEnabled())
+        {
+            HighResolutionTimer.enable();
+        }
+
         if (null != sharedRunner)
         {
             AgentRunner.startOnThread(sharedRunner, ctx.sharedThreadFactory);

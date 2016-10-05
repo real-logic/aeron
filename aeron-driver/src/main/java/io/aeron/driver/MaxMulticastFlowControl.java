@@ -52,7 +52,7 @@ public class MaxMulticastFlowControl implements FlowControl
     {
         this.initialTermId = initialTermId;
         positionBitsToShift = Long.numberOfTrailingZeros(termBufferCapacity);
-        positionLimit = computePosition(initialTermId, 0, positionBitsToShift, initialTermId);
+        positionLimit = 0;
     }
 
     /**

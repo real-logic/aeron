@@ -43,36 +43,35 @@ import static io.aeron.logbuffer.TermScanner.*;
 class NetworkPublicationPadding1
 {
     @SuppressWarnings("unused")
-    long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
+    protected long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
 }
 
 class NetworkPublicationConductorFields extends NetworkPublicationPadding1
 {
-    long cleanPosition = 0;
-    long timeOfLastActivity = 0;
-    long lastSenderPosition = 0;
-    int refCount = 0;
+    protected long cleanPosition = 0;
+    protected long timeOfLastActivity = 0;
+    protected long lastSenderPosition = 0;
+    protected int refCount = 0;
 }
 
 class NetworkPublicationPadding2 extends NetworkPublicationConductorFields
 {
     @SuppressWarnings("unused")
-    long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
+    protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
 }
 
 class NetworkPublicationReceiverFields extends NetworkPublicationPadding2
 {
-    long timeOfLastSendOrHeartbeat;
-    long senderPositionLimit = 0;
-    long timeOfLastSetup;
-    boolean trackSenderLimits = true;
-    boolean shouldSendSetupFrame = true;
+    protected long timeOfLastSendOrHeartbeat;
+    protected long timeOfLastSetup;
+    protected boolean trackSenderLimits = true;
+    protected boolean shouldSendSetupFrame = true;
 }
 
 class NetworkPublicationPadding3 extends NetworkPublicationReceiverFields
 {
     @SuppressWarnings("unused")
-    long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
+    protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
 }
 
 /**
@@ -99,6 +98,7 @@ public class NetworkPublication
     private final ByteBuffer[] sendBuffers;
     private final Position publisherLimit;
     private final Position senderPosition;
+    private final Position senderLimit;
     private final SendChannelEndpoint channelEndpoint;
     private final ByteBuffer heartbeatBuffer;
     private final DataHeaderFlyweight dataHeader;
@@ -121,6 +121,7 @@ public class NetworkPublication
         final RawLog rawLog,
         final Position publisherLimit,
         final Position senderPosition,
+        final Position senderLimit,
         final int sessionId,
         final int streamId,
         final int initialTermId,
@@ -134,6 +135,7 @@ public class NetworkPublication
         this.rawLog = rawLog;
         this.epochClock = epochClock;
         this.senderPosition = senderPosition;
+        this.senderLimit = senderLimit;
         this.flowControl = flowControl;
         this.retransmitHandler = retransmitHandler;
         this.publisherLimit = publisherLimit;
@@ -172,6 +174,7 @@ public class NetworkPublication
         rawLog.close();
         publisherLimit.close();
         senderPosition.close();
+        senderLimit.close();
         for (final ReadablePosition position : spyPositions)
         {
             position.close();
@@ -194,7 +197,7 @@ public class NetworkPublication
         if (0 == bytesSent)
         {
             bytesSent = heartbeatMessageCheck(now, activeTermId, termOffset);
-            senderPositionLimit = flowControl.onIdle(now);
+            senderLimit.setOrdered(flowControl.onIdle(now));
         }
 
         retransmitHandler.processTimeouts(now, this);
@@ -219,7 +222,7 @@ public class NetworkPublication
 
     void senderPositionLimit(final long positionLimit)
     {
-        senderPositionLimit = positionLimit;
+        senderLimit.setOrdered(positionLimit);
 
         if (!hasHadFirstStatusMessage)
         {
@@ -359,7 +362,7 @@ public class NetworkPublication
     private int sendData(final long now, final long senderPosition, final int termOffset)
     {
         int bytesSent = 0;
-        final int availableWindow = (int)(senderPositionLimit - senderPosition);
+        final int availableWindow = (int)(senderLimit.get() - senderPosition);
         if (availableWindow > 0)
         {
             final int scanLimit = Math.min(availableWindow, mtuLength);

@@ -131,6 +131,7 @@ public class SenderTest
             rawLog,
             mock(Position.class),
             new AtomicLongPosition(),
+            new AtomicLongPosition(),
             SESSION_ID,
             STREAM_ID,
             INITIAL_TERM_ID,

@@ -147,6 +147,9 @@ public class StreamPositionCounter
             case SenderPos.SENDER_POSITION_TYPE_ID:
                 return SenderPos.NAME;
 
+            case SenderLimit.SENDER_LIMIT_TYPE_ID:
+                return SenderLimit.NAME;
+
             case ReceiverHwm.RECEIVER_HWM_TYPE_ID:
                 return ReceiverHwm.NAME;
 

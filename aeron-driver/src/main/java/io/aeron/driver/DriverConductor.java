@@ -552,6 +552,7 @@ public class DriverConductor implements Agent
                 newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId, termLength),
                 PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 SenderPos.allocate(countersManager, registrationId, sessionId, streamId, channel),
+                SenderLimit.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 sessionId,
                 streamId,
                 initialTermId,

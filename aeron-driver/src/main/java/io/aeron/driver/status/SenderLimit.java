@@ -15,29 +15,32 @@
  */
 package io.aeron.driver.status;
 
-import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 /**
- * The status of a send channel endpoint represented as a counter value.
+ * The position the Sender has reached for sending data to the media on a session-channel-stream tuple.
  */
-public class SendChannelStatus
+public class SenderLimit
 {
     /**
-     * Type id of a send channel status indicator.
+     * Type id of a sender position counter.
      */
-    public static final int SEND_CHANNEL_STATUS_TYPE_ID = 6;
+    public static final int SENDER_LIMIT_TYPE_ID = 9;
 
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "snd-channel";
+    public static final String NAME = "snd-lmt";
 
-    public static AtomicCounter allocate(
+    public static UnsafeBufferPosition allocate(
         final CountersManager countersManager,
+        final long registrationId,
+        final int sessionId,
+        final int streamId,
         final String channel)
     {
-        return ChannelEndpointStatus.allocate(
-            NAME, SEND_CHANNEL_STATUS_TYPE_ID, countersManager, channel);
+        return StreamPositionCounter.allocate(
+            NAME, SENDER_LIMIT_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
     }
 }

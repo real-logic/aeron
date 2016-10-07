@@ -31,7 +31,7 @@ public class ReceiveChannelStatus
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "recv-channel";
+    public static final String NAME = "rcv-channel";
 
     public static AtomicCounter allocate(
         final CountersManager countersManager,

@@ -366,7 +366,7 @@ public class PublicationImage
             cleanBufferTo(minSubscriberPosition - (termLengthMask + 1));
         }
 
-        final long rebuildPosition = Math.max(this.rebuildPosition.getVolatile(), maxSubscriberPosition);
+        final long rebuildPosition = Math.max(this.rebuildPosition.get(), maxSubscriberPosition);
 
         final int workCount = lossDetector.scan(
             termBuffers[indexByPosition(rebuildPosition, positionBitsToShift)],
@@ -537,7 +537,7 @@ public class PublicationImage
      */
     long rebuildPosition()
     {
-        return rebuildPosition.getVolatile();
+        return rebuildPosition.get();
     }
 
     public void onTimeEvent(final long time, final DriverConductor conductor)
@@ -590,7 +590,7 @@ public class PublicationImage
             minSubscriberPosition = Math.min(minSubscriberPosition, subscriberPosition.getVolatile());
         }
 
-        return minSubscriberPosition >= rebuildPosition.getVolatile();
+        return minSubscriberPosition >= rebuildPosition.get();
     }
 
     private boolean isHeartbeat(final UnsafeBuffer packet, final int length)

@@ -32,20 +32,20 @@ import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_SENT;
 class SenderLhsPadding
 {
     @SuppressWarnings("unused")
-    long p1, p2, p3, p4, p5, p6, p7;
+    protected long p1, p2, p3, p4, p5, p6, p7;
 }
 
 class SenderHotFields extends SenderLhsPadding
 {
-    long controlPollTimeout;
-    int dutyCycleCounter;
-    int roundRobinIndex = 0;
+    protected long controlPollTimeout;
+    protected int dutyCycleCounter;
+    protected int roundRobinIndex = 0;
 }
 
 class SenderRhsPadding extends SenderHotFields
 {
     @SuppressWarnings("unused")
-    long p8, p9, p10, p11, p12, p13, p14;
+    protected long p8, p9, p10, p11, p12, p13, p14;
 }
 
 /**

@@ -38,51 +38,51 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
 class PublicationImagePadding1
 {
     @SuppressWarnings("unused")
-    long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
+    protected long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
 }
 
 class PublicationImageConductorFields extends PublicationImagePadding1
 {
-    long timeOfLastStatusChange;
+    protected long timeOfLastStatusChange;
 
-    volatile long beginLossChange = -1;
-    volatile long endLossChange = -1;
-    int lossTermId;
-    int lossTermOffset;
-    int lossLength;
+    protected volatile long beginLossChange = -1;
+    protected volatile long endLossChange = -1;
+    protected int lossTermId;
+    protected int lossTermOffset;
+    protected int lossLength;
 }
 
 class PublicationImagePadding2 extends PublicationImageConductorFields
 {
     @SuppressWarnings("unused")
-    long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
+    protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
 }
 
 class PublicationImageHotFields extends PublicationImagePadding2
 {
-    long lastPacketTimestamp;
-    long lastStatusMessageTimestamp;
-    long lastStatusMessagePosition;
-    long lastChangeNumber = -1;
+    protected long lastPacketTimestamp;
+    protected long lastStatusMessageTimestamp;
+    protected long lastStatusMessagePosition;
+    protected long lastChangeNumber = -1;
 }
 
 class PublicationImagePadding3 extends PublicationImageHotFields
 {
     @SuppressWarnings("unused")
-    long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
+    protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
 }
 
 class PublicationImageStatusFields extends PublicationImagePadding3
 {
-    long cleanPosition;
-    volatile long newStatusMessagePosition;
-    volatile PublicationImage.Status status = PublicationImage.Status.INIT;
+    protected long cleanPosition;
+    protected volatile long newStatusMessagePosition;
+    protected volatile PublicationImage.Status status = PublicationImage.Status.INIT;
 }
 
 class PublicationImagePadding4 extends PublicationImageStatusFields
 {
     @SuppressWarnings("unused")
-    long p46, p47, p48, p49, p50, p51, p52, p53, p54, p55, p56, p57, p58, p59, p60;
+    protected long p46, p47, p48, p49, p50, p51, p52, p53, p54, p55, p56, p57, p58, p59, p60;
 }
 
 /**

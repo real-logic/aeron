@@ -25,18 +25,18 @@ import java.util.function.Consumer;
 class SubscriptionLhsPadding
 {
     @SuppressWarnings("unused")
-    long p1, p2, p3, p4, p5, p6, p7;
+    protected long p1, p2, p3, p4, p5, p6, p7;
 }
 
 class SubscriptionHotFields extends SubscriptionLhsPadding
 {
-    int roundRobinIndex = 0;
+    protected int roundRobinIndex = 0;
 }
 
 class SubscriptionRhsPadding extends SubscriptionHotFields
 {
     @SuppressWarnings("unused")
-    long p8, p9, p10, p11, p12, p13, p14;
+    protected long p8, p9, p10, p11, p12, p13, p14;
 }
 
 /**

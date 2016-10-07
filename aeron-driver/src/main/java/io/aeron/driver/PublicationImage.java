@@ -43,13 +43,7 @@ class PublicationImagePadding1
 
 class PublicationImageConductorFields extends PublicationImagePadding1
 {
-    protected long timeOfLastStatusChange;
-
-    protected volatile long beginLossChange = -1;
-    protected volatile long endLossChange = -1;
-    protected int lossTermId;
-    protected int lossTermOffset;
-    protected int lossLength;
+    protected long cleanPosition;
 }
 
 class PublicationImagePadding2 extends PublicationImageConductorFields
@@ -63,7 +57,6 @@ class PublicationImageHotFields extends PublicationImagePadding2
     protected long lastPacketTimestamp;
     protected long lastStatusMessageTimestamp;
     protected long lastStatusMessagePosition;
-    protected long lastChangeNumber = -1;
 }
 
 class PublicationImagePadding3 extends PublicationImageHotFields
@@ -74,9 +67,7 @@ class PublicationImagePadding3 extends PublicationImageHotFields
 
 class PublicationImageStatusFields extends PublicationImagePadding3
 {
-    protected long cleanPosition;
     protected volatile long newStatusMessagePosition;
-    protected volatile PublicationImage.Status status = PublicationImage.Status.INIT;
 }
 
 class PublicationImagePadding4 extends PublicationImageStatusFields
@@ -97,6 +88,15 @@ public class PublicationImage
         INIT, ACTIVE, INACTIVE, LINGER
     }
 
+    private long timeOfLastStatusChange;
+    private long lastChangeNumber = -1;
+
+    private volatile long beginLossChange = -1;
+    private volatile long endLossChange = -1;
+    private int lossTermId;
+    private int lossTermOffset;
+    private int lossLength;
+
     private final long correlationId;
     private final long imageLivenessTimeoutNs;
     private final int sessionId;
@@ -107,6 +107,8 @@ public class PublicationImage
     private final int currentWindowLength;
     private final int currentGain;
     private boolean reachedEndOfLife = false;
+
+    private volatile PublicationImage.Status status = PublicationImage.Status.INIT;
 
     private final RawLog rawLog;
     private final InetSocketAddress controlAddress;

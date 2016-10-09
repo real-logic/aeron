@@ -110,7 +110,6 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
 
     public void onCloseSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
     {
-        channelEndpoint.statusIndicator().setOrdered(ChannelEndpointStatus.CLOSING);
         conductorProxy.closeAutoCloseable(channelEndpoint.statusIndicator());
         channelEndpoint.close();
     }

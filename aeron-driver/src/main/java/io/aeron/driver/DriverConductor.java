@@ -288,8 +288,10 @@ public class DriverConductor implements Agent
                 .forEach(SubscriptionLink::removeSpiedPublication);
         }
 
-        if (channelEndpoint.sessionCount() == 0)
+        if (channelEndpoint.sessionCount() == 0 &&
+            channelEndpoint.statusIndicator().get() != ChannelEndpointStatus.CLOSING)
         {
+            channelEndpoint.statusIndicator().setOrdered(ChannelEndpointStatus.CLOSING);
             sendChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
             senderProxy.closeSendChannelEndpoint(channelEndpoint);
         }

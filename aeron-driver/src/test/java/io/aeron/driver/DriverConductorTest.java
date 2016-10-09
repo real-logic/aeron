@@ -20,6 +20,7 @@ import io.aeron.DriverProxy;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.buffer.RawLogFactory;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
+import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.HeaderWriter;
@@ -1021,6 +1022,29 @@ public class DriverConductorTest
         verify(senderProxy).removeNetworkPublication(eq(publication));
         verify(mockClientProxy).onUnavailableImage(
             eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), anyString());
+    }
+
+    @Test
+    public void shouldOnlyCloseSendChannelEndpointOnceWithMultiplePublications() throws Exception
+    {
+        final long id1 = driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final long id2 = driverProxy.addPublication(CHANNEL_4000, STREAM_ID_2);
+
+        driverConductor.doWork();
+
+        final SendChannelEndpoint sendChannelEndpoint =
+            driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
+        assertNotNull(sendChannelEndpoint);
+
+        driverProxy.removePublication(id1);
+        driverProxy.removePublication(id2);
+
+        doWorkUntil(() -> nanoClock.nanoTime() >= PUBLICATION_LINGER_NS * 2);
+
+        verify(senderProxy, times(1)).closeSendChannelEndpoint(eq(sendChannelEndpoint));
     }
 
     private long doWorkUntil(final BooleanSupplier condition) throws Exception

@@ -26,8 +26,8 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 /**
  * Allocates {@link AtomicCounter} indicating channel endpoint status. Indicators include:
  * <ul>
- *     <li>{@link SendChannelStatus}: Indication of send channel status.</li>
- *     <li>{@link ReceiveChannelStatus}: Indication of receive channel status.</li>
+ * <li>{@link SendChannelStatus}: Indication of send channel status.</li>
+ * <li>{@link ReceiveChannelStatus}: Indication of receive channel status.</li>
  * </ul>
  */
 public class ChannelEndpointStatus
@@ -56,6 +56,34 @@ public class ChannelEndpointStatus
      * Offset in the key meta data for the channel of the counter.
      */
     public static final int CHANNEL_OFFSET = 0;
+
+    /**
+     * String representation of the channel status.
+     *
+     * @param status to be converted.
+     * @return representation of the channel status.
+     */
+    public static String status(final long status)
+    {
+        if (INITIALIZING == status)
+        {
+            return "INITIALIZING";
+        }
+        if (ERRORED == status)
+        {
+            return "ERRORED";
+        }
+        if (ACTIVE == status)
+        {
+            return "ACTIVE";
+        }
+        if (CLOSING == status)
+        {
+            return "CLOSING";
+        }
+
+        return "unknown id=" + status;
+    }
 
     /**
      * The maximum length in bytes of the encoded channel identity.

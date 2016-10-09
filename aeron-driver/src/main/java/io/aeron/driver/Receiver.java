@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.function.Consumer;
 
 import static io.aeron.driver.Configuration.PENDING_SETUPS_TIMEOUT_NS;
+import static io.aeron.driver.status.ChannelEndpointStatus.status;
 import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_RECEIVED;
 
 /**
@@ -112,9 +113,17 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
 
     public void onRegisterReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
+        final AtomicCounter status = channelEndpoint.statusIndicator();
+        final long currentStatus = status.get();
+        if (currentStatus != ChannelEndpointStatus.INITIALIZING)
+        {
+            throw new IllegalStateException(
+                "Channel cannot be registered unless INITALIZING: status=" + status(currentStatus));
+        }
+
         channelEndpoint.openChannel();
         channelEndpoint.registerForRead(dataTransportPoller);
-        channelEndpoint.statusIndicator().setOrdered(ChannelEndpointStatus.ACTIVE);
+        status.setOrdered(ChannelEndpointStatus.ACTIVE);
     }
 
     public void onCloseReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)

@@ -289,7 +289,7 @@ public class DriverConductor implements Agent
         }
 
         if (channelEndpoint.sessionCount() == 0 &&
-            channelEndpoint.statusIndicator().get() != ChannelEndpointStatus.CLOSING)
+            null != sendChannelEndpointByChannelMap.get(channelEndpoint.udpChannel().canonicalForm()))
         {
             channelEndpoint.statusIndicator().setOrdered(ChannelEndpointStatus.CLOSING);
             sendChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
@@ -311,7 +311,7 @@ public class DriverConductor implements Agent
             }
 
             if (channelEndpoint.streamCount() == 0 &&
-                channelEndpoint.statusIndicator().get() != ChannelEndpointStatus.CLOSING)
+                null != receiveChannelEndpointByChannelMap.get(channelEndpoint.udpChannel().canonicalForm()))
             {
                 channelEndpoint.statusIndicator().setOrdered(ChannelEndpointStatus.CLOSING);
                 receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
@@ -899,7 +899,7 @@ public class DriverConductor implements Agent
             }
 
             if (0 == channelEndpoint.streamCount() &&
-                channelEndpoint.statusIndicator().get() != ChannelEndpointStatus.CLOSING)
+                null != receiveChannelEndpointByChannelMap.get(channelEndpoint.udpChannel().canonicalForm()))
             {
                 channelEndpoint.statusIndicator().setOrdered(ChannelEndpointStatus.CLOSING);
                 receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());

@@ -128,7 +128,6 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
 
     public void onCloseReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
-        channelEndpoint.statusIndicator().setOrdered(ChannelEndpointStatus.CLOSING);
         conductorProxy.closeAutoCloseable(channelEndpoint.statusIndicator());
         channelEndpoint.close();
     }

@@ -310,8 +310,10 @@ public class DriverConductor implements Agent
                 receiverProxy.removeSubscription(channelEndpoint, streamId);
             }
 
-            if (channelEndpoint.streamCount() == 0)
+            if (channelEndpoint.streamCount() == 0 &&
+                channelEndpoint.statusIndicator().get() != ChannelEndpointStatus.CLOSING)
             {
+                channelEndpoint.statusIndicator().setOrdered(ChannelEndpointStatus.CLOSING);
                 receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
                 receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
             }
@@ -896,8 +898,10 @@ public class DriverConductor implements Agent
                 receiverProxy.removeSubscription(channelEndpoint, link.streamId());
             }
 
-            if (0 == channelEndpoint.streamCount())
+            if (0 == channelEndpoint.streamCount() &&
+                channelEndpoint.statusIndicator().get() != ChannelEndpointStatus.CLOSING)
             {
+                channelEndpoint.statusIndicator().setOrdered(ChannelEndpointStatus.CLOSING);
                 receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
                 receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
 

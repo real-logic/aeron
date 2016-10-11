@@ -16,6 +16,7 @@
 package io.aeron.driver.media;
 
 import io.aeron.driver.*;
+import io.aeron.driver.status.ChannelEndpointStatus;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.LangUtil;
@@ -64,9 +65,6 @@ public class SendChannelEndpoint extends UdpChannelTransport
         this.statusIndicator = statusIndicator;
     }
 
-    /**
-     * Called from the {@link Sender} to create the channel for the transport.
-     */
     public void openChannel()
     {
         openDatagramChannel(statusIndicator);
@@ -77,9 +75,23 @@ public class SendChannelEndpoint extends UdpChannelTransport
         return udpChannel().originalUriString();
     }
 
+    public boolean isStatusIndicatorClosed()
+    {
+        return statusIndicator.isClosed();
+    }
+
     public AtomicCounter statusIndicator()
     {
         return statusIndicator;
+    }
+
+    public void closeStatusIndicator()
+    {
+        if (!statusIndicator.isClosed())
+        {
+            statusIndicator.setOrdered(ChannelEndpointStatus.CLOSING);
+            statusIndicator.close();
+        }
     }
 
     /**

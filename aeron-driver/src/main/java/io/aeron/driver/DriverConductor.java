@@ -288,10 +288,9 @@ public class DriverConductor implements Agent
                 .forEach(SubscriptionLink::removeSpiedPublication);
         }
 
-        if (channelEndpoint.sessionCount() == 0 &&
-            null != sendChannelEndpointByChannelMap.get(channelEndpoint.udpChannel().canonicalForm()))
+        if (0 == channelEndpoint.sessionCount() && !channelEndpoint.isStatusIndicatorClosed())
         {
-            channelEndpoint.statusIndicator().setOrdered(ChannelEndpointStatus.CLOSING);
+            channelEndpoint.closeStatusIndicator();
             sendChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
             senderProxy.closeSendChannelEndpoint(channelEndpoint);
         }
@@ -310,10 +309,9 @@ public class DriverConductor implements Agent
                 receiverProxy.removeSubscription(channelEndpoint, streamId);
             }
 
-            if (channelEndpoint.streamCount() == 0 &&
-                null != receiveChannelEndpointByChannelMap.get(channelEndpoint.udpChannel().canonicalForm()))
+            if (0 == channelEndpoint.streamCount() && !channelEndpoint.isStatusIndicatorClosed())
             {
-                channelEndpoint.statusIndicator().setOrdered(ChannelEndpointStatus.CLOSING);
+                channelEndpoint.closeStatusIndicator();
                 receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
                 receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
             }
@@ -898,10 +896,9 @@ public class DriverConductor implements Agent
                 receiverProxy.removeSubscription(channelEndpoint, link.streamId());
             }
 
-            if (0 == channelEndpoint.streamCount() &&
-                null != receiveChannelEndpointByChannelMap.get(channelEndpoint.udpChannel().canonicalForm()))
+            if (0 == channelEndpoint.streamCount() && !channelEndpoint.isStatusIndicatorClosed())
             {
-                channelEndpoint.statusIndicator().setOrdered(ChannelEndpointStatus.CLOSING);
+                channelEndpoint.closeStatusIndicator();
                 receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
                 receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
 

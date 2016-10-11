@@ -17,6 +17,7 @@ package io.aeron.driver.media;
 
 import io.aeron.driver.*;
 import io.aeron.driver.exceptions.ConfigurationException;
+import io.aeron.driver.status.ChannelEndpointStatus;
 import io.aeron.protocol.*;
 import org.agrona.LangUtil;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -106,9 +107,23 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         return udpChannel().originalUriString();
     }
 
+    public boolean isStatusIndicatorClosed()
+    {
+        return statusIndicator.isClosed();
+    }
+
     public AtomicCounter statusIndicator()
     {
         return statusIndicator;
+    }
+
+    public void closeStatusIndicator()
+    {
+        if (!statusIndicator.isClosed())
+        {
+            statusIndicator.setOrdered(ChannelEndpointStatus.CLOSING);
+            statusIndicator.close();
+        }
     }
 
     public void close()

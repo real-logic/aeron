@@ -18,7 +18,6 @@ package io.aeron.driver;
 import io.aeron.driver.media.ControlTransportPoller;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.cmd.SenderCmd;
-import io.aeron.driver.status.ChannelEndpointStatus;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -27,7 +26,6 @@ import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.function.Consumer;
 
-import static io.aeron.driver.status.ChannelEndpointStatus.status;
 import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_SENT;
 
 class SenderLhsPadding
@@ -104,17 +102,9 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
 
     public void onRegisterSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
     {
-        final AtomicCounter status = channelEndpoint.statusIndicator();
-        final long currentStatus = status.get();
-        if (currentStatus != ChannelEndpointStatus.INITIALIZING)
-        {
-            throw new IllegalStateException(
-                "Channel cannot be registered unless INITALIZING: status=" + status(currentStatus));
-        }
-
         channelEndpoint.openChannel();
         channelEndpoint.registerForRead(controlTransportPoller);
-        status.setOrdered(ChannelEndpointStatus.ACTIVE);
+        channelEndpoint.indicateActive();
     }
 
     public void onCloseSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)

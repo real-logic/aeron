@@ -30,6 +30,7 @@ import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 
+import static io.aeron.driver.status.ChannelEndpointStatus.status;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 
@@ -112,9 +113,16 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         return statusIndicator.isClosed();
     }
 
-    public AtomicCounter statusIndicator()
+    public void indicateActive()
     {
-        return statusIndicator;
+        final long currentStatus = statusIndicator.get();
+        if (currentStatus != ChannelEndpointStatus.INITIALIZING)
+        {
+            throw new IllegalStateException(
+                "Channel cannot be registered unless INITALIZING: status=" + status(currentStatus));
+        }
+
+        statusIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
     }
 
     public void closeStatusIndicator()

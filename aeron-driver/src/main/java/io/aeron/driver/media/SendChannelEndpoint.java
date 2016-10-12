@@ -30,6 +30,7 @@ import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
+import static io.aeron.driver.status.ChannelEndpointStatus.status;
 import static io.aeron.driver.status.SystemCounterDescriptor.INVALID_PACKETS;
 import static io.aeron.driver.status.SystemCounterDescriptor.NAK_MESSAGES_RECEIVED;
 import static io.aeron.driver.status.SystemCounterDescriptor.STATUS_MESSAGES_RECEIVED;
@@ -80,9 +81,16 @@ public class SendChannelEndpoint extends UdpChannelTransport
         return statusIndicator.isClosed();
     }
 
-    public AtomicCounter statusIndicator()
+    public void indicateActive()
     {
-        return statusIndicator;
+        final long currentStatus = statusIndicator.get();
+        if (currentStatus != ChannelEndpointStatus.INITIALIZING)
+        {
+            throw new IllegalStateException(
+                "Channel cannot be registered unless INITALIZING: status=" + status(currentStatus));
+        }
+
+        statusIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
     }
 
     public void closeStatusIndicator()

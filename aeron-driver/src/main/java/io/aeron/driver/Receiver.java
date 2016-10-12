@@ -41,7 +41,6 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     private final NanoClock clock;
     private final ArrayList<PublicationImage> publicationImages = new ArrayList<>();
     private final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = new ArrayList<>();
-    private final DriverConductorProxy conductorProxy;
 
     public Receiver(final MediaDriver.Context ctx)
     {
@@ -50,7 +49,6 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         commandQueue = ctx.receiverCommandQueue();
         totalBytesReceived = ctx.systemCounters().get(BYTES_RECEIVED);
         clock = ctx.nanoClock();
-        conductorProxy = ctx.fromReceiverDriverConductorProxy();
     }
 
     public String roleName()

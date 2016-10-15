@@ -99,7 +99,7 @@ public class Configuration
     /**
      * Default value for low file storage warning threshold.
      */
-    public static final long LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT = TERM_BUFFER_LENGTH_DEFAULT * 4L;
+    public static final long LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT = TERM_BUFFER_LENGTH_DEFAULT * 10L;
 
     /**
      * Default value for low file storage warning threshold.

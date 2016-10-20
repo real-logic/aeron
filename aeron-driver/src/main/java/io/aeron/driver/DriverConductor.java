@@ -273,8 +273,6 @@ public class DriverConductor implements Agent
     {
         final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
 
-        senderProxy.removeNetworkPublication(publication);
-
         if (publication.hasSpies())
         {
             clientProxy.onUnavailableImage(
@@ -287,6 +285,8 @@ public class DriverConductor implements Agent
                 .filter((link) -> link.matches(channelEndpoint, publication.streamId()))
                 .forEach(SubscriptionLink::removeSpiedPublication);
         }
+
+        senderProxy.removeNetworkPublication(publication);
 
         if (0 == channelEndpoint.sessionCount() && !channelEndpoint.isStatusIndicatorClosed())
         {

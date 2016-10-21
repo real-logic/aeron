@@ -19,7 +19,6 @@ import io.aeron.exceptions.ConductorServiceTimeoutException;
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.exceptions.RegistrationException;
 import org.agrona.ErrorHandler;
-import org.agrona.LangUtil;
 import org.agrona.ManagedResource;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.concurrent.Agent;
@@ -137,7 +136,7 @@ class ClientConductor implements Agent, DriverListener
         {
             final long correlationId = driverProxy.addPublication(channel, streamId);
 
-            awaitResponse(correlationId, channel, true);
+            awaitResponse(correlationId, channel);
             publication = activePublications.get(channel, streamId);
         }
 
@@ -155,7 +154,7 @@ class ClientConductor implements Agent, DriverListener
             final long correlationId = driverProxy.removePublication(publication.registrationId());
 
             lingerResource(publication.managedResource());
-            awaitResponse(correlationId, publication.channel(), false);
+            awaitResponse(correlationId, publication.channel());
         }
     }
 
@@ -167,7 +166,7 @@ class ClientConductor implements Agent, DriverListener
         final Subscription subscription = new Subscription(this, channel, streamId, correlationId);
         activeSubscriptions.add(subscription);
 
-        awaitResponse(correlationId, channel, true);
+        awaitResponse(correlationId, channel);
 
         return subscription;
     }
@@ -178,7 +177,7 @@ class ClientConductor implements Agent, DriverListener
 
         final long correlationId = driverProxy.removeSubscription(subscription.registrationId());
 
-        awaitResponse(correlationId, subscription.channel(), false);
+        awaitResponse(correlationId, subscription.channel());
 
         activeSubscriptions.remove(subscription);
     }
@@ -270,7 +269,7 @@ class ClientConductor implements Agent, DriverListener
 
     boolean isPublicationConnected(final long timeOfLastStatusMessage)
     {
-        return (epochClock.time() <= (timeOfLastStatusMessage + publicationConnectionTimeoutMs));
+        return epochClock.time() <= (timeOfLastStatusMessage + publicationConnectionTimeoutMs);
     }
 
     UnavailableImageHandler unavailableImageHandler()
@@ -287,7 +286,7 @@ class ClientConductor implements Agent, DriverListener
         {
             driverActive = false;
 
-            final String msg = String.format("Driver has been inactive for over %dms", driverTimeoutMs);
+            final String msg = "Driver has been inactive for over " + driverTimeoutMs + "ms";
             errorHandler.onError(new DriverTimeoutException(msg));
         }
     }
@@ -317,28 +316,14 @@ class ClientConductor implements Agent, DriverListener
         return workCount;
     }
 
-    private void awaitResponse(final long correlationId, final String expectedChannel, final boolean isSlowOperation)
+    private void awaitResponse(final long correlationId, final String expectedChannel)
     {
         driverException = null;
         final long timeout = nanoClock.nanoTime() + driverTimeoutNs;
 
         do
         {
-            if (isSlowOperation)
-            {
-                try
-                {
-                    Thread.sleep(1);
-                }
-                catch (final InterruptedException ex)
-                {
-                    LangUtil.rethrowUnchecked(ex);
-                }
-            }
-            else
-            {
-                Thread.yield();
-            }
+            Thread.yield();
 
             doWork(correlationId, expectedChannel);
 
@@ -367,7 +352,7 @@ class ClientConductor implements Agent, DriverListener
             onClose();
 
             throw new ConductorServiceTimeoutException(
-                String.format("Timeout between service calls over %dns", interServiceTimeoutNs));
+                "Timeout between service calls over " + interServiceTimeoutNs + "ns");
         }
 
         timeOfLastWork = now;

@@ -135,10 +135,10 @@ subprojects {
             exceptionFormat = 'full'
             afterSuite { desc, result ->
                 if (!desc.parent) {
-                    println("Results: ${result.resultType} (${result.testCount} tests, " +
+                    println "Results: ${result.resultType} (${result.testCount} tests, " +
                             "${result.successfulTestCount} successes, " +
                             "${result.failedTestCount} failures, " +
-                            "${result.skippedTestCount} skipped)")
+                            "${result.skippedTestCount} skipped)"
                 }
             }
         }

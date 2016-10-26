@@ -121,7 +121,7 @@ public class ReceiverTest
     {
         when(POSITION.getVolatile())
             .thenReturn(computePosition(ACTIVE_TERM_ID, 0, numberOfTrailingZeros(TERM_BUFFER_LENGTH), ACTIVE_TERM_ID));
-        when(mockSystemCounters.get(anyObject())).thenReturn(mock(AtomicCounter.class));
+        when(mockSystemCounters.get(any())).thenReturn(mock(AtomicCounter.class));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))

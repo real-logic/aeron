@@ -536,7 +536,7 @@ public class ClientConductorTest
                 conductor.driverListenerAdapter().onMessage(msgTypeId, buffer, 0, length);
 
                 return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+            }).when(mockToClientReceiver).receive(any());
     }
 
     private class PrintError implements ErrorHandler

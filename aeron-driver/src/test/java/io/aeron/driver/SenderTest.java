@@ -106,8 +106,8 @@ public class SenderTest
     {
         final SendChannelEndpoint mockSendChannelEndpoint = mock(SendChannelEndpoint.class);
         when(mockSendChannelEndpoint.udpChannel()).thenReturn(udpChannel);
-        when(mockSendChannelEndpoint.send(anyObject())).thenAnswer(saveByteBufferAnswer);
-        when(mockSystemCounters.get(anyObject())).thenReturn(mock(AtomicCounter.class));
+        when(mockSendChannelEndpoint.send(any())).thenAnswer(saveByteBufferAnswer);
+        when(mockSystemCounters.get(any())).thenReturn(mock(AtomicCounter.class));
 
         sender = new Sender(
             new MediaDriver.Context()

@@ -168,7 +168,7 @@ public class FragmentAssemblerTest
 
         adapter.onFragment(srcBuffer, offset, length, header);
 
-        verify(delegateFragmentHandler, never()).onFragment(anyObject(), anyInt(), anyInt(), anyObject());
+        verify(delegateFragmentHandler, never()).onFragment(any(), anyInt(), anyInt(), any());
     }
 
     @Test
@@ -185,6 +185,6 @@ public class FragmentAssemblerTest
         adapter.onFragment(srcBuffer, offset, length, header);
         adapter.onFragment(srcBuffer, offset, length, header);
 
-        verify(delegateFragmentHandler, never()).onFragment(anyObject(), anyInt(), anyInt(), anyObject());
+        verify(delegateFragmentHandler, never()).onFragment(any(), anyInt(), anyInt(), any());
     }
 }

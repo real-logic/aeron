@@ -320,7 +320,7 @@ public class DriverConductorTest
 
         inOrder.verify(senderProxy).newNetworkPublication(any());
         inOrder.verify(mockClientProxy).onPublicationReady(eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt());
-        inOrder.verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), argThat(not(isEmptyOrNullString())), anyLong());
+        inOrder.verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), anyString(), anyLong());
         inOrder.verifyNoMoreInteractions();
 
         verify(mockErrorCounter).increment();
@@ -339,7 +339,7 @@ public class DriverConductorTest
 
         inOrder.verify(receiverProxy).addSubscription(any(), anyInt());
         inOrder.verify(mockClientProxy).operationSucceeded(id1);
-        inOrder.verify(mockClientProxy).onError(eq(UNKNOWN_SUBSCRIPTION), argThat(not(isEmptyOrNullString())), anyLong());
+        inOrder.verify(mockClientProxy).onError(eq(UNKNOWN_SUBSCRIPTION), anyString(), anyLong());
         inOrder.verifyNoMoreInteractions();
 
         verify(mockErrorLog).record(any(Throwable.class));
@@ -355,7 +355,7 @@ public class DriverConductorTest
 
         verify(senderProxy, never()).newNetworkPublication(any());
 
-        verify(mockClientProxy).onError(eq(INVALID_CHANNEL), argThat(not(isEmptyOrNullString())), anyLong());
+        verify(mockClientProxy).onError(eq(INVALID_CHANNEL), anyString(), anyLong());
         verify(mockClientProxy, never()).operationSucceeded(anyLong());
 
         verify(mockErrorCounter).increment();

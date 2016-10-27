@@ -28,7 +28,6 @@ import java.nio.ByteOrder;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 public class FragmentAssemblerTest

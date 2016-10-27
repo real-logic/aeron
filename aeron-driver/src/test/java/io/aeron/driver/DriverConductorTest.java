@@ -51,7 +51,6 @@ import static io.aeron.driver.Configuration.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 

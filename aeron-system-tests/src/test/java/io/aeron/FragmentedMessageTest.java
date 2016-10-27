@@ -31,7 +31,6 @@ import io.aeron.logbuffer.Header;
 import static io.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 

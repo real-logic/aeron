@@ -26,7 +26,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetSocketAddress;
 
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.*;
 
 public class DataPacketDispatcherTest

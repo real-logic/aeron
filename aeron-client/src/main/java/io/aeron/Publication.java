@@ -26,7 +26,8 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 /**
  * Aeron Publisher API for sending messages to subscribers of a given channel and streamId pair. Publishers
- * are created via an {@link Aeron} object, and messages are sent via an offer method or a claim and commit
+ * are created via the {@link Aeron#addPublication(String, int)} method, and messages are sent via one of the
+ * {@link #offer(DirectBuffer)} methods, or a {@link #tryClaim(int, BufferClaim)} and {@link BufferClaim#commit()}
  * method combination.
  * <p>
  * The APIs used to send are all non-blocking.

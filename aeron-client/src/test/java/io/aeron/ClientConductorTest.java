@@ -123,7 +123,7 @@ public class ClientConductorTest
             KEEP_ALIVE_INTERVAL,
             AWAIT_TIMEOUT,
             TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS),
-            TimeUnit.MILLISECONDS.toMillis(PUBLICATION_CONNECTION_TIMEOUT_MS));
+            PUBLICATION_CONNECTION_TIMEOUT_MS);
 
         publicationReady.wrap(publicationReadyBuffer, 0);
         correlatedMessage.wrap(correlatedMessageBuffer, 0);

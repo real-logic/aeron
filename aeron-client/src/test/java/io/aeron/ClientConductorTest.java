@@ -159,10 +159,10 @@ public class ClientConductorTest
         final LogBuffers logBuffersSession1 = mock(LogBuffers.class);
         final LogBuffers logBuffersSession2 = mock(LogBuffers.class);
 
-        when(logBuffersFactory.map(eq(SESSION_ID_1 + "-log"), eq(READ_WRITE))).thenReturn(logBuffersSession1);
-        when(logBuffersFactory.map(eq(SESSION_ID_2 + "-log"), eq(READ_WRITE))).thenReturn(logBuffersSession2);
-        when(logBuffersFactory.map(eq(SESSION_ID_1 + "-log"), eq(READ_ONLY))).thenReturn(logBuffersSession1);
-        when(logBuffersFactory.map(eq(SESSION_ID_2 + "-log"), eq(READ_ONLY))).thenReturn(logBuffersSession2);
+        when(logBuffersFactory.map(SESSION_ID_1 + "-log", READ_WRITE)).thenReturn(logBuffersSession1);
+        when(logBuffersFactory.map(SESSION_ID_2 + "-log", READ_WRITE)).thenReturn(logBuffersSession2);
+        when(logBuffersFactory.map(SESSION_ID_1 + "-log", READ_ONLY)).thenReturn(logBuffersSession1);
+        when(logBuffersFactory.map(SESSION_ID_2 + "-log", READ_ONLY)).thenReturn(logBuffersSession2);
 
         when(logBuffersSession1.termBuffers()).thenReturn(termBuffersSession1);
         when(logBuffersSession2.termBuffers()).thenReturn(termBuffersSession2);

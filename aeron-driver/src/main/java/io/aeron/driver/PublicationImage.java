@@ -193,13 +193,14 @@ public class PublicationImage
      */
     public void close()
     {
-        rawLog.close();
         hwmPosition.close();
         rebuildPosition.close();
         for (final ReadablePosition position : subscriberPositions)
         {
             position.close();
         }
+
+        rawLog.close();
     }
 
     public long correlationId()

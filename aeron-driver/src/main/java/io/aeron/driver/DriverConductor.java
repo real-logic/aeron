@@ -369,8 +369,8 @@ public class DriverConductor implements Agent
 
             if (resource.hasReachedEndOfLife())
             {
-                resource.delete();
                 list.remove(i);
+                resource.delete();
             }
         }
     }

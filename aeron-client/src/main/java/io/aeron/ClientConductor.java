@@ -132,11 +132,9 @@ class ClientConductor implements Agent, DriverListener
         verifyDriverIsActive();
 
         Publication publication = activePublications.get(channel, streamId);
-        if (publication == null)
+        if (null == publication)
         {
-            final long correlationId = driverProxy.addPublication(channel, streamId);
-
-            awaitResponse(correlationId, channel);
+            awaitResponse(driverProxy.addPublication(channel, streamId), channel);
             publication = activePublications.get(channel, streamId);
         }
 
@@ -151,10 +149,8 @@ class ClientConductor implements Agent, DriverListener
 
         if (publication == activePublications.remove(publication.channel(), publication.streamId()))
         {
-            final long correlationId = driverProxy.removePublication(publication.registrationId());
-
             lingerResource(publication.managedResource());
-            awaitResponse(correlationId, publication.channel());
+            awaitResponse(driverProxy.removePublication(publication.registrationId()), publication.channel());
         }
     }
 
@@ -175,9 +171,7 @@ class ClientConductor implements Agent, DriverListener
     {
         verifyDriverIsActive();
 
-        final long correlationId = driverProxy.removeSubscription(subscription.registrationId());
-
-        awaitResponse(correlationId, subscription.channel());
+        awaitResponse(driverProxy.removeSubscription(subscription.registrationId()), subscription.channel());
 
         activeSubscriptions.remove(subscription);
     }
@@ -227,8 +221,7 @@ class ClientConductor implements Agent, DriverListener
                             logBuffersFactory.map(logFileName, imageMapMode),
                             errorHandler,
                             sourceIdentity,
-                            correlationId
-                        );
+                            correlationId);
 
                         subscription.addImage(image);
                         availableImageHandler.onAvailableImage(image);
@@ -339,7 +332,7 @@ class ClientConductor implements Agent, DriverListener
         }
         while (nanoClock.nanoTime() < timeout);
 
-        throw new DriverTimeoutException("No response from driver within timeout");
+        throw new DriverTimeoutException("No response within driver timeout");
     }
 
     private int onCheckTimeouts()

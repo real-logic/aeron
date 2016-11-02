@@ -31,6 +31,7 @@ import org.agrona.concurrent.status.UnsafeBufferPosition;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -316,7 +317,7 @@ class ClientConductor implements Agent, DriverListener
 
         do
         {
-            Thread.yield();
+            LockSupport.parkNanos(1);
 
             doWork(correlationId, expectedChannel);
 

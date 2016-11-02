@@ -69,7 +69,7 @@ public class ClientConductorTest
 
     private static final long KEEP_ALIVE_INTERVAL = TimeUnit.MILLISECONDS.toNanos(500);
     private static final long AWAIT_TIMEOUT = 100;
-    private static final long INTER_SERVICE_TIMEOUT_MS = 100;
+    private static final long INTER_SERVICE_TIMEOUT_MS = 1000;
     private static final long PUBLICATION_CONNECTION_TIMEOUT_MS = 5000;
 
     private static final String SOURCE_INFO = "127.0.0.1:40789";
@@ -520,7 +520,7 @@ public class ClientConductorTest
         suppressPrintError = true;
 
         conductor.doWork();
-        Thread.sleep(INTER_SERVICE_TIMEOUT_MS + 10);
+        Thread.sleep(INTER_SERVICE_TIMEOUT_MS + 100);
         conductor.doWork();
 
         verify(mockClientErrorHandler).onError(any(ConductorServiceTimeoutException.class));

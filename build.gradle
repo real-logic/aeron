@@ -170,6 +170,8 @@ subprojects {
 }
 
 project(':aeron-client') {
+    apply plugin: 'osgi'
+
     dependencies {
         compile 'org.agrona:Agrona:0.5.6'
     }
@@ -212,6 +214,7 @@ project(':aeron-client') {
 
 project(':aeron-driver') {
     apply plugin: 'application'
+    apply plugin: 'osgi'
 
     mainClassName = 'io.aeron.driver.MediaDriver'
 
@@ -367,6 +370,7 @@ project(':aeron-system-tests') {
 
 project(':aeron-agent') {
     apply plugin: 'com.github.johnrengelman.shadow'
+    apply plugin: 'osgi'
 
     dependencies {
         compile project(':aeron-client'), project(':aeron-driver')

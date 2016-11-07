@@ -31,6 +31,7 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
 
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static org.agrona.IoUtil.mapExistingFile;
@@ -280,18 +281,12 @@ public final class Aeron implements AutoCloseable
 
             if (null == availableImageHandler)
             {
-                availableImageHandler =
-                    (image) ->
-                    {
-                    };
+                availableImageHandler = (image) -> {};
             }
 
             if (null == unavailableImageHandler)
             {
-                unavailableImageHandler =
-                    (image) ->
-                    {
-                    };
+                unavailableImageHandler = (image) -> {};
             }
 
             if (null == imageMapMode)
@@ -555,7 +550,7 @@ public final class Aeron implements AutoCloseable
                     throw new DriverTimeoutException("CnC file not found: " + cncFile.getName());
                 }
 
-                Thread.yield();
+                LockSupport.parkNanos(1);
             }
 
             cncByteBuffer = mapExistingFile(cncFile(), CncFileDescriptor.CNC_FILE);
@@ -569,7 +564,7 @@ public final class Aeron implements AutoCloseable
                     throw new DriverTimeoutException("CnC file is created by not initialised.");
                 }
 
-                Thread.yield();
+                LockSupport.parkNanos(1);
             }
 
             if (CncFileDescriptor.CNC_VERSION != cncVersion)

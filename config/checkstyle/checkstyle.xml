@@ -59,7 +59,9 @@
 
         <module name="NoWhitespaceBefore"/>
 
-        <module name="WhitespaceAround"/>
+        <module name="WhitespaceAround">
+            <property name="allowEmptyLambdas" value="true"/>
+        </module>
 
         <module name="WhitespaceAfter">
             <property name="tokens" value="COMMA, SEMI"/>

@@ -300,19 +300,9 @@ public final class MediaDriver implements AutoCloseable
             HighResolutionTimer.enable();
         }
 
-        if (null != sharedRunner)
+        if (null != conductorRunner)
         {
-            AgentRunner.startOnThread(sharedRunner, ctx.sharedThreadFactory);
-        }
-
-        if (null != sharedNetworkRunner)
-        {
-            AgentRunner.startOnThread(sharedNetworkRunner, ctx.sharedNetworkThreadFactory);
-        }
-
-        if (null != receiverRunner)
-        {
-            AgentRunner.startOnThread(receiverRunner, ctx.receiverThreadFactory);
+            AgentRunner.startOnThread(conductorRunner, ctx.conductorThreadFactory);
         }
 
         if (null != senderRunner)
@@ -320,9 +310,19 @@ public final class MediaDriver implements AutoCloseable
             AgentRunner.startOnThread(senderRunner, ctx.senderThreadFactory);
         }
 
-        if (null != conductorRunner)
+        if (null != receiverRunner)
         {
-            AgentRunner.startOnThread(conductorRunner, ctx.conductorThreadFactory);
+            AgentRunner.startOnThread(receiverRunner, ctx.receiverThreadFactory);
+        }
+
+        if (null != sharedNetworkRunner)
+        {
+            AgentRunner.startOnThread(sharedNetworkRunner, ctx.sharedNetworkThreadFactory);
+        }
+
+        if (null != sharedRunner)
+        {
+            AgentRunner.startOnThread(sharedRunner, ctx.sharedThreadFactory);
         }
 
         return this;

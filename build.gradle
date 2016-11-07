@@ -119,7 +119,7 @@ subprojects {
         testCompile(
             'org.hamcrest:hamcrest-all:1.3',
             'junit:junit:4.12',
-            'org.mockito:mockito-core:2.2.9')
+            'org.mockito:mockito-core:2.2.12')
     }
 
     checkstyle {
@@ -374,7 +374,7 @@ project(':aeron-agent') {
 
     dependencies {
         compile project(':aeron-client'), project(':aeron-driver')
-        compile "net.bytebuddy:byte-buddy:1.5.0"
+        compile "net.bytebuddy:byte-buddy:1.5.3"
     }
 
     jar {

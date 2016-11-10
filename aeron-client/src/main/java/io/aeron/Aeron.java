@@ -30,7 +30,6 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
@@ -84,6 +83,7 @@ public final class Aeron implements AutoCloseable
      */
     public static final long PUBLICATION_CONNECTION_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
 
+    private boolean isClosed = false;
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;
     private final Context ctx;
@@ -142,8 +142,20 @@ public final class Aeron implements AutoCloseable
      */
     public void close()
     {
-        conductorRunner.close();
-        ctx.close();
+        conductor.mainLock().lock();
+        try
+        {
+            if (!isClosed)
+            {
+                isClosed = true;
+                conductorRunner.close();
+                ctx.close();
+            }
+        }
+        finally
+        {
+            conductor.mainLock().unlock();
+        }
     }
 
     /**
@@ -155,7 +167,20 @@ public final class Aeron implements AutoCloseable
      */
     public Publication addPublication(final String channel, final int streamId)
     {
-        return conductor.addPublication(channel, streamId);
+        conductor.mainLock().lock();
+        try
+        {
+            if (isClosed)
+            {
+                throw new IllegalStateException("Aeron client is closed");
+            }
+
+            return conductor.addPublication(channel, streamId);
+        }
+        finally
+        {
+            conductor.mainLock().unlock();
+        }
     }
 
     /**
@@ -167,7 +192,20 @@ public final class Aeron implements AutoCloseable
      */
     public Subscription addSubscription(final String channel, final int streamId)
     {
-        return conductor.addSubscription(channel, streamId);
+        conductor.mainLock().lock();
+        try
+        {
+            if (isClosed)
+            {
+                throw new IllegalStateException("Aeron client is closed");
+            }
+
+            return conductor.addSubscription(channel, streamId);
+        }
+        finally
+        {
+            conductor.mainLock().unlock();
+        }
     }
 
     /**
@@ -177,7 +215,20 @@ public final class Aeron implements AutoCloseable
      */
     public CountersReader countersReader()
     {
-        return new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer());
+        conductor.mainLock().lock();
+        try
+        {
+            if (isClosed)
+            {
+                throw new IllegalStateException("Aeron client is closed");
+            }
+
+            return new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer());
+        }
+        finally
+        {
+            conductor.mainLock().unlock();
+        }
     }
 
     private Aeron start()
@@ -195,7 +246,6 @@ public final class Aeron implements AutoCloseable
      */
     public static class Context extends CommonContext
     {
-        private final AtomicBoolean isClosed = new AtomicBoolean(false);
         private EpochClock epochClock;
         private NanoClock nanoClock;
         private IdleStrategy idleStrategy;
@@ -531,12 +581,8 @@ public final class Aeron implements AutoCloseable
          */
         public void close()
         {
-            if (isClosed.compareAndSet(false, true))
-            {
-                IoUtil.unmap(cncByteBuffer);
-
-                super.close();
-            }
+            IoUtil.unmap(cncByteBuffer);
+            super.close();
         }
 
         private void connectToDriver()

@@ -200,12 +200,17 @@ public class Publication implements AutoCloseable
      */
     public void close()
     {
-        synchronized (clientConductor)
+        clientConductor.mainLock().lock();
+        try
         {
             if (--refCount == 0)
             {
                 release();
             }
+        }
+        finally
+        {
+            clientConductor.mainLock().unlock();
         }
     }
 
@@ -425,10 +430,7 @@ public class Publication implements AutoCloseable
      */
     void incRef()
     {
-        synchronized (clientConductor)
-        {
-            ++refCount;
-        }
+        ++refCount;
     }
 
     private long newPosition(final int index, final int currentTail, final long position, final long result)

@@ -275,7 +275,8 @@ public class Subscription extends SubscriptionRhsPadding implements AutoCloseabl
      */
     public void close()
     {
-        synchronized (clientConductor)
+        clientConductor.mainLock().lock();
+        try
         {
             if (!isClosed)
             {
@@ -291,6 +292,10 @@ public class Subscription extends SubscriptionRhsPadding implements AutoCloseabl
 
                 this.images = EMPTY_ARRAY;
             }
+        }
+        finally
+        {
+            clientConductor.mainLock().unlock();
         }
     }
 

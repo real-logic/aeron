@@ -22,8 +22,11 @@ import io.aeron.logbuffer.FrameDescriptor;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.locks.Lock;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.hamcrest.Matchers.is;
@@ -48,6 +51,7 @@ public class PublicationTest
     private final UnsafeBuffer logMetaDataBuffer = spy(new UnsafeBuffer(allocateDirect(LOG_META_DATA_LENGTH)));
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
 
+    private final Lock conductorLock = mock(Lock.class);
     private final ClientConductor conductor = mock(ClientConductor.class);
     private final LogBuffers logBuffers = mock(LogBuffers.class);
     private final ReadablePosition publicationLimit = mock(ReadablePosition.class);
@@ -60,6 +64,7 @@ public class PublicationTest
         when(logBuffers.termBuffers()).thenReturn(termBuffers);
         when(logBuffers.termLength()).thenReturn(TERM_MIN_LENGTH);
         when(logBuffers.metaDataBuffer()).thenReturn(logMetaDataBuffer);
+        when(conductor.mainLock()).thenReturn(conductorLock);
 
         initialTermId(logMetaDataBuffer, TERM_ID_1);
         timeOfLastStatusMessage(logMetaDataBuffer, 0);
@@ -88,6 +93,11 @@ public class PublicationTest
     {
         publication.close();
         assertThat(publication.position(), is(Publication.CLOSED));
+
+        final InOrder inOrder = Mockito.inOrder(conductorLock, conductor);
+        inOrder.verify(conductorLock).lock();
+        inOrder.verify(conductor).releasePublication(publication);
+        inOrder.verify(conductorLock).unlock();
     }
 
     @Test
@@ -140,6 +150,11 @@ public class PublicationTest
         publication.close();
 
         verify(logBuffers, never()).close();
+
+        final InOrder inOrder = Mockito.inOrder(conductorLock, conductor);
+        inOrder.verify(conductorLock).lock();
+        inOrder.verify(conductorLock).unlock();
+        inOrder.verifyNoMoreInteractions();
     }
 
     @Test
@@ -149,7 +164,12 @@ public class PublicationTest
         publication.close();
 
         publication.close();
-        verify(conductor, times(1)).releasePublication(publication);
+
+        final InOrder inOrder = Mockito.inOrder(conductorLock, conductor);
+        inOrder.verify(conductorLock).lock();
+        inOrder.verify(conductor).releasePublication(publication);
+        inOrder.verify(conductorLock).unlock();
+        inOrder.verifyNoMoreInteractions();
     }
 
     @Test
@@ -158,6 +178,12 @@ public class PublicationTest
         publication.close();
         publication.close();
 
-        verify(conductor, times(1)).releasePublication(publication);
+        final InOrder inOrder = Mockito.inOrder(conductorLock, conductor);
+        inOrder.verify(conductorLock).lock();
+        inOrder.verify(conductor).releasePublication(publication);
+        inOrder.verify(conductorLock).unlock();
+        inOrder.verify(conductorLock).lock();
+        inOrder.verify(conductorLock).unlock();
+        inOrder.verifyNoMoreInteractions();
     }
 }

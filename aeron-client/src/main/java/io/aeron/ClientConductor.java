@@ -31,7 +31,9 @@ import org.agrona.concurrent.status.UnsafeBufferPosition;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -55,6 +57,7 @@ class ClientConductor implements Agent, DriverListener
     private long timeOfLastWork;
     private volatile boolean driverActive = true;
 
+    private final Lock lock = new ReentrantLock();
     private final EpochClock epochClock;
     private final FileChannel.MapMode imageMapMode;
     private final NanoClock nanoClock;
@@ -108,19 +111,44 @@ class ClientConductor implements Agent, DriverListener
         this.driverListener = new DriverListenerAdapter(broadcastReceiver, this);
     }
 
-    public synchronized void onClose()
+    public void onClose()
     {
-        activePublications.close();
-        activeSubscriptions.close();
+        lock.lock();
+        try
+        {
+            activePublications.close();
+            activeSubscriptions.close();
 
-        Thread.yield();
+            Thread.yield();
 
-        lingeringResources.forEach(ManagedResource::delete);
+            lingeringResources.forEach(ManagedResource::delete);
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
-    public synchronized int doWork()
+    public Lock mainLock()
     {
-        return doWork(NO_CORRELATION_ID, null);
+        return lock;
+    }
+
+    public int doWork()
+    {
+        if (!lock.tryLock())
+        {
+            return 0;
+        }
+
+        try
+        {
+            return doWork(NO_CORRELATION_ID, null);
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     public String roleName()
@@ -128,7 +156,7 @@ class ClientConductor implements Agent, DriverListener
         return "aeron-client-conductor";
     }
 
-    synchronized Publication addPublication(final String channel, final int streamId)
+    Publication addPublication(final String channel, final int streamId)
     {
         verifyDriverIsActive();
 
@@ -144,7 +172,7 @@ class ClientConductor implements Agent, DriverListener
         return publication;
     }
 
-    synchronized void releasePublication(final Publication publication)
+    void releasePublication(final Publication publication)
     {
         verifyDriverIsActive();
 
@@ -155,7 +183,7 @@ class ClientConductor implements Agent, DriverListener
         }
     }
 
-    synchronized Subscription addSubscription(final String channel, final int streamId)
+    Subscription addSubscription(final String channel, final int streamId)
     {
         verifyDriverIsActive();
 
@@ -168,7 +196,7 @@ class ClientConductor implements Agent, DriverListener
         return subscription;
     }
 
-    synchronized void releaseSubscription(final Subscription subscription)
+    void releaseSubscription(final Subscription subscription)
     {
         verifyDriverIsActive();
 
@@ -302,9 +330,9 @@ class ClientConductor implements Agent, DriverListener
             workCount += onCheckTimeouts();
             workCount += driverListener.pollMessage(correlationId, expectedChannel);
         }
-        catch (final Exception ex)
+        catch (final Throwable throwable)
         {
-            errorHandler.onError(ex);
+            errorHandler.onError(throwable);
         }
 
         return workCount;

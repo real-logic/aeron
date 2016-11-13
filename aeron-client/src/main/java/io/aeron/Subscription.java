@@ -28,15 +28,27 @@ class SubscriptionLhsPadding
     protected long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
 }
 
-class SubscriptionHotFields extends SubscriptionLhsPadding
+class SubscriptionFields extends SubscriptionLhsPadding
 {
-    protected int roundRobinIndex = 0;
-}
+    protected static final Image[] EMPTY_ARRAY = new Image[0];
 
-class SubscriptionRhsPadding extends SubscriptionHotFields
-{
-    @SuppressWarnings("unused")
-    protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
+    protected final long registrationId;
+    protected int roundRobinIndex = 0;
+    protected final int streamId;
+    protected volatile boolean isClosed = false;
+
+    protected volatile Image[] images = EMPTY_ARRAY;
+    protected final ClientConductor clientConductor;
+    protected final String channel;
+
+    protected SubscriptionFields(
+        final long registrationId, final int streamId, final ClientConductor clientConductor, final String channel)
+    {
+        this.registrationId = registrationId;
+        this.streamId = streamId;
+        this.clientConductor = clientConductor;
+        this.channel = channel;
+    }
 }
 
 /**
@@ -56,24 +68,14 @@ class SubscriptionRhsPadding extends SubscriptionHotFields
  *
  * @see FragmentAssembler
  */
-public class Subscription extends SubscriptionRhsPadding implements AutoCloseable
+public class Subscription extends SubscriptionFields implements AutoCloseable
 {
-    private static final Image[] EMPTY_ARRAY = new Image[0];
-
-    private final long registrationId;
-    private final int streamId;
-    private volatile boolean isClosed = false;
-
-    private volatile Image[] images = EMPTY_ARRAY;
-    private final ClientConductor clientConductor;
-    private final String channel;
+    @SuppressWarnings("unused")
+    protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
 
     Subscription(final ClientConductor conductor, final String channel, final int streamId, final long registrationId)
     {
-        this.clientConductor = conductor;
-        this.channel = channel;
-        this.streamId = streamId;
-        this.registrationId = registrationId;
+        super(registrationId, streamId, conductor, channel);
     }
 
     /**

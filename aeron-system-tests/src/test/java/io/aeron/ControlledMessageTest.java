@@ -85,7 +85,7 @@ public class ControlledMessageTest
         }
     }
 
-    class FragmentCollector implements ControlledFragmentHandler
+    static class FragmentCollector implements ControlledFragmentHandler
     {
         private final UnsafeBuffer collectedBuffer = new UnsafeBuffer(new byte[PAYLOAD_LENGTH * 4]);
         private int limit = 0;
@@ -120,5 +120,4 @@ public class ControlledMessageTest
             return action;
         }
     }
-
 }

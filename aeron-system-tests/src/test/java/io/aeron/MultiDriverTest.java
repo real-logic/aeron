@@ -30,6 +30,7 @@ import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.Mockito.*;
 
@@ -115,7 +116,10 @@ public class MultiDriverTest
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
 
-        Thread.sleep(20); // allow for images to be established
+        while (subscriptionA.hasNoImages() && subscriptionB.hasNoImages())
+        {
+            Thread.sleep(1);
+        }
     }
 
     @Test(timeout = 10000)
@@ -139,12 +143,12 @@ public class MultiDriverTest
                 Thread.yield();
             }
 
-            final int fragmentsRead[] = new int[1];
+            final AtomicInteger fragmentsRead = new AtomicInteger();
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead[0] > 0,
+                () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscriptionA.poll(fragmentHandlerA, 10);
+                    fragmentsRead.getAndAdd(subscriptionA.poll(fragmentHandlerA, 10));
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -163,23 +167,23 @@ public class MultiDriverTest
                 Thread.yield();
             }
 
-            final int fragmentsRead[] = new int[1];
+            final AtomicInteger fragmentsRead = new AtomicInteger();
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead[0] > 0,
+                () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscriptionA.poll(fragmentHandlerA, 10);
+                    fragmentsRead.addAndGet(subscriptionA.poll(fragmentHandlerA, 10));
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(500));
 
-            fragmentsRead[0] = 0;
+            fragmentsRead.set(0);
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead[0] > 0,
+                () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscriptionB.poll(fragmentHandlerB, 10);
+                    fragmentsRead.addAndGet(subscriptionB.poll(fragmentHandlerB, 10));
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -230,23 +234,23 @@ public class MultiDriverTest
                 Thread.yield();
             }
 
-            final int fragmentsRead[] = new int[1];
+            final AtomicInteger fragmentsRead = new AtomicInteger();
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead[0] > 0,
+                () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscriptionA.poll(fragmentHandlerA, 10);
+                    fragmentsRead.addAndGet(subscriptionA.poll(fragmentHandlerA, 10));
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(500));
 
-            fragmentsRead[0] = 0;
+            fragmentsRead.set(0);
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead[0] > 0,
+                () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscriptionB.poll(fragmentHandlerB, 10);
+                    fragmentsRead.addAndGet(subscriptionB.poll(fragmentHandlerB, 10));
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,

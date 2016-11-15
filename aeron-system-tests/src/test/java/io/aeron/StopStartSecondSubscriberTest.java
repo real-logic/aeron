@@ -21,13 +21,13 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
-import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -128,13 +128,14 @@ public class StopStartSecondSubscriberTest
             Thread.yield();
         }
 
-        final int fragmentsRead[] = new int[2];
+        final AtomicInteger fragmentsRead1 = new AtomicInteger();
+        final AtomicInteger fragmentsRead2 = new AtomicInteger();
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead[0] >= numMessagesPerPublication && fragmentsRead[1] >= numMessagesPerPublication,
+            () -> fragmentsRead1.get() >= numMessagesPerPublication && fragmentsRead2.get() >= numMessagesPerPublication,
             (i) ->
             {
-                fragmentsRead[0] += subscription1.poll(fragmentHandler1, 10);
-                fragmentsRead[1] += subscription2.poll(fragmentHandler2, 10);
+                fragmentsRead1.addAndGet(subscription1.poll(fragmentHandler1, 10));
+                fragmentsRead2.addAndGet(subscription2.poll(fragmentHandler2, 10));
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -184,10 +185,11 @@ public class StopStartSecondSubscriberTest
     {
         final ExecutorService executor = Executors.newFixedThreadPool(2);
         final int numMessages = 1;
-        final MutableInteger subscriber2AfterRestartCount = new MutableInteger();
+        final AtomicInteger subscriber2AfterRestartCount = new AtomicInteger();
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        final FragmentHandler fragmentHandler2b = (buffer, offset, length, header) -> subscriber2AfterRestartCount.value++;
+        final FragmentHandler fragmentHandler2b =
+            (buffer, offset, length, header) -> subscriber2AfterRestartCount.incrementAndGet();
 
         launch(channel1, stream1, channel2, stream2);
 
@@ -196,13 +198,14 @@ public class StopStartSecondSubscriberTest
         executor.execute(() -> doPublisherWork(publication1, running));
         executor.execute(() -> doPublisherWork(publication2, running));
 
-        final int fragmentsRead[] = new int[2];
+        final AtomicInteger fragmentsRead1 = new AtomicInteger();
+        final AtomicInteger fragmentsRead2 = new AtomicInteger();
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead[0] >= numMessages && fragmentsRead[1] >= numMessages,
+            () -> fragmentsRead1.get() >= numMessages && fragmentsRead2.get() >= numMessages,
             (i) ->
             {
-                fragmentsRead[0] += subscription1.poll(fragmentHandler1, 1);
-                fragmentsRead[1] += subscription2.poll(fragmentHandler2, 1);
+                fragmentsRead1.addAndGet(subscription1.poll(fragmentHandler1, 1));
+                fragmentsRead2.addAndGet(subscription2.poll(fragmentHandler2, 1));
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -215,18 +218,18 @@ public class StopStartSecondSubscriberTest
         subscription2.close();
 
         // Zero out the counters
-        fragmentsRead[0] = 0;
-        fragmentsRead[1] = 0;
+        fragmentsRead1.set(0);
+        fragmentsRead2.set(0);
 
         // Start the second subscriber again
         subscription2 = subscribingClient2.addSubscription(channel2, stream2);
 
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead[0] >= numMessages && fragmentsRead[1] >= numMessages,
+            () -> fragmentsRead1.get() >= numMessages && fragmentsRead2.get() >= numMessages,
             (i) ->
             {
-                fragmentsRead[0] += subscription1.poll(fragmentHandler1, 1);
-                fragmentsRead[1] += subscription2.poll(fragmentHandler2b, 1);
+                fragmentsRead1.addAndGet(subscription1.poll(fragmentHandler1, 1));
+                fragmentsRead2.addAndGet(subscription2.poll(fragmentHandler2b, 1));
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -237,7 +240,7 @@ public class StopStartSecondSubscriberTest
         assertTrue("Expecting subscriber1 to receive messages the entire time", subscriber1Count >= numMessages * 2);
         assertTrue("Expecting subscriber2 to receive messages before being stopped and started", subscriber2Count >= numMessages);
         assertTrue("Expecting subscriber2 to receive messages after being stopped and started",
-            subscriber2AfterRestartCount.value >= numMessages);
+            subscriber2AfterRestartCount.get() >= numMessages);
 
         executor.shutdown();
 

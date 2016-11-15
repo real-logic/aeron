@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.junit.After;
 import org.junit.Assume;
@@ -40,6 +41,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertTrue;
@@ -94,30 +96,9 @@ public class PubAndSubTest
     @After
     public void closeEverything() throws Exception
     {
-        if (null != publication)
-        {
-            publication.close();
-        }
-
-        if (null != subscription)
-        {
-            subscription.close();
-        }
-
-        if (null != subscribingClient)
-        {
-            subscribingClient.close();
-        }
-
-        if (null != publishingClient)
-        {
-            publishingClient.close();
-        }
-
-        if (null != driver)
-        {
-            driver.close();
-        }
+        CloseHelper.quietClose(subscribingClient);
+        CloseHelper.quietClose(publishingClient);
+        CloseHelper.quietClose(driver);
 
         context.deleteAeronDirectory();
     }
@@ -137,12 +118,12 @@ public class PubAndSubTest
 
         publishMessage();
 
-        final int fragmentsRead[] = new int[1];
+        final AtomicInteger fragmentsRead = new AtomicInteger();
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead[0] > 0,
+            () -> fragmentsRead.get() > 0,
             (i) ->
             {
-                fragmentsRead[0] += subscription.poll(fragmentHandler, 10);
+                fragmentsRead.getAndAdd(subscription.poll(fragmentHandler, 10));
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -163,12 +144,12 @@ public class PubAndSubTest
 
         publishMessage();
 
-        final int fragmentsRead[] = new int[1];
+        final AtomicInteger fragmentsRead = new AtomicInteger();
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead[0] > 0,
+            () -> fragmentsRead.get() > 0,
             (i) ->
             {
-                fragmentsRead[0] += subscription.rawPoll(rawBlockHandler, Integer.MAX_VALUE);
+                fragmentsRead.addAndGet((int)subscription.rawPoll(rawBlockHandler, Integer.MAX_VALUE));
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -221,12 +202,12 @@ public class PubAndSubTest
                 Thread.yield();
             }
 
-            final int fragmentsRead[] = new int[1];
+            final AtomicInteger fragmentsRead = new AtomicInteger();
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead[0] > 0,
+                () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(fragmentHandler, 10);
+                    fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -263,12 +244,12 @@ public class PubAndSubTest
                 Thread.yield();
             }
 
-            final int fragmentsRead[] = new int[1];
+            final AtomicInteger fragmentsRead = new AtomicInteger();
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead[0] > 0,
+                () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(fragmentHandler, 10);
+                    fragmentsRead.getAndAdd(subscription.poll(fragmentHandler, 10));
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -419,12 +400,12 @@ public class PubAndSubTest
                 }
             }
 
-            final int fragmentsRead[] = new int[1];
+            final AtomicInteger fragmentsRead = new AtomicInteger();
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead[0] >= numMessagesPerBatch,
+                () -> fragmentsRead.get() >= numMessagesPerBatch,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(fragmentHandler, 10);
+                    fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -463,12 +444,12 @@ public class PubAndSubTest
                 }
             }
 
-            final int fragmentsRead[] = new int[1];
+            final AtomicInteger fragmentsRead = new AtomicInteger();
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead[0] >= numMessagesPerBatch,
+                () -> fragmentsRead.get() >= numMessagesPerBatch,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(fragmentHandler, 10);
+                    fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -480,12 +461,12 @@ public class PubAndSubTest
             Thread.yield();
         }
 
-        final int fragmentsRead[] = new int[1];
+        final AtomicInteger fragmentsRead = new AtomicInteger();
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead[0] > 0,
+            () -> fragmentsRead.get() > 0,
             (j) ->
             {
-                fragmentsRead[0] += subscription.poll(fragmentHandler, 10);
+                fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -523,12 +504,12 @@ public class PubAndSubTest
                 Thread.yield();
             }
 
-            final int fragmentsRead[] = new int[1];
+            final AtomicInteger fragmentsRead = new AtomicInteger();
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead[0] > 0,
+                () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(fragmentHandler, 10);
+                    fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -572,12 +553,12 @@ public class PubAndSubTest
                 }
             }
 
-            final int fragmentsRead[] = new int[1];
+            final AtomicInteger fragmentsRead = new AtomicInteger();
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead[0] >= numMessagesPerBatch,
+                () -> fragmentsRead.get() >= numMessagesPerBatch,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(fragmentHandler, 10);
+                    fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -630,13 +611,13 @@ public class PubAndSubTest
             messagesSent++;
         }
 
-        final int fragmentsRead[] = new int[1];
+        final AtomicInteger fragmentsRead = new AtomicInteger();
         final int messagesToReceive = messagesSent;
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead[0] >= messagesToReceive,
+            () -> fragmentsRead.get() >= messagesToReceive,
             (j) ->
             {
-                fragmentsRead[0] += subscription.poll(fragmentHandler, 10);
+                fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -680,12 +661,12 @@ public class PubAndSubTest
                 Thread.yield();
             }
 
-            final int fragmentsRead[] = new int[1];
+            final AtomicInteger fragmentsRead = new AtomicInteger();
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead[0] > 0,
+                () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(fragmentHandler, 10);
+                    fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -705,12 +686,12 @@ public class PubAndSubTest
                 Thread.yield();
             }
 
-            final int fragmentsRead[] = new int[1];
+            final AtomicInteger fragmentsRead = new AtomicInteger();
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead[0] > 0,
+                () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(fragmentHandler, 10);
+                    fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -751,12 +732,12 @@ public class PubAndSubTest
             }
         }
 
-        final int fragmentsRead[] = new int[1];
+        final AtomicInteger fragmentsRead = new AtomicInteger();
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead[0] > numFramesToExpect,
+            () -> fragmentsRead.get() > numFramesToExpect,
             (j) ->
             {
-                fragmentsRead[0] += subscription.poll(fragmentHandler, 10);
+                fragmentsRead.getAndAdd(subscription.poll(fragmentHandler, 10));
                 Thread.yield();
             },
             Integer.MAX_VALUE,

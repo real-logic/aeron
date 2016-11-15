@@ -28,6 +28,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -77,26 +78,6 @@ public class PongTest
     @After
     public void closeEverything() throws Exception
     {
-        if (null != pingPublication)
-        {
-            pingPublication.close();
-        }
-
-        if (null != pongPublication)
-        {
-            pongPublication.close();
-        }
-
-        if (null != pingSubscription)
-        {
-            pingSubscription.close();
-        }
-
-        if (null != pongSubscription)
-        {
-            pongSubscription.close();
-        }
-
         pongClient.close();
         pingClient.close();
         driver.close();
@@ -114,25 +95,25 @@ public class PongTest
             Thread.yield();
         }
 
-        final int fragmentsRead[] = new int[1];
+        final AtomicInteger fragmentsRead = new AtomicInteger();
 
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead[0] > 0,
+            () -> fragmentsRead.get() > 0,
             (i) ->
             {
-                fragmentsRead[0] += pingSubscription.poll(this::pingHandler, 10);
+                fragmentsRead.addAndGet(pingSubscription.poll(this::pingHandler, 10));
                 Thread.yield();
             },
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(5900));
 
-        fragmentsRead[0] = 0;
+        fragmentsRead.set(0);
 
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead[0] > 0,
+            () -> fragmentsRead.get() > 0,
             (i) ->
             {
-                fragmentsRead[0] += pongSubscription.poll(pongHandler, 10);
+                fragmentsRead.addAndGet(pongSubscription.poll(pongHandler, 10));
                 Thread.yield();
             },
             Integer.MAX_VALUE,

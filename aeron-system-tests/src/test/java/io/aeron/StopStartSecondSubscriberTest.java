@@ -53,11 +53,11 @@ public class StopStartSecondSubscriberTest
     private Subscription subscription2;
     private Publication publication2;
 
-    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[8192]);
-    private int subscriber1Count = 0;
-    private FragmentHandler fragmentHandler1 = (buffer, offset, length, header) -> subscriber1Count++;
-    private int subscriber2Count = 0;
-    private FragmentHandler fragmentHandler2 = (buffer, offset, length, header) -> subscriber2Count++;
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[8192]);
+    private final AtomicInteger subscriber1Count = new AtomicInteger();
+    private final FragmentHandler fragmentHandler1 = (buffer, offset, length, header) -> subscriber1Count.getAndIncrement();
+    private final AtomicInteger subscriber2Count = new AtomicInteger();
+    private final FragmentHandler fragmentHandler2 = (buffer, offset, length, header) -> subscriber2Count.getAndIncrement();
 
     final MediaDriver.Context mediaDriverContext1 = new MediaDriver.Context();
     final MediaDriver.Context mediaDriverContext2 = new MediaDriver.Context();
@@ -141,8 +141,8 @@ public class StopStartSecondSubscriberTest
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(9900));
 
-        assertEquals(numMessagesPerPublication, subscriber1Count);
-        assertEquals(numMessagesPerPublication, subscriber2Count);
+        assertEquals(numMessagesPerPublication, subscriber1Count.get());
+        assertEquals(numMessagesPerPublication, subscriber2Count.get());
     }
 
     @Test(timeout = 10000)
@@ -211,8 +211,8 @@ public class StopStartSecondSubscriberTest
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(4900));
 
-        assertTrue(subscriber1Count >= numMessages);
-        assertTrue(subscriber2Count >= numMessages);
+        assertTrue(subscriber1Count.get() >= numMessages);
+        assertTrue(subscriber2Count.get() >= numMessages);
 
         // Stop the second subscriber
         subscription2.close();
@@ -237,8 +237,10 @@ public class StopStartSecondSubscriberTest
 
         running.set(false);
 
-        assertTrue("Expecting subscriber1 to receive messages the entire time", subscriber1Count >= numMessages * 2);
-        assertTrue("Expecting subscriber2 to receive messages before being stopped and started", subscriber2Count >= numMessages);
+        assertTrue("Expecting subscriber1 to receive messages the entire time",
+            subscriber1Count.get() >= numMessages * 2);
+        assertTrue("Expecting subscriber2 to receive messages before being stopped and started",
+            subscriber2Count.get() >= numMessages);
         assertTrue("Expecting subscriber2 to receive messages after being stopped and started",
             subscriber2AfterRestartCount.get() >= numMessages);
 

@@ -37,13 +37,12 @@ public class MemoryOrderingTest
     public static final int BURST_LENGTH = 5;
     public static final int INTER_BURST_DURATION_NS = 10_000;
 
-    final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
-
-    volatile String failedMessage = null;
+    public static volatile String failedMessage = null;
 
     @Test(timeout = 10000)
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntact() throws Exception
     {
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
         srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .publicationTermBufferLength(TERM_BUFFER_LENGTH);
@@ -97,7 +96,7 @@ public class MemoryOrderingTest
         }
     }
 
-    public class Subscriber implements Runnable, FragmentHandler
+    public static class Subscriber implements Runnable, FragmentHandler
     {
         private final Subscription subscription;
 

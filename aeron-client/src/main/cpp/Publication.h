@@ -334,7 +334,7 @@ public:
 
         if (!isClosed())
         {
-            checkForMaxMessageLength(length);
+            checkForMaxPayloadLength(length);
 
             const std::int64_t limit = m_publicationLimit.getVolatile();
             const std::int32_t partitionIndex = LogBufferDescriptor::activePartitionIndex(m_logMetaDataBuffer);
@@ -418,6 +418,16 @@ private:
         {
             throw util::IllegalStateException(
                 util::strPrintf("Encoded message exceeds maxMessageLength of %d, length=%d",
+                    m_maxMessageLength, length), SOURCEINFO);
+        }
+    }
+
+    void checkForMaxPayloadLength(const util::index_t length)
+    {
+        if (length > m_maxPayloadLength)
+        {
+            throw util::IllegalStateException(
+                util::strPrintf("Encoded message exceeds m_maxPayloadLength of %d, length=%d",
                     m_maxPayloadLength, length), SOURCEINFO);
         }
     }

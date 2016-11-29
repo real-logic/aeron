@@ -41,15 +41,16 @@ void sigIntHandler (int param)
     running = false;
 }
 
-static const char optHelp         = 'h';
-static const char optPrefix       = 'p';
-static const char optPingChannel  = 'c';
-static const char optPongChannel  = 'C';
-static const char optPingStreamId = 's';
-static const char optPongStreamId = 'S';
-static const char optFrags        = 'f';
-static const char optMessages     = 'm';
-static const char optLength       = 'L';
+static const char optHelp           = 'h';
+static const char optPrefix         = 'p';
+static const char optPingChannel    = 'c';
+static const char optPongChannel    = 'C';
+static const char optPingStreamId   = 's';
+static const char optPongStreamId   = 'S';
+static const char optFrags          = 'f';
+static const char optMessages       = 'm';
+static const char optLength         = 'L';
+static const char optWarmupMessages = 'w';
 
 struct Settings
 {
@@ -61,6 +62,7 @@ struct Settings
     long numberOfMessages = samples::configuration::DEFAULT_NUMBER_OF_MESSAGES;
     int messageLength = samples::configuration::DEFAULT_MESSAGE_LENGTH;
     int fragmentCountLimit = samples::configuration::DEFAULT_FRAGMENT_COUNT_LIMIT;
+    long numberOfWarmupMessages = samples::configuration::DEFAULT_NUMBER_OF_MESSAGES;
 };
 
 Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
@@ -82,6 +84,7 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
     s.numberOfMessages = cp.getOption(optMessages).getParamAsLong(0, 0, INT64_MAX, s.numberOfMessages);
     s.messageLength = cp.getOption(optLength).getParamAsInt(0, sizeof(std::int64_t), INT32_MAX, s.messageLength);
     s.fragmentCountLimit = cp.getOption(optFrags).getParamAsInt(0, 1, INT32_MAX, s.fragmentCountLimit);
+    s.numberOfWarmupMessages = cp.getOption(optWarmupMessages).getParamAsLong(0, 0, INT64_MAX, s.numberOfWarmupMessages);
     return s;
 }
 
@@ -89,7 +92,7 @@ void sendPingAndReceivePong(
     const fragment_handler_t& fragmentHandler,
     std::shared_ptr<Publication> publication,
     std::shared_ptr<Subscription> subscription,
-    Settings& settings)
+    const Settings& settings)
 {
     AERON_DECL_ALIGNED(std::uint8_t buffer[settings.messageLength], 16);
     concurrent::AtomicBuffer srcBuffer(buffer, settings.messageLength);
@@ -116,15 +119,16 @@ void sendPingAndReceivePong(
 int main(int argc, char **argv)
 {
     CommandOptionParser cp;
-    cp.addOption(CommandOption (optHelp,         0, 0, "                Displays help information."));
-    cp.addOption(CommandOption (optPrefix,       1, 1, "dir             Prefix directory for aeron driver."));
-    cp.addOption(CommandOption (optPingChannel,  1, 1, "channel         Ping Channel."));
-    cp.addOption(CommandOption (optPongChannel,  1, 1, "channel         Pong Channel."));
-    cp.addOption(CommandOption (optPingStreamId, 1, 1, "streamId        Ping Stream ID."));
-    cp.addOption(CommandOption (optPongStreamId, 1, 1, "streamId        Pong Stream ID."));
-    cp.addOption(CommandOption (optMessages,     1, 1, "number          Number of Messages."));
-    cp.addOption(CommandOption (optLength,       1, 1, "length          Length of Messages."));
-    cp.addOption(CommandOption (optFrags,        1, 1, "limit           Fragment Count Limit."));
+    cp.addOption(CommandOption (optHelp,          0, 0, "                Displays help information."));
+    cp.addOption(CommandOption (optPrefix,        1, 1, "dir             Prefix directory for aeron driver."));
+    cp.addOption(CommandOption (optPingChannel,   1, 1, "channel         Ping Channel."));
+    cp.addOption(CommandOption (optPongChannel,   1, 1, "channel         Pong Channel."));
+    cp.addOption(CommandOption (optPingStreamId,  1, 1, "streamId        Ping Stream ID."));
+    cp.addOption(CommandOption (optPongStreamId,  1, 1, "streamId        Pong Stream ID."));
+    cp.addOption(CommandOption (optMessages,      1, 1, "number          Number of Messages."));
+    cp.addOption(CommandOption (optLength,        1, 1, "length          Length of Messages."));
+    cp.addOption(CommandOption (optFrags,         1, 1, "limit           Fragment Count Limit."));
+    cp.addOption(CommandOption (optWarmupMessages,1, 1, "number          Number of Messages for warmup."));
 
     signal (SIGINT, sigIntHandler);
 
@@ -199,6 +203,21 @@ int main(int argc, char **argv)
             std::this_thread::yield();
         }
 
+        ::setlocale(LC_NUMERIC, "");
+        if (settings.numberOfWarmupMessages > 0)
+        {
+            Settings warmupSettings = settings;
+            warmupSettings.numberOfMessages = warmupSettings.numberOfWarmupMessages;
+
+            const steady_clock::time_point start = steady_clock::now();
+
+            printf("Warming up the media driver with %'ld messages of length %d bytes\n", warmupSettings.numberOfWarmupMessages, warmupSettings.messageLength);
+            sendPingAndReceivePong([](AtomicBuffer&, index_t, index_t, Header&){}, pingPublication, pongSubscription, warmupSettings);
+            std::int64_t nanoDuration = duration<std::int64_t, std::nano>(steady_clock::now() - start).count();
+
+            printf("Warmed up the media driver in %'ld [ns]\n", nanoDuration);
+        }
+
         hdr_histogram* histogram;
         hdr_init(1, 10 * 1000 * 1000 * 1000L, 3, &histogram);
 
@@ -218,7 +237,6 @@ int main(int argc, char **argv)
                     hdr_record_value(histogram, nanoRtt);
                 });
 
-            ::setlocale(LC_NUMERIC, "");
             printf("Pinging %'ld messages of length %d bytes\n", settings.numberOfMessages, settings.messageLength);
 
             sendPingAndReceivePong(fragmentAssembler.handler(), pingPublication, pongSubscription, settings);

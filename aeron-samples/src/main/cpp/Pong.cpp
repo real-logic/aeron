@@ -146,7 +146,7 @@ int main(int argc, char **argv)
         BusySpinIdleStrategy idleStrategy;
         BusySpinIdleStrategy pingHandlerIdleStrategy;
         FragmentAssembler fragmentAssembler(
-            [&](AtomicBuffer& buffer, index_t offset, index_t length, Header& header)
+            [&](AtomicBuffer& buffer, index_t offset, index_t length, const Header& header)
             {
                 while (pongPublication->offer(buffer, offset, length) < 0L)
                 {
@@ -165,18 +165,18 @@ int main(int argc, char **argv)
 
         std::cout << "Shutting down...\n";
     }
-    catch (CommandOptionException& e)
+    catch (const CommandOptionException& e)
     {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         cp.displayOptionsHelp(std::cerr);
         return -1;
     }
-    catch (SourcedException& e)
+    catch (const SourcedException& e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << e.where() << std::endl;
         return -1;
     }
-    catch (std::exception& e)
+    catch (const std::exception& e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << std::endl;
         return -1;

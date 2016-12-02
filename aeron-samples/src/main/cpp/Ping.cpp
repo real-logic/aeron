@@ -89,7 +89,7 @@ void sendPingAndReceivePong(
     const fragment_handler_t& fragmentHandler,
     std::shared_ptr<Publication> publication,
     std::shared_ptr<Subscription> subscription,
-    Settings& settings)
+    const Settings& settings)
 {
     AERON_DECL_ALIGNED(std::uint8_t buffer[settings.messageLength], 16);
     concurrent::AtomicBuffer srcBuffer(buffer, settings.messageLength);
@@ -207,7 +207,7 @@ int main(int argc, char **argv)
             hdr_reset(histogram);
 
             FragmentAssembler fragmentAssembler(
-                [&](AtomicBuffer& buffer, index_t offset, index_t length, Header& header)
+                [&](const AtomicBuffer& buffer, index_t offset, index_t length, const Header& header)
                 {
                     steady_clock::time_point end = steady_clock::now();
                     steady_clock::time_point start;
@@ -229,18 +229,18 @@ int main(int argc, char **argv)
         while (running && continuationBarrier("Execute again?"));
 
     }
-    catch (CommandOptionException& e)
+    catch (const CommandOptionException& e)
     {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         cp.displayOptionsHelp(std::cerr);
         return -1;
     }
-    catch (SourcedException& e)
+    catch (const SourcedException& e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << e.where() << std::endl;
         return -1;
     }
-    catch (std::exception& e)
+    catch (const std::exception& e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << std::endl;
         return -1;

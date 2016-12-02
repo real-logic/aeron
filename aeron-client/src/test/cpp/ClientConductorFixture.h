@@ -84,7 +84,7 @@ public:
             std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewSub, &m_handlers, _1, _2, _3),
             std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewImage, &m_handlers, _1),
             std::bind(&testing::NiceMock<MockClientConductorHandlers>::onInactive, &m_handlers, _1),
-            [&](std::exception& exception) { m_errorHandler(exception); },
+            [&](const std::exception& exception) { m_errorHandler(exception); },
             DRIVER_TIMEOUT_MS,
             RESOURCE_LINGER_TIMEOUT_MS,
             INTER_SERVICE_TIMEOUT_NS,

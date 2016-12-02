@@ -363,7 +363,7 @@ TEST_F(OneToOneRingBufferTest, shouldCopeWithExceptionFromHandler)
     {
         m_ringBuffer.read(handler);
     }
-    catch (std::runtime_error ignored)
+    catch (const std::runtime_error& ignored)
     {
         exceptionReceived = true;
     }
@@ -485,7 +485,7 @@ TEST(OneToOneRingBufferConcurrentTest, shouldExchangeMessages)
             thr.join();
         }
     }
-    catch (util::OutOfBoundsException& e)
+    catch (const util::OutOfBoundsException& e)
     {
         printf("EXCEPTION %s at %s\n", e.what(), e.where());
     }

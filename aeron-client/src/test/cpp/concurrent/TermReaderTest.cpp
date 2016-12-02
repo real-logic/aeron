@@ -38,7 +38,7 @@ typedef std::array<std::uint8_t, META_DATA_BUFFER_CAPACITY> meta_data_buffer_t;
 typedef std::array<std::uint8_t, HDR_LENGTH> hdr_t;
 typedef std::array<std::uint8_t, TERM_BUFFER_UNALIGNED_CAPACITY> log_buffer_unaligned_t;
 
-void rethrowHandler(std::exception& ex)
+void rethrowHandler(const std::exception& ex)
 {
     throw ex;
 }

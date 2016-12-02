@@ -40,7 +40,7 @@ void CommandOptionParser::parse (int argc, char** argv)
                 currentOption = argStr[argNum];
 
                 // is this a valid option ?
-                std::map<char, CommandOption>::iterator opt = m_options.find(currentOption);
+                auto opt = m_options.find(currentOption);
                 if (m_options.end() == opt)
                     throw CommandOptionException(std::string ("-") + currentOption + " is not a valid command option.", SOURCEINFO);
                 else
@@ -56,8 +56,7 @@ void CommandOptionParser::parse (int argc, char** argv)
     }
 
     // validate the options. the validate method on each option will throw if the options are not valid.
-    std::map<char, CommandOption>::const_iterator opt;
-    for (opt = m_options.begin(); opt != m_options.end(); ++opt)
+    for (auto opt = m_options.begin(); opt != m_options.end(); ++opt)
     {
         opt->second.validate();
     }
@@ -70,7 +69,7 @@ void CommandOptionParser::addOption (const CommandOption& option)
 
 CommandOption& CommandOptionParser::getOption (char optionChar)
 {
-    std::map<char, CommandOption>::iterator opt = m_options.find(optionChar);
+    auto opt = m_options.find(optionChar);
 
     if (m_options.end() == opt)
     {
@@ -80,9 +79,9 @@ CommandOption& CommandOptionParser::getOption (char optionChar)
     return opt->second;
 }
 
-void CommandOptionParser::displayOptionsHelp (std::ostream& out)
+void CommandOptionParser::displayOptionsHelp (std::ostream& out) const
 {
-    for (std::map<char, CommandOption>::iterator i = m_options.begin(); i != m_options.end(); ++i)
+    for (auto i = m_options.begin(); i != m_options.end(); ++i)
     {
         if (i->first != CommandOption::UNNAMED)
             out << "    -" << i->first << " " << i->second.getHelpText() << std::endl;

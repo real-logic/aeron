@@ -39,19 +39,19 @@ CommandOption::CommandOption(char optionChar, size_t minParams, size_t maxParams
 }
 
 
-void CommandOption::checkIndex(size_t index)
+void CommandOption::checkIndex(size_t index) const
 {
     if (index > m_params.size())
         throw CommandOptionException(std::string("Internal Error: index out of range for option: ") + m_optionChar, SOURCEINFO);
 }
 
-std::string CommandOption::getParam(size_t index)
+std::string CommandOption::getParam(size_t index) const
 {
     checkIndex(index);
     return m_params[index];
 }
 
-std::string CommandOption::getParam(size_t index, std::string defaultValue)
+std::string CommandOption::getParam(size_t index, std::string defaultValue) const
 {
     // if this option was not present on the command line then return the default value.
     if (!isPresent())
@@ -60,7 +60,7 @@ std::string CommandOption::getParam(size_t index, std::string defaultValue)
     return getParam(index);
 }
 
-int CommandOption::getParamAsInt(size_t index)
+int CommandOption::getParamAsInt(size_t index) const
 {
     checkIndex(index);
 
@@ -69,12 +69,12 @@ int CommandOption::getParamAsInt(size_t index)
     try {
         return parse<int>(param);
     }
-    catch (ParseException &) {
+    catch (const ParseException &) {
         throw CommandOptionException(std::string("Invalid numeric value: \"") + param + "\" on option -" + m_optionChar, SOURCEINFO);
     }
 }
 
-long CommandOption::getParamAsLong(size_t index)
+long CommandOption::getParamAsLong(size_t index) const
 {
     checkIndex(index);
 
@@ -83,12 +83,12 @@ long CommandOption::getParamAsLong(size_t index)
     try {
         return parse<long>(param);
     }
-    catch (ParseException &) {
+    catch (const ParseException &) {
         throw CommandOptionException(std::string("Invalid numeric value: \"") + param + "\" on option -" + m_optionChar, SOURCEINFO);
     }
 }
 
-int CommandOption::getParamAsInt(size_t index, int minValue, int maxValue, int defaultValue)
+int CommandOption::getParamAsInt(size_t index, int minValue, int maxValue, int defaultValue) const
 {
     // if this option was not present on the command line then return the default value.
     if (!isPresent())
@@ -103,7 +103,7 @@ int CommandOption::getParamAsInt(size_t index, int minValue, int maxValue, int d
     return value;
 }
 
-long CommandOption::getParamAsLong(size_t index, long minValue, long maxValue, long defaultValue)
+long CommandOption::getParamAsLong(size_t index, long minValue, long maxValue, long defaultValue) const
 {
     // if this option was not present on the command line then return the default value.
     if (!isPresent())

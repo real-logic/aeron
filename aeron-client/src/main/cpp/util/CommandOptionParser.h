@@ -36,7 +36,7 @@ class CommandOptionParser
         void addOption (const CommandOption& option);
         CommandOption& getOption (char optionChar);
 
-        void displayOptionsHelp (std::ostream& out);
+        void displayOptionsHelp (std::ostream& out) const;
 };
 
 }}

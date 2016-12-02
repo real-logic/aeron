@@ -33,7 +33,7 @@ private:
     {
         virtual ~FuncHolderBase()
         {
-        };
+        }
     };
 
     template<typename func_t>
@@ -48,7 +48,7 @@ private:
         virtual ~FuncHolder()
         {
             f();
-        };
+        }
     };
 
     std::unique_ptr<FuncHolderBase> m_holder;

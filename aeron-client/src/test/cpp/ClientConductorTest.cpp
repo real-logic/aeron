@@ -356,7 +356,7 @@ TEST_F(ClientConductorTest, shouldCallErrorHandlerWhenInterServiceTimeoutExceede
     bool called = false;
 
     m_errorHandler =
-        [&](std::exception& exception)
+        [&](const std::exception& exception)
         {
             EXPECT_EQ(typeid(ConductorServiceTimeoutException), typeid(exception));
             called = true;
@@ -372,7 +372,7 @@ TEST_F(ClientConductorTest, shouldCallErrorHandlerWhenDriverInactiveOnIdle)
     bool called = false;
 
     m_errorHandler =
-        [&](std::exception& exception)
+        [&](const std::exception& exception)
         {
             EXPECT_EQ(typeid(DriverTimeoutException), typeid(exception));
             called = true;
@@ -385,7 +385,7 @@ TEST_F(ClientConductorTest, shouldCallErrorHandlerWhenDriverInactiveOnIdle)
 TEST_F(ClientConductorTest, shouldExceptionWhenAddPublicationAfterDriverInactive)
 {
     bool called = false;
-    m_errorHandler = [&](std::exception& exception) { called = true; };
+    m_errorHandler = [&](const std::exception& exception) { called = true; };
 
     doWorkUntilDriverTimeout();
     EXPECT_TRUE(called);
@@ -399,7 +399,7 @@ TEST_F(ClientConductorTest, shouldExceptionWhenAddPublicationAfterDriverInactive
 TEST_F(ClientConductorTest, shouldExceptionWhenReleasePublicationAfterDriverInactive)
 {
     bool called = false;
-    m_errorHandler = [&](std::exception& exception) { called = true; };
+    m_errorHandler = [&](const std::exception& exception) { called = true; };
 
     doWorkUntilDriverTimeout();
     EXPECT_TRUE(called);
@@ -413,7 +413,7 @@ TEST_F(ClientConductorTest, shouldExceptionWhenReleasePublicationAfterDriverInac
 TEST_F(ClientConductorTest, shouldExceptionWhenAddSubscriptionAfterDriverInactive)
 {
     bool called = false;
-    m_errorHandler = [&](std::exception& exception) { called = true; };
+    m_errorHandler = [&](const std::exception& exception) { called = true; };
 
     doWorkUntilDriverTimeout();
     EXPECT_TRUE(called);
@@ -427,7 +427,7 @@ TEST_F(ClientConductorTest, shouldExceptionWhenAddSubscriptionAfterDriverInactiv
 TEST_F(ClientConductorTest, shouldExceptionWhenReleaseSubscriptionAfterDriverInactive)
 {
     bool called = false;
-    m_errorHandler = [&](std::exception& exception) { called = true; };
+    m_errorHandler = [&](const std::exception& exception) { called = true; };
 
     doWorkUntilDriverTimeout();
     EXPECT_TRUE(called);

@@ -121,18 +121,18 @@ int main (int argc, char** argv)
 
         std::printf("\n%d distinct errors observed.\n", distinctErrorCount);
     }
-    catch (CommandOptionException& e)
+    catch (const CommandOptionException& e)
     {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         cp.displayOptionsHelp(std::cerr);
         return -1;
     }
-    catch (SourcedException& e)
+    catch (const SourcedException& e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << e.where() << std::endl;
         return -1;
     }
-    catch (std::exception& e)
+    catch (const std::exception& e)
     {
         std::cerr << "FAILED: " << e.what() << " : " << std::endl;
         return -1;

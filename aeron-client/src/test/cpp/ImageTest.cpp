@@ -49,7 +49,7 @@ static const std::int32_t POSITION_BITS_TO_SHIFT = BitUtil::numberOfTrailingZero
 static const util::index_t ALIGNED_FRAME_LENGTH =
     BitUtil::align(DataFrameHeader::LENGTH + (std::int32_t)DATA.size(), FrameDescriptor::FRAME_ALIGNMENT);
 
-void exceptionHandler(std::exception&)
+void exceptionHandler(const std::exception&)
 {
 }
 

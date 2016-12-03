@@ -113,8 +113,8 @@ subprojects {
     }
 
     dependencies {
-        checkstyle 'com.puppycrawl.tools:checkstyle:7.2'
-        checkstyle 'com.github.sevntu.checkstyle:sevntu-checks:1.21.1'
+        checkstyle 'com.puppycrawl.tools:checkstyle:7.3'
+        checkstyle 'com.github.sevntu.checkstyle:sevntu-checks:1.22.0'
 
         testCompile(
             'org.hamcrest:hamcrest-all:1.3',
@@ -124,7 +124,7 @@ subprojects {
 
     checkstyle {
         configFile = new File(rootDir, 'config/checkstyle/checkstyle.xml')
-        toolVersion = '7.2'
+        toolVersion = '7.3'
     }
 
     test {

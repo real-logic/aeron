@@ -56,6 +56,20 @@ public final class UdpChannel
     private final ProtocolFamily protocolFamily;
     private final AeronUri aeronUri;
 
+    private UdpChannel(final Context context)
+    {
+        this.remoteData = context.remoteData;
+        this.localData = context.localData;
+        this.remoteControl = context.remoteControl;
+        this.localControl = context.localControl;
+        this.uriStr = context.uriStr;
+        this.canonicalForm = context.canonicalForm;
+        this.localInterface = context.localInterface;
+        this.protocolFamily = context.protocolFamily;
+        this.multicastTtl = context.multicastTtl;
+        this.aeronUri = context.aeronUri;
+    }
+
     /**
      * Parse URI and create channel
      *
@@ -134,6 +148,176 @@ public final class UdpChannel
         {
             throw new InvalidChannelException(ErrorCode.INVALID_CHANNEL, ex);
         }
+    }
+
+    /**
+     * Return a string which is a canonical form of the channel suitable for use as a file or directory
+     * name and also as a method of hashing, etc.
+     * <p>
+     * A canonical form:
+     * - begins with the string "UDP-"
+     * - has all hostnames converted to hexadecimal
+     * - has all fields expanded out
+     * - uses "-" as all field separators
+     * <p>
+     * The general format is:
+     * UDP-interface-localPort-remoteAddress-remotePort
+     *
+     * @param localData  for the channel
+     * @param remoteData for the channel
+     * @return canonical representation as a string
+     */
+    public static String canonicalise(final InetSocketAddress localData, final InetSocketAddress remoteData)
+    {
+        return
+            "UDP-" +
+                toHex(localData.getAddress().getAddress()) +
+                '-' +
+                localData.getPort() +
+                '-' +
+                toHex(remoteData.getAddress().getAddress()) +
+                '-' +
+                remoteData.getPort();
+    }
+
+    /**
+     * Remote data address information
+     *
+     * @return remote data address information
+     */
+    public InetSocketAddress remoteData()
+    {
+        return remoteData;
+    }
+
+    /**
+     * Local data address information
+     *
+     * @return local data address information
+     */
+    public InetSocketAddress localData()
+    {
+        return localData;
+    }
+
+    /**
+     * Remote control address information
+     *
+     * @return remote control address information
+     */
+    public InetSocketAddress remoteControl()
+    {
+        return remoteControl;
+    }
+
+    /**
+     * Local control address information
+     *
+     * @return local control address information
+     */
+    public InetSocketAddress localControl()
+    {
+        return localControl;
+    }
+
+    /**
+     * Get the {@link AeronUri} for this channel.
+     *
+     * @return the {@link AeronUri} for this channel.
+     */
+    public AeronUri aeronUri()
+    {
+        return aeronUri;
+    }
+
+    /**
+     * Multicast TTL information
+     *
+     * @return multicast TTL value
+     */
+    public int multicastTtl()
+    {
+        return multicastTtl;
+    }
+
+    /**
+     * The canonical form for the channel
+     *
+     * {@link UdpChannel#canonicalise(java.net.InetSocketAddress, java.net.InetSocketAddress)}
+     *
+     * @return canonical form for channel
+     */
+    public String canonicalForm()
+    {
+        return canonicalForm;
+    }
+
+    public boolean equals(final Object o)
+    {
+        if (this == o)
+        {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+
+        final UdpChannel that = (UdpChannel)o;
+
+        return !(canonicalForm != null ? !canonicalForm.equals(that.canonicalForm) : that.canonicalForm != null);
+    }
+
+    public int hashCode()
+    {
+        return canonicalForm != null ? canonicalForm.hashCode() : 0;
+    }
+
+    public String toString()
+    {
+        return canonicalForm;
+    }
+
+    /**
+     * Does channel represent a multicast or not
+     *
+     * @return does channel represent a multicast or not
+     */
+    public boolean isMulticast()
+    {
+        return remoteData.getAddress().isMulticastAddress();
+    }
+
+    /**
+     * Local interface to be used by the channel.
+     *
+     * @return {@link NetworkInterface} for the local interface used by the channel
+     * @throws SocketException if an error occurs
+     */
+    public NetworkInterface localInterface() throws SocketException
+    {
+        return localInterface;
+    }
+
+    /**
+     * Original URI of the channel URI.
+     *
+     * @return the original uri
+     */
+    public String originalUriString()
+    {
+        return uriStr;
+    }
+
+    /**
+     * Get the {@link ProtocolFamily} for this channel.
+     *
+     * @return the {@link ProtocolFamily} for this channel.
+     */
+    public ProtocolFamily protocolFamily()
+    {
+        return protocolFamily;
     }
 
     private static InterfaceSearchAddress getInterfaceSearchAddress(final AeronUri uri) throws UnknownHostException
@@ -235,188 +419,6 @@ public final class UdpChannel
         }
 
         throw new IllegalArgumentException(errorNoMatchingInterfaces(filteredIfcs, searchAddress));
-    }
-
-    /**
-     * Remote data address information
-     *
-     * @return remote data address information
-     */
-    public InetSocketAddress remoteData()
-    {
-        return remoteData;
-    }
-
-    /**
-     * Local data address information
-     *
-     * @return local data address information
-     */
-    public InetSocketAddress localData()
-    {
-        return localData;
-    }
-
-    /**
-     * Remote control address information
-     *
-     * @return remote control address information
-     */
-    public InetSocketAddress remoteControl()
-    {
-        return remoteControl;
-    }
-
-    /**
-     * Local control address information
-     *
-     * @return local control address information
-     */
-    public InetSocketAddress localControl()
-    {
-        return localControl;
-    }
-
-    /**
-     * Get the {@link AeronUri} for this channel.
-     *
-     * @return the {@link AeronUri} for this channel.
-     */
-    public AeronUri aeronUri()
-    {
-        return aeronUri;
-    }
-
-    /**
-     * Multicast TTL information
-     *
-     * @return multicast TTL value
-     */
-    public int multicastTtl()
-    {
-        return multicastTtl;
-    }
-
-    private UdpChannel(final Context context)
-    {
-        this.remoteData = context.remoteData;
-        this.localData = context.localData;
-        this.remoteControl = context.remoteControl;
-        this.localControl = context.localControl;
-        this.uriStr = context.uriStr;
-        this.canonicalForm = context.canonicalForm;
-        this.localInterface = context.localInterface;
-        this.protocolFamily = context.protocolFamily;
-        this.multicastTtl = context.multicastTtl;
-        this.aeronUri = context.aeronUri;
-    }
-
-    /**
-     * The canonical form for the channel
-     * <p>
-     * {@link UdpChannel#canonicalise(java.net.InetSocketAddress, java.net.InetSocketAddress)}
-     *
-     * @return canonical form for channel
-     */
-    public String canonicalForm()
-    {
-        return canonicalForm;
-    }
-
-    public boolean equals(final Object o)
-    {
-        if (this == o)
-        {
-            return true;
-        }
-
-        if (o == null || getClass() != o.getClass())
-        {
-            return false;
-        }
-
-        final UdpChannel that = (UdpChannel)o;
-
-        return !(canonicalForm != null ? !canonicalForm.equals(that.canonicalForm) : that.canonicalForm != null);
-    }
-
-    public int hashCode()
-    {
-        return canonicalForm != null ? canonicalForm.hashCode() : 0;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public String toString()
-    {
-        return canonicalForm;
-    }
-
-    /**
-     * Return a string which is a canonical form of the channel suitable for use as a file or directory
-     * name and also as a method of hashing, etc.
-     * <p>
-     * A canonical form:
-     * - begins with the string "UDP-"
-     * - has all hostnames converted to hexadecimal
-     * - has all fields expanded out
-     * - uses "-" as all field separators
-     * <p>
-     * The general format is:
-     * UDP-interface-localPort-remoteAddress-remotePort
-     *
-     * @param localData  for the channel
-     * @param remoteData for the channel
-     * @return canonical representation as a string
-     */
-    public static String canonicalise(final InetSocketAddress localData, final InetSocketAddress remoteData)
-    {
-        return
-            "UDP-" +
-            toHex(localData.getAddress().getAddress()) +
-            '-' +
-            localData.getPort() +
-            '-' +
-            toHex(remoteData.getAddress().getAddress()) +
-            '-' +
-            remoteData.getPort();
-    }
-
-    /**
-     * Does channel represent a multicast or not
-     *
-     * @return does channel represent a multicast or not
-     */
-    public boolean isMulticast()
-    {
-        return remoteData.getAddress().isMulticastAddress();
-    }
-
-    /**
-     * Local interface to be used by the channel.
-     *
-     * @return {@link NetworkInterface} for the local interface used by the channel
-     * @throws SocketException if an error occurs
-     */
-    public NetworkInterface localInterface() throws SocketException
-    {
-        return localInterface;
-    }
-
-    /**
-     * Original URI of the channel URI.
-     *
-     * @return the original uri
-     */
-    public String originalUriString()
-    {
-        return uriStr;
-    }
-
-    public ProtocolFamily protocolFamily()
-    {
-        return protocolFamily;
     }
 
     static class Context

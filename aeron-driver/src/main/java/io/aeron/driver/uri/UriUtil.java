@@ -19,8 +19,20 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
 
+/**
+ * Utility functions for dealing with {@link URI}s.
+ */
 public class UriUtil
 {
+    /**
+     * Parse a URI query string and extract the params as key value pairs.
+     *
+     * @param uri         with query string.
+     * @param queryParams to be populated.
+     * @param <M> container for the params
+     * @return the queryParams that has been populated.
+     * @throws URISyntaxException if a parsing exception occurs on the query string.
+     */
     public static <M extends Map<String, String>> M parseQueryString(final URI uri, final M queryParams)
         throws URISyntaxException
     {
@@ -31,8 +43,7 @@ public class UriUtil
             return queryParams;
         }
 
-        final String[] pairs = query.split("&");
-        for (final String pair : pairs)
+        for (final String pair : query.split("&"))
         {
             final String[] componentParts = pair.split("=");
             if (componentParts.length == 2)

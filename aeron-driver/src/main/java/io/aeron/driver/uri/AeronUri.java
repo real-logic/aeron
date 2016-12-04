@@ -15,8 +15,6 @@
  */
 package io.aeron.driver.uri;
 
-import io.aeron.driver.media.UdpChannel;
-
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -53,16 +51,6 @@ public class AeronUri
         this.scheme = scheme;
         this.media = media;
         this.params = params;
-
-        if (null != params.get(UdpChannel.LOCAL_KEY))
-        {
-            System.err.println("Warning: deprecated API usage - please use 'interface' rather than 'local'");
-        }
-
-        if (null != params.get(UdpChannel.REMOTE_KEY) || null != params.get(UdpChannel.GROUP_KEY))
-        {
-            System.err.println("Warning: deprecated API usage - please use 'endpoint' rather than 'remote' or 'group'");
-        }
     }
 
     public String media()
@@ -126,19 +114,6 @@ public class AeronUri
     public boolean containsKey(final String key)
     {
         return params.containsKey(key);
-    }
-
-    public boolean containsAnyKey(String[] keys)
-    {
-        for (final String key : keys)
-        {
-            if (params.containsKey(key))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     public static AeronUri parse(final CharSequence cs)

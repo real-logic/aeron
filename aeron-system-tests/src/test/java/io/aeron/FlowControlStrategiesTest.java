@@ -124,7 +124,7 @@ public class FlowControlStrategiesTest
     }
 
     @Test(timeout = 10000)
-    public void shouldTimeoutImageWhenBehindForTooLong() throws Exception
+    public void shouldTimeoutImageWhenBehindForTooLongWithMaxMulticastFlowControlStrategy() throws Exception
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         final CountDownLatch unavailableCountDownLatch = new CountDownLatch(1);

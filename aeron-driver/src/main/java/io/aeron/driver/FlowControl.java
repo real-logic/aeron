@@ -27,16 +27,16 @@ public interface FlowControl
     /**
      * Update the sender flow control strategy based on a status message from the receiver.
      *
-     * @param flyweight            the Status Message contents
-     * @param address              of the receiver.
-     * @param senderLimit          the current sender position limit.
-     * @param initialTermId        for the term buffers.
-     * @param positionBitsToShift  in use for the length of each term buffer.
+     * @param flyweight           the Status Message contents
+     * @param receiverAddress     of the receiver.
+     * @param senderLimit         the current sender position limit.
+     * @param initialTermId       for the term buffers.
+     * @param positionBitsToShift in use for the length of each term buffer.
      * @return the new position limit to be employed by the sender.
      */
     long onStatusMessage(
         StatusMessageFlyweight flyweight,
-        InetSocketAddress address,
+        InetSocketAddress receiverAddress,
         long senderLimit,
         int initialTermId,
         int positionBitsToShift);

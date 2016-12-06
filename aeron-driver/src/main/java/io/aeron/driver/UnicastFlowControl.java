@@ -34,7 +34,7 @@ public class UnicastFlowControl implements FlowControl
      */
     public long onStatusMessage(
         final StatusMessageFlyweight flyweight,
-        final InetSocketAddress address,
+        final InetSocketAddress receiverAddress,
         final long senderLimit,
         final int initialTermId,
         final int positionBitsToShift)

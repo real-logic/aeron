@@ -210,11 +210,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
             }
             else
             {
-                publication.onStatusMessage(
-                    msg.consumptionTermId(),
-                    msg.consumptionTermOffset(),
-                    msg.receiverWindowLength(),
-                    srcAddress);
+                publication.onStatusMessage(msg, srcAddress);
             }
 
             statusMessagesReceived.orderedIncrement();

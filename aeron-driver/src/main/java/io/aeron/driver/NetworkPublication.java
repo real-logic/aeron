@@ -22,6 +22,7 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.LogBufferUnblocker;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.SetupFlyweight;
+import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NanoClock;
@@ -197,7 +198,7 @@ public class NetworkPublication
         if (0 == bytesSent)
         {
             bytesSent = heartbeatMessageCheck(now, activeTermId, termOffset);
-            senderLimit.setOrdered(flowControl.onIdle(now));
+            senderLimit.setOrdered(flowControl.onIdle(now, senderLimit.get()));
         }
 
         retransmitHandler.processTimeouts(now, this);
@@ -352,10 +353,15 @@ public class NetworkPublication
         retransmitHandler.onNak(termId, termOffset, length, termLengthMask + 1, this);
     }
 
-    public void onStatusMessage(
-        final int termId, final int termOffset, final int receiverWindowLength, final InetSocketAddress srcAddress)
+    public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
-        senderPositionLimit(flowControl.onStatusMessage(termId, termOffset, receiverWindowLength, srcAddress));
+        senderPositionLimit(
+            flowControl.onStatusMessage(
+                msg,
+                srcAddress,
+                senderLimit.get(),
+                initialTermId,
+                positionBitsToShift));
         LogBufferDescriptor.timeOfLastStatusMessage(rawLog.logMetaData(), epochClock.time());
     }
 

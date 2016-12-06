@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.driver.Configuration;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.LangUtil;
@@ -45,8 +46,7 @@ public class ControlTransportPoller extends UdpTransportPoller
 
     public ControlTransportPoller()
     {
-        byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(
-            Math.max(StatusMessageFlyweight.HEADER_LENGTH, NakFlyweight.HEADER_LENGTH),
+        byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(Configuration.MTU_LENGTH,
             CACHE_LINE_LENGTH * 2);
 
         unsafeBuffer = new UnsafeBuffer(byteBuffer);

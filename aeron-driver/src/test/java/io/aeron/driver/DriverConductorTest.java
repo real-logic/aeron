@@ -25,6 +25,7 @@ import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.TermAppender;
+import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.SystemEpochClock;
@@ -423,7 +424,12 @@ public class DriverConductorTest
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[256]);
         final HeaderWriter headerWriter = new HeaderWriter(createDefaultHeader(publication.sessionId(), STREAM_ID_1, termId));
 
-        publication.onStatusMessage(termId, 0, 10, new InetSocketAddress("localhost", 4059));
+        final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
+        when(msg.consumptionTermId()).thenReturn(termId);
+        when(msg.consumptionTermOffset()).thenReturn(0);
+        when(msg.receiverWindowLength()).thenReturn(10);
+
+        publication.onStatusMessage(msg, new InetSocketAddress("localhost", 4059));
 
         appender.appendUnfragmentedMessage(headerWriter, srcBuffer, 0, 256, null);
 

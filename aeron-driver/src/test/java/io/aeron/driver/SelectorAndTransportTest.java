@@ -245,7 +245,7 @@ public class SelectorAndTransportTest
                 controlMessagesReceived.incrementAndGet();
                 return null;
             })
-            .when(mockPublication).onStatusMessage(anyInt(), anyInt(), anyInt(), any(InetSocketAddress.class));
+            .when(mockPublication).onStatusMessage(any(), any());
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);

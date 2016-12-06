@@ -15,6 +15,8 @@
  */
 package io.aeron.driver;
 
+import io.aeron.protocol.StatusMessageFlyweight;
+
 import java.net.InetSocketAddress;
 
 /**
@@ -25,13 +27,19 @@ public interface FlowControl
     /**
      * Update the sender flow control strategy based on a status message from the receiver.
      *
-     * @param termId               currently active for the receiver.
-     * @param termOffset           within the current active term for the receiver.
-     * @param receiverWindowLength supported by the receiver.
+     * @param flyweight            the Status Message contents
      * @param address              of the receiver.
+     * @param senderLimit          the current sender position limit.
+     * @param initialTermId        for the term buffers.
+     * @param positionBitsToShift  in use for the length of each term buffer.
      * @return the new position limit to be employed by the sender.
      */
-    long onStatusMessage(int termId, int termOffset, int receiverWindowLength, InetSocketAddress address);
+    long onStatusMessage(
+        StatusMessageFlyweight flyweight,
+        InetSocketAddress address,
+        long senderLimit,
+        int initialTermId,
+        int positionBitsToShift);
 
     /**
      * Initialize the flow control strategy
@@ -44,8 +52,9 @@ public interface FlowControl
     /**
      * Perform any maintenance needed by the flow control strategy and return current position
      *
-     * @param now time in nanoseconds.
+     * @param now         time in nanoseconds.
+     * @param senderLimit for the current sender position.
      * @return the position limit to be employed by the sender.
      */
-    long onIdle(long now);
+    long onIdle(long now, long senderLimit);
 }

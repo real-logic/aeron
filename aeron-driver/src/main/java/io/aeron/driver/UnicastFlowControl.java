@@ -15,6 +15,8 @@
  */
 package io.aeron.driver;
 
+import io.aeron.protocol.StatusMessageFlyweight;
+
 import java.net.InetSocketAddress;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
@@ -27,21 +29,24 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
  */
 public class UnicastFlowControl implements FlowControl
 {
-    private long positionLimit = 0;
-    private int positionBitsToShift;
-    private int initialTermId;
-
     /**
      * {@inheritDoc}
      */
     public long onStatusMessage(
-        final int termId, final int termOffset, final int receiverWindowLength, final InetSocketAddress address)
+        final StatusMessageFlyweight flyweight,
+        final InetSocketAddress address,
+        final long senderLimit,
+        final int initialTermId,
+        final int positionBitsToShift)
     {
-        final long position = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
-        final long newPositionLimit = position + receiverWindowLength;
-        positionLimit = Math.max(positionLimit, newPositionLimit);
+        final long position =
+            computePosition(
+                flyweight.consumptionTermId(),
+                flyweight.consumptionTermOffset(),
+                positionBitsToShift,
+                initialTermId);
 
-        return positionLimit;
+        return Math.max(senderLimit, position + flyweight.receiverWindowLength());
     }
 
     /**
@@ -49,16 +54,13 @@ public class UnicastFlowControl implements FlowControl
      */
     public void initialize(final int initialTermId, final int termBufferCapacity)
     {
-        this.initialTermId = initialTermId;
-        positionBitsToShift = Long.numberOfTrailingZeros(termBufferCapacity);
-        positionLimit = 0;
     }
 
     /**
      * {@inheritDoc}
      */
-    public long onIdle(final long now)
+    public long onIdle(final long now, final long senderLimit)
     {
-        return positionLimit;
+        return senderLimit;
     }
 }

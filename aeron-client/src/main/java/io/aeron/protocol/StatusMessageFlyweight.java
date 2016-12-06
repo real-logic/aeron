@@ -39,6 +39,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     private static final int CONSUMPTION_TERM_ID_FIELD_OFFSET = 16;
     private static final int CONSUMPTION_TERM_OFFSET_FIELD_OFFSET = 20;
     private static final int RECEIVER_WINDOW_FIELD_OFFSET = 24;
+    private static final int APP_SPECIFIC_FEEDBACK_FIELD_OFFSET = 28;
 
     public StatusMessageFlyweight()
     {
@@ -163,6 +164,51 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     public StatusMessageFlyweight receiverWindowLength(final int receiverWindowLength)
     {
         putInt(RECEIVER_WINDOW_FIELD_OFFSET, receiverWindowLength, LITTLE_ENDIAN);
+
+        return this;
+    }
+
+    /**
+     * Retrieve the Application Specific Feedback (if present) from the Status Message.
+     *
+     * @param destination to store the feedback
+     * @return the number of bytes in the feedback copied into the destination
+     */
+    public int applicationSpecificFeedback(final byte[] destination)
+    {
+        final int frameLength = frameLength();
+        int result = 0;
+
+        if (frameLength > HEADER_LENGTH)
+        {
+            if (frameLength > capacity())
+            {
+                throw new IllegalStateException(String.format(
+                    "SM application specific feedback (%d) is truncated (%d)",
+                    frameLength - HEADER_LENGTH,
+                    capacity() - HEADER_LENGTH));
+            }
+
+            final int copyLength = Math.min(destination.length, frameLength - HEADER_LENGTH);
+            getBytes(APP_SPECIFIC_FEEDBACK_FIELD_OFFSET, destination, 0, copyLength);
+            result = copyLength;
+        }
+
+        return result;
+    }
+
+    /**
+     * Set the Application Specific Feedback for the Status Message.
+     *
+     * @param source of the feedback to set
+     * @param offset of the feedback in the source
+     * @param length of the feedback in bytes
+     * @return flyweight
+     */
+    public StatusMessageFlyweight applicationSpecificFeedback(final byte[] source, final int offset, final int length)
+    {
+        frameLength(HEADER_LENGTH + length);
+        putBytes(APP_SPECIFIC_FEEDBACK_FIELD_OFFSET, source, offset, length);
 
         return this;
     }

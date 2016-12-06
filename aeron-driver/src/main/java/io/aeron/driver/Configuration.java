@@ -37,6 +37,7 @@ import static io.aeron.driver.ThreadingMode.DEDICATED;
 import static java.lang.Integer.getInteger;
 import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
+import static org.agrona.BitUtil.fromHex;
 
 /**
  * Configuration options for the {@link MediaDriver}.
@@ -503,6 +504,18 @@ public class Configuration
      */
     public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER = getProperty(
         RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultReceiveChannelEndpointSupplier");
+
+    /**
+     * Property name for Application Specific Feedback added to Status Messages by the driver.
+     */
+    public static final String SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME =
+        "aeron.flow.control.sm.applicationSpecificFeedback";
+
+    /**
+     * Value to use for all Status Message Application Specific Feedback values from the driver.
+     */
+    public static final byte[] SM_APPLICATION_SPECIFIC_FEEDBACK = fromHex(getProperty(
+        SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME, ""));
 
     /**
      * Capacity for the command queues used between driver agents.

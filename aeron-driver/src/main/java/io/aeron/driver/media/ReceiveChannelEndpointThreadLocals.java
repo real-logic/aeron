@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.driver.Configuration;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
@@ -33,21 +34,26 @@ public class ReceiveChannelEndpointThreadLocals
 
     public ReceiveChannelEndpointThreadLocals()
     {
-        final ByteBuffer byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(64, CACHE_LINE_LENGTH);
+        final byte[] applicationSpecificFeedback = Configuration.SM_APPLICATION_SPECIFIC_FEEDBACK;
+        final int smLength = StatusMessageFlyweight.HEADER_LENGTH + applicationSpecificFeedback.length;
+        final int bufferLength = BitUtil.align(smLength + NakFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH);
 
-        byteBuffer.limit(StatusMessageFlyweight.HEADER_LENGTH);
+        final ByteBuffer byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(bufferLength, CACHE_LINE_LENGTH);
+
+        byteBuffer.limit(smLength);
         smBuffer = byteBuffer.slice();
         statusMessageFlyweight = new StatusMessageFlyweight(smBuffer);
 
-        final int nakMessageOffset = BitUtil.align(StatusMessageFlyweight.HEADER_LENGTH, 32);
+        final int nakMessageOffset = BitUtil.align(smLength, 32);
         byteBuffer.limit(nakMessageOffset + NakFlyweight.HEADER_LENGTH).position(nakMessageOffset);
         nakBuffer = byteBuffer.slice();
         nakFlyweight = new NakFlyweight(nakBuffer);
 
         statusMessageFlyweight
+            .applicationSpecificFeedback(applicationSpecificFeedback, 0, applicationSpecificFeedback.length)
             .version(HeaderFlyweight.CURRENT_VERSION)
             .headerType(HeaderFlyweight.HDR_TYPE_SM)
-            .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
+            .frameLength(StatusMessageFlyweight.HEADER_LENGTH + applicationSpecificFeedback.length);
 
         nakFlyweight
             .version(HeaderFlyweight.CURRENT_VERSION)

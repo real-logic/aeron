@@ -355,14 +355,17 @@ public class NetworkPublication
 
     public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
+        final long now = epochClock.time();
+
         senderPositionLimit(
             flowControl.onStatusMessage(
                 msg,
                 srcAddress,
                 senderLimit.get(),
                 initialTermId,
-                positionBitsToShift));
-        LogBufferDescriptor.timeOfLastStatusMessage(rawLog.logMetaData(), epochClock.time());
+                positionBitsToShift,
+                now));
+        LogBufferDescriptor.timeOfLastStatusMessage(rawLog.logMetaData(), now);
     }
 
     private int sendData(final long now, final long senderPosition, final int termOffset)

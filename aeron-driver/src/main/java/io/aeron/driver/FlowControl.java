@@ -32,6 +32,7 @@ public interface FlowControl
      * @param senderLimit         the current sender position limit.
      * @param initialTermId       for the term buffers.
      * @param positionBitsToShift in use for the length of each term buffer.
+     * @param now                 current wall clock time (in milliseconds). {@link System#currentTimeMillis()}
      * @return the new position limit to be employed by the sender.
      */
     long onStatusMessage(
@@ -39,7 +40,8 @@ public interface FlowControl
         InetSocketAddress receiverAddress,
         long senderLimit,
         int initialTermId,
-        int positionBitsToShift);
+        int positionBitsToShift,
+        long now);
 
     /**
      * Initialize the flow control strategy

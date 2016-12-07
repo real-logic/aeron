@@ -25,6 +25,9 @@
 #include "FragmentAssembler.h"
 #include "Configuration.h"
 
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
 extern "C"
 {
 #include <hdr_histogram.h>
@@ -211,11 +214,11 @@ int main(int argc, char **argv)
 
             const steady_clock::time_point start = steady_clock::now();
 
-            printf("Warming up the media driver with %'ld messages of length %d bytes\n", warmupSettings.numberOfWarmupMessages, warmupSettings.messageLength);
+            std::printf("Warming up the media driver with %'ld messages of length %d bytes\n", warmupSettings.numberOfWarmupMessages, warmupSettings.messageLength);
             sendPingAndReceivePong([](AtomicBuffer&, index_t, index_t, Header&){}, pingPublication, pongSubscription, warmupSettings);
             std::int64_t nanoDuration = duration<std::int64_t, std::nano>(steady_clock::now() - start).count();
 
-            printf("Warmed up the media driver in %'ld [ns]\n", nanoDuration);
+            std::printf("Warmed up the media driver in %'" PRId64 " [ns]\n", nanoDuration);
         }
 
         hdr_histogram* histogram;
@@ -237,7 +240,7 @@ int main(int argc, char **argv)
                     hdr_record_value(histogram, nanoRtt);
                 });
 
-            printf("Pinging %'ld messages of length %d bytes\n", settings.numberOfMessages, settings.messageLength);
+            std::printf("Pinging %'ld messages of length %d bytes\n", settings.numberOfMessages, settings.messageLength);
 
             sendPingAndReceivePong(fragmentAssembler.handler(), pingPublication, pongSubscription, settings);
 

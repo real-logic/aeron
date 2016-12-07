@@ -28,6 +28,7 @@ out
 build-local.properties
 .gradle
 build
+cmake-build-debug
 
 # cpp build linux
 cppbuild/CMakeCache.txt

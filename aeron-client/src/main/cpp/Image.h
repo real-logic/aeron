@@ -399,7 +399,7 @@ public:
                 }
                 while (fragmentsRead < fragmentLimit && offset < capacity);
             }
-            catch (std::exception ex)
+            catch (const std::exception& ex)
             {
                 m_exceptionHandler(ex);
             }
@@ -450,7 +450,7 @@ public:
 
                     blockHandler(termBuffer, termOffset, bytesConsumed, m_sessionId, termId);
                 }
-                catch (std::exception ex)
+                catch (const std::exception& ex)
                 {
                     m_exceptionHandler(ex);
                 }

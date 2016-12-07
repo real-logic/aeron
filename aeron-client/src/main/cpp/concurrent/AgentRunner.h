@@ -64,7 +64,7 @@ public:
                 const int workCount = m_agent.doWork();
                 m_idleStrategy.idle(workCount);
             }
-            catch (util::SourcedException &exception)
+            catch (const util::SourcedException &exception)
             {
                 m_exceptionHandler(exception);
             }

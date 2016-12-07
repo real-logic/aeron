@@ -41,7 +41,7 @@ private:
 
     std::vector<std::string> m_params;
 
-    void checkIndex(size_t index);
+    void checkIndex(size_t index) const;
 
 public:
     static const char UNNAMED = -1;
@@ -76,17 +76,17 @@ public:
         m_isPresent = true;
     }
 
-    size_t getNumParams()
+    size_t getNumParams() const
     {
         return m_params.size();
     }
 
-    std::string getParam(size_t index);
-    std::string getParam(size_t index, std::string defaultValue);
-    int getParamAsInt(size_t index);
-    long getParamAsLong(size_t index);
-    int getParamAsInt(size_t index, int minValue, int maxValue, int defaultValue);
-    long getParamAsLong(size_t index, long minValue, long maxValue, long defaultValue);
+    std::string getParam(size_t index) const;
+    std::string getParam(size_t index, std::string defaultValue) const;
+    int getParamAsInt(size_t index) const;
+    long getParamAsLong(size_t index) const;
+    int getParamAsInt(size_t index, int minValue, int maxValue, int defaultValue) const;
+    long getParamAsLong(size_t index, long minValue, long maxValue, long defaultValue) const;
 };
 
 }}

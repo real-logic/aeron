@@ -97,7 +97,7 @@ void MappedRawLog::allocatePages(std::uint8_t *mapping, size_t length)
 {
     size_t pageLength = MemoryMappedFile::getPageSize();
 
-    for (int i = 0; i < length; i += pageLength)
+    for (size_t i = 0; i < length; i += pageLength)
     {
         mapping[i] = 0;
     }

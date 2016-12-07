@@ -33,24 +33,26 @@ namespace BitUtil
     template <typename value_t>
     inline bool isPowerOfTwo(value_t value) AERON_NOEXCEPT
     {
+        static_assert (std::is_integral<value_t>::value, "isPowerOfTwo only available on integer types");
         return value > 0 && ((value & (~value + 1)) == value);
     }
 
     template <typename value_t>
     inline value_t align(value_t value, value_t alignment) AERON_NOEXCEPT
     {
+        static_assert (std::is_integral<value_t>::value, "align only available on integer types");
         return (value + (alignment - 1)) & ~(alignment - 1);
     }
 
     template <typename value_t>
-    bool isEven(value_t value) AERON_NOEXCEPT
+    inline bool isEven(value_t value) AERON_NOEXCEPT
     {
         static_assert (std::is_integral<value_t>::value, "isEven only available on integer types");
         return (value & 1) == 0;
     }
 
     template <typename value_t>
-    value_t next(value_t current, value_t max) AERON_NOEXCEPT
+    inline value_t next(value_t current, value_t max) AERON_NOEXCEPT
     {
         static_assert (std::is_integral<value_t>::value, "next only available on integer types");
         value_t next = current + 1;
@@ -61,7 +63,7 @@ namespace BitUtil
     }
 
     template <typename value_t>
-    value_t previous(value_t current, value_t max) AERON_NOEXCEPT
+    inline value_t previous(value_t current, value_t max) AERON_NOEXCEPT
     {
         static_assert (std::is_integral<value_t>::value, "previous only available on integer types");
         if (0 == current)

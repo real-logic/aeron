@@ -90,13 +90,13 @@ const static long DEFAULT_PUBLICATION_CONNECTION_TIMEOUT_MS = 5000;
  *
  * @see Context#errorHandler
  */
-inline void defaultErrorHandler(std::exception& exception)
+inline void defaultErrorHandler(const std::exception& exception)
 {
     std::cerr << "ERROR: " << exception.what();
 
     try
     {
-        SourcedException& sourcedException = dynamic_cast<SourcedException&>(exception);
+        const SourcedException& sourcedException = dynamic_cast<const SourcedException&>(exception);
         std::cerr << " : " << sourcedException.where();
     }
     catch (std::bad_cast)

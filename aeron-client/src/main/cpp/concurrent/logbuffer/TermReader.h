@@ -54,7 +54,7 @@ typedef std::function<void(
  * @param exception that has occurred.
  */
 typedef std::function<void(
-    std::exception& exception)> exception_handler_t;
+    const std::exception& exception)> exception_handler_t;
 
 namespace TermReader {
 
@@ -102,7 +102,7 @@ inline void read(
         }
         while (outcome.fragmentsRead < fragmentsLimit && termOffset < capacity);
     }
-    catch (std::exception ex)
+    catch (const std::exception& ex)
     {
         exceptionHandler(ex);
     }

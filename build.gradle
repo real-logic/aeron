@@ -173,7 +173,7 @@ project(':aeron-client') {
     apply plugin: 'osgi'
 
     dependencies {
-        compile 'org.agrona:Agrona:0.9.0'
+        compile 'org.agrona:Agrona:0.9.1-SNAPSHOT'
     }
 
     uploadArchives {

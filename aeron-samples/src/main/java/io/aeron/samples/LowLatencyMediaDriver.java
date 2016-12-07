@@ -19,7 +19,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.BusySpinIdleStrategy;
-import org.agrona.concurrent.SigIntBarrier;
+import org.agrona.concurrent.ShutdownSignalBarrier;
 
 /**
  * Sample setup for a {@link MediaDriver} that is configured for low latency communications.
@@ -39,7 +39,7 @@ public class LowLatencyMediaDriver
 
         try (MediaDriver ignored = MediaDriver.launch(ctx))
         {
-            new SigIntBarrier().await();
+            new ShutdownSignalBarrier().await();
 
             System.out.println("Shutdown Driver...");
         }

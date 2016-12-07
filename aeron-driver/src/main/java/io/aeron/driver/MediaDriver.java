@@ -141,7 +141,7 @@ public final class MediaDriver implements AutoCloseable
 
         try (MediaDriver ignored = MediaDriver.launch())
         {
-            new SigIntBarrier().await();
+            new ShutdownSignalBarrier().await();
 
             System.out.println("Shutdown Driver...");
         }

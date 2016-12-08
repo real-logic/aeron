@@ -25,6 +25,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.After;
 import org.junit.Test;
 
@@ -44,7 +45,6 @@ public class FlowControlStrategiesTest
     public static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
 
     private static final int STREAM_ID = 1;
-    private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
 
     private static final int TERM_BUFFER_LENGTH = 64 * 1024;
     private static final int NUM_MESSAGES_PER_TERM = 64;
@@ -78,13 +78,15 @@ public class FlowControlStrategiesTest
 
         driverAContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
-            .threadingMode(THREADING_MODE);
+            .sharedIdleStrategy(new YieldingIdleStrategy())
+            .threadingMode(ThreadingMode.SHARED);
 
         aeronAContext.aeronDirectoryName(driverAContext.aeronDirectoryName());
 
         driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
-            .threadingMode(THREADING_MODE);
+            .sharedIdleStrategy(new YieldingIdleStrategy())
+            .threadingMode(ThreadingMode.SHARED);
 
         aeronBContext.aeronDirectoryName(driverBContext.aeronDirectoryName());
 
@@ -118,7 +120,7 @@ public class FlowControlStrategiesTest
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
 
-        while (subscriptionA.hasNoImages() && subscriptionB.hasNoImages())
+        while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages())
         {
             Thread.sleep(1);
         }
@@ -145,7 +147,7 @@ public class FlowControlStrategiesTest
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
 
-        while (!publication.isConnected() && subscriptionA.hasNoImages() && subscriptionB.hasNoImages())
+        while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages())
         {
             Thread.yield();
         }
@@ -219,12 +221,12 @@ public class FlowControlStrategiesTest
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
 
-        while (!publication.isConnected() && subscriptionA.hasNoImages() && subscriptionB.hasNoImages())
+        while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages())
         {
             Thread.yield();
         }
 
-        for (int i = 0; numFragmentsReadFromB < numMessagesToSend; i++)
+        for (long i = 0; numFragmentsReadFromB < numMessagesToSend; i++)
         {
             if (numMessagesLeftToSend > 0)
             {
@@ -234,11 +236,13 @@ public class FlowControlStrategiesTest
                 }
             }
 
+            Thread.yield();
+
             // A keeps up
             subscriptionA.poll(fragmentHandlerA, 10);
 
             // B receives slowly
-            if ((i % 10) == 0)
+            if ((i % 2) == 0)
             {
                 numFragmentsReadFromB += subscriptionB.poll(fragmentHandlerB, 1);
             }
@@ -275,7 +279,7 @@ public class FlowControlStrategiesTest
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
 
-        while (!publication.isConnected() && subscriptionA.hasNoImages() && subscriptionB.hasNoImages())
+        while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages())
         {
             Thread.yield();
         }

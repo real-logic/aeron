@@ -33,10 +33,9 @@ public class MinMulticastFlowControl implements FlowControl
 {
     private static final String RECEIVER_TIMEOUT_PROP_NAME = "aeron.MinMulticastFlowControl.receiverTimeout";
     private static final long RECEIVER_TIMEOUT_DEFAULT = TimeUnit.SECONDS.toNanos(2);
-
     private static final long RECEIVER_TIMEOUT = Long.getLong(RECEIVER_TIMEOUT_PROP_NAME, RECEIVER_TIMEOUT_DEFAULT);
 
-    private ArrayList<Receiver> receiverList = new ArrayList<>();
+    private final ArrayList<Receiver> receiverList = new ArrayList<>();
 
     /**
      * {@inheritDoc}
@@ -49,12 +48,11 @@ public class MinMulticastFlowControl implements FlowControl
         final int positionBitsToShift,
         final long now)
     {
-        final long position =
-            computePosition(
-                flyweight.consumptionTermId(),
-                flyweight.consumptionTermOffset(),
-                positionBitsToShift,
-                initialTermId);
+        final long position = computePosition(
+            flyweight.consumptionTermId(),
+            flyweight.consumptionTermOffset(),
+            positionBitsToShift,
+            initialTermId);
 
         final long windowLength = flyweight.receiverWindowLength();
         final long receiverId = flyweight.receiverId();

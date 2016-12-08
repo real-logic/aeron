@@ -264,7 +264,7 @@ public class FlowControlStrategiesTest
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         int numMessagesLeftToSend = numMessagesToSend;
         int numFragmentsReadFromA = 0, numFragmentsReadFromB = 0;
-        boolean isBclosed = false;
+        boolean isBClosed = false;
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
         driverAContext.multicastFlowControlSupplier(
@@ -281,7 +281,7 @@ public class FlowControlStrategiesTest
             Thread.yield();
         }
 
-        for (int i = 0; numFragmentsReadFromA < numMessagesToSend; i++)
+        while (numFragmentsReadFromA < numMessagesToSend)
         {
             if (numMessagesLeftToSend > 0)
             {
@@ -299,10 +299,10 @@ public class FlowControlStrategiesTest
             {
                 numFragmentsReadFromB += subscriptionB.poll(fragmentHandlerB, 10);
             }
-            else if (!isBclosed)
+            else if (!isBClosed)
             {
                 subscriptionB.close();
-                isBclosed = true;
+                isBClosed = true;
             }
         }
 
@@ -453,7 +453,7 @@ public class FlowControlStrategiesTest
             Thread.yield();
         }
 
-        for (int i = 0; numFragmentsReadFromA < numMessagesToSend; i++)
+        while (numFragmentsReadFromA < numMessagesToSend)
         {
             if (numMessagesLeftToSend > 0)
             {

@@ -15,7 +15,7 @@
  */
 package io.aeron.driver.media;
 
-import io.aeron.driver.Configuration;
+import io.aeron.driver.MediaDriver;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
@@ -33,9 +33,9 @@ public class ReceiveChannelEndpointThreadLocals
     private final ByteBuffer nakBuffer;
     private final NakFlyweight nakFlyweight;
 
-    public ReceiveChannelEndpointThreadLocals()
+    public ReceiveChannelEndpointThreadLocals(final MediaDriver.Context context)
     {
-        final byte[] applicationSpecificFeedback = Configuration.SM_APPLICATION_SPECIFIC_FEEDBACK;
+        final byte[] applicationSpecificFeedback = context.applicationSpecificFeedback();
         final int smLength = StatusMessageFlyweight.HEADER_LENGTH + applicationSpecificFeedback.length;
         final int bufferLength =
             BitUtil.align(smLength, CACHE_LINE_LENGTH) +

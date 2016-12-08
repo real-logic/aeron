@@ -20,6 +20,7 @@ import io.aeron.DriverProxy;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.buffer.RawLogFactory;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
+import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.HeaderWriter;
@@ -150,6 +151,7 @@ public class DriverConductorTest
         ctx.fromReceiverDriverConductorProxy(fromReceiverConductorProxy);
         ctx.fromSenderDriverConductorProxy(fromSenderConductorProxy);
         ctx.clientLivenessTimeoutNs(CLIENT_LIVENESS_TIMEOUT_NS);
+        ctx.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(ctx));
 
         driverProxy = new DriverProxy(fromClientCommands);
         driverConductor = new DriverConductor(ctx);

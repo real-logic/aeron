@@ -88,7 +88,9 @@ public class PreferredMulticastFlowControl implements FlowControl
             minPosition = Math.min(minPosition, position + windowLength);
         }
 
-        return Math.max(senderLimit, minPosition);
+        return (receiverList.size() > 0) ?
+            Math.max(senderLimit, minPosition) :
+            Math.max(senderLimit, position + windowLength);
     }
 
     /**

@@ -502,7 +502,9 @@ public final class MediaDriver implements AutoCloseable
 
         private SendChannelEndpointSupplier sendChannelEndpointSupplier;
         private ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier;
-        private ReceiveChannelEndpointThreadLocals receiveChannelEndpointThreadLocals = new ReceiveChannelEndpointThreadLocals();
+        private ReceiveChannelEndpointThreadLocals receiveChannelEndpointThreadLocals;
+
+        private byte[] applicationSpecificFeedback = Configuration.SM_APPLICATION_SPECIFIC_FEEDBACK;
 
         public Context()
         {
@@ -698,6 +700,11 @@ public final class MediaDriver implements AutoCloseable
             if (null == sharedNetworkThreadFactory)
             {
                 sharedNetworkThreadFactory = Thread::new;
+            }
+
+            if (null == receiveChannelEndpointThreadLocals)
+            {
+                receiveChannelEndpointThreadLocals = new ReceiveChannelEndpointThreadLocals(this);
             }
         }
 
@@ -980,6 +987,18 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context receiveChannelEndpointThreadLocals(final ReceiveChannelEndpointThreadLocals threadLocals)
+        {
+            this.receiveChannelEndpointThreadLocals = threadLocals;
+            return this;
+        }
+
+        public Context applicationSpecificFeedback(final byte[] bytes)
+        {
+            this.applicationSpecificFeedback = bytes;
+            return this;
+        }
+
         public EpochClock epochClock()
         {
             return epochClock;
@@ -1221,6 +1240,11 @@ public final class MediaDriver implements AutoCloseable
         public ReceiveChannelEndpointThreadLocals receiveChannelEndpointThreadLocals()
         {
             return receiveChannelEndpointThreadLocals;
+        }
+
+        public byte[] applicationSpecificFeedback()
+        {
+            return applicationSpecificFeedback;
         }
 
         public void close()

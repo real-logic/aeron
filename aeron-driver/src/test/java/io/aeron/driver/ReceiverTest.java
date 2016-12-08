@@ -17,16 +17,13 @@ package io.aeron.driver;
 
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.buffer.RawLogFactory;
+import io.aeron.driver.media.*;
 import io.aeron.driver.status.SystemCounters;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import io.aeron.driver.cmd.CreatePublicationImageCmd;
 import io.aeron.driver.cmd.DriverConductorCmd;
-import io.aeron.driver.media.ControlTransportPoller;
-import io.aeron.driver.media.DataTransportPoller;
-import io.aeron.driver.media.ReceiveChannelEndpoint;
-import io.aeron.driver.media.UdpChannel;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.TermReader;
@@ -139,6 +136,8 @@ public class ReceiverTest
 
         receiverProxy = new ReceiverProxy(ThreadingMode.DEDICATED, ctx.receiverCommandQueue(), mock(AtomicCounter.class));
 
+        ctx.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(ctx));
+
         receiver = new Receiver(ctx);
 
         senderChannel = DatagramChannel.open();
@@ -148,6 +147,7 @@ public class ReceiverTest
         termBuffers = rawLog.termBuffers();
 
         context.systemCounters(mockSystemCounters);
+        context.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(context));
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             UdpChannel.parse(URI),

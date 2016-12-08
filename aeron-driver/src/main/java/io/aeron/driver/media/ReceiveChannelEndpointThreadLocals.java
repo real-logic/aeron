@@ -22,6 +22,7 @@ import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.BitUtil;
 
 import java.nio.ByteBuffer;
+import java.util.UUID;
 
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
@@ -36,7 +37,12 @@ public class ReceiveChannelEndpointThreadLocals
     {
         final byte[] applicationSpecificFeedback = Configuration.SM_APPLICATION_SPECIFIC_FEEDBACK;
         final int smLength = StatusMessageFlyweight.HEADER_LENGTH + applicationSpecificFeedback.length;
-        final int bufferLength = BitUtil.align(smLength + NakFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH);
+        final int bufferLength =
+            BitUtil.align(smLength, CACHE_LINE_LENGTH) +
+            BitUtil.align(NakFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH);
+
+        final UUID uuid = UUID.randomUUID();
+        final long receiverId = (uuid.getMostSignificantBits() ^ uuid.getLeastSignificantBits());
 
         final ByteBuffer byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(bufferLength, CACHE_LINE_LENGTH);
 
@@ -51,6 +57,7 @@ public class ReceiveChannelEndpointThreadLocals
 
         statusMessageFlyweight
             .applicationSpecificFeedback(applicationSpecificFeedback, 0, applicationSpecificFeedback.length)
+            .receiverId(receiverId)
             .version(HeaderFlyweight.CURRENT_VERSION)
             .headerType(HeaderFlyweight.HDR_TYPE_SM)
             .frameLength(StatusMessageFlyweight.HEADER_LENGTH + applicationSpecificFeedback.length);

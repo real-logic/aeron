@@ -17,15 +17,16 @@ package io.aeron;
 
 import io.aeron.driver.MaxMulticastFlowControl;
 import io.aeron.driver.MediaDriver;
-import org.agrona.DirectBuffer;
-import org.junit.After;
-import org.junit.Test;
+import io.aeron.driver.MinMulticastFlowControl;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
+import org.junit.Test;
 
 import java.io.File;
 import java.util.UUID;
@@ -131,7 +132,7 @@ public class FlowControlStrategiesTest
         final CountDownLatch availableCountDownLatch = new CountDownLatch(2);
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
-        driverBContext.multicastFlowControlSupplier(
+        driverAContext.multicastFlowControlSupplier(
             (udpChannel, streamId, registrationId) -> new MaxMulticastFlowControl());
 
         aeronAContext.availableImageHandler(mock(AvailableImageHandler.class));
@@ -195,6 +196,116 @@ public class FlowControlStrategiesTest
             any(Header.class));
 
         verify(fragmentHandlerB, atMost(numMessagesToSend - 1)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(MESSAGE_LENGTH),
+            any(Header.class));
+    }
+
+    @Test(timeout = 10000)
+    public void shouldSlowDownWhenBehindWithMinMulticastFlowControlStrategy() throws Exception
+    {
+        final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        int numMessagesLeftToSend = numMessagesToSend;
+        int numFragmentsReadFromB = 0;
+
+        driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
+        driverAContext.multicastFlowControlSupplier(
+            (udpChannel, streamId, registrationId) -> new MinMulticastFlowControl());
+
+        launch();
+
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
+        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
+        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+
+        while (!publication.isConnected() && subscriptionA.hasNoImages() && subscriptionB.hasNoImages())
+        {
+            Thread.yield();
+        }
+
+        for (int i = 0; numFragmentsReadFromB < numMessagesToSend; i++)
+        {
+            if (numMessagesLeftToSend > 0)
+            {
+                if (publication.offer(buffer, 0, buffer.capacity()) >= 0L)
+                {
+                    numMessagesLeftToSend--;
+                }
+            }
+
+            // A keeps up
+            subscriptionA.poll(fragmentHandlerA, 10);
+
+            // B receives slowly
+            if ((i % 10) == 0)
+            {
+                numFragmentsReadFromB += subscriptionB.poll(fragmentHandlerB, 1);
+            }
+        }
+
+        verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(MESSAGE_LENGTH),
+            any(Header.class));
+
+        verify(fragmentHandlerB, times(numMessagesToSend)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(MESSAGE_LENGTH),
+            any(Header.class));
+    }
+
+    @Test(timeout = 10000)
+    public void shouldRemoveDeadReceiverWithMinMulticastFlowControlStrategy() throws Exception
+    {
+        final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        int numMessagesLeftToSend = numMessagesToSend;
+        int numFragmentsReadFromA = 0, numFragmentsReadFromB = 0;
+        boolean isBclosed = false;
+
+        driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
+        driverAContext.multicastFlowControlSupplier(
+            (udpChannel, streamId, registrationId) -> new MinMulticastFlowControl());
+
+        launch();
+
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
+        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
+        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+
+        while (!publication.isConnected() && subscriptionA.hasNoImages() && subscriptionB.hasNoImages())
+        {
+            Thread.yield();
+        }
+
+        for (int i = 0; numFragmentsReadFromA < numMessagesToSend; i++)
+        {
+            if (numMessagesLeftToSend > 0)
+            {
+                if (publication.offer(buffer, 0, buffer.capacity()) >= 0L)
+                {
+                    numMessagesLeftToSend--;
+                }
+            }
+
+            // A keeps up
+            numFragmentsReadFromA += subscriptionA.poll(fragmentHandlerA, 10);
+
+            // B receives up to 1/4 of the messages, then stops
+            if (numFragmentsReadFromB < (numMessagesToSend / 8))
+            {
+                numFragmentsReadFromB += subscriptionB.poll(fragmentHandlerB, 10);
+            }
+            else if (!isBclosed)
+            {
+                subscriptionB.close();
+                isBclosed = true;
+            }
+        }
+
+        verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(
             any(DirectBuffer.class),
             anyInt(),
             eq(MESSAGE_LENGTH),

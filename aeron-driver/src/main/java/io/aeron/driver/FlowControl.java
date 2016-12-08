@@ -32,7 +32,7 @@ public interface FlowControl
      * @param senderLimit         the current sender position limit.
      * @param initialTermId       for the term buffers.
      * @param positionBitsToShift in use for the length of each term buffer.
-     * @param now                 current wall clock time (in milliseconds). {@link System#currentTimeMillis()}
+     * @param now                 current nano clock time (in nanoseconds). {@link System#nanoTime()}
      * @return the new position limit to be employed by the sender.
      */
     long onStatusMessage(

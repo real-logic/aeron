@@ -29,7 +29,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 public class StatusMessageFlyweight extends HeaderFlyweight
 {
     /** Length of the Status Message Packet */
-    public static final int HEADER_LENGTH = 28;
+    public static final int HEADER_LENGTH = 36;
 
     /** Publisher should send SETUP frame */
     public static final short SEND_SETUP_FLAG = 0x80;
@@ -39,7 +39,8 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     private static final int CONSUMPTION_TERM_ID_FIELD_OFFSET = 16;
     private static final int CONSUMPTION_TERM_OFFSET_FIELD_OFFSET = 20;
     private static final int RECEIVER_WINDOW_FIELD_OFFSET = 24;
-    private static final int APP_SPECIFIC_FEEDBACK_FIELD_OFFSET = 28;
+    private static final int RECEIVER_ID_FIELD_OFFSET = 28;
+    private static final int APP_SPECIFIC_FEEDBACK_FIELD_OFFSET = 36;
 
     public StatusMessageFlyweight()
     {
@@ -164,6 +165,18 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     public StatusMessageFlyweight receiverWindowLength(final int receiverWindowLength)
     {
         putInt(RECEIVER_WINDOW_FIELD_OFFSET, receiverWindowLength, LITTLE_ENDIAN);
+
+        return this;
+    }
+
+    public long receiverId()
+    {
+        return getLong(RECEIVER_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+    }
+
+    public StatusMessageFlyweight receiverId(final long id)
+    {
+        putLong(RECEIVER_ID_FIELD_OFFSET, id, LITTLE_ENDIAN);
 
         return this;
     }

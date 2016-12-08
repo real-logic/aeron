@@ -107,6 +107,7 @@ public class NetworkPublication
     private final SetupFlyweight setupHeader;
     private final FlowControl flowControl;
     private final EpochClock epochClock;
+    private final NanoClock nanoClock;
     private final RetransmitHandler retransmitHandler;
     private final RawLog rawLog;
     private final AtomicCounter heartbeatsSent;
@@ -134,6 +135,7 @@ public class NetworkPublication
     {
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
+        this.nanoClock = nanoClock;
         this.epochClock = epochClock;
         this.senderPosition = senderPosition;
         this.senderLimit = senderLimit;
@@ -355,7 +357,7 @@ public class NetworkPublication
 
     public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
-        final long now = epochClock.time();
+        final long now = nanoClock.nanoTime();
 
         senderPositionLimit(
             flowControl.onStatusMessage(

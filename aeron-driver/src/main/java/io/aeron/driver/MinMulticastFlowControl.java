@@ -31,7 +31,10 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
  */
 public class MinMulticastFlowControl implements FlowControl
 {
-    private static final long RECEIVER_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
+    private static final String RECEIVER_TIMEOUT_PROP_NAME = "aeron.MinMulticastFlowControl.receiverTimeout";
+    private static final long RECEIVER_TIMEOUT_DEFAULT = TimeUnit.SECONDS.toNanos(2);
+
+    private static final long RECEIVER_TIMEOUT = Long.getLong(RECEIVER_TIMEOUT_PROP_NAME, RECEIVER_TIMEOUT_DEFAULT);
 
     private ArrayList<Receiver> receiverList = new ArrayList<>();
 
@@ -54,12 +57,13 @@ public class MinMulticastFlowControl implements FlowControl
                 initialTermId);
 
         final long windowLength = flyweight.receiverWindowLength();
+        final long receiverId = flyweight.receiverId();
         boolean isExisting = false;
         long minPosition = Long.MAX_VALUE;
 
         for (final Receiver receiver : receiverList)
         {
-            if (receiverAddress == receiver.address)
+            if (receiverId == receiver.receiverId)
             {
                 receiver.lastPositionPlusWindow = position + windowLength;
                 receiver.timeOfLastStatusMessage = now;
@@ -71,7 +75,7 @@ public class MinMulticastFlowControl implements FlowControl
 
         if (!isExisting)
         {
-            receiverList.add(new Receiver(position + windowLength, now, receiverAddress));
+            receiverList.add(new Receiver(position + windowLength, now, receiverId, receiverAddress));
             minPosition = Math.min(minPosition, position + windowLength);
         }
 
@@ -112,12 +116,18 @@ public class MinMulticastFlowControl implements FlowControl
     {
         long lastPositionPlusWindow;
         long timeOfLastStatusMessage;
+        long receiverId;
         InetSocketAddress address;
 
-        Receiver(final long lastPositionPlusWindow, final long now, final InetSocketAddress receiverAddress)
+        Receiver(
+            final long lastPositionPlusWindow,
+            final long now,
+            final long receiverId,
+            final InetSocketAddress receiverAddress)
         {
             this.lastPositionPlusWindow = lastPositionPlusWindow;
             this.timeOfLastStatusMessage = now;
+            this.receiverId = receiverId;
             this.address = receiverAddress;
         }
     }

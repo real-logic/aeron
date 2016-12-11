@@ -66,7 +66,7 @@ void BsdInterfaceLookup::lookupIPv4(IPv4LookupCallback func) const
 
     while (cursor)
     {
-        if (cursor->ifa_addr->sa_family == AF_INET)
+        if (cursor->ifa_addr != nullptr && cursor->ifa_addr->sa_family == AF_INET)
         {
             sockaddr_in* sockaddrIn = (sockaddr_in*) cursor->ifa_addr;
             Inet4Address inet4Address{sockaddrIn->sin_addr, 0};
@@ -108,7 +108,7 @@ void BsdInterfaceLookup::lookupIPv6(IPv6LookupCallback func) const
 
     while (cursor)
     {
-        if (cursor->ifa_addr->sa_family == AF_INET6)
+        if (cursor->ifa_addr != nullptr && cursor->ifa_addr->sa_family == AF_INET6)
         {
             sockaddr_in6* sockaddrIn = (sockaddr_in6*) cursor->ifa_addr;
             Inet6Address inet6Address{sockaddrIn->sin6_addr, 0};

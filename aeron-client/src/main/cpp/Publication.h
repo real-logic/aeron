@@ -427,7 +427,7 @@ private:
         if (length > m_maxPayloadLength)
         {
             throw util::IllegalStateException(
-                util::strPrintf("Encoded message exceeds m_maxPayloadLength of %d, length=%d",
+                util::strPrintf("Encoded message exceeds maxPayloadLength of %d, length=%d",
                     m_maxPayloadLength, length), SOURCEINFO);
         }
     }

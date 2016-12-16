@@ -370,7 +370,6 @@ project(':aeron-system-tests') {
 
 project(':aeron-agent') {
     apply plugin: 'com.github.johnrengelman.shadow'
-    apply plugin: 'osgi'
 
     dependencies {
         compile project(':aeron-client'), project(':aeron-driver')

@@ -74,7 +74,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(ADD_PUBLICATION, buffer, 0, publicationMessage.length()))
         {
-            throw new IllegalStateException("could not write publication message");
+            throw new IllegalStateException("Could not write add publication command");
         }
 
         return correlationId;
@@ -90,7 +90,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(REMOVE_PUBLICATION, buffer, 0, RemoveMessageFlyweight.length()))
         {
-            throw new IllegalStateException("could not write publication remove message");
+            throw new IllegalStateException("Could not write remove publication command");
         }
 
         return correlationId;
@@ -109,7 +109,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(ADD_SUBSCRIPTION, buffer, 0, subscriptionMessage.length()))
         {
-            throw new IllegalStateException("could not write subscription message");
+            throw new IllegalStateException("Could not write add subscription command");
         }
 
         return correlationId;
@@ -125,7 +125,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(REMOVE_SUBSCRIPTION, buffer, 0, RemoveMessageFlyweight.length()))
         {
-            throw new IllegalStateException("could not write subscription remove message");
+            throw new IllegalStateException("Could not write remove subscription message");
         }
 
         return correlationId;
@@ -137,7 +137,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(CLIENT_KEEPALIVE, buffer, 0, CorrelatedMessageFlyweight.LENGTH))
         {
-            throw new IllegalStateException("could not write keepalive message");
+            throw new IllegalStateException("Could not send client keepalive command");
         }
     }
 }

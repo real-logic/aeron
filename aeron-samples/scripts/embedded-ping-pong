@@ -18,6 +18,5 @@
 ${JAVA_HOME}/bin/java \
     -cp aeron-samples/build/libs/samples.jar \
     -Dagrona.disable.bounds.checks=true \
-    -Dagrona.disable.bounds.checks=true \
     -Daeron.term.buffer.sparse.file=false \
     io.aeron.samples.EmbeddedPingPong

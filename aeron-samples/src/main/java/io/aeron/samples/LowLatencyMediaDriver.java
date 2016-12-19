@@ -17,7 +17,6 @@ package io.aeron.samples;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
@@ -33,7 +32,7 @@ public class LowLatencyMediaDriver
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .termBufferSparseFile(false)
             .threadingMode(ThreadingMode.DEDICATED)
-            .conductorIdleStrategy(new BackoffIdleStrategy(1, 1, 1, 1))
+            .conductorIdleStrategy(new BusySpinIdleStrategy())
             .receiverIdleStrategy(new BusySpinIdleStrategy())
             .senderIdleStrategy(new BusySpinIdleStrategy());
 

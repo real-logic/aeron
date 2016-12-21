@@ -53,18 +53,18 @@ class SubscriptionFields extends SubscriptionLhsPadding
 
 /**
  * Aeron Subscriber API for receiving a reconstructed {@link Image} for a stream of messages from publishers on
- * a given channel and streamId pair.
+ * a given channel and streamId pair. {@link Image}s are aggregated under a {@link Subscription}.
  *
- * Subscribers are created via an {@link Aeron} object, and received messages are delivered
+ * {@link Subscription}s are created via an {@link Aeron} object, and received messages are delivered
  * to the {@link FragmentHandler}.
  *
  * By default fragmented messages are not reassembled before delivery. If an application must
  * receive whole messages, whether or not they were fragmented, then the Subscriber
  * should be created with a {@link FragmentAssembler} or a custom implementation.
  *
- * It is an application's responsibility to {@link #poll} the Subscriber for new messages.
+ * It is an application's responsibility to {@link #poll} the {@link Subscription} for new messages.
  *
- * Subscriptions are not threadsafe and should not be shared between subscribers.
+ * <b>Note:</b>Subscriptions are not threadsafe and should not be shared between subscribers.
  *
  * @see FragmentAssembler
  */

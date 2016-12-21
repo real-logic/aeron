@@ -38,6 +38,14 @@ import static io.aeron.protocol.DataHeaderFlyweight.TERM_ID_FIELD_OFFSET;
 /**
  * Represents a replicated publication {@link Image} from a publisher to a {@link Subscription}.
  * Each {@link Image} identifies a source publisher by session id.
+ *
+ * By default fragmented messages are not reassembled before delivery. If an application must
+ * receive whole messages, whether or not they were fragmented, then the Subscriber
+ * should be created with a {@link FragmentAssembler} or a custom implementation.
+ *
+ * It is an application's responsibility to {@link #poll} the {@link Image} for new messages.
+ *
+ * <b>Note:</b>Images are not threadsafe and should not be shared between subscribers.
  */
 public class Image
 {

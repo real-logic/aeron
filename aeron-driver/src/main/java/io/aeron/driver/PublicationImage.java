@@ -82,7 +82,7 @@ class PublicationImagePadding4 extends PublicationImageStatusFields
  */
 public class PublicationImage
     extends PublicationImagePadding4
-    implements NakMessageSender, DriverManagedResource
+    implements PacketLossHandler, DriverManagedResource
 {
     enum Status
     {
@@ -302,9 +302,9 @@ public class PublicationImage
 
     /**
      * Set status of the image.
-     * <p>
+     *
      * Set by {@link Receiver} for INIT to ACTIVE to INACTIVE
-     * <p>
+     *
      * Set by {@link DriverConductor} for INACTIVE to LINGER
      *
      * @param status of the image
@@ -327,9 +327,9 @@ public class PublicationImage
     }
 
     /**
-     * Called from the {@link LossDetector} when gap is detected.
+     * Called from the {@link LossDetector} when gap is detected from the {@link DriverConductor} thread.
      *
-     * @see NakMessageSender
+     * @see PacketLossHandler
      */
     public void onLossDetected(final int termId, final int termOffset, final int length)
     {
@@ -472,11 +472,11 @@ public class PublicationImage
     }
 
     /**
-     * Called from the {@link Receiver} to send a pending NAK.
+     * Called from the {@link Receiver} thread to processing any pending loss of packets.
      *
      * @return number of work items processed.
      */
-    int sendPendingNak()
+    int processPendingLoss()
     {
         int workCount = 0;
         final long changeNumber = endLossChange;
@@ -504,7 +504,7 @@ public class PublicationImage
     /**
      * Called from the {@link Receiver} upon receiving an RTT Measurement that is a reply.
      *
-     * @param header of the measurement
+     * @param header     of the measurement
      * @param srcAddress from the sender of the measurement
      */
     public void onRttMeasurement(final RttMeasurementFlyweight header, final InetSocketAddress srcAddress)
@@ -641,10 +641,10 @@ public class PublicationImage
         return isFlowControlOverRun;
     }
 
-    private void cleanBufferTo(final long cleanToPosition)
+    private void cleanBufferTo(final long newCleanPosition)
     {
         final long cleanPosition = this.cleanPosition;
-        final int bytesForCleaning = (int)(cleanToPosition - cleanPosition);
+        final int bytesForCleaning = (int)(newCleanPosition - cleanPosition);
         final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
         final int termOffset = (int)cleanPosition & termLengthMask;
         final int length = Math.min(bytesForCleaning, dirtyTerm.capacity() - termOffset);

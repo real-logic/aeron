@@ -16,13 +16,13 @@
 package io.aeron.driver;
 
 /**
- * Handler for transmitting NAK messages
+ * Handler for dealing with detected packet loss.
  */
 @FunctionalInterface
-public interface NakMessageSender
+public interface PacketLossHandler
 {
     /**
-     * Called when a gap has not been filled.
+     * Called when a gap in the packet stream has been detected.
      *
      * @param termId     for the gap
      * @param termOffset for the beginning of the gap

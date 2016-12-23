@@ -22,7 +22,7 @@ import static io.aeron.logbuffer.TermGapScanner.scanForGap;
 
 /**
  * Detecting and handling of gaps in a stream
- * <p>
+ *
  * This detector only notifies a single NAK at a time.
  */
 public class LossDetector implements GapHandler
@@ -30,7 +30,7 @@ public class LossDetector implements GapHandler
     private static final long TIMER_INACTIVE = -1;
 
     private final FeedbackDelayGenerator delayGenerator;
-    private final NakMessageSender nakMessageSender;
+    private final PacketLossHandler packetLossHandler;
     private final Gap scannedGap = new Gap();
     private final Gap activeGap = new Gap();
 
@@ -43,10 +43,10 @@ public class LossDetector implements GapHandler
      * @param delayGenerator   to use for delay determination
      * @param nakMessageSender to call when sending a NAK is indicated
      */
-    public LossDetector(final FeedbackDelayGenerator delayGenerator, final NakMessageSender nakMessageSender)
+    public LossDetector(final FeedbackDelayGenerator delayGenerator, final PacketLossHandler nakMessageSender)
     {
         this.delayGenerator = delayGenerator;
-        this.nakMessageSender = nakMessageSender;
+        this.packetLossHandler = nakMessageSender;
     }
 
     /**
@@ -152,7 +152,7 @@ public class LossDetector implements GapHandler
 
         if (delayGenerator.shouldFeedbackImmediately())
         {
-            sendNakMessage();
+            signalLoss();
         }
     }
 
@@ -162,7 +162,7 @@ public class LossDetector implements GapHandler
 
         if (TIMER_INACTIVE != expire && now > expire)
         {
-            sendNakMessage();
+            signalLoss();
             expire = now + determineNakDelay();
             result = 1;
         }
@@ -170,9 +170,9 @@ public class LossDetector implements GapHandler
         return result;
     }
 
-    private void sendNakMessage()
+    private void signalLoss()
     {
-        nakMessageSender.onLossDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
+        packetLossHandler.onLossDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
     }
 
     private long determineNakDelay()

@@ -73,7 +73,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
             else
             {
                 workCount += image.sendPendingStatusMessage(now, statusMessageTimeout);
-                workCount += image.sendPendingNak();
+                workCount += image.processPendingLoss();
             }
         }
 

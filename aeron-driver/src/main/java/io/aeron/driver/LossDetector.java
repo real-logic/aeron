@@ -23,7 +23,7 @@ import static io.aeron.logbuffer.TermGapScanner.scanForGap;
 /**
  * Detecting and handling of gaps in a stream
  *
- * This detector only notifies a single NAK at a time.
+ * This detector only notifies a single run of gap in message stream
  */
 public class LossDetector implements GapHandler
 {
@@ -40,13 +40,13 @@ public class LossDetector implements GapHandler
     /**
      * Create a loss handler for a channel.
      *
-     * @param delayGenerator   to use for delay determination
-     * @param nakMessageSender to call when sending a NAK is indicated
+     * @param delayGenerator    to use for delay determination
+     * @param packetLossHandler to call when signalling a gap
      */
-    public LossDetector(final FeedbackDelayGenerator delayGenerator, final PacketLossHandler nakMessageSender)
+    public LossDetector(final FeedbackDelayGenerator delayGenerator, final PacketLossHandler packetLossHandler)
     {
         this.delayGenerator = delayGenerator;
-        this.packetLossHandler = nakMessageSender;
+        this.packetLossHandler = packetLossHandler;
     }
 
     /**
@@ -61,16 +61,16 @@ public class LossDetector implements GapHandler
 
     /**
      * Scan for gaps and handle received data.
-     * <p>
+     *
      * The handler keeps track from scan to scan what is a gap and what must have been repaired.
      *
-     * @param termBuffer to scan
-     * @param rebuildPosition to start scanning from
-     * @param hwmPosition to scan up to
-     * @param now time in nanoseconds
-     * @param termLengthMask used for offset calculation
+     * @param termBuffer          to scan
+     * @param rebuildPosition     to start scanning from
+     * @param hwmPosition         to scan up to
+     * @param now                 time in nanoseconds
+     * @param termLengthMask      used for offset calculation
      * @param positionBitsToShift used for position calculation
-     * @param initialTermId used by the scanner
+     * @param initialTermId       used by the scanner
      * @return the work count for this operation.
      */
     public int scan(
@@ -121,7 +121,7 @@ public class LossDetector implements GapHandler
     }
 
     /**
-     * Called on reception of a NAK
+     * Called on reception of a NAK message
      *
      * @param now        time in nanoseconds
      * @param termId     in the NAK

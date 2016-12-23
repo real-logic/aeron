@@ -46,12 +46,15 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final StatusMessageFlyweight statusMessageFlyweight;
     private final ByteBuffer nakBuffer;
     private final NakFlyweight nakFlyweight;
+    private final ByteBuffer rttMeasurementBuffer;
+    private final RttMeasurementFlyweight rttMeasurementFlyweight;
     private final AtomicCounter shortSends;
     private final AtomicCounter possibleTtlAsymmetry;
     private final AtomicCounter statusIndicator;
 
     private final Int2ObjectHashMap<MutableInteger> refCountByStreamIdMap = new Int2ObjectHashMap<>();
 
+    private final long receiverId;
     private volatile boolean isClosed = false;
 
     public ReceiveChannelEndpoint(
@@ -79,6 +82,9 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         statusMessageFlyweight = threadLocals.statusMessageFlyweight();
         nakBuffer = threadLocals.nakBuffer();
         nakFlyweight = threadLocals.nakFlyweight();
+        rttMeasurementBuffer = threadLocals.rttMeasurementBuffer();
+        rttMeasurementFlyweight = threadLocals.rttMeasurementFlyweight();
+        receiverId = threadLocals.receiverId();
     }
 
     /**
@@ -205,6 +211,15 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         dispatcher.onSetupMessage(this, header, buffer, srcAddress);
     }
 
+    public void onRttMeasurement(
+        final RttMeasurementFlyweight header, final UnsafeBuffer buffer, final InetSocketAddress srcAddress)
+    {
+        if (header.receiverId() == receiverId)
+        {
+            dispatcher.onRttMeasurement(this, header, srcAddress);
+        }
+    }
+
     public void sendSetupElicitingStatusMessage(final InetSocketAddress controlAddress, final int sessionId, final int streamId)
     {
         sendStatusMessage(controlAddress, sessionId, streamId, 0, 0, 0, SEND_SETUP_FLAG);
@@ -288,6 +303,32 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
             final int bytesSent = sendTo(nakBuffer, controlAddress);
             if (NakFlyweight.HEADER_LENGTH != bytesSent)
+            {
+                shortSends.increment();
+            }
+        }
+    }
+
+    public void sendRttMeasurement(
+        final InetSocketAddress controlAddress,
+        final int sessionId,
+        final int streamId,
+        final long echoTimestamp,
+        final long receptionDelta,
+        final boolean hasReplySet)
+    {
+        if (!isClosed)
+        {
+            rttMeasurementFlyweight
+                .sessionId(sessionId)
+                .streamId(streamId)
+                .receiverId(receiverId)
+                .echoTimestamp(echoTimestamp)
+                .receptionDelta(receptionDelta)
+                .flags((hasReplySet) ? RttMeasurementFlyweight.REPLY_FLAG : 0);
+
+            final int bytesSent = sendTo(rttMeasurementBuffer, controlAddress);
+            if (RttMeasurementFlyweight.HEADER_LENGTH != bytesSent)
             {
                 shortSends.increment();
             }

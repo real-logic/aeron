@@ -18,6 +18,7 @@ package io.aeron.driver.media;
 import io.aeron.driver.*;
 import io.aeron.driver.status.ChannelEndpointStatus;
 import io.aeron.protocol.NakFlyweight;
+import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.LangUtil;
 import org.agrona.collections.BiInt2ObjectMap;
@@ -31,9 +32,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
 import static io.aeron.driver.status.ChannelEndpointStatus.status;
-import static io.aeron.driver.status.SystemCounterDescriptor.INVALID_PACKETS;
-import static io.aeron.driver.status.SystemCounterDescriptor.NAK_MESSAGES_RECEIVED;
-import static io.aeron.driver.status.SystemCounterDescriptor.STATUS_MESSAGES_RECEIVED;
+import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 
 /**
@@ -224,6 +223,15 @@ public class SendChannelEndpoint extends UdpChannelTransport
         {
             publication.onNak(msg.termId(), msg.termOffset(), msg.length());
             nakMessagesReceived.orderedIncrement();
+        }
+    }
+
+    public void onRttMeasurement(final RttMeasurementFlyweight msg, final InetSocketAddress srcAddress)
+    {
+        final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(msg.sessionId(), msg.streamId());
+        if (null != publication)
+        {
+            publication.onRttMeasurement(msg, srcAddress);
         }
     }
 }

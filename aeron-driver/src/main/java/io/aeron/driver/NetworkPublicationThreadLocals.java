@@ -17,6 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
+import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.SetupFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
@@ -29,10 +30,12 @@ public class NetworkPublicationThreadLocals
     private final DataHeaderFlyweight dataHeader;
     private final ByteBuffer setupBuffer;
     private final SetupFlyweight setupHeader;
+    private final ByteBuffer rttMeasurementBuffer;
+    private final RttMeasurementFlyweight rttMeasurementHeader;
 
     public NetworkPublicationThreadLocals()
     {
-        final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(128, BitUtil.CACHE_LINE_LENGTH);
+        final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(192, BitUtil.CACHE_LINE_LENGTH);
 
         byteBuffer.limit(DataHeaderFlyweight.HEADER_LENGTH);
         heartbeatBuffer = byteBuffer.slice();
@@ -41,6 +44,10 @@ public class NetworkPublicationThreadLocals
         byteBuffer.limit(64 + SetupFlyweight.HEADER_LENGTH).position(64);
         setupBuffer = byteBuffer.slice();
         setupHeader = new SetupFlyweight(setupBuffer);
+
+        byteBuffer.limit(128 + RttMeasurementFlyweight.HEADER_LENGTH).position(128);
+        rttMeasurementBuffer = byteBuffer.slice();
+        rttMeasurementHeader = new RttMeasurementFlyweight(rttMeasurementBuffer);
 
         dataHeader
             .version(HeaderFlyweight.CURRENT_VERSION)
@@ -52,6 +59,11 @@ public class NetworkPublicationThreadLocals
             .version(HeaderFlyweight.CURRENT_VERSION)
             .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
             .frameLength(SetupFlyweight.HEADER_LENGTH);
+
+        rttMeasurementHeader
+            .version(HeaderFlyweight.CURRENT_VERSION)
+            .headerType(HeaderFlyweight.HDR_TYPE_RTTM)
+            .frameLength(RttMeasurementFlyweight.HEADER_LENGTH);
     }
 
     public ByteBuffer heartbeatBuffer()
@@ -72,5 +84,15 @@ public class NetworkPublicationThreadLocals
     public SetupFlyweight setupHeader()
     {
         return setupHeader;
+    }
+
+    public ByteBuffer rttMeasurementBuffer()
+    {
+        return rttMeasurementBuffer;
+    }
+
+    public RttMeasurementFlyweight rttMeasurementHeader()
+    {
+        return rttMeasurementHeader;
     }
 }

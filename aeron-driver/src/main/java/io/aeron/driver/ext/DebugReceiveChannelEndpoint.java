@@ -20,6 +20,7 @@ import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.DataPacketDispatcher;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.SetupFlyweight;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -96,6 +97,15 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
         if (!dataLossGenerator.shouldDropFrame(srcAddress, buffer, header.frameLength()))
         {
             super.onSetupMessage(header, buffer, srcAddress);
+        }
+    }
+
+    public void onRttMeasurement(
+        final RttMeasurementFlyweight header, final UnsafeBuffer buffer, final InetSocketAddress srcAddress)
+    {
+        if (!dataLossGenerator.shouldDropFrame(srcAddress, buffer, header.frameLength()))
+        {
+            super.onRttMeasurement(header, buffer, srcAddress);
         }
     }
 }

@@ -19,6 +19,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.protocol.NakFlyweight;
+import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -85,6 +86,14 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
         if (!controlLossGenerator.shouldDropFrame(srcAddress, msg, msg.frameLength()))
         {
             super.onNakMessage(msg, srcAddress);
+        }
+    }
+
+    public void onRttMeasurement(RttMeasurementFlyweight msg, InetSocketAddress srcAddress)
+    {
+        if (!controlLossGenerator.shouldDropFrame(srcAddress, msg, msg.frameLength()))
+        {
+            super.onRttMeasurement(msg, srcAddress);
         }
     }
 }

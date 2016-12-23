@@ -17,6 +17,7 @@ package io.aeron.driver.media;
 
 import io.aeron.driver.Configuration;
 import io.aeron.protocol.NakFlyweight;
+import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.LangUtil;
 import org.agrona.collections.ArrayUtil;
@@ -30,6 +31,7 @@ import java.nio.channels.SelectionKey;
 
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_NAK;
+import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_RTTM;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_SM;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
@@ -42,6 +44,7 @@ public class ControlTransportPoller extends UdpTransportPoller
     private final UnsafeBuffer unsafeBuffer;
     private final NakFlyweight nakMessage;
     private final StatusMessageFlyweight statusMessage;
+    private final RttMeasurementFlyweight rttMeasurement;
     private SendChannelEndpoint[] transports = new SendChannelEndpoint[0];
 
     public ControlTransportPoller()
@@ -52,6 +55,7 @@ public class ControlTransportPoller extends UdpTransportPoller
         unsafeBuffer = new UnsafeBuffer(byteBuffer);
         nakMessage = new NakFlyweight(unsafeBuffer);
         statusMessage = new StatusMessageFlyweight(unsafeBuffer);
+        rttMeasurement = new RttMeasurementFlyweight(unsafeBuffer);
     }
 
     public int pollTransports()
@@ -136,6 +140,10 @@ public class ControlTransportPoller extends UdpTransportPoller
 
                     case HDR_TYPE_SM:
                         channelEndpoint.onStatusMessage(statusMessage, srcAddress);
+                        break;
+
+                    case HDR_TYPE_RTTM:
+                        channelEndpoint.onRttMeasurement(rttMeasurement, srcAddress);
                         break;
                 }
             }

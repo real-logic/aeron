@@ -16,6 +16,7 @@
 package io.aeron.driver.media;
 
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.SetupFlyweight;
 import org.agrona.BufferUtil;
 import org.agrona.LangUtil;
@@ -29,9 +30,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_SETUP;
+import static io.aeron.protocol.HeaderFlyweight.*;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 /**
@@ -45,6 +44,7 @@ public class DataTransportPoller extends UdpTransportPoller
     private final UnsafeBuffer unsafeBuffer;
     private final DataHeaderFlyweight dataMessage;
     private final SetupFlyweight setupMessage;
+    private final RttMeasurementFlyweight rttMeasurement;
     private ReceiveChannelEndpoint[] transports = new ReceiveChannelEndpoint[0];
 
     public DataTransportPoller()
@@ -53,6 +53,7 @@ public class DataTransportPoller extends UdpTransportPoller
         unsafeBuffer = new UnsafeBuffer(byteBuffer);
         dataMessage = new DataHeaderFlyweight(unsafeBuffer);
         setupMessage = new SetupFlyweight(unsafeBuffer);
+        rttMeasurement = new RttMeasurementFlyweight(unsafeBuffer);
     }
 
     public int pollTransports()
@@ -139,6 +140,10 @@ public class DataTransportPoller extends UdpTransportPoller
 
                     case HDR_TYPE_SETUP:
                         channelEndpoint.onSetupMessage(setupMessage, unsafeBuffer, srcAddress);
+                        break;
+
+                    case HDR_TYPE_RTTM:
+                        channelEndpoint.onRttMeasurement(rttMeasurement, unsafeBuffer, srcAddress);
                         break;
                 }
             }

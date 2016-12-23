@@ -35,6 +35,7 @@ public class EventDissector
     private static final StatusMessageFlyweight SM_HEADER = new StatusMessageFlyweight();
     private static final NakFlyweight NAK_HEADER = new NakFlyweight();
     private static final SetupFlyweight SETUP_HEADER = new SetupFlyweight();
+    private static final RttMeasurementFlyweight RTT_MEASUREMENT_FLYWEIGHT = new RttMeasurementFlyweight();
     private static final PublicationMessageFlyweight PUB_MESSAGE = new PublicationMessageFlyweight();
     private static final SubscriptionMessageFlyweight SUB_MESSAGE = new SubscriptionMessageFlyweight();
     private static final PublicationBuffersReadyFlyweight PUBLICATION_READY = new PublicationBuffersReadyFlyweight();
@@ -80,6 +81,12 @@ public class EventDissector
                 final SetupFlyweight setupFrame = SETUP_HEADER;
                 setupFrame.wrap(buffer,  frameOffset, buffer.capacity() - frameOffset);
                 builder.append(dissect(setupFrame));
+                break;
+
+            case HeaderFlyweight.HDR_TYPE_RTTM:
+                final RttMeasurementFlyweight rttMeasurementFlyweight = RTT_MEASUREMENT_FLYWEIGHT;
+                rttMeasurementFlyweight.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
+                builder.append(dissect(rttMeasurementFlyweight));
                 break;
 
             default:
@@ -256,14 +263,15 @@ public class EventDissector
     private static String dissect(final StatusMessageFlyweight msg)
     {
         return String.format(
-            "SM 0x%x len %d %d:%d:%d @%x %d",
+            "SM 0x%x len %d %d:%d:%d @%x %d %d",
             msg.flags(),
             msg.frameLength(),
             msg.sessionId(),
             msg.streamId(),
             msg.consumptionTermId(),
             msg.consumptionTermOffset(),
-            msg.receiverWindowLength());
+            msg.receiverWindowLength(),
+            msg.receiverId());
     }
 
     private static String dissect(final NakFlyweight msg)
@@ -293,6 +301,19 @@ public class EventDissector
             msg.termLength(),
             msg.mtuLength(),
             msg.ttl());
+    }
+
+    private static String dissect(final RttMeasurementFlyweight msg)
+    {
+        return String.format(
+            "RTT 0x%x len %d %d:%d %d %d %d",
+            msg.flags(),
+            msg.frameLength(),
+            msg.sessionId(),
+            msg.streamId(),
+            msg.echoTimestamp(),
+            msg.receptionDelta(),
+            msg.receiverId());
     }
 
     private static String dissect(final PublicationMessageFlyweight msg)

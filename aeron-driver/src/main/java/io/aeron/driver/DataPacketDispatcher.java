@@ -18,6 +18,7 @@ package io.aeron.driver;
 import io.aeron.driver.exceptions.UnknownSubscriptionException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.SetupFlyweight;
 import org.agrona.collections.BiInt2ObjectMap;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -180,6 +181,39 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
                     header.termOffset(),
                     header.termLength(),
                     header.mtuLength());
+            }
+        }
+    }
+
+    public void onRttMeasurement(
+        final ReceiveChannelEndpoint channelEndpoint,
+        final RttMeasurementFlyweight header,
+        final InetSocketAddress srcAddress)
+    {
+        final int streamId = header.streamId();
+        final Int2ObjectHashMap<PublicationImage> imageBySessionIdMap = sessionsByStreamIdMap.get(streamId);
+
+        if (null != imageBySessionIdMap)
+        {
+            final int sessionId = header.sessionId();
+            final PublicationImage image = imageBySessionIdMap.get(sessionId);
+
+            if (null != image)
+            {
+                if (RttMeasurementFlyweight.REPLY_FLAG == (header.flags() & RttMeasurementFlyweight.REPLY_FLAG))
+                {
+                    // TODO: check rate limit
+
+                    final InetSocketAddress controlAddress =
+                        channelEndpoint.isMulticast() ? channelEndpoint.udpChannel().remoteControl() : srcAddress;
+
+                    channelEndpoint.sendRttMeasurement(
+                        controlAddress, sessionId, streamId, header.echoTimestamp(), 0, false);
+                }
+                else
+                {
+                    image.onRttMeasurement(header, srcAddress);
+                }
             }
         }
     }

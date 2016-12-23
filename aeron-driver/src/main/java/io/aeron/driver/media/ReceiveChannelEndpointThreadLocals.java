@@ -18,6 +18,7 @@ package io.aeron.driver.media;
 import io.aeron.driver.MediaDriver;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.protocol.NakFlyweight;
+import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.BitUtil;
 
@@ -32,6 +33,9 @@ public class ReceiveChannelEndpointThreadLocals
     private final StatusMessageFlyweight statusMessageFlyweight;
     private final ByteBuffer nakBuffer;
     private final NakFlyweight nakFlyweight;
+    private final ByteBuffer rttMeasurementBuffer;
+    private final RttMeasurementFlyweight rttMeasurementFlyweight;
+    private final long receiverId;
 
     public ReceiveChannelEndpointThreadLocals(final MediaDriver.Context context)
     {
@@ -39,10 +43,11 @@ public class ReceiveChannelEndpointThreadLocals
         final int smLength = StatusMessageFlyweight.HEADER_LENGTH + applicationSpecificFeedback.length;
         final int bufferLength =
             BitUtil.align(smLength, CACHE_LINE_LENGTH) +
-            BitUtil.align(NakFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH);
+            BitUtil.align(NakFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH) +
+            BitUtil.align(RttMeasurementFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH);
 
         final UUID uuid = UUID.randomUUID();
-        final long receiverId = (uuid.getMostSignificantBits() ^ uuid.getLeastSignificantBits());
+        receiverId = (uuid.getMostSignificantBits() ^ uuid.getLeastSignificantBits());
 
         final ByteBuffer byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(bufferLength, CACHE_LINE_LENGTH);
 
@@ -55,6 +60,11 @@ public class ReceiveChannelEndpointThreadLocals
         nakBuffer = byteBuffer.slice();
         nakFlyweight = new NakFlyweight(nakBuffer);
 
+        final int rttMeasurementOffset = nakMessageOffset + BitUtil.align(NakFlyweight.HEADER_LENGTH, 32);
+        byteBuffer.limit(rttMeasurementOffset + RttMeasurementFlyweight.HEADER_LENGTH).position(rttMeasurementOffset);
+        rttMeasurementBuffer = byteBuffer.slice();
+        rttMeasurementFlyweight = new RttMeasurementFlyweight(rttMeasurementBuffer);
+
         statusMessageFlyweight
             .applicationSpecificFeedback(applicationSpecificFeedback, 0, applicationSpecificFeedback.length)
             .receiverId(receiverId)
@@ -66,6 +76,12 @@ public class ReceiveChannelEndpointThreadLocals
             .version(HeaderFlyweight.CURRENT_VERSION)
             .headerType(HeaderFlyweight.HDR_TYPE_NAK)
             .frameLength(NakFlyweight.HEADER_LENGTH);
+
+        rttMeasurementFlyweight
+            .receiverId(receiverId)
+            .version(HeaderFlyweight.CURRENT_VERSION)
+            .headerType(HeaderFlyweight.HDR_TYPE_RTTM)
+            .frameLength(RttMeasurementFlyweight.HEADER_LENGTH);
     }
 
     public ByteBuffer smBuffer()
@@ -86,5 +102,20 @@ public class ReceiveChannelEndpointThreadLocals
     public NakFlyweight nakFlyweight()
     {
         return nakFlyweight;
+    }
+
+    public ByteBuffer rttMeasurementBuffer()
+    {
+        return rttMeasurementBuffer;
+    }
+
+    public RttMeasurementFlyweight rttMeasurementFlyweight()
+    {
+        return rttMeasurementFlyweight;
+    }
+
+    public long receiverId()
+    {
+        return receiverId;
     }
 }

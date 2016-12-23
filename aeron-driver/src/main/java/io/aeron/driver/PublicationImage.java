@@ -20,6 +20,7 @@ import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.TermRebuilder;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.protocol.RttMeasurementFlyweight;
 import org.agrona.UnsafeAccess;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -498,6 +499,17 @@ public class PublicationImage
         }
 
         return workCount;
+    }
+
+    /**
+     * Called from the {@link Receiver} upon receiving an RTT Measurement that is a reply.
+     *
+     * @param header of the measurement
+     * @param srcAddress from the sender of the measurement
+     */
+    public void onRttMeasurement(final RttMeasurementFlyweight header, final InetSocketAddress srcAddress)
+    {
+        // TODO: hook into congestion control strategy
     }
 
     /**

@@ -21,6 +21,7 @@ import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.LogBufferUnblocker;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.SetupFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.collections.ArrayUtil;
@@ -34,9 +35,7 @@ import org.agrona.concurrent.status.ReadablePosition;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import static io.aeron.driver.Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS;
-import static io.aeron.driver.Configuration.PUBLICATION_LINGER_NS;
-import static io.aeron.driver.Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
+import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.TermScanner.*;
@@ -105,8 +104,9 @@ public class NetworkPublication
     private final DataHeaderFlyweight dataHeader;
     private final ByteBuffer setupBuffer;
     private final SetupFlyweight setupHeader;
+    private final ByteBuffer rttMeasurementBuffer;
+    private final RttMeasurementFlyweight rttMeasurementHeader;
     private final FlowControl flowControl;
-    private final EpochClock epochClock;
     private final NanoClock nanoClock;
     private final RetransmitHandler retransmitHandler;
     private final RawLog rawLog;
@@ -136,7 +136,6 @@ public class NetworkPublication
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
         this.nanoClock = nanoClock;
-        this.epochClock = epochClock;
         this.senderPosition = senderPosition;
         this.senderLimit = senderLimit;
         this.flowControl = flowControl;
@@ -151,6 +150,8 @@ public class NetworkPublication
         setupHeader = threadLocals.setupHeader();
         heartbeatBuffer = threadLocals.heartbeatBuffer();
         dataHeader = threadLocals.dataHeader();
+        rttMeasurementBuffer = threadLocals.rttMeasurementBuffer();
+        rttMeasurementHeader = threadLocals.rttMeasurementHeader();
 
         heartbeatsSent = systemCounters.get(HEARTBEATS_SENT);
         shortSends = systemCounters.get(SHORT_SENDS);
@@ -368,6 +369,30 @@ public class NetworkPublication
                 positionBitsToShift,
                 now));
         LogBufferDescriptor.timeOfLastStatusMessage(rawLog.logMetaData(), now);
+    }
+
+    public void onRttMeasurement(final RttMeasurementFlyweight msg, final InetSocketAddress srcAddress)
+    {
+        if (RttMeasurementFlyweight.REPLY_FLAG == (msg.flags() & RttMeasurementFlyweight.REPLY_FLAG))
+        {
+            // TODO: rate limit
+
+            rttMeasurementHeader
+                .receiverId(msg.receiverId())
+                .echoTimestamp(msg.echoTimestamp())
+                .receptionDelta(0)
+                .sessionId(sessionId)
+                .streamId(streamId)
+                .flags((short)0x0);
+
+            final int bytesSent = channelEndpoint.send(rttMeasurementBuffer);
+            if (RttMeasurementFlyweight.HEADER_LENGTH != bytesSent)
+            {
+                shortSends.increment();
+            }
+        }
+
+        // handling of RTT measurements would be done in an else clause here.
     }
 
     private int sendData(final long now, final long senderPosition, final int termOffset)

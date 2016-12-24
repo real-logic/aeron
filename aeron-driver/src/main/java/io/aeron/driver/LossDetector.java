@@ -17,7 +17,6 @@ package io.aeron.driver;
 
 import org.agrona.concurrent.UnsafeBuffer;
 
-import static io.aeron.logbuffer.TermGapScanner.GapHandler;
 import static io.aeron.logbuffer.TermGapScanner.scanForGap;
 
 /**
@@ -25,12 +24,12 @@ import static io.aeron.logbuffer.TermGapScanner.scanForGap;
  *
  * This detector only notifies a single run of gap in message stream
  */
-public class LossDetector implements GapHandler
+public class LossDetector implements io.aeron.logbuffer.TermGapScanner.GapHandler
 {
     private static final long TIMER_INACTIVE = -1;
 
     private final FeedbackDelayGenerator delayGenerator;
-    private final PacketLossHandler packetLossHandler;
+    private final GapHandler gapHandler;
     private final Gap scannedGap = new Gap();
     private final Gap activeGap = new Gap();
 
@@ -40,13 +39,13 @@ public class LossDetector implements GapHandler
     /**
      * Create a loss handler for a channel.
      *
-     * @param delayGenerator    to use for delay determination
-     * @param packetLossHandler to call when signalling a gap
+     * @param delayGenerator to use for delay determination
+     * @param gapHandler     to call when signalling a gap
      */
-    public LossDetector(final FeedbackDelayGenerator delayGenerator, final PacketLossHandler packetLossHandler)
+    public LossDetector(final FeedbackDelayGenerator delayGenerator, final GapHandler gapHandler)
     {
         this.delayGenerator = delayGenerator;
-        this.packetLossHandler = packetLossHandler;
+        this.gapHandler = gapHandler;
     }
 
     /**
@@ -152,7 +151,7 @@ public class LossDetector implements GapHandler
 
         if (delayGenerator.shouldFeedbackImmediately())
         {
-            signalLoss();
+            signalGap();
         }
     }
 
@@ -162,7 +161,7 @@ public class LossDetector implements GapHandler
 
         if (TIMER_INACTIVE != expire && now > expire)
         {
-            signalLoss();
+            signalGap();
             expire = now + determineNakDelay();
             result = 1;
         }
@@ -170,9 +169,9 @@ public class LossDetector implements GapHandler
         return result;
     }
 
-    private void signalLoss()
+    private void signalGap()
     {
-        packetLossHandler.onLossDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
+        gapHandler.onLossDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
     }
 
     private long determineNakDelay()

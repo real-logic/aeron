@@ -82,7 +82,7 @@ class PublicationImagePadding4 extends PublicationImageStatusFields
  */
 public class PublicationImage
     extends PublicationImagePadding4
-    implements PacketLossHandler, DriverManagedResource
+    implements GapHandler, DriverManagedResource
 {
     enum Status
     {
@@ -329,7 +329,7 @@ public class PublicationImage
     /**
      * Called from the {@link LossDetector} when gap is detected from the {@link DriverConductor} thread.
      *
-     * @see PacketLossHandler
+     * @see GapHandler
      */
     public void onLossDetected(final int termId, final int termOffset, final int length)
     {
@@ -452,7 +452,7 @@ public class PublicationImage
 
         if (ACTIVE == status)
         {
-            final long statusMessagePosition = this.newStatusMessagePosition;
+            final long statusMessagePosition = newStatusMessagePosition;
             if (statusMessagePosition != lastStatusMessagePosition || now > (lastStatusMessageTimestamp + statusMessageTimeout))
             {
                 final int termId = computeTermIdFromPosition(statusMessagePosition, positionBitsToShift, initialTermId);
@@ -487,7 +487,7 @@ public class PublicationImage
             final int termOffset = lossTermOffset;
             final int length = lossLength;
 
-            UnsafeAccess.UNSAFE.loadFence(); // LoadLoad required so value loads don't move past version check below.
+            UnsafeAccess.UNSAFE.loadFence(); // LoadLoad required so previous loads don't move past version check below.
 
             if (changeNumber == beginLossChange)
             {

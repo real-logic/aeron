@@ -60,19 +60,18 @@ public class LossDetectorTest
         TimeUnit.MILLISECONDS.toNanos(20), true);
 
     private final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
-
-    private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
+    private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private LossDetector handler;
-    private PacketLossHandler packetLossHandler;
+    private GapHandler gapHandler;
     private long currentTime = 0;
 
     public LossDetectorTest()
     {
-        packetLossHandler = mock(PacketLossHandler.class);
+        gapHandler = mock(GapHandler.class);
 
-        handler = new LossDetector(DELAY_GENERATOR, packetLossHandler);
+        handler = new LossDetector(DELAY_GENERATOR, gapHandler);
         dataHeader.wrap(rcvBuffer);
     }
 
@@ -86,7 +85,7 @@ public class LossDetectorTest
         currentTime = TimeUnit.MILLISECONDS.toNanos(100);
         handler.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verifyZeroInteractions(packetLossHandler);
+        verifyZeroInteractions(gapHandler);
     }
 
     @Test
@@ -103,7 +102,7 @@ public class LossDetectorTest
         currentTime = TimeUnit.MILLISECONDS.toNanos(40);
         handler.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verifyZeroInteractions(packetLossHandler);
+        verifyZeroInteractions(gapHandler);
     }
 
     @Test
@@ -119,7 +118,7 @@ public class LossDetectorTest
         currentTime = TimeUnit.MILLISECONDS.toNanos(40);
         handler.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(packetLossHandler).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(gapHandler).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
     }
 
     @Test
@@ -137,7 +136,7 @@ public class LossDetectorTest
         currentTime = TimeUnit.MILLISECONDS.toNanos(60);
         handler.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(packetLossHandler, atLeast(2)).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(gapHandler, atLeast(2)).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
     }
 
     @Test
@@ -155,7 +154,7 @@ public class LossDetectorTest
         currentTime = TimeUnit.MILLISECONDS.toNanos(25);
         handler.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verifyZeroInteractions(packetLossHandler);
+        verifyZeroInteractions(gapHandler);
     }
 
     @Test
@@ -175,7 +174,7 @@ public class LossDetectorTest
         currentTime = TimeUnit.MILLISECONDS.toNanos(100);
         handler.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verifyZeroInteractions(packetLossHandler);
+        verifyZeroInteractions(gapHandler);
     }
 
     @Test
@@ -198,10 +197,10 @@ public class LossDetectorTest
         currentTime = TimeUnit.MILLISECONDS.toNanos(80);
         handler.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        final InOrder inOrder = inOrder(packetLossHandler);
-        inOrder.verify(packetLossHandler, atLeast(1)).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
-        inOrder.verify(packetLossHandler, atLeast(1)).onLossDetected(TERM_ID, offsetOfMessage(3), gapLength());
-        inOrder.verify(packetLossHandler, never()).onLossDetected(TERM_ID, offsetOfMessage(5), gapLength());
+        final InOrder inOrder = inOrder(gapHandler);
+        inOrder.verify(gapHandler, atLeast(1)).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
+        inOrder.verify(gapHandler, atLeast(1)).onLossDetected(TERM_ID, offsetOfMessage(3), gapLength());
+        inOrder.verify(gapHandler, never()).onLossDetected(TERM_ID, offsetOfMessage(5), gapLength());
     }
 
     @Test
@@ -226,7 +225,7 @@ public class LossDetectorTest
         currentTime = TimeUnit.MILLISECONDS.toNanos(100);
         handler.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(packetLossHandler, atLeast(1)).onLossDetected(TERM_ID, offsetOfMessage(3), gapLength());
+        verify(gapHandler, atLeast(1)).onLossDetected(TERM_ID, offsetOfMessage(3), gapLength());
     }
 
     @Test
@@ -242,7 +241,7 @@ public class LossDetectorTest
 
         handler.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(packetLossHandler).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(gapHandler).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
     }
 
     @Test
@@ -256,7 +255,7 @@ public class LossDetectorTest
 
         handler.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verifyZeroInteractions(packetLossHandler);
+        verifyZeroInteractions(gapHandler);
     }
 
     @Test
@@ -273,7 +272,7 @@ public class LossDetectorTest
         handler.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         handler.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(packetLossHandler).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(gapHandler).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
     }
 
     @Test
@@ -289,7 +288,7 @@ public class LossDetectorTest
 
         handler.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(packetLossHandler).onLossDetected(TERM_ID, offsetOfMessage(1), TERM_BUFFER_LENGTH - (int)rebuildPosition);
+        verify(gapHandler).onLossDetected(TERM_ID, offsetOfMessage(1), TERM_BUFFER_LENGTH - (int)rebuildPosition);
     }
 
     @Test
@@ -305,13 +304,13 @@ public class LossDetectorTest
 
         handler.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(packetLossHandler).onLossDetected(TERM_ID, offsetOfMessage(3), gapLength());
-        verifyNoMoreInteractions(packetLossHandler);
+        verify(gapHandler).onLossDetected(TERM_ID, offsetOfMessage(3), gapLength());
+        verifyNoMoreInteractions(gapHandler);
     }
 
     private LossDetector getLossHandlerWithImmediate()
     {
-        return new LossDetector(DELAY_GENERATOR_WITH_IMMEDIATE, packetLossHandler);
+        return new LossDetector(DELAY_GENERATOR_WITH_IMMEDIATE, gapHandler);
     }
 
     private void insertDataFrame(final int offset)

@@ -19,7 +19,7 @@ package io.aeron.driver;
  * Handler for dealing with detected packet loss.
  */
 @FunctionalInterface
-public interface PacketLossHandler
+public interface GapHandler
 {
     /**
      * Called when a gap in the packet stream has been detected.

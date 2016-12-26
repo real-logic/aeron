@@ -140,7 +140,7 @@ public class LossDetector implements TermGapScanner.GapHandler
 
         if (delayGenerator.shouldFeedbackImmediately())
         {
-            signalGap();
+            gapHandler.onLossDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
         }
     }
 
@@ -150,17 +150,12 @@ public class LossDetector implements TermGapScanner.GapHandler
 
         if (TIMER_INACTIVE != expire && now > expire)
         {
-            signalGap();
+            gapHandler.onLossDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
             expire = now + determineNakDelay();
             result = 1;
         }
 
         return result;
-    }
-
-    private void signalGap()
-    {
-        gapHandler.onLossDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
     }
 
     private long determineNakDelay()

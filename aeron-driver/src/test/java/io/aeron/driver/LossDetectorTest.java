@@ -140,24 +140,6 @@ public class LossDetectorTest
     }
 
     @Test
-    public void shouldSuppressNakOnReceivingNak()
-    {
-        final long rebuildPosition = ACTIVE_TERM_POSITION;
-        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
-
-        insertDataFrame(offsetOfMessage(0));
-        insertDataFrame(offsetOfMessage(2));
-
-        handler.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        currentTime = TimeUnit.MILLISECONDS.toNanos(20);
-        handler.onNak(currentTime, TERM_ID, offsetOfMessage(1));
-        currentTime = TimeUnit.MILLISECONDS.toNanos(25);
-        handler.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-
-        verifyZeroInteractions(gapHandler);
-    }
-
-    @Test
     public void shouldStopNakOnReceivingData()
     {
         long rebuildPosition = ACTIVE_TERM_POSITION;

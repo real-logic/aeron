@@ -123,21 +123,6 @@ public class LossDetector implements TermGapScanner.GapHandler
         return workCount;
     }
 
-    /**
-     * Called on reception of a NAK message
-     *
-     * @param now        time in nanoseconds
-     * @param termId     in the NAK
-     * @param termOffset in the NAK
-     */
-    public void onNak(final long now, final int termId, final int termOffset)
-    {
-        if (TIMER_INACTIVE != expire && activeGap.matches(termId, termOffset))
-        {
-            expire = now + determineNakDelay();
-        }
-    }
-
     public void onGap(final int termId, final UnsafeBuffer buffer, final int offset, final int length)
     {
         scannedGap.reset(termId, offset, length);

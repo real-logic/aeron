@@ -109,7 +109,11 @@ public class LossDetector implements io.aeron.logbuffer.TermGapScanner.GapHandle
         }
         else
         {
-            expire = TIMER_INACTIVE;
+            if (expire != TIMER_INACTIVE)
+            {
+                expire = TIMER_INACTIVE;
+            }
+
             rebuildOffset = rebuildTermOffset;
         }
 

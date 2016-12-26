@@ -88,12 +88,11 @@ public class LossDetector implements io.aeron.logbuffer.TermGapScanner.GapHandle
 
         if (rebuildPosition < hwmPosition)
         {
-            final int rebuildTermsCount = (int)(rebuildPosition >>> positionBitsToShift);
-            final int hwmTermsCount = (int)(hwmPosition >>> positionBitsToShift);
+            final int rebuildTermCount = (int)(rebuildPosition >>> positionBitsToShift);
+            final int hwmTermCount = (int)(hwmPosition >>> positionBitsToShift);
 
-            final int activeTermId = initialTermId + rebuildTermsCount;
-            final int activeTermLimit = (rebuildTermsCount == hwmTermsCount) ? hwmTermOffset : termBuffer.capacity();
-            rebuildOffset = activeTermLimit;
+            final int activeTermId = initialTermId + rebuildTermCount;
+            final int activeTermLimit = rebuildTermCount == hwmTermCount ? hwmTermOffset : termBuffer.capacity();
 
             rebuildOffset = scanForGap(termBuffer, activeTermId, rebuildTermOffset, activeTermLimit, this);
             if (rebuildOffset < activeTermLimit)

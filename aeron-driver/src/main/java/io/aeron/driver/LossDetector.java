@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.logbuffer.TermGapScanner;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import static io.aeron.logbuffer.TermGapScanner.scanForGap;
@@ -24,7 +25,7 @@ import static io.aeron.logbuffer.TermGapScanner.scanForGap;
  *
  * This detector only notifies a single run of gap in message stream
  */
-public class LossDetector implements io.aeron.logbuffer.TermGapScanner.GapHandler
+public class LossDetector implements TermGapScanner.GapHandler
 {
     private static final long TIMER_INACTIVE = -1;
 

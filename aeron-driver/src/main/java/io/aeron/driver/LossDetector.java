@@ -35,10 +35,9 @@ public class LossDetector implements TermGapScanner.GapHandler
     private final Gap activeGap = new Gap();
 
     private long expire = TIMER_INACTIVE;
-    private int rebuildOffset = 0;
 
     /**
-     * Create a loss handler for a channel.
+     * Create a loss detector for a channel.
      *
      * @param delayGenerator to use for delay determination
      * @param gapHandler     to call when signalling a gap
@@ -47,16 +46,6 @@ public class LossDetector implements TermGapScanner.GapHandler
     {
         this.delayGenerator = delayGenerator;
         this.gapHandler = gapHandler;
-    }
-
-    /**
-     * Get the offset to which the term is rebuilt after a {@link #scan(UnsafeBuffer, long, long, long, int, int, int)}.
-     *
-     * @return the offset to which the term is rebuilt after a {@link #scan(UnsafeBuffer, long, long, long, int, int, int)}.
-     */
-    public int rebuildOffset()
-    {
-        return rebuildOffset;
     }
 
     /**
@@ -71,9 +60,9 @@ public class LossDetector implements TermGapScanner.GapHandler
      * @param termLengthMask      used for offset calculation
      * @param positionBitsToShift used for position calculation
      * @param initialTermId       used by the scanner
-     * @return the work count for this operation.
+     * @return packed outcome of the scan.
      */
-    public int scan(
+    public long scan(
         final UnsafeBuffer termBuffer,
         final long rebuildPosition,
         final long hwmPosition,
@@ -83,9 +72,7 @@ public class LossDetector implements TermGapScanner.GapHandler
         final int initialTermId)
     {
         int workCount = 0;
-
-        final int rebuildTermOffset = (int)rebuildPosition & termLengthMask;
-        final int hwmTermOffset = (int)hwmPosition & termLengthMask;
+        int rebuildOffset = (int)rebuildPosition & termLengthMask;
 
         if (rebuildPosition < hwmPosition)
         {
@@ -93,9 +80,10 @@ public class LossDetector implements TermGapScanner.GapHandler
             final int hwmTermCount = (int)(hwmPosition >>> positionBitsToShift);
 
             final int activeTermId = initialTermId + rebuildTermCount;
+            final int hwmTermOffset = (int)hwmPosition & termLengthMask;
             final int activeTermLimit = rebuildTermCount == hwmTermCount ? hwmTermOffset : termBuffer.capacity();
 
-            rebuildOffset = scanForGap(termBuffer, activeTermId, rebuildTermOffset, activeTermLimit, this);
+            rebuildOffset = scanForGap(termBuffer, activeTermId, rebuildOffset, activeTermLimit, this);
             if (rebuildOffset < activeTermLimit)
             {
                 final Gap gap = scannedGap;
@@ -108,24 +96,53 @@ public class LossDetector implements TermGapScanner.GapHandler
                 rebuildOffset = gap.termOffset;
             }
         }
-        else
+        else if (expire != TIMER_INACTIVE)
         {
-            if (expire != TIMER_INACTIVE)
-            {
-                expire = TIMER_INACTIVE;
-            }
-
-            rebuildOffset = rebuildTermOffset;
+            expire = TIMER_INACTIVE;
         }
 
         workCount += checkTimerExpire(now);
 
-        return workCount;
+        return pack(rebuildOffset, workCount);
     }
 
     public void onGap(final int termId, final UnsafeBuffer buffer, final int offset, final int length)
     {
         scannedGap.reset(termId, offset, length);
+    }
+
+    /**
+     * Pack the values for workCount and rebuildOffset into a long for returning on the stack.
+     *
+     * @param rebuildOffset value to be packed.
+     * @param workCount     value to be packed.
+     * @return a long with both ints packed into it.
+     */
+    public static long pack(final int rebuildOffset, final int workCount)
+    {
+        return ((long)rebuildOffset << 32) | workCount;
+    }
+
+    /**
+     * The work count for the scan.
+     *
+     * @param scanOutcome into which the fragments read value has been packed.
+     * @return the number of fragments that have been read.
+     */
+    public static int workCount(final long scanOutcome)
+    {
+        return (int)scanOutcome;
+    }
+
+    /**
+     * The offset up to which the log has been rebuilt.
+     *
+     * @param scanOutcome into which the offset value has been packed.
+     * @return the offset up to which the log has been rebuilt.
+     */
+    public static int rebuildOffset(final long scanOutcome)
+    {
+        return (int)(scanOutcome >>> 32);
     }
 
     private void activateGap(final long now, final int termId, final int termOffset, final int length)

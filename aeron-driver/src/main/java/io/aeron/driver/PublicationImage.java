@@ -32,6 +32,8 @@ import org.agrona.concurrent.status.ReadablePosition;
 import java.net.InetSocketAddress;
 import java.util.List;
 
+import static io.aeron.driver.LossDetector.rebuildOffset;
+import static io.aeron.driver.LossDetector.workCount;
 import static io.aeron.driver.PublicationImage.Status.ACTIVE;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
@@ -370,7 +372,7 @@ public class PublicationImage
 
         final long rebuildPosition = Math.max(this.rebuildPosition.get(), maxSubscriberPosition);
 
-        final int workCount = lossDetector.scan(
+        final long scanOutcome = lossDetector.scan(
             termBuffers[indexByPosition(rebuildPosition, positionBitsToShift)],
             rebuildPosition,
             hwmPosition.getVolatile(),
@@ -380,10 +382,10 @@ public class PublicationImage
             initialTermId);
 
         final int rebuildTermOffset = (int)rebuildPosition & termLengthMask;
-        final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + lossDetector.rebuildOffset();
+        final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + rebuildOffset(scanOutcome);
         this.rebuildPosition.proposeMaxOrdered(newRebuildPosition);
 
-        return workCount;
+        return workCount(scanOutcome);
     }
 
     /**

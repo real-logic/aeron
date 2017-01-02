@@ -87,7 +87,7 @@ public class LossDetector implements TermGapScanner.GapHandler
             if (rebuildOffset < offsetLimit)
             {
                 final Gap gap = scannedGap;
-                if (TIMER_INACTIVE == expiry || !gap.matches(activeGap.termId, activeGap.termOffset))
+                if (!gap.matches(activeGap.termId, activeGap.termOffset))
                 {
                     activateGap(now, gap.termId, gap.termOffset, gap.length);
                     workCount = 1;
@@ -98,17 +98,13 @@ public class LossDetector implements TermGapScanner.GapHandler
                 workCount += checkTimerExpiry(now);
             }
         }
-        else if (expiry != TIMER_INACTIVE)
-        {
-            expiry = TIMER_INACTIVE;
-        }
 
         return pack(rebuildOffset, workCount);
     }
 
     public void onGap(final int termId, final int offset, final int length)
     {
-        scannedGap.reset(termId, offset, length);
+        scannedGap.set(termId, offset, length);
     }
 
     /**
@@ -147,7 +143,7 @@ public class LossDetector implements TermGapScanner.GapHandler
 
     private void activateGap(final long now, final int termId, final int termOffset, final int length)
     {
-        activeGap.reset(termId, termOffset, length);
+        activeGap.set(termId, termOffset, length);
 
         if (delayGenerator.shouldFeedbackImmediately())
         {
@@ -179,7 +175,7 @@ public class LossDetector implements TermGapScanner.GapHandler
         int termOffset;
         int length;
 
-        public void reset(final int termId, final int termOffset, final int length)
+        public void set(final int termId, final int termOffset, final int length)
         {
             this.termId = termId;
             this.termOffset = termOffset;

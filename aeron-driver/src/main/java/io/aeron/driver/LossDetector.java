@@ -34,7 +34,7 @@ public class LossDetector implements TermGapScanner.GapHandler
     private final Gap scannedGap = new Gap();
     private final Gap activeGap = new Gap();
 
-    private long expire = TIMER_INACTIVE;
+    private long expiry = TIMER_INACTIVE;
 
     /**
      * Create a loss detector for a channel.
@@ -87,21 +87,21 @@ public class LossDetector implements TermGapScanner.GapHandler
             if (rebuildOffset < offsetLimit)
             {
                 final Gap gap = scannedGap;
-                if (TIMER_INACTIVE == expire || !gap.matches(activeGap.termId, activeGap.termOffset))
+                if (TIMER_INACTIVE == expiry || !gap.matches(activeGap.termId, activeGap.termOffset))
                 {
                     activateGap(now, gap.termId, gap.termOffset, gap.length);
                     workCount = 1;
                 }
 
                 rebuildOffset = gap.termOffset;
+
+                workCount += checkTimerExpiry(now);
             }
         }
-        else if (expire != TIMER_INACTIVE)
+        else if (expiry != TIMER_INACTIVE)
         {
-            expire = TIMER_INACTIVE;
+            expiry = TIMER_INACTIVE;
         }
-
-        workCount += checkTimerExpire(now);
 
         return pack(rebuildOffset, workCount);
     }
@@ -149,22 +149,24 @@ public class LossDetector implements TermGapScanner.GapHandler
     {
         activeGap.reset(termId, termOffset, length);
 
-        expire = now + delayGenerator.generateDelay();
-
         if (delayGenerator.shouldFeedbackImmediately())
         {
-            lossHandler.onGapDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
+            expiry = now;
+        }
+        else
+        {
+            expiry = now + delayGenerator.generateDelay();
         }
     }
 
-    private int checkTimerExpire(final long now)
+    private int checkTimerExpiry(final long now)
     {
         int result = 0;
 
-        if (TIMER_INACTIVE != expire && now > expire)
+        if (now >= expiry)
         {
             lossHandler.onGapDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
-            expire = now + delayGenerator.generateDelay();
+            expiry = now + delayGenerator.generateDelay();
             result = 1;
         }
 

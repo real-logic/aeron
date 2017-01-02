@@ -148,10 +148,6 @@ public class LossDetector implements TermGapScanner.GapHandler
     private void activateGap(final long now, final int termId, final int termOffset, final int length)
     {
         activeGap.reset(termId, termOffset, length);
-        if (delayGenerator.generateDelay() == -1)
-        {
-            return;
-        }
 
         expire = now + delayGenerator.generateDelay();
 

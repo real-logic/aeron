@@ -84,7 +84,7 @@ class PublicationImagePadding4 extends PublicationImageStatusFields
  */
 public class PublicationImage
     extends PublicationImagePadding4
-    implements GapHandler, DriverManagedResource
+    implements LossHandler, DriverManagedResource
 {
     enum Status
     {
@@ -329,11 +329,11 @@ public class PublicationImage
     }
 
     /**
-     * Called from the {@link LossDetector} when gap is detected from the {@link DriverConductor} thread.
+     * Called from the {@link LossDetector} when gap is detected by the {@link DriverConductor} thread.
      *
-     * @see GapHandler
+     * @see LossHandler
      */
-    public void onLossDetected(final int termId, final int termOffset, final int length)
+    public void onGapDetected(final int termId, final int termOffset, final int length)
     {
         final long changeNumber = beginLossChange + 1;
 

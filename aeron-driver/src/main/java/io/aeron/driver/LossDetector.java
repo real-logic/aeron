@@ -30,7 +30,7 @@ public class LossDetector implements TermGapScanner.GapHandler
     private static final long TIMER_INACTIVE = -1;
 
     private final FeedbackDelayGenerator delayGenerator;
-    private final GapHandler gapHandler;
+    private final LossHandler lossHandler;
     private final Gap scannedGap = new Gap();
     private final Gap activeGap = new Gap();
 
@@ -40,12 +40,12 @@ public class LossDetector implements TermGapScanner.GapHandler
      * Create a loss detector for a channel.
      *
      * @param delayGenerator to use for delay determination
-     * @param gapHandler     to call when signalling a gap
+     * @param lossHandler    to call when signalling a gap
      */
-    public LossDetector(final FeedbackDelayGenerator delayGenerator, final GapHandler gapHandler)
+    public LossDetector(final FeedbackDelayGenerator delayGenerator, final LossHandler lossHandler)
     {
         this.delayGenerator = delayGenerator;
-        this.gapHandler = gapHandler;
+        this.lossHandler = lossHandler;
     }
 
     /**
@@ -153,7 +153,7 @@ public class LossDetector implements TermGapScanner.GapHandler
 
         if (delayGenerator.shouldFeedbackImmediately())
         {
-            gapHandler.onLossDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
+            lossHandler.onGapDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
         }
     }
 
@@ -163,7 +163,7 @@ public class LossDetector implements TermGapScanner.GapHandler
 
         if (TIMER_INACTIVE != expire && now > expire)
         {
-            gapHandler.onLossDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
+            lossHandler.onGapDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
             expire = now + delayGenerator.generateDelay();
             result = 1;
         }

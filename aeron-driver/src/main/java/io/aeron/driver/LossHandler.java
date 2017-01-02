@@ -16,17 +16,17 @@
 package io.aeron.driver;
 
 /**
- * Handler for dealing with detected packet loss.
+ * Handler for dealing with detected loss on a message stream.
  */
 @FunctionalInterface
-public interface GapHandler
+public interface LossHandler
 {
     /**
-     * Called when a gap in the packet stream has been detected.
+     * Called when a gap in the message stream has been detected.
      *
      * @param termId     for the gap
      * @param termOffset for the beginning of the gap
      * @param length     of the gap
      */
-    void onLossDetected(int termId, int termOffset, int length);
+    void onGapDetected(int termId, int termOffset, int length);
 }

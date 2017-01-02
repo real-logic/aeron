@@ -106,7 +106,7 @@ public class LossDetector implements TermGapScanner.GapHandler
         return pack(rebuildOffset, workCount);
     }
 
-    public void onGap(final int termId, final UnsafeBuffer buffer, final int offset, final int length)
+    public void onGap(final int termId, final int offset, final int length)
     {
         scannedGap.reset(termId, offset, length);
     }

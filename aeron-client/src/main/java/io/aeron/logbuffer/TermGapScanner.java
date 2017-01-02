@@ -25,7 +25,7 @@ import static org.agrona.BitUtil.align;
 
 /**
  * Scans for gaps in the sequence of bytes in a replicated term buffer between the completed rebuild and the
- * high-water-mark. This can be used for detecting loss and generating a NACK message to the source.
+ * high-water-mark. This can be used for detecting loss and generating a NAK message to the source.
  *
  * <b>Note:</b> This class is threadsafe to be used across multiple threads.
  */
@@ -43,25 +43,24 @@ public class TermGapScanner
          * Gap detected in log buffer that is being rebuilt.
          *
          * @param termId active term being scanned.
-         * @param buffer containing the gap.
          * @param offset at which the gap begins.
          * @param length of the gap in bytes.
          */
-        void onGap(int termId, UnsafeBuffer buffer, int offset, int length);
+        void onGap(int termId, int offset, int length);
     }
 
     /**
-     * Scan for gaps from the rebuildOffset up to the high-water-mark. Each gap will be reported to the {@link GapHandler}.
+     * Scan for gaps from the rebuildOffset up to a limit offset. Each gap will be reported to the {@link GapHandler}.
      *
      * @param termBuffer    to be scanned for a gap.
      * @param termId        of the current term buffer.
      * @param rebuildOffset at which to start scanning.
-     * @param hwmOffset     at which to stop scanning.
+     * @param limitOffset   at which to stop scanning.
      * @param handler       to call if a gap is found.
      * @return offset of last contiguous frame
      */
     public static int scanForGap(
-        final UnsafeBuffer termBuffer, final int termId, int rebuildOffset, final int hwmOffset, final GapHandler handler)
+        final UnsafeBuffer termBuffer, final int termId, int rebuildOffset, final int limitOffset, final GapHandler handler)
     {
         do
         {
@@ -73,12 +72,12 @@ public class TermGapScanner
 
             rebuildOffset += align(frameLength, FRAME_ALIGNMENT);
         }
-        while (rebuildOffset < hwmOffset);
+        while (rebuildOffset < limitOffset);
 
         final int gapBeginOffset = rebuildOffset;
-        if (rebuildOffset < hwmOffset)
+        if (rebuildOffset < limitOffset)
         {
-            final int limit = hwmOffset - ALIGNED_HEADER_LENGTH;
+            final int limit = limitOffset - ALIGNED_HEADER_LENGTH;
             while (rebuildOffset < limit)
             {
                 rebuildOffset += FRAME_ALIGNMENT;
@@ -91,7 +90,7 @@ public class TermGapScanner
             }
 
             final int gapLength = (rebuildOffset - gapBeginOffset) + ALIGNED_HEADER_LENGTH;
-            handler.onGap(termId, termBuffer, gapBeginOffset, gapLength);
+            handler.onGap(termId, gapBeginOffset, gapLength);
         }
 
         return gapBeginOffset;

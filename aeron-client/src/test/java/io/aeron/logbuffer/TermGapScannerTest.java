@@ -51,7 +51,7 @@ public class TermGapScannerTest
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, 0, highWaterMark, gapHandler), is(0));
 
-        verify(gapHandler).onGap(TERM_ID, termBuffer, 0, frameOffset);
+        verify(gapHandler).onGap(TERM_ID, 0, frameOffset);
     }
 
     @Test
@@ -66,7 +66,7 @@ public class TermGapScannerTest
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(tail));
 
-        verify(gapHandler).onGap(TERM_ID, termBuffer, tail, align(HEADER_LENGTH, FRAME_ALIGNMENT));
+        verify(gapHandler).onGap(TERM_ID, tail, align(HEADER_LENGTH, FRAME_ALIGNMENT));
     }
 
     @Test
@@ -81,7 +81,7 @@ public class TermGapScannerTest
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(tail));
 
-        verify(gapHandler).onGap(TERM_ID, termBuffer, tail, align(HEADER_LENGTH, FRAME_ALIGNMENT));
+        verify(gapHandler).onGap(TERM_ID, tail, align(HEADER_LENGTH, FRAME_ALIGNMENT));
     }
 
     @Test

@@ -89,10 +89,9 @@ public class LossDetector implements TermGapScanner.GapHandler
                 if (!scannedGap.matches(activeGap))
                 {
                     activateGap(now, scannedGap);
-                    workCount = 1;
                 }
 
-                workCount += checkTimerExpiry(now);
+                workCount = checkTimerExpiry(now);
             }
         }
 

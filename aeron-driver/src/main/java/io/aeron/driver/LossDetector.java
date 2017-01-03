@@ -86,10 +86,9 @@ public class LossDetector implements TermGapScanner.GapHandler
             rebuildOffset = scanForGap(termBuffer, rebuildTermId, rebuildOffset, offsetLimit, this);
             if (rebuildOffset < offsetLimit)
             {
-                final Gap gap = scannedGap;
-                if (!gap.matches(activeGap.termId, activeGap.termOffset))
+                if (!scannedGap.matches(activeGap))
                 {
-                    activateGap(now, gap.termId, gap.termOffset, gap.length);
+                    activateGap(now, scannedGap);
                     workCount = 1;
                 }
 
@@ -139,9 +138,9 @@ public class LossDetector implements TermGapScanner.GapHandler
         return (int)(scanOutcome >>> 32);
     }
 
-    private void activateGap(final long now, final int termId, final int termOffset, final int length)
+    private void activateGap(final long now, final Gap gap)
     {
-        activeGap.set(termId, termOffset, length);
+        activeGap.set(gap.termId, gap.termOffset, gap.length);
 
         if (delayGenerator.shouldFeedbackImmediately())
         {
@@ -180,9 +179,9 @@ public class LossDetector implements TermGapScanner.GapHandler
             this.length = length;
         }
 
-        public boolean matches(final int termId, final int termOffset)
+        public boolean matches(final Gap other)
         {
-            return termId == this.termId && termOffset == this.termOffset;
+            return other.termId == this.termId && other.termOffset == this.termOffset;
         }
     }
 }

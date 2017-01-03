@@ -50,46 +50,46 @@ public class TermGapScanner
     }
 
     /**
-     * Scan for gaps from the rebuildOffset up to a limit offset. Each gap will be reported to the {@link GapHandler}.
+     * Scan for gaps from the scanOffset up to a limit offset. Each gap will be reported to the {@link GapHandler}.
      *
-     * @param termBuffer    to be scanned for a gap.
-     * @param termId        of the current term buffer.
-     * @param rebuildOffset at which to start scanning.
-     * @param limitOffset   at which to stop scanning.
-     * @param handler       to call if a gap is found.
+     * @param termBuffer  to be scanned for a gap.
+     * @param termId      of the current term buffer.
+     * @param scanOffset  at which to start scanning.
+     * @param limitOffset at which to stop scanning.
+     * @param handler     to call if a gap is found.
      * @return offset of last contiguous frame
      */
     public static int scanForGap(
-        final UnsafeBuffer termBuffer, final int termId, int rebuildOffset, final int limitOffset, final GapHandler handler)
+        final UnsafeBuffer termBuffer, final int termId, int scanOffset, final int limitOffset, final GapHandler handler)
     {
         do
         {
-            final int frameLength = frameLengthVolatile(termBuffer, rebuildOffset);
+            final int frameLength = frameLengthVolatile(termBuffer, scanOffset);
             if (frameLength <= 0)
             {
                 break;
             }
 
-            rebuildOffset += align(frameLength, FRAME_ALIGNMENT);
+            scanOffset += align(frameLength, FRAME_ALIGNMENT);
         }
-        while (rebuildOffset < limitOffset);
+        while (scanOffset < limitOffset);
 
-        final int gapBeginOffset = rebuildOffset;
-        if (rebuildOffset < limitOffset)
+        final int gapBeginOffset = scanOffset;
+        if (scanOffset < limitOffset)
         {
             final int limit = limitOffset - ALIGNED_HEADER_LENGTH;
-            while (rebuildOffset < limit)
+            while (scanOffset < limit)
             {
-                rebuildOffset += FRAME_ALIGNMENT;
+                scanOffset += FRAME_ALIGNMENT;
 
-                if (0 != termBuffer.getIntVolatile(rebuildOffset))
+                if (0 != termBuffer.getIntVolatile(scanOffset))
                 {
-                    rebuildOffset -= ALIGNED_HEADER_LENGTH;
+                    scanOffset -= ALIGNED_HEADER_LENGTH;
                     break;
                 }
             }
 
-            final int gapLength = (rebuildOffset - gapBeginOffset) + ALIGNED_HEADER_LENGTH;
+            final int gapLength = (scanOffset - gapBeginOffset) + ALIGNED_HEADER_LENGTH;
             handler.onGap(termId, gapBeginOffset, gapLength);
         }
 

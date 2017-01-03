@@ -88,10 +88,10 @@ public class LossDetector implements TermGapScanner.GapHandler
             {
                 if (!scannedGap.matches(activeGap))
                 {
-                    activateGap(now, scannedGap);
+                    workCount = activateGap(now, scannedGap);
                 }
 
-                workCount = checkTimerExpiry(now);
+                workCount += checkTimerExpiry(now);
             }
         }
 
@@ -137,8 +137,10 @@ public class LossDetector implements TermGapScanner.GapHandler
         return (int)(scanOutcome >>> 32);
     }
 
-    private void activateGap(final long now, final Gap gap)
+    private int activateGap(final long now, final Gap gap)
     {
+        int workCount = 0;
+
         activeGap.set(gap.termId, gap.termOffset, gap.length);
 
         if (delayGenerator.shouldFeedbackImmediately())
@@ -148,21 +150,24 @@ public class LossDetector implements TermGapScanner.GapHandler
         else
         {
             expiry = now + delayGenerator.generateDelay();
+            workCount = 1;
         }
+
+        return workCount;
     }
 
     private int checkTimerExpiry(final long now)
     {
-        int result = 0;
+        int workCount = 0;
 
         if (now >= expiry)
         {
             lossHandler.onGapDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
             expiry = now + delayGenerator.generateDelay();
-            result = 1;
+            workCount = 1;
         }
 
-        return result;
+        return workCount;
     }
 
     static final class Gap

@@ -21,9 +21,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 import static io.aeron.logbuffer.TermGapScanner.scanForGap;
 
 /**
- * Detecting and handling of gaps in a stream
+ * Detecting and handling of gaps in a message stream.
  *
- * This detector only notifies a single run of gap in message stream
+ * Each detector only notifies a single run of gap in a message stream.
  */
 public class LossDetector implements TermGapScanner.GapHandler
 {

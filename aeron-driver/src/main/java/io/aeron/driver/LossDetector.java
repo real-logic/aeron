@@ -93,8 +93,6 @@ public class LossDetector implements TermGapScanner.GapHandler
                     workCount = 1;
                 }
 
-                rebuildOffset = gap.termOffset;
-
                 workCount += checkTimerExpiry(now);
             }
         }
@@ -172,7 +170,7 @@ public class LossDetector implements TermGapScanner.GapHandler
     static final class Gap
     {
         int termId;
-        int termOffset;
+        int termOffset = -1;
         int length;
 
         public void set(final int termId, final int termOffset, final int length)

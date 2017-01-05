@@ -113,21 +113,21 @@ public class PublicationImage
 
     private volatile PublicationImage.Status status = PublicationImage.Status.INIT;
 
-    private final RawLog rawLog;
-    private final InetSocketAddress controlAddress;
-    private final InetSocketAddress sourceAddress;
-    private final ReceiveChannelEndpoint channelEndpoint;
     private final NanoClock clock;
+    private final InetSocketAddress controlAddress;
+    private final ReceiveChannelEndpoint channelEndpoint;
     private final UnsafeBuffer[] termBuffers;
     private final Position hwmPosition;
-    private final Position rebuildPosition;
-    private ReadablePosition[] subscriberPositions;
     private final LossDetector lossDetector;
     private final AtomicCounter heartbeatsReceived;
     private final AtomicCounter statusMessagesSent;
     private final AtomicCounter nakMessagesSent;
     private final AtomicCounter flowControlUnderRuns;
     private final AtomicCounter flowControlOverRuns;
+    private final Position rebuildPosition;
+    private ReadablePosition[] subscriberPositions;
+    private final InetSocketAddress sourceAddress;
+    private final RawLog rawLog;
 
     public PublicationImage(
         final long correlationId,

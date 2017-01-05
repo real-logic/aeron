@@ -494,8 +494,9 @@ public class PublicationImage
             if (changeNumber == beginLossChange)
             {
                 channelEndpoint.sendNakMessage(controlAddress, sessionId, streamId, termId, termOffset, length);
-                lastChangeNumber = changeNumber;
                 nakMessagesSent.orderedIncrement();
+
+                lastChangeNumber = changeNumber;
                 workCount = 1;
             }
         }

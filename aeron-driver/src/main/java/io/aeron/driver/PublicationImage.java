@@ -32,8 +32,8 @@ import org.agrona.concurrent.status.ReadablePosition;
 import java.net.InetSocketAddress;
 import java.util.List;
 
+import static io.aeron.driver.LossDetector.lossFound;
 import static io.aeron.driver.LossDetector.rebuildOffset;
-import static io.aeron.driver.LossDetector.workCount;
 import static io.aeron.driver.PublicationImage.Status.ACTIVE;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
@@ -350,9 +350,9 @@ public class PublicationImage
      * Called from the {@link DriverConductor}.
      *
      * @param now in nanoseconds
-     * @return if work has been done or not
+     * @return if true if loss was discovered otherwise false.
      */
-    int trackRebuild(final long now)
+    boolean trackRebuild(final long now)
     {
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
@@ -385,7 +385,7 @@ public class PublicationImage
         final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + rebuildOffset(scanOutcome);
         this.rebuildPosition.proposeMaxOrdered(newRebuildPosition);
 
-        return workCount(scanOutcome);
+        return lossFound(scanOutcome);
     }
 
     /**

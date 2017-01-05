@@ -71,7 +71,7 @@ public class LossDetector implements TermGapScanner.GapHandler
         final int positionBitsToShift,
         final int initialTermId)
     {
-        int workCount = 0;
+        boolean lossFound = false;
         int rebuildOffset = (int)rebuildPosition & termLengthMask;
 
         if (rebuildPosition < hwmPosition)
@@ -88,14 +88,15 @@ public class LossDetector implements TermGapScanner.GapHandler
             {
                 if (!scannedGap.matches(activeGap))
                 {
-                    workCount = activateGap(now, scannedGap);
+                    activateGap(now, scannedGap);
+                    lossFound = true;
                 }
 
-                workCount += checkTimerExpiry(now);
+                checkTimerExpiry(now);
             }
         }
 
-        return pack(rebuildOffset, workCount);
+        return pack(rebuildOffset, lossFound);
     }
 
     public void onGap(final int termId, final int offset, final int length)
@@ -107,23 +108,23 @@ public class LossDetector implements TermGapScanner.GapHandler
      * Pack the values for workCount and rebuildOffset into a long for returning on the stack.
      *
      * @param rebuildOffset value to be packed.
-     * @param workCount     value to be packed.
+     * @param lossFound     value to be packed.
      * @return a long with both ints packed into it.
      */
-    public static long pack(final int rebuildOffset, final int workCount)
+    public static long pack(final int rebuildOffset, final boolean lossFound)
     {
-        return ((long)rebuildOffset << 32) | workCount;
+        return ((long)rebuildOffset << 32) | (lossFound ? 1 : 0);
     }
 
     /**
-     * The work count for the scan.
+     * Has loss been found in the scan?
      *
      * @param scanOutcome into which the fragments read value has been packed.
-     * @return the number of fragments that have been read.
+     * @return if loss has been found or not.
      */
-    public static int workCount(final long scanOutcome)
+    public static boolean lossFound(final long scanOutcome)
     {
-        return (int)scanOutcome;
+        return ((int)scanOutcome) != 0;
     }
 
     /**
@@ -137,10 +138,8 @@ public class LossDetector implements TermGapScanner.GapHandler
         return (int)(scanOutcome >>> 32);
     }
 
-    private int activateGap(final long now, final Gap gap)
+    private void activateGap(final long now, final Gap gap)
     {
-        int workCount = 0;
-
         activeGap.set(gap.termId, gap.termOffset, gap.length);
 
         if (delayGenerator.shouldFeedbackImmediately())
@@ -150,24 +149,16 @@ public class LossDetector implements TermGapScanner.GapHandler
         else
         {
             expiry = now + delayGenerator.generateDelay();
-            workCount = 1;
         }
-
-        return workCount;
     }
 
-    private int checkTimerExpiry(final long now)
+    private void checkTimerExpiry(final long now)
     {
-        int workCount = 0;
-
         if (now >= expiry)
         {
             lossHandler.onGapDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
             expiry = now + delayGenerator.generateDelay();
-            workCount = 1;
         }
-
-        return workCount;
     }
 
     static final class Gap

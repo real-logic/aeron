@@ -511,6 +511,10 @@ public class PublicationImage
      */
     public void onRttMeasurement(final RttMeasurementFlyweight header, final InetSocketAddress srcAddress)
     {
+        final long now = clock.nanoTime();
+        final long rttInNanos = now - header.echoTimestamp() - header.receptionDelta();
+
+
         // TODO: hook into congestion control strategy
     }
 

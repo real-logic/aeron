@@ -518,6 +518,17 @@ public class Configuration
         SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME, ""));
 
     /**
+     * Property name for {@link CongestionControlSupplier} to be employed for receivers.
+     */
+    public static final String CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME = "aeron.CongestionControl.supplier";
+
+    /**
+     * {@link CongestionControlSupplier} to be employed for receivers.
+     */
+    public static final String CONGESTION_CONTROL_STRATEGY_SUPPLIER = getProperty(
+        CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultCongestionControlSupplier");
+
+    /**
      * Capacity for the command queues used between driver agents.
      */
     public static final int CMD_QUEUE_CAPACITY = 1024;
@@ -831,6 +842,26 @@ public class Configuration
         try
         {
             supplier = (FlowControlSupplier)Class.forName(MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER).newInstance();
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        return supplier;
+    }
+
+    /**
+     * Get the supplier of {@link CongestionControl}s which can be used for receivers.
+     *
+     * @return the {@link CongestionControlSupplier}
+     */
+    static CongestionControlSupplier congestionControlSupplier()
+    {
+        CongestionControlSupplier supplier = null;
+        try
+        {
+            supplier = (CongestionControlSupplier)Class.forName(CONGESTION_CONTROL_STRATEGY_SUPPLIER).newInstance();
         }
         catch (final Exception ex)
         {

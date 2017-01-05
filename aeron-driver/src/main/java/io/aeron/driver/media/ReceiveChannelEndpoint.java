@@ -214,7 +214,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     public void onRttMeasurement(
         final RttMeasurementFlyweight header, final UnsafeBuffer buffer, final InetSocketAddress srcAddress)
     {
-        if (header.receiverId() == receiverId)
+        if (header.receiverId() == receiverId || header.receiverId() == 0)
         {
             dispatcher.onRttMeasurement(this, header, srcAddress);
         }

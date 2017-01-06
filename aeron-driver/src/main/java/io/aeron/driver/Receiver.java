@@ -34,7 +34,6 @@ import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_RECEIVED;
  */
 public class Receiver implements Agent, Consumer<ReceiverCmd>
 {
-    private final long statusMessageTimeout;
     private final DataTransportPoller dataTransportPoller;
     private final OneToOneConcurrentArrayQueue<ReceiverCmd> commandQueue;
     private final AtomicCounter totalBytesReceived;
@@ -44,7 +43,6 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
 
     public Receiver(final MediaDriver.Context ctx)
     {
-        statusMessageTimeout = ctx.statusMessageTimeout();
         dataTransportPoller = ctx.dataTransportPoller();
         commandQueue = ctx.receiverCommandQueue();
         totalBytesReceived = ctx.systemCounters().get(BYTES_RECEIVED);
@@ -72,8 +70,9 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
             }
             else
             {
-                workCount += image.sendPendingStatusMessage(now, statusMessageTimeout);
+                workCount += image.sendPendingStatusMessage();
                 workCount += image.processPendingLoss();
+                workCount += image.initiateAnyRttMeasurements(now);
             }
         }
 

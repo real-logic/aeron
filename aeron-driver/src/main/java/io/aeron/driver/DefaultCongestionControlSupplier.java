@@ -28,6 +28,6 @@ public class DefaultCongestionControlSupplier implements CongestionControlSuppli
         NanoClock clock,
         MediaDriver.Context context)
     {
-        return null;
+        return new StaticWindowCongestionControl(udpChannel, streamId, sessionId, termLength, clock, context);
     }
 }

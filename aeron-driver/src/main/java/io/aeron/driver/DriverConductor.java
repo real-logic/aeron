@@ -180,7 +180,7 @@ public class DriverConductor implements Agent
         final ArrayList<PublicationImage> publicationImages = this.publicationImages;
         for (int i = 0, size = publicationImages.size(); i < size; i++)
         {
-            publicationImages.get(i).trackRebuild(now);
+            publicationImages.get(i).trackRebuild(now, context.statusMessageTimeout());
         }
 
         final ArrayList<NetworkPublication> networkPublications = this.networkPublications;
@@ -228,6 +228,10 @@ public class DriverConductor implements Agent
             final RawLog rawLog = newPublicationImageLog(
                 sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, registrationId);
 
+            final CongestionControl congestionControl =
+                context.congestionControlSupplier().newInstance(
+                    udpChannel, streamId, sessionId, termBufferLength, nanoClock, context);
+
             final PublicationImage image = new PublicationImage(
                 registrationId,
                 imageLivenessTimeoutNs,
@@ -238,7 +242,6 @@ public class DriverConductor implements Agent
                 initialTermId,
                 activeTermId,
                 initialTermOffset,
-                context.initialWindowLength(),
                 rawLog,
                 udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
                 subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
@@ -246,7 +249,8 @@ public class DriverConductor implements Agent
                 ReceiverPos.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 nanoClock,
                 context.systemCounters(),
-                sourceAddress);
+                sourceAddress,
+                congestionControl);
 
             subscriberPositions.forEach(
                 (subscriberPosition) -> subscriberPosition.subscription().addImage(image, subscriberPosition.position()));

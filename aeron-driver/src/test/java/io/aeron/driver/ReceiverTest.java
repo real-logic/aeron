@@ -110,6 +110,7 @@ public class ReceiverTest
 
     private MediaDriver.Context context = new MediaDriver.Context();
     private ReceiveChannelEndpoint receiveChannelEndpoint;
+    private CongestionControl congestionControl = mock(CongestionControl.class);
 
     // TODO rework test to use proxies rather than the command queues.
 
@@ -119,6 +120,9 @@ public class ReceiverTest
         when(POSITION.getVolatile())
             .thenReturn(computePosition(ACTIVE_TERM_ID, 0, numberOfTrailingZeros(TERM_BUFFER_LENGTH), ACTIVE_TERM_ID));
         when(mockSystemCounters.get(any())).thenReturn(mock(AtomicCounter.class));
+        when(congestionControl.onTrackRebuild(anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), anyBoolean()))
+            .thenReturn(CongestionControlUtil.packOutcome(INITIAL_WINDOW_LENGTH, false));
+        when(congestionControl.initialWindowLength()).thenReturn(INITIAL_WINDOW_LENGTH);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
@@ -185,7 +189,6 @@ public class ReceiverTest
             INITIAL_TERM_ID,
             ACTIVE_TERM_ID,
             INITIAL_TERM_OFFSET,
-            INITIAL_WINDOW_LENGTH,
             rawLog,
             mockFeedbackDelayGenerator,
             POSITIONS,
@@ -193,7 +196,8 @@ public class ReceiverTest
             mockRebuildPosition,
             clock,
             mockSystemCounters,
-            SOURCE_ADDRESS);
+            SOURCE_ADDRESS,
+            congestionControl);
 
         final int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -213,8 +217,8 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        image.trackRebuild(currentTime);
-        image.sendPendingStatusMessage(1000, STATUS_MESSAGE_TIMEOUT);
+        image.trackRebuild(currentTime + (2 * STATUS_MESSAGE_TIMEOUT), STATUS_MESSAGE_TIMEOUT);
+        image.sendPendingStatusMessage();
 
         final ByteBuffer rcvBuffer = ByteBuffer.allocateDirect(256);
         InetSocketAddress rcvAddress;
@@ -264,7 +268,6 @@ public class ReceiverTest
                         INITIAL_TERM_ID,
                         ACTIVE_TERM_ID,
                         INITIAL_TERM_OFFSET,
-                        INITIAL_WINDOW_LENGTH,
                         rawLog,
                         mockFeedbackDelayGenerator,
                         POSITIONS,
@@ -272,7 +275,8 @@ public class ReceiverTest
                         mockRebuildPosition,
                         clock,
                         mockSystemCounters,
-                        SOURCE_ADDRESS));
+                        SOURCE_ADDRESS,
+                        congestionControl));
             });
 
         assertThat(commandsRead, is(1));
@@ -329,7 +333,6 @@ public class ReceiverTest
                         INITIAL_TERM_ID,
                         ACTIVE_TERM_ID,
                         INITIAL_TERM_OFFSET,
-                        INITIAL_WINDOW_LENGTH,
                         rawLog,
                         mockFeedbackDelayGenerator,
                         POSITIONS,
@@ -337,7 +340,8 @@ public class ReceiverTest
                         mockRebuildPosition,
                         clock,
                         mockSystemCounters,
-                        SOURCE_ADDRESS));
+                        SOURCE_ADDRESS,
+                        congestionControl));
             });
 
         assertThat(commandsRead, is(1));
@@ -397,7 +401,6 @@ public class ReceiverTest
                         INITIAL_TERM_ID,
                         ACTIVE_TERM_ID,
                         INITIAL_TERM_OFFSET,
-                        INITIAL_WINDOW_LENGTH,
                         rawLog,
                         mockFeedbackDelayGenerator,
                         POSITIONS,
@@ -405,7 +408,8 @@ public class ReceiverTest
                         mockRebuildPosition,
                         clock,
                         mockSystemCounters,
-                        SOURCE_ADDRESS));
+                        SOURCE_ADDRESS,
+                        congestionControl));
             });
 
         assertThat(commandsRead, is(1));
@@ -469,7 +473,6 @@ public class ReceiverTest
                         INITIAL_TERM_ID,
                         ACTIVE_TERM_ID,
                         initialTermOffset,
-                        INITIAL_WINDOW_LENGTH,
                         rawLog,
                         mockFeedbackDelayGenerator,
                         POSITIONS,
@@ -477,7 +480,8 @@ public class ReceiverTest
                         mockRebuildPosition,
                         clock,
                         mockSystemCounters,
-                        SOURCE_ADDRESS));
+                        SOURCE_ADDRESS,
+                        congestionControl));
             });
 
         assertThat(commandsRead, is(1));

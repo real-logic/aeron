@@ -58,8 +58,6 @@ class PublicationImagePadding2 extends PublicationImageConductorFields
 class PublicationImageHotFields extends PublicationImagePadding2
 {
     protected long lastPacketTimestamp;
-    protected long lastStatusMessageTimestamp;
-    protected long lastStatusMessagePosition;
 }
 
 class PublicationImagePadding3 extends PublicationImageHotFields
@@ -68,22 +66,11 @@ class PublicationImagePadding3 extends PublicationImageHotFields
     protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
 }
 
-class PublicationImageStatusFields extends PublicationImagePadding3
-{
-    protected volatile long newStatusMessagePosition;
-}
-
-class PublicationImagePadding4 extends PublicationImageStatusFields
-{
-    @SuppressWarnings("unused")
-    protected long p46, p47, p48, p49, p50, p51, p52, p53, p54, p55, p56, p57, p58, p59, p60;
-}
-
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
 public class PublicationImage
-    extends PublicationImagePadding4
+    extends PublicationImagePadding3
     implements LossHandler, DriverManagedResource
 {
     enum Status
@@ -92,13 +79,21 @@ public class PublicationImage
     }
 
     private long timeOfLastStatusChange;
-    private long lastChangeNumber = -1;
+    private long lastLossChangeNumber = -1;
+    private long lastSmChangeNumber = -1;
 
     private volatile long beginLossChange = -1;
     private volatile long endLossChange = -1;
     private int lossTermId;
     private int lossTermOffset;
     private int lossLength;
+
+    private volatile long beginSmChange = -1;
+    private volatile long endSmChange = -1;
+    private long nextSmPosition;
+    private int nextSmReceiverWindowLength;
+
+    private long lastStatusMessageTimestamp;
 
     private final long correlationId;
     private final long imageLivenessTimeoutNs;
@@ -107,8 +102,6 @@ public class PublicationImage
     private final int positionBitsToShift;
     private final int termLengthMask;
     private final int initialTermId;
-    private final int currentWindowLength;
-    private final int currentGain;
     private boolean reachedEndOfLife = false;
 
     private volatile PublicationImage.Status status = PublicationImage.Status.INIT;
@@ -128,6 +121,7 @@ public class PublicationImage
     private ReadablePosition[] subscriberPositions;
     private final InetSocketAddress sourceAddress;
     private final RawLog rawLog;
+    private final CongestionControl congestionControl;
 
     public PublicationImage(
         final long correlationId,
@@ -139,7 +133,6 @@ public class PublicationImage
         final int initialTermId,
         final int activeTermId,
         final int initialTermOffset,
-        final int initialWindowLength,
         final RawLog rawLog,
         final FeedbackDelayGenerator lossFeedbackDelayGenerator,
         final List<ReadablePosition> subscriberPositions,
@@ -147,7 +140,8 @@ public class PublicationImage
         final Position rebuildPosition,
         final NanoClock clock,
         final SystemCounters systemCounters,
-        final InetSocketAddress sourceAddress)
+        final InetSocketAddress sourceAddress,
+        final CongestionControl congestionControl)
     {
         this.correlationId = correlationId;
         this.imageLivenessTimeoutNs = imageLivenessTimeoutNs;
@@ -161,6 +155,7 @@ public class PublicationImage
         this.rebuildPosition = rebuildPosition;
         this.sourceAddress = sourceAddress;
         this.initialTermId = initialTermId;
+        this.congestionControl = congestionControl;
 
         heartbeatsReceived = systemCounters.get(HEARTBEATS_RECEIVED);
         statusMessagesSent = systemCounters.get(STATUS_MESSAGES_SENT);
@@ -177,14 +172,12 @@ public class PublicationImage
         lossDetector = new LossDetector(lossFeedbackDelayGenerator, this);
 
         final int termLength = rawLog.termLength();
-        currentWindowLength = Math.min(termLength / 2, initialWindowLength);
-        currentGain = currentWindowLength / 4;
         termLengthMask = termLength - 1;
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
 
         final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
-        lastStatusMessagePosition = initialPosition - (currentGain + 1);
-        newStatusMessagePosition = lastStatusMessagePosition;
+        nextSmPosition = initialPosition;
+        nextSmReceiverWindowLength = congestionControl.initialWindowLength();
         cleanPosition = initialPosition;
 
         hwmPosition.setOrdered(initialPosition);
@@ -346,13 +339,27 @@ public class PublicationImage
         endLossChange = changeNumber;
     }
 
+    public void scheduleStatusMessage(final long now, final long smPosition, final int receiverWindowLength)
+    {
+        final long changeNumber = beginSmChange + 1;
+
+        beginSmChange = changeNumber;
+
+        nextSmPosition = smPosition;
+        nextSmReceiverWindowLength = receiverWindowLength;
+        lastStatusMessageTimestamp = now;
+
+        endSmChange = changeNumber;
+    }
+
     /**
      * Called from the {@link DriverConductor}.
      *
      * @param now in nanoseconds
+     * @param statusMessageTimeout for sending of Status Messages.
      * @return if true if loss was discovered otherwise false.
      */
-    boolean trackRebuild(final long now)
+    boolean trackRebuild(final long now, final long statusMessageTimeout)
     {
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
@@ -364,18 +371,13 @@ public class PublicationImage
             maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
 
-        if (minSubscriberPosition > (newStatusMessagePosition + currentGain))
-        {
-            newStatusMessagePosition = minSubscriberPosition;
-            cleanBufferTo(minSubscriberPosition - (termLengthMask + 1));
-        }
-
         final long rebuildPosition = Math.max(this.rebuildPosition.get(), maxSubscriberPosition);
+        final long hwmPosition = this.hwmPosition.getVolatile();
 
         final long scanOutcome = lossDetector.scan(
             termBuffers[indexByPosition(rebuildPosition, positionBitsToShift)],
             rebuildPosition,
-            hwmPosition.getVolatile(),
+            hwmPosition,
             now,
             termLengthMask,
             positionBitsToShift,
@@ -384,6 +386,27 @@ public class PublicationImage
         final int rebuildTermOffset = (int)rebuildPosition & termLengthMask;
         final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + rebuildOffset(scanOutcome);
         this.rebuildPosition.proposeMaxOrdered(newRebuildPosition);
+
+        final long ccOutcome =
+            congestionControl.onTrackRebuild(
+                now,
+                minSubscriberPosition,
+                nextSmPosition,
+                hwmPosition,
+                rebuildPosition,
+                newRebuildPosition,
+                lossFound(scanOutcome));
+
+        final int window = CongestionControlUtil.receiverWindowLength(ccOutcome);
+        final long threshold = CongestionControlUtil.positionThreshold(window);
+
+        if (CongestionControlUtil.shouldForceStatusMessage(ccOutcome) ||
+            (now > (lastStatusMessageTimestamp + statusMessageTimeout)) ||
+            (minSubscriberPosition > (nextSmPosition + threshold)))
+        {
+            scheduleStatusMessage(now, minSubscriberPosition, window);
+            cleanBufferTo(minSubscriberPosition - (termLengthMask + 1));
+        }
 
         return lossFound(scanOutcome);
     }
@@ -402,7 +425,7 @@ public class PublicationImage
         final boolean isHeartbeat = isHeartbeat(buffer, length);
         final long packetPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long proposedPosition = isHeartbeat ? packetPosition : packetPosition + length;
-        final long windowPosition = lastStatusMessagePosition;
+        final long windowPosition = nextSmPosition;
 
         if (!isFlowControlUnderRun(windowPosition, packetPosition) &&
             !isFlowControlOverRun(windowPosition, proposedPosition))
@@ -444,29 +467,36 @@ public class PublicationImage
     /**
      * Called from the {@link Receiver} to send any pending Status Messages.
      *
-     * @param now                  time in nanoseconds.
-     * @param statusMessageTimeout for sending of Status Messages.
      * @return number of work items processed.
      */
-    int sendPendingStatusMessage(final long now, final long statusMessageTimeout)
+    int sendPendingStatusMessage()
     {
         int workCount = 0;
 
         if (ACTIVE == status)
         {
-            final long statusMessagePosition = newStatusMessagePosition;
-            if (statusMessagePosition != lastStatusMessagePosition || now > (lastStatusMessageTimestamp + statusMessageTimeout))
+            final long changeNumber = endSmChange;
+
+            if (changeNumber != lastSmChangeNumber)
             {
-                final int termId = computeTermIdFromPosition(statusMessagePosition, positionBitsToShift, initialTermId);
-                final int termOffset = (int)statusMessagePosition & termLengthMask;
+                final long smPosition = nextSmPosition;
+                final int receiverWindowLength = nextSmReceiverWindowLength;
 
-                channelEndpoint.sendStatusMessage(
-                    controlAddress, sessionId, streamId, termId, termOffset, currentWindowLength, (byte)0);
+                UnsafeAccess.UNSAFE.loadFence(); // LoadLoad required so previous loads don't move past version check below.
 
-                lastStatusMessageTimestamp = now;
-                lastStatusMessagePosition = statusMessagePosition;
-                statusMessagesSent.orderedIncrement();
-                workCount = 1;
+                if (changeNumber == beginSmChange)
+                {
+                    final int termId = computeTermIdFromPosition(smPosition, positionBitsToShift, initialTermId);
+                    final int termOffset = (int)smPosition & termLengthMask;
+
+                    channelEndpoint.sendStatusMessage(
+                        controlAddress, sessionId, streamId, termId, termOffset, receiverWindowLength, (byte)0);
+
+                    statusMessagesSent.orderedIncrement();
+
+                    lastSmChangeNumber = changeNumber;
+                    workCount = 1;
+                }
             }
         }
 
@@ -483,7 +513,7 @@ public class PublicationImage
         int workCount = 0;
         final long changeNumber = endLossChange;
 
-        if (changeNumber != lastChangeNumber)
+        if (changeNumber != lastLossChangeNumber)
         {
             final int termId = lossTermId;
             final int termOffset = lossTermOffset;
@@ -496,9 +526,28 @@ public class PublicationImage
                 channelEndpoint.sendNakMessage(controlAddress, sessionId, streamId, termId, termOffset, length);
                 nakMessagesSent.orderedIncrement();
 
-                lastChangeNumber = changeNumber;
+                lastLossChangeNumber = changeNumber;
                 workCount = 1;
             }
+        }
+
+        return workCount;
+    }
+
+    /**
+     * Called from the {@link Receiver} thread to check for initiating an RTT measurement.
+     *
+     * @param now in nanoseconds
+     * @return number of work items processed.
+     */
+    int initiateAnyRttMeasurements(final long now)
+    {
+        int workCount = 0;
+
+        if (congestionControl.shouldMeasureRtt(now))
+        {
+            channelEndpoint.sendRttMeasurement(controlAddress, sessionId, streamId, now, 0, true);
+            workCount = 1;
         }
 
         return workCount;
@@ -515,8 +564,7 @@ public class PublicationImage
         final long now = clock.nanoTime();
         final long rttInNanos = now - header.echoTimestamp() - header.receptionDelta();
 
-
-        // TODO: hook into congestion control strategy
+        congestionControl.onRttMeasurement(now, rttInNanos, srcAddress);
     }
 
     /**
@@ -638,7 +686,7 @@ public class PublicationImage
 
     private boolean isFlowControlOverRun(final long windowPosition, final long proposedPosition)
     {
-        final boolean isFlowControlOverRun = proposedPosition > (windowPosition + currentWindowLength);
+        final boolean isFlowControlOverRun = proposedPosition > (windowPosition + nextSmReceiverWindowLength);
 
         if (isFlowControlOverRun)
         {

@@ -36,29 +36,6 @@ public class CongestionControlUtil
         return ((int)(outcome >>> 32) & FORCE_STATUS_MESSAGE_BIT) == FORCE_STATUS_MESSAGE_BIT;
     }
 
-    public static boolean didLossOccur(
-        final long hwmPosition,
-        final long startingRebuildPosition,
-        final long endingRebuildPosition,
-        final long lastGapPosition,
-        final int positionBitsToShift)
-    {
-        boolean result = false;
-
-        if (lastGapPosition < endingRebuildPosition && endingRebuildPosition < hwmPosition)
-        {
-            final int hwmTermCount = (int)(hwmPosition >>> positionBitsToShift);
-            final int startingRebuildTermCount = (int)(startingRebuildPosition >>> positionBitsToShift);
-
-            if (hwmTermCount == startingRebuildTermCount)
-            {
-                result = true;
-            }
-        }
-
-        return result;
-    }
-
     public static long positionThreshold(final long position)
     {
         return position / 4;

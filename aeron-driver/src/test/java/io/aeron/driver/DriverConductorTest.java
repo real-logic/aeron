@@ -135,7 +135,8 @@ public class DriverConductorTest
             .countersManager(countersManager)
             .nanoClock(nanoClock)
             .sendChannelEndpointSupplier(Configuration.sendChannelEndpointSupplier())
-            .receiveChannelEndpointSupplier(Configuration.receiveChannelEndpointSupplier());
+            .receiveChannelEndpointSupplier(Configuration.receiveChannelEndpointSupplier())
+            .congestControlSupplier(Configuration.congestionControlSupplier());
 
         ctx.toDriverCommands(fromClientCommands);
         ctx.clientProxy(mockClientProxy);

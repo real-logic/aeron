@@ -506,6 +506,8 @@ public final class MediaDriver implements AutoCloseable
 
         private byte[] applicationSpecificFeedback = Configuration.SM_APPLICATION_SPECIFIC_FEEDBACK;
 
+        private CongestionControlSupplier congestionControlSupplier;
+
         public Context()
         {
             publicationTermBufferLength(Configuration.termBufferLength());
@@ -705,6 +707,11 @@ public final class MediaDriver implements AutoCloseable
             if (null == receiveChannelEndpointThreadLocals)
             {
                 receiveChannelEndpointThreadLocals = new ReceiveChannelEndpointThreadLocals(this);
+            }
+
+            if (null == congestionControlSupplier)
+            {
+                congestionControlSupplier = Configuration.congestionControlSupplier();
             }
         }
 
@@ -999,6 +1006,12 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context congestControlSupplier(final CongestionControlSupplier supplier)
+        {
+            this.congestionControlSupplier = supplier;
+            return this;
+        }
+
         public EpochClock epochClock()
         {
             return epochClock;
@@ -1245,6 +1258,11 @@ public final class MediaDriver implements AutoCloseable
         public byte[] applicationSpecificFeedback()
         {
             return applicationSpecificFeedback;
+        }
+
+        public CongestionControlSupplier congestionControlSupplier()
+        {
+            return congestionControlSupplier;
         }
 
         public void close()

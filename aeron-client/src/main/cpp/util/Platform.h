@@ -40,9 +40,6 @@
 
     #if defined(__x86_64__)
         #define AERON_CPU_X64 1
-
-    #else
-        #error Unsupported CPU!
     #endif
 
 #else

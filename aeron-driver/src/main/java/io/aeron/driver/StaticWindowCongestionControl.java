@@ -35,7 +35,6 @@ public class StaticWindowCongestionControl implements CongestionControl
         ccOutcome = CongestionControlUtil.packOutcome(Math.min(termLength / 2, context.initialWindowLength()), false);
     }
 
-
     public boolean shouldMeasureRtt(final long now)
     {
         return false;
@@ -47,7 +46,7 @@ public class StaticWindowCongestionControl implements CongestionControl
 
     public long onTrackRebuild(
         final long now,
-        final long newConsumptiopnPosition,
+        final long newConsumptionPosition,
         final long lastSmPosition,
         final long hwmPosition,
         final long startingRebuildPosition,

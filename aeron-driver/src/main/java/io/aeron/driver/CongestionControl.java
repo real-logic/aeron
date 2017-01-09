@@ -33,30 +33,30 @@ public interface CongestionControl
     /**
      * Called by {@link Receiver} on reception of an RTT Measurement.
      *
-     * @param now in nanoseconds
+     * @param now        in nanoseconds
      * @param rttInNanos to the Sender
      * @param srcAddress of the Sender
      */
     void onRttMeasurement(long now, long rttInNanos, InetSocketAddress srcAddress);
 
     /**
-     *  Called by {@link DriverConductor} upon execution of {@link PublicationImage#trackRebuild(long, long)} to
-     *  pass on current status.
+     * Called by {@link DriverConductor} upon execution of {@link PublicationImage#trackRebuild(long, long)} to
+     * pass on current status.
      *
-     *  The return value must be packed using {@link CongestionControlUtil#packOutcome(int, boolean)}.
+     * The return value must be packed using {@link CongestionControlUtil#packOutcome(int, boolean)}.
      *
-     * @param now in nanoseconds
-     * @param newConsumptiopnPosition of the Subscribers
-     * @param lastSmPosition of the image
-     * @param hwmPosition of the image
+     * @param now                     in nanoseconds
+     * @param newConsumptionPosition  of the Subscribers
+     * @param lastSmPosition          of the image
+     * @param hwmPosition             of the image
      * @param startingRebuildPosition of the rebuild
-     * @param endingRebuildPosition of the rebuild
-     * @param lossOccurred during rebuild
+     * @param endingRebuildPosition   of the rebuild
+     * @param lossOccurred            during rebuild
      * @return outcome of congestion control calculation containing window length and whether to force sending an SM.
      */
     long onTrackRebuild(
         long now,
-        long newConsumptiopnPosition,
+        long newConsumptionPosition,
         long lastSmPosition,
         long hwmPosition,
         long startingRebuildPosition,
@@ -64,7 +64,7 @@ public interface CongestionControl
         boolean lossOccurred);
 
     /**
-     * Called by {@link DriverConductor} to initialize window length for a new Image.
+     * Called by {@link DriverConductor} to initialise window length for a new {@link PublicationImage}.
      *
      * @return new image window length
      */

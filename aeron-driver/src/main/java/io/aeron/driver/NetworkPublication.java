@@ -149,7 +149,7 @@ public class NetworkPublication
         setupBuffer = threadLocals.setupBuffer();
         setupHeader = threadLocals.setupHeader();
         heartbeatBuffer = threadLocals.heartbeatBuffer();
-        dataHeader = threadLocals.dataHeader();
+        dataHeader = threadLocals.heartbeatDataHeader();
         rttMeasurementBuffer = threadLocals.rttMeasurementBuffer();
         rttMeasurementHeader = threadLocals.rttMeasurementHeader();
 

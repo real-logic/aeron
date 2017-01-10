@@ -71,7 +71,7 @@ public class NetworkPublicationThreadLocals
         return heartbeatBuffer;
     }
 
-    public DataHeaderFlyweight dataHeader()
+    public DataHeaderFlyweight heartbeatDataHeader()
     {
         return dataHeader;
     }

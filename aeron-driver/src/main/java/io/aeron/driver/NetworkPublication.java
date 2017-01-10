@@ -101,7 +101,7 @@ public class NetworkPublication
     private final Position senderLimit;
     private final SendChannelEndpoint channelEndpoint;
     private final ByteBuffer heartbeatBuffer;
-    private final DataHeaderFlyweight dataHeader;
+    private final DataHeaderFlyweight heartbeatDataHeader;
     private final ByteBuffer setupBuffer;
     private final SetupFlyweight setupHeader;
     private final ByteBuffer rttMeasurementBuffer;
@@ -149,7 +149,7 @@ public class NetworkPublication
         setupBuffer = threadLocals.setupBuffer();
         setupHeader = threadLocals.setupHeader();
         heartbeatBuffer = threadLocals.heartbeatBuffer();
-        dataHeader = threadLocals.heartbeatDataHeader();
+        heartbeatDataHeader = threadLocals.heartbeatDataHeader();
         rttMeasurementBuffer = threadLocals.rttMeasurementBuffer();
         rttMeasurementHeader = threadLocals.rttMeasurementHeader();
 
@@ -472,7 +472,7 @@ public class NetworkPublication
         if (now > (timeOfLastSendOrHeartbeat + PUBLICATION_HEARTBEAT_TIMEOUT_NS))
         {
             heartbeatBuffer.clear();
-            dataHeader
+            heartbeatDataHeader
                 .sessionId(sessionId)
                 .streamId(streamId)
                 .termId(activeTermId)

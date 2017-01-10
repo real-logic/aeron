@@ -4,6 +4,7 @@ GRTAGS
 GPATH
 prop
 out
+classes
 
 # OS X
 .DS_Store

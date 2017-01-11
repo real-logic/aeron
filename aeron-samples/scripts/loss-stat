@@ -17,4 +17,4 @@
 
 ${JAVA_HOME}/bin/java \
     -cp aeron-samples/build/libs/samples.jar \
-    io.aeron.samples.ErrorStat
+    io.aeron.samples.LossStat

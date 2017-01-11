@@ -20,18 +20,22 @@ import io.aeron.driver.CongestionControlSupplier;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.status.CountersManager;
 
 public class CubicCongestionControlSupplier implements CongestionControlSupplier
 {
     public CongestionControl newInstance(
+        final long registrationId,
         final UdpChannel udpChannel,
         final int streamId,
         final int sessionId,
         final int termLength,
         final int senderMtuLength,
         final NanoClock clock,
-        final MediaDriver.Context context)
+        final MediaDriver.Context context,
+        final CountersManager countersManager)
     {
-        return new CubicCongestionControl(udpChannel, streamId, sessionId, termLength, senderMtuLength, clock, context);
+        return new CubicCongestionControl(
+            registrationId, udpChannel, streamId, sessionId, termLength, senderMtuLength, clock, context, countersManager);
     }
 }

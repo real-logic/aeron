@@ -19,6 +19,7 @@ import io.aeron.driver.CongestionControl;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.status.CountersManager;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
@@ -69,13 +70,15 @@ public class CubicCongestionControl implements CongestionControl
     private int outstandingRttMeasurements = 0;
 
     CubicCongestionControl(
+        final long registrationId,
         final UdpChannel udpChannel,
         final int streamId,
         final int sessionId,
         final int termLength,
         final int senderMtuLength,
         final NanoClock clock,
-        final MediaDriver.Context context)
+        final MediaDriver.Context context,
+        final CountersManager countersManager)
     {
         mtu = senderMtuLength;
         minWindow = senderMtuLength;
@@ -91,6 +94,8 @@ public class CubicCongestionControl implements CongestionControl
         windowUpdateTimeout = rttInNanos;
 
         // TODO: add counters manager so that some stats can be outputted (such as RTT and cwnd)
+
+        // TODO: add registrationId for counters
 
         lastLossTimestamp = clock.nanoTime();
         lastUpdateTimestamp = lastLossTimestamp;
@@ -177,5 +182,9 @@ public class CubicCongestionControl implements CongestionControl
     public int initialWindowLength()
     {
         return minWindow;
+    }
+
+    public void close()
+    {
     }
 }

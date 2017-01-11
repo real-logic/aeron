@@ -230,7 +230,15 @@ public class DriverConductor implements Agent
 
             final CongestionControl congestionControl =
                 context.congestionControlSupplier().newInstance(
-                    udpChannel, streamId, sessionId, termBufferLength, senderMtuLength, nanoClock, context);
+                    registrationId,
+                    udpChannel,
+                    streamId,
+                    sessionId,
+                    termBufferLength,
+                    senderMtuLength,
+                    nanoClock,
+                    context,
+                    countersManager);
 
             final PublicationImage image = new PublicationImage(
                 registrationId,

@@ -256,9 +256,11 @@ public class DriverConductor implements Agent
                 ReceiverHwm.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 ReceiverPos.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 nanoClock,
+                context.epochClock(),
                 context.systemCounters(),
                 sourceAddress,
-                congestionControl);
+                congestionControl,
+                context.lossReport());
 
             subscriberPositions.forEach(
                 (subscriberPosition) -> subscriberPosition.subscription().addImage(image, subscriberPosition.position()));

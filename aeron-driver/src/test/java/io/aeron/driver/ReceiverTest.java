@@ -18,7 +18,9 @@ package io.aeron.driver;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.buffer.RawLogFactory;
 import io.aeron.driver.media.*;
+import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
+import org.agrona.concurrent.EpochClock;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -95,7 +97,9 @@ public class ReceiverTest
     private final SetupFlyweight setupHeader = new SetupFlyweight();
 
     private long currentTime = 0;
-    private final NanoClock clock = () -> currentTime;
+    private final NanoClock nanoClock = () -> currentTime;
+    private final EpochClock epochClock = mock(EpochClock.class);
+    private final LossReport lossReport = mock(LossReport.class);
 
     private final RawLog rawLog = LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH);
 
@@ -194,10 +198,12 @@ public class ReceiverTest
             POSITIONS,
             mockHighestReceivedPosition,
             mockRebuildPosition,
-            clock,
+            nanoClock,
+            epochClock,
             mockSystemCounters,
             SOURCE_ADDRESS,
-            congestionControl);
+            congestionControl,
+            lossReport);
 
         final int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -273,10 +279,12 @@ public class ReceiverTest
                         POSITIONS,
                         mockHighestReceivedPosition,
                         mockRebuildPosition,
-                        clock,
+                        nanoClock,
+                        epochClock,
                         mockSystemCounters,
                         SOURCE_ADDRESS,
-                        congestionControl));
+                        congestionControl,
+                        lossReport));
             });
 
         assertThat(commandsRead, is(1));
@@ -338,10 +346,12 @@ public class ReceiverTest
                         POSITIONS,
                         mockHighestReceivedPosition,
                         mockRebuildPosition,
-                        clock,
+                        nanoClock,
+                        epochClock,
                         mockSystemCounters,
                         SOURCE_ADDRESS,
-                        congestionControl));
+                        congestionControl,
+                        lossReport));
             });
 
         assertThat(commandsRead, is(1));
@@ -406,10 +416,12 @@ public class ReceiverTest
                         POSITIONS,
                         mockHighestReceivedPosition,
                         mockRebuildPosition,
-                        clock,
+                        nanoClock,
+                        epochClock,
                         mockSystemCounters,
                         SOURCE_ADDRESS,
-                        congestionControl));
+                        congestionControl,
+                        lossReport));
             });
 
         assertThat(commandsRead, is(1));
@@ -478,10 +490,12 @@ public class ReceiverTest
                         POSITIONS,
                         mockHighestReceivedPosition,
                         mockRebuildPosition,
-                        clock,
+                        nanoClock,
+                        epochClock,
                         mockSystemCounters,
                         SOURCE_ADDRESS,
-                        congestionControl));
+                        congestionControl,
+                        lossReport));
             });
 
         assertThat(commandsRead, is(1));

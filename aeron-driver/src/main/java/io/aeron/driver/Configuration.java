@@ -172,6 +172,21 @@ public class Configuration
      * Buffer length for the error buffer for the media driver.
      */
     public static final int ERROR_BUFFER_LENGTH = getInteger(ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
+    /**
+     * Property name for length of the memory mapped buffer for the loss report buffer.
+     */
+    public static final String LOSS_REPORT_BUFFER_LENGTH_PROP_NAME = "aeron.loss.report.buffer.length";
+
+    /**
+     * Default buffer length for the loss report buffer.
+     */
+    public static final int LOSS_REPORT_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
+
+    /**
+     * Buffer length for the loss report buffer for the media driver.
+     */
+    public static final int LOSS_REPORT_BUFFER_LENGTH = getInteger(
+        LOSS_REPORT_BUFFER_LENGTH_PROP_NAME, LOSS_REPORT_BUFFER_LENGTH_DEFAULT);
 
     /**
      * Property name for length of the initial window which must be sufficient for Bandwidth Delay Produce (BDP).

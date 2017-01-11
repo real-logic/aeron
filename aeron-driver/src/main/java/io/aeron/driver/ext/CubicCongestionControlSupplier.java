@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Real Logic Ltd.
+ * Copyright 2017 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.driver;
+package io.aeron.driver.ext;
 
+import io.aeron.driver.CongestionControl;
+import io.aeron.driver.CongestionControlSupplier;
+import io.aeron.driver.MediaDriver;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.NanoClock;
 
-public class DefaultCongestionControlSupplier implements CongestionControlSupplier
+public class CubicCongestionControlSupplier implements CongestionControlSupplier
 {
     public CongestionControl newInstance(
-        UdpChannel udpChannel,
-        int streamId,
-        int sessionId,
-        int termLength,
-        int senderMtuLength,
-        NanoClock clock,
-        MediaDriver.Context context)
+        final UdpChannel udpChannel,
+        final int streamId,
+        final int sessionId,
+        final int termLength,
+        final int senderMtuLength,
+        final NanoClock clock,
+        final MediaDriver.Context context)
     {
-        return new StaticWindowCongestionControl(udpChannel, streamId, sessionId, termLength, senderMtuLength, clock, context);
+        return new CubicCongestionControl(udpChannel, streamId, sessionId, termLength, senderMtuLength, clock, context);
     }
 }

@@ -382,9 +382,8 @@ public class PublicationImage
      *
      * @param now                  in nanoseconds
      * @param statusMessageTimeout for sending of Status Messages.
-     * @return if true if loss was discovered otherwise false.
      */
-    boolean trackRebuild(final long now, final long statusMessageTimeout)
+    void trackRebuild(final long now, final long statusMessageTimeout)
     {
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
@@ -432,8 +431,6 @@ public class PublicationImage
             scheduleStatusMessage(now, minSubscriberPosition, window);
             cleanBufferTo(minSubscriberPosition - (termLengthMask + 1));
         }
-
-        return lossFound(scanOutcome);
     }
 
     /**

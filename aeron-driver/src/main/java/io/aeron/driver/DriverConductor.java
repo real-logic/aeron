@@ -763,8 +763,8 @@ public class DriverConductor implements Agent
         }
 
         final AeronClient client = getOrAddClient(clientId);
-        final SubscriptionLink subscription =
-                new SubscriptionLink(registrationId, channelEndpoint, streamId, client, context.clientLivenessTimeoutNs());
+        final SubscriptionLink subscription = new SubscriptionLink(
+            registrationId, channelEndpoint, streamId, client, context.clientLivenessTimeoutNs());
 
         subscriptionLinks.add(subscription);
         clientProxy.operationSucceeded(registrationId);
@@ -806,12 +806,12 @@ public class DriverConductor implements Agent
 
         final long joiningPosition = publication.joiningPosition();
         final int sessionId = publication.sessionId();
-        final Position position =
-            SubscriberPos.allocate(countersManager, registrationId, sessionId, streamId, IPC_CHANNEL, joiningPosition);
+        final Position position = SubscriberPos.allocate(
+            countersManager, registrationId, sessionId, streamId, IPC_CHANNEL, joiningPosition);
         position.setOrdered(joiningPosition);
 
-        final SubscriptionLink subscriptionLink =
-                new SubscriptionLink(registrationId, streamId, publication, position, client, context.clientLivenessTimeoutNs());
+        final SubscriptionLink subscriptionLink = new SubscriptionLink(
+            registrationId, streamId, publication, position, client, context.clientLivenessTimeoutNs());
 
         subscriptionLinks.add(subscriptionLink);
         publication.addSubscription(position);

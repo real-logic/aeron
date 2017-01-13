@@ -20,8 +20,7 @@ import io.aeron.driver.exceptions.ConfigurationException;
 import io.aeron.driver.status.ChannelEndpointStatus;
 import io.aeron.protocol.*;
 import org.agrona.LangUtil;
-import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.collections.MutableInteger;
+import org.agrona.collections.Int2IntHashMap;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -52,7 +51,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter possibleTtlAsymmetry;
     private final AtomicCounter statusIndicator;
 
-    private final Int2ObjectHashMap<MutableInteger> refCountByStreamIdMap = new Int2ObjectHashMap<>();
+    private final Int2IntHashMap refCountByStreamIdMap = new Int2IntHashMap(0);
 
     private final long receiverId;
     private volatile boolean isClosed = false;
@@ -163,36 +162,21 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
     public int incRefToStream(final int streamId)
     {
-        MutableInteger count = refCountByStreamIdMap.get(streamId);
-
-        if (null == count)
-        {
-            count = new MutableInteger();
-            refCountByStreamIdMap.put(streamId, count);
-        }
-
-        count.value++;
-
-        return count.value;
+        final int count = refCountByStreamIdMap.inc(streamId);
+        return count + 1;
     }
 
     public int decRefToStream(final int streamId)
     {
-        final MutableInteger count = refCountByStreamIdMap.get(streamId);
+        final int count = refCountByStreamIdMap.dec(streamId);
 
-        if (null == count)
+        if (0 == count)
         {
+            refCountByStreamIdMap.remove(streamId);
             throw new IllegalStateException("Could not find stream Id to decrement: " + streamId);
         }
 
-        count.value--;
-
-        if (0 == count.value)
-        {
-            refCountByStreamIdMap.remove(streamId);
-        }
-
-        return count.value;
+        return count - 1;
     }
 
     public int streamCount()

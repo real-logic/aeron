@@ -411,15 +411,14 @@ public class PublicationImage
         final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + rebuildOffset(scanOutcome);
         this.rebuildPosition.proposeMaxOrdered(newRebuildPosition);
 
-        final long ccOutcome =
-            congestionControl.onTrackRebuild(
-                now,
-                minSubscriberPosition,
-                nextSmPosition,
-                hwmPosition,
-                rebuildPosition,
-                newRebuildPosition,
-                lossFound(scanOutcome));
+        final long ccOutcome = congestionControl.onTrackRebuild(
+            now,
+            minSubscriberPosition,
+            nextSmPosition,
+            hwmPosition,
+            rebuildPosition,
+            newRebuildPosition,
+            lossFound(scanOutcome));
 
         final int window = CongestionControlUtil.receiverWindowLength(ccOutcome);
         final long threshold = CongestionControlUtil.positionThreshold(window);

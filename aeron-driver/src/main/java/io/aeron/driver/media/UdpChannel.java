@@ -100,12 +100,7 @@ public final class UdpChannel
 
             if (endpointAddress.getAddress().isMulticastAddress())
             {
-                final byte[] addressAsBytes = endpointAddress.getAddress().getAddress();
-                validateDataAddress(addressAsBytes);
-
-                addressAsBytes[addressAsBytes.length - 1]++;
-                final InetSocketAddress controlAddress =
-                    new InetSocketAddress(getByAddress(addressAsBytes), endpointAddress.getPort());
+                final InetSocketAddress controlAddress = getMulticastControlAddress(endpointAddress);
 
                 final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(aeronUri);
 
@@ -148,6 +143,15 @@ public final class UdpChannel
         {
             throw new InvalidChannelException(ErrorCode.INVALID_CHANNEL, ex);
         }
+    }
+
+    private static InetSocketAddress getMulticastControlAddress(InetSocketAddress endpointAddress) throws UnknownHostException
+    {
+        final byte[] addressAsBytes = endpointAddress.getAddress().getAddress();
+        validateDataAddress(addressAsBytes);
+
+        addressAsBytes[addressAsBytes.length - 1]++;
+        return new InetSocketAddress(getByAddress(addressAsBytes), endpointAddress.getPort());
     }
 
     /**

@@ -524,6 +524,53 @@ project(':aeron-all') {
     }
 }
 
+project(':aeron-archiver') {
+    apply plugin: 'com.github.johnrengelman.shadow'
+
+    dependencies {
+        compile project(':aeron-client'), project(':aeron-driver'), 'uk.co.real-logic:sbe-all:1.5.5'
+    }
+
+    shadowJar {
+        archiveName = 'aeron-archiver.jar'
+    }
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                beforeDeployment {
+                    MavenDeployment deployment -> signing.signPom(deployment)
+                }
+
+                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                pom.project(projectPom)
+            }
+        }
+    }
+
+    task sourcesJar(type: Jar) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from javadoc.destinationDir
+    }
+
+    artifacts {
+        archives sourcesJar
+        archives javadocJar
+    }
+}
+
 task uploadToMavenCentral {
     dependsOn 'aeron-client:uploadArchives', 'aeron-driver:uploadArchives', 'aeron-samples:uploadArchives',
             'aeron-system-tests:uploadArchives', 'aeron-all:uploadArchives', 'aeron-all:uploadShadow',

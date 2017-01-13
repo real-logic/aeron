@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Real Logic Ltd.
+ * Copyright 2017 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.driver;
+package io.aeron.driver.ext;
 
+import io.aeron.driver.CongestionControl;
+import io.aeron.driver.CongestionControlSupplier;
+import io.aeron.driver.MediaDriver;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.status.CountersManager;
 
-public class DefaultCongestionControlSupplier implements CongestionControlSupplier
+public class CubicCongestionControlSupplier implements CongestionControlSupplier
 {
     public CongestionControl newInstance(
         final long registrationId,
@@ -32,7 +35,7 @@ public class DefaultCongestionControlSupplier implements CongestionControlSuppli
         final MediaDriver.Context context,
         final CountersManager countersManager)
     {
-        return new StaticWindowCongestionControl(
+        return new CubicCongestionControl(
             registrationId, udpChannel, streamId, sessionId, termLength, senderMtuLength, clock, context, countersManager);
     }
 }

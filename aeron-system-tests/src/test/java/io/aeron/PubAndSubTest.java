@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.driver.reports.LossReport;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.junit.After;
@@ -315,6 +316,9 @@ public class PubAndSubTest
         final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
         final int numMessagesToSend = 2 * numMessagesInTermBuffer;
 
+        final LossReport lossReport = mock(LossReport.class);
+        context.lossReport(lossReport);
+
         final LossGenerator dataLossGenerator =
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.10, 0xcafebabeL);  // 10% data loss, predictable seed
         final LossGenerator noLossGenerator =
@@ -358,6 +362,8 @@ public class PubAndSubTest
             anyInt(),
             eq(messageLength),
             any(Header.class));
+
+        verify(lossReport).createEntry(anyLong(), anyLong(), anyInt(), eq(STREAM_ID), anyString(), anyString());
     }
 
     @Theory
@@ -370,6 +376,9 @@ public class PubAndSubTest
         final int numMessagesToSend = 2 * numMessagesInTermBuffer;
         final int numBatches = 4;
         final int numMessagesPerBatch = numMessagesToSend / numBatches;
+
+        final LossReport lossReport = mock(LossReport.class);
+        context.lossReport(lossReport);
 
         final LossGenerator dataLossGenerator =
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.10, 0xcafebabeL);  // 10% data loss, predictable seed
@@ -417,6 +426,8 @@ public class PubAndSubTest
             anyInt(),
             eq(messageLength),
             any(Header.class));
+
+        verify(lossReport).createEntry(anyLong(), anyLong(), anyInt(), eq(STREAM_ID), anyString(), anyString());
     }
 
     @Theory

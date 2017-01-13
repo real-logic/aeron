@@ -17,12 +17,14 @@ package io.aeron.driver;
 
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
+import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.TermRebuilder;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import org.agrona.UnsafeAccess;
 import org.agrona.collections.ArrayUtil;
+import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -106,22 +108,25 @@ public class PublicationImage
 
     private volatile PublicationImage.Status status = PublicationImage.Status.INIT;
 
-    private final NanoClock clock;
+    private final NanoClock nanoClock;
     private final InetSocketAddress controlAddress;
     private final ReceiveChannelEndpoint channelEndpoint;
     private final UnsafeBuffer[] termBuffers;
     private final Position hwmPosition;
     private final LossDetector lossDetector;
+    private final CongestionControl congestionControl;
+    private final Position rebuildPosition;
+    private ReadablePosition[] subscriberPositions;
+    private final InetSocketAddress sourceAddress;
     private final AtomicCounter heartbeatsReceived;
     private final AtomicCounter statusMessagesSent;
     private final AtomicCounter nakMessagesSent;
     private final AtomicCounter flowControlUnderRuns;
     private final AtomicCounter flowControlOverRuns;
-    private final Position rebuildPosition;
-    private ReadablePosition[] subscriberPositions;
-    private final InetSocketAddress sourceAddress;
+    private LossReport lossReport;
+    private LossReport.ReportEntry reportEntry;
+    private final EpochClock epochClock;
     private final RawLog rawLog;
-    private final CongestionControl congestionControl;
 
     public PublicationImage(
         final long correlationId,
@@ -138,10 +143,12 @@ public class PublicationImage
         final List<ReadablePosition> subscriberPositions,
         final Position hwmPosition,
         final Position rebuildPosition,
-        final NanoClock clock,
+        final NanoClock nanoClock,
+        final EpochClock epochClock,
         final SystemCounters systemCounters,
         final InetSocketAddress sourceAddress,
-        final CongestionControl congestionControl)
+        final CongestionControl congestionControl,
+        final LossReport lossReport)
     {
         this.correlationId = correlationId;
         this.imageLivenessTimeoutNs = imageLivenessTimeoutNs;
@@ -156,6 +163,7 @@ public class PublicationImage
         this.sourceAddress = sourceAddress;
         this.initialTermId = initialTermId;
         this.congestionControl = congestionControl;
+        this.lossReport = lossReport;
 
         heartbeatsReceived = systemCounters.get(HEARTBEATS_RECEIVED);
         statusMessagesSent = systemCounters.get(STATUS_MESSAGES_SENT);
@@ -163,8 +171,9 @@ public class PublicationImage
         flowControlUnderRuns = systemCounters.get(FLOW_CONTROL_UNDER_RUNS);
         flowControlOverRuns = systemCounters.get(FLOW_CONTROL_OVER_RUNS);
 
-        final long time = clock.nanoTime();
-        this.clock = clock;
+        this.nanoClock = nanoClock;
+        this.epochClock = epochClock;
+        final long time = nanoClock.nanoTime();
         timeOfLastStatusChange = time;
         lastPacketTimestamp = time;
 
@@ -197,6 +206,7 @@ public class PublicationImage
         }
 
         rawLog.close();
+        congestionControl.close();
     }
 
     public long correlationId()
@@ -306,7 +316,7 @@ public class PublicationImage
      */
     public void status(final Status status)
     {
-        timeOfLastStatusChange = clock.nanoTime();
+        timeOfLastStatusChange = nanoClock.nanoTime();
         this.status = status;
     }
 
@@ -337,6 +347,21 @@ public class PublicationImage
         lossLength = length;
 
         endLossChange = changeNumber;
+
+        if (null != reportEntry)
+        {
+            reportEntry.recordObservation(length, epochClock.time());
+        }
+        else if (null != lossReport)
+        {
+            reportEntry = lossReport.createEntry(
+                length, epochClock.time(), sessionId, streamId, channelUriString(), sourceAddress.toString());
+
+            if (null == reportEntry)
+            {
+                lossReport = null;
+            }
+        }
     }
 
     public void scheduleStatusMessage(final long now, final long smPosition, final int receiverWindowLength)
@@ -355,11 +380,10 @@ public class PublicationImage
     /**
      * Called from the {@link DriverConductor}.
      *
-     * @param now in nanoseconds
+     * @param now                  in nanoseconds
      * @param statusMessageTimeout for sending of Status Messages.
-     * @return if true if loss was discovered otherwise false.
      */
-    boolean trackRebuild(final long now, final long statusMessageTimeout)
+    void trackRebuild(final long now, final long statusMessageTimeout)
     {
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
@@ -407,8 +431,6 @@ public class PublicationImage
             scheduleStatusMessage(now, minSubscriberPosition, window);
             cleanBufferTo(minSubscriberPosition - (termLengthMask + 1));
         }
-
-        return lossFound(scanOutcome);
     }
 
     /**
@@ -561,7 +583,7 @@ public class PublicationImage
      */
     public void onRttMeasurement(final RttMeasurementFlyweight header, final InetSocketAddress srcAddress)
     {
-        final long now = clock.nanoTime();
+        final long now = nanoClock.nanoTime();
         final long rttInNanos = now - header.echoTimestamp() - header.receptionDelta();
 
         congestionControl.onRttMeasurement(now, rttInNanos, srcAddress);
@@ -668,7 +690,7 @@ public class PublicationImage
 
     private void hwmCandidate(final long proposedPosition)
     {
-        lastPacketTimestamp = clock.nanoTime();
+        lastPacketTimestamp = nanoClock.nanoTime();
         hwmPosition.proposeMaxOrdered(proposedPosition);
     }
 

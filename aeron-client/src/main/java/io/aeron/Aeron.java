@@ -79,7 +79,7 @@ public final class Aeron implements AutoCloseable
     public static final long INTER_SERVICE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(10);
 
     /**
-     * Timeout after which if no status messages have been receiver then a publication is considered not connected.
+     * Timeout after which if no status messages have been received then a publication is considered not connected.
      */
     public static final long PUBLICATION_CONNECTION_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
 

@@ -17,14 +17,18 @@ package io.aeron.driver;
 
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.status.CountersManager;
 
 public interface CongestionControlSupplier
 {
     CongestionControl newInstance(
+        long registrationId,
         UdpChannel udpChannel,
         int streamId,
         int sessionId,
         int termLength,
+        int senderMtuLength,
         NanoClock clock,
-        MediaDriver.Context context);
+        MediaDriver.Context context,
+        CountersManager countersManager);
 }

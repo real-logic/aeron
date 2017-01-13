@@ -228,9 +228,16 @@ public class DriverConductor implements Agent
             final RawLog rawLog = newPublicationImageLog(
                 sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, registrationId);
 
-            final CongestionControl congestionControl =
-                context.congestionControlSupplier().newInstance(
-                    udpChannel, streamId, sessionId, termBufferLength, nanoClock, context);
+            final CongestionControl congestionControl = context.congestionControlSupplier().newInstance(
+                    registrationId,
+                    udpChannel,
+                    streamId,
+                    sessionId,
+                    termBufferLength,
+                    senderMtuLength,
+                    nanoClock,
+                    context,
+                    countersManager);
 
             final PublicationImage image = new PublicationImage(
                 registrationId,
@@ -248,12 +255,13 @@ public class DriverConductor implements Agent
                 ReceiverHwm.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 ReceiverPos.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 nanoClock,
+                context.epochClock(),
                 context.systemCounters(),
                 sourceAddress,
-                congestionControl);
+                congestionControl,
+                context.lossReport());
 
-            subscriberPositions.forEach(
-                (subscriberPosition) -> subscriberPosition.subscription().addImage(image, subscriberPosition.position()));
+            subscriberPositions.forEach((subscriberPosition) -> subscriberPosition.addImage(image));
 
             publicationImages.add(image);
             receiverProxy.newPublicationImage(channelEndpoint, image);
@@ -603,7 +611,8 @@ public class DriverConductor implements Agent
         return termLength;
     }
 
-    private void onAddDirectPublication(final String channel, final int streamId, final long registrationId, final long clientId)
+    private void onAddDirectPublication(
+        final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final DirectPublication directPublication = getOrAddDirectPublication(streamId, channel);
         linkPublication(registrationId, directPublication, getOrAddClient(clientId));
@@ -621,7 +630,8 @@ public class DriverConductor implements Agent
         return nextSessionId++;
     }
 
-    private void linkPublication(final long registrationId, final DriverManagedResource publication, final AeronClient client)
+    private void linkPublication(
+        final long registrationId, final DriverManagedResource publication, final AeronClient client)
     {
         if (null != findPublicationLink(publicationLinks, registrationId))
         {
@@ -753,8 +763,8 @@ public class DriverConductor implements Agent
         }
 
         final AeronClient client = getOrAddClient(clientId);
-        final SubscriptionLink subscription =
-                new SubscriptionLink(registrationId, channelEndpoint, streamId, client, context.clientLivenessTimeoutNs());
+        final SubscriptionLink subscription = new SubscriptionLink(
+            registrationId, channelEndpoint, streamId, client, context.clientLivenessTimeoutNs());
 
         subscriptionLinks.add(subscription);
         clientProxy.operationSucceeded(registrationId);
@@ -788,19 +798,20 @@ public class DriverConductor implements Agent
                 });
     }
 
-    private void onAddDirectSubscription(final String channel, final int streamId, final long registrationId, final long clientId)
+    private void onAddDirectSubscription(
+        final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final DirectPublication publication = getOrAddDirectPublication(streamId, channel);
         final AeronClient client = getOrAddClient(clientId);
 
         final long joiningPosition = publication.joiningPosition();
         final int sessionId = publication.sessionId();
-        final Position position =
-            SubscriberPos.allocate(countersManager, registrationId, sessionId, streamId, IPC_CHANNEL, joiningPosition);
+        final Position position = SubscriberPos.allocate(
+            countersManager, registrationId, sessionId, streamId, IPC_CHANNEL, joiningPosition);
         position.setOrdered(joiningPosition);
 
-        final SubscriptionLink subscriptionLink =
-                new SubscriptionLink(registrationId, streamId, publication, position, client, context.clientLivenessTimeoutNs());
+        final SubscriptionLink subscriptionLink = new SubscriptionLink(
+            registrationId, streamId, publication, position, client, context.clientLivenessTimeoutNs());
 
         subscriptionLinks.add(subscriptionLink);
         publication.addSubscription(position);
@@ -819,7 +830,8 @@ public class DriverConductor implements Agent
             IPC_CHANNEL);
     }
 
-    private void onAddSpySubscription(final String channel, final int streamId, final long registrationId, final long clientId)
+    private void onAddSpySubscription(
+        final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final SendChannelEndpoint channelEndpoint = senderChannelEndpoint(udpChannel);
@@ -845,7 +857,7 @@ public class DriverConductor implements Agent
         final int sessionId = publication.sessionId();
         final String channel = subscriptionLink.spiedChannel().originalUriString();
         final Position position = SubscriberPos.allocate(
-                countersManager, subscriptionLink.registrationId(), sessionId, streamId, channel, spyJoiningPosition);
+            countersManager, subscriptionLink.registrationId(), sessionId, streamId, channel, spyJoiningPosition);
         position.setOrdered(spyJoiningPosition);
 
         final List<SubscriberPosition> subscriberPositions = new ArrayList<>();

@@ -26,7 +26,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.INVALID_PACKETS;
 
 /**
  * Tracking and handling of retransmit request, NAKs, for senders and receivers
- * <p>
+ *
  * A max number of retransmits is permitted by {@link Configuration#MAX_RETRANSMITS_DEFAULT}. Additional received NAKs will be
  * ignored if this maximum is reached.
  */

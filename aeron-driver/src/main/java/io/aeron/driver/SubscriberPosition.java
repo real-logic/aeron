@@ -22,12 +22,12 @@ import org.agrona.concurrent.status.Position;
  */
 public final class SubscriberPosition
 {
-    private final SubscriptionLink subscription;
+    private final SubscriptionLink subscriptionLink;
     private final Position position;
 
-    public SubscriberPosition(final SubscriptionLink subscription, final Position position)
+    public SubscriberPosition(final SubscriptionLink subscriptionLink, final Position position)
     {
-        this.subscription = subscription;
+        this.subscriptionLink = subscriptionLink;
         this.position = position;
     }
 
@@ -43,6 +43,11 @@ public final class SubscriberPosition
 
     public SubscriptionLink subscription()
     {
-        return subscription;
+        return subscriptionLink;
+    }
+
+    public void addImage(final PublicationImage image)
+    {
+        subscriptionLink.addImage(image, position);
     }
 }

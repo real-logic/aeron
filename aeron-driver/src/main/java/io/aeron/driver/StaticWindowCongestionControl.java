@@ -17,6 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.status.CountersManager;
 
 import java.net.InetSocketAddress;
 
@@ -25,14 +26,21 @@ public class StaticWindowCongestionControl implements CongestionControl
     private final long ccOutcome;
 
     public StaticWindowCongestionControl(
-        UdpChannel udpChannel,
-        int streamId,
-        int sessionId,
-        int termLength,
-        NanoClock clock,
-        MediaDriver.Context context)
+        final long registrationId,
+        final UdpChannel udpChannel,
+        final int streamId,
+        final int sessionId,
+        final int termLength,
+        final int senderMtuLength,
+        final NanoClock clock,
+        final MediaDriver.Context context,
+        final CountersManager countersManager)
     {
         ccOutcome = CongestionControlUtil.packOutcome(Math.min(termLength / 2, context.initialWindowLength()), false);
+    }
+
+    public void close()
+    {
     }
 
     public boolean shouldMeasureRtt(final long now)

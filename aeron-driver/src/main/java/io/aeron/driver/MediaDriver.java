@@ -26,6 +26,7 @@ import io.aeron.driver.exceptions.ConfigurationException;
 import io.aeron.driver.media.ControlTransportPoller;
 import io.aeron.driver.media.DataTransportPoller;
 import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
+import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -46,6 +47,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
 import static java.lang.Boolean.getBoolean;
 import static org.agrona.IoUtil.mapNewFile;
 import static io.aeron.CncFileDescriptor.*;
@@ -405,30 +407,7 @@ public final class MediaDriver implements AutoCloseable
                     throw new ActiveDriverException("active driver detected");
                 }
 
-                final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
-                final String errorLogFilename = String.format(
-                    "%s-%s-error.log", ctx.aeronDirectoryName(), dateFormat.format(new Date()));
-                final File errorLogFile = new File(errorLogFilename);
-                int observations = 0;
-
-                try (PrintStream stream = new PrintStream(errorLogFile, "UTF-8"))
-                {
-                    observations = ctx.saveErrorLog(stream);
-                }
-                catch (final Exception ex)
-                {
-                    LangUtil.rethrowUnchecked(ex);
-                }
-
-                if (0 == observations)
-                {
-                    //noinspection ResultOfMethodCallIgnored
-                    errorLogFile.delete();
-                }
-                else
-                {
-                    System.err.println("WARNING: existing errors saved to " + errorLogFile);
-                }
+                reportExistingErrors(ctx);
 
                 ctx.deleteAeronDirectory();
             }
@@ -444,6 +423,34 @@ public final class MediaDriver implements AutoCloseable
             };
 
         IoUtil.ensureDirectoryIsRecreated(aeronDir, "aeron", callback);
+    }
+
+    private void reportExistingErrors(final Context ctx)
+    {
+        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
+        final String errorLogFilename = String.format(
+            "%s-%s-error.log", ctx.aeronDirectoryName(), dateFormat.format(new Date()));
+        final File errorLogFile = new File(errorLogFilename);
+        int observations = 0;
+
+        try (PrintStream stream = new PrintStream(errorLogFile, "UTF-8"))
+        {
+            observations = ctx.saveErrorLog(stream);
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        if (0 == observations)
+        {
+            //noinspection ResultOfMethodCallIgnored
+            errorLogFile.delete();
+        }
+        else
+        {
+            System.err.println("WARNING: existing errors saved to " + errorLogFile);
+        }
     }
 
     public static class Context extends CommonContext
@@ -472,6 +479,9 @@ public final class MediaDriver implements AutoCloseable
         private RingBuffer toDriverCommands;
         private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
+
+        private MappedByteBuffer lossReportBuffer;
+        private LossReport lossReport;
 
         private MappedByteBuffer cncByteBuffer;
         private UnsafeBuffer cncMetaDataBuffer;
@@ -604,6 +614,12 @@ public final class MediaDriver implements AutoCloseable
                     maxTermBufferLength,
                     termBufferSparseFile,
                     errorLog));
+
+                if (null == lossReport)
+                {
+                    lossReportBuffer = mapLossReport(aeronDirectoryName(), Configuration.LOSS_REPORT_BUFFER_LENGTH);
+                    lossReport = new LossReport(new UnsafeBuffer(lossReportBuffer));
+                }
 
                 concludeIdleStrategies();
             }
@@ -898,6 +914,12 @@ public final class MediaDriver implements AutoCloseable
         public Context errorLog(final DistinctErrorLog errorLog)
         {
             this.errorLog = errorLog;
+            return this;
+        }
+
+        public Context lossReport(final LossReport lossReport)
+        {
+            this.lossReport = lossReport;
             return this;
         }
 
@@ -1213,6 +1235,11 @@ public final class MediaDriver implements AutoCloseable
             return errorLog;
         }
 
+        public LossReport lossReport()
+        {
+            return lossReport;
+        }
+
         public int mtuLength()
         {
             return mtuLength;
@@ -1269,6 +1296,7 @@ public final class MediaDriver implements AutoCloseable
         {
             // do not close the systemsCounters so that all counters are kept as is.
             IoUtil.unmap(cncByteBuffer);
+            IoUtil.unmap(lossReportBuffer);
 
             super.close();
         }

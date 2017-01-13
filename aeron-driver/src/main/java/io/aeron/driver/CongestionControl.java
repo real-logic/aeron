@@ -20,7 +20,7 @@ import java.net.InetSocketAddress;
 /**
  * Strategy for applying congestion control to determine the receiverWindowLength of the Status Messages
  */
-public interface CongestionControl
+public interface CongestionControl extends AutoCloseable
 {
     /**
      * Polled by {@link Receiver} to determine when to initiate an RTT measurement to a Sender.
@@ -69,4 +69,6 @@ public interface CongestionControl
      * @return new image window length
      */
     int initialWindowLength();
+
+    void close();
 }

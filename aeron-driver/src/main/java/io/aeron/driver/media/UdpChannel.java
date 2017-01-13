@@ -157,13 +157,13 @@ public final class UdpChannel
     /**
      * Return a string which is a canonical form of the channel suitable for use as a file or directory
      * name and also as a method of hashing, etc.
-     * <p>
+     *
      * A canonical form:
      * - begins with the string "UDP-"
      * - has all hostnames converted to hexadecimal
      * - has all fields expanded out
      * - uses "-" as all field separators
-     * <p>
+     *
      * The general format is:
      * UDP-interface-localPort-remoteAddress-remotePort
      *

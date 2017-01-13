@@ -81,10 +81,10 @@ public class LossDetector implements TermGapScanner.GapHandler
 
             final int rebuildTermId = initialTermId + rebuildTermCount;
             final int hwmTermOffset = (int)hwmPosition & termLengthMask;
-            final int offsetLimit = rebuildTermCount == hwmTermCount ? hwmTermOffset : termBuffer.capacity();
+            final int limitOffset = rebuildTermCount == hwmTermCount ? hwmTermOffset : termBuffer.capacity();
 
-            rebuildOffset = scanForGap(termBuffer, rebuildTermId, rebuildOffset, offsetLimit, this);
-            if (rebuildOffset < offsetLimit)
+            rebuildOffset = scanForGap(termBuffer, rebuildTermId, rebuildOffset, limitOffset, this);
+            if (rebuildOffset < limitOffset)
             {
                 if (!scannedGap.matches(activeGap))
                 {

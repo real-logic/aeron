@@ -22,7 +22,6 @@ import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.TermRebuilder;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
-import org.agrona.UnsafeAccess;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -39,6 +38,7 @@ import static io.aeron.driver.LossDetector.rebuildOffset;
 import static io.aeron.driver.PublicationImage.Status.ACTIVE;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
+import static org.agrona.UnsafeAccess.UNSAFE;
 
 class PublicationImagePadding1
 {
@@ -503,7 +503,7 @@ public class PublicationImage
                 final long smPosition = nextSmPosition;
                 final int receiverWindowLength = nextSmReceiverWindowLength;
 
-                UnsafeAccess.UNSAFE.loadFence(); // LoadLoad required so previous loads don't move past version check below.
+                UNSAFE.loadFence(); // LoadLoad required so previous loads don't move past version check below.
 
                 if (changeNumber == beginSmChange)
                 {
@@ -540,7 +540,7 @@ public class PublicationImage
             final int termOffset = lossTermOffset;
             final int length = lossLength;
 
-            UnsafeAccess.UNSAFE.loadFence(); // LoadLoad required so previous loads don't move past version check below.
+            UNSAFE.loadFence(); // LoadLoad required so previous loads don't move past version check below.
 
             if (changeNumber == beginLossChange)
             {

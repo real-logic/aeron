@@ -20,7 +20,7 @@ import io.aeron.driver.exceptions.ConfigurationException;
 import io.aeron.driver.status.ChannelEndpointStatus;
 import io.aeron.protocol.*;
 import org.agrona.LangUtil;
-import org.agrona.collections.Int2IntHashMap;
+import org.agrona.collections.Int2IntCounterMap;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -51,7 +51,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter possibleTtlAsymmetry;
     private final AtomicCounter statusIndicator;
 
-    private final Int2IntHashMap refCountByStreamIdMap = new Int2IntHashMap(0);
+    private final Int2IntCounterMap refCountByStreamIdMap = new Int2IntCounterMap(0);
 
     private final long receiverId;
     private volatile boolean isClosed = false;
@@ -162,21 +162,20 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
     public int incRefToStream(final int streamId)
     {
-        final int count = refCountByStreamIdMap.inc(streamId);
-        return count + 1;
+        return refCountByStreamIdMap.incrementAndGet(streamId);
     }
 
     public int decRefToStream(final int streamId)
     {
-        final int count = refCountByStreamIdMap.dec(streamId);
+        final int count = refCountByStreamIdMap.decrementAndGet(streamId);
 
-        if (0 == count)
+        if (-1 == count)
         {
             refCountByStreamIdMap.remove(streamId);
             throw new IllegalStateException("Could not find stream Id to decrement: " + streamId);
         }
 
-        return count - 1;
+        return count;
     }
 
     public int streamCount()

@@ -18,7 +18,10 @@ package io.aeron.driver.ext;
 import io.aeron.driver.CongestionControl;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.media.UdpChannel;
+import io.aeron.driver.status.PerImageIndicator;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 
 import java.net.InetSocketAddress;
@@ -69,6 +72,9 @@ public class CubicCongestionControl implements CongestionControl
 
     private int outstandingRttMeasurements = 0;
 
+    private AtomicCounter rttIndicator;
+    private AtomicCounter windowIndicator;
+
     CubicCongestionControl(
         final long registrationId,
         final UdpChannel udpChannel,
@@ -93,9 +99,26 @@ public class CubicCongestionControl implements CongestionControl
         rttInNanos = TimeUnit.MICROSECONDS.toNanos(100); // initial RTT
         windowUpdateTimeout = rttInNanos;
 
-        // TODO: add counters manager so that some stats can be outputted (such as RTT and cwnd)
+        rttIndicator = PerImageIndicator.allocate(
+            "rcv-cc-cubic-rtt",
+            countersManager,
+            registrationId,
+            sessionId,
+            streamId,
+            udpChannel.originalUriString(),
+            "");
 
-        // TODO: add registrationId for counters
+        windowIndicator = PerImageIndicator.allocate(
+            "rcv-cc-cubic-wnd",
+            countersManager,
+            registrationId,
+            sessionId,
+            streamId,
+            udpChannel.originalUriString(),
+            "");
+
+        rttIndicator.setOrdered(0);
+        windowIndicator.setOrdered(minWindow);
 
         lastLossTimestamp = clock.nanoTime();
         lastUpdateTimestamp = lastLossTimestamp;
@@ -129,6 +152,7 @@ public class CubicCongestionControl implements CongestionControl
         outstandingRttMeasurements--;
         lastRttTimestamp = now;
         this.rttInNanos = rttInNanos;
+        rttIndicator.setOrdered(rttInNanos);
     }
 
     public long onTrackRebuild(
@@ -175,6 +199,7 @@ public class CubicCongestionControl implements CongestionControl
         }
 
         final int window = cwnd * mtu;
+        windowIndicator.setOrdered(window);
 
         return packOutcome(window, forceStatusMessage);
     }
@@ -186,5 +211,7 @@ public class CubicCongestionControl implements CongestionControl
 
     public void close()
     {
+        CloseHelper.close(rttIndicator);
+        CloseHelper.close(windowIndicator);
     }
 }

@@ -38,7 +38,7 @@ public class TermGapFiller
      * @param termId            for the current term.
      * @return true if the gap has been filled with a padding record or false if data found.
      */
-    public static boolean tryFill(
+    public static boolean tryFillGap(
         final UnsafeBuffer logMetaDataBuffer,
         final UnsafeBuffer termBuffer,
         final int gapOffset,

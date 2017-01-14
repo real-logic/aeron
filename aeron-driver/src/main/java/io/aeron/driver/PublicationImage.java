@@ -38,7 +38,7 @@ import static io.aeron.driver.LossDetector.rebuildOffset;
 import static io.aeron.driver.PublicationImage.Status.ACTIVE;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
-import static io.aeron.logbuffer.TermGapFiller.tryFill;
+import static io.aeron.logbuffer.TermGapFiller.tryFillGap;
 import static org.agrona.UnsafeAccess.UNSAFE;
 
 class PublicationImagePadding1
@@ -558,7 +558,7 @@ public class PublicationImage
                 else
                 {
                     final UnsafeBuffer termBuffer = termBuffers[indexByTerm(initialTermId, termId)];
-                    if (tryFill(rawLog.logMetaData(), termBuffer, termOffset, length, termId))
+                    if (tryFillGap(rawLog.logMetaData(), termBuffer, termOffset, length, termId))
                     {
                         lossGapFills.orderedIncrement();
                     }

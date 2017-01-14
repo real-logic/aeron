@@ -53,7 +53,7 @@ public class TermGapFillerTest
         final int gapOffset = 0;
         final int gapLength = 64;
 
-        assertTrue(TermGapFiller.tryFill(metaDataBuffer, termBuffer, gapOffset, gapLength, TERM_ID));
+        assertTrue(TermGapFiller.tryFillGap(metaDataBuffer, termBuffer, gapOffset, gapLength, TERM_ID));
 
         assertThat(dataFlyweight.frameLength(), is(gapLength));
         assertThat(dataFlyweight.termOffset(), is(gapOffset));
@@ -71,7 +71,7 @@ public class TermGapFillerTest
 
         dataFlyweight.frameLength(32);
 
-        assertFalse(TermGapFiller.tryFill(metaDataBuffer, termBuffer, gapOffset, gapLength, TERM_ID));
+        assertFalse(TermGapFiller.tryFillGap(metaDataBuffer, termBuffer, gapOffset, gapLength, TERM_ID));
     }
 
     @Test
@@ -88,7 +88,7 @@ public class TermGapFillerTest
             .frameLength(gapOffset);
         dataFlyweight.setMemory(0, gapOffset - DataHeaderFlyweight.HEADER_LENGTH, (byte)'x');
 
-        assertTrue(TermGapFiller.tryFill(metaDataBuffer, termBuffer, gapOffset, gapLength, TERM_ID));
+        assertTrue(TermGapFiller.tryFillGap(metaDataBuffer, termBuffer, gapOffset, gapLength, TERM_ID));
 
         dataFlyweight.wrap(termBuffer, gapOffset, termBuffer.capacity() - gapOffset);
         assertThat(dataFlyweight.frameLength(), is(gapLength));
@@ -125,7 +125,7 @@ public class TermGapFillerTest
             .flags(UNFRAGMENTED)
             .frameLength(64);
 
-        assertTrue(TermGapFiller.tryFill(metaDataBuffer, termBuffer, gapOffset, gapLength, TERM_ID));
+        assertTrue(TermGapFiller.tryFillGap(metaDataBuffer, termBuffer, gapOffset, gapLength, TERM_ID));
 
         dataFlyweight.wrap(termBuffer, gapOffset, termBuffer.capacity() - gapOffset);
         assertThat(dataFlyweight.frameLength(), is(gapLength));
@@ -150,7 +150,7 @@ public class TermGapFillerTest
             .frameLength(termBuffer.capacity() - gapOffset);
         dataFlyweight.setMemory(0, gapOffset - DataHeaderFlyweight.HEADER_LENGTH, (byte)'x');
 
-        assertTrue(TermGapFiller.tryFill(metaDataBuffer, termBuffer, gapOffset, gapLength, TERM_ID));
+        assertTrue(TermGapFiller.tryFillGap(metaDataBuffer, termBuffer, gapOffset, gapLength, TERM_ID));
 
         dataFlyweight.wrap(termBuffer, gapOffset, termBuffer.capacity() - gapOffset);
         assertThat(dataFlyweight.frameLength(), is(gapLength));

@@ -558,7 +558,7 @@ public class PublicationImage
                 else
                 {
                     final UnsafeBuffer termBuffer = termBuffers[indexByTerm(initialTermId, termId)];
-                    if (tryFillGap(rawLog.logMetaData(), termBuffer, termOffset, length, termId))
+                    if (tryFillGap(rawLog.logMetaData(), termBuffer, termId, termOffset, length))
                     {
                         lossGapFills.orderedIncrement();
                     }

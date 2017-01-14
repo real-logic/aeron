@@ -33,17 +33,17 @@ public class TermGapFiller
      *
      * @param logMetaDataBuffer containing the default headers
      * @param termBuffer        to gap fill
+     * @param termId            for the current term.
      * @param gapOffset         to fill from
      * @param gapLength         to length of the gap.
-     * @param termId            for the current term.
      * @return true if the gap has been filled with a padding record or false if data found.
      */
     public static boolean tryFillGap(
         final UnsafeBuffer logMetaDataBuffer,
         final UnsafeBuffer termBuffer,
+        final int termId,
         final int gapOffset,
-        final int gapLength,
-        final int termId)
+        final int gapLength)
     {
         int offset = (gapOffset + gapLength) - FRAME_ALIGNMENT;
 

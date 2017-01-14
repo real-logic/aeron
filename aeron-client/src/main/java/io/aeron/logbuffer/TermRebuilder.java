@@ -28,6 +28,8 @@ public class TermRebuilder
     /**
      * Insert a packet of frames into the log at the appropriate termOffset as indicated by the term termOffset header.
      *
+     * If the packet has already been inserted then this is a noop.
+     *
      * @param termBuffer into which the packet should be inserted.
      * @param termOffset in the term at which the packet should be inserted.
      * @param packet     containing a sequence of frames.
@@ -35,12 +37,15 @@ public class TermRebuilder
      */
     public static void insert(final UnsafeBuffer termBuffer, final int termOffset, final UnsafeBuffer packet, final int length)
     {
-        termBuffer.putBytes(termOffset + HEADER_LENGTH, packet, HEADER_LENGTH, length - HEADER_LENGTH);
+        if (0 == termBuffer.getInt(termOffset))
+        {
+            termBuffer.putBytes(termOffset + HEADER_LENGTH, packet, HEADER_LENGTH, length - HEADER_LENGTH);
 
-        termBuffer.putLong(termOffset + 24, packet.getLong(24));
-        termBuffer.putLong(termOffset + 16, packet.getLong(16));
-        termBuffer.putLong(termOffset + 8, packet.getLong(8));
+            termBuffer.putLong(termOffset + 24, packet.getLong(24));
+            termBuffer.putLong(termOffset + 16, packet.getLong(16));
+            termBuffer.putLong(termOffset + 8, packet.getLong(8));
 
-        termBuffer.putLongOrdered(termOffset, packet.getLong(0));
+            termBuffer.putLongOrdered(termOffset, packet.getLong(0));
+        }
     }
 }

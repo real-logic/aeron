@@ -229,15 +229,15 @@ public class DriverConductor implements Agent
                 sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, registrationId);
 
             final CongestionControl congestionControl = context.congestionControlSupplier().newInstance(
-                    registrationId,
-                    udpChannel,
-                    streamId,
-                    sessionId,
-                    termBufferLength,
-                    senderMtuLength,
-                    nanoClock,
-                    context,
-                    countersManager);
+                registrationId,
+                udpChannel,
+                streamId,
+                sessionId,
+                termBufferLength,
+                senderMtuLength,
+                nanoClock,
+                context,
+                countersManager);
 
             final PublicationImage image = new PublicationImage(
                 registrationId,
@@ -259,7 +259,8 @@ public class DriverConductor implements Agent
                 context.systemCounters(),
                 sourceAddress,
                 congestionControl,
-                context.lossReport());
+                context.lossReport(),
+                true);
 
             subscriberPositions.forEach((subscriberPosition) -> subscriberPosition.addImage(image));
 
@@ -773,8 +774,8 @@ public class DriverConductor implements Agent
             .stream()
             .filter((image) ->
                 image.matches(channelEndpoint, streamId) &&
-                (image.subscriberCount() > 0) &&
-                (image.status() == PublicationImage.Status.ACTIVE))
+                    (image.subscriberCount() > 0) &&
+                    (image.status() == PublicationImage.Status.ACTIVE))
             .forEach(
                 (image) ->
                 {

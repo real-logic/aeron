@@ -203,7 +203,8 @@ public class ReceiverTest
             mockSystemCounters,
             SOURCE_ADDRESS,
             congestionControl,
-            lossReport);
+            lossReport,
+            true);
 
         final int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -284,7 +285,8 @@ public class ReceiverTest
                         mockSystemCounters,
                         SOURCE_ADDRESS,
                         congestionControl,
-                        lossReport));
+                        lossReport,
+                        true));
             });
 
         assertThat(commandsRead, is(1));
@@ -351,7 +353,8 @@ public class ReceiverTest
                         mockSystemCounters,
                         SOURCE_ADDRESS,
                         congestionControl,
-                        lossReport));
+                        lossReport,
+                        true));
             });
 
         assertThat(commandsRead, is(1));
@@ -421,7 +424,8 @@ public class ReceiverTest
                         mockSystemCounters,
                         SOURCE_ADDRESS,
                         congestionControl,
-                        lossReport));
+                        lossReport,
+                        true));
             });
 
         assertThat(commandsRead, is(1));
@@ -495,7 +499,8 @@ public class ReceiverTest
                         mockSystemCounters,
                         SOURCE_ADDRESS,
                         congestionControl,
-                        lossReport));
+                        lossReport,
+                        true));
             });
 
         assertThat(commandsRead, is(1));

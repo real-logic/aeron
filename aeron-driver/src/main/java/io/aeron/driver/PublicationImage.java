@@ -38,6 +38,7 @@ import static io.aeron.driver.LossDetector.rebuildOffset;
 import static io.aeron.driver.PublicationImage.Status.ACTIVE;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
+import static io.aeron.logbuffer.TermGapFiller.tryFill;
 import static org.agrona.UnsafeAccess.UNSAFE;
 
 class PublicationImagePadding1
@@ -104,6 +105,7 @@ public class PublicationImage
     private final int positionBitsToShift;
     private final int termLengthMask;
     private final int initialTermId;
+    private final boolean isReliable;
     private boolean reachedEndOfLife = false;
 
     private volatile PublicationImage.Status status = PublicationImage.Status.INIT;
@@ -123,6 +125,7 @@ public class PublicationImage
     private final AtomicCounter nakMessagesSent;
     private final AtomicCounter flowControlUnderRuns;
     private final AtomicCounter flowControlOverRuns;
+    private final AtomicCounter lossGapFills;
     private LossReport lossReport;
     private LossReport.ReportEntry reportEntry;
     private final EpochClock epochClock;
@@ -148,7 +151,8 @@ public class PublicationImage
         final SystemCounters systemCounters,
         final InetSocketAddress sourceAddress,
         final CongestionControl congestionControl,
-        final LossReport lossReport)
+        final LossReport lossReport,
+        final boolean isReliable)
     {
         this.correlationId = correlationId;
         this.imageLivenessTimeoutNs = imageLivenessTimeoutNs;
@@ -164,12 +168,14 @@ public class PublicationImage
         this.initialTermId = initialTermId;
         this.congestionControl = congestionControl;
         this.lossReport = lossReport;
+        this.isReliable = isReliable;
 
         heartbeatsReceived = systemCounters.get(HEARTBEATS_RECEIVED);
         statusMessagesSent = systemCounters.get(STATUS_MESSAGES_SENT);
         nakMessagesSent = systemCounters.get(NAK_MESSAGES_SENT);
         flowControlUnderRuns = systemCounters.get(FLOW_CONTROL_UNDER_RUNS);
         flowControlOverRuns = systemCounters.get(FLOW_CONTROL_OVER_RUNS);
+        lossGapFills = systemCounters.get(LOSS_GAP_FILLS);
 
         this.nanoClock = nanoClock;
         this.epochClock = epochClock;
@@ -544,8 +550,19 @@ public class PublicationImage
 
             if (changeNumber == beginLossChange)
             {
-                channelEndpoint.sendNakMessage(controlAddress, sessionId, streamId, termId, termOffset, length);
-                nakMessagesSent.orderedIncrement();
+                if (isReliable)
+                {
+                    channelEndpoint.sendNakMessage(controlAddress, sessionId, streamId, termId, termOffset, length);
+                    nakMessagesSent.orderedIncrement();
+                }
+                else
+                {
+                    final UnsafeBuffer termBuffer = termBuffers[indexByTerm(initialTermId, termId)];
+                    if (tryFill(rawLog.logMetaData(), termBuffer, termOffset, length, termId))
+                    {
+                        lossGapFills.orderedIncrement();
+                    }
+                }
 
                 lastLossChangeNumber = changeNumber;
                 workCount = 1;

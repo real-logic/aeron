@@ -826,15 +826,12 @@ public class DriverConductor implements Agent
 
         clientProxy.operationSucceeded(registrationId);
 
-        final List<SubscriberPosition> subscriberPositions = new ArrayList<>();
-        subscriberPositions.add(new SubscriberPosition(subscriptionLink, position));
-
         clientProxy.onAvailableImage(
             publication.correlationId(),
             streamId,
             sessionId,
             publication.rawLog().logFileName(),
-            subscriberPositions,
+            Collections.singletonList(new SubscriberPosition(subscriptionLink, position)),
             IPC_CHANNEL);
     }
 

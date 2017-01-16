@@ -343,10 +343,14 @@ public class DriverConductor implements Agent
 
     void cleanupImage(final PublicationImage image)
     {
-        subscriptionLinks
-            .stream()
-            .filter((link) -> image.matches(link.channelEndpoint(), link.streamId()))
-            .forEach((link) -> link.removeImage(image));
+        for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
+        {
+            final SubscriptionLink link = subscriptionLinks.get(i);
+            if (image.matches(link.channelEndpoint(), link.streamId()))
+            {
+                link.removeImage(image);
+            }
+        }
     }
 
     private List<SubscriberPosition> listSubscriberPositions(

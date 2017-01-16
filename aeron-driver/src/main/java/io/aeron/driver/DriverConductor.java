@@ -333,11 +333,7 @@ public class DriverConductor implements Agent
 
     void imageTransitionToLinger(final PublicationImage image)
     {
-        clientProxy.onUnavailableImage(
-            image.correlationId(),
-            image.streamId(),
-            image.channelUriString());
-
+        clientProxy.onUnavailableImage(image.correlationId(), image.streamId(), image.channelUriString());
         receiverProxy.removeCoolDown(image.channelEndpoint(), image.sessionId(), image.streamId());
     }
 

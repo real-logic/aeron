@@ -48,6 +48,7 @@ import java.util.function.Consumer;
 
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.driver.Configuration.*;
+import static io.aeron.driver.PublicationImage.Status.ACTIVE;
 import static io.aeron.driver.status.SystemCounterDescriptor.CLIENT_KEEP_ALIVES;
 import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
 import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_COMMANDS;
@@ -770,33 +771,40 @@ public class DriverConductor implements Agent
         subscriptionLinks.add(subscription);
         clientProxy.operationSucceeded(registrationId);
 
-        publicationImages
-            .stream()
-            .filter((image) ->
-                image.matches(channelEndpoint, streamId) &&
-                    (image.subscriberCount() > 0) &&
-                    (image.status() == PublicationImage.Status.ACTIVE))
-            .forEach(
-                (image) ->
-                {
-                    final long rebuildPosition = image.rebuildPosition();
-                    final int sessionId = image.sessionId();
-                    final Position position = SubscriberPos.allocate(
-                        countersManager, registrationId, sessionId, streamId, channel, rebuildPosition);
+        linkMatchingImages(channel, streamId, registrationId, channelEndpoint, subscription);
+    }
 
-                    position.setOrdered(rebuildPosition);
+    private void linkMatchingImages(
+        final String channel,
+        final int streamId,
+        final long registrationId,
+        final ReceiveChannelEndpoint channelEndpoint,
+        final SubscriptionLink subscription)
+    {
+        for (int i = 0, size = publicationImages.size(); i < size; i++)
+        {
+            final PublicationImage image = publicationImages.get(i);
+            if (image.matches(channelEndpoint, streamId) && image.subscriberCount() > 0 && image.status() == ACTIVE)
+            {
+                final long rebuildPosition = image.rebuildPosition();
+                final int sessionId = image.sessionId();
+                final Position position = SubscriberPos.allocate(
+                    countersManager, registrationId, sessionId, streamId, channel, rebuildPosition);
 
-                    image.addSubscriber(position);
-                    subscription.addImage(image, position);
+                position.setOrdered(rebuildPosition);
 
-                    clientProxy.onAvailableImage(
-                        image.correlationId(),
-                        streamId,
-                        sessionId,
-                        image.rawLog().logFileName(),
-                        Collections.singletonList(new SubscriberPosition(subscription, position)),
-                        generateSourceIdentity(image.sourceAddress()));
-                });
+                image.addSubscriber(position);
+                subscription.addImage(image, position);
+
+                clientProxy.onAvailableImage(
+                    image.correlationId(),
+                    streamId,
+                    sessionId,
+                    image.rawLog().logFileName(),
+                    Collections.singletonList(new SubscriberPosition(subscription, position)),
+                    generateSourceIdentity(image.sourceAddress()));
+            }
+        }
     }
 
     private void onAddDirectSubscription(

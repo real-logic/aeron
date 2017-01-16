@@ -108,6 +108,7 @@ public class NetworkPublication
     private final RttMeasurementFlyweight rttMeasurementHeader;
     private final FlowControl flowControl;
     private final NanoClock nanoClock;
+    private final EpochClock epochClock;
     private final RetransmitHandler retransmitHandler;
     private final RawLog rawLog;
     private final AtomicCounter heartbeatsSent;
@@ -136,6 +137,7 @@ public class NetworkPublication
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
         this.nanoClock = nanoClock;
+        this.epochClock = epochClock;
         this.senderPosition = senderPosition;
         this.senderLimit = senderLimit;
         this.flowControl = flowControl;
@@ -358,7 +360,8 @@ public class NetworkPublication
 
     public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
-        final long now = nanoClock.nanoTime();
+        final long nowInNs = nanoClock.nanoTime();
+        final long nowInMs = epochClock.time();
 
         senderPositionLimit(
             flowControl.onStatusMessage(
@@ -367,8 +370,9 @@ public class NetworkPublication
                 senderLimit.get(),
                 initialTermId,
                 positionBitsToShift,
-                now));
-        LogBufferDescriptor.timeOfLastStatusMessage(rawLog.logMetaData(), now);
+                nowInNs));
+
+        LogBufferDescriptor.timeOfLastStatusMessage(rawLog.logMetaData(), nowInMs);
     }
 
     public void onRttMeasurement(final RttMeasurementFlyweight msg, final InetSocketAddress srcAddress)

@@ -86,8 +86,8 @@ public class PubAndSubTest
     private void launch(final String channel) throws Exception
     {
         context.threadingMode(THREADING_MODE);
-
         driver = MediaDriver.launch(context);
+        publishingAeronContext.publicationConnectionTimeout(1000);
         publishingClient = Aeron.connect(publishingAeronContext);
         subscribingClient = Aeron.connect(subscribingAeronContext);
         publication = publishingClient.addPublication(channel, STREAM_ID);
@@ -760,4 +760,24 @@ public class PubAndSubTest
             eq(frameLength),
             any(Header.class));
     }
+
+    @Theory
+    @Test(timeout = 10000)
+    public void shouldNoticeDroppedSubscriber(final String channel) throws Exception
+    {
+        launch(channel);
+
+        while (!publication.isConnected())
+        {
+            Thread.sleep(1);
+        }
+
+        subscription.close();
+
+        while (publication.isConnected())
+        {
+            Thread.sleep(1);
+        }
+    }
+
 }

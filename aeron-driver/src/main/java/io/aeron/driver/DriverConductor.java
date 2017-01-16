@@ -865,9 +865,6 @@ public class DriverConductor implements Agent
             countersManager, subscriptionLink.registrationId(), sessionId, streamId, channel, spyJoiningPosition);
         position.setOrdered(spyJoiningPosition);
 
-        final List<SubscriberPosition> subscriberPositions = new ArrayList<>();
-        subscriberPositions.add(new SubscriberPosition(subscriptionLink, position));
-
         publication.addSpyPosition(position);
         subscriptionLink.addSpiedPublication(publication, position);
 
@@ -876,7 +873,7 @@ public class DriverConductor implements Agent
             streamId,
             sessionId,
             publication.rawLog().logFileName(),
-            subscriberPositions,
+            Collections.singletonList(new SubscriberPosition(subscriptionLink, position)),
             channel);
     }
 

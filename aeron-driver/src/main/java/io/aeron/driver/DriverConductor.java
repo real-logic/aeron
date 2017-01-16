@@ -841,8 +841,6 @@ public class DriverConductor implements Agent
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
-        final SendChannelEndpoint channelEndpoint = senderChannelEndpoint(udpChannel);
-        final NetworkPublication publication = null == channelEndpoint ? null : channelEndpoint.getPublication(streamId);
         final AeronClient client = getOrAddClient(clientId);
         final SubscriptionLink subscriptionLink = new SubscriptionLink(
             registrationId, udpChannel, streamId, client, context.clientLivenessTimeoutNs());
@@ -851,6 +849,8 @@ public class DriverConductor implements Agent
 
         clientProxy.operationSucceeded(registrationId);
 
+        final SendChannelEndpoint channelEndpoint = senderChannelEndpoint(udpChannel);
+        final NetworkPublication publication = null == channelEndpoint ? null : channelEndpoint.getPublication(streamId);
         if (null != publication)
         {
             linkSpy(publication, subscriptionLink);

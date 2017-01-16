@@ -360,20 +360,22 @@ public class DriverConductor implements Agent
         final String channel,
         final long joiningPosition)
     {
-        return subscriptionLinks
-            .stream()
-            .filter((subscription) -> subscription.matches(channelEndpoint, streamId))
-            .map(
-                (subscription) ->
-                {
-                    final Position position = SubscriberPos.allocate(
-                        countersManager, subscription.registrationId(), sessionId, streamId, channel, joiningPosition);
+        final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
 
-                    position.setOrdered(joiningPosition);
+        for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
+        {
+            final SubscriptionLink link = subscriptionLinks.get(i);
+            if (link.matches(channelEndpoint, streamId))
+            {
+                final Position position = SubscriberPos.allocate(
+                    countersManager, link.registrationId(), sessionId, streamId, channel, joiningPosition);
 
-                    return new SubscriberPosition(subscription, position);
-                })
-            .collect(toList());
+                position.setOrdered(joiningPosition);
+                subscriberPositions.add(new SubscriberPosition(link, position));
+            }
+        }
+
+        return subscriberPositions;
     }
 
     private <T extends DriverManagedResource> void onCheckManagedResources(final ArrayList<T> list, final long time)

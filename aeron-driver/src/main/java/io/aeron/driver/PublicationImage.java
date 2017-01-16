@@ -327,6 +327,16 @@ public class PublicationImage
     }
 
     /**
+     * Is the stream reliable in that is will NAK for loss or will it gap fill?
+     *
+     * @return true if it will attempt to recover loss or false if it will gap fill.
+     */
+    public boolean isReliable()
+    {
+        return isReliable;
+    }
+
+    /**
      * Set status to INACTIVE, but only if currently ACTIVE. Set by {@link Receiver}.
      */
     void ifActiveGoInactive()
@@ -627,13 +637,13 @@ public class PublicationImage
     }
 
     /**
-     * Return number of subscribers to this image.
+     * Is the image in a state to accept new subscriptions?
      *
-     * @return number of subscribers
+     * @return true if accepting new subscriptions.
      */
-    int subscriberCount()
+    boolean isAcceptingSubscriptions()
     {
-        return subscriberPositions.length;
+        return subscriberPositions.length > 0 && status == ACTIVE;
     }
 
     /**

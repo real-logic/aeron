@@ -48,7 +48,6 @@ import java.util.function.Consumer;
 
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.driver.Configuration.*;
-import static io.aeron.driver.PublicationImage.Status.ACTIVE;
 import static io.aeron.driver.status.SystemCounterDescriptor.CLIENT_KEEP_ALIVES;
 import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
 import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_COMMANDS;
@@ -784,7 +783,7 @@ public class DriverConductor implements Agent
         for (int i = 0, size = publicationImages.size(); i < size; i++)
         {
             final PublicationImage image = publicationImages.get(i);
-            if (image.matches(channelEndpoint, streamId) && image.subscriberCount() > 0 && image.status() == ACTIVE)
+            if (image.matches(channelEndpoint, streamId) && image.isAcceptingSubscriptions())
             {
                 final long rebuildPosition = image.rebuildPosition();
                 final int sessionId = image.sessionId();

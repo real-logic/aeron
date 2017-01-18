@@ -119,7 +119,7 @@ class MappedRawLog implements RawLog
 
         if (!logFile.delete())
         {
-            errorLog.record(new IllegalStateException(String.format("could not delete file %s", logFile)));
+            errorLog.record(new IllegalStateException("Unable to delete " + logFile));
         }
     }
 

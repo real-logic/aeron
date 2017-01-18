@@ -177,7 +177,6 @@ public class NetworkPublication
 
     public void close()
     {
-        rawLog.close();
         publisherLimit.close();
         senderPosition.close();
         senderLimit.close();
@@ -185,6 +184,8 @@ public class NetworkPublication
         {
             position.close();
         }
+
+        rawLog.close();
     }
 
     public int send(final long now)

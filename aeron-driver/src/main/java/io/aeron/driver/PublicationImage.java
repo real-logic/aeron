@@ -211,8 +211,8 @@ public class PublicationImage
             position.close();
         }
 
-        rawLog.close();
         congestionControl.close();
+        rawLog.close();
     }
 
     public long correlationId()

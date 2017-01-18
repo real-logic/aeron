@@ -57,7 +57,7 @@ public:
         const exception_handler_t& errorHandler,
         long driverTimeoutMs,
         long resourceLingerTimeoutMs,
-        long interServiceTimeoutNs,
+        long long interServiceTimeoutNs,
         long publicationConnectionTimeoutMs) :
         m_driverProxy(driverProxy),
         m_driverListenerAdapter(broadcastReceiver, *this),

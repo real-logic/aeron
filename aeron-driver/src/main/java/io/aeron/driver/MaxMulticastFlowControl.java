@@ -40,12 +40,11 @@ public class MaxMulticastFlowControl implements FlowControl
         final int positionBitsToShift,
         final long now)
     {
-        final long position =
-            computePosition(
-                flyweight.consumptionTermId(),
-                flyweight.consumptionTermOffset(),
-                positionBitsToShift,
-                initialTermId);
+        final long position = computePosition(
+            flyweight.consumptionTermId(),
+            flyweight.consumptionTermOffset(),
+            positionBitsToShift,
+            initialTermId);
 
         return Math.max(senderLimit, position + flyweight.receiverWindowLength());
     }

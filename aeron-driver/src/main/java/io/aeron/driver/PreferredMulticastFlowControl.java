@@ -58,12 +58,11 @@ public class PreferredMulticastFlowControl implements FlowControl
         final int positionBitsToShift,
         final long now)
     {
-        final long position =
-            computePosition(
-                flyweight.consumptionTermId(),
-                flyweight.consumptionTermOffset(),
-                positionBitsToShift,
-                initialTermId);
+        final long position = computePosition(
+            flyweight.consumptionTermId(),
+            flyweight.consumptionTermOffset(),
+            positionBitsToShift,
+            initialTermId);
 
         final long windowLength = flyweight.receiverWindowLength();
         final long receiverId = flyweight.receiverId();
@@ -71,8 +70,10 @@ public class PreferredMulticastFlowControl implements FlowControl
         boolean isExisting = false;
         long minPosition = Long.MAX_VALUE;
 
-        for (final Receiver receiver : receiverList)
+        final ArrayList<Receiver> receiverList = this.receiverList;
+        for (int i = 0, size = receiverList.size(); i < size; i++)
         {
+            final Receiver receiver = receiverList.get(i);
             if (isFromPreferred && receiverId == receiver.receiverId)
             {
                 receiver.lastPositionPlusWindow = position + windowLength;
@@ -89,7 +90,7 @@ public class PreferredMulticastFlowControl implements FlowControl
             minPosition = Math.min(minPosition, position + windowLength);
         }
 
-        return (receiverList.size() > 0) ?
+        return receiverList.size() > 0 ?
             Math.max(senderLimit, minPosition) :
             Math.max(senderLimit, position + windowLength);
     }
@@ -106,9 +107,8 @@ public class PreferredMulticastFlowControl implements FlowControl
      */
     public long onIdle(final long now, final long senderLimit)
     {
-        final ArrayList<Receiver> receiverList = this.receiverList;
-
         long minPosition = Long.MAX_VALUE;
+        final ArrayList<Receiver> receiverList = this.receiverList;
 
         for (int lastIndex = receiverList.size() - 1, i = lastIndex; i >= 0; i--)
         {
@@ -124,7 +124,7 @@ public class PreferredMulticastFlowControl implements FlowControl
             }
         }
 
-        return (receiverList.size() > 0) ? minPosition : senderLimit;
+        return receiverList.size() > 0 ? minPosition : senderLimit;
     }
 
     public boolean isFromPreferred(final StatusMessageFlyweight sm)
@@ -147,7 +147,7 @@ public class PreferredMulticastFlowControl implements FlowControl
         return result;
     }
 
-    private static class Receiver
+    static class Receiver
     {
         long lastPositionPlusWindow;
         long timeOfLastStatusMessage;

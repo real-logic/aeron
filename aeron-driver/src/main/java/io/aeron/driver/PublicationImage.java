@@ -664,7 +664,7 @@ public class PublicationImage
                 if (isDrained() || time > (timeOfLastStatusChange + imageLivenessTimeoutNs))
                 {
                     status(PublicationImage.Status.LINGER);
-                    conductor.imageTransitionToLinger(this);
+                    conductor.transitionToLinger(this);
                 }
                 break;
 

@@ -61,7 +61,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 
 /**
- * Driver Conductor to take commands from publishers and subscribers as well as determining if loss has occurred.
+ * Driver Conductor that takes commands from publishers and subscribers and orchestrates the media driver.
  */
 public class DriverConductor implements Agent
 {
@@ -221,8 +221,8 @@ public class DriverConductor implements Agent
         final long joiningPosition = computePosition(
             activeTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferLength), initialTermId);
 
-        final List<SubscriberPosition> subscriberPositions = listSubscriberPositions(
-            sessionId, streamId, channelEndpoint, channel, joiningPosition);
+        final List<SubscriberPosition> subscriberPositions = createSubscriberPositions(
+            sessionId, streamId, channelEndpoint, joiningPosition);
 
         if (subscriberPositions.size() > 0)
         {
@@ -261,7 +261,7 @@ public class DriverConductor implements Agent
                 sourceAddress,
                 congestionControl,
                 context.lossReport(),
-                true);
+                subscriberPositions.get(0).subscription().isReliable());
 
             subscriberPositions.forEach((subscriberPosition) -> subscriberPosition.addImage(image));
 
@@ -285,8 +285,6 @@ public class DriverConductor implements Agent
 
     void cleanupPublication(final NetworkPublication publication)
     {
-        final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
-
         if (publication.hasSpies())
         {
             clientProxy.onUnavailableImage(
@@ -296,12 +294,13 @@ public class DriverConductor implements Agent
 
             subscriptionLinks
                 .stream()
-                .filter((link) -> link.matches(channelEndpoint, publication.streamId()))
+                .filter((link) -> link.matches(publication))
                 .forEach(SubscriptionLink::removeSpiedPublication);
         }
 
         senderProxy.removeNetworkPublication(publication);
 
+        final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
         if (0 == channelEndpoint.sessionCount() && !channelEndpoint.isStatusIndicatorClosed())
         {
             channelEndpoint.closeStatusIndicator();
@@ -332,7 +331,7 @@ public class DriverConductor implements Agent
         }
     }
 
-    void imageTransitionToLinger(final PublicationImage image)
+    void transitionToLinger(final PublicationImage image)
     {
         clientProxy.onUnavailableImage(image.correlationId(), image.streamId(), image.channelUriString());
         receiverProxy.removeCoolDown(image.channelEndpoint(), image.sessionId(), image.streamId());
@@ -350,11 +349,10 @@ public class DriverConductor implements Agent
         }
     }
 
-    private List<SubscriberPosition> listSubscriberPositions(
+    private List<SubscriberPosition> createSubscriberPositions(
         final int sessionId,
         final int streamId,
         final ReceiveChannelEndpoint channelEndpoint,
-        final String channel,
         final long joiningPosition)
     {
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
@@ -365,7 +363,7 @@ public class DriverConductor implements Agent
             if (link.matches(channelEndpoint, streamId))
             {
                 final Position position = SubscriberPos.allocate(
-                    countersManager, link.registrationId(), sessionId, streamId, channel, joiningPosition);
+                    countersManager, link.registrationId(), sessionId, streamId, link.channelUri(), joiningPosition);
 
                 position.setOrdered(joiningPosition);
                 subscriberPositions.add(new SubscriberPosition(link, position));
@@ -426,7 +424,11 @@ public class DriverConductor implements Agent
         }
     }
 
-    private void onClientCommand(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
+    private void onClientCommand(
+        final int msgTypeId,
+        final MutableDirectBuffer buffer,
+        final int index,
+        @SuppressWarnings("unused") final int length)
     {
         long correlationId = 0;
 
@@ -514,15 +516,19 @@ public class DriverConductor implements Agent
         catch (final ControlProtocolException ex)
         {
             clientProxy.onError(ex.errorCode(), ex.getMessage(), correlationId);
-            errors.increment();
-            errorLog.record(ex);
+            recordError(ex);
         }
         catch (final Exception ex)
         {
             clientProxy.onError(GENERIC_ERROR, ex.getMessage(), correlationId);
-            errors.increment();
-            errorLog.record(ex);
+            recordError(ex);
         }
+    }
+
+    private void recordError(final Exception ex)
+    {
+        errors.increment();
+        errorLog.record(ex);
     }
 
     private int processTimers(final long now)
@@ -550,7 +556,7 @@ public class DriverConductor implements Agent
         if (null == publication)
         {
             final int termLength = getTermBufferLength(udpChannel.aeronUri(), context.publicationTermBufferLength());
-            final int sessionId = nextSessionId();
+            final int sessionId = nextSessionId++;
             final int initialTermId = BitUtil.generateRandomisedId();
 
             final RetransmitHandler retransmitHandler = new RetransmitHandler(
@@ -584,13 +590,7 @@ public class DriverConductor implements Agent
             channelEndpoint.addPublication(publication);
             networkPublications.add(publication);
             senderProxy.newNetworkPublication(publication);
-
-            final NetworkPublication networkPublication = publication;
-
-            subscriptionLinks
-                .stream()
-                .filter((link) -> link.matches(channelEndpoint, streamId))
-                .forEach((link) -> linkSpy(networkPublication, link));
+            linkSpies(publication);
         }
 
         linkPublication(registrationId, publication, getOrAddClient(clientId));
@@ -601,6 +601,19 @@ public class DriverConductor implements Agent
             publication.sessionId(),
             publication.rawLog().logFileName(),
             publication.publisherLimitId());
+    }
+
+    private void linkSpies(final NetworkPublication publication)
+    {
+        final ArrayList<SubscriptionLink> links = this.subscriptionLinks;
+        for (int i = 0, size = links.size(); i < size; i++)
+        {
+            final SubscriptionLink subscription = links.get(i);
+            if (subscription.matches(publication))
+            {
+                linkSpy(publication, subscription);
+            }
+        }
     }
 
     private static int getTermBufferLength(final AeronUri aeronUri, final int defaultTermLength)
@@ -628,11 +641,6 @@ public class DriverConductor implements Agent
             directPublication.sessionId(),
             directPublication.rawLog().logFileName(),
             directPublication.publisherLimitId());
-    }
-
-    private int nextSessionId()
-    {
-        return nextSessionId++;
     }
 
     private void linkPublication(
@@ -759,8 +767,13 @@ public class DriverConductor implements Agent
     private void onAddNetworkSubscription(
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
-        final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(UdpChannel.parse(channel));
+        final UdpChannel udpChannel = UdpChannel.parse(channel);
+        final String reliableParam = udpChannel.aeronUri().get("reliable", "true");
+        final boolean isReliable = !"false".equals(reliableParam);
 
+        checkForClashingSubscription(isReliable, udpChannel, streamId);
+
+        final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(udpChannel);
         final int refCount = channelEndpoint.incRefToStream(streamId);
         if (1 == refCount)
         {
@@ -769,16 +782,34 @@ public class DriverConductor implements Agent
 
         final AeronClient client = getOrAddClient(clientId);
         final SubscriptionLink subscription = new SubscriptionLink(
-            registrationId, channelEndpoint, streamId, client, context.clientLivenessTimeoutNs());
+            registrationId, channelEndpoint, streamId, channel, client, context.clientLivenessTimeoutNs(), isReliable);
 
         subscriptionLinks.add(subscription);
         clientProxy.operationSucceeded(registrationId);
 
-        linkMatchingImages(channel, streamId, registrationId, channelEndpoint, subscription);
+        linkMatchingImages(streamId, registrationId, channelEndpoint, subscription);
+    }
+
+    private void checkForClashingSubscription(final boolean isReliable, final UdpChannel udpChannel, final int streamId)
+    {
+        final ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
+        if (null == channelEndpoint)
+        {
+            return;
+        }
+
+        final ArrayList<SubscriptionLink> existingLinks = subscriptionLinks;
+        for (int i = 0, size = existingLinks.size(); i < size; i++)
+        {
+            final SubscriptionLink link = existingLinks.get(i);
+            if (link.matches(channelEndpoint, streamId) && isReliable != link.isReliable())
+            {
+                throw new IllegalStateException("Settings do not match existing subscriptions: reliable=" + isReliable);
+            }
+        }
     }
 
     private void linkMatchingImages(
-        final String channel,
         final int streamId,
         final long registrationId,
         final ReceiveChannelEndpoint channelEndpoint,
@@ -792,7 +823,7 @@ public class DriverConductor implements Agent
                 final long rebuildPosition = image.rebuildPosition();
                 final int sessionId = image.sessionId();
                 final Position position = SubscriberPos.allocate(
-                    countersManager, registrationId, sessionId, streamId, channel, rebuildPosition);
+                    countersManager, registrationId, sessionId, streamId, subscription.channelUri(), rebuildPosition);
 
                 position.setOrdered(rebuildPosition);
 
@@ -819,11 +850,11 @@ public class DriverConductor implements Agent
         final long joiningPosition = publication.joiningPosition();
         final int sessionId = publication.sessionId();
         final Position position = SubscriberPos.allocate(
-            countersManager, registrationId, sessionId, streamId, IPC_CHANNEL, joiningPosition);
+            countersManager, registrationId, sessionId, streamId, channel, joiningPosition);
         position.setOrdered(joiningPosition);
 
         final SubscriptionLink subscriptionLink = new SubscriptionLink(
-            registrationId, streamId, publication, position, client, context.clientLivenessTimeoutNs());
+            registrationId, streamId, channel, publication, position, client, context.clientLivenessTimeoutNs());
 
         subscriptionLinks.add(subscriptionLink);
         publication.addSubscription(position);
@@ -836,7 +867,7 @@ public class DriverConductor implements Agent
             sessionId,
             publication.rawLog().logFileName(),
             Collections.singletonList(new SubscriberPosition(subscriptionLink, position)),
-            IPC_CHANNEL);
+            channel);
     }
 
     private void onAddSpySubscription(
@@ -845,7 +876,7 @@ public class DriverConductor implements Agent
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final AeronClient client = getOrAddClient(clientId);
         final SubscriptionLink subscriptionLink = new SubscriptionLink(
-            registrationId, udpChannel, streamId, client, context.clientLivenessTimeoutNs());
+            registrationId, udpChannel, streamId, channel, client, context.clientLivenessTimeoutNs());
 
         subscriptionLinks.add(subscriptionLink);
 
@@ -859,26 +890,25 @@ public class DriverConductor implements Agent
         }
     }
 
-    private void linkSpy(final NetworkPublication publication, final SubscriptionLink subscriptionLink)
+    private void linkSpy(final NetworkPublication publication, final SubscriptionLink link)
     {
         final long spyJoiningPosition = publication.spyJoiningPosition();
         final int streamId = publication.streamId();
         final int sessionId = publication.sessionId();
-        final String channel = subscriptionLink.spiedChannel().originalUriString();
         final Position position = SubscriberPos.allocate(
-            countersManager, subscriptionLink.registrationId(), sessionId, streamId, channel, spyJoiningPosition);
+            countersManager, link.registrationId(), sessionId, streamId, link.channelUri(), spyJoiningPosition);
         position.setOrdered(spyJoiningPosition);
 
         publication.addSpyPosition(position);
-        subscriptionLink.addSpiedPublication(publication, position);
+        link.addSpiedPublication(publication, position);
 
         clientProxy.onAvailableImage(
             correlationId(publication.rawLog().logMetaData()),
             streamId,
             sessionId,
             publication.rawLog().logFileName(),
-            Collections.singletonList(new SubscriberPosition(subscriptionLink, position)),
-            channel);
+            Collections.singletonList(new SubscriberPosition(link, position)),
+            link.channelUri());
     }
 
     private ReceiveChannelEndpoint getOrCreateReceiveChannelEndpoint(final UdpChannel udpChannel)
@@ -970,12 +1000,13 @@ public class DriverConductor implements Agent
         {
             final int termLength = getTermBufferLength(AeronUri.parse(channel), context.ipcTermBufferLength());
             final long registrationId = nextImageCorrelationId();
-            final int sessionId = nextSessionId();
+            final int sessionId = nextSessionId++;
             final int initialTermId = BitUtil.generateRandomisedId();
-            final RawLog rawLog = newDirectPublicationLog(termLength, sessionId, streamId, initialTermId, registrationId);
+            final RawLog rawLog = newDirectPublicationLog(
+                termLength, sessionId, streamId, initialTermId, registrationId);
 
             final Position publisherLimit = PublisherLimit.allocate(
-                countersManager, registrationId, sessionId, streamId, IPC_CHANNEL);
+                countersManager, registrationId, sessionId, streamId, channel);
 
             publication = new DirectPublication(registrationId, sessionId, streamId, publisherLimit, rawLog);
 

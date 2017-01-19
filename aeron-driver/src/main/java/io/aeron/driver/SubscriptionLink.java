@@ -16,7 +16,6 @@
 package io.aeron.driver;
 
 import io.aeron.driver.media.ReceiveChannelEndpoint;
-import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.status.ReadablePosition;
 
@@ -29,14 +28,16 @@ import java.util.Map;
 public class SubscriptionLink implements DriverManagedResource
 {
     private final long registrationId;
+    private final long clientLivenessTimeoutNs;
     private final int streamId;
+    private final boolean isReliable;
+    private final String channelUri;
     private final ReceiveChannelEndpoint channelEndpoint;
     private final AeronClient aeronClient;
     private final Map<PublicationImage, ReadablePosition> positionByImageMap = new IdentityHashMap<>();
     private final DirectPublication directPublication;
     private final ReadablePosition directPublicationSubscriberPosition;
     private final UdpChannel spiedChannel;
-    private final long clientLivenessTimeoutNs;
 
     private NetworkPublication spiedPublication = null;
     private ReadablePosition spiedPosition = null;
@@ -47,22 +48,27 @@ public class SubscriptionLink implements DriverManagedResource
         final long registrationId,
         final ReceiveChannelEndpoint channelEndpoint,
         final int streamId,
+        final String channelUri,
         final AeronClient aeronClient,
-        long clientLivenessTimeoutNs)
+        long clientLivenessTimeoutNs,
+        final boolean isReliable)
     {
         this.registrationId = registrationId;
         this.channelEndpoint = channelEndpoint;
         this.streamId = streamId;
+        this.channelUri = channelUri;
         this.aeronClient = aeronClient;
         this.directPublication = null;
         this.directPublicationSubscriberPosition = null;
         this.spiedChannel = null;
         this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
+        this.isReliable = isReliable;
     }
 
     public SubscriptionLink(
         final long registrationId,
         final int streamId,
+        final String channelUri,
         final DirectPublication directPublication,
         final ReadablePosition subscriberPosition,
         final AeronClient aeronClient,
@@ -71,29 +77,34 @@ public class SubscriptionLink implements DriverManagedResource
         this.registrationId = registrationId;
         this.channelEndpoint = null; // will prevent matches between PublicationImages and DirectPublications
         this.streamId = streamId;
+        this.channelUri = channelUri;
         this.aeronClient = aeronClient;
         this.directPublication = directPublication;
         directPublication.incRef();
         this.directPublicationSubscriberPosition = subscriberPosition;
         this.spiedChannel = null;
         this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
+        this.isReliable = true;
     }
 
     public SubscriptionLink(
         final long registrationId,
         final UdpChannel spiedChannel,
         final int streamId,
+        final String channelUri,
         final AeronClient aeronClient,
         long clientLivenessTimeoutNs)
     {
         this.registrationId = registrationId;
         this.channelEndpoint = null;
         this.streamId = streamId;
+        this.channelUri = channelUri;
         this.aeronClient = aeronClient;
         this.directPublication = null;
         this.directPublicationSubscriberPosition = null;
         this.spiedChannel = spiedChannel;
         this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
+        this.isReliable = true;
     }
 
     public long registrationId()
@@ -111,9 +122,14 @@ public class SubscriptionLink implements DriverManagedResource
         return streamId;
     }
 
-    public UdpChannel spiedChannel()
+    public String channelUri()
     {
-        return spiedChannel;
+        return channelUri;
+    }
+
+    public boolean isReliable()
+    {
+        return isReliable;
     }
 
     public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
@@ -121,15 +137,14 @@ public class SubscriptionLink implements DriverManagedResource
         return channelEndpoint == this.channelEndpoint && streamId == this.streamId;
     }
 
-    public boolean matches(final SendChannelEndpoint channelEndpoint, final int streamId)
+    public boolean matches(final NetworkPublication publication)
     {
         boolean result = false;
 
         if (null != spiedChannel)
         {
-            result =
-                channelEndpoint.udpChannel().canonicalForm().equals(spiedChannel.canonicalForm()) &&
-                    streamId == this.streamId();
+            result = streamId == publication.streamId() &&
+                publication.sendChannelEndpoint().udpChannel().canonicalForm().equals(spiedChannel.canonicalForm());
         }
 
         return result;

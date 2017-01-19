@@ -377,7 +377,7 @@ public class DriverConductor implements Agent
 
     private <T extends DriverManagedResource> void onCheckManagedResources(final ArrayList<T> list, final long time)
     {
-        for (int lastIndex = list.size() - 1, i= lastIndex; i >= 0; i--)
+        for (int lastIndex = list.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final DriverManagedResource resource = list.get(i);
 

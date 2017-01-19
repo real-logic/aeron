@@ -31,7 +31,8 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *     <li>{@link PublisherLimit}: Limit for flow controlling a {@link io.aeron.Publication} steam.</li>
  *     <li>{@link SenderPos}: Highest position on a {@link io.aeron.Publication} stream sent to the media.</li>
  *     <li>{@link SenderLimit}: Limit for flow controlling a {@link io.aeron.driver.Sender} of a stream.</li>
- *     <li>{@link ReceiverHwm}: Highest position by the Receiver when rebuilding an {@link io.aeron.Image} of a stream.</li>
+ *     <li>{@link ReceiverHwm}: Highest position observed by the Receiver when rebuilding an {@link io.aeron.Image} of a stream.</li>
+ *     <li>{@link ReceiverPos}: Highest position rebuilt by the Receiver when rebuilding an {@link io.aeron.Image} of a stream.</li>
  *     <li>{@link SubscriberPos}: Consumption position in an {@link io.aeron.Image} of a stream for each Subscriber.</li>
  * </ul>
  */

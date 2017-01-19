@@ -390,12 +390,14 @@ class ClientConductor implements Agent, DriverListener
 
         if (now > (timeOfLastCheckResources + RESOURCE_TIMEOUT_NS))
         {
-            for (int i = lingeringResources.size() - 1; i >= 0; i--)
+            final ArrayList<ManagedResource> lingeringResources = this.lingeringResources;
+            for (int lastIndex = lingeringResources.size() - 1, i = lastIndex; i >= 0; i--)
             {
                 final ManagedResource resource = lingeringResources.get(i);
                 if (now > (resource.timeOfLastStateChange() + RESOURCE_LINGER_NS))
                 {
-                    lingeringResources.remove(i);
+                    ArrayListUtil.fastUnorderedRemove(lingeringResources, i, lastIndex);
+                    lastIndex--;
                     resource.delete();
                 }
             }

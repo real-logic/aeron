@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.ArrayListUtil;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.BitUtil;
 
@@ -105,14 +106,17 @@ public class PreferredMulticastFlowControl implements FlowControl
      */
     public long onIdle(final long now, final long senderLimit)
     {
+        final ArrayList<Receiver> receiverList = this.receiverList;
+
         long minPosition = Long.MAX_VALUE;
 
-        for (int i = receiverList.size() - 1; i >= 0; i--)
+        for (int lastIndex = receiverList.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final Receiver receiver = receiverList.get(i);
             if (now > (receiver.timeOfLastStatusMessage + RECEIVER_TIMEOUT))
             {
-                receiverList.remove(i);
+                ArrayListUtil.fastUnorderedRemove(receiverList, i, lastIndex);
+                lastIndex--;
             }
             else
             {

@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.ArrayListUtil;
 import io.aeron.driver.cmd.ReceiverCmd;
 import io.aeron.driver.media.DataTransportPoller;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
@@ -60,13 +61,16 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         final int bytesReceived = dataTransportPoller.pollTransports();
 
         final long now = clock.nanoTime();
-        for (int i = publicationImages.size() - 1; i >= 0; i--)
+
+        final ArrayList<PublicationImage> publicationImages = this.publicationImages;
+        for (int lastIndex = publicationImages.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final PublicationImage image = publicationImages.get(i);
             if (!image.checkForActivity(now))
             {
                 image.removeFromDispatcher();
-                publicationImages.remove(i);
+                ArrayListUtil.fastUnorderedRemove(publicationImages, i, lastIndex);
+                lastIndex--;
             }
             else
             {
@@ -130,13 +134,15 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
 
     private void timeoutPendingSetupMessages(final long now)
     {
-        for (int i = pendingSetupMessages.size() - 1; i >= 0; i--)
+        final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = this.pendingSetupMessages;
+        for (int lastIndex = pendingSetupMessages.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final PendingSetupMessageFromSource cmd = pendingSetupMessages.get(i);
 
             if (now > (cmd.timeOfStatusMessage() + PENDING_SETUPS_TIMEOUT_NS))
             {
-                pendingSetupMessages.remove(i);
+                ArrayListUtil.fastUnorderedRemove(pendingSetupMessages, i, lastIndex);
+                lastIndex--;
                 cmd.removeFromDataPacketDispatcher();
             }
         }

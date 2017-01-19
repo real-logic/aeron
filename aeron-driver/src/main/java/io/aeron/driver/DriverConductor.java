@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.ArrayListUtil;
 import io.aeron.CommonContext;
 import io.aeron.driver.buffer.RawLogFactory;
 import io.aeron.command.CorrelatedMessageFlyweight;
@@ -376,7 +377,7 @@ public class DriverConductor implements Agent
 
     private <T extends DriverManagedResource> void onCheckManagedResources(final ArrayList<T> list, final long time)
     {
-        for (int i = list.size() - 1; i >= 0; i--)
+        for (int lastIndex = list.size() - 1, i= lastIndex; i >= 0; i--)
         {
             final DriverManagedResource resource = list.get(i);
 
@@ -384,7 +385,8 @@ public class DriverConductor implements Agent
 
             if (resource.hasReachedEndOfLife())
             {
-                list.remove(i);
+                ArrayListUtil.fastUnorderedRemove(list, i, lastIndex);
+                lastIndex--;
                 resource.delete();
             }
         }
@@ -733,13 +735,13 @@ public class DriverConductor implements Agent
     {
         PublicationLink publicationLink = null;
         final ArrayList<PublicationLink> publicationLinks = this.publicationLinks;
-        for (int i = 0, size = publicationLinks.size(); i < size; i++)
+        for (int i = 0, size = publicationLinks.size(), lastIndex = size - 1; i < size; i++)
         {
             final PublicationLink link = publicationLinks.get(i);
             if (registrationId == link.registrationId())
             {
                 publicationLink = link;
-                publicationLinks.remove(i);
+                ArrayListUtil.fastUnorderedRemove(publicationLinks, i, lastIndex);
                 break;
             }
         }
@@ -1028,13 +1030,13 @@ public class DriverConductor implements Agent
     {
         SubscriptionLink subscriptionLink = null;
 
-        for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
+        for (int i = 0, size = subscriptionLinks.size(), lastIndex = size - 1; i < size; i++)
         {
             final SubscriptionLink link = subscriptionLinks.get(i);
             if (link.registrationId() == registrationId)
             {
                 subscriptionLink = link;
-                subscriptionLinks.remove(i);
+                ArrayListUtil.fastUnorderedRemove(subscriptionLinks, i, lastIndex);
                 break;
             }
         }

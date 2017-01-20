@@ -25,14 +25,14 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |                         Correlation ID                        |
+ * |                       Correlation ID                          |
  * |                                                               |
  * +---------------------------------------------------------------+
  * |                          Stream ID                            |
  * +---------------------------------------------------------------+
- * |                        Channel Length                         |
+ * |                       Channel Length                          |
  * +---------------------------------------------------------------+
- * |                           Channel                            ...
+ * |                       Channel (ASCII)                        ...
  *...                                                              |
  * +---------------------------------------------------------------+
  */
@@ -67,24 +67,24 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Get the channel field
+     * Get the channel field in ASCII
      *
      * @return channel field
      */
     public String channel()
     {
-        return buffer.getStringUtf8(offset + CHANNEL_OFFSET);
+        return buffer.getStringAscii(offset + CHANNEL_OFFSET);
     }
 
     /**
-     * Set the channel field
+     * Set the channel field in ASCII
      *
      * @param channel field value
      * @return flyweight
      */
     public PublicationMessageFlyweight channel(final String channel)
     {
-        lengthOfChannel = buffer.putStringUtf8(offset + CHANNEL_OFFSET, channel);
+        lengthOfChannel = buffer.putStringAscii(offset + CHANNEL_OFFSET, channel);
 
         return this;
     }

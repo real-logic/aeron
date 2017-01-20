@@ -37,10 +37,10 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                    Publication Limit Offset                   |
  * +---------------------------------------------------------------+
- * |                         Log File Length                       |
+ * |                        Log File Length                        |
  * +---------------------------------------------------------------+
- * |                          Log File Name                      ...
- * ...                                                             |
+ * |                     Log File Name (ASCII)                    ...
+ *...                                                              |
  * +---------------------------------------------------------------+
  */
 public class PublicationBuffersReadyFlyweight
@@ -161,14 +161,25 @@ public class PublicationBuffersReadyFlyweight
         return this;
     }
 
+    /**
+     * Get the log file name in ASCII.
+     *
+     * @return the log file name in ASCII.
+     */
     public String logFileName()
     {
-        return buffer.getStringUtf8(offset + LOGFILE_FIELD_OFFSET);
+        return buffer.getStringAscii(offset + LOGFILE_FIELD_OFFSET);
     }
 
+    /**
+     * Set the log file name in ASCII.
+     *
+     * @param logFileName for the publication buffers.
+     * @return the log file name in ASCII.
+     */
     public PublicationBuffersReadyFlyweight logFileName(final String logFileName)
     {
-        buffer.putStringUtf8(offset + LOGFILE_FIELD_OFFSET, logFileName);
+        buffer.putStringAscii(offset + LOGFILE_FIELD_OFFSET, logFileName);
         return this;
     }
 

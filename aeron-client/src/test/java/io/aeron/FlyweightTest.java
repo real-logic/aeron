@@ -158,15 +158,15 @@ public class FlyweightTest
     }
 
     @Test
-    public void shouldEncodeAndDecodeStringsCorrectly()
+    public void shouldEncodeAndDecodeChannelsCorrectly()
     {
         encodePublication.wrap(aBuff, 0);
 
-        final String example = "abcç̀漢字仮名交じり文";
-        encodePublication.channel(example);
+        final String channel = "aeron:udp?endpoint=localhost:4000";
+        encodePublication.channel(channel);
 
         decodePublication.wrap(aBuff, 0);
 
-        assertThat(decodePublication.channel(), is(example));
+        assertThat(decodePublication.channel(), is(channel));
     }
 }

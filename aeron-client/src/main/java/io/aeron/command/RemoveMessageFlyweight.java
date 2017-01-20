@@ -24,11 +24,11 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |                            Client ID                          |
+ * |                          Client ID                            |
  * +---------------------------------------------------------------+
  * |                    Command Correlation ID                     |
  * +---------------------------------------------------------------+
- * |                         Registration ID                       |
+ * |                       Registration ID                         |
  * +---------------------------------------------------------------+
  */
 public class RemoveMessageFlyweight extends CorrelatedMessageFlyweight
@@ -46,7 +46,7 @@ public class RemoveMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Set registration  id field
+     * Set registration id field
      *
      * @param registrationId field value
      * @return flyweight

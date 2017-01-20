@@ -21,18 +21,19 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 /**
  * Control message for adding or removing a subscription.
  *
- * <p>
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  * |                    Command Correlation ID                     |
  * +---------------------------------------------------------------+
- * |                  Registration Correlation ID                  |
+ * |                 Registration Correlation ID                   |
  * +---------------------------------------------------------------+
- * |                           Stream Id                           |
+ * |                         Stream Id                             |
  * +---------------------------------------------------------------+
- * |       Channel Length         |   Channel                     ...
- * |                                                              ...
+ * |                       Channel Length                          |
+ * +---------------------------------------------------------------+
+ * |                       Channel (ASCII)                        ...
+ *...                                                              |
  * +---------------------------------------------------------------+
  */
 public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
@@ -90,24 +91,24 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * return the channel field
+     * Get the channel field in ASCII
      *
      * @return channel field
      */
     public String channel()
     {
-        return buffer.getStringUtf8(offset + CHANNEL_OFFSET);
+        return buffer.getStringAscii(offset + CHANNEL_OFFSET);
     }
 
     /**
-     * Set channel field
+     * Set channel field in ASCII
      *
      * @param channel field value
      * @return flyweight
      */
     public SubscriptionMessageFlyweight channel(final String channel)
     {
-        lengthOfChannel = buffer.putStringUtf8(offset + CHANNEL_OFFSET, channel);
+        lengthOfChannel = buffer.putStringAscii(offset + CHANNEL_OFFSET, channel);
 
         return this;
     }

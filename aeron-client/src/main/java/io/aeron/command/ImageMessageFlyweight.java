@@ -31,10 +31,10 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
  * +---------------------------------------------------------------+
  * |                          Stream ID                            |
  * +---------------------------------------------------------------+
- * |                        Channel Length                         |
+ * |                       Channel Length                          |
  * +---------------------------------------------------------------+
- * |                           Channel                           ...
- * ...                                                             |
+ * |                       Channel (ASCII)                        ...
+ *...                                                              |
  * +---------------------------------------------------------------+
  */
 public class ImageMessageFlyweight
@@ -107,7 +107,7 @@ public class ImageMessageFlyweight
     }
 
     /**
-     * return channel field
+     * Get the channel field as ASCII
      *
      * @return channel field
      */
@@ -116,18 +116,18 @@ public class ImageMessageFlyweight
         final int length = buffer.getInt(offset + CHANNEL_OFFSET);
         lengthOfChannel = SIZE_OF_INT + length;
 
-        return buffer.getStringUtf8(offset + CHANNEL_OFFSET, length);
+        return buffer.getStringAscii(offset + CHANNEL_OFFSET, length);
     }
 
     /**
-     * set channel field
+     * Set the channel field as ASCII
      *
      * @param channel field value
      * @return flyweight
      */
     public ImageMessageFlyweight channel(final String channel)
     {
-        lengthOfChannel = buffer.putStringUtf8(offset + CHANNEL_OFFSET, channel);
+        lengthOfChannel = buffer.putStringAscii(offset + CHANNEL_OFFSET, channel);
 
         return this;
     }

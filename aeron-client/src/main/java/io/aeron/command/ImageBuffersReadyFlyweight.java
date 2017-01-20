@@ -52,16 +52,16 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * |                                                               |
  * +---------------------------------------------------------------+
  * |                                                              ...
- *...     Up to "Position Indicators Count" entries of this form
+ *...     Up to "Position Indicators Count" entries of this form   |
  * +---------------------------------------------------------------+
  * |                         Log File Length                       |
  * +---------------------------------------------------------------+
- * |                          Log File Name                       ...
+ * |                     Log File Name (ASCII)                    ...
  *...                                                              |
  * +---------------------------------------------------------------+
  * |                     Source identity Length                    |
  * +---------------------------------------------------------------+
- * |                     Source identity Name                     ...
+ * |                    Source identity (ASCII)                   ...
  *...                                                              |
  * +---------------------------------------------------------------+
  */
@@ -237,46 +237,46 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * Return the Log Filename
+     * Return the Log Filename in ASCII
      *
      * @return log filename
      */
     public String logFileName()
     {
-        return buffer.getStringUtf8(offset + logFileNameOffset());
+        return buffer.getStringAscii(offset + logFileNameOffset());
     }
 
     /**
-     * Set the log filename
+     * Set the log filename in ASCII
      *
      * @param logFileName for the image
      * @return flyweight
      */
     public ImageBuffersReadyFlyweight logFileName(final String logFileName)
     {
-        buffer.putStringUtf8(offset + logFileNameOffset(), logFileName);
+        buffer.putStringAscii(offset + logFileNameOffset(), logFileName);
         return this;
     }
 
     /**
-     * Return the source identity string
+     * Return the source identity string in ASCII
      *
      * @return source identity string
      */
     public String sourceIdentity()
     {
-        return buffer.getStringUtf8(offset + sourceIdentityOffset());
+        return buffer.getStringAscii(offset + sourceIdentityOffset());
     }
 
     /**
-     * Set the source identity string
+     * Set the source identity string in ASCII
      *
      * @param value for the source identity
      * @return flyweight
      */
     public ImageBuffersReadyFlyweight sourceIdentity(final String value)
     {
-        buffer.putStringUtf8(offset + sourceIdentityOffset(), value);
+        buffer.putStringAscii(offset + sourceIdentityOffset(), value);
         return this;
     }
 

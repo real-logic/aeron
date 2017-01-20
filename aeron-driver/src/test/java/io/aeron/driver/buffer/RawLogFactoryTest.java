@@ -82,7 +82,7 @@ public class RawLogFactoryTest
             assertThat(termBuffer.getByte(TERM_BUFFER_LENGTH - 1), is((byte)0));
         }
 
-        final UnsafeBuffer metaData = rawLog.logMetaData();
+        final UnsafeBuffer metaData = rawLog.metaData();
 
         assertThat(metaData.capacity(), is(LogBufferDescriptor.LOG_META_DATA_LENGTH));
         assertThat(metaData.getByte(0), is((byte)0));
@@ -109,7 +109,7 @@ public class RawLogFactoryTest
             assertThat(termBuffer.getByte(imageTermBufferMaxLength - 1), is((byte)0));
         }
 
-        final UnsafeBuffer metaData = rawLog.logMetaData();
+        final UnsafeBuffer metaData = rawLog.metaData();
 
         assertThat(metaData.capacity(), is(LogBufferDescriptor.LOG_META_DATA_LENGTH));
         assertThat(metaData.getByte(0), is((byte)0));

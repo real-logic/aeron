@@ -373,7 +373,7 @@ public class NetworkPublication
                 positionBitsToShift,
                 nowInNs));
 
-        LogBufferDescriptor.timeOfLastStatusMessage(rawLog.logMetaData(), nowInMs);
+        LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), nowInMs);
     }
 
     public void onRttMeasurement(final RttMeasurementFlyweight msg, final InetSocketAddress srcAddress)
@@ -582,7 +582,7 @@ public class NetworkPublication
 
     public long producerPosition()
     {
-        final long rawTail = rawTailVolatile(rawLog.logMetaData());
+        final long rawTail = rawTailVolatile(rawLog.metaData());
         final int termOffset = termOffset(rawTail, rawLog.termLength());
 
         return computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);
@@ -595,6 +595,6 @@ public class NetworkPublication
 
     public boolean unblockAtConsumerPosition()
     {
-        return LogBufferUnblocker.unblock(termBuffers, rawLog.logMetaData(), consumerPosition());
+        return LogBufferUnblocker.unblock(termBuffers, rawLog.metaData(), consumerPosition());
     }
 }

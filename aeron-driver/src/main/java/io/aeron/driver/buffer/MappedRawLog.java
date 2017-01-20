@@ -128,7 +128,7 @@ class MappedRawLog implements RawLog
         return termBuffers;
     }
 
-    public UnsafeBuffer logMetaData()
+    public UnsafeBuffer metaData()
     {
         return logMetaDataBuffer;
     }
@@ -157,7 +157,7 @@ class MappedRawLog implements RawLog
         return terms;
     }
 
-    public String logFileName()
+    public String fileName()
     {
         return logFile.getAbsolutePath();
     }

@@ -272,7 +272,7 @@ public class DriverConductor implements Agent
                 registrationId,
                 streamId,
                 sessionId,
-                rawLog.logFileName(),
+                rawLog.fileName(),
                 subscriberPositions,
                 generateSourceIdentity(sourceAddress));
         }
@@ -288,7 +288,7 @@ public class DriverConductor implements Agent
         if (publication.hasSpies())
         {
             clientProxy.onUnavailableImage(
-                correlationId(publication.rawLog().logMetaData()),
+                correlationId(publication.rawLog().metaData()),
                 publication.streamId(),
                 publication.sendChannelEndpoint().originalUriString());
 
@@ -599,7 +599,7 @@ public class DriverConductor implements Agent
             registrationId,
             streamId,
             publication.sessionId(),
-            publication.rawLog().logFileName(),
+            publication.rawLog().fileName(),
             publication.publisherLimitId());
     }
 
@@ -639,7 +639,7 @@ public class DriverConductor implements Agent
             registrationId,
             streamId,
             directPublication.sessionId(),
-            directPublication.rawLog().logFileName(),
+            directPublication.rawLog().fileName(),
             directPublication.publisherLimitId());
     }
 
@@ -671,7 +671,7 @@ public class DriverConductor implements Agent
         final RawLog rawLog = rawLogFactory.newNetworkPublication(
             udpChannel.canonicalForm(), sessionId, streamId, registrationId, termBufferLength);
 
-        final UnsafeBuffer logMetaData = rawLog.logMetaData();
+        final UnsafeBuffer logMetaData = rawLog.metaData();
         storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
         initialiseTailWithTermId(logMetaData, 0, initialTermId);
 
@@ -695,7 +695,7 @@ public class DriverConductor implements Agent
         final RawLog rawLog = rawLogFactory.newNetworkedImage(
             udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferLength);
 
-        final UnsafeBuffer logMetaData = rawLog.logMetaData();
+        final UnsafeBuffer logMetaData = rawLog.metaData();
         storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
         initialTermId(logMetaData, initialTermId);
         mtuLength(logMetaData, senderMtuLength);
@@ -710,7 +710,7 @@ public class DriverConductor implements Agent
     {
         final RawLog rawLog = rawLogFactory.newDirectPublication(sessionId, streamId, registrationId, termBufferLength);
 
-        final UnsafeBuffer logMetaData = rawLog.logMetaData();
+        final UnsafeBuffer logMetaData = rawLog.metaData();
         storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
         initialiseTailWithTermId(logMetaData, 0, initialTermId);
         initialTermId(logMetaData, initialTermId);
@@ -834,7 +834,7 @@ public class DriverConductor implements Agent
                     image.correlationId(),
                     streamId,
                     sessionId,
-                    image.rawLog().logFileName(),
+                    image.rawLog().fileName(),
                     Collections.singletonList(new SubscriberPosition(subscription, position)),
                     generateSourceIdentity(image.sourceAddress()));
             }
@@ -865,7 +865,7 @@ public class DriverConductor implements Agent
             publication.correlationId(),
             streamId,
             sessionId,
-            publication.rawLog().logFileName(),
+            publication.rawLog().fileName(),
             Collections.singletonList(new SubscriberPosition(subscriptionLink, position)),
             channel);
     }
@@ -903,10 +903,10 @@ public class DriverConductor implements Agent
         link.addSpiedPublication(publication, position);
 
         clientProxy.onAvailableImage(
-            correlationId(publication.rawLog().logMetaData()),
+            correlationId(publication.rawLog().metaData()),
             streamId,
             sessionId,
-            publication.rawLog().logFileName(),
+            publication.rawLog().fileName(),
             Collections.singletonList(new SubscriberPosition(link, position)),
             link.channelUri());
     }

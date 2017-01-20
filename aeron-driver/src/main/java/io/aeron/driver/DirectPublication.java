@@ -60,7 +60,7 @@ public class DirectPublication implements DriverManagedResource
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.termBuffers = rawLog.termBuffers();
-        this.initialTermId = initialTermId(rawLog.logMetaData());
+        this.initialTermId = initialTermId(rawLog.metaData());
 
         final int termLength = rawLog.termLength();
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
@@ -132,7 +132,7 @@ public class DirectPublication implements DriverManagedResource
 
         if (0 != subscriberPositions.length)
         {
-            LogBufferDescriptor.timeOfLastStatusMessage(rawLog.logMetaData(), nowInMillis);
+            LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), nowInMillis);
 
             final long proposedLimit = minSubscriberPosition + termWindowLength;
             if (proposedLimit > tripLimit)
@@ -181,7 +181,7 @@ public class DirectPublication implements DriverManagedResource
 
     public long producerPosition()
     {
-        final long rawTail = rawTailVolatile(rawLog.logMetaData());
+        final long rawTail = rawTailVolatile(rawLog.metaData());
         final int termOffset = termOffset(rawTail, rawLog.termLength());
 
         return computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);
@@ -232,6 +232,6 @@ public class DirectPublication implements DriverManagedResource
 
     public boolean unblockAtConsumerPosition()
     {
-        return LogBufferUnblocker.unblock(termBuffers, rawLog.logMetaData(), consumerPosition);
+        return LogBufferUnblocker.unblock(termBuffers, rawLog.metaData(), consumerPosition);
     }
 }

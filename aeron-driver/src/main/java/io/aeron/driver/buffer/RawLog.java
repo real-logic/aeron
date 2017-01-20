@@ -44,7 +44,7 @@ public interface RawLog extends AutoCloseable
      *
      * @return the meta data storage for the overall log.
      */
-    UnsafeBuffer logMetaData();
+    UnsafeBuffer metaData();
 
     /**
      * Slice the underlying buffer to provide an array of term buffers in order.
@@ -58,7 +58,7 @@ public interface RawLog extends AutoCloseable
      *
      * @return the fully qualified file name for the log file.
      */
-    String logFileName();
+    String fileName();
 
     void close();
 }

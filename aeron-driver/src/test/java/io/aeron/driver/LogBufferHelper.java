@@ -48,7 +48,7 @@ public class LogBufferHelper
                 return termBuffers;
             }
 
-            public UnsafeBuffer logMetaData()
+            public UnsafeBuffer metaData()
             {
                 return logMetaData;
             }
@@ -64,7 +64,7 @@ public class LogBufferHelper
                 return terms;
             }
 
-            public String logFileName()
+            public String fileName()
             {
                 return "stream.log";
             }

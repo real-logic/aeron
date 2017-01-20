@@ -117,12 +117,12 @@ public class SenderTest
                 .senderCommandQueue(senderCommandQueue)
                 .nanoClock(() -> currentTimestamp));
 
-        LogBufferDescriptor.initialiseTailWithTermId(rawLog.logMetaData(), 0, INITIAL_TERM_ID);
+        LogBufferDescriptor.initialiseTailWithTermId(rawLog.metaData(), 0, INITIAL_TERM_ID);
 
         termAppenders = new TermAppender[PARTITION_COUNT];
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            termAppenders[i] = new TermAppender(rawLog.termBuffers()[i], rawLog.logMetaData(), i);
+            termAppenders[i] = new TermAppender(rawLog.termBuffers()[i], rawLog.metaData(), i);
         }
 
         publication = new NetworkPublication(

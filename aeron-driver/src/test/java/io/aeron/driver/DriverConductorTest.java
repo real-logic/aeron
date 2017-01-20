@@ -423,7 +423,7 @@ public class DriverConductorTest
         final int termId = 101;
         final int index = LogBufferDescriptor.indexByTerm(termId, termId);
         final RawLog rawLog = publication.rawLog();
-        final TermAppender appender = new TermAppender(rawLog.termBuffers()[index], rawLog.logMetaData(), index);
+        final TermAppender appender = new TermAppender(rawLog.termBuffers()[index], rawLog.metaData(), index);
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[256]);
         final HeaderWriter headerWriter = new HeaderWriter(createDefaultHeader(publication.sessionId(), STREAM_ID_1, termId));
 
@@ -691,7 +691,7 @@ public class DriverConductorTest
         inOrder.verify(mockClientProxy).operationSucceeded(eq(id));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(directPublication.correlationId()), eq(STREAM_ID_1), eq(directPublication.sessionId()),
-            eq(directPublication.rawLog().logFileName()), any(), anyString());
+            eq(directPublication.rawLog().fileName()), any(), anyString());
     }
 
     @Test
@@ -710,7 +710,7 @@ public class DriverConductorTest
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(directPublication.correlationId()), eq(STREAM_ID_1), eq(directPublication.sessionId()),
-            eq(directPublication.rawLog().logFileName()), any(), anyString());
+            eq(directPublication.rawLog().fileName()), any(), anyString());
     }
 
     @Test
@@ -728,7 +728,7 @@ public class DriverConductorTest
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(directPublication.correlationId()), eq(STREAM_ID_1), eq(directPublication.sessionId()),
-            eq(directPublication.rawLog().logFileName()), any(), anyString());
+            eq(directPublication.rawLog().fileName()), any(), anyString());
         inOrder.verify(mockClientProxy).onPublicationReady(eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt());
     }
 
@@ -920,7 +920,7 @@ public class DriverConductorTest
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSpy));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), eq(publication.sessionId()),
-            eq(publication.rawLog().logFileName()), any(), anyString());
+            eq(publication.rawLog().fileName()), any(), anyString());
     }
 
     @Test
@@ -941,7 +941,7 @@ public class DriverConductorTest
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSpy));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), eq(publication.sessionId()),
-            eq(publication.rawLog().logFileName()), any(), anyString());
+            eq(publication.rawLog().fileName()), any(), anyString());
     }
 
     @Test
@@ -1091,6 +1091,6 @@ public class DriverConductorTest
 
     private static long networkPublicationCorrelationId(final NetworkPublication publication)
     {
-        return LogBufferDescriptor.correlationId(publication.rawLog().logMetaData());
+        return LogBufferDescriptor.correlationId(publication.rawLog().metaData());
     }
 }

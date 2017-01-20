@@ -17,6 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.CommonContext;
 import io.aeron.DriverProxy;
+import io.aeron.ErrorCode;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.buffer.RawLogFactory;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
@@ -1069,6 +1070,42 @@ public class DriverConductorTest
             });
 
         verify(receiverProxy, times(1)).closeReceiveChannelEndpoint(any());
+    }
+
+    @Test
+    public void shouldErrorWhenConflictingUnreliableSubscriptionAdded() throws Exception
+    {
+        driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        driverConductor.doWork();
+
+        final long id2 = driverProxy.addSubscription(CHANNEL_4000 + "|reliable=false", STREAM_ID_1);
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onError(any(ErrorCode.class), anyString(), eq(id2));
+    }
+
+    @Test
+    public void shouldErrorWhenConflictingDefaultReliableSubscriptionAdded() throws Exception
+    {
+        driverProxy.addSubscription(CHANNEL_4000 + "|reliable=false", STREAM_ID_1);
+        driverConductor.doWork();
+
+        final long id2 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onError(any(ErrorCode.class), anyString(), eq(id2));
+    }
+
+    @Test
+    public void shouldErrorWhenConflictingReliableSubscriptionAdded() throws Exception
+    {
+        driverProxy.addSubscription(CHANNEL_4000 + "|reliable=false", STREAM_ID_1);
+        driverConductor.doWork();
+
+        final long id2 = driverProxy.addSubscription(CHANNEL_4000 + "|reliable=true", STREAM_ID_1);
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onError(any(ErrorCode.class), anyString(), eq(id2));
     }
 
     private long doWorkUntil(final BooleanSupplier condition) throws Exception

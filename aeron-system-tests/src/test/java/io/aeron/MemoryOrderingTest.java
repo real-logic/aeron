@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.*;
 import org.junit.Test;
@@ -28,16 +29,16 @@ import static org.junit.Assert.fail;
 
 public class MemoryOrderingTest
 {
-    public static final String CHANNEL = "aeron:udp?endpoint=localhost:54325";
-    public static final int STREAM_ID = 1;
-    public static final int FRAGMENT_COUNT_LIMIT = 256;
-    public static final int MESSAGE_LENGTH = 1024 - 32;
-    public static final int TERM_BUFFER_LENGTH = 1024 * 64;
-    public static final int NUM_MESSAGES = 100_000;
-    public static final int BURST_LENGTH = 5;
-    public static final int INTER_BURST_DURATION_NS = 10_000;
+    private static final String CHANNEL = "aeron:udp?endpoint=localhost:54325";
+    private static final int STREAM_ID = 1;
+    private static final int FRAGMENT_COUNT_LIMIT = 256;
+    private static final int MESSAGE_LENGTH = 1024 - DataHeaderFlyweight.HEADER_LENGTH;
+    private static final int TERM_BUFFER_LENGTH = 1024 * 64;
+    private static final int NUM_MESSAGES = 100_000;
+    private static final int BURST_LENGTH = 5;
+    private static final int INTER_BURST_DURATION_NS = 10_000;
 
-    public static volatile String failedMessage = null;
+    private static volatile String failedMessage = null;
 
     @Test(timeout = 10000)
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntact() throws Exception
@@ -96,14 +97,14 @@ public class MemoryOrderingTest
         }
     }
 
-    public static class Subscriber implements Runnable, FragmentHandler
+    static class Subscriber implements Runnable, FragmentHandler
     {
         private final Subscription subscription;
 
         long previousValue = -1;
         int messageNum = 0;
 
-        public Subscriber(final Subscription subscription)
+        Subscriber(final Subscription subscription)
         {
             this.subscription = subscription;
         }

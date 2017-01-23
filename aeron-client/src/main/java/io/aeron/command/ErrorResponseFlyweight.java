@@ -22,7 +22,6 @@ import org.agrona.MutableDirectBuffer;
 /**
  * Control message flyweight for any errors sent from driver to clients
  *
- * <p>
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+

@@ -24,7 +24,7 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 /**
  * A term buffer reader.
- * <p>
+ *
  * <b>Note:</b> Reading from the term is thread safe, but each thread needs its own instance of this class.
  */
 public class TermReader

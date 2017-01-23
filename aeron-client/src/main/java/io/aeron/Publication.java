@@ -29,9 +29,9 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
  * are created via the {@link Aeron#addPublication(String, int)} method, and messages are sent via one of the
  * {@link #offer(DirectBuffer)} methods, or a {@link #tryClaim(int, BufferClaim)} and {@link BufferClaim#commit()}
  * method combination.
- * <p>
+ *
  * The APIs used to send are all non-blocking.
- * <p>
+ *
  * Note: Publication instances are threadsafe and can be shared between publishing threads.
  *
  * @see Aeron#addPublication(String, int)
@@ -353,7 +353,7 @@ public class Publication implements AutoCloseable
     /**
      * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
      * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
-     * <p>
+     *
      * <b>Note:</b> This method can only be used for message lengths less than MTU length minus header.
      *
      * <pre>{@code

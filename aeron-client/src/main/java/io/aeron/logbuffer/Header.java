@@ -195,7 +195,7 @@ public class Header
 
     /**
      * Get the value stored in the reserve space at the end of a data frame header.
-     * <p>
+     *
      * Note: The value is in {@link ByteOrder#LITTLE_ENDIAN} format.
      *
      * @return the value stored in the reserve space at the end of a data frame header.

@@ -107,7 +107,7 @@ public class RetransmitHandler
 
     /**
      * Called to indicate a retransmission is received that may obviate the need to send one ourselves.
-     * <p>
+     *
      * NOTE: Currently only called from unit tests. Would be used for retransmitting from receivers for NAK suppression
      *
      * @param termId     of the data

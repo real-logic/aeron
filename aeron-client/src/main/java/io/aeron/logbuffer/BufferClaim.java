@@ -31,10 +31,10 @@ import static io.aeron.protocol.HeaderFlyweight.TYPE_FIELD_OFFSET;
 
 /**
  * Represents a claimed range in a buffer to be used for recording a message without copy semantics for later commit.
- * <p>
+ *
  * The claimed space is in {@link #buffer()} between {@link #offset()} and {@link #offset()} + {@link #length()}.
  * When the buffer is filled with message data, use {@link #commit()} to make it available to subscribers.
- * <p>
+ *
  * If the claimed space is no longer required it can be aborted by calling {@link #abort()}.
  */
 public class BufferClaim

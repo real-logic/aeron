@@ -41,7 +41,7 @@ ext {
 }
 
 def projectPom = {
-    name = 'Aeron'
+    name = 'aeron'
     packaging = 'pom'
     // optionally artifactId can be defined here
     description = 'Efficient reliable UDP unicast, UDP multicast, and IPC transport protocol.'
@@ -173,7 +173,7 @@ project(':aeron-client') {
     apply plugin: 'osgi'
 
     dependencies {
-        compile 'org.agrona:Agrona:0.9.2-SNAPSHOT'
+        compile 'org.agrona:agrona:0.9.2-SNAPSHOT'
     }
 
     uploadArchives {
@@ -390,7 +390,7 @@ project(':aeron-agent') {
         dependencies {
             exclude(project(':aeron-client'))
             exclude(project(':aeron-driver'))
-            exclude(dependency('org.agrona:Agrona'))
+            exclude(dependency('org.agrona:agrona'))
         }
     }
 

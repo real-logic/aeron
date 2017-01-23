@@ -49,25 +49,31 @@ public class EventLogAgent
     {
         public void onTransformation(
             final TypeDescription typeDescription,
-            final ClassLoader classLoader,
-            final JavaModule module,
+            final ClassLoader classLoader, JavaModule module,
+            final boolean loaded,
             final DynamicType dynamicType)
         {
             System.out.format("TRANSFORM %s%n", typeDescription.getName());
         }
 
-        public void onIgnored(final TypeDescription typeDescription, final ClassLoader classLoader, final JavaModule module)
+        public void onIgnored(
+            final TypeDescription typeDescription, final ClassLoader classLoader, final JavaModule module, final boolean loaded)
         {
         }
 
         public void onError(
-            final String typeName, final ClassLoader classLoader, final JavaModule module, final Throwable throwable)
+            final String typeName,
+            final ClassLoader classLoader,
+            final JavaModule module,
+            final boolean loaded,
+            final Throwable throwable)
         {
             System.out.format("ERROR %s%n", typeName);
             throwable.printStackTrace(System.out);
         }
 
-        public void onComplete(final String typeName, final ClassLoader classLoader, final JavaModule module)
+        public void onComplete(
+            final String typeName, final ClassLoader classLoader, final JavaModule module, final boolean loaded)
         {
         }
     };
@@ -97,7 +103,7 @@ public class EventLogAgent
                 .disableClassFormatChanges()
                 .with(redefine ? AgentBuilder.RedefinitionStrategy.RETRANSFORMATION : AgentBuilder.RedefinitionStrategy.DISABLED)
                 .type(nameEndsWith("DriverConductor"))
-                .transform((builder, typeDescription, classLoader) ->
+                .transform((builder, typeDescription, classLoader, javaModule) ->
                     builder
                         .visit(to(CmdInterceptor.class).on(named("onClientCommand")))
                         .visit(to(CleanupInterceptor.DriverConductorInterceptor.CleanupImage.class)
@@ -107,24 +113,24 @@ public class EventLogAgent
                         .visit(to(CleanupInterceptor.DriverConductorInterceptor.CleanupSubscriptionLink.class)
                             .on(named("cleanupSubscriptionLink"))))
                 .type(nameEndsWith("ClientProxy"))
-                .transform((builder, typeDescription, classLoader) ->
+                .transform((builder, typeDescription, classLoader, javaModule) ->
                     builder.visit(to(CmdInterceptor.class).on(named("transmit"))))
                 .type(nameEndsWith("SenderProxy"))
-                .transform((builder, typeDescription, classLoader) ->
+                .transform((builder, typeDescription, classLoader, javaModule) ->
                     builder
                         .visit(to(ChannelEndpointInterceptor.SenderProxyInterceptor.RegisterSendChannelEndpoint.class)
                             .on(named("registerSendChannelEndpoint")))
                         .visit(to(ChannelEndpointInterceptor.SenderProxyInterceptor.CloseSendChannelEndpoint.class)
                             .on(named("closeSendChannelEndpoint"))))
                 .type(nameEndsWith("ReceiverProxy"))
-                .transform((builder, typeDescription, classLoader) ->
+                .transform((builder, typeDescription, classLoader, javaModule) ->
                     builder
                         .visit(to(ChannelEndpointInterceptor.ReceiverProxyInterceptor.RegisterReceiveChannelEndpoint.class)
                             .on(named("registerReceiveChannelEndpoint")))
                         .visit(to(ChannelEndpointInterceptor.ReceiverProxyInterceptor.CloseReceiveChannelEndpoint.class)
                             .on(named("closeReceiveChannelEndpoint"))))
                 .type(inheritsAnnotation(EventLog.class))
-                .transform((builder, typeDescription, classLoader) ->
+                .transform((builder, typeDescription, classLoader, javaModule) ->
                     builder
                         .visit(to(ChannelEndpointInterceptor.SendChannelEndpointInterceptor.Presend.class)
                             .on(named("presend")))

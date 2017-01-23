@@ -34,7 +34,7 @@ import static java.lang.System.getProperty;
 
 /**
  * This class provides the Media Driver and client with common configuration for the Aeron directory.
- * <p>
+ *
  * Properties
  * <ul>
  * <li><code>aeron.dir</code>: Use value as directory name for Aeron buffers and status.</li>

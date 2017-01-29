@@ -27,7 +27,7 @@ import static org.agrona.BitUtil.align;
 public class TermBlockScanner
 {
     /**
-     * Scan a term buffer for a block of messages from and offset up to a limit.
+     * Scan a term buffer for a block of messages from an offset up to a limit.
      *
      * @param termBuffer to scan for messages.
      * @param offset     at which the scan should begin.

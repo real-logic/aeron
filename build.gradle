@@ -41,7 +41,7 @@ ext {
 }
 
 def projectPom = {
-    name = 'Aeron'
+    name = 'aeron'
     packaging = 'pom'
     // optionally artifactId can be defined here
     description = 'Efficient reliable UDP unicast, UDP multicast, and IPC transport protocol.'
@@ -113,18 +113,18 @@ subprojects {
     }
 
     dependencies {
-        checkstyle 'com.puppycrawl.tools:checkstyle:7.3'
+        checkstyle 'com.puppycrawl.tools:checkstyle:7.4'
         checkstyle 'com.github.sevntu.checkstyle:sevntu-checks:1.23.0'
 
         testCompile(
             'org.hamcrest:hamcrest-all:1.3',
             'junit:junit:4.12',
-            'org.mockito:mockito-core:2.5.5')
+            'org.mockito:mockito-core:2.6.8')
     }
 
     checkstyle {
         configFile = new File(rootDir, 'config/checkstyle/checkstyle.xml')
-        toolVersion = '7.3'
+        toolVersion = '7.4'
     }
 
     test {
@@ -168,12 +168,13 @@ subprojects {
         sign configurations.shadow
     }
 }
+def agronaVersion = '0.9.2'
 
 project(':aeron-client') {
     apply plugin: 'osgi'
 
     dependencies {
-        compile 'org.agrona:Agrona:0.9.2-SNAPSHOT'
+        compile "org.agrona:agrona:${agronaVersion}"
     }
 
     uploadArchives {
@@ -373,7 +374,7 @@ project(':aeron-agent') {
 
     dependencies {
         compile project(':aeron-client'), project(':aeron-driver')
-        compile "net.bytebuddy:byte-buddy:1.6.0"
+        compile "net.bytebuddy:byte-buddy:1.6.5"
     }
 
     jar {
@@ -390,7 +391,7 @@ project(':aeron-agent') {
         dependencies {
             exclude(project(':aeron-client'))
             exclude(project(':aeron-driver'))
-            exclude(dependency('org.agrona:Agrona'))
+            exclude(dependency('org.agrona:agrona'))
         }
     }
 
@@ -524,11 +525,50 @@ project(':aeron-all') {
     }
 }
 
-project(':aeron-archiver') {
+
+project(':aeron-archiver-codecs') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
+    def generatedDir = file("${buildDir}/generated-src")
+    sourceSets {
+        generated.java.srcDir generatedDir
+    }
+
     dependencies {
-        compile project(':aeron-client'), project(':aeron-driver'), 'uk.co.real-logic:sbe-all:1.5.5'
+        compile "org.agrona:agrona:${agronaVersion}"
+        compile 'uk.co.real-logic:sbe-all:1.5.6'
+        testCompile sourceSets.generated.output
+    }
+
+    // Code Generation Configuration
+    compileGeneratedJava.dependsOn 'generateMessages'
+    compileGeneratedJava.classpath += sourceSets.main.runtimeClasspath
+
+    task (generateMessages, type: JavaExec) {
+        main = 'uk.co.real_logic.sbe.SbeTool'
+        classpath = sourceSets.main.runtimeClasspath
+        systemProperties('sbe.output.dir': generatedDir,
+                'sbe.target.language': 'Java',
+                'sbe.validation.stop.on.error': 'true')
+        args = [ 'src/main/resources/archiver-sbe-message-schema.xml' ]
+    }
+
+    jar {
+        from("$buildDir/classes/generated") {
+            include '**/*.class'
+        }
+    }
+
+    jar.dependsOn compileGeneratedJava
+}
+
+project(':aeron-archiver') {
+    apply plugin: 'com.github.johnrengelman.shadow'
+    apply plugin: 'idea'
+
+    dependencies {
+        compile project(':aeron-client'), project(':aeron-driver'), project(':aeron-archiver-codecs')
+        compile 'uk.co.real-logic:sbe-tool:1.5.6'
     }
 
     shadowJar {
@@ -568,6 +608,12 @@ project(':aeron-archiver') {
     artifacts {
         archives sourcesJar
         archives javadocJar
+    }
+
+    idea {
+        dependencies {
+            compile project(':aeron-archiver-codecs').sourceSets.generated.output
+        }
     }
 }
 

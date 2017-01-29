@@ -161,7 +161,7 @@ public class Publication implements AutoCloseable
     }
 
     /**
-     * Maximum message length supported in bytes. Messages may be made of of multiple fragments if greater than
+     * Maximum message length supported in bytes. Messages may be made of multiple fragments if greater than
      * MTU length.
      *
      * @return maximum message length supported in bytes.
@@ -353,7 +353,7 @@ public class Publication implements AutoCloseable
     /**
      * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
      * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
-     * <p>
+     *
      * <b>Note:</b> This method can only be used for message lengths less than MTU length minus header.
      *
      * <pre>{@code
@@ -379,7 +379,7 @@ public class Publication implements AutoCloseable
      * @param bufferClaim to be populated if the claim succeeds.
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
-     * @throws IllegalArgumentException if the length is greater than max payload length within an MTU.
+     * @throws IllegalArgumentException if the length is greater than {@link #maxPayloadLength()} within an MTU.
      * @see BufferClaim#commit()
      * @see BufferClaim#abort()
      */

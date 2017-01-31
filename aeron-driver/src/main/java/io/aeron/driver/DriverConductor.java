@@ -550,6 +550,15 @@ public class DriverConductor implements Agent
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
+
+        int mtuLength = context.mtuLength();
+        final String mtuString = udpChannel.aeronUri().get(MTU_LENGTH_URI_PARAM_NAME);
+        if (null != mtuString)
+        {
+            mtuLength = Integer.parseInt(mtuString);
+            Configuration.validateMtuLength(mtuLength);
+        }
+
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel);
 
         NetworkPublication publication = channelEndpoint.getPublication(streamId);
@@ -581,7 +590,7 @@ public class DriverConductor implements Agent
                 sessionId,
                 streamId,
                 initialTermId,
-                context.mtuLength(),
+                mtuLength,
                 context.systemCounters(),
                 flowControl,
                 retransmitHandler,
@@ -591,6 +600,11 @@ public class DriverConductor implements Agent
             networkPublications.add(publication);
             senderProxy.newNetworkPublication(publication);
             linkSpies(publication);
+        }
+        else if (publication.mtuLength() != mtuLength)
+        {
+            throw new IllegalStateException("Existing publication has different MTU length: existing=" +
+                publication.mtuLength() + " requested=" + mtuString);
         }
 
         linkPublication(registrationId, publication, getOrAddClient(clientId));

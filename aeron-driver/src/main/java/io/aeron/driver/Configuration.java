@@ -22,6 +22,7 @@ import io.aeron.driver.exceptions.ConfigurationException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.BackoffIdleStrategy;
@@ -356,6 +357,7 @@ public class Configuration
     public static final long PUBLICATION_UNBLOCK_TIMEOUT_NS = getLong(
         PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME, PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS);
 
+
     private static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 
     static final long AGENT_IDLE_MAX_SPINS = 100;
@@ -465,6 +467,11 @@ public class Configuration
      */
     public static final String MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER = getProperty(
         MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultMulticastFlowControlSupplier");
+
+    /**
+     * MTU length parameter name for using on a channel URI.
+     */
+    public static final String MTU_LENGTH_URI_PARAM_NAME = "mtu";
 
     /**
      * Length of the maximum transmission unit of the media driver's protocol
@@ -894,10 +901,10 @@ public class Configuration
      */
     public static void validateMtuLength(final int mtuLength)
     {
-        if (mtuLength < 0 || mtuLength > MAX_UDP_PAYLOAD_LENGTH)
+        if (mtuLength < DataHeaderFlyweight.HEADER_LENGTH || mtuLength > MAX_UDP_PAYLOAD_LENGTH)
         {
             throw new ConfigurationException(
-                "mtuLength must be a > 0 and <= " + MAX_UDP_PAYLOAD_LENGTH + ": mtuLength=" + mtuLength);
+                "mtuLength must be a >= HEADER_LENGTH and <= " + MAX_UDP_PAYLOAD_LENGTH + ": mtuLength=" + mtuLength);
         }
 
         if ((mtuLength % FrameDescriptor.FRAME_ALIGNMENT) != 0)

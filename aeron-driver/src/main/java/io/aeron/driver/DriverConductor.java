@@ -550,21 +550,14 @@ public class DriverConductor implements Agent
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
-
-        int mtuLength = context.mtuLength();
-        final String mtuString = udpChannel.aeronUri().get(MTU_LENGTH_URI_PARAM_NAME);
-        if (null != mtuString)
-        {
-            mtuLength = Integer.parseInt(mtuString);
-            Configuration.validateMtuLength(mtuLength);
-        }
-
+        final AeronUri aeronUri = udpChannel.aeronUri();
+        final int mtuLength = getMtuLength(aeronUri, context.mtuLength());
+        final int termLength = getTermBufferLength(aeronUri, context.publicationTermBufferLength());
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel);
 
         NetworkPublication publication = channelEndpoint.getPublication(streamId);
         if (null == publication)
         {
-            final int termLength = getTermBufferLength(udpChannel.aeronUri(), context.publicationTermBufferLength());
             final int sessionId = nextSessionId++;
             final int initialTermId = BitUtil.generateRandomisedId();
 
@@ -604,7 +597,7 @@ public class DriverConductor implements Agent
         else if (publication.mtuLength() != mtuLength)
         {
             throw new IllegalStateException("Existing publication has different MTU length: existing=" +
-                publication.mtuLength() + " requested=" + mtuString);
+                publication.mtuLength() + " requested=" + mtuLength);
         }
 
         linkPublication(registrationId, publication, getOrAddClient(clientId));
@@ -615,6 +608,19 @@ public class DriverConductor implements Agent
             publication.sessionId(),
             publication.rawLog().fileName(),
             publication.publisherLimitId());
+    }
+
+    private static int getMtuLength(final AeronUri aeronUri, final int defaultMtuLength)
+    {
+        int mtuLength = defaultMtuLength;
+        final String mtu = aeronUri.get(MTU_LENGTH_URI_PARAM_NAME);
+        if (null != mtu)
+        {
+            mtuLength = Integer.parseInt(mtu);
+            Configuration.validateMtuLength(mtuLength);
+        }
+
+        return mtuLength;
     }
 
     private void linkSpies(final NetworkPublication publication)

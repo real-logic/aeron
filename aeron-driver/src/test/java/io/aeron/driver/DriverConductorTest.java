@@ -340,7 +340,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
+        final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
         verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
 
         assertThat(argumentCaptor.getValue().mtuLength(), is(mtuLength));

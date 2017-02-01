@@ -613,7 +613,7 @@ public class DriverConductor implements Agent
     private static int getMtuLength(final AeronUri aeronUri, final int defaultMtuLength)
     {
         int mtuLength = defaultMtuLength;
-        final String mtu = aeronUri.get(MTU_LENGTH_URI_PARAM_NAME);
+        final String mtu = aeronUri.get(CommonContext.MTU_LENGTH_URI_PARAM_NAME);
         if (null != mtu)
         {
             mtuLength = Integer.parseInt(mtu);

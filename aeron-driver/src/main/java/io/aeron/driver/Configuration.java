@@ -469,11 +469,6 @@ public class Configuration
         MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultMulticastFlowControlSupplier");
 
     /**
-     * MTU length parameter name for using on a channel URI.
-     */
-    public static final String MTU_LENGTH_URI_PARAM_NAME = "mtu";
-
-    /**
      * Length of the maximum transmission unit of the media driver's protocol
      */
     public static final String MTU_LENGTH_PROP_NAME = "aeron.mtu.length";

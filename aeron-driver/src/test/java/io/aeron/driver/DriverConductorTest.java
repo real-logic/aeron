@@ -335,7 +335,7 @@ public class DriverConductorTest
     public void shouldAddPublicationWithMtu() throws Exception
     {
         final int mtuLength = 4096;
-        final String mtuParam = "|" + Configuration.MTU_LENGTH_URI_PARAM_NAME + "=" + mtuLength;
+        final String mtuParam = "|" + CommonContext.MTU_LENGTH_URI_PARAM_NAME + "=" + mtuLength;
         driverProxy.addPublication(CHANNEL_4000 + mtuParam, STREAM_ID_1);
 
         driverConductor.doWork();

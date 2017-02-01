@@ -69,9 +69,14 @@ public class CommonContext implements AutoCloseable
     public static final long DEFAULT_DRIVER_TIMEOUT_MS = 10_000;
 
     /**
-     * The param name to be used for the term length as a channel URI parameter.
+     * The param name to be used for the term length as a channel URI param.
      */
     public static final String TERM_LENGTH_PARAM_NAME = "term-length";
+
+    /**
+     * MTU length parameter name for using as a channel URI param.
+     */
+    public static final String MTU_LENGTH_URI_PARAM_NAME = "mtu";
 
     private long driverTimeoutMs = DEFAULT_DRIVER_TIMEOUT_MS;
     private String aeronDirectoryName;

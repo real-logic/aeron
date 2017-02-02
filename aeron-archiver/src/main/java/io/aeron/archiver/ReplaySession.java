@@ -281,7 +281,9 @@ class ReplaySession
         {
             initialState = state();
             workDone += state().doWork(this);
-        } while (initialState != state());
+        }
+        while (initialState != state());
+
         return workDone;
     }
 
@@ -300,7 +302,6 @@ class ReplaySession
     {
         this.state = state;
     }
-
 
     void close()
     {

@@ -303,7 +303,9 @@ public class SystemTest
                     }
                     this.fragmentCount++;
                     this.nextMessage += frameLength;
-                } while (messageStart + frameLength < offset + length);
+                }
+                while (messageStart + frameLength < offset + length);
+
                 delivered -= length;
 
             }, 1);
@@ -390,6 +392,7 @@ public class SystemTest
 
             waitForData.countDown();
         });
+
         t.setDaemon(true);
         t.start();
     }

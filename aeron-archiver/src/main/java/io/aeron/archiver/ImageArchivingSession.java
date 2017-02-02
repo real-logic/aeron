@@ -100,6 +100,7 @@ class ImageArchivingSession implements RawBlockHandler
                 return 0;
             }
         };
+
         abstract int doWork(ImageArchivingSession session);
     }
 
@@ -285,10 +286,11 @@ class ImageArchivingSession implements RawBlockHandler
         {
             initialState = state();
             workDone += state().doWork(this);
-        } while (initialState != state());
+        }
+        while (initialState != state());
+
         return workDone;
     }
-
 
     Image image()
     {

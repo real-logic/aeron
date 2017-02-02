@@ -104,7 +104,8 @@ public class EmbeddedPingPong
             PONG_IMAGE_LATCH.await();
 
             System.out.println(
-                "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS + " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
+                "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS +
+                " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
 
             for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
             {

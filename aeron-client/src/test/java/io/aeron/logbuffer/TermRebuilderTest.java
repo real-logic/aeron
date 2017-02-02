@@ -74,7 +74,8 @@ public class TermRebuilderTest
 
         TermRebuilder.insert(termBuffer, termOffset, packet, frameLength);
 
-        verify(termBuffer).putBytes(tail + HEADER_LENGTH, packet, srcOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH);
+        verify(termBuffer).putBytes(
+            tail + HEADER_LENGTH, packet, srcOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH);
     }
 
     @Test
@@ -89,7 +90,8 @@ public class TermRebuilderTest
 
         TermRebuilder.insert(termBuffer, termOffset, packet, alignedFrameLength);
 
-        verify(termBuffer).putBytes(tail + HEADER_LENGTH, packet, srcOffset + HEADER_LENGTH, alignedFrameLength - HEADER_LENGTH);
+        verify(termBuffer).putBytes(
+            tail + HEADER_LENGTH, packet, srcOffset + HEADER_LENGTH, alignedFrameLength - HEADER_LENGTH);
     }
 
     @Test
@@ -104,7 +106,10 @@ public class TermRebuilderTest
         TermRebuilder.insert(termBuffer, termOffset, packet, alignedFrameLength);
 
         verify(termBuffer).putBytes(
-            (alignedFrameLength * 2) + HEADER_LENGTH, packet, srcOffset + HEADER_LENGTH, alignedFrameLength - HEADER_LENGTH);
+            (alignedFrameLength * 2) + HEADER_LENGTH,
+            packet,
+            srcOffset + HEADER_LENGTH,
+            alignedFrameLength - HEADER_LENGTH);
     }
 
     @Test
@@ -119,6 +124,9 @@ public class TermRebuilderTest
         TermRebuilder.insert(termBuffer, termOffset, packet, alignedFrameLength);
 
         verify(termBuffer).putBytes(
-            (alignedFrameLength * 2) + HEADER_LENGTH, packet, srcOffset + HEADER_LENGTH, alignedFrameLength - HEADER_LENGTH);
+            (alignedFrameLength * 2) + HEADER_LENGTH,
+            packet,
+            srcOffset + HEADER_LENGTH,
+            alignedFrameLength - HEADER_LENGTH);
     }
 }

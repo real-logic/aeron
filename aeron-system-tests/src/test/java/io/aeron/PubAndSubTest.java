@@ -320,7 +320,7 @@ public class PubAndSubTest
         context.lossReport(lossReport);
 
         final LossGenerator dataLossGenerator =
-            DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.10, 0xcafebabeL);  // 10% data loss, predictable seed
+            DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.10, 0xcafebabeL);
         final LossGenerator noLossGenerator =
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
 
@@ -381,7 +381,7 @@ public class PubAndSubTest
         context.lossReport(lossReport);
 
         final LossGenerator dataLossGenerator =
-            DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.10, 0xcafebabeL);  // 10% data loss, predictable seed
+            DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.10, 0xcafebabeL);
         final LossGenerator noLossGenerator =
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
 

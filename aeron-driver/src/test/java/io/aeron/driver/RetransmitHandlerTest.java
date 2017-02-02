@@ -57,7 +57,8 @@ public class RetransmitHandlerTest
     private static final ReservedValueSupplier RESERVED_VALUE_SUPPLIER = null;
 
     private final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirect(TERM_BUFFER_LENGTH));
-    private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(allocateDirect(LogBufferDescriptor.LOG_META_DATA_LENGTH));
+    private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(
+        allocateDirect(LogBufferDescriptor.LOG_META_DATA_LENGTH));
     private final TermAppender termAppender = new TermAppender(termBuffer, metaDataBuffer, 0);
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);

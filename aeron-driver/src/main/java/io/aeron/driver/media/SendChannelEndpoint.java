@@ -199,7 +199,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
-        final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(msg.sessionId(), msg.streamId());
+        final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(
+            msg.sessionId(), msg.streamId());
 
         if (null != publication)
         {
@@ -218,7 +219,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public void onNakMessage(final NakFlyweight msg, final InetSocketAddress srcAddress)
     {
-        final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(msg.sessionId(), msg.streamId());
+        final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(
+            msg.sessionId(), msg.streamId());
         if (null != publication)
         {
             publication.onNak(msg.termId(), msg.termOffset(), msg.length());
@@ -228,7 +230,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public void onRttMeasurement(final RttMeasurementFlyweight msg, final InetSocketAddress srcAddress)
     {
-        final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(msg.sessionId(), msg.streamId());
+        final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(
+            msg.sessionId(), msg.streamId());
         if (null != publication)
         {
             publication.onRttMeasurement(msg, srcAddress);

@@ -547,9 +547,10 @@ project(':aeron-archiver-codecs') {
     task (generateMessages, type: JavaExec) {
         main = 'uk.co.real_logic.sbe.SbeTool'
         classpath = sourceSets.main.runtimeClasspath
-        systemProperties('sbe.output.dir': generatedDir,
-                'sbe.target.language': 'Java',
-                'sbe.validation.stop.on.error': 'true')
+        systemProperties(
+            'sbe.output.dir': generatedDir,
+            'sbe.target.language': 'Java',
+            'sbe.validation.stop.on.error': 'true')
         args = [ 'src/main/resources/archiver-sbe-message-schema.xml' ]
     }
 

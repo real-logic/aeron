@@ -53,22 +53,25 @@ public class ArchiverConductor implements Agent
     private final ArchiveStopRequestDecoder archiveStopRequestDecoder = new ArchiveStopRequestDecoder();
 
     private final UnsafeBuffer responseBuffer =
-            new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, CACHE_LINE_LENGTH));
+        new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, CACHE_LINE_LENGTH));
     private final MessageHeaderEncoder responseHeaderEncoder = new MessageHeaderEncoder();
 
     // TODO: arguably this is a good fit for a linked array queue so that we can have minimal footprint
-    // TODO: this makes for awkward construction as we need Aeron setup before the archiver. The image listener would be easier
-    // to setup on the subscription level
+    // TODO: this makes for awkward construction as we need Aeron setup before the archiver.
+    // TODO: The image listener would be easier to setup on the subscription level
     private final ManyToOneConcurrentArrayQueue<Image> imageNotifications;
     private final File archiveFolder;
 
-    public ArchiverConductor(Aeron aeron, ManyToOneConcurrentArrayQueue<Image> imageNotifications,
-                             Archiver.Context ctx)
+    public ArchiverConductor(
+        Aeron aeron,
+        ManyToOneConcurrentArrayQueue<Image> imageNotifications,
+        Archiver.Context ctx)
     {
         this.aeron = aeron;
         this.imageNotifications = imageNotifications;
         serviceRequests = aeron.addSubscription(ctx.serviceRequestChannel(), ctx.serviceRequestStreamId());
-        archiverNotifications = aeron.addPublication(ctx.archiverNotificationsChannel(), ctx.archiverNotificationsStreamId());
+        archiverNotifications = aeron.addPublication(
+            ctx.archiverNotificationsChannel(), ctx.archiverNotificationsStreamId());
         this.archiveFolder = ctx.archiveFolder();
     }
 
@@ -81,7 +84,7 @@ public class ArchiverConductor implements Agent
     {
         int workDone = 0;
 
-        workDone += imageNotifications.drain(image -> handleNewImageNotification(image));
+        workDone += imageNotifications.drain(this::handleNewImageNotification);
         workDone += doServiceRequestsWork();
         workDone += doReplaySessionsWork();
         workDone += doArchivingSessionsWork();
@@ -153,7 +156,7 @@ public class ArchiverConductor implements Agent
             {
                 case ReplayRequestDecoder.TEMPLATE_ID:
                 {
-                    onReplayRequest(buffer, offset  + MessageHeaderDecoder.ENCODED_LENGTH, header);
+                    onReplayRequest(buffer, offset + MessageHeaderDecoder.ENCODED_LENGTH, header);
                     break;
                 }
                 case ArchiveStartRequestDecoder.TEMPLATE_ID:
@@ -202,10 +205,13 @@ public class ArchiverConductor implements Agent
         replayRequestDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
         final StreamInstance streamInstance =
-                new StreamInstance(replayRequestDecoder.source(), replayRequestDecoder.sessionId(),
-                                   replayRequestDecoder.channel(), replayRequestDecoder.streamId());
+            new StreamInstance(
+                replayRequestDecoder.source(),
+                replayRequestDecoder.sessionId(),
+                replayRequestDecoder.channel(),
+                replayRequestDecoder.streamId());
 
-        final int replayStreamId  = replayRequestDecoder.replayStreamId();
+        final int replayStreamId = replayRequestDecoder.replayStreamId();
         final int controlStreamId = replayRequestDecoder.controlStreamId();
         final String replyChannel = replayRequestDecoder.replyChannel();
 
@@ -214,15 +220,19 @@ public class ArchiverConductor implements Agent
         /* TODO: need a hook for requesting a special ReplayPublication from driver, need non-public way to expose
                  driver side capability */
         // TODO: need to control construction of publications to handle errors
-        final Publication replayPublication  = aeron.addPublication(replyChannel, replayStreamId);
+        final Publication replayPublication = aeron.addPublication(replyChannel, replayStreamId);
         final Publication controlPublication = aeron.addPublication(replyChannel, controlStreamId);
 
 
         final ReplaySession replaySession = new ReplaySession(
-                streamInstance,
-                replayRequestDecoder.termId(),
-                replayRequestDecoder.termOffset(), (long) replayRequestDecoder.length(),
-                replayPublication, controlPublication, image, this);
+            streamInstance,
+            replayRequestDecoder.termId(),
+            replayRequestDecoder.termOffset(),
+            (long)replayRequestDecoder.length(),
+            replayPublication,
+            controlPublication,
+            image,
+            this);
 
         image2ReplaySession.put(header.sessionId(), replaySession);
         replaySessions.add(replaySession);
@@ -231,9 +241,11 @@ public class ArchiverConductor implements Agent
 
     private void onArchiveStartRequest(DirectBuffer buffer, int offset)
     {
-        archiveStartRequestDecoder.wrap(buffer, offset,
-                                        headerDecoder.blockLength(),
-                                        headerDecoder.version());
+        archiveStartRequestDecoder.wrap(
+            buffer,
+            offset,
+            headerDecoder.blockLength(),
+            headerDecoder.version());
 
         final String channel = archiveStartRequestDecoder.channel();
         final int streamId = archiveStartRequestDecoder.streamId();
@@ -247,7 +259,7 @@ public class ArchiverConductor implements Agent
     private void onArchiveStopRequest(DirectBuffer buffer, int offset)
     {
         archiveStopRequestDecoder.wrap(buffer, offset, headerDecoder.blockLength(),
-                                       headerDecoder.version());
+            headerDecoder.version());
 
         final String channel = archiveStopRequestDecoder.channel();
         final int streamId = archiveStopRequestDecoder.streamId();
@@ -303,24 +315,24 @@ public class ArchiverConductor implements Agent
     void sendResponse(Publication control, String err)
     {
         final ArchiverResponseEncoder responseEncoder = new ArchiverResponseEncoder();
-        responseHeaderEncoder.wrap(responseBuffer, 0).
-                blockLength(ArchiverResponseEncoder.BLOCK_LENGTH).
-                             templateId(ArchiverResponseEncoder.TEMPLATE_ID).
-                             schemaId(ArchiverResponseEncoder.SCHEMA_ID).
-                             version(ArchiverResponseEncoder.SCHEMA_VERSION);
+        responseHeaderEncoder.wrap(responseBuffer, 0)
+            .blockLength(ArchiverResponseEncoder.BLOCK_LENGTH)
+            .templateId(ArchiverResponseEncoder.TEMPLATE_ID)
+            .schemaId(ArchiverResponseEncoder.SCHEMA_ID)
+            .version(ArchiverResponseEncoder.SCHEMA_VERSION);
 
         if (!Strings.isEmpty(err))
         {
             responseEncoder.wrap(responseBuffer, MessageHeaderEncoder.ENCODED_LENGTH).
-                    err(err);
+                err(err);
         }
 
 
         long offer;
         do
         {
-            offer = control.offer(responseBuffer, 0,
-                                  MessageHeaderEncoder.ENCODED_LENGTH + responseEncoder.encodedLength());
+            offer = control.offer(
+                responseBuffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + responseEncoder.encodedLength());
             if (offer == Publication.NOT_CONNECTED || offer == Publication.CLOSED)
             {
                 // TODO: backoff? fail nicely?
@@ -340,17 +352,17 @@ public class ArchiverConductor implements Agent
         // TODO: persistent index for instances, as well as an index file.
         final int instanceId = 0;
         final ArchiveStartedNotificationEncoder mEncoder = new ArchiveStartedNotificationEncoder();
-        responseHeaderEncoder.wrap(responseBuffer, 0).
-                blockLength(ArchiveStartedNotificationEncoder.BLOCK_LENGTH).
-                             templateId(ArchiveStartedNotificationEncoder.TEMPLATE_ID).
-                             schemaId(ArchiveStartedNotificationEncoder.SCHEMA_ID).
-                             version(ArchiveStartedNotificationEncoder.SCHEMA_VERSION);
+        responseHeaderEncoder.wrap(responseBuffer, 0)
+            .blockLength(ArchiveStartedNotificationEncoder.BLOCK_LENGTH)
+            .templateId(ArchiveStartedNotificationEncoder.TEMPLATE_ID)
+            .schemaId(ArchiveStartedNotificationEncoder.SCHEMA_ID)
+            .version(ArchiveStartedNotificationEncoder.SCHEMA_VERSION);
         mEncoder.wrap(responseBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
         mEncoder.instanceId(instanceId).sessionId(sessionId).streamId(streamId).channel(channel).source(source);
 
 
         final long result = archiverNotifications.offer(responseBuffer, 0,
-                                                        MessageHeaderEncoder.ENCODED_LENGTH + mEncoder.encodedLength());
+            MessageHeaderEncoder.ENCODED_LENGTH + mEncoder.encodedLength());
         if (result > 0 || result == Publication.NOT_CONNECTED)
         {
             return instanceId;
@@ -364,20 +376,21 @@ public class ArchiverConductor implements Agent
     void notifyArchiveProgress(int instanceId, int initialTermId, int initialTermOffset, int termId, int endTermOffset)
     {
         final ArchiveProgressNotificationEncoder mEncoder = new ArchiveProgressNotificationEncoder();
-        responseHeaderEncoder.wrap(responseBuffer, 0).
-                blockLength(ArchiveProgressNotificationEncoder.BLOCK_LENGTH).
-                templateId(ArchiveProgressNotificationEncoder.TEMPLATE_ID).
-                schemaId(ArchiveProgressNotificationEncoder.SCHEMA_ID).
-                version(ArchiveProgressNotificationEncoder.SCHEMA_VERSION);
-        mEncoder.wrap(responseBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
-        mEncoder.instanceId(instanceId).
-                initialTermId(initialTermId).
-                initialTermOffset(initialTermOffset).
-                termId(termId).
-                termOffset(endTermOffset);
+        responseHeaderEncoder.wrap(responseBuffer, 0)
+            .blockLength(ArchiveProgressNotificationEncoder.BLOCK_LENGTH)
+            .templateId(ArchiveProgressNotificationEncoder.TEMPLATE_ID)
+            .schemaId(ArchiveProgressNotificationEncoder.SCHEMA_ID)
+            .version(ArchiveProgressNotificationEncoder.SCHEMA_VERSION);
 
-        final long result = archiverNotifications.offer(responseBuffer, 0,
-                                                        MessageHeaderEncoder.ENCODED_LENGTH + mEncoder.encodedLength());
+        mEncoder.wrap(responseBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
+        mEncoder.instanceId(instanceId)
+            .initialTermId(initialTermId)
+            .initialTermOffset(initialTermOffset)
+            .termId(termId)
+            .termOffset(endTermOffset);
+
+        final long result = archiverNotifications.offer(
+            responseBuffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + mEncoder.encodedLength());
         if (result < 0 && result != Publication.NOT_CONNECTED)
         {
             throw new IllegalStateException();
@@ -387,16 +400,16 @@ public class ArchiverConductor implements Agent
     void notifyArchiveStopped(int instanceId)
     {
         final ArchiveStoppedNotificationEncoder mEncoder = new ArchiveStoppedNotificationEncoder();
-        responseHeaderEncoder.wrap(responseBuffer, 0).
-                blockLength(ArchiveStoppedNotificationEncoder.BLOCK_LENGTH).
-                templateId(ArchiveStoppedNotificationEncoder.TEMPLATE_ID).
-                schemaId(ArchiveStoppedNotificationEncoder.SCHEMA_ID).
-                version(ArchiveStoppedNotificationEncoder.SCHEMA_VERSION);
+        responseHeaderEncoder.wrap(responseBuffer, 0)
+            .blockLength(ArchiveStoppedNotificationEncoder.BLOCK_LENGTH)
+            .templateId(ArchiveStoppedNotificationEncoder.TEMPLATE_ID)
+            .schemaId(ArchiveStoppedNotificationEncoder.SCHEMA_ID)
+            .version(ArchiveStoppedNotificationEncoder.SCHEMA_VERSION);
         mEncoder.wrap(responseBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
         mEncoder.instanceId(instanceId);
 
-        final long result = archiverNotifications.offer(responseBuffer, 0,
-                                                        MessageHeaderEncoder.ENCODED_LENGTH + mEncoder.encodedLength());
+        final long result = archiverNotifications.offer(
+            responseBuffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + mEncoder.encodedLength());
         if (result < 0 && result != Publication.NOT_CONNECTED)
         {
             throw new IllegalStateException();

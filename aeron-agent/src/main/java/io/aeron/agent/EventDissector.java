@@ -158,7 +158,8 @@ public class EventDissector
         return builder.toString();
     }
 
-    public static String dissectAsInvocation(final EventCode code, final MutableDirectBuffer buffer, final int initialOffset)
+    public static String dissectAsInvocation(
+        final EventCode code, final MutableDirectBuffer buffer, final int initialOffset)
     {
         final StringBuilder builder = new StringBuilder();
         final int relativeOffset = dissectLogHeader(code, buffer, initialOffset, builder);
@@ -222,7 +223,8 @@ public class EventDissector
         return relativeOffset;
     }
 
-    private static int dissectSocketAddress(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    private static int dissectSocketAddress(
+        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         int relativeOffset = 0;
 

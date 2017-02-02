@@ -90,7 +90,8 @@ public class AeronUri
         return SocketAddressUtil.parse(get(key));
     }
 
-    public InetSocketAddress getSocketAddress(final String key, final int defaultPort, final InetSocketAddress defaultValue)
+    public InetSocketAddress getSocketAddress(
+        final String key, final int defaultPort, final InetSocketAddress defaultValue)
     {
         if (!containsKey(key))
         {
@@ -100,7 +101,8 @@ public class AeronUri
         return SocketAddressUtil.parse(get(key), defaultPort);
     }
 
-    public InterfaceSearchAddress getInterfaceSearchAddress(final String key, final InterfaceSearchAddress defaultValue)
+    public InterfaceSearchAddress getInterfaceSearchAddress(
+        final String key, final InterfaceSearchAddress defaultValue)
         throws UnknownHostException
     {
         if (!containsKey(key))

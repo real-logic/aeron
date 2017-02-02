@@ -33,8 +33,11 @@ class ArchiveFileUtil
 
     static String streamInstanceName(Image image)
     {
-        return streamInstanceName(image.sourceIdentity(), image.sessionId(),
-                                  image.subscription().channel(), image.subscription().streamId());
+        return streamInstanceName(
+            image.sourceIdentity(),
+            image.sessionId(),
+            image.subscription().channel(),
+            image.subscription().streamId());
     }
 
     static String streamInstanceName(String sourceIdentity, int sessionId, String channel, int streamId)
@@ -76,24 +79,18 @@ class ArchiveFileUtil
 
     static ArchiveMetaFileFormatDecoder archiveMetaFileFormatDecoder(File metaFile) throws IOException
     {
-
         try (RandomAccessFile randomAccessFile = new RandomAccessFile(metaFile, "rw");
              FileChannel metadataFileChannel = randomAccessFile.getChannel();)
         {
             final MappedByteBuffer metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 64);
             return new ArchiveMetaFileFormatDecoder().wrap(new UnsafeBuffer(metaDataBuffer), 0, 64, 0);
         }
-        catch (IOException e)
-        {
-            throw e;
-        }
-
-
     }
 
     static int archiveOffset(int termOffset, int termId, int initialTermId, int termBufferLength)
     {
-        return archiveOffset(termOffset, termId, initialTermId, ((ARCHIVE_FILE_SIZE / termBufferLength) - 1), termBufferLength);
+        return archiveOffset(
+            termOffset, termId, initialTermId, ((ARCHIVE_FILE_SIZE / termBufferLength) - 1), termBufferLength);
     }
 
     static int archiveOffset(int termOffset, int termId, int initialTermId, int termsMask, int termBufferLength)

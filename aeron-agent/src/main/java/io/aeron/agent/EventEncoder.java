@@ -131,7 +131,8 @@ public class EventEncoder
         return relativeOffset;
     }
 
-    private static int encodeLogHeader(final MutableDirectBuffer encodingBuffer, final int captureLength, final int length)
+    private static int encodeLogHeader(
+        final MutableDirectBuffer encodingBuffer, final int captureLength, final int length)
     {
         int relativeOffset = 0;
         /*

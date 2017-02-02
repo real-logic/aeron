@@ -190,7 +190,8 @@ public class PublicationImage
         termLengthMask = termLength - 1;
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
 
-        final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
+        final long initialPosition = computePosition(
+            activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
         nextSmPosition = initialPosition;
         nextSmReceiverWindowLength = congestionControl.initialWindowLength();
         cleanPosition = initialPosition;

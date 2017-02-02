@@ -29,7 +29,8 @@ public class SocketAddressUtil
     private static final Pattern IPV6_ADDRESS_PATTERN = Pattern.compile(
         "\\[([0-9A-Fa-f:]+)(?:%[a-zA-Z0-9_.~-]+)?\\](?::([0-9]+))?");
 
-    private static InetSocketAddress parse(final CharSequence cs, final BiFunction<String, String, InetSocketAddress> consumer)
+    private static InetSocketAddress parse(
+        final CharSequence cs, final BiFunction<String, String, InetSocketAddress> consumer)
     {
         if (null == cs)
         {

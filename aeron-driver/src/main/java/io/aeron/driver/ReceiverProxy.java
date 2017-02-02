@@ -34,7 +34,8 @@ public class ReceiverProxy
 
     private Receiver receiver;
 
-    public ReceiverProxy(final ThreadingMode threadingMode, final Queue<ReceiverCmd> commandQueue, final AtomicCounter failCount)
+    public ReceiverProxy(
+        final ThreadingMode threadingMode, final Queue<ReceiverCmd> commandQueue, final AtomicCounter failCount)
     {
         this.threadingMode = threadingMode;
         this.commandQueue = commandQueue;

@@ -43,7 +43,9 @@ public class CleanupInterceptor
             public static void cleanupPublication(final NetworkPublication publication)
             {
                 LOGGER.logPublicationRemoval(
-                    publication.sendChannelEndpoint().originalUriString(), publication.sessionId(), publication.streamId());
+                    publication.sendChannelEndpoint().originalUriString(),
+                    publication.sessionId(),
+                    publication.streamId());
             }
         }
 
@@ -57,7 +59,9 @@ public class CleanupInterceptor
                 if (null != channelEndpoint)
                 {
                     LOGGER.logSubscriptionRemoval(
-                        channelEndpoint.originalUriString(), subscriptionLink.streamId(), subscriptionLink.registrationId());
+                        channelEndpoint.originalUriString(),
+                        subscriptionLink.streamId(),
+                        subscriptionLink.registrationId());
                 }
             }
         }

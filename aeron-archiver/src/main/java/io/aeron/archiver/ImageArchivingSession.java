@@ -42,8 +42,8 @@ import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
  *
  * For filenames {@see ArchiveFileUtil}
  *
- * Data in the files is expected to cover from initial positions to last. Each file covers (1GB/term size) terms. To find data
- * by term id and offset you can find the file and position by calculating:<br>
+ * Data in the files is expected to cover from initial positions to last. Each file covers (1GB/term size) terms.
+ * To find data by term id and offset you can find the file and position by calculating:<br>
  *  <ul>
  *    <li>file index = (term - initial term)/(1GB/term size)</li>
  *    <li>file position = offset + term size * [ (term - initial term) % (1GB/term size) ] </li>
@@ -124,7 +124,8 @@ class ImageArchivingSession implements RawBlockHandler
     State state = State.INIT;
 
     /**
-     * index is in the range 0:ARCHIVE_FILE_SIZE, except before the first block for this image is received indicated by -1
+     * Index is in the range 0:ARCHIVE_FILE_SIZE, except before the first block for this image is received indicated
+     * by -1
      */
     int index = -1;
 
@@ -139,13 +140,15 @@ class ImageArchivingSession implements RawBlockHandler
         this.termsMask = termsPerFile - 1;
         if ((termsPerFile & termsMask) != 0)
         {
-            throw new IllegalArgumentException("It is assumed the termBufferLength is a power of 2 smaller than 1G and that" +
-                                               "therefore the number of terms in a file is also a power of 2");
+            throw new IllegalArgumentException(
+                "It is assumed the termBufferLength is a power of 2 smaller than 1G and that" +
+                "therefore the number of terms in a file is also a power of 2");
         }
-        instanceId = archiverConductor.notifyArchiveStarted(image.sourceIdentity(), image.sessionId(),
-                                                            image.subscription().channel(), image.subscription().streamId());
+        instanceId = archiverConductor.notifyArchiveStarted(
+            image.sourceIdentity(), image.sessionId(), image.subscription().channel(), image.subscription().streamId());
 
-        final File file = new File(archiverConductor.archiveFolder(), ArchiveFileUtil.archiveMetaFileName(streamInstanceName));
+        final File file = new File(
+            archiverConductor.archiveFolder(), ArchiveFileUtil.archiveMetaFileName(streamInstanceName));
         final RandomAccessFile randomAccessFile;
         try
         {
@@ -179,8 +182,8 @@ class ImageArchivingSession implements RawBlockHandler
 
     private void newArchiveFile(int termId)
     {
-        final File file = new File(archiverConductor.archiveFolder(),
-                                   archiveDataFileName(streamInstanceName, termId, termBufferLength));
+        final File file = new File(
+            archiverConductor.archiveFolder(), archiveDataFileName(streamInstanceName, termId, termBufferLength));
 
         final RandomAccessFile randomAccessFile;
         try
@@ -200,8 +203,14 @@ class ImageArchivingSession implements RawBlockHandler
     }
 
 
-    public void onBlock(FileChannel fileChannel, long fileOffset, UnsafeBuffer termBuffer, int termOffset, int length, int
-            sessionId, int termId)
+    public void onBlock(
+        FileChannel fileChannel,
+        long fileOffset,
+        UnsafeBuffer termBuffer,
+        int termOffset,
+        int length,
+        int sessionId,
+        int termId)
     {
         try
         {
@@ -211,16 +220,19 @@ class ImageArchivingSession implements RawBlockHandler
                 metaDataWriter.initialTermId(termId);
                 initialTermId = termId;
             }
-            // TODO: if assumptions below are valid the computation is redundant for all but the first time this method is called
-            final int archiveOffset = ArchiveFileUtil
-                    .archiveOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
+            // TODO: if assumptions below are valid the computation is redundant for all but the first time this
+            // TODO: method is called
+            final int archiveOffset = ArchiveFileUtil.archiveOffset(
+                termOffset, termId, initialTermId, termsMask, termBufferLength);
             if (index == -1)
             {
                 newArchiveFile(termId);
                 if (archiveFileChannel.position() != 0)
                 {
-                    throw new IllegalArgumentException("It is assumed that archiveFileChannel.position() is 0 on first write");
+                    throw new IllegalArgumentException(
+                        "It is assumed that archiveFileChannel.position() is 0 on first write");
                 }
+
                 index = termOffset;
                 // first write to the logs is not at beginning of file. We need to insert a padding indicator.
                 if (archiveOffset != 0)
@@ -249,8 +261,8 @@ class ImageArchivingSession implements RawBlockHandler
             metaDataWriter.lastTermId(termId);
             final int endTermOffset = termOffset + length;
             metaDataWriter.lastTermOffset(endTermOffset);
-            archiverConductor.notifyArchiveProgress(instanceId, initialTermId, metaDataReader.initialTermOffset(), termId,
-                                                    endTermOffset);
+            archiverConductor.notifyArchiveProgress(
+                instanceId, initialTermId, metaDataReader.initialTermOffset(), termId, endTermOffset);
             if (index == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
             {
                 archiveFileChannel.close();

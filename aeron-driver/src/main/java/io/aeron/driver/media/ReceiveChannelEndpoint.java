@@ -124,7 +124,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         if (currentStatus != ChannelEndpointStatus.INITIALIZING)
         {
             throw new IllegalStateException(
-                "Channel cannot be registered unless INITALIZING: status=" + status(currentStatus));
+                "Channel cannot be registered unless INITIALISING: status=" + status(currentStatus));
         }
 
         statusIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
@@ -184,12 +184,16 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     }
 
     public int onDataPacket(
-        final DataHeaderFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
+        final DataHeaderFlyweight header,
+        final UnsafeBuffer buffer,
+        final int length,
+        final InetSocketAddress srcAddress)
     {
         return dispatcher.onDataPacket(this, header, buffer, length, srcAddress);
     }
 
-    public void onSetupMessage(final SetupFlyweight header, final UnsafeBuffer buffer, final InetSocketAddress srcAddress)
+    public void onSetupMessage(
+        final SetupFlyweight header, final UnsafeBuffer buffer, final InetSocketAddress srcAddress)
     {
         dispatcher.onSetupMessage(this, header, buffer, srcAddress);
     }
@@ -203,7 +207,8 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         }
     }
 
-    public void sendSetupElicitingStatusMessage(final InetSocketAddress controlAddress, final int sessionId, final int streamId)
+    public void sendSetupElicitingStatusMessage(
+        final InetSocketAddress controlAddress, final int sessionId, final int streamId)
     {
         sendStatusMessage(controlAddress, sessionId, streamId, 0, 0, 0, SEND_SETUP_FLAG);
     }
@@ -215,7 +220,8 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         if (windowMaxLength > soRcvbuf)
         {
             throw new ConfigurationException(String.format(
-                "Max Window length greater than socket SO_RCVBUF, increase %s to match window: windowMaxLength=%d, SO_RCVBUF=%d",
+                "Max Window length greater than socket SO_RCVBUF, " +
+                "increase %s to match window: windowMaxLength=%d, SO_RCVBUF=%d",
                 Configuration.INITIAL_WINDOW_LENGTH_PROP_NAME,
                 windowMaxLength,
                 soRcvbuf));
@@ -231,7 +237,8 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         if (senderMtuLength > soRcvbuf)
         {
             throw new ConfigurationException(String.format(
-                "Sender MTU greater than socket SO_RCVBUF, increase %s to match MTU: senderMtuLength=%d, SO_RCVBUF=%d",
+                "Sender MTU greater than socket SO_RCVBUF, " +
+                "increase %s to match MTU: senderMtuLength=%d, SO_RCVBUF=%d",
                 Configuration.SOCKET_RCVBUF_LENGTH_PROP_NAME,
                 senderMtuLength,
                 soRcvbuf));

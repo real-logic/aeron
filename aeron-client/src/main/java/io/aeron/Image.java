@@ -378,7 +378,8 @@ public class Image
                 final long fileOffset = ((long)capacity * activeIndex) + termOffset;
                 final int termId = termBuffer.getInt(termOffset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
 
-                rawBlockHandler.onBlock(logBuffers.fileChannel(), fileOffset, termBuffer, termOffset, length, sessionId, termId);
+                rawBlockHandler.onBlock(
+                    logBuffers.fileChannel(), fileOffset, termBuffer, termOffset, length, sessionId, termId);
             }
             catch (final Throwable t)
             {

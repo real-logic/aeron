@@ -33,7 +33,8 @@ public class SenderProxy
     private final AtomicCounter failCount;
     private Sender sender;
 
-    public SenderProxy(final ThreadingMode threadingMode, final Queue<SenderCmd> commandQueue, final AtomicCounter failCount)
+    public SenderProxy(
+        final ThreadingMode threadingMode, final Queue<SenderCmd> commandQueue, final AtomicCounter failCount)
     {
         this.threadingMode = threadingMode;
         this.commandQueue = commandQueue;

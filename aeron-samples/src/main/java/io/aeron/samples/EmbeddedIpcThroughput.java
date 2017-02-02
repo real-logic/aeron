@@ -123,7 +123,8 @@ public class EmbeddedIpcThroughput
         public void run()
         {
             final Publication publication = this.publication;
-            final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(publication.maxMessageLength(), CACHE_LINE_LENGTH);
+            final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(
+                publication.maxMessageLength(), CACHE_LINE_LENGTH);
             final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
             long backPressureCount = 0;
             long totalMessageCount = 0;

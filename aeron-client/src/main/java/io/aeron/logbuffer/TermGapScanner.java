@@ -60,7 +60,11 @@ public class TermGapScanner
      * @return offset of last contiguous frame
      */
     public static int scanForGap(
-        final UnsafeBuffer termBuffer, final int termId, int scanOffset, final int limitOffset, final GapHandler handler)
+        final UnsafeBuffer termBuffer,
+        final int termId,
+        int scanOffset,
+        final int limitOffset,
+        final GapHandler handler)
     {
         do
         {

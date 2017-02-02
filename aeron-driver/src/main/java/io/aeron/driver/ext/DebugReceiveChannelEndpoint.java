@@ -80,7 +80,10 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
     }
 
     public int onDataPacket(
-        final DataHeaderFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
+        final DataHeaderFlyweight header,
+        final UnsafeBuffer buffer,
+        final int length,
+        final InetSocketAddress srcAddress)
     {
         int result = 0;
 
@@ -92,7 +95,8 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
         return result;
     }
 
-    public void onSetupMessage(final SetupFlyweight header, final UnsafeBuffer buffer, final InetSocketAddress srcAddress)
+    public void onSetupMessage(
+        final SetupFlyweight header, final UnsafeBuffer buffer, final InetSocketAddress srcAddress)
     {
         if (!dataLossGenerator.shouldDropFrame(srcAddress, buffer, header.frameLength()))
         {

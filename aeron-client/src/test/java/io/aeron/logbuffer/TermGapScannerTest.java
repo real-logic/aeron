@@ -62,7 +62,8 @@ public class TermGapScannerTest
 
         when(termBuffer.getIntVolatile(tail - align(HEADER_LENGTH, FRAME_ALIGNMENT))).thenReturn(HEADER_LENGTH);
         when(termBuffer.getIntVolatile(tail)).thenReturn(0);
-        when(termBuffer.getIntVolatile(highWaterMark - align(HEADER_LENGTH, FRAME_ALIGNMENT))).thenReturn(HEADER_LENGTH);
+        when(termBuffer.getIntVolatile(highWaterMark - align(HEADER_LENGTH, FRAME_ALIGNMENT)))
+            .thenReturn(HEADER_LENGTH);
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(tail));
 
@@ -77,7 +78,8 @@ public class TermGapScannerTest
 
         when(termBuffer.getIntVolatile(tail - align(HEADER_LENGTH, FRAME_ALIGNMENT))).thenReturn(HEADER_LENGTH);
         when(termBuffer.getIntVolatile(tail)).thenReturn(0);
-        when(termBuffer.getIntVolatile(highWaterMark - align(HEADER_LENGTH, FRAME_ALIGNMENT))).thenReturn(HEADER_LENGTH);
+        when(termBuffer.getIntVolatile(highWaterMark - align(HEADER_LENGTH, FRAME_ALIGNMENT)))
+            .thenReturn(HEADER_LENGTH);
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(tail));
 
@@ -94,7 +96,8 @@ public class TermGapScannerTest
         when(termBuffer.getIntVolatile(tail)).thenReturn(paddingLength);
         when(termBuffer.getIntVolatile(tail + HEADER_LENGTH)).thenReturn(0);
 
-        assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(LOG_BUFFER_CAPACITY));
+        assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler),
+            is(LOG_BUFFER_CAPACITY));
 
         verifyZeroInteractions(gapHandler);
     }

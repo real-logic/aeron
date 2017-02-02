@@ -484,7 +484,8 @@ public class DriverConductor implements Agent
                     {
                         if (channel.startsWith(SPY_PREFIX))
                         {
-                            onAddSpySubscription(channel.substring(SPY_PREFIX.length()), streamId, correlationId, clientId);
+                            onAddSpySubscription(
+                                channel.substring(SPY_PREFIX.length()), streamId, correlationId, clientId);
                         }
                         else
                         {
@@ -726,7 +727,11 @@ public class DriverConductor implements Agent
     }
 
     private RawLog newDirectPublicationLog(
-        final int termBufferLength, final int sessionId, final int streamId, final int initialTermId, final long registrationId)
+        final int termBufferLength,
+        final int sessionId,
+        final int streamId,
+        final int initialTermId,
+        final long registrationId)
     {
         final RawLog rawLog = rawLogFactory.newDirectPublication(sessionId, streamId, registrationId, termBufferLength);
 
@@ -812,7 +817,8 @@ public class DriverConductor implements Agent
 
     private void checkForClashingSubscription(final boolean isReliable, final UdpChannel udpChannel, final int streamId)
     {
-        final ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
+        final ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(
+            udpChannel.canonicalForm());
         if (null == channelEndpoint)
         {
             return;
@@ -903,7 +909,8 @@ public class DriverConductor implements Agent
         clientProxy.operationSucceeded(registrationId);
 
         final SendChannelEndpoint channelEndpoint = senderChannelEndpoint(udpChannel);
-        final NetworkPublication publication = null == channelEndpoint ? null : channelEndpoint.getPublication(streamId);
+        final NetworkPublication publication =
+            null == channelEndpoint ? null : channelEndpoint.getPublication(streamId);
         if (null != publication)
         {
             linkSpy(publication, subscriptionLink);

@@ -230,7 +230,9 @@ public class ClientConductorTest
         final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1);
 
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_OPERATION_SUCCESS, correlatedMessageBuffer, (buffer) -> CorrelatedMessageFlyweight.LENGTH);
+            ControlProtocolEvents.ON_OPERATION_SUCCESS,
+            correlatedMessageBuffer,
+            (buffer) -> CorrelatedMessageFlyweight.LENGTH);
 
         publication.close();
 
@@ -246,7 +248,9 @@ public class ClientConductorTest
         final Publication firstPublication = conductor.addPublication(CHANNEL, STREAM_ID_1);
 
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_OPERATION_SUCCESS, correlatedMessageBuffer, (buffer) -> CorrelatedMessageFlyweight.LENGTH);
+            ControlProtocolEvents.ON_OPERATION_SUCCESS,
+            correlatedMessageBuffer,
+            (buffer) -> CorrelatedMessageFlyweight.LENGTH);
 
         firstPublication.close();
 
@@ -311,7 +315,9 @@ public class ClientConductorTest
         verify(driverProxy, never()).removePublication(CORRELATION_ID);
 
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_OPERATION_SUCCESS, correlatedMessageBuffer, (buffer) -> CorrelatedMessageFlyweight.LENGTH);
+            ControlProtocolEvents.ON_OPERATION_SUCCESS,
+            correlatedMessageBuffer,
+            (buffer) -> CorrelatedMessageFlyweight.LENGTH);
 
         publication.close();
 
@@ -341,7 +347,9 @@ public class ClientConductorTest
         conductor.addPublication(CHANNEL, STREAM_ID_2);
 
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_OPERATION_SUCCESS, correlatedMessageBuffer, (buffer) -> CorrelatedMessageFlyweight.LENGTH);
+            ControlProtocolEvents.ON_OPERATION_SUCCESS,
+            correlatedMessageBuffer,
+            (buffer) -> CorrelatedMessageFlyweight.LENGTH);
 
         publication.close();
 

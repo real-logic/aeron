@@ -60,7 +60,8 @@ public class SimpleSubscriber
 
                 System.out.println(String.format(
                     "Received message (%s) to stream %d from session %x term id %x term offset %d (%d@%d)",
-                    new String(data), streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
+                    new String(data), streamId, header.sessionId(),
+                    header.termId(), header.termOffset(), length, offset));
 
                 // Received the intended message, time to exit the program
                 running.set(false);

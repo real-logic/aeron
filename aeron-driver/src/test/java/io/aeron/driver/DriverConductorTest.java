@@ -441,7 +441,8 @@ public class DriverConductorTest
         final RawLog rawLog = publication.rawLog();
         final TermAppender appender = new TermAppender(rawLog.termBuffers()[index], rawLog.metaData(), index);
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[256]);
-        final HeaderWriter headerWriter = new HeaderWriter(createDefaultHeader(publication.sessionId(), STREAM_ID_1, termId));
+        final HeaderWriter headerWriter = new HeaderWriter(
+            createDefaultHeader(publication.sessionId(), STREAM_ID_1, termId));
 
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(termId);
@@ -475,7 +476,8 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        verify(receiverProxy, times(1)).removeSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
+        verify(receiverProxy, times(1))
+            .removeSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
 
         assertNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
     }

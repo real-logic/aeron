@@ -70,8 +70,8 @@ public class RateSubscriber
         try (Aeron aeron = Aeron.connect(ctx);
              Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
-            final Future future = executor.submit(
-                () -> SamplesUtil.subscriberLoop(rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));
+            final Future future = executor.submit(() -> SamplesUtil.subscriberLoop(
+                rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
             reporter.run();
 

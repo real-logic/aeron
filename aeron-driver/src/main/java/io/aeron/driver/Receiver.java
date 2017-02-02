@@ -87,9 +87,11 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         return workCount + bytesReceived;
     }
 
-    public void addPendingSetupMessage(final int sessionId, final int streamId, final ReceiveChannelEndpoint channelEndpoint)
+    public void addPendingSetupMessage(
+        final int sessionId, final int streamId, final ReceiveChannelEndpoint channelEndpoint)
     {
-        final PendingSetupMessageFromSource cmd = new PendingSetupMessageFromSource(sessionId, streamId, channelEndpoint);
+        final PendingSetupMessageFromSource cmd = new PendingSetupMessageFromSource(
+            sessionId, streamId, channelEndpoint);
         cmd.timeOfStatusMessage(clock.nanoTime());
         pendingSetupMessages.add(cmd);
     }

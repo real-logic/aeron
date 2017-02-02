@@ -45,7 +45,8 @@ public class FlowControlStrategiesTest
 
     private static final int TERM_BUFFER_LENGTH = 64 * 1024;
     private static final int NUM_MESSAGES_PER_TERM = 64;
-    private static final int MESSAGE_LENGTH = (TERM_BUFFER_LENGTH / NUM_MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
+    private static final int MESSAGE_LENGTH =
+        (TERM_BUFFER_LENGTH / NUM_MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
     private static final String ROOT_DIR =
         IoUtil.tmpDirName() + "aeron-system-tests-" + UUID.randomUUID().toString() + File.separator;
 

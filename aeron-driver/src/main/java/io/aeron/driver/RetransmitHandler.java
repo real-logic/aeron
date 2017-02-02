@@ -25,10 +25,10 @@ import static io.aeron.driver.Configuration.MAX_RETRANSMITS_DEFAULT;
 import static io.aeron.driver.status.SystemCounterDescriptor.INVALID_PACKETS;
 
 /**
- * Tracking and handling of retransmit request, NAKs, for senders and receivers
+ * Tracking and handling of retransmit request, NAKs, for senders, and receivers.
  *
- * A max number of retransmits is permitted by {@link Configuration#MAX_RETRANSMITS_DEFAULT}. Additional received NAKs will be
- * ignored if this maximum is reached.
+ * A max number of retransmits is permitted by {@link Configuration#MAX_RETRANSMITS_DEFAULT}. Additional received NAKs
+ * will be ignored if this maximum is reached.
  */
 public class RetransmitHandler
 {
@@ -82,7 +82,8 @@ public class RetransmitHandler
     {
         if (!isInvalid(termOffset, termLength))
         {
-            if (null == activeRetransmitsMap.get(termId, termOffset) && activeRetransmitsMap.size() < MAX_RETRANSMITS_DEFAULT)
+            if (null == activeRetransmitsMap.get(termId, termOffset) &&
+                activeRetransmitsMap.size() < MAX_RETRANSMITS_DEFAULT)
             {
                 final RetransmitAction action = assignRetransmitAction();
                 action.termId = termId;

@@ -115,7 +115,8 @@ public class SelectorAndTransportTest
     @Test(timeout = 1000)
     public void shouldHandleBasicSetupAndTearDown() throws Exception
     {
-        receiveChannelEndpoint = new ReceiveChannelEndpoint(RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(
+            RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
 
         receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
@@ -144,7 +145,8 @@ public class SelectorAndTransportTest
             anyInt(),
             any(InetSocketAddress.class));
 
-        receiveChannelEndpoint = new ReceiveChannelEndpoint(RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(
+            RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
 
         receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
@@ -192,7 +194,8 @@ public class SelectorAndTransportTest
             anyInt(),
             any(InetSocketAddress.class));
 
-        receiveChannelEndpoint = new ReceiveChannelEndpoint(RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(
+            RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
 
         receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
@@ -248,7 +251,8 @@ public class SelectorAndTransportTest
             })
             .when(mockPublication).onStatusMessage(any(), any());
 
-        receiveChannelEndpoint = new ReceiveChannelEndpoint(RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(
+            RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
         sendChannelEndpoint.registerForSend(mockPublication);
 

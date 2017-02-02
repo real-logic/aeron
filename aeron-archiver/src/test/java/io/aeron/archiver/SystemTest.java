@@ -78,10 +78,10 @@ public class SystemTest
         archiver = Archiver.launch(ctx);
         System.out.println("Archiver started, folder:" + ctx.archiveFolder().getAbsolutePath());
         publishingClient = Aeron.connect();
-        archiverServiceRequest = publishingClient.addPublication(ctx.serviceRequestChannel(),
-                                                                 ctx.serviceRequestStreamId());
-        archiverNotifications = publishingClient.addSubscription(ctx.archiverNotificationsChannel(),
-                                                                 ctx.archiverNotificationsStreamId());
+        archiverServiceRequest = publishingClient.addPublication(
+            ctx.serviceRequestChannel(), ctx.serviceRequestStreamId());
+        archiverNotifications = publishingClient.addSubscription(
+            ctx.archiverNotificationsChannel(), ctx.archiverNotificationsStreamId());
 
         while (!archiverServiceRequest.isConnected())
         {
@@ -99,12 +99,13 @@ public class SystemTest
         }
 
         // the archiver has subscribed to the pingPub, now we wait for the archive start message
-        while (0 >= archiverNotifications.poll((buffer, offset, length, header) ->
+        final FragmentHandler fragmentHandler = (buffer, offset, length, header) ->
         {
-            final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
-            Assert.assertEquals(ArchiveStartedNotificationDecoder.TEMPLATE_ID, hDecoder.templateId());
+            final MessageHeaderDecoder decoder = new MessageHeaderDecoder().wrap(buffer, offset);
+            Assert.assertEquals(ArchiveStartedNotificationDecoder.TEMPLATE_ID, decoder.templateId());
             final ArchiveStartedNotificationDecoder mDecoder = new ArchiveStartedNotificationDecoder();
-            mDecoder.wrap(buffer, offset + MessageHeaderDecoder.ENCODED_LENGTH, hDecoder.blockLength(), hDecoder.version());
+            mDecoder.wrap(
+                buffer, offset + MessageHeaderDecoder.ENCODED_LENGTH, decoder.blockLength(), decoder.version());
             Assert.assertEquals(mDecoder.streamId(), PUBLISH_STREAM_ID);
             Assert.assertEquals(mDecoder.channel(), PUBLISH_URI);
             Assert.assertEquals(mDecoder.sessionId(), publication.sessionId());
@@ -112,7 +113,9 @@ public class SystemTest
             source = mDecoder.source();
             System.out.println("Archive started. source: " + source);
 
-        }, 1))
+        };
+
+        while (0 >= archiverNotifications.poll(fragmentHandler, 1))
         {
             LockSupport.parkNanos(1000);
         }
@@ -121,12 +124,13 @@ public class SystemTest
     private void requestArchive(String channel, int streamId)
     {
         final MessageHeaderEncoder hEncoder = new MessageHeaderEncoder().wrap(buffer, 0);
-        hEncoder.templateId(ArchiveStartRequestEncoder.TEMPLATE_ID).
-                            blockLength(ArchiveStartRequestEncoder.BLOCK_LENGTH).
-                            schemaId(ArchiveStartRequestEncoder.SCHEMA_ID).
-                            version(ArchiveStartRequestEncoder.SCHEMA_VERSION);
+        hEncoder.templateId(ArchiveStartRequestEncoder.TEMPLATE_ID)
+            .blockLength(ArchiveStartRequestEncoder.BLOCK_LENGTH)
+            .schemaId(ArchiveStartRequestEncoder.SCHEMA_ID)
+            .version(ArchiveStartRequestEncoder.SCHEMA_VERSION);
 
-        final ArchiveStartRequestEncoder mEncoder = new ArchiveStartRequestEncoder().wrap(buffer, hEncoder.ENCODED_LENGTH);
+        final ArchiveStartRequestEncoder mEncoder = new ArchiveStartRequestEncoder()
+            .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH);
         mEncoder.channel(channel).streamId(streamId);
 
         while (archiverServiceRequest.offer(buffer) < 0)
@@ -138,12 +142,13 @@ public class SystemTest
     private void requestArchiveStop(String channel, int streamId)
     {
         final MessageHeaderEncoder hEncoder = new MessageHeaderEncoder().wrap(buffer, 0);
-        hEncoder.templateId(ArchiveStopRequestEncoder.TEMPLATE_ID).
-                blockLength(ArchiveStopRequestEncoder.BLOCK_LENGTH).
-                schemaId(ArchiveStopRequestEncoder.SCHEMA_ID).
-                version(ArchiveStopRequestEncoder.SCHEMA_VERSION);
+        hEncoder.templateId(ArchiveStopRequestEncoder.TEMPLATE_ID)
+            .blockLength(ArchiveStopRequestEncoder.BLOCK_LENGTH)
+            .schemaId(ArchiveStopRequestEncoder.SCHEMA_ID)
+            .version(ArchiveStopRequestEncoder.SCHEMA_VERSION);
 
-        final ArchiveStopRequestEncoder mEncoder = new ArchiveStopRequestEncoder().wrap(buffer, hEncoder.ENCODED_LENGTH);
+        final ArchiveStopRequestEncoder mEncoder = new ArchiveStopRequestEncoder()
+            .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH);
         mEncoder.channel(channel).streamId(streamId);
 
         while (archiverServiceRequest.offer(buffer) < 0)
@@ -152,39 +157,39 @@ public class SystemTest
         }
     }
 
-    private void requestReplay(String source,
-                               int sessionId,
-
-                               String channel,
-                               int streamId,
-
-                               int termId,
-                               int termOffset,
-                               int length,
-                               String replyChannel,
-                               int replayStreamId,
-                               int controlStreamId)
+    private void requestReplay(
+        String source,
+        int sessionId,
+        String channel,
+        int streamId,
+        int termId,
+        int termOffset,
+        int length,
+        String replyChannel,
+        int replayStreamId,
+        int controlStreamId)
     {
         final MessageHeaderEncoder hEncoder = new MessageHeaderEncoder().wrap(buffer, 0);
-        hEncoder.templateId(ReplayRequestEncoder.TEMPLATE_ID).
-                blockLength(ReplayRequestEncoder.BLOCK_LENGTH).
-                schemaId(ReplayRequestEncoder.SCHEMA_ID).
-                version(ReplayRequestEncoder.SCHEMA_VERSION);
+        hEncoder.templateId(ReplayRequestEncoder.TEMPLATE_ID)
+            .blockLength(ReplayRequestEncoder.BLOCK_LENGTH)
+            .schemaId(ReplayRequestEncoder.SCHEMA_ID)
+            .version(ReplayRequestEncoder.SCHEMA_VERSION);
 
-        final ReplayRequestEncoder mEncoder = new ReplayRequestEncoder().wrap(buffer, hEncoder.ENCODED_LENGTH);
-        mEncoder.source(source).
-                sessionId(sessionId);
+        final ReplayRequestEncoder mEncoder = new ReplayRequestEncoder()
+            .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH);
+        mEncoder.source(source)
+            .sessionId(sessionId);
 
-        mEncoder.channel(channel).
-                streamId(streamId);
+        mEncoder.channel(channel)
+            .streamId(streamId);
 
-        mEncoder.termId(termId).
-                termOffset(termOffset).
-                length(length);
+        mEncoder.termId(termId)
+            .termOffset(termOffset)
+            .length(length);
 
-        mEncoder.replyChannel(replyChannel).
-                replayStreamId(replayStreamId).
-                controlStreamId(controlStreamId);
+        mEncoder.replyChannel(replyChannel)
+            .replayStreamId(replayStreamId)
+            .controlStreamId(controlStreamId);
 
         System.out.println(mEncoder.toString());
         Assert.assertTrue(archiverServiceRequest.offer(buffer) > 0);
@@ -234,15 +239,17 @@ public class SystemTest
         requestArchiveStop(PUBLISH_URI, PUBLISH_STREAM_ID);
         System.out.println("Request stop archive");
 
-        // wait for the archive stopped message
-        poll(archiverNotifications, (buffer, offset, length, header) ->
+        final FragmentHandler fragmentHandler = (buffer, offset, length, header) ->
         {
             final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
             Assert.assertEquals(ArchiveStoppedNotificationDecoder.TEMPLATE_ID, hDecoder.templateId());
             final ArchiveStoppedNotificationDecoder mDecoder = new ArchiveStoppedNotificationDecoder();
-            mDecoder.wrap(buffer, offset + MessageHeaderDecoder.ENCODED_LENGTH, hDecoder.blockLength(), hDecoder.version());
+            mDecoder.wrap(
+                buffer, offset + MessageHeaderDecoder.ENCODED_LENGTH, hDecoder.blockLength(), hDecoder.version());
             Assert.assertEquals(mDecoder.instanceId(), instanceId);
-        }, 1);
+        };
+
+        poll(archiverNotifications, fragmentHandler, 1);
 
         System.out.println("Archive stopped");
 
@@ -262,18 +269,31 @@ public class SystemTest
     private void validateReplay()
     {
         // request replay
-        requestReplay(source, publication.sessionId(), PUBLISH_URI, PUBLISH_STREAM_ID, publication.initialTermId(), 0, delivered,
-                      REPLAY_URI, 1, 2);
+        requestReplay(
+            source,
+            publication.sessionId(),
+            PUBLISH_URI,
+            PUBLISH_STREAM_ID,
+            publication.initialTermId(),
+            0,
+            delivered,
+            REPLAY_URI,
+            1,
+            2);
+
         final Subscription replay = publishingClient.addSubscription(REPLAY_URI, 1);
         final Subscription control = publishingClient.addSubscription(REPLAY_URI, 2);
-        while (0 >= control.poll((buffer, offset, length, header) ->
+        final FragmentHandler fragmentHandlerOne = (buffer, offset, length, header) ->
         {
             final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
             Assert.assertEquals(ArchiverResponseDecoder.TEMPLATE_ID, hDecoder.templateId());
             final ArchiverResponseDecoder mDecoder = new ArchiverResponseDecoder();
-            mDecoder.wrap(buffer, offset + MessageHeaderDecoder.ENCODED_LENGTH, hDecoder.blockLength(), hDecoder.version());
+            mDecoder.wrap(
+                buffer, offset + MessageHeaderDecoder.ENCODED_LENGTH, hDecoder.blockLength(), hDecoder.version());
             Assert.assertEquals(mDecoder.err(), "");
-        }, 1))
+        };
+
+        while (0 >= control.poll(fragmentHandlerOne, 1))
         {
             LockSupport.parkNanos(1000);
         }
@@ -281,34 +301,37 @@ public class SystemTest
         // break replay back into data
         final DataHeaderFlyweight dHeader = new DataHeaderFlyweight();
         this.nextMessage = 0;
+
+        final FragmentHandler fragmentHandlerTwo = (directBuffer, offset, length, header) ->
+        {
+            int messageStart;
+            int frameLength;
+            do
+            {
+                messageStart = offset + (this.nextMessage % length);
+                dHeader.wrap(directBuffer, messageStart, length);
+                frameLength = dHeader.frameLength();
+                Assert.assertEquals(1024, frameLength);
+                if (messageStart + 32 < offset + length)
+                {
+                    final int index = directBuffer.getInt(messageStart + 32);
+                    Assert.assertEquals(this.fragmentCount, index);
+                    System.out.printf(
+                        "Fragment: length=%d \t, offset=%d \t, getInt(0)=%d \n", frameLength,
+                        (this.nextMessage % length),
+                        index);
+                }
+                this.fragmentCount++;
+                this.nextMessage += frameLength;
+            }
+            while (messageStart + frameLength < offset + length);
+
+            delivered -= length;
+        };
+
         while (delivered > 0)
         {
-            poll(replay, (directBuffer, offset, length, header) ->
-            {
-                int messageStart;
-                int frameLength;
-                do
-                {
-                    messageStart = offset + (this.nextMessage % length);
-                    dHeader.wrap(directBuffer, messageStart, length);
-                    frameLength = dHeader.frameLength();
-                    Assert.assertEquals(1024, frameLength);
-                    if (messageStart + 32 < offset + length)
-                    {
-                        final int index = directBuffer.getInt(messageStart + 32);
-                        Assert.assertEquals(this.fragmentCount, index);
-                        System.out.printf("Fragment: length=%d \t, offset=%d \t, getInt(0)=%d \n", frameLength,
-                                          (this.nextMessage % length),
-                                          index);
-                    }
-                    this.fragmentCount++;
-                    this.nextMessage += frameLength;
-                }
-                while (messageStart + frameLength < offset + length);
-
-                delivered -= length;
-
-            }, 1);
+            poll(replay, fragmentHandlerTwo, 1);
             {
                 LockSupport.parkNanos(1000);
             }
@@ -317,8 +340,9 @@ public class SystemTest
 
     private void validateArchiveFile(int messageCount, String instance) throws IOException
     {
-        final File archiveFile1 = new File(archiveFolder, ArchiveFileUtil
-                .archiveDataFileName(instance, publication.initialTermId(), publication.termBufferLength()));
+        final File archiveFile1 = new File(
+            archiveFolder,
+            ArchiveFileUtil.archiveDataFileName(instance, publication.initialTermId(), publication.termBufferLength()));
         Assert.assertTrue(archiveFile1.exists());
 
         // validate file data
@@ -344,6 +368,20 @@ public class SystemTest
 
     private void trackArchiveProgress(int messageCount, CountDownLatch waitForData)
     {
+        final FragmentHandler fragmentHandler = (buffer, offset, length, header) ->
+        {
+            final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
+            Assert.assertEquals(ArchiveProgressNotificationDecoder.TEMPLATE_ID, hDecoder.templateId());
+            final ArchiveProgressNotificationDecoder mDecoder = new ArchiveProgressNotificationDecoder();
+            mDecoder.wrap(
+                buffer, offset + MessageHeaderDecoder.ENCODED_LENGTH, hDecoder.blockLength(), hDecoder.version());
+            Assert.assertEquals(instanceId, mDecoder.instanceId());
+            Assert.assertEquals(publication.initialTermId(), mDecoder.initialTermId());
+            Assert.assertEquals(0, mDecoder.initialTermOffset());
+            delivered = publication.termBufferLength() * (mDecoder.termId() - mDecoder.initialTermId()) +
+                (mDecoder.termOffset() - mDecoder.initialTermOffset());
+        };
+
         Thread t = new Thread(() ->
         {
             delivered = 0;
@@ -352,20 +390,7 @@ public class SystemTest
             // each message is 1024
             while (delivered < messageCount * 1024)
             {
-                if (0 == archiverNotifications.poll(
-                    (buffer, offset, length, header) ->
-                    {
-                        final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
-                        Assert.assertEquals(ArchiveProgressNotificationDecoder.TEMPLATE_ID, hDecoder.templateId());
-                        final ArchiveProgressNotificationDecoder mDecoder = new ArchiveProgressNotificationDecoder();
-                        mDecoder.wrap(buffer, offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                                      hDecoder.blockLength(), hDecoder.version());
-                        Assert.assertEquals(instanceId, mDecoder.instanceId());
-                        Assert.assertEquals(publication.initialTermId(), mDecoder.initialTermId());
-                        Assert.assertEquals(0, mDecoder.initialTermOffset());
-                        delivered = publication.termBufferLength() *  (mDecoder.termId() - mDecoder.initialTermId()) +
-                                    (mDecoder.termOffset() - mDecoder.initialTermOffset());
-                    }, 1))
+                if (0 == archiverNotifications.poll(fragmentHandler, 1))
                 {
                     LockSupport.parkNanos(1000);
                 }
@@ -381,6 +406,7 @@ public class SystemTest
                     System.out.printf("Archive reported speed: %f MB/s \n", mbps);
                 }
             }
+
             final long end = System.currentTimeMillis();
             final long deltaTime = end - start;
 

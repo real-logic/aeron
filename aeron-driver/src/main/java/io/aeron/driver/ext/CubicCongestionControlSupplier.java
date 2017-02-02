@@ -36,6 +36,14 @@ public class CubicCongestionControlSupplier implements CongestionControlSupplier
         final CountersManager countersManager)
     {
         return new CubicCongestionControl(
-            registrationId, udpChannel, streamId, sessionId, termLength, senderMtuLength, clock, context, countersManager);
+            registrationId,
+            udpChannel,
+            streamId,
+            sessionId,
+            termLength,
+            senderMtuLength,
+            clock,
+            context,
+            countersManager);
     }
 }

@@ -332,6 +332,21 @@ public class DriverConductorTest
     }
 
     @Test
+    public void shouldAddPublicationWithMtu() throws Exception
+    {
+        final int mtuLength = 4096;
+        final String mtuParam = "|" + CommonContext.MTU_LENGTH_URI_PARAM_NAME + "=" + mtuLength;
+        driverProxy.addPublication(CHANNEL_4000 + mtuParam, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
+
+        assertThat(argumentCaptor.getValue().mtuLength(), is(mtuLength));
+    }
+
+    @Test
     public void shouldErrorOnRemoveSubscriptionOnUnknownRegistrationId() throws Exception
     {
         final long id1 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);

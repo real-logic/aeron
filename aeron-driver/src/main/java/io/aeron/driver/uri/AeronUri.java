@@ -221,36 +221,4 @@ public class AeronUri
 
         return true;
     }
-
-    public static class Builder
-    {
-        private final Map<String, String> params = new HashMap<>();
-        private String media;
-
-        public Builder media(final String media)
-        {
-            this.media = media;
-            return this;
-        }
-
-        public Builder param(final String key, final String value)
-        {
-            if (null != key && null != value)
-            {
-                params.put(key, value);
-            }
-
-            return this;
-        }
-
-        public AeronUri newInstance()
-        {
-            return new AeronUri("aeron", media, params);
-        }
-    }
-
-    public static Builder builder()
-    {
-        return new Builder();
-    }
 }

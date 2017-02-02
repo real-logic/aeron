@@ -188,6 +188,11 @@ public class NetworkPublication
         rawLog.close();
     }
 
+    public int mtuLength()
+    {
+        return mtuLength;
+    }
+
     public int send(final long now)
     {
         final long senderPosition = this.senderPosition.get();

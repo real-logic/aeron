@@ -383,6 +383,10 @@ public final class Aeron implements AutoCloseable
             return this;
         }
 
+        public IdleStrategy idleStrategy()
+        {
+            return idleStrategy;
+        }
         /**
          * This method is used for testing and debugging.
          *
@@ -432,6 +436,11 @@ public final class Aeron implements AutoCloseable
         {
             this.errorHandler = errorHandler;
             return this;
+        }
+
+        public ErrorHandler errorHandler()
+        {
+            return errorHandler;
         }
 
         /**

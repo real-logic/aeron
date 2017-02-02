@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<messageSchema package="io.aeron.archiver.messages"
+               id="1"
+               semanticVersion="5.2"
+               description="Archiver Protocol"
+               byteOrder="littleEndian">
+    <types>
+        <composite name="messageHeader" description="Message identifiers and length of message root">
+            <type name="blockLength"    primitiveType="uint16"/>
+            <type name="templateId"     primitiveType="uint16"/>
+            <type name="schemaId"       primitiveType="uint16"/>
+            <type name="version"        primitiveType="uint16"/>
+        </composite>
+        <composite name="varDataEncoding">
+            <type name="length"     primitiveType="uint32" maxValue="1073741824"/>
+            <type name="varData"    primitiveType="uint8" length="0" characterEncoding="ASCII"/>
+        </composite>
+    </types>
+
+    <message name="ArchiverResponse" id="1" description="Empty error is an OK response" >
+        <data   name="err"  id="1" type="varDataEncoding" />
+    </message>
+
+    <message name="ArchiveStartRequest"   id="2" description="Request a channel + stream be archived" >
+        <field  name="streamId"       id="1" type="int32" />
+        <data   name="channel"        id="2" type="varDataEncoding" />
+    </message>
+
+    <message name="ArchiveStartedNotification" id="21" description="Describes a new stream instance" >
+        <field  name="instanceId"     id="1" type="int32" />
+        <field  name="sessionId"      id="2" type="int32" />
+        <field  name="streamId"       id="3" type="int32" />
+        <data   name="source"         id="4" type="varDataEncoding" />
+        <data   name="channel"        id="5" type="varDataEncoding" />
+    </message>
+
+    <message name="ArchiveProgressNotification" id="22" description="Archival progress" >
+        <field  name="instanceId"        id="1" type="int32" />
+        <field  name="initialTermId"     id="2" type="int32" />
+        <field  name="initialTermOffset" id="3" type="int32" />
+        <field  name="termId"            id="4" type="int32" />
+        <field  name="termOffset"        id="5" type="int32" />
+    </message>
+
+    <message name="ArchiveStoppedNotification" id="23" description="Archival progress" >
+        <field  name="instanceId"        id="1" type="int32" />
+    </message>
+
+    <message name="ArchiveStopRequest"   id="3" description="Request a channel + stream stop archiving" >
+        <field  name="streamId"       id="1" type="int32" />
+        <data   name="channel"        id="2" type="varDataEncoding" />
+    </message>
+
+    <message name="ReplayRequest"   id="4" description="ReplayRequest" >
+        <field  name="sessionId"     id="1" type="int32" />
+        <field  name="streamId"      id="2" type="int32" />
+
+        <field  name="termId"        id="3" type="int32" />
+        <field  name="termOffset"    id="4" type="int32" />
+        <field  name="length"        id="5" type="int32" />
+
+        <field  name="controlStreamId" id="6"  type="int32" />
+        <field  name="replayStreamId"  id="7" type="int32" />
+
+        <data   name="source"         id="8" type="varDataEncoding" />
+        <data   name="channel"        id="9" type="varDataEncoding" />
+        <data   name="replyChannel"   id="10"  type="varDataEncoding" />
+    </message>
+
+    <message name="AbortReplayRequest" id="5" description="Enable early close of replay" >
+    </message>
+
+    <message name="ArchiveMetaFileFormat" id="6" description="Describes a new stream instance" >
+        <field  name="instanceId"           id="1" type="int32" />
+        <field  name="termBufferLength"     id="2" type="int32" />
+        <field  name="startTime"            id="3" type="int64" />
+        <field  name="initialTermId"        id="4" type="int32" />
+        <field  name="initialTermOffset"    id="5" type="int32" />
+        <field  name="lastTermId"           id="6" type="int32" />
+        <field  name="lastTermOffset"       id="7" type="int32" />
+        <field  name="endTime"              id="8" type="int64" />
+    </message>
+</messageSchema>

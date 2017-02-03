@@ -38,9 +38,9 @@ public final class TermScanner
      * @param maxLength  in bytes of how much should be scanned.
      * @return resulting status of the scan which packs the available bytes and padding into a long.
      */
-    public static long scanForAvailability(final UnsafeBuffer termBuffer, final int offset, int maxLength)
+    public static long scanForAvailability(final UnsafeBuffer termBuffer, final int offset, final int maxLength)
     {
-        maxLength = Math.min(maxLength, termBuffer.capacity() - offset);
+        final int limit = Math.min(maxLength, termBuffer.capacity() - offset);
         int available = 0;
         int padding = 0;
 
@@ -62,14 +62,14 @@ public final class TermScanner
 
             available += alignedFrameLength;
 
-            if (available > maxLength)
+            if (available > limit)
             {
                 available -= alignedFrameLength;
                 padding = 0;
                 break;
             }
         }
-        while (0 == padding && available < maxLength);
+        while (0 == padding && available < limit);
 
         return pack(padding, available);
     }

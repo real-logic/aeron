@@ -524,7 +524,7 @@ public final class Aeron implements AutoCloseable
         /**
          * @see CommonContext#aeronDirectoryName(String)
          */
-        public Context aeronDirectoryName(String dirName)
+        public Context aeronDirectoryName(final String dirName)
         {
             super.aeronDirectoryName(dirName);
             return this;
@@ -572,7 +572,7 @@ public final class Aeron implements AutoCloseable
          * @param threadFactory thread factory to construct the thread.
          * @return this for a fluent API.
          */
-        public Context threadFactory(ThreadFactory threadFactory)
+        public Context threadFactory(final ThreadFactory threadFactory)
         {
             this.threadFactory = threadFactory;
             return this;

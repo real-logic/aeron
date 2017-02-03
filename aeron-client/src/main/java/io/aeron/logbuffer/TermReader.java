@@ -35,7 +35,7 @@ public class TermReader
      * If a fragmentsLimit of 0 or less is passed then at least one read will be attempted.
      *
      * @param termBuffer     to be read for fragments.
-     * @param offset         offset within the buffer that the read should begin.
+     * @param termOffset     within the buffer that the read should begin.
      * @param handler        the handler for data that has been read
      * @param fragmentsLimit limit the number of fragments read.
      * @param header         to be used for mapping over the header for a given fragment.
@@ -44,13 +44,14 @@ public class TermReader
      */
     public static long read(
         final UnsafeBuffer termBuffer,
-        int offset,
+        final int termOffset,
         final FragmentHandler handler,
         final int fragmentsLimit,
         final Header header,
         final ErrorHandler errorHandler)
     {
         int fragmentsRead = 0;
+        int offset = termOffset;
         final int capacity = termBuffer.capacity();
 
         try
@@ -63,15 +64,15 @@ public class TermReader
                     break;
                 }
 
-                final int termOffset = offset;
+                final int frameOffset = offset;
                 offset += BitUtil.align(frameLength, FRAME_ALIGNMENT);
 
-                if (!isPaddingFrame(termBuffer, termOffset))
+                if (!isPaddingFrame(termBuffer, frameOffset))
                 {
                     header.buffer(termBuffer);
-                    header.offset(termOffset);
+                    header.offset(frameOffset);
 
-                    handler.onFragment(termBuffer, termOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH, header);
+                    handler.onFragment(termBuffer, frameOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH, header);
 
                     ++fragmentsRead;
                 }

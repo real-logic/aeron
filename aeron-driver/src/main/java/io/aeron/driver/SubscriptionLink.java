@@ -50,7 +50,7 @@ public class SubscriptionLink implements DriverManagedResource
         final int streamId,
         final String channelUri,
         final AeronClient aeronClient,
-        long clientLivenessTimeoutNs,
+        final long clientLivenessTimeoutNs,
         final boolean isReliable)
     {
         this.registrationId = registrationId;
@@ -72,7 +72,7 @@ public class SubscriptionLink implements DriverManagedResource
         final DirectPublication directPublication,
         final ReadablePosition subscriberPosition,
         final AeronClient aeronClient,
-        long clientLivenessTimeoutNs)
+        final long clientLivenessTimeoutNs)
     {
         this.registrationId = registrationId;
         this.channelEndpoint = null; // will prevent matches between PublicationImages and DirectPublications
@@ -93,7 +93,7 @@ public class SubscriptionLink implements DriverManagedResource
         final int streamId,
         final String channelUri,
         final AeronClient aeronClient,
-        long clientLivenessTimeoutNs)
+        final long clientLivenessTimeoutNs)
     {
         this.registrationId = registrationId;
         this.channelEndpoint = null;

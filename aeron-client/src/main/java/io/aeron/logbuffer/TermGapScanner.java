@@ -54,7 +54,7 @@ public class TermGapScanner
      *
      * @param termBuffer  to be scanned for a gap.
      * @param termId      of the current term buffer.
-     * @param scanOffset  at which to start scanning.
+     * @param termOffset  at which to start scanning.
      * @param limitOffset at which to stop scanning.
      * @param handler     to call if a gap is found.
      * @return offset of last contiguous frame
@@ -62,38 +62,39 @@ public class TermGapScanner
     public static int scanForGap(
         final UnsafeBuffer termBuffer,
         final int termId,
-        int scanOffset,
+        final int termOffset,
         final int limitOffset,
         final GapHandler handler)
     {
+        int offset = termOffset;
         do
         {
-            final int frameLength = frameLengthVolatile(termBuffer, scanOffset);
+            final int frameLength = frameLengthVolatile(termBuffer, offset);
             if (frameLength <= 0)
             {
                 break;
             }
 
-            scanOffset += align(frameLength, FRAME_ALIGNMENT);
+            offset += align(frameLength, FRAME_ALIGNMENT);
         }
-        while (scanOffset < limitOffset);
+        while (offset < limitOffset);
 
-        final int gapBeginOffset = scanOffset;
-        if (scanOffset < limitOffset)
+        final int gapBeginOffset = offset;
+        if (offset < limitOffset)
         {
             final int limit = limitOffset - ALIGNED_HEADER_LENGTH;
-            while (scanOffset < limit)
+            while (offset < limit)
             {
-                scanOffset += FRAME_ALIGNMENT;
+                offset += FRAME_ALIGNMENT;
 
-                if (0 != termBuffer.getIntVolatile(scanOffset))
+                if (0 != termBuffer.getIntVolatile(offset))
                 {
-                    scanOffset -= ALIGNED_HEADER_LENGTH;
+                    offset -= ALIGNED_HEADER_LENGTH;
                     break;
                 }
             }
 
-            final int gapLength = (scanOffset - gapBeginOffset) + ALIGNED_HEADER_LENGTH;
+            final int gapLength = (offset - gapBeginOffset) + ALIGNED_HEADER_LENGTH;
             handler.onGap(termId, gapBeginOffset, gapLength);
         }
 

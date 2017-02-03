@@ -549,7 +549,7 @@ public class ClientConductorTest
 
     private class PrintError implements ErrorHandler
     {
-        public void onError(Throwable throwable)
+        public void onError(final Throwable throwable)
         {
             if (!suppressPrintError)
             {

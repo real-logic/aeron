@@ -242,7 +242,7 @@ public class NetworkPublication
         }
     }
 
-    public void resend(final int termId, int termOffset, final int length)
+    public void resend(final int termId, final int termOffset, final int length)
     {
         final long senderPosition = this.senderPosition.get();
         final long resendPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
@@ -255,18 +255,19 @@ public class NetworkPublication
 
             int remainingBytes = length;
             int bytesSent = 0;
+            int offset = termOffset;
             do
             {
-                termOffset += bytesSent;
+                offset += bytesSent;
 
-                final long scanOutcome = scanForAvailability(termBuffer, termOffset, mtuLength);
+                final long scanOutcome = scanForAvailability(termBuffer, offset, mtuLength);
                 final int available = available(scanOutcome);
                 if (available <= 0)
                 {
                     break;
                 }
 
-                sendBuffer.limit(termOffset + available).position(termOffset);
+                sendBuffer.limit(offset + available).position(offset);
 
                 if (available != channelEndpoint.send(sendBuffer))
                 {

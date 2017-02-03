@@ -89,7 +89,7 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
         }
     }
 
-    public void onRttMeasurement(RttMeasurementFlyweight msg, InetSocketAddress srcAddress)
+    public void onRttMeasurement(final RttMeasurementFlyweight msg, final InetSocketAddress srcAddress)
     {
         if (!controlLossGenerator.shouldDropFrame(srcAddress, msg, msg.frameLength()))
         {

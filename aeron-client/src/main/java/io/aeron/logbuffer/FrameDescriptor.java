@@ -253,14 +253,15 @@ public class FrameDescriptor
      * @param termOffset  at which a frame begins.
      * @param frameLength field to be set for the frame.
      */
-    public static void frameLengthOrdered(final UnsafeBuffer buffer, final int termOffset, int frameLength)
+    public static void frameLengthOrdered(final UnsafeBuffer buffer, final int termOffset, final int frameLength)
     {
+        int length = frameLength;
         if (ByteOrder.nativeOrder() != LITTLE_ENDIAN)
         {
-            frameLength = Integer.reverseBytes(frameLength);
+            length = Integer.reverseBytes(frameLength);
         }
 
-        buffer.putIntOrdered(termOffset, frameLength);
+        buffer.putIntOrdered(termOffset, length);
     }
 
     /**

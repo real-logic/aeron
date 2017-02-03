@@ -170,7 +170,7 @@ public class NetworkUtil
             (((long)b[offset]) << 56);
     }
 
-    public static ProtocolFamily getProtocolFamily(InetAddress address)
+    public static ProtocolFamily getProtocolFamily(final InetAddress address)
     {
         if (address instanceof Inet4Address)
         {

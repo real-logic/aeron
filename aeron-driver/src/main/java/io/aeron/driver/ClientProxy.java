@@ -53,17 +53,14 @@ public class ClientProxy
         imageMessage.wrap(buffer, 0);
     }
 
-    public void onError(final ErrorCode errorCode, String errorMessage, final long correlationId)
+    public void onError(final ErrorCode errorCode, final String errorMessage, final long correlationId)
     {
-        if (null == errorMessage)
-        {
-            errorMessage = "";
-        }
+        final String msg = null == errorMessage ? "" : errorMessage;
 
         errorResponse
             .offendingCommandCorrelationId(correlationId)
             .errorCode(errorCode)
-            .errorMessage(errorMessage);
+            .errorMessage(msg);
 
         transmit(ON_ERROR, buffer, 0, errorResponse.length());
     }

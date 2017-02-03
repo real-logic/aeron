@@ -27,7 +27,7 @@ public class CloseNetworkPublicationCmd implements DriverConductorCmd
         this.publication = publication;
     }
 
-    public void execute(DriverConductor conductor)
+    public void execute(final DriverConductor conductor)
     {
         conductor.onClosePublication(publication);
     }

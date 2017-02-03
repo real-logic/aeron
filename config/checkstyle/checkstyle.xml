@@ -6,6 +6,8 @@
         <property name="file" value="config/checkstyle/suppress.xml"/>
     </module>
 
+    <module name="SuppressWarningsFilter"/>
+
     <module name="SeverityMatchFilter">
         <property name="severity" value="info"/>
         <property name="acceptOnMatch" value="false"/>
@@ -19,9 +21,13 @@
         <property name="tabWidth" value="4"/>
         <property name="severity" value="error"/>
 
+        <module name="SuppressWarningsHolder"/>
+
         <module name="Indentation"/>
 
         <module name="ConstantName"/>
+
+        <module name="FinalParameters"/>
 
         <module name="FinalLocalVariable"/>
 

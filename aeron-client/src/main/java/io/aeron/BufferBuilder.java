@@ -165,8 +165,9 @@ public class BufferBuilder
         }
     }
 
-    private static int findSuitableCapacity(int capacity, final int requiredCapacity)
+    private static int findSuitableCapacity(final int currentCapacity, final int requiredCapacity)
     {
+        int capacity = currentCapacity;
         do
         {
             capacity <<= 1;

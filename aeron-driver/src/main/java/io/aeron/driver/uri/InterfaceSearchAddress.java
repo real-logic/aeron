@@ -35,7 +35,7 @@ public class InterfaceSearchAddress
     private final InetSocketAddress address;
     private final int subnetPrefix;
 
-    public InterfaceSearchAddress(InetSocketAddress address, int subnetPrefix)
+    public InterfaceSearchAddress(final InetSocketAddress address, final int subnetPrefix)
     {
         this.address = address;
         this.subnetPrefix = subnetPrefix;
@@ -61,7 +61,7 @@ public class InterfaceSearchAddress
         return address.getPort();
     }
 
-    public static InterfaceSearchAddress parse(String s) throws UnknownHostException
+    public static InterfaceSearchAddress parse(final String s) throws UnknownHostException
     {
         if (Strings.isEmpty(s))
         {
@@ -78,7 +78,7 @@ public class InterfaceSearchAddress
         return new InterfaceSearchAddress(new InetSocketAddress(hostAddress, port), subnetPrefix);
     }
 
-    private static Matcher getMatcher(CharSequence cs)
+    private static Matcher getMatcher(final CharSequence cs)
     {
         final Matcher ipV4Matcher = IPV4_ADDRESS_PATTERN.matcher(cs);
 

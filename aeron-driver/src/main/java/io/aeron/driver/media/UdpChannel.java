@@ -145,7 +145,7 @@ public final class UdpChannel
         }
     }
 
-    private static InetSocketAddress getMulticastControlAddress(InetSocketAddress endpointAddress)
+    private static InetSocketAddress getMulticastControlAddress(final InetSocketAddress endpointAddress)
         throws UnknownHostException
     {
         final byte[] addressAsBytes = endpointAddress.getAddress().getAddress();

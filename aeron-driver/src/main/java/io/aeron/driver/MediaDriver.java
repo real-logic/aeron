@@ -1003,7 +1003,7 @@ public final class MediaDriver implements AutoCloseable
         /**
          * @see CommonContext#aeronDirectoryName(String)
          */
-        public Context aeronDirectoryName(String dirName)
+        public Context aeronDirectoryName(final String dirName)
         {
             super.aeronDirectoryName(dirName);
             return this;

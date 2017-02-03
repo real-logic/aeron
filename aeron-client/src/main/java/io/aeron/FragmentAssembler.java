@@ -87,7 +87,8 @@ public class FragmentAssembler implements FragmentHandler
         }
     }
 
-    private void handleFragment(DirectBuffer buffer, int offset, int length, Header header, byte flags)
+    private void handleFragment(
+        final DirectBuffer buffer, final int offset, final int length, final Header header, final byte flags)
     {
         if ((flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG)
         {

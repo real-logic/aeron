@@ -30,12 +30,14 @@ public class TermBlockScanner
      * Scan a term buffer for a block of messages from an offset up to a limit.
      *
      * @param termBuffer to scan for messages.
-     * @param offset     at which the scan should begin.
+     * @param termOffset at which the scan should begin.
      * @param limit      at which the scan should stop.
      * @return the offset at which the scan terminated.
      */
-    public static int scan(final UnsafeBuffer termBuffer, int offset, final int limit)
+    public static int scan(final UnsafeBuffer termBuffer, final int termOffset, final int limit)
     {
+        int offset = termOffset;
+
         do
         {
             final int frameLength = frameLengthVolatile(termBuffer, offset);

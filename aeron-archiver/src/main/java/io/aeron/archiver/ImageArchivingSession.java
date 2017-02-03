@@ -45,10 +45,10 @@ import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
  *
  * Data in the files is expected to cover from initial positions to last. Each file covers (1GB/term size) terms.
  * To find data by term id and offset you can find the file and position by calculating:<br>
- *  <ul>
- *    <li>file index = (term - initial term)/(1GB/term size)</li>
- *    <li>file position = offset + term size * [ (term - initial term) % (1GB/term size) ] </li>
- *  </ul>
+ * <ul>
+ * <li>file index = (term - initial term)/(1GB/term size)</li>
+ * <li>file position = offset + term size * [ (term - initial term) % (1GB/term size) ] </li>
+ * </ul>
  */
 class ImageArchivingSession implements RawBlockHandler
 {
@@ -56,17 +56,16 @@ class ImageArchivingSession implements RawBlockHandler
     {
         INIT
         {
-            @Override
-            int doWork(ImageArchivingSession session)
+            int doWork(final ImageArchivingSession session)
             {
                 session.state(ARCHIVING);
                 return 1;
             }
         },
+
         ARCHIVING
         {
-            @Override
-            int doWork(ImageArchivingSession session)
+            int doWork(final ImageArchivingSession session)
             {
                 final int delta = session.image.rawPoll(session, ArchiveFileUtil.ARCHIVE_FILE_SIZE);
                 if (session.image.isClosed())
@@ -76,10 +75,10 @@ class ImageArchivingSession implements RawBlockHandler
                 return delta;
             }
         },
+
         CLOSE
         {
-            @Override
-            int doWork(ImageArchivingSession session)
+            int doWork(final ImageArchivingSession session)
             {
                 CloseHelper.quietClose(session.archiveFileChannel);
                 if (session.metaDataBuffer != null)
@@ -93,10 +92,10 @@ class ImageArchivingSession implements RawBlockHandler
                 return 1;
             }
         },
+
         DONE
         {
-            @Override
-            int doWork(ImageArchivingSession session)
+            int doWork(final ImageArchivingSession session)
             {
                 return 0;
             }
@@ -129,7 +128,7 @@ class ImageArchivingSession implements RawBlockHandler
      */
     int index = -1;
 
-    ImageArchivingSession(ArchiverConductor archiverConductor, Image image)
+    ImageArchivingSession(final ArchiverConductor archiverConductor, final Image image)
     {
         this.archiverConductor = archiverConductor;
         this.image = image;
@@ -141,16 +140,15 @@ class ImageArchivingSession implements RawBlockHandler
         {
             throw new IllegalArgumentException(
                 "It is assumed the termBufferLength is a power of 2 smaller than 1G and that" +
-                "therefore the number of terms in a file is also a power of 2");
+                    "therefore the number of terms in a file is also a power of 2");
         }
         final Subscription subscription = image.subscription();
-        streamInstanceId = archiverConductor.notifyArchiveStarted(image.sourceIdentity(), image.sessionId(),
-                                                                  subscription.channel(), subscription.streamId());
+        streamInstanceId = archiverConductor.notifyArchiveStarted(
+            image.sourceIdentity(), image.sessionId(), subscription.channel(), subscription.streamId());
 
 
         final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
-        final File file = new File(archiverConductor.archiveFolder(),
-                                   archiveMetaFileName);
+        final File file = new File(archiverConductor.archiveFolder(), archiveMetaFileName);
         final RandomAccessFile randomAccessFile;
         try
         {
@@ -181,12 +179,11 @@ class ImageArchivingSession implements RawBlockHandler
     }
 
 
-    private void newArchiveFile(int termId)
+    private void newArchiveFile(final int termId)
     {
         final String archiveDataFileName =
-                archiveDataFileName(streamInstanceId, initialTermId, termBufferLength, termId);
-        final File file = new File(archiverConductor.archiveFolder(),
-                                   archiveDataFileName);
+            archiveDataFileName(streamInstanceId, initialTermId, termBufferLength, termId);
+        final File file = new File(archiverConductor.archiveFolder(), archiveDataFileName);
 
         final RandomAccessFile randomAccessFile;
         try
@@ -195,7 +192,7 @@ class ImageArchivingSession implements RawBlockHandler
             archiveFileChannel = randomAccessFile.getChannel();
             // presize the file
             archiveFileChannel.position(ArchiveFileUtil.ARCHIVE_FILE_SIZE - 1);
-            archiveFileChannel.write(ByteBuffer.wrap(new byte[]{0}));
+            archiveFileChannel.write(ByteBuffer.wrap(new byte[]{ 0 }));
             archiveFileChannel.position(0);
         }
         catch (IOException e)
@@ -207,13 +204,13 @@ class ImageArchivingSession implements RawBlockHandler
 
 
     public void onBlock(
-        FileChannel fileChannel,
-        long fileOffset,
-        UnsafeBuffer termBuffer,
-        int termOffset,
-        int length,
-        int sessionId,
-        int termId)
+        final FileChannel fileChannel,
+        final long fileOffset,
+        final UnsafeBuffer termBuffer,
+        final int termOffset,
+        final int length,
+        final int sessionId,
+        final int termId)
     {
         try
         {
@@ -264,11 +261,12 @@ class ImageArchivingSession implements RawBlockHandler
             metaDataWriter.lastTermId(termId);
             final int endTermOffset = termOffset + length;
             metaDataWriter.lastTermOffset(endTermOffset);
-            archiverConductor.notifyArchiveProgress(streamInstanceId,
-                                                    initialTermId,
-                                                    metaDataReader.initialTermOffset(),
-                                                    termId,
-                                                    endTermOffset);
+            archiverConductor.notifyArchiveProgress(
+                streamInstanceId,
+                initialTermId,
+                metaDataReader.initialTermOffset(),
+                termId,
+                endTermOffset);
             if (index == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
             {
                 archiveFileChannel.close();
@@ -320,7 +318,7 @@ class ImageArchivingSession implements RawBlockHandler
         return state;
     }
 
-    void state(State state)
+    void state(final State state)
     {
         this.state = state;
     }

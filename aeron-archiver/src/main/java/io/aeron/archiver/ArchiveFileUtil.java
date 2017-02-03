@@ -30,17 +30,21 @@ class ArchiveFileUtil
     static final int META_FILE_SIZE = 64;
     static final int ARCHIVE_FILE_SIZE = 1 << 30;
 
-    static String archiveMetaFileName(int streamInstanceId)
+    static String archiveMetaFileName(final int streamInstanceId)
     {
         return streamInstanceId + ".meta";
     }
 
-    static String archiveDataFileName(int streamInstanceId, int index)
+    static String archiveDataFileName(final int streamInstanceId, final int index)
     {
         return streamInstanceId + "." + index + ".aaf";
     }
 
-    static String archiveDataFileName(int streamInstanceId, int initialTermId, int termBufferLength, int termId)
+    static String archiveDataFileName(
+        final int streamInstanceId,
+        final int initialTermId,
+        final int termBufferLength,
+        final int termId)
     {
         final int termsPerFile = ARCHIVE_FILE_SIZE / termBufferLength;
         final int index = (termId - initialTermId) / termsPerFile;
@@ -48,7 +52,7 @@ class ArchiveFileUtil
         return archiveDataFileName(streamInstanceId, index);
     }
 
-    static void printMetaFile(File metaFile) throws IOException
+    static void printMetaFile(final File metaFile) throws IOException
     {
         final ArchiveMetaFileFormatDecoder formatDecoder = archiveMetaFileFormatDecoder(metaFile);
         System.out.println("streamInstanceId: " + formatDecoder.streamInstanceId());
@@ -61,7 +65,8 @@ class ArchiveFileUtil
         System.out.println("end time: " + new Date(formatDecoder.endTime()));
     }
 
-    static ArchiveMetaFileFormatDecoder archiveMetaFileFormatDecoder(File metaFile) throws IOException
+    static ArchiveMetaFileFormatDecoder archiveMetaFileFormatDecoder(final File metaFile)
+        throws IOException
     {
         try (RandomAccessFile randomAccessFile = new RandomAccessFile(metaFile, "rw");
              FileChannel metadataFileChannel = randomAccessFile.getChannel();)
@@ -71,13 +76,19 @@ class ArchiveFileUtil
         }
     }
 
-    static int archiveOffset(int termOffset, int termId, int initialTermId, int termBufferLength)
+    static int archiveOffset(
+        final int termOffset, final int termId, final int initialTermId, final int termBufferLength)
     {
         final int termsMask = ((ARCHIVE_FILE_SIZE / termBufferLength) - 1);
         return archiveOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
     }
 
-    static int archiveOffset(int termOffset, int termId, int initialTermId, int termsMask, int termBufferLength)
+    static int archiveOffset(
+        final int termOffset,
+        final int termId,
+        final int initialTermId,
+        final int termsMask,
+        final int termBufferLength)
     {
         return ((termId - initialTermId) & termsMask) * termBufferLength + termOffset;
     }

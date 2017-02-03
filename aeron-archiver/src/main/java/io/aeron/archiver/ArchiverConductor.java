@@ -63,9 +63,9 @@ public class ArchiverConductor implements Agent
     private final File archiveFolder;
 
     public ArchiverConductor(
-        Aeron aeron,
-        ManyToOneConcurrentArrayQueue<Image> imageNotifications,
-        Archiver.Context ctx)
+        final Aeron aeron,
+        final ManyToOneConcurrentArrayQueue<Image> imageNotifications,
+        final Archiver.Context ctx)
     {
         this.aeron = aeron;
         this.imageNotifications = imageNotifications;
@@ -94,7 +94,7 @@ public class ArchiverConductor implements Agent
 
     public void onClose()
     {
-        for (ReplaySession session : replaySessions)
+        for (final ReplaySession session : replaySessions)
         {
             session.close();
         }
@@ -108,7 +108,7 @@ public class ArchiverConductor implements Agent
         {
             System.err.println("ERROR: expected empty image2ReplaySession");
         }
-        for (ImageArchivingSession session : archivingSessions)
+        for (final ImageArchivingSession session : archivingSessions)
         {
             session.close();
         }
@@ -122,7 +122,7 @@ public class ArchiverConductor implements Agent
             System.err.println("ERROR: expected empty image2ArchivingSession");
         }
 
-        for (Subscription subscription : archiveSubscriptions)
+        for (final Subscription subscription : archiveSubscriptions)
         {
             subscription.close();
         }
@@ -133,7 +133,7 @@ public class ArchiverConductor implements Agent
         serviceRequests.close();
     }
 
-    private void handleNewImageNotification(Image image)
+    private void handleNewImageNotification(final Image image)
     {
         if (archiveSubscriptions.contains(image.subscription()))
         {
@@ -181,7 +181,7 @@ public class ArchiverConductor implements Agent
         }, 16);
     }
 
-    private void onAbortReplay(Header header)
+    private void onAbortReplay(final Header header)
     {
         final ReplaySession session = image2ReplaySession.get(header.sessionId());
         if (session == null)
@@ -191,9 +191,8 @@ public class ArchiverConductor implements Agent
         session.close();
     }
 
-    void onReplayRequest(DirectBuffer buffer, int offset, Header header)
+    void onReplayRequest(final DirectBuffer buffer, final int offset, final Header header)
     {
-
         // validate image single use
         if (image2ReplaySession.containsKey(header.sessionId()))
         {
@@ -239,7 +238,7 @@ public class ArchiverConductor implements Agent
     }
 
 
-    private void onArchiveStartRequest(DirectBuffer buffer, int offset)
+    private void onArchiveStartRequest(final DirectBuffer buffer, final int offset)
     {
         archiveStartRequestDecoder.wrap(
             buffer,
@@ -256,15 +255,15 @@ public class ArchiverConductor implements Agent
         archiveSubscriptions.add(archiveSubscription);
     }
 
-    private void onArchiveStopRequest(DirectBuffer buffer, int offset)
+    private void onArchiveStopRequest(final DirectBuffer buffer, final int offset)
     {
-        archiveStopRequestDecoder.wrap(buffer, offset, headerDecoder.blockLength(),
-            headerDecoder.version());
+        archiveStopRequestDecoder.wrap(
+            buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
         final String channel = archiveStopRequestDecoder.channel();
         final int streamId = archiveStopRequestDecoder.streamId();
 
-        for (Subscription archiveSubscription : archiveSubscriptions)
+        for (final Subscription archiveSubscription : archiveSubscriptions)
         {
             if (archiveSubscription.streamId() == streamId &&
                 archiveSubscription.channel().equals(channel))
@@ -291,6 +290,7 @@ public class ArchiverConductor implements Agent
                 lastIndex--;
             }
         }
+
         return workDone;
     }
 
@@ -309,10 +309,11 @@ public class ArchiverConductor implements Agent
                 lastIndex--;
             }
         }
+
         return workDone;
     }
 
-    void sendResponse(Publication control, String err)
+    void sendResponse(final Publication control, final String err)
     {
         final ArchiverResponseEncoder responseEncoder = new ArchiverResponseEncoder();
         responseHeaderEncoder.wrap(responseBuffer, 0)
@@ -347,7 +348,7 @@ public class ArchiverConductor implements Agent
         return archiveFolder;
     }
 
-    int notifyArchiveStarted(String source, int sessionId, String channel, int streamId)
+    int notifyArchiveStarted(final String source, final int sessionId, final String channel, final int streamId)
     {
         // TODO: persistent index for instances, as well as an index file.
         final int instanceId = 0;
@@ -361,8 +362,8 @@ public class ArchiverConductor implements Agent
         mEncoder.streamInstanceId(instanceId).sessionId(sessionId).streamId(streamId).channel(channel).source(source);
 
 
-        final long result = archiverNotifications.offer(responseBuffer, 0,
-            MessageHeaderEncoder.ENCODED_LENGTH + mEncoder.encodedLength());
+        final long result = archiverNotifications.offer(
+            responseBuffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + mEncoder.encodedLength());
         if (result > 0 || result == Publication.NOT_CONNECTED)
         {
             return instanceId;
@@ -373,7 +374,12 @@ public class ArchiverConductor implements Agent
         }
     }
 
-    void notifyArchiveProgress(int instanceId, int initialTermId, int initialTermOffset, int termId, int endTermOffset)
+    void notifyArchiveProgress(
+        final int instanceId,
+        final int initialTermId,
+        final int initialTermOffset,
+        final int termId,
+        final int endTermOffset)
     {
         final ArchiveProgressNotificationEncoder mEncoder = new ArchiveProgressNotificationEncoder();
         responseHeaderEncoder.wrap(responseBuffer, 0)
@@ -397,7 +403,7 @@ public class ArchiverConductor implements Agent
         }
     }
 
-    void notifyArchiveStopped(int instanceId)
+    void notifyArchiveStopped(final int instanceId)
     {
         final ArchiveStoppedNotificationEncoder mEncoder = new ArchiveStoppedNotificationEncoder();
         responseHeaderEncoder.wrap(responseBuffer, 0)
@@ -416,7 +422,7 @@ public class ArchiverConductor implements Agent
         }
     }
 
-    public int findStreamInstanceId(StreamInstance streamInstance)
+    public int findStreamInstanceId(final StreamInstance streamInstance)
     {
         return 0;
     }

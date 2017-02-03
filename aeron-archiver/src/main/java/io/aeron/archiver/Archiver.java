@@ -31,7 +31,7 @@ public class Archiver implements AutoCloseable
     private AgentRunner runner;
     private Aeron aeron;
 
-    public Archiver(Context ctx)
+    public Archiver(final Context ctx)
     {
         this.ctx = ctx;
     }
@@ -84,18 +84,20 @@ public class Archiver implements AutoCloseable
                  traffic/sufficient replay load?*/
         final ArchiverConductor archiverConductor = new ArchiverConductor(aeron, imageNotifications, ctx);
 
-        runner = new AgentRunner(ctx.clientContext.idleStrategy(),
-                                ctx.clientContext.errorHandler(),
-                                null,
-                                archiverConductor);
+        runner = new AgentRunner(
+            ctx.clientContext.idleStrategy(),
+            ctx.clientContext.errorHandler(),
+            null,
+            archiverConductor);
         AgentRunner.startOnThread(runner, ctx.clientContext.threadFactory());
     }
+
     public static Archiver launch()
     {
         return launch(new Context());
     }
 
-    public static Archiver launch(Context ctx)
+    public static Archiver launch(final Context ctx)
     {
         final Archiver archiver = new Archiver(ctx);
         archiver.start();
@@ -128,7 +130,7 @@ public class Archiver implements AutoCloseable
             archiverNotificationsStreamId = 0;
         }
 
-        public Context(Aeron.Context clientContext, File archiveFolder)
+        public Context(final Aeron.Context clientContext, final File archiveFolder)
         {
             this.clientContext = clientContext;
             this.archiveFolder = archiveFolder;
@@ -139,18 +141,20 @@ public class Archiver implements AutoCloseable
             return archiveFolder;
         }
 
-        public Context archiveFolder(File f)
+        public Context archiveFolder(final File f)
         {
             this.archiveFolder = f;
             return this;
         }
+
         public Aeron.Context clientContext()
         {
             return clientContext;
         }
-        public Context clientContext(Aeron.Context cctx)
+
+        public Context clientContext(final Aeron.Context ctx)
         {
-            this.clientContext = cctx;
+            this.clientContext = ctx;
             return this;
         }
 
@@ -158,16 +162,19 @@ public class Archiver implements AutoCloseable
         {
             return serviceRequestChannel;
         }
-        public Context serviceRequestChannel(String serviceRequestChannel)
+
+        public Context serviceRequestChannel(final String serviceRequestChannel)
         {
             this.serviceRequestChannel = serviceRequestChannel;
             return this;
         }
+
         public int serviceRequestStreamId()
         {
             return serviceRequestStreamId;
         }
-        public Context serviceRequestStreamId(int serviceRequestStreamId)
+
+        public Context serviceRequestStreamId(final int serviceRequestStreamId)
         {
             this.serviceRequestStreamId = serviceRequestStreamId;
             return this;
@@ -177,16 +184,19 @@ public class Archiver implements AutoCloseable
         {
             return archiverNotificationsChannel;
         }
-        public Context archiverNotificationsChannel(String archiverNotificationsChannel)
+
+        public Context archiverNotificationsChannel(final String archiverNotificationsChannel)
         {
             this.archiverNotificationsChannel = archiverNotificationsChannel;
             return this;
         }
+
         public int archiverNotificationsStreamId()
         {
             return archiverNotificationsStreamId;
         }
-        public Context archiverNotificationsStreamId(int archiverNotificationsStreamId)
+
+        public Context archiverNotificationsStreamId(final int archiverNotificationsStreamId)
         {
             this.archiverNotificationsStreamId = archiverNotificationsStreamId;
             return this;

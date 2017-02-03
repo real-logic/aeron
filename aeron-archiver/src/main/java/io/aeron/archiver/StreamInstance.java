@@ -22,7 +22,7 @@ class StreamInstance
     private final String channel;
     private final int streamId;
 
-    StreamInstance(String source, int sessionId, String channel, int streamId)
+    StreamInstance(final String source, final int sessionId, final String channel, final int streamId)
     {
         this.source = source;
         this.sessionId = sessionId;

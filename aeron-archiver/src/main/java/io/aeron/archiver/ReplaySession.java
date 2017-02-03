@@ -42,7 +42,7 @@ class ReplaySession
     {
         INIT
         {
-            int doWork(ReplaySession session)
+            int doWork(final ReplaySession session)
             {
                 // can't do much until plumbing is in place
                 if (session.replay.isConnected() && session.control.isConnected())
@@ -58,9 +58,10 @@ class ReplaySession
                 return 0;
             }
         },
+
         SETUP
         {
-            int doWork(ReplaySession session)
+            int doWork(final ReplaySession session)
             {
                 final Publication control = session.control;
                 final int streamInstanceId = session.archiverConductor.findStreamInstanceId(session.streamInstance);
@@ -110,8 +111,8 @@ class ReplaySession
 
 
                 final int termBufferLength = archiveMetaFileFormatDecoder.termBufferLength();
-                final String archiveDataFileName = ArchiveFileUtil.archiveDataFileName(streamInstanceId, initialTermId,
-                                                                                       termBufferLength, termId);
+                final String archiveDataFileName = ArchiveFileUtil.archiveDataFileName(
+                    streamInstanceId, initialTermId, termBufferLength, termId);
                 final File archiveDataFile = new File(session.archiverConductor.archiveFolder(), archiveDataFileName);
 
 
@@ -160,9 +161,10 @@ class ReplaySession
                 return 1;
             }
         },
+
         REPLAY
         {
-            int doWork(ReplaySession session)
+            int doWork(final ReplaySession session)
             {
                 final long channelIndex = session.channelIndex;
                 final long remainingInFile = ARCHIVE_FILE_SIZE - channelIndex;
@@ -218,9 +220,10 @@ class ReplaySession
                 }
             }
         },
+
         CLOSE
         {
-            int doWork(ReplaySession session)
+            int doWork(final ReplaySession session)
             {
                 session.control.close();
                 session.replay.close();
@@ -230,9 +233,10 @@ class ReplaySession
                 return 1;
             }
         },
+
         DONE
         {
-            int doWork(ReplaySession session)
+            int doWork(final ReplaySession session)
             {
                 return 0;
             }
@@ -265,14 +269,14 @@ class ReplaySession
     private long length;
 
     ReplaySession(
-        StreamInstance streamInstance,
-        int instanceTerm,
-        int instanceTermOffset,
-        long replayLength,
-        Publication replay,
-        Publication control,
-        Image image,
-        ArchiverConductor archiverConductor)
+        final StreamInstance streamInstance,
+        final int instanceTerm,
+        final int instanceTermOffset,
+        final long replayLength,
+        final Publication replay,
+        final Publication control,
+        final Image image,
+        final ArchiverConductor archiverConductor)
     {
         this.streamInstance = streamInstance;
 
@@ -311,7 +315,7 @@ class ReplaySession
         return state;
     }
 
-    private void state(State state)
+    private void state(final State state)
     {
         this.state = state;
     }

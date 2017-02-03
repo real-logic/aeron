@@ -52,7 +52,8 @@ public class EventLogAgent
     {
         public void onTransformation(
             final TypeDescription typeDescription,
-            final ClassLoader classLoader, JavaModule module,
+            final ClassLoader classLoader,
+            final JavaModule module,
             final boolean loaded,
             final DynamicType dynamicType)
         {

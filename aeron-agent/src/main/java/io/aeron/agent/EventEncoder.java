@@ -120,15 +120,17 @@ public class EventEncoder
     }
 
     private static int putStackTraceElement(
-        final MutableDirectBuffer encodingBuffer, final StackTraceElement stack, int relativeOffset)
+        final MutableDirectBuffer encodingBuffer, final StackTraceElement stack, final int relativeOffset)
     {
-        encodingBuffer.putInt(relativeOffset, stack.getLineNumber(), LITTLE_ENDIAN);
-        relativeOffset += SIZE_OF_INT;
-        relativeOffset += encodingBuffer.putStringUtf8(relativeOffset, stack.getClassName(), LITTLE_ENDIAN);
-        relativeOffset += encodingBuffer.putStringUtf8(relativeOffset, stack.getMethodName(), LITTLE_ENDIAN);
-        relativeOffset += encodingBuffer.putStringUtf8(relativeOffset, stack.getFileName(), LITTLE_ENDIAN);
+        int offset = relativeOffset;
+        encodingBuffer.putInt(offset, stack.getLineNumber(), LITTLE_ENDIAN);
 
-        return relativeOffset;
+        offset += SIZE_OF_INT;
+        offset += encodingBuffer.putStringUtf8(offset, stack.getClassName(), LITTLE_ENDIAN);
+        offset += encodingBuffer.putStringUtf8(offset, stack.getMethodName(), LITTLE_ENDIAN);
+        offset += encodingBuffer.putStringUtf8(offset, stack.getFileName(), LITTLE_ENDIAN);
+
+        return offset;
     }
 
     private static int encodeLogHeader(

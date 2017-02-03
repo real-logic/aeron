@@ -180,26 +180,29 @@ public class EventDissector
         return builder.toString();
     }
 
-    private static int readStackTraceElement(final MutableDirectBuffer buffer, int offset, final StringBuilder builder)
+    private static int readStackTraceElement(
+        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
-        final int lineNumber = buffer.getInt(offset, LITTLE_ENDIAN);
-        offset += SIZE_OF_INT;
+        int i = offset;
 
-        int length = buffer.getInt(offset);
-        final String className = buffer.getStringUtf8(offset, length);
-        offset += SIZE_OF_INT + length;
+        final int lineNumber = buffer.getInt(i, LITTLE_ENDIAN);
+        i += SIZE_OF_INT;
 
-        length = buffer.getInt(offset);
-        final String methodName = buffer.getStringUtf8(offset, length);
-        offset += SIZE_OF_INT + length;
+        int length = buffer.getInt(i);
+        final String className = buffer.getStringUtf8(i, length);
+        i += SIZE_OF_INT + length;
 
-        length = buffer.getInt(offset);
-        final String fileName = buffer.getStringUtf8(offset, length);
-        offset += SIZE_OF_INT + length;
+        length = buffer.getInt(i);
+        final String methodName = buffer.getStringUtf8(i, length);
+        i += SIZE_OF_INT + length;
+
+        length = buffer.getInt(i);
+        final String fileName = buffer.getStringUtf8(i, length);
+        i += SIZE_OF_INT + length;
 
         builder.append(String.format("%s.%s %s:%d", className, methodName, fileName, lineNumber));
 
-        return offset;
+        return i;
     }
 
     private static int dissectLogHeader(

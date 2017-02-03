@@ -202,7 +202,8 @@ public final class MediaDriver implements AutoCloseable
                     errorHandler,
                     errorCounter,
                     new CompositeAgent(sender, receiver));
-                this.conductorRunner = new AgentRunner(ctx.conductorIdleStrategy, errorHandler, errorCounter, conductor);
+                this.conductorRunner = new AgentRunner(
+                    ctx.conductorIdleStrategy, errorHandler, errorCounter, conductor);
                 this.sharedRunner = null;
                 this.receiverRunner = null;
                 this.senderRunner = null;
@@ -212,7 +213,8 @@ public final class MediaDriver implements AutoCloseable
             case DEDICATED:
                 this.senderRunner = new AgentRunner(ctx.senderIdleStrategy, errorHandler, errorCounter, sender);
                 this.receiverRunner = new AgentRunner(ctx.receiverIdleStrategy, errorHandler, errorCounter, receiver);
-                this.conductorRunner = new AgentRunner(ctx.conductorIdleStrategy, errorHandler, errorCounter, conductor);
+                this.conductorRunner = new AgentRunner(
+                    ctx.conductorIdleStrategy, errorHandler, errorCounter, conductor);
                 this.sharedNetworkRunner = null;
                 this.sharedRunner = null;
         }
@@ -429,7 +431,8 @@ public final class MediaDriver implements AutoCloseable
     {
         final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
         final String errorLogFilename = String.format(
-            "%s-%s-error.log", ctx.aeronDirectoryName(), dateFormat.format(new Date()));
+            "%s-%s-error.log",
+            ctx.aeronDirectoryName(), dateFormat.format(new Date()));
         final File errorLogFile = new File(errorLogFilename);
         int observations = 0;
 
@@ -593,7 +596,8 @@ public final class MediaDriver implements AutoCloseable
                         {
                             if (!errorLog.record(throwable))
                             {
-                                System.err.println("Error Log is full, consider increasing " + ERROR_BUFFER_LENGTH_PROP_NAME);
+                                System.err.println(
+                                    "Error Log is full, consider increasing " + ERROR_BUFFER_LENGTH_PROP_NAME);
                                 throwable.printStackTrace(System.err);
                             }
                         };
@@ -603,7 +607,8 @@ public final class MediaDriver implements AutoCloseable
 
                 receiverProxy(new ReceiverProxy(
                     threadingMode, receiverCommandQueue(), systemCounters.get(RECEIVER_PROXY_FAILS)));
-                senderProxy(new SenderProxy(threadingMode, senderCommandQueue(), systemCounters.get(SENDER_PROXY_FAILS)));
+                senderProxy(new SenderProxy(
+                    threadingMode, senderCommandQueue(), systemCounters.get(SENDER_PROXY_FAILS)));
                 fromReceiverDriverConductorProxy(new DriverConductorProxy(
                     threadingMode, toConductorFromReceiverCommandQueue, systemCounters.get(CONDUCTOR_PROXY_FAILS)));
                 fromSenderDriverConductorProxy(new DriverConductorProxy(

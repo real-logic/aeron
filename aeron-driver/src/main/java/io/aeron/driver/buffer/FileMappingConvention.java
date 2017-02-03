@@ -73,7 +73,8 @@ class FileMappingConvention
         final long correlationId)
     {
         final String filename = String.format(
-            "%s-%s-%s-%s.logbuffer", channel, toHexString(sessionId), toHexString(streamId), toHexString(correlationId));
+            "%s-%s-%s-%s.logbuffer",
+            channel, toHexString(sessionId), toHexString(streamId), toHexString(correlationId));
         return new File(rootDir, filename);
     }
 

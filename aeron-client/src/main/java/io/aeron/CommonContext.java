@@ -347,7 +347,8 @@ public class CommonContext implements AutoCloseable
                         throw new IllegalStateException("aeron cnc file version not understood: version=" + cncVersion);
                     }
 
-                    final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
+                    final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(
+                        cncByteBuffer, cncMetaDataBuffer);
                     final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
 
                     final int distinctErrorCount = ErrorLogReader.read(

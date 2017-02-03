@@ -37,7 +37,8 @@ public class LogInspector
 {
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
-    private static final String DATA_FORMAT = System.getProperty("aeron.log.inspector.data.format", "hex").toLowerCase();
+    private static final String DATA_FORMAT = System.getProperty(
+        "aeron.log.inspector.data.format", "hex").toLowerCase();
     private static final boolean SKIP_DEFAULT_HEADER = Boolean.getBoolean("aeron.log.inspector.skipDefaultHeader");
     private static final boolean SCAN_OVER_ZEROES = Boolean.getBoolean("aeron.log.inspector.scanOverZeroes");
 

@@ -38,7 +38,8 @@ public class DriverProxy
     /** Maximum capacity of the write buffer */
     public static final int MSG_BUFFER_CAPACITY = 1024;
 
-    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MSG_BUFFER_CAPACITY, CACHE_LINE_LENGTH * 2));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(
+        allocateDirectAligned(MSG_BUFFER_CAPACITY, CACHE_LINE_LENGTH * 2));
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();

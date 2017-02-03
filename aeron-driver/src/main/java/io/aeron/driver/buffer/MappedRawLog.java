@@ -75,7 +75,8 @@ class MappedRawLog implements RawLog
                     termBuffers[i] = new UnsafeBuffer(mappedBuffer, i * termLength, termLength);
                 }
 
-                logMetaDataBuffer = new UnsafeBuffer(mappedBuffer, (int)(logLength - LOG_META_DATA_LENGTH), LOG_META_DATA_LENGTH);
+                logMetaDataBuffer = new UnsafeBuffer(
+                    mappedBuffer, (int)(logLength - LOG_META_DATA_LENGTH), LOG_META_DATA_LENGTH);
             }
             else
             {

@@ -57,7 +57,10 @@ public class SamplesUtil
      * @return loop function
      */
     public static Consumer<Subscription> subscriberLoop(
-        final FragmentHandler fragmentHandler, final int limit, final AtomicBoolean running, final IdleStrategy idleStrategy)
+        final FragmentHandler fragmentHandler,
+        final int limit,
+        final AtomicBoolean running,
+        final IdleStrategy idleStrategy)
     {
         return
             (subscription) ->

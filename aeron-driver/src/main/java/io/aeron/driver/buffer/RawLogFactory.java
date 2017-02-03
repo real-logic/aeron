@@ -28,7 +28,7 @@ import static io.aeron.driver.Configuration.LOW_FILE_STORE_WARNING_THRESHOLD;
 import static io.aeron.driver.buffer.FileMappingConvention.streamLocation;
 
 /**
- * Factory for creating new {@link RawLog} in the source publications or rebuilt publication images directories as appropriate.
+ * Factory for creating {@link RawLog}s in the source publications or publication images directories as appropriate.
  */
 public class RawLogFactory
 {
@@ -80,7 +80,11 @@ public class RawLogFactory
      * @return the newly allocated {@link RawLog}
      */
     public RawLog newNetworkPublication(
-        final String channel, final int sessionId, final int streamId, final long correlationId, final int termBufferLength)
+        final String channel,
+        final int sessionId,
+        final int streamId,
+        final long correlationId,
+        final int termBufferLength)
     {
         return newInstance(publicationsDir, channel, sessionId, streamId, correlationId, termBufferLength);
     }
@@ -96,7 +100,11 @@ public class RawLogFactory
      * @return the newly allocated {@link RawLog}
      */
     public RawLog newNetworkedImage(
-        final String channel, final int sessionId, final int streamId, final long correlationId, final int termBufferLength)
+        final String channel,
+        final int sessionId,
+        final int streamId,
+        final long correlationId,
+        final int termBufferLength)
     {
         return newInstance(imagesDir, channel, sessionId, streamId, correlationId, termBufferLength);
     }

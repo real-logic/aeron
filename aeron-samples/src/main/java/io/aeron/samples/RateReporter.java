@@ -79,7 +79,8 @@ public class RateReporter implements Runnable
             final long currentTimestamp = System.nanoTime();
 
             final long timeSpanNs = currentTimestamp - lastTimestamp;
-            final double messagesPerSec = ((currentTotalMessages - lastTotalMessages) * reportIntervalNs) / (double)timeSpanNs;
+            final double messagesPerSec =
+                ((currentTotalMessages - lastTotalMessages) * reportIntervalNs) / (double)timeSpanNs;
             final double bytesPerSec = ((currentTotalBytes - lastTotalBytes) * reportIntervalNs) / (double)timeSpanNs;
 
             reportingFunc.onReport(messagesPerSec, bytesPerSec, currentTotalMessages, currentTotalBytes);

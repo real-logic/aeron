@@ -61,7 +61,8 @@ public class SenderTest
     private static final int INITIAL_TERM_ID = 3;
     private static final byte[] PAYLOAD = "Payload is here!".getBytes();
 
-    private static final UnsafeBuffer HEADER = DataHeaderFlyweight.createDefaultHeader(SESSION_ID, STREAM_ID, INITIAL_TERM_ID);
+    private static final UnsafeBuffer HEADER = DataHeaderFlyweight.createDefaultHeader(
+        SESSION_ID, STREAM_ID, INITIAL_TERM_ID);
     private static final int FRAME_LENGTH = HEADER.capacity() + PAYLOAD.length;
     private static final int ALIGNED_FRAME_LENGTH = align(FRAME_LENGTH, FRAME_ALIGNMENT);
 
@@ -85,7 +86,8 @@ public class SenderTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final SetupFlyweight setupHeader = new SetupFlyweight();
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
-    private final OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue = new OneToOneConcurrentArrayQueue<>(1024);
+    private final OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue =
+        new OneToOneConcurrentArrayQueue<>(1024);
 
     private final HeaderWriter headerWriter = new HeaderWriter(HEADER);
 

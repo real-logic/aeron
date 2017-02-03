@@ -68,7 +68,8 @@ class ReplaySession
                 final File archiveMetaFile = new File(session.archiverConductor.archiveFolder(), archiveMetaFileName);
                 if (!archiveMetaFile.exists())
                 {
-                    session.archiverConductor.sendResponse(control, archiveMetaFile.getAbsolutePath() + " not found");
+                    session.archiverConductor.sendResponse(
+                        control, archiveMetaFile.getAbsolutePath() + " not found");
                     session.state(CLOSE);
                     return 1;
                 }
@@ -80,7 +81,8 @@ class ReplaySession
                 }
                 catch (IOException e)
                 {
-                    session.archiverConductor.sendResponse(control, archiveMetaFile.getAbsolutePath() + " : failed to map");
+                    session.archiverConductor.sendResponse(
+                        control, archiveMetaFile.getAbsolutePath() + " : failed to map");
                     session.state(CLOSE);
                     LangUtil.rethrowUnchecked(e);
                     return 0;
@@ -90,16 +92,17 @@ class ReplaySession
                 final int lastTermId = archiveMetaFileFormatDecoder.lastTermId();
                 final int termId = session.instanceTerm;
                 if ((initialTermId <= lastTermId && (termId < initialTermId || termId > lastTermId)) ||
-                    (initialTermId > lastTermId  && (termId > initialTermId || termId < lastTermId)))
+                    (initialTermId > lastTermId && (termId > initialTermId || termId < lastTermId)))
                 {
-                    session.archiverConductor.sendResponse(control, "Requested term (" +
-                                                                    termId + ") out of archive range [" +
-                                                                    initialTermId + "," + lastTermId + "]");
+                    session.archiverConductor.sendResponse(
+                        control, "Requested term (" +
+                        termId + ") out of archive range [" +
+                        initialTermId + "," + lastTermId + "]");
                     session.state(CLOSE);
                     return 1;
                 }
-                // TODO: cover termOffset edge cases: range[0, termBufferLength], or [initialOffset, termBufferLength] if first
-                //       term or, [0, lastOffset] if lastTerm.
+                // TODO: cover termOffset edge cases: range[0, termBufferLength],
+                // or [initialOffset, termBufferLength] if first term or, [0, lastOffset] if lastTerm.
 
                 // TODO: what should we do if the length exceeds range? error or replay what's available?
 
@@ -111,9 +114,11 @@ class ReplaySession
                                                                                        termBufferLength, termId);
                 final File archiveDataFile = new File(session.archiverConductor.archiveFolder(), archiveDataFileName);
 
+
                 if (!archiveDataFile.exists())
                 {
-                    session.archiverConductor.sendResponse(control, archiveDataFile.getAbsolutePath() + " not found");
+                    session.archiverConductor.sendResponse(
+                        control, archiveDataFile.getAbsolutePath() + " not found");
                     session.state(CLOSE);
                     return 1;
                 }
@@ -125,7 +130,8 @@ class ReplaySession
                 }
                 catch (IOException e)
                 {
-                    session.archiverConductor.sendResponse(control, archiveDataFile.getAbsolutePath() + " failed to open.");
+                    session.archiverConductor.sendResponse(
+                        control, archiveDataFile.getAbsolutePath() + " failed to open.");
                     session.state(CLOSE);
                     LangUtil.rethrowUnchecked(e);
                     return 0;
@@ -142,7 +148,8 @@ class ReplaySession
                 }
                 catch (IOException e)
                 {
-                    session.archiverConductor.sendResponse(control, "Failed to set position in archive: " + archiveOffset);
+                    session.archiverConductor.sendResponse(
+                        control, "Failed to set position in archive: " + archiveOffset);
                     session.state(CLOSE);
                     LangUtil.rethrowUnchecked(e);
                     return 0;
@@ -161,7 +168,7 @@ class ReplaySession
                 final long remainingInFile = ARCHIVE_FILE_SIZE - channelIndex;
                 final long mtu = session.replay.maxPayloadLength();
 
-                final int claimSize = (int) min(mtu, min(remainingInFile, session.length));
+                final int claimSize = (int)min(mtu, min(remainingInFile, session.length));
 
                 final FileChannel currentDataChannel = session.currentDataChannel;
                 final ArchiverConductor conductor = session.archiverConductor;
@@ -177,8 +184,8 @@ class ReplaySession
 
                     if (read != claimSize)
                     {
-                        conductor.sendResponse(session.control, "Failed to read " + claimSize + " bytes at position: " +
-                                                               channelIndex);
+                        conductor.sendResponse(
+                            session.control, "Failed to read " + claimSize + " bytes at position: " + channelIndex);
                         session.state(CLOSE);
                         throw new IllegalStateException();
                     }
@@ -248,7 +255,7 @@ class ReplaySession
 
     private final ArchiverConductor archiverConductor;
 
-    private final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(1024 * 16,  64));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(1024 * 16, 64));
 
     private State state = State.INIT;
 
@@ -257,8 +264,15 @@ class ReplaySession
     private long channelIndex;
     private long length;
 
-    ReplaySession(StreamInstance streamInstance, int instanceTerm, int instanceTermOffset, long replayLength,
-                         Publication replay, Publication control, Image image, ArchiverConductor archiverConductor)
+    ReplaySession(
+        StreamInstance streamInstance,
+        int instanceTerm,
+        int instanceTermOffset,
+        long replayLength,
+        Publication replay,
+        Publication control,
+        Image image,
+        ArchiverConductor archiverConductor)
     {
         this.streamInstance = streamInstance;
 
@@ -281,10 +295,11 @@ class ReplaySession
         {
             initialState = state();
             workDone += state().doWork(this);
-        } while (initialState != state());
+        }
+        while (initialState != state());
+
         return workDone;
     }
-
 
     Image image()
     {
@@ -300,7 +315,6 @@ class ReplaySession
     {
         this.state = state;
     }
-
 
     void close()
     {

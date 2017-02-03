@@ -28,9 +28,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
- * Application to print out errors recorded in the command-and-control (cnc) file is maintained by media driver in shared
- * memory. This application reads the the cnc file and prints the distinct errors. Layout of the cnc file is described in
- * {@link CncFileDescriptor}.
+ * Application to print out errors recorded in the command-and-control (cnc) file is maintained by media driver in
+ * shared memory. This application reads the the cnc file and prints the distinct errors. Layout of the cnc file is
+ * described in {@link CncFileDescriptor}.
  */
 public class ErrorStat
 {

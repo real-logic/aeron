@@ -277,7 +277,7 @@ public class Publication implements AutoCloseable
      *
      * @param buffer containing message.
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
-     * {@link #ADMIN_ACTION} or {@link #CLOSED}.
+     * {@link #ADMIN_ACTION}, or {@link #CLOSED}.
      */
     public long offer(final DirectBuffer buffer)
     {
@@ -290,8 +290,8 @@ public class Publication implements AutoCloseable
      * @param buffer containing message.
      * @param offset offset in the buffer at which the encoded message begins.
      * @param length in bytes of the encoded message.
-     * @return The new stream position, otherwise a negative error value {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
-     * {@link #ADMIN_ACTION} or {@link #CLOSED}.
+     * @return The new stream position, otherwise a negative error value {@link #NOT_CONNECTED},
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, or {@link #CLOSED}.
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
@@ -305,11 +305,14 @@ public class Publication implements AutoCloseable
      * @param offset                offset in the buffer at which the encoded message begins.
      * @param length                in bytes of the encoded message.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return The new stream position, otherwise a negative error value {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
-     * {@link #ADMIN_ACTION} or {@link #CLOSED}.
+     * @return The new stream position, otherwise a negative error value {@link #NOT_CONNECTED},
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, or {@link #CLOSED}.
      */
     public long offer(
-        final DirectBuffer buffer, final int offset, final int length, final ReservedValueSupplier reservedValueSupplier)
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final ReservedValueSupplier reservedValueSupplier)
     {
         long newPosition = CLOSED;
         if (!isClosed)
@@ -319,14 +322,16 @@ public class Publication implements AutoCloseable
             final TermAppender termAppender = termAppenders[partitionIndex];
             final long rawTail = termAppender.rawTailVolatile();
             final long termOffset = rawTail & 0xFFFF_FFFFL;
-            final long position = computeTermBeginPosition(termId(rawTail), positionBitsToShift, initialTermId) + termOffset;
+            final long position =
+                computeTermBeginPosition(termId(rawTail), positionBitsToShift, initialTermId) + termOffset;
 
             if (position < limit)
             {
                 final long result;
                 if (length <= maxPayloadLength)
                 {
-                    result = termAppender.appendUnfragmentedMessage(headerWriter, buffer, offset, length, reservedValueSupplier);
+                    result = termAppender.appendUnfragmentedMessage(
+                        headerWriter, buffer, offset, length, reservedValueSupplier);
                 }
                 else
                 {
@@ -378,7 +383,7 @@ public class Publication implements AutoCloseable
      * @param length      of the range to claim, in bytes..
      * @param bufferClaim to be populated if the claim succeeds.
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
-     * {@link #ADMIN_ACTION} or {@link #CLOSED}.
+     * {@link #ADMIN_ACTION}, or {@link #CLOSED}.
      * @throws IllegalArgumentException if the length is greater than {@link #maxPayloadLength()} within an MTU.
      * @see BufferClaim#commit()
      * @see BufferClaim#abort()
@@ -395,7 +400,8 @@ public class Publication implements AutoCloseable
             final TermAppender termAppender = termAppenders[partitionIndex];
             final long rawTail = termAppender.rawTailVolatile();
             final long termOffset = rawTail & 0xFFFF_FFFFL;
-            final long position = computeTermBeginPosition(termId(rawTail), positionBitsToShift, initialTermId) + termOffset;
+            final long position =
+                computeTermBeginPosition(termId(rawTail), positionBitsToShift, initialTermId) + termOffset;
 
             if (position < limit)
             {

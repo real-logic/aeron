@@ -35,7 +35,8 @@ public class TermRebuilder
      * @param packet     containing a sequence of frames.
      * @param length     of the sequence of frames in bytes.
      */
-    public static void insert(final UnsafeBuffer termBuffer, final int termOffset, final UnsafeBuffer packet, final int length)
+    public static void insert(
+        final UnsafeBuffer termBuffer, final int termOffset, final UnsafeBuffer packet, final int length)
     {
         if (0 == termBuffer.getInt(termOffset))
         {

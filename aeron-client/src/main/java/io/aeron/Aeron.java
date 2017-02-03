@@ -58,7 +58,8 @@ public final class Aeron implements AutoCloseable
             throwable.printStackTrace();
             if (throwable instanceof DriverTimeoutException)
             {
-                System.err.printf("%n***%n*** Timeout from the Media Driver - is it currently running? Exiting.%n***%n");
+                System.err.printf(
+                    "%n***%n*** Timeout from the Media Driver - is it currently running? Exiting.%n***%n");
                 System.exit(-1);
             }
         };
@@ -309,7 +310,8 @@ public final class Aeron implements AutoCloseable
 
             if (countersMetaDataBuffer() == null)
             {
-                countersMetaDataBuffer(CncFileDescriptor.createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer));
+                countersMetaDataBuffer(
+                    CncFileDescriptor.createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer));
             }
 
             if (countersValuesBuffer() == null)

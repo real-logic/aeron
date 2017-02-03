@@ -66,8 +66,8 @@ public class EmbeddedThroughput
              Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             executor.execute(reporter);
-            executor.execute(
-                () -> SamplesUtil.subscriberLoop(rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));
+            executor.execute(() -> SamplesUtil.subscriberLoop(
+                rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
 
@@ -92,7 +92,8 @@ public class EmbeddedThroughput
                     }
                 }
 
-                System.out.println("Done streaming. backPressureRatio=" + ((double)backPressureCount / NUMBER_OF_MESSAGES));
+                System.out.println(
+                    "Done streaming. backPressureRatio=" + ((double)backPressureCount / NUMBER_OF_MESSAGES));
 
                 if (0 < LINGER_TIMEOUT_MS)
                 {

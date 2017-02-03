@@ -133,7 +133,8 @@ public class MultipleSubscribersWithFragmentAssembly
                 if (length != 10000)
                 {
                     System.out.format(
-                        "Received message was not assembled properly; received length was %d, but was expecting 10000%n",
+                        "Received message was not assembled properly;" +
+                        " received length was %d, but was expecting 10000%n",
                         length);
                 }
             };

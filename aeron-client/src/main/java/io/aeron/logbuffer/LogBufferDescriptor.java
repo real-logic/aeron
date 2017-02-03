@@ -290,8 +290,8 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Get the value of the active partition index used by the producer of this log. Consumers may have a different active
-     * index if they are running behind. The read is done with volatile semantics.
+     * Get the value of the active partition index used by the producer of this log. Consumers may have a different
+     * active index if they are running behind. The read is done with volatile semantics.
      *
      * @param logMetaDataBuffer containing the meta data.
      * @return the value of the active partition index used by the producer of this log.
@@ -399,7 +399,8 @@ public class LogBufferDescriptor
      * @param initialTermId       the initial term id that this stream started on
      * @return the term id according to the position
      */
-    public static int computeTermIdFromPosition(final long position, final int positionBitsToShift, final int initialTermId)
+    public static int computeTermIdFromPosition(
+        final long position, final int positionBitsToShift, final int initialTermId)
     {
         return ((int)(position >>> positionBitsToShift) + initialTermId);
     }
@@ -445,7 +446,7 @@ public class LogBufferDescriptor
      *
      * @param logMetaDataBuffer into which the default headers should be stored.
      * @param defaultHeader     to be stored.
-     * @throws IllegalArgumentException if the default header is larger than {@link #LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH}
+     * @throws IllegalArgumentException if the defaultHeader is larger than {@link #LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH}
      */
     public static void storeDefaultFrameHeader(final UnsafeBuffer logMetaDataBuffer, final DirectBuffer defaultHeader)
     {
@@ -504,7 +505,8 @@ public class LogBufferDescriptor
      * @param partitionIndex to be initialised.
      * @param termId         to be set.
      */
-    public static void initialiseTailWithTermId(final UnsafeBuffer logMetaData, final int partitionIndex, final int termId)
+    public static void initialiseTailWithTermId(
+        final UnsafeBuffer logMetaData, final int partitionIndex, final int termId)
     {
         logMetaData.putLong(TERM_TAIL_COUNTERS_OFFSET + (partitionIndex * SIZE_OF_LONG), ((long)termId) << 32);
     }

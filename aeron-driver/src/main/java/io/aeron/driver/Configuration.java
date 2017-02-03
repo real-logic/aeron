@@ -91,7 +91,8 @@ public class Configuration
     /**
      * IPC Term buffer length in bytes.
      */
-    public static final int IPC_TERM_BUFFER_LENGTH = getInteger(IPC_TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_IPC_LENGTH_DEFAULT);
+    public static final int IPC_TERM_BUFFER_LENGTH = getInteger(
+        IPC_TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_IPC_LENGTH_DEFAULT);
 
     /**
      * Property name low file storage warning threshold.
@@ -172,7 +173,8 @@ public class Configuration
     /**
      * Buffer length for the error buffer for the media driver.
      */
-    public static final int ERROR_BUFFER_LENGTH = getInteger(ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
+    public static final int ERROR_BUFFER_LENGTH = getInteger(
+        ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
     /**
      * Property name for length of the memory mapped buffer for the loss report buffer.
      */
@@ -241,7 +243,8 @@ public class Configuration
     /**
      * SO_RCVBUF length, 0 means use OS default.
      */
-    public static final int SOCKET_RCVBUF_LENGTH = getInteger(SOCKET_RCVBUF_LENGTH_PROP_NAME, SOCKET_RCVBUF_LENGTH_DEFAULT);
+    public static final int SOCKET_RCVBUF_LENGTH = getInteger(
+        SOCKET_RCVBUF_LENGTH_PROP_NAME, SOCKET_RCVBUF_LENGTH_DEFAULT);
 
     /**
      * Property name for SO_SNDBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Produce (BDP).
@@ -256,7 +259,8 @@ public class Configuration
     /**
      * SO_SNDBUF length, 0 means use OS default.
      */
-    public static final int SOCKET_SNDBUF_LENGTH = getInteger(SOCKET_SNDBUF_LENGTH_PROP_NAME, SOCKET_SNDBUF_LENGTH_DEFAULT);
+    public static final int SOCKET_SNDBUF_LENGTH = getInteger(
+        SOCKET_SNDBUF_LENGTH_PROP_NAME, SOCKET_SNDBUF_LENGTH_DEFAULT);
 
     /**
      * Property name for IP_MULTICAST_TTL setting on UDP sockets.
@@ -271,7 +275,8 @@ public class Configuration
     /**
      * Multicast TTL value.
      */
-    public static final int SOCKET_MULTICAST_TTL = getInteger(SOCKET_MULTICAST_TTL_PROP_NAME, SOCKET_MULTICAST_TTL_DEFAULT);
+    public static final int SOCKET_MULTICAST_TTL = getInteger(
+        SOCKET_MULTICAST_TTL_PROP_NAME, SOCKET_MULTICAST_TTL_DEFAULT);
 
     /**
      * Property name for linger timeout on {@link Publication}s.
@@ -286,7 +291,8 @@ public class Configuration
     /**
      * Time for {@link Publication}s to linger before cleanup.
      */
-    public static final long PUBLICATION_LINGER_NS = getLong(PUBLICATION_LINGER_PROP_NAME, PUBLICATION_LINGER_DEFAULT_NS);
+    public static final long PUBLICATION_LINGER_NS = getLong(
+        PUBLICATION_LINGER_PROP_NAME, PUBLICATION_LINGER_DEFAULT_NS);
 
     /**
      * Property name for {@link Aeron} client liveness timeout.
@@ -333,7 +339,8 @@ public class Configuration
     /**
      * Property name for window limit for IPC publications.
      */
-    public static final String IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME = "aeron.ipc.publication.term.window.length";
+    public static final String IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME =
+        "aeron.ipc.publication.term.window.length";
 
     /**
      * IPC Publication term window length for flow control in bytes.
@@ -375,11 +382,12 @@ public class Configuration
     /**
      * {@link IdleStrategy} to be employed by {@link Sender} for {@link ThreadingMode#DEDICATED}.
      */
-    public static final String SENDER_IDLE_STRATEGY = getProperty(SENDER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
+    public static final String SENDER_IDLE_STRATEGY = getProperty(
+        SENDER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
 
     /**
-     * Property name for {@link IdleStrategy} to be employed by {@link DriverConductor} for {@link ThreadingMode#DEDICATED}
-     * and {@link ThreadingMode#SHARED_NETWORK}.
+     * Property name for {@link IdleStrategy} to be employed by {@link DriverConductor} for
+     * {@link ThreadingMode#DEDICATED} and {@link ThreadingMode#SHARED_NETWORK}.
      */
     public static final String CONDUCTOR_IDLE_STRATEGY_PROP_NAME = "aeron.conductor.idle.strategy";
 
@@ -387,7 +395,8 @@ public class Configuration
      * {@link IdleStrategy} to be employed by {@link DriverConductor} for {@link ThreadingMode#DEDICATED}
      * and {@link ThreadingMode#SHARED_NETWORK}.
      */
-    public static final String CONDUCTOR_IDLE_STRATEGY = getProperty(CONDUCTOR_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
+    public static final String CONDUCTOR_IDLE_STRATEGY = getProperty(
+        CONDUCTOR_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
 
     /**
      * Property name for {@link IdleStrategy} to be employed by {@link Receiver} for {@link ThreadingMode#DEDICATED}.
@@ -397,7 +406,8 @@ public class Configuration
     /**
      * {@link IdleStrategy} to be employed by {@link Receiver} for {@link ThreadingMode#DEDICATED}.
      */
-    public static final String RECEIVER_IDLE_STRATEGY = getProperty(RECEIVER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
+    public static final String RECEIVER_IDLE_STRATEGY = getProperty(
+        RECEIVER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
 
     /**
      * Property name for {@link IdleStrategy} to be employed by {@link Sender} and {@link Receiver} for
@@ -413,8 +423,8 @@ public class Configuration
         SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
 
     /**
-     * Property name for {@link IdleStrategy} to be employed by {@link Sender}, {@link Receiver}, and {@link DriverConductor}
-     * for {@link ThreadingMode#SHARED}.
+     * Property name for {@link IdleStrategy} to be employed by {@link Sender}, {@link Receiver},
+     * and {@link DriverConductor} for {@link ThreadingMode#SHARED}.
      */
     public static final String SHARED_IDLE_STRATEGY_PROP_NAME = "aeron.shared.idle.strategy";
 
@@ -422,7 +432,8 @@ public class Configuration
      * {@link IdleStrategy} to be employed by {@link Sender}, {@link Receiver}, and {@link DriverConductor}
      * for {@link ThreadingMode#SHARED}.
      */
-    public static final String SHARED_IDLE_STRATEGY = getProperty(SHARED_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
+    public static final String SHARED_IDLE_STRATEGY = getProperty(
+        SHARED_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
 
     /**
      * Property name for {@link FlowControl} to be employed for unicast channels.
@@ -460,7 +471,8 @@ public class Configuration
     /**
      * Property name for {@link FlowControlSupplier} to be employed for unicast channels.
      */
-    public static final String MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME = "aeron.multicast.FlowControl.supplier";
+    public static final String MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME =
+        "aeron.multicast.FlowControl.supplier";
 
     /**
      * {@link FlowControlSupplier} to be employed for multicast channels.
@@ -583,8 +595,8 @@ public class Configuration
     /**
      * Multicast NAK delay is immediate initial with delayed subsequent delay.
      */
-    public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR = new OptimalMulticastDelayGenerator(
-        NAK_MAX_BACKOFF_DEFAULT, NAK_GROUPSIZE_DEFAULT, NAK_GRTT_DEFAULT);
+    public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR =
+        new OptimalMulticastDelayGenerator(NAK_MAX_BACKOFF_DEFAULT, NAK_GROUPSIZE_DEFAULT, NAK_GRTT_DEFAULT);
 
     /**
      * Default Unicast NAK delay in nanoseconds.
@@ -605,7 +617,8 @@ public class Configuration
     /**
      * Source uses same for unicast and multicast. For ticks.
      */
-    public static final FeedbackDelayGenerator RETRANSMIT_UNICAST_DELAY_GENERATOR = () -> RETRANSMIT_UNICAST_DELAY_DEFAULT_NS;
+    public static final FeedbackDelayGenerator RETRANSMIT_UNICAST_DELAY_GENERATOR =
+        () -> RETRANSMIT_UNICAST_DELAY_DEFAULT_NS;
 
     /**
      * Default delay for linger for unicast.
@@ -615,7 +628,8 @@ public class Configuration
     /**
      * Delay for linger for unicast.
      */
-    public static final FeedbackDelayGenerator RETRANSMIT_UNICAST_LINGER_GENERATOR = () -> RETRANSMIT_UNICAST_LINGER_DEFAULT_NS;
+    public static final FeedbackDelayGenerator RETRANSMIT_UNICAST_LINGER_GENERATOR =
+        () -> RETRANSMIT_UNICAST_LINGER_DEFAULT_NS;
 
     /**
      * Default max number of active retransmissions per connected stream.
@@ -889,7 +903,8 @@ public class Configuration
     }
 
     /**
-     * Validate the the MTU is an appropriate length. MTU lengths must be a multiple of {@link FrameDescriptor#FRAME_ALIGNMENT}.
+     * Validate the the MTU is an appropriate length. MTU lengths must be a multiple of
+     * {@link FrameDescriptor#FRAME_ALIGNMENT}.
      *
      * @param mtuLength to be validated.
      * @throws ConfigurationException if the MTU length is not valid.

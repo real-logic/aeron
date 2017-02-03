@@ -40,7 +40,8 @@ public class MultiplePublishersWithFragmentation
 
     public static void main(final String[] args) throws Exception
     {
-        System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID_1 + " and stream Id " + STREAM_ID_2);
+        System.out.println(
+            "Publishing to " + CHANNEL + " on stream Id " + STREAM_ID_1 + " and stream Id " + STREAM_ID_2);
 
         try (Aeron aeron = Aeron.connect();
              Publication publication1 = aeron.addPublication(CHANNEL, STREAM_ID_1);
@@ -103,7 +104,8 @@ public class MultiplePublishersWithFragmentation
                             }
                             else if (result2 == Publication.NOT_CONNECTED)
                             {
-                                System.out.println("Offer failed - publisher is not yet connected to subscriber" + STREAM_ID_2);
+                                System.out.println(
+                                    "Offer failed - publisher is not yet connected to subscriber" + STREAM_ID_2);
                             }
                             else
                             {

@@ -48,7 +48,7 @@
         <module name="UnusedImports"/>
 
         <module name="LineLength">
-            <property name="max" value="130"/>
+            <property name="max" value="120"/>
             <property name="ignorePattern" value="^[ \t]*\*.*@.*$"/>
         </module>
 
@@ -98,6 +98,7 @@
 
         <module name="RightCurly">
             <property name="option" value="alone"/>
+            <property name="tokens" value="LITERAL_ELSE, LITERAL_DO, LITERAL_WHILE"/>
         </module>
 
         <module name="EmptyStatement"/>

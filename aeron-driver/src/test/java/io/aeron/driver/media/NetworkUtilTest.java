@@ -137,7 +137,8 @@ public class NetworkUtilTest
         final NetworkInterface ifc1 = stub.add("fe80:0:0:0001:0002:0:0:1/80");
         stub.add("fe80:0:0:0002:0003:0:0:1/80");
 
-        final Collection<NetworkInterface> filteredBySubnet = filterBySubnet(stub, getByName("fe80:0:0:0001:0002:0:0:0"), 80);
+        final Collection<NetworkInterface> filteredBySubnet =
+            filterBySubnet(stub, getByName("fe80:0:0:0001:0002:0:0:0"), 80);
 
         assertThat(filteredBySubnet.size(), is(1));
         assertThat(first(filteredBySubnet), is(ifc1));
@@ -151,7 +152,8 @@ public class NetworkUtilTest
         stub.add("fe80:0:0:0001:0:0:0:1/64");
         stub.add("fe80:0:0:0002:0:0:0:1/64");
 
-        final Collection<NetworkInterface> filteredBySubnet = filterBySubnet(stub, getByName("fe80:0:0:0004:0:0:0:0"), 64);
+        final Collection<NetworkInterface> filteredBySubnet =
+            filterBySubnet(stub, getByName("fe80:0:0:0004:0:0:0:0"), 64);
 
         assertThat(filteredBySubnet.size(), is(0));
     }
@@ -166,7 +168,8 @@ public class NetworkUtilTest
         final NetworkInterface ifc2 = stub.add("fe80:0001:0:0:0:0:0:1/32");
         final NetworkInterface ifc3 = stub.add("fe80:0001:abcd:0:0:0:0:1/48");
 
-        final Collection<NetworkInterface> filteredBySubnet = filterBySubnet(stub, getByName("fe80:0:0:0:0:0:0:0"), 16);
+        final Collection<NetworkInterface> filteredBySubnet =
+            filterBySubnet(stub, getByName("fe80:0:0:0:0:0:0:0"), 16);
 
         assertThat(filteredBySubnet.size(), is(3));
         final Iterator<NetworkInterface> it = filteredBySubnet.iterator();
@@ -184,7 +187,8 @@ public class NetworkUtilTest
     {
         private int counter = 0;
 
-        private final IdentityHashMap<NetworkInterface, List<InterfaceAddress>> addressesByInterface = new IdentityHashMap<>();
+        private final IdentityHashMap<NetworkInterface, List<InterfaceAddress>> addressesByInterface =
+            new IdentityHashMap<>();
 
         public Enumeration<NetworkInterface> getNetworkInterfaces() throws SocketException
         {

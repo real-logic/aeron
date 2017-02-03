@@ -112,7 +112,8 @@ public class StreamingPublisher
                     reporter.onMessage(1, length);
                 }
 
-                System.out.println("Done streaming. Back pressure ratio " + ((double)backPressureCount / NUMBER_OF_MESSAGES));
+                System.out.println(
+                    "Done streaming. Back pressure ratio " + ((double)backPressureCount / NUMBER_OF_MESSAGES));
 
                 if (0 < LINGER_TIMEOUT_MS)
                 {

@@ -15,6 +15,7 @@
  */
 package io.aeron.archiver;
 
+import io.aeron.Image;
 import io.aeron.archiver.messages.ArchiveMetaFileFormatDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -30,28 +31,29 @@ class ArchiveFileUtil
     static final int META_FILE_SIZE = 64;
     static final int ARCHIVE_FILE_SIZE = 1 << 30;
 
-    static String archiveMetaFileName(int streamInstanceId)
+    static String archiveMetaFileName(String streamInstanceName)
     {
-        return streamInstanceId + ".meta";
+        return streamInstanceName + ".meta";
     }
 
-    static String archiveDataFileName(int streamInstanceId, int index)
+    static String archiveDataFileName(String streamInstanceName, int startTermId, int termBufferLength)
     {
-        return streamInstanceId + "." + index + ".aaf";
+        final int termsPerFile = ARCHIVE_FILE_SIZE / termBufferLength;
+        return streamInstanceName + "." + startTermId + "-to-" + (termsPerFile + startTermId) + ".aaf";
     }
 
-    static String archiveDataFileName(int streamInstanceId, int initialTermId, int termBufferLength, int termId)
+    static String archiveDataFileName(String streamInstanceName, int initialTermId, int termBufferLength, int termId)
     {
         final int termsPerFile = ARCHIVE_FILE_SIZE / termBufferLength;
         final int index = (termId - initialTermId) / termsPerFile;
 
-        return archiveDataFileName(streamInstanceId, index);
+        return archiveDataFileName(streamInstanceName, initialTermId + index * termsPerFile, termBufferLength);
     }
 
     static void printMetaFile(File metaFile) throws IOException
     {
         final ArchiveMetaFileFormatDecoder formatDecoder = archiveMetaFileFormatDecoder(metaFile);
-        System.out.println("streamInstanceId: " + formatDecoder.streamInstanceId());
+        System.out.println("instanceId: " + formatDecoder.instanceId());
         System.out.println("termBufferLength: " + formatDecoder.termBufferLength());
         System.out.println("start time: " + new Date(formatDecoder.startTime()));
         System.out.println("initialTermId: " + formatDecoder.initialTermId());
@@ -63,24 +65,18 @@ class ArchiveFileUtil
 
     static ArchiveMetaFileFormatDecoder archiveMetaFileFormatDecoder(File metaFile) throws IOException
     {
-
         try (RandomAccessFile randomAccessFile = new RandomAccessFile(metaFile, "rw");
              FileChannel metadataFileChannel = randomAccessFile.getChannel();)
         {
             final MappedByteBuffer metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 64);
             return new ArchiveMetaFileFormatDecoder().wrap(new UnsafeBuffer(metaDataBuffer), 0, 64, 0);
         }
-        catch (IOException e)
-        {
-            throw e;
-        }
-
-
     }
 
     static int archiveOffset(int termOffset, int termId, int initialTermId, int termBufferLength)
     {
-        return archiveOffset(termOffset, termId, initialTermId, ((ARCHIVE_FILE_SIZE / termBufferLength) - 1), termBufferLength);
+        final int termsMask = ((ARCHIVE_FILE_SIZE / termBufferLength) - 1);
+        return archiveOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
     }
 
     static int archiveOffset(int termOffset, int termId, int initialTermId, int termsMask, int termBufferLength)

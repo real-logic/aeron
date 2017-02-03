@@ -33,6 +33,14 @@ public class DefaultCongestionControlSupplier implements CongestionControlSuppli
         final CountersManager countersManager)
     {
         return new StaticWindowCongestionControl(
-            registrationId, udpChannel, streamId, sessionId, termLength, senderMtuLength, clock, context, countersManager);
+            registrationId,
+            udpChannel,
+            streamId,
+            sessionId,
+            termLength,
+            senderMtuLength,
+            clock,
+            context,
+            countersManager);
     }
 }

@@ -55,9 +55,11 @@ public class StopStartSecondSubscriberTest
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[8192]);
     private final AtomicInteger subscriber1Count = new AtomicInteger();
-    private final FragmentHandler fragmentHandler1 = (buffer, offset, length, header) -> subscriber1Count.getAndIncrement();
+    private final FragmentHandler fragmentHandler1 =
+        (buffer, offset, length, header) -> subscriber1Count.getAndIncrement();
     private final AtomicInteger subscriber2Count = new AtomicInteger();
-    private final FragmentHandler fragmentHandler2 = (buffer, offset, length, header) -> subscriber2Count.getAndIncrement();
+    private final FragmentHandler fragmentHandler2 =
+        (buffer, offset, length, header) -> subscriber2Count.getAndIncrement();
 
     final MediaDriver.Context mediaDriverContext1 = new MediaDriver.Context();
     final MediaDriver.Context mediaDriverContext2 = new MediaDriver.Context();
@@ -131,7 +133,8 @@ public class StopStartSecondSubscriberTest
         final AtomicInteger fragmentsRead1 = new AtomicInteger();
         final AtomicInteger fragmentsRead2 = new AtomicInteger();
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead1.get() >= numMessagesPerPublication && fragmentsRead2.get() >= numMessagesPerPublication,
+            () -> fragmentsRead1.get() >= numMessagesPerPublication &&
+                fragmentsRead2.get() >= numMessagesPerPublication,
             (i) ->
             {
                 fragmentsRead1.addAndGet(subscription1.poll(fragmentHandler1, 10));

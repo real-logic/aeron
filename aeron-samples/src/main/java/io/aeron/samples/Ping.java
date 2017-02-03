@@ -74,7 +74,8 @@ public class Ping
         try (Aeron aeron = Aeron.connect(ctx))
         {
             System.out.println(
-                "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS + " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
+                "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS +
+                " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
 
             try (Publication publication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
                  Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID))
@@ -107,7 +108,10 @@ public class Ping
     }
 
     private static void roundTripMessages(
-        final FragmentHandler fragmentHandler, final Publication publication, final Subscription subscription, final int count)
+        final FragmentHandler fragmentHandler,
+        final Publication publication,
+        final Subscription subscription,
+        final int count)
     {
         for (int i = 0; i < count; i++)
         {

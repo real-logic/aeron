@@ -30,7 +30,6 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
 import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileName;
-import static io.aeron.archiver.ArchiveFileUtil.streamInstanceName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -94,12 +93,11 @@ public class ImageArchivingSessionTest
             Assert.assertNotEquals("Expect some work", 0, work);
 
             // meta and data exist
-            final String streamInstance = streamInstanceName(sourceIdentity, sessionId, channel, streamId);
-            final File archiveMetaFile = new File(tempFolderForTest, archiveMetaFileName(streamInstance));
+            final File archiveMetaFile = new File(tempFolderForTest, archiveMetaFileName(session.streamInstanceId()));
             assertTrue(archiveMetaFile.exists());
 
             final File archiveDataFile = new File(tempFolderForTest,
-                                                  archiveDataFileName(streamInstance, initialTermId, termBufferLength));
+                                                  archiveDataFileName(session.streamInstanceId(), 0));
             assertTrue(archiveDataFile.exists());
         }
 

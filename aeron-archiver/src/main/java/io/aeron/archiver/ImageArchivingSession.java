@@ -16,6 +16,7 @@
 package io.aeron.archiver;
 
 import io.aeron.Image;
+import io.aeron.Subscription;
 import io.aeron.archiver.messages.ArchiveMetaFileFormatDecoder;
 import io.aeron.archiver.messages.ArchiveMetaFileFormatEncoder;
 import io.aeron.logbuffer.RawBlockHandler;
@@ -88,7 +89,7 @@ class ImageArchivingSession implements RawBlockHandler
                 }
                 CloseHelper.quietClose(session.metadataFileChannel);
                 session.state(DONE);
-                session.archiverConductor.notifyArchiveStopped(session.instanceId);
+                session.archiverConductor.notifyArchiveStopped(session.streamInstanceId);
                 return 1;
             }
         },
@@ -105,11 +106,10 @@ class ImageArchivingSession implements RawBlockHandler
 
     private final ArchiverConductor archiverConductor;
     private final Image image;
-    private final String streamInstanceName;
     private final int termBufferLength;
     private final int termsPerFile;
     private final int termsMask;
-    private final int instanceId;
+    private final int streamInstanceId;
 
     private final FileChannel metadataFileChannel;
     private final MappedByteBuffer metaDataBuffer;
@@ -131,7 +131,6 @@ class ImageArchivingSession implements RawBlockHandler
     {
         this.archiverConductor = archiverConductor;
         this.image = image;
-        this.streamInstanceName = ArchiveFileUtil.streamInstanceName(image);
         this.initialTermId = image.initialTermId();
         this.termBufferLength = image.termBufferLength();
         this.termsPerFile = ArchiveFileUtil.ARCHIVE_FILE_SIZE / termBufferLength;
@@ -141,10 +140,12 @@ class ImageArchivingSession implements RawBlockHandler
             throw new IllegalArgumentException("It is assumed the termBufferLength is a power of 2 smaller than 1G and that" +
                                                "therefore the number of terms in a file is also a power of 2");
         }
-        instanceId = archiverConductor.notifyArchiveStarted(image.sourceIdentity(), image.sessionId(),
-                                                            image.subscription().channel(), image.subscription().streamId());
+        final Subscription subscription = image.subscription();
+        streamInstanceId = archiverConductor.notifyArchiveStarted(image.sourceIdentity(), image.sessionId(),
+                                                                  subscription.channel(), subscription.streamId());
 
-        final File file = new File(archiverConductor.archiveFolder(), ArchiveFileUtil.archiveMetaFileName(streamInstanceName));
+        final File file = new File(archiverConductor.archiveFolder(),
+                                   ArchiveFileUtil.archiveMetaFileName(streamInstanceId));
         final RandomAccessFile randomAccessFile;
         try
         {
@@ -155,7 +156,7 @@ class ImageArchivingSession implements RawBlockHandler
             metaDataReader = new ArchiveMetaFileFormatDecoder().wrap(unsafeBuffer, 0, 64, 0);
             metaDataWriter = new ArchiveMetaFileFormatEncoder().wrap(unsafeBuffer, 0);
 
-            metaDataWriter.instanceId(instanceId);
+            metaDataWriter.streamInstanceId(streamInstanceId);
             metaDataWriter.startTime(System.currentTimeMillis());
             metaDataWriter.termBufferLength(termBufferLength);
             metaDataWriter.initialTermId(initialTermId);
@@ -167,8 +168,7 @@ class ImageArchivingSession implements RawBlockHandler
         }
         catch (IOException e)
         {
-            close();
-            state().doWork(this);
+            State.CLOSE.doWork(this);
             LangUtil.rethrowUnchecked(e);
             // the next line is to keep compiler happy with regards to final fields init
             throw new RuntimeException();
@@ -179,7 +179,7 @@ class ImageArchivingSession implements RawBlockHandler
     private void newArchiveFile(int termId)
     {
         final File file = new File(archiverConductor.archiveFolder(),
-                                   archiveDataFileName(streamInstanceName, termId, termBufferLength));
+                                   archiveDataFileName(streamInstanceId, termId, termBufferLength, initialTermId));
 
         final RandomAccessFile randomAccessFile;
         try
@@ -248,8 +248,8 @@ class ImageArchivingSession implements RawBlockHandler
             metaDataWriter.lastTermId(termId);
             final int endTermOffset = termOffset + length;
             metaDataWriter.lastTermOffset(endTermOffset);
-            archiverConductor.notifyArchiveProgress(instanceId, initialTermId, metaDataReader.initialTermOffset(), termId,
-                                                    endTermOffset);
+            archiverConductor.notifyArchiveProgress(streamInstanceId, initialTermId, metaDataReader.initialTermOffset(),
+                                                    termId, endTermOffset);
             if (index == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
             {
                 archiveFileChannel.close();
@@ -303,5 +303,10 @@ class ImageArchivingSession implements RawBlockHandler
     void state(State state)
     {
         this.state = state;
+    }
+
+    int streamInstanceId()
+    {
+        return streamInstanceId;
     }
 }

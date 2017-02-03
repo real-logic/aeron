@@ -22,14 +22,12 @@ class StreamInstance
     private final String channel;
     private final int streamId;
 
-    private final String name;
     StreamInstance(String source, int sessionId, String channel, int streamId)
     {
         this.source = source;
         this.sessionId = sessionId;
         this.channel = channel;
         this.streamId = streamId;
-        name = ArchiveFileUtil.streamInstanceName(source, sessionId, channel, streamId);
     }
 
 
@@ -51,10 +49,5 @@ class StreamInstance
     public int streamId()
     {
         return streamId;
-    }
-
-    public String name()
-    {
-        return name;
     }
 }

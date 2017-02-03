@@ -63,8 +63,8 @@ class ReplaySession
             int doWork(ReplaySession session)
             {
                 final Publication control = session.control;
-                final String streamInstanceName = session.streamInstance.name();
-                final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceName);
+                final int streamInstanceId = session.archiverConductor.findStreamInstanceId(session.streamInstance);
+                final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
                 final File archiveMetaFile = new File(session.archiverConductor.archiveFolder(), archiveMetaFileName);
                 if (!archiveMetaFile.exists())
                 {
@@ -107,7 +107,7 @@ class ReplaySession
 
 
                 final int termBufferLength = archiveMetaFileFormatDecoder.termBufferLength();
-                final String archiveDataFileName = ArchiveFileUtil.archiveDataFileName(streamInstanceName, initialTermId,
+                final String archiveDataFileName = ArchiveFileUtil.archiveDataFileName(streamInstanceId, initialTermId,
                                                                                        termBufferLength, termId);
                 final File archiveDataFile = new File(session.archiverConductor.archiveFolder(), archiveDataFileName);
 

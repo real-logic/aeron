@@ -80,11 +80,10 @@ public class SystemTest
     private void requestArchive(final Publication archiverServiceRequest, final String channel, final int streamId)
     {
         final MessageHeaderEncoder hEncoder = new MessageHeaderEncoder().wrap(buffer, 0);
-        hEncoder.templateId(
-            ArchiveStartRequestEncoder.TEMPLATE_ID).
-            blockLength(ArchiveStartRequestEncoder.BLOCK_LENGTH).
-            schemaId(ArchiveStartRequestEncoder.SCHEMA_ID).
-            version(ArchiveStartRequestEncoder.SCHEMA_VERSION);
+        hEncoder.templateId(ArchiveStartRequestEncoder.TEMPLATE_ID)
+            .blockLength(ArchiveStartRequestEncoder.BLOCK_LENGTH)
+            .schemaId(ArchiveStartRequestEncoder.SCHEMA_ID)
+            .version(ArchiveStartRequestEncoder.SCHEMA_VERSION);
 
         final ArchiveStartRequestEncoder mEncoder =
                 new ArchiveStartRequestEncoder().wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH);
@@ -97,10 +96,10 @@ public class SystemTest
     private void requestArchiveStop(final Publication archiverServiceRequest, final String channel, final int streamId)
     {
         final MessageHeaderEncoder hEncoder = new MessageHeaderEncoder().wrap(buffer, 0);
-        hEncoder.templateId(ArchiveStopRequestEncoder.TEMPLATE_ID).
-                blockLength(ArchiveStopRequestEncoder.BLOCK_LENGTH).
-                schemaId(ArchiveStopRequestEncoder.SCHEMA_ID).
-                version(ArchiveStopRequestEncoder.SCHEMA_VERSION);
+        hEncoder.templateId(ArchiveStopRequestEncoder.TEMPLATE_ID)
+            .blockLength(ArchiveStopRequestEncoder.BLOCK_LENGTH)
+            .schemaId(ArchiveStopRequestEncoder.SCHEMA_ID)
+            .version(ArchiveStopRequestEncoder.SCHEMA_VERSION);
 
         final ArchiveStopRequestEncoder mEncoder =
                 new ArchiveStopRequestEncoder().wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH);
@@ -185,24 +184,24 @@ public class SystemTest
         }
 
         // the archiver has subscribed to the pingPub, now we wait for the archive start message
-        poll(archiverNotifications, (buffer, offset, length, header) ->
-        {
-            final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
-            Assert.assertEquals(ArchiveStartedNotificationDecoder.TEMPLATE_ID, hDecoder.templateId());
-            final ArchiveStartedNotificationDecoder mDecoder = new ArchiveStartedNotificationDecoder();
-            mDecoder.wrap(
-                buffer,
-                offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                hDecoder.blockLength(),
-                hDecoder.version());
-            Assert.assertEquals(mDecoder.streamId(), PUBLISH_STREAM_ID);
-            Assert.assertEquals(mDecoder.channel(), PUBLISH_URI);
-            Assert.assertEquals(mDecoder.sessionId(), publication.sessionId());
-            streamInstanceId = mDecoder.streamInstanceId();
-            source = mDecoder.source();
-            println("Archive started. source: " + source);
-
-        }, 1, 1000);
+        poll(archiverNotifications,
+            (buffer, offset, length, header) ->
+            {
+                final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
+                Assert.assertEquals(ArchiveStartedNotificationDecoder.TEMPLATE_ID, hDecoder.templateId());
+                final ArchiveStartedNotificationDecoder mDecoder = new ArchiveStartedNotificationDecoder();
+                mDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    hDecoder.blockLength(),
+                    hDecoder.version());
+                Assert.assertEquals(mDecoder.streamId(), PUBLISH_STREAM_ID);
+                Assert.assertEquals(mDecoder.channel(), PUBLISH_URI);
+                Assert.assertEquals(mDecoder.sessionId(), publication.sessionId());
+                streamInstanceId = mDecoder.streamInstanceId();
+                source = mDecoder.source();
+                println("Archive started. source: " + source);
+            }, 1, 1000);
 
         final int messageCount = 128;
         final CountDownLatch waitForData = new CountDownLatch(1);
@@ -237,18 +236,20 @@ public class SystemTest
 
     private void awaitArchiveStoppedNotification(final Subscription archiverNotifications)
     {
-        poll(archiverNotifications, (buffer, offset, length, header) ->
-        {
-            final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
-            Assert.assertEquals(ArchiveStoppedNotificationDecoder.TEMPLATE_ID, hDecoder.templateId());
-            final ArchiveStoppedNotificationDecoder mDecoder = new ArchiveStoppedNotificationDecoder();
-            mDecoder.wrap(buffer,
-                          offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                          hDecoder.blockLength(),
-                          hDecoder.version());
+        poll(archiverNotifications,
+            (buffer, offset, length, header) ->
+            {
+                final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
+                Assert.assertEquals(ArchiveStoppedNotificationDecoder.TEMPLATE_ID, hDecoder.templateId());
+                final ArchiveStoppedNotificationDecoder mDecoder = new ArchiveStoppedNotificationDecoder();
+                mDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    hDecoder.blockLength(),
+                    hDecoder.version());
 
-            Assert.assertEquals(mDecoder.streamInstanceId(), streamInstanceId);
-        }, 1, 1000);
+                Assert.assertEquals(mDecoder.streamInstanceId(), streamInstanceId);
+            }, 1, 1000);
 
         println("Archive stopped");
     }
@@ -277,11 +278,12 @@ public class SystemTest
     private void validateReplay(final Publication archiverServiceRequest, final Publication publication)
     {
         // request replay
-        requestReplay(archiverServiceRequest,
-                      source, publication.sessionId(),
-                      PUBLISH_URI, PUBLISH_STREAM_ID,
-                      publication.initialTermId(), 0, delivered,
-                      REPLAY_URI, 1, 2);
+        requestReplay(
+            archiverServiceRequest,
+            source, publication.sessionId(),
+            PUBLISH_URI, PUBLISH_STREAM_ID,
+            publication.initialTermId(), 0, delivered,
+            REPLAY_URI, 1, 2);
 
         final Subscription replay = publishingClient.addSubscription(REPLAY_URI, 1);
         final Subscription control = publishingClient.addSubscription(REPLAY_URI, 2);
@@ -290,10 +292,11 @@ public class SystemTest
             final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
             Assert.assertEquals(ArchiverResponseDecoder.TEMPLATE_ID, hDecoder.templateId());
             final ArchiverResponseDecoder mDecoder = new ArchiverResponseDecoder();
-            mDecoder.wrap(buffer,
-                          offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                          hDecoder.blockLength(),
-                          hDecoder.version());
+            mDecoder.wrap(
+                buffer,
+                offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                hDecoder.blockLength(),
+                hDecoder.version());
             Assert.assertEquals(mDecoder.err(), "");
         }, 1, 1000);
 
@@ -317,23 +320,22 @@ public class SystemTest
                         final int index = directBuffer.getInt(messageStart + 32);
                         Assert.assertEquals(this.fragmentCount, index);
                         printf("Fragment: length=%d \t, offset=%d \t, getInt(0)=%d \n", frameLength,
-                                          (this.nextMessage % length),
-                                          index);
+                            (this.nextMessage % length), index);
                     }
                     this.fragmentCount++;
                     this.nextMessage += frameLength;
                 }
                 while (messageStart + frameLength < offset + length);
-                delivered -= length;
 
+                delivered -= length;
             }, 1, 1000);
         }
     }
 
     private void validateArchiveFile(final int messageCount, final int streamInstanceId) throws IOException
     {
-        final File archiveFile1 = new File(archiveFolder, ArchiveFileUtil
-                .archiveDataFileName(streamInstanceId, 0));
+        final File archiveFile1 = new File(
+            archiveFolder, ArchiveFileUtil.archiveDataFileName(streamInstanceId, 0));
         Assert.assertTrue(archiveFile1.exists());
 
         // validate file data
@@ -355,7 +357,7 @@ public class SystemTest
         final int messageCount,
         final CountDownLatch waitForData)
     {
-        Thread t = new Thread(() ->
+        final Thread t = new Thread(() ->
         {
             delivered = 0;
             long start = System.currentTimeMillis();
@@ -399,6 +401,7 @@ public class SystemTest
 
             waitForData.countDown();
         });
+
         t.setDaemon(true);
         t.start();
     }
@@ -429,11 +432,12 @@ public class SystemTest
         }
     }
 
-    private void offer(final Publication publication,
-                       final UnsafeBuffer buffer,
-                       final int offset,
-                       final int length,
-                       final long timeout)
+    private void offer(
+        final Publication publication,
+        final UnsafeBuffer buffer,
+        final int offset,
+        final int length,
+        final long timeout)
     {
         final long limit = System.currentTimeMillis() + timeout;
         while (publication.offer(buffer, offset, length) < 0)

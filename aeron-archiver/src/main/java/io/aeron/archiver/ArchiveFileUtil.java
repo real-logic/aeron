@@ -15,7 +15,6 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.Image;
 import io.aeron.archiver.messages.ArchiveMetaFileFormatDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -31,29 +30,28 @@ class ArchiveFileUtil
     static final int META_FILE_SIZE = 64;
     static final int ARCHIVE_FILE_SIZE = 1 << 30;
 
-    static String archiveMetaFileName(String streamInstanceName)
+    static String archiveMetaFileName(int streamInstanceId)
     {
-        return streamInstanceName + ".meta";
+        return streamInstanceId + ".meta";
     }
 
-    static String archiveDataFileName(String streamInstanceName, int startTermId, int termBufferLength)
+    static String archiveDataFileName(int streamInstanceId, int index)
     {
-        final int termsPerFile = ARCHIVE_FILE_SIZE / termBufferLength;
-        return streamInstanceName + "." + startTermId + "-to-" + (termsPerFile + startTermId) + ".aaf";
+        return streamInstanceId + "." + index + ".aaf";
     }
 
-    static String archiveDataFileName(String streamInstanceName, int initialTermId, int termBufferLength, int termId)
+    static String archiveDataFileName(int streamInstanceId, int initialTermId, int termBufferLength, int termId)
     {
         final int termsPerFile = ARCHIVE_FILE_SIZE / termBufferLength;
         final int index = (termId - initialTermId) / termsPerFile;
 
-        return archiveDataFileName(streamInstanceName, initialTermId + index * termsPerFile, termBufferLength);
+        return archiveDataFileName(streamInstanceId, index);
     }
 
     static void printMetaFile(File metaFile) throws IOException
     {
         final ArchiveMetaFileFormatDecoder formatDecoder = archiveMetaFileFormatDecoder(metaFile);
-        System.out.println("instanceId: " + formatDecoder.instanceId());
+        System.out.println("streamInstanceId: " + formatDecoder.streamInstanceId());
         System.out.println("termBufferLength: " + formatDecoder.termBufferLength());
         System.out.println("start time: " + new Date(formatDecoder.startTime()));
         System.out.println("initialTermId: " + formatDecoder.initialTermId());

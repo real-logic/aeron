@@ -358,7 +358,7 @@ public class ArchiverConductor implements Agent
             .schemaId(ArchiveStartedNotificationEncoder.SCHEMA_ID)
             .version(ArchiveStartedNotificationEncoder.SCHEMA_VERSION);
         mEncoder.wrap(responseBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
-        mEncoder.instanceId(instanceId).sessionId(sessionId).streamId(streamId).channel(channel).source(source);
+        mEncoder.streamInstanceId(instanceId).sessionId(sessionId).streamId(streamId).channel(channel).source(source);
 
 
         final long result = archiverNotifications.offer(responseBuffer, 0,
@@ -383,7 +383,7 @@ public class ArchiverConductor implements Agent
             .version(ArchiveProgressNotificationEncoder.SCHEMA_VERSION);
 
         mEncoder.wrap(responseBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
-        mEncoder.instanceId(instanceId)
+        mEncoder.streamInstanceId(instanceId)
             .initialTermId(initialTermId)
             .initialTermOffset(initialTermOffset)
             .termId(termId)
@@ -406,7 +406,7 @@ public class ArchiverConductor implements Agent
             .schemaId(ArchiveStoppedNotificationEncoder.SCHEMA_ID)
             .version(ArchiveStoppedNotificationEncoder.SCHEMA_VERSION);
         mEncoder.wrap(responseBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
-        mEncoder.instanceId(instanceId);
+        mEncoder.streamInstanceId(instanceId);
 
         final long result = archiverNotifications.offer(
             responseBuffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + mEncoder.encodedLength());
@@ -414,5 +414,10 @@ public class ArchiverConductor implements Agent
         {
             throw new IllegalStateException();
         }
+    }
+
+    public int findStreamInstanceId(StreamInstance streamInstance)
+    {
+        return 0;
     }
 }

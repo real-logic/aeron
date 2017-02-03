@@ -148,7 +148,9 @@ class ImageArchivingSession implements RawBlockHandler
                                                                   subscription.channel(), subscription.streamId());
 
 
-        final File file = new File(archiverConductor.archiveFolder(), ArchiveFileUtil.archiveMetaFileName(streamInstanceName));
+        final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
+        final File file = new File(archiverConductor.archiveFolder(),
+                                   archiveMetaFileName);
         final RandomAccessFile randomAccessFile;
         try
         {
@@ -181,8 +183,10 @@ class ImageArchivingSession implements RawBlockHandler
 
     private void newArchiveFile(int termId)
     {
+        final String archiveDataFileName =
+                archiveDataFileName(streamInstanceId, initialTermId, termBufferLength, termId);
         final File file = new File(archiverConductor.archiveFolder(),
-                                   archiveDataFileName(streamInstanceId, termId, termBufferLength));
+                                   archiveDataFileName);
 
         final RandomAccessFile randomAccessFile;
         try
@@ -260,7 +264,10 @@ class ImageArchivingSession implements RawBlockHandler
             metaDataWriter.lastTermId(termId);
             final int endTermOffset = termOffset + length;
             metaDataWriter.lastTermOffset(endTermOffset);
-            archiverConductor.notifyArchiveProgress(streamInstanceId, initialTermId, metaDataReader.initialTermOffset(), termId,
+            archiverConductor.notifyArchiveProgress(streamInstanceId,
+                                                    initialTermId,
+                                                    metaDataReader.initialTermOffset(),
+                                                    termId,
                                                     endTermOffset);
             if (index == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
             {

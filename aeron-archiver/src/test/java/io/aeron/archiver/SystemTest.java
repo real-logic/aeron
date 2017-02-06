@@ -318,7 +318,7 @@ public class SystemTest
                         {
                             final int index = directBuffer.getInt(messageStart + 32);
                             Assert.assertEquals(this.fragmentCount, index);
-                            printf("Fragment: length=%d \t, offset=%d \t, getInt(0)=%d \n",
+                            printf("Fragment: length=%d \t, offset=%d \t, getInt(0)=%d %n",
                                 frameLength, (this.nextMessage % length), index);
                         }
 
@@ -396,7 +396,7 @@ public class SystemTest
                         final long deltaBytes = delivered - startBytes;
                         startBytes = delivered;
                         final double mbps = ((deltaBytes * 1000.0) / deltaTime) / (1024.0 * 1024.0);
-                        printf("Archive reported speed: %f MB/s \n", mbps);
+                        printf("Archive reported speed: %f MB/s %n", mbps);
                     }
                 }
                 final long end = System.currentTimeMillis();
@@ -404,7 +404,7 @@ public class SystemTest
 
                 final long deltaBytes = delivered - startBytes;
                 final double mbps = ((deltaBytes * 1000.0) / deltaTime) / (1024.0 * 1024.0);
-                printf("Archive reported speed: %f MB/s \n", mbps);
+                printf("Archive reported speed: %f MB/s %n", mbps);
 
                 waitForData.countDown();
             });

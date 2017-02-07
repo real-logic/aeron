@@ -173,9 +173,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
             presend(buffer, connectAddress);
             byteSent = sendDatagramChannel.write(buffer);
         }
-        catch (final PortUnreachableException | ClosedChannelException ex)
+        catch (final PortUnreachableException | ClosedChannelException ignore)
         {
-            // ignore
         }
         catch (final IOException ex)
         {

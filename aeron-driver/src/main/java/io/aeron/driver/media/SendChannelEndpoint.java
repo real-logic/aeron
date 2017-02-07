@@ -75,11 +75,6 @@ public class SendChannelEndpoint extends UdpChannelTransport
         return udpChannel().originalUriString();
     }
 
-    public boolean isStatusIndicatorClosed()
-    {
-        return statusIndicator.isClosed();
-    }
-
     public void indicateActive()
     {
         final long currentStatus = statusIndicator.get();
@@ -134,13 +129,13 @@ public class SendChannelEndpoint extends UdpChannelTransport
     }
 
     /**
-     * Called from the {@link DriverConductor} to return the number of associated publications.
+     * Called by the {@link DriverConductor} to determine if the channel endpoint should be closed.
      *
-     * @return number of publications associated.
+     * @return true if ready to be closed.
      */
-    public int sessionCount()
+    public boolean shouldBeClosed()
     {
-        return driversPublicationByStreamId.size();
+        return driversPublicationByStreamId.isEmpty() && !statusIndicator.isClosed();
     }
 
     /**

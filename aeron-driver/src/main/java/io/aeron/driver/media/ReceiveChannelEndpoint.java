@@ -113,11 +113,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         return udpChannel().originalUriString();
     }
 
-    public boolean isStatusIndicatorClosed()
-    {
-        return statusIndicator.isClosed();
-    }
-
     public void indicateActive()
     {
         final long currentStatus = statusIndicator.get();
@@ -181,6 +176,11 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     public int streamCount()
     {
         return refCountByStreamIdMap.size();
+    }
+
+    public boolean shouldBeClosed()
+    {
+        return refCountByStreamIdMap.isEmpty() && !statusIndicator.isClosed();
     }
 
     public int onDataPacket(

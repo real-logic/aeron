@@ -301,7 +301,7 @@ public class DriverConductor implements Agent
         senderProxy.removeNetworkPublication(publication);
 
         final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
-        if (0 == channelEndpoint.sessionCount() && !channelEndpoint.isStatusIndicatorClosed())
+        if (channelEndpoint.shouldBeClosed())
         {
             channelEndpoint.closeStatusIndicator();
             sendChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
@@ -322,7 +322,7 @@ public class DriverConductor implements Agent
                 receiverProxy.removeSubscription(channelEndpoint, streamId);
             }
 
-            if (0 == channelEndpoint.streamCount() && !channelEndpoint.isStatusIndicatorClosed())
+            if (channelEndpoint.shouldBeClosed())
             {
                 channelEndpoint.closeStatusIndicator();
                 receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
@@ -975,7 +975,7 @@ public class DriverConductor implements Agent
                 receiverProxy.removeSubscription(channelEndpoint, link.streamId());
             }
 
-            if (0 == channelEndpoint.streamCount() && !channelEndpoint.isStatusIndicatorClosed())
+            if (channelEndpoint.shouldBeClosed())
             {
                 channelEndpoint.closeStatusIndicator();
                 receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());

@@ -170,7 +170,7 @@ public class SystemTest
         awaitPublicationIsConnected(publication, 1000);
 
 
-        // the archiver has subscribed to the pingPub, now we wait for the archive start message
+        // the archiver has subscribed to the publication, now we wait for the archive start message
         poll(archiverNotifications,
             (buffer, offset, length, header) ->
             {
@@ -183,11 +183,13 @@ public class SystemTest
                         offset + MessageHeaderDecoder.ENCODED_LENGTH,
                         hDecoder.blockLength(),
                         hDecoder.version());
-                Assert.assertEquals(mDecoder.streamId(), PUBLISH_STREAM_ID);
-                Assert.assertEquals(mDecoder.channel(), PUBLISH_URI);
-                Assert.assertEquals(mDecoder.sessionId(), publication.sessionId());
+
                 streamInstanceId = mDecoder.streamInstanceId();
+                Assert.assertEquals(mDecoder.streamId(), PUBLISH_STREAM_ID);
+                Assert.assertEquals(mDecoder.sessionId(), publication.sessionId());
                 source = mDecoder.source();
+                final String channel = mDecoder.channel();
+                Assert.assertEquals(channel, PUBLISH_URI);
                 println("Archive started. source: " + source);
             }, 1, 1000);
 

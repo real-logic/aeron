@@ -29,22 +29,18 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.ArchiveFileUtil.ARCHIVE_FILE_SIZE;
-import static io.aeron.archiver.ArchiveFileUtil.archiveOffset;
 import static java.lang.Math.min;
 
-/**
- * replay session should transition from creation, to connected, to replaying/error, to closed/error
- */
 class ReplaySession
 {
+
     enum State
     {
         INIT
         {
             int doWork(final ReplaySession session)
             {
-                // can't do much until plumbing is in place
+                // wait until outgoing publications are in place
                 if (session.replay.isConnected() && session.control.isConnected())
                 {
                     session.state(State.SETUP);
@@ -64,8 +60,8 @@ class ReplaySession
             int doWork(final ReplaySession session)
             {
                 final Publication control = session.control;
-                final int streamInstanceId = session.archiverConductor.findStreamInstanceId(session.streamInstance);
-                final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
+                session.streamInstanceId = session.archiverConductor.getStreamInstanceId(session.streamInstance);
+                final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(session.streamInstanceId);
                 final File archiveMetaFile = new File(session.archiverConductor.archiveFolder(), archiveMetaFileName);
                 if (!archiveMetaFile.exists())
                 {
@@ -103,7 +99,7 @@ class ReplaySession
                     return 1;
                 }
                 // TODO: cover termOffset edge cases: range[0, termBufferLength],
-                // or [initialOffset, termBufferLength] if first term or, [0, lastOffset] if lastTerm.
+                // TODO: or [initialOffset, termBufferLength] if first term or, [0, lastOffset] if lastTerm.
 
                 // TODO: what should we do if the length exceeds range? error or replay what's available?
 
@@ -111,37 +107,14 @@ class ReplaySession
 
 
                 final int termBufferLength = archiveMetaFileFormatDecoder.termBufferLength();
-                final String archiveDataFileName = ArchiveFileUtil.archiveDataFileName(
-                    streamInstanceId, initialTermId, termBufferLength, termId);
-                final File archiveDataFile = new File(session.archiverConductor.archiveFolder(), archiveDataFileName);
+                session.archiveFileIndex =
+                    ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, termId);
 
-
-                if (!archiveDataFile.exists())
-                {
-                    session.archiverConductor.sendResponse(
-                        control, archiveDataFile.getAbsolutePath() + " not found");
-                    session.state(CLOSE);
-                    return 1;
-                }
-
-                final RandomAccessFile currentDataFile;
-                try
-                {
-                    currentDataFile = new RandomAccessFile(archiveDataFile, "r");
-                }
-                catch (IOException e)
-                {
-                    session.archiverConductor.sendResponse(
-                        control, archiveDataFile.getAbsolutePath() + " failed to open.");
-                    session.state(CLOSE);
-                    LangUtil.rethrowUnchecked(e);
-                    return 0;
-                }
-                session.currentDataFile = currentDataFile;
-                session.currentDataChannel = currentDataFile.getChannel();
+                session.archiveFileRollover();
 
                 final int termOffset = session.instanceTermOffset;
-                final int archiveOffset = archiveOffset(termOffset, termId, initialTermId, termBufferLength);
+                final int archiveOffset =
+                    ArchiveFileUtil.archiveOffset(termOffset, termId, initialTermId, termBufferLength);
                 try
                 {
                     session.currentDataChannel.position(archiveOffset);
@@ -167,7 +140,7 @@ class ReplaySession
             int doWork(final ReplaySession session)
             {
                 final long channelIndex = session.channelIndex;
-                final long remainingInFile = ARCHIVE_FILE_SIZE - channelIndex;
+                final long remainingInFile = ArchiveFileUtil.ARCHIVE_FILE_SIZE - channelIndex;
                 final long mtu = session.replay.maxPayloadLength();
 
                 final int claimSize = (int)min(mtu, min(remainingInFile, session.length));
@@ -204,9 +177,10 @@ class ReplaySession
                     {
                         session.state(CLOSE);
                     }
-                    else if (session.channelIndex == ARCHIVE_FILE_SIZE)
+                    else if (session.channelIndex == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
                     {
-                        throw new UnsupportedOperationException("need to implement file rollover");
+                        session.archiveFileIndex++;
+                        session.archiveFileRollover();
                     }
 
                     return claimSize;
@@ -225,8 +199,8 @@ class ReplaySession
         {
             int doWork(final ReplaySession session)
             {
-                session.control.close();
-                session.replay.close();
+                CloseHelper.quietClose(session.control);
+                CloseHelper.quietClose(session.replay);
                 CloseHelper.quietClose(session.currentDataFile);
                 CloseHelper.quietClose(session.currentDataChannel);
                 session.state(DONE);
@@ -267,6 +241,9 @@ class ReplaySession
     private FileChannel currentDataChannel;
     private long channelIndex;
     private long length;
+    private int archiveFileIndex;
+    private int streamInstanceId;
+
 
     ReplaySession(
         final StreamInstance streamInstance,
@@ -323,5 +300,40 @@ class ReplaySession
     void close()
     {
         state(State.CLOSE);
+    }
+
+    private void archiveFileRollover()
+    {
+        CloseHelper.quietClose(currentDataFile);
+        CloseHelper.quietClose(currentDataChannel);
+
+        final String archiveDataFileName =
+            ArchiveFileUtil.archiveDataFileName(streamInstanceId, archiveFileIndex);
+        final File archiveDataFile = new File(archiverConductor.archiveFolder(), archiveDataFileName);
+
+
+        if (!archiveDataFile.exists())
+        {
+            archiverConductor.sendResponse(
+                control, archiveDataFile.getAbsolutePath() + " not found");
+            state(State.CLOSE);
+            throw new IllegalStateException(archiveDataFile.getAbsolutePath() + " not found");
+        }
+
+        final RandomAccessFile currentDataFile;
+        try
+        {
+            currentDataFile = new RandomAccessFile(archiveDataFile, "r");
+        }
+        catch (IOException e)
+        {
+            archiverConductor.sendResponse(
+                control, archiveDataFile.getAbsolutePath() + " failed to open.");
+            state(State.CLOSE);
+            LangUtil.rethrowUnchecked(e);
+            throw new RuntimeException();
+        }
+        this.currentDataFile = currentDataFile;
+        currentDataChannel = currentDataFile.getChannel();
     }
 }

@@ -46,10 +46,15 @@ class ArchiveFileUtil
         final int termBufferLength,
         final int termId)
     {
-        final int termsPerFile = ARCHIVE_FILE_SIZE / termBufferLength;
-        final int index = (termId - initialTermId) / termsPerFile;
+        final int index = archiveDataFileIndex(initialTermId, termBufferLength, termId);
 
         return archiveDataFileName(streamInstanceId, index);
+    }
+
+    static int archiveDataFileIndex(final int initialTermId, final int termBufferLength, final int termId)
+    {
+        final int termsPerFile = ARCHIVE_FILE_SIZE / termBufferLength;
+        return (termId - initialTermId) / termsPerFile;
     }
 
     static void printMetaFile(final File metaFile) throws IOException

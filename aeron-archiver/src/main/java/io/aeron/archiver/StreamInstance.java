@@ -15,6 +15,8 @@
  */
 package io.aeron.archiver;
 
+import java.util.Objects;
+
 class StreamInstance
 {
     private final String source;
@@ -24,6 +26,9 @@ class StreamInstance
 
     StreamInstance(final String source, final int sessionId, final String channel, final int streamId)
     {
+        Objects.requireNonNull(source);
+        Objects.requireNonNull(channel);
+
         this.source = source;
         this.sessionId = sessionId;
         this.channel = channel;
@@ -49,5 +54,38 @@ class StreamInstance
     public int streamId()
     {
         return streamId;
+    }
+
+    public boolean equals(final Object o)
+    {
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+
+        final StreamInstance that = (StreamInstance) o;
+
+        if (sessionId != that.sessionId)
+        {
+            return false;
+        }
+        if (streamId != that.streamId)
+        {
+            return false;
+        }
+        if (!source.equals(that.source))
+        {
+            return false;
+        }
+        return channel.equals(that.channel);
+    }
+
+    public int hashCode()
+    {
+        return sessionId;
     }
 }

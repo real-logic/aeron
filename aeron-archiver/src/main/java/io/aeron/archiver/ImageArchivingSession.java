@@ -107,7 +107,6 @@ class ImageArchivingSession implements RawBlockHandler
     private final ArchiverConductor archiverConductor;
     private final Image image;
     private final int termBufferLength;
-    private final int termsPerFile;
     private final int termsMask;
     private final int streamInstanceId;
 
@@ -120,13 +119,13 @@ class ImageArchivingSession implements RawBlockHandler
     private FileChannel archiveFileChannel;
 
 
-    State state = State.INIT;
+    private State state = State.INIT;
 
     /**
      * Index is in the range 0:ARCHIVE_FILE_SIZE, except before the first block for this image is received indicated
      * by -1
      */
-    int index = -1;
+    private int index = -1;
 
     ImageArchivingSession(final ArchiverConductor archiverConductor, final Image image)
     {
@@ -134,9 +133,8 @@ class ImageArchivingSession implements RawBlockHandler
         this.image = image;
         this.initialTermId = image.initialTermId();
         this.termBufferLength = image.termBufferLength();
-        this.termsPerFile = ArchiveFileUtil.ARCHIVE_FILE_SIZE / termBufferLength;
-        this.termsMask = termsPerFile - 1;
-        if ((termsPerFile & termsMask) != 0)
+        this.termsMask = (ArchiveFileUtil.ARCHIVE_FILE_SIZE / termBufferLength) - 1;
+        if (((termsMask + 1) & termsMask) != 0)
         {
             throw new IllegalArgumentException(
                 "It is assumed the termBufferLength is a power of 2 smaller than 1G and that" +
@@ -221,7 +219,7 @@ class ImageArchivingSession implements RawBlockHandler
                 initialTermId = termId;
             }
             // TODO: if assumptions below are valid the computation is redundant for all but the first time this
-            // TODO: method is called
+            // TODO: ...method is called
             final int archiveOffset = ArchiveFileUtil.archiveOffset(
                 termOffset, termId, initialTermId, termsMask, termBufferLength);
             if (index == -1)
@@ -285,13 +283,6 @@ class ImageArchivingSession implements RawBlockHandler
     void close()
     {
         state(State.CLOSE);
-    }
-
-    void error()
-    {
-        //TODO: recovery?
-        //TODO: should we close subscription?
-        //TODO: notify originator on response channel
     }
 
     int doWork()

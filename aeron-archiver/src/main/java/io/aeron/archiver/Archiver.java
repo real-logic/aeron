@@ -17,9 +17,7 @@ package io.aeron.archiver;
 
 import io.aeron.Aeron;
 import io.aeron.Image;
-import org.agrona.concurrent.AgentRunner;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.agrona.concurrent.ShutdownSignalBarrier;
+import org.agrona.concurrent.*;
 
 import java.io.File;
 
@@ -79,9 +77,9 @@ public class Archiver implements AutoCloseable
         });
 
         aeron = Aeron.connect(ctx.clientContext);
-        /* TODO: should we have replay and record on same thread?
-           TODO: should we allow the allocation of more threads to these tasks assuming slow storage/sufficient
-                 traffic/sufficient replay load?*/
+        // TODO: Should we have replay and record on same thread?
+        // TODO: Should we allow the allocation of more threads to these tasks assuming slow storage/sufficient
+        // TODO: traffic/sufficient replay load?
         final ArchiverConductor archiverConductor = new ArchiverConductor(aeron, imageNotifications, ctx);
 
         runner = new AgentRunner(
@@ -106,17 +104,16 @@ public class Archiver implements AutoCloseable
 
     public static class Context
     {
-        Aeron.Context clientContext;
-        File archiveFolder;
+        private Aeron.Context clientContext;
+        private File archiveFolder;
         private String serviceRequestChannel;
         private int serviceRequestStreamId;
         private String archiverNotificationsChannel;
         private int archiverNotificationsStreamId;
+        private IdleStrategy idleStrategy;
 
         public Context()
         {
-            // TODO: parametrize port/host/interface
-            // TODO: Allow running with existing driver
             final File archiveDir = new File("archive");
             if (!archiveDir.exists())
             {
@@ -128,6 +125,7 @@ public class Archiver implements AutoCloseable
             serviceRequestStreamId = 0;
             archiverNotificationsChannel = "aeron:udp?endpoint=localhost:8011";
             archiverNotificationsStreamId = 0;
+            idleStrategy = clientContext.idleStrategy();
         }
 
         public Context(final Aeron.Context clientContext, final File archiveFolder)
@@ -199,6 +197,17 @@ public class Archiver implements AutoCloseable
         public Context archiverNotificationsStreamId(final int archiverNotificationsStreamId)
         {
             this.archiverNotificationsStreamId = archiverNotificationsStreamId;
+            return this;
+        }
+
+        public IdleStrategy idleStrategy()
+        {
+            return idleStrategy;
+        }
+
+        public Context idleStrategy(final IdleStrategy idleStrategy)
+        {
+            this.idleStrategy = idleStrategy;
             return this;
         }
     }

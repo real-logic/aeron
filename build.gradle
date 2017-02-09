@@ -536,7 +536,7 @@ project(':aeron-archiver-codecs') {
 
     dependencies {
         compile "org.agrona:agrona:${agronaVersion}"
-        compile 'uk.co.real-logic:sbe-all:1.5.6'
+        compile 'uk.co.real-logic:sbe-all:1.5.7'
         testCompile sourceSets.generated.output
     }
 
@@ -569,7 +569,7 @@ project(':aeron-archiver') {
 
     dependencies {
         compile project(':aeron-client'), project(':aeron-driver'), project(':aeron-archiver-codecs')
-        compile 'uk.co.real-logic:sbe-tool:1.5.6'
+        compile 'uk.co.real-logic:sbe-tool:1.5.7'
     }
 
     shadowJar {

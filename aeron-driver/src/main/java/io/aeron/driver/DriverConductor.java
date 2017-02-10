@@ -557,11 +557,6 @@ public class DriverConductor implements Agent
     private void onAddNetworkPublication(
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
-        if (null != findPublicationLink(publicationLinks, registrationId))
-        {
-            throw new ControlProtocolException(GENERIC_ERROR, "Registration id already in use.");
-        }
-
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final AeronUri aeronUri = udpChannel.aeronUri();
         final int mtuLength = getMtuLength(aeronUri, context.mtuLength());
@@ -671,11 +666,6 @@ public class DriverConductor implements Agent
     private void onAddDirectPublication(
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
-        if (null != findPublicationLink(publicationLinks, registrationId))
-        {
-            throw new ControlProtocolException(GENERIC_ERROR, "registration id already in use.");
-        }
-
         final DirectPublication directPublication = getOrAddDirectPublication(streamId, channel);
         publicationLinks.add(new PublicationLink(
             registrationId,

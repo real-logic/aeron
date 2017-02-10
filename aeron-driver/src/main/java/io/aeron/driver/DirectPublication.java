@@ -34,20 +34,20 @@ public class DirectPublication implements DriverManagedResource
 
     private final long correlationId;
     private final long tripGain;
-    private long tripLimit = 0;
     private final int sessionId;
     private final int streamId;
     private final int termWindowLength;
     private final int positionBitsToShift;
     private final int initialTermId;
-    private final UnsafeBuffer[] termBuffers;
-    private ReadablePosition[] subscriberPositions = EMPTY_POSITIONS;
-    private final RawLog rawLog;
-    private final Position publisherLimit;
+    private long tripLimit = 0;
     private long consumerPosition = 0;
     private long cleanPosition = 0;
     private int refCount = 0;
     private boolean reachedEndOfLife = false;
+    private final UnsafeBuffer[] termBuffers;
+    private ReadablePosition[] subscriberPositions = EMPTY_POSITIONS;
+    private final RawLog rawLog;
+    private final Position publisherLimit;
 
     public DirectPublication(
         final long correlationId,
@@ -132,11 +132,10 @@ public class DirectPublication implements DriverManagedResource
 
         if (0 != subscriberPositions.length)
         {
-            LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), nowInMillis);
-
             final long proposedLimit = minSubscriberPosition + termWindowLength;
             if (proposedLimit > tripLimit)
             {
+                LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), nowInMillis);
                 publisherLimit.setOrdered(proposedLimit);
                 tripLimit = proposedLimit + tripGain;
 
@@ -144,9 +143,9 @@ public class DirectPublication implements DriverManagedResource
 
                 workCount = 1;
             }
-        }
 
-        consumerPosition = maxSubscriberPosition;
+            consumerPosition = maxSubscriberPosition;
+        }
 
         return workCount;
     }

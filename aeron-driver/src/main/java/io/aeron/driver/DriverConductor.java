@@ -487,17 +487,13 @@ public class DriverConductor implements Agent
                     {
                         onAddDirectSubscription(channel, streamId, correlationId, clientId);
                     }
+                    else if (channel.startsWith(SPY_PREFIX))
+                    {
+                        onAddSpySubscription(channel.substring(SPY_PREFIX.length()), streamId, correlationId, clientId);
+                    }
                     else
                     {
-                        if (channel.startsWith(SPY_PREFIX))
-                        {
-                            onAddSpySubscription(
-                                channel.substring(SPY_PREFIX.length()), streamId, correlationId, clientId);
-                        }
-                        else
-                        {
-                            onAddNetworkSubscription(channel, streamId, correlationId, clientId);
-                        }
+                        onAddNetworkSubscription(channel, streamId, correlationId, clientId);
                     }
                     break;
                 }

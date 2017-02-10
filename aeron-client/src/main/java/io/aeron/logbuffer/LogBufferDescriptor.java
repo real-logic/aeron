@@ -246,7 +246,7 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Get the value of the correlation ID for this log.
+     * Get the value of the correlation ID for this log relating to the command which created it.
      *
      * @param logMetaDataBuffer containing the meta data.
      * @return the value of the correlation ID used for this log.
@@ -257,7 +257,7 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Set the correlation ID used for this log.
+     * Set the correlation ID used for this log relating to the command which created it.
      *
      * @param logMetaDataBuffer containing the meta data.
      * @param id                value to be set.

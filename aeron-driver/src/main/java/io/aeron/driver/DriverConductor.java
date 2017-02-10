@@ -1080,24 +1080,6 @@ public class DriverConductor implements Agent
         return aeronClient;
     }
 
-    private static PublicationLink findPublicationLink(
-        final ArrayList<PublicationLink> publicationLinks, final long registrationId)
-    {
-        PublicationLink publicationLink = null;
-
-        for (int i = 0, size = publicationLinks.size(); i < size; i++)
-        {
-            final PublicationLink link = publicationLinks.get(i);
-            if (registrationId == link.registrationId())
-            {
-                publicationLink = link;
-                break;
-            }
-        }
-
-        return publicationLink;
-    }
-
     private static SubscriptionLink removeSubscriptionLink(
         final ArrayList<SubscriptionLink> subscriptionLinks, final long registrationId)
     {

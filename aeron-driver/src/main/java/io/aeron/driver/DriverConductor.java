@@ -515,7 +515,6 @@ public class DriverConductor implements Agent
                 {
                     final CorrelatedMessageFlyweight correlatedMessageFlyweight = correlatedMsgFlyweight;
                     correlatedMessageFlyweight.wrap(buffer, index);
-                    correlationId = correlatedMessageFlyweight.correlationId();
                     onClientKeepalive(correlatedMessageFlyweight.clientId());
                     break;
                 }

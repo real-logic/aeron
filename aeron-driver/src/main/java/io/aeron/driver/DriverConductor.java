@@ -292,10 +292,14 @@ public class DriverConductor implements Agent
                 publication.streamId(),
                 publication.sendChannelEndpoint().originalUriString());
 
-            subscriptionLinks
-                .stream()
-                .filter((link) -> link.matches(publication))
-                .forEach(SubscriptionLink::removeSpiedPublication);
+            for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
+            {
+                final SubscriptionLink link = subscriptionLinks.get(i);
+                if (link.matches(publication))
+                {
+                    link.removeSpiedPublication();
+                }
+            }
         }
 
         senderProxy.removeNetworkPublication(publication);

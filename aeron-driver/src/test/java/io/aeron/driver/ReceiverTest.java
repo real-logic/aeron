@@ -45,8 +45,6 @@ import org.agrona.concurrent.status.ReadablePosition;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
-import java.util.Collections;
-import java.util.List;
 
 import static java.lang.Integer.numberOfTrailingZeros;
 import static junit.framework.TestCase.assertTrue;
@@ -75,7 +73,7 @@ public class ReceiverTest
     private static final InetSocketAddress SOURCE_ADDRESS = new InetSocketAddress("localhost", 45679);
 
     private static final ReadablePosition POSITION = mock(ReadablePosition.class);
-    private static final List<ReadablePosition> POSITIONS = Collections.singletonList(POSITION);
+    private static final ReadablePosition[] POSITIONS = new ReadablePosition[]{ POSITION };
 
     private final FeedbackDelayGenerator mockFeedbackDelayGenerator = mock(FeedbackDelayGenerator.class);
     private final DataTransportPoller mockDataTransportPoller = mock(DataTransportPoller.class);

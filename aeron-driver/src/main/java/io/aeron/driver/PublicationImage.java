@@ -31,7 +31,6 @@ import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.ReadablePosition;
 
 import java.net.InetSocketAddress;
-import java.util.List;
 
 import static io.aeron.driver.LossDetector.lossFound;
 import static io.aeron.driver.LossDetector.rebuildOffset;
@@ -143,7 +142,7 @@ public class PublicationImage
         final int initialTermOffset,
         final RawLog rawLog,
         final FeedbackDelayGenerator lossFeedbackDelayGenerator,
-        final List<ReadablePosition> subscriberPositions,
+        final ReadablePosition[] subscriberPositions,
         final Position hwmPosition,
         final Position rebuildPosition,
         final NanoClock nanoClock,
@@ -161,7 +160,7 @@ public class PublicationImage
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.rawLog = rawLog;
-        this.subscriberPositions = subscriberPositions.toArray(new ReadablePosition[0]);
+        this.subscriberPositions = subscriberPositions;
         this.hwmPosition = hwmPosition;
         this.rebuildPosition = rebuildPosition;
         this.sourceAddress = sourceAddress;

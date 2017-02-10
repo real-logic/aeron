@@ -39,6 +39,7 @@ import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.Position;
+import org.agrona.concurrent.status.ReadablePosition;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -52,7 +53,6 @@ import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.CLIENT_KEEP_ALIVES;
 import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
 import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_COMMANDS;
-import static java.util.stream.Collectors.toList;
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.command.ControlProtocolEvents.*;
@@ -252,7 +252,7 @@ public class DriverConductor implements Agent
                 initialTermOffset,
                 rawLog,
                 udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
-                subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
+                positionArray(subscriberPositions),
                 ReceiverHwm.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 ReceiverPos.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 nanoClock,
@@ -263,7 +263,10 @@ public class DriverConductor implements Agent
                 context.lossReport(),
                 subscriberPositions.get(0).subscription().isReliable());
 
-            subscriberPositions.forEach((subscriberPosition) -> subscriberPosition.addImage(image));
+            for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+            {
+                subscriberPositions.get(i).addImage(image);
+            }
 
             publicationImages.add(image);
             receiverProxy.newPublicationImage(channelEndpoint, image);
@@ -837,6 +840,19 @@ public class DriverConductor implements Agent
                 throw new IllegalStateException("Settings do not match existing subscriptions: reliable=" + isReliable);
             }
         }
+    }
+
+    private static ReadablePosition[] positionArray(final List<SubscriberPosition> subscriberPositions)
+    {
+        final int size = subscriberPositions.size();
+        final ReadablePosition[] positions = new ReadablePosition[subscriberPositions.size()];
+
+        for (int i = 0; i < size; i++)
+        {
+            positions[i] = subscriberPositions.get(i).position();
+        }
+
+        return positions;
     }
 
     private void linkMatchingImages(

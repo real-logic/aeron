@@ -36,7 +36,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 
 /**
- * Aggregator of multiple {@link NetworkPublication}s onto a single transport session for
+ * Aggregator of multiple {@link NetworkPublication}s onto a single transport channel for
  * sending data and setup frames plus the receiving of status and NAK frames.
  */
 @EventLog

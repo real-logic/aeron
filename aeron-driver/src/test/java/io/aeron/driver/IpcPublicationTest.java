@@ -38,14 +38,14 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class DirectPublicationTest
+public class IpcPublicationTest
 {
     private static final int STREAM_ID = 10;
     private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
     private static final int BUFFER_LENGTH = 16 * 1024;
 
     private Position publisherLimit;
-    private DirectPublication directPublication;
+    private IpcPublication ipcPublication;
 
     private DriverProxy driverProxy;
     private DriverConductor driverConductor;
@@ -66,7 +66,7 @@ public class DirectPublicationTest
         final CountersManager countersManager = new CountersManager(
             new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH * 2)), counterBuffer);
 
-        when(mockRawLogFactory.newDirectPublication(anyInt(), anyInt(), anyLong(), anyInt()))
+        when(mockRawLogFactory.newIpcPublication(anyInt(), anyInt(), anyLong(), anyInt()))
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
@@ -88,9 +88,9 @@ public class DirectPublicationTest
         driverProxy.addPublication(CommonContext.IPC_CHANNEL, STREAM_ID);
         driverConductor.doWork();
 
-        directPublication = driverConductor.getDirectPublication(STREAM_ID);
+        ipcPublication = driverConductor.getIpcPublication(STREAM_ID);
 
-        publisherLimit = new UnsafeBufferPosition(counterBuffer, directPublication.publisherLimitId());
+        publisherLimit = new UnsafeBufferPosition(counterBuffer, ipcPublication.publisherLimitId());
     }
 
     @Test
@@ -102,14 +102,14 @@ public class DirectPublicationTest
     @Test
     public void shouldKeepPublisherLimitZeroOnNoSubscriptionUpdate()
     {
-        directPublication.updatePublishersLimit(0);
+        ipcPublication.updatePublishersLimit(0);
         assertThat(publisherLimit.get(), is(0L));
     }
 
     @Test
     public void shouldHaveJoiningPositionZeroWhenNoSubscriptions()
     {
-        assertThat(directPublication.joiningPosition(), is(0L));
+        assertThat(ipcPublication.joiningPosition(), is(0L));
     }
 
     @Test

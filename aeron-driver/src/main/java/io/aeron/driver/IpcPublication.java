@@ -28,7 +28,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
 /**
  * Encapsulation of a LogBuffer used directly between publishers and subscribers for IPC.
  */
-public class DirectPublication implements DriverManagedResource
+public class IpcPublication implements DriverManagedResource
 {
     private static final ReadablePosition[] EMPTY_POSITIONS = new ReadablePosition[0];
 
@@ -49,7 +49,7 @@ public class DirectPublication implements DriverManagedResource
     private final RawLog rawLog;
     private final Position publisherLimit;
 
-    public DirectPublication(
+    public IpcPublication(
         final long correlationId,
         final int sessionId,
         final int streamId,

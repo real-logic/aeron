@@ -90,7 +90,7 @@ public class DriverConductor implements Agent
     private final ArrayList<SubscriptionLink> subscriptionLinks = new ArrayList<>();
     private final ArrayList<PublicationImage> publicationImages = new ArrayList<>();
     private final ArrayList<AeronClient> clients = new ArrayList<>();
-    private final ArrayList<DirectPublication> directPublications = new ArrayList<>();
+    private final ArrayList<IpcPublication> ipcPublications = new ArrayList<>();
 
     private final PublicationMessageFlyweight publicationMsgFlyweight = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMsgFlyweight = new SubscriptionMessageFlyweight();
@@ -142,7 +142,7 @@ public class DriverConductor implements Agent
     {
         networkPublications.forEach(NetworkPublication::close);
         publicationImages.forEach(PublicationImage::close);
-        directPublications.forEach(DirectPublication::close);
+        ipcPublications.forEach(IpcPublication::close);
         sendChannelEndpointByChannelMap.values().forEach(SendChannelEndpoint::close);
         receiveChannelEndpointByChannelMap.values().forEach(ReceiveChannelEndpoint::close);
     }
@@ -162,9 +162,9 @@ public class DriverConductor implements Agent
         return receiveChannelEndpointByChannelMap.get(channel.canonicalForm());
     }
 
-    DirectPublication getDirectPublication(final long streamId)
+    IpcPublication getIpcPublication(final long streamId)
     {
-        return findDirectPublication(directPublications, streamId);
+        return findIpcPublication(ipcPublications, streamId);
     }
 
     public int doWork() throws Exception
@@ -190,10 +190,10 @@ public class DriverConductor implements Agent
             workCount += networkPublications.get(i).updatePublishersLimit();
         }
 
-        final ArrayList<DirectPublication> directPublications = this.directPublications;
-        for (int i = 0, size = directPublications.size(); i < size; i++)
+        final ArrayList<IpcPublication> ipcPublications = this.ipcPublications;
+        for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
-            workCount += directPublications.get(i).updatePublishersLimit(toDriverCommands.consumerHeartbeatTime());
+            workCount += ipcPublications.get(i).updatePublishersLimit(toDriverCommands.consumerHeartbeatTime());
         }
 
         return workCount;
@@ -406,7 +406,7 @@ public class DriverConductor implements Agent
         onCheckManagedResources(networkPublications, nanoTimeNow);
         onCheckManagedResources(subscriptionLinks, nanoTimeNow);
         onCheckManagedResources(publicationImages, nanoTimeNow);
-        onCheckManagedResources(directPublications, nanoTimeNow);
+        onCheckManagedResources(ipcPublications, nanoTimeNow);
     }
 
     private void onCheckForBlockedToDriverCommands(final long nanoTimeNow)
@@ -455,7 +455,7 @@ public class DriverConductor implements Agent
 
                     if (channel.startsWith(IPC_CHANNEL))
                     {
-                        onAddDirectPublication(channel, streamId, correlationId, clientId);
+                        onAddIpcPublication(channel, streamId, correlationId, clientId);
                     }
                     else
                     {
@@ -485,7 +485,7 @@ public class DriverConductor implements Agent
 
                     if (channel.startsWith(IPC_CHANNEL))
                     {
-                        onAddDirectSubscription(channel, streamId, correlationId, clientId);
+                        onAddIpcSubscription(channel, streamId, correlationId, clientId);
                     }
                     else if (channel.startsWith(SPY_PREFIX))
                     {
@@ -658,13 +658,13 @@ public class DriverConductor implements Agent
         return termLength;
     }
 
-    private void onAddDirectPublication(
+    private void onAddIpcPublication(
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
-        final DirectPublication directPublication = getOrAddDirectPublication(streamId, channel);
+        final IpcPublication ipcPublication = getOrAddIpcPublication(streamId, channel);
         publicationLinks.add(new PublicationLink(
             registrationId,
-            directPublication,
+            ipcPublication,
             getOrAddClient(clientId),
             nanoClock.nanoTime(),
             publicationUnblockTimeoutNs,
@@ -673,9 +673,9 @@ public class DriverConductor implements Agent
         clientProxy.onPublicationReady(
             registrationId,
             streamId,
-            directPublication.sessionId(),
-            directPublication.rawLog().fileName(),
-            directPublication.publisherLimitId());
+            ipcPublication.sessionId(),
+            ipcPublication.rawLog().fileName(),
+            ipcPublication.publisherLimitId());
     }
 
     private RawLog newNetworkPublicationLog(
@@ -723,14 +723,14 @@ public class DriverConductor implements Agent
         return rawLog;
     }
 
-    private RawLog newDirectPublicationLog(
+    private RawLog newIpcPublicationLog(
         final int termBufferLength,
         final int sessionId,
         final int streamId,
         final int initialTermId,
         final long registrationId)
     {
-        final RawLog rawLog = rawLogFactory.newDirectPublication(sessionId, streamId, registrationId, termBufferLength);
+        final RawLog rawLog = rawLogFactory.newIpcPublication(sessionId, streamId, registrationId, termBufferLength);
 
         final UnsafeBuffer logMetaData = rawLog.metaData();
         storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
@@ -877,10 +877,10 @@ public class DriverConductor implements Agent
         }
     }
 
-    private void onAddDirectSubscription(
+    private void onAddIpcSubscription(
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
-        final DirectPublication publication = getOrAddDirectPublication(streamId, channel);
+        final IpcPublication publication = getOrAddIpcPublication(streamId, channel);
         final AeronClient client = getOrAddClient(clientId);
 
         final long joiningPosition = publication.joiningPosition();
@@ -1029,9 +1029,9 @@ public class DriverConductor implements Agent
         return client;
     }
 
-    private DirectPublication getOrAddDirectPublication(final int streamId, final String channel)
+    private IpcPublication getOrAddIpcPublication(final int streamId, final String channel)
     {
-        DirectPublication publication = findDirectPublication(directPublications, streamId);
+        IpcPublication publication = findIpcPublication(ipcPublications, streamId);
 
         if (null == publication)
         {
@@ -1039,15 +1039,15 @@ public class DriverConductor implements Agent
             final long registrationId = nextImageCorrelationId();
             final int sessionId = nextSessionId++;
             final int initialTermId = BitUtil.generateRandomisedId();
-            final RawLog rawLog = newDirectPublicationLog(
+            final RawLog rawLog = newIpcPublicationLog(
                 termLength, sessionId, streamId, initialTermId, registrationId);
 
             final Position publisherLimit = PublisherLimit.allocate(
                 countersManager, registrationId, sessionId, streamId, channel);
 
-            publication = new DirectPublication(registrationId, sessionId, streamId, publisherLimit, rawLog);
+            publication = new IpcPublication(registrationId, sessionId, streamId, publisherLimit, rawLog);
 
-            directPublications.add(publication);
+            ipcPublications.add(publication);
         }
 
         return publication;
@@ -1094,22 +1094,22 @@ public class DriverConductor implements Agent
         return subscriptionLink;
     }
 
-    private static DirectPublication findDirectPublication(
-        final ArrayList<DirectPublication> directPublications, final long streamId)
+    private static IpcPublication findIpcPublication(
+        final ArrayList<IpcPublication> ipcPublications, final long streamId)
     {
-        DirectPublication directPublication = null;
+        IpcPublication ipcPublication = null;
 
-        for (int i = 0, size = directPublications.size(); i < size; i++)
+        for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
-            final DirectPublication log = directPublications.get(i);
+            final IpcPublication log = ipcPublications.get(i);
             if (log.streamId() == streamId)
             {
-                directPublication = log;
+                ipcPublication = log;
                 break;
             }
         }
 
-        return directPublication;
+        return ipcPublication;
     }
 
     private static String generateSourceIdentity(final InetSocketAddress address)

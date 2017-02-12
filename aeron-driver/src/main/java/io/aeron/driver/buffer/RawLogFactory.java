@@ -118,7 +118,7 @@ public class RawLogFactory
      * @param termBufferLength length of the each term
      * @return the newly allocated {@link RawLog}
      */
-    public RawLog newDirectPublication(
+    public RawLog newIpcPublication(
         final int sessionId, final int streamId, final long correlationId, final int termBufferLength)
     {
         return newInstance(publicationsDir, "ipc", sessionId, streamId, correlationId, termBufferLength);

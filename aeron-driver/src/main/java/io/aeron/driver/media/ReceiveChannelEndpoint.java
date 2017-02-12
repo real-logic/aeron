@@ -34,7 +34,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 
 /**
- * Aggregator of multiple subscriptions onto a single transport session for receiving of data and setup frames
+ * Aggregator of multiple subscriptions onto a single transport channel for receiving of data and setup frames
  * plus sending status and NAK frames.
  */
 @EventLog
@@ -305,7 +305,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final int streamId,
         final long echoTimestamp,
         final long receptionDelta,
-        final boolean hasReplySet)
+        final boolean isReply)
     {
         if (!isClosed)
         {
@@ -315,7 +315,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
                 .receiverId(receiverId)
                 .echoTimestamp(echoTimestamp)
                 .receptionDelta(receptionDelta)
-                .flags((hasReplySet) ? RttMeasurementFlyweight.REPLY_FLAG : 0);
+                .flags(isReply ? RttMeasurementFlyweight.REPLY_FLAG : 0);
 
             final int bytesSent = sendTo(rttMeasurementBuffer, controlAddress);
             if (RttMeasurementFlyweight.HEADER_LENGTH != bytesSent)

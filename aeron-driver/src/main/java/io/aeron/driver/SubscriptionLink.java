@@ -35,8 +35,8 @@ public class SubscriptionLink implements DriverManagedResource
     private final ReceiveChannelEndpoint channelEndpoint;
     private final AeronClient aeronClient;
     private final Map<PublicationImage, ReadablePosition> positionByImageMap = new IdentityHashMap<>();
-    private final DirectPublication directPublication;
-    private final ReadablePosition directPublicationSubscriberPosition;
+    private final IpcPublication ipcPublication;
+    private final ReadablePosition ipcPublicationSubscriberPosition;
     private final UdpChannel spiedChannel;
 
     private NetworkPublication spiedPublication = null;
@@ -58,8 +58,8 @@ public class SubscriptionLink implements DriverManagedResource
         this.streamId = streamId;
         this.channelUri = channelUri;
         this.aeronClient = aeronClient;
-        this.directPublication = null;
-        this.directPublicationSubscriberPosition = null;
+        this.ipcPublication = null;
+        this.ipcPublicationSubscriberPosition = null;
         this.spiedChannel = null;
         this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
         this.isReliable = isReliable;
@@ -69,19 +69,19 @@ public class SubscriptionLink implements DriverManagedResource
         final long registrationId,
         final int streamId,
         final String channelUri,
-        final DirectPublication directPublication,
+        final IpcPublication ipcPublication,
         final ReadablePosition subscriberPosition,
         final AeronClient aeronClient,
         final long clientLivenessTimeoutNs)
     {
         this.registrationId = registrationId;
-        this.channelEndpoint = null; // will prevent matches between PublicationImages and DirectPublications
+        this.channelEndpoint = null; // will prevent matches between PublicationImages and IpcPublications
         this.streamId = streamId;
         this.channelUri = channelUri;
         this.aeronClient = aeronClient;
-        this.directPublication = directPublication;
-        directPublication.incRef();
-        this.directPublicationSubscriberPosition = subscriberPosition;
+        this.ipcPublication = ipcPublication;
+        ipcPublication.incRef();
+        this.ipcPublicationSubscriberPosition = subscriberPosition;
         this.spiedChannel = null;
         this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
         this.isReliable = true;
@@ -100,8 +100,8 @@ public class SubscriptionLink implements DriverManagedResource
         this.streamId = streamId;
         this.channelUri = channelUri;
         this.aeronClient = aeronClient;
-        this.directPublication = null;
-        this.directPublicationSubscriberPosition = null;
+        this.ipcPublication = null;
+        this.ipcPublicationSubscriberPosition = null;
         this.spiedChannel = spiedChannel;
         this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
         this.isReliable = true;
@@ -176,10 +176,10 @@ public class SubscriptionLink implements DriverManagedResource
     {
         positionByImageMap.forEach(PublicationImage::removeSubscriber);
 
-        if (null != directPublication)
+        if (null != ipcPublication)
         {
-            directPublication.removeSubscription(directPublicationSubscriberPosition);
-            directPublication.decRef();
+            ipcPublication.removeSubscription(ipcPublicationSubscriberPosition);
+            ipcPublication.decRef();
         }
         else if (null != spiedPublication)
         {

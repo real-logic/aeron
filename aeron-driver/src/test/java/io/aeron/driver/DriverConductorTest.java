@@ -116,7 +116,7 @@ public class DriverConductorTest
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH));
         when(mockRawLogFactory.newNetworkedImage(anyString(), anyInt(), anyInt(), anyLong(), eq(TERM_BUFFER_LENGTH)))
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH));
-        when(mockRawLogFactory.newDirectPublication(anyInt(), anyInt(), anyLong(), anyInt()))
+        when(mockRawLogFactory.newIpcPublication(anyInt(), anyInt(), anyLong(), anyInt()))
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH));
 
         currentTime = 0;
@@ -685,97 +685,97 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddSingleDirectPublicationPublication() throws Exception
+    public void shouldBeAbleToAddSingleIpcPublicationPublication() throws Exception
     {
         final long id = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
 
         driverConductor.doWork();
 
-        assertNotNull(driverConductor.getDirectPublication(STREAM_ID_1));
+        assertNotNull(driverConductor.getIpcPublication(STREAM_ID_1));
         verify(mockClientProxy).onPublicationReady(eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt());
     }
 
     @Test
-    public void shouldBeAbleToAddSingleDirectPublicationSubscription() throws Exception
+    public void shouldBeAbleToAddSingleIpcPublicationSubscription() throws Exception
     {
         final long id = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
 
         driverConductor.doWork();
 
-        final DirectPublication directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNotNull(directPublication);
+        final IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublication);
 
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy).operationSucceeded(eq(id));
         inOrder.verify(mockClientProxy).onAvailableImage(
-            eq(directPublication.correlationId()), eq(STREAM_ID_1), eq(directPublication.sessionId()),
-            eq(directPublication.rawLog().fileName()), any(), anyString());
+            eq(ipcPublication.correlationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
+            eq(ipcPublication.rawLog().fileName()), any(), anyString());
     }
 
     @Test
-    public void shouldBeAbleToAddDirectPublicationPublicationThenSubscription() throws Exception
+    public void shouldBeAbleToAddIpcPublicationPublicationThenSubscription() throws Exception
     {
         final long idPub = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
         final long idSub = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
 
         driverConductor.doWork();
 
-        final DirectPublication directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNotNull(directPublication);
+        final IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublication);
 
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy).onPublicationReady(eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt());
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
         inOrder.verify(mockClientProxy).onAvailableImage(
-            eq(directPublication.correlationId()), eq(STREAM_ID_1), eq(directPublication.sessionId()),
-            eq(directPublication.rawLog().fileName()), any(), anyString());
+            eq(ipcPublication.correlationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
+            eq(ipcPublication.rawLog().fileName()), any(), anyString());
     }
 
     @Test
-    public void shouldBeAbleToAddDirectPublicationSubscriptionThenPublication() throws Exception
+    public void shouldBeAbleToAddIpcPublicationSubscriptionThenPublication() throws Exception
     {
         final long idSub = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
         final long idPub = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
 
         driverConductor.doWork();
 
-        final DirectPublication directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNotNull(directPublication);
+        final IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublication);
 
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
         inOrder.verify(mockClientProxy).onAvailableImage(
-            eq(directPublication.correlationId()), eq(STREAM_ID_1), eq(directPublication.sessionId()),
-            eq(directPublication.rawLog().fileName()), any(), anyString());
+            eq(ipcPublication.correlationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
+            eq(ipcPublication.rawLog().fileName()), any(), anyString());
         inOrder.verify(mockClientProxy).onPublicationReady(eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt());
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveDirectPublicationPublication() throws Exception
+    public void shouldBeAbleToAddAndRemoveIpcPublicationPublication() throws Exception
     {
         final long idAdd = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
         driverProxy.removePublication(idAdd);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        final DirectPublication directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNull(directPublication);
+        final IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNull(ipcPublication);
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveDirectPublicationSubscription() throws Exception
+    public void shouldBeAbleToAddAndRemoveIpcPublicationSubscription() throws Exception
     {
         final long idAdd = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
         driverProxy.removeSubscription(idAdd);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        final DirectPublication directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNull(directPublication);
+        final IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNull(ipcPublication);
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveDirectPublicationTwoPublications() throws Exception
+    public void shouldBeAbleToAddAndRemoveIpcPublicationTwoPublications() throws Exception
     {
         final long idAdd1 = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
         final long idAdd2 = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
@@ -783,19 +783,19 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        DirectPublication directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNotNull(directPublication);
+        IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublication);
 
         driverProxy.removePublication(idAdd2);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNull(directPublication);
+        ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNull(ipcPublication);
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveDirectPublicationTwoSubscriptions() throws Exception
+    public void shouldBeAbleToAddAndRemoveIpcPublicationTwoSubscriptions() throws Exception
     {
         final long idAdd1 = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
         final long idAdd2 = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
@@ -803,19 +803,19 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        DirectPublication directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNotNull(directPublication);
+        IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublication);
 
         driverProxy.removeSubscription(idAdd2);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNull(directPublication);
+        ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNull(ipcPublication);
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveDirectPublicationPublicationAndSubscription() throws Exception
+    public void shouldBeAbleToAddAndRemoveIpcPublicationPublicationAndSubscription() throws Exception
     {
         final long idAdd1 = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
         final long idAdd2 = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
@@ -823,42 +823,42 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        DirectPublication directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNotNull(directPublication);
+        IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublication);
 
         driverProxy.removePublication(idAdd2);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNull(directPublication);
+        ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNull(ipcPublication);
     }
 
     @Test
-    public void shouldTimeoutDirectPublicationPublication() throws Exception
+    public void shouldTimeoutIpcPublicationPublication() throws Exception
     {
         driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
 
         driverConductor.doWork();
 
-        DirectPublication directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNotNull(directPublication);
+        IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublication);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNull(directPublication);
+        ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNull(ipcPublication);
     }
 
     @Test
-    public void shouldNotTimeoutDirectPublicationPublicationWithKeepalive() throws Exception
+    public void shouldNotTimeoutIpcPublicationPublicationWithKeepalive() throws Exception
     {
         driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
 
         driverConductor.doWork();
 
-        DirectPublication directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNotNull(directPublication);
+        IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublication);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
@@ -866,35 +866,35 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNotNull(directPublication);
+        ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublication);
     }
 
     @Test
-    public void shouldTimeoutDirectPublicationSubscription() throws Exception
+    public void shouldTimeoutIpcPublicationSubscription() throws Exception
     {
         driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
 
         driverConductor.doWork();
 
-        DirectPublication directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNotNull(directPublication);
+        IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublication);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNull(directPublication);
+        ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNull(ipcPublication);
     }
 
     @Test
-    public void shouldNotTimeoutDirectPublicationSubscriptionWithKeepalive() throws Exception
+    public void shouldNotTimeoutIpcPublicationSubscriptionWithKeepalive() throws Exception
     {
         driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
 
         driverConductor.doWork();
 
-        DirectPublication directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNotNull(directPublication);
+        IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublication);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
@@ -902,8 +902,8 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        directPublication = driverConductor.getDirectPublication(STREAM_ID_1);
-        assertNotNull(directPublication);
+        ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublication);
     }
 
     @Test

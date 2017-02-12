@@ -33,7 +33,6 @@ import static java.lang.Math.min;
 
 class ReplaySession
 {
-
     enum State
     {
         INIT
@@ -311,7 +310,6 @@ class ReplaySession
         final String archiveDataFileName =
             ArchiveFileUtil.archiveDataFileName(streamInstanceId, archiveFileIndex);
         final File archiveDataFile = new File(archiverConductor.archiveFolder(), archiveDataFileName);
-
 
         if (!archiveDataFile.exists())
         {

@@ -36,14 +36,14 @@ import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 
 /**
- * Aggregator of multiple {@link NetworkPublication}s onto a single transport session for
+ * Aggregator of multiple {@link NetworkPublication}s onto a single transport channel for
  * sending data and setup frames plus the receiving of status and NAK frames.
  */
 @EventLog
 public class SendChannelEndpoint extends UdpChannelTransport
 {
     private final Int2ObjectHashMap<NetworkPublication> driversPublicationByStreamId = new Int2ObjectHashMap<>();
-    private final BiInt2ObjectMap<NetworkPublication> sendersPublicationByStreamAndSessionId = new BiInt2ObjectMap<>();
+    private final BiInt2ObjectMap<NetworkPublication> sendersPublicationBySessionAndStreamId = new BiInt2ObjectMap<>();
 
     private final AtomicCounter statusMessagesReceived;
     private final AtomicCounter nakMessagesReceived;
@@ -145,7 +145,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public void registerForSend(final NetworkPublication publication)
     {
-        sendersPublicationByStreamAndSessionId.put(publication.sessionId(), publication.streamId(), publication);
+        sendersPublicationBySessionAndStreamId.put(publication.sessionId(), publication.streamId(), publication);
     }
 
     /**
@@ -155,7 +155,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public void unregisterForSend(final NetworkPublication publication)
     {
-        sendersPublicationByStreamAndSessionId.remove(publication.sessionId(), publication.streamId());
+        sendersPublicationBySessionAndStreamId.remove(publication.sessionId(), publication.streamId());
     }
 
     /**
@@ -193,7 +193,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
-        final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(
+        final NetworkPublication publication = sendersPublicationBySessionAndStreamId.get(
             msg.sessionId(), msg.streamId());
 
         if (null != publication)
@@ -213,8 +213,9 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public void onNakMessage(final NakFlyweight msg, final InetSocketAddress srcAddress)
     {
-        final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(
+        final NetworkPublication publication = sendersPublicationBySessionAndStreamId.get(
             msg.sessionId(), msg.streamId());
+
         if (null != publication)
         {
             publication.onNak(msg.termId(), msg.termOffset(), msg.length());
@@ -224,8 +225,9 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public void onRttMeasurement(final RttMeasurementFlyweight msg, final InetSocketAddress srcAddress)
     {
-        final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(
+        final NetworkPublication publication = sendersPublicationBySessionAndStreamId.get(
             msg.sessionId(), msg.streamId());
+
         if (null != publication)
         {
             publication.onRttMeasurement(msg, srcAddress);

@@ -22,7 +22,7 @@ import io.aeron.archiver.messages.ArchiveMetaFileFormatEncoder;
 import io.aeron.logbuffer.RawBlockHandler;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,8 +46,8 @@ import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
  * Data in the files is expected to cover from initial positions to last. Each file covers (1GB/term size) terms.
  * To find data by term id and offset you can find the file and position by calculating:<br>
  * <ul>
- * <li>file index = (term - initial term)/(1GB/term size)</li>
- * <li>file position = offset + term size * [ (term - initial term) % (1GB/term size) ] </li>
+ * <li> file index = (term - initial term) / (1GB / term size) </li>
+ * <li> file position = offset + term size * [ (term - initial term) % (1GB / term size) ] </li>
  * </ul>
  */
 class ImageArchivingSession implements RawBlockHandler
@@ -83,7 +83,7 @@ class ImageArchivingSession implements RawBlockHandler
                 CloseHelper.quietClose(session.archiveFileChannel);
                 if (session.metaDataBuffer != null)
                 {
-                    session.metaDataWriter.endTime(System.currentTimeMillis());
+                    session.metaDataWriter.endTime(session.epochClock.time());
                     session.metaDataBuffer.force();
                 }
                 CloseHelper.quietClose(session.metadataFileChannel);
@@ -107,6 +107,7 @@ class ImageArchivingSession implements RawBlockHandler
     private final ArchiverConductor archiverConductor;
     private final Image image;
     private final int termBufferLength;
+    private final EpochClock epochClock;
     private final int termsMask;
     private final int streamInstanceId;
 
@@ -127,12 +128,14 @@ class ImageArchivingSession implements RawBlockHandler
      */
     private int index = -1;
 
-    ImageArchivingSession(final ArchiverConductor archiverConductor, final Image image)
+    ImageArchivingSession(final ArchiverConductor archiverConductor, final Image image, final EpochClock epochClock)
     {
         this.archiverConductor = archiverConductor;
         this.image = image;
         this.initialTermId = image.initialTermId();
         this.termBufferLength = image.termBufferLength();
+        this.epochClock = epochClock;
+
         this.termsMask = (ArchiveFileUtil.ARCHIVE_FILE_SIZE / termBufferLength) - 1;
         if (((termsMask + 1) & termsMask) != 0)
         {
@@ -141,8 +144,11 @@ class ImageArchivingSession implements RawBlockHandler
                     "therefore the number of terms in a file is also a power of 2");
         }
         final Subscription subscription = image.subscription();
-        streamInstanceId = archiverConductor.notifyArchiveStarted(
-            image.sourceIdentity(), image.sessionId(), subscription.channel(), subscription.streamId());
+        final int streamId = subscription.streamId();
+        final String channel = subscription.channel();
+        final int sessionId = image.sessionId();
+        final String source = image.sourceIdentity();
+        streamInstanceId = archiverConductor.notifyArchiveStarted(source, sessionId, channel, streamId);
 
 
         final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
@@ -152,19 +158,23 @@ class ImageArchivingSession implements RawBlockHandler
         {
             randomAccessFile = new RandomAccessFile(file, "rw");
             metadataFileChannel = randomAccessFile.getChannel();
-            metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 64);
+            metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
             final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(metaDataBuffer);
-            metaDataReader = new ArchiveMetaFileFormatDecoder().wrap(unsafeBuffer, 0, 64, 0);
+            metaDataReader = new ArchiveMetaFileFormatDecoder().wrap(unsafeBuffer, 0, 4096, 0);
             metaDataWriter = new ArchiveMetaFileFormatEncoder().wrap(unsafeBuffer, 0);
 
             metaDataWriter.streamInstanceId(streamInstanceId);
-            metaDataWriter.startTime(System.currentTimeMillis());
+            metaDataWriter.startTime(epochClock.time());
             metaDataWriter.termBufferLength(termBufferLength);
             metaDataWriter.initialTermId(initialTermId);
             metaDataWriter.initialTermOffset(-1);
             metaDataWriter.lastTermId(initialTermId);
             metaDataWriter.lastTermOffset(-1);
             metaDataWriter.endTime(-1);
+            metaDataWriter.sessionId(sessionId);
+            metaDataWriter.streamId(streamId);
+            metaDataWriter.source(source);
+            metaDataWriter.channel(channel);
             metaDataBuffer.force();
         }
         catch (IOException e)

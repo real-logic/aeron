@@ -77,12 +77,12 @@ public class SystemTest
             .schemaId(ArchiveStartRequestEncoder.SCHEMA_ID)
             .version(ArchiveStartRequestEncoder.SCHEMA_VERSION);
 
-        new ArchiveStartRequestEncoder()
+        final ArchiveStartRequestEncoder encoder = new ArchiveStartRequestEncoder()
             .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH)
             .channel(channel)
             .streamId(streamId);
 
-        offer(archiverServiceRequest, buffer, 1000);
+        offer(archiverServiceRequest, buffer, 0, encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH, 1000);
     }
 
 
@@ -95,12 +95,12 @@ public class SystemTest
             .schemaId(ArchiveStopRequestEncoder.SCHEMA_ID)
             .version(ArchiveStopRequestEncoder.SCHEMA_VERSION);
 
-        new ArchiveStopRequestEncoder()
+        final ArchiveStopRequestEncoder encoder = new ArchiveStopRequestEncoder()
             .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH)
             .channel(channel)
             .streamId(streamId);
 
-        offer(archiverServiceRequest, buffer, 1000);
+        offer(archiverServiceRequest, buffer, 0, encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH, 1000);
     }
 
     private void requestReplay(
@@ -123,7 +123,7 @@ public class SystemTest
             .schemaId(ReplayRequestEncoder.SCHEMA_ID)
             .version(ReplayRequestEncoder.SCHEMA_VERSION);
 
-        final ReplayRequestEncoder mEncoder = new ReplayRequestEncoder()
+        final ReplayRequestEncoder encoder = new ReplayRequestEncoder()
             .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH)
             .source(source)
             .sessionId(sessionId)
@@ -136,8 +136,8 @@ public class SystemTest
             .replayStreamId(replayStreamId)
             .controlStreamId(controlStreamId);
 
-        println(mEncoder.toString());
-        offer(archiverServiceRequest, buffer, 1000);
+        println(encoder.toString());
+        offer(archiverServiceRequest, buffer, 0, encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH, 1000);
     }
 
     @After
@@ -424,19 +424,6 @@ public class SystemTest
             if (limit < System.currentTimeMillis())
             {
                 Assert.fail("Poll has timed out");
-            }
-        }
-    }
-
-    private void offer(final Publication publication, final UnsafeBuffer buffer, final long timeout)
-    {
-        final long limit = System.currentTimeMillis() + timeout;
-        while (publication.offer(buffer) < 0)
-        {
-            LockSupport.parkNanos(1000);
-            if (limit < System.currentTimeMillis())
-            {
-                Assert.fail("Offer has timed out");
             }
         }
     }

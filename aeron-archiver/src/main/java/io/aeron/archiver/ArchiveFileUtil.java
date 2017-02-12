@@ -76,8 +76,9 @@ class ArchiveFileUtil
         try (RandomAccessFile randomAccessFile = new RandomAccessFile(metaFile, "rw");
              FileChannel metadataFileChannel = randomAccessFile.getChannel();)
         {
-            final MappedByteBuffer metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 64);
-            return new ArchiveMetaFileFormatDecoder().wrap(new UnsafeBuffer(metaDataBuffer), 0, 64, 0);
+            final MappedByteBuffer metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
+            final ArchiveMetaFileFormatDecoder decoder = new ArchiveMetaFileFormatDecoder();
+            return decoder.wrap(new UnsafeBuffer(metaDataBuffer), 0, ArchiveMetaFileFormatDecoder.BLOCK_LENGTH, 0);
         }
     }
 

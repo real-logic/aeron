@@ -111,7 +111,7 @@ public class Archiver implements AutoCloseable
         private String archiverNotificationsChannel;
         private int archiverNotificationsStreamId;
         private IdleStrategy idleStrategy;
-
+        private EpochClock epochClock;
         public Context()
         {
             final File archiveDir = new File("archive");
@@ -126,6 +126,7 @@ public class Archiver implements AutoCloseable
             archiverNotificationsChannel = "aeron:udp?endpoint=localhost:8011";
             archiverNotificationsStreamId = 0;
             idleStrategy = clientContext.idleStrategy();
+            epochClock = clientContext.epochClock();
         }
 
         public Context(final Aeron.Context clientContext, final File archiveFolder)
@@ -200,15 +201,38 @@ public class Archiver implements AutoCloseable
             return this;
         }
 
+        /**
+         * Provides an IdleStrategy for the thread responsible for publication/subscription backoff.
+         *
+         * @param idleStrategy Thread idle strategy for publication/subscription backoff.
+         * @return this Context for method chaining.
+         */
+        public Context idleStrategy(final IdleStrategy idleStrategy)
+        {
+            this.idleStrategy = idleStrategy;
+            return this;
+        }
+
         public IdleStrategy idleStrategy()
         {
             return idleStrategy;
         }
 
-        public Context idleStrategy(final IdleStrategy idleStrategy)
+        /**
+         * Set the {@link EpochClock} to be used for tracking wall clock time when interacting with the archiver.
+         *
+         * @param clock {@link EpochClock} to be used for tracking wall clock time when interacting with the archiver.
+         * @return this Context for method chaining
+         */
+        public Context epochClock(final EpochClock clock)
         {
-            this.idleStrategy = idleStrategy;
+            this.epochClock = clock;
             return this;
+        }
+
+        public EpochClock epochClock()
+        {
+            return epochClock;
         }
     }
 }

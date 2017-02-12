@@ -179,6 +179,7 @@ class ReplaySession
                     }
                     else if (session.channelIndex == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
                     {
+                        session.channelIndex = 0;
                         session.archiveFileIndex++;
                         session.archiveFileRollover();
                     }

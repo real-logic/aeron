@@ -66,6 +66,7 @@ class ArchiverConductor implements Agent
     private final ManyToOneConcurrentArrayQueue<Image> imageNotifications;
     private final File archiveFolder;
     private final IdleStrategy idleStrategy;
+    private final EpochClock epochClock;
 
     ArchiverConductor(
         final Aeron aeron,
@@ -79,6 +80,8 @@ class ArchiverConductor implements Agent
             ctx.archiverNotificationsChannel(), ctx.archiverNotificationsStreamId());
         this.archiveFolder = ctx.archiveFolder();
         this.idleStrategy = ctx.idleStrategy();
+        this.epochClock = ctx.epochClock();
+
         archiveIndex = new ArchiveIndex(archiveFolder);
 
         outboundHeaderEncoder.wrap(outboundBuffer, 0);
@@ -151,7 +154,7 @@ class ArchiverConductor implements Agent
     {
         if (archiveSubscriptions.contains(image.subscription()))
         {
-            final ImageArchivingSession session = new ImageArchivingSession(this, image);
+            final ImageArchivingSession session = new ImageArchivingSession(this, image, this.epochClock);
             archivingSessions.add(session);
             image2ArchivingSession.put(image.sessionId(), session);
         }
@@ -188,11 +191,21 @@ class ArchiverConductor implements Agent
                     onAbortReplay(header);
                     break;
                 }
-
+                case ListStreamInstancesRequestDecoder.TEMPLATE_ID:
+                    onListStreamInstances(header);
+                    break;
                 default:
                     throw new IllegalArgumentException("Unexpected template id:" + templateId);
             }
         }, 16);
+    }
+
+    private void onListStreamInstances(final Header header)
+    {
+        /* TODO: send the list of archives. This will entail a replying session which hits the 3 barrier of abstraction
+           for the whole session management thing. So will require some refactoring work. Further thought required on
+           how the list message should appear on the SBE level. Is it one message with a group of elements? many
+           messages? how many should we send at once? */
     }
 
     private void onAbortReplay(final Header header)
@@ -282,7 +295,7 @@ class ArchiverConductor implements Agent
             {
                 archiveSubscription.close();
                 archiveSubscriptions.remove(archiveSubscription);
-                // image archiving will sort itself out
+                // image archiving sessions will sort themselves out naturally
             }
         }
     }

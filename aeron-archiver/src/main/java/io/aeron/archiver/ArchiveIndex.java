@@ -25,6 +25,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
+import java.util.function.BiConsumer;
 
 class ArchiveIndex implements AutoCloseable
 {
@@ -210,5 +211,10 @@ class ArchiveIndex implements AutoCloseable
     StreamInstance getStreamInstance(final int newStreamInstanceId)
     {
         return instanceId2streamInstance.get(newStreamInstanceId);
+    }
+
+    void forEach(final BiConsumer<Integer, StreamInstance> consumer)
+    {
+        instanceId2streamInstance.forEach(consumer);
     }
 }

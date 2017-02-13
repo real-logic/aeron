@@ -77,6 +77,8 @@ public class Archiver implements AutoCloseable
         });
 
         aeron = Aeron.connect(ctx.clientContext);
+
+        ctx.conclude();
         // TODO: Should we have replay and record on same thread?
         // TODO: Should we allow the allocation of more threads to these tasks assuming slow storage/sufficient
         // TODO: traffic/sufficient replay load?
@@ -125,14 +127,25 @@ public class Archiver implements AutoCloseable
             serviceRequestStreamId = 0;
             archiverNotificationsChannel = "aeron:udp?endpoint=localhost:8011";
             archiverNotificationsStreamId = 0;
-            idleStrategy = clientContext.idleStrategy();
-            epochClock = clientContext.epochClock();
+
         }
 
         public Context(final Aeron.Context clientContext, final File archiveFolder)
         {
             this.clientContext = clientContext;
             this.archiveFolder = archiveFolder;
+        }
+
+        void conclude()
+        {
+            if (idleStrategy == null)
+            {
+                idleStrategy = clientContext.idleStrategy();
+            }
+            if (epochClock == null)
+            {
+                epochClock = clientContext.epochClock();
+            }
         }
 
         public File archiveFolder()

@@ -361,6 +361,11 @@ public final class Aeron implements AutoCloseable
             return this;
         }
 
+        /**
+         * Get the {@link java.time.Clock} used by the client for the epoch time in milliseconds.
+         *
+         * @return the {@link java.time.Clock} used by the client for the epoch time in milliseconds.
+         */
         public EpochClock epochClock()
         {
             return epochClock;
@@ -390,10 +395,16 @@ public final class Aeron implements AutoCloseable
             return this;
         }
 
+        /**
+         * Get the {@link IdleStrategy} employed by the client conductor thread.
+         *
+         * @return the {@link IdleStrategy} employed by the client conductor thread.
+         */
         public IdleStrategy idleStrategy()
         {
             return idleStrategy;
         }
+
         /**
          * This method is used for testing and debugging.
          *
@@ -445,6 +456,11 @@ public final class Aeron implements AutoCloseable
             return this;
         }
 
+        /**
+         * Get the error handler that will be called for errors reported back from the media driver.
+         *
+         * @return the error handler that will be called for errors reported back from the media driver.
+         */
         public ErrorHandler errorHandler()
         {
             return errorHandler;

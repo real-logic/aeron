@@ -35,7 +35,7 @@
     </message>
 
     <message name="ArchiveProgressNotification" id="22" description="Archival progress" >
-        <field  name="streamInstanceId"        id="1" type="int32" />
+        <field  name="streamInstanceId"  id="1" type="int32" />
         <field  name="initialTermId"     id="2" type="int32" />
         <field  name="initialTermOffset" id="3" type="int32" />
         <field  name="termId"            id="4" type="int32" />
@@ -79,5 +79,25 @@
         <field  name="lastTermId"           id="6" type="int32" />
         <field  name="lastTermOffset"       id="7" type="int32" />
         <field  name="endTime"              id="8" type="int64" />
+    </message>
+
+    <message name="ListStreamInstancesRequest" id="7" description="Send all archive descriptors" >
+        <field  name="replyStreamId"  id="1" type="int32" />
+        <data   name="replyChannel"   id="2" type="varDataEncoding" />
+    </message>
+
+    <message name="ArchiveMetaFileFormat" id="8" description="Describes a new stream instance" >
+        <field  name="streamInstanceId"  id="1" type="int32" />
+        <field  name="termBufferLength"  id="2" type="int32" />
+        <field  name="startTime"         id="3" type="int64" />
+        <field  name="initialTermId"     id="4" type="int32" />
+        <field  name="initialTermOffset" id="5" type="int32" />
+        <field  name="lastTermId"        id="6" type="int32" />
+        <field  name="lastTermOffset"    id="7" type="int32" />
+        <field  name="endTime"           id="8" type="int64" />
+        <field  name="sessionId"         id="9" type="int32" />
+        <field  name="streamId"          id="10" type="int32" />
+        <data   name="source"            id="11" type="varDataEncoding" />
+        <data   name="channel"           id="12" type="varDataEncoding" />
     </message>
 </messageSchema>

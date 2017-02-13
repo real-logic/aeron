@@ -30,7 +30,6 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.LockSupport;
 
-@Ignore
 public class SystemTest
 {
     private static final boolean DEBUG = false;

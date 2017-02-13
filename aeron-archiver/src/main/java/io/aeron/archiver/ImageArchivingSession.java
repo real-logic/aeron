@@ -35,18 +35,17 @@ import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
 
 /**
  * Consumes a stream and archives data into files. Each file is 1GB and naming convention is:<br>
- * <i>source.sessionId.channel.streamId.termStart-to-termEnd.aaf</i><br>
- *
+ * <i>streamInstaceId.file-index.aaf</i><br>
  * A metadata file:<br>
- * <i>source.sessionId.channel.streamId.meta</i><br>
+ * <i>streamInstaceId.meta</i><br>
  * Contains indexing support data and recording info, {@see ArchiveMetaFileFormatDecoder}.
  *
- * For filenames {@see ArchiveFileUtil}
+ * For filenames {@see ArchiveFileUtil}.
  *
  * Data in the files is expected to cover from initial positions to last. Each file covers (1GB/term size) terms.
  * To find data by term id and offset you can find the file and position by calculating:<br>
  * <ul>
- * <li> file index = (term - initial term) / (1GB / term size) </li>
+ * <li> file index    = (term - initial term) / (1GB / term size) </li>
  * <li> file position = offset + term size * [ (term - initial term) % (1GB / term size) ] </li>
  * </ul>
  */
@@ -126,7 +125,7 @@ class ImageArchivingSession implements RawBlockHandler
      * Index is in the range 0:ARCHIVE_FILE_SIZE, except before the first block for this image is received indicated
      * by -1
      */
-    private int index = -1;
+    private int archivePosition = -1;
 
     ImageArchivingSession(final ArchiverConductor archiverConductor, final Image image, final EpochClock epochClock)
     {
@@ -222,7 +221,8 @@ class ImageArchivingSession implements RawBlockHandler
     {
         try
         {
-            if (index == -1 && termId != initialTermId)
+            // detect first write
+            if (archivePosition == -1 && termId != initialTermId)
             {
                 // archiving an ongoing publication
                 metaDataWriter.initialTermId(termId);
@@ -232,7 +232,7 @@ class ImageArchivingSession implements RawBlockHandler
             // TODO: ...method is called
             final int archiveOffset = ArchiveFileUtil.archiveOffset(
                 termOffset, termId, initialTermId, termsMask, termBufferLength);
-            if (index == -1)
+            if (archivePosition == -1)
             {
                 newArchiveFile(termId);
                 if (archiveFileChannel.position() != 0)
@@ -241,7 +241,7 @@ class ImageArchivingSession implements RawBlockHandler
                         "It is assumed that archiveFileChannel.position() is 0 on first write");
                 }
 
-                index = termOffset;
+                archivePosition = termOffset;
                 // first write to the logs is not at beginning of file. We need to insert a padding indicator.
                 if (archiveOffset != 0)
                 {
@@ -252,19 +252,20 @@ class ImageArchivingSession implements RawBlockHandler
                     archiveFileChannel.write(bb);
                 }
                 metaDataWriter.initialTermOffset(termOffset);
-                archiveFileChannel.position(index);
+                archiveFileChannel.position(archivePosition);
             }
-            else if (archiveOffset != index)
+            else if (archiveOffset != archivePosition)
             {
-                throw new IllegalArgumentException("It is assumed that index tracks the calculated archiveOffset");
+                throw new IllegalArgumentException("It is assumed that archivePosition tracks the calculated " +
+                                                   "archiveOffset");
             }
-            else if (archiveFileChannel.position() != index)
+            else if (archiveFileChannel.position() != archivePosition)
             {
-                throw new IllegalArgumentException("It is assumed that index tracks the file position");
+                throw new IllegalArgumentException("It is assumed that archivePosition tracks the file position");
             }
 
             fileChannel.transferTo(fileOffset, length, archiveFileChannel);
-            index = archiveOffset + length;
+            archivePosition = archiveOffset + length;
 
             metaDataWriter.lastTermId(termId);
             final int endTermOffset = termOffset + length;
@@ -275,10 +276,10 @@ class ImageArchivingSession implements RawBlockHandler
                 metaDataReader.initialTermOffset(),
                 termId,
                 endTermOffset);
-            if (index == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
+            if (archivePosition == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
             {
                 archiveFileChannel.close();
-                index = 0;
+                archivePosition = 0;
                 // TODO: allocate ahead files, will also give early indication to low storage
                 newArchiveFile(termId + 1);
             }

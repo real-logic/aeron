@@ -24,12 +24,11 @@ import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.*;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
 
-public class ArchiveReader
+public class ArchiveDataFileReader
 {
     private final int streamInstanceId;
     private final File archiveFolder;
@@ -39,7 +38,7 @@ public class ArchiveReader
     private final int lastTermId;
     private final int lastTermOffset;
 
-    ArchiveReader(final int streamInstanceId, final File archiveFolder) throws IOException
+    ArchiveDataFileReader(final int streamInstanceId, final File archiveFolder) throws IOException
     {
         this.streamInstanceId = streamInstanceId;
         this.archiveFolder = archiveFolder;
@@ -54,7 +53,12 @@ public class ArchiveReader
         lastTermOffset = metaDecoder.lastTermOffset();
 
         final int lastTermId = metaDecoder.lastTermId();
+    }
 
+    void forEachFragment(final FragmentHandler fragmentHandler) throws IOException
+    {
+        final long length = (lastTermId - initialTermId) * termBufferLength + (lastTermOffset - initialTermOffset);
+        forEachFragment(fragmentHandler, initialTermId, initialTermOffset, length);
     }
 
     void forEachFragment(final FragmentHandler fragmentHandler,
@@ -76,14 +80,15 @@ public class ArchiveReader
 
         RandomAccessFile currentDataFile = new RandomAccessFile(archiveDataFile, "r");
         FileChannel currentDataChannel = currentDataFile.getChannel();
+
         try
         {
             int archiveTermStartOffset = archiveOffset - termOffset;
-            MappedByteBuffer termMappedBuffer = currentDataChannel.map(FileChannel.MapMode.READ_ONLY,
-                                                                       archiveTermStartOffset,
-                                                                       termBufferLength);
+            final UnsafeBuffer termMappedUnsafeBuffer =
+                new UnsafeBuffer(currentDataChannel.map(FileChannel.MapMode.READ_ONLY,
+                                                        archiveTermStartOffset,
+                                                        termBufferLength));
 
-            UnsafeBuffer termMappedUnsafeBuffer = new UnsafeBuffer(termMappedBuffer);
             int fragmentOffset = archiveOffset & (termBufferLength - 1);
             while (true)
             {
@@ -91,6 +96,7 @@ public class ArchiveReader
                     new Header(initialTermId, Integer.numberOfTrailingZeros(termBufferLength));
                 fragmentHeader.buffer(termMappedUnsafeBuffer);
 
+                // read to end of term or requested data
                 while (fragmentOffset < termBufferLength && transmitted < length)
                 {
                     fragmentHeader.offset(fragmentOffset);
@@ -107,6 +113,7 @@ public class ArchiveReader
                     fragmentOffset += frameLength;
                     transmitted +=  frameLength;
                 }
+
                 if (transmitted >= length)
                 {
                     return;
@@ -130,11 +137,10 @@ public class ArchiveReader
                     currentDataFile = new RandomAccessFile(archiveDataFile, "r");
                     currentDataChannel = currentDataFile.getChannel();
                 }
-                termMappedBuffer = currentDataChannel.map(FileChannel.MapMode.READ_ONLY,
-                                                          archiveTermStartOffset,
-                                                          termBufferLength);
-
-                termMappedUnsafeBuffer = new UnsafeBuffer(termMappedBuffer);
+                // roll term
+                termMappedUnsafeBuffer.wrap(currentDataChannel.map(FileChannel.MapMode.READ_ONLY,
+                                                                   archiveTermStartOffset,
+                                                                   termBufferLength));
             }
         }
         finally

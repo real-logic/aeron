@@ -68,6 +68,10 @@ class ArchiveFileUtil
         System.out.println("last term: " + formatDecoder.lastTermId());
         System.out.println("last term offset: " + formatDecoder.lastTermOffset());
         System.out.println("end time: " + new Date(formatDecoder.endTime()));
+        System.out.println("source: " + formatDecoder.source());
+        System.out.println("sessionId: " + formatDecoder.sessionId());
+        System.out.println("channel: " + formatDecoder.channel());
+        System.out.println("streamId: " + formatDecoder.streamId());
     }
 
     static ArchiveMetaFileFormatDecoder archiveMetaFileFormatDecoder(final File metaFile)

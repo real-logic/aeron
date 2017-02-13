@@ -361,6 +361,11 @@ public final class Aeron implements AutoCloseable
             return this;
         }
 
+        public EpochClock epochClock()
+        {
+            return epochClock;
+        }
+
         /**
          * Set the {@link NanoClock} to be used for tracking high resolution time.
          *

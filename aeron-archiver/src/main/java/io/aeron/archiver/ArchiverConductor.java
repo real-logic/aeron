@@ -354,20 +354,20 @@ class ArchiverConductor implements Agent
         }
 
 
-        long result;
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + responseEncoder.encodedLength();
         while (true)
         {
-            result = responsePublication.offer(
-                outboundBuffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + responseEncoder.encodedLength());
+            final long result = responsePublication.offer(outboundBuffer, 0, length);
             if (result > 0)
             {
+                idleStrategy.reset();
                 break;
             }
             if (result == Publication.NOT_CONNECTED || result == Publication.CLOSED)
             {
                 throw new IllegalStateException("Response channel is down: " + responsePublication);
             }
-            idleStrategy.idle((int) result);
+            idleStrategy.idle();
         }
     }
 
@@ -444,18 +444,24 @@ class ArchiverConductor implements Agent
                 outboundBuffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length);
             if (result > 0 || result == Publication.NOT_CONNECTED)
             {
+                idleStrategy.reset();
                 break;
             }
             else if (result == Publication.CLOSED)
             {
                 throw new IllegalStateException();
             }
-            idleStrategy.idle((int) result);
+            idleStrategy.idle();
         }
     }
 
     int getStreamInstanceId(final StreamInstance streamInstance)
     {
         return archiveIndex.getStreamInstanceId(streamInstance);
+    }
+
+    IdleStrategy idleStrategy()
+    {
+        return idleStrategy;
     }
 }

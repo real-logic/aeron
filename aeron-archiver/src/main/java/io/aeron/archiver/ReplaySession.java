@@ -21,7 +21,7 @@ import io.aeron.archiver.messages.ArchiveMetaFileFormatDecoder;
 import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -64,9 +64,9 @@ class ReplaySession
                 final File archiveMetaFile = new File(session.archiverConductor.archiveFolder(), archiveMetaFileName);
                 if (!archiveMetaFile.exists())
                 {
+                    session.state(CLOSE);
                     session.archiverConductor.sendResponse(
                         control, archiveMetaFile.getAbsolutePath() + " not found");
-                    session.state(CLOSE);
                     return 1;
                 }
 
@@ -77,9 +77,9 @@ class ReplaySession
                 }
                 catch (IOException e)
                 {
+                    session.state(CLOSE);
                     session.archiverConductor.sendResponse(
                         control, archiveMetaFile.getAbsolutePath() + " : failed to map");
-                    session.state(CLOSE);
                     LangUtil.rethrowUnchecked(e);
                     return 0;
                 }
@@ -90,11 +90,11 @@ class ReplaySession
                 if ((initialTermId <= lastTermId && (termId < initialTermId || termId > lastTermId)) ||
                     (initialTermId > lastTermId && (termId > initialTermId || termId < lastTermId)))
                 {
+                    session.state(CLOSE);
                     session.archiverConductor.sendResponse(
                         control, "Requested term (" +
                         termId + ") out of archive range [" +
                         initialTermId + "," + lastTermId + "]");
-                    session.state(CLOSE);
                     return 1;
                 }
                 // TODO: cover termOffset edge cases: range[0, termBufferLength],
@@ -118,19 +118,20 @@ class ReplaySession
                 {
                     session.currentDataChannel.position(archiveOffset);
                     session.channelIndex = archiveOffset;
+                    // plumbing is secured, we can kick off the replay
+                    session.archiverConductor.sendResponse(control, null);
+                    session.state(REPLAY);
+                    return 1;
                 }
-                catch (IOException e)
+                catch (Throwable e)
                 {
+                    session.state(CLOSE);
                     session.archiverConductor.sendResponse(
                         control, "Failed to set position in archive: " + archiveOffset);
-                    session.state(CLOSE);
                     LangUtil.rethrowUnchecked(e);
                     return 0;
                 }
-                // plumbing is secured, we can kick off the replay
-                session.archiverConductor.sendResponse(control, null);
-                session.state(REPLAY);
-                return 1;
+
             }
         },
 
@@ -140,7 +141,8 @@ class ReplaySession
             {
                 final long channelIndex = session.channelIndex;
                 final long remainingInFile = ArchiveFileUtil.ARCHIVE_FILE_SIZE - channelIndex;
-                final long mtu = session.replay.maxPayloadLength();
+                final Publication replay = session.replay;
+                final long mtu = replay.maxPayloadLength();
 
                 final int claimSize = (int)min(mtu, min(remainingInFile, session.length));
 
@@ -158,16 +160,28 @@ class ReplaySession
 
                     if (read != claimSize)
                     {
+                        session.state(CLOSE);
                         conductor.sendResponse(
                             session.control, "Failed to read " + claimSize + " bytes at position: " + channelIndex);
-                        session.state(CLOSE);
                         throw new IllegalStateException();
                     }
                     else
                     {
-                        while (session.replay.offer(buffer, 0, claimSize) < 0)
+                        final IdleStrategy idleStrategy = conductor.idleStrategy();
+                        long result = replay.offer(buffer, 0, claimSize);
+                        if (result == Publication.ADMIN_ACTION)
                         {
-                            //TODO: backoff
+                            while (result == Publication.ADMIN_ACTION)
+                            {
+                                idleStrategy.idle();
+                                result = replay.offer(buffer, 0, claimSize);
+                            }
+                            idleStrategy.reset();
+                        }
+                        if (result < 0)
+                        {
+                            session.state(CLOSE);
+                            throw new IllegalStateException();
                         }
                     }
                     session.channelIndex += claimSize;
@@ -313,9 +327,9 @@ class ReplaySession
 
         if (!archiveDataFile.exists())
         {
+            state(State.CLOSE);
             archiverConductor.sendResponse(
                 control, archiveDataFile.getAbsolutePath() + " not found");
-            state(State.CLOSE);
             throw new IllegalStateException(archiveDataFile.getAbsolutePath() + " not found");
         }
 
@@ -326,9 +340,9 @@ class ReplaySession
         }
         catch (IOException e)
         {
+            state(State.CLOSE);
             archiverConductor.sendResponse(
                 control, archiveDataFile.getAbsolutePath() + " failed to open.");
-            state(State.CLOSE);
             LangUtil.rethrowUnchecked(e);
             throw new RuntimeException();
         }

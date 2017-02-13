@@ -116,24 +116,22 @@ public class Archiver implements AutoCloseable
         private EpochClock epochClock;
         public Context()
         {
-            final File archiveDir = new File("archive");
-            if (!archiveDir.exists())
-            {
-                archiveDir.mkdirs();
-            }
-            archiveFolder = archiveDir;
-            clientContext = new Aeron.Context();
-            serviceRequestChannel = "aeron:udp?endpoint=localhost:8010";
-            serviceRequestStreamId = 0;
-            archiverNotificationsChannel = "aeron:udp?endpoint=localhost:8011";
-            archiverNotificationsStreamId = 0;
-
+            this(new Aeron.Context(), new File("archive"));
         }
 
         public Context(final Aeron.Context clientContext, final File archiveFolder)
         {
+            if (!archiveFolder.exists() && !archiveFolder.mkdirs())
+            {
+                throw new IllegalArgumentException("Failed to create archive folder:" +
+                                                   archiveFolder.getAbsolutePath());
+            }
             this.clientContext = clientContext;
             this.archiveFolder = archiveFolder;
+            serviceRequestChannel = "aeron:udp?endpoint=localhost:8010";
+            serviceRequestStreamId = 0;
+            archiverNotificationsChannel = "aeron:udp?endpoint=localhost:8011";
+            archiverNotificationsStreamId = 0;
         }
 
         void conclude()

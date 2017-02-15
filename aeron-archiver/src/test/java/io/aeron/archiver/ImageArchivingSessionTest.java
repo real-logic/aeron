@@ -60,6 +60,7 @@ public class ImageArchivingSessionTest
     private RandomAccessFile logBufferRandomAccessFile;
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
+    private File termFile;
 
     public ImageArchivingSessionTest() throws IOException
     {
@@ -73,7 +74,7 @@ public class ImageArchivingSessionTest
     @Before
     public void setupMockTermBuff() throws IOException
     {
-        final File termFile = File.createTempFile("archiver.test", "source");
+        termFile = File.createTempFile("archiver.test", "source");
         logBufferRandomAccessFile = new RandomAccessFile(termFile, "rw");
         // size this file as a mock term buffer
         mockLogBufferChannel = logBufferRandomAccessFile.getChannel();
@@ -98,6 +99,12 @@ public class ImageArchivingSessionTest
     {
         CloseHelper.quietClose(logBufferRandomAccessFile);
         CloseHelper.quietClose(mockLogBufferChannel);
+        for (String fn : tempFolderForTest.list())
+        {
+            new File(tempFolderForTest, fn).delete();
+        }
+        tempFolderForTest.delete();
+        termFile.delete();
     }
     @Test
     public void shouldRecordDataFromImage() throws IOException

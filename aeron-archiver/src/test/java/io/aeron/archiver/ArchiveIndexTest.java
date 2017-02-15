@@ -43,6 +43,16 @@ public class ArchiveIndexTest
         }
     }
 
+    @AfterClass
+    public static void teardown()
+    {
+        for (String fn : archiveFolder.list())
+        {
+            new File(archiveFolder, fn).delete();
+        }
+        archiveFolder.delete();
+    }
+
     @Test
     public void shouldReloadExistingIndex() throws Exception
     {

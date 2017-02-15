@@ -146,7 +146,11 @@ public class SystemTest
         CloseHelper.quietClose(publishingClient);
         CloseHelper.quietClose(archiver);
         CloseHelper.quietClose(driver);
-
+        for (String fn : archiveFolder.list())
+        {
+            new File(archiveFolder, fn).delete();
+        }
+        archiveFolder.delete();
         driverCtx.deleteAeronDirectory();
     }
 

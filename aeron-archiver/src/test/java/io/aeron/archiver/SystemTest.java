@@ -21,6 +21,7 @@ import io.aeron.driver.*;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 
@@ -66,6 +67,17 @@ public class SystemTest
         archiver = Archiver.launch(archiverCtx);
         println("Archiver started, folder: " + archiverCtx.archiveFolder().getAbsolutePath());
         publishingClient = Aeron.connect();
+    }
+
+    @After
+    public void closeEverything() throws Exception
+    {
+        CloseHelper.quietClose(publishingClient);
+        CloseHelper.quietClose(archiver);
+        CloseHelper.quietClose(driver);
+
+        IoUtil.delete(archiveFolder, true);
+        driverCtx.deleteAeronDirectory();
     }
 
     private void requestArchive(final Publication archiverServiceRequest, final String channel, final int streamId)
@@ -138,20 +150,6 @@ public class SystemTest
 
         println(encoder.toString());
         offer(archiverServiceRequest, buffer, 0, encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH, 1000);
-    }
-
-    @After
-    public void closeEverything() throws Exception
-    {
-        CloseHelper.quietClose(publishingClient);
-        CloseHelper.quietClose(archiver);
-        CloseHelper.quietClose(driver);
-        for (String fn : archiveFolder.list())
-        {
-            new File(archiveFolder, fn).delete();
-        }
-        archiveFolder.delete();
-        driverCtx.deleteAeronDirectory();
     }
 
     @Test(timeout = 10000)

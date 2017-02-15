@@ -20,6 +20,7 @@ import io.aeron.*;
 import io.aeron.archiver.messages.ArchiveMetaFileFormatDecoder;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.*;
 import org.junit.*;
 import org.mockito.*;
@@ -99,13 +100,10 @@ public class ImageArchivingSessionTest
     {
         CloseHelper.quietClose(logBufferRandomAccessFile);
         CloseHelper.quietClose(mockLogBufferChannel);
-        for (String fn : tempFolderForTest.list())
-        {
-            new File(tempFolderForTest, fn).delete();
-        }
-        tempFolderForTest.delete();
-        termFile.delete();
+        IoUtil.delete(tempFolderForTest, true);
+        IoUtil.delete(termFile, true);
     }
+
     @Test
     public void shouldRecordDataFromImage() throws IOException
     {
@@ -151,7 +149,7 @@ public class ImageArchivingSessionTest
 
         // data exists and is as expected
         final File archiveDataFile = new File(tempFolderForTest,
-                                              archiveDataFileName(session.streamInstanceId(), 0));
+            archiveDataFileName(session.streamInstanceId(), 0));
         assertTrue(archiveDataFile.exists());
         final ArchiveDataFileReader reader = new ArchiveDataFileReader(session.streamInstanceId(), tempFolderForTest);
         reader.forEachFragment((buffer, offset, length, header) ->
@@ -180,8 +178,12 @@ public class ImageArchivingSessionTest
         return subscription;
     }
 
-    private Image mockImage(final String sourceIdentity, final int sessionId, final int initialTermId, final int
-        termBufferLength, final Subscription subscription)
+    private Image mockImage(
+        final String sourceIdentity,
+        final int sessionId,
+        final int initialTermId,
+        final int termBufferLength,
+        final Subscription subscription)
     {
         final Image image = mock(Image.class);
 

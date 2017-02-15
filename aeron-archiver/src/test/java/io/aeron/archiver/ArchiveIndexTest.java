@@ -16,6 +16,7 @@
 
 package io.aeron.archiver;
 
+import org.agrona.IoUtil;
 import org.junit.*;
 
 import java.io.File;
@@ -46,11 +47,7 @@ public class ArchiveIndexTest
     @AfterClass
     public static void teardown()
     {
-        for (String fn : archiveFolder.list())
-        {
-            new File(archiveFolder, fn).delete();
-        }
-        archiveFolder.delete();
+        IoUtil.delete(archiveFolder, true);
     }
 
     @Test
@@ -92,5 +89,4 @@ public class ArchiveIndexTest
             archiveIndex.addNewStreamInstance(STREAM_INSTANCE_A);
         }
     }
-
 }

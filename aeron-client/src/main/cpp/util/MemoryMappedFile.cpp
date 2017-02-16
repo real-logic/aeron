@@ -140,7 +140,7 @@ MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, off_t 
     return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size));
 }
 
-MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, size_t offset, size_t length)
+MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, off_t offset, size_t length)
 {
     FileHandle fd;
     fd.handle = ::open(filename, O_RDWR, 0666);
@@ -172,7 +172,7 @@ size_t MemoryMappedFile::getMemorySize() const
 size_t MemoryMappedFile::PAGE_SIZE = getPageSize();
 
 #ifdef _WIN32
-MemoryMappedFile::MemoryMappedFile(FileHandle handle, off_t offset, size_t length)
+MemoryMappedFile::MemoryMappedFile(FileHandle fd, off_t offset, size_t length)
 {
     if (0 == length && 0 == offset)
     {
@@ -180,7 +180,7 @@ MemoryMappedFile::MemoryMappedFile(FileHandle handle, off_t offset, size_t lengt
         if (!GetFileSizeEx(fd.handle, &fileSize))
         {
             cleanUp();
-            throw IOException(std::string("Failed query size of existing file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
+            throw IOException(std::string("Failed query size of existing file: ") + toString(GetLastError()), SOURCEINFO);
         }
 
         length = (size_t)fileSize.QuadPart;
@@ -192,7 +192,7 @@ MemoryMappedFile::MemoryMappedFile(FileHandle handle, off_t offset, size_t lengt
     if (!m_memory)
     {
         cleanUp();
-        throw IOException(std::string("Failed to Map Memory: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
+        throw IOException(std::string("Failed to Map Memory: ") + toString(GetLastError()), SOURCEINFO);
     }
 }
 
@@ -221,7 +221,7 @@ uint8_t* MemoryMappedFile::doMapping(size_t size, FileHandle fd, size_t offset)
         return NULL;
     }
 
-    void* memory = (LPTSTR)MapViewOfFile(m_mapping, FILE_MAP_ALL_ACCESS, 0,	offset, size);
+    void* memory = (LPTSTR)MapViewOfFile(m_mapping, FILE_MAP_ALL_ACCESS, 0,	(DWORD)offset, size);
 
     return static_cast<uint8_t*>(memory);
 }

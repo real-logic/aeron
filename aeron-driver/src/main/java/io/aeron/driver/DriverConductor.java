@@ -803,7 +803,7 @@ public class DriverConductor implements Agent
         }
 
         final AeronClient client = getOrAddClient(clientId);
-        final SubscriptionLink subscription = new SubscriptionLink(
+        final SubscriptionLink subscription = new NetworkSubscriptionLink(
             registrationId, channelEndpoint, streamId, channel, client, context.clientLivenessTimeoutNs(), isReliable);
 
         subscriptionLinks.add(subscription);
@@ -889,7 +889,7 @@ public class DriverConductor implements Agent
             countersManager, registrationId, sessionId, streamId, channel, joiningPosition);
         position.setOrdered(joiningPosition);
 
-        final SubscriptionLink subscriptionLink = new SubscriptionLink(
+        final IpcSubscriptionLink subscriptionLink = new IpcSubscriptionLink(
             registrationId, streamId, channel, publication, position, client, context.clientLivenessTimeoutNs());
 
         subscriptionLinks.add(subscriptionLink);
@@ -911,7 +911,7 @@ public class DriverConductor implements Agent
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final AeronClient client = getOrAddClient(clientId);
-        final SubscriptionLink subscriptionLink = new SubscriptionLink(
+        final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
             registrationId, udpChannel, streamId, channel, client, context.clientLivenessTimeoutNs());
 
         subscriptionLinks.add(subscriptionLink);
@@ -1035,20 +1035,28 @@ public class DriverConductor implements Agent
 
         if (null == publication)
         {
-            final int termLength = getTermBufferLength(AeronUri.parse(channel), context.ipcTermBufferLength());
-            final long registrationId = nextImageCorrelationId();
-            final int sessionId = nextSessionId++;
-            final int initialTermId = BitUtil.generateRandomisedId();
-            final RawLog rawLog = newIpcPublicationLog(
-                termLength, sessionId, streamId, initialTermId, registrationId);
-
-            final Position publisherLimit = PublisherLimit.allocate(
-                countersManager, registrationId, sessionId, streamId, channel);
-
-            publication = new IpcPublication(registrationId, sessionId, streamId, publisherLimit, rawLog);
-
-            ipcPublications.add(publication);
+            publication = addIpcPublication(streamId, channel);
         }
+
+        return publication;
+    }
+
+    private IpcPublication addIpcPublication(final int streamId, final String channel)
+    {
+        final int termLength = getTermBufferLength(AeronUri.parse(channel), context.ipcTermBufferLength());
+        final long registrationId = nextImageCorrelationId();
+        final int sessionId = nextSessionId++;
+        final int initialTermId = BitUtil.generateRandomisedId();
+        final RawLog rawLog = newIpcPublicationLog(
+            termLength, sessionId, streamId, initialTermId, registrationId);
+
+        final Position publisherLimit = PublisherLimit.allocate(
+            countersManager, registrationId, sessionId, streamId, channel);
+
+        final IpcPublication publication = new IpcPublication(
+            registrationId, sessionId, streamId, publisherLimit, rawLog);
+
+        ipcPublications.add(publication);
 
         return publication;
     }

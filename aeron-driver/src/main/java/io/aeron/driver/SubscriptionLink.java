@@ -25,96 +25,33 @@ import java.util.Map;
 /**
  * Subscription registration from a client used for liveness tracking
  */
-public class SubscriptionLink implements DriverManagedResource
+public abstract class SubscriptionLink implements DriverManagedResource
 {
-    private final long registrationId;
-    private final long clientLivenessTimeoutNs;
-    private final int streamId;
-    private final boolean isReliable;
-    private final String channelUri;
-    private final ReceiveChannelEndpoint channelEndpoint;
-    private final AeronClient aeronClient;
-    private final Map<PublicationImage, ReadablePosition> positionByImageMap = new IdentityHashMap<>();
-    private final IpcPublication ipcPublication;
-    private final ReadablePosition ipcPublicationSubscriberPosition;
-    private final UdpChannel spiedChannel;
+    protected final long registrationId;
+    protected final long clientLivenessTimeoutNs;
+    protected final int streamId;
+    protected final String channelUri;
+    protected final AeronClient aeronClient;
 
-    private NetworkPublication spiedPublication = null;
-    private ReadablePosition spiedPosition = null;
+    protected boolean reachedEndOfLife = false;
 
-    private boolean reachedEndOfLife = false;
-
-    public SubscriptionLink(
+    protected SubscriptionLink(
         final long registrationId,
-        final ReceiveChannelEndpoint channelEndpoint,
-        final int streamId,
-        final String channelUri,
-        final AeronClient aeronClient,
-        final long clientLivenessTimeoutNs,
-        final boolean isReliable)
-    {
-        this.registrationId = registrationId;
-        this.channelEndpoint = channelEndpoint;
-        this.streamId = streamId;
-        this.channelUri = channelUri;
-        this.aeronClient = aeronClient;
-        this.ipcPublication = null;
-        this.ipcPublicationSubscriberPosition = null;
-        this.spiedChannel = null;
-        this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
-        this.isReliable = isReliable;
-    }
-
-    public SubscriptionLink(
-        final long registrationId,
-        final int streamId,
-        final String channelUri,
-        final IpcPublication ipcPublication,
-        final ReadablePosition subscriberPosition,
-        final AeronClient aeronClient,
-        final long clientLivenessTimeoutNs)
-    {
-        this.registrationId = registrationId;
-        this.channelEndpoint = null; // will prevent matches between PublicationImages and IpcPublications
-        this.streamId = streamId;
-        this.channelUri = channelUri;
-        this.aeronClient = aeronClient;
-        this.ipcPublication = ipcPublication;
-        ipcPublication.incRef();
-        this.ipcPublicationSubscriberPosition = subscriberPosition;
-        this.spiedChannel = null;
-        this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
-        this.isReliable = true;
-    }
-
-    public SubscriptionLink(
-        final long registrationId,
-        final UdpChannel spiedChannel,
         final int streamId,
         final String channelUri,
         final AeronClient aeronClient,
         final long clientLivenessTimeoutNs)
     {
         this.registrationId = registrationId;
-        this.channelEndpoint = null;
         this.streamId = streamId;
         this.channelUri = channelUri;
         this.aeronClient = aeronClient;
-        this.ipcPublication = null;
-        this.ipcPublicationSubscriberPosition = null;
-        this.spiedChannel = spiedChannel;
         this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
-        this.isReliable = true;
     }
 
     public long registrationId()
     {
         return registrationId;
-    }
-
-    public ReceiveChannelEndpoint channelEndpoint()
-    {
-        return channelEndpoint;
     }
 
     public int streamId()
@@ -127,65 +64,42 @@ public class SubscriptionLink implements DriverManagedResource
         return channelUri;
     }
 
-    public boolean isReliable()
+    public ReceiveChannelEndpoint channelEndpoint()
     {
-        return isReliable;
+        return null;
     }
 
-    public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
+    public boolean isReliable()
     {
-        return channelEndpoint == this.channelEndpoint && streamId == this.streamId;
+        return true;
     }
 
     public boolean matches(final NetworkPublication publication)
     {
-        boolean result = false;
-
-        if (null != spiedChannel)
-        {
-            result = streamId == publication.streamId() &&
-                publication.sendChannelEndpoint().udpChannel().canonicalForm().equals(spiedChannel.canonicalForm());
-        }
-
-        return result;
+        return false;
     }
-
-    public void addImage(final PublicationImage image, final ReadablePosition position)
+    public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
-        positionByImageMap.put(image, position);
-    }
-
-    public void removeImage(final PublicationImage image)
-    {
-        positionByImageMap.remove(image);
+        return false;
     }
 
     public void addSpiedPublication(final NetworkPublication publication, final ReadablePosition position)
     {
-        spiedPublication = publication;
-        spiedPosition = position;
     }
 
     public void removeSpiedPublication()
     {
-        spiedPublication = null;
-        spiedPosition = null;
     }
 
-    public void close()
+    public void addImage(final PublicationImage image, final ReadablePosition position)
     {
-        positionByImageMap.forEach(PublicationImage::removeSubscriber);
-
-        if (null != ipcPublication)
-        {
-            ipcPublication.removeSubscription(ipcPublicationSubscriberPosition);
-            ipcPublication.decRef();
-        }
-        else if (null != spiedPublication)
-        {
-            spiedPublication.removeSpyPosition(spiedPosition);
-        }
     }
+
+    public void removeImage(final PublicationImage image)
+    {
+    }
+
+    public abstract void close();
 
     public void onTimeEvent(final long time, final DriverConductor conductor)
     {
@@ -214,5 +128,131 @@ public class SubscriptionLink implements DriverManagedResource
     public void delete()
     {
         close();
+    }
+}
+
+class NetworkSubscriptionLink extends SubscriptionLink
+{
+    private final boolean isReliable;
+    private final ReceiveChannelEndpoint channelEndpoint;
+    private final Map<PublicationImage, ReadablePosition> positionByImageMap = new IdentityHashMap<>();
+
+    NetworkSubscriptionLink(
+        final long registrationId,
+        final ReceiveChannelEndpoint channelEndpoint,
+        final int streamId,
+        final String channelUri,
+        final AeronClient aeronClient,
+        final long clientLivenessTimeoutNs,
+        final boolean isReliable)
+    {
+        super(registrationId, streamId, channelUri, aeronClient, clientLivenessTimeoutNs);
+
+        this.isReliable = isReliable;
+        this.channelEndpoint = channelEndpoint;
+    }
+
+    public boolean isReliable()
+    {
+        return isReliable;
+    }
+
+    public ReceiveChannelEndpoint channelEndpoint()
+    {
+        return channelEndpoint;
+    }
+
+    public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
+    {
+        return channelEndpoint == this.channelEndpoint && streamId == this.streamId;
+    }
+
+    public void addImage(final PublicationImage image, final ReadablePosition position)
+    {
+        positionByImageMap.put(image, position);
+    }
+
+    public void removeImage(final PublicationImage image)
+    {
+        positionByImageMap.remove(image);
+    }
+
+    public void close()
+    {
+        positionByImageMap.forEach(PublicationImage::removeSubscriber);
+    }
+}
+
+class IpcSubscriptionLink extends SubscriptionLink
+{
+    private final IpcPublication ipcPublication;
+    private final ReadablePosition ipcPublicationSubscriberPosition;
+
+    IpcSubscriptionLink(
+        final long registrationId,
+        final int streamId,
+        final String channelUri,
+        final IpcPublication ipcPublication,
+        final ReadablePosition subscriberPosition,
+        final AeronClient aeronClient,
+        final long clientLivenessTimeoutNs)
+    {
+        super(registrationId, streamId, channelUri, aeronClient, clientLivenessTimeoutNs);
+
+        this.ipcPublication = ipcPublication;
+        this.ipcPublicationSubscriberPosition = subscriberPosition;
+
+        ipcPublication.incRef();
+    }
+
+    public void close()
+    {
+        ipcPublication.removeSubscription(ipcPublicationSubscriberPosition);
+        ipcPublication.decRef();
+    }
+}
+
+class SpySubscriptionLink extends SubscriptionLink
+{
+    private final UdpChannel spiedChannel;
+    private NetworkPublication spiedPublication = null;
+    private ReadablePosition spiedPosition = null;
+
+    SpySubscriptionLink(
+        final long registrationId,
+        final UdpChannel spiedChannel,
+        final int streamId,
+        final String channelUri,
+        final AeronClient aeronClient,
+        final long clientLivenessTimeoutNs)
+    {
+        super(registrationId, streamId, channelUri, aeronClient, clientLivenessTimeoutNs);
+        this.spiedChannel = spiedChannel;
+    }
+
+    public void addSpiedPublication(final NetworkPublication publication, final ReadablePosition position)
+    {
+        spiedPublication = publication;
+        spiedPosition = position;
+    }
+
+    public void removeSpiedPublication()
+    {
+        spiedPublication = null;
+        spiedPosition = null;
+    }
+
+    public boolean matches(final NetworkPublication publication)
+    {
+        return streamId == publication.streamId() &&
+            publication.sendChannelEndpoint().udpChannel().canonicalForm().equals(spiedChannel.canonicalForm());
+    }
+
+    public void close()
+    {
+        if (null != spiedPublication)
+        {
+            spiedPublication.removeSpyPosition(spiedPosition);
+        }
     }
 }

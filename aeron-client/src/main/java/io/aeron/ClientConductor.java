@@ -113,20 +113,12 @@ class ClientConductor implements Agent, DriverListener
 
     public void onClose()
     {
-        lock.lock();
-        try
-        {
-            activePublications.close();
-            activeSubscriptions.close();
+        activePublications.close();
+        activeSubscriptions.close();
 
-            Thread.yield();
+        Thread.yield();
 
-            lingeringResources.forEach(ManagedResource::delete);
-        }
-        finally
-        {
-            lock.unlock();
-        }
+        lingeringResources.forEach(ManagedResource::delete);
     }
 
     public Lock mainLock()

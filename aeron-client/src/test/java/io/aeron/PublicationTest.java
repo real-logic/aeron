@@ -44,7 +44,8 @@ public class PublicationTest
     private static final int TERM_ID_1 = 1;
     private static final int CORRELATION_ID = 2000;
     private static final int SEND_BUFFER_CAPACITY = 1024;
-    public static final int PARTITION_INDEX = 0;
+    private static final int PARTITION_INDEX = 0;
+    private static final int MTU_LENGTH = 4096;
 
     private final ByteBuffer sendBuffer = allocateDirect(SEND_BUFFER_CAPACITY);
     private final UnsafeBuffer atomicSendBuffer = new UnsafeBuffer(sendBuffer);
@@ -67,6 +68,7 @@ public class PublicationTest
         when(conductor.mainLock()).thenReturn(conductorLock);
 
         initialTermId(logMetaDataBuffer, TERM_ID_1);
+        mtuLength(logMetaDataBuffer, MTU_LENGTH);
         timeOfLastStatusMessage(logMetaDataBuffer, 0);
 
         for (int i = 0; i < PARTITION_COUNT; i++)

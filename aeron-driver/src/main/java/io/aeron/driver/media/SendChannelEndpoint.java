@@ -30,6 +30,7 @@ import java.net.InetSocketAddress;
 import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.status.ChannelEndpointStatus.status;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
@@ -42,12 +43,16 @@ import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 @EventLog
 public class SendChannelEndpoint extends UdpChannelTransport
 {
+    private static final long DESTINATION_TIMEOUT = TimeUnit.SECONDS.toNanos(5);
+
     private final Int2ObjectHashMap<NetworkPublication> driversPublicationByStreamId = new Int2ObjectHashMap<>();
     private final BiInt2ObjectMap<NetworkPublication> sendersPublicationBySessionAndStreamId = new BiInt2ObjectMap<>();
 
     private final AtomicCounter statusMessagesReceived;
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusIndicator;
+
+    private final UdpDestinationTracker multiDestinationTracker;
 
     public SendChannelEndpoint(
         final UdpChannel udpChannel, final AtomicCounter statusIndicator, final MediaDriver.Context context)
@@ -56,13 +61,21 @@ public class SendChannelEndpoint extends UdpChannelTransport
             udpChannel,
             udpChannel.remoteControl(),
             udpChannel.localControl(),
-            udpChannel.remoteData(),
+            !udpChannel.hasExplicitControl() ? udpChannel.remoteData() : null,
             context.errorLog(),
             context.systemCounters().get(INVALID_PACKETS));
 
         nakMessagesReceived = context.systemCounters().get(NAK_MESSAGES_RECEIVED);
         statusMessagesReceived = context.systemCounters().get(STATUS_MESSAGES_RECEIVED);
         this.statusIndicator = statusIndicator;
+
+        UdpDestinationTracker destinationTracker = null;
+        if (udpChannel.hasExplicitControl())
+        {
+            destinationTracker = new UdpDestinationTracker(context.nanoClock(), this::presend, DESTINATION_TIMEOUT);
+        }
+
+        multiDestinationTracker = destinationTracker;
     }
 
     public void openChannel()
@@ -168,17 +181,25 @@ public class SendChannelEndpoint extends UdpChannelTransport
     public int send(final ByteBuffer buffer)
     {
         int byteSent = 0;
-        try
+
+        if (null == multiDestinationTracker)
         {
-            presend(buffer, connectAddress);
-            byteSent = sendDatagramChannel.write(buffer);
+            try
+            {
+                presend(buffer, connectAddress);
+                byteSent = sendDatagramChannel.write(buffer);
+            }
+            catch (final PortUnreachableException | ClosedChannelException ignore)
+            {
+            }
+            catch (final IOException ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
         }
-        catch (final PortUnreachableException | ClosedChannelException ignore)
+        else
         {
-        }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
+            byteSent = multiDestinationTracker.sendToDestinations(sendDatagramChannel, buffer);
         }
 
         return byteSent;
@@ -195,6 +216,17 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
         final NetworkPublication publication = sendersPublicationBySessionAndStreamId.get(
             msg.sessionId(), msg.streamId());
+
+        if (null != multiDestinationTracker)
+        {
+            multiDestinationTracker.destinationActivity(msg.receiverId(), srcAddress);
+
+            if (0 == msg.sessionId() && 0 == msg.streamId() && SEND_SETUP_FLAG == (msg.flags() & SEND_SETUP_FLAG))
+            {
+                sendersPublicationBySessionAndStreamId.forEach(NetworkPublication::triggerSendSetupFrame);
+                statusMessagesReceived.orderedIncrement();
+            }
+        }
 
         if (null != publication)
         {

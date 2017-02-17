@@ -183,6 +183,16 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         return refCountByStreamIdMap.isEmpty() && !statusIndicator.isClosed();
     }
 
+    public boolean hasExplicitControl()
+    {
+        return udpChannel.hasExplicitControl();
+    }
+
+    public InetSocketAddress explicitControlAddress()
+    {
+        return (udpChannel.hasExplicitControl()) ? udpChannel.localControl() : null;
+    }
+
     public int onDataPacket(
         final DataHeaderFlyweight header,
         final UnsafeBuffer buffer,
@@ -353,5 +363,10 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     public void removeCoolDown(final int sessionId, final int streamId)
     {
         dispatcher.removeCoolDown(sessionId, streamId);
+    }
+
+    public boolean shouldElicitSetupMessage()
+    {
+        return dispatcher.shouldElicitSetupMessage();
     }
 }

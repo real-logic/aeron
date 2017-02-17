@@ -77,7 +77,7 @@ public class DataPacketDispatcherTest
 
         verify(mockImage, never()).insertPacket(anyInt(), anyInt(), any(), anyInt());
         verify(mockChannelEndpoint).sendSetupElicitingStatusMessage(SRC_ADDRESS, SESSION_ID, STREAM_ID);
-        verify(mockReceiver).addPendingSetupMessage(SESSION_ID, STREAM_ID, mockChannelEndpoint);
+        verify(mockReceiver).addPendingSetupMessage(SESSION_ID, STREAM_ID, mockChannelEndpoint, false, SRC_ADDRESS);
     }
 
     @Test
@@ -90,7 +90,7 @@ public class DataPacketDispatcherTest
 
         verify(mockImage, never()).insertPacket(anyInt(), anyInt(), any(), anyInt());
         verify(mockChannelEndpoint).sendSetupElicitingStatusMessage(SRC_ADDRESS, SESSION_ID, STREAM_ID);
-        verify(mockReceiver).addPendingSetupMessage(SESSION_ID, STREAM_ID, mockChannelEndpoint);
+        verify(mockReceiver).addPendingSetupMessage(SESSION_ID, STREAM_ID, mockChannelEndpoint, false, SRC_ADDRESS);
     }
 
     @Test
@@ -105,7 +105,8 @@ public class DataPacketDispatcherTest
 
         verify(mockImage, never()).insertPacket(anyInt(), anyInt(), any(), anyInt());
         verify(mockChannelEndpoint, times(2)).sendSetupElicitingStatusMessage(SRC_ADDRESS, SESSION_ID, STREAM_ID);
-        verify(mockReceiver, times(2)).addPendingSetupMessage(SESSION_ID, STREAM_ID, mockChannelEndpoint);
+        verify(mockReceiver, times(2))
+            .addPendingSetupMessage(SESSION_ID, STREAM_ID, mockChannelEndpoint, false, SRC_ADDRESS);
     }
 
     @Test
@@ -189,7 +190,8 @@ public class DataPacketDispatcherTest
 
         final InOrder inOrder = inOrder(mockChannelEndpoint, mockReceiver, mockConductorProxy);
         inOrder.verify(mockChannelEndpoint).sendSetupElicitingStatusMessage(SRC_ADDRESS, SESSION_ID, STREAM_ID);
-        inOrder.verify(mockReceiver).addPendingSetupMessage(SESSION_ID, STREAM_ID, mockChannelEndpoint);
+        inOrder.verify(mockReceiver)
+            .addPendingSetupMessage(SESSION_ID, STREAM_ID, mockChannelEndpoint, false, SRC_ADDRESS);
         inOrder.verify(mockConductorProxy).createPublicationImage(
             SESSION_ID, STREAM_ID, INITIAL_TERM_ID, ACTIVE_TERM_ID, TERM_OFFSET, TERM_LENGTH,
             MTU_LENGTH, SRC_ADDRESS, SRC_ADDRESS, mockChannelEndpoint);

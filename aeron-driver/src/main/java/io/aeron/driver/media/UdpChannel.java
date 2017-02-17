@@ -44,6 +44,7 @@ public final class UdpChannel
     public static final String INTERFACE_KEY = "interface";
     public static final String ENDPOINT_KEY = "endpoint";
     public static final String MULTICAST_TTL_KEY = "ttl";
+    public static final String CONTROL_KEY = "control";
 
     private final int multicastTtl;
     private final InetSocketAddress remoteData;
@@ -55,6 +56,7 @@ public final class UdpChannel
     private final NetworkInterface localInterface;
     private final ProtocolFamily protocolFamily;
     private final AeronUri aeronUri;
+    private final boolean hasExplicitControl;
 
     private UdpChannel(final Context context)
     {
@@ -68,6 +70,7 @@ public final class UdpChannel
         this.protocolFamily = context.protocolFamily;
         this.multicastTtl = context.multicastTtl;
         this.aeronUri = context.aeronUri;
+        this.hasExplicitControl = context.hasExplicitControl;
     }
 
     /**
@@ -86,16 +89,29 @@ public final class UdpChannel
 
             final Context context = new Context().uriStr(uriStr).aeronUri(aeronUri);
 
-            final InetSocketAddress endpointAddress = getEndpointAddress(aeronUri);
+            InetSocketAddress endpointAddress = getEndpointAddress(aeronUri);
+            final InetSocketAddress explicitControlAddress = getExplicitControlAddress(aeronUri);
+
+            if (null == endpointAddress && null == explicitControlAddress)
+            {
+                throw new IllegalArgumentException(
+                    "Aeron URIs for UDP must specify an endpoint address and/or a control address");
+            }
+
+            if (null != endpointAddress && endpointAddress.isUnresolved())
+            {
+                throw new UnknownHostException("could not resolve endpoint address: " + endpointAddress);
+            }
+
+            if (null != explicitControlAddress && explicitControlAddress.isUnresolved())
+            {
+                throw new UnknownHostException("could not resolve control address: " + explicitControlAddress);
+            }
 
             if (null == endpointAddress)
             {
-                throw new IllegalArgumentException("Aeron URIs for UDP must specify an endpoint address");
-            }
-
-            if (endpointAddress.isUnresolved())
-            {
-                throw new UnknownHostException("could not resolve endpoint address: " + endpointAddress);
+                // just control specified, a multi-destination-cast Publication, so wildcard the endpoint
+                endpointAddress = new InetSocketAddress("0.0.0.0", 0);
             }
 
             if (endpointAddress.getAddress().isMulticastAddress())
@@ -105,6 +121,7 @@ public final class UdpChannel
                 final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(aeronUri);
 
                 context
+                    .hasExplicitControl(false)
                     .localControlAddress(resolveToAddressOfInterface(findInterface(searchAddress), searchAddress))
                     .remoteControlAddress(controlAddress)
                     .localDataAddress(resolveToAddressOfInterface(findInterface(searchAddress), searchAddress))
@@ -114,6 +131,17 @@ public final class UdpChannel
                     .protocolFamily(getProtocolFamily(endpointAddress.getAddress()))
                     .canonicalForm(canonicalise(
                         resolveToAddressOfInterface(findInterface(searchAddress), searchAddress), endpointAddress));
+            }
+            else if (null != explicitControlAddress)
+            {
+                context
+                    .hasExplicitControl(true)
+                    .remoteControlAddress(endpointAddress)
+                    .remoteDataAddress(endpointAddress)
+                    .localControlAddress(explicitControlAddress)
+                    .localDataAddress(explicitControlAddress)
+                    .protocolFamily(getProtocolFamily(endpointAddress.getAddress()))
+                    .canonicalForm(canonicalise(explicitControlAddress, endpointAddress));
             }
             else
             {
@@ -129,6 +157,7 @@ public final class UdpChannel
                 }
 
                 context
+                    .hasExplicitControl(false)
                     .remoteControlAddress(endpointAddress)
                     .remoteDataAddress(endpointAddress)
                     .localControlAddress(localAddress)
@@ -325,6 +354,16 @@ public final class UdpChannel
         return protocolFamily;
     }
 
+    /**
+     * Does the channel have an explicit control address as used with multi-destination-cast or not
+     *
+     * @return does channel have an explicit control address or not
+     */
+    public boolean hasExplicitControl()
+    {
+        return hasExplicitControl;
+    }
+
     private static InterfaceSearchAddress getInterfaceSearchAddress(final AeronUri uri) throws UnknownHostException
     {
         final InterfaceSearchAddress interfaceSearchAddress;
@@ -371,6 +410,22 @@ public final class UdpChannel
         }
 
         return ttl;
+    }
+
+    private static InetSocketAddress getExplicitControlAddress(final AeronUri uri) throws UnknownHostException
+    {
+        final InetSocketAddress controlAddress;
+
+        if (uri.containsKey(CONTROL_KEY))
+        {
+            controlAddress = uri.getSocketAddress(CONTROL_KEY);
+        }
+        else
+        {
+            controlAddress = null;
+        }
+
+        return controlAddress;
     }
 
     private static void validateDataAddress(final byte[] addressAsBytes)
@@ -438,6 +493,7 @@ public final class UdpChannel
         private NetworkInterface localInterface;
         private ProtocolFamily protocolFamily;
         private AeronUri aeronUri;
+        private boolean hasExplicitControl;
 
         public Context uriStr(final String uri)
         {
@@ -496,6 +552,12 @@ public final class UdpChannel
         public Context aeronUri(final AeronUri aeronUri)
         {
             this.aeronUri = aeronUri;
+            return this;
+        }
+
+        public Context hasExplicitControl(final boolean hasExplicitControl)
+        {
+            this.hasExplicitControl = hasExplicitControl;
             return this;
         }
     }

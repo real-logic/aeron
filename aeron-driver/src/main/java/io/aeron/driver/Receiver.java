@@ -24,6 +24,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
@@ -80,7 +81,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
             }
         }
 
-        timeoutPendingSetupMessages(now);
+        checkPendingSetupMessages(now);
 
         totalBytesReceived.addOrdered(bytesReceived);
 
@@ -88,10 +89,14 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     }
 
     public void addPendingSetupMessage(
-        final int sessionId, final int streamId, final ReceiveChannelEndpoint channelEndpoint)
+        final int sessionId,
+        final int streamId,
+        final ReceiveChannelEndpoint channelEndpoint,
+        final boolean periodic,
+        final InetSocketAddress controlAddress)
     {
         final PendingSetupMessageFromSource cmd = new PendingSetupMessageFromSource(
-            sessionId, streamId, channelEndpoint);
+            sessionId, streamId, channelEndpoint, periodic, controlAddress);
         cmd.timeOfStatusMessage(clock.nanoTime());
         pendingSetupMessages.add(cmd);
     }
@@ -117,6 +122,12 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         channelEndpoint.openChannel();
         channelEndpoint.registerForRead(dataTransportPoller);
         channelEndpoint.indicateActive();
+
+        if (channelEndpoint.hasExplicitControl())
+        {
+            addPendingSetupMessage(0, 0, channelEndpoint, true, channelEndpoint.explicitControlAddress());
+            channelEndpoint.sendSetupElicitingStatusMessage(channelEndpoint.explicitControlAddress(), 0, 0);
+        }
     }
 
     public void onCloseReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
@@ -134,18 +145,28 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         cmd.execute(this);
     }
 
-    private void timeoutPendingSetupMessages(final long now)
+    private void checkPendingSetupMessages(final long now)
     {
         final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = this.pendingSetupMessages;
         for (int lastIndex = pendingSetupMessages.size() - 1, i = lastIndex; i >= 0; i--)
         {
-            final PendingSetupMessageFromSource cmd = pendingSetupMessages.get(i);
+            final PendingSetupMessageFromSource pending = pendingSetupMessages.get(i);
 
-            if (now > (cmd.timeOfStatusMessage() + PENDING_SETUPS_TIMEOUT_NS))
+            if (now > (pending.timeOfStatusMessage() + PENDING_SETUPS_TIMEOUT_NS))
             {
-                ArrayListUtil.fastUnorderedRemove(pendingSetupMessages, i, lastIndex);
-                lastIndex--;
-                cmd.removeFromDataPacketDispatcher();
+                if (!pending.isPeriodic())
+                {
+                    ArrayListUtil.fastUnorderedRemove(pendingSetupMessages, i, lastIndex);
+                    lastIndex--;
+                    pending.removeFromDataPacketDispatcher();
+                }
+                else if (pending.shouldElicitSetupMessage())
+                {
+                    pending.channelEndpoint()
+                        .sendSetupElicitingStatusMessage(
+                            pending.controlAddress(), pending.sessionId(), pending.streamId());
+                    pending.timeOfStatusMessage(now);
+                }
             }
         }
     }

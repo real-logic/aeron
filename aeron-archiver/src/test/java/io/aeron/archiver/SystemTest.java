@@ -154,6 +154,7 @@ public class SystemTest
     }
 
     @Test(timeout = 10000)
+    @Ignore
     public void archiveAndReplay() throws IOException, InterruptedException
     {
         final Publication archiverServiceRequest = publishingClient.addPublication(

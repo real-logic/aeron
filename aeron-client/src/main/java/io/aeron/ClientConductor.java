@@ -148,6 +148,11 @@ class ClientConductor implements Agent, DriverListener
         return "aeron-client-conductor";
     }
 
+    void handleError(final Throwable ex)
+    {
+        errorHandler.onError(ex);
+    }
+
     Publication addPublication(final String channel, final int streamId)
     {
         verifyDriverIsActive();

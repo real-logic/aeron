@@ -282,17 +282,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         {
             if (!isClosed)
             {
-                isClosed = true;
-
-                clientConductor.releaseSubscription(this);
-
-                for (final Image image : images)
-                {
-                    clientConductor.unavailableImageHandler().onUnavailableImage(image);
-                    clientConductor.lingerResource(image.managedResource());
-                }
-
-                this.images = EMPTY_ARRAY;
+                release();
             }
         }
         finally
@@ -319,6 +309,29 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     public long registrationId()
     {
         return registrationId;
+    }
+
+    void release()
+    {
+        isClosed = true;
+
+        for (final Image image : images)
+        {
+            clientConductor.lingerResource(image.managedResource());
+
+            try
+            {
+                clientConductor.unavailableImageHandler().onUnavailableImage(image);
+            }
+            catch (final Throwable ex)
+            {
+                clientConductor.handleError(ex);
+            }
+        }
+
+        this.images = EMPTY_ARRAY;
+
+        clientConductor.releaseSubscription(this);
     }
 
     void addImage(final Image image)

@@ -54,8 +54,8 @@ ExternalProject_Get_Property(gmock binary_dir)
 set(GMOCK_BINARY_DIR ${binary_dir})
 
 set(GMOCK_LIBS
-    ${GMOCK_BINARY_DIR}/${CMAKE_CFG_INTDIR}/googlemock/${CMAKE_STATIC_LIBRARY_PREFIX}gmock${CMAKE_STATIC_LIBRARY_SUFFIX}
-    ${GMOCK_BINARY_DIR}/${CMAKE_CFG_INTDIR}/googlemock/${CMAKE_STATIC_LIBRARY_PREFIX}gmock_main${CMAKE_STATIC_LIBRARY_SUFFIX}
+    ${GMOCK_BINARY_DIR}/googlemock/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock${CMAKE_STATIC_LIBRARY_SUFFIX}
+    ${GMOCK_BINARY_DIR}/googlemock/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock_main${CMAKE_STATIC_LIBRARY_SUFFIX}
 )
 
 ##########################################################
@@ -82,8 +82,8 @@ set(HDRHISTOGRAM_LIBS
 
 ExternalProject_Add(
     google_benchmark
-    URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/benchmark-0.1.0.tar.gz
-    URL_MD5 5a3ec4924f75f98cf01a8f1ff47d7a44
+    URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/benchmark-1.1.0.tar.gz
+    URL_MD5 66b2a23076cf70739525be0092fc3ae3
     INSTALL_COMMAND ""
 )
 

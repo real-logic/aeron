@@ -34,7 +34,7 @@ public:
 
     static ptr_t createNew(const char* filename, off_t offset, size_t length);
     static ptr_t mapExisting(const char* filename);
-    static ptr_t mapExisting(const char* filename, size_t offset, size_t length);
+    static ptr_t mapExisting(const char* filename, off_t offset, size_t length);
 
     ~MemoryMappedFile ();
 

@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <functional>
 #include <util/BitUtil.h>
 
 #include "AtomicBuffer.h"

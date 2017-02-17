@@ -168,7 +168,11 @@ The Media Driver is packaged by the default build into an application that can b
 Troubleshooting
 ---------------
 
-1. On linux, the subscriber sample throws an exception `java.lang.InternalError(a fault occurred in a recent unsafe memory access operation in compiled Java code)`
+1. On linux, the subscriber sample throws an exception
+ 
+ ```java
+ java.lang.InternalError(a fault occurred in a recent unsafe memory access operation in compiled Java code)
+ ```
 
   This is actually an out of disk space issue.
   
@@ -180,6 +184,6 @@ Troubleshooting
   
   Note: if you are trying to run this inside a Linux Docker, be aware that, by default, [Docker only allocates 64 MB](https://github.com/docker/docker/issues/2606) to the [shared memory](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&ved=0CB8QFjAA&url=http%3A%2F%2Fwww.cyberciti.biz%2Ftips%2Fwhat-is-devshm-and-its-practical-usage.html&ei=NBEPVcfzLZLWoASv8IKYCA&usg=AFQjCNHwBF2R9m4v_Z9pyNlunei2gH-ssA&sig2=VzzxpzRAGoHRjpH_MhRL8w&bvm=bv.88528373,d.cGU) space at `/dev/shm`. However, the samples will quickly outgrow this.
   
-  You can work around this issue by using the `--shm-size` argument for `docker run` or `shm_size` in `docker-compose.yaml`:
+  You can work around this issue by using the `--shm-size` argument for `docker run` or `shm_size` in `docker-compose.yaml`.
 
   

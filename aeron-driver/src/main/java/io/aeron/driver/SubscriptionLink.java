@@ -83,21 +83,9 @@ public abstract class SubscriptionLink implements DriverManagedResource
         return false;
     }
 
-    public void addSpiedPublication(final NetworkPublication publication, final ReadablePosition position)
-    {
-    }
+    public abstract void addSource(Object source, ReadablePosition position);
 
-    public void removeSpiedPublication()
-    {
-    }
-
-    public void addImage(final PublicationImage image, final ReadablePosition position)
-    {
-    }
-
-    public void removeImage(final PublicationImage image)
-    {
-    }
+    public abstract void removeSource(Object source);
 
     public abstract void close();
 
@@ -167,14 +155,15 @@ class NetworkSubscriptionLink extends SubscriptionLink
         return channelEndpoint == this.channelEndpoint && streamId == this.streamId;
     }
 
-    public void addImage(final PublicationImage image, final ReadablePosition position)
+    public void addSource(final Object source, final ReadablePosition position)
     {
-        positionByImageMap.put(image, position);
+        positionByImageMap.put((PublicationImage)source, position);
     }
 
-    public void removeImage(final PublicationImage image)
+    @SuppressWarnings("SuspiciousMethodCalls")
+    public void removeSource(final Object source)
     {
-        positionByImageMap.remove(image);
+        positionByImageMap.remove(source);
     }
 
     public void close()
@@ -185,38 +174,48 @@ class NetworkSubscriptionLink extends SubscriptionLink
 
 class IpcSubscriptionLink extends SubscriptionLink
 {
-    private final IpcPublication ipcPublication;
-    private final ReadablePosition ipcPublicationSubscriberPosition;
+    private IpcPublication publication;
+    private ReadablePosition position;
 
     IpcSubscriptionLink(
         final long registrationId,
         final int streamId,
         final String channelUri,
-        final IpcPublication ipcPublication,
-        final ReadablePosition subscriberPosition,
         final AeronClient aeronClient,
         final long clientLivenessTimeoutNs)
     {
         super(registrationId, streamId, channelUri, aeronClient, clientLivenessTimeoutNs);
+    }
 
-        this.ipcPublication = ipcPublication;
-        this.ipcPublicationSubscriberPosition = subscriberPosition;
+    public void addSource(final Object source, final ReadablePosition position)
+    {
+        this.publication = (IpcPublication)source;
+        this.position = position;
 
-        ipcPublication.incRef();
+        publication.incRef();
+    }
+
+    public void removeSource(final Object source)
+    {
+        publication = null;
+        position = null;
     }
 
     public void close()
     {
-        ipcPublication.removeSubscription(ipcPublicationSubscriberPosition);
-        ipcPublication.decRef();
+        if (null != publication)
+        {
+            publication.removeSubscription(position);
+            publication.decRef();
+        }
     }
 }
 
 class SpySubscriptionLink extends SubscriptionLink
 {
-    private final UdpChannel spiedChannel;
-    private NetworkPublication spiedPublication = null;
-    private ReadablePosition spiedPosition = null;
+    private final UdpChannel udpChannel;
+    private NetworkPublication publication = null;
+    private ReadablePosition position = null;
 
     SpySubscriptionLink(
         final long registrationId,
@@ -226,32 +225,32 @@ class SpySubscriptionLink extends SubscriptionLink
         final long clientLivenessTimeoutNs)
     {
         super(registrationId, streamId, spiedChannel.originalUriString(), aeronClient, clientLivenessTimeoutNs);
-        this.spiedChannel = spiedChannel;
+        this.udpChannel = spiedChannel;
     }
 
-    public void addSpiedPublication(final NetworkPublication publication, final ReadablePosition position)
+    public void addSource(final Object source, final ReadablePosition position)
     {
-        spiedPublication = publication;
-        spiedPosition = position;
+        this.publication = (NetworkPublication)source;
+        this.position = position;
     }
 
-    public void removeSpiedPublication()
+    public void removeSource(final Object source)
     {
-        spiedPublication = null;
-        spiedPosition = null;
+        publication = null;
+        position = null;
     }
 
     public boolean matches(final NetworkPublication publication)
     {
         return streamId == publication.streamId() &&
-            publication.sendChannelEndpoint().udpChannel().canonicalForm().equals(spiedChannel.canonicalForm());
+            publication.sendChannelEndpoint().udpChannel().canonicalForm().equals(udpChannel.canonicalForm());
     }
 
     public void close()
     {
-        if (null != spiedPublication)
+        if (null != publication)
         {
-            spiedPublication.removeSpyPosition(spiedPosition);
+            publication.removeSpyPosition(position);
         }
     }
 }

@@ -265,7 +265,7 @@ public class DriverConductor implements Agent
 
             for (int i = 0, size = subscriberPositions.size(); i < size; i++)
             {
-                subscriberPositions.get(i).addImage(image);
+                subscriberPositions.get(i).addSource(image);
             }
 
             publicationImages.add(image);
@@ -300,7 +300,7 @@ public class DriverConductor implements Agent
                 final SubscriptionLink link = subscriptionLinks.get(i);
                 if (link.matches(publication))
                 {
-                    link.removeSpiedPublication();
+                    link.removeSource(publication);
                 }
             }
         }
@@ -351,7 +351,7 @@ public class DriverConductor implements Agent
             final SubscriptionLink link = subscriptionLinks.get(i);
             if (image.matches(link.channelEndpoint(), link.streamId()))
             {
-                link.removeImage(image);
+                link.removeSource(image);
             }
         }
     }
@@ -863,7 +863,7 @@ public class DriverConductor implements Agent
                 position.setOrdered(rebuildPosition);
 
                 image.addSubscriber(position);
-                subscription.addImage(image, position);
+                subscription.addSource(image, position);
 
                 clientProxy.onAvailableImage(
                     image.correlationId(),
@@ -889,7 +889,8 @@ public class DriverConductor implements Agent
         position.setOrdered(joiningPosition);
 
         final IpcSubscriptionLink subscriptionLink = new IpcSubscriptionLink(
-            registrationId, streamId, channel, publication, position, client, context.clientLivenessTimeoutNs());
+            registrationId, streamId, channel, client, context.clientLivenessTimeoutNs());
+        subscriptionLink.addSource(publication, position);
 
         subscriptionLinks.add(subscriptionLink);
         publication.addSubscription(position);
@@ -936,7 +937,7 @@ public class DriverConductor implements Agent
         position.setOrdered(spyJoiningPosition);
 
         publication.addSpyPosition(position);
-        link.addSpiedPublication(publication, position);
+        link.addSource(publication, position);
 
         clientProxy.onAvailableImage(
             correlationId(publication.rawLog().metaData()),

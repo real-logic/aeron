@@ -297,10 +297,10 @@ public class DriverConductor implements Agent
 
             for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
             {
-                final SubscriptionLink link = subscriptionLinks.get(i);
-                if (link.matches(publication))
+                final SubscriptionLink subscription = subscriptionLinks.get(i);
+                if (subscription.matches(publication))
                 {
-                    link.unlink(publication);
+                    subscription.unlink(publication);
                 }
             }
         }
@@ -316,15 +316,15 @@ public class DriverConductor implements Agent
         }
     }
 
-    void cleanupSubscriptionLink(final SubscriptionLink link)
+    void cleanupSubscriptionLink(final SubscriptionLink subscription)
     {
-        final ReceiveChannelEndpoint channelEndpoint = link.channelEndpoint();
+        final ReceiveChannelEndpoint channelEndpoint = subscription.channelEndpoint();
 
         if (null != channelEndpoint)
         {
-            final int streamId = link.streamId();
+            final int streamId = subscription.streamId();
 
-            if (0 == channelEndpoint.decRefToStream(link.streamId()))
+            if (0 == channelEndpoint.decRefToStream(subscription.streamId()))
             {
                 receiverProxy.removeSubscription(channelEndpoint, streamId);
             }
@@ -348,10 +348,10 @@ public class DriverConductor implements Agent
     {
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
-            final SubscriptionLink link = subscriptionLinks.get(i);
-            if (image.matches(link.channelEndpoint(), link.streamId()))
+            final SubscriptionLink subscription = subscriptionLinks.get(i);
+            if (image.matches(subscription.channelEndpoint(), subscription.streamId()))
             {
-                link.unlink(image);
+                subscription.unlink(image);
             }
         }
     }
@@ -366,14 +366,19 @@ public class DriverConductor implements Agent
 
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
-            final SubscriptionLink link = subscriptionLinks.get(i);
-            if (link.matches(channelEndpoint, streamId))
+            final SubscriptionLink subscription = subscriptionLinks.get(i);
+            if (subscription.matches(channelEndpoint, streamId))
             {
                 final Position position = SubscriberPos.allocate(
-                    countersManager, link.registrationId(), sessionId, streamId, link.channelUri(), joiningPosition);
+                    countersManager,
+                    subscription.registrationId(),
+                    sessionId,
+                    streamId,
+                    subscription.channelUri(),
+                    joiningPosition);
 
                 position.setOrdered(joiningPosition);
-                subscriberPositions.add(new SubscriberPosition(link, position));
+                subscriberPositions.add(new SubscriberPosition(subscription, position));
             }
         }
 
@@ -767,10 +772,10 @@ public class DriverConductor implements Agent
         final ArrayList<PublicationLink> publicationLinks = this.publicationLinks;
         for (int i = 0, size = publicationLinks.size(), lastIndex = size - 1; i < size; i++)
         {
-            final PublicationLink link = publicationLinks.get(i);
-            if (registrationId == link.registrationId())
+            final PublicationLink publication = publicationLinks.get(i);
+            if (registrationId == publication.registrationId())
             {
-                publicationLink = link;
+                publicationLink = publication;
                 ArrayListUtil.fastUnorderedRemove(publicationLinks, i, lastIndex);
                 break;
             }
@@ -821,8 +826,8 @@ public class DriverConductor implements Agent
             final ArrayList<SubscriptionLink> existingLinks = subscriptionLinks;
             for (int i = 0, size = existingLinks.size(); i < size; i++)
             {
-                final SubscriptionLink link = existingLinks.get(i);
-                if (link.matches(channelEndpoint, streamId) && isReliable != link.isReliable())
+                final SubscriptionLink subscription = existingLinks.get(i);
+                if (subscription.matches(channelEndpoint, streamId) && isReliable != subscription.isReliable())
                 {
                     throw new IllegalStateException(
                         "Option conflicts with existing subscriptions: reliable=" + isReliable);
@@ -888,11 +893,11 @@ public class DriverConductor implements Agent
             countersManager, registrationId, sessionId, streamId, channel, joiningPosition);
         position.setOrdered(joiningPosition);
 
-        final IpcSubscriptionLink subscriptionLink = new IpcSubscriptionLink(
+        final IpcSubscriptionLink subscription = new IpcSubscriptionLink(
             registrationId, streamId, channel, client, context.clientLivenessTimeoutNs());
-        subscriptionLink.link(publication, position);
+        subscription.link(publication, position);
 
-        subscriptionLinks.add(subscriptionLink);
+        subscriptionLinks.add(subscription);
         publication.addSubscription(position);
 
         clientProxy.operationSucceeded(registrationId);
@@ -902,7 +907,7 @@ public class DriverConductor implements Agent
             streamId,
             sessionId,
             publication.rawLog().fileName(),
-            Collections.singletonList(new SubscriberPosition(subscriptionLink, position)),
+            Collections.singletonList(new SubscriberPosition(subscription, position)),
             channel);
     }
 
@@ -968,21 +973,21 @@ public class DriverConductor implements Agent
 
     private void onRemoveSubscription(final long registrationId, final long correlationId)
     {
-        final SubscriptionLink link = removeSubscriptionLink(subscriptionLinks, registrationId);
-        if (null == link)
+        final SubscriptionLink subscription = removeSubscriptionLink(subscriptionLinks, registrationId);
+        if (null == subscription)
         {
             throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "Unknown Subscription: " + registrationId);
         }
 
-        link.close();
-        final ReceiveChannelEndpoint channelEndpoint = link.channelEndpoint();
+        subscription.close();
+        final ReceiveChannelEndpoint channelEndpoint = subscription.channelEndpoint();
 
         if (null != channelEndpoint)
         {
-            final int refCount = channelEndpoint.decRefToStream(link.streamId());
+            final int refCount = channelEndpoint.decRefToStream(subscription.streamId());
             if (0 == refCount)
             {
-                receiverProxy.removeSubscription(channelEndpoint, link.streamId());
+                receiverProxy.removeSubscription(channelEndpoint, subscription.streamId());
             }
 
             if (channelEndpoint.shouldBeClosed())
@@ -1090,10 +1095,10 @@ public class DriverConductor implements Agent
 
         for (int i = 0, size = subscriptionLinks.size(), lastIndex = size - 1; i < size; i++)
         {
-            final SubscriptionLink link = subscriptionLinks.get(i);
-            if (link.registrationId() == registrationId)
+            final SubscriptionLink subscription = subscriptionLinks.get(i);
+            if (subscription.registrationId() == registrationId)
             {
-                subscriptionLink = link;
+                subscriptionLink = subscription;
                 ArrayListUtil.fastUnorderedRemove(subscriptionLinks, i, lastIndex);
                 break;
             }
@@ -1109,10 +1114,10 @@ public class DriverConductor implements Agent
 
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
-            final IpcPublication log = ipcPublications.get(i);
-            if (log.streamId() == streamId)
+            final IpcPublication publication = ipcPublications.get(i);
+            if (publication.streamId() == streamId)
             {
-                ipcPublication = log;
+                ipcPublication = publication;
                 break;
             }
         }

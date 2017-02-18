@@ -827,7 +827,7 @@ public class DriverConductor implements Agent
             final SubscriptionLink link = existingLinks.get(i);
             if (link.matches(channelEndpoint, streamId) && isReliable != link.isReliable())
             {
-                throw new IllegalStateException("Settings do not match existing subscriptions: reliable=" + isReliable);
+                throw new IllegalStateException("Option conflicts with existing subscriptions: reliable=" + isReliable);
             }
         }
     }
@@ -912,7 +912,7 @@ public class DriverConductor implements Agent
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final AeronClient client = getOrAddClient(clientId);
         final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
-            registrationId, udpChannel, streamId, channel, client, context.clientLivenessTimeoutNs());
+            registrationId, udpChannel, streamId, client, context.clientLivenessTimeoutNs());
 
         subscriptionLinks.add(subscriptionLink);
 
@@ -971,7 +971,7 @@ public class DriverConductor implements Agent
         final SubscriptionLink link = removeSubscriptionLink(subscriptionLinks, registrationId);
         if (null == link)
         {
-            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "Unknown subscription link: " + registrationId);
+            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "Unknown Subscription: " + registrationId);
         }
 
         link.close();

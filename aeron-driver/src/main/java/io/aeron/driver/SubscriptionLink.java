@@ -222,11 +222,10 @@ class SpySubscriptionLink extends SubscriptionLink
         final long registrationId,
         final UdpChannel spiedChannel,
         final int streamId,
-        final String channelUri,
         final AeronClient aeronClient,
         final long clientLivenessTimeoutNs)
     {
-        super(registrationId, streamId, channelUri, aeronClient, clientLivenessTimeoutNs);
+        super(registrationId, streamId, spiedChannel.originalUriString(), aeronClient, clientLivenessTimeoutNs);
         this.spiedChannel = spiedChannel;
     }
 

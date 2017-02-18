@@ -250,7 +250,15 @@ class ClientConductor implements Agent, DriverListener
                             correlationId);
 
                         subscription.addImage(image);
-                        availableImageHandler.onAvailableImage(image);
+
+                        try
+                        {
+                            availableImageHandler.onAvailableImage(image);
+                        }
+                        catch (final Throwable ex)
+                        {
+                            errorHandler.onError(ex);
+                        }
                     }
                 }
             });
@@ -270,7 +278,14 @@ class ClientConductor implements Agent, DriverListener
                 final Image image = subscription.removeImage(correlationId);
                 if (null != image)
                 {
-                    unavailableImageHandler.onUnavailableImage(image);
+                    try
+                    {
+                        unavailableImageHandler.onUnavailableImage(image);
+                    }
+                    catch (final Throwable ex)
+                    {
+                        errorHandler.onError(ex);
+                    }
                 }
             });
     }

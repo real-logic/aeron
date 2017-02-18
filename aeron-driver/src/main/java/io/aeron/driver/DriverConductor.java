@@ -816,18 +816,17 @@ public class DriverConductor implements Agent
     {
         final ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(
             udpChannel.canonicalForm());
-        if (null == channelEndpoint)
+        if (null != channelEndpoint)
         {
-            return;
-        }
-
-        final ArrayList<SubscriptionLink> existingLinks = subscriptionLinks;
-        for (int i = 0, size = existingLinks.size(); i < size; i++)
-        {
-            final SubscriptionLink link = existingLinks.get(i);
-            if (link.matches(channelEndpoint, streamId) && isReliable != link.isReliable())
+            final ArrayList<SubscriptionLink> existingLinks = subscriptionLinks;
+            for (int i = 0, size = existingLinks.size(); i < size; i++)
             {
-                throw new IllegalStateException("Option conflicts with existing subscriptions: reliable=" + isReliable);
+                final SubscriptionLink link = existingLinks.get(i);
+                if (link.matches(channelEndpoint, streamId) && isReliable != link.isReliable())
+                {
+                    throw new IllegalStateException(
+                        "Option conflicts with existing subscriptions: reliable=" + isReliable);
+                }
             }
         }
     }

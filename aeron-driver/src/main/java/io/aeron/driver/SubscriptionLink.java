@@ -83,9 +83,9 @@ public abstract class SubscriptionLink implements DriverManagedResource
         return false;
     }
 
-    public abstract void addSource(Object source, ReadablePosition position);
+    public abstract void link(Object source, ReadablePosition position);
 
-    public abstract void removeSource(Object source);
+    public abstract void unlink(Object source);
 
     public abstract void close();
 
@@ -155,13 +155,13 @@ class NetworkSubscriptionLink extends SubscriptionLink
         return channelEndpoint == this.channelEndpoint && streamId == this.streamId;
     }
 
-    public void addSource(final Object source, final ReadablePosition position)
+    public void link(final Object source, final ReadablePosition position)
     {
         positionByImageMap.put((PublicationImage)source, position);
     }
 
     @SuppressWarnings("SuspiciousMethodCalls")
-    public void removeSource(final Object source)
+    public void unlink(final Object source)
     {
         positionByImageMap.remove(source);
     }
@@ -187,7 +187,7 @@ class IpcSubscriptionLink extends SubscriptionLink
         super(registrationId, streamId, channelUri, aeronClient, clientLivenessTimeoutNs);
     }
 
-    public void addSource(final Object source, final ReadablePosition position)
+    public void link(final Object source, final ReadablePosition position)
     {
         this.publication = (IpcPublication)source;
         this.position = position;
@@ -195,7 +195,7 @@ class IpcSubscriptionLink extends SubscriptionLink
         publication.incRef();
     }
 
-    public void removeSource(final Object source)
+    public void unlink(final Object source)
     {
         publication = null;
         position = null;
@@ -228,13 +228,13 @@ class SpySubscriptionLink extends SubscriptionLink
         this.udpChannel = spiedChannel;
     }
 
-    public void addSource(final Object source, final ReadablePosition position)
+    public void link(final Object source, final ReadablePosition position)
     {
         this.publication = (NetworkPublication)source;
         this.position = position;
     }
 
-    public void removeSource(final Object source)
+    public void unlink(final Object source)
     {
         publication = null;
         position = null;

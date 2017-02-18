@@ -46,8 +46,8 @@ public final class SubscriberPosition
         return subscriptionLink;
     }
 
-    public void addSource(final PublicationImage image)
+    public void addLink(final PublicationImage image)
     {
-        subscriptionLink.addSource(image, position);
+        subscriptionLink.link(image, position);
     }
 }

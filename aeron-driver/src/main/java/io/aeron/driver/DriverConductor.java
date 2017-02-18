@@ -265,7 +265,7 @@ public class DriverConductor implements Agent
 
             for (int i = 0, size = subscriberPositions.size(); i < size; i++)
             {
-                subscriberPositions.get(i).addSource(image);
+                subscriberPositions.get(i).addLink(image);
             }
 
             publicationImages.add(image);
@@ -300,7 +300,7 @@ public class DriverConductor implements Agent
                 final SubscriptionLink link = subscriptionLinks.get(i);
                 if (link.matches(publication))
                 {
-                    link.removeSource(publication);
+                    link.unlink(publication);
                 }
             }
         }
@@ -351,7 +351,7 @@ public class DriverConductor implements Agent
             final SubscriptionLink link = subscriptionLinks.get(i);
             if (image.matches(link.channelEndpoint(), link.streamId()))
             {
-                link.removeSource(image);
+                link.unlink(image);
             }
         }
     }
@@ -863,7 +863,7 @@ public class DriverConductor implements Agent
                 position.setOrdered(rebuildPosition);
 
                 image.addSubscriber(position);
-                subscription.addSource(image, position);
+                subscription.link(image, position);
 
                 clientProxy.onAvailableImage(
                     image.correlationId(),
@@ -890,7 +890,7 @@ public class DriverConductor implements Agent
 
         final IpcSubscriptionLink subscriptionLink = new IpcSubscriptionLink(
             registrationId, streamId, channel, client, context.clientLivenessTimeoutNs());
-        subscriptionLink.addSource(publication, position);
+        subscriptionLink.link(publication, position);
 
         subscriptionLinks.add(subscriptionLink);
         publication.addSubscription(position);
@@ -937,7 +937,7 @@ public class DriverConductor implements Agent
         position.setOrdered(spyJoiningPosition);
 
         publication.addSpyPosition(position);
-        link.addSource(publication, position);
+        link.link(publication, position);
 
         clientProxy.onAvailableImage(
             correlationId(publication.rawLog().metaData()),

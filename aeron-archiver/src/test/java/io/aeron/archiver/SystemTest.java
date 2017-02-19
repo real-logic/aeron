@@ -179,6 +179,7 @@ public class SystemTest
         awaitSubscriptionIsConnected(archiverNotifications, 1000);
         println("Archive service connected");
 
+
         requestArchive(archiverServiceRequest, PUBLISH_URI, PUBLISH_STREAM_ID);
         println("Archive requested");
 

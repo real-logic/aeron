@@ -219,6 +219,11 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         }
     }
 
+    public boolean shouldElicitSetupMessage()
+    {
+        return !sessionsByStreamIdMap.isEmpty();
+    }
+
     private boolean isNotAlreadyInProgressOrOnCoolDown(final int streamId, final int sessionId)
     {
         final SessionStatus status = ignoredSessionsMap.get(sessionId, streamId);
@@ -238,7 +243,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         ignoredSessionsMap.put(sessionId, streamId, PENDING_SETUP_FRAME);
 
         channelEndpoint.sendSetupElicitingStatusMessage(controlAddress, sessionId, streamId);
-        receiver.addPendingSetupMessage(sessionId, streamId, channelEndpoint);
+        receiver.addPendingSetupMessage(sessionId, streamId, channelEndpoint, false, controlAddress);
     }
 
     private void createPublicationImage(

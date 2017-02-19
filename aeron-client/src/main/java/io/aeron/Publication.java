@@ -94,7 +94,7 @@ public class Publication implements AutoCloseable
         }
 
         final int termLength = logBuffers.termLength();
-        this.maxPayloadLength = mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
+        this.maxPayloadLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
         this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(termLength);
         this.clientConductor = clientConductor;
         this.channel = channel;
@@ -390,11 +390,11 @@ public class Publication implements AutoCloseable
      */
     public long tryClaim(final int length, final BufferClaim bufferClaim)
     {
+        checkForMaxPayloadLength(length);
         long newPosition = CLOSED;
+
         if (!isClosed)
         {
-            checkForMaxPayloadLength(length);
-
             final long limit = positionLimit.getVolatile();
             final int partitionIndex = activePartitionIndex(logMetaDataBuffer);
             final TermAppender termAppender = termAppenders[partitionIndex];

@@ -113,20 +113,12 @@ class ClientConductor implements Agent, DriverListener
 
     public void onClose()
     {
-        lock.lock();
-        try
-        {
-            activePublications.close();
-            activeSubscriptions.close();
+        activePublications.close();
+        activeSubscriptions.close();
 
-            Thread.yield();
+        Thread.yield();
 
-            lingeringResources.forEach(ManagedResource::delete);
-        }
-        finally
-        {
-            lock.unlock();
-        }
+        lingeringResources.forEach(ManagedResource::delete);
     }
 
     public Lock mainLock()
@@ -154,6 +146,11 @@ class ClientConductor implements Agent, DriverListener
     public String roleName()
     {
         return "aeron-client-conductor";
+    }
+
+    void handleError(final Throwable ex)
+    {
+        errorHandler.onError(ex);
     }
 
     Publication addPublication(final String channel, final int streamId)
@@ -253,7 +250,15 @@ class ClientConductor implements Agent, DriverListener
                             correlationId);
 
                         subscription.addImage(image);
-                        availableImageHandler.onAvailableImage(image);
+
+                        try
+                        {
+                            availableImageHandler.onAvailableImage(image);
+                        }
+                        catch (final Throwable ex)
+                        {
+                            errorHandler.onError(ex);
+                        }
                     }
                 }
             });
@@ -273,7 +278,14 @@ class ClientConductor implements Agent, DriverListener
                 final Image image = subscription.removeImage(correlationId);
                 if (null != image)
                 {
-                    unavailableImageHandler.onUnavailableImage(image);
+                    try
+                    {
+                        unavailableImageHandler.onUnavailableImage(image);
+                    }
+                    catch (final Throwable ex)
+                    {
+                        errorHandler.onError(ex);
+                    }
                 }
             });
     }

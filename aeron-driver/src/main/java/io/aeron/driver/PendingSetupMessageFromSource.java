@@ -17,22 +17,30 @@ package io.aeron.driver;
 
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 
+import java.net.InetSocketAddress;
+
 public class PendingSetupMessageFromSource
 {
     private final int sessionId;
     private final int streamId;
     private final ReceiveChannelEndpoint channelEndpoint;
+    private final boolean periodic;
+    private final InetSocketAddress controlAddress;
 
     private long timeOfStatusMessage;
 
     public PendingSetupMessageFromSource(
         final int sessionId,
         final int streamId,
-        final ReceiveChannelEndpoint channelEndpoint)
+        final ReceiveChannelEndpoint channelEndpoint,
+        final boolean periodic,
+        final InetSocketAddress controlAddress)
     {
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.channelEndpoint = channelEndpoint;
+        this.periodic = periodic;
+        this.controlAddress = controlAddress;
     }
 
     public int sessionId()
@@ -48,6 +56,21 @@ public class PendingSetupMessageFromSource
     public ReceiveChannelEndpoint channelEndpoint()
     {
         return channelEndpoint;
+    }
+
+    public boolean isPeriodic()
+    {
+        return periodic;
+    }
+
+    public boolean shouldElicitSetupMessage()
+    {
+        return channelEndpoint.shouldElicitSetupMessage();
+    }
+
+    public InetSocketAddress controlAddress()
+    {
+        return controlAddress;
     }
 
     public long timeOfStatusMessage()

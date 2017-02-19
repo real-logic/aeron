@@ -265,7 +265,7 @@ public class DriverConductor implements Agent
 
             for (int i = 0, size = subscriberPositions.size(); i < size; i++)
             {
-                subscriberPositions.get(i).addImage(image);
+                subscriberPositions.get(i).addLink(image);
             }
 
             publicationImages.add(image);
@@ -297,10 +297,10 @@ public class DriverConductor implements Agent
 
             for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
             {
-                final SubscriptionLink link = subscriptionLinks.get(i);
-                if (link.matches(publication))
+                final SubscriptionLink subscription = subscriptionLinks.get(i);
+                if (subscription.matches(publication))
                 {
-                    link.removeSpiedPublication();
+                    subscription.unlink(publication);
                 }
             }
         }
@@ -316,15 +316,15 @@ public class DriverConductor implements Agent
         }
     }
 
-    void cleanupSubscriptionLink(final SubscriptionLink link)
+    void cleanupSubscriptionLink(final SubscriptionLink subscription)
     {
-        final ReceiveChannelEndpoint channelEndpoint = link.channelEndpoint();
+        final ReceiveChannelEndpoint channelEndpoint = subscription.channelEndpoint();
 
         if (null != channelEndpoint)
         {
-            final int streamId = link.streamId();
+            final int streamId = subscription.streamId();
 
-            if (0 == channelEndpoint.decRefToStream(link.streamId()))
+            if (0 == channelEndpoint.decRefToStream(subscription.streamId()))
             {
                 receiverProxy.removeSubscription(channelEndpoint, streamId);
             }
@@ -348,10 +348,10 @@ public class DriverConductor implements Agent
     {
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
-            final SubscriptionLink link = subscriptionLinks.get(i);
-            if (image.matches(link.channelEndpoint(), link.streamId()))
+            final SubscriptionLink subscription = subscriptionLinks.get(i);
+            if (image.matches(subscription.channelEndpoint(), subscription.streamId()))
             {
-                link.removeImage(image);
+                subscription.unlink(image);
             }
         }
     }
@@ -366,14 +366,19 @@ public class DriverConductor implements Agent
 
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
-            final SubscriptionLink link = subscriptionLinks.get(i);
-            if (link.matches(channelEndpoint, streamId))
+            final SubscriptionLink subscription = subscriptionLinks.get(i);
+            if (subscription.matches(channelEndpoint, streamId))
             {
                 final Position position = SubscriberPos.allocate(
-                    countersManager, link.registrationId(), sessionId, streamId, link.channelUri(), joiningPosition);
+                    countersManager,
+                    subscription.registrationId(),
+                    sessionId,
+                    streamId,
+                    subscription.channelUri(),
+                    joiningPosition);
 
                 position.setOrdered(joiningPosition);
-                subscriberPositions.add(new SubscriberPosition(link, position));
+                subscriberPositions.add(new SubscriberPosition(subscription, position));
             }
         }
 
@@ -767,10 +772,10 @@ public class DriverConductor implements Agent
         final ArrayList<PublicationLink> publicationLinks = this.publicationLinks;
         for (int i = 0, size = publicationLinks.size(), lastIndex = size - 1; i < size; i++)
         {
-            final PublicationLink link = publicationLinks.get(i);
-            if (registrationId == link.registrationId())
+            final PublicationLink publication = publicationLinks.get(i);
+            if (registrationId == publication.registrationId())
             {
-                publicationLink = link;
+                publicationLink = publication;
                 ArrayListUtil.fastUnorderedRemove(publicationLinks, i, lastIndex);
                 break;
             }
@@ -803,7 +808,7 @@ public class DriverConductor implements Agent
         }
 
         final AeronClient client = getOrAddClient(clientId);
-        final SubscriptionLink subscription = new SubscriptionLink(
+        final SubscriptionLink subscription = new NetworkSubscriptionLink(
             registrationId, channelEndpoint, streamId, channel, client, context.clientLivenessTimeoutNs(), isReliable);
 
         subscriptionLinks.add(subscription);
@@ -816,18 +821,17 @@ public class DriverConductor implements Agent
     {
         final ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(
             udpChannel.canonicalForm());
-        if (null == channelEndpoint)
+        if (null != channelEndpoint)
         {
-            return;
-        }
-
-        final ArrayList<SubscriptionLink> existingLinks = subscriptionLinks;
-        for (int i = 0, size = existingLinks.size(); i < size; i++)
-        {
-            final SubscriptionLink link = existingLinks.get(i);
-            if (link.matches(channelEndpoint, streamId) && isReliable != link.isReliable())
+            final ArrayList<SubscriptionLink> existingLinks = subscriptionLinks;
+            for (int i = 0, size = existingLinks.size(); i < size; i++)
             {
-                throw new IllegalStateException("Settings do not match existing subscriptions: reliable=" + isReliable);
+                final SubscriptionLink subscription = existingLinks.get(i);
+                if (subscription.matches(channelEndpoint, streamId) && isReliable != subscription.isReliable())
+                {
+                    throw new IllegalStateException(
+                        "Option conflicts with existing subscriptions: reliable=" + isReliable);
+                }
             }
         }
     }
@@ -864,7 +868,7 @@ public class DriverConductor implements Agent
                 position.setOrdered(rebuildPosition);
 
                 image.addSubscriber(position);
-                subscription.addImage(image, position);
+                subscription.link(image, position);
 
                 clientProxy.onAvailableImage(
                     image.correlationId(),
@@ -889,10 +893,11 @@ public class DriverConductor implements Agent
             countersManager, registrationId, sessionId, streamId, channel, joiningPosition);
         position.setOrdered(joiningPosition);
 
-        final SubscriptionLink subscriptionLink = new SubscriptionLink(
-            registrationId, streamId, channel, publication, position, client, context.clientLivenessTimeoutNs());
+        final IpcSubscriptionLink subscription = new IpcSubscriptionLink(
+            registrationId, streamId, channel, client, context.clientLivenessTimeoutNs());
+        subscription.link(publication, position);
 
-        subscriptionLinks.add(subscriptionLink);
+        subscriptionLinks.add(subscription);
         publication.addSubscription(position);
 
         clientProxy.operationSucceeded(registrationId);
@@ -902,7 +907,7 @@ public class DriverConductor implements Agent
             streamId,
             sessionId,
             publication.rawLog().fileName(),
-            Collections.singletonList(new SubscriberPosition(subscriptionLink, position)),
+            Collections.singletonList(new SubscriberPosition(subscription, position)),
             channel);
     }
 
@@ -911,8 +916,8 @@ public class DriverConductor implements Agent
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final AeronClient client = getOrAddClient(clientId);
-        final SubscriptionLink subscriptionLink = new SubscriptionLink(
-            registrationId, udpChannel, streamId, channel, client, context.clientLivenessTimeoutNs());
+        final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
+            registrationId, udpChannel, streamId, client, context.clientLivenessTimeoutNs());
 
         subscriptionLinks.add(subscriptionLink);
 
@@ -937,7 +942,7 @@ public class DriverConductor implements Agent
         position.setOrdered(spyJoiningPosition);
 
         publication.addSpyPosition(position);
-        link.addSpiedPublication(publication, position);
+        link.link(publication, position);
 
         clientProxy.onAvailableImage(
             correlationId(publication.rawLog().metaData()),
@@ -968,21 +973,21 @@ public class DriverConductor implements Agent
 
     private void onRemoveSubscription(final long registrationId, final long correlationId)
     {
-        final SubscriptionLink link = removeSubscriptionLink(subscriptionLinks, registrationId);
-        if (null == link)
+        final SubscriptionLink subscription = removeSubscriptionLink(subscriptionLinks, registrationId);
+        if (null == subscription)
         {
-            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "Unknown subscription link: " + registrationId);
+            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "Unknown Subscription: " + registrationId);
         }
 
-        link.close();
-        final ReceiveChannelEndpoint channelEndpoint = link.channelEndpoint();
+        subscription.close();
+        final ReceiveChannelEndpoint channelEndpoint = subscription.channelEndpoint();
 
         if (null != channelEndpoint)
         {
-            final int refCount = channelEndpoint.decRefToStream(link.streamId());
+            final int refCount = channelEndpoint.decRefToStream(subscription.streamId());
             if (0 == refCount)
             {
-                receiverProxy.removeSubscription(channelEndpoint, link.streamId());
+                receiverProxy.removeSubscription(channelEndpoint, subscription.streamId());
             }
 
             if (channelEndpoint.shouldBeClosed())
@@ -1035,20 +1040,28 @@ public class DriverConductor implements Agent
 
         if (null == publication)
         {
-            final int termLength = getTermBufferLength(AeronUri.parse(channel), context.ipcTermBufferLength());
-            final long registrationId = nextImageCorrelationId();
-            final int sessionId = nextSessionId++;
-            final int initialTermId = BitUtil.generateRandomisedId();
-            final RawLog rawLog = newIpcPublicationLog(
-                termLength, sessionId, streamId, initialTermId, registrationId);
-
-            final Position publisherLimit = PublisherLimit.allocate(
-                countersManager, registrationId, sessionId, streamId, channel);
-
-            publication = new IpcPublication(registrationId, sessionId, streamId, publisherLimit, rawLog);
-
-            ipcPublications.add(publication);
+            publication = addIpcPublication(streamId, channel);
         }
+
+        return publication;
+    }
+
+    private IpcPublication addIpcPublication(final int streamId, final String channel)
+    {
+        final int termLength = getTermBufferLength(AeronUri.parse(channel), context.ipcTermBufferLength());
+        final long registrationId = nextImageCorrelationId();
+        final int sessionId = nextSessionId++;
+        final int initialTermId = BitUtil.generateRandomisedId();
+        final RawLog rawLog = newIpcPublicationLog(
+            termLength, sessionId, streamId, initialTermId, registrationId);
+
+        final Position publisherLimit = PublisherLimit.allocate(
+            countersManager, registrationId, sessionId, streamId, channel);
+
+        final IpcPublication publication = new IpcPublication(
+            registrationId, sessionId, streamId, publisherLimit, rawLog);
+
+        ipcPublications.add(publication);
 
         return publication;
     }
@@ -1082,10 +1095,10 @@ public class DriverConductor implements Agent
 
         for (int i = 0, size = subscriptionLinks.size(), lastIndex = size - 1; i < size; i++)
         {
-            final SubscriptionLink link = subscriptionLinks.get(i);
-            if (link.registrationId() == registrationId)
+            final SubscriptionLink subscription = subscriptionLinks.get(i);
+            if (subscription.registrationId() == registrationId)
             {
-                subscriptionLink = link;
+                subscriptionLink = subscription;
                 ArrayListUtil.fastUnorderedRemove(subscriptionLinks, i, lastIndex);
                 break;
             }
@@ -1101,10 +1114,10 @@ public class DriverConductor implements Agent
 
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
-            final IpcPublication log = ipcPublications.get(i);
-            if (log.streamId() == streamId)
+            final IpcPublication publication = ipcPublications.get(i);
+            if (publication.streamId() == streamId)
             {
-                ipcPublication = log;
+                ipcPublication = publication;
                 break;
             }
         }

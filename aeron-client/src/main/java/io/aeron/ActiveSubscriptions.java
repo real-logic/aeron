@@ -62,6 +62,6 @@ class ActiveSubscriptions
             .stream()
             .flatMap(Collection::stream)
             .collect(toList())
-            .forEach(Subscription::close);
+            .forEach(Subscription::release);
     }
 }

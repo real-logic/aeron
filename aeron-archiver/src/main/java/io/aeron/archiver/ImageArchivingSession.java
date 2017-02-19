@@ -20,8 +20,7 @@ import io.aeron.Subscription;
 import io.aeron.archiver.messages.ArchiveMetaFileFormatDecoder;
 import io.aeron.archiver.messages.ArchiveMetaFileFormatEncoder;
 import io.aeron.logbuffer.RawBlockHandler;
-import org.agrona.CloseHelper;
-import org.agrona.LangUtil;
+import org.agrona.*;
 import org.agrona.concurrent.*;
 
 import java.io.File;
@@ -86,6 +85,7 @@ class ImageArchivingSession implements RawBlockHandler
                     session.metaDataBuffer.force();
                 }
                 CloseHelper.quietClose(session.metadataFileChannel);
+                IoUtil.unmap(session.metaDataBuffer);
                 session.state(DONE);
                 session.archiverConductor.notifyArchiveStopped(session.streamInstanceId);
                 return 1;
@@ -270,6 +270,7 @@ class ImageArchivingSession implements RawBlockHandler
             metaDataWriter.lastTermId(termId);
             final int endTermOffset = termOffset + length;
             metaDataWriter.lastTermOffset(endTermOffset);
+            metaDataBuffer.force();
             archiverConductor.notifyArchiveProgress(
                 streamInstanceId,
                 initialTermId,

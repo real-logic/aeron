@@ -16,6 +16,7 @@
 package io.aeron.archiver;
 
 import io.aeron.archiver.messages.ArchiveMetaFileFormatDecoder;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -28,7 +29,7 @@ import java.util.Date;
 class ArchiveFileUtil
 {
     static final int META_FILE_SIZE = 64;
-    static final int ARCHIVE_FILE_SIZE = 1 << 30;
+    static final int ARCHIVE_FILE_SIZE = 1024 * 1024 * 128;
 
     static String archiveMetaFileName(final int streamInstanceId)
     {
@@ -72,6 +73,7 @@ class ArchiveFileUtil
         System.out.println("sessionId: " + formatDecoder.sessionId());
         System.out.println("channel: " + formatDecoder.channel());
         System.out.println("streamId: " + formatDecoder.streamId());
+        IoUtil.unmap(formatDecoder.buffer().byteBuffer());
     }
 
     static ArchiveMetaFileFormatDecoder archiveMetaFileFormatDecoder(final File metaFile)
@@ -101,5 +103,11 @@ class ArchiveFileUtil
         final int termBufferLength)
     {
         return ((termId - initialTermId) & termsMask) * termBufferLength + termOffset;
+    }
+
+    static long archiveFullLength(final ArchiveMetaFileFormatDecoder metaDecoder)
+    {
+        return ((long) (metaDecoder.lastTermId() - metaDecoder.initialTermId())) * metaDecoder.termBufferLength() +
+               (metaDecoder.lastTermOffset() - metaDecoder.initialTermOffset());
     }
 }

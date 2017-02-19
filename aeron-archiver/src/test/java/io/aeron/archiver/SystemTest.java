@@ -18,18 +18,19 @@ package io.aeron.archiver;
 import io.aeron.*;
 import io.aeron.archiver.messages.*;
 import io.aeron.driver.*;
-import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.CloseHelper;
-import org.agrona.IoUtil;
+import io.aeron.logbuffer.*;
+import io.aeron.protocol.*;
+import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 
 import java.io.*;
-import java.nio.*;
-import java.nio.channels.FileChannel;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.LockSupport;
+
+import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileFormatDecoder;
+import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileName;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
 public class SystemTest
 {
@@ -39,6 +40,8 @@ public class SystemTest
     private static final int PUBLISH_STREAM_ID = 1;
 
     private static final ThreadingMode THREADING_MODE = ThreadingMode.DEDICATED;
+    public static final int MAX_FRARGMENT_SIZE = 1024;
+    public static final double MEGABYTE = (1024.0 * 1024.0);
 
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
@@ -52,15 +55,24 @@ public class SystemTest
     private File archiveFolder;
     private int streamInstanceId;
     private String source;
-    private int delivered;
-    private int nextMessage;
+    private long remaining;
+    private int nextFragmentOffset;
     private int fragmentCount;
+    private int[] fragmentLength;
+    private long totalDataLength;
+    private long totalArchiveLength;
+    private long archived;
+    private int initialTermOffset;
+    private int lastTermOffset;
+    private volatile int lastTermId = -1;
+    private Throwable trackerError;
 
     @Before
     public void setUp() throws Exception
     {
         driverCtx.threadingMode(THREADING_MODE);
 
+        driverCtx.errorHandler(throwable -> LangUtil.rethrowUnchecked(throwable));
         driver = MediaDriver.launch(driverCtx);
         archiveFolder = ImageArchivingSessionTest.makeTempFolder();
         archiverCtx.archiveFolder(archiveFolder);
@@ -75,8 +87,10 @@ public class SystemTest
         CloseHelper.quietClose(publishingClient);
         CloseHelper.quietClose(archiver);
         CloseHelper.quietClose(driver);
-
-        IoUtil.delete(archiveFolder, true);
+        if (archiveFolder != null && archiveFolder.exists())
+        {
+            IoUtil.delete(archiveFolder, true);
+        }
         driverCtx.deleteAeronDirectory();
     }
 
@@ -123,7 +137,7 @@ public class SystemTest
         final int streamId,
         final int termId,
         final int termOffset,
-        final int length,
+        final long length,
         final String replyChannel,
         final int replayStreamId,
         final int controlStreamId)
@@ -143,7 +157,7 @@ public class SystemTest
             .streamId(streamId)
             .termId(termId)
             .termOffset(termOffset)
-            .length(length)
+            .length((int) length)
             .replyChannel(replyChannel)
             .replayStreamId(replayStreamId)
             .controlStreamId(controlStreamId);
@@ -152,7 +166,7 @@ public class SystemTest
         offer(archiverServiceRequest, buffer, 0, encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH, 1000);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 60000)
     public void archiveAndReplay() throws IOException, InterruptedException
     {
         final Publication archiverServiceRequest = publishingClient.addPublication(
@@ -171,7 +185,64 @@ public class SystemTest
         final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
         awaitPublicationIsConnected(publication, 1000);
 
+        awaitArchiveForPublicationStartedNotification(archiverNotifications, publication);
 
+        final int messageCount = 128 + rnd().nextInt(10000);
+        fragmentLength = new int[messageCount];
+        for (int i = 0; i < messageCount; i++)
+        {
+            final int messageLength = 64 + rnd().nextInt(MAX_FRARGMENT_SIZE - 64) - DataHeaderFlyweight.HEADER_LENGTH;
+            fragmentLength[i] = messageLength + DataHeaderFlyweight.HEADER_LENGTH;
+            totalDataLength += fragmentLength[i];
+        }
+        final CountDownLatch waitForData = new CountDownLatch(1);
+        printf("Sending %d messages, total length=%d %n", messageCount, totalDataLength);
+
+        trackArchiveProgress(publication, archiverNotifications, messageCount, waitForData);
+        publishDataToBeArchived(publication, messageCount);
+
+        waitForData.await();
+        Assert.assertNull(trackerError);
+        println("All data arrived");
+
+        println("Request stop archive");
+        requestArchiveStop(archiverServiceRequest, PUBLISH_URI, PUBLISH_STREAM_ID);
+        awaitArchiveStoppedNotification(archiverNotifications);
+
+        println("Stream instance id: " + streamInstanceId);
+        println("Meta data file printout: ");
+
+        final File metaFile = new File(archiveFolder, archiveMetaFileName(streamInstanceId));
+        Assert.assertTrue(metaFile.exists());
+
+        if (DEBUG)
+        {
+            ArchiveFileUtil.printMetaFile(metaFile);
+        }
+        final ArchiveMetaFileFormatDecoder decoder =
+            archiveMetaFileFormatDecoder(new File(archiveFolder, archiveMetaFileName(streamInstanceId)));
+        Assert.assertEquals(publication.initialTermId(), decoder.initialTermId());
+        Assert.assertEquals(publication.sessionId(), decoder.sessionId());
+        Assert.assertEquals(publication.streamId(), decoder.streamId());
+        Assert.assertEquals(publication.termBufferLength(), decoder.termBufferLength());
+
+        Assert.assertEquals(totalArchiveLength, ArchiveFileUtil.archiveFullLength(decoder));
+        // length might exceed data sent due to padding
+        Assert.assertTrue(totalDataLength + " <= " + totalArchiveLength, totalDataLength <= totalArchiveLength);
+
+
+        IoUtil.unmap(decoder.buffer().byteBuffer());
+
+
+
+        validateArchiveFile(messageCount, streamInstanceId);
+        validateArchiveFileChunked(messageCount, streamInstanceId);
+        validateReplay(archiverServiceRequest, publication, messageCount);
+    }
+
+    private void awaitArchiveForPublicationStartedNotification(final Subscription archiverNotifications,
+                                                               final Publication publication)
+    {
         // the archiver has subscribed to the publication, now we wait for the archive start message
         poll(archiverNotifications,
             (buffer, offset, length, header) ->
@@ -194,36 +265,6 @@ public class SystemTest
                 Assert.assertEquals(channel, PUBLISH_URI);
                 println("Archive started. source: " + source);
             }, 1, 1000);
-
-        final int messageCount = 128;
-        final CountDownLatch waitForData = new CountDownLatch(1);
-
-        trackArchiveProgress(publication, archiverNotifications, messageCount, waitForData);
-        publishDataToBeArchived(publication, messageCount);
-
-
-        waitForData.await();
-        println("All data arrived");
-
-        requestArchiveStop(archiverServiceRequest, PUBLISH_URI, PUBLISH_STREAM_ID);
-        println("Request stop archive");
-
-        // wait for the archive stopped message
-        awaitArchiveStoppedNotification(archiverNotifications);
-
-        println("stream instance id: " + streamInstanceId);
-        println("Meta data file printout: ");
-
-        final File metaFile = new File(archiveFolder, ArchiveFileUtil.archiveMetaFileName(streamInstanceId));
-        Assert.assertTrue(metaFile.exists());
-
-        if (DEBUG)
-        {
-            ArchiveFileUtil.printMetaFile(metaFile);
-        }
-
-        validateArchiveFile(messageCount, streamInstanceId);
-        validateReplay(archiverServiceRequest, publication);
     }
 
     private void awaitArchiveStoppedNotification(final Subscription archiverNotifications)
@@ -249,26 +290,44 @@ public class SystemTest
 
     private void publishDataToBeArchived(final Publication publication, final int messageCount)
     {
+        final int positionBitsToShift = Integer.numberOfTrailingZeros(publication.termBufferLength());
+        final long initialPosition = publication.position();
+        initialTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(initialPosition,
+                                                                              positionBitsToShift);
         // clear out the buffer we write
         for (int i = 0; i < 1024; i++)
         {
             buffer.putByte(i, (byte)'z');
         }
         buffer.putStringAscii(32, "TEST");
-        buffer.putStringAscii(1024 - DataHeaderFlyweight.HEADER_LENGTH - 6, "\r\n");
 
         for (int i = 0; i < messageCount; i++)
         {
-            buffer.putInt(0, (byte)i);
-            offer(publication, buffer, 0, 1024 - DataHeaderFlyweight.HEADER_LENGTH, 1000);
-            if (i % (1024 * 128) == 0)
-            {
-                println("Sent out " + (i / 1024) + "K messages");
-            }
+            final int dataLength = fragmentLength[i] - DataHeaderFlyweight.HEADER_LENGTH;
+            buffer.putInt(0, i);
+            printf("Sending: index=%d length=%d %n", i, dataLength);
+            offer(publication, buffer, 0, dataLength, 1000);
         }
+        lastTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(publication.position(),
+                                                                           positionBitsToShift);
+        final int termIdFromPosition =
+            LogBufferDescriptor.computeTermIdFromPosition(publication.position(),
+                                                          positionBitsToShift,
+                                                          publication.initialTermId());
+        totalArchiveLength = (termIdFromPosition - publication.initialTermId()) * publication.termBufferLength() +
+                             (lastTermOffset - initialTermOffset);
+        Assert.assertEquals(totalArchiveLength, publication.position() - initialPosition);
+        lastTermId = termIdFromPosition;
     }
 
-    private void validateReplay(final Publication archiverServiceRequest, final Publication publication)
+    private ThreadLocalRandom rnd()
+    {
+        return ThreadLocalRandom.current();
+    }
+
+    private void validateReplay(final Publication archiverServiceRequest,
+                                final Publication publication,
+                                final int messageCount)
     {
         // request replay
         requestReplay(
@@ -279,7 +338,7 @@ public class SystemTest
             PUBLISH_STREAM_ID,
             publication.initialTermId(),
             0,
-            delivered,
+            totalArchiveLength,
             REPLAY_URI,
             1,
             2);
@@ -302,57 +361,115 @@ public class SystemTest
             }, 1, 1000);
 
         // break replay back into data
-        final DataHeaderFlyweight dHeader = new DataHeaderFlyweight();
-        this.nextMessage = 0;
-        while (delivered > 0)
+        final HeaderFlyweight mHeader = new HeaderFlyweight();
+        this.nextFragmentOffset = 0;
+        fragmentCount = 0;
+        remaining = totalDataLength;
+
+        while (remaining > 0)
         {
             poll(replay,
-                (directBuffer, offset, length, header) ->
+                (termBuffer, termOffset, chunkLength, header) ->
                 {
-                    int messageStart;
-                    int frameLength;
-                    do
-                    {
-                        messageStart = offset + (this.nextMessage % length);
-                        dHeader.wrap(directBuffer, messageStart, length);
-
-                        frameLength = dHeader.frameLength();
-                        Assert.assertEquals(1024, frameLength);
-                        if (messageStart + 32 < offset + length)
-                        {
-                            final int index = directBuffer.getInt(messageStart + 32);
-                            Assert.assertEquals(this.fragmentCount, index);
-                            printf("Fragment: length=%d \t, offset=%d \t, getInt(0)=%d %n",
-                                frameLength, (this.nextMessage % length), index);
-                        }
-
-                        this.fragmentCount++;
-                        this.nextMessage += frameLength;
-                    }
-                    while (messageStart + frameLength < offset + length);
-
-                    delivered -= length;
+                    validateFragmentsInChunk(mHeader, messageCount, termBuffer, termOffset, chunkLength);
                 }, 1, 1000);
         }
+        Assert.assertEquals(messageCount, fragmentCount);
+        Assert.assertEquals(0, remaining);
     }
 
     private void validateArchiveFile(final int messageCount, final int streamInstanceId) throws IOException
     {
-        final File archiveFile1 = new File(
-            archiveFolder, ArchiveFileUtil.archiveDataFileName(streamInstanceId, 0));
-        Assert.assertTrue(archiveFile1.exists());
-
-        // validate file data
-        final ByteBuffer bb = ByteBuffer.allocate(1024).order(ByteOrder.nativeOrder());
-        final RandomAccessFile randomAccessFile = new RandomAccessFile(archiveFile1, "r");
-        final FileChannel channel = randomAccessFile.getChannel();
-        for (int i = 0; i < messageCount; i++)
+        final ArchiveDataFileReader archiveDataFileReader =
+            new ArchiveDataFileReader(streamInstanceId, archiveFolder);
+        fragmentCount = 0;
+        remaining = totalDataLength;
+        archiveDataFileReader.forEachFragment((bb, offset, length, header) ->
         {
-            channel.read(bb);
-            Assert.assertEquals(i, bb.getInt(32));
-            Assert.assertEquals('z', bb.get(36));
-            bb.clear();
+            Assert.assertEquals(fragmentLength[fragmentCount] - DataHeaderFlyweight.HEADER_LENGTH, length);
+            Assert.assertEquals(fragmentCount, bb.getInt(offset));
+            Assert.assertEquals('z', bb.getByte(offset + 4));
+            remaining -= fragmentLength[fragmentCount];
+            fragmentCount++;
+        });
+        Assert.assertEquals(0, remaining);
+        Assert.assertEquals(messageCount, fragmentCount);
+    }
+
+    private void validateArchiveFileChunked(final int messageCount, final int streamInstanceId) throws IOException
+    {
+        final ArchiveMetaFileFormatDecoder decoder =
+            archiveMetaFileFormatDecoder(new File(archiveFolder, archiveMetaFileName(streamInstanceId)));
+        final ArchiveDataChunkReadingCursor cursor =
+            new ArchiveDataChunkReadingCursor(streamInstanceId,
+                                              archiveFolder,
+                                              decoder.initialTermId(),
+                                              decoder.termBufferLength(),
+                                              decoder.initialTermId(),
+                                              decoder.initialTermOffset(),
+                                              ArchiveFileUtil.archiveFullLength(decoder));
+        IoUtil.unmap(decoder.buffer().byteBuffer());
+
+        fragmentCount = 0;
+        final HeaderFlyweight mHeader = new HeaderFlyweight();
+        this.nextFragmentOffset = 0;
+        remaining = totalDataLength;
+        while (!cursor.isDone())
+        {
+            cursor.readChunk((termBuffer, termOffset, chunkLength) ->
+            {
+                validateFragmentsInChunk(mHeader, messageCount, termBuffer, termOffset, chunkLength);
+                return true;
+            }, 4096 - DataHeaderFlyweight.HEADER_LENGTH);
         }
+        Assert.assertEquals(messageCount, fragmentCount);
+        Assert.assertEquals(0, remaining);
+
+    }
+
+    private void validateFragmentsInChunk(final HeaderFlyweight mHeader,
+                                          final int messageCount,
+                                          final DirectBuffer termBuffer,
+                                          final int termOffset,
+                                          final int chunkLength)
+    {
+        printf("Chunk: length=%d \t, offset=%d%n", chunkLength, termOffset);
+
+        int messageStart;
+        int frameLength;
+        while (nextFragmentOffset < chunkLength)
+        {
+            messageStart = termOffset + this.nextFragmentOffset;
+            mHeader.wrap(termBuffer, messageStart, HeaderFlyweight.HEADER_LENGTH);
+            frameLength = mHeader.frameLength();
+
+            if (mHeader.headerType() == DataHeaderFlyweight.HDR_TYPE_DATA)
+            {
+                Assert.assertTrue("Fragments exceed messages",
+                                  this.fragmentCount < messageCount);
+                Assert.assertEquals("Fragment:" + this.fragmentCount,
+                                    fragmentLength[fragmentCount], frameLength);
+
+                if (messageStart + 32 < termOffset + chunkLength)
+                {
+                    final int index = termBuffer.getInt(messageStart + DataHeaderFlyweight.HEADER_LENGTH);
+                    Assert.assertEquals(String.format("Fragment: length=%d, foffset=%d, " +
+                                                      "getInt(0)=%d, toffset=%d",
+                                                      frameLength, (this.nextFragmentOffset % chunkLength),
+                                                      index, termOffset),
+                                        this.fragmentCount, index);
+                    printf("Fragment: length=%d \t, offset=%d \t, getInt(0)=%d %n",
+                           frameLength, (this.nextFragmentOffset % chunkLength), index);
+
+                }
+                remaining -= frameLength;
+                this.fragmentCount++;
+            }
+            final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
+            this.nextFragmentOffset += alignedLength;
+        }
+        this.nextFragmentOffset -= chunkLength;
+
     }
 
     private void trackArchiveProgress(
@@ -361,14 +478,15 @@ public class SystemTest
         final int messageCount,
         final CountDownLatch waitForData)
     {
-        final Thread t = new Thread(
-            () ->
+        final Thread t = new Thread(() ->
+        {
+            try
             {
-                delivered = 0;
+                archived = 0;
                 long start = System.currentTimeMillis();
-                long startBytes = delivered;
-                // each message is 1024
-                while (delivered < messageCount * 1024)
+                long startBytes = remaining;
+                // each message is fragmentLength[fragmentCount]
+                while (lastTermId == -1 || archived < totalArchiveLength)
                 {
                     poll(archiverNotifications,
                         (buffer, offset, length, header) ->
@@ -386,10 +504,11 @@ public class SystemTest
                             Assert.assertEquals(streamInstanceId, mDecoder.streamInstanceId());
                             Assert.assertEquals(publication.initialTermId(), mDecoder.initialTermId());
                             Assert.assertEquals(0, mDecoder.initialTermOffset());
-
-                            delivered = publication.termBufferLength() *
-                                (mDecoder.termId() - mDecoder.initialTermId()) +
-                                (mDecoder.termOffset() - mDecoder.initialTermOffset());
+                            println(mDecoder.toString());
+                            archived = publication.termBufferLength() *
+                                       (mDecoder.termId() - mDecoder.initialTermId()) +
+                                       (mDecoder.termOffset() - mDecoder.initialTermOffset());
+                            printf("a=%d total=%d %n", archived, totalArchiveLength);
                         }, 1, 1000);
 
                     final long end = System.currentTimeMillis();
@@ -397,21 +516,25 @@ public class SystemTest
                     if (deltaTime > 1000)
                     {
                         start = end;
-                        final long deltaBytes = delivered - startBytes;
-                        startBytes = delivered;
-                        final double mbps = ((deltaBytes * 1000.0) / deltaTime) / (1024.0 * 1024.0);
+                        final long deltaBytes = remaining - startBytes;
+                        startBytes = remaining;
+                        final double mbps = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
                         printf("Archive reported speed: %f MB/s %n", mbps);
                     }
                 }
                 final long end = System.currentTimeMillis();
                 final long deltaTime = end - start;
 
-                final long deltaBytes = delivered - startBytes;
-                final double mbps = ((deltaBytes * 1000.0) / deltaTime) / (1024.0 * 1024.0);
+                final long deltaBytes = remaining - startBytes;
+                final double mbps = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
                 printf("Archive reported speed: %f MB/s %n", mbps);
-
-                waitForData.countDown();
-            });
+            }
+            catch (Throwable throwable)
+            {
+                trackerError = throwable;
+            }
+            waitForData.countDown();
+        });
 
         t.setDaemon(true);
         t.start();
@@ -430,7 +553,7 @@ public class SystemTest
         }
     }
 
-    private void offer(
+    private long offer(
         final Publication publication,
         final UnsafeBuffer buffer,
         final int offset,
@@ -438,7 +561,9 @@ public class SystemTest
         final long timeout)
     {
         final long limit = System.currentTimeMillis() + timeout;
-        while (publication.offer(buffer, offset, length) < 0)
+        long newPosition;
+
+        while ((newPosition = publication.offer(buffer, offset, length)) < 0)
         {
             LockSupport.parkNanos(1000);
             if (limit < System.currentTimeMillis())
@@ -446,6 +571,8 @@ public class SystemTest
                 Assert.fail("Offer has timed out");
             }
         }
+
+        return newPosition;
     }
 
     private void awaitSubscriptionIsConnected(final Subscription subscription, final long timeout)

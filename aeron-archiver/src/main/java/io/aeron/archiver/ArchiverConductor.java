@@ -113,7 +113,7 @@ class ArchiverConductor implements Agent
     {
         for (final ReplaySession session : replaySessions)
         {
-            session.close();
+            session.abortReplay();
         }
         doReplaySessionsWork();
 
@@ -216,7 +216,7 @@ class ArchiverConductor implements Agent
             throw new IllegalStateException("Trying to abort an unknown replay session:" +
                                             header.sessionId());
         }
-        session.close();
+        session.abortReplay();
     }
 
     private void onReplayRequest(final DirectBuffer buffer, final int offset, final Header header)

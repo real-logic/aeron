@@ -20,12 +20,13 @@ package io.aeron.archiver;
 import io.aeron.archiver.messages.ArchiveMetaFileFormatDecoder;
 import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.CloseHelper;
+import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
 
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
 
 public class ArchiveDataFileReader
@@ -37,6 +38,7 @@ public class ArchiveDataFileReader
     private final int initialTermOffset;
     private final int lastTermId;
     private final int lastTermOffset;
+    private final long fullLength;
 
     ArchiveDataFileReader(final int streamInstanceId, final File archiveFolder) throws IOException
     {
@@ -51,14 +53,13 @@ public class ArchiveDataFileReader
         initialTermOffset = metaDecoder.initialTermOffset();
         lastTermId = metaDecoder.lastTermId();
         lastTermOffset = metaDecoder.lastTermOffset();
-
-        final int lastTermId = metaDecoder.lastTermId();
+        fullLength = ArchiveFileUtil.archiveFullLength(metaDecoder);
+        IoUtil.unmap(metaDecoder.buffer().byteBuffer());
     }
 
     void forEachFragment(final FragmentHandler fragmentHandler) throws IOException
     {
-        final long length = (lastTermId - initialTermId) * termBufferLength + (lastTermOffset - initialTermOffset);
-        forEachFragment(fragmentHandler, initialTermId, initialTermOffset, length);
+        forEachFragment(fragmentHandler, initialTermId, initialTermOffset, fullLength);
     }
 
     void forEachFragment(final FragmentHandler fragmentHandler,
@@ -78,17 +79,18 @@ public class ArchiveDataFileReader
             throw new IllegalStateException(archiveDataFile.getAbsolutePath() + " not found");
         }
 
-        RandomAccessFile currentDataFile = new RandomAccessFile(archiveDataFile, "r");
-        FileChannel currentDataChannel = currentDataFile.getChannel();
-
+        RandomAccessFile currentDataFile = null;
+        FileChannel currentDataChannel = null;
+        UnsafeBuffer termMappedUnsafeBuffer = null;
         try
         {
+            currentDataFile = new RandomAccessFile(archiveDataFile, "r");
+            currentDataChannel = currentDataFile.getChannel();
             int archiveTermStartOffset = archiveOffset - termOffset;
-            final UnsafeBuffer termMappedUnsafeBuffer =
+            termMappedUnsafeBuffer =
                 new UnsafeBuffer(currentDataChannel.map(FileChannel.MapMode.READ_ONLY,
                                                         archiveTermStartOffset,
                                                         termBufferLength));
-
             int fragmentOffset = archiveOffset & (termBufferLength - 1);
             while (true)
             {
@@ -101,6 +103,11 @@ public class ArchiveDataFileReader
                 {
                     fragmentHeader.offset(fragmentOffset);
                     final int frameLength = fragmentHeader.frameLength();
+                    if (frameLength == 0)
+                    {
+                        // TODO: give some context to exception? maybe replace with graceful exit?
+                        throw new IllegalStateException();
+                    }
                     if (fragmentHeader.type() != PADDING_FRAME_TYPE)
                     {
                         final int fragmentDataOffset = fragmentOffset + DataHeaderFlyweight.DATA_OFFSET;
@@ -110,8 +117,10 @@ public class ArchiveDataFileReader
                                                    fragmentDataLength,
                                                    fragmentHeader);
                     }
-                    fragmentOffset += frameLength;
-                    transmitted +=  frameLength;
+                    final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
+                    transmitted +=  alignedLength;
+                    fragmentOffset += alignedLength;
+
                 }
 
                 if (transmitted >= length)
@@ -122,6 +131,7 @@ public class ArchiveDataFileReader
                 archiveTermStartOffset += termBufferLength;
                 if (archiveTermStartOffset == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
                 {
+                    archiveTermStartOffset = 0;
                     archiveFileIndex++;
                     final String archiveDataFileNameN =
                         ArchiveFileUtil.archiveDataFileName(streamInstanceId, archiveFileIndex);
@@ -134,10 +144,11 @@ public class ArchiveDataFileReader
                     CloseHelper.quietClose(currentDataFile);
                     CloseHelper.quietClose(currentDataChannel);
 
-                    currentDataFile = new RandomAccessFile(archiveDataFile, "r");
+                    currentDataFile = new RandomAccessFile(archiveDataFileN, "r");
                     currentDataChannel = currentDataFile.getChannel();
                 }
                 // roll term
+                IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
                 termMappedUnsafeBuffer.wrap(currentDataChannel.map(FileChannel.MapMode.READ_ONLY,
                                                                    archiveTermStartOffset,
                                                                    termBufferLength));
@@ -147,6 +158,12 @@ public class ArchiveDataFileReader
         {
             CloseHelper.quietClose(currentDataFile);
             CloseHelper.quietClose(currentDataChannel);
+            IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
         }
+    }
+
+    interface ChunkHandler
+    {
+        boolean handle(UnsafeBuffer buffer, int offset, int length);
     }
 }

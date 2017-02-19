@@ -15,14 +15,13 @@
  */
 package io.aeron.driver.uri;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Parser for Aeron uri used for configuring channels.  The format is:
+ * Parser for Aeron URI used for configuring channels. The format is:
  *
  * <pre>
  * aeron-uri = "aeron:" media [ "?" param *( "|" param ) ]
@@ -32,7 +31,7 @@ import java.util.Map;
  * value     = *( "[^|]" )
  * </pre>
  *
- * Multiple params with the same key are allowed, the last value specified 'wins'.
+ * Multiple params with the same key are allowed, the last value specified takes precedence.
  */
 public class AeronUri
 {
@@ -80,29 +79,12 @@ public class AeronUri
         return defaultValue;
     }
 
-    public InetAddress getInetAddress(final String key) throws UnknownHostException
-    {
-        return InetAddress.getByName(get(key));
-    }
-
     public InetSocketAddress getSocketAddress(final String key)
     {
         return SocketAddressUtil.parse(get(key));
     }
 
-    public InetSocketAddress getSocketAddress(
-        final String key, final int defaultPort, final InetSocketAddress defaultValue)
-    {
-        if (!containsKey(key))
-        {
-            return defaultValue;
-        }
-
-        return SocketAddressUtil.parse(get(key), defaultPort);
-    }
-
-    public InterfaceSearchAddress getInterfaceSearchAddress(
-        final String key, final InterfaceSearchAddress defaultValue)
+    public InterfaceSearchAddress getInterfaceSearchAddress(final String key, final InterfaceSearchAddress defaultValue)
         throws UnknownHostException
     {
         if (!containsKey(key))
@@ -185,7 +167,7 @@ public class AeronUri
                     break;
 
                 default:
-                    throw new IllegalStateException("Que? State = " + state);
+                    throw new IllegalStateException("Que? state=" + state);
             }
         }
 

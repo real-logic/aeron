@@ -16,54 +16,80 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
-import io.aeron.archiver.messages.ArchiveMetaFileFormatDecoder;
+import io.aeron.archiver.messages.*;
+import io.aeron.logbuffer.BufferClaim;
 import org.agrona.*;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.*;
 
+/**
+ * A replay session with a client which works through the required request response flow and streaming of archived data.
+ * The {@link ArchiverConductor} will initiate a session on receiving a ReplayRequest
+ * (see {@link io.aeron.archiver.messages.ReplayRequestDecoder}). The session will:
+ * <ul>
+ *     <li>Establish a reply {@link Publication} with the initiator(or someone else possibly) </li>
+ *     <li>Validate request parameters and respond with error, or OK message(see {@link ArchiverResponseDecoder})</li>
+ *     <li>Stream archived data into reply {@link Publication}</li>
+ *     <li>Successfully terminate the stream (see {@link ReplayFinishedDecoder})</li>
+ * </ul>
+ * TODO: implement open ended replay
+ */
 class ReplaySession
 {
-    enum State
+    static final long REPLAY_DATA_HEADER;
+
+    static
     {
-        INIT, REPLAY, CLOSE, DONE
+        final MessageHeaderEncoder encoder = new MessageHeaderEncoder();
+        encoder.wrap(new UnsafeBuffer(new byte[8]), 0);
+        encoder.schemaId(ReplayDataDecoder.SCHEMA_ID);
+        encoder.version(ReplayDataDecoder.SCHEMA_VERSION);
+        encoder.blockLength(ReplayDataDecoder.BLOCK_LENGTH);
+        encoder.templateId(ReplayDataDecoder.TEMPLATE_ID);
+        REPLAY_DATA_HEADER = encoder.buffer().getLong(0);
     }
 
-    private final StreamInstance streamInstance;
+    enum State
+    {
+        INIT,
+        REPLAY,
+        CLOSE,
+        DONE
+    }
 
     // replay boundaries
+    private final int streamInstanceId;
     private final int fromTermId;
     private final int fromTermOffset;
     private final long replayLength;
 
-    // 2 way comms setup
-    private final Publication control;
-    private final Publication replay;
+    private final Publication reply;
     private final Image image;
 
     private final ArchiverConductor archiverConductor;
+    private final BufferClaim bufferClaim = new BufferClaim();
+
 
     private State state = State.INIT;
-    private int streamInstanceId;
     private ArchiveDataChunkReadingCursor cursor;
 
     ReplaySession(
-        final StreamInstance streamInstance,
+        final int streamInstanceId,
         final int fromTermId,
         final int fromTermOffset,
         final long replayLength,
-        final Publication replay,
-        final Publication control,
+        final Publication reply,
         final Image image,
         final ArchiverConductor archiverConductor)
     {
-        this.streamInstance = streamInstance;
+        this.streamInstanceId = streamInstanceId;
 
         this.fromTermId = fromTermId;
         this.fromTermOffset = fromTermOffset;
         this.replayLength = replayLength;
 
-        this.control = control;
-        this.replay = replay;
+        this.reply = reply;
         this.image = image;
         this.archiverConductor = archiverConductor;
     }
@@ -107,20 +133,19 @@ class ReplaySession
 
     private int init()
     {
-        // wait until outgoing publications are in place
-        if (!replay.isConnected() || !control.isConnected())
-        {
-            // TODO: introduce some timeout mechanism here to prevent stale requests linger
-            return 0;
-        }
-        // failure before SETUP is not reportable...
-        else if (replay.isClosed() || control.isClosed())
+        if (reply.isClosed())
         {
             state(State.CLOSE);
             return 0;
         }
 
-        streamInstanceId = archiverConductor.getStreamInstanceId(streamInstance);
+        // wait until outgoing publications are in place
+        if (!reply.isConnected())
+        {
+            // TODO: introduce some timeout mechanism here to prevent stale requests linger
+            return 0;
+        }
+
         final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
         final File archiveMetaFile = new File(archiverConductor.archiveFolder(), archiveMetaFileName);
         if (!archiveMetaFile.exists())
@@ -129,10 +154,10 @@ class ReplaySession
             return closeOnErr(null, err);
         }
 
-        final ArchiveMetaFileFormatDecoder archiveMetaFileFormatDecoder;
+        final ArchiveMetaFileFormatDecoder metaData;
         try
         {
-            archiveMetaFileFormatDecoder = ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
+            metaData = ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
         }
         catch (IOException e)
         {
@@ -140,45 +165,87 @@ class ReplaySession
             return closeOnErr(e, err);
         }
 
-        final int initialTermId = archiveMetaFileFormatDecoder.initialTermId();
-        final int lastTermId = archiveMetaFileFormatDecoder.lastTermId();
-        final int termId = fromTermId;
-        if ((initialTermId <= lastTermId && (termId < initialTermId || termId > lastTermId)) ||
-            (initialTermId > lastTermId && (termId > initialTermId || termId < lastTermId)))
+        final int initialTermId = metaData.initialTermId();
+        final int initialTermOffset = metaData.initialTermOffset();
+
+        final int lastTermId = metaData.lastTermId();
+        final int lastTermOffset = metaData.lastTermOffset();
+        final int termBufferLength = metaData.termBufferLength();
+        IoUtil.unmap(metaData.buffer().byteBuffer());
+
+        final int replayEndTermId = (int) (fromTermId + (replayLength / termBufferLength));
+        final int replayEndTermOffset = (int) ((replayLength + fromTermOffset) % termBufferLength);
+
+        if (fromTermOffset >= termBufferLength || fromTermOffset < 0 ||
+            !isTermIdInRange(fromTermId, initialTermId, lastTermId) ||
+            !isTermOffsetInRange(initialTermId,
+                                 initialTermOffset,
+                                 lastTermId,
+                                 lastTermOffset,
+                                 fromTermId,
+                                 fromTermOffset) ||
+            !isTermIdInRange(replayEndTermId, initialTermId, lastTermId) ||
+            !isTermOffsetInRange(initialTermId,
+                                 initialTermOffset,
+                                 lastTermId,
+                                 lastTermOffset,
+                                 replayEndTermId,
+                                 replayEndTermOffset))
         {
-            return closeOnErr(null, "Requested term (" +
-                                    termId + ") out of archive range [" +
-                                    initialTermId + "," + lastTermId + "]");
+            return closeOnErr(null, "Requested replay is out of archive range [(" +
+                                    initialTermId + "," + initialTermOffset + "),(" +
+                                    lastTermId + "," + lastTermOffset + ")]");
         }
-        // TODO: cover termOffset edge cases: range[0, termBufferLength],
-        // TODO: or [initialOffset, termBufferLength] if first term or, [0, lastOffset] if lastTerm.
 
-        // TODO: what should we do if the length exceeds range? error or replay what's available?
-
-        // TODO: open ended replay
-
-
-        final int termBufferLength = archiveMetaFileFormatDecoder.termBufferLength();
-        cursor = new ArchiveDataChunkReadingCursor(streamInstanceId,
-                                                   archiverConductor.archiveFolder(),
-                                                   initialTermId,
-                                                   termBufferLength,
-                                                   fromTermId,
-                                                   fromTermOffset,
-                                                   replayLength);
+        try
+        {
+            cursor = new ArchiveDataChunkReadingCursor(streamInstanceId,
+                                                       archiverConductor.archiveFolder(),
+                                                       initialTermId,
+                                                       termBufferLength,
+                                                       fromTermId,
+                                                       fromTermOffset,
+                                                       replayLength);
+        }
+        catch (IOException e)
+        {
+            return closeOnErr(e, "Failed to open archive cursor");
+        }
         // plumbing is secured, we can kick off the replay
-        archiverConductor.sendResponse(control, null);
+        archiverConductor.sendResponse(reply, null);
         state(State.REPLAY);
         return 1;
     }
 
-    private int closeOnErr(final Throwable e,
-                            final String err)
+    private static boolean isTermOffsetInRange(final int initialTermId,
+                                               final int initialTermOffset,
+                                               final int lastTermId,
+                                               final int lastTermOffset,
+                                               final int termId,
+                                               final int termOffset)
+    {
+        return (initialTermId == termId && termOffset >= initialTermOffset) ||
+            (lastTermId == termId && termOffset <= lastTermOffset);
+    }
+
+    static boolean isTermIdInRange(final int term, final int start, final int end)
+    {
+        if (start <= end)
+        {
+            return term >= start && term <= end;
+        }
+        else
+        {
+            return term >= start || term <= end;
+        }
+    }
+
+    private int closeOnErr(final Throwable e, final String err)
     {
         state(State.CLOSE);
-        if (control.isConnected())
+        if (reply.isConnected())
         {
-            archiverConductor.sendResponse(control, err);
+            archiverConductor.sendResponse(reply, err);
         }
         if (e != null)
         {
@@ -189,23 +256,13 @@ class ReplaySession
 
     private int replay()
     {
-        final int mtu = replay.maxPayloadLength();
+        final int mtu = reply.maxPayloadLength() - MessageHeaderDecoder.ENCODED_LENGTH;
 
-        final ArchiverConductor conductor = archiverConductor;
         try
         {
-            int readBytes = cursor.readChunk((b, offset, length) ->
-            {
-                final long result = replay.offer(b, offset, length);
-                if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
-                {
-                    throw new IllegalStateException();
-                }
-                return result >= 0;
-            }, mtu);
+            final int readBytes = cursor.readChunk(this::handleChunks, mtu);
             if (cursor.isDone())
             {
-                // TODO: This is actually premature closure of publication
                 state(State.CLOSE);
             }
             return readBytes;
@@ -216,10 +273,35 @@ class ReplaySession
         }
     }
 
+    private boolean handleChunks(final UnsafeBuffer chunkBuffer, final int chunkOffset, final int chunkLength)
+    {
+        final long result = reply.tryClaim(chunkLength + MessageHeaderDecoder.ENCODED_LENGTH,
+                                           bufferClaim);
+        if (result > 0)
+        {
+            try
+            {
+                final MutableDirectBuffer buffer = bufferClaim.buffer();
+                final int offset = bufferClaim.offset();
+                buffer.putLong(offset, REPLAY_DATA_HEADER);
+                buffer.putBytes(offset + 8, chunkBuffer, chunkOffset, chunkLength);
+            }
+            finally
+            {
+                bufferClaim.commit();
+            }
+        }
+        else if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
+        {
+            throw new IllegalStateException("Reply publication to replay requestor has shutdown mid-replay");
+        }
+        return result >= 0;
+    }
+
     private int close()
     {
-        CloseHelper.quietClose(control);
-        CloseHelper.quietClose(replay);
+        // TODO: how do we gracefully timeout or terminate this? need to add a LINGER state etc.
+        CloseHelper.quietClose(reply);
         CloseHelper.quietClose(cursor);
         state(State.DONE);
         return 1;

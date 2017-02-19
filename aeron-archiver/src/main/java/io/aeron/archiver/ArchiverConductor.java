@@ -232,29 +232,19 @@ class ArchiverConductor implements Agent
 
         replayRequestDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        final StreamInstance streamInstance =
-            new StreamInstance(
-                replayRequestDecoder.source(),
-                replayRequestDecoder.sessionId(),
-                replayRequestDecoder.channel(),
-                replayRequestDecoder.streamId());
-
-        final int replayStreamId = replayRequestDecoder.replayStreamId();
-        final int controlStreamId = replayRequestDecoder.controlStreamId();
+        final int replyStreamId = replayRequestDecoder.replyStreamId();
         final String replyChannel = replayRequestDecoder.replyChannel();
 
         // TODO: need to control construction of publications to handle errors
-        final Publication replayPublication = aeron.addPublication(replyChannel, replayStreamId);
-        final Publication controlPublication = aeron.addPublication(replyChannel, controlStreamId);
+        final Publication replyPublication = aeron.addPublication(replyChannel, replyStreamId);
 
 
         final ReplaySession replaySession = new ReplaySession(
-            streamInstance,
+            replayRequestDecoder.streamInstanceId(),
             replayRequestDecoder.termId(),
             replayRequestDecoder.termOffset(),
             (long) replayRequestDecoder.length(),
-            replayPublication,
-            controlPublication,
+            replyPublication,
             image,
             this);
 
@@ -455,7 +445,7 @@ class ArchiverConductor implements Agent
         }
     }
 
-    int getStreamInstanceId(final StreamInstance streamInstance)
+    IntArrayList getStreamInstanceId(final StreamInstance streamInstance)
     {
         return archiveIndex.getStreamInstanceId(streamInstance);
     }

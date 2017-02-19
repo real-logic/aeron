@@ -29,7 +29,7 @@ import java.nio.channels.FileChannel;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
 
-public class ArchiveDataFileReader
+class ArchiveDataFragementReadingCursor
 {
     private final int streamInstanceId;
     private final File archiveFolder;
@@ -39,8 +39,11 @@ public class ArchiveDataFileReader
     private final int lastTermId;
     private final int lastTermOffset;
     private final long fullLength;
+    private final int termId;
+    private final int termOffset;
+    private final long length;
 
-    ArchiveDataFileReader(final int streamInstanceId, final File archiveFolder) throws IOException
+    ArchiveDataFragementReadingCursor(final int streamInstanceId, final File archiveFolder) throws IOException
     {
         this.streamInstanceId = streamInstanceId;
         this.archiveFolder = archiveFolder;
@@ -55,17 +58,44 @@ public class ArchiveDataFileReader
         lastTermOffset = metaDecoder.lastTermOffset();
         fullLength = ArchiveFileUtil.archiveFullLength(metaDecoder);
         IoUtil.unmap(metaDecoder.buffer().byteBuffer());
+        termId = initialTermId;
+        termOffset = initialTermOffset;
+        length = fullLength;
     }
 
-    void forEachFragment(final FragmentHandler fragmentHandler) throws IOException
+    ArchiveDataFragementReadingCursor(final int streamInstanceId,
+                                      final File archiveFolder,
+                                      final int termId,
+                                      final int termOffset,
+                                      final long length) throws IOException
     {
-        forEachFragment(fragmentHandler, initialTermId, initialTermOffset, fullLength);
+        this.streamInstanceId = streamInstanceId;
+        this.archiveFolder = archiveFolder;
+        this.termId = termId;
+        this.termOffset = termOffset;
+        this.length = length;
+        final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
+        final File archiveMetaFile = new File(archiveFolder, archiveMetaFileName);
+        final ArchiveMetaFileFormatDecoder metaDecoder =
+            ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
+        termBufferLength = metaDecoder.termBufferLength();
+        initialTermId = metaDecoder.initialTermId();
+        initialTermOffset = metaDecoder.initialTermOffset();
+        lastTermId = metaDecoder.lastTermId();
+        lastTermOffset = metaDecoder.lastTermOffset();
+        fullLength = ArchiveFileUtil.archiveFullLength(metaDecoder);
+        IoUtil.unmap(metaDecoder.buffer().byteBuffer());
     }
 
-    void forEachFragment(final FragmentHandler fragmentHandler,
-                         final int termId,
-                         final int termOffset,
-                         final long length) throws IOException
+    void poll(final FragmentHandler fragmentHandler) throws IOException
+    {
+        poll(fragmentHandler, initialTermId, initialTermOffset, fullLength);
+    }
+
+    void poll(final FragmentHandler fragmentHandler,
+              final int termId,
+              final int termOffset,
+              final long length) throws IOException
     {
         long transmitted = 0;
         int archiveFileIndex = ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, termId);
@@ -162,8 +192,4 @@ public class ArchiveDataFileReader
         }
     }
 
-    interface ChunkHandler
-    {
-        boolean handle(UnsafeBuffer buffer, int offset, int length);
-    }
 }

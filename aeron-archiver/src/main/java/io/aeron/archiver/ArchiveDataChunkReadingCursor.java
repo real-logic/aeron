@@ -48,7 +48,7 @@ class ArchiveDataChunkReadingCursor implements AutoCloseable
                                   final int termBufferLength,
                                   final int termId,
                                   final int termOffset,
-                                  final long length)
+                                  final long length) throws IOException
     {
         this.streamInstanceId = streamInstanceId;
         this.archiveFolder = archiveFolder;
@@ -66,31 +66,24 @@ class ArchiveDataChunkReadingCursor implements AutoCloseable
 
         if (!archiveDataFile.exists())
         {
-            throw new IllegalStateException(archiveDataFile.getAbsolutePath() + " not found");
+            throw new IOException(archiveDataFile.getAbsolutePath() + " not found");
         }
 
-        currentDataFile = null;
         try
         {
             currentDataFile = new RandomAccessFile(archiveDataFile, "r");
-        }
-        catch (FileNotFoundException e)
-        {
-            LangUtil.rethrowUnchecked(e);
-        }
-        currentDataChannel = currentDataFile.getChannel();
-        archiveTermStartOffset = archiveOffset - termOffset;
-        currentTermOffset = termOffset;
-        try
-        {
+            currentDataChannel = currentDataFile.getChannel();
+            archiveTermStartOffset = archiveOffset - termOffset;
+            currentTermOffset = termOffset;
             termMappedUnsafeBuffer =
                 new UnsafeBuffer(currentDataChannel.map(FileChannel.MapMode.READ_ONLY,
-                                                        archiveTermStartOffset,
-                                                        termBufferLength));
+                                                            archiveTermStartOffset,
+                                                            termBufferLength));
         }
         catch (IOException e)
         {
-            LangUtil.rethrowUnchecked(e);
+            CloseHelper.quietClose(this);
+            throw e;
         }
     }
 
@@ -99,7 +92,7 @@ class ArchiveDataChunkReadingCursor implements AutoCloseable
         return transmitted == length;
     }
 
-    int readChunk(final ArchiveDataFileReader.ChunkHandler handler, final int chunkLength)
+    int readChunk(final ChunkHandler handler, final int chunkLength)
     {
         final int remainingInTerm = termBufferLength - currentTermOffset;
         final long remainingInCursor = length - transmitted;
@@ -165,5 +158,10 @@ class ArchiveDataChunkReadingCursor implements AutoCloseable
         CloseHelper.quietClose(currentDataFile);
         CloseHelper.quietClose(currentDataChannel);
         IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
+    }
+
+    interface ChunkHandler
+    {
+        boolean handle(UnsafeBuffer buffer, int offset, int length);
     }
 }

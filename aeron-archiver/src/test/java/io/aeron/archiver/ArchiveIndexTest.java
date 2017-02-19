@@ -55,9 +55,9 @@ public class ArchiveIndexTest
     {
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
         {
-            Assert.assertEquals(streamInstanceAId, archiveIndex.getStreamInstanceId(STREAM_INSTANCE_A));
-            Assert.assertEquals(streamInstanceBId, archiveIndex.getStreamInstanceId(STREAM_INSTANCE_B));
-            Assert.assertEquals(streamInstanceCId, archiveIndex.getStreamInstanceId(STREAM_INSTANCE_C));
+            Assert.assertEquals(streamInstanceAId, archiveIndex.getStreamInstanceId(STREAM_INSTANCE_A).getInt(0));
+            Assert.assertEquals(streamInstanceBId, archiveIndex.getStreamInstanceId(STREAM_INSTANCE_B).getInt(0));
+            Assert.assertEquals(streamInstanceCId, archiveIndex.getStreamInstanceId(STREAM_INSTANCE_C).getInt(0));
         }
     }
 
@@ -69,24 +69,14 @@ public class ArchiveIndexTest
         {
             newStreamInstanceId = archiveIndex.addNewStreamInstance(STREAM_INSTANCE_D);
 
-            Assert.assertEquals(newStreamInstanceId, archiveIndex.getStreamInstanceId(STREAM_INSTANCE_D));
+            Assert.assertEquals(newStreamInstanceId, archiveIndex.getStreamInstanceId(STREAM_INSTANCE_D).getInt(0));
             Assert.assertEquals(STREAM_INSTANCE_D, archiveIndex.getStreamInstance(newStreamInstanceId));
         }
 
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
         {
-            Assert.assertEquals(newStreamInstanceId, archiveIndex.getStreamInstanceId(STREAM_INSTANCE_D));
+            Assert.assertEquals(newStreamInstanceId, archiveIndex.getStreamInstanceId(STREAM_INSTANCE_D).getInt(0));
             Assert.assertEquals(STREAM_INSTANCE_D, archiveIndex.getStreamInstance(newStreamInstanceId));
-        }
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldNotAllowAddingSameInstanceToExistingIndex() throws Exception
-    {
-        // TODO: resolve if this is desirable behaviour
-        try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
-        {
-            archiveIndex.addNewStreamInstance(STREAM_INSTANCE_A);
         }
     }
 }

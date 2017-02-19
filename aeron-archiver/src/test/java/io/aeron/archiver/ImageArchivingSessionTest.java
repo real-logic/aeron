@@ -105,7 +105,7 @@ public class ImageArchivingSessionTest
     }
 
     @Test
-    public void shouldRecordDataFromImage() throws IOException
+    public void shouldRecordSingleFragmentFromImage() throws IOException
     {
         final EpochClock epochClock = Mockito.mock(EpochClock.class);
         when(epochClock.time()).thenReturn(42L);
@@ -151,8 +151,9 @@ public class ImageArchivingSessionTest
         final File archiveDataFile = new File(tempFolderForTest,
             archiveDataFileName(session.streamInstanceId(), 0));
         assertTrue(archiveDataFile.exists());
-        final ArchiveDataFileReader reader = new ArchiveDataFileReader(session.streamInstanceId(), tempFolderForTest);
-        reader.forEachFragment((buffer, offset, length, header) ->
+        final ArchiveDataFragementReadingCursor
+            reader = new ArchiveDataFragementReadingCursor(session.streamInstanceId(), tempFolderForTest);
+        reader.poll((buffer, offset, length, header) ->
         {
             Assert.assertEquals(100, header.frameLength());
             Assert.assertEquals(termOffset + DataHeaderFlyweight.HEADER_LENGTH, offset);
@@ -165,8 +166,12 @@ public class ImageArchivingSessionTest
 
         // image is closed
         when(image.isClosed()).thenReturn(true);
+        when(epochClock.time()).thenReturn(128L);
+
         Assert.assertNotEquals("Expect some work", 0, session.doWork());
         assertEquals(ImageArchivingSession.State.DONE, session.state());
+        Assert.assertEquals(128L, metaData.endTime());
+        IoUtil.unmap(metaData.buffer().byteBuffer());
 
     }
 

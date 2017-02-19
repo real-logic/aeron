@@ -131,16 +131,12 @@ public class SystemTest
 
     private void requestReplay(
         final Publication archiverServiceRequest,
-        final String source,
-        final int sessionId,
-        final String channel,
-        final int streamId,
+        final int streamInstanceId,
         final int termId,
         final int termOffset,
         final long length,
         final String replyChannel,
-        final int replayStreamId,
-        final int controlStreamId)
+        final int replyStreamId)
     {
         new MessageHeaderEncoder()
             .wrap(buffer, 0)
@@ -151,16 +147,12 @@ public class SystemTest
 
         final ReplayRequestEncoder encoder = new ReplayRequestEncoder()
             .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH)
-            .source(source)
-            .sessionId(sessionId)
-            .channel(channel)
-            .streamId(streamId)
+            .streamInstanceId(streamInstanceId)
             .termId(termId)
             .termOffset(termOffset)
             .length((int) length)
             .replyChannel(replyChannel)
-            .replayStreamId(replayStreamId)
-            .controlStreamId(controlStreamId);
+            .replyStreamId(replyStreamId);
 
         println(encoder.toString());
         offer(archiverServiceRequest, buffer, 0, encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH, 1000);
@@ -333,20 +325,15 @@ public class SystemTest
         // request replay
         requestReplay(
             archiverServiceRequest,
-            source,
-            publication.sessionId(),
-            PUBLISH_URI,
-            PUBLISH_STREAM_ID,
+            streamInstanceId,
             publication.initialTermId(),
             0,
             totalArchiveLength,
             REPLAY_URI,
-            1,
-            2);
+            1);
 
         final Subscription replay = publishingClient.addSubscription(REPLAY_URI, 1);
-        final Subscription control = publishingClient.addSubscription(REPLAY_URI, 2);
-        poll(control,
+        poll(replay,
             (buffer, offset, length, header) ->
             {
                 final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
@@ -372,7 +359,9 @@ public class SystemTest
             poll(replay,
                 (termBuffer, termOffset, chunkLength, header) ->
                 {
-                    validateFragmentsInChunk(mHeader, messageCount, termBuffer, termOffset, chunkLength);
+                    Assert.assertEquals(ReplaySession.REPLAY_DATA_HEADER, termBuffer.getLong(termOffset));
+                    validateFragmentsInChunk(mHeader, messageCount,
+                                             termBuffer, termOffset + 8, chunkLength - 8);
                 }, 1, 1000);
         }
         Assert.assertEquals(messageCount, fragmentCount);
@@ -381,11 +370,11 @@ public class SystemTest
 
     private void validateArchiveFile(final int messageCount, final int streamInstanceId) throws IOException
     {
-        final ArchiveDataFileReader archiveDataFileReader =
-            new ArchiveDataFileReader(streamInstanceId, archiveFolder);
+        final ArchiveDataFragementReadingCursor archiveDataFileReader =
+            new ArchiveDataFragementReadingCursor(streamInstanceId, archiveFolder);
         fragmentCount = 0;
         remaining = totalDataLength;
-        archiveDataFileReader.forEachFragment((bb, offset, length, header) ->
+        archiveDataFileReader.poll((bb, offset, length, header) ->
         {
             Assert.assertEquals(fragmentLength[fragmentCount] - DataHeaderFlyweight.HEADER_LENGTH, length);
             Assert.assertEquals(fragmentCount, bb.getInt(offset));

@@ -18,7 +18,7 @@ package io.aeron.archiver;
 
 import io.aeron.archiver.messages.*;
 import org.agrona.*;
-import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.*;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.*;
@@ -29,19 +29,16 @@ import java.util.function.BiConsumer;
 
 class ArchiveIndex implements AutoCloseable
 {
-    public static final int NULL_STREAM_INSTANCE_ID = -1;
-    public static final int PAGE_SIZE = 4096;
-    public static final int CAPACITY = 4096;
-    public static final int INDEX_FRAME_LENGTH = 8;
-    public static final int EOF_MARKER = -1;
+    private static final int PAGE_SIZE = 4096;
+    private static final int CAPACITY = 4096;
+    private static final int INDEX_FRAME_LENGTH = 8;
+    private static final int EOF_MARKER = -1;
 
     private final ArchiveStartedNotificationEncoder archiveStartedNotificationEncoder =
         new ArchiveStartedNotificationEncoder();
 
-    // TODO: Object2int map cound spare us the boxing here
-    private final HashMap<StreamInstance, Integer> streamInstance2InstanceId = new HashMap<>();
+    private final HashMap<StreamInstance, IntArrayList> streamInstance2InstanceId = new HashMap<>();
     private final Int2ObjectHashMap<StreamInstance> instanceId2streamInstance = new Int2ObjectHashMap<>();
-    private final File archiveFolder;
     private final ByteBuffer byteBuffer;
     private final UnsafeBuffer unsafeBuffer;
     private final FileChannel archiveIndexFileChannel;
@@ -52,7 +49,6 @@ class ArchiveIndex implements AutoCloseable
 
     ArchiveIndex(final File archiveFolder)
     {
-        this.archiveFolder = archiveFolder;
         try
         {
             // TODO: refactor file interaction to a separate class
@@ -145,21 +141,13 @@ class ArchiveIndex implements AutoCloseable
         final String channel = decoder.channel();
 
         final StreamInstance newStreamInstance = new StreamInstance(source, sessionId, channel, streamId);
-        streamInstance2InstanceId.put(newStreamInstance, streamInstanceId);
-        instanceId2streamInstance.put(streamInstanceId, newStreamInstance);
-
-        // TODO: validate metadata per archive on load of index to avoid disappointment
-
+        addToIndex(newStreamInstance, streamInstanceId);
         streamInstanceIdSeq = Math.max(streamInstanceId + 1, streamInstanceIdSeq);
         return length + INDEX_FRAME_LENGTH;
     }
 
     int addNewStreamInstance(final StreamInstance newStreamInstance)
     {
-        if (streamInstance2InstanceId.containsKey(newStreamInstance))
-        {
-            throw new IllegalArgumentException("Stream instance already exists in index");
-        }
         final int newStreamInstanceId = streamInstanceIdSeq;
 
         archiveStartedNotificationEncoder.limit(INDEX_FRAME_LENGTH + ArchiveStartedNotificationEncoder.BLOCK_LENGTH);
@@ -188,23 +176,26 @@ class ArchiveIndex implements AutoCloseable
             LangUtil.rethrowUnchecked(e);
         }
         streamInstanceIdSeq++;
-        streamInstance2InstanceId.put(newStreamInstance, newStreamInstanceId);
-        instanceId2streamInstance.put(newStreamInstanceId, newStreamInstance);
+        addToIndex(newStreamInstance, newStreamInstanceId);
 
         return newStreamInstanceId;
     }
 
-    int getStreamInstanceId(final StreamInstance newStreamInstance)
+    private void addToIndex(final StreamInstance newStreamInstance, final int newStreamInstanceId)
     {
-        final Integer streamInstanceId = streamInstance2InstanceId.get(newStreamInstance);
+        streamInstance2InstanceId.computeIfAbsent(newStreamInstance, streamInstance -> new IntArrayList())
+            .add(newStreamInstanceId);
+        instanceId2streamInstance.put(newStreamInstanceId, newStreamInstance);
+    }
 
-        return streamInstanceId == null ? NULL_STREAM_INSTANCE_ID : streamInstanceId;
+    IntArrayList getStreamInstanceId(final StreamInstance newStreamInstance)
+    {
+        return streamInstance2InstanceId.get(newStreamInstance);
     }
 
     @Override
     public void close() throws Exception
     {
-        // TODO: wish I could delete that buffer
         archiveIndexFileChannel.close();
     }
 

@@ -21,7 +21,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_PUBLICATIONS;
 
 /**
- * Tracks a aeron client interest registration in a {@link NetworkPublication}.
+ * Tracks a aeron client interest registration in a {@link NetworkPublication} or {@link IpcPublication}.
  */
 public class PublicationLink implements DriverManagedResource
 {

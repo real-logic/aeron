@@ -812,9 +812,8 @@ public class DriverConductor implements Agent
             registrationId, channelEndpoint, streamId, channel, client, context.clientLivenessTimeoutNs(), isReliable);
 
         subscriptionLinks.add(subscription);
+        linkMatchingImages(channelEndpoint, subscription);
         clientProxy.operationSucceeded(registrationId);
-
-        linkMatchingImages(streamId, registrationId, channelEndpoint, subscription);
     }
 
     private void checkForClashingSubscription(final boolean isReliable, final UdpChannel udpChannel, final int streamId)
@@ -849,12 +848,12 @@ public class DriverConductor implements Agent
         return positions;
     }
 
-    private void linkMatchingImages(
-        final int streamId,
-        final long registrationId,
-        final ReceiveChannelEndpoint channelEndpoint,
-        final SubscriptionLink subscription)
+    private void linkMatchingImages(final ReceiveChannelEndpoint channelEndpoint, final SubscriptionLink subscription)
     {
+        final long registrationId = subscription.registrationId();
+        final int streamId = subscription.streamId();
+        final String channel = subscription.channelUri();
+
         for (int i = 0, size = publicationImages.size(); i < size; i++)
         {
             final PublicationImage image = publicationImages.get(i);
@@ -863,7 +862,7 @@ public class DriverConductor implements Agent
                 final long rebuildPosition = image.rebuildPosition();
                 final int sessionId = image.sessionId();
                 final Position position = SubscriberPos.allocate(
-                    countersManager, registrationId, sessionId, streamId, subscription.channelUri(), rebuildPosition);
+                    countersManager, registrationId, sessionId, streamId, channel, rebuildPosition);
 
                 position.setOrdered(rebuildPosition);
 
@@ -921,8 +920,6 @@ public class DriverConductor implements Agent
 
         subscriptionLinks.add(subscriptionLink);
 
-        clientProxy.operationSucceeded(registrationId);
-
         final SendChannelEndpoint channelEndpoint = senderChannelEndpoint(udpChannel);
         final NetworkPublication publication =
             null == channelEndpoint ? null : channelEndpoint.getPublication(streamId);
@@ -930,6 +927,8 @@ public class DriverConductor implements Agent
         {
             linkSpy(publication, subscriptionLink);
         }
+
+        clientProxy.operationSucceeded(registrationId);
     }
 
     private void linkSpy(final NetworkPublication publication, final SubscriptionLink link)

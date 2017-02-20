@@ -233,7 +233,7 @@ public class IpcPublication implements DriverManagedResource
                 break;
         }
 
-        if (Status.ACTIVE == status && consumerPosition == lastConsumerPosition)
+        if (consumerPosition == lastConsumerPosition)
         {
             if (producerPosition() > consumerPosition &&
                 timeNs > (timeOfLastConsumerPositionChange + unblockTimeoutNs))

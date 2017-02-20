@@ -612,7 +612,8 @@ public class DriverConductor implements Agent
                 context.systemCounters(),
                 flowControl,
                 retransmitHandler,
-                networkPublicationThreadLocals);
+                networkPublicationThreadLocals,
+                publicationUnblockTimeoutNs);
 
             channelEndpoint.addPublication(publication);
             networkPublications.add(publication);
@@ -625,13 +626,7 @@ public class DriverConductor implements Agent
                 publication.mtuLength() + " requested=" + mtuLength);
         }
 
-        publicationLinks.add(new PublicationLink(
-            registrationId,
-            publication,
-            getOrAddClient(clientId),
-            nanoClock.nanoTime(),
-            publicationUnblockTimeoutNs,
-            context.systemCounters()));
+        publicationLinks.add(new PublicationLink(registrationId, publication, getOrAddClient(clientId)));
 
         clientProxy.onPublicationReady(
             registrationId,
@@ -684,13 +679,7 @@ public class DriverConductor implements Agent
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final IpcPublication ipcPublication = getOrAddIpcPublication(streamId, channel);
-        publicationLinks.add(new PublicationLink(
-            registrationId,
-            ipcPublication,
-            getOrAddClient(clientId),
-            nanoClock.nanoTime(),
-            publicationUnblockTimeoutNs,
-            context.systemCounters()));
+        publicationLinks.add(new PublicationLink(registrationId, ipcPublication, getOrAddClient(clientId)));
 
         clientProxy.onPublicationReady(
             registrationId,
@@ -701,7 +690,6 @@ public class DriverConductor implements Agent
 
         linkIpcSubscriptions(ipcPublication);
     }
-
 
     private RawLog newNetworkPublicationLog(
         final int sessionId,
@@ -1106,7 +1094,13 @@ public class DriverConductor implements Agent
             countersManager, registrationId, sessionId, streamId, channel);
 
         final IpcPublication publication = new IpcPublication(
-            registrationId, sessionId, streamId, publisherLimit, rawLog);
+            registrationId,
+            sessionId,
+            streamId,
+            publisherLimit,
+            rawLog,
+            publicationUnblockTimeoutNs,
+            context.systemCounters());
 
         ipcPublications.add(publication);
 

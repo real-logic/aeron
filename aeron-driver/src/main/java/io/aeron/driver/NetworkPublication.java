@@ -48,10 +48,15 @@ class NetworkPublicationPadding1
 
 class NetworkPublicationConductorFields extends NetworkPublicationPadding1
 {
+    private static final ReadablePosition[] EMPTY_POSITIONS = new ReadablePosition[0];
+
     protected long cleanPosition = 0;
     protected long timeOfLastActivity = 0;
     protected long lastSenderPosition = 0;
+    protected long lastConsumerPosition = 0;
+    protected long timeOfLastConsumerPositionChange = 0;
     protected int refCount = 0;
+    protected ReadablePosition[] spyPositions = EMPTY_POSITIONS;
 }
 
 class NetworkPublicationPadding2 extends NetworkPublicationConductorFields
@@ -81,8 +86,7 @@ public class NetworkPublication
     extends NetworkPublicationPadding3
     implements RetransmitSender, DriverManagedResource
 {
-    private static final ReadablePosition[] EMPTY_POSITIONS = new ReadablePosition[0];
-
+    private final long unblockTimeoutNs;
     private final int positionBitsToShift;
     private final int initialTermId;
     private final int termLengthMask;
@@ -115,7 +119,7 @@ public class NetworkPublication
     private final AtomicCounter retransmitsSent;
     private final AtomicCounter senderFlowControlLimits;
     private final AtomicCounter shortSends;
-    private ReadablePosition[] spyPositions = EMPTY_POSITIONS;
+    private final AtomicCounter unblockedPublications;
 
     public NetworkPublication(
         final SendChannelEndpoint channelEndpoint,
@@ -132,8 +136,10 @@ public class NetworkPublication
         final SystemCounters systemCounters,
         final FlowControl flowControl,
         final RetransmitHandler retransmitHandler,
-        final NetworkPublicationThreadLocals threadLocals)
+        final NetworkPublicationThreadLocals threadLocals,
+        final long unblockTimeoutNs)
     {
+        this.unblockTimeoutNs = unblockTimeoutNs;
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
         this.nanoClock = nanoClock;
@@ -159,6 +165,7 @@ public class NetworkPublication
         shortSends = systemCounters.get(SHORT_SENDS);
         retransmitsSent = systemCounters.get(RETRANSMITS_SENT);
         senderFlowControlLimits = systemCounters.get(SENDER_FLOW_CONTROL_LIMITS);
+        unblockedPublications = systemCounters.get(UNBLOCKED_PUBLICATIONS);
 
         termBuffers = rawLog.termBuffers();
         sendBuffers = rawLog.sliceTerms();
@@ -547,6 +554,26 @@ public class NetworkPublication
         {
             hasReachedEndOfLife = true;
             conductor.cleanupPublication(NetworkPublication.this);
+        }
+        else
+        {
+            final long consumerPosition = consumerPosition();
+            if (consumerPosition == lastConsumerPosition)
+            {
+                if (producerPosition() > consumerPosition &&
+                    timeNs > (timeOfLastConsumerPositionChange + unblockTimeoutNs))
+                {
+                    if (unblockAtConsumerPosition())
+                    {
+                        unblockedPublications.orderedIncrement();
+                    }
+                }
+            }
+            else
+            {
+                timeOfLastConsumerPositionChange = timeNs;
+                lastConsumerPosition = consumerPosition;
+            }
         }
     }
 

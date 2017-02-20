@@ -16,14 +16,17 @@
 package io.aeron.driver;
 
 import io.aeron.driver.buffer.RawLog;
+import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.LogBufferUnblocker;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.ReadablePosition;
 
 import static io.aeron.driver.Configuration.PUBLICATION_LINGER_NS;
+import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_PUBLICATIONS;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 
 /**
@@ -45,24 +48,30 @@ public class IpcPublication implements DriverManagedResource
     private final int termWindowLength;
     private final int positionBitsToShift;
     private final int initialTermId;
+    private final long unblockTimeoutNs;
     private long tripLimit = 0;
     private long consumerPosition = 0;
+    private long lastConsumerPosition = 0;
     private long cleanPosition = 0;
+    private long timeOfLastConsumerPositionChange = 0;
     private long timeOfLastStatusChange = 0;
     private int refCount = 0;
     private boolean reachedEndOfLife = false;
+    private Status status = Status.ACTIVE;
     private final UnsafeBuffer[] termBuffers;
     private ReadablePosition[] subscriberPositions = EMPTY_POSITIONS;
     private final RawLog rawLog;
     private final Position publisherLimit;
-    private Status status = Status.ACTIVE;
+    private final AtomicCounter unblockedPublications;
 
     public IpcPublication(
         final long correlationId,
         final int sessionId,
         final int streamId,
         final Position publisherLimit,
-        final RawLog rawLog)
+        final RawLog rawLog,
+        final long unblockTimeoutNs,
+        final SystemCounters systemCounters)
     {
         this.correlationId = correlationId;
         this.sessionId = sessionId;
@@ -76,6 +85,8 @@ public class IpcPublication implements DriverManagedResource
         this.tripGain = termWindowLength / 8;
         this.publisherLimit = publisherLimit;
         this.rawLog = rawLog;
+        this.unblockTimeoutNs = unblockTimeoutNs;
+        this.unblockedPublications = systemCounters.get(UNBLOCKED_PUBLICATIONS);
     }
 
     public int sessionId()
@@ -220,6 +231,24 @@ public class IpcPublication implements DriverManagedResource
                     conductor.cleanupIpcPublication(this);
                 }
                 break;
+        }
+
+        final long consumerPosition = this.consumerPosition;
+        if (Status.ACTIVE == status && consumerPosition == lastConsumerPosition)
+        {
+            if (producerPosition() > consumerPosition &&
+                timeNs > (timeOfLastConsumerPositionChange + unblockTimeoutNs))
+            {
+                if (unblockAtConsumerPosition())
+                {
+                    unblockedPublications.orderedIncrement();
+                }
+            }
+        }
+        else
+        {
+            timeOfLastConsumerPositionChange = timeNs;
+            lastConsumerPosition = consumerPosition;
         }
     }
 

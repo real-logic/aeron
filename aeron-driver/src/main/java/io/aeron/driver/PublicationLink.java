@@ -15,42 +15,22 @@
  */
 package io.aeron.driver;
 
-import io.aeron.driver.status.SystemCounters;
-import org.agrona.concurrent.status.AtomicCounter;
-
-import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_PUBLICATIONS;
-
 /**
  * Tracks a aeron client interest registration in a {@link NetworkPublication} or {@link IpcPublication}.
  */
 public class PublicationLink implements DriverManagedResource
 {
     private final long registrationId;
-    private final long unblockTimeoutNs;
     private final DriverManagedResource publication;
     private final AeronClient client;
-    private final AtomicCounter unblockedPublications;
-
-    private long lastConsumerPosition;
-    private long timeOfLastConsumerPositionChange;
     private boolean reachedEndOfLife = false;
 
-    public PublicationLink(
-        final long registrationId,
-        final DriverManagedResource publication,
-        final AeronClient client,
-        final long now,
-        final long unblockTimeoutNs,
-        final SystemCounters systemCounters)
+    public PublicationLink(final long registrationId, final DriverManagedResource publication, final AeronClient client)
     {
         this.registrationId = registrationId;
         this.publication = publication;
         this.client = client;
         this.publication.incRef();
-        this.lastConsumerPosition = publication.consumerPosition();
-        this.timeOfLastConsumerPositionChange = now;
-        this.unblockTimeoutNs = unblockTimeoutNs;
-        this.unblockedPublications = systemCounters.get(UNBLOCKED_PUBLICATIONS);
     }
 
     public void close()
@@ -68,24 +48,6 @@ public class PublicationLink implements DriverManagedResource
         if (client.hasTimedOut(timeNs))
         {
             reachedEndOfLife = true;
-        }
-
-        final long consumerPosition = publication.consumerPosition();
-        if (consumerPosition == lastConsumerPosition)
-        {
-            if (publication.producerPosition() > consumerPosition &&
-                timeNs > (timeOfLastConsumerPositionChange + unblockTimeoutNs))
-            {
-                if (publication.unblockAtConsumerPosition())
-                {
-                    unblockedPublications.orderedIncrement();
-                }
-            }
-        }
-        else
-        {
-            timeOfLastConsumerPositionChange = timeNs;
-            lastConsumerPosition = consumerPosition;
         }
     }
 

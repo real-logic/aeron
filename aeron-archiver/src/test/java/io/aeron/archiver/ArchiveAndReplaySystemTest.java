@@ -32,7 +32,7 @@ import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileFormatDecoder;
 import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileName;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
-public class SystemTest
+public class ArchiveAndReplaySystemTest
 {
     private static final boolean DEBUG = false;
     private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";

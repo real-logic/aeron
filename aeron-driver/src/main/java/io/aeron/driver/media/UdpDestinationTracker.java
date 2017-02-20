@@ -39,7 +39,10 @@ public class UdpDestinationTracker
     private final PreSendFunction preSendFunction;
     private final long destinationTimeout;
 
-    public UdpDestinationTracker(final NanoClock nanoClock, final PreSendFunction preSendFunction, final long timeout)
+    public UdpDestinationTracker(
+        final NanoClock nanoClock,
+        final PreSendFunction preSendFunction,
+        final long timeout)
     {
         this.nanoClock = nanoClock;
         this.preSendFunction = preSendFunction;
@@ -49,13 +52,14 @@ public class UdpDestinationTracker
     public int sendToDestinations(final DatagramChannel sendDatagramChannel, final ByteBuffer buffer)
     {
         final ArrayList<Destination> destinationList = this.destinationList;
+        final long now = nanoClock.nanoTime();
         int minByteSent = buffer.remaining();
 
         for (int lastIndex = destinationList.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final Destination destination = destinationList.get(i);
 
-            if (nanoClock.nanoTime() > (destination.timeOfLastActivity + destinationTimeout))
+            if (now > (destination.timeOfLastActivity + destinationTimeout))
             {
                 ArrayListUtil.fastUnorderedRemove(destinationList, i, lastIndex);
                 lastIndex--;

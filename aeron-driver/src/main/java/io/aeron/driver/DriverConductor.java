@@ -832,9 +832,9 @@ public class DriverConductor implements Agent
             registrationId, channelEndpoint, streamId, channel, client, context.clientLivenessTimeoutNs(), isReliable);
 
         subscriptionLinks.add(subscription);
-        linkMatchingImages(channelEndpoint, subscription);
-
         clientProxy.operationSucceeded(registrationId);
+
+        linkMatchingImages(channelEndpoint, subscription);
     }
 
     private void checkForClashingSubscription(final boolean isReliable, final UdpChannel udpChannel, final int streamId)
@@ -965,6 +965,7 @@ public class DriverConductor implements Agent
             registrationId, udpChannel, streamId, client, context.clientLivenessTimeoutNs());
 
         subscriptionLinks.add(subscriptionLink);
+        clientProxy.operationSucceeded(registrationId);
 
         final SendChannelEndpoint channelEndpoint = senderChannelEndpoint(udpChannel);
         final NetworkPublication publication =
@@ -973,8 +974,6 @@ public class DriverConductor implements Agent
         {
             linkSpy(publication, subscriptionLink);
         }
-
-        clientProxy.operationSucceeded(registrationId);
     }
 
     private void linkSpy(final NetworkPublication publication, final SubscriptionLink subscription)

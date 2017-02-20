@@ -862,10 +862,10 @@ public class DriverConductorTest
         assertTrue(publication.hasSpies());
 
         final InOrder inOrder = inOrder(mockClientProxy);
+        inOrder.verify(mockClientProxy).operationSucceeded(eq(idSpy));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), eq(publication.sessionId()),
             eq(publication.rawLog().fileName()), any(), anyString());
-        inOrder.verify(mockClientProxy).operationSucceeded(eq(idSpy));
     }
 
     @Test

@@ -96,7 +96,7 @@ public class UdpDestinationTracker
         {
             final Destination destination = destinationList.get(i);
 
-            if (receiverId == destination.receiverId)
+            if (receiverId == destination.receiverId && destAddress.getPort() == destination.port)
             {
                 destination.timeOfLastActivity = now;
                 isExisting = true;
@@ -113,6 +113,7 @@ public class UdpDestinationTracker
     {
         long timeOfLastActivity;
         long receiverId;
+        int port;
         InetSocketAddress address;
 
         Destination(final long now, final long receiverId, final InetSocketAddress address)
@@ -120,6 +121,7 @@ public class UdpDestinationTracker
             this.timeOfLastActivity = now;
             this.receiverId = receiverId;
             this.address = address;
+            this.port = address.getPort();
         }
     }
 }

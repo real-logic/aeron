@@ -656,12 +656,12 @@ public class PublicationImage
         return rebuildPosition.get();
     }
 
-    public void onTimeEvent(final long time, final DriverConductor conductor)
+    public void onTimeEvent(final long timeNs, final DriverConductor conductor)
     {
         switch (status)
         {
             case INACTIVE:
-                if (isDrained() || time > (timeOfLastStatusChange + imageLivenessTimeoutNs))
+                if (isDrained() || timeNs > (timeOfLastStatusChange + imageLivenessTimeoutNs))
                 {
                     status(PublicationImage.Status.LINGER);
                     conductor.transitionToLinger(this);
@@ -669,7 +669,7 @@ public class PublicationImage
                 break;
 
             case LINGER:
-                if (time > (timeOfLastStatusChange + imageLivenessTimeoutNs))
+                if (timeNs > (timeOfLastStatusChange + imageLivenessTimeoutNs))
                 {
                     reachedEndOfLife = true;
                     conductor.cleanupImage(this);

@@ -541,9 +541,9 @@ public class NetworkPublication
         }
     }
 
-    public void onTimeEvent(final long time, final DriverConductor conductor)
+    public void onTimeEvent(final long timeNs, final DriverConductor conductor)
     {
-        if (isUnreferencedAndPotentiallyInactive(time) && time > (timeOfLastActivity + PUBLICATION_LINGER_NS))
+        if (isUnreferencedAndPotentiallyInactive(timeNs) && timeNs > (timeOfLastActivity + PUBLICATION_LINGER_NS))
         {
             hasReachedEndOfLife = true;
             conductor.cleanupPublication(NetworkPublication.this);

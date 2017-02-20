@@ -95,9 +95,9 @@ public abstract class SubscriptionLink implements DriverManagedResource
 
     public abstract void close();
 
-    public void onTimeEvent(final long time, final DriverConductor conductor)
+    public void onTimeEvent(final long timeNs, final DriverConductor conductor)
     {
-        if (time > (aeronClient.timeOfLastKeepalive() + clientLivenessTimeoutNs))
+        if (timeNs > (aeronClient.timeOfLastKeepalive() + clientLivenessTimeoutNs))
         {
             reachedEndOfLife = true;
             conductor.cleanupSubscriptionLink(this);

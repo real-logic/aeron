@@ -63,9 +63,9 @@ public class PublicationLink implements DriverManagedResource
         return registrationId;
     }
 
-    public void onTimeEvent(final long time, final DriverConductor conductor)
+    public void onTimeEvent(final long timeNs, final DriverConductor conductor)
     {
-        if (client.hasTimedOut(time))
+        if (client.hasTimedOut(timeNs))
         {
             reachedEndOfLife = true;
         }
@@ -74,7 +74,7 @@ public class PublicationLink implements DriverManagedResource
         if (consumerPosition == lastConsumerPosition)
         {
             if (publication.producerPosition() > consumerPosition &&
-                time > (timeOfLastConsumerPositionChange + unblockTimeoutNs))
+                timeNs > (timeOfLastConsumerPositionChange + unblockTimeoutNs))
             {
                 if (publication.unblockAtConsumerPosition())
                 {
@@ -84,7 +84,7 @@ public class PublicationLink implements DriverManagedResource
         }
         else
         {
-            timeOfLastConsumerPositionChange = time;
+            timeOfLastConsumerPositionChange = timeNs;
             lastConsumerPosition = consumerPosition;
         }
     }

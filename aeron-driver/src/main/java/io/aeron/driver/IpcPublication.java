@@ -194,27 +194,27 @@ public class IpcPublication implements DriverManagedResource
         return computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);
     }
 
-    public void onTimeEvent(final long time, final DriverConductor conductor)
+    public void onTimeEvent(final long timeNs, final DriverConductor conductor)
     {
         switch (status)
         {
             case ACTIVE:
                 if (0 == refCount)
                 {
-                    status(Status.INACTIVE, time);
+                    status(Status.INACTIVE, timeNs);
                 }
                 break;
 
             case INACTIVE:
                 if (isDrained())
                 {
-                    status(Status.LINGER, time);
+                    status(Status.LINGER, timeNs);
                     conductor.transitionToLinger(this);
                 }
                 break;
 
             case LINGER:
-                if (time > (timeOfLastStatusChange + PUBLICATION_LINGER_NS))
+                if (timeNs > (timeOfLastStatusChange + PUBLICATION_LINGER_NS))
                 {
                     reachedEndOfLife = true;
                     conductor.cleanupIpcPublication(this);

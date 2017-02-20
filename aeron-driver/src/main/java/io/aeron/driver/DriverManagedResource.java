@@ -20,12 +20,12 @@ import org.agrona.ManagedResource;
 public interface DriverManagedResource extends ManagedResource
 {
     /**
-     * Inform resource of time passing and pass it DriverConductor to inform of any state transitions.
+     * Inform resource of timeNs passing and pass it DriverConductor to inform of any state transitions.
      *
-     * @param time      now in nanoseconds
+     * @param timeNs      now in nanoseconds
      * @param conductor to inform of any state transitions
      */
-    void onTimeEvent(long time, DriverConductor conductor);
+    void onTimeEvent(long timeNs, DriverConductor conductor);
 
     /**
      * Has resource reached end of its life and should be reclaimed?

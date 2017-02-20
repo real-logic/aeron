@@ -233,7 +233,6 @@ public class IpcPublication implements DriverManagedResource
                 break;
         }
 
-        final long consumerPosition = this.consumerPosition;
         if (Status.ACTIVE == status && consumerPosition == lastConsumerPosition)
         {
             if (producerPosition() > consumerPosition &&
@@ -259,12 +258,12 @@ public class IpcPublication implements DriverManagedResource
 
     public void timeOfLastStateChange(final long time)
     {
-        throw new UnsupportedOperationException("not used");
+        timeOfLastStatusChange = time;
     }
 
     public long timeOfLastStateChange()
     {
-        throw new UnsupportedOperationException("not used");
+        return timeOfLastStatusChange;
     }
 
     public void delete()

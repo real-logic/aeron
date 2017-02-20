@@ -203,13 +203,19 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     }
 
     public void onSetupMessage(
-        final SetupFlyweight header, final UnsafeBuffer buffer, final InetSocketAddress srcAddress)
+        final SetupFlyweight header,
+        final UnsafeBuffer buffer,
+        final int length,
+        final InetSocketAddress srcAddress)
     {
         dispatcher.onSetupMessage(this, header, buffer, srcAddress);
     }
 
     public void onRttMeasurement(
-        final RttMeasurementFlyweight header, final UnsafeBuffer buffer, final InetSocketAddress srcAddress)
+        final RttMeasurementFlyweight header,
+        final UnsafeBuffer buffer,
+        final int length,
+        final InetSocketAddress srcAddress)
     {
         if (header.receiverId() == receiverId || header.receiverId() == 0)
         {

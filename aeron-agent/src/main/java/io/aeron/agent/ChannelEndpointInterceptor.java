@@ -17,6 +17,7 @@ package io.aeron.agent;
 
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.SendChannelEndpoint;
+import io.aeron.protocol.*;
 import net.bytebuddy.asm.Advice;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -81,10 +82,40 @@ public class ChannelEndpointInterceptor
             }
         }
 
-        public static class Dispatch
+        public static class OnStatusMessage
         {
             @Advice.OnMethodEnter
-            public static void dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
+            public static void onStatusMessage(
+                final StatusMessageFlyweight msg,
+                final UnsafeBuffer buffer,
+                final int length,
+                final InetSocketAddress srcAddress)
+            {
+                LOGGER.logFrameIn(buffer, 0, length, srcAddress);
+            }
+        }
+
+        public static class OnNakMessage
+        {
+            @Advice.OnMethodEnter
+            public static void onNakMessage(
+                final NakFlyweight msg,
+                final UnsafeBuffer buffer,
+                final int length,
+                final InetSocketAddress srcAddress)
+            {
+                LOGGER.logFrameIn(buffer, 0, length, srcAddress);
+            }
+        }
+
+        public static class OnRttMeasurement
+        {
+            @Advice.OnMethodEnter
+            public static void onRttMeasurement(
+                final RttMeasurementFlyweight msg,
+                final UnsafeBuffer buffer,
+                final int length,
+                final InetSocketAddress srcAddress)
             {
                 LOGGER.logFrameIn(buffer, 0, length, srcAddress);
             }
@@ -102,10 +133,40 @@ public class ChannelEndpointInterceptor
             }
         }
 
-        public static class Dispatch
+        public static class OnDataPacket
         {
             @Advice.OnMethodEnter
-            public static void dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
+            public static void onDataPacket(
+                final DataHeaderFlyweight header,
+                final UnsafeBuffer buffer,
+                final int length,
+                final InetSocketAddress srcAddress)
+            {
+                LOGGER.logFrameIn(buffer, 0, length, srcAddress);
+            }
+        }
+
+        public static class OnSetupMessage
+        {
+            @Advice.OnMethodEnter
+            public static void onStatusMessage(
+                final SetupFlyweight header,
+                final UnsafeBuffer buffer,
+                final int length,
+                final InetSocketAddress srcAddress)
+            {
+                LOGGER.logFrameIn(buffer, 0, length, srcAddress);
+            }
+        }
+
+        public static class OnRttMeasurement
+        {
+            @Advice.OnMethodEnter
+            public static void onRttMeasurement(
+                final RttMeasurementFlyweight msg,
+                final UnsafeBuffer buffer,
+                final int length,
+                final InetSocketAddress srcAddress)
             {
                 LOGGER.logFrameIn(buffer, 0, length, srcAddress);
             }

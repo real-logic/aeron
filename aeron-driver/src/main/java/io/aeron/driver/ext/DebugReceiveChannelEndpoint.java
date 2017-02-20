@@ -96,20 +96,26 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
     }
 
     public void onSetupMessage(
-        final SetupFlyweight header, final UnsafeBuffer buffer, final InetSocketAddress srcAddress)
+        final SetupFlyweight header,
+        final UnsafeBuffer buffer,
+        final int length,
+        final InetSocketAddress srcAddress)
     {
         if (!dataLossGenerator.shouldDropFrame(srcAddress, buffer, header.frameLength()))
         {
-            super.onSetupMessage(header, buffer, srcAddress);
+            super.onSetupMessage(header, buffer, length, srcAddress);
         }
     }
 
     public void onRttMeasurement(
-        final RttMeasurementFlyweight header, final UnsafeBuffer buffer, final InetSocketAddress srcAddress)
+        final RttMeasurementFlyweight header,
+        final UnsafeBuffer buffer,
+        final int length,
+        final InetSocketAddress srcAddress)
     {
         if (!dataLossGenerator.shouldDropFrame(srcAddress, buffer, header.frameLength()))
         {
-            super.onRttMeasurement(header, buffer, srcAddress);
+            super.onRttMeasurement(header, buffer, length, srcAddress);
         }
     }
 }

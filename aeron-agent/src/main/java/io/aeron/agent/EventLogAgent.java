@@ -148,8 +148,18 @@ public class EventLogAgent
                         .on(named("presend")))
                     .visit(to(ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.SendTo.class)
                         .on(named("sendTo")))
-                    .visit(to(ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.Dispatch.class)
-                        .on(named("dispatch"))))
+                    .visit(to(ChannelEndpointInterceptor.SendChannelEndpointInterceptor.OnStatusMessage.class)
+                        .on(named("onStatusMessage")))
+                    .visit(to(ChannelEndpointInterceptor.SendChannelEndpointInterceptor.OnNakMessage.class)
+                        .on(named("onNakMessage")))
+                    .visit(to(ChannelEndpointInterceptor.SendChannelEndpointInterceptor.OnRttMeasurement.class)
+                        .on(named("onRttMeasurement")))
+                    .visit(to(ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.OnDataPacket.class)
+                        .on(named("onDataPacket")))
+                    .visit(to(ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.OnSetupMessage.class)
+                        .on(named("onSetupMessage")))
+                    .visit(to(ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.OnRttMeasurement.class)
+                        .on(named("onRttMeasurement"))))
             .installOn(instrumentation);
 
         EVENT_LOG_READER_THREAD.setName("event log reader");

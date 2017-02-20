@@ -135,15 +135,15 @@ public class ControlTransportPoller extends UdpTransportPoller
                 switch (frameType(unsafeBuffer, 0))
                 {
                     case HDR_TYPE_NAK:
-                        channelEndpoint.onNakMessage(nakMessage, srcAddress);
+                        channelEndpoint.onNakMessage(nakMessage, unsafeBuffer, byteReceived, srcAddress);
                         break;
 
                     case HDR_TYPE_SM:
-                        channelEndpoint.onStatusMessage(statusMessage, srcAddress);
+                        channelEndpoint.onStatusMessage(statusMessage, unsafeBuffer, byteReceived, srcAddress);
                         break;
 
                     case HDR_TYPE_RTTM:
-                        channelEndpoint.onRttMeasurement(rttMeasurement, srcAddress);
+                        channelEndpoint.onRttMeasurement(rttMeasurement, unsafeBuffer, byteReceived, srcAddress);
                         break;
                 }
             }

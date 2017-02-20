@@ -139,11 +139,11 @@ public class DataTransportPoller extends UdpTransportPoller
                         break;
 
                     case HDR_TYPE_SETUP:
-                        channelEndpoint.onSetupMessage(setupMessage, unsafeBuffer, srcAddress);
+                        channelEndpoint.onSetupMessage(setupMessage, unsafeBuffer, length, srcAddress);
                         break;
 
                     case HDR_TYPE_RTTM:
-                        channelEndpoint.onRttMeasurement(rttMeasurement, unsafeBuffer, srcAddress);
+                        channelEndpoint.onRttMeasurement(rttMeasurement, unsafeBuffer, length, srcAddress);
                         break;
                 }
             }

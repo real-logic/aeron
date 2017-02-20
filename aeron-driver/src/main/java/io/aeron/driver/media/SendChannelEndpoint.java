@@ -23,6 +23,7 @@ import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.LangUtil;
 import org.agrona.collections.BiInt2ObjectMap;
 import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.IOException;
@@ -212,7 +213,11 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
     }
 
-    public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
+    public void onStatusMessage(
+        final StatusMessageFlyweight msg,
+        final UnsafeBuffer buffer,
+        final int length,
+        final InetSocketAddress srcAddress)
     {
         final NetworkPublication publication = sendersPublicationBySessionAndStreamId.get(
             msg.sessionId(), msg.streamId());
@@ -243,7 +248,11 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
     }
 
-    public void onNakMessage(final NakFlyweight msg, final InetSocketAddress srcAddress)
+    public void onNakMessage(
+        final NakFlyweight msg,
+        final UnsafeBuffer buffer,
+        final int length,
+        final InetSocketAddress srcAddress)
     {
         final NetworkPublication publication = sendersPublicationBySessionAndStreamId.get(
             msg.sessionId(), msg.streamId());
@@ -255,7 +264,11 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
     }
 
-    public void onRttMeasurement(final RttMeasurementFlyweight msg, final InetSocketAddress srcAddress)
+    public void onRttMeasurement(
+        final RttMeasurementFlyweight msg,
+        final UnsafeBuffer buffer,
+        final int length,
+        final InetSocketAddress srcAddress)
     {
         final NetworkPublication publication = sendersPublicationBySessionAndStreamId.get(
             msg.sessionId(), msg.streamId());

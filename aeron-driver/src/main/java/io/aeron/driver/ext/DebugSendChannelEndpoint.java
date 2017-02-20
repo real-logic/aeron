@@ -73,27 +73,39 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
         return result;
     }
 
-    public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
+    public void onStatusMessage(
+        final StatusMessageFlyweight msg,
+        final UnsafeBuffer buffer,
+        final int length,
+        final InetSocketAddress srcAddress)
     {
         if (!controlLossGenerator.shouldDropFrame(srcAddress, msg, msg.frameLength()))
         {
-            super.onStatusMessage(msg, srcAddress);
+            super.onStatusMessage(msg, buffer, length, srcAddress);
         }
     }
 
-    public void onNakMessage(final NakFlyweight msg, final InetSocketAddress srcAddress)
+    public void onNakMessage(
+        final NakFlyweight msg,
+        final UnsafeBuffer buffer,
+        final int length,
+        final InetSocketAddress srcAddress)
     {
         if (!controlLossGenerator.shouldDropFrame(srcAddress, msg, msg.frameLength()))
         {
-            super.onNakMessage(msg, srcAddress);
+            super.onNakMessage(msg, buffer, length, srcAddress);
         }
     }
 
-    public void onRttMeasurement(final RttMeasurementFlyweight msg, final InetSocketAddress srcAddress)
+    public void onRttMeasurement(
+        final RttMeasurementFlyweight msg,
+        final UnsafeBuffer buffer,
+        final int length,
+        final InetSocketAddress srcAddress)
     {
         if (!controlLossGenerator.shouldDropFrame(srcAddress, msg, msg.frameLength()))
         {
-            super.onRttMeasurement(msg, srcAddress);
+            super.onRttMeasurement(msg, buffer, length, srcAddress);
         }
     }
 }

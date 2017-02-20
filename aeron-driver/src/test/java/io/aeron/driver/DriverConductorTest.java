@@ -696,23 +696,6 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddSingleIpcPublicationSubscription() throws Exception
-    {
-        final long id = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
-
-        driverConductor.doWork();
-
-        final IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
-        assertNotNull(ipcPublication);
-
-        final InOrder inOrder = inOrder(mockClientProxy);
-        inOrder.verify(mockClientProxy).operationSucceeded(eq(id));
-        inOrder.verify(mockClientProxy).onAvailableImage(
-            eq(ipcPublication.correlationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
-            eq(ipcPublication.rawLog().fileName()), any(), anyString());
-    }
-
-    @Test
     public void shouldBeAbleToAddIpcPublicationPublicationThenSubscription() throws Exception
     {
         final long idPub = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
@@ -744,10 +727,10 @@ public class DriverConductorTest
 
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
+        inOrder.verify(mockClientProxy).onPublicationReady(eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt());
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublication.correlationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
             eq(ipcPublication.rawLog().fileName()), any(), anyString());
-        inOrder.verify(mockClientProxy).onPublicationReady(eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt());
     }
 
     @Test
@@ -795,26 +778,6 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveIpcPublicationTwoSubscriptions() throws Exception
-    {
-        final long idAdd1 = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
-        final long idAdd2 = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
-        driverProxy.removeSubscription(idAdd1);
-
-        driverConductor.doWork();
-
-        IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
-        assertNotNull(ipcPublication);
-
-        driverProxy.removeSubscription(idAdd2);
-
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
-
-        ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
-        assertNull(ipcPublication);
-    }
-
-    @Test
     public void shouldBeAbleToAddAndRemoveIpcPublicationPublicationAndSubscription() throws Exception
     {
         final long idAdd1 = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
@@ -854,42 +817,6 @@ public class DriverConductorTest
     public void shouldNotTimeoutIpcPublicationPublicationWithKeepalive() throws Exception
     {
         driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
-
-        driverConductor.doWork();
-
-        IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
-        assertNotNull(ipcPublication);
-
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
-
-        driverProxy.sendClientKeepalive();
-
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
-
-        ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
-        assertNotNull(ipcPublication);
-    }
-
-    @Test
-    public void shouldTimeoutIpcPublicationSubscription() throws Exception
-    {
-        driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
-
-        driverConductor.doWork();
-
-        IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
-        assertNotNull(ipcPublication);
-
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
-
-        ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
-        assertNull(ipcPublication);
-    }
-
-    @Test
-    public void shouldNotTimeoutIpcPublicationSubscriptionWithKeepalive() throws Exception
-    {
-        driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
 
         driverConductor.doWork();
 

@@ -30,7 +30,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
     protected final long registrationId;
     protected final long clientLivenessTimeoutNs;
     protected final int streamId;
-    protected final String channelUri;
+    protected final String uri;
     protected final AeronClient aeronClient;
 
     protected boolean reachedEndOfLife = false;
@@ -44,7 +44,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
     {
         this.registrationId = registrationId;
         this.streamId = streamId;
-        this.channelUri = channelUri;
+        this.uri = channelUri;
         this.aeronClient = aeronClient;
         this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
     }
@@ -59,9 +59,9 @@ public abstract class SubscriptionLink implements DriverManagedResource
         return streamId;
     }
 
-    public String channelUri()
+    public String uri()
     {
-        return channelUri;
+        return uri;
     }
 
     public ReceiveChannelEndpoint channelEndpoint()
@@ -78,7 +78,13 @@ public abstract class SubscriptionLink implements DriverManagedResource
     {
         return false;
     }
+
     public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
+    {
+        return false;
+    }
+
+    public boolean matches(final int streamId)
     {
         return false;
     }
@@ -94,7 +100,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
         if (time > (aeronClient.timeOfLastKeepalive() + clientLivenessTimeoutNs))
         {
             reachedEndOfLife = true;
-            conductor.cleanupSubscriptionLink(SubscriptionLink.this);
+            conductor.cleanupSubscriptionLink(this);
         }
     }
 
@@ -191,8 +197,6 @@ class IpcSubscriptionLink extends SubscriptionLink
     {
         this.publication = (IpcPublication)source;
         this.position = position;
-
-        publication.incRef();
     }
 
     public void unlink(final Object source)
@@ -201,12 +205,16 @@ class IpcSubscriptionLink extends SubscriptionLink
         position = null;
     }
 
+    public boolean matches(final int streamId)
+    {
+        return streamId() == streamId;
+    }
+
     public void close()
     {
         if (null != publication)
         {
             publication.removeSubscription(position);
-            publication.decRef();
         }
     }
 }
@@ -243,7 +251,7 @@ class SpySubscriptionLink extends SubscriptionLink
     public boolean matches(final NetworkPublication publication)
     {
         return streamId == publication.streamId() &&
-            publication.sendChannelEndpoint().udpChannel().canonicalForm().equals(udpChannel.canonicalForm());
+            udpChannel.canonicalForm().equals(publication.sendChannelEndpoint().udpChannel().canonicalForm());
     }
 
     public void close()

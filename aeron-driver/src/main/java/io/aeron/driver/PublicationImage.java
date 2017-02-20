@@ -107,7 +107,7 @@ public class PublicationImage
     private final boolean isReliable;
     private boolean reachedEndOfLife = false;
 
-    private volatile PublicationImage.Status status = PublicationImage.Status.INIT;
+    private volatile Status status = Status.INIT;
 
     private final NanoClock nanoClock;
     private final InetSocketAddress controlAddress;
@@ -610,9 +610,9 @@ public class PublicationImage
     public void onRttMeasurement(final RttMeasurementFlyweight header, final InetSocketAddress srcAddress)
     {
         final long now = nanoClock.nanoTime();
-        final long rttInNanos = now - header.echoTimestamp() - header.receptionDelta();
+        final long rttInNs = now - header.echoTimestamp() - header.receptionDelta();
 
-        congestionControl.onRttMeasurement(now, rttInNanos, srcAddress);
+        congestionControl.onRttMeasurement(now, rttInNs, srcAddress);
     }
 
     /**

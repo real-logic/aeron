@@ -23,6 +23,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.ReadablePosition;
 
+import static io.aeron.driver.Configuration.PUBLICATION_LINGER_NS;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 
 /**
@@ -30,6 +31,11 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
  */
 public class IpcPublication implements DriverManagedResource
 {
+    enum Status
+    {
+        ACTIVE, INACTIVE, LINGER
+    }
+
     private static final ReadablePosition[] EMPTY_POSITIONS = new ReadablePosition[0];
 
     private final long correlationId;
@@ -42,12 +48,14 @@ public class IpcPublication implements DriverManagedResource
     private long tripLimit = 0;
     private long consumerPosition = 0;
     private long cleanPosition = 0;
+    private long timeOfLastStatusChange = 0;
     private int refCount = 0;
     private boolean reachedEndOfLife = false;
     private final UnsafeBuffer[] termBuffers;
     private ReadablePosition[] subscriberPositions = EMPTY_POSITIONS;
     private final RawLog rawLog;
     private final Position publisherLimit;
+    private Status status = Status.ACTIVE;
 
     public IpcPublication(
         final long correlationId,
@@ -188,9 +196,30 @@ public class IpcPublication implements DriverManagedResource
 
     public void onTimeEvent(final long time, final DriverConductor conductor)
     {
-        if (0 == refCount)
+        switch (status)
         {
-            reachedEndOfLife = true;
+            case ACTIVE:
+                if (0 == refCount)
+                {
+                    status(Status.INACTIVE, time);
+                }
+                break;
+
+            case INACTIVE:
+                if (isDrained())
+                {
+                    status(Status.LINGER, time);
+                    conductor.transitionToLinger(this);
+                }
+                break;
+
+            case LINGER:
+                if (time > (timeOfLastStatusChange + PUBLICATION_LINGER_NS))
+                {
+                    reachedEndOfLife = true;
+                    conductor.cleanupIpcPublication(this);
+                }
+                break;
         }
     }
 
@@ -232,5 +261,28 @@ public class IpcPublication implements DriverManagedResource
     public boolean unblockAtConsumerPosition()
     {
         return LogBufferUnblocker.unblock(termBuffers, rawLog.metaData(), consumerPosition);
+    }
+
+    Status status()
+    {
+        return status;
+    }
+
+    private boolean isDrained()
+    {
+        long minSubscriberPosition = Long.MAX_VALUE;
+
+        for (final ReadablePosition subscriberPosition : subscriberPositions)
+        {
+            minSubscriberPosition = Math.min(minSubscriberPosition, subscriberPosition.getVolatile());
+        }
+
+        return minSubscriberPosition >= producerPosition();
+    }
+
+    private void status(final Status status, final long time)
+    {
+        timeOfLastStatusChange = time;
+        this.status = status;
     }
 }

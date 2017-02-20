@@ -52,8 +52,8 @@ public class IpcPublication implements DriverManagedResource
     private long tripLimit = 0;
     private long consumerPosition = 0;
     private long lastConsumerPosition = 0;
-    private long cleanPosition = 0;
     private long timeOfLastConsumerPositionChange = 0;
+    private long cleanPosition = 0;
     private long timeOfLastStatusChange = 0;
     private int refCount = 0;
     private boolean reachedEndOfLife = false;

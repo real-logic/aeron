@@ -29,7 +29,9 @@
 
         <module name="FinalParameters"/>
 
-        <module name="FinalLocalVariable"/>
+        <module name="FinalLocalVariable">
+            <property name="validateEnhancedForLoopVariable" value="true"/>
+        </module>
 
         <module name="LocalFinalVariableName"/>
 

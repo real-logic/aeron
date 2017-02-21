@@ -74,5 +74,4 @@ public class DestinationMessageFlyweight extends CorrelatedMessageFlyweight
     {
         return CHANNEL_OFFSET + lengthOfChannel;
     }
-
 }

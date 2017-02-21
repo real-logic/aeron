@@ -364,8 +364,18 @@ public:
         return newPosition;
     }
 
+    /**
+     * Add a destination manually to a multi-destination-cast Publication.
+     *
+     * @param endpointChannel for the destination to add
+     */
     void addDestination(const std::string& endpointChannel);
 
+    /**
+     * Remove a previously added destination manually from a multi-destination-cast Publication.
+     *
+     * @param endpointChannel for the destination to remove
+     */
     void removeDestination(const std::string& endpointChannel);
 
     /// @cond HIDDEN_SYMBOLS

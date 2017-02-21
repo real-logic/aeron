@@ -18,12 +18,12 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.messages.ArchiveMetaFileFormatDecoder;
+import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.CloseHelper;
-import org.agrona.IoUtil;
+import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.junit.*;
-import org.mockito.*;
+import org.mockito.Mockito;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -33,8 +33,8 @@ import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
 import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -115,10 +115,15 @@ public class ImageArchivingSessionTest
         Assert.assertEquals(streamInstanceId, session.streamInstanceId());
 
         // setup the mock image to pass on the mock log buffer
-        when(image.rawPoll(eq(session), anyInt())).
+        when(image.rawPoll(any(), anyInt())).
             thenAnswer(invocation ->
             {
-                session.onBlock(mockLogBufferChannel, 0, mockLogBufferMapped, termOffset, 100, sessionId, 0);
+                final RawBlockHandler handle = invocation.getArgument(0);
+                if (handle == null)
+                {
+                    return 0;
+                }
+                handle.onBlock(mockLogBufferChannel, 0, mockLogBufferMapped, termOffset, 100, sessionId, 0);
                 return 100;
             });
 
@@ -161,7 +166,7 @@ public class ImageArchivingSessionTest
         });
 
         // next poll has no data
-        when(image.rawPoll(eq(session), anyInt())).thenReturn(0);
+        when(image.rawPoll(any(), anyInt())).thenReturn(0);
         Assert.assertEquals("Expect no work", 0, session.doWork());
 
         // image is closed

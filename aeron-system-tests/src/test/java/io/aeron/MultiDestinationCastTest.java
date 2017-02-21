@@ -384,7 +384,13 @@ public class MultiDestinationCastTest
                     Integer.MAX_VALUE,
                     TimeUnit.MILLISECONDS.toNanos(500));
             }
-            else if (i == numMessageForSub2 - 1)
+            else
+            {
+                fragmentsRead.addAndGet(subscriptionB.poll(fragmentHandlerB, 10));
+                Thread.yield();
+            }
+
+            if (i == numMessageForSub2 - 1)
             {
                 publication.removeDestination(SUB2_MDC_MANUAL_URI);
             }

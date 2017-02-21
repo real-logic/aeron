@@ -115,7 +115,6 @@ public class GapFillLossTest
     {
         private final Subscription subscription;
         int messageCount = 0;
-        long position = 0;
 
         Subscriber(final Subscription subscription)
         {
@@ -126,7 +125,14 @@ public class GapFillLossTest
         {
             final IdleStrategy idleStrategy = new YieldingIdleStrategy();
 
-            while (position < FINAL_POSITION.get())
+            while (subscription.hasNoImages())
+            {
+                idleStrategy.idle();
+            }
+
+            final Image image = subscription.images().get(0);
+
+            while (image.position() < FINAL_POSITION.get())
             {
                 idleStrategy.idle(subscription.poll(this, FRAGMENT_COUNT_LIMIT));
             }
@@ -135,7 +141,6 @@ public class GapFillLossTest
         public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
         {
             messageCount++;
-            position = header.position();
         }
     }
 }

@@ -559,7 +559,7 @@ public class NetworkPublication
     public void onTimeEvent(final long timeNs, final DriverConductor conductor)
     {
         if (isUnreferencedAndPotentiallyInactive(timeNs) &&
-            spiesHaveConsumed() &&
+            haveSpiesCaughtUpWithTheSender() &&
             timeNs > (timeOfLastActivity + PUBLICATION_LINGER_NS))
         {
             hasReachedEndOfLife = true;
@@ -587,7 +587,7 @@ public class NetworkPublication
         }
     }
 
-    private boolean spiesHaveConsumed()
+    private boolean haveSpiesCaughtUpWithTheSender()
     {
         if (hasSpies())
         {

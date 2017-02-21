@@ -15,10 +15,7 @@
  */
 package io.aeron;
 
-import io.aeron.command.CorrelatedMessageFlyweight;
-import io.aeron.command.PublicationMessageFlyweight;
-import io.aeron.command.RemoveMessageFlyweight;
-import io.aeron.command.SubscriptionMessageFlyweight;
+import io.aeron.command.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 
@@ -44,6 +41,7 @@ public class DriverProxy
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
+    private final DestinationMessageFlyweight destinationMessage = new DestinationMessageFlyweight();
     private final RingBuffer toDriverCommandBuffer;
 
     public DriverProxy(final RingBuffer toDriverCommandBuffer)
@@ -54,6 +52,7 @@ public class DriverProxy
         subscriptionMessage.wrap(buffer, 0);
         correlatedMessage.wrap(buffer, 0);
         removeMessage.wrap(buffer, 0);
+        destinationMessage.wrap(buffer, 0);
 
         final long clientId = toDriverCommandBuffer.nextCorrelationId();
         correlatedMessage.clientId(clientId);
@@ -140,5 +139,39 @@ public class DriverProxy
         {
             throw new IllegalStateException("Could not send client keepalive command");
         }
+    }
+
+    public long addDestination(final long registrationId, final String endpointChannel)
+    {
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+
+        destinationMessage
+            .registrationCorrelationId(registrationId)
+            .channel(endpointChannel)
+            .correlationId(correlationId);
+
+        if (!toDriverCommandBuffer.write(ADD_DESTINATION, buffer, 0, destinationMessage.length()))
+        {
+            throw new IllegalStateException("Could not write destination command");
+        }
+
+        return correlationId;
+    }
+
+    public long removeDestination(final long registrationId, final String endpointChannel)
+    {
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+
+        destinationMessage
+            .registrationCorrelationId(registrationId)
+            .channel(endpointChannel)
+            .correlationId(correlationId);
+
+        if (!toDriverCommandBuffer.write(REMOVE_DESTINATION, buffer, 0, destinationMessage.length()))
+        {
+            throw new IllegalStateException("Could not write destination command");
+        }
+
+        return correlationId;
     }
 }

@@ -432,6 +432,26 @@ public class Publication implements AutoCloseable
     }
 
     /**
+     * Add a destination manually to a multi-destination-cast Publication.
+     *
+     * @param endpointChannel for the destination to add
+     */
+    public void addDestination(final String endpointChannel)
+    {
+        clientConductor.addDestination(this, endpointChannel);
+    }
+
+    /**
+     * Remove a previously added destination manually from a multi-destination-cast Publication.
+
+     * @param endpointChannel for the destination to remove
+     */
+    public void removeDestination(final String endpointChannel)
+    {
+        clientConductor.removeDestination(this, endpointChannel);
+    }
+
+    /**
      * @see Publication#close()
      */
     void incRef()

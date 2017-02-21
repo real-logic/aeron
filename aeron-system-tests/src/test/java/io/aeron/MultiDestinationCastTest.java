@@ -39,9 +39,13 @@ import static org.mockito.Mockito.*;
 
 public class MultiDestinationCastTest
 {
-    private static final String PUB_MDC_URI = "aeron:udp?control=localhost:54325";
+    private static final String PUB_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:54325";
     private static final String SUB1_MDC_DYNAMIC_URI = "aeron:udp?endpoint=localhost:54326|control=localhost:54325";
     private static final String SUB2_MDC_DYNAMIC_URI = "aeron:udp?endpoint=localhost:54327|control=localhost:54325";
+
+    private static final String PUB_MDC_MANUAL_URI = "aeron:udp?control=localhost:54325|control-mode=manual";
+    private static final String SUB1_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:54326";
+    private static final String SUB2_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:54327";
 
     private static final int STREAM_ID = 1;
     private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
@@ -115,9 +119,27 @@ public class MultiDestinationCastTest
     {
         launch();
 
-        publication = clientA.addPublication(PUB_MDC_URI, STREAM_ID);
+        publication = clientA.addPublication(PUB_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(SUB2_MDC_DYNAMIC_URI, STREAM_ID);
+
+        while (subscriptionA.hasNoImages() && subscriptionB.hasNoImages())
+        {
+            Thread.sleep(1);
+        }
+    }
+
+    @Test(timeout = 10000)
+    public void shouldSpinUpAndShutdownWithManual() throws Exception
+    {
+        launch();
+
+        publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
+        subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
+        subscriptionB = clientA.addSubscription(SUB2_MDC_MANUAL_URI, STREAM_ID);
+
+        publication.addDestination(SUB1_MDC_MANUAL_URI);
+        publication.addDestination(SUB2_MDC_MANUAL_URI);
 
         while (subscriptionA.hasNoImages() && subscriptionB.hasNoImages())
         {
@@ -132,7 +154,7 @@ public class MultiDestinationCastTest
 
         launch();
 
-        publication = clientA.addPublication(PUB_MDC_URI, STREAM_ID);
+        publication = clientA.addPublication(PUB_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(SUB2_MDC_DYNAMIC_URI, STREAM_ID);
 
@@ -191,9 +213,71 @@ public class MultiDestinationCastTest
 
         launch();
 
-        publication = clientA.addPublication(PUB_MDC_URI, STREAM_ID);
+        publication = clientA.addPublication(PUB_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionB = clientA.addSubscription(SUB2_MDC_DYNAMIC_URI, STREAM_ID);
+
+        while (subscriptionA.hasNoImages() && subscriptionB.hasNoImages())
+        {
+            Thread.sleep(1);
+        }
+
+        for (int i = 0; i < numMessagesToSend; i++)
+        {
+            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            {
+                Thread.yield();
+            }
+
+            final AtomicInteger fragmentsRead = new AtomicInteger();
+            SystemTestHelper.executeUntil(
+                () -> fragmentsRead.get() > 0,
+                (j) ->
+                {
+                    fragmentsRead.getAndAdd(subscriptionA.poll(fragmentHandlerA, 10));
+                    Thread.yield();
+                },
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(500));
+
+            fragmentsRead.set(0);
+            SystemTestHelper.executeUntil(
+                () -> fragmentsRead.get() > 0,
+                (j) ->
+                {
+                    fragmentsRead.addAndGet(subscriptionB.poll(fragmentHandlerB, 10));
+                    Thread.yield();
+                },
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(500));
+        }
+
+        verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(MESSAGE_LENGTH),
+            any(Header.class));
+
+        verify(fragmentHandlerB, times(numMessagesToSend)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(MESSAGE_LENGTH),
+            any(Header.class));
+    }
+
+    @Test(timeout = 10000)
+    public void shouldSendToTwoPortsWithManualSingleDriver() throws Exception
+    {
+        final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+
+        launch();
+
+        publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
+        subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
+        subscriptionB = clientA.addSubscription(SUB2_MDC_MANUAL_URI, STREAM_ID);
+
+        publication.addDestination(SUB1_MDC_MANUAL_URI);
+        publication.addDestination(SUB2_MDC_MANUAL_URI);
 
         while (subscriptionA.hasNoImages() && subscriptionB.hasNoImages())
         {

@@ -364,6 +364,25 @@ public final class UdpChannel
         return hasExplicitControl;
     }
 
+    /**
+     * Get the endpoint address from the URI.
+     *
+     * @param uri to check
+     * @return endpoint address for URI
+     */
+    public static InetSocketAddress destinationAddress(final AeronUri uri)
+    {
+        try
+        {
+            validateConfiguration(uri);
+            return getEndpointAddress(uri);
+        }
+        catch (final Exception ex)
+        {
+            throw new InvalidChannelException(ErrorCode.INVALID_CHANNEL, ex);
+        }
+    }
+
     private static InterfaceSearchAddress getInterfaceSearchAddress(final AeronUri uri) throws UnknownHostException
     {
         final InterfaceSearchAddress interfaceSearchAddress;

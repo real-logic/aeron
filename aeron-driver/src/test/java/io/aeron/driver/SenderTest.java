@@ -128,6 +128,7 @@ public class SenderTest
         }
 
         publication = new NetworkPublication(
+            1,
             mockSendChannelEndpoint,
             () -> currentTimestamp,
             () -> currentTimestamp / (1_000_000L),

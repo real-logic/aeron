@@ -17,11 +17,8 @@ package io.aeron.driver;
 
 import io.aeron.ArrayListUtil;
 import io.aeron.CommonContext;
+import io.aeron.command.*;
 import io.aeron.driver.buffer.RawLogFactory;
-import io.aeron.command.CorrelatedMessageFlyweight;
-import io.aeron.command.PublicationMessageFlyweight;
-import io.aeron.command.RemoveMessageFlyweight;
-import io.aeron.command.SubscriptionMessageFlyweight;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.cmd.DriverConductorCmd;
@@ -96,6 +93,7 @@ public class DriverConductor implements Agent
     private final SubscriptionMessageFlyweight subscriptionMsgFlyweight = new SubscriptionMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMsgFlyweight = new CorrelatedMessageFlyweight();
     private final RemoveMessageFlyweight removeMsgFlyweight = new RemoveMessageFlyweight();
+    private final DestinationMessageFlyweight destinationMsgFlyweight = new DestinationMessageFlyweight();
 
     private final EpochClock epochClock;
     private final NanoClock nanoClock;
@@ -529,6 +527,30 @@ public class DriverConductor implements Agent
                     break;
                 }
 
+                case ADD_DESTINATION:
+                {
+                    final DestinationMessageFlyweight addDestinationMsgFlyweight = destinationMsgFlyweight;
+                    addDestinationMsgFlyweight.wrap(buffer, index);
+                    correlationId = addDestinationMsgFlyweight.correlationId();
+                    final long channelRegistrationId = addDestinationMsgFlyweight.registrationCorrelationId();
+                    final String channel = addDestinationMsgFlyweight.channel();
+
+                    onAddDestination(channelRegistrationId, channel, correlationId);
+                    break;
+                }
+
+                case REMOVE_DESTINATION:
+                {
+                    final DestinationMessageFlyweight addDestinationMsgFlyweight = destinationMsgFlyweight;
+                    addDestinationMsgFlyweight.wrap(buffer, index);
+                    correlationId = addDestinationMsgFlyweight.correlationId();
+                    final long channelRegistrationId = addDestinationMsgFlyweight.registrationCorrelationId();
+                    final String channel = addDestinationMsgFlyweight.channel();
+
+                    onRemoveDestination(channelRegistrationId, channel, correlationId);
+                    break;
+                }
+
                 case CLIENT_KEEPALIVE:
                 {
                     final CorrelatedMessageFlyweight correlatedMessageFlyweight = correlatedMsgFlyweight;
@@ -598,6 +620,7 @@ public class DriverConductor implements Agent
                     context.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
 
             publication = new NetworkPublication(
+                registrationId,
                 channelEndpoint,
                 nanoClock,
                 toDriverCommands::consumerHeartbeatTime,
@@ -796,6 +819,60 @@ public class DriverConductor implements Agent
 
         publicationLink.close();
 
+        clientProxy.operationSucceeded(correlationId);
+    }
+
+    private void onAddDestination(
+        final long registrationId, final String destinationChannel, final long correlationId)
+    {
+        SendChannelEndpoint sendChannelEndpoint = null;
+
+        for (int i = 0, size = networkPublications.size(); i < size; i++)
+        {
+            final NetworkPublication publication = networkPublications.get(i);
+
+            if (registrationId == publication.registrationId())
+            {
+                sendChannelEndpoint = publication.sendChannelEndpoint();
+                break;
+            }
+        }
+
+        if (null == sendChannelEndpoint)
+        {
+            throw new ControlProtocolException(UNKNOWN_PUBLICATION, "Unknown publication: " + registrationId);
+        }
+
+        final AeronUri aeronUri = AeronUri.parse(destinationChannel);
+        final InetSocketAddress destAddress = UdpChannel.destinationAddress(aeronUri);
+        sendChannelEndpoint.addDestination(destAddress);
+        clientProxy.operationSucceeded(correlationId);
+    }
+
+    private void onRemoveDestination(
+        final long registrationId, final String destinationChannel, final long correlationId)
+    {
+        SendChannelEndpoint sendChannelEndpoint = null;
+
+        for (int i = 0, size = networkPublications.size(); i < size; i++)
+        {
+            final NetworkPublication publication = networkPublications.get(i);
+
+            if (registrationId == publication.registrationId())
+            {
+                sendChannelEndpoint = publication.sendChannelEndpoint();
+                break;
+            }
+        }
+
+        if (null == sendChannelEndpoint)
+        {
+            throw new ControlProtocolException(UNKNOWN_PUBLICATION, "Unknown publication: " + registrationId);
+        }
+
+        final AeronUri aeronUri = AeronUri.parse(destinationChannel);
+        final InetSocketAddress destAddress = UdpChannel.destinationAddress(aeronUri);
+        sendChannelEndpoint.removeDestination(destAddress);
         clientProxy.operationSucceeded(correlationId);
     }
 

@@ -73,7 +73,15 @@ public class SendChannelEndpoint extends UdpChannelTransport
         UdpDestinationTracker destinationTracker = null;
         if (udpChannel.hasExplicitControl())
         {
-            destinationTracker = new UdpDestinationTracker(context.nanoClock(), this::presend, DESTINATION_TIMEOUT);
+            final String mode = udpChannel.aeronUri().get("control-mode");
+            if ("manual".equals(mode))
+            {
+                destinationTracker = new UdpDestinationTracker(this::presend);
+            }
+            else
+            {
+                destinationTracker = new UdpDestinationTracker(context.nanoClock(), this::presend, DESTINATION_TIMEOUT);
+            }
         }
 
         multiDestinationTracker = destinationTracker;
@@ -276,6 +284,30 @@ public class SendChannelEndpoint extends UdpChannelTransport
         if (null != publication)
         {
             publication.onRttMeasurement(msg, srcAddress);
+        }
+    }
+
+    public void addDestination(final InetSocketAddress address)
+    {
+        if (null != multiDestinationTracker && multiDestinationTracker.isManualControlMode())
+        {
+            multiDestinationTracker.addDestination(address);
+        }
+        else
+        {
+            throw new IllegalArgumentException("control channel does not allow manual control");
+        }
+    }
+
+    public void removeDestination(final InetSocketAddress address)
+    {
+        if (null != multiDestinationTracker && multiDestinationTracker.isManualControlMode())
+        {
+            multiDestinationTracker.removeDestination(address);
+        }
+        else
+        {
+            throw new IllegalArgumentException("control channel does not allow manual control");
         }
     }
 }

@@ -202,6 +202,20 @@ class ClientConductor implements Agent, DriverListener
         activeSubscriptions.remove(subscription);
     }
 
+    void addDestination(final Publication publication, final String endpointChannel)
+    {
+        verifyDriverIsActive();
+
+        awaitResponse(driverProxy.addDestination(publication.registrationId(), endpointChannel), endpointChannel);
+    }
+
+    void removeDestination(final Publication publication, final String endpointChannel)
+    {
+        verifyDriverIsActive();
+
+        awaitResponse(driverProxy.removeDestination(publication.registrationId(), endpointChannel), endpointChannel);
+    }
+
     public void onNewPublication(
         final String channel,
         final int streamId,

@@ -49,6 +49,13 @@ public class UdpDestinationTracker
         this.destinationTimeout = timeout;
     }
 
+    public UdpDestinationTracker(final PreSendFunction preSendFunction)
+    {
+        this.nanoClock = () -> 0;
+        this.preSendFunction = preSendFunction;
+        this.destinationTimeout = 0;
+    }
+
     public int sendToDestinations(final DatagramChannel sendDatagramChannel, final ByteBuffer buffer)
     {
         final ArrayList<Destination> destinationList = this.destinationList;
@@ -92,24 +99,54 @@ public class UdpDestinationTracker
 
     public void destinationActivity(final long receiverId, final InetSocketAddress destAddress)
     {
-        final ArrayList<Destination> destinationList = this.destinationList;
-        final long now = nanoClock.nanoTime();
-        boolean isExisting = false;
+        if (destinationTimeout > 0)
+        {
+            final ArrayList<Destination> destinationList = this.destinationList;
+            final long now = nanoClock.nanoTime();
+            boolean isExisting = false;
 
-        for (int i = 0, size = destinationList.size(); i < size; i++)
+            for (int i = 0, size = destinationList.size(); i < size; i++)
+            {
+                final Destination destination = destinationList.get(i);
+
+                if (receiverId == destination.receiverId && destAddress.getPort() == destination.port)
+                {
+                    destination.timeOfLastActivity = now;
+                    isExisting = true;
+                    break;
+                }
+            }
+
+            if (!isExisting)
+            {
+                destinationList.add(new Destination(now, receiverId, destAddress));
+            }
+        }
+    }
+
+    public boolean isManualControlMode()
+    {
+        return destinationTimeout == 0;
+    }
+
+    public void addDestination(final InetSocketAddress address)
+    {
+        destinationList.add(new Destination(Long.MAX_VALUE, 0, address));
+    }
+
+    public void removeDestination(final InetSocketAddress address)
+    {
+        final ArrayList<Destination> destinationList = this.destinationList;
+
+        for (int lastIndex = destinationList.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final Destination destination = destinationList.get(i);
 
-            if (receiverId == destination.receiverId && destAddress.getPort() == destination.port)
+            if (address.equals(destination.address))
             {
-                destination.timeOfLastActivity = now;
-                isExisting = true;
+                ArrayListUtil.fastUnorderedRemove(destinationList, i, lastIndex);
+                break;
             }
-        }
-
-        if (!isExisting)
-        {
-            destinationList.add(new Destination(now, receiverId, destAddress));
         }
     }
 

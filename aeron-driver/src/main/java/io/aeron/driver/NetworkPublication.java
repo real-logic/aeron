@@ -86,6 +86,7 @@ public class NetworkPublication
     extends NetworkPublicationPadding3
     implements RetransmitSender, DriverManagedResource
 {
+    private final long registrationId;
     private final long unblockTimeoutNs;
     private final int positionBitsToShift;
     private final int initialTermId;
@@ -122,6 +123,7 @@ public class NetworkPublication
     private final AtomicCounter unblockedPublications;
 
     public NetworkPublication(
+        final long registrationId,
         final SendChannelEndpoint channelEndpoint,
         final NanoClock nanoClock,
         final EpochClock epochClock,
@@ -139,6 +141,7 @@ public class NetworkPublication
         final NetworkPublicationThreadLocals threadLocals,
         final long unblockTimeoutNs)
     {
+        this.registrationId = registrationId;
         this.unblockTimeoutNs = unblockTimeoutNs;
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
@@ -198,6 +201,11 @@ public class NetworkPublication
     public int mtuLength()
     {
         return mtuLength;
+    }
+
+    public long registrationId()
+    {
+        return registrationId;
     }
 
     public int send(final long now)

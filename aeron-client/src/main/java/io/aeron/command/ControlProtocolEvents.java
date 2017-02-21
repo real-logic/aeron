@@ -33,6 +33,10 @@ public class ControlProtocolEvents
     public static final int REMOVE_SUBSCRIPTION = 0x05;
     /** Keepalive from Client */
     public static final int CLIENT_KEEPALIVE = 0x06;
+    /** Add Destination */
+    public static final int ADD_DESTINATION = 0x07;
+    /** Remove Destination */
+    public static final int REMOVE_DESTINATION = 0x08;
 
     // Media Driver to Clients
 

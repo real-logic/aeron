@@ -60,7 +60,7 @@
 
         <module name="MethodLength">
             <property name="tokens" value="METHOD_DEF"/>
-            <property name="max" value="100"/>
+            <property name="max" value="120"/>
         </module>
 
         <module name="EmptyForInitializerPad"/>

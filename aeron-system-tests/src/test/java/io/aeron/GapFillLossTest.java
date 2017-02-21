@@ -65,7 +65,7 @@ public class GapFillLossTest
         ctx.lossReport(lossReport);
 
         final LossGenerator dataLossGenerator =
-            DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.10, 0xcafebabeL);
+            DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.20, 0xcafebabeL);
         final LossGenerator noLossGenerator =
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
 

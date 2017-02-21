@@ -329,7 +329,7 @@ public class MultiDestinationCastTest
     }
 
     @Test(timeout = 10000)
-    public void shouldRemoveManualPort() throws Exception
+    public void shouldManuallyRemovePortDuringActiveStream() throws Exception
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         final int numMessageForSub2 = 10;
@@ -411,4 +411,83 @@ public class MultiDestinationCastTest
             any(Header.class));
     }
 
+    @Test(timeout = 10000)
+    public void shouldManuallyAddPortDuringActiveStream() throws Exception
+    {
+        final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        final int numMessageForSub2 = 10;
+        final CountDownLatch availableCountDownLatch = new CountDownLatch(1);
+
+        aeronBContext.availableImageHandler((image) -> availableCountDownLatch.countDown());
+
+        launch();
+
+        publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
+        subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
+        subscriptionB = clientB.addSubscription(SUB2_MDC_MANUAL_URI, STREAM_ID);
+
+        publication.addDestination(SUB1_MDC_MANUAL_URI);
+
+        while (subscriptionA.hasNoImages())
+        {
+            Thread.sleep(1);
+        }
+
+        for (int i = 0; i < numMessagesToSend; i++)
+        {
+            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            {
+                Thread.yield();
+            }
+
+            final AtomicInteger fragmentsRead = new AtomicInteger();
+            SystemTestHelper.executeUntil(
+                () -> fragmentsRead.get() > 0,
+                (j) ->
+                {
+                    fragmentsRead.getAndAdd(subscriptionA.poll(fragmentHandlerA, 10));
+                    Thread.yield();
+                },
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(500));
+
+            fragmentsRead.set(0);
+
+            if (i > (numMessagesToSend - numMessageForSub2))
+            {
+                SystemTestHelper.executeUntil(
+                    () -> fragmentsRead.get() > 0,
+                    (j) ->
+                    {
+                        fragmentsRead.addAndGet(subscriptionB.poll(fragmentHandlerB, 10));
+                        Thread.yield();
+                    },
+                    Integer.MAX_VALUE,
+                    TimeUnit.MILLISECONDS.toNanos(500));
+            }
+            else
+            {
+                fragmentsRead.addAndGet(subscriptionB.poll(fragmentHandlerB, 10));
+                Thread.yield();
+            }
+
+            if (i == (numMessagesToSend - numMessageForSub2 - 1))
+            {
+                publication.addDestination(SUB2_MDC_MANUAL_URI);
+                availableCountDownLatch.await();
+            }
+        }
+
+        verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(MESSAGE_LENGTH),
+            any(Header.class));
+
+        verify(fragmentHandlerB, times(numMessageForSub2)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(MESSAGE_LENGTH),
+            any(Header.class));
+    }
 }

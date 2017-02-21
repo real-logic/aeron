@@ -21,6 +21,20 @@ import org.agrona.concurrent.status.CountersManager;
 
 public interface CongestionControlSupplier
 {
+    /**
+     * Return a new {@link CongestionControl} instance.
+     *
+     * @param registrationId  for the instance.
+     * @param udpChannel      for the instance.
+     * @param streamId        for the instance.
+     * @param sessionId       for the instance.
+     * @param termLength      for the instance.
+     * @param senderMtuLength for the instance.
+     * @param clock           for the instance.
+     * @param context         for the instance.
+     * @param countersManager for the instance.
+     * @return congestion control instance ready for immediate usage.
+     */
     CongestionControl newInstance(
         long registrationId,
         UdpChannel udpChannel,

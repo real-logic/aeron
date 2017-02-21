@@ -451,6 +451,7 @@ public class DriverConductor implements Agent
         }
     }
 
+    @SuppressWarnings("MethodLength")
     private void onClientCommand(
         final int msgTypeId,
         final MutableDirectBuffer buffer,

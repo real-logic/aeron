@@ -19,6 +19,7 @@ import io.aeron.driver.cmd.*;
 import io.aeron.driver.media.SendChannelEndpoint;
 import org.agrona.concurrent.status.AtomicCounter;
 
+import java.net.InetSocketAddress;
 import java.util.Queue;
 
 import static io.aeron.driver.ThreadingMode.SHARED;
@@ -91,6 +92,30 @@ public class SenderProxy
         else
         {
             offer(new NewPublicationCmd(publication));
+        }
+    }
+
+    public void addDestination(final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
+    {
+        if (isSharedThread())
+        {
+            sender.onAddDestination(channelEndpoint, address);
+        }
+        else
+        {
+            offer(new AddDestinationCmd(channelEndpoint, address));
+        }
+    }
+
+    public void removeDestination(final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
+    {
+        if (isSharedThread())
+        {
+            sender.onRemoveDestination(channelEndpoint, address);
+        }
+        else
+        {
+            offer(new RemoveDestinationCmd(channelEndpoint, address));
         }
     }
 

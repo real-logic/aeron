@@ -516,10 +516,11 @@ public class DriverConductor implements Agent
         {
             throw new ControlProtocolException(UNKNOWN_PUBLICATION, "Unknown publication: " + registrationId);
         }
+        sendChannelEndpoint.validateAllowsManualControl();
 
         final AeronUri aeronUri = AeronUri.parse(destinationChannel);
         final InetSocketAddress dstAddress = UdpChannel.destinationAddress(aeronUri);
-        sendChannelEndpoint.addDestination(dstAddress);
+        senderProxy.addDestination(sendChannelEndpoint, dstAddress);
         clientProxy.operationSucceeded(correlationId);
     }
 
@@ -542,10 +543,11 @@ public class DriverConductor implements Agent
         {
             throw new ControlProtocolException(UNKNOWN_PUBLICATION, "Unknown publication: " + registrationId);
         }
+        sendChannelEndpoint.validateAllowsManualControl();
 
         final AeronUri aeronUri = AeronUri.parse(destinationChannel);
         final InetSocketAddress dstAddress = UdpChannel.destinationAddress(aeronUri);
-        sendChannelEndpoint.removeDestination(dstAddress);
+        senderProxy.removeDestination(sendChannelEndpoint, dstAddress);
         clientProxy.operationSucceeded(correlationId);
     }
 

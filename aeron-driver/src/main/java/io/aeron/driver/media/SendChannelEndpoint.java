@@ -287,27 +287,21 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
     }
 
-    public void addDestination(final InetSocketAddress address)
+    public void validateAllowsManualControl()
     {
-        if (null != multiDestinationTracker && multiDestinationTracker.isManualControlMode())
-        {
-            multiDestinationTracker.addDestination(address);
-        }
-        else
+        if (null == multiDestinationTracker || !multiDestinationTracker.isManualControlMode())
         {
             throw new IllegalArgumentException("control channel does not allow manual control");
         }
     }
 
+    public void addDestination(final InetSocketAddress address)
+    {
+        multiDestinationTracker.addDestination(address);
+    }
+
     public void removeDestination(final InetSocketAddress address)
     {
-        if (null != multiDestinationTracker && multiDestinationTracker.isManualControlMode())
-        {
-            multiDestinationTracker.removeDestination(address);
-        }
-        else
-        {
-            throw new IllegalArgumentException("control channel does not allow manual control");
-        }
+        multiDestinationTracker.removeDestination(address);
     }
 }

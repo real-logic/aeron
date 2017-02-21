@@ -24,6 +24,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
+import java.net.InetSocketAddress;
 import java.util.function.Consumer;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_SENT;
@@ -123,6 +124,16 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
         networkPublications = ArrayUtil.remove(networkPublications, publication);
         publication.sendChannelEndpoint().unregisterForSend(publication);
         conductorProxy.closeNetworkPublication(publication);
+    }
+
+    public void onAddDestination(final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
+    {
+        channelEndpoint.addDestination(address);
+    }
+
+    public void onRemoveDestination(final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
+    {
+        channelEndpoint.removeDestination(address);
     }
 
     public void accept(final SenderCmd cmd)

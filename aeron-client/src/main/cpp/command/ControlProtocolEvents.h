@@ -39,6 +39,10 @@ struct ControlProtocolEvents
     static const std::int32_t REMOVE_SUBSCRIPTION = 0x05;
     /** Keepalive from Client */
     static const std::int32_t CLIENT_KEEPALIVE = 0x06;
+    /** Add Destination */
+    static const std::int32_t ADD_DESTINATION = 0x07;
+    /** Remove Destination */
+    static const std::int32_t REMOVE_DESTINATION = 0x08;
 
     // Media Driver to Clients
 

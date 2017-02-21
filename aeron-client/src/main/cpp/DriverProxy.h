@@ -22,6 +22,7 @@
 #include <command/PublicationMessageFlyweight.h>
 #include <command/RemoveMessageFlyweight.h>
 #include <command/SubscriptionMessageFlyweight.h>
+#include <command/DestinationMessageFlyweight.h>
 #include <command/ControlProtocolEvents.h>
 
 namespace aeron {
@@ -142,6 +143,48 @@ public:
 
             return ControlProtocolEvents::CLIENT_KEEPALIVE;
         });
+    }
+
+    std::int64_t addDestination(std::int64_t publicationRegistrationId, const std::string& channel)
+    {
+        std::int64_t correlationId = m_toDriverCommandBuffer.nextCorrelationId();
+
+        writeCommandToDriver([&](AtomicBuffer &buffer, util::index_t &length)
+        {
+            DestinationMessageFlyweight addMessage(buffer, 0);
+
+            addMessage.clientId(m_clientId);
+            addMessage.registrationId(publicationRegistrationId);
+            addMessage.correlationId(correlationId);
+            addMessage.channel(channel);
+
+            length = addMessage.length();
+
+            return ControlProtocolEvents::ADD_DESTINATION;
+        });
+
+        return correlationId;
+    }
+
+    std::int64_t removeDestination(std::int64_t publicationRegistrationId, const std::string& channel)
+    {
+        std::int64_t correlationId = m_toDriverCommandBuffer.nextCorrelationId();
+
+        writeCommandToDriver([&](AtomicBuffer &buffer, util::index_t &length)
+        {
+            DestinationMessageFlyweight removeMessage(buffer, 0);
+
+            removeMessage.clientId(m_clientId);
+            removeMessage.registrationId(publicationRegistrationId);
+            removeMessage.correlationId(correlationId);
+            removeMessage.channel(channel);
+
+            length = removeMessage.length();
+
+            return ControlProtocolEvents::REMOVE_DESTINATION;
+        });
+
+        return correlationId;
     }
 
 private:

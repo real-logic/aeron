@@ -364,6 +364,10 @@ public:
         return newPosition;
     }
 
+    void addDestination(const std::string& endpointChannel);
+
+    void removeDestination(const std::string& endpointChannel);
+
     /// @cond HIDDEN_SYMBOLS
     inline void close()
     {

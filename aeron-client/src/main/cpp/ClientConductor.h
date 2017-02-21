@@ -137,6 +137,9 @@ public:
         return (m_epochClock() <= (timeOfLastStatusMessage + m_publicationConnectionTimeoutMs));
     }
 
+    void addDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel);
+    void removeDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel);
+
 protected:
     void onCheckManagedResources(long now);
 

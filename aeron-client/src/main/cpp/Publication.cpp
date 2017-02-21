@@ -65,4 +65,14 @@ bool Publication::isPublicationConnected(std::int64_t timeOfLastStatusMessage) c
     return m_conductor.isPublicationConnected(timeOfLastStatusMessage);
 }
 
+void Publication::addDestination(const std::string& endpointChannel)
+{
+    m_conductor.addDestination(m_registrationId, endpointChannel);
+}
+
+void Publication::removeDestination(const std::string& endpointChannel)
+{
+    m_conductor.removeDestination(m_registrationId, endpointChannel);
+}
+
 }

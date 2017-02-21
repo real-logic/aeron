@@ -49,6 +49,7 @@ SET(HEADERS
     command/PublicationBuffersReadyFlyweight.h
     command/RemoveMessageFlyweight.h
     command/SubscriptionMessageFlyweight.h
+    command/DestinationMessageFlyweight.h
     concurrent/AgentRunner.h
     concurrent/Atomic64.h
     concurrent/AtomicBuffer.h

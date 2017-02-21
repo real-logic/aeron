@@ -558,14 +558,16 @@ public class NetworkPublication
 
     public void onTimeEvent(final long timeNs, final DriverConductor conductor)
     {
-        if (isUnreferencedAndPotentiallyInactive(timeNs) && timeNs > (timeOfLastActivity + PUBLICATION_LINGER_NS))
+        if (isUnreferencedAndPotentiallyInactive(timeNs) &&
+            spiesHaveConsumed() &&
+            timeNs > (timeOfLastActivity + PUBLICATION_LINGER_NS))
         {
             hasReachedEndOfLife = true;
             conductor.cleanupPublication(NetworkPublication.this);
         }
         else
         {
-            final long consumerPosition = consumerPosition();
+            final long consumerPosition = senderPosition.getVolatile();
             if (consumerPosition == lastConsumerPosition)
             {
                 if (producerPosition() > consumerPosition &&
@@ -583,6 +585,24 @@ public class NetworkPublication
                 lastConsumerPosition = consumerPosition;
             }
         }
+    }
+
+    private boolean spiesHaveConsumed()
+    {
+        if (hasSpies())
+        {
+            final long senderPosition = this.senderPosition.getVolatile();
+
+            long minSpyPosition = senderPosition;
+            for (final ReadablePosition spyPosition : spyPositions)
+            {
+                minSpyPosition = Math.min(minSpyPosition, spyPosition.getVolatile());
+            }
+
+            return minSpyPosition >= senderPosition;
+        }
+
+        return true;
     }
 
     public boolean hasReachedEndOfLife()

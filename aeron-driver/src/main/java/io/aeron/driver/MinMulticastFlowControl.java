@@ -27,13 +27,23 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 /**
  * Minimum multicast sender flow control strategy.
  *
- * Min of right edges.
- * Tracking of receivers for X seconds
+ * Flow control is set to minimum of tracked receivers.
+ *
+ * Tracking of receivers is done as long as they continue to send Status Messages. Once SMs stop, the receiver tracking
+ * for that receiver will timeout after a given number of nanoseconds.
  */
 public class MinMulticastFlowControl implements FlowControl
 {
+    /**
+     * Property name to set timeout, in nanoseconds, for a receiver to be tracked.
+     */
     private static final String RECEIVER_TIMEOUT_PROP_NAME = "aeron.MinMulticastFlowControl.receiverTimeout";
+
+    /**
+     * Default timeout, in nanoseconds, until a receiver is no longer tracked and considered for minimum.
+     */
     private static final long RECEIVER_TIMEOUT_DEFAULT = TimeUnit.SECONDS.toNanos(2);
+
     private static final long RECEIVER_TIMEOUT = Long.getLong(RECEIVER_TIMEOUT_PROP_NAME, RECEIVER_TIMEOUT_DEFAULT);
 
     private final ArrayList<Receiver> receiverList = new ArrayList<>();

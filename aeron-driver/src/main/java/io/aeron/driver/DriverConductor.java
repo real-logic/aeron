@@ -297,7 +297,7 @@ public class DriverConductor implements Agent
                 RETRANSMIT_UNICAST_LINGER_GENERATOR);
 
             final FlowControl flowControl =
-                udpChannel.isMulticast() ?
+                (udpChannel.isMulticast() || udpChannel.hasExplicitControl()) ?
                     context.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
                     context.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
 

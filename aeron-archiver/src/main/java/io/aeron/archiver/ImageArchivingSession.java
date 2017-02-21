@@ -15,19 +15,13 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.Image;
-import io.aeron.Subscription;
-import io.aeron.archiver.messages.ArchiveMetaFileFormatDecoder;
-import io.aeron.archiver.messages.ArchiveMetaFileFormatEncoder;
-import io.aeron.logbuffer.RawBlockHandler;
+import io.aeron.*;
+import io.aeron.archiver.messages.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
+import java.io.*;
+import java.nio.*;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
@@ -48,7 +42,7 @@ import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
  * <li> file position = offset + term size * [ (term - initial term) % (1GB / term size) ] </li>
  * </ul>
  */
-class ImageArchivingSession implements RawBlockHandler
+class ImageArchivingSession
 {
     enum State
     {
@@ -65,7 +59,7 @@ class ImageArchivingSession implements RawBlockHandler
         {
             int doWork(final ImageArchivingSession session)
             {
-                final int delta = session.image.rawPoll(session, ArchiveFileUtil.ARCHIVE_FILE_SIZE);
+                final int delta = session.image.rawPoll(session::onBlock, ArchiveFileUtil.ARCHIVE_FILE_SIZE);
                 if (session.image.isClosed())
                 {
                     session.state(CLOSE);
@@ -210,7 +204,7 @@ class ImageArchivingSession implements RawBlockHandler
     }
 
 
-    public void onBlock(
+    private void onBlock(
         final FileChannel fileChannel,
         final long fileOffset,
         final UnsafeBuffer termBuffer,

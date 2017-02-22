@@ -65,7 +65,7 @@ public class PublicationTest
         when(logBuffers.termBuffers()).thenReturn(termBuffers);
         when(logBuffers.termLength()).thenReturn(TERM_MIN_LENGTH);
         when(logBuffers.metaDataBuffer()).thenReturn(logMetaDataBuffer);
-        when(conductor.mainLock()).thenReturn(conductorLock);
+        when(conductor.clientLock()).thenReturn(conductorLock);
 
         initialTermId(logMetaDataBuffer, TERM_ID_1);
         mtuLength(logMetaDataBuffer, MTU_LENGTH);

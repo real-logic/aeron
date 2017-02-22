@@ -143,7 +143,7 @@ public final class Aeron implements AutoCloseable
      */
     public void close()
     {
-        conductor.mainLock().lock();
+        conductor.clientLock().lock();
         try
         {
             if (!isClosed)
@@ -155,7 +155,7 @@ public final class Aeron implements AutoCloseable
         }
         finally
         {
-            conductor.mainLock().unlock();
+            conductor.clientLock().unlock();
         }
     }
 
@@ -168,7 +168,7 @@ public final class Aeron implements AutoCloseable
      */
     public Publication addPublication(final String channel, final int streamId)
     {
-        conductor.mainLock().lock();
+        conductor.clientLock().lock();
         try
         {
             if (isClosed)
@@ -180,7 +180,7 @@ public final class Aeron implements AutoCloseable
         }
         finally
         {
-            conductor.mainLock().unlock();
+            conductor.clientLock().unlock();
         }
     }
 
@@ -193,7 +193,7 @@ public final class Aeron implements AutoCloseable
      */
     public Subscription addSubscription(final String channel, final int streamId)
     {
-        conductor.mainLock().lock();
+        conductor.clientLock().lock();
         try
         {
             if (isClosed)
@@ -205,7 +205,7 @@ public final class Aeron implements AutoCloseable
         }
         finally
         {
-            conductor.mainLock().unlock();
+            conductor.clientLock().unlock();
         }
     }
 
@@ -216,7 +216,7 @@ public final class Aeron implements AutoCloseable
      */
     public CountersReader countersReader()
     {
-        conductor.mainLock().lock();
+        conductor.clientLock().lock();
         try
         {
             if (isClosed)
@@ -228,7 +228,7 @@ public final class Aeron implements AutoCloseable
         }
         finally
         {
-            conductor.mainLock().unlock();
+            conductor.clientLock().unlock();
         }
     }
 

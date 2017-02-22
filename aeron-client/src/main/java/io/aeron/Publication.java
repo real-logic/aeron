@@ -73,7 +73,7 @@ public class Publication implements AutoCloseable
     private final UnsafeBuffer logMetaDataBuffer;
     private final HeaderWriter headerWriter;
     private final LogBuffers logBuffers;
-    private final ClientConductor clientConductor;
+    private final ClientConductor conductor;
     private final String channel;
 
     Publication(
@@ -96,7 +96,7 @@ public class Publication implements AutoCloseable
         final int termLength = logBuffers.termLength();
         this.maxPayloadLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
         this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(termLength);
-        this.clientConductor = clientConductor;
+        this.conductor = clientConductor;
         this.channel = channel;
         this.streamId = streamId;
         this.sessionId = sessionId;
@@ -184,13 +184,23 @@ public class Publication implements AutoCloseable
     }
 
     /**
+     * Return the registration id used to register this Publication with the media driver.
+     *
+     * @return registration id
+     */
+    public long registrationId()
+    {
+        return registrationId;
+    }
+
+    /**
      * Has the {@link Publication} seen an active Subscriber recently?
      *
      * @return true if this {@link Publication} has seen an active subscriber otherwise false.
      */
     public boolean isConnected()
     {
-        return !isClosed && clientConductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer));
+        return !isClosed && conductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer));
     }
 
     /**
@@ -200,7 +210,7 @@ public class Publication implements AutoCloseable
      */
     public void close()
     {
-        clientConductor.mainLock().lock();
+        conductor.clientLock().lock();
         try
         {
             if (--refCount == 0)
@@ -210,7 +220,7 @@ public class Publication implements AutoCloseable
         }
         finally
         {
-            clientConductor.mainLock().unlock();
+            conductor.clientLock().unlock();
         }
     }
 
@@ -232,7 +242,7 @@ public class Publication implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            clientConductor.releasePublication(this);
+            conductor.releasePublication(this);
         }
     }
 
@@ -342,7 +352,7 @@ public class Publication implements AutoCloseable
 
                 newPosition = newPosition(partitionIndex, (int)termOffset, position, result);
             }
-            else if (clientConductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
+            else if (conductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
             {
                 newPosition = BACK_PRESSURED;
             }
@@ -408,7 +418,7 @@ public class Publication implements AutoCloseable
                 final long result = termAppender.claim(headerWriter, length, bufferClaim);
                 newPosition = newPosition(partitionIndex, (int)termOffset, position, result);
             }
-            else if (clientConductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
+            else if (conductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
             {
                 newPosition = BACK_PRESSURED;
             }
@@ -422,33 +432,39 @@ public class Publication implements AutoCloseable
     }
 
     /**
-     * Return the registration id used to register this Publication with the media driver.
-     *
-     * @return registration id
-     */
-    public long registrationId()
-    {
-        return registrationId;
-    }
-
-    /**
      * Add a destination manually to a multi-destination-cast Publication.
      *
      * @param endpointChannel for the destination to add
      */
     public void addDestination(final String endpointChannel)
     {
-        clientConductor.addDestination(this, endpointChannel);
+        conductor.clientLock().lock();
+        try
+        {
+            conductor.addDestination(this, endpointChannel);
+        }
+        finally
+        {
+            conductor.clientLock().unlock();
+        }
     }
 
     /**
      * Remove a previously added destination manually from a multi-destination-cast Publication.
-
+     *
      * @param endpointChannel for the destination to remove
      */
     public void removeDestination(final String endpointChannel)
     {
-        clientConductor.removeDestination(this, endpointChannel);
+        conductor.clientLock().lock();
+        try
+        {
+            conductor.removeDestination(this, endpointChannel);
+        }
+        finally
+        {
+            conductor.clientLock().unlock();
+        }
     }
 
     /**

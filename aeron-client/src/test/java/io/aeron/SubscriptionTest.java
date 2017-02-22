@@ -57,7 +57,7 @@ public class SubscriptionTest
     public void setUp()
     {
         when(header.flags()).thenReturn(FLAGS);
-        when(conductor.mainLock()).thenReturn(conductorLock);
+        when(conductor.clientLock()).thenReturn(conductorLock);
 
         subscription = new Subscription(conductor, CHANNEL, STREAM_ID_1, SUBSCRIPTION_CORRELATION_ID);
     }

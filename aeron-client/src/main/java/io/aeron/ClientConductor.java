@@ -121,11 +121,6 @@ class ClientConductor implements Agent, DriverListener
         lingeringResources.forEach(ManagedResource::delete);
     }
 
-    public Lock mainLock()
-    {
-        return lock;
-    }
-
     public int doWork()
     {
         if (!lock.tryLock())
@@ -146,6 +141,11 @@ class ClientConductor implements Agent, DriverListener
     public String roleName()
     {
         return "aeron-client-conductor";
+    }
+
+    Lock clientLock()
+    {
+        return lock;
     }
 
     void handleError(final Throwable ex)

@@ -99,6 +99,16 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
+     * Return the registration id used to register this Publication with the media driver.
+     *
+     * @return registration id
+     */
+    public long registrationId()
+    {
+        return registrationId;
+    }
+
+    /**
      * Poll the {@link Image}s under the subscription for available message fragments.
      *
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
@@ -216,6 +226,16 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
+     * Has the subscription currently no images connected to it?
+     *
+     * @return he subscription currently no images connected to it?
+     */
+    public boolean hasNoImages()
+    {
+        return images.length == 0;
+    }
+
+    /**
      * Count of images connected to this subscription.
      *
      * @return count of images connected to this subscription.
@@ -277,7 +297,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
      */
     public void close()
     {
-        clientConductor.mainLock().lock();
+        clientConductor.clientLock().lock();
         try
         {
             if (!isClosed)
@@ -287,7 +307,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         }
         finally
         {
-            clientConductor.mainLock().unlock();
+            clientConductor.clientLock().unlock();
         }
     }
 
@@ -299,16 +319,6 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     public boolean isClosed()
     {
         return isClosed;
-    }
-
-    /**
-     * Return the registration id used to register this Publication with the media driver.
-     *
-     * @return registration id
-     */
-    public long registrationId()
-    {
-        return registrationId;
     }
 
     void release()
@@ -383,10 +393,5 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         }
 
         return hasImage;
-    }
-
-    boolean hasNoImages()
-    {
-        return images.length == 0;
     }
 }

@@ -216,16 +216,12 @@ void ClientConductor::addDestination(std::int64_t publicationRegistrationId, con
 {
     verifyDriverIsActive();
 
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-
     m_driverProxy.addDestination(publicationRegistrationId, endpointChannel);
 }
 
 void ClientConductor::removeDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel)
 {
     verifyDriverIsActive();
-
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     m_driverProxy.removeDestination(publicationRegistrationId, endpointChannel);
 }

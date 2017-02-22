@@ -30,7 +30,7 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
  * {@link #offer(DirectBuffer)} methods, or a {@link #tryClaim(int, BufferClaim)} and {@link BufferClaim#commit()}
  * method combination.
  *
- * The APIs used to send are all non-blocking.
+ * The APIs used try claim and offer are non-blocking.
  *
  * Note: Publication instances are threadsafe and can be shared between publishing threads.
  *

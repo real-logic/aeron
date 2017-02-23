@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.CommonContext;
 import io.aeron.driver.*;
 import io.aeron.driver.status.ChannelEndpointStatus;
 import io.aeron.protocol.NakFlyweight;
@@ -73,8 +74,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
         UdpDestinationTracker destinationTracker = null;
         if (udpChannel.hasExplicitControl())
         {
-            final String mode = udpChannel.aeronUri().get("control-mode");
-            if ("manual".equals(mode))
+            final String mode = udpChannel.aeronUri().get(CommonContext.MDC_CONTROL_MODE);
+            if (CommonContext.MDC_CONTROL_MODE_MANUAL.equals(mode))
             {
                 destinationTracker = new UdpDestinationTracker(this::presend);
             }

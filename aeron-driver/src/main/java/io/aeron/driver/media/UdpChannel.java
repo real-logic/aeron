@@ -41,9 +41,24 @@ public final class UdpChannel
 {
     public static final String UDP_MEDIA_ID = "udp";
 
+    /**
+     * The key for the interface or NIC to which this channel is bound.
+     */
     public static final String INTERFACE_KEY = "interface";
+
+    /**
+     * The key for endpoint address that is the destination for the channel.
+     */
     public static final String ENDPOINT_KEY = "endpoint";
+
+    /**
+     * The key for Time-To-Live (TTL) for the multicast datagrams being sent.
+     */
     public static final String MULTICAST_TTL_KEY = "ttl";
+
+    /**
+     * The key for the control channel IP address and port for multi-destination-cast semantics.
+     */
     public static final String CONTROL_KEY = "control";
 
     private final int multicastTtl;

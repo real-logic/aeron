@@ -78,6 +78,16 @@ public class CommonContext implements AutoCloseable
      */
     public static final String MTU_LENGTH_URI_PARAM_NAME = "mtu";
 
+    /**
+     * Key for the mode of control that such be used for multi-destination-cast semantics.
+     */
+    public static final String MDC_CONTROL_MODE = "control-mode";
+
+    /**
+     * Valid value for {@link #MDC_CONTROL_MODE} when manual control is desired.
+     */
+    public static final String MDC_CONTROL_MODE_MANUAL = "manual";
+
     private long driverTimeoutMs = DEFAULT_DRIVER_TIMEOUT_MS;
     private String aeronDirectoryName;
     private File cncFile;

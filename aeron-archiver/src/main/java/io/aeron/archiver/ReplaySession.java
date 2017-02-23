@@ -72,7 +72,7 @@ class ReplaySession
 
 
     private State state = State.INIT;
-    private ArchiveDataChunkReadingCursor cursor;
+    private StreamInstanceArchiveChunkReader cursor;
 
     ReplaySession(
         final int streamInstanceId,
@@ -171,6 +171,8 @@ class ReplaySession
         final int lastTermId = metaData.lastTermId();
         final int lastTermOffset = metaData.lastTermOffset();
         final int termBufferLength = metaData.termBufferLength();
+
+        // Note: when debugging this may cause a crash as the debugger might try to call metaData.toString after unmap
         IoUtil.unmap(metaData.buffer().byteBuffer());
 
         final int replayEndTermId = (int) (fromTermId + (replayLength / termBufferLength));
@@ -199,13 +201,13 @@ class ReplaySession
 
         try
         {
-            cursor = new ArchiveDataChunkReadingCursor(streamInstanceId,
-                                                       archiverConductor.archiveFolder(),
-                                                       initialTermId,
-                                                       termBufferLength,
-                                                       fromTermId,
-                                                       fromTermOffset,
-                                                       replayLength);
+            cursor = new StreamInstanceArchiveChunkReader(streamInstanceId,
+                                                          archiverConductor.archiveFolder(),
+                                                          initialTermId,
+                                                          termBufferLength,
+                                                          fromTermId,
+                                                          fromTermOffset,
+                                                          replayLength);
         }
         catch (IOException e)
         {
@@ -228,7 +230,7 @@ class ReplaySession
             (lastTermId == termId && termOffset <= lastTermOffset);
     }
 
-    static boolean isTermIdInRange(final int term, final int start, final int end)
+    private static boolean isTermIdInRange(final int term, final int start, final int end)
     {
         if (start <= end)
         {

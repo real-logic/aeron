@@ -23,25 +23,40 @@ import io.aeron.protocol.*;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 import java.io.*;
-import java.util.concurrent.*;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.LockSupport;
 
 import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileFormatDecoder;
 import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileName;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static org.junit.Assert.fail;
 
 public class ArchiveAndReplaySystemTest
 {
+    @Rule
+    public TestWatcher ruleExample = new TestWatcher()
+    {
+        @Override
+        protected void failed(final Throwable e, final Description description)
+        {
+            System.out.println("ArchiveAndReplaySystemTest failed with random seed:" +
+                               ArchiveAndReplaySystemTest.this.seed);
+        }
+    };
+
     private static final boolean DEBUG = false;
     private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
     private static final String PUBLISH_URI = "aeron:udp?endpoint=127.0.0.1:54325";
     private static final int PUBLISH_STREAM_ID = 1;
 
     private static final ThreadingMode THREADING_MODE = ThreadingMode.DEDICATED;
-    public static final int MAX_FRARGMENT_SIZE = 1024;
-    public static final double MEGABYTE = (1024.0 * 1024.0);
+    private static final int MAX_FRARGMENT_SIZE = 1024;
+    private static final double MEGABYTE = (1024.0 * 1024.0);
 
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
@@ -66,19 +81,23 @@ public class ArchiveAndReplaySystemTest
     private int lastTermOffset;
     private volatile int lastTermId = -1;
     private Throwable trackerError;
+    private Random rnd = new Random();
+    private long seed;
 
     @Before
     public void setUp() throws Exception
     {
         driverCtx.threadingMode(THREADING_MODE);
 
-        driverCtx.errorHandler(throwable -> LangUtil.rethrowUnchecked(throwable));
+        driverCtx.errorHandler(LangUtil::rethrowUnchecked);
         driver = MediaDriver.launch(driverCtx);
         archiveFolder = ImageArchivingSessionTest.makeTempFolder();
         archiverCtx.archiveFolder(archiveFolder);
         archiver = Archiver.launch(archiverCtx);
         println("Archiver started, folder: " + archiverCtx.archiveFolder().getAbsolutePath());
         publishingClient = Aeron.connect();
+        seed = System.nanoTime();
+        rnd.setSeed(seed);
     }
 
     @After
@@ -313,9 +332,9 @@ public class ArchiveAndReplaySystemTest
         lastTermId = termIdFromPosition;
     }
 
-    private ThreadLocalRandom rnd()
+    private Random rnd()
     {
-        return ThreadLocalRandom.current();
+        return rnd;
     }
 
     private void validateReplay(final Publication archiverServiceRequest,
@@ -370,8 +389,8 @@ public class ArchiveAndReplaySystemTest
 
     private void validateArchiveFile(final int messageCount, final int streamInstanceId) throws IOException
     {
-        final ArchiveDataFragementReadingCursor archiveDataFileReader =
-            new ArchiveDataFragementReadingCursor(streamInstanceId, archiveFolder);
+        final StreamInstanceArchiveFragementReader archiveDataFileReader =
+            new StreamInstanceArchiveFragementReader(streamInstanceId, archiveFolder);
         fragmentCount = 0;
         remaining = totalDataLength;
         archiveDataFileReader.poll((bb, offset, length, header) ->
@@ -390,14 +409,14 @@ public class ArchiveAndReplaySystemTest
     {
         final ArchiveMetaFileFormatDecoder decoder =
             archiveMetaFileFormatDecoder(new File(archiveFolder, archiveMetaFileName(streamInstanceId)));
-        final ArchiveDataChunkReadingCursor cursor =
-            new ArchiveDataChunkReadingCursor(streamInstanceId,
-                                              archiveFolder,
-                                              decoder.initialTermId(),
-                                              decoder.termBufferLength(),
-                                              decoder.initialTermId(),
-                                              decoder.initialTermOffset(),
-                                              ArchiveFileUtil.archiveFullLength(decoder));
+        final StreamInstanceArchiveChunkReader cursor =
+            new StreamInstanceArchiveChunkReader(streamInstanceId,
+                                                 archiveFolder,
+                                                 decoder.initialTermId(),
+                                                 decoder.termBufferLength(),
+                                                 decoder.initialTermId(),
+                                                 decoder.initialTermOffset(),
+                                                 ArchiveFileUtil.archiveFullLength(decoder));
         IoUtil.unmap(decoder.buffer().byteBuffer());
 
         fragmentCount = 0;
@@ -538,7 +557,7 @@ public class ArchiveAndReplaySystemTest
             LockSupport.parkNanos(1000);
             if (limit < System.currentTimeMillis())
             {
-                Assert.fail("Poll has timed out");
+                fail("Poll has timed out");
             }
         }
     }
@@ -558,7 +577,7 @@ public class ArchiveAndReplaySystemTest
             LockSupport.parkNanos(1000);
             if (limit < System.currentTimeMillis())
             {
-                Assert.fail("Offer has timed out");
+                fail("Offer has timed out");
             }
         }
 
@@ -573,7 +592,7 @@ public class ArchiveAndReplaySystemTest
             LockSupport.parkNanos(1000);
             if (limit < System.currentTimeMillis())
             {
-                Assert.fail("awaitSubscriptionIsConnected has timed out");
+                fail("awaitSubscriptionIsConnected has timed out");
             }
         }
     }
@@ -586,7 +605,7 @@ public class ArchiveAndReplaySystemTest
             LockSupport.parkNanos(1000);
             if (limit < System.currentTimeMillis())
             {
-                Assert.fail("awaitPublicationIsConnected has timed out");
+                fail("awaitPublicationIsConnected has timed out");
             }
         }
     }

@@ -21,10 +21,11 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
+import java.util.Objects;
 
 import static java.lang.Math.min;
 
-class ArchiveDataChunkReadingCursor implements AutoCloseable
+class StreamInstanceArchiveChunkReader implements AutoCloseable
 {
     private final int streamInstanceId;
     private final File archiveFolder;
@@ -42,13 +43,13 @@ class ArchiveDataChunkReadingCursor implements AutoCloseable
     private int archiveTermStartOffset;
     private int currentTermOffset;
 
-    ArchiveDataChunkReadingCursor(final int streamInstanceId,
-                                  final File archiveFolder,
-                                  final int initialTermId,
-                                  final int termBufferLength,
-                                  final int termId,
-                                  final int termOffset,
-                                  final long length) throws IOException
+    StreamInstanceArchiveChunkReader(final int streamInstanceId,
+                                     final File archiveFolder,
+                                     final int initialTermId,
+                                     final int termBufferLength,
+                                     final int termId,
+                                     final int termOffset,
+                                     final long length) throws IOException
     {
         this.streamInstanceId = streamInstanceId;
         this.archiveFolder = archiveFolder;
@@ -94,6 +95,12 @@ class ArchiveDataChunkReadingCursor implements AutoCloseable
 
     int readChunk(final ChunkHandler handler, final int chunkLength)
     {
+        if (chunkLength <= 0)
+        {
+            throw new IllegalArgumentException("chunkLength <= 0: " + chunkLength);
+        }
+        Objects.requireNonNull(handler);
+
         final int remainingInTerm = termBufferLength - currentTermOffset;
         final long remainingInCursor = length - transmitted;
         final int readSize = (int) min(chunkLength, min(remainingInTerm, remainingInCursor));
@@ -109,7 +116,7 @@ class ArchiveDataChunkReadingCursor implements AutoCloseable
         }
         currentTermOffset += readSize;
         transmitted += readSize;
-        if (currentTermOffset == termBufferLength)
+        if (transmitted != length && currentTermOffset == termBufferLength)
         {
             try
             {
@@ -153,7 +160,7 @@ class ArchiveDataChunkReadingCursor implements AutoCloseable
     }
 
     @Override
-    public void close() throws Exception
+    public void close()
     {
         CloseHelper.quietClose(currentDataFile);
         CloseHelper.quietClose(currentDataChannel);

@@ -168,6 +168,7 @@ subprojects {
         sign configurations.shadow
     }
 }
+
 def agronaVersion = '0.9.3'
 
 project(':aeron-client') {
@@ -536,7 +537,7 @@ project(':aeron-archiver-codecs') {
 
     dependencies {
         compile "org.agrona:agrona:${agronaVersion}"
-        compile 'uk.co.real-logic:sbe-all:1.5.7'
+        compile 'uk.co.real-logic:sbe-all:1.6.0'
         testCompile sourceSets.generated.output
     }
 

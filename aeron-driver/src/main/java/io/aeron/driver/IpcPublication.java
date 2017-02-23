@@ -140,7 +140,7 @@ public class IpcPublication implements DriverManagedResource
     {
         int workCount = 0;
         long minSubscriberPosition = Long.MAX_VALUE;
-        long maxSubscriberPosition = 0;
+        long maxSubscriberPosition = consumerPosition;
 
         for (final ReadablePosition subscriberPosition : subscriberPositions)
         {
@@ -154,7 +154,6 @@ public class IpcPublication implements DriverManagedResource
             final long proposedLimit = minSubscriberPosition + termWindowLength;
             if (proposedLimit > tripLimit)
             {
-                LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), nowInMillis);
                 publisherLimit.setOrdered(proposedLimit);
                 tripLimit = proposedLimit + tripGain;
 
@@ -163,6 +162,7 @@ public class IpcPublication implements DriverManagedResource
                 workCount = 1;
             }
 
+            LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), nowInMillis);
             consumerPosition = maxSubscriberPosition;
         }
 

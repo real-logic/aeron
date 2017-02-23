@@ -19,16 +19,14 @@ import io.aeron.archiver.messages.ArchiveMetaFileFormatDecoder;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Date;
 
 class ArchiveFileUtil
 {
-    static final int META_FILE_SIZE = 64;
+    // TODO: make configurable
     static final int ARCHIVE_FILE_SIZE = 1024 * 1024 * 128;
 
     static String archiveMetaFileName(final int streamInstanceId)
@@ -80,7 +78,7 @@ class ArchiveFileUtil
         throws IOException
     {
         try (RandomAccessFile randomAccessFile = new RandomAccessFile(metaFile, "rw");
-             FileChannel metadataFileChannel = randomAccessFile.getChannel();)
+             FileChannel metadataFileChannel = randomAccessFile.getChannel())
         {
             final MappedByteBuffer metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
             final ArchiveMetaFileFormatDecoder decoder = new ArchiveMetaFileFormatDecoder();

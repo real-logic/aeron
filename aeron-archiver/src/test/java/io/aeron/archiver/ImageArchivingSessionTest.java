@@ -156,15 +156,15 @@ public class ImageArchivingSessionTest
         final File archiveDataFile = new File(tempFolderForTest,
             archiveDataFileName(session.streamInstanceId(), 0));
         assertTrue(archiveDataFile.exists());
-        final ArchiveDataFragementReadingCursor
-            reader = new ArchiveDataFragementReadingCursor(session.streamInstanceId(), tempFolderForTest);
-        reader.poll((buffer, offset, length, header) ->
+        final StreamInstanceArchiveFragementReader
+            reader = new StreamInstanceArchiveFragementReader(session.streamInstanceId(), tempFolderForTest);
+        final int polled = reader.poll((buffer, offset, length, header) ->
         {
             Assert.assertEquals(100, header.frameLength());
             Assert.assertEquals(termOffset + DataHeaderFlyweight.HEADER_LENGTH, offset);
             Assert.assertEquals(100 - DataHeaderFlyweight.HEADER_LENGTH, length);
         });
-
+        Assert.assertEquals(1, polled);
         // next poll has no data
         when(image.rawPoll(any(), anyInt())).thenReturn(0);
         Assert.assertEquals("Expect no work", 0, session.doWork());

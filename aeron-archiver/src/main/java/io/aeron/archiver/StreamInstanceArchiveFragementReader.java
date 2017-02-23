@@ -29,7 +29,12 @@ import java.nio.channels.FileChannel;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
 
-class ArchiveDataFragementReadingCursor
+/**
+ * TODO: Make {@link AutoCloseable}
+ * TODO: Is this useful beyond testing?
+ * TODO: More closely reflect {@link io.aeron.Image} API
+ */
+class StreamInstanceArchiveFragementReader
 {
     private final int streamInstanceId;
     private final File archiveFolder;
@@ -43,7 +48,7 @@ class ArchiveDataFragementReadingCursor
     private final int termOffset;
     private final long length;
 
-    ArchiveDataFragementReadingCursor(final int streamInstanceId, final File archiveFolder) throws IOException
+    StreamInstanceArchiveFragementReader(final int streamInstanceId, final File archiveFolder) throws IOException
     {
         this.streamInstanceId = streamInstanceId;
         this.archiveFolder = archiveFolder;
@@ -63,11 +68,11 @@ class ArchiveDataFragementReadingCursor
         length = fullLength;
     }
 
-    ArchiveDataFragementReadingCursor(final int streamInstanceId,
-                                      final File archiveFolder,
-                                      final int termId,
-                                      final int termOffset,
-                                      final long length) throws IOException
+    StreamInstanceArchiveFragementReader(final int streamInstanceId,
+                                         final File archiveFolder,
+                                         final int termId,
+                                         final int termOffset,
+                                         final long length) throws IOException
     {
         this.streamInstanceId = streamInstanceId;
         this.archiveFolder = archiveFolder;
@@ -87,19 +92,21 @@ class ArchiveDataFragementReadingCursor
         IoUtil.unmap(metaDecoder.buffer().byteBuffer());
     }
 
-    void poll(final FragmentHandler fragmentHandler) throws IOException
+    int poll(final FragmentHandler fragmentHandler) throws IOException
     {
-        poll(fragmentHandler, initialTermId, initialTermOffset, fullLength);
+        return poll(fragmentHandler, initialTermId, initialTermOffset, fullLength);
     }
 
-    void poll(final FragmentHandler fragmentHandler,
-              final int termId,
-              final int termOffset,
-              final long length) throws IOException
+    int poll(final FragmentHandler fragmentHandler,
+             final int fromTermId,
+             final int fromTermOffset,
+             final long replayLength) throws IOException
     {
+        int polled = 0;
         long transmitted = 0;
-        int archiveFileIndex = ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, termId);
-        final int archiveOffset = ArchiveFileUtil.archiveOffset(termOffset, termId, initialTermId, termBufferLength);
+        int archiveFileIndex = ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, fromTermId);
+        final int archiveOffset =
+            ArchiveFileUtil.archiveOffset(fromTermOffset, fromTermId, initialTermId, termBufferLength);
         final String archiveDataFileName =
             ArchiveFileUtil.archiveDataFileName(streamInstanceId, archiveFileIndex);
         final File archiveDataFile = new File(archiveFolder, archiveDataFileName);
@@ -116,7 +123,7 @@ class ArchiveDataFragementReadingCursor
         {
             currentDataFile = new RandomAccessFile(archiveDataFile, "r");
             currentDataChannel = currentDataFile.getChannel();
-            int archiveTermStartOffset = archiveOffset - termOffset;
+            int archiveTermStartOffset = archiveOffset - fromTermOffset;
             termMappedUnsafeBuffer =
                 new UnsafeBuffer(currentDataChannel.map(FileChannel.MapMode.READ_ONLY,
                                                         archiveTermStartOffset,
@@ -125,37 +132,27 @@ class ArchiveDataFragementReadingCursor
             while (true)
             {
                 final Header fragmentHeader =
-                    new Header(initialTermId, Integer.numberOfTrailingZeros(termBufferLength));
+                    new Header(initialTermId, Integer.numberOfLeadingZeros(termBufferLength));
                 fragmentHeader.buffer(termMappedUnsafeBuffer);
 
                 // read to end of term or requested data
-                while (fragmentOffset < termBufferLength && transmitted < length)
+                while (fragmentOffset < termBufferLength && transmitted < replayLength)
                 {
                     fragmentHeader.offset(fragmentOffset);
                     final int frameLength = fragmentHeader.frameLength();
-                    if (frameLength == 0)
-                    {
-                        // TODO: give some context to exception? maybe replace with graceful exit?
-                        throw new IllegalStateException();
-                    }
-                    if (fragmentHeader.type() != PADDING_FRAME_TYPE)
-                    {
-                        final int fragmentDataOffset = fragmentOffset + DataHeaderFlyweight.DATA_OFFSET;
-                        final int fragmentDataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
-                        fragmentHandler.onFragment(termMappedUnsafeBuffer,
-                                                   fragmentDataOffset,
-                                                   fragmentDataLength,
-                                                   fragmentHeader);
-                    }
+                    polled += readFragment(fragmentHandler,
+                                          termMappedUnsafeBuffer,
+                                          fragmentOffset,
+                                          frameLength,
+                                          fragmentHeader);
                     final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
                     transmitted +=  alignedLength;
                     fragmentOffset += alignedLength;
-
                 }
 
-                if (transmitted >= length)
+                if (transmitted >= replayLength)
                 {
-                    return;
+                    return polled;
                 }
                 fragmentOffset = 0;
                 archiveTermStartOffset += termBufferLength;
@@ -188,8 +185,36 @@ class ArchiveDataFragementReadingCursor
         {
             CloseHelper.quietClose(currentDataFile);
             CloseHelper.quietClose(currentDataChannel);
-            IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
+            if (termMappedUnsafeBuffer != null)
+            {
+                IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
+            }
         }
+    }
+
+    private int readFragment(
+        final FragmentHandler fragmentHandler,
+        final UnsafeBuffer termMappedUnsafeBuffer,
+        final int fragmentOffset,
+        final int frameLength, final Header fragmentHeader)
+    {
+        if (frameLength <= 0)
+        {
+            final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
+            headerFlyweight.wrap(termMappedUnsafeBuffer, fragmentOffset, DataHeaderFlyweight.HEADER_LENGTH);
+            throw new IllegalStateException("Broken frame with length <= 0: " + headerFlyweight);
+        }
+        if (fragmentHeader.type() != PADDING_FRAME_TYPE)
+        {
+            final int fragmentDataOffset = fragmentOffset + DataHeaderFlyweight.DATA_OFFSET;
+            final int fragmentDataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
+            fragmentHandler.onFragment(termMappedUnsafeBuffer,
+                                       fragmentDataOffset,
+                                       fragmentDataLength,
+                                       fragmentHeader);
+            return 1;
+        }
+        return 0;
     }
 
 }

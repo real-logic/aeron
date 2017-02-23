@@ -168,7 +168,7 @@ subprojects {
         sign configurations.shadow
     }
 }
-def agronaVersion = '0.9.2'
+def agronaVersion = '0.9.3'
 
 project(':aeron-client') {
     apply plugin: 'osgi'

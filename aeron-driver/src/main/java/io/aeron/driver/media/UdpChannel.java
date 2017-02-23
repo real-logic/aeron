@@ -370,9 +370,9 @@ public final class UdpChannel
     }
 
     /**
-     * Does the channel have an explicit control address as used with multi-destination-cast or not
+     * Does the channel have an explicit control address as used with multi-destination-cast or not?
      *
-     * @return does channel have an explicit control address or not
+     * @return does channel have an explicit control address or not?
      */
     public boolean hasExplicitControl()
     {

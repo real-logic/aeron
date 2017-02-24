@@ -115,8 +115,8 @@ public class ImageArchivingSessionTest
         Assert.assertEquals(streamInstanceId, session.streamInstanceId());
 
         // setup the mock image to pass on the mock log buffer
-        when(image.rawPoll(any(), anyInt())).
-            thenAnswer(invocation ->
+        when(image.rawPoll(any(), anyInt()))
+            .thenAnswer(invocation ->
             {
                 final RawBlockHandler handle = invocation.getArgument(0);
                 if (handle == null)

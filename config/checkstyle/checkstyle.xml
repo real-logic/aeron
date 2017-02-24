@@ -71,12 +71,18 @@
 
         <module name="NoWhitespaceBefore"/>
 
-        <module name="WhitespaceAround">
-            <property name="allowEmptyLambdas" value="true"/>
+        <module name="WhitespaceAfter">
+            <property name="tokens"
+                      value="COMMA, SEMI, LITERAL_IF, LITERAL_ELSE, LITERAL_WHILE, LITERAL_DO, LITERAL_FOR, DO_WHILE"/>
         </module>
 
-        <module name="WhitespaceAfter">
-            <property name="tokens" value="COMMA, SEMI"/>
+        <module name="NoWhitespaceAfter">
+            <property name="tokens" value="DOT"/>
+            <property name="allowLineBreaks" value="false"/>
+        </module>
+
+        <module name="WhitespaceAround">
+            <property name="allowEmptyLambdas" value="true"/>
         </module>
 
         <module name="OperatorWrap">

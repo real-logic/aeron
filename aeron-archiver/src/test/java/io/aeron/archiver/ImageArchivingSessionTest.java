@@ -177,7 +177,6 @@ public class ImageArchivingSessionTest
         assertEquals(ImageArchivingSession.State.DONE, session.state());
         Assert.assertEquals(128L, metaData.endTime());
         IoUtil.unmap(metaData.buffer().byteBuffer());
-
     }
 
     private Subscription mockSubscription(final String channel, final int streamId)

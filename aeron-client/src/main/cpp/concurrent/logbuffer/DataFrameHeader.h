@@ -29,8 +29,8 @@ namespace DataFrameHeader {
 struct DataFrameHeaderDefn
 {
     std::int32_t frameLength;
-    std::int8_t version;
-    std::int8_t flags;
+    std::uint8_t version;
+    std::uint8_t flags;
     std::uint16_t type;
     std::int32_t termOffset;
     std::int32_t sessionId;

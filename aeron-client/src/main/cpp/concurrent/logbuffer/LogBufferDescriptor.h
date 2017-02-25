@@ -122,15 +122,15 @@ struct LogMetaDataDefn
 };
 #pragma pack(pop)
 
-static const util::index_t TERM_TAIL_COUNTER_OFFSET = offsetof(LogMetaDataDefn, termTailCounters[0]);
+static const util::index_t TERM_TAIL_COUNTER_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, termTailCounters[0]);
 
-static const util::index_t LOG_ACTIVE_PARTITION_INDEX_OFFSET = offsetof(LogMetaDataDefn, activePartitionIndex);
-static const util::index_t LOG_TIME_OF_LAST_STATUS_MESSAGE_OFFSET = offsetof(LogMetaDataDefn, timeOfLastStatusMessage);
-static const util::index_t LOG_INITIAL_TERM_ID_OFFSET = offsetof(LogMetaDataDefn, initialTermId);
-static const util::index_t LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = offsetof(LogMetaDataDefn, defaultFrameHeaderLength);
-static const util::index_t LOG_MTU_LENGTH_OFFSET = offsetof(LogMetaDataDefn, mtuLength);
-static const util::index_t LOG_DEFAULT_FRAME_HEADER_OFFSET = sizeof(LogMetaDataDefn);
-static const util::index_t LOG_META_DATA_LENGTH = sizeof(LogMetaDataDefn) + LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH;
+static const util::index_t LOG_ACTIVE_PARTITION_INDEX_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, activePartitionIndex);
+static const util::index_t LOG_TIME_OF_LAST_STATUS_MESSAGE_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, timeOfLastStatusMessage);
+static const util::index_t LOG_INITIAL_TERM_ID_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, initialTermId);
+static const util::index_t LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, defaultFrameHeaderLength);
+static const util::index_t LOG_MTU_LENGTH_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, mtuLength);
+static const util::index_t LOG_DEFAULT_FRAME_HEADER_OFFSET = (util::index_t)sizeof(LogMetaDataDefn);
+static const util::index_t LOG_META_DATA_LENGTH = (util::index_t)sizeof(LogMetaDataDefn) + LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH;
 
 inline static void checkTermLength(std::int64_t termLength)
 {

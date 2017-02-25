@@ -372,7 +372,7 @@ void ClientConductor::onUnavailableImage(
     std::int32_t streamId,
     std::int64_t correlationId)
 {
-    const long now = m_epochClock();
+    const long long now = m_epochClock();
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
@@ -399,7 +399,7 @@ void ClientConductor::onUnavailableImage(
         });
 }
 
-void ClientConductor::onInterServiceTimeout(long now)
+void ClientConductor::onInterServiceTimeout(long long now)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
@@ -434,7 +434,7 @@ void ClientConductor::onInterServiceTimeout(long now)
     m_subscriptions.clear();
 }
 
-void ClientConductor::onCheckManagedResources(long now)
+void ClientConductor::onCheckManagedResources(long long now)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
@@ -466,17 +466,17 @@ void ClientConductor::onCheckManagedResources(long now)
     m_lingeringImageArrays.erase(arrayIt, m_lingeringImageArrays.end());
 }
 
-void ClientConductor::lingerResource(long now, Image* array)
+void ClientConductor::lingerResource(long long now, Image* array)
 {
     m_lingeringImageArrays.emplace_back(now, array);
 }
 
-void ClientConductor::lingerResource(long now, std::shared_ptr<LogBuffers> logBuffers)
+void ClientConductor::lingerResource(long long now, std::shared_ptr<LogBuffers> logBuffers)
 {
     m_lingeringLogBuffers.emplace_back(now, logBuffers);
 }
 
-void ClientConductor::lingerResources(long now, Image* images, int imagesLength)
+void ClientConductor::lingerResources(long long now, Image* images, int imagesLength)
 {
     for (int i = 0; i < imagesLength; i++)
     {

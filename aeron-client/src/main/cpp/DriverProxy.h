@@ -196,8 +196,8 @@ private:
     inline void writeCommandToDriver(const std::function<util::index_t(AtomicBuffer&, util::index_t &)>& filler)
     {
         AERON_DECL_ALIGNED(driver_proxy_command_buffer_t messageBuffer, 16);
-        AtomicBuffer buffer(&messageBuffer[0], messageBuffer.size());
-        util::index_t length = messageBuffer.size();
+        AtomicBuffer buffer(messageBuffer);
+        util::index_t length = buffer.capacity();
 
         util::index_t msgTypeId = filler(buffer, length);
 

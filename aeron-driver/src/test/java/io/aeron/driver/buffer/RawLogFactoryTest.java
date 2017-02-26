@@ -60,7 +60,7 @@ public class RawLogFactoryTest
     @After
     public void cleanupFiles() throws IOException
     {
-        IoUtil.delete(DATA_DIR, true);
+        IoUtil.delete(DATA_DIR, false);
     }
 
     @Test
@@ -87,6 +87,8 @@ public class RawLogFactoryTest
         assertThat(metaData.capacity(), is(LogBufferDescriptor.LOG_META_DATA_LENGTH));
         assertThat(metaData.getByte(0), is((byte)0));
         assertThat(metaData.getByte(LogBufferDescriptor.LOG_META_DATA_LENGTH - 1), is((byte)0));
+
+        rawLog.close();
     }
 
     @Test
@@ -114,6 +116,8 @@ public class RawLogFactoryTest
         assertThat(metaData.capacity(), is(LogBufferDescriptor.LOG_META_DATA_LENGTH));
         assertThat(metaData.getByte(0), is((byte)0));
         assertThat(metaData.getByte(LogBufferDescriptor.LOG_META_DATA_LENGTH - 1), is((byte)0));
+
+        rawLog.close();
     }
 
     @Test(expected = IllegalArgumentException.class)

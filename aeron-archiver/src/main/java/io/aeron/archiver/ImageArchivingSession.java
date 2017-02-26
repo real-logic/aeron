@@ -26,72 +26,9 @@ import org.agrona.concurrent.EpochClock;
 class ImageArchivingSession
 {
 
-    enum State
+    private enum State
     {
-        INIT
-        {
-            int doWork(final ImageArchivingSession session)
-            {
-                session.state(ARCHIVING);
-                return 1;
-            }
-        },
-
-        ARCHIVING
-        {
-            int doWork(final ImageArchivingSession session)
-            {
-                final StreamInstanceArchiveWriter writer = session.writer;
-                try
-                {
-                    final int delta = session.image.rawPoll(writer, ArchiveFileUtil.ARCHIVE_FILE_SIZE);
-                    if (delta != 0)
-                    {
-                        session.archiverConductor.notifyArchiveProgress(
-                            writer.streamInstanceId(),
-                            writer.initialTermId(),
-                            writer.initialTermOffset(),
-                            writer.lastTermId(),
-                            writer.lastTermOffset());
-                    }
-                    if (session.image.isClosed())
-                    {
-                        session.state(CLOSE);
-                    }
-                    return delta;
-                }
-                catch (Exception e)
-                {
-                    session.state(CLOSE);
-                    LangUtil.rethrowUnchecked(e);
-                }
-                return 1;
-            }
-        },
-
-        CLOSE
-        {
-            int doWork(final ImageArchivingSession session)
-            {
-                if (session.writer != null)
-                {
-                    session.writer.close();
-                }
-                session.archiverConductor.notifyArchiveStopped(session.streamInstanceId);
-                session.state(DONE);
-                return 1;
-            }
-        },
-
-        DONE
-        {
-            int doWork(final ImageArchivingSession session)
-            {
-                return 0;
-            }
-        };
-
-        abstract int doWork(ImageArchivingSession session);
+        ARCHIVING, CLOSING, DONE
     }
 
     private final int streamInstanceId;
@@ -99,7 +36,7 @@ class ImageArchivingSession
     private final Image image;
     private final StreamInstanceArchiveWriter writer;
 
-    private State state = State.INIT;
+    private State state = State.ARCHIVING;
 
     ImageArchivingSession(final ArchiverConductor archiverConductor, final Image image, final EpochClock epochClock)
     {
@@ -126,28 +63,29 @@ class ImageArchivingSession
         }
         catch (Exception e)
         {
-            State.CLOSE.doWork(this);
+            close();
             LangUtil.rethrowUnchecked(e);
             // the next line is to keep compiler happy with regards to final fields init
             throw new RuntimeException();
         }
     }
 
-    void close()
+    void abortArchive()
     {
-        state(State.CLOSE);
+        state(State.CLOSING);
     }
 
     int doWork()
     {
         int workDone = 0;
-        State initialState;
-        do
+        if (state == State.ARCHIVING)
         {
-            initialState = state();
-            workDone += state().doWork(this);
+            workDone += archive();
         }
-        while (initialState != state());
+        if (state == State.CLOSING)
+        {
+            workDone += close();
+        }
 
         return workDone;
     }
@@ -170,5 +108,50 @@ class ImageArchivingSession
     int streamInstanceId()
     {
         return writer.streamInstanceId();
+    }
+
+    private int close()
+    {
+        if (writer != null)
+        {
+            writer.close();
+        }
+        archiverConductor.notifyArchiveStopped(streamInstanceId);
+        state(State.DONE);
+        return 1;
+    }
+
+    private int archive()
+    {
+        final StreamInstanceArchiveWriter writer = this.writer;
+        try
+        {
+            final int delta = this.image.rawPoll(writer, ArchiveFileUtil.ARCHIVE_FILE_SIZE);
+            if (delta != 0)
+            {
+                this.archiverConductor.notifyArchiveProgress(
+                    writer.streamInstanceId(),
+                    writer.initialTermId(),
+                    writer.initialTermOffset(),
+                    writer.lastTermId(),
+                    writer.lastTermOffset());
+            }
+            if (this.image.isClosed())
+            {
+                this.state(State.CLOSING);
+            }
+            return delta;
+        }
+        catch (Exception e)
+        {
+            this.state(State.CLOSING);
+            LangUtil.rethrowUnchecked(e);
+        }
+        return 1;
+    }
+
+    boolean isDone()
+    {
+        return state == State.DONE;
     }
 }

@@ -132,7 +132,7 @@ public class ReplaySessionTest
         IoUtil.delete(archiveFolder, true);
     }
 
-    int messageIndex = 0;
+    private int messageIndex = 0;
     @Test
     public void shouldReplayDataFromFile()
     {
@@ -150,16 +150,13 @@ public class ReplaySessionTest
                               conductor);
         when(reply.isClosed()).thenReturn(false);
         when(reply.isConnected()).thenReturn(false);
-        Assert.assertEquals(0, replaySession.doWork());
-
         // does not switch to replay mode until publications are established
-        Assert.assertEquals(ReplaySession.State.INIT, replaySession.state());
+        Assert.assertEquals(0, replaySession.doWork());
 
         when(reply.isConnected()).thenReturn(true);
 
         Assert.assertNotEquals(0, replaySession.doWork());
         Mockito.verify(conductor, times(1)).sendResponse(reply, null);
-        Assert.assertEquals(ReplaySession.State.REPLAY, replaySession.state());
 
         final UnsafeBuffer mockTermBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
         when(reply.tryClaim(anyInt(), any(BufferClaim.class))).then(invocation ->
@@ -177,10 +174,8 @@ public class ReplaySessionTest
                             mockTermBuffer.getLong(DataHeaderFlyweight.HEADER_LENGTH));
         Assert.assertEquals(1024, mockTermBuffer.getInt(0) -
                                   (DataHeaderFlyweight.HEADER_LENGTH + MessageHeaderDecoder.ENCODED_LENGTH));
-        Assert.assertEquals(ReplaySession.State.CLOSE, replaySession.state());
 
-        Assert.assertNotEquals(0, replaySession.doWork());
-        Assert.assertEquals(ReplaySession.State.DONE, replaySession.state());
+        Assert.assertTrue(replaySession.isDone());
 
         Assert.assertEquals(0, replaySession.doWork());
     }

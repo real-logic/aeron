@@ -31,8 +31,6 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
 import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileName;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -55,7 +53,6 @@ public class ImageArchivingSessionTest
     private final File tempFolderForTest = makeTempFolder();
     private final ArchiverConductor archive;
 
-    private final Subscription subscription;
     private final Image image;
 
     private RandomAccessFile logBufferRandomAccessFile;
@@ -68,7 +65,7 @@ public class ImageArchivingSessionTest
         archive = mock(ArchiverConductor.class);
         when(archive.archiveFolder()).thenReturn(tempFolderForTest);
         when(archive.notifyArchiveStarted(source, sessionId, channel, streamId)).thenReturn(streamInstanceId);
-        subscription = mockSubscription(channel, streamId);
+        final Subscription subscription = mockSubscription(channel, streamId);
         image = mockImage(source, sessionId, initialTermId, termBufferLength, subscription);
     }
 
@@ -111,7 +108,6 @@ public class ImageArchivingSessionTest
         when(epochClock.time()).thenReturn(42L);
 
         final ImageArchivingSession session = new ImageArchivingSession(archive, image, epochClock);
-        assertEquals(ImageArchivingSession.State.INIT, session.state());
         Assert.assertEquals(streamInstanceId, session.streamInstanceId());
 
         // setup the mock image to pass on the mock log buffer
@@ -134,7 +130,7 @@ public class ImageArchivingSessionTest
 
         // meta data exists and is as expected
         final File archiveMetaFile = new File(tempFolderForTest, archiveMetaFileName(session.streamInstanceId()));
-        assertTrue(archiveMetaFile.exists());
+        Assert.assertTrue(archiveMetaFile.exists());
 
         final ArchiveMetaFileFormatDecoder metaData =
             ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
@@ -155,7 +151,7 @@ public class ImageArchivingSessionTest
         // data exists and is as expected
         final File archiveDataFile = new File(tempFolderForTest,
             archiveDataFileName(session.streamInstanceId(), 0));
-        assertTrue(archiveDataFile.exists());
+        Assert.assertTrue(archiveDataFile.exists());
         final StreamInstanceArchiveFragementReader
             reader = new StreamInstanceArchiveFragementReader(session.streamInstanceId(), tempFolderForTest);
         final int polled = reader.poll((buffer, offset, length, header) ->
@@ -174,7 +170,7 @@ public class ImageArchivingSessionTest
         when(epochClock.time()).thenReturn(128L);
 
         Assert.assertNotEquals("Expect some work", 0, session.doWork());
-        assertEquals(ImageArchivingSession.State.DONE, session.state());
+        Assert.assertTrue(session.isDone());
         Assert.assertEquals(128L, metaData.endTime());
         IoUtil.unmap(metaData.buffer().byteBuffer());
     }
@@ -208,8 +204,8 @@ public class ImageArchivingSessionTest
     {
         final File tempFolderForTest = File.createTempFile("archiver.test", "tmp");
         // we really need a temp dir, not a file... delete and remake!
-        assertTrue(tempFolderForTest.delete());
-        assertTrue(tempFolderForTest.mkdir());
+        Assert.assertTrue(tempFolderForTest.delete());
+        Assert.assertTrue(tempFolderForTest.mkdir());
         return tempFolderForTest;
     }
 }

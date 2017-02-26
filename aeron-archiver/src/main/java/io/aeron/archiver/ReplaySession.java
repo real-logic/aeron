@@ -50,12 +50,9 @@ class ReplaySession
         REPLAY_DATA_HEADER = encoder.buffer().getLong(0);
     }
 
-    enum State
+    private enum State
     {
-        INIT,
-        REPLAY,
-        CLOSE,
-        DONE
+        INIT, REPLAY, CLOSE, DONE
     }
 
     // replay boundaries
@@ -96,19 +93,20 @@ class ReplaySession
 
     int doWork()
     {
+        int workDone = 0;
         if (state == State.REPLAY)
         {
-            return replay();
+            workDone += replay();
         }
         else if (state == State.INIT)
         {
-            return init();
+            workDone += init();
         }
-        else if (state == State.CLOSE)
+        if (state == State.CLOSE)
         {
-            return close();
+            workDone += close();
         }
-        return 0;
+        return workDone;
     }
 
     Image image()
@@ -116,9 +114,9 @@ class ReplaySession
         return image;
     }
 
-    State state()
+    boolean isDone()
     {
-        return state;
+        return state == State.DONE;
     }
 
     private void state(final State state)
@@ -302,7 +300,6 @@ class ReplaySession
 
     private int close()
     {
-        // TODO: how do we gracefully timeout or terminate this? need to add a LINGER state etc.
         CloseHelper.quietClose(reply);
         CloseHelper.quietClose(cursor);
         state(State.DONE);

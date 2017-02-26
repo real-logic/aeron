@@ -127,7 +127,7 @@ class ArchiverConductor implements Agent
         }
         for (final ImageArchivingSession session : archivingSessions)
         {
-            session.close();
+            session.abortArchive();
         }
         doArchivingSessionsWork();
         if (!archivingSessions.isEmpty())
@@ -243,7 +243,7 @@ class ArchiverConductor implements Agent
             replayRequestDecoder.streamInstanceId(),
             replayRequestDecoder.termId(),
             replayRequestDecoder.termOffset(),
-            (long) replayRequestDecoder.length(),
+            replayRequestDecoder.length(),
             replyPublication,
             image,
             this);
@@ -298,7 +298,7 @@ class ArchiverConductor implements Agent
         {
             final ReplaySession session = replaySessions.get(i);
             workDone += session.doWork();
-            if (session.state() == ReplaySession.State.DONE)
+            if (session.isDone())
             {
                 image2ReplaySession.remove(session.image().sessionId());
                 ArrayListUtil.fastUnorderedRemove(replaySessions, i, lastIndex);
@@ -317,7 +317,7 @@ class ArchiverConductor implements Agent
         {
             final ImageArchivingSession session = archivingSessions.get(i);
             workDone += session.doWork();
-            if (session.state() == ImageArchivingSession.State.DONE)
+            if (session.isDone())
             {
                 image2ArchivingSession.remove(session.image().sessionId());
                 ArrayListUtil.fastUnorderedRemove(archivingSessions, i, lastIndex);

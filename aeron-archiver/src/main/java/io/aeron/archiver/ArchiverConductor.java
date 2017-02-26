@@ -172,28 +172,25 @@ class ArchiverConductor implements Agent
             switch (templateId)
             {
                 case ReplayRequestDecoder.TEMPLATE_ID:
-                {
                     onReplayRequest(buffer, offset + MessageHeaderDecoder.ENCODED_LENGTH, header);
                     break;
-                }
+
                 case ArchiveStartRequestDecoder.TEMPLATE_ID:
-                {
                     onArchiveStartRequest(buffer, offset + MessageHeaderDecoder.ENCODED_LENGTH);
                     break;
-                }
+
                 case ArchiveStopRequestDecoder.TEMPLATE_ID:
-                {
                     onArchiveStopRequest(buffer, offset + MessageHeaderDecoder.ENCODED_LENGTH);
                     break;
-                }
+
                 case AbortReplayRequestDecoder.TEMPLATE_ID:
-                {
                     onAbortReplay(header);
                     break;
-                }
+
                 case ListStreamInstancesRequestDecoder.TEMPLATE_ID:
                     onListStreamInstances(header);
                     break;
+
                 default:
                     throw new IllegalArgumentException("Unexpected template id:" + templateId);
             }
@@ -213,8 +210,7 @@ class ArchiverConductor implements Agent
         final ReplaySession session = image2ReplaySession.get(header.sessionId());
         if (session == null)
         {
-            throw new IllegalStateException("Trying to abort an unknown replay session:" +
-                                            header.sessionId());
+            throw new IllegalStateException("Trying to abort an unknown replay session:" + header.sessionId());
         }
         session.abortReplay();
     }
@@ -224,8 +220,8 @@ class ArchiverConductor implements Agent
         // validate image single use
         if (image2ReplaySession.containsKey(header.sessionId()))
         {
-            throw new IllegalStateException("Trying to request a second replay from same session:" +
-                                            header.sessionId());
+            throw new IllegalStateException(
+                "Trying to request a second replay from same session:" + header.sessionId());
         }
 
         final Image image = serviceRequests.imageBySessionId(header.sessionId());
@@ -251,7 +247,6 @@ class ArchiverConductor implements Agent
         image2ReplaySession.put(header.sessionId(), replaySession);
         replaySessions.add(replaySession);
     }
-
 
     private void onArchiveStartRequest(final DirectBuffer buffer, final int offset)
     {
@@ -377,7 +372,7 @@ class ArchiverConductor implements Agent
             .schemaId(ArchiveStartedNotificationEncoder.SCHEMA_ID)
             .version(ArchiveStartedNotificationEncoder.SCHEMA_VERSION);
 
-        // reset encoder limit is required for varible length messages
+        // reset encoder limit is required for variable length messages
         responseEncoder.limit(MessageHeaderEncoder.ENCODED_LENGTH + ArchiveStartedNotificationEncoder.BLOCK_LENGTH);
         archiveStartedNotificationEncoder
             .streamInstanceId(instanceId)

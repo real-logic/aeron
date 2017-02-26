@@ -34,7 +34,7 @@ import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
  * TODO: Is this useful beyond testing?
  * TODO: More closely reflect {@link io.aeron.Image} API
  */
-class StreamInstanceArchiveFragementReader
+class StreamInstanceArchiveFragmentReader
 {
     private final int streamInstanceId;
     private final File archiveFolder;
@@ -48,7 +48,7 @@ class StreamInstanceArchiveFragementReader
     private final int termOffset;
     private final long length;
 
-    StreamInstanceArchiveFragementReader(final int streamInstanceId, final File archiveFolder) throws IOException
+    StreamInstanceArchiveFragmentReader(final int streamInstanceId, final File archiveFolder) throws IOException
     {
         this.streamInstanceId = streamInstanceId;
         this.archiveFolder = archiveFolder;
@@ -68,11 +68,12 @@ class StreamInstanceArchiveFragementReader
         length = fullLength;
     }
 
-    StreamInstanceArchiveFragementReader(final int streamInstanceId,
-                                         final File archiveFolder,
-                                         final int termId,
-                                         final int termOffset,
-                                         final long length) throws IOException
+    StreamInstanceArchiveFragmentReader(
+        final int streamInstanceId,
+        final File archiveFolder,
+        final int termId,
+        final int termOffset,
+        final long length) throws IOException
     {
         this.streamInstanceId = streamInstanceId;
         this.archiveFolder = archiveFolder;
@@ -97,10 +98,11 @@ class StreamInstanceArchiveFragementReader
         return poll(fragmentHandler, initialTermId, initialTermOffset, fullLength);
     }
 
-    int poll(final FragmentHandler fragmentHandler,
-             final int fromTermId,
-             final int fromTermOffset,
-             final long replayLength) throws IOException
+    int poll(
+        final FragmentHandler fragmentHandler,
+        final int fromTermId,
+        final int fromTermOffset,
+        final long replayLength) throws IOException
     {
         int polled = 0;
         long transmitted = 0;
@@ -126,8 +128,8 @@ class StreamInstanceArchiveFragementReader
             int archiveTermStartOffset = archiveOffset - fromTermOffset;
             termMappedUnsafeBuffer =
                 new UnsafeBuffer(currentDataChannel.map(FileChannel.MapMode.READ_ONLY,
-                                                        archiveTermStartOffset,
-                                                        termBufferLength));
+                    archiveTermStartOffset,
+                    termBufferLength));
             int fragmentOffset = archiveOffset & (termBufferLength - 1);
             while (true)
             {
@@ -140,13 +142,14 @@ class StreamInstanceArchiveFragementReader
                 {
                     fragmentHeader.offset(fragmentOffset);
                     final int frameLength = fragmentHeader.frameLength();
-                    polled += readFragment(fragmentHandler,
-                                          termMappedUnsafeBuffer,
-                                          fragmentOffset,
-                                          frameLength,
-                                          fragmentHeader);
+                    polled += readFragment(
+                        fragmentHandler,
+                        termMappedUnsafeBuffer,
+                        fragmentOffset,
+                        frameLength,
+                        fragmentHeader);
                     final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
-                    transmitted +=  alignedLength;
+                    transmitted += alignedLength;
                     fragmentOffset += alignedLength;
                 }
 
@@ -177,8 +180,8 @@ class StreamInstanceArchiveFragementReader
                 // roll term
                 IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
                 termMappedUnsafeBuffer.wrap(currentDataChannel.map(FileChannel.MapMode.READ_ONLY,
-                                                                   archiveTermStartOffset,
-                                                                   termBufferLength));
+                    archiveTermStartOffset,
+                    termBufferLength));
             }
         }
         finally
@@ -208,13 +211,13 @@ class StreamInstanceArchiveFragementReader
         {
             final int fragmentDataOffset = fragmentOffset + DataHeaderFlyweight.DATA_OFFSET;
             final int fragmentDataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
-            fragmentHandler.onFragment(termMappedUnsafeBuffer,
-                                       fragmentDataOffset,
-                                       fragmentDataLength,
-                                       fragmentHeader);
+            fragmentHandler.onFragment(
+                termMappedUnsafeBuffer,
+                fragmentDataOffset,
+                fragmentDataLength,
+                fragmentHeader);
             return 1;
         }
         return 0;
     }
-
 }

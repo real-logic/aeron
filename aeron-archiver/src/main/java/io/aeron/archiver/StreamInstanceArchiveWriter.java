@@ -52,11 +52,13 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
     private int lastTermOffset = -1;
 
     private boolean closed;
-    StreamInstanceArchiveWriter(final File archiveFolder,
-                                final EpochClock epochClock,
-                                final int streamInstanceId,
-                                final int termBufferLength,
-                                final StreamInstance streamInstance)
+
+    StreamInstanceArchiveWriter(
+        final File archiveFolder,
+        final EpochClock epochClock,
+        final int streamInstanceId,
+        final int termBufferLength,
+        final StreamInstance streamInstance)
     {
         this.streamInstanceId = streamInstanceId;
         this.archiveFolder = archiveFolder;
@@ -68,7 +70,7 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         {
             throw new IllegalArgumentException(
                 "It is assumed the termBufferLength is a power of 2 smaller than 1G and that" +
-                "therefore the number of terms in a file is also a power of 2");
+                    "therefore the number of terms in a file is also a power of 2");
         }
 
         final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
@@ -104,6 +106,7 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
             throw new RuntimeException();
         }
     }
+
     private void newArchiveFile(final int termId)
     {
         final String archiveDataFileName =
@@ -117,7 +120,7 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
             archiveFileChannel = randomAccessFile.getChannel();
             // presize the file
             archiveFileChannel.position(ArchiveFileUtil.ARCHIVE_FILE_SIZE - 1);
-            archiveFileChannel.write(ByteBuffer.wrap(new byte[]{0 }));
+            archiveFileChannel.write(ByteBuffer.wrap(new byte[]{ 0 }));
             archiveFileChannel.position(0);
         }
         catch (IOException e)
@@ -127,8 +130,6 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         }
     }
 
-
-    @Override
     public void onBlock(
         final FileChannel fileChannel,
         final long fileOffset,
@@ -163,10 +164,6 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         }
     }
 
-
-
-
-    @Override
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final int termId = header.termId();
@@ -229,8 +226,8 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         }
         else if (archiveOffset != archivePosition)
         {
-            throw new IllegalArgumentException("It is assumed that archivePosition tracks the calculated " +
-                                               "archiveOffset");
+            throw new IllegalArgumentException(
+                "It is assumed that archivePosition tracks the calculated archiveOffset");
         }
         else if (archiveFileChannel.position() != archivePosition)
         {
@@ -257,6 +254,7 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
             newArchiveFile(termId + 1);
         }
     }
+
     public void close()
     {
         if (closed)
@@ -298,5 +296,4 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
     {
         return lastTermOffset;
     }
-
 }

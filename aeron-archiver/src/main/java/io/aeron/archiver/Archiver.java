@@ -49,13 +49,12 @@ public class Archiver implements AutoCloseable
 
     static void setup() throws Exception
     {
-        try (Archiver archiver = Archiver.launch())
+        try (Archiver ignore = Archiver.launch())
         {
             new ShutdownSignalBarrier().await();
             System.out.println("Shutdown Archiver...");
         }
     }
-
 
     public void close() throws Exception
     {
@@ -123,8 +122,8 @@ public class Archiver implements AutoCloseable
         {
             if (!archiveFolder.exists() && !archiveFolder.mkdirs())
             {
-                throw new IllegalArgumentException("Failed to create archive folder:" +
-                                                   archiveFolder.getAbsolutePath());
+                throw new IllegalArgumentException(
+                    "Failed to create archive folder:" + archiveFolder.getAbsolutePath());
             }
             this.clientContext = clientContext;
             this.archiveFolder = archiveFolder;

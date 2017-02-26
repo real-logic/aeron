@@ -31,7 +31,7 @@ public class ArchiverWithEmbeddedDriver
     {
         loadPropertiesFiles(args);
 
-        try (MediaDriver driver = MediaDriver.launch())
+        try (MediaDriver ignore = MediaDriver.launch())
         {
             Archiver.setup();
         }

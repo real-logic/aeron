@@ -69,7 +69,7 @@ class ArchiveIndex implements AutoCloseable
                 }
                 int read;
                 while (offset < CAPACITY &&
-                       (read = loadIntoIndex(byteBuffer, unsafeBuffer, decoder, offset)) != 0)
+                    (read = loadIntoIndex(byteBuffer, unsafeBuffer, decoder, offset)) != 0)
                 {
                     offset += read;
                 }
@@ -89,10 +89,11 @@ class ArchiveIndex implements AutoCloseable
         archiveStartedNotificationEncoder.wrap(unsafeBuffer, INDEX_FRAME_LENGTH);
     }
 
-    private int loadIntoIndex(final ByteBuffer dst,
-                              final UnsafeBuffer unsafeBuffer,
-                              final ArchiveStartedNotificationDecoder decoder,
-                              final int offset)
+    private int loadIntoIndex(
+        final ByteBuffer dst,
+        final UnsafeBuffer unsafeBuffer,
+        final ArchiveStartedNotificationDecoder decoder,
+        final int offset)
     {
 
         if (dst.remaining() == 0)
@@ -105,8 +106,8 @@ class ArchiveIndex implements AutoCloseable
             dst.compact();
             if (dst.capacity() - dst.limit() < INDEX_FRAME_LENGTH)
             {
-                throw new IllegalStateException("After compaction this buffer still too small to fit " +
-                                                "INDEX_FRAME_LENGTH=8");
+                throw new IllegalStateException(
+                    "After compaction this buffer still too small to fit INDEX_FRAME_LENGTH=8");
             }
             return 0;
         }
@@ -193,7 +194,6 @@ class ArchiveIndex implements AutoCloseable
         return streamInstance2InstanceId.get(newStreamInstance);
     }
 
-    @Override
     public void close() throws Exception
     {
         archiveIndexFileChannel.close();

@@ -98,10 +98,11 @@ public class ImageArchivingSessionTest
     @After
     public void teardownMockTermBuff()
     {
+        IoUtil.unmap(mockLogBufferMapped.byteBuffer());
         CloseHelper.quietClose(mockLogBufferChannel);
         CloseHelper.quietClose(logBufferRandomAccessFile);
-        IoUtil.delete(tempFolderForTest, true);
-        IoUtil.delete(termFile, true);
+        IoUtil.delete(tempFolderForTest, false);
+        IoUtil.delete(termFile, false);
     }
 
     @Test

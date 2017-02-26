@@ -305,6 +305,7 @@ class ReplaySession
 
     private int close()
     {
+        System.out.println("ReplaySession.close");
         // TODO: how do we gracefully timeout or terminate this? need to add a LINGER state etc.
         CloseHelper.quietClose(reply);
         CloseHelper.quietClose(cursor);

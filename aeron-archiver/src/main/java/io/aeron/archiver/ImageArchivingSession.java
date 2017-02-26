@@ -113,7 +113,6 @@ class ImageArchivingSession
         streamInstanceId = archiverConductor.notifyArchiveStarted(source, sessionId, channel, streamId);
         final int termBufferLength = image.termBufferLength();
 
-
         try
         {
             this.writer = new StreamInstanceArchiveWriter(

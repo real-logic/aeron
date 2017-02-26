@@ -126,6 +126,7 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
                 LangUtil.rethrowUnchecked(e);
             }
         }
+
         return readSize;
     }
 
@@ -145,9 +146,8 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
             {
                 throw new IllegalStateException(archiveDataFileN.getAbsolutePath() + " not found");
             }
-            CloseHelper.quietClose(currentDataFile);
-            CloseHelper.quietClose(currentDataChannel);
-            IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
+
+            closeResources();
 
             currentDataFile = new RandomAccessFile(archiveDataFileN, "r");
             currentDataChannel = currentDataFile.getChannel();
@@ -158,6 +158,11 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
     }
 
     public void close()
+    {
+        closeResources();
+    }
+
+    private void closeResources()
     {
         CloseHelper.quietClose(currentDataFile);
         CloseHelper.quietClose(currentDataChannel);

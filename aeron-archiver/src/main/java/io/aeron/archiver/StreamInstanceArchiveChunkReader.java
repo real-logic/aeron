@@ -164,9 +164,9 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
 
     private void closeResources()
     {
-        CloseHelper.quietClose(currentDataFile);
-        CloseHelper.quietClose(currentDataChannel);
         IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
+        CloseHelper.quietClose(currentDataChannel);
+        CloseHelper.quietClose(currentDataFile);
     }
 
     interface ChunkHandler

@@ -86,8 +86,8 @@ public class ImageArchivingSessionTest
         final ByteBuffer bb = ByteBuffer.allocate(100);
         mockLogBufferChannel.position(termOffset);
         mockLogBufferChannel.write(bb);
-        mockLogBufferMapped =
-            new UnsafeBuffer(mockLogBufferChannel.map(FileChannel.MapMode.READ_WRITE, 0, termBufferLength));
+        mockLogBufferMapped = new UnsafeBuffer(
+            mockLogBufferChannel.map(FileChannel.MapMode.READ_WRITE, 0, termBufferLength));
 
         // prep a single message in the log buffer
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
@@ -98,8 +98,8 @@ public class ImageArchivingSessionTest
     @After
     public void teardownMockTermBuff()
     {
-        CloseHelper.quietClose(logBufferRandomAccessFile);
         CloseHelper.quietClose(mockLogBufferChannel);
+        CloseHelper.quietClose(logBufferRandomAccessFile);
         IoUtil.delete(tempFolderForTest, true);
         IoUtil.delete(termFile, true);
     }

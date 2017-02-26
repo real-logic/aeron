@@ -21,7 +21,6 @@ import org.agrona.concurrent.EpochClock;
 
 /**
  * Consumes an {@link Image} and archives data into file using {@link StreamInstanceArchiveWriter}.
- * TODO: refactor out of State pattern
  */
 class ImageArchivingSession
 {

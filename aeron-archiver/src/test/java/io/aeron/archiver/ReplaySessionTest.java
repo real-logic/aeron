@@ -58,11 +58,12 @@ public class ReplaySessionTest
         final EpochClock epochClock = mock(EpochClock.class);
         final StreamInstance streamInstance = new StreamInstance("source", 1, "channel", 1);
         try (StreamInstanceArchiveWriter writer =
-                 new StreamInstanceArchiveWriter(archiveFolder,
-                                                 epochClock,
-                                                 STREAM_INSTANCE_ID,
-                                                 TERM_BUFFER_LENGTH,
-                                                 streamInstance))
+                 new StreamInstanceArchiveWriter(
+                     archiveFolder,
+                     epochClock,
+                     STREAM_INSTANCE_ID,
+                     TERM_BUFFER_LENGTH,
+                     streamInstance))
         {
             when(epochClock.time()).thenReturn(42L);
             final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
@@ -75,9 +76,10 @@ public class ReplaySessionTest
                 .termId(INITIAL_TERM_ID)
                 .headerType(DataHeaderFlyweight.HDR_TYPE_DATA)
                 .frameLength(1024);
-            buffer.setMemory(INITIAL_TERM_OFFSET + DataHeaderFlyweight.HEADER_LENGTH,
-                             1024 - DataHeaderFlyweight.HEADER_LENGTH,
-                             (byte) 1);
+            buffer.setMemory(
+                INITIAL_TERM_OFFSET + DataHeaderFlyweight.HEADER_LENGTH,
+                1024 - DataHeaderFlyweight.HEADER_LENGTH,
+                (byte) 1);
 
             final Header header = new Header(INITIAL_TERM_ID, Integer.numberOfLeadingZeros(TERM_BUFFER_LENGTH));
             header.buffer(buffer);
@@ -86,22 +88,24 @@ public class ReplaySessionTest
             Assert.assertEquals(INITIAL_TERM_ID, header.termId());
             Assert.assertEquals(INITIAL_TERM_OFFSET, header.offset());
 
-            writer.onFragment(buffer,
-                              header.offset() + DataHeaderFlyweight.HEADER_LENGTH,
-                              header.frameLength() - DataHeaderFlyweight.HEADER_LENGTH,
-                              header);
+            writer.onFragment(
+                buffer,
+                header.offset() + DataHeaderFlyweight.HEADER_LENGTH,
+                header.frameLength() - DataHeaderFlyweight.HEADER_LENGTH,
+                header);
 
             when(epochClock.time()).thenReturn(84L);
         }
 
         try (StreamInstanceArchiveChunkReader chunkReader =
-                new StreamInstanceArchiveChunkReader(STREAM_INSTANCE_ID,
-                                                     archiveFolder,
-                                                     INITIAL_TERM_ID,
-                                                     TERM_BUFFER_LENGTH,
-                                                     INITIAL_TERM_ID,
-                                                     INITIAL_TERM_OFFSET,
-                                                     1024))
+                new StreamInstanceArchiveChunkReader(
+                    STREAM_INSTANCE_ID,
+                    archiveFolder,
+                    INITIAL_TERM_ID,
+                    TERM_BUFFER_LENGTH,
+                    INITIAL_TERM_ID,
+                    INITIAL_TERM_OFFSET,
+                    1024))
         {
             chunkReader.readChunk((termBuff, termOffset, length) ->
             {
@@ -112,8 +116,8 @@ public class ReplaySessionTest
                 return true;
             }, 1024);
         }
-        final StreamInstanceArchiveFragementReader reader =
-            new StreamInstanceArchiveFragementReader(STREAM_INSTANCE_ID, archiveFolder);
+        final StreamInstanceArchiveFragmentReader reader =
+            new StreamInstanceArchiveFragmentReader(STREAM_INSTANCE_ID, archiveFolder);
 
         final int polled = reader.poll((b, offset, length, h) ->
         {
@@ -141,13 +145,14 @@ public class ReplaySessionTest
         final Image image = Mockito.mock(Image.class);
 
         final ReplaySession replaySession =
-            new ReplaySession(STREAM_INSTANCE_ID,
-                              INITIAL_TERM_ID,
-                              INITIAL_TERM_OFFSET,
-                              length,
-                              reply,
-                              image,
-                              conductor);
+            new ReplaySession(
+                STREAM_INSTANCE_ID,
+                INITIAL_TERM_ID,
+                INITIAL_TERM_OFFSET,
+                length,
+                reply,
+                image,
+                conductor);
         when(reply.isClosed()).thenReturn(false);
         when(reply.isConnected()).thenReturn(false);
         // does not switch to replay mode until publications are established
@@ -171,7 +176,7 @@ public class ReplaySessionTest
         Assert.assertNotEquals(0, replaySession.doWork());
         Assert.assertTrue(messageIndex > 0);
         Assert.assertEquals(ReplaySession.REPLAY_DATA_HEADER,
-                            mockTermBuffer.getLong(DataHeaderFlyweight.HEADER_LENGTH));
+            mockTermBuffer.getLong(DataHeaderFlyweight.HEADER_LENGTH));
         Assert.assertEquals(1024, mockTermBuffer.getInt(0) -
                                   (DataHeaderFlyweight.HEADER_LENGTH + MessageHeaderDecoder.ENCODED_LENGTH));
 

@@ -83,8 +83,8 @@ public class ImageArchivingSessionTest
         final ByteBuffer bb = ByteBuffer.allocate(100);
         mockLogBufferChannel.position(termOffset);
         mockLogBufferChannel.write(bb);
-        mockLogBufferMapped =
-            new UnsafeBuffer(mockLogBufferChannel.map(FileChannel.MapMode.READ_WRITE, 0, termBufferLength));
+        mockLogBufferMapped = new UnsafeBuffer(
+            mockLogBufferChannel.map(FileChannel.MapMode.READ_WRITE, 0, termBufferLength));
 
         // prep a single message in the log buffer
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
@@ -95,10 +95,11 @@ public class ImageArchivingSessionTest
     @After
     public void teardownMockTermBuff()
     {
-        CloseHelper.quietClose(logBufferRandomAccessFile);
+        IoUtil.unmap(mockLogBufferMapped.byteBuffer());
         CloseHelper.quietClose(mockLogBufferChannel);
-        IoUtil.delete(tempFolderForTest, true);
-        IoUtil.delete(termFile, true);
+        CloseHelper.quietClose(logBufferRandomAccessFile);
+        IoUtil.delete(tempFolderForTest, false);
+        IoUtil.delete(termFile, false);
     }
 
     @Test
@@ -152,8 +153,8 @@ public class ImageArchivingSessionTest
         final File archiveDataFile = new File(tempFolderForTest,
             archiveDataFileName(session.streamInstanceId(), 0));
         Assert.assertTrue(archiveDataFile.exists());
-        final StreamInstanceArchiveFragementReader
-            reader = new StreamInstanceArchiveFragementReader(session.streamInstanceId(), tempFolderForTest);
+        final StreamInstanceArchiveFragmentReader
+            reader = new StreamInstanceArchiveFragmentReader(session.streamInstanceId(), tempFolderForTest);
         final int polled = reader.poll((buffer, offset, length, header) ->
         {
             Assert.assertEquals(100, header.frameLength());

@@ -17,16 +17,13 @@ package io.aeron.driver.buffer;
 
 import io.aeron.driver.Configuration;
 import io.aeron.driver.media.UdpChannel;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.errors.DistinctErrorLog;
+import org.junit.*;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 import static org.hamcrest.Matchers.is;

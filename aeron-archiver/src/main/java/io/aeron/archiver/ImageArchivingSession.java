@@ -25,7 +25,6 @@ import org.agrona.concurrent.EpochClock;
  */
 class ImageArchivingSession
 {
-
     enum State
     {
         INIT
@@ -117,11 +116,12 @@ class ImageArchivingSession
 
         try
         {
-            this.writer = new StreamInstanceArchiveWriter(archiverConductor.archiveFolder(),
-                                                          epochClock,
-                                                          streamInstanceId,
-                                                          termBufferLength,
-                                                          new StreamInstance(source, sessionId, channel, streamId));
+            this.writer = new StreamInstanceArchiveWriter(
+                archiverConductor.archiveFolder(),
+                epochClock,
+                streamInstanceId,
+                termBufferLength,
+                new StreamInstance(source, sessionId, channel, streamId));
 
         }
         catch (Exception e)

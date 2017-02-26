@@ -156,8 +156,8 @@ public class ImageArchivingSessionTest
         final File archiveDataFile = new File(tempFolderForTest,
             archiveDataFileName(session.streamInstanceId(), 0));
         assertTrue(archiveDataFile.exists());
-        final StreamInstanceArchiveFragementReader
-            reader = new StreamInstanceArchiveFragementReader(session.streamInstanceId(), tempFolderForTest);
+        final StreamInstanceArchiveFragmentReader
+            reader = new StreamInstanceArchiveFragmentReader(session.streamInstanceId(), tempFolderForTest);
         final int polled = reader.poll((buffer, offset, length, header) ->
         {
             Assert.assertEquals(100, header.frameLength());

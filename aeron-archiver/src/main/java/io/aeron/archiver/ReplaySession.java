@@ -28,10 +28,10 @@ import java.io.*;
  * The {@link ArchiverConductor} will initiate a session on receiving a ReplayRequest
  * (see {@link io.aeron.archiver.messages.ReplayRequestDecoder}). The session will:
  * <ul>
- *     <li>Establish a reply {@link Publication} with the initiator(or someone else possibly) </li>
- *     <li>Validate request parameters and respond with error, or OK message(see {@link ArchiverResponseDecoder})</li>
- *     <li>Stream archived data into reply {@link Publication}</li>
- *     <li>Successfully terminate the stream (see {@link ReplayFinishedDecoder})</li>
+ * <li>Establish a reply {@link Publication} with the initiator(or someone else possibly) </li>
+ * <li>Validate request parameters and respond with error, or OK message(see {@link ArchiverResponseDecoder})</li>
+ * <li>Stream archived data into reply {@link Publication}</li>
+ * <li>Successfully terminate the stream (see {@link ReplayFinishedDecoder})</li>
  * </ul>
  * TODO: implement open ended replay
  */
@@ -175,39 +175,41 @@ class ReplaySession
         // Note: when debugging this may cause a crash as the debugger might try to call metaData.toString after unmap
         IoUtil.unmap(metaData.buffer().byteBuffer());
 
-        final int replayEndTermId = (int) (fromTermId + (replayLength / termBufferLength));
-        final int replayEndTermOffset = (int) ((replayLength + fromTermOffset) % termBufferLength);
+        final int replayEndTermId = (int)(fromTermId + (replayLength / termBufferLength));
+        final int replayEndTermOffset = (int)((replayLength + fromTermOffset) % termBufferLength);
 
         if (fromTermOffset >= termBufferLength || fromTermOffset < 0 ||
             !isTermIdInRange(fromTermId, initialTermId, lastTermId) ||
-            !isTermOffsetInRange(initialTermId,
-                                 initialTermOffset,
-                                 lastTermId,
-                                 lastTermOffset,
-                                 fromTermId,
-                                 fromTermOffset) ||
+            !isTermOffsetInRange(
+                initialTermId,
+                initialTermOffset,
+                lastTermId,
+                lastTermOffset,
+                fromTermId,
+                fromTermOffset) ||
             !isTermIdInRange(replayEndTermId, initialTermId, lastTermId) ||
-            !isTermOffsetInRange(initialTermId,
-                                 initialTermOffset,
-                                 lastTermId,
-                                 lastTermOffset,
-                                 replayEndTermId,
-                                 replayEndTermOffset))
+            !isTermOffsetInRange(
+                initialTermId,
+                initialTermOffset,
+                lastTermId,
+                lastTermOffset,
+                replayEndTermId,
+                replayEndTermOffset))
         {
             return closeOnErr(null, "Requested replay is out of archive range [(" +
-                                    initialTermId + "," + initialTermOffset + "),(" +
-                                    lastTermId + "," + lastTermOffset + ")]");
+                initialTermId + "," + initialTermOffset + "),(" +
+                lastTermId + "," + lastTermOffset + ")]");
         }
 
         try
         {
             cursor = new StreamInstanceArchiveChunkReader(streamInstanceId,
-                                                          archiverConductor.archiveFolder(),
-                                                          initialTermId,
-                                                          termBufferLength,
-                                                          fromTermId,
-                                                          fromTermOffset,
-                                                          replayLength);
+                archiverConductor.archiveFolder(),
+                initialTermId,
+                termBufferLength,
+                fromTermId,
+                fromTermOffset,
+                replayLength);
         }
         catch (IOException e)
         {
@@ -219,12 +221,13 @@ class ReplaySession
         return 1;
     }
 
-    private static boolean isTermOffsetInRange(final int initialTermId,
-                                               final int initialTermOffset,
-                                               final int lastTermId,
-                                               final int lastTermOffset,
-                                               final int termId,
-                                               final int termOffset)
+    private static boolean isTermOffsetInRange(
+        final int initialTermId,
+        final int initialTermOffset,
+        final int lastTermId,
+        final int lastTermOffset,
+        final int termId,
+        final int termOffset)
     {
         return (initialTermId == termId && termOffset >= initialTermOffset) ||
             (lastTermId == termId && termOffset <= lastTermOffset);
@@ -278,7 +281,7 @@ class ReplaySession
     private boolean handleChunks(final UnsafeBuffer chunkBuffer, final int chunkOffset, final int chunkLength)
     {
         final long result = reply.tryClaim(chunkLength + MessageHeaderDecoder.ENCODED_LENGTH,
-                                           bufferClaim);
+            bufferClaim);
         if (result > 0)
         {
             try

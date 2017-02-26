@@ -112,8 +112,8 @@ public class ReplaySessionTest
                 return true;
             }, 1024);
         }
-        final StreamInstanceArchiveFragementReader reader =
-            new StreamInstanceArchiveFragementReader(STREAM_INSTANCE_ID, archiveFolder);
+        final StreamInstanceArchiveFragmentReader reader =
+            new StreamInstanceArchiveFragmentReader(STREAM_INSTANCE_ID, archiveFolder);
 
         final int polled = reader.poll((b, offset, length, h) ->
         {

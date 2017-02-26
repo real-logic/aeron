@@ -35,7 +35,6 @@ class StreamInstance
         this.streamId = streamId;
     }
 
-
     public String source()
     {
         return source;
@@ -81,6 +80,7 @@ class StreamInstance
         {
             return false;
         }
+
         return channel.equals(that.channel);
     }
 

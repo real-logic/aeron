@@ -252,7 +252,6 @@ class ArchiverConductor implements Agent
         replaySessions.add(replaySession);
     }
 
-
     private void onArchiveStartRequest(final DirectBuffer buffer, final int offset)
     {
         archiveStartRequestDecoder.wrap(

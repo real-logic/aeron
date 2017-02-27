@@ -25,7 +25,7 @@ import static org.agrona.collections.CollectionUtil.getOrDefault;
 /**
  * Map for navigating to active {@link Publication}s.
  */
-public class ActivePublications
+class ActivePublications
 {
     private final Map<String, Int2ObjectHashMap<Publication>> publicationsByChannelMap = new HashMap<>();
 

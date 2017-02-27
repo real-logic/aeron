@@ -176,7 +176,8 @@ public class BufferBuilder
     private static int findSuitableCapacity(final int currentCapacity, final int requiredCapacity)
     {
         int capacity = currentCapacity;
-        while (capacity < requiredCapacity)
+
+        do
         {
             final int newCapacity = capacity + (capacity >> 1);
 
@@ -194,6 +195,7 @@ public class BufferBuilder
                 capacity = newCapacity;
             }
         }
+        while (capacity < requiredCapacity);
 
         return capacity;
     }

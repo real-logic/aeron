@@ -27,6 +27,14 @@ import java.util.Arrays;
  */
 public class BufferBuilder
 {
+    /**
+     * Maximum capacity to which the array can grow.
+     */
+    public static final int MAX_CAPACITY = Integer.MAX_VALUE - 8;
+
+    /**
+     * Initial capacity for the internal buffer.
+     */
     public static final int INITIAL_CAPACITY = 4096;
 
     private final MutableDirectBuffer mutableDirectBuffer;
@@ -168,11 +176,24 @@ public class BufferBuilder
     private static int findSuitableCapacity(final int currentCapacity, final int requiredCapacity)
     {
         int capacity = currentCapacity;
-        do
+        while (capacity < requiredCapacity)
         {
-            capacity <<= 1;
+            final int newCapacity = capacity + (capacity >> 1);
+
+            if (newCapacity < 0 || newCapacity > MAX_CAPACITY)
+            {
+                if (capacity == MAX_CAPACITY)
+                {
+                    throw new IllegalStateException("Max capacity reached: " + MAX_CAPACITY);
+                }
+
+                capacity = MAX_CAPACITY;
+            }
+            else
+            {
+                capacity = newCapacity;
+            }
         }
-        while (capacity < requiredCapacity);
 
         return capacity;
     }

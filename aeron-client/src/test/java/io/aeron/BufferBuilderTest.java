@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThat;
@@ -48,6 +49,18 @@ public class BufferBuilderTest
         bufferBuilder.append(srcBuffer, 0, 0);
 
         assertThat(bufferBuilder.limit(), is(0));
+    }
+
+    @Test
+    public void shouldGrowToMultipleOfInitialCapacity()
+    {
+        final int srcCapacity = INITIAL_CAPACITY * 5;
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[srcCapacity]);
+
+        bufferBuilder.append(srcBuffer, 0, srcBuffer.capacity());
+
+        assertThat(bufferBuilder.limit(), is(srcCapacity));
+        assertThat(bufferBuilder.capacity(), greaterThanOrEqualTo(srcCapacity));
     }
 
     @Test
@@ -135,7 +148,7 @@ public class BufferBuilderTest
         bufferBuilder.buffer().getBytes(0, temp, 0, buffer.length);
 
         assertThat(bufferBuilder.limit(), is(buffer.length));
-        assertThat(bufferBuilder.capacity(), is(bufferLength * 2));
+        assertThat(bufferBuilder.capacity(), greaterThan(bufferLength));
         assertArrayEquals(temp, buffer);
     }
 
@@ -158,7 +171,7 @@ public class BufferBuilderTest
         bufferBuilder.buffer().getBytes(0, temp, 0, secondLength + firstLength);
 
         assertThat(bufferBuilder.limit(), is(firstLength + secondLength));
-        assertThat(bufferBuilder.capacity(), is(bufferLength));
+        assertThat(bufferBuilder.capacity(), greaterThanOrEqualTo(firstLength + secondLength));
         assertArrayEquals(temp, buffer);
     }
 

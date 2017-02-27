@@ -47,7 +47,7 @@ public class ArchiveIndexTest
     @AfterClass
     public static void teardown()
     {
-        IoUtil.delete(archiveFolder, true);
+        IoUtil.delete(archiveFolder, false);
     }
 
     @Test

@@ -106,7 +106,7 @@ public class ArchiveAndReplaySystemTest
         CloseHelper.quietClose(archiver);
         CloseHelper.quietClose(driver);
 
-        IoUtil.delete(archiveFolder, true);
+        IoUtil.delete(archiveFolder, false);
         driverCtx.deleteAeronDirectory();
     }
 

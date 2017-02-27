@@ -133,7 +133,7 @@ public class ReplaySessionTest
         IoUtil.unmap(metaDataBuffer);
         CloseHelper.quietClose(metadataFileChannel);
         CloseHelper.quietClose(metaDataFile);
-        IoUtil.delete(archiveFolder, true);
+        IoUtil.delete(archiveFolder, false);
     }
 
     @Test

@@ -20,13 +20,24 @@ package io.aeron;
  */
 public enum ErrorCode
 {
-    /** Aeron encountered an error condition. */
+    /**
+     * Aeron encountered an error condition.
+     */
     GENERIC_ERROR(0),
-    /** A failure occurred creating a new channel or parsing the channel string. */
+
+    /**
+     * A failure occurred creating a new channel or parsing the channel string.
+     */
     INVALID_CHANNEL(1),
-    /** Attempted to remove a subscription, but it was not found */
+
+    /**
+     * Attempted to remove a subscription, but it was not found
+     */
     UNKNOWN_SUBSCRIPTION(2),
-    /** Attempted to remove a publication, but it was not found. */
+
+    /**
+     * Attempted to remove a publication, but it was not found.
+     */
     UNKNOWN_PUBLICATION(3);
 
     private final int value;
@@ -38,6 +49,7 @@ public enum ErrorCode
 
     /**
      * Get the value of this ErrorCode.
+     *
      * @return The value.
      */
     public int value()
@@ -47,6 +59,7 @@ public enum ErrorCode
 
     /**
      * Get the ErrorCode that corresponds to the given value.
+     *
      * @param value Of the ErrorCode
      * @return ErrorCode
      */
@@ -54,7 +67,7 @@ public enum ErrorCode
     {
         if (value > Singleton.VALUES.length)
         {
-            throw new IllegalArgumentException("no ErrorCode for value: " + value);
+            throw new IllegalArgumentException("No ErrorCode for value: " + value);
         }
 
         return Singleton.VALUES[value];

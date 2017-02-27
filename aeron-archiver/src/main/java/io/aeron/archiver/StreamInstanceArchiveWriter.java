@@ -118,11 +118,8 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         try
         {
             archiveFile = new RandomAccessFile(file, "rwd");
+            archiveFile.setLength(ArchiveFileUtil.ARCHIVE_FILE_SIZE);
             archiveFileChannel = archiveFile.getChannel();
-            // presize the file
-            archiveFileChannel.position(ArchiveFileUtil.ARCHIVE_FILE_SIZE - 1);
-            archiveFileChannel.write(ByteBuffer.wrap(new byte[]{ 0 }));
-            archiveFileChannel.position(0);
         }
         catch (IOException e)
         {
@@ -207,7 +204,8 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         final int termOffset,
         final int termId,
         final int archiveOffset,
-        final int writeLength) throws IOException
+        final int writeLength)
+        throws IOException
     {
         if (termOffset + writeLength > termBufferLength)
         {

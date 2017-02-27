@@ -148,6 +148,7 @@ class ArchiverConductor implements Agent
 
         archiverNotifications.close();
         serviceRequests.close();
+        CloseHelper.quietClose(archiveIndex);
     }
 
     private void handleNewImageNotification(final Image image)

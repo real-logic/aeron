@@ -106,7 +106,7 @@ public class ArchiveAndReplaySystemTest
         CloseHelper.quietClose(archiver);
         CloseHelper.quietClose(driver);
 
-        IoUtil.delete(archiveFolder, true);
+        IoUtil.delete(archiveFolder, false);
         driverCtx.deleteAeronDirectory();
     }
 
@@ -228,7 +228,7 @@ public class ArchiveAndReplaySystemTest
             ArchiveFileUtil.printMetaFile(metaFile);
         }
         final ArchiveMetaFileFormatDecoder decoder =
-            archiveMetaFileFormatDecoder(new File(archiveFolder, archiveMetaFileName(streamInstanceId)));
+                archiveMetaFileFormatDecoder(new File(archiveFolder, archiveMetaFileName(streamInstanceId)));
         Assert.assertEquals(publication.initialTermId(), decoder.initialTermId());
         Assert.assertEquals(publication.sessionId(), decoder.sessionId());
         Assert.assertEquals(publication.streamId(), decoder.streamId());
@@ -404,27 +404,34 @@ public class ArchiveAndReplaySystemTest
     {
         final ArchiveMetaFileFormatDecoder decoder =
             archiveMetaFileFormatDecoder(new File(archiveFolder, archiveMetaFileName(streamInstanceId)));
-        final StreamInstanceArchiveChunkReader cursor =
-            new StreamInstanceArchiveChunkReader(streamInstanceId,
-                archiveFolder,
-                decoder.initialTermId(),
-                decoder.termBufferLength(),
-                decoder.initialTermId(),
-                decoder.initialTermOffset(),
-                ArchiveFileUtil.archiveFullLength(decoder));
-        IoUtil.unmap(decoder.buffer().byteBuffer());
+        final long archiveFullLength = ArchiveFileUtil.archiveFullLength(decoder);
+        final int initialTermId = decoder.initialTermId();
+        final int termBufferLength = decoder.termBufferLength();
+        final int initialTermOffset = decoder.initialTermOffset();
 
-        fragmentCount = 0;
-        final HeaderFlyweight mHeader = new HeaderFlyweight();
-        this.nextFragmentOffset = 0;
-        remaining = totalDataLength;
-        while (!cursor.isDone())
+        IoUtil.unmap(decoder.buffer().byteBuffer());
+        try (StreamInstanceArchiveChunkReader cursor =
+            new StreamInstanceArchiveChunkReader(
+                streamInstanceId,
+                archiveFolder,
+                initialTermId,
+                termBufferLength,
+                initialTermId,
+                initialTermOffset,
+                archiveFullLength))
         {
-            cursor.readChunk((termBuffer, termOffset, chunkLength) ->
+            fragmentCount = 0;
+            final HeaderFlyweight mHeader = new HeaderFlyweight();
+            this.nextFragmentOffset = 0;
+            remaining = totalDataLength;
+            while (!cursor.isDone())
             {
-                validateFragmentsInChunk(mHeader, messageCount, termBuffer, termOffset, chunkLength);
-                return true;
-            }, 4096 - DataHeaderFlyweight.HEADER_LENGTH);
+                cursor.readChunk((termBuffer, termOffset, chunkLength) ->
+                {
+                    validateFragmentsInChunk(mHeader, messageCount, termBuffer, termOffset, chunkLength);
+                    return true;
+                }, 4096 - DataHeaderFlyweight.HEADER_LENGTH);
+            }
         }
         Assert.assertEquals(messageCount, fragmentCount);
         Assert.assertEquals(0, remaining);

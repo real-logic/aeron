@@ -264,7 +264,8 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
 
         if (archivePosition == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
         {
-            archiveFileChannel.close();
+            CloseHelper.quietClose(archiveFileChannel);
+            CloseHelper.quietClose(archiveFile);
             archivePosition = 0;
             // TODO: allocate ahead files, will also give early indication to low storage
             newArchiveFile(termId + 1);

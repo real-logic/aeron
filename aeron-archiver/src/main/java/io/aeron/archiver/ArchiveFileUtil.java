@@ -74,6 +74,7 @@ class ArchiveFileUtil
         IoUtil.unmap(formatDecoder.buffer().byteBuffer());
     }
 
+    // TODO: in view of resource management issues on windows the approach below might be problematic
     static ArchiveMetaFileFormatDecoder archiveMetaFileFormatDecoder(final File metaFile)
         throws IOException
     {

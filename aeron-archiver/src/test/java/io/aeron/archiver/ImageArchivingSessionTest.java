@@ -50,7 +50,7 @@ public class ImageArchivingSessionTest
     private final int termBufferLength = 4096;
     private final int termOffset = 1024;
 
-    private final File tempFolderForTest = makeTempFolder();
+    private final File tempFolderForTest = TestUtil.makeTempFolder();
     private final ArchiverConductor archive;
 
     private final Image image;
@@ -210,12 +210,4 @@ public class ImageArchivingSessionTest
         return image;
     }
 
-    static File makeTempFolder() throws IOException
-    {
-        final File tempFolderForTest = File.createTempFile("archiver.test", "tmp");
-        // we really need a temp dir, not a file... delete and remake!
-        Assert.assertTrue(tempFolderForTest.delete());
-        Assert.assertTrue(tempFolderForTest.mkdir());
-        return tempFolderForTest;
-    }
 }

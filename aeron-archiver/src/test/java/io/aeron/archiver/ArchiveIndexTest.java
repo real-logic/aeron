@@ -35,7 +35,7 @@ public class ArchiveIndexTest
     @BeforeClass
     public static void setup() throws Exception
     {
-        archiveFolder = ImageArchivingSessionTest.makeTempFolder();
+        archiveFolder = TestUtil.makeTempFolder();
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder);)
         {
             streamInstanceAId = archiveIndex.addNewStreamInstance(STREAM_INSTANCE_A);

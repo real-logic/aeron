@@ -29,7 +29,7 @@ import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.ImageArchivingSessionTest.makeTempFolder;
+import static io.aeron.archiver.TestUtil.makeTempFolder;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 

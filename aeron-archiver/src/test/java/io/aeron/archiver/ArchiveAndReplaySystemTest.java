@@ -90,7 +90,7 @@ public class ArchiveAndReplaySystemTest
 
         driverCtx.errorHandler(LangUtil::rethrowUnchecked);
         driver = MediaDriver.launch(driverCtx);
-        archiveFolder = ImageArchivingSessionTest.makeTempFolder();
+        archiveFolder = TestUtil.makeTempFolder();
         archiverCtx.archiveFolder(archiveFolder);
         archiver = Archiver.launch(archiverCtx);
         println("Archiver started, folder: " + archiverCtx.archiveFolder().getAbsolutePath());

@@ -44,9 +44,6 @@ class ArchiveIndex implements AutoCloseable
     private final FileChannel archiveIndexFileChannel;
     private int streamInstanceIdSeq = 0;
 
-    // TODO: archiver resume after restart needs consideration, would imply instance to id is one to many
-    // TODO: re-subscription to same channel:stream can result in same streamInstance -> error, needs consideration
-
     ArchiveIndex(final File archiveFolder)
     {
         try
@@ -162,7 +159,8 @@ class ArchiveIndex implements AutoCloseable
         // keep word alignment like a good SBE user
         final int encodedLength = BitUtil.align(archiveStartedNotificationEncoder.encodedLength(), 8);
         unsafeBuffer.putInt(0, encodedLength);
-        // if this were a mmapped file this last right would need to be ordered
+
+        // if this were a mmapped file this last write would need to be ordered
         unsafeBuffer.putInt(encodedLength + 8, -1);
         byteBuffer.position(0).limit(8 + encodedLength + 4);
         try

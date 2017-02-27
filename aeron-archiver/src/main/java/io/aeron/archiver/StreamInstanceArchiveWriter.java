@@ -35,6 +35,7 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
     private final int streamInstanceId;
 
     private final File archiveFolder;
+    private final RandomAccessFile metadataFile;
     private final FileChannel metadataFileChannel;
     private final MappedByteBuffer metaDataBuffer;
     private final ArchiveMetaFileFormatEncoder metaDataWriter;
@@ -45,7 +46,9 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
      * by -1
      */
     private int archivePosition = -1;
+    private RandomAccessFile archiveFile;
     private FileChannel archiveFileChannel;
+
     private int initialTermId = -1;
     private int initialTermOffset = -1;
     private int lastTermId = -1;
@@ -75,11 +78,10 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
 
         final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
         final File file = new File(archiveFolder, archiveMetaFileName);
-        final RandomAccessFile randomAccessFile;
         try
         {
-            randomAccessFile = new RandomAccessFile(file, "rw");
-            metadataFileChannel = randomAccessFile.getChannel();
+            metadataFile = new RandomAccessFile(file, "rw");
+            metadataFileChannel = metadataFile.getChannel();
             metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
             final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(metaDataBuffer);
             metaDataWriter = new ArchiveMetaFileFormatEncoder().wrap(unsafeBuffer, 0);
@@ -113,11 +115,10 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
             archiveDataFileName(streamInstanceId, initialTermId, termBufferLength, termId);
         final File file = new File(archiveFolder, archiveDataFileName);
 
-        final RandomAccessFile randomAccessFile;
         try
         {
-            randomAccessFile = new RandomAccessFile(file, "rwd");
-            archiveFileChannel = randomAccessFile.getChannel();
+            archiveFile = new RandomAccessFile(file, "rwd");
+            archiveFileChannel = archiveFile.getChannel();
             // presize the file
             archiveFileChannel.position(ArchiveFileUtil.ARCHIVE_FILE_SIZE - 1);
             archiveFileChannel.write(ByteBuffer.wrap(new byte[]{ 0 }));
@@ -151,7 +152,7 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         final int archiveOffset = archiveOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
         try
         {
-            prepareWrite(termOffset, termId, archiveOffset);
+            prepareWrite(termOffset, termId, archiveOffset, blockLength);
 
             fileChannel.transferTo(fileOffset, blockLength, archiveFileChannel);
 
@@ -164,7 +165,11 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         }
     }
 
-    public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    public void onFragment(
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final Header header)
     {
         final int termId = header.termId();
         final int termOffset = header.termOffset();
@@ -183,7 +188,7 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
 
         try
         {
-            prepareWrite(termOffset, termId, archiveOffset);
+            prepareWrite(termOffset, termId, archiveOffset, header.frameLength());
 
             final ByteBuffer src = buffer.byteBuffer().duplicate();
             src.position(termOffset).limit(termOffset + frameLength);
@@ -198,8 +203,17 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         }
     }
 
-    private void prepareWrite(final int termOffset, final int termId, final int archiveOffset) throws IOException
+    private void prepareWrite(
+        final int termOffset,
+        final int termId,
+        final int archiveOffset,
+        final int writeLength) throws IOException
     {
+        if (termOffset + writeLength > termBufferLength)
+        {
+            throw new IllegalArgumentException("Writing across terms is not supported:" +
+                " [offset=" + termOffset + " + length=" + writeLength + "] > termBufferLength=" + termBufferLength);
+        }
         if (archivePosition == -1)
         {
             newArchiveFile(termId);
@@ -235,7 +249,11 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         }
     }
 
-    private void writePrologue(final int termOffset, final int blockLength, final int termId, final int archiveOffset)
+    private void writePrologue(
+        final int termOffset,
+        final int blockLength,
+        final int termId,
+        final int archiveOffset)
         throws IOException
     {
         archivePosition = archiveOffset + blockLength;
@@ -261,14 +279,20 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         {
             return;
         }
+
+        // teardown archive file resources
         CloseHelper.quietClose(archiveFileChannel);
+        CloseHelper.quietClose(archiveFile);
+
+        // teardown metadata resources
         if (metaDataBuffer != null)
         {
             metaDataWriter.endTime(epochClock.time());
             metaDataBuffer.force();
         }
-        CloseHelper.quietClose(metadataFileChannel);
         IoUtil.unmap(metaDataBuffer);
+        CloseHelper.quietClose(metadataFileChannel);
+        CloseHelper.quietClose(metadataFile);
         closed = true;
     }
 

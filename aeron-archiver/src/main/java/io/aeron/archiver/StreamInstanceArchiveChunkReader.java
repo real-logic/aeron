@@ -78,7 +78,10 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
             archiveTermStartOffset = archiveOffset - termOffset;
             currentTermOffset = termOffset;
             termMappedUnsafeBuffer = new UnsafeBuffer(
-                currentDataChannel.map(FileChannel.MapMode.READ_ONLY, archiveTermStartOffset, termBufferLength));
+                currentDataChannel.map(
+                    FileChannel.MapMode.READ_ONLY,
+                    archiveTermStartOffset,
+                    termBufferLength));
         }
         catch (IOException e)
         {
@@ -152,9 +155,17 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
             currentDataFile = new RandomAccessFile(archiveDataFileN, "r");
             currentDataChannel = currentDataFile.getChannel();
         }
+        else
+        {
+            IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
+        }
+
         // roll term
-        termMappedUnsafeBuffer.wrap(currentDataChannel.map(
-            FileChannel.MapMode.READ_ONLY, archiveTermStartOffset, termBufferLength));
+        termMappedUnsafeBuffer.wrap(
+            currentDataChannel.map(
+                FileChannel.MapMode.READ_ONLY,
+                archiveTermStartOffset,
+                termBufferLength));
     }
 
     public void close()

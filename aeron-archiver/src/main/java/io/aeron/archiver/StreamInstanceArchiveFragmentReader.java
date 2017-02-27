@@ -159,8 +159,10 @@ class StreamInstanceArchiveFragmentReader
                 }
                 fragmentOffset = 0;
                 archiveTermStartOffset += termBufferLength;
+
                 if (archiveTermStartOffset == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
                 {
+                    // roll file
                     archiveTermStartOffset = 0;
                     archiveFileIndex++;
                     final String archiveDataFileNameN =
@@ -171,14 +173,18 @@ class StreamInstanceArchiveFragmentReader
                     {
                         throw new IllegalStateException(archiveDataFileN.getAbsolutePath() + " not found");
                     }
-                    CloseHelper.quietClose(currentDataFile);
+                    IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
                     CloseHelper.quietClose(currentDataChannel);
+                    CloseHelper.quietClose(currentDataFile);
 
                     currentDataFile = new RandomAccessFile(archiveDataFileN, "r");
                     currentDataChannel = currentDataFile.getChannel();
                 }
+                else
+                {
+                    IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
+                }
                 // roll term
-                IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
                 termMappedUnsafeBuffer.wrap(currentDataChannel.map(FileChannel.MapMode.READ_ONLY,
                     archiveTermStartOffset,
                     termBufferLength));
@@ -186,12 +192,13 @@ class StreamInstanceArchiveFragmentReader
         }
         finally
         {
-            CloseHelper.quietClose(currentDataFile);
-            CloseHelper.quietClose(currentDataChannel);
             if (termMappedUnsafeBuffer != null)
             {
                 IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
             }
+            CloseHelper.quietClose(currentDataChannel);
+            CloseHelper.quietClose(currentDataFile);
+
         }
     }
 

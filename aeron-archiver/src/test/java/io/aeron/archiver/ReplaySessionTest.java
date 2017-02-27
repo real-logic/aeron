@@ -46,7 +46,7 @@ public class ReplaySessionTest
     private MappedByteBuffer metaDataBuffer;
     private ArchiveMetaFileFormatEncoder metaDataWriter;
     private ArchiverConductor conductor;
-    private int polled;
+    private int messageIndex = 0;
 
     @Before
     public void setup() throws Exception
@@ -136,7 +136,6 @@ public class ReplaySessionTest
         IoUtil.delete(archiveFolder, true);
     }
 
-    private int messageIndex = 0;
     @Test
     public void shouldReplayDataFromFile()
     {

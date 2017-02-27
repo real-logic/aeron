@@ -120,7 +120,14 @@ public class ImageArchivingSessionTest
                 {
                     return 0;
                 }
-                handle.onBlock(mockLogBufferChannel, 0, mockLogBufferMapped, termOffset, 100, sessionId, 0);
+                handle.onBlock(
+                    mockLogBufferChannel,
+                    0,
+                    mockLogBufferMapped,
+                    termOffset,
+                    100,
+                    sessionId,
+                    0);
                 return 100;
             });
 
@@ -176,7 +183,9 @@ public class ImageArchivingSessionTest
         IoUtil.unmap(metaData.buffer().byteBuffer());
     }
 
-    private Subscription mockSubscription(final String channel, final int streamId)
+    private Subscription mockSubscription(
+        final String channel,
+        final int streamId)
     {
         final Subscription subscription = mock(Subscription.class);
         when(subscription.channel()).thenReturn(channel);

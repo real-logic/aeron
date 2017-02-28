@@ -42,7 +42,7 @@ bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
 
     while (size >= PAGE_SIZE)
     {
-        if (!WriteFile(fd.handle, buffer, PAGE_SIZE, &written, NULL))
+        if (!WriteFile(fd.handle, buffer, (DWORD)PAGE_SIZE, &written, NULL))
         {
             return false;
         }
@@ -52,7 +52,7 @@ bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
 
     if (size)
     {
-        if (!WriteFile(fd.handle, buffer, size, &written, NULL))
+        if (!WriteFile(fd.handle, buffer, (DWORD)size, &written, NULL))
         {
             return false;
         }
@@ -60,7 +60,7 @@ bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
     return true;
 }
 
-MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, off_t offset, size_t size)
+MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, size_t offset, size_t size)
 {
     FileHandle fd;
     fd.handle = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -79,7 +79,7 @@ MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, off_t 
     return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size));
 }
 
-MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, off_t offset, size_t size)
+MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, size_t offset, size_t size)
 {
     FileHandle fd;
     fd.handle = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -172,7 +172,7 @@ size_t MemoryMappedFile::getMemorySize() const
 size_t MemoryMappedFile::PAGE_SIZE = getPageSize();
 
 #ifdef _WIN32
-MemoryMappedFile::MemoryMappedFile(FileHandle fd, off_t offset, size_t length)
+MemoryMappedFile::MemoryMappedFile(FileHandle fd, size_t offset, size_t length)
 {
     if (0 == length && 0 == offset)
     {
@@ -215,13 +215,13 @@ MemoryMappedFile::~MemoryMappedFile()
 
 uint8_t* MemoryMappedFile::doMapping(size_t size, FileHandle fd, size_t offset)
 {
-    m_mapping = CreateFileMapping(fd.handle, NULL, PAGE_READWRITE, 0, size, NULL);
+    m_mapping = CreateFileMapping(fd.handle, NULL, PAGE_READWRITE, 0, (DWORD)size, NULL);
     if (m_mapping == NULL)
     {
         return NULL;
     }
 
-    void* memory = (LPTSTR)MapViewOfFile(m_mapping, FILE_MAP_ALL_ACCESS, 0,	(DWORD)offset, size);
+    void* memory = (LPTSTR)MapViewOfFile(m_mapping, FILE_MAP_ALL_ACCESS, 0, (DWORD)offset, size);
 
     return static_cast<uint8_t*>(memory);
 }
@@ -243,7 +243,7 @@ std::int64_t MemoryMappedFile::getFileSize(const char *filename)
         return -1;
     }
 
-    return (info.nFileSizeHigh << 32) | (info.nFileSizeLow);
+    return ((std::int64_t)info.nFileSizeHigh << 32) | (info.nFileSizeLow);
 }
 
 #else

@@ -20,7 +20,10 @@
 #include <memory>
 
 #ifdef _WIN32
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif // !NOMINMAX
+
 #include <windows.h>
 #endif
 
@@ -32,9 +35,15 @@ class MemoryMappedFile
 public:
     typedef std::shared_ptr<MemoryMappedFile> ptr_t;
 
+#ifdef _WIN32
+    static ptr_t createNew(const char* filename, size_t offset, size_t length);
+    static ptr_t mapExisting(const char* filename, size_t offset, size_t length);
+#else
     static ptr_t createNew(const char* filename, off_t offset, size_t length);
-    static ptr_t mapExisting(const char* filename);
     static ptr_t mapExisting(const char* filename, off_t offset, size_t length);
+#endif
+
+    static ptr_t mapExisting(const char* filename);
 
     ~MemoryMappedFile ();
 
@@ -58,7 +67,11 @@ private:
 #endif
     };
 
+#ifdef _WIN32
+    MemoryMappedFile(const FileHandle fd, size_t offset, size_t length);
+#else
     MemoryMappedFile(const FileHandle fd, off_t offset, size_t length);
+#endif
 
     uint8_t* doMapping(size_t size, FileHandle fd, size_t offset);
 

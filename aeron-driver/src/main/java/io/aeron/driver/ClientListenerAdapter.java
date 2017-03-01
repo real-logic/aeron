@@ -83,13 +83,12 @@ class ClientListenerAdapter implements MessageHandler
             {
                 case ADD_PUBLICATION:
                 {
-                    final PublicationMessageFlyweight publicationMessageFlyweight = publicationMsgFlyweight;
-                    publicationMessageFlyweight.wrap(buffer, index);
+                    publicationMsgFlyweight.wrap(buffer, index);
 
-                    correlationId = publicationMessageFlyweight.correlationId();
-                    final int streamId = publicationMessageFlyweight.streamId();
-                    final long clientId = publicationMessageFlyweight.clientId();
-                    final String channel = publicationMessageFlyweight.channel();
+                    correlationId = publicationMsgFlyweight.correlationId();
+                    final int streamId = publicationMsgFlyweight.streamId();
+                    final long clientId = publicationMsgFlyweight.clientId();
+                    final String channel = publicationMsgFlyweight.channel();
 
                     if (channel.startsWith(IPC_CHANNEL))
                     {
@@ -104,22 +103,21 @@ class ClientListenerAdapter implements MessageHandler
 
                 case REMOVE_PUBLICATION:
                 {
-                    final RemoveMessageFlyweight removeMessageFlyweight = removeMsgFlyweight;
-                    removeMessageFlyweight.wrap(buffer, index);
-                    correlationId = removeMessageFlyweight.correlationId();
-                    conductor.onRemovePublication(removeMessageFlyweight.registrationId(), correlationId);
+                    removeMsgFlyweight.wrap(buffer, index);
+
+                    correlationId = removeMsgFlyweight.correlationId();
+                    conductor.onRemovePublication(removeMsgFlyweight.registrationId(), correlationId);
                     break;
                 }
 
                 case ADD_SUBSCRIPTION:
                 {
-                    final SubscriptionMessageFlyweight subscriptionMessageFlyweight = subscriptionMsgFlyweight;
-                    subscriptionMessageFlyweight.wrap(buffer, index);
+                    subscriptionMsgFlyweight.wrap(buffer, index);
 
-                    correlationId = subscriptionMessageFlyweight.correlationId();
-                    final int streamId = subscriptionMessageFlyweight.streamId();
-                    final long clientId = subscriptionMessageFlyweight.clientId();
-                    final String channel = subscriptionMessageFlyweight.channel();
+                    correlationId = subscriptionMsgFlyweight.correlationId();
+                    final int streamId = subscriptionMsgFlyweight.streamId();
+                    final long clientId = subscriptionMsgFlyweight.clientId();
+                    final String channel = subscriptionMsgFlyweight.channel();
 
                     if (channel.startsWith(IPC_CHANNEL))
                     {
@@ -139,20 +137,20 @@ class ClientListenerAdapter implements MessageHandler
 
                 case REMOVE_SUBSCRIPTION:
                 {
-                    final RemoveMessageFlyweight removeMessageFlyweight = removeMsgFlyweight;
-                    removeMessageFlyweight.wrap(buffer, index);
-                    correlationId = removeMessageFlyweight.correlationId();
-                    conductor.onRemoveSubscription(removeMessageFlyweight.registrationId(), correlationId);
+                    removeMsgFlyweight.wrap(buffer, index);
+
+                    correlationId = removeMsgFlyweight.correlationId();
+                    conductor.onRemoveSubscription(removeMsgFlyweight.registrationId(), correlationId);
                     break;
                 }
 
                 case ADD_DESTINATION:
                 {
-                    final DestinationMessageFlyweight addDestinationMsgFlyweight = destinationMsgFlyweight;
-                    addDestinationMsgFlyweight.wrap(buffer, index);
-                    correlationId = addDestinationMsgFlyweight.correlationId();
-                    final long channelRegistrationId = addDestinationMsgFlyweight.registrationCorrelationId();
-                    final String channel = addDestinationMsgFlyweight.channel();
+                    destinationMsgFlyweight.wrap(buffer, index);
+
+                    correlationId = destinationMsgFlyweight.correlationId();
+                    final long channelRegistrationId = destinationMsgFlyweight.registrationCorrelationId();
+                    final String channel = destinationMsgFlyweight.channel();
 
                     conductor.onAddDestination(channelRegistrationId, channel, correlationId);
                     break;
@@ -160,11 +158,11 @@ class ClientListenerAdapter implements MessageHandler
 
                 case REMOVE_DESTINATION:
                 {
-                    final DestinationMessageFlyweight addDestinationMsgFlyweight = destinationMsgFlyweight;
-                    addDestinationMsgFlyweight.wrap(buffer, index);
-                    correlationId = addDestinationMsgFlyweight.correlationId();
-                    final long channelRegistrationId = addDestinationMsgFlyweight.registrationCorrelationId();
-                    final String channel = addDestinationMsgFlyweight.channel();
+                    destinationMsgFlyweight.wrap(buffer, index);
+
+                    correlationId = destinationMsgFlyweight.correlationId();
+                    final long channelRegistrationId = destinationMsgFlyweight.registrationCorrelationId();
+                    final String channel = destinationMsgFlyweight.channel();
 
                     conductor.onRemoveDestination(channelRegistrationId, channel, correlationId);
                     break;
@@ -172,9 +170,9 @@ class ClientListenerAdapter implements MessageHandler
 
                 case CLIENT_KEEPALIVE:
                 {
-                    final CorrelatedMessageFlyweight correlatedMessageFlyweight = correlatedMsgFlyweight;
-                    correlatedMessageFlyweight.wrap(buffer, index);
-                    conductor.onClientKeepalive(correlatedMessageFlyweight.clientId());
+                    correlatedMsgFlyweight.wrap(buffer, index);
+
+                    conductor.onClientKeepalive(correlatedMsgFlyweight.clientId());
                     break;
                 }
             }

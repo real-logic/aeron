@@ -162,6 +162,8 @@ include_directories(${AERON_CLIENT_TEST_PATH})
 
 ##########################################################
 
+add_definitions(-D_FILE_OFFSET_BITS=64)
+
 include_directories(${AERON_CLIENT_SOURCE_PATH})
 include_directories(${AERON_DRIVER_SOURCE_PATH})
 

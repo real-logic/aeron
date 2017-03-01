@@ -35,8 +35,8 @@ using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::status;
 using namespace aeron::concurrent;
 
-typedef std::function<long()> epoch_clock_t;
-typedef std::function<long()> nano_clock_t;
+typedef std::function<long long()> epoch_clock_t;
+typedef std::function<long long()> nano_clock_t;
 
 static const long KEEPALIVE_TIMEOUT_MS = 500;
 static const long RESOURCE_TIMEOUT_MS = 1000;
@@ -73,7 +73,7 @@ public:
         m_timeOfLastDoWork(epochClock()),
         m_driverTimeoutMs(driverTimeoutMs),
         m_resourceLingerTimeoutMs(resourceLingerTimeoutMs),
-        m_interServiceTimeoutMs(interServiceTimeoutNs / 1000000),
+        m_interServiceTimeoutMs(static_cast<long>(interServiceTimeoutNs / 1000000)),
         m_publicationConnectionTimeoutMs(publicationConnectionTimeoutMs),
         m_driverActive(true)
     {
@@ -130,7 +130,7 @@ public:
         std::int32_t streamId,
         std::int64_t correlationId);
 
-    void onInterServiceTimeout(long now);
+    void onInterServiceTimeout(long long now);
 
     inline bool isPublicationConnected(std::int64_t timeOfLastStatusMessage) const
     {
@@ -141,11 +141,11 @@ public:
     void removeDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel);
 
 protected:
-    void onCheckManagedResources(long now);
+    void onCheckManagedResources(long long now);
 
-    void lingerResource(long now, Image * array);
-    void lingerResource(long now, std::shared_ptr<LogBuffers> logBuffers);
-    void lingerResources(long now, Image *images, int connectionsLength);
+    void lingerResource(long long now, Image * array);
+    void lingerResource(long long now, std::shared_ptr<LogBuffers> logBuffers);
+    void lingerResources(long long now, Image *images, int connectionsLength);
 
 private:
     enum class RegistrationStatus
@@ -160,7 +160,7 @@ private:
         std::int32_t m_streamId;
         std::int32_t m_sessionId = -1;
         std::int32_t m_positionLimitCounterId = -1;
-        long m_timeOfRegistration;
+        long long m_timeOfRegistration;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
         std::int32_t m_errorCode;
         std::string m_errorMessage;
@@ -168,7 +168,7 @@ private:
         std::weak_ptr<Publication> m_publication;
 
         PublicationStateDefn(
-            const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long now) :
+            const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long long now) :
             m_channel(channel), m_registrationId(registrationId), m_streamId(streamId), m_timeOfRegistration(now)
         {
         }
@@ -179,7 +179,7 @@ private:
         std::string m_channel;
         std::int64_t m_registrationId;
         std::int32_t m_streamId;
-        long m_timeOfRegistration;
+        long long m_timeOfRegistration;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
         std::int32_t m_errorCode;
         std::string m_errorMessage;
@@ -187,7 +187,7 @@ private:
         std::weak_ptr<Subscription> m_subscription;
 
         SubscriptionStateDefn(
-            const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long now) :
+            const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long long now) :
             m_channel(channel), m_registrationId(registrationId), m_streamId(streamId), m_timeOfRegistration(now)
         {
         }
@@ -195,10 +195,10 @@ private:
 
     struct ImageArrayLingerDefn
     {
-        long m_timeOfLastStatusChange;
+        long long m_timeOfLastStatusChange;
         Image * m_array;
 
-        ImageArrayLingerDefn(long now, Image *array) :
+        ImageArrayLingerDefn(long long now, Image *array) :
             m_timeOfLastStatusChange(now), m_array(array)
         {
         }
@@ -206,10 +206,10 @@ private:
 
     struct LogBuffersLingerDefn
     {
-        long m_timeOfLastStatusChange;
+        long long m_timeOfLastStatusChange;
         std::shared_ptr<LogBuffers> m_logBuffers;
 
-        LogBuffersLingerDefn(long now, std::shared_ptr<LogBuffers> buffers) :
+        LogBuffersLingerDefn(long long now, std::shared_ptr<LogBuffers> buffers) :
             m_timeOfLastStatusChange(now), m_logBuffers(buffers)
         {
         }
@@ -235,9 +235,9 @@ private:
     exception_handler_t m_errorHandler;
 
     epoch_clock_t m_epochClock;
-    long m_timeOfLastKeepalive;
-    long m_timeOfLastCheckManagedResources;
-    long m_timeOfLastDoWork;
+    long long m_timeOfLastKeepalive;
+    long long m_timeOfLastCheckManagedResources;
+    long long m_timeOfLastDoWork;
     long m_driverTimeoutMs;
     long m_resourceLingerTimeoutMs;
     long m_interServiceTimeoutMs;
@@ -249,7 +249,7 @@ private:
     {
         // TODO: use system nano clock since it is quicker to poll, then use epochClock only for driver activity
 
-        const long now = m_epochClock();
+        const long long now = m_epochClock();
         int result = 0;
 
         if (now > (m_timeOfLastDoWork + m_interServiceTimeoutMs))

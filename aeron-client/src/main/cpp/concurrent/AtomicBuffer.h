@@ -43,11 +43,28 @@ public:
     AtomicBuffer(std::uint8_t *buffer, util::index_t length) :
         m_buffer(buffer), m_length(length)
     {
+#if !defined(DISABLE_BOUNDS_CHECKS)
+        if (AERON_COND_EXPECT(length < 0, false))
+        {
+            throw aeron::util::OutOfBoundsException(
+                aeron::util::strPrintf("Length Out of Bounds[%p]. Length: %d", this, length),
+                SOURCEINFO);
+        }
+#endif
     }
 
     AtomicBuffer(std::uint8_t *buffer, util::index_t length, std::uint8_t initialValue) :
         m_buffer(buffer), m_length(length)
     {
+#if !defined(DISABLE_BOUNDS_CHECKS)
+        if (AERON_COND_EXPECT(length < 0, false))
+        {
+            throw aeron::util::OutOfBoundsException(
+                aeron::util::strPrintf("Length Out of Bounds[%p]. Length: %d", this, length),
+                SOURCEINFO);
+        }
+#endif
+
         setMemory(0, (size_t)length, initialValue);
     }
 
@@ -78,6 +95,15 @@ public:
 
     inline void wrap(std::uint8_t* buffer, util::index_t length)
     {
+#if !defined(DISABLE_BOUNDS_CHECKS)
+        if (AERON_COND_EXPECT(length < 0, false))
+        {
+            throw aeron::util::OutOfBoundsException(
+                aeron::util::strPrintf("Length Out of Bounds[%p]. Length: %d", this, length),
+                SOURCEINFO);
+        }
+#endif
+
         m_buffer = buffer;
         m_length = length;
     }
@@ -91,6 +117,7 @@ public:
     template<size_t N>
     inline void wrap(std::array<std::uint8_t, N>& buffer)
     {
+        static_assert(N <= std::numeric_limits<util::index_t>::max(), "Requires the array to have a size that fits in an index_t");
         m_buffer = buffer.data();
         m_length = static_cast<util::index_t>(N);
     }
@@ -102,6 +129,15 @@ public:
 
     inline void capacity(util::index_t length)
     {
+#if !defined(DISABLE_BOUNDS_CHECKS)
+        if (AERON_COND_EXPECT(length < 0, false))
+        {
+            throw aeron::util::OutOfBoundsException(
+                aeron::util::strPrintf("Length Out of Bounds[%p]. Length: %d", this, length),
+                SOURCEINFO);
+        }
+#endif
+
         m_length = length;
     }
 
@@ -337,13 +373,17 @@ public:
     }
 
 private:
-    std::uint8_t *m_buffer;
-    util::index_t m_length;
+    // The internal length type used by the atomic buffer
+    typedef std::uint32_t length_t;
 
-    inline void boundsCheck(util::index_t index, util::index_t length) const
+    std::uint8_t *m_buffer;
+    length_t m_length;
+
+    inline void boundsCheck(util::index_t index, std::uint64_t length) const
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
-        if (AERON_COND_EXPECT((index + length) > m_length, false))
+        // This check disallows negative indices and makes sure the 
+        if (AERON_COND_EXPECT(index < 0 || (std::uint64_t)m_length - index < length, false))
         {
             throw aeron::util::OutOfBoundsException(
                 aeron::util::strPrintf("Index Out of Bounds[%p]. Index: %d + %d Capacity: %d", this, index, length, m_length),

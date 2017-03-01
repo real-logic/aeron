@@ -20,7 +20,7 @@ namespace aeron {
 
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS(4);
 
-static long currentTimeMillis()
+static long long currentTimeMillis()
 {
     using namespace std::chrono;
 
@@ -71,7 +71,7 @@ Aeron::~Aeron()
 
 inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
 {
-    const long startMs = currentTimeMillis();
+    const long long startMs = currentTimeMillis();
     while (MemoryMappedFile::getFileSize(context.cncFileName().c_str()) == -1)
     {
         if (currentTimeMillis() > (startMs + context.m_mediaDriverTimeout))

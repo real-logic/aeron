@@ -36,7 +36,7 @@ LogBuffers::LogBuffers(const char *filename)
 
         for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
         {
-            m_buffers[i].wrap(basePtr + (i * termLength), termLength);
+            m_buffers[i].wrap(basePtr + (i * termLength), util::convertSizeToIndex(termLength));
         }
 
         m_buffers[LogBufferDescriptor::PARTITION_COUNT]
@@ -45,7 +45,7 @@ LogBuffers::LogBuffers(const char *filename)
     }
     else
     {
-        const std::int64_t metaDataSectionOffset = (index_t) (termLength * LogBufferDescriptor::PARTITION_COUNT);
+        const index_t metaDataSectionOffset = (index_t) (termLength * LogBufferDescriptor::PARTITION_COUNT);
         const std::int64_t metaDataSectionLength = (index_t) (logLength - metaDataSectionOffset);
 
         m_memoryMappedFiles.push_back(
@@ -60,7 +60,7 @@ LogBuffers::LogBuffers(const char *filename)
 
             std::uint8_t *basePtr = m_memoryMappedFiles[i + 1]->getMemoryPtr();
 
-            m_buffers[i].wrap(basePtr, termLength);
+            m_buffers[i].wrap(basePtr, util::convertSizeToIndex(termLength));
         }
 
         m_buffers[LogBufferDescriptor::PARTITION_COUNT].wrap(metaDataBasePtr, LogBufferDescriptor::LOG_META_DATA_LENGTH);

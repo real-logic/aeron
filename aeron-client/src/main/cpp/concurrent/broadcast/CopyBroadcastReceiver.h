@@ -37,7 +37,7 @@ class CopyBroadcastReceiver
 public:
     CopyBroadcastReceiver(BroadcastReceiver& receiver) :
         m_receiver(receiver),
-        m_scratchBuffer(&m_scratch[0], m_scratch.size())
+        m_scratchBuffer(m_scratch)
     {
         while (m_receiver.receiveNext())
         {

@@ -72,6 +72,10 @@ namespace BitUtil
         return current - 1;
     }
 
+    /* Counts the leading number of zeros in a value.
+     * (Note: this only works on 32-bit types, when compiling with GCC
+     * or on newer x64 processors when compiling with Visual Studio.)
+     */
     template<typename value_t>
     inline int numberOfLeadingZeroes(value_t value) AERON_NOEXCEPT
     {
@@ -112,15 +116,26 @@ namespace BitUtil
     }
 
     /*
-     * Works for 32-bit fields only at the moment.
+     * Finds the next power of 2 and returns it.
+     * Invalid arguments (negative, 0, or too large) always return 0 or min value of type.
      */
     template<typename value_t>
     inline value_t findNextPowerOfTwo(value_t value) AERON_NOEXCEPT
     {
         static_assert(std::is_integral<value_t>::value, "findNextPowerOfTwo only available on integral types");
-        static_assert(sizeof(value_t)==4, "findNextPowerOfTwo only available on 32-bit integral types");
 
-        return 1 << (32 - numberOfLeadingZeroes(value - 1));
+#if defined(__GNUC__)
+        if (sizeof(value) == sizeof(unsigned int))
+            return 1 << (32 - numberOfLeadingZeroes(value - 1));
+#endif
+
+        value--;
+
+        // Set all bits below the leading one using binary expansion http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+        for (size_t i = 1; i < sizeof(value) * 8; i = i * 2)
+            value |= (value >> i);
+
+        return value + 1;
     }
 
     /*

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2016 Real Logic Ltd.
+ * Copyright 2014-2017 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -146,7 +146,7 @@ subprojects {
 
     javadoc {
         title = '<h1>Aeron Transport Protocol</h1>'
-        options.bottom = '<i>Copyright &#169; 2014 - 2016 Real Logic Ltd. All Rights Reserved.</i>'
+        options.bottom = '<i>Copyright &#169; 2014-2017 Real Logic Ltd. All Rights Reserved.</i>'
     }
 
     task testJar(type: Jar, dependsOn: testClasses) {

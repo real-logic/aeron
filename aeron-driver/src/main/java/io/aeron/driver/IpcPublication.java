@@ -209,17 +209,11 @@ public class IpcPublication implements DriverManagedResource
     {
         switch (status)
         {
-            case ACTIVE:
-                if (0 == refCount)
-                {
-                    status(Status.INACTIVE, timeNs);
-                }
-                break;
-
             case INACTIVE:
                 if (isDrained())
                 {
-                    status(Status.LINGER, timeNs);
+                    status = Status.LINGER;
+                    timeOfLastStatusChange = timeNs;
                     conductor.transitionToLinger(this);
                 }
                 break;
@@ -278,7 +272,14 @@ public class IpcPublication implements DriverManagedResource
 
     public int decRef()
     {
-        return --refCount;
+        final int count = --refCount;
+
+        if (0 == count)
+        {
+            status = Status.INACTIVE;
+        }
+
+        return count;
     }
 
     public long consumerPosition()
@@ -306,11 +307,5 @@ public class IpcPublication implements DriverManagedResource
         }
 
         return minSubscriberPosition >= producerPosition();
-    }
-
-    private void status(final Status status, final long time)
-    {
-        timeOfLastStatusChange = time;
-        this.status = status;
     }
 }

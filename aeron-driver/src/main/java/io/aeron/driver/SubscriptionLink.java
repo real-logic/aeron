@@ -193,6 +193,11 @@ class IpcSubscriptionLink extends SubscriptionLink
         super(registrationId, streamId, channelUri, aeronClient, clientLivenessTimeoutNs);
     }
 
+    public IpcPublication publication()
+    {
+        return publication;
+    }
+
     public void link(final Object source, final ReadablePosition position)
     {
         this.publication = (IpcPublication)source;

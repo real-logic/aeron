@@ -868,26 +868,29 @@ public class DriverConductor implements Agent
 
     private void linkIpcSubscription(final IpcSubscriptionLink subscription, final IpcPublication publication)
     {
-        final long joiningPosition = publication.joiningPosition();
-        final long registrationId = subscription.registrationId();
-        final int sessionId = publication.sessionId();
-        final int streamId = subscription.streamId();
-        final String channel = subscription.uri();
+        if (null == subscription.publication())
+        {
+            final long joiningPosition = publication.joiningPosition();
+            final long registrationId = subscription.registrationId();
+            final int sessionId = publication.sessionId();
+            final int streamId = subscription.streamId();
+            final String channel = subscription.uri();
 
-        final Position position = SubscriberPos.allocate(
-            countersManager, registrationId, sessionId, streamId, channel, joiningPosition);
+            final Position position = SubscriberPos.allocate(
+                countersManager, registrationId, sessionId, streamId, channel, joiningPosition);
 
-        position.setOrdered(joiningPosition);
-        subscription.link(publication, position);
-        publication.addSubscription(position);
+            position.setOrdered(joiningPosition);
+            subscription.link(publication, position);
+            publication.addSubscription(position);
 
-        clientProxy.onAvailableImage(
-            publication.correlationId(),
-            streamId,
-            sessionId,
-            publication.rawLog().fileName(),
-            Collections.singletonList(new SubscriberPosition(subscription, position)),
-            channel);
+            clientProxy.onAvailableImage(
+                publication.correlationId(),
+                streamId,
+                sessionId,
+                publication.rawLog().fileName(),
+                Collections.singletonList(new SubscriberPosition(subscription, position)),
+                channel);
+        }
     }
 
     private void linkSpy(final NetworkPublication publication, final SubscriptionLink subscription)

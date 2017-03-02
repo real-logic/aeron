@@ -73,7 +73,7 @@ class PublicationImagePadding3 extends PublicationImageHotFields
  */
 public class PublicationImage
     extends PublicationImagePadding3
-    implements LossHandler, DriverManagedResource
+    implements LossHandler, DriverManagedResource, Subscribable
 {
     enum Status
     {
@@ -251,6 +251,18 @@ public class PublicationImage
     }
 
     /**
+     * Does this image match a given {@link ReceiveChannelEndpoint} and stream id?
+     *
+     * @param channelEndpoint to match by identity.
+     * @param streamId        to match on value.
+     * @return true on a match otherwise false.
+     */
+    public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
+    {
+        return this.streamId == streamId && this.channelEndpoint == channelEndpoint;
+    }
+
+    /**
      * The address of the source associated with the image.
      *
      * @return source address
@@ -277,18 +289,6 @@ public class PublicationImage
     void removeFromDispatcher()
     {
         channelEndpoint.removePublicationImage(this);
-    }
-
-    /**
-     * Does this image match a given {@link ReceiveChannelEndpoint} and stream id?
-     *
-     * @param channelEndpoint to match by identity.
-     * @param streamId        to match on value.
-     * @return true on a match otherwise false.
-     */
-    public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
-    {
-        return this.streamId == streamId && this.channelEndpoint == channelEndpoint;
     }
 
     /**
@@ -324,27 +324,6 @@ public class PublicationImage
     {
         timeOfLastStatusChange = nanoClock.nanoTime();
         this.status = status;
-    }
-
-    /**
-     * Is the stream reliable in that is will NAK for loss or will it gap fill?
-     *
-     * @return true if it will attempt to recover loss or false if it will gap fill.
-     */
-    public boolean isReliable()
-    {
-        return isReliable;
-    }
-
-    /**
-     * Set status to INACTIVE, but only if currently ACTIVE. Set by {@link Receiver}.
-     */
-    void ifActiveGoInactive()
-    {
-        if (Status.ACTIVE == status)
-        {
-            status(Status.INACTIVE);
-        }
     }
 
     /**
@@ -391,6 +370,27 @@ public class PublicationImage
         lastStatusMessageTimestamp = now;
 
         endSmChange = changeNumber;
+    }
+
+    /**
+     * Remove a {@link ReadablePosition} for a subscriber that has been removed so it is not tracked for flow control.
+     *
+     * @param subscriberPosition for the subscriber that has been removed.
+     */
+    public void removeSubscriber(final ReadablePosition subscriberPosition)
+    {
+        subscriberPositions = ArrayUtil.remove(subscriberPositions, subscriberPosition);
+        subscriberPosition.close();
+    }
+
+    /**
+     * Add a new subscriber to this image so their position can be tracked for flow control.
+     *
+     * @param subscriberPosition for the subscriber to be added.
+     */
+    public void addSubscriber(final ReadablePosition subscriberPosition)
+    {
+        subscriberPositions = ArrayUtil.add(subscriberPositions, subscriberPosition);
     }
 
     /**
@@ -445,6 +445,17 @@ public class PublicationImage
         {
             scheduleStatusMessage(now, minSubscriberPosition, window);
             cleanBufferTo(minSubscriberPosition - (termLengthMask + 1));
+        }
+    }
+
+    /**
+     * Set status to INACTIVE, but only if currently ACTIVE. Set by {@link Receiver}.
+     */
+    void ifActiveGoInactive()
+    {
+        if (Status.ACTIVE == status)
+        {
+            status(Status.INACTIVE);
         }
     }
 
@@ -613,27 +624,6 @@ public class PublicationImage
         final long rttInNs = now - header.echoTimestamp() - header.receptionDelta();
 
         congestionControl.onRttMeasurement(now, rttInNs, srcAddress);
-    }
-
-    /**
-     * Remove a {@link ReadablePosition} for a subscriber that has been removed so it is not tracked for flow control.
-     *
-     * @param subscriberPosition for the subscriber that has been removed.
-     */
-    void removeSubscriber(final ReadablePosition subscriberPosition)
-    {
-        subscriberPositions = ArrayUtil.remove(subscriberPositions, subscriberPosition);
-        subscriberPosition.close();
-    }
-
-    /**
-     * Add a new subscriber to this image so their position can be tracked for flow control.
-     *
-     * @param subscriberPosition for the subscriber to be added.
-     */
-    void addSubscriber(final ReadablePosition subscriberPosition)
-    {
-        subscriberPositions = ArrayUtil.add(subscriberPositions, subscriberPosition);
     }
 
     /**

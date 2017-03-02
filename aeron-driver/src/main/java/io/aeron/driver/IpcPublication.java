@@ -32,7 +32,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
 /**
  * Encapsulation of a LogBuffer used directly between publishers and subscribers for IPC.
  */
-public class IpcPublication implements DriverManagedResource
+public class IpcPublication implements DriverManagedResource, Subscribable
 {
     enum Status
     {
@@ -125,12 +125,12 @@ public class IpcPublication implements DriverManagedResource
         rawLog.close();
     }
 
-    public void addSubscription(final ReadablePosition subscriberPosition)
+    public void addSubscriber(final ReadablePosition subscriberPosition)
     {
         subscriberPositions = ArrayUtil.add(subscriberPositions, subscriberPosition);
     }
 
-    public void removeSubscription(final ReadablePosition subscriberPosition)
+    public void removeSubscriber(final ReadablePosition subscriberPosition)
     {
         subscriberPositions = ArrayUtil.remove(subscriberPositions, subscriberPosition);
         subscriberPosition.close();

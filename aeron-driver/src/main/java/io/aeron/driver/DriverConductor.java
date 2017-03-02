@@ -846,7 +846,7 @@ public class DriverConductor implements Agent
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
             final SubscriptionLink subscription = subscriptionLinks.get(i);
-            if (subscription.matches(streamId))
+            if (subscription.matches(streamId) && !subscription.isLinked(publication))
             {
                 linkIpcSubscription((IpcSubscriptionLink)subscription, publication);
             }
@@ -868,29 +868,26 @@ public class DriverConductor implements Agent
 
     private void linkIpcSubscription(final IpcSubscriptionLink subscription, final IpcPublication publication)
     {
-        if (null == subscription.publication())
-        {
-            final long joiningPosition = publication.joiningPosition();
-            final long registrationId = subscription.registrationId();
-            final int sessionId = publication.sessionId();
-            final int streamId = subscription.streamId();
-            final String channel = subscription.uri();
+        final long joiningPosition = publication.joiningPosition();
+        final long registrationId = subscription.registrationId();
+        final int sessionId = publication.sessionId();
+        final int streamId = subscription.streamId();
+        final String channel = subscription.uri();
 
-            final Position position = SubscriberPos.allocate(
-                countersManager, registrationId, sessionId, streamId, channel, joiningPosition);
+        final Position position = SubscriberPos.allocate(
+            countersManager, registrationId, sessionId, streamId, channel, joiningPosition);
 
-            position.setOrdered(joiningPosition);
-            subscription.link(publication, position);
-            publication.addSubscription(position);
+        position.setOrdered(joiningPosition);
+        subscription.link(publication, position);
+        publication.addSubscriber(position);
 
-            clientProxy.onAvailableImage(
-                publication.correlationId(),
-                streamId,
-                sessionId,
-                publication.rawLog().fileName(),
-                Collections.singletonList(new SubscriberPosition(subscription, position)),
-                channel);
-        }
+        clientProxy.onAvailableImage(
+            publication.correlationId(),
+            streamId,
+            sessionId,
+            publication.rawLog().fileName(),
+            Collections.singletonList(new SubscriberPosition(subscription, position)),
+            channel);
     }
 
     private void linkSpy(final NetworkPublication publication, final SubscriptionLink subscription)
@@ -905,7 +902,7 @@ public class DriverConductor implements Agent
             countersManager, registrationId, sessionId, streamId, channel, joiningPosition);
 
         position.setOrdered(joiningPosition);
-        publication.addSpyPosition(position);
+        publication.addSubscriber(position);
         subscription.link(publication, position);
 
         clientProxy.onAvailableImage(

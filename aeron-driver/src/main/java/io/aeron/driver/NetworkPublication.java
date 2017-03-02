@@ -84,7 +84,7 @@ class NetworkPublicationPadding3 extends NetworkPublicationReceiverFields
  */
 public class NetworkPublication
     extends NetworkPublicationPadding3
-    implements RetransmitSender, DriverManagedResource
+    implements RetransmitSender, DriverManagedResource, Subscribable
 {
     private final long registrationId;
     private final long unblockTimeoutNs;
@@ -247,16 +247,6 @@ public class NetworkPublication
         return streamId;
     }
 
-    void senderPositionLimit(final long positionLimit)
-    {
-        senderLimit.setOrdered(positionLimit);
-
-        if (!hasHadFirstStatusMessage)
-        {
-            hasHadFirstStatusMessage = true;
-        }
-    }
-
     public void resend(final int termId, final int termOffset, final int length)
     {
         final long senderPosition = this.senderPosition.get();
@@ -302,6 +292,27 @@ public class NetworkPublication
     public void triggerSendSetupFrame()
     {
         shouldSendSetupFrame = true;
+    }
+
+    public void addSubscriber(final ReadablePosition spyPosition)
+    {
+        spyPositions = ArrayUtil.add(spyPositions, spyPosition);
+    }
+
+    public void removeSubscriber(final ReadablePosition spyPosition)
+    {
+        spyPositions = ArrayUtil.remove(spyPositions, spyPosition);
+        spyPosition.close();
+    }
+
+    void senderPositionLimit(final long positionLimit)
+    {
+        senderLimit.setOrdered(positionLimit);
+
+        if (!hasHadFirstStatusMessage)
+        {
+            hasHadFirstStatusMessage = true;
+        }
     }
 
     RawLog rawLog()
@@ -350,17 +361,6 @@ public class NetworkPublication
     boolean hasSpies()
     {
         return spyPositions.length > 0;
-    }
-
-    void addSpyPosition(final ReadablePosition spyPosition)
-    {
-        spyPositions = ArrayUtil.add(spyPositions, spyPosition);
-    }
-
-    void removeSpyPosition(final ReadablePosition spyPosition)
-    {
-        spyPositions = ArrayUtil.remove(spyPositions, spyPosition);
-        spyPosition.close();
     }
 
     long spyJoiningPosition()

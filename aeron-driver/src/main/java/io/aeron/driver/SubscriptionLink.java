@@ -32,6 +32,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
     protected final int streamId;
     protected final String uri;
     protected final AeronClient aeronClient;
+    protected final Map<Subscribable, ReadablePosition> positionBySubscribableMap = new IdentityHashMap<>();
 
     protected boolean reachedEndOfLife = false;
 
@@ -89,11 +90,25 @@ public abstract class SubscriptionLink implements DriverManagedResource
         return false;
     }
 
-    public abstract void link(Object source, ReadablePosition position);
+    public boolean isLinked(final Subscribable subscribable)
+    {
+        return null != positionBySubscribableMap.get(subscribable);
+    }
 
-    public abstract void unlink(Object source);
+    public void link(final Subscribable subscribable, final ReadablePosition position)
+    {
+        positionBySubscribableMap.put(subscribable, position);
+    }
 
-    public abstract void close();
+    public void unlink(final Subscribable subscribable)
+    {
+        positionBySubscribableMap.remove(subscribable);
+    }
+
+    public void close()
+    {
+        positionBySubscribableMap.forEach(Subscribable::removeSubscriber);
+    }
 
     public void onTimeEvent(final long timeNs, final DriverConductor conductor)
     {
@@ -129,7 +144,6 @@ class NetworkSubscriptionLink extends SubscriptionLink
 {
     private final boolean isReliable;
     private final ReceiveChannelEndpoint channelEndpoint;
-    private final Map<PublicationImage, ReadablePosition> positionByImageMap = new IdentityHashMap<>();
 
     NetworkSubscriptionLink(
         final long registrationId,
@@ -160,29 +174,10 @@ class NetworkSubscriptionLink extends SubscriptionLink
     {
         return channelEndpoint == this.channelEndpoint && streamId == this.streamId;
     }
-
-    public void link(final Object source, final ReadablePosition position)
-    {
-        positionByImageMap.put((PublicationImage)source, position);
-    }
-
-    @SuppressWarnings("SuspiciousMethodCalls")
-    public void unlink(final Object source)
-    {
-        positionByImageMap.remove(source);
-    }
-
-    public void close()
-    {
-        positionByImageMap.forEach(PublicationImage::removeSubscriber);
-    }
 }
 
 class IpcSubscriptionLink extends SubscriptionLink
 {
-    private IpcPublication publication;
-    private ReadablePosition position;
-
     IpcSubscriptionLink(
         final long registrationId,
         final int streamId,
@@ -193,34 +188,9 @@ class IpcSubscriptionLink extends SubscriptionLink
         super(registrationId, streamId, channelUri, aeronClient, clientLivenessTimeoutNs);
     }
 
-    public IpcPublication publication()
-    {
-        return publication;
-    }
-
-    public void link(final Object source, final ReadablePosition position)
-    {
-        this.publication = (IpcPublication)source;
-        this.position = position;
-    }
-
-    public void unlink(final Object source)
-    {
-        publication = null;
-        position = null;
-    }
-
     public boolean matches(final int streamId)
     {
         return streamId() == streamId;
-    }
-
-    public void close()
-    {
-        if (null != publication)
-        {
-            publication.removeSubscription(position);
-        }
     }
 }
 
@@ -241,13 +211,13 @@ class SpySubscriptionLink extends SubscriptionLink
         this.udpChannel = spiedChannel;
     }
 
-    public void link(final Object source, final ReadablePosition position)
+    public void link(final Subscribable subscribable, final ReadablePosition position)
     {
-        this.publication = (NetworkPublication)source;
+        this.publication = (NetworkPublication)subscribable;
         this.position = position;
     }
 
-    public void unlink(final Object source)
+    public void unlink(final Subscribable subscribable)
     {
         publication = null;
         position = null;
@@ -263,7 +233,7 @@ class SpySubscriptionLink extends SubscriptionLink
     {
         if (null != publication)
         {
-            publication.removeSpyPosition(position);
+            publication.removeSubscriber(position);
         }
     }
 }

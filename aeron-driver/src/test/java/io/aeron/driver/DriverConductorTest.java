@@ -567,7 +567,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldSignalInactiveImageWhenImageTimesout() throws Exception
+    public void shouldSignalInactiveImageWhenImageTimesOut() throws Exception
     {
         final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
 
@@ -713,6 +713,37 @@ public class DriverConductorTest
             eq(ipcPublication.correlationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
             eq(ipcPublication.rawLog().fileName()), any(), anyString());
     }
+
+    @Test
+    public void shouldBeAbleToAddThenRemoveTheAddIpcPublicationWithExistingSubscription() throws Exception
+    {
+        final long idSub = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
+        final long idPubOne = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
+        driverConductor.doWork();
+
+        final IpcPublication ipcPublicationOne = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublicationOne);
+
+        final long idPubOneRemove = driverProxy.removePublication(idPubOne);
+        driverConductor.doWork();
+
+        final long idPubTwo = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
+        driverConductor.doWork();
+
+        final IpcPublication ipcPublicationTwo = driverConductor.getIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublicationTwo);
+
+        final InOrder inOrder = inOrder(mockClientProxy);
+        inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
+        inOrder.verify(mockClientProxy).onPublicationReady(eq(idPubOne), eq(STREAM_ID_1), anyInt(), any(), anyInt());
+        inOrder.verify(mockClientProxy).onAvailableImage(
+            eq(ipcPublicationOne.correlationId()), eq(STREAM_ID_1), eq(ipcPublicationOne.sessionId()),
+            eq(ipcPublicationOne.rawLog().fileName()), any(), anyString());
+        inOrder.verify(mockClientProxy).operationSucceeded(eq(idPubOneRemove));
+        inOrder.verify(mockClientProxy).onPublicationReady(eq(idPubTwo), eq(STREAM_ID_1), anyInt(), any(), anyInt());
+        inOrder.verify(mockClientProxy).onAvailableImage(
+            eq(ipcPublicationTwo.correlationId()), eq(STREAM_ID_1), eq(ipcPublicationTwo.sessionId()),
+            eq(ipcPublicationTwo.rawLog().fileName()), any(), anyString());    }
 
     @Test
     public void shouldBeAbleToAddSubscriptionThenIpcPublication() throws Exception

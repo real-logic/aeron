@@ -743,7 +743,8 @@ public class DriverConductorTest
         inOrder.verify(mockClientProxy).onPublicationReady(eq(idPubTwo), eq(STREAM_ID_1), anyInt(), any(), anyInt());
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublicationTwo.correlationId()), eq(STREAM_ID_1), eq(ipcPublicationTwo.sessionId()),
-            eq(ipcPublicationTwo.rawLog().fileName()), any(), anyString());    }
+            eq(ipcPublicationTwo.rawLog().fileName()), any(), anyString());
+    }
 
     @Test
     public void shouldBeAbleToAddSubscriptionThenIpcPublication() throws Exception

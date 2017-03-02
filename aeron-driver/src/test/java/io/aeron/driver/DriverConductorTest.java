@@ -89,8 +89,8 @@ public class DriverConductorTest
     private final DriverConductorProxy fromSenderConductorProxy = mock(DriverConductorProxy.class);
     private final DriverConductorProxy fromReceiverConductorProxy = mock(DriverConductorProxy.class);
 
-    private long currentTime;
-    private NanoClock nanoClock = () -> currentTime;
+    private long currentTimeNs;
+    private NanoClock nanoClock = () -> currentTimeNs;
 
     private DriverProxy driverProxy;
 
@@ -119,7 +119,7 @@ public class DriverConductorTest
         when(mockRawLogFactory.newIpcPublication(anyInt(), anyInt(), anyLong(), anyInt()))
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH));
 
-        currentTime = 0;
+        currentTimeNs = 0;
 
         final UnsafeBuffer counterBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH));
         final CountersManager countersManager = new CountersManager(
@@ -685,7 +685,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddSingleIpcPublicationPublication() throws Exception
+    public void shouldBeAbleToAddSingleIpcPublication() throws Exception
     {
         final long id = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
 
@@ -696,7 +696,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddIpcPublicationPublicationThenSubscription() throws Exception
+    public void shouldBeAbleToAddIpcPublicationThenSubscription() throws Exception
     {
         final long idPub = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
         final long idSub = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
@@ -715,7 +715,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddIpcPublicationSubscriptionThenPublication() throws Exception
+    public void shouldBeAbleToAddSubscriptionThenIpcPublication() throws Exception
     {
         final long idSub = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
         final long idPub = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
@@ -734,7 +734,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveIpcPublicationPublication() throws Exception
+    public void shouldBeAbleToAddAndRemoveIpcPublication() throws Exception
     {
         final long idAdd = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
         driverProxy.removePublication(idAdd);
@@ -746,7 +746,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveIpcPublicationSubscription() throws Exception
+    public void shouldBeAbleToAddAndRemoveSubscriptionToIpcPublication() throws Exception
     {
         final long idAdd = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
         driverProxy.removeSubscription(idAdd);
@@ -758,7 +758,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveIpcPublicationTwoPublications() throws Exception
+    public void shouldBeAbleToAddAndRemoveTwoIpcPublications() throws Exception
     {
         final long idAdd1 = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
         final long idAdd2 = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
@@ -778,7 +778,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveIpcPublicationPublicationAndSubscription() throws Exception
+    public void shouldBeAbleToAddAndRemoveIpcPublicationAndSubscription() throws Exception
     {
         final long idAdd1 = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
         final long idAdd2 = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
@@ -798,7 +798,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldTimeoutIpcPublicationPublication() throws Exception
+    public void shouldTimeoutIpcPublication() throws Exception
     {
         driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
 
@@ -814,7 +814,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldNotTimeoutIpcPublicationPublicationWithKeepalive() throws Exception
+    public void shouldNotTimeoutIpcPublicationWithKeepalive() throws Exception
     {
         driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
 
@@ -1054,15 +1054,15 @@ public class DriverConductorTest
 
     private long doWorkUntil(final BooleanSupplier condition) throws Exception
     {
-        final long startTime = currentTime;
+        final long startTime = currentTimeNs;
 
         while (!condition.getAsBoolean())
         {
-            currentTime += TimeUnit.MILLISECONDS.toNanos(10);
+            currentTimeNs += TimeUnit.MILLISECONDS.toNanos(10);
             driverConductor.doWork();
         }
 
-        return currentTime - startTime;
+        return currentTimeNs - startTime;
     }
 
     private static String spyForChannel(final String channel)

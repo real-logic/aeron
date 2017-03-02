@@ -32,6 +32,9 @@ public interface Subscribable
     /**
      * Remove a subscriber identified by its position.
      *
+     * <b>Note:</b> The {@link Subscribable} is responsible for calling {@link ReadablePosition#close()} on
+     * removed positions.
+     *
      * @param subscriberPosition to be identified by.
      */
     void removeSubscriber(ReadablePosition subscriberPosition);

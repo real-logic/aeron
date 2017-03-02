@@ -92,7 +92,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
 
     public boolean isLinked(final Subscribable subscribable)
     {
-        return null != positionBySubscribableMap.get(subscribable);
+        return positionBySubscribableMap.containsKey(subscribable);
     }
 
     public void link(final Subscribable subscribable, final ReadablePosition position)

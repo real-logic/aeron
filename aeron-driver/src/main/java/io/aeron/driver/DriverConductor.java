@@ -352,11 +352,7 @@ public class DriverConductor implements Agent
 
             for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
             {
-                final SubscriptionLink subscription = subscriptionLinks.get(i);
-                if (subscription.matches(publication))
-                {
-                    subscription.unlink(publication);
-                }
+                subscriptionLinks.get(i).unlink(publication);
             }
         }
 
@@ -408,11 +404,7 @@ public class DriverConductor implements Agent
     {
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
-            final SubscriptionLink subscription = subscriptionLinks.get(i);
-            if (image.matches(subscription.channelEndpoint(), subscription.streamId()))
-            {
-                subscription.unlink(image);
-            }
+            subscriptionLinks.get(i).unlink(image);
         }
     }
 
@@ -420,11 +412,7 @@ public class DriverConductor implements Agent
     {
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
-            final SubscriptionLink subscription = subscriptionLinks.get(i);
-            if (subscription.matches(publication.streamId()))
-            {
-                subscription.unlink(publication);
-            }
+            subscriptionLinks.get(i).unlink(publication);
         }
     }
 
@@ -1102,7 +1090,7 @@ public class DriverConductor implements Agent
         for (int i = 0, size = links.size(); i < size; i++)
         {
             final SubscriptionLink subscription = links.get(i);
-            if (subscription.matches(publication))
+            if (subscription.matches(publication) && !subscription.isLinked(publication))
             {
                 linkSpy(publication, subscription);
             }

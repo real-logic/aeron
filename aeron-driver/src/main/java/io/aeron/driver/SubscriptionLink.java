@@ -197,8 +197,6 @@ class IpcSubscriptionLink extends SubscriptionLink
 class SpySubscriptionLink extends SubscriptionLink
 {
     private final UdpChannel udpChannel;
-    private NetworkPublication publication = null;
-    private ReadablePosition position = null;
 
     SpySubscriptionLink(
         final long registrationId,
@@ -211,29 +209,9 @@ class SpySubscriptionLink extends SubscriptionLink
         this.udpChannel = spiedChannel;
     }
 
-    public void link(final Subscribable subscribable, final ReadablePosition position)
-    {
-        this.publication = (NetworkPublication)subscribable;
-        this.position = position;
-    }
-
-    public void unlink(final Subscribable subscribable)
-    {
-        publication = null;
-        position = null;
-    }
-
     public boolean matches(final NetworkPublication publication)
     {
         return streamId == publication.streamId() &&
             udpChannel.canonicalForm().equals(publication.sendChannelEndpoint().udpChannel().canonicalForm());
-    }
-
-    public void close()
-    {
-        if (null != publication)
-        {
-            publication.removeSubscriber(position);
-        }
     }
 }

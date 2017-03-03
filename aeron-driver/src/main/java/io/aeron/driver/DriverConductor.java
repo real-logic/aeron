@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static io.aeron.CommonContext.RELIABLE_STREAM_PARAM_NAME;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.CLIENT_KEEP_ALIVES;
 import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
@@ -297,7 +298,7 @@ public class DriverConductor implements Agent
                 RETRANSMIT_UNICAST_LINGER_GENERATOR);
 
             final FlowControl flowControl =
-                (udpChannel.isMulticast() || udpChannel.hasExplicitControl()) ?
+                udpChannel.isMulticast() || udpChannel.hasExplicitControl() ?
                     context.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
                     context.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
 
@@ -543,7 +544,7 @@ public class DriverConductor implements Agent
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
-        final String reliableParam = udpChannel.aeronUri().get("reliable", "true");
+        final String reliableParam = udpChannel.aeronUri().get(RELIABLE_STREAM_PARAM_NAME, "true");
         final boolean isReliable = !"false".equals(reliableParam);
 
         checkForClashingSubscription(isReliable, udpChannel, streamId);

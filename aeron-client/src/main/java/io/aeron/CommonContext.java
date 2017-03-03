@@ -88,6 +88,11 @@ public class CommonContext implements AutoCloseable
      */
     public static final String MDC_CONTROL_MODE_MANUAL = "manual";
 
+    /**
+     * Parameter name for channel URI param to indicate if a subscribed must be reliable or not. Value is boolean.
+     */
+    public static final String RELIABLE_STREAM_PARAM_NAME = "reliable";
+
     private long driverTimeoutMs = DEFAULT_DRIVER_TIMEOUT_MS;
     private String aeronDirectoryName;
     private File cncFile;

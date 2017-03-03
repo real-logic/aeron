@@ -43,6 +43,9 @@ import static org.mockito.Mockito.verify;
 public class GapFillLossTest
 {
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:54325";
+    private static final String UNRELIABLE_CHANNEL =
+        CHANNEL + "|" + CommonContext.RELIABLE_STREAM_PARAM_NAME + "=false";
+
     private static final int STREAM_ID = 1;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
     private static final int MSG_LENGTH = 1024;
@@ -80,7 +83,7 @@ public class GapFillLossTest
         try (MediaDriver ignore = MediaDriver.launch(ctx);
              Aeron aeron = Aeron.connect();
              Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(CHANNEL + "|reliable=false", STREAM_ID))
+             Subscription subscription = aeron.addSubscription(UNRELIABLE_CHANNEL, STREAM_ID))
         {
             final IdleStrategy idleStrategy = new YieldingIdleStrategy();
 

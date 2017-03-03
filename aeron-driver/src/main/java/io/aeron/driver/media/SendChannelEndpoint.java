@@ -23,7 +23,6 @@ import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.LangUtil;
 import org.agrona.collections.BiInt2ObjectMap;
-import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -47,14 +46,12 @@ public class SendChannelEndpoint extends UdpChannelTransport
 {
     private static final long DESTINATION_TIMEOUT = TimeUnit.SECONDS.toNanos(5);
 
-    private final Int2ObjectHashMap<NetworkPublication> driversPublicationByStreamId = new Int2ObjectHashMap<>();
-    private final BiInt2ObjectMap<NetworkPublication> sendersPublicationBySessionAndStreamId = new BiInt2ObjectMap<>();
-
+    private int refCount = 0;
+    private final BiInt2ObjectMap<NetworkPublication> publicationBySessionAndStreamId = new BiInt2ObjectMap<>();
+    private final UdpDestinationTracker multiDestinationTracker;
     private final AtomicCounter statusMessagesReceived;
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusIndicator;
-
-    private final UdpDestinationTracker multiDestinationTracker;
 
     public SendChannelEndpoint(
         final UdpChannel udpChannel, final AtomicCounter statusIndicator, final MediaDriver.Context context)
@@ -86,6 +83,16 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
 
         multiDestinationTracker = destinationTracker;
+    }
+
+    public int decRef()
+    {
+        return --refCount;
+    }
+
+    public int incRef()
+    {
+        return ++refCount;
     }
 
     public void openChannel()
@@ -120,45 +127,13 @@ public class SendChannelEndpoint extends UdpChannelTransport
     }
 
     /**
-     * Called from the {@link DriverConductor} to find the publication associated with a sessionId and streamId
-     *
-     * @param streamId for the publication
-     * @return publication
-     */
-    public NetworkPublication getPublication(final int streamId)
-    {
-        return driversPublicationByStreamId.get(streamId);
-    }
-
-    /**
-     * Called form the {@link DriverConductor} to associate a publication with a sessionId and streamId.
-     *
-     * @param publication to associate
-     */
-    public void addPublication(final NetworkPublication publication)
-    {
-        driversPublicationByStreamId.put(publication.streamId(), publication);
-    }
-
-    /**
-     * Called from the {@link DriverConductor} to remove an association of a publication.
-     *
-     * @param publication to remove
-     * @return publication removed
-     */
-    public NetworkPublication removePublication(final NetworkPublication publication)
-    {
-        return driversPublicationByStreamId.remove(publication.streamId());
-    }
-
-    /**
      * Called by the {@link DriverConductor} to determine if the channel endpoint should be closed.
      *
      * @return true if ready to be closed.
      */
     public boolean shouldBeClosed()
     {
-        return driversPublicationByStreamId.isEmpty() && !statusIndicator.isClosed();
+        return 0 == refCount && !statusIndicator.isClosed();
     }
 
     /**
@@ -168,7 +143,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public void registerForSend(final NetworkPublication publication)
     {
-        sendersPublicationBySessionAndStreamId.put(publication.sessionId(), publication.streamId(), publication);
+        publicationBySessionAndStreamId.put(publication.sessionId(), publication.streamId(), publication);
     }
 
     /**
@@ -178,7 +153,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public void unregisterForSend(final NetworkPublication publication)
     {
-        sendersPublicationBySessionAndStreamId.remove(publication.sessionId(), publication.streamId());
+        publicationBySessionAndStreamId.remove(publication.sessionId(), publication.streamId());
     }
 
     /**
@@ -228,7 +203,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         final int length,
         final InetSocketAddress srcAddress)
     {
-        final NetworkPublication publication = sendersPublicationBySessionAndStreamId.get(
+        final NetworkPublication publication = publicationBySessionAndStreamId.get(
             msg.sessionId(), msg.streamId());
 
         if (null != multiDestinationTracker)
@@ -237,7 +212,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
             if (0 == msg.sessionId() && 0 == msg.streamId() && SEND_SETUP_FLAG == (msg.flags() & SEND_SETUP_FLAG))
             {
-                sendersPublicationBySessionAndStreamId.forEach(NetworkPublication::triggerSendSetupFrame);
+                publicationBySessionAndStreamId.forEach(NetworkPublication::triggerSendSetupFrame);
                 statusMessagesReceived.orderedIncrement();
             }
         }
@@ -263,7 +238,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         final int length,
         final InetSocketAddress srcAddress)
     {
-        final NetworkPublication publication = sendersPublicationBySessionAndStreamId.get(
+        final NetworkPublication publication = publicationBySessionAndStreamId.get(
             msg.sessionId(), msg.streamId());
 
         if (null != publication)
@@ -279,7 +254,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         final int length,
         final InetSocketAddress srcAddress)
     {
-        final NetworkPublication publication = sendersPublicationBySessionAndStreamId.get(
+        final NetworkPublication publication = publicationBySessionAndStreamId.get(
             msg.sessionId(), msg.streamId());
 
         if (null != publication)
@@ -292,7 +267,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
         if (null == multiDestinationTracker || !multiDestinationTracker.isManualControlMode())
         {
-            throw new IllegalArgumentException("control channel does not allow manual control");
+            throw new IllegalArgumentException("Control channel does not allow manual control");
         }
     }
 

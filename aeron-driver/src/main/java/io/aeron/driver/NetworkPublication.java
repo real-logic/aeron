@@ -86,6 +86,11 @@ public class NetworkPublication
     extends NetworkPublicationPadding3
     implements RetransmitSender, DriverManagedResource, Subscribable
 {
+    public enum Status
+    {
+        ACTIVE, INACTIVE
+    }
+
     private final long registrationId;
     private final long unblockTimeoutNs;
     private final int positionBitsToShift;
@@ -98,6 +103,7 @@ public class NetworkPublication
 
     private volatile boolean hasHadFirstStatusMessage = false;
     private boolean hasReachedEndOfLife = false;
+    private Status status = Status.ACTIVE;
 
     private final UnsafeBuffer[] termBuffers;
     private final ByteBuffer[] sendBuffers;
@@ -232,7 +238,7 @@ public class NetworkPublication
         return bytesSent;
     }
 
-    public SendChannelEndpoint sendChannelEndpoint()
+    public SendChannelEndpoint channelEndpoint()
     {
         return channelEndpoint;
     }
@@ -630,7 +636,8 @@ public class NetworkPublication
 
         if (0 == count)
         {
-            channelEndpoint.removePublication(this);
+            status = Status.INACTIVE;
+            channelEndpoint.decRef();
         }
 
         return count;
@@ -639,6 +646,11 @@ public class NetworkPublication
     public int incRef()
     {
         return ++refCount;
+    }
+
+    public Status status()
+    {
+        return status;
     }
 
     public long producerPosition()

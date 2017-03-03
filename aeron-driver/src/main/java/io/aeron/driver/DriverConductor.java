@@ -285,7 +285,7 @@ public class DriverConductor implements Agent
         final int termLength = getTermBufferLength(aeronUri, context.publicationTermBufferLength());
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel);
 
-        NetworkPublication publication = channelEndpoint.getPublication(streamId);
+        NetworkPublication publication = findPublication(networkPublications, streamId, channelEndpoint);
         if (null == publication)
         {
             final int sessionId = nextSessionId++;
@@ -321,7 +321,7 @@ public class DriverConductor implements Agent
                 networkPublicationThreadLocals,
                 publicationUnblockTimeoutNs);
 
-            channelEndpoint.addPublication(publication);
+            channelEndpoint.incRef();
             networkPublications.add(publication);
             senderProxy.newNetworkPublication(publication);
             linkSpies(publication);
@@ -349,7 +349,7 @@ public class DriverConductor implements Agent
             clientProxy.onUnavailableImage(
                 correlationId(publication.rawLog().metaData()),
                 publication.streamId(),
-                publication.sendChannelEndpoint().originalUriString());
+                publication.channelEndpoint().originalUriString());
 
             for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
             {
@@ -359,7 +359,7 @@ public class DriverConductor implements Agent
 
         senderProxy.removeNetworkPublication(publication);
 
-        final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
+        final SendChannelEndpoint channelEndpoint = publication.channelEndpoint();
         if (channelEndpoint.shouldBeClosed())
         {
             channelEndpoint.closeStatusIndicator();
@@ -446,6 +446,26 @@ public class DriverConductor implements Agent
         return subscriberPositions;
     }
 
+    private static NetworkPublication findPublication(
+        final ArrayList<NetworkPublication> publications,
+        final int streamId,
+        final SendChannelEndpoint channelEndpoint)
+    {
+        for (int i = 0, size = publications.size(); i < size; i++)
+        {
+            final NetworkPublication publication = publications.get(i);
+
+            if (NetworkPublication.Status.ACTIVE == publication.status() &&
+                streamId == publication.streamId() &&
+                channelEndpoint == publication.channelEndpoint())
+            {
+                return publication;
+            }
+        }
+
+        return null;
+    }
+
     void onAddIpcPublication(final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final IpcPublication ipcPublication = getOrAddIpcPublication(streamId, channel);
@@ -496,7 +516,7 @@ public class DriverConductor implements Agent
 
             if (registrationId == publication.registrationId())
             {
-                sendChannelEndpoint = publication.sendChannelEndpoint();
+                sendChannelEndpoint = publication.channelEndpoint();
                 break;
             }
         }
@@ -523,7 +543,7 @@ public class DriverConductor implements Agent
 
             if (registrationId == publication.registrationId())
             {
-                sendChannelEndpoint = publication.sendChannelEndpoint();
+                sendChannelEndpoint = publication.channelEndpoint();
                 break;
             }
         }
@@ -591,9 +611,8 @@ public class DriverConductor implements Agent
         subscriptionLinks.add(subscriptionLink);
         clientProxy.operationSucceeded(registrationId);
 
-        final SendChannelEndpoint channelEndpoint = senderChannelEndpoint(udpChannel);
-        final NetworkPublication publication =
-            null == channelEndpoint ? null : channelEndpoint.getPublication(streamId);
+        final NetworkPublication publication = findPublication(
+            networkPublications, streamId, sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm()));
         if (null != publication)
         {
             linkSpy(publication, subscriptionLink);

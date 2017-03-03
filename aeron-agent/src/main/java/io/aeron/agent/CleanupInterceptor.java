@@ -43,7 +43,7 @@ public class CleanupInterceptor
             public static void cleanupPublication(final NetworkPublication publication)
             {
                 LOGGER.logPublicationRemoval(
-                    publication.sendChannelEndpoint().originalUriString(),
+                    publication.channelEndpoint().originalUriString(),
                     publication.sessionId(),
                     publication.streamId());
             }

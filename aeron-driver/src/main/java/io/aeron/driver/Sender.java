@@ -116,13 +116,13 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
     public void onNewNetworkPublication(final NetworkPublication publication)
     {
         networkPublications = ArrayUtil.add(networkPublications, publication);
-        publication.sendChannelEndpoint().registerForSend(publication);
+        publication.channelEndpoint().registerForSend(publication);
     }
 
     public void onRemoveNetworkPublication(final NetworkPublication publication)
     {
         networkPublications = ArrayUtil.remove(networkPublications, publication);
-        publication.sendChannelEndpoint().unregisterForSend(publication);
+        publication.channelEndpoint().unregisterForSend(publication);
         conductorProxy.closeNetworkPublication(publication);
     }
 

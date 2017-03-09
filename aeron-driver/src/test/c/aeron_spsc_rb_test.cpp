@@ -16,6 +16,7 @@
 
 #include <array>
 #include <cstdint>
+#include <thread>
 
 #include <gtest/gtest.h>
 
@@ -88,4 +89,45 @@ TEST_F(SpscRbTest, shouldWriteToEmptyBuffer)
     EXPECT_EQ(record->length, (int32_t)recordLength);
     EXPECT_EQ(record->msg_type_id, (int32_t)MSG_TYPE_ID);
     EXPECT_EQ(rb.descriptor->tail_position, (int64_t)(tail + alignedRecordLength));
+}
+
+#define NUM_MESSAGES (10 * 1000 * 1000)
+#define NUM_IDS_PER_THREAD (10 * 1000 * 1000)
+
+TEST(SpscRbConcurrentTest, shouldProvideCcorrelationIds)
+{
+    AERON_DECL_ALIGNED(buffer_t buffer, 16);
+    buffer.fill(0);
+
+    aeron_spsc_rb_t rb;
+    ASSERT_EQ(aeron_spsc_rb_init(&rb, buffer.data(), buffer.size()), 0);
+
+    std::atomic<int> countDown(2);
+
+    std::vector<std::thread> threads;
+
+    for (int i = 0; i < 2; i++)
+    {
+        threads.push_back(std::thread([&]()
+        {
+            countDown--;
+            while (countDown > 0)
+            {
+                std::this_thread::yield(); // spin until we is ready
+            }
+
+            for (int m = 0; m < NUM_IDS_PER_THREAD; m++)
+            {
+                aeron_spsc_rb_next_correlation_id(&rb);
+            }
+        }));
+    }
+
+    // wait for all threads to finish
+    for (std::thread &thr: threads)
+    {
+        thr.join();
+    }
+
+    ASSERT_EQ(aeron_spsc_rb_next_correlation_id(&rb), NUM_IDS_PER_THREAD * 2);
 }

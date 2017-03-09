@@ -187,7 +187,7 @@ size_t aeron_mpsc_rb_read(
 int64_t aeron_mpsc_rb_next_correlation_id(volatile aeron_mpsc_rb_t *ring_buffer)
 {
     int64_t result = 0;
-    AERON_GET_AND_ADD_INT64(ring_buffer->descriptor->correlation_counter, result, 1);
+    AERON_GET_AND_ADD_INT64(result, ring_buffer->descriptor->correlation_counter, 1);
     return result;
 }
 

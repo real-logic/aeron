@@ -29,11 +29,8 @@ struct DestinationMessageDefn
 {
     CorrelatedMessageDefn correlatedMessage;
     std::int64_t registrationId;
-    struct
-    {
-        std::int32_t length;
-        std::int8_t  data[1];
-    } channel;
+    std::int32_t channelLength;
+    std::int8_t  channelData[1];
 };
 #pragma pack(pop)
 
@@ -60,18 +57,18 @@ public:
 
     inline std::string channel() const
     {
-        return stringGet(offsetof(DestinationMessageDefn, channel));
+        return stringGet(offsetof(DestinationMessageDefn, channelLength));
     }
 
     inline this_t& channel(const std::string& value)
     {
-        stringPut(offsetof(DestinationMessageDefn, channel), value);
+        stringPut(offsetof(DestinationMessageDefn, channelLength), value);
         return *this;
     }
 
     inline util::index_t length() const
     {
-        return offsetof(DestinationMessageDefn, channel.data) + m_struct.channel.length;
+        return offsetof(DestinationMessageDefn, channelData) + m_struct.channelLength;
     }
 
 private:

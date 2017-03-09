@@ -97,8 +97,8 @@ void sendPingAndReceivePong(
     std::shared_ptr<Subscription> subscription,
     const Settings& settings)
 {
-    AERON_DECL_ALIGNED(std::uint8_t buffer[settings.messageLength], 16);
-    concurrent::AtomicBuffer srcBuffer(buffer, settings.messageLength);
+    std::unique_ptr<std::uint8_t[]> buffer(new std::uint8_t[settings.messageLength]);
+    concurrent::AtomicBuffer srcBuffer(buffer.get(), settings.messageLength);
     BusySpinIdleStrategy idleStrategy;
 
     for (int i = 0; i < settings.numberOfMessages; i++)

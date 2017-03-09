@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 SET(SOURCE
     Publication.cpp
     Subscription.cpp

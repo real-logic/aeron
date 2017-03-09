@@ -47,11 +47,8 @@ struct ImageMessageDefn
 {
     std::int64_t correlationId;
     std::int32_t streamId;
-    struct
-    {
-        std::int32_t channelLength;
-        std::int8_t  channelData[1];
-    } channel;
+    std::int32_t channelLength;
+    std::int8_t  channelData[1];
 };
 #pragma pack(pop)
 
@@ -90,18 +87,18 @@ public:
 
     inline std::string channel() const
     {
-        return stringGet(offsetof(ImageMessageDefn, channel));
+        return stringGet(offsetof(ImageMessageDefn, channelLength));
     }
 
     inline this_t& channel(const std::string& value)
     {
-        stringPut(offsetof(ImageMessageDefn, channel), value);
+        stringPut(offsetof(ImageMessageDefn, channelLength), value);
         return *this;
     }
 
     inline std::int32_t length() const
     {
-        return offsetof(ImageMessageDefn, channel.channelData) + m_struct.channel.channelLength;
+        return offsetof(ImageMessageDefn, channelData) + m_struct.channelLength;
     }
 };
 

@@ -24,7 +24,7 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
         "and run CMake from there. You may need to remove CMakeCache.txt.")
 endif()
 
-option(BUILD_AERON_DRIVER "Build Aeron driver" OFF)
+option(BUILD_AERON_DRIVER "Build Aeron driver" ON)
 
 include(ExternalProject)
 
@@ -110,17 +110,22 @@ find_package(Doxygen)
 # all UNIX-based platform compiler flags
 if(UNIX)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fexceptions -g -m64")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic -Wextra -Wno-unused-parameter -std=c++11 -fexceptions -g -m64")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wpedantic -Wextra -Wno-unused-parameter -std=c11 -g -m64")
     else()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fexceptions -g")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic -Wextra -Wno-unused-parameter -std=c++11 -fexceptions -g")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wpedantic -Wextra -Wno-unused-parameter -std=c11 -g")
     endif()
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Ofast")
 endif()
 
 # platform specific flags
 if(APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsign-compare")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wsign-compare")
     add_definitions(-DDarwin)
     add_definitions(-Wno-deprecated-register)
 elseif(CYGWIN)
@@ -141,12 +146,15 @@ endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/binaries")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
 
 set(AERON_SAMPLES_PATH "${CMAKE_SOURCE_DIR}/aeron-samples/src/main/cpp")
+
 set(AERON_CLIENT_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/main/cpp")
 set(AERON_CLIENT_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/test/cpp")
-set(AERON_DRIVER_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/main/cpp")
-set(AERON_DRIVER_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/test/cpp")
+
+set(AERON_DRIVER_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/main/c")
+set(AERON_DRIVER_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/test/c")
 
 # gmock - includes gtest
 include_directories(${GMOCK_SOURCE_DIR}/googletest/include)
@@ -158,22 +166,17 @@ include_directories(${HDRHISTOGRAM_SOURCE_DIR}/src)
 # google benchmark
 include_directories(${GOOGLE_BENCHMARK_SOURCE_DIR}/include)
 
-include_directories(${AERON_CLIENT_TEST_PATH})
-
 ##########################################################
 
 add_definitions(-D_FILE_OFFSET_BITS=64)
-
-include_directories(${AERON_CLIENT_SOURCE_PATH})
-include_directories(${AERON_DRIVER_SOURCE_PATH})
 
 add_subdirectory(${AERON_CLIENT_SOURCE_PATH})
 add_subdirectory(${AERON_CLIENT_TEST_PATH})
 add_subdirectory(${AERON_SAMPLES_PATH})
 
 if(BUILD_AERON_DRIVER)
-    add_subdirectory(${AERON_DRIVER_SOURCE_PATH})
-    add_subdirectory(${AERON_DRIVER_TEST_PATH})
+   add_subdirectory(${AERON_DRIVER_SOURCE_PATH})
+   add_subdirectory(${AERON_DRIVER_TEST_PATH})
 endif(BUILD_AERON_DRIVER)
 
 ##########################################################

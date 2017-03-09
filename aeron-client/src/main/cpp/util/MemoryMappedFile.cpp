@@ -94,12 +94,12 @@ MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, size
 #else
 bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
 {
-    uint8_t buffer[PAGE_SIZE];
-    memset(buffer, value, PAGE_SIZE);
+    std::unique_ptr<uint8_t[]> buffer(new uint8_t[PAGE_SIZE]);
+    memset(buffer.get(), value, PAGE_SIZE);
 
     while (size >= PAGE_SIZE)
     {
-        if (static_cast<size_t>(write(fd.handle, buffer, PAGE_SIZE)) != PAGE_SIZE)
+        if (static_cast<size_t>(write(fd.handle, buffer.get(), PAGE_SIZE)) != PAGE_SIZE)
         {
             return false;
         }
@@ -109,7 +109,7 @@ bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
 
     if (size)
     {
-        if (static_cast<size_t>(write(fd.handle, buffer, size)) != size)
+        if (static_cast<size_t>(write(fd.handle, buffer.get(), size)) != size)
         {
             return false;
         }

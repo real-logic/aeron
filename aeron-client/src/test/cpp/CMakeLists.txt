@@ -15,6 +15,9 @@
 #
 
 if(BUILD_TESTING)
+    include_directories(${AERON_CLIENT_SOURCE_PATH})
+    include_directories(${AERON_CLIENT_TEST_PATH})
+
     set(TEST_HEADERS
         ClientConductorFixture.h
         util/TestUtils.h

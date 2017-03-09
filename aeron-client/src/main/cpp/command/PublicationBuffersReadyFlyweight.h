@@ -54,11 +54,8 @@ struct PublicationBuffersReadyDefn
     std::int32_t sessionId;
     std::int32_t streamId;
     std::int32_t positionLimitCounterId;
-    struct
-    {
-        std::int32_t logFileLength;
-        std::int8_t  logFileData[1];
-    } logFile;
+    std::int32_t logFileLength;
+    std::int8_t  logFileData[1];
 };
 #pragma pack(pop)
 
@@ -118,18 +115,18 @@ public:
 
     inline std::string logFileName() const
     {
-        return stringGet(offsetof(PublicationBuffersReadyDefn, logFile));
+        return stringGet(offsetof(PublicationBuffersReadyDefn, logFileLength));
     }
 
     inline this_t& logFileName(const std::string& value)
     {
-        stringPut(offsetof(PublicationBuffersReadyDefn, logFile), value);
+        stringPut(offsetof(PublicationBuffersReadyDefn, logFileLength), value);
         return *this;
     }
 
     std::int32_t length() const
     {
-        return offsetof(PublicationBuffersReadyDefn, logFile.logFileData) + m_struct.logFile.logFileLength;
+        return offsetof(PublicationBuffersReadyDefn, logFileData) + m_struct.logFileLength;
     }
 };
 

@@ -122,7 +122,7 @@ struct LogMetaDataDefn
 };
 #pragma pack(pop)
 
-static const util::index_t TERM_TAIL_COUNTER_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, termTailCounters[0]);
+static const util::index_t TERM_TAIL_COUNTER_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, termTailCounters);
 
 static const util::index_t LOG_ACTIVE_PARTITION_INDEX_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, activePartitionIndex);
 static const util::index_t LOG_TIME_OF_LAST_STATUS_MESSAGE_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, timeOfLastStatusMessage);

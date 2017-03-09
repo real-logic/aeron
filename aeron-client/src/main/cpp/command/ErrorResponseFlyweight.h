@@ -48,11 +48,8 @@ struct ErrorResponseDefn
 {
     std::int64_t offendingCommandCorrelationId;
     std::int32_t errorCode;
-    struct
-    {
-        std::int32_t errorMessageLength;
-        std::int8_t  errorMessageData[1];
-    } errorMessage;
+    std::int32_t errorMessageLength;
+    std::int8_t  errorMessageData[1];
 };
 #pragma pack(pop)
 
@@ -83,12 +80,12 @@ public:
 
     inline std::string errorMessage() const
     {
-        return stringGet(offsetof(ErrorResponseDefn, errorMessage));
+        return stringGet(offsetof(ErrorResponseDefn, errorMessageLength));
     }
 
     inline util::index_t length() const
     {
-        return offsetof(ErrorResponseDefn, errorMessage.errorMessageData) + m_struct.errorMessage.errorMessageLength;
+        return offsetof(ErrorResponseDefn, errorMessageData) + m_struct.errorMessageLength;
     }
 };
 

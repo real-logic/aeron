@@ -136,6 +136,7 @@ aeron_rb_write_result_t aeron_mpsc_rb_write(
 size_t aeron_mpsc_rb_read(
     volatile aeron_mpsc_rb_t *ring_buffer,
     aeron_rb_handler_t handler,
+    void *clientd,
     size_t message_count_limit)
 {
     const int64_t head = ring_buffer->descriptor->head_position;
@@ -148,7 +149,7 @@ size_t aeron_mpsc_rb_read(
     {
         aeron_rb_record_descriptor_t *header = NULL;
         const size_t record_index = head_index + bytes_read;
-        size_t record_length = 0;
+        int32_t record_length = 0;
         int32_t msg_type_id = 0;
 
         header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
@@ -171,7 +172,8 @@ size_t aeron_mpsc_rb_read(
         handler(
             msg_type_id,
             ring_buffer->buffer + AERON_RB_MESSAGE_OFFSET(record_index),
-            record_length - AERON_RB_RECORD_HEADER_LENGTH);
+            record_length - AERON_RB_RECORD_HEADER_LENGTH,
+            clientd);
 
     }
 

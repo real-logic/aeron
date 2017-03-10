@@ -88,11 +88,13 @@ public final class Aeron implements AutoCloseable
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;
     private final Context ctx;
+    private final RingBuffer commandBuffer;
 
     Aeron(final Context ctx)
     {
         ctx.conclude();
         this.ctx = ctx;
+        commandBuffer = ctx.toDriverBuffer;
 
         conductor = new ClientConductor(
             ctx.epochClock,
@@ -207,6 +209,21 @@ public final class Aeron implements AutoCloseable
         {
             conductor.clientLock().unlock();
         }
+    }
+
+    /**
+     * Generate the next correlation id that is unique for the Media Driver.
+     *
+     * This is useful generating correlation identifiers for pairing requests with responses in a clients own
+     * application protocol.
+     *
+     * This method is thread safe and will work across processes that all use the same media driver.
+     *
+     * @return next correlation id that is unique for the Media Driver.
+     */
+    public long nextCorrelationId()
+    {
+        return commandBuffer.nextCorrelationId();
     }
 
     /**

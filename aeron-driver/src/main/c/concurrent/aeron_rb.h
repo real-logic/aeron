@@ -70,7 +70,7 @@ typedef enum aeron_rb_write_result_stct
 }
 aeron_rb_write_result_t;
 
-typedef void (*aeron_rb_handler_t)(int32_t, const void *, size_t);
+typedef void (*aeron_rb_handler_t)(int32_t, const void *, size_t, void *);
 
 #define AERON_RB_IS_CAPACITY_VALID(capacity) AERON_IS_POWER_OF_TWO(capacity)
 

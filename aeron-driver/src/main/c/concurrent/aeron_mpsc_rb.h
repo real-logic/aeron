@@ -39,6 +39,7 @@ aeron_rb_write_result_t aeron_mpsc_rb_write(
 size_t aeron_mpsc_rb_read(
     volatile aeron_mpsc_rb_t *ring_buffer,
     aeron_rb_handler_t handler,
+    void *clientd,
     size_t message_count_limit);
 
 int64_t aeron_mpsc_rb_next_correlation_id(volatile aeron_mpsc_rb_t *ring_buffer);

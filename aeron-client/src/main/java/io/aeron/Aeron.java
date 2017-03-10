@@ -309,7 +309,15 @@ public final class Aeron implements AutoCloseable
 
             if (cncFile() != null)
             {
-                connectToDriver();
+                try
+                {
+                    connectToDriver();
+                }
+                catch (final Exception ex)
+                {
+                    close();
+                    throw ex;
+                }
             }
 
             if (null == toClientBuffer)

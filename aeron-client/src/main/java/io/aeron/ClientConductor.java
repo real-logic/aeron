@@ -56,6 +56,7 @@ class ClientConductor implements Agent, DriverListener
     private long timeOfLastCheckResources;
     private long timeOfLastWork;
     private volatile boolean driverActive = true;
+    private boolean clientActive = true;
 
     private final Lock lock = new ReentrantLock();
     private final EpochClock epochClock;
@@ -113,12 +114,17 @@ class ClientConductor implements Agent, DriverListener
 
     public void onClose()
     {
-        activePublications.close();
-        activeSubscriptions.close();
+        if (clientActive)
+        {
+            clientActive = false;
 
-        Thread.yield();
+            activePublications.close();
+            activeSubscriptions.close();
 
-        lingeringResources.forEach(ManagedResource::delete);
+            Thread.yield();
+
+            lingeringResources.forEach(ManagedResource::delete);
+        }
     }
 
     public int doWork()

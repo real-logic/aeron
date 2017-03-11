@@ -93,6 +93,7 @@ public final class Aeron implements AutoCloseable
     Aeron(final Context ctx)
     {
         ctx.conclude();
+
         this.ctx = ctx;
         commandBuffer = ctx.toDriverBuffer;
 
@@ -124,7 +125,7 @@ public final class Aeron implements AutoCloseable
      */
     public static Aeron connect()
     {
-        return new Aeron(new Context()).start();
+        return connect(new Context());
     }
 
     /**
@@ -137,7 +138,15 @@ public final class Aeron implements AutoCloseable
      */
     public static Aeron connect(final Context ctx)
     {
-        return new Aeron(ctx).start();
+        try
+        {
+            return new Aeron(ctx).start();
+        }
+        catch (final Exception ex)
+        {
+            ctx.close();
+            throw ex;
+        }
     }
 
     /**
@@ -309,15 +318,7 @@ public final class Aeron implements AutoCloseable
 
             if (cncFile() != null)
             {
-                try
-                {
-                    connectToDriver();
-                }
-                catch (final Exception ex)
-                {
-                    close();
-                    throw ex;
-                }
+                connectToDriver();
             }
 
             if (null == toClientBuffer)
@@ -358,12 +359,16 @@ public final class Aeron implements AutoCloseable
 
             if (null == availableImageHandler)
             {
-                availableImageHandler = (image) -> {};
+                availableImageHandler = (image) ->
+                {
+                };
             }
 
             if (null == unavailableImageHandler)
             {
-                unavailableImageHandler = (image) -> {};
+                unavailableImageHandler = (image) ->
+                {
+                };
             }
 
             if (null == imageMapMode)
@@ -626,6 +631,7 @@ public final class Aeron implements AutoCloseable
 
         /**
          * The thread factory to be use to construct the conductor thread
+         *
          * @return the specified thread factory or {@link Thread#Thread(Runnable)} if none is provided
          */
         public ThreadFactory threadFactory()

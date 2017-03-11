@@ -133,6 +133,9 @@ public final class Aeron implements AutoCloseable
      *
      * Threads required for interacting with the media driver are created and managed within the Aeron instance.
      *
+     * If an exception occurs while trying to establish a connection then the {@link Context#close()} method
+     * will be called on the passed context.
+     *
      * @param ctx for configuration of the client.
      * @return the new {@link Aeron} instance connected to the Media Driver.
      */

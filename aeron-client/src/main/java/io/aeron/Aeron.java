@@ -84,7 +84,7 @@ public final class Aeron implements AutoCloseable
      */
     public static final long PUBLICATION_CONNECTION_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
 
-    private boolean isClosed = false;
+    private volatile boolean isClosed = false;
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;
     private final RingBuffer commandBuffer;
@@ -218,6 +218,11 @@ public final class Aeron implements AutoCloseable
      */
     public long nextCorrelationId()
     {
+        if (isClosed)
+        {
+            throw new IllegalStateException("Aeron client is closed");
+        }
+
         return commandBuffer.nextCorrelationId();
     }
 

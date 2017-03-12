@@ -87,15 +87,15 @@ public final class Aeron implements AutoCloseable
     private boolean isClosed = false;
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;
-    private final Context ctx;
     private final RingBuffer commandBuffer;
+    private final CountersReader countersReader;
 
     Aeron(final Context ctx)
     {
         ctx.conclude();
 
-        this.ctx = ctx;
         commandBuffer = ctx.toDriverBuffer;
+        countersReader = new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer());
         conductor = new ClientConductor(ctx);
         conductorRunner = new AgentRunner(ctx.idleStrategy, ctx.errorHandler, null, conductor);
     }
@@ -127,7 +127,7 @@ public final class Aeron implements AutoCloseable
     {
         try
         {
-            return new Aeron(ctx).start();
+            return new Aeron(ctx).start(ctx.threadFactory);
         }
         catch (final Exception ex)
         {
@@ -228,25 +228,17 @@ public final class Aeron implements AutoCloseable
      */
     public CountersReader countersReader()
     {
-        conductor.clientLock().lock();
-        try
+        if (isClosed)
         {
-            if (isClosed)
-            {
-                throw new IllegalStateException("Aeron client is closed");
-            }
+            throw new IllegalStateException("Aeron client is closed");
+        }
 
-            return new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer());
-        }
-        finally
-        {
-            conductor.clientLock().unlock();
-        }
+        return countersReader;
     }
 
-    private Aeron start()
+    private Aeron start(final ThreadFactory threadFactory)
     {
-        AgentRunner.startOnThread(conductorRunner, ctx.threadFactory);
+        AgentRunner.startOnThread(conductorRunner, threadFactory);
 
         return this;
     }

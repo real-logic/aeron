@@ -66,7 +66,7 @@ public final class Aeron implements AutoCloseable
     /**
      * Duration in nanoseconds for which the client conductor will sleep between duty cycles.
      */
-    public static final long IDLE_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(10);
+    public static final long IDLE_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(16);
 
     /**
      * Default interval between sending keepalive control messages to the driver.

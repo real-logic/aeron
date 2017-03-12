@@ -791,7 +791,7 @@ public final class Aeron implements AutoCloseable
         }
     }
 
-    private static void sleep(final long timeInMs)
+    static void sleep(final long timeInMs)
     {
         try
         {

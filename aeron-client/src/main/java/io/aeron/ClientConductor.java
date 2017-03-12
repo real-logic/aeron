@@ -102,8 +102,6 @@ class ClientConductor implements Agent, DriverListener
     {
         if (clientActive)
         {
-            clientActive = false;
-
             activePublications.close();
             activeSubscriptions.close();
 
@@ -111,24 +109,30 @@ class ClientConductor implements Agent, DriverListener
 
             lingeringResources.forEach(ManagedResource::delete);
             ctx.close();
+            clientActive = false;
         }
     }
 
     public int doWork()
     {
-        if (!lock.tryLock())
+        int workCount = 0;
+
+        if (lock.tryLock())
         {
-            return 0;
+            try
+            {
+                if (clientActive)
+                {
+                    workCount = doWork(NO_CORRELATION_ID, null);
+                }
+            }
+            finally
+            {
+                lock.unlock();
+            }
         }
 
-        try
-        {
-            return doWork(NO_CORRELATION_ID, null);
-        }
-        finally
-        {
-            lock.unlock();
-        }
+        return workCount;
     }
 
     public String roleName()
@@ -148,7 +152,7 @@ class ClientConductor implements Agent, DriverListener
 
     Publication addPublication(final String channel, final int streamId)
     {
-        verifyDriverIsActive();
+        verifyActive();
 
         Publication publication = activePublications.get(channel, streamId);
         if (null == publication)
@@ -164,7 +168,7 @@ class ClientConductor implements Agent, DriverListener
 
     void releasePublication(final Publication publication)
     {
-        verifyDriverIsActive();
+        verifyActive();
 
         if (publication == activePublications.remove(publication.channel(), publication.streamId()))
         {
@@ -175,7 +179,7 @@ class ClientConductor implements Agent, DriverListener
 
     Subscription addSubscription(final String channel, final int streamId)
     {
-        verifyDriverIsActive();
+        verifyActive();
 
         final long correlationId = driverProxy.addSubscription(channel, streamId);
         final Subscription subscription = new Subscription(this, channel, streamId, correlationId);
@@ -188,7 +192,7 @@ class ClientConductor implements Agent, DriverListener
 
     void releaseSubscription(final Subscription subscription)
     {
-        verifyDriverIsActive();
+        verifyActive();
 
         awaitResponse(driverProxy.removeSubscription(subscription.registrationId()), subscription.channel());
 
@@ -197,14 +201,14 @@ class ClientConductor implements Agent, DriverListener
 
     void addDestination(final Publication publication, final String endpointChannel)
     {
-        verifyDriverIsActive();
+        verifyActive();
 
         awaitResponse(driverProxy.addDestination(publication.registrationId(), endpointChannel), endpointChannel);
     }
 
     void removeDestination(final Publication publication, final String endpointChannel)
     {
-        verifyDriverIsActive();
+        verifyActive();
 
         awaitResponse(driverProxy.removeDestination(publication.registrationId(), endpointChannel), endpointChannel);
     }
@@ -332,11 +336,16 @@ class ClientConductor implements Agent, DriverListener
         }
     }
 
-    private void verifyDriverIsActive()
+    private void verifyActive()
     {
         if (!driverActive)
         {
-            throw new DriverTimeoutException("Driver is inactive");
+            throw new DriverTimeoutException("MediaDriver is inactive");
+        }
+
+        if (!clientActive)
+        {
+            throw new IllegalStateException("Aeron client is closed");
         }
     }
 

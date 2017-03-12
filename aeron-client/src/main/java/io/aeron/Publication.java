@@ -213,7 +213,7 @@ public class Publication implements AutoCloseable
         conductor.clientLock().lock();
         try
         {
-            if (--refCount == 0)
+            if (!isClosed && --refCount == 0)
             {
                 release();
             }

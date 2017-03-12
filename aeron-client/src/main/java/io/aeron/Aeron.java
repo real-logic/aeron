@@ -84,7 +84,6 @@ public final class Aeron implements AutoCloseable
      */
     public static final long PUBLICATION_CONNECTION_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
 
-    private volatile boolean isClosed = false;
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;
     private final RingBuffer commandBuffer;
@@ -144,11 +143,7 @@ public final class Aeron implements AutoCloseable
         conductor.clientLock().lock();
         try
         {
-            if (!isClosed)
-            {
-                isClosed = true;
-                conductorRunner.close();
-            }
+            conductorRunner.close();
         }
         finally
         {
@@ -168,11 +163,6 @@ public final class Aeron implements AutoCloseable
         conductor.clientLock().lock();
         try
         {
-            if (isClosed)
-            {
-                throw new IllegalStateException("Aeron client is closed");
-            }
-
             return conductor.addPublication(channel, streamId);
         }
         finally
@@ -193,11 +183,6 @@ public final class Aeron implements AutoCloseable
         conductor.clientLock().lock();
         try
         {
-            if (isClosed)
-            {
-                throw new IllegalStateException("Aeron client is closed");
-            }
-
             return conductor.addSubscription(channel, streamId);
         }
         finally
@@ -218,11 +203,6 @@ public final class Aeron implements AutoCloseable
      */
     public long nextCorrelationId()
     {
-        if (isClosed)
-        {
-            throw new IllegalStateException("Aeron client is closed");
-        }
-
         return commandBuffer.nextCorrelationId();
     }
 
@@ -233,11 +213,6 @@ public final class Aeron implements AutoCloseable
      */
     public CountersReader countersReader()
     {
-        if (isClosed)
-        {
-            throw new IllegalStateException("Aeron client is closed");
-        }
-
         return countersReader;
     }
 

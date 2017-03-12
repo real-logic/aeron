@@ -54,8 +54,8 @@ class ClientConductor implements Agent, DriverListener
     private long timeOfLastKeepalive;
     private long timeOfLastCheckResources;
     private long timeOfLastWork;
-    private boolean driverActive = true;
-    private boolean clientActive = true;
+    private boolean isDriverActive = true;
+    private boolean isClientActive = true;
 
     private final Lock lock = new ReentrantLock();
     private final Aeron.Context ctx;
@@ -100,7 +100,7 @@ class ClientConductor implements Agent, DriverListener
 
     public void onClose()
     {
-        if (clientActive)
+        if (isClientActive)
         {
             activePublications.close();
             activeSubscriptions.close();
@@ -109,7 +109,7 @@ class ClientConductor implements Agent, DriverListener
 
             lingeringResources.forEach(ManagedResource::delete);
             ctx.close();
-            clientActive = false;
+            isClientActive = false;
         }
     }
 
@@ -121,7 +121,7 @@ class ClientConductor implements Agent, DriverListener
         {
             try
             {
-                if (clientActive)
+                if (isClientActive)
                 {
                     workCount = doWork(NO_CORRELATION_ID, null);
                 }
@@ -327,23 +327,23 @@ class ClientConductor implements Agent, DriverListener
         final long now = epochClock.time();
         final long currentDriverKeepaliveTime = driverProxy.timeOfLastDriverKeepalive();
 
-        if (driverActive && (now > (currentDriverKeepaliveTime + driverTimeoutMs)))
+        if (isDriverActive && (now > (currentDriverKeepaliveTime + driverTimeoutMs)))
         {
-            driverActive = false;
+            isDriverActive = false;
 
-            final String msg = "Driver has been inactive for over " + driverTimeoutMs + "ms";
+            final String msg = "MediaDriver has been inactive for over " + driverTimeoutMs + "ms";
             errorHandler.onError(new DriverTimeoutException(msg));
         }
     }
 
     private void verifyActive()
     {
-        if (!driverActive)
+        if (!isDriverActive)
         {
             throw new DriverTimeoutException("MediaDriver is inactive");
         }
 
-        if (!clientActive)
+        if (!isClientActive)
         {
             throw new IllegalStateException("Aeron client is closed");
         }

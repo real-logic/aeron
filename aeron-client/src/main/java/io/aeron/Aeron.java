@@ -59,7 +59,7 @@ public final class Aeron implements AutoCloseable
             if (throwable instanceof DriverTimeoutException)
             {
                 System.err.printf(
-                    "%n***%n*** Timeout from the Media Driver - is it currently running? Exiting.%n***%n");
+                    "%n***%n*** Timeout from the MediaDriver - is it currently running? Exiting.%n***%n");
                 System.exit(-1);
             }
         };

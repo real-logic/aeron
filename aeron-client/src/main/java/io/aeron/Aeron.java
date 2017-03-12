@@ -96,23 +96,7 @@ public final class Aeron implements AutoCloseable
 
         this.ctx = ctx;
         commandBuffer = ctx.toDriverBuffer;
-
-        conductor = new ClientConductor(
-            ctx.epochClock,
-            ctx.nanoClock,
-            ctx.toClientBuffer,
-            ctx.logBuffersFactory,
-            ctx.countersValuesBuffer(),
-            new DriverProxy(ctx.toDriverBuffer),
-            ctx.errorHandler,
-            ctx.availableImageHandler,
-            ctx.unavailableImageHandler,
-            ctx.imageMapMode,
-            ctx.keepAliveInterval(),
-            ctx.driverTimeoutMs(),
-            ctx.interServiceTimeout(),
-            ctx.publicationConnectionTimeout());
-
+        conductor = new ClientConductor(ctx);
         conductorRunner = new AgentRunner(ctx.idleStrategy, ctx.errorHandler, null, conductor);
     }
 
@@ -164,7 +148,6 @@ public final class Aeron implements AutoCloseable
             {
                 isClosed = true;
                 conductorRunner.close();
-                ctx.close();
             }
         }
         finally
@@ -273,6 +256,8 @@ public final class Aeron implements AutoCloseable
      * method and its overloads. It gives applications some control over the interactions with the Aeron Media Driver.
      * It can also set up error handling as well as application callbacks for image information from the
      * Media Driver.
+     *
+     * A number of the properties are for testing and should not be set by end users.
      */
     public static class Context extends CommonContext
     {
@@ -281,6 +266,7 @@ public final class Aeron implements AutoCloseable
         private IdleStrategy idleStrategy;
         private CopyBroadcastReceiver toClientBuffer;
         private RingBuffer toDriverBuffer;
+        private DriverProxy driverProxy;
         private MappedByteBuffer cncByteBuffer;
         private AtomicBuffer cncMetaDataBuffer;
         private LogBuffersFactory logBuffersFactory;
@@ -288,7 +274,7 @@ public final class Aeron implements AutoCloseable
         private AvailableImageHandler availableImageHandler;
         private UnavailableImageHandler unavailableImageHandler;
         private long keepAliveInterval = KEEPALIVE_INTERVAL_NS;
-        private long interServiceTimeout = INTER_SERVICE_TIMEOUT_NS;
+        private long interServiceTimeout = 0;
         private long publicationConnectionTimeout = PUBLICATION_CONNECTION_TIMEOUT_MS;
         private FileChannel.MapMode imageMapMode;
         private ThreadFactory threadFactory = Thread::new;
@@ -348,7 +334,14 @@ public final class Aeron implements AutoCloseable
                 countersValuesBuffer(CncFileDescriptor.createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
             }
 
-            interServiceTimeout = CncFileDescriptor.clientLivenessTimeout(cncMetaDataBuffer);
+            if (0 == interServiceTimeout)
+            {
+                interServiceTimeout = CncFileDescriptor.clientLivenessTimeout(cncMetaDataBuffer);
+            }
+            else
+            {
+                interServiceTimeout = INTER_SERVICE_TIMEOUT_NS;
+            }
 
             if (null == logBuffersFactory)
             {
@@ -362,21 +355,22 @@ public final class Aeron implements AutoCloseable
 
             if (null == availableImageHandler)
             {
-                availableImageHandler = (image) ->
-                {
-                };
+                availableImageHandler = (image) -> {};
             }
 
             if (null == unavailableImageHandler)
             {
-                unavailableImageHandler = (image) ->
-                {
-                };
+                unavailableImageHandler = (image) -> {};
             }
 
             if (null == imageMapMode)
             {
                 imageMapMode = READ_ONLY;
+            }
+
+            if (null == driverProxy)
+            {
+                driverProxy = new DriverProxy(toDriverBuffer);
             }
 
             return this;
@@ -417,6 +411,16 @@ public final class Aeron implements AutoCloseable
         }
 
         /**
+         * Get the {@link NanoClock} to be used for tracking high resolution time.
+         *
+         * @return the {@link NanoClock} to be used for tracking high resolution time.
+         */
+        public NanoClock nanoClock()
+        {
+            return nanoClock;
+        }
+
+        /**
          * Provides an IdleStrategy for the thread responsible for communicating with the Aeron Media Driver.
          *
          * @param idleStrategy Thread idle strategy for communication with the Media Driver.
@@ -451,6 +455,16 @@ public final class Aeron implements AutoCloseable
         }
 
         /**
+         * The buffer used for communicating from the media driver to the Aeron client.
+         *
+         * @return the buffer used for communicating from the media driver to the Aeron client.
+         */
+        public CopyBroadcastReceiver toClientBuffer()
+        {
+            return toClientBuffer;
+        }
+
+        /**
          * This method is used for testing and debugging.
          *
          * @param toDriverBuffer Injected RingBuffer.
@@ -463,15 +477,57 @@ public final class Aeron implements AutoCloseable
         }
 
         /**
+         * Get the {@link RingBuffer} used for sending commands to the media driver.
+         *
+         * @return the {@link RingBuffer} used for sending commands to the media driver.
+         */
+        public RingBuffer toDriverBuffer()
+        {
+            return toDriverBuffer;
+        }
+
+        /**
+         * Set the proxy for communicating with the media driver.
+         *
+         * @param driverProxy for communicating with the media driver.
+         * @return this Aeron.Context for method chaining.
+         */
+        public Context driverProxy(final DriverProxy driverProxy)
+        {
+            this.driverProxy = driverProxy;
+            return this;
+        }
+
+        /**
+         * Get the proxy for communicating with the media driver.
+         *
+         * @return the proxy for communicating with the media driver.
+         */
+        public DriverProxy driverProxy()
+        {
+            return  driverProxy;
+        }
+
+        /**
          * This method is used for testing and debugging.
          *
          * @param logBuffersFactory Injected LogBuffersFactory
          * @return this Aeron.Context for method chaining.
          */
-        public Context bufferManager(final LogBuffersFactory logBuffersFactory)
+        public Context logBuffersFactory(final LogBuffersFactory logBuffersFactory)
         {
             this.logBuffersFactory = logBuffersFactory;
             return this;
+        }
+
+        /**
+         * Get the factory for making log buffers.
+         *
+         * @return the factory for making log buffers.
+         */
+        public LogBuffersFactory logBuffersFactory()
+        {
+            return logBuffersFactory;
         }
 
         /**
@@ -512,6 +568,16 @@ public final class Aeron implements AutoCloseable
         }
 
         /**
+         * Get the callback handler for notifying when {@link Image}s become available.
+         *
+         * @return the callback handler for notifying when {@link Image}s become available.
+         */
+        public AvailableImageHandler availableImageHandler()
+        {
+            return availableImageHandler;
+        }
+
+        /**
          * Set up a callback for when an {@link Image} is unavailable.
          *
          * @param handler Callback method for handling unavailable image notifications.
@@ -521,6 +587,16 @@ public final class Aeron implements AutoCloseable
         {
             this.unavailableImageHandler = handler;
             return this;
+        }
+
+        /**
+         * Get the callback handler for when an {@link Image} is unavailable.
+         *
+         * @return the callback handler for when an {@link Image} is unavailable.
+         */
+        public UnavailableImageHandler unavailableImageHandler()
+        {
+            return unavailableImageHandler;
         }
 
         /**
@@ -561,7 +637,19 @@ public final class Aeron implements AutoCloseable
         }
 
         /**
-         * Return the timeout between service calls for the client.
+         * Set the timeout between service calls the to {@link ClientConductor} duty cycles.
+         *
+         * @param interServiceTimeout the timeout (ms) between service calls the to {@link ClientConductor} duty cycles.
+         * @return this Aeron.Context for method chaining.
+         */
+        public Context interServiceTimeout(final long interServiceTimeout)
+        {
+            this.interServiceTimeout = interServiceTimeout;
+            return this;
+        }
+
+        /**
+         * Return the timeout between service calls to the duty cycle for the client.
          *
          * When exceeded, {@link #errorHandler} will be called and the active {@link Publication}s and {@link Image}s
          * closed.
@@ -621,6 +709,16 @@ public final class Aeron implements AutoCloseable
         }
 
         /**
+         * The file memory mapping mode for {@link Image}s.
+         *
+         * @return the file memory mapping mode for {@link Image}s.
+         */
+        public FileChannel.MapMode imageMapMode()
+        {
+            return imageMapMode;
+        }
+
+        /**
          * Specify the thread factory to use when starting the conductor thread.
          *
          * @param threadFactory thread factory to construct the thread.
@@ -648,6 +746,7 @@ public final class Aeron implements AutoCloseable
         public void close()
         {
             IoUtil.unmap(cncByteBuffer);
+            cncByteBuffer = null;
             super.close();
         }
 

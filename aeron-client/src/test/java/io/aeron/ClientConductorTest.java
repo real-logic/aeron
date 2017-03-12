@@ -90,7 +90,7 @@ public class ClientConductorTest
     private final NanoClock nanoClock = new SystemNanoClock();
     private final ErrorHandler mockClientErrorHandler = spy(new PrintError());
 
-    private DriverProxy driverProxy;
+    private DriverProxy driverProxy = mock(DriverProxy.class);
     private ClientConductor conductor;
     private AvailableImageHandler mockAvailableImageHandler = mock(AvailableImageHandler.class);
     private UnavailableImageHandler mockUnavailableImageHandler = mock(UnavailableImageHandler.class);
@@ -101,7 +101,22 @@ public class ClientConductorTest
     @Before
     public void setUp() throws Exception
     {
-        driverProxy = mock(DriverProxy.class);
+        final Aeron.Context ctx = new Aeron.Context()
+            .epochClock(epochClock)
+            .nanoClock(nanoClock)
+            .toClientBuffer(mockToClientReceiver)
+            .driverProxy(driverProxy)
+            .logBuffersFactory(logBuffersFactory)
+            .errorHandler(mockClientErrorHandler)
+            .availableImageHandler(mockAvailableImageHandler)
+            .unavailableImageHandler(mockUnavailableImageHandler)
+            .imageMapMode(READ_ONLY)
+            .keepAliveInterval(KEEP_ALIVE_INTERVAL)
+            .driverTimeoutMs(AWAIT_TIMEOUT)
+            .interServiceTimeout(TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS))
+            .publicationConnectionTimeout(PUBLICATION_CONNECTION_TIMEOUT_MS);
+
+        ctx.countersValuesBuffer(counterValuesBuffer);
 
         when(driverProxy.addPublication(CHANNEL, STREAM_ID_1)).thenReturn(CORRELATION_ID);
         when(driverProxy.addPublication(CHANNEL, STREAM_ID_2)).thenReturn(CORRELATION_ID_2);
@@ -109,21 +124,7 @@ public class ClientConductorTest
         when(driverProxy.addSubscription(anyString(), anyInt())).thenReturn(CORRELATION_ID);
         when(driverProxy.removeSubscription(CORRELATION_ID)).thenReturn(CLOSE_CORRELATION_ID);
 
-        conductor = new ClientConductor(
-            epochClock,
-            nanoClock,
-            mockToClientReceiver,
-            logBuffersFactory,
-            counterValuesBuffer,
-            driverProxy,
-            mockClientErrorHandler,
-            mockAvailableImageHandler,
-            mockUnavailableImageHandler,
-            READ_ONLY,
-            KEEP_ALIVE_INTERVAL,
-            AWAIT_TIMEOUT,
-            TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS),
-            PUBLICATION_CONNECTION_TIMEOUT_MS);
+        conductor = new ClientConductor(ctx);
 
         publicationReady.wrap(publicationReadyBuffer, 0);
         correlatedMessage.wrap(correlatedMessageBuffer, 0);

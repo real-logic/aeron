@@ -25,7 +25,6 @@ import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.nio.channels.FileChannel;
@@ -59,6 +58,7 @@ class ClientConductor implements Agent, DriverListener
     private boolean clientActive = true;
 
     private final Lock lock = new ReentrantLock();
+    private final Aeron.Context ctx;
     private final EpochClock epochClock;
     private final FileChannel.MapMode imageMapMode;
     private final NanoClock nanoClock;
@@ -75,41 +75,27 @@ class ClientConductor implements Agent, DriverListener
 
     private RegistrationException driverException;
 
-    ClientConductor(
-        final EpochClock epochClock,
-        final NanoClock nanoClock,
-        final CopyBroadcastReceiver broadcastReceiver,
-        final LogBuffersFactory logBuffersFactory,
-        final UnsafeBuffer counterValuesBuffer,
-        final DriverProxy driverProxy,
-        final ErrorHandler errorHandler,
-        final AvailableImageHandler availableImageHandler,
-        final UnavailableImageHandler unavailableImageHandler,
-        final FileChannel.MapMode imageMapMode,
-        final long keepAliveIntervalNs,
-        final long driverTimeoutMs,
-        final long interServiceTimeoutNs,
-        final long publicationConnectionTimeoutMs)
+    ClientConductor(final Aeron.Context ctx)
     {
-        this.epochClock = epochClock;
-        this.nanoClock = nanoClock;
+        this.ctx = ctx;
+        this.epochClock = ctx.epochClock();
+        this.nanoClock = ctx.nanoClock();
         this.timeOfLastKeepalive = nanoClock.nanoTime();
         this.timeOfLastCheckResources = nanoClock.nanoTime();
         this.timeOfLastWork = nanoClock.nanoTime();
-        this.errorHandler = errorHandler;
-        this.counterValuesBuffer = counterValuesBuffer;
-        this.driverProxy = driverProxy;
-        this.logBuffersFactory = logBuffersFactory;
-        this.availableImageHandler = availableImageHandler;
-        this.unavailableImageHandler = unavailableImageHandler;
-        this.imageMapMode = imageMapMode;
-        this.keepAliveIntervalNs = keepAliveIntervalNs;
-        this.driverTimeoutMs = driverTimeoutMs;
+        this.errorHandler = ctx.errorHandler();
+        this.counterValuesBuffer = ctx.countersValuesBuffer();
+        this.driverProxy = ctx.driverProxy();
+        this.logBuffersFactory = ctx.logBuffersFactory();
+        this.availableImageHandler = ctx.availableImageHandler();
+        this.unavailableImageHandler = ctx.unavailableImageHandler();
+        this.imageMapMode = ctx.imageMapMode();
+        this.keepAliveIntervalNs = ctx.keepAliveInterval();
+        this.driverTimeoutMs = ctx.driverTimeoutMs();
         this.driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
-        this.interServiceTimeoutNs = interServiceTimeoutNs;
-        this.publicationConnectionTimeoutMs = publicationConnectionTimeoutMs;
-
-        this.driverListener = new DriverListenerAdapter(broadcastReceiver, this);
+        this.interServiceTimeoutNs = ctx.interServiceTimeout();
+        this.publicationConnectionTimeoutMs = ctx.publicationConnectionTimeout();
+        this.driverListener = new DriverListenerAdapter(ctx.toClientBuffer(), this);
     }
 
     public void onClose()
@@ -124,6 +110,7 @@ class ClientConductor implements Agent, DriverListener
             Thread.yield();
 
             lingeringResources.forEach(ManagedResource::delete);
+            ctx.close();
         }
     }
 

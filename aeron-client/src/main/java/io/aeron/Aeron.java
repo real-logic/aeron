@@ -30,7 +30,6 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static org.agrona.IoUtil.mapExistingFile;
@@ -282,17 +281,16 @@ public final class Aeron implements AutoCloseable
                 connectToDriver();
             }
 
-            if (null == toClientBuffer)
-            {
-                final BroadcastReceiver receiver = new BroadcastReceiver(
-                    CncFileDescriptor.createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer));
-                toClientBuffer = new CopyBroadcastReceiver(receiver);
-            }
-
             if (null == toDriverBuffer)
             {
                 toDriverBuffer = new ManyToOneRingBuffer(
                     CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
+            }
+
+            if (null == toClientBuffer)
+            {
+                toClientBuffer = new CopyBroadcastReceiver(new BroadcastReceiver(
+                    CncFileDescriptor.createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer)));
             }
 
             if (countersMetaDataBuffer() == null)
@@ -724,36 +722,83 @@ public final class Aeron implements AutoCloseable
 
         private void connectToDriver()
         {
-            final long startMs = epochClock.time();
+            final long startTimeMs = epochClock.time();
             final File cncFile = cncFile();
-            while (!cncFile.exists())
+
+            while (true)
             {
-                if (epochClock.time() > (startMs + driverTimeoutMs()))
+                while (!cncFile.exists())
                 {
-                    throw new DriverTimeoutException("CnC file not found: " + cncFile.getName());
+                    if (epochClock.time() > (startTimeMs + driverTimeoutMs()))
+                    {
+                        throw new DriverTimeoutException("CnC file not found: " + cncFile.getName());
+                    }
+
+                    sleep(16);
                 }
 
-                LockSupport.parkNanos(1);
-            }
+                cncByteBuffer = mapExistingFile(cncFile(), CncFileDescriptor.CNC_FILE);
+                cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
 
-            cncByteBuffer = mapExistingFile(cncFile(), CncFileDescriptor.CNC_FILE);
-            cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-
-            int cncVersion;
-            while (0 == (cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0))))
-            {
-                if (epochClock.time() > (startMs + driverTimeoutMs()))
+                int cncVersion;
+                while (0 == (cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0))))
                 {
-                    throw new DriverTimeoutException("CnC file is created by not initialised.");
+                    if (epochClock.time() > (startTimeMs + driverTimeoutMs()))
+                    {
+                        throw new DriverTimeoutException("CnC file is created but not initialised.");
+                    }
+
+                    sleep(1);
                 }
 
-                LockSupport.parkNanos(1);
-            }
+                if (CncFileDescriptor.CNC_VERSION != cncVersion)
+                {
+                    throw new IllegalStateException("CnC file version not supported: version=" + cncVersion);
+                }
 
-            if (CncFileDescriptor.CNC_VERSION != cncVersion)
-            {
-                throw new IllegalStateException("Aeron CnC file version not supported: version=" + cncVersion);
+                final ManyToOneRingBuffer ringBuffer = new ManyToOneRingBuffer(
+                    CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
+
+                while (0 == ringBuffer.consumerHeartbeatTime())
+                {
+                    if (epochClock.time() > (startTimeMs + driverTimeoutMs()))
+                    {
+                        throw new DriverTimeoutException("No driver heartbeat detected.");
+                    }
+
+                    sleep(1);
+                }
+
+                if (ringBuffer.consumerHeartbeatTime() < (epochClock.time() - driverTimeoutMs()))
+                {
+                    if (epochClock.time() > (startTimeMs + driverTimeoutMs()))
+                    {
+                        throw new DriverTimeoutException("No driver heartbeat detected.");
+                    }
+
+                    IoUtil.unmap(cncByteBuffer);
+                    sleep(100);
+                    continue;
+                }
+
+                if (null == toDriverBuffer)
+                {
+                    toDriverBuffer = ringBuffer;
+                }
+
+                break;
             }
+        }
+    }
+
+    private static void sleep(final long timeInMs)
+    {
+        try
+        {
+            Thread.sleep(timeInMs);
+        }
+        catch (final InterruptedException ignore)
+        {
         }
     }
 }

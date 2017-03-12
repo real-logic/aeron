@@ -54,7 +54,7 @@ class ClientConductor implements Agent, DriverListener
     private long timeOfLastKeepalive;
     private long timeOfLastCheckResources;
     private long timeOfLastWork;
-    private volatile boolean driverActive = true;
+    private boolean driverActive = true;
     private boolean clientActive = true;
 
     private final Lock lock = new ReentrantLock();

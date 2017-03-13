@@ -17,6 +17,7 @@ package io.aeron.archiver;
 
 import java.util.Objects;
 
+// TODO: maybe remove
 class StreamInstance
 {
     private final String source;

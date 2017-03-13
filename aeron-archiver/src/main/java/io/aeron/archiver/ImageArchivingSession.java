@@ -16,15 +16,17 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
-import org.agrona.LangUtil;
+import org.agrona.*;
 import org.agrona.concurrent.EpochClock;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Consumes an {@link Image} and archives data into file using {@link StreamInstanceArchiveWriter}.
  */
-class ImageArchivingSession
+class ImageArchivingSession implements ArchiverConductor.Session
 {
-
     private enum State
     {
         ARCHIVING, CLOSING, DONE
@@ -47,7 +49,14 @@ class ImageArchivingSession
         final String channel = subscription.channel();
         final int sessionId = image.sessionId();
         final String source = image.sourceIdentity();
-        streamInstanceId = archiverConductor.notifyArchiveStarted(source, sessionId, channel, streamId);
+        streamInstanceId =
+            archiverConductor.notifyArchiveStarted(
+                source,
+                sessionId,
+                channel,
+                streamId,
+                image.termBufferLength(),
+                image.initialTermId());
         final int termBufferLength = image.termBufferLength();
 
 
@@ -58,6 +67,7 @@ class ImageArchivingSession
                 epochClock,
                 streamInstanceId,
                 termBufferLength,
+                image.initialTermId(),
                 new StreamInstance(source, sessionId, channel, streamId));
 
         }
@@ -70,12 +80,12 @@ class ImageArchivingSession
         }
     }
 
-    void abortArchive()
+    public void abort()
     {
-        state(State.CLOSING);
+        this.state = State.CLOSING;
     }
 
-    int doWork()
+    public int doWork()
     {
         int workDone = 0;
         if (state == State.ARCHIVING)
@@ -90,21 +100,6 @@ class ImageArchivingSession
         return workDone;
     }
 
-    Image image()
-    {
-        return image;
-    }
-
-    State state()
-    {
-        return state;
-    }
-
-    private void state(final State state)
-    {
-        this.state = state;
-    }
-
     int streamInstanceId()
     {
         return writer.streamInstanceId();
@@ -112,18 +107,30 @@ class ImageArchivingSession
 
     private int close()
     {
-        if (writer != null)
+        try
         {
-            writer.close();
+            if (writer != null)
+            {
+                writer.stop();
+                archiverConductor.updateIndexFromMeta(streamInstanceId, writer.metaDataBuffer());
+            }
         }
-        archiverConductor.notifyArchiveStopped(streamInstanceId);
-        state(State.DONE);
+        catch (IOException e)
+        {
+            LangUtil.rethrowUnchecked(e);
+        }
+        finally
+        {
+            CloseHelper.quietClose(writer);
+            archiverConductor.removeArchivingSession(streamInstanceId);
+            archiverConductor.notifyArchiveStopped(streamInstanceId);
+            this.state = State.DONE;
+        }
         return 1;
     }
 
     private int archive()
     {
-        final StreamInstanceArchiveWriter writer = this.writer;
         try
         {
             final int delta = this.image.rawPoll(writer, ArchiveFileUtil.ARCHIVE_FILE_SIZE);
@@ -138,20 +145,25 @@ class ImageArchivingSession
             }
             if (this.image.isClosed())
             {
-                this.state(State.CLOSING);
+                this.state = State.CLOSING;
             }
             return delta;
         }
         catch (Exception e)
         {
-            this.state(State.CLOSING);
+            this.state = State.CLOSING;
             LangUtil.rethrowUnchecked(e);
         }
         return 1;
     }
 
-    boolean isDone()
+    public boolean isDone()
     {
         return state == State.DONE;
+    }
+
+    ByteBuffer metaDataBuffer()
+    {
+        return writer.metaDataBuffer();
     }
 }

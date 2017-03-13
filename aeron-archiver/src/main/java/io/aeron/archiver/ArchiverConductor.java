@@ -23,22 +23,31 @@ import org.agrona.collections.*;
 import org.agrona.concurrent.*;
 import uk.co.real_logic.sbe.ir.generated.MessageHeaderEncoder;
 
-import java.io.File;
+import java.io.*;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.function.Consumer;
 
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 class ArchiverConductor implements Agent
 {
+    interface Session
+    {
+        void abort();
+        boolean isDone();
+        int doWork();
+    }
+
     private final Aeron aeron;
     private final Subscription serviceRequests;
     private final Publication archiverNotifications;
 
-    private final ArrayList<ReplaySession> replaySessions = new ArrayList<>();
-    private final Int2ObjectHashMap<ReplaySession> image2ReplaySession = new Int2ObjectHashMap<>();
+    private final ArrayList<Session> sessions = new ArrayList<>();
 
-    private final ArrayList<ImageArchivingSession> archivingSessions = new ArrayList<>();
-    private final Int2ObjectHashMap<ImageArchivingSession> image2ArchivingSession = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<ReplaySession> image2ReplaySession = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<ImageArchivingSession> instance2ArchivingSession = new Int2ObjectHashMap<>();
+
     private final ObjectHashSet<Subscription> archiveSubscriptions = new ObjectHashSet<>(128);
 
     private final ArchiveIndex archiveIndex;
@@ -47,6 +56,8 @@ class ArchiverConductor implements Agent
     private final ReplayRequestDecoder replayRequestDecoder = new ReplayRequestDecoder();
     private final ArchiveStartRequestDecoder archiveStartRequestDecoder = new ArchiveStartRequestDecoder();
     private final ArchiveStopRequestDecoder archiveStopRequestDecoder = new ArchiveStopRequestDecoder();
+    private final ListStreamInstancesRequestDecoder requestDecoder =
+        new ListStreamInstancesRequestDecoder();
 
     private final UnsafeBuffer outboundBuffer =
         new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, CACHE_LINE_LENGTH));
@@ -67,6 +78,8 @@ class ArchiverConductor implements Agent
     private final File archiveFolder;
     private final IdleStrategy idleStrategy;
     private final EpochClock epochClock;
+
+    private final Consumer<Image> handleNewImageNotification = this::handleNewImageNotification;
 
     ArchiverConductor(
         final Aeron aeron,
@@ -101,42 +114,34 @@ class ArchiverConductor implements Agent
         int workDone = 0;
 
         // TODO: control tasks balance? shard/distribute tasks across threads?
-        workDone += imageNotifications.drain(this::handleNewImageNotification);
+        workDone += imageNotifications.drain(handleNewImageNotification);
         workDone += doServiceRequestsWork();
-        workDone += doReplaySessionsWork();
-        workDone += doArchivingSessionsWork();
+        workDone += doSessionsWork();
 
         return workDone;
     }
 
     public void onClose()
     {
-        for (final ReplaySession session : replaySessions)
+        for (final Session session : sessions)
         {
-            session.abortReplay();
+            session.abort();
         }
-        doReplaySessionsWork();
+        doSessionsWork();
 
-        if (!replaySessions.isEmpty())
+        if (!sessions.isEmpty())
         {
-            System.err.println("ERROR: expected empty replaySessions");
+            System.err.println("ERROR: expected empty sessions");
         }
+
         if (!image2ReplaySession.isEmpty())
         {
             System.err.println("ERROR: expected empty image2ReplaySession");
         }
-        for (final ImageArchivingSession session : archivingSessions)
+
+        if (!instance2ArchivingSession.isEmpty())
         {
-            session.abortArchive();
-        }
-        doArchivingSessionsWork();
-        if (!archivingSessions.isEmpty())
-        {
-            System.err.println("ERROR: expected empty archivingSessions");
-        }
-        if (!image2ArchivingSession.isEmpty())
-        {
-            System.err.println("ERROR: expected empty image2ArchivingSession");
+            System.err.println("ERROR: expected empty instance2ArchivingSession");
         }
 
         for (final Subscription subscription : archiveSubscriptions)
@@ -156,8 +161,8 @@ class ArchiverConductor implements Agent
         if (archiveSubscriptions.contains(image.subscription()))
         {
             final ImageArchivingSession session = new ImageArchivingSession(this, image, this.epochClock);
-            archivingSessions.add(session);
-            image2ArchivingSession.put(image.sessionId(), session);
+            sessions.add(session);
+            instance2ArchivingSession.put(session.streamInstanceId(), session);
         }
     }
 
@@ -189,7 +194,7 @@ class ArchiverConductor implements Agent
                     break;
 
                 case ListStreamInstancesRequestDecoder.TEMPLATE_ID:
-                    onListStreamInstances(header);
+                    onListStreamInstances(buffer, offset + MessageHeaderDecoder.ENCODED_LENGTH);
                     break;
 
                 default:
@@ -198,22 +203,32 @@ class ArchiverConductor implements Agent
         }, 16);
     }
 
-    private void onListStreamInstances(final Header header)
+    private void onListStreamInstances(final DirectBuffer buffer, final int offset)
     {
-        /* TODO: send the list of archives. This will entail a replying session which hits the 3 barrier of abstraction
-           for the whole session management thing. So will require some refactoring work. Further thought required on
-           how the list message should appear on the SBE level. Is it one message with a group of elements? many
-           messages? how many should we send at once? */
+        requestDecoder.wrap(
+                buffer,
+                offset,
+                headerDecoder.blockLength(),
+                headerDecoder.version());
+        final int from = requestDecoder.from();
+        final int to = requestDecoder.to();
+        final String channel = requestDecoder.replyChannel();
+        final Publication reply = aeron.addPublication(channel, requestDecoder.replyStreamId());
+        final Session listSession =
+            new ListDescriptorsSession(reply, from, to, archiveIndex, instance2ArchivingSession);
+
+        sessions.add(listSession);
     }
 
     private void onAbortReplay(final Header header)
     {
+        // TODO: replace with correlation id
         final ReplaySession session = image2ReplaySession.get(header.sessionId());
         if (session == null)
         {
             throw new IllegalStateException("Trying to abort an unknown replay session:" + header.sessionId());
         }
-        session.abortReplay();
+        session.abort();
     }
 
     private void onReplayRequest(final DirectBuffer buffer, final int offset, final Header header)
@@ -246,7 +261,7 @@ class ArchiverConductor implements Agent
             this);
 
         image2ReplaySession.put(header.sessionId(), replaySession);
-        replaySessions.add(replaySession);
+        sessions.add(replaySession);
     }
 
     private void onArchiveStartRequest(final DirectBuffer buffer, final int offset)
@@ -286,37 +301,17 @@ class ArchiverConductor implements Agent
         }
     }
 
-    private int doReplaySessionsWork()
+    private int doSessionsWork()
     {
         int workDone = 0;
-        final ArrayList<ReplaySession> replaySessions = this.replaySessions;
-        for (int lastIndex = replaySessions.size() - 1, i = lastIndex; i >= 0; i--)
+        final ArrayList<Session> sessions = this.sessions;
+        for (int lastIndex = sessions.size() - 1, i = lastIndex; i >= 0; i--)
         {
-            final ReplaySession session = replaySessions.get(i);
+            final Session session = sessions.get(i);
             workDone += session.doWork();
             if (session.isDone())
             {
-                image2ReplaySession.remove(session.image().sessionId());
-                ArrayListUtil.fastUnorderedRemove(replaySessions, i, lastIndex);
-                lastIndex--;
-            }
-        }
-
-        return workDone;
-    }
-
-    private int doArchivingSessionsWork()
-    {
-        int workDone = 0;
-        final ArrayList<ImageArchivingSession> archivingSessions = this.archivingSessions;
-        for (int lastIndex = archivingSessions.size() - 1, i = lastIndex; i >= 0; i--)
-        {
-            final ImageArchivingSession session = archivingSessions.get(i);
-            workDone += session.doWork();
-            if (session.isDone())
-            {
-                image2ArchivingSession.remove(session.image().sessionId());
-                ArrayListUtil.fastUnorderedRemove(archivingSessions, i, lastIndex);
+                ArrayListUtil.fastUnorderedRemove(sessions, i, lastIndex);
                 lastIndex--;
             }
         }
@@ -362,10 +357,19 @@ class ArchiverConductor implements Agent
         return archiveFolder;
     }
 
-    int notifyArchiveStarted(final String source, final int sessionId, final String channel, final int streamId)
+    int notifyArchiveStarted(
+        final String source,
+        final int sessionId,
+        final String channel,
+        final int streamId,
+        final int termBufferLength,
+        final int imageInitialTermId)
     {
         final int instanceId =
-            archiveIndex.addNewStreamInstance(new StreamInstance(source, sessionId, channel, streamId));
+            archiveIndex.addNewStreamInstance(
+                new StreamInstance(source, sessionId, channel, streamId),
+                termBufferLength,
+                imageInitialTermId);
 
         outboundHeaderEncoder
             .blockLength(ArchiveStartedNotificationEncoder.BLOCK_LENGTH)
@@ -400,7 +404,8 @@ class ArchiverConductor implements Agent
             .schemaId(ArchiveProgressNotificationEncoder.SCHEMA_ID)
             .version(ArchiveProgressNotificationEncoder.SCHEMA_VERSION);
 
-        archiveProgressNotificationEncoder.streamInstanceId(instanceId)
+        archiveProgressNotificationEncoder
+            .streamInstanceId(instanceId)
             .initialTermId(initialTermId)
             .initialTermOffset(initialTermOffset)
             .termId(termId)
@@ -441,13 +446,20 @@ class ArchiverConductor implements Agent
         }
     }
 
-    IntArrayList getStreamInstanceId(final StreamInstance streamInstance)
+    void removeArchivingSession(final int streamInstanceId)
     {
-        return archiveIndex.getStreamInstanceId(streamInstance);
+        instance2ArchivingSession.remove(streamInstanceId);
     }
 
-    IdleStrategy idleStrategy()
+    void removeReplaySession(final int sessionId)
     {
-        return idleStrategy;
+        image2ReplaySession.remove(sessionId);
     }
+
+    void updateIndexFromMeta(final int streamInstanceId, final ByteBuffer byteBuffer) throws IOException
+    {
+        archiveIndex.updateIndexFromMeta(streamInstanceId, byteBuffer);
+    }
+
+
 }

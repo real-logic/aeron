@@ -15,7 +15,7 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.archiver.messages.ArchiveMetaFileFormatDecoder;
+import io.aeron.archiver.messages.ArchiveDescriptorDecoder;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -58,7 +58,7 @@ class ArchiveFileUtil
 
     static void printMetaFile(final File metaFile) throws IOException
     {
-        final ArchiveMetaFileFormatDecoder formatDecoder = archiveMetaFileFormatDecoder(metaFile);
+        final ArchiveDescriptorDecoder formatDecoder = archiveMetaFileFormatDecoder(metaFile);
         System.out.println("streamInstanceId: " + formatDecoder.streamInstanceId());
         System.out.println("termBufferLength: " + formatDecoder.termBufferLength());
         System.out.println("start time: " + new Date(formatDecoder.startTime()));
@@ -74,16 +74,19 @@ class ArchiveFileUtil
         IoUtil.unmap(formatDecoder.buffer().byteBuffer());
     }
 
-    // TODO: in view of resource management issues on windows the approach below might be problematic
-    static ArchiveMetaFileFormatDecoder archiveMetaFileFormatDecoder(final File metaFile)
+    static ArchiveDescriptorDecoder archiveMetaFileFormatDecoder(final File metaFile)
         throws IOException
     {
         try (RandomAccessFile randomAccessFile = new RandomAccessFile(metaFile, "rw");
              FileChannel metadataFileChannel = randomAccessFile.getChannel())
         {
-            final MappedByteBuffer metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
-            final ArchiveMetaFileFormatDecoder decoder = new ArchiveMetaFileFormatDecoder();
-            return decoder.wrap(new UnsafeBuffer(metaDataBuffer), 0, ArchiveMetaFileFormatDecoder.BLOCK_LENGTH, 0);
+            final MappedByteBuffer metaDataBuffer =
+                metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, ArchiveIndex.INDEX_RECORD_SIZE);
+            final ArchiveDescriptorDecoder decoder = new ArchiveDescriptorDecoder();
+            return decoder.wrap(new UnsafeBuffer(metaDataBuffer),
+                                ArchiveIndex.INDEX_FRAME_LENGTH,
+                                ArchiveDescriptorDecoder.BLOCK_LENGTH,
+                                ArchiveDescriptorDecoder.SCHEMA_VERSION);
         }
     }
 
@@ -104,7 +107,7 @@ class ArchiveFileUtil
         return ((termId - initialTermId) & termsMask) * termBufferLength + termOffset;
     }
 
-    static long archiveFullLength(final ArchiveMetaFileFormatDecoder metaDecoder)
+    static long archiveFullLength(final ArchiveDescriptorDecoder metaDecoder)
     {
         return ((long) (metaDecoder.lastTermId() - metaDecoder.initialTermId())) * metaDecoder.termBufferLength() +
                (metaDecoder.lastTermOffset() - metaDecoder.initialTermOffset());

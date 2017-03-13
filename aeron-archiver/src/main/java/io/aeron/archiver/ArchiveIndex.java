@@ -17,28 +17,30 @@
 package io.aeron.archiver;
 
 import io.aeron.archiver.messages.*;
+import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
-import org.agrona.collections.*;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.HashMap;
-import java.util.function.BiConsumer;
 
+import static io.aeron.archiver.StreamInstanceArchiveWriter.initDescriptor;
+
+/**
+ * Index file for the srchiving service provides a persisted log of archives past and present and used to lookup
+ * details. The index format is simple, allocating a fixed 4k record for each archive descriptor. This allows offset
+ * based look up of a descriptor in the file.
+ */
 class ArchiveIndex implements AutoCloseable
 {
     private static final int PAGE_SIZE = 4096;
-    private static final int CAPACITY = 4096;
-    private static final int INDEX_FRAME_LENGTH = 8;
+    static final int INDEX_RECORD_SIZE = 4096;
+    static final int INDEX_FRAME_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     private static final int EOF_MARKER = -1;
 
-    private final ArchiveStartedNotificationEncoder archiveStartedNotificationEncoder =
-        new ArchiveStartedNotificationEncoder();
+    private final ArchiveDescriptorEncoder archiveDescriptorEncoder = new ArchiveDescriptorEncoder();
 
-    private final HashMap<StreamInstance, IntArrayList> streamInstance2InstanceId = new HashMap<>();
-    private final Int2ObjectHashMap<StreamInstance> instanceId2streamInstance = new Int2ObjectHashMap<>();
     private final ByteBuffer byteBuffer;
     private final UnsafeBuffer unsafeBuffer;
     private final FileChannel archiveIndexFileChannel;
@@ -48,13 +50,12 @@ class ArchiveIndex implements AutoCloseable
     {
         try
         {
-            // TODO: refactor file interaction to a separate class
             final RandomAccessFile archiveIndexFile =
-                new RandomAccessFile(new File(archiveFolder, "index"), "rw");
+                new RandomAccessFile(new File(archiveFolder, "index"), "rws");
             archiveIndexFileChannel = archiveIndexFile.getChannel();
-            byteBuffer = BufferUtil.allocateDirectAligned(CAPACITY, PAGE_SIZE);
+            byteBuffer = BufferUtil.allocateDirectAligned(INDEX_RECORD_SIZE, PAGE_SIZE);
             unsafeBuffer = new UnsafeBuffer(byteBuffer);
-            final ArchiveStartedNotificationDecoder decoder = new ArchiveStartedNotificationDecoder();
+            final ArchiveDescriptorDecoder decoder = new ArchiveDescriptorDecoder();
             int offset;
             while (archiveIndexFileChannel.read(byteBuffer) != -1)
             {
@@ -64,18 +65,12 @@ class ArchiveIndex implements AutoCloseable
                 {
                     break;
                 }
-                int read;
-                while (offset < CAPACITY &&
-                    (read = loadIntoIndex(byteBuffer, unsafeBuffer, decoder, offset)) != 0)
+                if (byteBuffer.remaining() != INDEX_RECORD_SIZE)
                 {
-                    offset += read;
+                    throw new IllegalStateException();
                 }
-                byteBuffer.flip();
-            }
-            final long position = archiveIndexFileChannel.position();
-            if (position > 0)
-            {
-                archiveIndexFileChannel.position(position - 4);
+                loadIntoIndex(byteBuffer, unsafeBuffer, decoder);
+                byteBuffer.clear();
             }
         }
         catch (IOException e)
@@ -83,14 +78,13 @@ class ArchiveIndex implements AutoCloseable
             LangUtil.rethrowUnchecked(e);
             throw new RuntimeException();
         }
-        archiveStartedNotificationEncoder.wrap(unsafeBuffer, INDEX_FRAME_LENGTH);
+        archiveDescriptorEncoder.wrap(unsafeBuffer, INDEX_FRAME_LENGTH);
     }
 
     private int loadIntoIndex(
         final ByteBuffer dst,
         final UnsafeBuffer unsafeBuffer,
-        final ArchiveStartedNotificationDecoder decoder,
-        final int offset)
+        final ArchiveDescriptorDecoder decoder)
     {
 
         if (dst.remaining() == 0)
@@ -98,39 +92,14 @@ class ArchiveIndex implements AutoCloseable
             return 0;
         }
 
-        if (dst.remaining() < INDEX_FRAME_LENGTH)
-        {
-            dst.compact();
-            if (dst.capacity() - dst.limit() < INDEX_FRAME_LENGTH)
-            {
-                throw new IllegalStateException(
-                    "After compaction this buffer still too small to fit INDEX_FRAME_LENGTH=8");
-            }
-            return 0;
-        }
-
         // frame
-        final int length = unsafeBuffer.getInt(offset);
-        if (length + INDEX_FRAME_LENGTH > CAPACITY)
-        {
-            throw new IllegalStateException("Frame and record combined exceed max allowed size:" + CAPACITY);
-        }
-        if (length == EOF_MARKER)
-        {
-            // EOF marker
-            return 0;
-        }
-        if (offset + INDEX_FRAME_LENGTH + length > CAPACITY)
-        {
-            dst.compact();
-            return 0;
-        }
+        final int length = unsafeBuffer.getInt(0);
 
         decoder.wrap(
             unsafeBuffer,
-            offset + INDEX_FRAME_LENGTH,
-            ArchiveStartedNotificationDecoder.BLOCK_LENGTH,
-            ArchiveStartedNotificationDecoder.SCHEMA_VERSION);
+            INDEX_FRAME_LENGTH,
+            ArchiveDescriptorDecoder.BLOCK_LENGTH,
+            ArchiveDescriptorDecoder.SCHEMA_VERSION);
 
         final int streamInstanceId = decoder.streamInstanceId();
         final int sessionId = decoder.sessionId();
@@ -138,72 +107,72 @@ class ArchiveIndex implements AutoCloseable
         final String source = decoder.source();
         final String channel = decoder.channel();
 
-        final StreamInstance newStreamInstance = new StreamInstance(source, sessionId, channel, streamId);
-        addToIndex(newStreamInstance, streamInstanceId);
         streamInstanceIdSeq = Math.max(streamInstanceId + 1, streamInstanceIdSeq);
         return length + INDEX_FRAME_LENGTH;
     }
 
-    int addNewStreamInstance(final StreamInstance newStreamInstance)
+    int addNewStreamInstance(
+        final StreamInstance newStreamInstance,
+        final int termBufferLength,
+        final int imageInitialTermId)
     {
         final int newStreamInstanceId = streamInstanceIdSeq;
 
-        archiveStartedNotificationEncoder.limit(INDEX_FRAME_LENGTH + ArchiveStartedNotificationEncoder.BLOCK_LENGTH);
-        archiveStartedNotificationEncoder
-            .streamInstanceId(newStreamInstanceId)
-            .sessionId(newStreamInstance.sessionId())
-            .streamId(newStreamInstance.streamId())
-            .source(newStreamInstance.source())
-            .channel(newStreamInstance.channel());
+        archiveDescriptorEncoder.limit(INDEX_FRAME_LENGTH + ArchiveDescriptorEncoder.BLOCK_LENGTH);
+        initDescriptor(
+            archiveDescriptorEncoder,
+            newStreamInstanceId,
+            termBufferLength,
+            imageInitialTermId,
+            newStreamInstance);
 
-        // keep word alignment like a good SBE user
-        final int encodedLength = BitUtil.align(archiveStartedNotificationEncoder.encodedLength(), 8);
+        final int encodedLength = archiveDescriptorEncoder.encodedLength();
         unsafeBuffer.putInt(0, encodedLength);
-
-        // if this were a mmapped file this last write would need to be ordered
-        unsafeBuffer.putInt(encodedLength + 8, -1);
-        byteBuffer.position(0).limit(8 + encodedLength + 4);
         try
         {
-            archiveIndexFileChannel.write(byteBuffer);
-
-            archiveIndexFileChannel.force(false);
-            archiveIndexFileChannel.position(archiveIndexFileChannel.position() - 4);
+            byteBuffer.clear();
+            final int written = archiveIndexFileChannel.write(byteBuffer);
+            if (written != INDEX_RECORD_SIZE)
+            {
+                throw new IllegalStateException();
+            }
         }
         catch (Exception e)
         {
             LangUtil.rethrowUnchecked(e);
         }
         streamInstanceIdSeq++;
-        addToIndex(newStreamInstance, newStreamInstanceId);
 
         return newStreamInstanceId;
     }
 
-    private void addToIndex(final StreamInstance newStreamInstance, final int newStreamInstanceId)
+    public void close()
     {
-        streamInstance2InstanceId.computeIfAbsent(newStreamInstance, streamInstance -> new IntArrayList())
-            .add(newStreamInstanceId);
-        instanceId2streamInstance.put(newStreamInstanceId, newStreamInstance);
+        CloseHelper.quietClose(archiveIndexFileChannel);
     }
 
-    IntArrayList getStreamInstanceId(final StreamInstance newStreamInstance)
+    boolean readArchiveDescriptor(
+        final int streamInstanceId,
+        final ByteBuffer buffer) throws IOException
     {
-        return streamInstance2InstanceId.get(newStreamInstance);
+        if (buffer.remaining() != INDEX_RECORD_SIZE)
+        {
+            throw new IllegalArgumentException("buffer must have exactly INDEX_RECORD_SIZE remaining to read into");
+        }
+        final int read = archiveIndexFileChannel.read(buffer, streamInstanceId * INDEX_RECORD_SIZE);
+        if (read == 0 || read == -1)
+        {
+            return false;
+        }
+        if (read != INDEX_RECORD_SIZE)
+        {
+            throw new IllegalStateException("Wrong read size:" + read);
+        }
+        return true;
     }
 
-    public void close() throws Exception
+    void updateIndexFromMeta(final int streamInstanceId, final ByteBuffer metaDataBuffer) throws IOException
     {
-        archiveIndexFileChannel.close();
-    }
-
-    StreamInstance getStreamInstance(final int newStreamInstanceId)
-    {
-        return instanceId2streamInstance.get(newStreamInstanceId);
-    }
-
-    void forEach(final BiConsumer<Integer, StreamInstance> consumer)
-    {
-        instanceId2streamInstance.forEach(consumer);
+        archiveIndexFileChannel.write(metaDataBuffer, streamInstanceId * INDEX_RECORD_SIZE);
     }
 }

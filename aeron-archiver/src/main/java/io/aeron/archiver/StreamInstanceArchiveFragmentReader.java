@@ -17,7 +17,7 @@
 package io.aeron.archiver;
 
 
-import io.aeron.archiver.messages.ArchiveMetaFileFormatDecoder;
+import io.aeron.archiver.messages.ArchiveDescriptorDecoder;
 import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
@@ -54,7 +54,7 @@ class StreamInstanceArchiveFragmentReader
         this.archiveFolder = archiveFolder;
         final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
         final File archiveMetaFile = new File(archiveFolder, archiveMetaFileName);
-        final ArchiveMetaFileFormatDecoder metaDecoder =
+        final ArchiveDescriptorDecoder metaDecoder =
             ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
         termBufferLength = metaDecoder.termBufferLength();
         initialTermId = metaDecoder.initialTermId();
@@ -82,7 +82,7 @@ class StreamInstanceArchiveFragmentReader
         this.length = length;
         final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
         final File archiveMetaFile = new File(archiveFolder, archiveMetaFileName);
-        final ArchiveMetaFileFormatDecoder metaDecoder =
+        final ArchiveDescriptorDecoder metaDecoder =
             ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
         termBufferLength = metaDecoder.termBufferLength();
         initialTermId = metaDecoder.initialTermId();

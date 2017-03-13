@@ -31,11 +31,10 @@ import java.io.*;
  * <li>Establish a reply {@link Publication} with the initiator(or someone else possibly) </li>
  * <li>Validate request parameters and respond with error, or OK message(see {@link ArchiverResponseDecoder})</li>
  * <li>Stream archived data into reply {@link Publication}</li>
- * <li>Successfully terminate the stream (see {@link ReplayFinishedDecoder})</li>
  * </ul>
  * TODO: implement open ended replay
  */
-class ReplaySession
+class ReplaySession implements ArchiverConductor.Session
 {
     static final long REPLAY_DATA_HEADER;
 
@@ -91,7 +90,7 @@ class ReplaySession
         this.archiverConductor = archiverConductor;
     }
 
-    int doWork()
+    public int doWork()
     {
         int workDone = 0;
         if (state == State.REPLAY)
@@ -109,31 +108,22 @@ class ReplaySession
         return workDone;
     }
 
-    Image image()
+    public void abort()
     {
-        return image;
+        this.state = State.CLOSE;
     }
 
-    boolean isDone()
+    public boolean isDone()
     {
         return state == State.DONE;
-    }
-
-    private void state(final State state)
-    {
-        this.state = state;
-    }
-
-    void abortReplay()
-    {
-        state(State.CLOSE);
     }
 
     private int init()
     {
         if (reply.isClosed())
         {
-            state(State.CLOSE);
+            // TODO: add counter
+            this.state = State.CLOSE;
             return 0;
         }
 
@@ -152,7 +142,7 @@ class ReplaySession
             return closeOnErr(null, err);
         }
 
-        final ArchiveMetaFileFormatDecoder metaData;
+        final ArchiveDescriptorDecoder metaData;
         try
         {
             metaData = ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
@@ -201,6 +191,7 @@ class ReplaySession
 
         try
         {
+            // TODO: fragement alignment, fragement reader -> exclusive publication
             cursor = new StreamInstanceArchiveChunkReader(streamInstanceId,
                 archiverConductor.archiveFolder(),
                 initialTermId,
@@ -214,8 +205,9 @@ class ReplaySession
             return closeOnErr(e, "Failed to open archive cursor");
         }
         // plumbing is secured, we can kick off the replay
+        // TODO: re-split the publications for data/control messages
         archiverConductor.sendResponse(reply, null);
-        state(State.REPLAY);
+        this.state = State.REPLAY;
         return 1;
     }
 
@@ -245,7 +237,7 @@ class ReplaySession
 
     private int closeOnErr(final Throwable e, final String err)
     {
-        state(State.CLOSE);
+        this.state = State.CLOSE;
         if (reply.isConnected())
         {
             archiverConductor.sendResponse(reply, err);
@@ -266,7 +258,7 @@ class ReplaySession
             final int readBytes = cursor.readChunk(this::handleChunks, mtu);
             if (cursor.isDone())
             {
-                state(State.CLOSE);
+                this.state = State.CLOSE;
             }
             return readBytes;
         }
@@ -305,7 +297,8 @@ class ReplaySession
     {
         CloseHelper.quietClose(reply);
         CloseHelper.quietClose(cursor);
-        state(State.DONE);
+        archiverConductor.removeReplaySession(image.sessionId());
+        this.state = State.DONE;
         return 1;
     }
 }

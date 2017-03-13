@@ -17,7 +17,7 @@ package io.aeron.archiver;
 
 
 import io.aeron.*;
-import io.aeron.archiver.messages.ArchiveMetaFileFormatDecoder;
+import io.aeron.archiver.messages.ArchiveDescriptorDecoder;
 import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
@@ -64,7 +64,8 @@ public class ImageArchivingSessionTest
     {
         archive = mock(ArchiverConductor.class);
         when(archive.archiveFolder()).thenReturn(tempFolderForTest);
-        when(archive.notifyArchiveStarted(source, sessionId, channel, streamId)).thenReturn(streamInstanceId);
+        when(archive.notifyArchiveStarted(source, sessionId, channel, streamId,
+                                          termBufferLength, initialTermId)).thenReturn(streamInstanceId);
         final Subscription subscription = mockSubscription(channel, streamId);
         image = mockImage(source, sessionId, initialTermId, termBufferLength, subscription);
     }
@@ -103,7 +104,7 @@ public class ImageArchivingSessionTest
     }
 
     @Test
-    public void shouldRecordSingleFragmentFromImage() throws IOException
+    public void shouldRecordFragmentsFromImage() throws IOException
     {
         final EpochClock epochClock = Mockito.mock(EpochClock.class);
         when(epochClock.time()).thenReturn(42L);
@@ -140,7 +141,7 @@ public class ImageArchivingSessionTest
         final File archiveMetaFile = new File(tempFolderForTest, archiveMetaFileName(session.streamInstanceId()));
         Assert.assertTrue(archiveMetaFile.exists());
 
-        final ArchiveMetaFileFormatDecoder metaData =
+        final ArchiveDescriptorDecoder metaData =
             ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
 
         Assert.assertEquals(streamInstanceId, metaData.streamInstanceId());

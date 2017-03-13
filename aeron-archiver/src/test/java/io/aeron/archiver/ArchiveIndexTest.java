@@ -16,17 +16,22 @@
 
 package io.aeron.archiver;
 
-import org.agrona.IoUtil;
+import io.aeron.archiver.messages.ArchiveDescriptorDecoder;
+import org.agrona.*;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 
-import java.io.File;
+import java.io.*;
 
 public class ArchiveIndexTest
 {
-    static final StreamInstance STREAM_INSTANCE_A = new StreamInstance("sourceA", 1, "channel1", 1);
-    static final StreamInstance STREAM_INSTANCE_B = new StreamInstance("sourceA", 2, "channel1", 2);
-    static final StreamInstance STREAM_INSTANCE_C = new StreamInstance("sourceA", 3, "channel1", 3);
-    static final StreamInstance STREAM_INSTANCE_D = new StreamInstance("sourceA", 4, "channel1", 4);
+    static final UnsafeBuffer UB =
+        new UnsafeBuffer(BufferUtil.allocateDirectAligned(ArchiveIndex.INDEX_RECORD_SIZE, 64));
+    static final ArchiveDescriptorDecoder DECODER = new ArchiveDescriptorDecoder();
+    static final StreamInstance STREAM_INSTANCE_A = new StreamInstance("sourceA", 6, "channelG", 1);
+    static final StreamInstance STREAM_INSTANCE_B = new StreamInstance("sourceV", 7, "channelH", 2);
+    static final StreamInstance STREAM_INSTANCE_C = new StreamInstance("sourceB", 8, "channelK", 3);
+    static final StreamInstance STREAM_INSTANCE_D = new StreamInstance("sourceN", 9, "channelJ", 4);
     private static File archiveFolder;
 
     static int streamInstanceAId;
@@ -35,12 +40,16 @@ public class ArchiveIndexTest
     @BeforeClass
     public static void setup() throws Exception
     {
+        DECODER.wrap(UB,
+                     ArchiveIndex.INDEX_FRAME_LENGTH,
+                     ArchiveDescriptorDecoder.BLOCK_LENGTH,
+                     ArchiveDescriptorDecoder.SCHEMA_VERSION);
         archiveFolder = TestUtil.makeTempFolder();
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder);)
         {
-            streamInstanceAId = archiveIndex.addNewStreamInstance(STREAM_INSTANCE_A);
-            streamInstanceBId = archiveIndex.addNewStreamInstance(STREAM_INSTANCE_B);
-            streamInstanceCId = archiveIndex.addNewStreamInstance(STREAM_INSTANCE_C);
+            streamInstanceAId = archiveIndex.addNewStreamInstance(STREAM_INSTANCE_A, 4096, 0);
+            streamInstanceBId = archiveIndex.addNewStreamInstance(STREAM_INSTANCE_B, 4096, 0);
+            streamInstanceCId = archiveIndex.addNewStreamInstance(STREAM_INSTANCE_C, 4096, 0);
         }
     }
 
@@ -55,10 +64,23 @@ public class ArchiveIndexTest
     {
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
         {
-            Assert.assertEquals(streamInstanceAId, archiveIndex.getStreamInstanceId(STREAM_INSTANCE_A).getInt(0));
-            Assert.assertEquals(streamInstanceBId, archiveIndex.getStreamInstanceId(STREAM_INSTANCE_B).getInt(0));
-            Assert.assertEquals(streamInstanceCId, archiveIndex.getStreamInstanceId(STREAM_INSTANCE_C).getInt(0));
+            verifyArchiveForId(archiveIndex, streamInstanceAId, STREAM_INSTANCE_A);
+            verifyArchiveForId(archiveIndex, streamInstanceBId, STREAM_INSTANCE_B);
+            verifyArchiveForId(archiveIndex, streamInstanceCId, STREAM_INSTANCE_C);
         }
+    }
+
+    private void verifyArchiveForId(final ArchiveIndex archiveIndex, final int id, final StreamInstance streamInstance)
+        throws IOException
+    {
+        UB.byteBuffer().clear();
+        archiveIndex.readArchiveDescriptor(id, UB.byteBuffer());
+        DECODER.limit(ArchiveIndex.INDEX_FRAME_LENGTH + ArchiveDescriptorDecoder.BLOCK_LENGTH);
+        Assert.assertEquals(id, DECODER.streamInstanceId());
+        Assert.assertEquals(streamInstance.sessionId(), DECODER.sessionId());
+        Assert.assertEquals(streamInstance.streamId(), DECODER.streamId());
+        Assert.assertEquals(streamInstance.source(), DECODER.source());
+        Assert.assertEquals(streamInstance.channel(), DECODER.channel());
     }
 
     @Test
@@ -67,16 +89,24 @@ public class ArchiveIndexTest
         final int newStreamInstanceId;
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
         {
-            newStreamInstanceId = archiveIndex.addNewStreamInstance(STREAM_INSTANCE_D);
-
-            Assert.assertEquals(newStreamInstanceId, archiveIndex.getStreamInstanceId(STREAM_INSTANCE_D).getInt(0));
-            Assert.assertEquals(STREAM_INSTANCE_D, archiveIndex.getStreamInstance(newStreamInstanceId));
+            newStreamInstanceId = archiveIndex.addNewStreamInstance(STREAM_INSTANCE_D, 4096, 0);
         }
 
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
         {
-            Assert.assertEquals(newStreamInstanceId, archiveIndex.getStreamInstanceId(STREAM_INSTANCE_D).getInt(0));
-            Assert.assertEquals(STREAM_INSTANCE_D, archiveIndex.getStreamInstance(newStreamInstanceId));
+            verifyArchiveForId(archiveIndex, streamInstanceAId, STREAM_INSTANCE_A);
+            verifyArchiveForId(archiveIndex, newStreamInstanceId, STREAM_INSTANCE_D);
+        }
+    }
+
+    @Test
+    public void shouldAllowMultipleInstancesForSameStream() throws Exception
+    {
+        final int newStreamInstanceId;
+        try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
+        {
+            newStreamInstanceId = archiveIndex.addNewStreamInstance(STREAM_INSTANCE_A, 4096, 0);
+            Assert.assertNotEquals(streamInstanceAId, newStreamInstanceId);
         }
     }
 }

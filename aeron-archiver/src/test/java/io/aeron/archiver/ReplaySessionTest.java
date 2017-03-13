@@ -17,7 +17,7 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
-import io.aeron.archiver.messages.*;
+import io.aeron.archiver.messages.MessageHeaderDecoder;
 import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
@@ -25,9 +25,7 @@ import org.agrona.concurrent.*;
 import org.junit.*;
 import org.mockito.Mockito;
 
-import java.io.*;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
+import java.io.File;
 
 import static io.aeron.archiver.TestUtil.makeTempFolder;
 import static org.mockito.ArgumentMatchers.any;
@@ -41,10 +39,7 @@ public class ReplaySessionTest
     private static final int INITIAL_TERM_ID = 8231773;
     private static final int INITIAL_TERM_OFFSET = 1024;
     private File archiveFolder;
-    private RandomAccessFile metaDataFile;
-    private FileChannel metadataFileChannel;
-    private MappedByteBuffer metaDataBuffer;
-    private ArchiveMetaFileFormatEncoder metaDataWriter;
+
     private ArchiverConductor conductor;
     private int messageIndex = 0;
 
@@ -63,6 +58,7 @@ public class ReplaySessionTest
                      epochClock,
                      STREAM_INSTANCE_ID,
                      TERM_BUFFER_LENGTH,
+                     INITIAL_TERM_ID,
                      streamInstance))
         {
             when(epochClock.time()).thenReturn(42L);
@@ -130,9 +126,6 @@ public class ReplaySessionTest
     @After
     public void teardown()
     {
-        IoUtil.unmap(metaDataBuffer);
-        CloseHelper.quietClose(metadataFileChannel);
-        CloseHelper.quietClose(metaDataFile);
         IoUtil.delete(archiveFolder, false);
     }
 

@@ -16,7 +16,7 @@
 
 package io.aeron.archiver;
 
-import io.aeron.archiver.messages.ArchiveMetaFileFormatEncoder;
+import io.aeron.archiver.messages.ArchiveDescriptorEncoder;
 import io.aeron.logbuffer.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -30,6 +30,7 @@ import static io.aeron.archiver.ArchiveFileUtil.archiveOffset;
 
 public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandler, RawBlockHandler
 {
+    private final int imageInitialTermId;
     private final int termBufferLength;
     private final int termsMask;
     private final int streamInstanceId;
@@ -38,7 +39,7 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
     private final RandomAccessFile metadataFile;
     private final FileChannel metadataFileChannel;
     private final MappedByteBuffer metaDataBuffer;
-    private final ArchiveMetaFileFormatEncoder metaDataWriter;
+    private final ArchiveDescriptorEncoder metaDataWriter;
 
     private final EpochClock epochClock;
     /**
@@ -54,19 +55,22 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
     private int lastTermId = -1;
     private int lastTermOffset = -1;
 
-    private boolean closed;
+    private boolean closed = false;
+    private boolean stopped = false;
 
     StreamInstanceArchiveWriter(
         final File archiveFolder,
         final EpochClock epochClock,
         final int streamInstanceId,
         final int termBufferLength,
+        final int imageInitialTermId,
         final StreamInstance streamInstance)
     {
         this.streamInstanceId = streamInstanceId;
         this.archiveFolder = archiveFolder;
         this.termBufferLength = termBufferLength;
         this.epochClock = epochClock;
+        this.imageInitialTermId = imageInitialTermId;
 
         this.termsMask = (ArchiveFileUtil.ARCHIVE_FILE_SIZE / termBufferLength) - 1;
         if (((termsMask + 1) & termsMask) != 0)
@@ -84,20 +88,11 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
             metadataFileChannel = metadataFile.getChannel();
             metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
             final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(metaDataBuffer);
-            metaDataWriter = new ArchiveMetaFileFormatEncoder().wrap(unsafeBuffer, 0);
+            metaDataWriter = new ArchiveDescriptorEncoder().wrap(unsafeBuffer, ArchiveIndex.INDEX_FRAME_LENGTH);
 
-            metaDataWriter.streamInstanceId(streamInstanceId);
-            metaDataWriter.startTime(-1);
-            metaDataWriter.termBufferLength(termBufferLength);
-            metaDataWriter.initialTermId(-1);
-            metaDataWriter.initialTermOffset(-1);
-            metaDataWriter.lastTermId(-1);
-            metaDataWriter.lastTermOffset(-1);
-            metaDataWriter.endTime(-1);
-            metaDataWriter.sessionId(streamInstance.sessionId());
-            metaDataWriter.streamId(streamInstance.streamId());
-            metaDataWriter.source(streamInstance.source());
-            metaDataWriter.channel(streamInstance.channel());
+            initDescriptor(metaDataWriter, streamInstanceId, termBufferLength, imageInitialTermId, streamInstance);
+
+            unsafeBuffer.putInt(0, metaDataWriter.encodedLength());
             metaDataBuffer.force();
         }
         catch (IOException e)
@@ -107,6 +102,28 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
             // the next line is to keep compiler happy with regards to final fields init
             throw new RuntimeException();
         }
+    }
+
+    static void initDescriptor(
+        final ArchiveDescriptorEncoder descriptor,
+        final int streamInstanceId,
+        final int termBufferLength,
+        final int imageInitialTermId,
+        final StreamInstance streamInstance)
+    {
+        descriptor.streamInstanceId(streamInstanceId);
+        descriptor.termBufferLength(termBufferLength);
+        descriptor.startTime(-1);
+        descriptor.initialTermId(-1);
+        descriptor.initialTermOffset(-1);
+        descriptor.lastTermId(-1);
+        descriptor.lastTermOffset(-1);
+        descriptor.endTime(-1);
+        descriptor.imageInitialTermId(imageInitialTermId);
+        descriptor.sessionId(streamInstance.sessionId());
+        descriptor.streamId(streamInstance.streamId());
+        descriptor.source(streamInstance.source());
+        descriptor.channel(streamInstance.channel());
     }
 
     private void newArchiveFile(final int termId)
@@ -272,6 +289,13 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         }
     }
 
+    void stop()
+    {
+        metaDataWriter.endTime(epochClock.time());
+        metaDataBuffer.force();
+        stopped = true;
+    }
+
     public void close()
     {
         if (closed)
@@ -284,10 +308,9 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         CloseHelper.quietClose(archiveFile);
 
         // teardown metadata resources
-        if (metaDataBuffer != null)
+        if (metaDataBuffer != null && !stopped)
         {
-            metaDataWriter.endTime(epochClock.time());
-            metaDataBuffer.force();
+            stop();
         }
         IoUtil.unmap(metaDataBuffer);
         CloseHelper.quietClose(metadataFileChannel);
@@ -318,5 +341,10 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
     int lastTermOffset()
     {
         return lastTermOffset;
+    }
+
+    ByteBuffer metaDataBuffer()
+    {
+        return metaDataBuffer;
     }
 }

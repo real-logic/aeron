@@ -379,7 +379,7 @@ public final class MediaDriver implements AutoCloseable
         }
     }
 
-    private void ensureDirectoryIsRecreated(final Context ctx)
+    private static void ensureDirectoryIsRecreated(final Context ctx)
     {
         final File aeronDir = new File(ctx.aeronDirectoryName());
 
@@ -427,32 +427,27 @@ public final class MediaDriver implements AutoCloseable
         IoUtil.ensureDirectoryIsRecreated(aeronDir, "aeron", callback);
     }
 
-    private void reportExistingErrors(final Context ctx)
+    private static void reportExistingErrors(final Context ctx)
     {
         final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
-        final String errorLogFilename = String.format(
-            "%s-%s-error.log",
-            ctx.aeronDirectoryName(), dateFormat.format(new Date()));
+        final String errorLogFilename = ctx.aeronDirectoryName() + '-' + dateFormat.format(new Date()) + "-error.log";
         final File errorLogFile = new File(errorLogFilename);
-        int observations = 0;
 
-        try (PrintStream stream = new PrintStream(errorLogFile, "UTF-8"))
+        try (PrintStream out = new PrintStream(errorLogFile, "UTF-8"))
         {
-            observations = ctx.saveErrorLog(stream);
+            final int observations = ctx.saveErrorLog(out);
+            if (0 == observations)
+            {
+                IoUtil.delete(errorLogFile, true);
+            }
+            else
+            {
+                System.err.println("WARNING: Existing errors saved to " + errorLogFile);
+            }
         }
         catch (final Exception ex)
         {
             LangUtil.rethrowUnchecked(ex);
-        }
-
-        if (0 == observations)
-        {
-            //noinspection ResultOfMethodCallIgnored
-            errorLogFile.delete();
-        }
-        else
-        {
-            System.err.println("WARNING: existing errors saved to " + errorLogFile);
         }
     }
 

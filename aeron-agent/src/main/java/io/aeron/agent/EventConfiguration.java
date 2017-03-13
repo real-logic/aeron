@@ -38,9 +38,9 @@ public class EventConfiguration
     /**
      * Event tags system property name. This is either:
      * <ul>
-     * <li>A comma separated list of EventCodes to enable</li>
-     * <li>"all" which enables all the codes</li>
-     * <li>"admin" which enables the codes specified by {@link #ADMIN_ONLY_EVENT_CODES}</li>
+     *   <li>A comma separated list of EventCodes to enable</li>
+     *   <li>"all" which enables all the codes</li>
+     *   <li>"admin" which enables the codes specified by {@link #ADMIN_ONLY_EVENT_CODES}</li>
      * </ul>
      */
     public static final String ENABLED_EVENT_CODES_PROP_NAME = "aeron.event.log";

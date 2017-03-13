@@ -777,6 +777,9 @@ public final class Aeron implements AutoCloseable
                     }
 
                     IoUtil.unmap(cncByteBuffer);
+                    cncByteBuffer = null;
+                    cncMetaDataBuffer = null;
+
                     sleep(100);
                     continue;
                 }

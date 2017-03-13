@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
 #include "aeron_mpsc_rb.h"
 
 int aeron_mpsc_rb_init(volatile aeron_mpsc_rb_t *ring_buffer, void *buffer, size_t length)
@@ -46,12 +47,12 @@ inline static int32_t aeron_mpsc_rb_claim_capacity(volatile aeron_mpsc_rb_t *rin
 
     do
     {
-        size_t available_capacity = 0;
+        int32_t available_capacity = 0;
         AERON_GET_VOLATILE(tail, ring_buffer->descriptor->tail_position);
 
-        available_capacity = ring_buffer->capacity - (int32_t)(tail - head);
+        available_capacity = (int32_t )ring_buffer->capacity - (int32_t)(tail - head);
 
-        if (required_capacity > available_capacity)
+        if ((int32_t)required_capacity > available_capacity)
         {
             AERON_GET_VOLATILE(head, ring_buffer->descriptor->head_position);
 
@@ -111,13 +112,15 @@ aeron_rb_write_result_t aeron_mpsc_rb_write(
 {
     const size_t record_length = length + AERON_RB_RECORD_HEADER_LENGTH;
     const size_t required_capacity = AERON_ALIGN(record_length, AERON_RB_ALIGNMENT);
-    const int32_t record_index = aeron_mpsc_rb_claim_capacity(ring_buffer, required_capacity);
+    int32_t record_index = 0;
     aeron_rb_write_result_t result = AERON_RB_FULL;
 
     if (length > ring_buffer->max_message_length || AERON_RB_INVALID_MSG_TYPE_ID(msg_type_id))
     {
         return AERON_RB_ERROR;
     }
+
+    record_index = aeron_mpsc_rb_claim_capacity(ring_buffer, required_capacity);
 
     if (-1 != record_index)
     {

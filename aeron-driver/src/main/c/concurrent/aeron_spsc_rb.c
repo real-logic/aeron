@@ -45,7 +45,7 @@ aeron_rb_write_result_t aeron_spsc_rb_write(
 
     int64_t head = ring_buffer->descriptor->head_cache_position;
     int64_t tail = ring_buffer->descriptor->tail_position;
-    const size_t available_capacity = ring_buffer->capacity - (size_t)(tail - head);
+    const int32_t available_capacity = (int32_t)ring_buffer->capacity - (int32_t)(tail - head);
 
     size_t padding = 0;
     size_t record_index = (size_t)tail & mask;
@@ -57,7 +57,7 @@ aeron_rb_write_result_t aeron_spsc_rb_write(
         return AERON_RB_ERROR;
     }
 
-    if (required_capacity > available_capacity)
+    if ((int32_t)required_capacity > available_capacity)
     {
         AERON_GET_VOLATILE(head, ring_buffer->descriptor->head_position);
 

@@ -17,6 +17,8 @@
 #ifndef AERON_ATOMIC64_GCC_X86_64_H
 #define AERON_ATOMIC64_GCC_X86_64_H
 
+#include <stdbool.h>
+
 #define AERON_GET_VOLATILE(dst,src) \
 do \
 { \
@@ -58,14 +60,14 @@ do \
         : "q"(desired), "0"(expected)); \
 } while(0)
 
-inline int64_t aeron_cmpxchg64(volatile int64_t* destination,  int64_t expected, int64_t desired)
+inline bool aeron_cmpxchg64(volatile int64_t* destination,  int64_t expected, int64_t desired)
 {
     int64_t original;
     __asm__ volatile(
         "lock; cmpxchgq %2, %1"
         : "=a"(original), "+m"(*destination)
         : "q"(desired), "0"(expected));
-    return original;
+    return (original == expected);
 }
 
 

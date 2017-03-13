@@ -16,5 +16,5 @@
 
 #include <concurrent/aeron_atomic.h>
 
-extern int64_t aeron_cmpxchg64(volatile int64_t* destination,  int64_t expected, int64_t desired);
+extern bool aeron_cmpxchg64(volatile int64_t* destination,  int64_t expected, int64_t desired);
 

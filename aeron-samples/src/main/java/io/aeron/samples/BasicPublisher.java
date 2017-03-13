@@ -71,7 +71,7 @@ public class BasicPublisher
                 final byte[] messageBytes = message.getBytes();
                 BUFFER.putBytes(0, messageBytes);
 
-                System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
+                System.out.print("Offering " + i + "/" + NUMBER_OF_MESSAGES + " - ");
 
                 final long result = publication.offer(BUFFER, 0, messageBytes.length);
 
@@ -83,7 +83,7 @@ public class BasicPublisher
                     }
                     else if (result == Publication.NOT_CONNECTED)
                     {
-                        System.out.println("Offer failed because publisher is not yet connected to subscriber");
+                        System.out.println("Offer failed because publisher is not connected to subscriber");
                     }
                     else if (result == Publication.ADMIN_ACTION)
                     {

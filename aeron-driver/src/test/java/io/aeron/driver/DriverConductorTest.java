@@ -181,7 +181,7 @@ public class DriverConductorTest
         final NetworkPublication publication = captor.getValue();
         assertThat(publication.streamId(), is(STREAM_ID_1));
 
-        verify(mockClientProxy).onPublicationReady(anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt());
+        verify(mockClientProxy).onPublicationReady(anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
     }
 
     @Test
@@ -323,7 +323,8 @@ public class DriverConductorTest
         final InOrder inOrder = inOrder(senderProxy, mockClientProxy);
 
         inOrder.verify(senderProxy).newNetworkPublication(any());
-        inOrder.verify(mockClientProxy).onPublicationReady(eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt());
+        inOrder.verify(mockClientProxy).onPublicationReady(
+            eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), anyString(), anyLong());
         inOrder.verifyNoMoreInteractions();
 
@@ -691,8 +692,8 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertNotNull(driverConductor.getIpcPublication(STREAM_ID_1));
-        verify(mockClientProxy).onPublicationReady(eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt());
+        assertNotNull(driverConductor.getIpcSharedPublication(STREAM_ID_1));
+        verify(mockClientProxy).onPublicationReady(eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
     }
 
     @Test
@@ -703,11 +704,12 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        final IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        final IpcPublication ipcPublication = driverConductor.getIpcSharedPublication(STREAM_ID_1);
         assertNotNull(ipcPublication);
 
         final InOrder inOrder = inOrder(mockClientProxy);
-        inOrder.verify(mockClientProxy).onPublicationReady(eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt());
+        inOrder.verify(mockClientProxy).onPublicationReady(
+            eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublication.correlationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
@@ -721,7 +723,7 @@ public class DriverConductorTest
         final long idPubOne = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
         driverConductor.doWork();
 
-        final IpcPublication ipcPublicationOne = driverConductor.getIpcPublication(STREAM_ID_1);
+        final IpcPublication ipcPublicationOne = driverConductor.getIpcSharedPublication(STREAM_ID_1);
         assertNotNull(ipcPublicationOne);
 
         final long idPubOneRemove = driverProxy.removePublication(idPubOne);
@@ -730,17 +732,19 @@ public class DriverConductorTest
         final long idPubTwo = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
         driverConductor.doWork();
 
-        final IpcPublication ipcPublicationTwo = driverConductor.getIpcPublication(STREAM_ID_1);
+        final IpcPublication ipcPublicationTwo = driverConductor.getIpcSharedPublication(STREAM_ID_1);
         assertNotNull(ipcPublicationTwo);
 
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
-        inOrder.verify(mockClientProxy).onPublicationReady(eq(idPubOne), eq(STREAM_ID_1), anyInt(), any(), anyInt());
+        inOrder.verify(mockClientProxy).onPublicationReady(
+            eq(idPubOne), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublicationOne.correlationId()), eq(STREAM_ID_1), eq(ipcPublicationOne.sessionId()),
             eq(ipcPublicationOne.rawLog().fileName()), any(), anyString());
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idPubOneRemove));
-        inOrder.verify(mockClientProxy).onPublicationReady(eq(idPubTwo), eq(STREAM_ID_1), anyInt(), any(), anyInt());
+        inOrder.verify(mockClientProxy).onPublicationReady(
+            eq(idPubTwo), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublicationTwo.correlationId()), eq(STREAM_ID_1), eq(ipcPublicationTwo.sessionId()),
             eq(ipcPublicationTwo.rawLog().fileName()), any(), anyString());
@@ -754,12 +758,13 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        final IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        final IpcPublication ipcPublication = driverConductor.getIpcSharedPublication(STREAM_ID_1);
         assertNotNull(ipcPublication);
 
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
-        inOrder.verify(mockClientProxy).onPublicationReady(eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt());
+        inOrder.verify(mockClientProxy).onPublicationReady(
+            eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublication.correlationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
             eq(ipcPublication.rawLog().fileName()), any(), anyString());
@@ -773,7 +778,7 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        final IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        final IpcPublication ipcPublication = driverConductor.getIpcSharedPublication(STREAM_ID_1);
         assertNull(ipcPublication);
     }
 
@@ -785,7 +790,7 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        final IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        final IpcPublication ipcPublication = driverConductor.getIpcSharedPublication(STREAM_ID_1);
         assertNull(ipcPublication);
     }
 
@@ -798,14 +803,14 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        IpcPublication ipcPublication = driverConductor.getIpcSharedPublication(STREAM_ID_1);
         assertNotNull(ipcPublication);
 
         driverProxy.removePublication(idAdd2);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        ipcPublication = driverConductor.getIpcSharedPublication(STREAM_ID_1);
         assertNull(ipcPublication);
     }
 
@@ -818,14 +823,14 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        IpcPublication ipcPublication = driverConductor.getIpcSharedPublication(STREAM_ID_1);
         assertNotNull(ipcPublication);
 
         driverProxy.removePublication(idAdd2);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        ipcPublication = driverConductor.getIpcSharedPublication(STREAM_ID_1);
         assertNull(ipcPublication);
     }
 
@@ -836,12 +841,12 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        IpcPublication ipcPublication = driverConductor.getIpcSharedPublication(STREAM_ID_1);
         assertNotNull(ipcPublication);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        ipcPublication = driverConductor.getIpcSharedPublication(STREAM_ID_1);
         assertNull(ipcPublication);
     }
 
@@ -852,7 +857,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        IpcPublication ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        IpcPublication ipcPublication = driverConductor.getIpcSharedPublication(STREAM_ID_1);
         assertNotNull(ipcPublication);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
@@ -861,7 +866,7 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        ipcPublication = driverConductor.getIpcPublication(STREAM_ID_1);
+        ipcPublication = driverConductor.getIpcSharedPublication(STREAM_ID_1);
         assertNotNull(ipcPublication);
     }
 

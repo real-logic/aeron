@@ -64,24 +64,19 @@ class DriverListenerAdapter implements MessageHandler
         return lastReceivedCorrelationId;
     }
 
+    @SuppressWarnings("MethodLength")
     public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
     {
         switch (msgTypeId)
         {
-            case ON_PUBLICATION_READY:
+            case ON_ERROR:
             {
-                publicationReady.wrap(buffer, index);
+                errorResponse.wrap(buffer, index);
 
-                final long correlationId = publicationReady.correlationId();
+                final long correlationId = errorResponse.offendingCommandCorrelationId();
                 if (correlationId == activeCorrelationId)
                 {
-                    listener.onNewPublication(
-                        expectedChannel,
-                        publicationReady.streamId(),
-                        publicationReady.sessionId(),
-                        publicationReady.publicationLimitCounterId(),
-                        publicationReady.logFileName(),
-                        correlationId);
+                    listener.onError(errorResponse.errorCode(), errorResponse.errorMessage(), correlationId);
 
                     lastReceivedCorrelationId = correlationId;
                 }
@@ -111,6 +106,26 @@ class DriverListenerAdapter implements MessageHandler
                 break;
             }
 
+            case ON_PUBLICATION_READY:
+            {
+                publicationReady.wrap(buffer, index);
+
+                final long correlationId = publicationReady.correlationId();
+                if (correlationId == activeCorrelationId)
+                {
+                    listener.onNewPublication(
+                        expectedChannel,
+                        publicationReady.streamId(),
+                        publicationReady.sessionId(),
+                        publicationReady.publicationLimitCounterId(),
+                        publicationReady.logFileName(),
+                        correlationId);
+
+                    lastReceivedCorrelationId = correlationId;
+                }
+                break;
+            }
+
             case ON_OPERATION_SUCCESS:
             {
                 correlatedMessage.wrap(buffer, index);
@@ -131,14 +146,20 @@ class DriverListenerAdapter implements MessageHandler
                 break;
             }
 
-            case ON_ERROR:
+            case ON_EXCLUSIVE_PUBLICATION_READY:
             {
-                errorResponse.wrap(buffer, index);
+                publicationReady.wrap(buffer, index);
 
-                final long correlationId = errorResponse.offendingCommandCorrelationId();
+                final long correlationId = publicationReady.correlationId();
                 if (correlationId == activeCorrelationId)
                 {
-                    listener.onError(errorResponse.errorCode(), errorResponse.errorMessage(), correlationId);
+                    listener.onNewExclusivePublication(
+                        expectedChannel,
+                        publicationReady.streamId(),
+                        publicationReady.sessionId(),
+                        publicationReady.publicationLimitCounterId(),
+                        publicationReady.logFileName(),
+                        correlationId);
 
                     lastReceivedCorrelationId = correlationId;
                 }

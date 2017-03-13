@@ -18,17 +18,11 @@ package io.aeron;
 import org.agrona.collections.Long2LongHashMap;
 
 /**
- * Callback interface for receiving messages from the driver.
+ * Callback interface for dispatching command responses from the driver on the control protocol.
  */
 interface DriverListener
 {
-    void onNewPublication(
-        String channel,
-        int streamId,
-        int sessionId,
-        int publicationLimitId,
-        String logFileName,
-        long correlationId);
+    void onError(ErrorCode errorCode, String message, long correlationId);
 
     void onAvailableImage(
         int streamId,
@@ -38,7 +32,21 @@ interface DriverListener
         String sourceIdentity,
         long correlationId);
 
+    void onNewPublication(
+        String channel,
+        int streamId,
+        int sessionId,
+        int publicationLimitId,
+        String logFileName,
+        long correlationId);
+
     void onUnavailableImage(int streamId, long correlationId);
 
-    void onError(ErrorCode errorCode, String message, long correlationId);
+    void onNewExclusivePublication(
+        String channel,
+        int streamId,
+        int sessionId,
+        int publicationLimitId,
+        String logFileName,
+        long correlationId);
 }

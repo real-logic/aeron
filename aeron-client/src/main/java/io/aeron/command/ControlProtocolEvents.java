@@ -89,4 +89,9 @@ public class ControlProtocolEvents
      * Inform client of timeout and removal of an inactive Image.
      */
     public static final int ON_UNAVAILABLE_IMAGE = 0x0F05;
+
+    /**
+     * New Exclusive Publication buffers are ready notification.
+     */
+    public static final int ON_EXCLUSIVE_PUBLICATION_READY = 0x0F06;
 }

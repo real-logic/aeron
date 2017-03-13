@@ -100,7 +100,8 @@ public class ClientProxy
         final int streamId,
         final int sessionId,
         final String logFileName,
-        final int positionCounterId)
+        final int positionCounterId,
+        final boolean isExclusive)
     {
         publicationReady
             .sessionId(sessionId)
@@ -110,7 +111,8 @@ public class ClientProxy
             .logFileName(logFileName);
 
         final int length = publicationReady.length();
-        transmit(ON_PUBLICATION_READY, buffer, 0, length);
+        final int msgTypeId = isExclusive ? ON_EXCLUSIVE_PUBLICATION_READY : ON_PUBLICATION_READY;
+        transmit(msgTypeId, buffer, 0, length);
     }
 
     public void operationSucceeded(final long correlationId)

@@ -86,18 +86,7 @@ class ClientListenerAdapter implements MessageHandler
                     publicationMsgFlyweight.wrap(buffer, index);
 
                     correlationId = publicationMsgFlyweight.correlationId();
-                    final int streamId = publicationMsgFlyweight.streamId();
-                    final long clientId = publicationMsgFlyweight.clientId();
-                    final String channel = publicationMsgFlyweight.channel();
-
-                    if (channel.startsWith(IPC_CHANNEL))
-                    {
-                        conductor.onAddIpcPublication(channel, streamId, correlationId, clientId);
-                    }
-                    else
-                    {
-                        conductor.onAddNetworkPublication(channel, streamId, correlationId, clientId);
-                    }
+                    addPublication(correlationId, false);
                     break;
                 }
 
@@ -107,6 +96,15 @@ class ClientListenerAdapter implements MessageHandler
 
                     correlationId = removeMsgFlyweight.correlationId();
                     conductor.onRemovePublication(removeMsgFlyweight.registrationId(), correlationId);
+                    break;
+                }
+
+                case ADD_EXCLUSIVE_PUBLICATION:
+                {
+                    publicationMsgFlyweight.wrap(buffer, index);
+
+                    correlationId = publicationMsgFlyweight.correlationId();
+                    addPublication(correlationId, true);
                     break;
                 }
 
@@ -186,6 +184,22 @@ class ClientListenerAdapter implements MessageHandler
         {
             clientProxy.onError(GENERIC_ERROR, ex.getMessage(), correlationId);
             recordError(ex);
+        }
+    }
+
+    public void addPublication(final long correlationId, final boolean isExclusive)
+    {
+        final int streamId = publicationMsgFlyweight.streamId();
+        final long clientId = publicationMsgFlyweight.clientId();
+        final String channel = publicationMsgFlyweight.channel();
+
+        if (channel.startsWith(IPC_CHANNEL))
+        {
+            conductor.onAddIpcPublication(channel, streamId, correlationId, clientId, isExclusive);
+        }
+        else
+        {
+            conductor.onAddNetworkPublication(channel, streamId, correlationId, clientId, isExclusive);
         }
     }
 

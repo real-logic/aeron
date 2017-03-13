@@ -429,20 +429,21 @@ public final class MediaDriver implements AutoCloseable
 
     private static void reportExistingErrors(final Context ctx)
     {
-        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
-        final String errorLogFilename = ctx.aeronDirectoryName() + '-' + dateFormat.format(new Date()) + "-error.log";
-        final File errorLogFile = new File(errorLogFilename);
-
-        try (PrintStream out = new PrintStream(errorLogFile, "UTF-8"))
+        try
         {
-            final int observations = ctx.saveErrorLog(out);
-            if (0 == observations)
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final int observations = ctx.saveErrorLog(new PrintStream(baos, false, "UTF-8"));
+            if (observations > 0)
             {
-                IoUtil.delete(errorLogFile, true);
-            }
-            else
-            {
-                System.err.println("WARNING: Existing errors saved to " + errorLogFile);
+                final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
+                final String errorLogFilename =
+                    ctx.aeronDirectoryName() + '-' + dateFormat.format(new Date()) + "-error.log";
+
+                System.err.println("WARNING: Existing errors saved to: " + errorLogFilename);
+                try (FileOutputStream out = new FileOutputStream(errorLogFilename))
+                {
+                    baos.writeTo(out);
+                }
             }
         }
         catch (final Exception ex)

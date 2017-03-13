@@ -334,13 +334,13 @@ public class CommonContext implements AutoCloseable
     /**
      * Read the error log to a given {@link PrintStream}
      *
-     * @param stream to write the error log contents to.
+     * @param out to write the error log contents to.
      * @return the number of observations from the error log
      */
-    public int saveErrorLog(final PrintStream stream)
+    public int saveErrorLog(final PrintStream out)
     {
         final File dirFile = new File(aeronDirectoryName);
-        int result = 0;
+        int distinctErrorCount = 0;
 
         if (dirFile.exists() && dirFile.isDirectory())
         {
@@ -366,20 +366,17 @@ public class CommonContext implements AutoCloseable
                         cncByteBuffer, cncMetaDataBuffer);
                     final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
 
-                    final int distinctErrorCount = ErrorLogReader.read(
+                    distinctErrorCount = ErrorLogReader.read(
                         buffer,
                         (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
-                            stream.format(
+                            out.format(
                                 "***%n%d observations from %s to %s for:%n %s%n",
                                 observationCount,
                                 dateFormat.format(new Date(firstObservationTimestamp)),
                                 dateFormat.format(new Date(lastObservationTimestamp)),
-                                encodedException
-                            ));
+                                encodedException));
 
-                    stream.format("%n%d distinct errors observed.%n", distinctErrorCount);
-
-                    result = distinctErrorCount;
+                    out.format("%n%d distinct errors observed.%n", distinctErrorCount);
                 }
                 catch (final Exception ex)
                 {
@@ -392,7 +389,7 @@ public class CommonContext implements AutoCloseable
             }
         }
 
-        return result;
+        return distinctErrorCount;
     }
 
     /**

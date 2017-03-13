@@ -200,3 +200,85 @@ void aeron_mpsc_rb_consumer_heartbeat_time(volatile aeron_mpsc_rb_t *ring_buffer
 {
     AERON_PUT_ORDERED(ring_buffer->descriptor->consumer_heartbeat, time);
 }
+
+inline static bool scan_back_to_confirm_still_zeroed(uint8_t *buffer, size_t from, size_t limit)
+{
+    size_t i = from - AERON_RB_ALIGNMENT;
+    bool all_zeroes = true;
+
+    while (i >= limit)
+    {
+        const aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(buffer + i);
+        int32_t length;
+        AERON_GET_VOLATILE(length, record->length);
+        if (0 != length)
+        {
+            all_zeroes = false;
+            break;
+        }
+
+        i -= AERON_RB_ALIGNMENT;
+    }
+
+    return all_zeroes;
+}
+
+bool aeron_mpsc_rb_unblock(volatile aeron_mpsc_rb_t *ring_buffer)
+{
+    const size_t mask = ring_buffer->capacity - 1;
+    int64_t head;
+    int64_t tail;
+    size_t consumer_index;
+    size_t producer_index;
+    bool unblocked = false;
+
+    AERON_GET_VOLATILE(head, ring_buffer->descriptor->head_position);
+    AERON_GET_VOLATILE(tail, ring_buffer->descriptor->tail_position);
+
+    consumer_index = (int32_t)head & mask;
+    producer_index = (int32_t)tail & mask;
+
+    if (producer_index == consumer_index)
+    {
+        return false;
+    }
+
+    int32_t length;
+    aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + consumer_index);
+
+    AERON_GET_VOLATILE(length, record->length);
+    if (length < 0)
+    {
+        record->msg_type_id = AERON_RB_PADDING_MSG_TYPE_ID;
+        AERON_PUT_ORDERED(record->length, -length);
+        unblocked = true;
+    }
+    else if (0 == length)
+    {
+        const size_t limit = producer_index > consumer_index ? producer_index : ring_buffer->capacity;
+        size_t i = consumer_index + AERON_RB_ALIGNMENT;
+
+        do
+        {
+            record = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + i);
+            AERON_GET_VOLATILE(length, record->length);
+            if (0 != length)
+            {
+                if (scan_back_to_confirm_still_zeroed(ring_buffer->buffer, i, consumer_index))
+                {
+                    record = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + consumer_index);
+                    record->msg_type_id = AERON_RB_PADDING_MSG_TYPE_ID;
+                    AERON_PUT_ORDERED(record->length, i - consumer_index);
+                    unblocked = true;
+                }
+
+                break;
+            }
+
+            i += AERON_RB_ALIGNMENT;
+        }
+        while (i < limit);
+    }
+
+    return unblocked;
+}

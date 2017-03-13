@@ -324,6 +324,70 @@ TEST_F(MpscRbTest, shouldLimitReadOfMessages)
     }
 }
 
+TEST_F(MpscRbTest, shouldNotUnblockWhenEmpty)
+{
+    aeron_mpsc_rb_t rb;
+    size_t tail = AERON_RB_ALIGNMENT * 4;
+    size_t head = tail;
+
+    ASSERT_EQ(aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()), 0);
+    rb.descriptor->head_position = (int64_t)head;
+    rb.descriptor->tail_position = (int64_t)tail;
+
+    EXPECT_FALSE(aeron_mpsc_rb_unblock(&rb));
+}
+
+TEST_F(MpscRbTest, shouldUnblockMessageWithHeader)
+{
+    aeron_mpsc_rb_t rb;
+    size_t message_length = AERON_RB_ALIGNMENT * 4;
+    size_t tail = message_length * 2;
+    size_t head = message_length;
+
+    ASSERT_EQ(aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()), 0);
+    rb.descriptor->head_position = (int64_t)head;
+    rb.descriptor->tail_position = (int64_t)tail;
+
+    aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(rb.buffer + head);
+
+    record->msg_type_id = MSG_TYPE_ID;
+    record->length = -(int32_t)message_length;
+
+    EXPECT_TRUE(aeron_mpsc_rb_unblock(&rb));
+
+    EXPECT_EQ(record->msg_type_id, AERON_RB_PADDING_MSG_TYPE_ID);
+    EXPECT_EQ(record->length, (int32_t)message_length);
+
+    EXPECT_EQ(rb.descriptor->head_position, (int64_t)message_length);
+    EXPECT_EQ(rb.descriptor->tail_position, (int64_t)(message_length * 2));
+}
+
+TEST_F(MpscRbTest, shouldUnblockGapWithZeros)
+{
+    aeron_mpsc_rb_t rb;
+    size_t message_length = AERON_RB_ALIGNMENT * 4;
+    size_t tail = message_length * 3;
+    size_t head = message_length;
+
+    ASSERT_EQ(aeron_mpsc_rb_init(&rb, m_buffer.data(), m_buffer.size()), 0);
+    rb.descriptor->head_position = (int64_t)head;
+    rb.descriptor->tail_position = (int64_t)tail;
+
+    aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(rb.buffer + (message_length * 2));
+
+    record->length = (int32_t)message_length;
+
+    EXPECT_TRUE(aeron_mpsc_rb_unblock(&rb));
+
+    record = (aeron_rb_record_descriptor_t *)(rb.buffer + head);
+
+    EXPECT_EQ(record->msg_type_id, AERON_RB_PADDING_MSG_TYPE_ID);
+    EXPECT_EQ(record->length, (int32_t)message_length);
+
+    EXPECT_EQ(rb.descriptor->head_position, (int64_t)message_length);
+    EXPECT_EQ(rb.descriptor->tail_position, (int64_t)(message_length * 3));
+}
+
 #define NUM_MESSAGES_PER_PUBLISHER (10 * 1000 * 1000)
 #define NUM_IDS_PER_THREAD (10 * 1000 * 1000)
 #define NUM_PUBLISHERS (2)

@@ -46,4 +46,6 @@ int64_t aeron_mpsc_rb_next_correlation_id(volatile aeron_mpsc_rb_t *ring_buffer)
 
 void aeron_mpsc_rb_consumer_heartbeat_time(volatile aeron_mpsc_rb_t *ring_buffer, int64_t time);
 
+bool aeron_mpsc_rb_unblock(volatile aeron_mpsc_rb_t *ring_buffer);
+
 #endif //AERON_AERON_MPSC_RB_H

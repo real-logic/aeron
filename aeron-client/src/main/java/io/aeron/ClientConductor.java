@@ -34,6 +34,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static io.aeron.ClientConductor.Status.ACTIVE;
+import static io.aeron.ClientConductor.Status.CLOSED;
+import static io.aeron.ClientConductor.Status.CLOSING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -42,6 +45,11 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 class ClientConductor implements Agent, DriverListener
 {
+    enum Status
+    {
+        ACTIVE, CLOSING, CLOSED
+    }
+
     private static final long NO_CORRELATION_ID = -1;
     private static final long RESOURCE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
     private static final long RESOURCE_LINGER_NS = TimeUnit.SECONDS.toNanos(5);
@@ -55,7 +63,7 @@ class ClientConductor implements Agent, DriverListener
     private long timeOfLastCheckResources;
     private long timeOfLastWork;
     private boolean isDriverActive = true;
-    private boolean isClientActive = true;
+    private Status status = ACTIVE;
 
     private final Lock lock = new ReentrantLock();
     private final Aeron.Context ctx;
@@ -100,8 +108,10 @@ class ClientConductor implements Agent, DriverListener
 
     public void onClose()
     {
-        if (isClientActive)
+        if (ACTIVE == status)
         {
+            status = CLOSING;
+
             activePublications.close();
             activeSubscriptions.close();
 
@@ -109,7 +119,8 @@ class ClientConductor implements Agent, DriverListener
 
             lingeringResources.forEach(ManagedResource::delete);
             ctx.close();
-            isClientActive = false;
+
+            status = CLOSED;
         }
     }
 
@@ -121,7 +132,7 @@ class ClientConductor implements Agent, DriverListener
         {
             try
             {
-                if (isClientActive)
+                if (CLOSED != status)
                 {
                     workCount = doWork(NO_CORRELATION_ID, null);
                 }
@@ -343,7 +354,7 @@ class ClientConductor implements Agent, DriverListener
             throw new DriverTimeoutException("MediaDriver is inactive");
         }
 
-        if (!isClientActive)
+        if (CLOSED == status)
         {
             throw new IllegalStateException("Aeron client is closed");
         }

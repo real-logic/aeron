@@ -25,18 +25,22 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 /**
- * Aeron Publisher API for sending messages to subscribers of a given channel and streamId pair. {@link Publication}s
- * are created via the {@link Aeron#addPublication(String, int)} method, and messages are sent via one of the
- * {@link #offer(DirectBuffer)} methods, or a {@link #tryClaim(int, BufferClaim)} and {@link BufferClaim#commit()}
- * method combination.
+ * Aeron Publisher API for sending messages to subscribers of a given channel and streamId pair. ExclusivePublications
+ * each get their own session id so multiple can be concurrently active on the same media driver as independent streams.
+ *
+ * {@link ExclusivePublication}s are created via the {@link Aeron#addExclusivePublication(String, int)} method,
+ * and messages are sent via one of the {@link #offer(DirectBuffer)} methods, or a {@link #tryClaim(int, BufferClaim)}
+ * and {@link BufferClaim#commit()} method combination.
+ *
+ * {@link ExclusivePublication}s have the potential to provide greater throughput than {@link Publication}s.
  *
  * The APIs used try claim and offer are non-blocking.
  *
- * <b>Note:</b> Publication instances are threadsafe and can be shared between publishing threads.
+ * <b>Note:</b> ExclusivePublication instances are NOT threadsafe.
  *
- * @see Aeron#addPublication(String, int)
+ * @see Aeron#addExclusivePublication(String, int)
  */
-public class Publication implements AutoCloseable
+public class ExclusivePublication implements AutoCloseable
 {
     /**
      * The publication is not yet connected to a subscriber.
@@ -54,12 +58,11 @@ public class Publication implements AutoCloseable
     public static final long ADMIN_ACTION = -3;
 
     /**
-     * The {@link Publication} has been closed and should no longer be used.
+     * The {@link ExclusivePublication} has been closed and should no longer be used.
      */
     public static final long CLOSED = -4;
 
     private final long registrationId;
-    private int refCount = 0;
     private final int streamId;
     private final int sessionId;
     private final int initialTermId;
@@ -76,7 +79,7 @@ public class Publication implements AutoCloseable
     private final ClientConductor conductor;
     private final String channel;
 
-    Publication(
+    ExclusivePublication(
         final ClientConductor clientConductor,
         final String channel,
         final int streamId,
@@ -140,7 +143,7 @@ public class Publication implements AutoCloseable
     }
 
     /**
-     * Session under which messages are published. Identifies this Publication instance.
+     * Session under which messages are published. Identifies this {@link ExclusivePublication} instance.
      *
      * @return the session id for this publication.
      */
@@ -150,8 +153,8 @@ public class Publication implements AutoCloseable
     }
 
     /**
-     * The initial term id assigned when this {@link Publication} was created. This can be used to determine how many
-     * terms have passed since creation.
+     * The initial term id assigned when this {@link ExclusivePublication} was created. This can be used to determine
+     * how many terms have passed since creation.
      *
      * @return the initial term id.
      */
@@ -194,9 +197,9 @@ public class Publication implements AutoCloseable
     }
 
     /**
-     * Has the {@link Publication} seen an active Subscriber recently?
+     * Has the {@link ExclusivePublication} seen an active Subscriber recently?
      *
-     * @return true if this {@link Publication} has seen an active subscriber otherwise false.
+     * @return true if this {@link ExclusivePublication} has seen an active subscriber otherwise false.
      */
     public boolean isConnected()
     {
@@ -204,19 +207,14 @@ public class Publication implements AutoCloseable
     }
 
     /**
-     * Release resources used by this Publication when there are no more references.
-     *
-     * Publications are reference counted and are only truly closed when the ref count reaches zero.
+     * Release resources used by this Publication.
      */
     public void close()
     {
         conductor.clientLock().lock();
         try
         {
-            if (!isClosed && --refCount == 0)
-            {
-                release();
-            }
+            release();
         }
         finally
         {
@@ -266,11 +264,11 @@ public class Publication implements AutoCloseable
     }
 
     /**
-     * Get the position limit beyond which this {@link Publication} will be back pressured.
+     * Get the position limit beyond which this {@link ExclusivePublication} will be back pressured.
      *
      * This should only be used as a guide to determine when back pressure is likely to be applied.
      *
-     * @return the position limit beyond which this {@link Publication} will be back pressured.
+     * @return the position limit beyond which this {@link ExclusivePublication} will be back pressured.
      */
     public long positionLimit()
     {
@@ -465,14 +463,6 @@ public class Publication implements AutoCloseable
         {
             conductor.clientLock().unlock();
         }
-    }
-
-    /**
-     * @see Publication#close()
-     */
-    void incRef()
-    {
-        ++refCount;
     }
 
     private long newPosition(final int index, final int currentTail, final long position, final long result)

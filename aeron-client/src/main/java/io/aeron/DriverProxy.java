@@ -80,6 +80,23 @@ public class DriverProxy
         return correlationId;
     }
 
+    public long addExclusivePublication(final String channel, final int streamId)
+    {
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+
+        publicationMessage.correlationId(correlationId);
+        publicationMessage
+            .streamId(streamId)
+            .channel(channel);
+
+        if (!toDriverCommandBuffer.write(ADD_EXCLUSIVE_PUBLICATION, buffer, 0, publicationMessage.length()))
+        {
+            throw new IllegalStateException("Could not write add exclusive publication command");
+        }
+
+        return correlationId;
+    }
+
     public long removePublication(final long registrationId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();

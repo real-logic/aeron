@@ -100,7 +100,7 @@ public class NetworkPublication
     private final int termWindowLength;
     private final int sessionId;
     private final int streamId;
-
+    private final boolean isExclusive;
     private volatile boolean hasHadFirstStatusMessage = false;
     private boolean hasReachedEndOfLife = false;
     private Status status = Status.ACTIVE;
@@ -145,7 +145,8 @@ public class NetworkPublication
         final FlowControl flowControl,
         final RetransmitHandler retransmitHandler,
         final NetworkPublicationThreadLocals threadLocals,
-        final long unblockTimeoutNs)
+        final long unblockTimeoutNs,
+        final boolean isExclusive)
     {
         this.registrationId = registrationId;
         this.unblockTimeoutNs = unblockTimeoutNs;
@@ -162,6 +163,7 @@ public class NetworkPublication
         this.initialTermId = initialTermId;
         this.sessionId = sessionId;
         this.streamId = streamId;
+        this.isExclusive = isExclusive;
 
         setupBuffer = threadLocals.setupBuffer();
         setupHeader = threadLocals.setupHeader();
@@ -212,6 +214,11 @@ public class NetworkPublication
     public long registrationId()
     {
         return registrationId;
+    }
+
+    public boolean isExclusive()
+    {
+        return isExclusive;
     }
 
     public int send(final long now)

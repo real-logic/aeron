@@ -171,6 +171,26 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
+     * Add an {@link ExclusivePublication} for publishing messages to subscribers from a single thread.
+     *
+     * @param channel  for receiving the messages known to the media layer.
+     * @param streamId within the channel scope.
+     * @return the new Publication.
+     */
+    public ExclusivePublication addExclusivePublication(final String channel, final int streamId)
+    {
+        conductor.clientLock().lock();
+        try
+        {
+            return conductor.addExclusivePublication(channel, streamId);
+        }
+        finally
+        {
+            conductor.clientLock().unlock();
+        }
+    }
+
+    /**
      * Add a new {@link Subscription} for subscribing to messages from publishers.
      *
      * @param channel  for receiving the messages known to the media layer.
@@ -191,7 +211,7 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
-     * Generate the next correlation id that is unique for the Media Driver.
+     * Generate the next correlation id that is unique for the connected Media Driver.
      *
      * This is useful generating correlation identifiers for pairing requests with responses in a clients own
      * application protocol.

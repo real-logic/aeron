@@ -57,6 +57,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
     private long timeOfLastStatusChange = 0;
     private int refCount = 0;
     private boolean reachedEndOfLife = false;
+    private final boolean isExclusive;
     private Status status = Status.ACTIVE;
     private final UnsafeBuffer[] termBuffers;
     private ReadablePosition[] subscriberPositions = EMPTY_POSITIONS;
@@ -71,11 +72,13 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         final Position publisherLimit,
         final RawLog rawLog,
         final long unblockTimeoutNs,
-        final SystemCounters systemCounters)
+        final SystemCounters systemCounters,
+        final boolean isExclusive)
     {
         this.correlationId = correlationId;
         this.sessionId = sessionId;
         this.streamId = streamId;
+        this.isExclusive = isExclusive;
         this.termBuffers = rawLog.termBuffers();
         this.initialTermId = initialTermId(rawLog.metaData());
 
@@ -102,6 +105,11 @@ public class IpcPublication implements DriverManagedResource, Subscribable
     public long correlationId()
     {
         return correlationId;
+    }
+
+    public boolean isExclusive()
+    {
+        return isExclusive;
     }
 
     public RawLog rawLog()

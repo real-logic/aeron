@@ -271,13 +271,17 @@ public class DriverConductor implements Agent
         return receiveChannelEndpointByChannelMap.get(channel.canonicalForm());
     }
 
-    IpcPublication getIpcPublication(final long streamId)
+    IpcPublication getIpcSharedPublication(final long streamId)
     {
-        return findIpcPublication(ipcPublications, streamId);
+        return findIpcSharedPublication(ipcPublications, streamId);
     }
 
     void onAddNetworkPublication(
-        final String channel, final int streamId, final long registrationId, final long clientId)
+        final String channel,
+        final int streamId,
+        final long registrationId,
+        final long clientId,
+        final boolean isExclusive)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final AeronUri aeronUri = udpChannel.aeronUri();
@@ -285,7 +289,13 @@ public class DriverConductor implements Agent
         final int termLength = getTermBufferLength(aeronUri, context.publicationTermBufferLength());
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel);
 
-        NetworkPublication publication = findPublication(networkPublications, streamId, channelEndpoint);
+        NetworkPublication publication = null;
+
+        if (!isExclusive)
+        {
+            publication = findPublication(networkPublications, streamId, channelEndpoint);
+        }
+
         if (null == publication)
         {
             final int sessionId = nextSessionId++;
@@ -319,7 +329,8 @@ public class DriverConductor implements Agent
                 flowControl,
                 retransmitHandler,
                 networkPublicationThreadLocals,
-                publicationUnblockTimeoutNs);
+                publicationUnblockTimeoutNs,
+                isExclusive);
 
             channelEndpoint.incRef();
             networkPublications.add(publication);
@@ -339,7 +350,8 @@ public class DriverConductor implements Agent
             streamId,
             publication.sessionId(),
             publication.rawLog().fileName(),
-            publication.publisherLimitId());
+            publication.publisherLimitId(),
+            isExclusive);
     }
 
     void cleanupPublication(final NetworkPublication publication)
@@ -456,6 +468,7 @@ public class DriverConductor implements Agent
             final NetworkPublication publication = publications.get(i);
 
             if (NetworkPublication.Status.ACTIVE == publication.status() &&
+                !publication.isExclusive() &&
                 streamId == publication.streamId() &&
                 channelEndpoint == publication.channelEndpoint())
             {
@@ -466,9 +479,14 @@ public class DriverConductor implements Agent
         return null;
     }
 
-    void onAddIpcPublication(final String channel, final int streamId, final long registrationId, final long clientId)
+    void onAddIpcPublication(
+        final String channel,
+        final int streamId,
+        final long registrationId,
+        final long clientId,
+        final boolean isExclusive)
     {
-        final IpcPublication ipcPublication = getOrAddIpcPublication(streamId, channel);
+        final IpcPublication ipcPublication = getOrAddIpcPublication(streamId, channel, isExclusive);
         publicationLinks.add(new PublicationLink(registrationId, ipcPublication, getOrAddClient(clientId)));
 
         clientProxy.onPublicationReady(
@@ -476,7 +494,8 @@ public class DriverConductor implements Agent
             streamId,
             ipcPublication.sessionId(),
             ipcPublication.rawLog().fileName(),
-            ipcPublication.publisherLimitId());
+            ipcPublication.publisherLimitId(),
+            isExclusive);
 
         linkIpcSubscriptions(ipcPublication);
     }
@@ -525,6 +544,7 @@ public class DriverConductor implements Agent
         {
             throw new ControlProtocolException(UNKNOWN_PUBLICATION, "Unknown publication: " + registrationId);
         }
+
         sendChannelEndpoint.validateAllowsManualControl();
 
         final AeronUri aeronUri = AeronUri.parse(destinationChannel);
@@ -552,6 +572,7 @@ public class DriverConductor implements Agent
         {
             throw new ControlProtocolException(UNKNOWN_PUBLICATION, "Unknown publication: " + registrationId);
         }
+
         sendChannelEndpoint.validateAllowsManualControl();
 
         final AeronUri aeronUri = AeronUri.parse(destinationChannel);
@@ -594,10 +615,13 @@ public class DriverConductor implements Agent
         subscriptionLinks.add(subscription);
         clientProxy.operationSucceeded(registrationId);
 
-        final IpcPublication publication = findIpcPublication(ipcPublications, streamId);
-        if (null != publication)
+        for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
-            linkIpcSubscription(subscription, publication);
+            final IpcPublication publication = ipcPublications.get(i);
+            if (publication.streamId() == streamId && IpcPublication.Status.ACTIVE == publication.status())
+            {
+                linkIpcSubscription(subscription, publication);
+            }
         }
     }
 
@@ -611,11 +635,18 @@ public class DriverConductor implements Agent
         subscriptionLinks.add(subscriptionLink);
         clientProxy.operationSucceeded(registrationId);
 
-        final NetworkPublication publication = findPublication(
-            networkPublications, streamId, sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm()));
-        if (null != publication)
+        final SendChannelEndpoint channelEndpoint = sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
+
+        for (int i = 0, size = networkPublications.size(); i < size; i++)
         {
-            linkSpy(publication, subscriptionLink);
+            final NetworkPublication publication = networkPublications.get(i);
+
+            if (NetworkPublication.Status.ACTIVE == publication.status() &&
+                streamId == publication.streamId() &&
+                channelEndpoint == publication.channelEndpoint())
+            {
+                linkSpy(publication, subscriptionLink);
+            }
         }
     }
 
@@ -957,19 +988,24 @@ public class DriverConductor implements Agent
         return client;
     }
 
-    private IpcPublication getOrAddIpcPublication(final int streamId, final String channel)
+    private IpcPublication getOrAddIpcPublication(final int streamId, final String channel, final boolean isExclusive)
     {
-        IpcPublication publication = findIpcPublication(ipcPublications, streamId);
+        IpcPublication publication = null;
+
+        if (!isExclusive)
+        {
+            publication = findIpcSharedPublication(ipcPublications, streamId);
+        }
 
         if (null == publication)
         {
-            publication = addIpcPublication(streamId, channel);
+            publication = addIpcPublication(streamId, channel, isExclusive);
         }
 
         return publication;
     }
 
-    private IpcPublication addIpcPublication(final int streamId, final String channel)
+    private IpcPublication addIpcPublication(final int streamId, final String channel, final boolean isExclusive)
     {
         final int termLength = getTermBufferLength(AeronUri.parse(channel), context.ipcTermBufferLength());
         final long registrationId = nextImageCorrelationId();
@@ -988,7 +1024,8 @@ public class DriverConductor implements Agent
             publisherLimit,
             rawLog,
             publicationUnblockTimeoutNs,
-            context.systemCounters());
+            context.systemCounters(),
+            isExclusive);
 
         ipcPublications.add(publication);
 
@@ -1036,7 +1073,7 @@ public class DriverConductor implements Agent
         return subscriptionLink;
     }
 
-    private static IpcPublication findIpcPublication(
+    private static IpcPublication findIpcSharedPublication(
         final ArrayList<IpcPublication> ipcPublications, final long streamId)
     {
         IpcPublication ipcPublication = null;
@@ -1044,7 +1081,9 @@ public class DriverConductor implements Agent
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
             final IpcPublication publication = ipcPublications.get(i);
-            if (publication.streamId() == streamId && IpcPublication.Status.ACTIVE == publication.status())
+            if (!publication.isExclusive() &&
+                publication.streamId() == streamId &&
+                IpcPublication.Status.ACTIVE == publication.status())
             {
                 ipcPublication = publication;
                 break;

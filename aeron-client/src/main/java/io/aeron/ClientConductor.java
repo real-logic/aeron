@@ -21,6 +21,7 @@ import io.aeron.exceptions.RegistrationException;
 import org.agrona.ErrorHandler;
 import org.agrona.ManagedResource;
 import org.agrona.collections.Long2LongHashMap;
+import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NanoClock;
@@ -38,10 +39,11 @@ import static io.aeron.ClientConductor.Status.ACTIVE;
 import static io.aeron.ClientConductor.Status.CLOSED;
 import static io.aeron.ClientConductor.Status.CLOSING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.stream.Collectors.toList;
 
 /**
- * Client conductor takes responses and notifications from media driver and acts on them.
- * As well as passes commands to the media driver.
+ * Client conductor takes responses and notifications from Media Driver and acts on them in addition to forwarding
+ * commands from the various Client APIs to the Media Driver.
  */
 class ClientConductor implements Agent, DriverListener
 {
@@ -73,6 +75,7 @@ class ClientConductor implements Agent, DriverListener
     private final DriverListenerAdapter driverListener;
     private final LogBuffersFactory logBuffersFactory;
     private final ActivePublications activePublications = new ActivePublications();
+    private final Long2ObjectHashMap<ExclusivePublication> activeExclusivePublications = new Long2ObjectHashMap<>();
     private final ActiveSubscriptions activeSubscriptions = new ActiveSubscriptions();
     private final ArrayList<ManagedResource> lingeringResources = new ArrayList<>();
     private final UnsafeBuffer counterValuesBuffer;
@@ -86,24 +89,27 @@ class ClientConductor implements Agent, DriverListener
     ClientConductor(final Aeron.Context ctx)
     {
         this.ctx = ctx;
-        this.epochClock = ctx.epochClock();
-        this.nanoClock = ctx.nanoClock();
-        this.timeOfLastKeepalive = nanoClock.nanoTime();
-        this.timeOfLastCheckResources = nanoClock.nanoTime();
-        this.timeOfLastWork = nanoClock.nanoTime();
-        this.errorHandler = ctx.errorHandler();
-        this.counterValuesBuffer = ctx.countersValuesBuffer();
-        this.driverProxy = ctx.driverProxy();
-        this.logBuffersFactory = ctx.logBuffersFactory();
-        this.availableImageHandler = ctx.availableImageHandler();
-        this.unavailableImageHandler = ctx.unavailableImageHandler();
-        this.imageMapMode = ctx.imageMapMode();
-        this.keepAliveIntervalNs = ctx.keepAliveInterval();
-        this.driverTimeoutMs = ctx.driverTimeoutMs();
-        this.driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
-        this.interServiceTimeoutNs = ctx.interServiceTimeout();
-        this.publicationConnectionTimeoutMs = ctx.publicationConnectionTimeout();
-        this.driverListener = new DriverListenerAdapter(ctx.toClientBuffer(), this);
+
+        epochClock = ctx.epochClock();
+        nanoClock = ctx.nanoClock();
+        errorHandler = ctx.errorHandler();
+        counterValuesBuffer = ctx.countersValuesBuffer();
+        driverProxy = ctx.driverProxy();
+        logBuffersFactory = ctx.logBuffersFactory();
+        availableImageHandler = ctx.availableImageHandler();
+        unavailableImageHandler = ctx.unavailableImageHandler();
+        imageMapMode = ctx.imageMapMode();
+        keepAliveIntervalNs = ctx.keepAliveInterval();
+        driverTimeoutMs = ctx.driverTimeoutMs();
+        driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
+        interServiceTimeoutNs = ctx.interServiceTimeout();
+        publicationConnectionTimeoutMs = ctx.publicationConnectionTimeout();
+        driverListener = new DriverListenerAdapter(ctx.toClientBuffer(), this);
+
+        final long now = nanoClock.nanoTime();
+        timeOfLastKeepalive = now;
+        timeOfLastCheckResources = now;
+        timeOfLastWork = now;
     }
 
     public void onClose()
@@ -111,6 +117,12 @@ class ClientConductor implements Agent, DriverListener
         if (ACTIVE == status)
         {
             status = CLOSING;
+
+            activeExclusivePublications
+                .values()
+                .stream()
+                .collect(toList())
+                .forEach(ExclusivePublication::release);
 
             activePublications.close();
             activeSubscriptions.close();
@@ -177,6 +189,16 @@ class ClientConductor implements Agent, DriverListener
         return publication;
     }
 
+    ExclusivePublication addExclusivePublication(final String channel, final int streamId)
+    {
+        verifyActive();
+
+        final long registrationId = driverProxy.addExclusivePublication(channel, streamId);
+        awaitResponse(registrationId, channel);
+
+        return activeExclusivePublications.get(registrationId);
+    }
+
     void releasePublication(final Publication publication)
     {
         verifyActive();
@@ -184,7 +206,18 @@ class ClientConductor implements Agent, DriverListener
         if (publication == activePublications.remove(publication.channel(), publication.streamId()))
         {
             lingerResource(publication.managedResource());
-            awaitResponse(driverProxy.removePublication(publication.registrationId()), publication.channel());
+            awaitResponse(driverProxy.removePublication(publication.registrationId()), null);
+        }
+    }
+
+    void releasePublication(final ExclusivePublication publication)
+    {
+        verifyActive();
+
+        if (publication == activeExclusivePublications.remove(publication.registrationId()))
+        {
+            lingerResource(publication.managedResource());
+            awaitResponse(driverProxy.removePublication(publication.registrationId()), null);
         }
     }
 
@@ -210,18 +243,23 @@ class ClientConductor implements Agent, DriverListener
         activeSubscriptions.remove(subscription);
     }
 
-    void addDestination(final Publication publication, final String endpointChannel)
+    void addDestination(final long registrationId, final String endpointChannel)
     {
         verifyActive();
 
-        awaitResponse(driverProxy.addDestination(publication.registrationId(), endpointChannel), endpointChannel);
+        awaitResponse(driverProxy.addDestination(registrationId, endpointChannel), null);
     }
 
-    void removeDestination(final Publication publication, final String endpointChannel)
+    void removeDestination(final long registrationId, final String endpointChannel)
     {
         verifyActive();
 
-        awaitResponse(driverProxy.removeDestination(publication.registrationId(), endpointChannel), endpointChannel);
+        awaitResponse(driverProxy.removeDestination(registrationId, endpointChannel), null);
+    }
+
+    public void onError(final ErrorCode errorCode, final String message, final long correlationId)
+    {
+        driverException = new RegistrationException(errorCode, message);
     }
 
     public void onNewPublication(
@@ -242,6 +280,26 @@ class ClientConductor implements Agent, DriverListener
             correlationId);
 
         activePublications.put(channel, streamId, publication);
+    }
+
+    public void onNewExclusivePublication(
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final int publicationLimitId,
+        final String logFileName,
+        final long correlationId)
+    {
+        final ExclusivePublication publication = new ExclusivePublication(
+            this,
+            channel,
+            streamId,
+            sessionId,
+            new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
+            logBuffersFactory.map(logFileName, FileChannel.MapMode.READ_WRITE),
+            correlationId);
+
+        activeExclusivePublications.put(correlationId, publication);
     }
 
     public void onAvailableImage(
@@ -286,11 +344,6 @@ class ClientConductor implements Agent, DriverListener
             });
     }
 
-    public void onError(final ErrorCode errorCode, final String message, final long correlationId)
-    {
-        driverException = new RegistrationException(errorCode, message);
-    }
-
     public void onUnavailableImage(final int streamId, final long correlationId)
     {
         activeSubscriptions.forEach(
@@ -331,33 +384,6 @@ class ClientConductor implements Agent, DriverListener
     UnavailableImageHandler unavailableImageHandler()
     {
         return unavailableImageHandler;
-    }
-
-    private void checkDriverHeartbeat()
-    {
-        final long now = epochClock.time();
-        final long currentDriverKeepaliveTime = driverProxy.timeOfLastDriverKeepalive();
-
-        if (isDriverActive && (now > (currentDriverKeepaliveTime + driverTimeoutMs)))
-        {
-            isDriverActive = false;
-
-            final String msg = "MediaDriver has been inactive for over " + driverTimeoutMs + "ms";
-            errorHandler.onError(new DriverTimeoutException(msg));
-        }
-    }
-
-    private void verifyActive()
-    {
-        if (!isDriverActive)
-        {
-            throw new DriverTimeoutException("MediaDriver is inactive");
-        }
-
-        if (CLOSED == status)
-        {
-            throw new IllegalStateException("Aeron client is closed");
-        }
     }
 
     private int doWork(final long correlationId, final String expectedChannel)
@@ -403,6 +429,19 @@ class ClientConductor implements Agent, DriverListener
         throw new DriverTimeoutException("No response within driver timeout");
     }
 
+    private void verifyActive()
+    {
+        if (!isDriverActive)
+        {
+            throw new DriverTimeoutException("MediaDriver is inactive");
+        }
+
+        if (CLOSED == status)
+        {
+            throw new IllegalStateException("Aeron client is closed");
+        }
+    }
+
     private int onCheckTimeouts()
     {
         final long now = nanoClock.nanoTime();
@@ -446,5 +485,19 @@ class ClientConductor implements Agent, DriverListener
         }
 
         return result;
+    }
+
+    private void checkDriverHeartbeat()
+    {
+        final long now = epochClock.time();
+        final long currentDriverKeepaliveTime = driverProxy.timeOfLastDriverKeepalive();
+
+        if (isDriverActive && (now > (currentDriverKeepaliveTime + driverTimeoutMs)))
+        {
+            isDriverActive = false;
+
+            final String msg = "MediaDriver has been inactive for over " + driverTimeoutMs + "ms";
+            errorHandler.onError(new DriverTimeoutException(msg));
+        }
     }
 }

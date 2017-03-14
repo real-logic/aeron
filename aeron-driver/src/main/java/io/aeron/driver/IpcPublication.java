@@ -215,6 +215,8 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
     public void onTimeEvent(final long timeNs, final DriverConductor conductor)
     {
+        checkForBlockedPublisher(timeNs);
+
         switch (status)
         {
             case INACTIVE:
@@ -233,23 +235,6 @@ public class IpcPublication implements DriverManagedResource, Subscribable
                     conductor.cleanupIpcPublication(this);
                 }
                 break;
-        }
-
-        if (consumerPosition == lastConsumerPosition)
-        {
-            if (producerPosition() > consumerPosition &&
-                timeNs > (timeOfLastConsumerPositionChange + unblockTimeoutNs))
-            {
-                if (unblockAtConsumerPosition())
-                {
-                    unblockedPublications.orderedIncrement();
-                }
-            }
-        }
-        else
-        {
-            timeOfLastConsumerPositionChange = timeNs;
-            lastConsumerPosition = consumerPosition;
         }
     }
 
@@ -315,5 +300,25 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         }
 
         return minSubscriberPosition >= producerPosition();
+    }
+
+    private void checkForBlockedPublisher(final long timeNs)
+    {
+        if (consumerPosition == lastConsumerPosition)
+        {
+            if (producerPosition() > consumerPosition &&
+                timeNs > (timeOfLastConsumerPositionChange + unblockTimeoutNs))
+            {
+                if (unblockAtConsumerPosition())
+                {
+                    unblockedPublications.orderedIncrement();
+                }
+            }
+        }
+        else
+        {
+            timeOfLastConsumerPositionChange = timeNs;
+            lastConsumerPosition = consumerPosition;
+        }
     }
 }

@@ -572,31 +572,36 @@ public class NetworkPublication
     public void onTimeEvent(final long timeNs, final DriverConductor conductor)
     {
         if (isUnreferencedAndPotentiallyInactive(timeNs) &&
-            haveSpiesCaughtUpWithTheSender() &&
-            timeNs > (timeOfLastActivity + PUBLICATION_LINGER_NS))
+            timeNs > (timeOfLastActivity + PUBLICATION_LINGER_NS) &&
+            haveSpiesCaughtUpWithTheSender())
         {
             hasReachedEndOfLife = true;
             conductor.cleanupPublication(NetworkPublication.this);
         }
-        else
+        else if (!isExclusive)
         {
-            final long consumerPosition = senderPosition.getVolatile();
-            if (consumerPosition == lastConsumerPosition)
+            checkForBlockedPublisher(timeNs);
+        }
+    }
+
+    private void checkForBlockedPublisher(final long timeNs)
+    {
+        final long consumerPosition = senderPosition.getVolatile();
+        if (consumerPosition == lastConsumerPosition)
+        {
+            if (producerPosition() > consumerPosition &&
+                timeNs > (timeOfLastConsumerPositionChange + unblockTimeoutNs))
             {
-                if (producerPosition() > consumerPosition &&
-                    timeNs > (timeOfLastConsumerPositionChange + unblockTimeoutNs))
+                if (unblockAtConsumerPosition())
                 {
-                    if (unblockAtConsumerPosition())
-                    {
-                        unblockedPublications.orderedIncrement();
-                    }
+                    unblockedPublications.orderedIncrement();
                 }
             }
-            else
-            {
-                timeOfLastConsumerPositionChange = timeNs;
-                lastConsumerPosition = consumerPosition;
-            }
+        }
+        else
+        {
+            timeOfLastConsumerPositionChange = timeNs;
+            lastConsumerPosition = consumerPosition;
         }
     }
 

@@ -60,6 +60,7 @@ public class DriverConductor implements Agent
     private final long imageLivenessTimeoutNs;
     private final long clientLivenessTimeoutNs;
     private final long publicationUnblockTimeoutNs;
+    private final long statusMessageTimeoutNs;
     private long timeOfLastToDriverPositionChange;
     private long lastConsumerCommandPosition;
     private long timeOfLastTimeoutCheck;
@@ -99,6 +100,7 @@ public class DriverConductor implements Agent
         imageLivenessTimeoutNs = ctx.imageLivenessTimeoutNs();
         clientLivenessTimeoutNs = ctx.clientLivenessTimeoutNs();
         publicationUnblockTimeoutNs = ctx.publicationUnblockTimeoutNs();
+        statusMessageTimeoutNs = ctx.statusMessageTimeout();
         fromReceiverDriverConductorCmdQueue = ctx.toConductorFromReceiverCommandQueue();
         fromSenderDriverConductorCmdQueue = ctx.toConductorFromSenderCommandQueue();
         receiverProxy = ctx.receiverProxy();
@@ -156,7 +158,7 @@ public class DriverConductor implements Agent
         final ArrayList<PublicationImage> publicationImages = this.publicationImages;
         for (int i = 0, size = publicationImages.size(); i < size; i++)
         {
-            publicationImages.get(i).trackRebuild(now, context.statusMessageTimeout());
+            publicationImages.get(i).trackRebuild(now, statusMessageTimeoutNs);
         }
 
         final ArrayList<NetworkPublication> networkPublications = this.networkPublications;

@@ -17,7 +17,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 SET(SOURCE
     concurrent/aeron_spsc_rb.c
     concurrent/aeron_mpsc_rb.c
-    concurrent/aeron_atomic.c)
+    concurrent/aeron_atomic.c
+    aeron_driver_context.c
+    aeron_alloc.c
+    aeron_driver.c)
 
 SET(HEADERS
     concurrent/aeron_atomic.h
@@ -26,7 +29,9 @@ SET(HEADERS
     util/aeron_platform.h
     util/aeron_bitutil.h
     concurrent/aeron_rb.h
-    concurrent/aeron_mpsc_rb.h)
+    concurrent/aeron_mpsc_rb.h
+    aeronmd.h
+    aeron_alloc.h)
 
 add_library(aeron_driver SHARED ${SOURCE} ${HEADERS})
 add_executable(aeronmd aeronmd.c)

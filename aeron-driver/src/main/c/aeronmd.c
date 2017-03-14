@@ -14,10 +14,60 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
+#include <signal.h>
+#include <stdatomic.h>
+#include <time.h>
+#include <stdbool.h>
+#include <stdio.h>
+
+#include <aeronmd.h>
+
+static atomic_bool running;
+
+void sigint_handler(int signal)
+{
+    atomic_store(&running, false);
+}
+
 /**
  *  $ $0 <file and URL list>
  */
 int main(int argc, char **argv)
 {
-    return 0;
+    int status = EXIT_FAILURE;
+    aeron_driver_context_t *context = NULL;
+    aeron_driver_t *driver = NULL;
+
+    atomic_init(&running, true);
+    signal(SIGINT, sigint_handler);
+
+    if (aeron_driver_context_init(&context) < 0)
+    {
+        goto cleanup;
+    }
+
+    if (aeron_driver_init(&driver, context) < 0)
+    {
+        goto cleanup;
+    }
+
+    if (aeron_driver_start(driver) < 0)
+    {
+        goto cleanup;
+    }
+
+    while (atomic_load(&running))
+    {
+        nanosleep(&(struct timespec){.tv_sec=1}, NULL);
+    }
+
+    printf("Shutting down driver...\n");
+
+    cleanup:
+
+    aeron_driver_close(driver);
+    aeron_driver_context_close(context);
+
+    return status;
 }

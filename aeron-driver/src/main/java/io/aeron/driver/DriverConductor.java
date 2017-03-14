@@ -620,9 +620,9 @@ public class DriverConductor implements Agent
         {
             final NetworkPublication publication = networkPublications.get(i);
 
-            if (NetworkPublication.Status.ACTIVE == publication.status() &&
-                streamId == publication.streamId() &&
-                channelEndpoint == publication.channelEndpoint())
+            if (streamId == publication.streamId() &&
+                channelEndpoint == publication.channelEndpoint() &&
+                NetworkPublication.Status.ACTIVE == publication.status())
             {
                 linkSpy(publication, subscriptionLink);
             }

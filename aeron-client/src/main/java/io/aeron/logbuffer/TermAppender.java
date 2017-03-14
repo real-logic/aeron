@@ -80,7 +80,7 @@ public class TermAppender
     }
 
     /**
-     * Get the raw value current tail value in a volatile memory ordering fashion.
+     * Get the raw current tail value in a volatile memory ordering fashion.
      *
      * @return the current tail value.
      */

@@ -335,7 +335,7 @@ public class DriverConductor implements Agent
             channelEndpoint.incRef();
             networkPublications.add(publication);
             senderProxy.newNetworkPublication(publication);
-            linkSpies(publication);
+            linkSpies(subscriptionLinks, publication);
         }
         else if (publication.mtuLength() != mtuLength)
         {
@@ -1143,9 +1143,8 @@ public class DriverConductor implements Agent
         return mtuLength;
     }
 
-    private void linkSpies(final NetworkPublication publication)
+    private void linkSpies(final ArrayList<SubscriptionLink> links, final NetworkPublication publication)
     {
-        final ArrayList<SubscriptionLink> links = this.subscriptionLinks;
         for (int i = 0, size = links.size(); i < size; i++)
         {
             final SubscriptionLink subscription = links.get(i);

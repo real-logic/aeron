@@ -113,7 +113,7 @@ subprojects {
     }
 
     dependencies {
-        checkstyle 'com.puppycrawl.tools:checkstyle:7.5.1'
+        checkstyle 'com.puppycrawl.tools:checkstyle:7.6'
         checkstyle 'com.github.sevntu.checkstyle:sevntu-checks:1.23.0'
 
         testCompile(
@@ -124,7 +124,7 @@ subprojects {
 
     checkstyle {
         configFile = new File(rootDir, 'config/checkstyle/checkstyle.xml')
-        toolVersion = '7.5.1'
+        toolVersion = '7.6'
     }
 
     test {

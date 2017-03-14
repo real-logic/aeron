@@ -37,6 +37,10 @@ public class CmdInterceptor
                 LOGGER.log(CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
                 break;
 
+            case ADD_EXCLUSIVE_PUBLICATION:
+                LOGGER.log(CMD_IN_ADD_EXCLUSIVE_PUBLICATION, buffer, index, length);
+                break;
+
             case ADD_SUBSCRIPTION:
                 LOGGER.log(CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
                 break;
@@ -47,6 +51,14 @@ public class CmdInterceptor
 
             case CLIENT_KEEPALIVE:
                 LOGGER.log(CMD_IN_KEEPALIVE_CLIENT, buffer, index, length);
+                break;
+
+            case ADD_DESTINATION:
+                LOGGER.log(CMD_IN_ADD_DESTINATION, buffer, index, length);
+                break;
+
+            case REMOVE_DESTINATION:
+                LOGGER.log(CMD_IN_REMOVE_DESTINATION, buffer, index, length);
                 break;
 
             case ON_AVAILABLE_IMAGE:
@@ -67,6 +79,10 @@ public class CmdInterceptor
 
             case ON_UNAVAILABLE_IMAGE:
                 LOGGER.log(CMD_OUT_ON_UNAVAILABLE_IMAGE, buffer, index, length);
+                break;
+
+            case ON_EXCLUSIVE_PUBLICATION_READY:
+                LOGGER.log(CMD_OUT_EXCLUSIVE_PUBLICATION_READY, buffer, index, length);
                 break;
         }
     }

@@ -45,7 +45,12 @@ public enum EventCode
     SEND_CHANNEL_CREATION(23, EventDissector::dissectAsString),
     RECEIVE_CHANNEL_CREATION(24, EventDissector::dissectAsString),
     SEND_CHANNEL_CLOSE(25, EventDissector::dissectAsString),
-    RECEIVE_CHANNEL_CLOSE(26, EventDissector::dissectAsString);
+    RECEIVE_CHANNEL_CLOSE(26, EventDissector::dissectAsString),
+
+    CMD_IN_ADD_DESTINATION(30, EventDissector::dissectAsCommand),
+    CMD_IN_REMOVE_DESTINATION(31, EventDissector::dissectAsCommand),
+    CMD_IN_ADD_EXCLUSIVE_PUBLICATION(32, EventDissector::dissectAsCommand),
+    CMD_OUT_EXCLUSIVE_PUBLICATION_READY(33, EventDissector::dissectAsCommand);
 
     private static final Int2ObjectHashMap<EventCode> EVENT_CODE_BY_ID_MAP = new Int2ObjectHashMap<>();
 

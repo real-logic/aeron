@@ -35,14 +35,15 @@ public class EventDissector
     private static final StatusMessageFlyweight SM_HEADER = new StatusMessageFlyweight();
     private static final NakFlyweight NAK_HEADER = new NakFlyweight();
     private static final SetupFlyweight SETUP_HEADER = new SetupFlyweight();
-    private static final RttMeasurementFlyweight RTT_MEASUREMENT_FLYWEIGHT = new RttMeasurementFlyweight();
-    private static final PublicationMessageFlyweight PUB_MESSAGE = new PublicationMessageFlyweight();
-    private static final SubscriptionMessageFlyweight SUB_MESSAGE = new SubscriptionMessageFlyweight();
-    private static final PublicationBuffersReadyFlyweight PUBLICATION_READY = new PublicationBuffersReadyFlyweight();
+    private static final RttMeasurementFlyweight RTT_MEASUREMENT = new RttMeasurementFlyweight();
+    private static final PublicationMessageFlyweight PUB_MSG = new PublicationMessageFlyweight();
+    private static final SubscriptionMessageFlyweight SUB_MSG = new SubscriptionMessageFlyweight();
+    private static final PublicationBuffersReadyFlyweight PUB_READY = new PublicationBuffersReadyFlyweight();
     private static final ImageBuffersReadyFlyweight IMAGE_READY = new ImageBuffersReadyFlyweight();
     private static final CorrelatedMessageFlyweight CORRELATED_MSG = new CorrelatedMessageFlyweight();
     private static final ImageMessageFlyweight IMAGE_MSG = new ImageMessageFlyweight();
     private static final RemoveMessageFlyweight REMOVE_MSG = new RemoveMessageFlyweight();
+    private static final DestinationMessageFlyweight DESTINATION_MSG = new DestinationMessageFlyweight();
 
     public static String dissectAsFrame(final EventCode code, final MutableDirectBuffer buffer, final int offset)
     {
@@ -84,7 +85,7 @@ public class EventDissector
                 break;
 
             case HeaderFlyweight.HDR_TYPE_RTTM:
-                final RttMeasurementFlyweight rttMeasurementFlyweight = RTT_MEASUREMENT_FLYWEIGHT;
+                final RttMeasurementFlyweight rttMeasurementFlyweight = RTT_MEASUREMENT;
                 rttMeasurementFlyweight.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
                 builder.append(dissect(rttMeasurementFlyweight));
                 break;
@@ -107,13 +108,14 @@ public class EventDissector
         switch (code)
         {
             case CMD_IN_ADD_PUBLICATION:
-                final PublicationMessageFlyweight pubCommand = PUB_MESSAGE;
+            case CMD_IN_ADD_EXCLUSIVE_PUBLICATION:
+                final PublicationMessageFlyweight pubCommand = PUB_MSG;
                 pubCommand.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(pubCommand));
                 break;
 
             case CMD_IN_ADD_SUBSCRIPTION:
-                final SubscriptionMessageFlyweight subCommand = SUB_MESSAGE;
+                final SubscriptionMessageFlyweight subCommand = SUB_MSG;
                 subCommand.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(subCommand));
                 break;
@@ -126,7 +128,8 @@ public class EventDissector
                 break;
 
             case CMD_OUT_PUBLICATION_READY:
-                final PublicationBuffersReadyFlyweight publicationReadyEvent = PUBLICATION_READY;
+            case CMD_OUT_EXCLUSIVE_PUBLICATION_READY:
+                final PublicationBuffersReadyFlyweight publicationReadyEvent = PUB_READY;
                 publicationReadyEvent.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(publicationReadyEvent));
                 break;
@@ -148,6 +151,13 @@ public class EventDissector
                 final ImageMessageFlyweight imageUnavailableEvent = IMAGE_MSG;
                 imageUnavailableEvent.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(imageUnavailableEvent));
+                break;
+
+            case CMD_IN_ADD_DESTINATION:
+            case CMD_IN_REMOVE_DESTINATION:
+                final DestinationMessageFlyweight destinationMessageFlyweight = DESTINATION_MSG;
+                destinationMessageFlyweight.wrap(buffer, offset + relativeOffset);
+                builder.append(dissect(destinationMessageFlyweight));
                 break;
 
             default:
@@ -398,6 +408,16 @@ public class EventDissector
         return String.format(
             "%d [%d:%d]",
             msg.registrationId(),
+            msg.clientId(),
+            msg.correlationId());
+    }
+
+    private static String dissect(final DestinationMessageFlyweight msg)
+    {
+        return String.format(
+            "%s %d [%d:%d]",
+            msg.channel(),
+            msg.registrationCorrelationId(),
             msg.clientId(),
             msg.correlationId());
     }

@@ -458,27 +458,6 @@ public class DriverConductor implements Agent
         return subscriberPositions;
     }
 
-    private static NetworkPublication findPublication(
-        final ArrayList<NetworkPublication> publications,
-        final int streamId,
-        final SendChannelEndpoint channelEndpoint)
-    {
-        for (int i = 0, size = publications.size(); i < size; i++)
-        {
-            final NetworkPublication publication = publications.get(i);
-
-            if (NetworkPublication.Status.ACTIVE == publication.status() &&
-                !publication.isExclusive() &&
-                streamId == publication.streamId() &&
-                channelEndpoint == publication.channelEndpoint())
-            {
-                return publication;
-            }
-        }
-
-        return null;
-    }
-
     void onAddIpcPublication(
         final String channel,
         final int streamId,
@@ -728,6 +707,27 @@ public class DriverConductor implements Agent
             timeOfLastToDriverPositionChange = nanoTimeNow;
             lastConsumerCommandPosition = consumerPosition;
         }
+    }
+
+    private static NetworkPublication findPublication(
+        final ArrayList<NetworkPublication> publications,
+        final int streamId,
+        final SendChannelEndpoint channelEndpoint)
+    {
+        for (int i = 0, size = publications.size(); i < size; i++)
+        {
+            final NetworkPublication publication = publications.get(i);
+
+            if (streamId == publication.streamId() &&
+                channelEndpoint == publication.channelEndpoint() &&
+                NetworkPublication.Status.ACTIVE == publication.status() &&
+                !publication.isExclusive())
+            {
+                return publication;
+            }
+        }
+
+        return null;
     }
 
     private RawLog newNetworkPublicationLog(
@@ -1081,8 +1081,8 @@ public class DriverConductor implements Agent
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
             final IpcPublication publication = ipcPublications.get(i);
-            if (!publication.isExclusive() &&
-                publication.streamId() == streamId &&
+            if (publication.streamId() == streamId &&
+                !publication.isExclusive() &&
                 IpcPublication.Status.ACTIVE == publication.status())
             {
                 ipcPublication = publication;

@@ -68,7 +68,7 @@ int aeron_agent_init(
     _runner->agent_state = state;
     _runner->do_work = do_work;
     _runner->on_close = on_close;
-    _runner->role_name = strdup(role_name);
+    _runner->role_name = strndup(role_name, AERON_MAX_PATH);
     _runner->idle_strategy_state = idle_state;
     _runner->idle_strategy = idle_func;
     atomic_init(&_runner->running, true);

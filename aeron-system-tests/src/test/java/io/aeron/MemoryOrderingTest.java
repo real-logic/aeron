@@ -97,6 +97,63 @@ public class MemoryOrderingTest
         }
     }
 
+    @Test(timeout = 10000)
+    public void shouldReceiveMessagesInOrderWithFirstLongWordIntactFromExclusivePublication() throws Exception
+    {
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
+        srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
+        final MediaDriver.Context ctx = new MediaDriver.Context()
+            .publicationTermBufferLength(TERM_BUFFER_LENGTH);
+
+        try (MediaDriver ignore = MediaDriver.launch(ctx);
+             Aeron aeron = Aeron.connect();
+             ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID);
+             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+        {
+            final BusySpinIdleStrategy idleStrategy = new BusySpinIdleStrategy();
+
+            final Thread subscriberThread = new Thread(new Subscriber(subscription));
+            subscriberThread.start();
+
+            for (int i = 0; i < NUM_MESSAGES; i++)
+            {
+                if (null != failedMessage)
+                {
+                    fail(failedMessage);
+                }
+
+                srcBuffer.putLong(0, i);
+
+                while (publication.offer(srcBuffer) < 0L)
+                {
+                    if (null != failedMessage)
+                    {
+                        fail(failedMessage);
+                    }
+
+                    idleStrategy.idle();
+                }
+
+                if (i % BURST_LENGTH == 0)
+                {
+                    final long timeout = System.nanoTime() + INTER_BURST_DURATION_NS;
+                    long now;
+                    do
+                    {
+                        now = System.nanoTime();
+                    }
+                    while (now < timeout);
+                }
+            }
+
+            subscriberThread.join();
+        }
+        finally
+        {
+            ctx.deleteAeronDirectory();
+        }
+    }
+
     static class Subscriber implements Runnable, FragmentHandler
     {
         private final Subscription subscription;

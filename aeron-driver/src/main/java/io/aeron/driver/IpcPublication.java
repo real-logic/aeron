@@ -292,14 +292,17 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
     private boolean isDrained()
     {
-        long minSubscriberPosition = Long.MAX_VALUE;
+        final long producerPosition = producerPosition();
 
         for (final ReadablePosition subscriberPosition : subscriberPositions)
         {
-            minSubscriberPosition = Math.min(minSubscriberPosition, subscriberPosition.getVolatile());
+            if (subscriberPosition.getVolatile() < producerPosition)
+            {
+                return false;
+            }
         }
 
-        return minSubscriberPosition >= producerPosition();
+        return true;
     }
 
     private void checkForBlockedPublisher(final long timeNs)

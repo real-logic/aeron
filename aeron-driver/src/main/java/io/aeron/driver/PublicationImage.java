@@ -689,14 +689,17 @@ public class PublicationImage
 
     private boolean isDrained()
     {
-        long minSubscriberPosition = Long.MAX_VALUE;
+        final long rebuildPosition = this.rebuildPosition.get();
 
         for (final ReadablePosition subscriberPosition : subscriberPositions)
         {
-            minSubscriberPosition = Math.min(minSubscriberPosition, subscriberPosition.getVolatile());
+            if (subscriberPosition.getVolatile() < rebuildPosition)
+            {
+                return false;
+            }
         }
 
-        return minSubscriberPosition >= rebuildPosition.get();
+        return true;
     }
 
     private boolean isHeartbeat(final UnsafeBuffer packet, final int length)

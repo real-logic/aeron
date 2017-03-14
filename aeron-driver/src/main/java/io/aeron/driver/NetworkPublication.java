@@ -607,17 +607,14 @@ public class NetworkPublication
 
     private boolean haveSpiesCaughtUpWithTheSender()
     {
-        if (hasSpies())
+        final long senderPosition = this.senderPosition.getVolatile();
+
+        for (final ReadablePosition spyPosition : spyPositions)
         {
-            final long senderPosition = this.senderPosition.getVolatile();
-
-            long minSpyPosition = senderPosition;
-            for (final ReadablePosition spyPosition : spyPositions)
+            if (spyPosition.getVolatile() < senderPosition)
             {
-                minSpyPosition = Math.min(minSpyPosition, spyPosition.getVolatile());
+                return false;
             }
-
-            return minSpyPosition >= senderPosition;
         }
 
         return true;

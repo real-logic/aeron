@@ -71,7 +71,7 @@ public class ExclusivePublication implements AutoCloseable
     private final int positionBitsToShift;
     private volatile boolean isClosed = false;
 
-    private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
+    private final ExclusiveTermAppender[] termAppenders = new ExclusiveTermAppender[PARTITION_COUNT];
     private final ReadablePosition positionLimit;
     private final UnsafeBuffer logMetaDataBuffer;
     private final HeaderWriter headerWriter;
@@ -93,7 +93,7 @@ public class ExclusivePublication implements AutoCloseable
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            termAppenders[i] = new TermAppender(buffers[i], logMetaDataBuffer, i);
+            termAppenders[i] = new ExclusiveTermAppender(buffers[i], logMetaDataBuffer, i);
         }
 
         final int termLength = logBuffers.termLength();
@@ -327,8 +327,8 @@ public class ExclusivePublication implements AutoCloseable
         {
             final long limit = positionLimit.getVolatile();
             final int partitionIndex = activePartitionIndex(logMetaDataBuffer);
-            final TermAppender termAppender = termAppenders[partitionIndex];
-            final long rawTail = termAppender.rawTailVolatile();
+            final ExclusiveTermAppender termAppender = termAppenders[partitionIndex];
+            final long rawTail = termAppender.rawTail();
             final long termOffset = rawTail & 0xFFFF_FFFFL;
             final long position =
                 computeTermBeginPosition(termId(rawTail), positionBitsToShift, initialTermId) + termOffset;
@@ -405,8 +405,8 @@ public class ExclusivePublication implements AutoCloseable
         {
             final long limit = positionLimit.getVolatile();
             final int partitionIndex = activePartitionIndex(logMetaDataBuffer);
-            final TermAppender termAppender = termAppenders[partitionIndex];
-            final long rawTail = termAppender.rawTailVolatile();
+            final ExclusiveTermAppender termAppender = termAppenders[partitionIndex];
+            final long rawTail = termAppender.rawTail();
             final long termOffset = rawTail & 0xFFFF_FFFFL;
             final long position =
                 computeTermBeginPosition(termId(rawTail), positionBitsToShift, initialTermId) + termOffset;
@@ -473,7 +473,7 @@ public class ExclusivePublication implements AutoCloseable
         {
             newPosition = (position - currentTail) + termOffset;
         }
-        else if (termOffset == TermAppender.TRIPPED)
+        else if (termOffset == ExclusiveTermAppender.TRIPPED)
         {
             final int nextIndex = nextPartitionIndex(index);
             termAppenders[nextIndex].tailTermId(TermAppender.termId(result) + 1);

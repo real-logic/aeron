@@ -322,7 +322,7 @@ public class ExclusiveTermAppender
     private long getAndAddRawTail(final int alignedLength)
     {
         final long previousValue = UnsafeAccess.UNSAFE.getLong(tailBuffer, tailAddressOffset);
-        UnsafeAccess.UNSAFE.putLong(tailBuffer, tailAddressOffset, previousValue + alignedLength);
+        UnsafeAccess.UNSAFE.putOrderedLong(tailBuffer, tailAddressOffset, previousValue + alignedLength);
 
         return previousValue;
     }

@@ -188,9 +188,8 @@ public class EmbeddedBufferClaimIpcThroughput
 
         public void run()
         {
-            while (subscription.imageCount() == 0)
+            while (subscription.hasNoImages())
             {
-                // wait for an image to be ready
                 Thread.yield();
             }
 

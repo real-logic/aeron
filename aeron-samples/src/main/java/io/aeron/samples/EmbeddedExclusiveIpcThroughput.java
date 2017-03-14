@@ -22,7 +22,9 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.NoOpIdleStrategy;
+import org.agrona.concurrent.SigInt;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,7 +33,7 @@ import java.util.concurrent.locks.LockSupport;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.UnsafeAccess.UNSAFE;
 
-public class EmbeddedIpcThroughput
+public class EmbeddedExclusiveIpcThroughput
 {
     public static final int BURST_LENGTH = 1_000_000;
     public static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
@@ -52,7 +54,7 @@ public class EmbeddedIpcThroughput
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
              Aeron aeron = Aeron.connect();
-             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
+             ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID);
              Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             final Subscriber subscriber = new Subscriber(running, subscription);
@@ -112,9 +114,9 @@ public class EmbeddedIpcThroughput
     public static final class Publisher implements Runnable
     {
         private final AtomicBoolean running;
-        private final Publication publication;
+        private final ExclusivePublication publication;
 
-        public Publisher(final AtomicBoolean running, final Publication publication)
+        public Publisher(final AtomicBoolean running, final ExclusivePublication publication)
         {
             this.running = running;
             this.publication = publication;
@@ -122,7 +124,7 @@ public class EmbeddedIpcThroughput
 
         public void run()
         {
-            final Publication publication = this.publication;
+            final ExclusivePublication publication = this.publication;
             final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(
                 publication.maxMessageLength(), CACHE_LINE_LENGTH);
             final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);

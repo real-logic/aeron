@@ -105,8 +105,8 @@ public class TermAppender
      * @param header      for writing the default header.
      * @param length      of the message to be written.
      * @param bufferClaim to be updated with the claimed region.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or {@link #FAILED}
-     * packed with the termId if a padding record was inserted at the end.
+     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED}
+     * or {@link #FAILED} packed with the termId if a padding record was inserted at the end.
      */
     public long claim(final HeaderWriter header, final int length, final BufferClaim bufferClaim)
     {
@@ -141,8 +141,8 @@ public class TermAppender
      * @param srcOffset             at which the message begins.
      * @param length                of the message in the source buffer.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or {@link #FAILED}
-     * packed with the termId if a padding record was inserted at the end.
+     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or
+     * {@link #FAILED} packed with the termId if a padding record was inserted at the end.
      */
     public long appendUnfragmentedMessage(
         final HeaderWriter header,
@@ -192,8 +192,8 @@ public class TermAppender
      * @param length                of the message in the source buffer.
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or {@link #FAILED}
-     * packed with the termId if a padding record was inserted at the end.
+     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED}
+     * or {@link #FAILED} packed with the termId if a padding record was inserted at the end.
      */
     public long appendFragmentedMessage(
         final HeaderWriter header,

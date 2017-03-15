@@ -157,7 +157,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
             maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
 
-        if (0 != subscriberPositions.length)
+        if (subscriberPositions.length > 0)
         {
             final long proposedLimit = minSubscriberPosition + termWindowLength;
             if (proposedLimit > tripLimit)
@@ -167,10 +167,10 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
                 cleanBuffer(minSubscriberPosition);
 
+                LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), nowInMillis);
                 workCount = 1;
             }
 
-            LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), nowInMillis);
             consumerPosition = maxSubscriberPosition;
         }
 
@@ -209,6 +209,11 @@ public class IpcPublication implements DriverManagedResource, Subscribable
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
         checkForBlockedPublisher(timeNs);
+
+        if (subscriberPositions.length > 0)
+        {
+            LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), timeMs);
+        }
 
         switch (status)
         {

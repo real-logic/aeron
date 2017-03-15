@@ -32,11 +32,11 @@ public class MemoryOrderingTest
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:54325";
     private static final int STREAM_ID = 1;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
-    private static final int MESSAGE_LENGTH = 1024 - DataHeaderFlyweight.HEADER_LENGTH;
+    private static final int MESSAGE_LENGTH = 2000;
     private static final int TERM_BUFFER_LENGTH = 1024 * 64;
-    private static final int NUM_MESSAGES = 100_000;
-    private static final int BURST_LENGTH = 5;
-    private static final int INTER_BURST_DURATION_NS = 10_000;
+    private static final int NUM_MESSAGES = 15_000;
+    private static final int BURST_LENGTH = 7;
+    private static final int INTER_BURST_DURATION_NS = 100_000;
 
     private static volatile String failedMessage = null;
 

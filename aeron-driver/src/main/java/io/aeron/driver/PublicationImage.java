@@ -49,6 +49,9 @@ class PublicationImagePadding1
 class PublicationImageConductorFields extends PublicationImagePadding1
 {
     protected long cleanPosition;
+    protected ReadablePosition[] subscriberPositions;
+    protected LossReport lossReport;
+    protected LossReport.ReportEntry reportEntry;
 }
 
 class PublicationImagePadding2 extends PublicationImageConductorFields
@@ -105,8 +108,8 @@ public class PublicationImage
     private final int termLengthMask;
     private final int initialTermId;
     private final boolean isReliable;
-    private boolean reachedEndOfLife = false;
 
+    private boolean reachedEndOfLife = false;
     private volatile Status status = Status.INIT;
 
     private final NanoClock nanoClock;
@@ -117,7 +120,6 @@ public class PublicationImage
     private final LossDetector lossDetector;
     private final CongestionControl congestionControl;
     private final Position rebuildPosition;
-    private ReadablePosition[] subscriberPositions;
     private final InetSocketAddress sourceAddress;
     private final AtomicCounter heartbeatsReceived;
     private final AtomicCounter statusMessagesSent;
@@ -125,8 +127,6 @@ public class PublicationImage
     private final AtomicCounter flowControlUnderRuns;
     private final AtomicCounter flowControlOverRuns;
     private final AtomicCounter lossGapFills;
-    private LossReport lossReport;
-    private LossReport.ReportEntry reportEntry;
     private final EpochClock epochClock;
     private final RawLog rawLog;
 
@@ -359,7 +359,7 @@ public class PublicationImage
         }
     }
 
-    public void scheduleStatusMessage(final long now, final long smPosition, final int receiverWindowLength)
+    public void scheduleStatusMessage(final long nowNs, final long smPosition, final int receiverWindowLength)
     {
         final long changeNumber = beginSmChange + 1;
 
@@ -367,7 +367,7 @@ public class PublicationImage
 
         nextSmPosition = smPosition;
         nextSmReceiverWindowLength = receiverWindowLength;
-        lastStatusMessageTimestamp = now;
+        lastStatusMessageTimestamp = nowNs;
 
         endSmChange = changeNumber;
     }

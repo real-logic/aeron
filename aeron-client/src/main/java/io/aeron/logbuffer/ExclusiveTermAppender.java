@@ -98,7 +98,6 @@ public class ExclusiveTermAppender
     /**
      * Claim length of a the term buffer for writing in the message with zero copy semantics.
      *
-     * @param rawTail     value from the meta data.
      * @param termId      for the current term.
      * @param termOffset  in the term at which to append.
      * @param header      for writing the default header.
@@ -108,7 +107,6 @@ public class ExclusiveTermAppender
      * {@link #FAILED}.
      */
     public int claim(
-        final long rawTail,
         final int termId,
         final int termOffset,
         final HeaderWriter header,
@@ -120,7 +118,7 @@ public class ExclusiveTermAppender
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
 
-        putRawTailOrdered(rawTail + alignedLength);
+        putRawTailOrdered(termId, termOffset + alignedLength);
 
         int resultingOffset = termOffset + alignedLength;
         if (resultingOffset > termLength)
@@ -139,7 +137,6 @@ public class ExclusiveTermAppender
     /**
      * Append an unfragmented message to the the term buffer.
      *
-     * @param rawTail               value from the meta data.
      * @param termId                for the current term.
      * @param termOffset            in the term at which to append.
      * @param header                for writing the default header.
@@ -151,7 +148,6 @@ public class ExclusiveTermAppender
      * {@link #FAILED}.
      */
     public int appendUnfragmentedMessage(
-        final long rawTail,
         final int termId,
         final int termOffset,
         final HeaderWriter header,
@@ -165,7 +161,7 @@ public class ExclusiveTermAppender
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
 
-        putRawTailOrdered(rawTail + alignedLength);
+        putRawTailOrdered(termId, termOffset + alignedLength);
 
         int resultingOffset = termOffset + alignedLength;
         if (resultingOffset > termLength)
@@ -193,7 +189,6 @@ public class ExclusiveTermAppender
      * Append a fragmented message to the the term buffer.
      * The message will be split up into fragments of MTU length minus header.
      *
-     * @param rawTail               value from the meta data.
      * @param termId                for the current term.
      * @param termOffset            in the term at which to append.
      * @param header                for writing the default header.
@@ -206,7 +201,6 @@ public class ExclusiveTermAppender
      * {@link #FAILED}.
      */
     public int appendFragmentedMessage(
-        final long rawTail,
         final int termId,
         final int termOffset,
         final HeaderWriter header,
@@ -223,7 +217,7 @@ public class ExclusiveTermAppender
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
 
-        putRawTailOrdered(rawTail + requiredLength);
+        putRawTailOrdered(termId, termOffset + requiredLength);
 
         int resultingOffset = termOffset + requiredLength;
         if (resultingOffset > termLength)
@@ -299,8 +293,8 @@ public class ExclusiveTermAppender
         return resultingOffset;
     }
 
-    private void putRawTailOrdered(final long rawTail)
+    private void putRawTailOrdered(final int termId, final int termOffset)
     {
-        UnsafeAccess.UNSAFE.putOrderedLong(tailBuffer, tailAddressOffset, rawTail);
+        UnsafeAccess.UNSAFE.putOrderedLong(tailBuffer, tailAddressOffset, (((long)termId) << 32) + termOffset);
     }
 }

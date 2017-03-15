@@ -71,6 +71,9 @@ public class ExclusivePublication implements AutoCloseable
     private final int positionBitsToShift;
     private long termBeginPosition;
     private int activePartitionIndex;
+    private int termId;
+    private int termOffset;
+
     private volatile boolean isClosed = false;
 
     private final ExclusiveTermAppender[] termAppenders = new ExclusiveTermAppender[PARTITION_COUNT];
@@ -115,7 +118,9 @@ public class ExclusivePublication implements AutoCloseable
         this.activePartitionIndex = activePartitionIndex(logMetaDataBuffer);
 
         final long rawTail = termAppenders[activePartitionIndex].rawTail();
-        termBeginPosition = computeTermBeginPosition(termId(rawTail), positionBitsToShift, initialTermId);
+        termId = termId(rawTail);
+        termOffset = termOffset(rawTail, termLength);
+        termBeginPosition = computeTermBeginPosition(termId, positionBitsToShift, initialTermId);
     }
 
     /**
@@ -333,9 +338,6 @@ public class ExclusivePublication implements AutoCloseable
         {
             final long limit = positionLimit.getVolatile();
             final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
-            final long rawTail = termAppender.rawTail();
-            final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
-            final int termId = termId(rawTail);
             final long position = termBeginPosition + termOffset;
 
             if (position < limit)
@@ -344,13 +346,12 @@ public class ExclusivePublication implements AutoCloseable
                 if (length <= maxPayloadLength)
                 {
                     result = termAppender.appendUnfragmentedMessage(
-                        rawTail, termId, termOffset, headerWriter, buffer, offset, length, reservedValueSupplier);
+                        termId, termOffset, headerWriter, buffer, offset, length, reservedValueSupplier);
                 }
                 else
                 {
                     checkForMaxMessageLength(length);
                     result = termAppender.appendFragmentedMessage(
-                        rawTail,
                         termId,
                         termOffset,
                         headerWriter,
@@ -361,7 +362,7 @@ public class ExclusivePublication implements AutoCloseable
                         reservedValueSupplier);
                 }
 
-                newPosition = newPosition(termId, termOffset, position, result);
+                newPosition = newPosition(result);
             }
             else if (conductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
             {
@@ -418,15 +419,12 @@ public class ExclusivePublication implements AutoCloseable
         {
             final long limit = positionLimit.getVolatile();
             final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
-            final long rawTail = termAppender.rawTail();
-            final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
-            final int termId = termId(rawTail);
             final long position = termBeginPosition + termOffset;
 
             if (position < limit)
             {
-                final int result = termAppender.claim(rawTail, termId, termOffset, headerWriter, length, bufferClaim);
-                newPosition = newPosition(termId, termOffset, position, result);
+                final int result = termAppender.claim(termId, termOffset, headerWriter, length, bufferClaim);
+                newPosition = newPosition(result);
             }
             else if (conductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
             {
@@ -477,19 +475,22 @@ public class ExclusivePublication implements AutoCloseable
         }
     }
 
-    private long newPosition(final int termId, final int currentTail, final long position, final int resultingOffset)
+    private long newPosition(final int resultingOffset)
     {
         long newPosition = ADMIN_ACTION;
 
         if (resultingOffset > 0)
         {
-            newPosition = (position - currentTail) + resultingOffset;
+            termOffset = resultingOffset;
+            newPosition = termBeginPosition + resultingOffset;
         }
         else if (resultingOffset == ExclusiveTermAppender.TRIPPED)
         {
+            this.termOffset = 0;
             final int nextIndex = nextPartitionIndex(activePartitionIndex);
             activePartitionIndex = nextIndex;
             final int nextTermId = termId + 1;
+            this.termId = nextTermId;
             termBeginPosition = computeTermBeginPosition(nextTermId, positionBitsToShift, initialTermId);
             termAppenders[nextIndex].tailTermId(nextTermId);
             LogBufferDescriptor.activePartitionIndex(logMetaDataBuffer, nextIndex);

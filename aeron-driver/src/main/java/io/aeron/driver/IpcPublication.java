@@ -195,14 +195,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
     public long joiningPosition()
     {
-        long maxSubscriberPosition = producerPosition();
-
-        for (final ReadablePosition subscriberPosition : subscriberPositions)
-        {
-            maxSubscriberPosition = Math.max(maxSubscriberPosition, subscriberPosition.getVolatile());
-        }
-
-        return maxSubscriberPosition;
+        return producerPosition();
     }
 
     public long producerPosition()

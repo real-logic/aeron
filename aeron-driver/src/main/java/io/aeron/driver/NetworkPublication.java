@@ -65,7 +65,7 @@ class NetworkPublicationPadding2 extends NetworkPublicationConductorFields
     protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
 }
 
-class NetworkPublicationReceiverFields extends NetworkPublicationPadding2
+class NetworkPublicationSenderFields extends NetworkPublicationPadding2
 {
     protected long timeOfLastSendOrHeartbeat;
     protected long timeOfLastSetup;
@@ -73,7 +73,7 @@ class NetworkPublicationReceiverFields extends NetworkPublicationPadding2
     protected boolean shouldSendSetupFrame = true;
 }
 
-class NetworkPublicationPadding3 extends NetworkPublicationReceiverFields
+class NetworkPublicationPadding3 extends NetworkPublicationSenderFields
 {
     @SuppressWarnings("unused")
     protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;

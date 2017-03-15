@@ -61,13 +61,13 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         int workCount = commandQueue.drain(this);
         final int bytesReceived = dataTransportPoller.pollTransports();
 
-        final long now = clock.nanoTime();
+        final long nowNs = clock.nanoTime();
 
         final ArrayList<PublicationImage> publicationImages = this.publicationImages;
         for (int lastIndex = publicationImages.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final PublicationImage image = publicationImages.get(i);
-            if (!image.checkForActivity(now))
+            if (!image.checkForActivity(nowNs))
             {
                 image.removeFromDispatcher();
                 ArrayListUtil.fastUnorderedRemove(publicationImages, i, lastIndex);
@@ -77,11 +77,11 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
             {
                 workCount += image.sendPendingStatusMessage();
                 workCount += image.processPendingLoss();
-                workCount += image.initiateAnyRttMeasurements(now);
+                workCount += image.initiateAnyRttMeasurements(nowNs);
             }
         }
 
-        checkPendingSetupMessages(now);
+        checkPendingSetupMessages(nowNs);
 
         totalBytesReceived.addOrdered(bytesReceived);
 
@@ -145,14 +145,14 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         cmd.execute(this);
     }
 
-    private void checkPendingSetupMessages(final long now)
+    private void checkPendingSetupMessages(final long nowNs)
     {
         final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = this.pendingSetupMessages;
         for (int lastIndex = pendingSetupMessages.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final PendingSetupMessageFromSource pending = pendingSetupMessages.get(i);
 
-            if (now > (pending.timeOfStatusMessage() + PENDING_SETUPS_TIMEOUT_NS))
+            if (nowNs > (pending.timeOfStatusMessage() + PENDING_SETUPS_TIMEOUT_NS))
             {
                 if (!pending.isPeriodic())
                 {
@@ -162,10 +162,9 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
                 }
                 else if (pending.shouldElicitSetupMessage())
                 {
-                    pending.channelEndpoint()
-                        .sendSetupElicitingStatusMessage(
+                    pending.channelEndpoint().sendSetupElicitingStatusMessage(
                             pending.controlAddress(), pending.sessionId(), pending.streamId());
-                    pending.timeOfStatusMessage(now);
+                    pending.timeOfStatusMessage(nowNs);
                 }
             }
         }

@@ -396,7 +396,7 @@ public class PublicationImage
     /**
      * Called from the {@link DriverConductor}.
      *
-     * @param nowNs              in nanoseconds
+     * @param nowNs                in nanoseconds
      * @param statusMessageTimeout for sending of Status Messages.
      */
     void trackRebuild(final long nowNs, final long statusMessageTimeout)
@@ -497,14 +497,14 @@ public class PublicationImage
     /**
      * To be called from the {@link Receiver} to see if a image should be garbage collected.
      *
-     * @param now current time to check against.
+     * @param nowNs current time to check against.
      * @return true if still active otherwise false.
      */
-    boolean checkForActivity(final long now)
+    boolean checkForActivity(final long nowNs)
     {
         boolean activity = true;
 
-        if (now > (lastPacketTimestamp + imageLivenessTimeoutNs))
+        if (nowNs > (lastPacketTimestamp + imageLivenessTimeoutNs))
         {
             activity = false;
         }
@@ -596,16 +596,16 @@ public class PublicationImage
     /**
      * Called from the {@link Receiver} thread to check for initiating an RTT measurement.
      *
-     * @param now in nanoseconds
+     * @param nowNs in nanoseconds
      * @return number of work items processed.
      */
-    int initiateAnyRttMeasurements(final long now)
+    int initiateAnyRttMeasurements(final long nowNs)
     {
         int workCount = 0;
 
-        if (congestionControl.shouldMeasureRtt(now))
+        if (congestionControl.shouldMeasureRtt(nowNs))
         {
-            channelEndpoint.sendRttMeasurement(controlAddress, sessionId, streamId, now, 0, true);
+            channelEndpoint.sendRttMeasurement(controlAddress, sessionId, streamId, nowNs, 0, true);
             workCount = 1;
         }
 
@@ -620,10 +620,10 @@ public class PublicationImage
      */
     public void onRttMeasurement(final RttMeasurementFlyweight header, final InetSocketAddress srcAddress)
     {
-        final long now = nanoClock.nanoTime();
-        final long rttInNs = now - header.echoTimestamp() - header.receptionDelta();
+        final long nowNs = nanoClock.nanoTime();
+        final long rttInNs = nowNs - header.echoTimestamp() - header.receptionDelta();
 
-        congestionControl.onRttMeasurement(now, rttInNs, srcAddress);
+        congestionControl.onRttMeasurement(nowNs, rttInNs, srcAddress);
     }
 
     /**

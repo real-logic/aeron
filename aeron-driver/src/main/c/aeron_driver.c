@@ -15,9 +15,8 @@
  */
 
 #include <stddef.h>
-
-#include <aeronmd.h>
-#include <aeron_alloc.h>
+#include "aeronmd.h"
+#include "aeron_alloc.h"
 
 int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 {

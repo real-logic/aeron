@@ -20,8 +20,7 @@
 #include <time.h>
 #include <stdbool.h>
 #include <stdio.h>
-
-#include <aeronmd.h>
+#include "aeronmd.h"
 
 static atomic_bool running;
 

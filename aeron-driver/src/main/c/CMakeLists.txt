@@ -24,13 +24,14 @@ SET(SOURCE
     aeron_agent.c)
 
 SET(HEADERS
+    util/aeron_platform.h
+    util/aeron_bitutil.h
     concurrent/aeron_atomic.h
     concurrent/aeron_atomic64_gcc_x86_64.h
     concurrent/aeron_spsc_rb.h
-    util/aeron_platform.h
-    util/aeron_bitutil.h
     concurrent/aeron_rb.h
     concurrent/aeron_mpsc_rb.h
+    concurrent/aeron_distinct_error_log.h
     aeronmd.h
     aeron_alloc.h
     aeron_agent.h)

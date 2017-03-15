@@ -396,10 +396,10 @@ public class PublicationImage
     /**
      * Called from the {@link DriverConductor}.
      *
-     * @param now                  in nanoseconds
+     * @param nowNs              in nanoseconds
      * @param statusMessageTimeout for sending of Status Messages.
      */
-    void trackRebuild(final long now, final long statusMessageTimeout)
+    void trackRebuild(final long nowNs, final long statusMessageTimeout)
     {
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
@@ -418,7 +418,7 @@ public class PublicationImage
             termBuffers[indexByPosition(rebuildPosition, positionBitsToShift)],
             rebuildPosition,
             hwmPosition,
-            now,
+            nowNs,
             termLengthMask,
             positionBitsToShift,
             initialTermId);
@@ -428,7 +428,7 @@ public class PublicationImage
         this.rebuildPosition.proposeMaxOrdered(newRebuildPosition);
 
         final long ccOutcome = congestionControl.onTrackRebuild(
-            now,
+            nowNs,
             minSubscriberPosition,
             nextSmPosition,
             hwmPosition,
@@ -440,10 +440,10 @@ public class PublicationImage
         final long threshold = CongestionControlUtil.positionThreshold(window);
 
         if (CongestionControlUtil.shouldForceStatusMessage(ccOutcome) ||
-            (now > (lastStatusMessageTimestamp + statusMessageTimeout)) ||
+            (nowNs > (lastStatusMessageTimestamp + statusMessageTimeout)) ||
             (minSubscriberPosition > (nextSmPosition + threshold)))
         {
-            scheduleStatusMessage(now, minSubscriberPosition, window);
+            scheduleStatusMessage(nowNs, minSubscriberPosition, window);
             cleanBufferTo(minSubscriberPosition - (termLengthMask + 1));
         }
     }

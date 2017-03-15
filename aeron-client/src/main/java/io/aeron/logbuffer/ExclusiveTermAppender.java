@@ -99,15 +99,17 @@ public class ExclusiveTermAppender
      * Claim length of a the term buffer for writing in the message with zero copy semantics.
      *
      * @param rawTail     value from the meta data.
+     * @param termId      for the current term.
      * @param termOffset  in the term at which to append.
      * @param header      for writing the default header.
      * @param length      of the message to be written.
      * @param bufferClaim to be updated with the claimed region.
      * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or
-     * {@link #FAILED} packed with the termId if a padding record was inserted at the end.
+     * {@link #FAILED}.
      */
-    public long claim(
+    public int claim(
         final long rawTail,
+        final int termId,
         final int termOffset,
         final HeaderWriter header,
         final int length,
@@ -120,14 +122,14 @@ public class ExclusiveTermAppender
 
         putRawTailOrdered(rawTail + alignedLength);
 
-        long resultingOffset = termOffset + alignedLength;
+        int resultingOffset = termOffset + alignedLength;
         if (resultingOffset > termLength)
         {
-            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId(rawTail));
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
         }
         else
         {
-            header.write(termBuffer, termOffset, frameLength, termId(rawTail));
+            header.write(termBuffer, termOffset, frameLength, termId);
             bufferClaim.wrap(termBuffer, termOffset, frameLength);
         }
 
@@ -138,6 +140,7 @@ public class ExclusiveTermAppender
      * Append an unfragmented message to the the term buffer.
      *
      * @param rawTail               value from the meta data.
+     * @param termId                for the current term.
      * @param termOffset            in the term at which to append.
      * @param header                for writing the default header.
      * @param srcBuffer             containing the message.
@@ -145,10 +148,11 @@ public class ExclusiveTermAppender
      * @param length                of the message in the source buffer.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or
-     * {@link #FAILED} packed with the termId if a padding record was inserted at the end.
+     * {@link #FAILED}.
      */
-    public long appendUnfragmentedMessage(
+    public int appendUnfragmentedMessage(
         final long rawTail,
+        final int termId,
         final int termOffset,
         final HeaderWriter header,
         final DirectBuffer srcBuffer,
@@ -163,14 +167,14 @@ public class ExclusiveTermAppender
 
         putRawTailOrdered(rawTail + alignedLength);
 
-        long resultingOffset = termOffset + alignedLength;
+        int resultingOffset = termOffset + alignedLength;
         if (resultingOffset > termLength)
         {
-            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId(rawTail));
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
         }
         else
         {
-            header.write(termBuffer, termOffset, frameLength, termId(rawTail));
+            header.write(termBuffer, termOffset, frameLength, termId);
             termBuffer.putBytes(termOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
 
             if (null != reservedValueSupplier)
@@ -190,6 +194,7 @@ public class ExclusiveTermAppender
      * The message will be split up into fragments of MTU length minus header.
      *
      * @param rawTail               value from the meta data.
+     * @param termId                for the current term.
      * @param termOffset            in the term at which to append.
      * @param header                for writing the default header.
      * @param srcBuffer             containing the message.
@@ -198,10 +203,11 @@ public class ExclusiveTermAppender
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or
-     * {@link #FAILED} packed with the termId if a padding record was inserted at the end.
+     * {@link #FAILED}.
      */
-    public long appendFragmentedMessage(
+    public int appendFragmentedMessage(
         final long rawTail,
+        final int termId,
         final int termOffset,
         final HeaderWriter header,
         final DirectBuffer srcBuffer,
@@ -214,13 +220,12 @@ public class ExclusiveTermAppender
         final int remainingPayload = length % maxPayloadLength;
         final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
         final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
-        final int termId = termId(rawTail);
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
 
         putRawTailOrdered(rawTail + requiredLength);
 
-        long resultingOffset = termOffset + requiredLength;
+        int resultingOffset = termOffset + requiredLength;
         if (resultingOffset > termLength)
         {
             resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
@@ -268,42 +273,7 @@ public class ExclusiveTermAppender
         return resultingOffset;
     }
 
-
-    /**
-     * Pack the values for termOffset and termId into a long for returning on the stack.
-     *
-     * @param termId     value to be packed.
-     * @param termOffset value to be packed.
-     * @return a long with both ints packed into it.
-     */
-    public static long pack(final int termId, final int termOffset)
-    {
-        return ((long)termId << 32) | (termOffset & 0xFFFF_FFFFL);
-    }
-
-    /**
-     * The termOffset as a result of the append
-     *
-     * @param result into which the termOffset value has been packed.
-     * @return the termOffset after the append
-     */
-    public static int termOffset(final long result)
-    {
-        return (int)result;
-    }
-
-    /**
-     * The termId in which the append operation took place.
-     *
-     * @param result into which the termId value has been packed.
-     * @return the termId in which the append operation took place.
-     */
-    public static int termId(final long result)
-    {
-        return (int)(result >>> 32);
-    }
-
-    private long handleEndOfLogCondition(
+    private int handleEndOfLogCondition(
         final UnsafeBuffer termBuffer,
         final long termOffset,
         final HeaderWriter header,
@@ -326,7 +296,7 @@ public class ExclusiveTermAppender
             }
         }
 
-        return pack(termId, resultingOffset);
+        return resultingOffset;
     }
 
     private void putRawTailOrdered(final long rawTail)

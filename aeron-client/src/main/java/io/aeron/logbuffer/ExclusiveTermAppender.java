@@ -98,21 +98,27 @@ public class ExclusiveTermAppender
     /**
      * Claim length of a the term buffer for writing in the message with zero copy semantics.
      *
+     * @param rawTail     value from the meta data.
+     * @param termOffset  in the term at which to append.
      * @param header      for writing the default header.
      * @param length      of the message to be written.
      * @param bufferClaim to be updated with the claimed region.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or {@link #FAILED}
-     * packed with the termId if a padding record was inserted at the end.
+     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or
+     * {@link #FAILED} packed with the termId if a padding record was inserted at the end.
      */
-    public long claim(final HeaderWriter header, final int length, final BufferClaim bufferClaim)
+    public long claim(
+        final long rawTail,
+        final int termOffset,
+        final HeaderWriter header,
+        final int length,
+        final BufferClaim bufferClaim)
     {
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
-        final long rawTail = getAndAddRawTail(alignedLength);
-        final long termOffset = rawTail & 0xFFFF_FFFFL;
-
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
+
+        putRawTailOrdered(rawTail + alignedLength);
 
         long resultingOffset = termOffset + alignedLength;
         if (resultingOffset > termLength)
@@ -121,9 +127,8 @@ public class ExclusiveTermAppender
         }
         else
         {
-            final int offset = (int)termOffset;
-            header.write(termBuffer, offset, frameLength, termId(rawTail));
-            bufferClaim.wrap(termBuffer, offset, frameLength);
+            header.write(termBuffer, termOffset, frameLength, termId(rawTail));
+            bufferClaim.wrap(termBuffer, termOffset, frameLength);
         }
 
         return resultingOffset;
@@ -132,15 +137,19 @@ public class ExclusiveTermAppender
     /**
      * Append an unfragmented message to the the term buffer.
      *
+     * @param rawTail               value from the meta data.
+     * @param termOffset            in the term at which to append.
      * @param header                for writing the default header.
      * @param srcBuffer             containing the message.
      * @param srcOffset             at which the message begins.
      * @param length                of the message in the source buffer.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or {@link #FAILED}
-     * packed with the termId if a padding record was inserted at the end.
+     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or
+     * {@link #FAILED} packed with the termId if a padding record was inserted at the end.
      */
     public long appendUnfragmentedMessage(
+        final long rawTail,
+        final int termOffset,
         final HeaderWriter header,
         final DirectBuffer srcBuffer,
         final int srcOffset,
@@ -149,11 +158,10 @@ public class ExclusiveTermAppender
     {
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
-        final long rawTail = getAndAddRawTail(alignedLength);
-        final long termOffset = rawTail & 0xFFFF_FFFFL;
-
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
+
+        putRawTailOrdered(rawTail + alignedLength);
 
         long resultingOffset = termOffset + alignedLength;
         if (resultingOffset > termLength)
@@ -162,17 +170,16 @@ public class ExclusiveTermAppender
         }
         else
         {
-            final int offset = (int)termOffset;
-            header.write(termBuffer, offset, frameLength, termId(rawTail));
-            termBuffer.putBytes(offset + HEADER_LENGTH, srcBuffer, srcOffset, length);
+            header.write(termBuffer, termOffset, frameLength, termId(rawTail));
+            termBuffer.putBytes(termOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
 
             if (null != reservedValueSupplier)
             {
-                final long reservedValue = reservedValueSupplier.get(termBuffer, offset, frameLength);
-                termBuffer.putLong(offset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
+                final long reservedValue = reservedValueSupplier.get(termBuffer, termOffset, frameLength);
+                termBuffer.putLong(termOffset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
             }
 
-            frameLengthOrdered(termBuffer, offset, frameLength);
+            frameLengthOrdered(termBuffer, termOffset, frameLength);
         }
 
         return resultingOffset;
@@ -182,16 +189,20 @@ public class ExclusiveTermAppender
      * Append a fragmented message to the the term buffer.
      * The message will be split up into fragments of MTU length minus header.
      *
+     * @param rawTail               value from the meta data.
+     * @param termOffset            in the term at which to append.
      * @param header                for writing the default header.
      * @param srcBuffer             containing the message.
      * @param srcOffset             at which the message begins.
      * @param length                of the message in the source buffer.
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or {@link #FAILED}
-     * packed with the termId if a padding record was inserted at the end.
+     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or
+     * {@link #FAILED} packed with the termId if a padding record was inserted at the end.
      */
     public long appendFragmentedMessage(
+        final long rawTail,
+        final int termOffset,
         final HeaderWriter header,
         final DirectBuffer srcBuffer,
         final int srcOffset,
@@ -203,12 +214,11 @@ public class ExclusiveTermAppender
         final int remainingPayload = length % maxPayloadLength;
         final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
         final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
-        final long rawTail = getAndAddRawTail(requiredLength);
         final int termId = termId(rawTail);
-        final long termOffset = rawTail & 0xFFFF_FFFFL;
-
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
+
+        putRawTailOrdered(rawTail + requiredLength);
 
         long resultingOffset = termOffset + requiredLength;
         if (resultingOffset > termLength)
@@ -217,7 +227,7 @@ public class ExclusiveTermAppender
         }
         else
         {
-            int offset = (int)termOffset;
+            int offset = termOffset;
             byte flags = BEGIN_FRAG_FLAG;
             int remaining = length;
             do
@@ -319,11 +329,8 @@ public class ExclusiveTermAppender
         return pack(termId, resultingOffset);
     }
 
-    private long getAndAddRawTail(final int alignedLength)
+    private void putRawTailOrdered(final long rawTail)
     {
-        final long previousValue = UnsafeAccess.UNSAFE.getLong(tailBuffer, tailAddressOffset);
-        UnsafeAccess.UNSAFE.putOrderedLong(tailBuffer, tailAddressOffset, previousValue + alignedLength);
-
-        return previousValue;
+        UnsafeAccess.UNSAFE.putOrderedLong(tailBuffer, tailAddressOffset, rawTail);
     }
 }

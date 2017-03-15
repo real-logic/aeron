@@ -486,12 +486,14 @@ public class ExclusivePublication implements AutoCloseable
         }
         else if (resultingOffset == ExclusiveTermAppender.TRIPPED)
         {
-            this.termOffset = 0;
             final int nextIndex = nextPartitionIndex(activePartitionIndex);
-            activePartitionIndex = nextIndex;
             final int nextTermId = termId + 1;
-            this.termId = nextTermId;
+
+            activePartitionIndex = nextIndex;
+            termOffset = 0;
+            termId = nextTermId;
             termBeginPosition = computeTermBeginPosition(nextTermId, positionBitsToShift, initialTermId);
+
             termAppenders[nextIndex].tailTermId(nextTermId);
             LogBufferDescriptor.activePartitionIndex(logMetaDataBuffer, nextIndex);
         }

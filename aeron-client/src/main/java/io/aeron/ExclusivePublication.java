@@ -36,7 +36,7 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
  *
  * The APIs used try claim and offer are non-blocking.
  *
- * <b>Note:</b> ExclusivePublication instances are NOT threadsafe.
+ * <b>Note:</b> ExclusivePublication instances are NOT threadsafe for offer and try claim method but are for position.
  *
  * @see Aeron#addExclusivePublication(String, int)
  */
@@ -69,6 +69,7 @@ public class ExclusivePublication implements AutoCloseable
     private final int maxMessageLength;
     private final int maxPayloadLength;
     private final int positionBitsToShift;
+    private long termBeginPosition;
     private int activePartitionIndex;
     private volatile boolean isClosed = false;
 
@@ -112,6 +113,9 @@ public class ExclusivePublication implements AutoCloseable
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         this.headerWriter = new HeaderWriter(defaultFrameHeader(logMetaDataBuffer));
         this.activePartitionIndex = activePartitionIndex(logMetaDataBuffer);
+
+        final long rawTail = termAppenders[activePartitionIndex].rawTail();
+        termBeginPosition = computeTermBeginPosition(termId(rawTail), positionBitsToShift, initialTermId);
     }
 
     /**
@@ -332,7 +336,7 @@ public class ExclusivePublication implements AutoCloseable
             final long rawTail = termAppender.rawTail();
             final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
             final int termId = termId(rawTail);
-            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
+            final long position = termBeginPosition + termOffset;
 
             if (position < limit)
             {
@@ -417,7 +421,7 @@ public class ExclusivePublication implements AutoCloseable
             final long rawTail = termAppender.rawTail();
             final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
             final int termId = termId(rawTail);
-            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
+            final long position = termBeginPosition + termOffset;
 
             if (position < limit)
             {
@@ -485,7 +489,9 @@ public class ExclusivePublication implements AutoCloseable
         {
             final int nextIndex = nextPartitionIndex(activePartitionIndex);
             activePartitionIndex = nextIndex;
-            termAppenders[nextIndex].tailTermId(termId + 1);
+            final int nextTermId = termId + 1;
+            termBeginPosition = computeTermBeginPosition(nextTermId, positionBitsToShift, initialTermId);
+            termAppenders[nextIndex].tailTermId(nextTermId);
             LogBufferDescriptor.activePartitionIndex(logMetaDataBuffer, nextIndex);
         }
 

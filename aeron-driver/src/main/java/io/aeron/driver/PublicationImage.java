@@ -646,7 +646,7 @@ public class PublicationImage
         return rebuildPosition.get();
     }
 
-    public void onTimeEvent(final long timeNs, final DriverConductor conductor)
+    public void onTimeEvent(final long timeNs, final long timesMs, final DriverConductor conductor)
     {
         switch (status)
         {

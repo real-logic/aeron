@@ -22,10 +22,11 @@ public interface DriverManagedResource extends ManagedResource
     /**
      * Inform resource of timeNs passing and pass it DriverConductor to inform of any state transitions.
      *
-     * @param timeNs      now in nanoseconds
+     * @param timeNs    now in nanoseconds
+     * @param timeMs    now in milliseconds for epoch
      * @param conductor to inform of any state transitions
      */
-    void onTimeEvent(long timeNs, DriverConductor conductor);
+    void onTimeEvent(long timeNs, long timeMs, DriverConductor conductor);
 
     /**
      * Has resource reached end of its life and should be reclaimed?

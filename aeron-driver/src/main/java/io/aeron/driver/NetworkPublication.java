@@ -569,7 +569,7 @@ public class NetworkPublication
         }
     }
 
-    public void onTimeEvent(final long timeNs, final DriverConductor conductor)
+    public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
         if (isUnreferencedAndPotentiallyInactive(timeNs) &&
             timeNs > (timeOfLastActivity + PUBLICATION_LINGER_NS) &&

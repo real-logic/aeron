@@ -52,7 +52,7 @@ public class AeronClient implements DriverManagedResource
         return now > (timeOfLastKeepalive + clientLivenessTimeoutNs);
     }
 
-    public void onTimeEvent(final long timeNs, final DriverConductor conductor)
+    public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
         if (timeNs > (timeOfLastKeepalive + clientLivenessTimeoutNs))
         {

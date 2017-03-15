@@ -43,7 +43,7 @@ public class PublicationLink implements DriverManagedResource
         return registrationId;
     }
 
-    public void onTimeEvent(final long timeNs, final DriverConductor conductor)
+    public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
         if (client.hasTimedOut(timeNs))
         {

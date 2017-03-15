@@ -64,6 +64,7 @@ public class DriverConductor implements Agent
     private long timeOfLastToDriverPositionChange;
     private long lastConsumerCommandPosition;
     private long timeOfLastTimeoutCheck;
+    private long timeInMs;
     private int nextSessionId = BitUtil.generateRandomisedId();
 
     private final NetworkPublicationThreadLocals networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
@@ -122,7 +123,8 @@ public class DriverConductor implements Agent
             clientProxy,
             this);
 
-        toDriverCommands.consumerHeartbeatTime(epochClock.time());
+        timeInMs = epochClock.time();
+        toDriverCommands.consumerHeartbeatTime(timeInMs);
 
         final long now = nanoClock.nanoTime();
         timeOfLastTimeoutCheck = now;
@@ -152,13 +154,13 @@ public class DriverConductor implements Agent
         workCount += fromReceiverDriverConductorCmdQueue.drain(onDriverConductorCmdFunc);
         workCount += fromSenderDriverConductorCmdQueue.drain(onDriverConductorCmdFunc);
 
-        final long now = nanoClock.nanoTime();
-        workCount += processTimers(now);
+        final long nowNs = nanoClock.nanoTime();
+        workCount += processTimers(nowNs);
 
         final ArrayList<PublicationImage> publicationImages = this.publicationImages;
         for (int i = 0, size = publicationImages.size(); i < size; i++)
         {
-            publicationImages.get(i).trackRebuild(now, statusMessageTimeoutNs);
+            publicationImages.get(i).trackRebuild(nowNs, statusMessageTimeoutNs);
         }
 
         final ArrayList<NetworkPublication> networkPublications = this.networkPublications;
@@ -170,7 +172,7 @@ public class DriverConductor implements Agent
         final ArrayList<IpcPublication> ipcPublications = this.ipcPublications;
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
-            workCount += ipcPublications.get(i).updatePublishersLimit(toDriverCommands.consumerHeartbeatTime());
+            workCount += ipcPublications.get(i).updatePublishersLimit(timeInMs);
         }
 
         return workCount;
@@ -677,16 +679,18 @@ public class DriverConductor implements Agent
         }
     }
 
-    private void onHeartbeatCheckTimeouts(final long nanoTimeNow)
+    private void onHeartbeatCheckTimeouts(final long nowNs)
     {
-        toDriverCommands.consumerHeartbeatTime(epochClock.time());
+        final long nowMs = epochClock.time();
+        timeInMs = nowMs;
+        toDriverCommands.consumerHeartbeatTime(nowMs);
 
-        onCheckManagedResources(clients, nanoTimeNow);
-        onCheckManagedResources(publicationLinks, nanoTimeNow);
-        onCheckManagedResources(networkPublications, nanoTimeNow);
-        onCheckManagedResources(subscriptionLinks, nanoTimeNow);
-        onCheckManagedResources(publicationImages, nanoTimeNow);
-        onCheckManagedResources(ipcPublications, nanoTimeNow);
+        onCheckManagedResources(clients, nowNs, nowMs);
+        onCheckManagedResources(publicationLinks, nowNs, nowMs);
+        onCheckManagedResources(networkPublications, nowNs, nowMs);
+        onCheckManagedResources(subscriptionLinks, nowNs, nowMs);
+        onCheckManagedResources(publicationImages, nowNs, nowMs);
+        onCheckManagedResources(ipcPublications, nowNs, nowMs);
     }
 
     private void onCheckForBlockedToDriverCommands(final long nanoTimeNow)
@@ -1100,13 +1104,14 @@ public class DriverConductor implements Agent
         return address.getHostString() + ':' + address.getPort();
     }
 
-    private <T extends DriverManagedResource> void onCheckManagedResources(final ArrayList<T> list, final long time)
+    private <T extends DriverManagedResource> void onCheckManagedResources(
+        final ArrayList<T> list, final long nowNs, final long nowMs)
     {
         for (int lastIndex = list.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final DriverManagedResource resource = list.get(i);
 
-            resource.onTimeEvent(time, this);
+            resource.onTimeEvent(nowNs, nowMs, this);
 
             if (resource.hasReachedEndOfLife())
             {
@@ -1117,15 +1122,15 @@ public class DriverConductor implements Agent
         }
     }
 
-    private int processTimers(final long now)
+    private int processTimers(final long nowNs)
     {
         int workCount = 0;
 
-        if (now > (timeOfLastTimeoutCheck + HEARTBEAT_TIMEOUT_NS))
+        if (nowNs > (timeOfLastTimeoutCheck + HEARTBEAT_TIMEOUT_NS))
         {
-            onHeartbeatCheckTimeouts(now);
-            onCheckForBlockedToDriverCommands(now);
-            timeOfLastTimeoutCheck = now;
+            onHeartbeatCheckTimeouts(nowNs);
+            onCheckForBlockedToDriverCommands(nowNs);
+            timeOfLastTimeoutCheck = nowNs;
             workCount = 1;
         }
 

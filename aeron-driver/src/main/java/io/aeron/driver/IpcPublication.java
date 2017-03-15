@@ -206,7 +206,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         return computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);
     }
 
-    public void onTimeEvent(final long timeNs, final DriverConductor conductor)
+    public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
         checkForBlockedPublisher(timeNs);
 

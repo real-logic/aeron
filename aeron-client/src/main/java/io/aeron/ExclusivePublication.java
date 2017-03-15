@@ -69,6 +69,7 @@ public class ExclusivePublication implements AutoCloseable
     private final int maxMessageLength;
     private final int maxPayloadLength;
     private final int positionBitsToShift;
+    private int activePartitionIndex;
     private volatile boolean isClosed = false;
 
     private final ExclusiveTermAppender[] termAppenders = new ExclusiveTermAppender[PARTITION_COUNT];
@@ -110,6 +111,7 @@ public class ExclusivePublication implements AutoCloseable
         this.logBuffers = logBuffers;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         this.headerWriter = new HeaderWriter(defaultFrameHeader(logMetaDataBuffer));
+        this.activePartitionIndex = activePartitionIndex(logMetaDataBuffer);
     }
 
     /**
@@ -326,8 +328,7 @@ public class ExclusivePublication implements AutoCloseable
         if (!isClosed)
         {
             final long limit = positionLimit.getVolatile();
-            final int partitionIndex = activePartitionIndex(logMetaDataBuffer);
-            final ExclusiveTermAppender termAppender = termAppenders[partitionIndex];
+            final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
             final long rawTail = termAppender.rawTail();
             final long termOffset = rawTail & 0xFFFF_FFFFL;
             final long position =
@@ -348,7 +349,7 @@ public class ExclusivePublication implements AutoCloseable
                         headerWriter, buffer, offset, length, maxPayloadLength, reservedValueSupplier);
                 }
 
-                newPosition = newPosition(partitionIndex, (int)termOffset, position, result);
+                newPosition = newPosition((int)termOffset, position, result);
             }
             else if (conductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
             {
@@ -404,8 +405,7 @@ public class ExclusivePublication implements AutoCloseable
         if (!isClosed)
         {
             final long limit = positionLimit.getVolatile();
-            final int partitionIndex = activePartitionIndex(logMetaDataBuffer);
-            final ExclusiveTermAppender termAppender = termAppenders[partitionIndex];
+            final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
             final long rawTail = termAppender.rawTail();
             final long termOffset = rawTail & 0xFFFF_FFFFL;
             final long position =
@@ -414,7 +414,7 @@ public class ExclusivePublication implements AutoCloseable
             if (position < limit)
             {
                 final long result = termAppender.claim(headerWriter, length, bufferClaim);
-                newPosition = newPosition(partitionIndex, (int)termOffset, position, result);
+                newPosition = newPosition((int)termOffset, position, result);
             }
             else if (conductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
             {
@@ -465,7 +465,7 @@ public class ExclusivePublication implements AutoCloseable
         }
     }
 
-    private long newPosition(final int index, final int currentTail, final long position, final long result)
+    private long newPosition(final int currentTail, final long position, final long result)
     {
         long newPosition = ADMIN_ACTION;
         final int termOffset = TermAppender.termOffset(result);
@@ -475,7 +475,8 @@ public class ExclusivePublication implements AutoCloseable
         }
         else if (termOffset == ExclusiveTermAppender.TRIPPED)
         {
-            final int nextIndex = nextPartitionIndex(index);
+            final int nextIndex = nextPartitionIndex(activePartitionIndex);
+            activePartitionIndex = nextIndex;
             termAppenders[nextIndex].tailTermId(TermAppender.termId(result) + 1);
             LogBufferDescriptor.activePartitionIndex(logMetaDataBuffer, nextIndex);
         }

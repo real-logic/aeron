@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.Aeron;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.status.SystemCounters;
@@ -101,7 +102,7 @@ public class NetworkPublication
     private final int sessionId;
     private final int streamId;
     private final boolean isExclusive;
-    private volatile boolean hasHadFirstStatusMessage = false;
+    private volatile boolean isConnected = false;
     private boolean hasReachedEndOfLife = false;
     private Status status = Status.ACTIVE;
 
@@ -334,9 +335,9 @@ public class NetworkPublication
                 positionBitsToShift,
                 nanoClock.nanoTime()));
 
-        if (!hasHadFirstStatusMessage)
+        if (!isConnected)
         {
-            hasHadFirstStatusMessage = true;
+            isConnected = true;
         }
 
         LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), epochClock.time());
@@ -385,25 +386,27 @@ public class NetworkPublication
     {
         int workCount = 0;
 
-        long candidatePublisherLimit = hasHadFirstStatusMessage ? senderPosition.getVolatile() + termWindowLength : 0L;
-
-        if (0 != spyPositions.length)
+        if (isConnected)
         {
-            long minSpyPosition = Long.MAX_VALUE;
-
-            for (final ReadablePosition spyPosition : spyPositions)
+            long minConsumerPosition = senderPosition.getVolatile();
+            if (spyPositions.length > 0)
             {
-                minSpyPosition = Math.min(minSpyPosition, spyPosition.getVolatile());
+                for (final ReadablePosition spyPosition : spyPositions)
+                {
+                    minConsumerPosition = Math.min(minConsumerPosition, spyPosition.getVolatile());
+                }
             }
 
-            candidatePublisherLimit = Math.min(candidatePublisherLimit, minSpyPosition + termWindowLength);
+            final long proposedPublisherLimit = minConsumerPosition + termWindowLength;
+            if (publisherLimit.proposeMaxOrdered(proposedPublisherLimit))
+            {
+                cleanBuffer(proposedPublisherLimit);
+                workCount = 1;
+            }
         }
-
-        if (publisherLimit.proposeMaxOrdered(candidatePublisherLimit))
+        else
         {
-            cleanBuffer(candidatePublisherLimit);
-
-            workCount = 1;
+            publisherLimit.setOrdered(senderPosition.getVolatile());
         }
 
         return workCount;
@@ -489,7 +492,7 @@ public class NetworkPublication
             timeOfLastSetup = nowNs;
             timeOfLastSendOrHeartbeat = nowNs;
 
-            if (hasHadFirstStatusMessage)
+            if (isConnected)
             {
                 shouldSendSetupFrame = false;
             }
@@ -611,6 +614,11 @@ public class NetworkPublication
             if (!isExclusive)
             {
                 checkForBlockedPublisher(timeNs);
+            }
+
+            if (timeMs > (timeOfLastStatusMessage(rawLog.metaData()) + Aeron.PUBLICATION_CONNECTION_TIMEOUT_MS))
+            {
+                isConnected = false;
             }
         }
     }

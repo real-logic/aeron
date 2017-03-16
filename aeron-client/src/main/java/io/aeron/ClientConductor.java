@@ -15,29 +15,18 @@
  */
 package io.aeron;
 
-import io.aeron.exceptions.ConductorServiceTimeoutException;
-import io.aeron.exceptions.DriverTimeoutException;
-import io.aeron.exceptions.RegistrationException;
-import org.agrona.ErrorHandler;
-import org.agrona.ManagedResource;
-import org.agrona.collections.Long2LongHashMap;
-import org.agrona.collections.Long2ObjectHashMap;
-import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.UnsafeBuffer;
+import io.aeron.exceptions.*;
+import org.agrona.*;
+import org.agrona.collections.*;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.LockSupport;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.*;
 
-import static io.aeron.ClientConductor.Status.ACTIVE;
-import static io.aeron.ClientConductor.Status.CLOSED;
-import static io.aeron.ClientConductor.Status.CLOSING;
+import static io.aeron.ClientConductor.Status.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 
@@ -61,9 +50,9 @@ class ClientConductor implements Agent, DriverListener
     private final long driverTimeoutNs;
     private final long interServiceTimeoutNs;
     private final long publicationConnectionTimeoutMs;
-    private long timeOfLastKeepalive;
-    private long timeOfLastCheckResources;
-    private long timeOfLastWork;
+    private long timeOfLastKeepaliveNs;
+    private long timeOfLastCheckResourcesNs;
+    private long timeOfLastWorkNs;
     private boolean isDriverActive = true;
     private Status status = ACTIVE;
 
@@ -106,10 +95,10 @@ class ClientConductor implements Agent, DriverListener
         publicationConnectionTimeoutMs = ctx.publicationConnectionTimeout();
         driverListener = new DriverListenerAdapter(ctx.toClientBuffer(), this);
 
-        final long now = nanoClock.nanoTime();
-        timeOfLastKeepalive = now;
-        timeOfLastCheckResources = now;
-        timeOfLastWork = now;
+        final long nowNs = nanoClock.nanoTime();
+        timeOfLastKeepaliveNs = nowNs;
+        timeOfLastCheckResourcesNs = nowNs;
+        timeOfLastWorkNs = nowNs;
     }
 
     public void onClose()
@@ -376,9 +365,9 @@ class ClientConductor implements Agent, DriverListener
         lingeringResources.add(managedResource);
     }
 
-    boolean isPublicationConnected(final long timeOfLastStatusMessage)
+    boolean isPublicationConnected(final long timeOfLastStatusMessageMs)
     {
-        return epochClock.time() <= (timeOfLastStatusMessage + publicationConnectionTimeoutMs);
+        return epochClock.time() <= (timeOfLastStatusMessageMs + publicationConnectionTimeoutMs);
     }
 
     UnavailableImageHandler unavailableImageHandler()
@@ -406,7 +395,7 @@ class ClientConductor implements Agent, DriverListener
     private void awaitResponse(final long correlationId, final String expectedChannel)
     {
         driverException = null;
-        final long timeout = nanoClock.nanoTime() + driverTimeoutNs;
+        final long timeoutDeadlineNs = nanoClock.nanoTime() + driverTimeoutNs;
 
         do
         {
@@ -424,7 +413,7 @@ class ClientConductor implements Agent, DriverListener
                 return;
             }
         }
-        while (nanoClock.nanoTime() < timeout);
+        while (nanoClock.nanoTime() < timeoutDeadlineNs);
 
         throw new DriverTimeoutException("No response within driver timeout");
     }
@@ -444,10 +433,10 @@ class ClientConductor implements Agent, DriverListener
 
     private int onCheckTimeouts()
     {
-        final long now = nanoClock.nanoTime();
+        final long nowNs = nanoClock.nanoTime();
         int result = 0;
 
-        if (now > (timeOfLastWork + interServiceTimeoutNs))
+        if (nowNs > (timeOfLastWorkNs + interServiceTimeoutNs))
         {
             onClose();
 
@@ -455,24 +444,24 @@ class ClientConductor implements Agent, DriverListener
                 "Timeout between service calls over " + interServiceTimeoutNs + "ns");
         }
 
-        timeOfLastWork = now;
+        timeOfLastWorkNs = nowNs;
 
-        if (now > (timeOfLastKeepalive + keepAliveIntervalNs))
+        if (nowNs > (timeOfLastKeepaliveNs + keepAliveIntervalNs))
         {
             driverProxy.sendClientKeepalive();
             checkDriverHeartbeat();
 
-            timeOfLastKeepalive = now;
+            timeOfLastKeepaliveNs = nowNs;
             result++;
         }
 
-        if (now > (timeOfLastCheckResources + RESOURCE_TIMEOUT_NS))
+        if (nowNs > (timeOfLastCheckResourcesNs + RESOURCE_TIMEOUT_NS))
         {
             final ArrayList<ManagedResource> lingeringResources = this.lingeringResources;
             for (int lastIndex = lingeringResources.size() - 1, i = lastIndex; i >= 0; i--)
             {
                 final ManagedResource resource = lingeringResources.get(i);
-                if (now > (resource.timeOfLastStateChange() + RESOURCE_LINGER_NS))
+                if (nowNs > (resource.timeOfLastStateChange() + RESOURCE_LINGER_NS))
                 {
                     ArrayListUtil.fastUnorderedRemove(lingeringResources, i, lastIndex);
                     lastIndex--;
@@ -480,7 +469,7 @@ class ClientConductor implements Agent, DriverListener
                 }
             }
 
-            timeOfLastCheckResources = now;
+            timeOfLastCheckResourcesNs = nowNs;
             result++;
         }
 
@@ -489,10 +478,9 @@ class ClientConductor implements Agent, DriverListener
 
     private void checkDriverHeartbeat()
     {
-        final long now = epochClock.time();
-        final long currentDriverKeepaliveTime = driverProxy.timeOfLastDriverKeepalive();
-
-        if (isDriverActive && (now > (currentDriverKeepaliveTime + driverTimeoutMs)))
+        final long lastDriverKeepalive = driverProxy.timeOfLastDriverKeepalive();
+        final long timeoutDeadlineMs = lastDriverKeepalive + driverTimeoutMs;
+        if (isDriverActive && (epochClock.time() > timeoutDeadlineMs))
         {
             isDriverActive = false;
 

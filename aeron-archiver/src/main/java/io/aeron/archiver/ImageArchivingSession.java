@@ -19,7 +19,7 @@ import io.aeron.*;
 import org.agrona.*;
 import org.agrona.concurrent.EpochClock;
 
-import java.io.IOException;
+import java.io.*;
 import java.nio.ByteBuffer;
 
 /**
@@ -27,21 +27,28 @@ import java.nio.ByteBuffer;
  */
 class ImageArchivingSession implements ArchiverConductor.Session
 {
+
     private enum State
     {
         ARCHIVING, CLOSING, DONE
     }
 
     private final int streamInstanceId;
-    private final ArchiverConductor archiverConductor;
+    private final ArchiverProtocolProxy proxy;
     private final Image image;
+    private final ArchiveIndex index;
     private final StreamInstanceArchiveWriter writer;
 
     private State state = State.ARCHIVING;
 
-    ImageArchivingSession(final ArchiverConductor archiverConductor, final Image image, final EpochClock epochClock)
+    ImageArchivingSession(
+        final ArchiverProtocolProxy proxy,
+        final ArchiveIndex index,
+        final File archiveFolder,
+        final Image image,
+        final EpochClock epochClock)
     {
-        this.archiverConductor = archiverConductor;
+        this.proxy = proxy;
         this.image = image;
 
         final Subscription subscription = image.subscription();
@@ -49,25 +56,33 @@ class ImageArchivingSession implements ArchiverConductor.Session
         final String channel = subscription.channel();
         final int sessionId = image.sessionId();
         final String source = image.sourceIdentity();
-        streamInstanceId =
-            archiverConductor.notifyArchiveStarted(
-                source,
-                sessionId,
-                channel,
-                streamId,
-                image.termBufferLength(),
-                image.initialTermId());
         final int termBufferLength = image.termBufferLength();
+
+        final int imageInitialTermId = image.initialTermId();
+        this.index = index;
+        streamInstanceId = index.addNewStreamInstance(
+            new StreamInstance(source, sessionId, channel, streamId),
+            termBufferLength,
+            imageInitialTermId);
+
+        proxy.notifyArchiveStarted(
+            streamInstanceId,
+            source,
+            sessionId,
+            channel,
+            streamId,
+            termBufferLength,
+            imageInitialTermId);
 
 
         try
         {
             this.writer = new StreamInstanceArchiveWriter(
-                archiverConductor.archiveFolder(),
+                archiveFolder,
                 epochClock,
                 streamInstanceId,
                 termBufferLength,
-                image.initialTermId(),
+                imageInitialTermId,
                 new StreamInstance(source, sessionId, channel, streamId));
 
         }
@@ -112,7 +127,7 @@ class ImageArchivingSession implements ArchiverConductor.Session
             if (writer != null)
             {
                 writer.stop();
-                archiverConductor.updateIndexWithDescriptor(streamInstanceId, writer.metaDataBuffer());
+                index.updateIndexFromMeta(streamInstanceId, writer.metaDataBuffer());
             }
         }
         catch (IOException e)
@@ -122,8 +137,7 @@ class ImageArchivingSession implements ArchiverConductor.Session
         finally
         {
             CloseHelper.quietClose(writer);
-            archiverConductor.removeArchivingSession(streamInstanceId);
-            archiverConductor.notifyArchiveStopped(streamInstanceId);
+            proxy.notifyArchiveStopped(streamInstanceId);
             this.state = State.DONE;
         }
         return 1;
@@ -136,7 +150,7 @@ class ImageArchivingSession implements ArchiverConductor.Session
             final int delta = this.image.rawPoll(writer, ArchiveFileUtil.ARCHIVE_FILE_SIZE);
             if (delta != 0)
             {
-                this.archiverConductor.notifyArchiveProgress(
+                this.proxy.notifyArchiveProgress(
                     writer.streamInstanceId(),
                     writer.initialTermId(),
                     writer.initialTermOffset(),
@@ -160,6 +174,11 @@ class ImageArchivingSession implements ArchiverConductor.Session
     public boolean isDone()
     {
         return state == State.DONE;
+    }
+
+    public void remove(final ArchiverConductor conductor)
+    {
+        conductor.removeArchivingSession(streamInstanceId);
     }
 
     ByteBuffer metaDataBuffer()

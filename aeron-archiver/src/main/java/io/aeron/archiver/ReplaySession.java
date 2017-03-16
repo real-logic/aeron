@@ -63,7 +63,8 @@ class ReplaySession implements ArchiverConductor.Session
     private final Publication reply;
     private final Image image;
 
-    private final ArchiverConductor archiverConductor;
+    private final File archiveFolder;
+    private final ArchiverProtocolProxy proxy;
     private final BufferClaim bufferClaim = new BufferClaim();
 
 
@@ -77,7 +78,8 @@ class ReplaySession implements ArchiverConductor.Session
         final long replayLength,
         final Publication reply,
         final Image image,
-        final ArchiverConductor archiverConductor)
+        final File archiveFolder,
+        final ArchiverProtocolProxy proxy)
     {
         this.streamInstanceId = streamInstanceId;
 
@@ -87,7 +89,8 @@ class ReplaySession implements ArchiverConductor.Session
 
         this.reply = reply;
         this.image = image;
-        this.archiverConductor = archiverConductor;
+        this.archiveFolder = archiveFolder;
+        this.proxy = proxy;
     }
 
     public int doWork()
@@ -118,6 +121,12 @@ class ReplaySession implements ArchiverConductor.Session
         return state == State.DONE;
     }
 
+    @Override
+    public void remove(final ArchiverConductor conductor)
+    {
+        conductor.removeReplaySession(image.sessionId());
+    }
+
     private int init()
     {
         if (reply.isClosed())
@@ -135,7 +144,7 @@ class ReplaySession implements ArchiverConductor.Session
         }
 
         final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
-        final File archiveMetaFile = new File(archiverConductor.archiveFolder(), archiveMetaFileName);
+        final File archiveMetaFile = new File(archiveFolder, archiveMetaFileName);
         if (!archiveMetaFile.exists())
         {
             final String err = archiveMetaFile.getAbsolutePath() + " not found";
@@ -193,7 +202,7 @@ class ReplaySession implements ArchiverConductor.Session
         {
             // TODO: fragement alignment, fragement reader -> exclusive publication
             cursor = new StreamInstanceArchiveChunkReader(streamInstanceId,
-                archiverConductor.archiveFolder(),
+                archiveFolder,
                 initialTermId,
                 termBufferLength,
                 fromTermId,
@@ -206,7 +215,7 @@ class ReplaySession implements ArchiverConductor.Session
         }
         // plumbing is secured, we can kick off the replay
         // TODO: re-split the publications for data/control messages
-        archiverConductor.sendResponse(reply, null);
+        proxy.sendResponse(reply, null);
         this.state = State.REPLAY;
         return 1;
     }
@@ -240,7 +249,7 @@ class ReplaySession implements ArchiverConductor.Session
         this.state = State.CLOSE;
         if (reply.isConnected())
         {
-            archiverConductor.sendResponse(reply, err);
+            proxy.sendResponse(reply, err);
         }
         if (e != null)
         {
@@ -297,7 +306,6 @@ class ReplaySession implements ArchiverConductor.Session
     {
         CloseHelper.quietClose(reply);
         CloseHelper.quietClose(cursor);
-        archiverConductor.removeReplaySession(image.sessionId());
         this.state = State.DONE;
         return 1;
     }

@@ -66,7 +66,8 @@ class ListDescriptorsSession implements ArchiverConductor.Session
     private final Publication reply;
     private final int from;
     private final int to;
-    private final ArchiverConductor archiverConductor;
+    private final ArchiverConductor conductor;
+    private final ArchiverProtocolProxy proxy;
 
     private int cursor;
     private State state = State.INIT;
@@ -75,13 +76,15 @@ class ListDescriptorsSession implements ArchiverConductor.Session
         final Publication reply,
         final int from,
         final int to,
-        final ArchiverConductor archiverConductor)
+        final ArchiverConductor conductor,
+        final ArchiverProtocolProxy proxy)
     {
         this.reply = reply;
         cursor = from;
         this.from = from;
         this.to = to;
-        this.archiverConductor = archiverConductor;
+        this.conductor = conductor;
+        this.proxy = proxy;
     }
 
     public void abort()
@@ -92,6 +95,11 @@ class ListDescriptorsSession implements ArchiverConductor.Session
     public boolean isDone()
     {
         return state == State.DONE;
+    }
+
+    @Override
+    public void remove(final ArchiverConductor conductor)
+    {
     }
 
     public int doWork()
@@ -124,14 +132,14 @@ class ListDescriptorsSession implements ArchiverConductor.Session
         final int limit = Math.min(cursor + 4, to);
         for (; cursor <= limit; cursor++)
         {
-            final ImageArchivingSession session = archiverConductor.getArchivingSession(cursor);
+            final ImageArchivingSession session = conductor.getArchivingSession(cursor);
             if (session == null)
             {
                 byteBuffer.clear();
                 unsafeBuffer.wrap(byteBuffer);
                 try
                 {
-                    if (!archiverConductor.readArchiveDescriptor(cursor, byteBuffer))
+                    if (!conductor.readArchiveDescriptor(cursor, byteBuffer))
                     {
                         // return relevant error
                         if (reply.tryClaim(8 +
@@ -141,7 +149,7 @@ class ListDescriptorsSession implements ArchiverConductor.Session
                             final int offset = bufferClaim.offset();
                             buffer.putLong(offset, NOT_FOUND_HEADER);
                             buffer.putInt(offset + 8, cursor);
-                            buffer.putInt(offset + 12, archiverConductor.maxStreamInstanceId());
+                            buffer.putInt(offset + 12, conductor.maxStreamInstanceId());
                             bufferClaim.commit();
                             state = State.CLOSE;
                         }
@@ -181,12 +189,12 @@ class ListDescriptorsSession implements ArchiverConductor.Session
 
         if (from > to)
         {
-            archiverConductor.sendResponse(reply, "Requested range is reversed (to < from)");
+            proxy.sendResponse(reply, "Requested range is reversed (to < from)");
             state = State.CLOSE;
         }
-        else if (to > archiverConductor.maxStreamInstanceId())
+        else if (to > conductor.maxStreamInstanceId())
         {
-            archiverConductor.sendResponse(reply, "Requested range exceeds available range (to > max)");
+            proxy.sendResponse(reply, "Requested range exceeds available range (to > max)");
             state = State.CLOSE;
         }
         else

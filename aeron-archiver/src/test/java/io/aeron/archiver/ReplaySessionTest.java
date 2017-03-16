@@ -40,16 +40,14 @@ public class ReplaySessionTest
     private static final int INITIAL_TERM_OFFSET = 1024;
     private File archiveFolder;
 
-    private ArchiverConductor conductor;
     private int messageIndex = 0;
+    private ArchiverProtocolProxy proxy;
 
     @Before
     public void setup() throws Exception
     {
         archiveFolder = makeTempFolder();
-        conductor = Mockito.mock(ArchiverConductor.class);
-        when(conductor.archiveFolder()).thenReturn(archiveFolder);
-
+        proxy = Mockito.mock(ArchiverProtocolProxy.class);
         final EpochClock epochClock = mock(EpochClock.class);
         final StreamInstance streamInstance = new StreamInstance("source", 1, "channel", 1);
         try (StreamInstanceArchiveWriter writer =
@@ -144,7 +142,8 @@ public class ReplaySessionTest
                 length,
                 reply,
                 image,
-                conductor);
+                archiveFolder,
+                proxy);
         when(reply.isClosed()).thenReturn(false);
         when(reply.isConnected()).thenReturn(false);
         // does not switch to replay mode until publications are established
@@ -153,7 +152,7 @@ public class ReplaySessionTest
         when(reply.isConnected()).thenReturn(true);
 
         Assert.assertNotEquals(0, replaySession.doWork());
-        Mockito.verify(conductor, times(1)).sendResponse(reply, null);
+        Mockito.verify(proxy, times(1)).sendResponse(reply, null);
 
         final UnsafeBuffer mockTermBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
         when(reply.tryClaim(anyInt(), any(BufferClaim.class))).then(invocation ->

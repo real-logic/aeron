@@ -51,9 +51,10 @@ public class ImageArchivingSessionTest
     private final int termOffset = 1024;
 
     private final File tempFolderForTest = TestUtil.makeTempFolder();
-    private final ArchiverConductor archive;
+    private final ArchiverProtocolProxy proxy;
 
     private final Image image;
+    private final ArchiveIndex index;
 
     private RandomAccessFile logBufferRandomAccessFile;
     private FileChannel mockLogBufferChannel;
@@ -62,10 +63,10 @@ public class ImageArchivingSessionTest
 
     public ImageArchivingSessionTest() throws IOException
     {
-        archive = mock(ArchiverConductor.class);
-        when(archive.archiveFolder()).thenReturn(tempFolderForTest);
-        when(archive.notifyArchiveStarted(source, sessionId, channel, streamId,
-                                          termBufferLength, initialTermId)).thenReturn(streamInstanceId);
+        proxy = mock(ArchiverProtocolProxy.class);
+        index = mock(ArchiveIndex.class);
+        final StreamInstance instance = new StreamInstance(source, sessionId, channel, streamId);
+        when(index.addNewStreamInstance(instance, termBufferLength, initialTermId)).thenReturn(streamInstanceId);
         final Subscription subscription = mockSubscription(channel, streamId);
         image = mockImage(source, sessionId, initialTermId, termBufferLength, subscription);
     }
@@ -109,7 +110,8 @@ public class ImageArchivingSessionTest
         final EpochClock epochClock = Mockito.mock(EpochClock.class);
         when(epochClock.time()).thenReturn(42L);
 
-        final ImageArchivingSession session = new ImageArchivingSession(archive, image, epochClock);
+        final ImageArchivingSession session =
+            new ImageArchivingSession(proxy, index, tempFolderForTest, image, epochClock);
         Assert.assertEquals(streamInstanceId, session.streamInstanceId());
 
         // setup the mock image to pass on the mock log buffer
@@ -132,7 +134,7 @@ public class ImageArchivingSessionTest
                 return 100;
             });
 
-        // expecting session to archive the available data from the image
+        // expecting session to proxy the available data from the image
         Assert.assertNotEquals("Expect some work", 0, session.doWork());
 
         // We now evaluate the output of the archiver...

@@ -318,16 +318,6 @@ public class NetworkPublication
         spyPosition.close();
     }
 
-    void senderPositionLimit(final long positionLimit)
-    {
-        senderLimit.setOrdered(positionLimit);
-
-        if (!hasHadFirstStatusMessage)
-        {
-            hasHadFirstStatusMessage = true;
-        }
-    }
-
     public void onNak(final int termId, final int termOffset, final int length)
     {
         retransmitHandler.onNak(termId, termOffset, length, termLengthMask + 1, this);
@@ -335,7 +325,7 @@ public class NetworkPublication
 
     public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
-        senderPositionLimit(
+        senderLimit.setOrdered(
             flowControl.onStatusMessage(
                 msg,
                 srcAddress,
@@ -343,6 +333,11 @@ public class NetworkPublication
                 initialTermId,
                 positionBitsToShift,
                 nanoClock.nanoTime()));
+
+        if (!hasHadFirstStatusMessage)
+        {
+            hasHadFirstStatusMessage = true;
+        }
 
         LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), epochClock.time());
     }
@@ -470,9 +465,9 @@ public class NetworkPublication
         return bytesSent;
     }
 
-    private void setupMessageCheck(final long now, final int activeTermId, final int termOffset)
+    private void setupMessageCheck(final long nowNs, final int activeTermId, final int termOffset)
     {
-        if (now > (timeOfLastSetup + PUBLICATION_SETUP_TIMEOUT_NS))
+        if (nowNs > (timeOfLastSetup + PUBLICATION_SETUP_TIMEOUT_NS))
         {
             setupBuffer.clear();
             setupHeader
@@ -491,8 +486,8 @@ public class NetworkPublication
                 shortSends.increment();
             }
 
-            timeOfLastSetup = now;
-            timeOfLastSendOrHeartbeat = now;
+            timeOfLastSetup = nowNs;
+            timeOfLastSendOrHeartbeat = nowNs;
 
             if (hasHadFirstStatusMessage)
             {
@@ -501,11 +496,11 @@ public class NetworkPublication
         }
     }
 
-    private int heartbeatMessageCheck(final long now, final int activeTermId, final int termOffset)
+    private int heartbeatMessageCheck(final long nowNs, final int activeTermId, final int termOffset)
     {
         int bytesSent = 0;
 
-        if (now > (timeOfLastSendOrHeartbeat + PUBLICATION_HEARTBEAT_TIMEOUT_NS))
+        if (nowNs > (timeOfLastSendOrHeartbeat + PUBLICATION_HEARTBEAT_TIMEOUT_NS))
         {
             heartbeatBuffer.clear();
             heartbeatDataHeader
@@ -521,7 +516,7 @@ public class NetworkPublication
             }
 
             heartbeatsSent.orderedIncrement();
-            timeOfLastSendOrHeartbeat = now;
+            timeOfLastSendOrHeartbeat = nowNs;
         }
 
         return bytesSent;
@@ -566,21 +561,6 @@ public class NetworkPublication
         }
     }
 
-    public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
-    {
-        if (isUnreferencedAndPotentiallyInactive(timeNs) &&
-            timeNs > (timeOfLastActivity + PUBLICATION_LINGER_NS) &&
-            haveSpiesCaughtUpWithTheSender())
-        {
-            hasReachedEndOfLife = true;
-            conductor.cleanupPublication(NetworkPublication.this);
-        }
-        else if (!isExclusive)
-        {
-            checkForBlockedPublisher(timeNs);
-        }
-    }
-
     private void checkForBlockedPublisher(final long timeNs)
     {
         final long consumerPosition = senderPosition.getVolatile();
@@ -615,6 +595,24 @@ public class NetworkPublication
         }
 
         return true;
+    }
+
+    public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
+    {
+        if (isUnreferencedAndPotentiallyInactive(timeNs) &&
+            timeNs > (timeOfLastActivity + PUBLICATION_LINGER_NS) &&
+            haveSpiesCaughtUpWithTheSender())
+        {
+            hasReachedEndOfLife = true;
+            conductor.cleanupPublication(NetworkPublication.this);
+        }
+        else
+        {
+            if (!isExclusive)
+            {
+                checkForBlockedPublisher(timeNs);
+            }
+        }
     }
 
     public boolean hasReachedEndOfLife()

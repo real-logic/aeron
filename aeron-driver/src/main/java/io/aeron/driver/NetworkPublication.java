@@ -326,6 +326,13 @@ public class NetworkPublication
 
     public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
+        LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), epochClock.time());
+
+        if (!isConnected)
+        {
+            isConnected = true;
+        }
+
         senderLimit.setOrdered(
             flowControl.onStatusMessage(
                 msg,
@@ -334,13 +341,6 @@ public class NetworkPublication
                 initialTermId,
                 positionBitsToShift,
                 nanoClock.nanoTime()));
-
-        if (!isConnected)
-        {
-            isConnected = true;
-        }
-
-        LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), epochClock.time());
     }
 
     public void onRttMeasurement(final RttMeasurementFlyweight msg, final InetSocketAddress srcAddress)

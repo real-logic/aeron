@@ -201,6 +201,13 @@ void aeron_mpsc_rb_consumer_heartbeat_time(volatile aeron_mpsc_rb_t *ring_buffer
     AERON_PUT_ORDERED(ring_buffer->descriptor->consumer_heartbeat, time);
 }
 
+int64_t aeron_mpsc_rb_consumer_heartbeat_time_value(volatile aeron_mpsc_rb_t *ring_buffer)
+{
+    int64_t value = 0;
+    AERON_GET_VOLATILE(value, ring_buffer->descriptor->consumer_heartbeat);
+    return value;
+}
+
 inline static bool scan_back_to_confirm_still_zeroed(uint8_t *buffer, size_t from, size_t limit)
 {
     size_t i = from - AERON_RB_ALIGNMENT;

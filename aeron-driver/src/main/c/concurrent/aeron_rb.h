@@ -20,9 +20,8 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
-
-#include <util/aeron_bitutil.h>
-#include <concurrent/aeron_atomic.h>
+#include "util/aeron_bitutil.h"
+#include "concurrent/aeron_atomic.h"
 
 #pragma pack(push)
 #pragma pack(4)

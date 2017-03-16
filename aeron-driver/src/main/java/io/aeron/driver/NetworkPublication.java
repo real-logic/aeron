@@ -15,7 +15,6 @@
  */
 package io.aeron.driver;
 
-import io.aeron.Aeron;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.status.SystemCounters;
@@ -36,6 +35,7 @@ import org.agrona.concurrent.status.ReadablePosition;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
+import static io.aeron.Aeron.PUBLICATION_CONNECTION_TIMEOUT_MS;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
@@ -326,6 +326,13 @@ public class NetworkPublication
 
     public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
+        LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), epochClock.time());
+
+        if (!isConnected)
+        {
+            isConnected = true;
+        }
+
         senderLimit.setOrdered(
             flowControl.onStatusMessage(
                 msg,
@@ -334,13 +341,6 @@ public class NetworkPublication
                 initialTermId,
                 positionBitsToShift,
                 nanoClock.nanoTime()));
-
-        if (!isConnected)
-        {
-            isConnected = true;
-        }
-
-        LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), epochClock.time());
     }
 
     public void onRttMeasurement(final RttMeasurementFlyweight msg, final InetSocketAddress srcAddress)
@@ -616,7 +616,8 @@ public class NetworkPublication
                 checkForBlockedPublisher(timeNs);
             }
 
-            if (timeMs > (timeOfLastStatusMessage(rawLog.metaData()) + Aeron.PUBLICATION_CONNECTION_TIMEOUT_MS))
+            if (isConnected &&
+                timeMs > (timeOfLastStatusMessage(rawLog.metaData()) + PUBLICATION_CONNECTION_TIMEOUT_MS))
             {
                 isConnected = false;
             }

@@ -112,7 +112,7 @@ class ImageArchivingSession implements ArchiverConductor.Session
             if (writer != null)
             {
                 writer.stop();
-                archiverConductor.updateIndexFromMeta(streamInstanceId, writer.metaDataBuffer());
+                archiverConductor.updateIndexWithDescriptor(streamInstanceId, writer.metaDataBuffer());
             }
         }
         catch (IOException e)

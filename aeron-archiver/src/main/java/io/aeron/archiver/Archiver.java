@@ -119,11 +119,6 @@ public class Archiver implements AutoCloseable
 
         public Context(final Aeron.Context clientContext, final File archiveFolder)
         {
-            if (!archiveFolder.exists() && !archiveFolder.mkdirs())
-            {
-                throw new IllegalArgumentException(
-                    "Failed to create archive folder:" + archiveFolder.getAbsolutePath());
-            }
             this.clientContext = clientContext;
             this.archiveFolder = archiveFolder;
             serviceRequestChannel = "aeron:udp?endpoint=localhost:8010";
@@ -134,6 +129,11 @@ public class Archiver implements AutoCloseable
 
         void conclude()
         {
+            if (!archiveFolder.exists() && !archiveFolder.mkdirs())
+            {
+                throw new IllegalArgumentException(
+                    "Failed to create archive folder:" + archiveFolder.getAbsolutePath());
+            }
             if (idleStrategy == null)
             {
                 idleStrategy = clientContext.idleStrategy();

@@ -51,7 +51,7 @@
         <data   name="channel"              id="2" type="varDataEncoding" />
     </message>
 
-    <message name="ReplayRequest"   id="4" description="ReplayRequest" >
+    <message name="ReplayRequest"   id="4" description="Replay archive range request" >
         <field  name="streamInstanceId"     id="1" type="int32" />
         <field  name="termId"               id="2" type="int32" />
         <field  name="termOffset"           id="3" type="int32" />
@@ -63,21 +63,22 @@
     <message name="ReplayData" id="41" description="Data chunk header" >
     </message>
 
-    <message name="AbortReplayRequest" id="5" description="Enable early close of replay" >
+    <message name="AbortReplayRequest" id="5" description="Abort replay" >
     </message>
 
-    <message name="ListStreamInstancesRequest" id="7" description="Request a replay of archive started messages" >
+    <message name="ListStreamInstancesRequest" id="6" description="Request a range of stream instance archive descriptors" >
         <field  name="replyStreamId"        id="1" type="int32" />
         <field  name="from"                 id="2" type="int32" />
         <field  name="to"                   id="3" type="int32" />
         <data   name="replyChannel"         id="4" type="varDataEncoding" />
     </message>
 
-    <message name="ListStreamInstancesEmptyResponse" id="71" description="Data chunk header" >
+    <message name="ListStreamInstancesNotFoundResponse" id="61" description="Failed to find stream instance, also terminates query" >
+        <field  name="streamInstanceId"        id="1" type="int32" />
+        <field  name="maxStreamInstanceId"     id="2" type="int32" />
     </message>
 
-
-    <message name="ArchiveDescriptor" id="8" description="Describes an archive in the meta file and index" >
+    <message name="ArchiveDescriptor" id="7" description="Describes an archive in the meta file and index" >
         <field  name="streamInstanceId"     id="1" type="int32" />
         <field  name="termBufferLength"     id="2" type="int32" />
         <field  name="startTime"            id="3" type="int64" />

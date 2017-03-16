@@ -175,4 +175,9 @@ class ArchiveIndex implements AutoCloseable
     {
         archiveIndexFileChannel.write(metaDataBuffer, streamInstanceId * INDEX_RECORD_SIZE);
     }
+
+    int maxStreamInstanceId()
+    {
+        return streamInstanceIdSeq;
+    }
 }

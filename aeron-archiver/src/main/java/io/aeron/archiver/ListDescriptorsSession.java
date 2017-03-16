@@ -20,7 +20,6 @@ import io.aeron.Publication;
 import io.aeron.archiver.messages.*;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.*;
-import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
@@ -31,18 +30,18 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 class ListDescriptorsSession implements ArchiverConductor.Session
 {
 
-    static final long EMPTY_LIST_HEADER;
+    static final long NOT_FOUND_HEADER;
     static final long DESCRIPTOR_HEADER;
 
     static
     {
         final MessageHeaderEncoder encoder = new MessageHeaderEncoder();
         encoder.wrap(new UnsafeBuffer(new byte[8]), 0);
-        encoder.schemaId(ListStreamInstancesEmptyResponseDecoder.SCHEMA_ID);
-        encoder.version(ListStreamInstancesEmptyResponseDecoder.SCHEMA_VERSION);
-        encoder.blockLength(ListStreamInstancesEmptyResponseDecoder.BLOCK_LENGTH);
-        encoder.templateId(ListStreamInstancesEmptyResponseDecoder.TEMPLATE_ID);
-        EMPTY_LIST_HEADER = encoder.buffer().getLong(0);
+        encoder.schemaId(ListStreamInstancesNotFoundResponseDecoder.SCHEMA_ID);
+        encoder.version(ListStreamInstancesNotFoundResponseDecoder.SCHEMA_VERSION);
+        encoder.blockLength(ListStreamInstancesNotFoundResponseDecoder.BLOCK_LENGTH);
+        encoder.templateId(ListStreamInstancesNotFoundResponseDecoder.TEMPLATE_ID);
+        NOT_FOUND_HEADER = encoder.buffer().getLong(0);
         encoder.schemaId(ArchiveDescriptorDecoder.SCHEMA_ID);
         encoder.version(ArchiveDescriptorDecoder.SCHEMA_VERSION);
         encoder.blockLength(ArchiveDescriptorDecoder.BLOCK_LENGTH);
@@ -67,23 +66,22 @@ class ListDescriptorsSession implements ArchiverConductor.Session
     private final Publication reply;
     private final int from;
     private final int to;
+    private final ArchiverConductor archiverConductor;
+
     private int cursor;
-    private final ArchiveIndex archiveIndex;
     private State state = State.INIT;
-    private final Int2ObjectHashMap<ImageArchivingSession> instance2ArchivingSession;
 
     ListDescriptorsSession(
         final Publication reply,
         final int from,
         final int to,
-        final ArchiveIndex archiveIndex, final Int2ObjectHashMap<ImageArchivingSession> instance2ArchivingSession)
+        final ArchiverConductor archiverConductor)
     {
         this.reply = reply;
         cursor = from;
         this.from = from;
         this.to = to;
-        this.archiveIndex = archiveIndex;
-        this.instance2ArchivingSession = instance2ArchivingSession;
+        this.archiverConductor = archiverConductor;
     }
 
     public void abort()
@@ -116,17 +114,6 @@ class ListDescriptorsSession implements ArchiverConductor.Session
 
     private int close()
     {
-        if (reply.isConnected() && from == cursor)
-        {
-            if (reply.tryClaim(8, bufferClaim) > 0L)
-            {
-                final MutableDirectBuffer buffer = bufferClaim.buffer();
-                final int offset = bufferClaim.offset();
-                buffer.putLong(offset, EMPTY_LIST_HEADER);
-                bufferClaim.commit();
-            }
-            // FUCK IT let's go bowling?
-        }
         CloseHelper.quietClose(reply);
         state = State.DONE;
         return 1;
@@ -135,18 +122,29 @@ class ListDescriptorsSession implements ArchiverConductor.Session
     private int sendDescriptors()
     {
         final int limit = Math.min(cursor + 4, to);
-        for (; cursor < limit; cursor++)
+        for (; cursor <= limit; cursor++)
         {
-            final ImageArchivingSession session = instance2ArchivingSession.get(cursor);
+            final ImageArchivingSession session = archiverConductor.getArchivingSession(cursor);
             if (session == null)
             {
                 byteBuffer.clear();
                 unsafeBuffer.wrap(byteBuffer);
                 try
                 {
-                    if (!archiveIndex.readArchiveDescriptor(cursor, byteBuffer))
+                    if (!archiverConductor.readArchiveDescriptor(cursor, byteBuffer))
                     {
-                        state = State.CLOSE;
+                        // return relevant error
+                        if (reply.tryClaim(8 +
+                                           ListStreamInstancesNotFoundResponseDecoder.BLOCK_LENGTH, bufferClaim) > 0L)
+                        {
+                            final MutableDirectBuffer buffer = bufferClaim.buffer();
+                            final int offset = bufferClaim.offset();
+                            buffer.putLong(offset, NOT_FOUND_HEADER);
+                            buffer.putInt(offset + 8, cursor);
+                            buffer.putInt(offset + 12, archiverConductor.maxStreamInstanceId());
+                            bufferClaim.commit();
+                            state = State.CLOSE;
+                        }
                         return 0;
                     }
                 }
@@ -161,11 +159,12 @@ class ListDescriptorsSession implements ArchiverConductor.Session
             {
                 unsafeBuffer.wrap(session.metaDataBuffer());
             }
+
             final int length = unsafeBuffer.getInt(0);
             unsafeBuffer.putLong(ArchiveIndex.INDEX_FRAME_LENGTH - 8, DESCRIPTOR_HEADER);
             reply.offer(unsafeBuffer, ArchiveIndex.INDEX_FRAME_LENGTH - 8, length + 8);
         }
-        if (cursor == limit)
+        if (cursor > to)
         {
             state = State.CLOSE;
         }
@@ -174,11 +173,26 @@ class ListDescriptorsSession implements ArchiverConductor.Session
 
     private int init()
     {
-        if (reply.isConnected())
+        if (!reply.isConnected())
+        {
+            // TODO: timeout
+            return 0;
+        }
+
+        if (from > to)
+        {
+            archiverConductor.sendResponse(reply, "Requested range is reversed (to < from)");
+            state = State.CLOSE;
+        }
+        else if (to > archiverConductor.maxStreamInstanceId())
+        {
+            archiverConductor.sendResponse(reply, "Requested range exceeds available range (to > max)");
+            state = State.CLOSE;
+        }
+        else
         {
             state = State.SENDING;
-            return 1;
         }
-        return 0;
+        return 1;
     }
 }

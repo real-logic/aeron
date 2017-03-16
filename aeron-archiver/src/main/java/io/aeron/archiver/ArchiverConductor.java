@@ -62,6 +62,8 @@ class ArchiverConductor implements Agent
     private final UnsafeBuffer outboundBuffer =
         new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, CACHE_LINE_LENGTH));
 
+    // TODO: replace header usage with constants
+    // TODO: conform to adapter/listener and proxy pattern as per ClientConductor
     private final MessageHeaderEncoder outboundHeaderEncoder = new MessageHeaderEncoder();
     private final ArchiverResponseEncoder responseEncoder = new ArchiverResponseEncoder();
     private final ArchiveStartedNotificationEncoder archiveStartedNotificationEncoder =
@@ -210,12 +212,13 @@ class ArchiverConductor implements Agent
                 offset,
                 headerDecoder.blockLength(),
                 headerDecoder.version());
+
         final int from = requestDecoder.from();
         final int to = requestDecoder.to();
         final String channel = requestDecoder.replyChannel();
         final Publication reply = aeron.addPublication(channel, requestDecoder.replyStreamId());
         final Session listSession =
-            new ListDescriptorsSession(reply, from, to, archiveIndex, instance2ArchivingSession);
+            new ListDescriptorsSession(reply, from, to, this);
 
         sessions.add(listSession);
     }
@@ -446,6 +449,11 @@ class ArchiverConductor implements Agent
         }
     }
 
+    ImageArchivingSession getArchivingSession(final int streamInstanceId)
+    {
+        return instance2ArchivingSession.get(streamInstanceId);
+    }
+
     void removeArchivingSession(final int streamInstanceId)
     {
         instance2ArchivingSession.remove(streamInstanceId);
@@ -456,10 +464,17 @@ class ArchiverConductor implements Agent
         image2ReplaySession.remove(sessionId);
     }
 
-    void updateIndexFromMeta(final int streamInstanceId, final ByteBuffer byteBuffer) throws IOException
+    void updateIndexWithDescriptor(final int streamInstanceId, final ByteBuffer descriptorByteBuffer) throws IOException
     {
-        archiveIndex.updateIndexFromMeta(streamInstanceId, byteBuffer);
+        archiveIndex.updateIndexFromMeta(streamInstanceId, descriptorByteBuffer);
     }
-
+    boolean readArchiveDescriptor(final int streamInstanceId, final ByteBuffer byteBuffer) throws IOException
+    {
+        return archiveIndex.readArchiveDescriptor(streamInstanceId, byteBuffer);
+    }
+    int maxStreamInstanceId()
+    {
+        return archiveIndex.maxStreamInstanceId();
+    }
 
 }

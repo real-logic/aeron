@@ -274,23 +274,16 @@ public class ExclusiveTermAppender
         final int termLength,
         final int termId)
     {
-        int resultingOffset = FAILED;
-
-        if (termOffset <= termLength)
+        if (termOffset < termLength)
         {
-            resultingOffset = TRIPPED;
-
-            if (termOffset < termLength)
-            {
-                final int offset = (int)termOffset;
-                final int paddingLength = termLength - offset;
-                header.write(termBuffer, offset, paddingLength, termId);
-                frameType(termBuffer, offset, PADDING_FRAME_TYPE);
-                frameLengthOrdered(termBuffer, offset, paddingLength);
-            }
+            final int offset = (int)termOffset;
+            final int paddingLength = termLength - offset;
+            header.write(termBuffer, offset, paddingLength, termId);
+            frameType(termBuffer, offset, PADDING_FRAME_TYPE);
+            frameLengthOrdered(termBuffer, offset, paddingLength);
         }
 
-        return resultingOffset;
+        return TRIPPED;
     }
 
     private void putRawTailOrdered(final int termId, final int termOffset)

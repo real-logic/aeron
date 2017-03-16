@@ -477,14 +477,13 @@ public class ExclusivePublication implements AutoCloseable
 
     private long newPosition(final int resultingOffset)
     {
-        long newPosition = ADMIN_ACTION;
-
         if (resultingOffset > 0)
         {
             termOffset = resultingOffset;
-            newPosition = termBeginPosition + resultingOffset;
+
+            return termBeginPosition + resultingOffset;
         }
-        else if (resultingOffset == ExclusiveTermAppender.TRIPPED)
+        else
         {
             final int nextIndex = nextPartitionIndex(activePartitionIndex);
             final int nextTermId = termId + 1;
@@ -496,9 +495,9 @@ public class ExclusivePublication implements AutoCloseable
 
             termAppenders[nextIndex].tailTermId(nextTermId);
             LogBufferDescriptor.activePartitionIndex(logMetaDataBuffer, nextIndex);
-        }
 
-        return newPosition;
+            return ADMIN_ACTION;
+        }
     }
 
     private void checkForMaxPayloadLength(final int length)

@@ -328,6 +328,49 @@ public class NetworkPublication
         }
     }
 
+    public void onNak(final int termId, final int termOffset, final int length)
+    {
+        retransmitHandler.onNak(termId, termOffset, length, termLengthMask + 1, this);
+    }
+
+    public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
+    {
+        senderPositionLimit(
+            flowControl.onStatusMessage(
+                msg,
+                srcAddress,
+                senderLimit.get(),
+                initialTermId,
+                positionBitsToShift,
+                nanoClock.nanoTime()));
+
+        LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), epochClock.time());
+    }
+
+    public void onRttMeasurement(final RttMeasurementFlyweight msg, final InetSocketAddress srcAddress)
+    {
+        if (RttMeasurementFlyweight.REPLY_FLAG == (msg.flags() & RttMeasurementFlyweight.REPLY_FLAG))
+        {
+            // TODO: rate limit
+
+            rttMeasurementHeader
+                .receiverId(msg.receiverId())
+                .echoTimestamp(msg.echoTimestamp())
+                .receptionDelta(0)
+                .sessionId(sessionId)
+                .streamId(streamId)
+                .flags((short)0x0);
+
+            final int bytesSent = channelEndpoint.send(rttMeasurementBuffer);
+            if (RttMeasurementFlyweight.HEADER_LENGTH != bytesSent)
+            {
+                shortSends.increment();
+            }
+        }
+
+        // handling of RTT measurements would be done in an else clause here.
+    }
+
     RawLog rawLog()
     {
         return rawLog;
@@ -386,52 +429,6 @@ public class NetworkPublication
         }
 
         return maxSpyPosition;
-    }
-
-    public void onNak(final int termId, final int termOffset, final int length)
-    {
-        retransmitHandler.onNak(termId, termOffset, length, termLengthMask + 1, this);
-    }
-
-    public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
-    {
-        final long nowInNs = nanoClock.nanoTime();
-        final long nowInMs = epochClock.time();
-
-        senderPositionLimit(
-            flowControl.onStatusMessage(
-                msg,
-                srcAddress,
-                senderLimit.get(),
-                initialTermId,
-                positionBitsToShift,
-                nowInNs));
-
-        LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), nowInMs);
-    }
-
-    public void onRttMeasurement(final RttMeasurementFlyweight msg, final InetSocketAddress srcAddress)
-    {
-        if (RttMeasurementFlyweight.REPLY_FLAG == (msg.flags() & RttMeasurementFlyweight.REPLY_FLAG))
-        {
-            // TODO: rate limit
-
-            rttMeasurementHeader
-                .receiverId(msg.receiverId())
-                .echoTimestamp(msg.echoTimestamp())
-                .receptionDelta(0)
-                .sessionId(sessionId)
-                .streamId(streamId)
-                .flags((short)0x0);
-
-            final int bytesSent = channelEndpoint.send(rttMeasurementBuffer);
-            if (RttMeasurementFlyweight.HEADER_LENGTH != bytesSent)
-            {
-                shortSends.increment();
-            }
-        }
-
-        // handling of RTT measurements would be done in an else clause here.
     }
 
     private int sendData(final long now, final long senderPosition, final int termOffset)

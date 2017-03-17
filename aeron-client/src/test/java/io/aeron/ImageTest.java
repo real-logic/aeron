@@ -69,7 +69,6 @@ public class ImageTest
     private final Subscription subscription = mock(Subscription.class);
 
     private UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
-    private UnsafeBuffer logMetaDataBuffer;
 
     @Before
     public void setUp()
@@ -81,7 +80,7 @@ public class ImageTest
             termBuffers[i] = new UnsafeBuffer(allocateDirect(TERM_BUFFER_LENGTH));
         }
 
-        logMetaDataBuffer = new UnsafeBuffer(allocateDirect(LOG_META_DATA_LENGTH));
+        final UnsafeBuffer logMetaDataBuffer = new UnsafeBuffer(allocateDirect(LOG_META_DATA_LENGTH));
 
         when(logBuffers.termBuffers()).thenReturn(termBuffers);
         when(logBuffers.termLength()).thenReturn(TERM_BUFFER_LENGTH);

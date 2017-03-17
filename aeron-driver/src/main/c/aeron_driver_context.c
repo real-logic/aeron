@@ -174,7 +174,7 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, a
                         aeron_mpsc_rb_t rb;
 
                         if (aeron_mpsc_rb_init(
-                            &rb, aeron_cnc_to_driver_buff(metadata), (size_t)metadata->to_driver_buffer_length) != 0)
+                            &rb, aeron_cnc_to_driver_buffer(metadata), (size_t)metadata->to_driver_buffer_length) != 0)
                         {
                             snprintf(
                                 buffer, sizeof(buffer) - 1, "ERROR: aeron cnc file could not init to-driver buffer");
@@ -214,4 +214,4 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, a
     return false;
 }
 
-extern uint8_t *aeron_cnc_to_driver_buff(aeron_cnc_metadata_t *metadata);
+extern uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata);

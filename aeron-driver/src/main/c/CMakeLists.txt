@@ -18,6 +18,7 @@ SET(SOURCE
     concurrent/aeron_spsc_rb.c
     concurrent/aeron_mpsc_rb.c
     concurrent/aeron_atomic.c
+    concurrent/aeron_distinct_error_log.c
     aeron_driver_context.c
     aeron_alloc.c
     aeron_driver.c

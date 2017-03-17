@@ -60,6 +60,14 @@ typedef struct aeron_driver_context_stct
 }
 aeron_driver_context_t;
 
+typedef struct aeron_resource_linger_stct
+{
+    uint8_t *buffer;
+    int64_t timestamp;
+    struct aeron_resource_linger_stct *next;
+}
+aeron_resource_linger_t;
+
 typedef struct aeron_driver_stct
 {
     aeron_driver_context_t *context;
@@ -83,7 +91,7 @@ int aeron_dir_delete(const char *dirname);
 typedef void (*aeron_log_func_t)(const char *);
 bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, aeron_log_func_t log_func);
 
-inline uint8_t *aeron_cnc_to_driver_buff(aeron_cnc_metadata_t *metadata)
+inline uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata)
 {
     return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH;
 }

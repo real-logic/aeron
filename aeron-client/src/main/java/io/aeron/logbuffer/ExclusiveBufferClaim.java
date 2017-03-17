@@ -31,7 +31,8 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * Represents a claimed range in a buffer to be used for recording a message without copy semantics for later commit.
  *
  * {@link ExclusiveBufferClaim}s offer additional functionality over standard {@link BufferClaim}s in that the header
- * can be manipulated for setting flags and type. This allows the user to do things such as their own fragmentation.
+ * can be manipulated for setting flags and type. This allows the user to implement things such as their own
+ * fragmentation policy.
  *
  * The claimed space is in {@link #buffer()} between {@link #offset()} and {@link #offset()} + {@link #length()}.
  * When the buffer is filled with message data, use {@link #commit()} to make it available to subscribers.

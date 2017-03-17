@@ -70,9 +70,7 @@ class ImageArchivingSession implements ArchiverConductor.Session
             source,
             sessionId,
             channel,
-            streamId,
-            termBufferLength,
-            imageInitialTermId);
+            streamId);
 
 
         try

@@ -91,9 +91,7 @@ class ArchiverProtocolProxy
         final String source,
         final int sessionId,
         final String channel,
-        final int streamId,
-        final int termBufferLength,
-        final int imageInitialTermId)
+        final int streamId)
     {
         outboundHeaderEncoder
             .blockLength(ArchiveStartedNotificationEncoder.BLOCK_LENGTH)

@@ -25,8 +25,8 @@ import java.util.function.IntFunction;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 
 /**
- * A {@link ControlledFragmentHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented messages
- * so that the next handler in the chain only sees whole messages.
+ * A {@link ControlledFragmentHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented
+ * messages so that the next handler in the chain only sees whole messages.
  *
  * Unfragmented messages are delegated without copy. Fragmented messages are copied to a temporary
  * buffer for reassembly before delegation.

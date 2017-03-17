@@ -29,8 +29,8 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
  * each get their own session id so multiple can be concurrently active on the same media driver as independent streams.
  *
  * {@link ExclusivePublication}s are created via the {@link Aeron#addExclusivePublication(String, int)} method,
- * and messages are sent via one of the {@link #offer(DirectBuffer)} methods, or a {@link #tryClaim(int, BufferClaim)}
- * and {@link BufferClaim#commit()} method combination.
+ * and messages are sent via one of the {@link #offer(DirectBuffer)} methods, or a
+ * {@link #tryClaim(int, ExclusiveBufferClaim)} and {@link ExclusiveBufferClaim#commit()} method combination.
  *
  * {@link ExclusivePublication}s have the potential to provide greater throughput than {@link Publication}s.
  *
@@ -379,12 +379,13 @@ public class ExclusivePublication implements AutoCloseable
 
     /**
      * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
-     * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
+     * Once the message has been written then {@link ExclusiveBufferClaim#commit()} should be called thus making it
+     * available.
      *
      * <b>Note:</b> This method can only be used for message lengths less than MTU length minus header.
      *
      * <pre>{@code
-     *     final BufferClaim bufferClaim = new BufferClaim(); // Can be stored and reused to avoid allocation
+     *     final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
      *
      *     if (publication.tryClaim(messageLength, bufferClaim) > 0L)
      *     {
@@ -407,10 +408,10 @@ public class ExclusivePublication implements AutoCloseable
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION}, or {@link #CLOSED}.
      * @throws IllegalArgumentException if the length is greater than {@link #maxPayloadLength()} within an MTU.
-     * @see BufferClaim#commit()
-     * @see BufferClaim#abort()
+     * @see ExclusiveBufferClaim#commit()
+     * @see ExclusiveBufferClaim#abort()
      */
-    public long tryClaim(final int length, final BufferClaim bufferClaim)
+    public long tryClaim(final int length, final ExclusiveBufferClaim bufferClaim)
     {
         checkForMaxPayloadLength(length);
         long newPosition = CLOSED;

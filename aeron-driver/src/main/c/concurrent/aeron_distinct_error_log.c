@@ -84,16 +84,17 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
     aeron_distinct_observation_t *observation = NULL;
 
     if ((observation = aeron_distinct_error_log_find_observation(
-        observations, num_observations, error_code, description)) == NULL)
+        observations, existing_num_observations, error_code, description)) == NULL)
     {
         char encoded_error[AERON_MAX_PATH];
+
+        snprintf(encoded_error, sizeof(encoded_error) - 1, "%d: %s %s", error_code, description, message);
+
         size_t encoded_error_length = strlen(encoded_error);
         size_t length = AERON_ERROR_LOG_HEADER_LENGTH + encoded_error_length;
         aeron_distinct_observation_t *new_array = NULL;
         size_t offset = log->next_offset;
         aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(log->buffer + offset);
-
-        snprintf(encoded_error, sizeof(encoded_error) - 1, "%d: %s %s", error_code, description, message);
 
         if ((offset + length) > log->buffer_capacity ||
             aeron_alloc((void **)&new_array, sizeof(aeron_distinct_observation_t) * (num_observations + 1)) < 0)
@@ -103,6 +104,7 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
 
         memcpy(log->buffer + offset + AERON_ERROR_LOG_HEADER_LENGTH, encoded_error, encoded_error_length);
         entry->first_observation_timestamp = timestamp;
+        entry->observation_count = 0;
 
         log->next_offset = AERON_ALIGN(offset + length, AERON_ERROR_LOG_RECORD_ALIGNMENT);
 
@@ -116,6 +118,8 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
 
         AERON_PUT_ORDERED(entry->length, length);
 
+        observation = &new_array[0];
+
         if (NULL != log->linger_resource)
         {
             log->linger_resource((uint8_t *)observations);
@@ -125,7 +129,7 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
     return observation;
 }
 
-int aeron_distrinct_error_log_record(
+int aeron_distinct_error_log_record(
     aeron_distinct_error_log_t *log, int error_code, const char *description, const char *message)
 {
     int64_t timestamp = 0;
@@ -161,7 +165,7 @@ int aeron_distrinct_error_log_record(
 
     int32_t dest;
 
-    AERON_GET_AND_ADD_INT32(entry->observation_count, dest, 1);
+    AERON_GET_AND_ADD_INT32(dest, entry->observation_count, 1);
     AERON_PUT_ORDERED(entry->last_observation_timestamp, timestamp);
 
     return 0;

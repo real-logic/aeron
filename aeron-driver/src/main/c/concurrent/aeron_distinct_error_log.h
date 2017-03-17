@@ -68,7 +68,7 @@ int aeron_distinct_error_log_init(
     aeron_clock_func_t clock,
     aeron_resource_linger_func_t linger);
 
-int aeron_distrinct_error_log_record(
+int aeron_distinct_error_log_record(
     aeron_distinct_error_log_t *log, int error_code, const char *description, const char *message);
 
 #endif //AERON_AERON_DISTINCT_ERROR_LOG_H

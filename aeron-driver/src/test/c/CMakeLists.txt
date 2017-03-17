@@ -25,6 +25,7 @@ if(BUILD_TESTING)
 
     aeron_driver_test(spsc_rb_test aeron_spsc_rb_test.cpp)
     aeron_driver_test(mpsc_rb_test aeron_mpsc_rb_test.cpp)
+    aeron_driver_test(distinct_error_log_test aeron_distinct_error_log_test.cpp)
 
     function(aeron_driver_benchmark name file)
         add_executable(${name} ${file})

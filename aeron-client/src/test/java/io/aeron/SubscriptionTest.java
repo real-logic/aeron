@@ -50,6 +50,8 @@ public class SubscriptionTest
     private final Image imageOneMock = mock(Image.class);
     private final Header header = mock(Header.class);
     private final Image imageTwoMock = mock(Image.class);
+    private final AvailableImageHandler availableImageHandlerMock = mock(AvailableImageHandler.class);
+    private final UnavailableImageHandler unavailableImageHandlerMock = mock(UnavailableImageHandler.class);
 
     private Subscription subscription;
 
@@ -59,7 +61,13 @@ public class SubscriptionTest
         when(header.flags()).thenReturn(FLAGS);
         when(conductor.clientLock()).thenReturn(conductorLock);
 
-        subscription = new Subscription(conductor, CHANNEL, STREAM_ID_1, SUBSCRIPTION_CORRELATION_ID);
+        subscription = new Subscription(
+            conductor,
+            CHANNEL,
+            STREAM_ID_1,
+            SUBSCRIPTION_CORRELATION_ID,
+            availableImageHandlerMock,
+            unavailableImageHandlerMock);
     }
 
     @Test

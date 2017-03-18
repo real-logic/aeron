@@ -16,13 +16,13 @@
 package io.aeron;
 
 /**
- * Interface for delivery of inactive image events to a {@link Subscription}.
+ * Interface for delivery of inactive image notification to a {@link Subscription}.
  */
 @FunctionalInterface
 public interface UnavailableImageHandler
 {
     /**
-     * Method called by Aeron to deliver notification that an Image is no longer available for polling.
+     * Method called by Aeron to deliver notification that an {@link Image} is no longer available for polling.
      *
      * @param image the image that has become unavailable.
      */

@@ -42,6 +42,8 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
     private final ArrayList<Session> sessions = new ArrayList<>();
 
     private final Int2ObjectHashMap<ReplaySession> image2ReplaySession = new Int2ObjectHashMap<>();
+
+    // TODO: archiving sessions index should be managed by the archive index
     private final Int2ObjectHashMap<ImageArchivingSession> instance2ArchivingSession = new Int2ObjectHashMap<>();
 
     private final ObjectHashSet<Subscription> archiveSubscriptions = new ObjectHashSet<>(128);
@@ -51,26 +53,41 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
 
     // TODO: arguably this is a good fit for a linked array queue so that we can have minimal footprint
     // TODO: this makes for awkward construction as we need Aeron setup before the archiver.
-    // TODO: The image listener would be easier to setup on the subscription level
-    private final ManyToOneConcurrentArrayQueue<Image> imageNotifications;
+    // TODO: Verify this is a valid SPSC usage
+    private final OneToOneConcurrentArrayQueue<Image> imageNotifications =
+        new OneToOneConcurrentArrayQueue<>(1024);
+    private final AvailableImageHandler availableImageHandler;
     private final File archiveFolder;
     private final EpochClock epochClock;
 
     private final Consumer<Image> handleNewImageNotification = this::handleNewImageNotification;
     private final ArchiverProtocolAdapter adapter = new ArchiverProtocolAdapter(this);
     private final ArchiverProtocolProxy proxy;
+    private final IdleStrategy idleStrategy;
+
     ArchiverConductor(
         final Aeron aeron,
-        final ManyToOneConcurrentArrayQueue<Image> imageNotifications,
         final Archiver.Context ctx)
     {
         this.aeron = aeron;
-        this.imageNotifications = imageNotifications;
-        serviceRequests = aeron.addSubscription(ctx.serviceRequestChannel(), ctx.serviceRequestStreamId());
+        serviceRequests = aeron.addSubscription(
+            ctx.serviceRequestChannel(),
+            ctx.serviceRequestStreamId());
+
         archiverNotifications = aeron.addPublication(
-            ctx.archiverNotificationsChannel(), ctx.archiverNotificationsStreamId());
+            ctx.archiverNotificationsChannel(),
+            ctx.archiverNotificationsStreamId());
+
         this.archiveFolder = ctx.archiveFolder();
-        this.proxy = new ArchiverProtocolProxy(ctx.idleStrategy(), archiverNotifications);
+        idleStrategy = ctx.idleStrategy();
+        availableImageHandler = image ->
+        {
+            while (!imageNotifications.offer(image))
+            {
+                idleStrategy.idle(0);
+            }
+        };
+        this.proxy = new ArchiverProtocolProxy(idleStrategy, archiverNotifications);
         this.epochClock = ctx.epochClock();
 
         archiveIndex = new ArchiveIndex(archiveFolder);
@@ -130,13 +147,10 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
 
     private void handleNewImageNotification(final Image image)
     {
-        if (archiveSubscriptions.contains(image.subscription()))
-        {
-            final ImageArchivingSession session =
-                new ImageArchivingSession(proxy, archiveIndex, archiveFolder, image, this.epochClock);
-            sessions.add(session);
-            instance2ArchivingSession.put(session.streamInstanceId(), session);
-        }
+        final ImageArchivingSession session =
+            new ImageArchivingSession(proxy, archiveIndex, archiveFolder, image, this.epochClock);
+        sessions.add(session);
+        instance2ArchivingSession.put(session.streamInstanceId(), session);
     }
 
     public void onArchiveStop(final String channel, final int streamId)
@@ -153,9 +167,14 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
         }
     }
 
-    public void onArchiveStart(final String channel1, final int streamId)
+    public void onArchiveStart(final String channel, final int streamId)
     {
-        final Subscription archiveSubscription = aeron.addSubscription(channel1, streamId);
+        final Subscription archiveSubscription =
+            aeron.addSubscription(
+                channel,
+                streamId,
+                availableImageHandler,
+                image -> {});
 
         // as subscription images are created they will get picked up and archived
         archiveSubscriptions.add(archiveSubscription);

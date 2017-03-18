@@ -16,20 +16,16 @@
 package io.aeron;
 
 import io.aeron.exceptions.DriverTimeoutException;
-import org.agrona.ErrorHandler;
-import org.agrona.IoUtil;
+import org.agrona.*;
 import org.agrona.concurrent.*;
-import org.agrona.concurrent.broadcast.BroadcastReceiver;
-import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
-import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
-import org.agrona.concurrent.ringbuffer.RingBuffer;
+import org.agrona.concurrent.broadcast.*;
+import org.agrona.concurrent.ringbuffer.*;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static org.agrona.IoUtil.mapExistingFile;
@@ -199,17 +195,34 @@ public final class Aeron implements AutoCloseable
      */
     public Subscription addSubscription(final String channel, final int streamId)
     {
+        return addSubscription(channel, streamId, image -> {}, image -> {});
+    }
+
+    /**
+     * Add a new {@link Subscription} for subscribing to messages from publishers.
+     *
+     * @param channel  for receiving the messages known to the media layer.
+     * @param streamId within the channel scope.
+     * @param availableImageHandler subscription level available image handler
+     * @param unavailableImageHandler subscription level unavailable image handler
+     * @return the {@link Subscription} for the channel and streamId pair.
+     */
+    public Subscription addSubscription(
+        final String channel,
+        final int streamId,
+        final AvailableImageHandler availableImageHandler,
+        final UnavailableImageHandler unavailableImageHandler)
+    {
         conductor.clientLock().lock();
         try
         {
-            return conductor.addSubscription(channel, streamId);
+            return conductor.addSubscription(channel, streamId, availableImageHandler, unavailableImageHandler);
         }
         finally
         {
             conductor.clientLock().unlock();
         }
     }
-
     /**
      * Generate the next correlation id that is unique for the connected Media Driver.
      *

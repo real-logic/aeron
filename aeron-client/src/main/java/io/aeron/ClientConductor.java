@@ -210,12 +210,14 @@ class ClientConductor implements Agent, DriverListener
         }
     }
 
+    // TODO: remove redundant method?
     Subscription addSubscription(
         final String channel,
         final int streamId)
     {
         return addSubscription(channel, streamId, image -> {}, image -> {});
     }
+
     Subscription addSubscription(
         final String channel,
         final int streamId,

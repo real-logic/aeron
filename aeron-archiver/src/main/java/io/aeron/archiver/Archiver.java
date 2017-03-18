@@ -15,7 +15,7 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.*;
+import io.aeron.Aeron;
 import org.agrona.concurrent.*;
 
 import java.io.File;
@@ -63,24 +63,13 @@ public class Archiver implements AutoCloseable
 
     public void start()
     {
-        final ManyToOneConcurrentArrayQueue<Image> imageNotifications = new ManyToOneConcurrentArrayQueue<>(1024);
-
-        // TODO: needs to give up on some isRunning flag
-        ctx.clientContext.availableImageHandler(image ->
-        {
-            while (!imageNotifications.offer(image))
-            {
-                ctx.clientContext.idleStrategy().idle(0);
-            }
-        });
-
         aeron = Aeron.connect(ctx.clientContext);
 
         ctx.conclude();
         // TODO: Should we have replay and record on same thread?
         // TODO: Should we allow the allocation of more threads to these tasks assuming slow storage/sufficient
         // TODO: traffic/sufficient replay load?
-        final ArchiverConductor archiverConductor = new ArchiverConductor(aeron, imageNotifications, ctx);
+        final ArchiverConductor archiverConductor = new ArchiverConductor(aeron, ctx);
 
         runner = new AgentRunner(
             ctx.clientContext.idleStrategy(),

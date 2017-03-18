@@ -145,6 +145,7 @@ class ImageArchivingSession implements ArchiverConductor.Session
     {
         try
         {
+            // TODO: add CRC as option, per fragment, use session id to store CRC
             final int delta = this.image.rawPoll(writer, ArchiveFileUtil.ARCHIVE_FILE_SIZE);
             if (delta != 0)
             {

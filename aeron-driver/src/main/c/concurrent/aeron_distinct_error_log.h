@@ -76,9 +76,16 @@ typedef void (*aeron_error_log_reader_func_t)(
     int64_t first_observation_timestamp,
     int64_t last_observation_timestamp,
     const char *error,
-    size_t error_length);
+    size_t error_length,
+    void *clientd);
+
+bool aeron_error_log_exists(const uint8_t *buffer, size_t buffer_size);
 
 size_t aeron_error_log_read(
-    const uint8_t *buffer, size_t buffer_size, aeron_error_log_reader_func_t reader, int64_t since_timestamp);
+    const uint8_t *buffer,
+    size_t buffer_size,
+    aeron_error_log_reader_func_t reader,
+    void *clientd,
+    int64_t since_timestamp);
 
 #endif //AERON_AERON_DISTINCT_ERROR_LOG_H

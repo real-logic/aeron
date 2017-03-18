@@ -18,12 +18,18 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <time.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <inttypes.h>
 #include "aeronmd.h"
 #include "aeron_alloc.h"
+#include "concurrent/aeron_distinct_error_log.h"
+#include "util/aeron_strutil.h"
 
 void aeron_log_func_stderr(const char *str)
 {
-    fprintf(stderr, "%s", str);
+    fprintf(stderr, "%s\n", str);
 }
 
 void aeron_log_func_none(const char *str)
@@ -53,9 +59,96 @@ int64_t aeron_epochclock()
     return (ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
 }
 
+static void error_log_reader_save_to_file(
+    int32_t observation_count,
+    int64_t first_observation_timestamp,
+    int64_t last_observation_timestamp,
+    const char *error,
+    size_t error_length,
+    void *clientd)
+{
+    FILE *saved_errors_file = (FILE *)clientd;
+    char first_datestamp[AERON_MAX_PATH];
+    char last_datestamp[AERON_MAX_PATH];
+
+    aeron_format_date(first_datestamp, sizeof(first_datestamp) - 1, first_observation_timestamp);
+    aeron_format_date(last_datestamp, sizeof(last_datestamp) - 1, last_observation_timestamp);
+    fprintf(
+        saved_errors_file,
+        "***\n%d observations from %s to %s for:\n %.*s\n",
+        observation_count,
+        first_datestamp,
+        last_datestamp,
+        (int)error_length,
+        error);
+}
+
 int aeron_report_existing_errors(const char *aeron_dir)
 {
-    return -1;
+    struct stat sb;
+    char buffer[AERON_MAX_PATH];
+    int fd, result = 0;
+
+    if (stat(aeron_dir, &sb) == 0 && (S_ISDIR(sb.st_mode)))
+    {
+        snprintf(buffer, sizeof(buffer) - 1, "%s/%s", aeron_dir, AERON_CNC_FILE);
+        if ((fd = open(buffer, O_RDONLY)) >= 0)
+        {
+            if (fstat(fd, &sb) == 0)
+            {
+                void *cnc_mmap = mmap(NULL, (size_t) sb.st_size, PROT_READ, MAP_FILE, fd, 0);
+
+                if (MAP_FAILED != cnc_mmap)
+                {
+                    aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *) cnc_mmap;
+
+                    if (AERON_CNC_VERSION == metadata->cnc_version &&
+                        aeron_error_log_exists(cnc_mmap, (size_t)sb.st_size))
+                    {
+                        char datestamp[AERON_MAX_PATH];
+                        FILE *saved_errors_file = NULL;
+
+                        aeron_format_date(datestamp, sizeof(datestamp) - 1, aeron_epochclock());
+                        snprintf(buffer, sizeof(buffer) - 1, "%s-%s-error.log", aeron_dir, datestamp);
+
+                        if ((saved_errors_file = fopen(buffer, "w")) != NULL)
+                        {
+                            uint64_t observations = aeron_error_log_read(
+                                aeron_cnc_error_log_buffer(metadata),
+                                (size_t)metadata->error_log_buffer_length,
+                                error_log_reader_save_to_file,
+                                saved_errors_file,
+                                0);
+
+                            fprintf(saved_errors_file, "\n%" PRIu64 " distinct errors observed.\n", observations);
+
+                            fprintf(stderr, "WARNING: Existing errors saved to: %s\n", buffer);
+                        }
+                        else
+                        {
+                            result = -1;
+                        }
+
+                        fclose(saved_errors_file);
+                    }
+                    else
+                    {
+                        result = -1;
+                    }
+
+                    munmap(cnc_mmap, (size_t) sb.st_size);
+                }
+                else
+                {
+                    result = -1;
+                }
+            }
+
+            close(fd);
+        }
+    }
+
+    return result;
 }
 
 int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
@@ -121,6 +214,11 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     }
 
     _driver->context = context;
+
+    if (aeron_driver_ensure_dir_is_recreated(_driver) < 0)
+    {
+        return -1;
+    }
 
     *driver = _driver;
     return 0;

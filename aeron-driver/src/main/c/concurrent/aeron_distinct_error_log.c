@@ -171,8 +171,21 @@ int aeron_distinct_error_log_record(
     return 0;
 }
 
+bool aeron_error_log_exists(const uint8_t *buffer, size_t buffer_size)
+{
+    aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)buffer;
+    int32_t length = 0;
+
+    AERON_GET_VOLATILE(length, entry->length);
+    return (0 != length);
+}
+
 size_t aeron_error_log_read(
-    const uint8_t *buffer, size_t buffer_size, aeron_error_log_reader_func_t reader, int64_t since_timestamp)
+    const uint8_t *buffer,
+    size_t buffer_size,
+    aeron_error_log_reader_func_t reader,
+    void *clientd,
+    int64_t since_timestamp)
 {
     size_t entries = 0;
     size_t offset = 0;
@@ -201,7 +214,8 @@ size_t aeron_error_log_read(
                 entry->first_observation_timestamp,
                 last_observation_timestamp,
                 (const char *)(buffer + offset + AERON_ERROR_LOG_HEADER_LENGTH),
-                length - AERON_ERROR_LOG_HEADER_LENGTH);
+                length - AERON_ERROR_LOG_HEADER_LENGTH,
+                clientd);
         }
 
         offset += AERON_ALIGN(length, AERON_ERROR_LOG_RECORD_ALIGNMENT);

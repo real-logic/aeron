@@ -250,3 +250,4 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, a
 }
 
 extern uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata);
+extern uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata);

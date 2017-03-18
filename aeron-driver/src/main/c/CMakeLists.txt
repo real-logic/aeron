@@ -19,6 +19,7 @@ SET(SOURCE
     concurrent/aeron_mpsc_rb.c
     concurrent/aeron_atomic.c
     concurrent/aeron_distinct_error_log.c
+    util/aeron_strutil.c
     aeron_driver_context.c
     aeron_alloc.c
     aeron_driver.c
@@ -27,6 +28,7 @@ SET(SOURCE
 SET(HEADERS
     util/aeron_platform.h
     util/aeron_bitutil.h
+    util/aeron_strutil.h
     concurrent/aeron_atomic.h
     concurrent/aeron_atomic64_gcc_x86_64.h
     concurrent/aeron_spsc_rb.h

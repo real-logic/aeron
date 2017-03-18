@@ -133,7 +133,8 @@ static void error_log_reader_no_entries(
     int64_t first_observation_timestamp,
     int64_t last_observation_timestamp,
     const char *error,
-    size_t error_length)
+    size_t error_length,
+    void *clientd)
 {
     FAIL();
 }
@@ -142,7 +143,8 @@ TEST_F(DistinctErrorLogTest, shouldReadNoErrorsFromEmptyLog)
 {
     ASSERT_EQ(aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), clock, linger_resource), 0);
 
-    EXPECT_EQ(aeron_error_log_read(m_buffer.data(), m_buffer.size(), error_log_reader_no_entries, 0), (size_t)0);
+    EXPECT_EQ(aeron_error_log_read(
+        m_buffer.data(), m_buffer.size(), error_log_reader_no_entries, NULL, 0), (size_t)0);
 }
 
 static void error_log_reader_first_observation(
@@ -150,7 +152,8 @@ static void error_log_reader_first_observation(
     int64_t first_observation_timestamp,
     int64_t last_observation_timestamp,
     const char *error,
-    size_t error_length)
+    size_t error_length,
+    void *clientd)
 {
     static int called = 0;
 
@@ -167,7 +170,8 @@ TEST_F(DistinctErrorLogTest, shouldReadFirstObservation)
 
     EXPECT_EQ(aeron_distinct_error_log_record(m_log, 1, "description 1", "message"), 0);
 
-    EXPECT_EQ(aeron_error_log_read(m_buffer.data(), m_buffer.size(), error_log_reader_first_observation, 0), (size_t)1);
+    EXPECT_EQ(aeron_error_log_read(
+        m_buffer.data(), m_buffer.size(), error_log_reader_first_observation, NULL, 0), (size_t)1);
 }
 
 static void error_log_reader_summarised_observation(
@@ -175,7 +179,8 @@ static void error_log_reader_summarised_observation(
     int64_t first_observation_timestamp,
     int64_t last_observation_timestamp,
     const char *error,
-    size_t error_length)
+    size_t error_length,
+    void *clientd)
 {
     static int called = 0;
 
@@ -195,7 +200,7 @@ TEST_F(DistinctErrorLogTest, shouldReadSummarisedObservation)
     EXPECT_EQ(aeron_distinct_error_log_record(m_log, 1, "description 1", "message"), 0);
 
     EXPECT_EQ(aeron_error_log_read(
-        m_buffer.data(), m_buffer.size(), error_log_reader_summarised_observation, 0), (size_t)1);
+        m_buffer.data(), m_buffer.size(), error_log_reader_summarised_observation, NULL, 0), (size_t)1);
 }
 
 static void error_log_reader_two_observations(
@@ -203,7 +208,8 @@ static void error_log_reader_two_observations(
     int64_t first_observation_timestamp,
     int64_t last_observation_timestamp,
     const char *error,
-    size_t error_length)
+    size_t error_length,
+    void *clientd)
 {
     static int called = 0;
 
@@ -237,7 +243,7 @@ TEST_F(DistinctErrorLogTest, shouldReadTwoDistinctObservations)
     EXPECT_EQ(aeron_distinct_error_log_record(m_log, 2, "description 2", "message"), 0);
 
     EXPECT_EQ(aeron_error_log_read(
-        m_buffer.data(), m_buffer.size(), error_log_reader_two_observations, 0), (size_t)2);
+        m_buffer.data(), m_buffer.size(), error_log_reader_two_observations, NULL, 0), (size_t)2);
 }
 
 static void error_log_reader_since_observation(
@@ -245,7 +251,8 @@ static void error_log_reader_since_observation(
     int64_t first_observation_timestamp,
     int64_t last_observation_timestamp,
     const char *error,
-    size_t error_length)
+    size_t error_length,
+    void *clientd)
 {
     static int called = 0;
 
@@ -265,5 +272,5 @@ TEST_F(DistinctErrorLogTest, shouldReadOneObservationSinceTimestamp)
     EXPECT_EQ(aeron_distinct_error_log_record(m_log, 2, "description 2", "message"), 0);
 
     EXPECT_EQ(aeron_error_log_read(
-        m_buffer.data(), m_buffer.size(), error_log_reader_since_observation, 8), (size_t)1);
+        m_buffer.data(), m_buffer.size(), error_log_reader_since_observation, NULL, 8), (size_t)1);
 }

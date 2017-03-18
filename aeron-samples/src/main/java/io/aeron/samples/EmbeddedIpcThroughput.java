@@ -16,12 +16,9 @@
 package io.aeron.samples;
 
 import io.aeron.*;
-import io.aeron.driver.MediaDriver;
-import io.aeron.driver.ThreadingMode;
-import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
-import org.agrona.BufferUtil;
-import org.agrona.DirectBuffer;
+import io.aeron.driver.*;
+import io.aeron.logbuffer.*;
+import org.agrona.*;
 import org.agrona.concurrent.*;
 
 import java.nio.ByteBuffer;
@@ -190,7 +187,7 @@ public class EmbeddedIpcThroughput
                 Thread.yield();
             }
 
-            final Image image = subscription.images().get(0);
+            final Image image = subscription.getImage(0);
 
             long failedPolls = 0;
             long successfulPolls = 0;

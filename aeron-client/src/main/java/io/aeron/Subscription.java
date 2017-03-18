@@ -284,13 +284,11 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     /**
      * Get a {@link List} of active {@link Image}s that match this subscription.
      *
-     * @return a {@link List} of active {@link Image}s that match this subscription.
+     * @return an unmodifiable {@link List} of active {@link Image}s that match this subscription.
      */
     public List<Image> images()
     {
-        // TODO: should this return an unmodifiable list? extra allocation and indirection, but presumably not something
-        // TODO: we encourage anyhow
-        return Arrays.asList(images);
+        return Collections.unmodifiableList(Arrays.asList(images));
     }
 
     /**
@@ -304,6 +302,17 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         {
             imageConsumer.accept(image);
         }
+    }
+
+    /**
+     * Get the image at the given index from the images array.
+     *
+     * @param index in the array
+     * @return image at given index
+     */
+    public Image getImage(final int index)
+    {
+        return images[index];
     }
 
     /**

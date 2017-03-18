@@ -15,19 +15,12 @@
  */
 package io.aeron;
 
-import io.aeron.driver.MediaDriver;
-import io.aeron.driver.ThreadingMode;
-import io.aeron.driver.ext.DebugChannelEndpointConfiguration;
-import io.aeron.driver.ext.DebugReceiveChannelEndpoint;
-import io.aeron.driver.ext.DebugSendChannelEndpoint;
-import io.aeron.driver.ext.LossGenerator;
+import io.aeron.driver.*;
+import io.aeron.driver.ext.*;
 import io.aeron.driver.reports.LossReport;
-import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
+import io.aeron.logbuffer.*;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.YieldingIdleStrategy;
+import org.agrona.concurrent.*;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
@@ -36,7 +29,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -133,7 +125,7 @@ public class GapFillLossTest
                 idleStrategy.idle();
             }
 
-            final Image image = subscription.images().get(0);
+            final Image image = subscription.getImage(0);
 
             while (image.position() < FINAL_POSITION.get())
             {

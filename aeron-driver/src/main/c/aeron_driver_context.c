@@ -101,6 +101,41 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     _context->threading_mode = AERON_THREADING_MODE_DEDICATED;
     _context->dirs_delete_on_start = false;
+    _context->warn_if_dirs_exist = true;
+    _context->driver_timeout_ms = 10 * 1000;
+
+    /* set from env */
+    char *value = NULL;
+
+    if ((value = getenv(AERON_DIR_ENV_VAR)))
+    {
+        _context->aeron_dir = value;
+    }
+
+    if ((value = getenv(AERON_THREADING_MODE_ENV_VAR)))
+    {
+        if (strncmp(value, "SHARED", sizeof("SHARED")) == 0)
+        {
+            _context->threading_mode = AERON_THREADING_MODE_SHARED;
+        }
+        else if (strncmp(value, "SHARED_NETWORK", sizeof("SHARED_NETWORK")) == 0)
+        {
+            _context->threading_mode = AERON_THREADING_MODE_SHARED_NETWORK;
+        }
+        else if (strncmp(value, "DEDICATED", sizeof("DEDICATED")) == 0)
+        {
+            _context->threading_mode = AERON_THREADING_MODE_DEDICATED;
+        }
+    }
+
+    if ((value = getenv(AERON_DIR_DELETE_ON_START_ENV_VAR)))
+    {
+        if (strncmp(value, "1", 1) == 0 || strncmp(value, "on", 2) == 0 || strncmp(value, "true", 4) == 0)
+        {
+            _context->dirs_delete_on_start = true;
+        }
+        /* else leave at false */
+    }
 
     *context = _context;
     return 0;

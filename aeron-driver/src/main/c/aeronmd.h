@@ -52,11 +52,17 @@ typedef enum aeron_threading_mode_enum
 }
 aeron_threading_mode_t;
 
+#define AERON_DIR_ENV_VAR "AERON_DIR"
+#define AERON_THREADING_MODE_ENV_VAR "AERON_THREADING_MODE"
+#define AERON_DIR_DELETE_ON_START_ENV_VAR "AERON_DIR_DELETE_ON_START"
+
 typedef struct aeron_driver_context_stct
 {
     char *aeron_dir;                        /* aeron.dir */
     aeron_threading_mode_t threading_mode;  /* aeron.threading.mode */
     bool dirs_delete_on_start;              /* aeron.dir.delete.on.start */
+    bool warn_if_dirs_exist;
+    int64_t driver_timeout_ms;
 }
 aeron_driver_context_t;
 
@@ -87,6 +93,9 @@ int aeron_driver_start(aeron_driver_t *driver);
 int aeron_driver_close(aeron_driver_t *driver);
 
 int aeron_dir_delete(const char *dirname);
+
+int64_t aeron_nanoclock();
+int64_t aeron_epochclock();
 
 typedef void (*aeron_log_func_t)(const char *);
 bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, aeron_log_func_t log_func);

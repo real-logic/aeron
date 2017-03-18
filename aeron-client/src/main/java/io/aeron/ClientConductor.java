@@ -210,12 +210,29 @@ class ClientConductor implements Agent, DriverListener
         }
     }
 
-    Subscription addSubscription(final String channel, final int streamId)
+    Subscription addSubscription(
+        final String channel,
+        final int streamId)
+    {
+        return addSubscription(channel, streamId, image -> {}, image -> {});
+    }
+    Subscription addSubscription(
+        final String channel,
+        final int streamId,
+        final AvailableImageHandler availableImageHandler,
+        final UnavailableImageHandler unavailableImageHandler)
     {
         verifyActive();
 
         final long correlationId = driverProxy.addSubscription(channel, streamId);
-        final Subscription subscription = new Subscription(this, channel, streamId, correlationId);
+        final Subscription subscription =
+            new Subscription(
+                this,
+                channel,
+                streamId,
+                correlationId,
+                availableImageHandler,
+                unavailableImageHandler);
         activeSubscriptions.add(subscription);
 
         awaitResponse(correlationId, channel);

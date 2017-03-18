@@ -15,21 +15,19 @@
  */
 package io.aeron;
 
-import org.junit.Before;
-import org.junit.Test;
-import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.FrameDescriptor;
-import io.aeron.logbuffer.Header;
+import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.mockito.InOrder;
-import org.mockito.Mockito;
+import org.junit.*;
+import org.mockito.*;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.locks.Lock;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 
@@ -50,7 +48,8 @@ public class SubscriptionTest
     private final Image imageOneMock = mock(Image.class);
     private final Header header = mock(Header.class);
     private final Image imageTwoMock = mock(Image.class);
-
+    private final AvailableImageHandler availableImageHandler = mock(AvailableImageHandler.class);
+    private final UnavailableImageHandler unavailableImageHandler = mock(UnavailableImageHandler.class);
     private Subscription subscription;
 
     @Before
@@ -59,7 +58,13 @@ public class SubscriptionTest
         when(header.flags()).thenReturn(FLAGS);
         when(conductor.clientLock()).thenReturn(conductorLock);
 
-        subscription = new Subscription(conductor, CHANNEL, STREAM_ID_1, SUBSCRIPTION_CORRELATION_ID);
+        subscription = new Subscription(
+            conductor,
+            CHANNEL,
+            STREAM_ID_1,
+            SUBSCRIPTION_CORRELATION_ID,
+            availableImageHandler,
+            unavailableImageHandler);
     }
 
     @Test
@@ -92,6 +97,7 @@ public class SubscriptionTest
     public void shouldReadData()
     {
         subscription.addImage(imageOneMock);
+        verify(availableImageHandler).onAvailableImage(imageOneMock);
 
         when(imageOneMock.poll(any(FragmentHandler.class), anyInt())).then(
             (invocation) ->
@@ -114,7 +120,10 @@ public class SubscriptionTest
     public void shouldReadDataFromMultipleSources()
     {
         subscription.addImage(imageOneMock);
+        verify(availableImageHandler).onAvailableImage(imageOneMock);
+
         subscription.addImage(imageTwoMock);
+        verify(availableImageHandler).onAvailableImage(imageTwoMock);
 
         when(imageOneMock.poll(any(FragmentHandler.class), anyInt())).then(
             (invocation) ->
@@ -135,5 +144,33 @@ public class SubscriptionTest
             });
 
         assertThat(subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT), is(2));
+    }
+    @Test
+    public void shouldAddAndRemoveImages()
+    {
+        subscription.addImage(imageOneMock);
+        verify(availableImageHandler).onAvailableImage(imageOneMock);
+        assertEquals(1, subscription.imageCount());
+        List<Image> images = subscription.images();
+        assertTrue(images.contains(imageOneMock));
+
+        subscription.addImage(imageTwoMock);
+        verify(availableImageHandler).onAvailableImage(imageTwoMock);
+        assertEquals(2, subscription.imageCount());
+        images = subscription.images();
+        assertTrue(images.contains(imageOneMock));
+        assertTrue(images.contains(imageTwoMock));
+
+        subscription.removeImage(imageOneMock.correlationId());
+        verify(unavailableImageHandler).onUnavailableImage(imageOneMock);
+        assertEquals(1, subscription.imageCount());
+        images = subscription.images();
+        assertTrue(!images.contains(imageOneMock));
+
+        subscription.removeImage(imageTwoMock.correlationId());
+        verify(unavailableImageHandler).onUnavailableImage(imageOneMock);
+        assertEquals(0, subscription.imageCount());
+        images = subscription.images();
+        assertTrue(images.isEmpty());
     }
 }

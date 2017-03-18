@@ -18,8 +18,7 @@ package io.aeron;
 import io.aeron.logbuffer.*;
 import org.agrona.collections.ArrayUtil;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
 
 class SubscriptionLhsPadding
@@ -41,13 +40,23 @@ class SubscriptionFields extends SubscriptionLhsPadding
     protected final ClientConductor clientConductor;
     protected final String channel;
 
+    protected final AvailableImageHandler availableImageHandler;
+    protected final UnavailableImageHandler unavailableImageHandler;
+
     protected SubscriptionFields(
-        final long registrationId, final int streamId, final ClientConductor clientConductor, final String channel)
+        final long registrationId,
+        final int streamId,
+        final ClientConductor clientConductor,
+        final String channel,
+        final AvailableImageHandler availableImageHandler,
+        final UnavailableImageHandler unavailableImageHandler)
     {
         this.registrationId = registrationId;
         this.streamId = streamId;
         this.clientConductor = clientConductor;
         this.channel = channel;
+        this.availableImageHandler = availableImageHandler;
+        this.unavailableImageHandler = unavailableImageHandler;
     }
 }
 
@@ -73,11 +82,16 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     @SuppressWarnings("unused")
     protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
 
-    Subscription(final ClientConductor conductor, final String channel, final int streamId, final long registrationId)
+    Subscription(
+        final ClientConductor clientConductor,
+        final String channel,
+        final int streamId,
+        final long registrationId,
+        final AvailableImageHandler availableImageHandler,
+        final UnavailableImageHandler unavailableImageHandler)
     {
-        super(registrationId, streamId, conductor, channel);
+        super(registrationId, streamId, clientConductor, channel, availableImageHandler, unavailableImageHandler);
     }
-
     /**
      * Media address for delivery to the channel.
      *
@@ -274,6 +288,8 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
      */
     public List<Image> images()
     {
+        // TODO: should this return an unmodifiable list? extra allocation and indirection, but presumably not something
+        // TODO: we encourage anyhow
         return Arrays.asList(images);
     }
 
@@ -353,6 +369,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         else
         {
             images = ArrayUtil.add(images, image);
+            availableImageHandler.onAvailableImage(image);
         }
     }
 
@@ -374,6 +391,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         {
             images = ArrayUtil.remove(oldArray, removedImage);
             clientConductor.lingerResource(removedImage.managedResource());
+            unavailableImageHandler.onUnavailableImage(removedImage);
         }
 
         return removedImage;

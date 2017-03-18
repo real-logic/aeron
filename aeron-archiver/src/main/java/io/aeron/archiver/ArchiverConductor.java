@@ -52,18 +52,17 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
 
 
     // TODO: arguably this is a good fit for a linked array queue so that we can have minimal footprint
-    // TODO: this makes for awkward construction as we need Aeron setup before the archiver.
-    // TODO: Verify this is a valid SPSC usage
     private final OneToOneConcurrentArrayQueue<Image> imageNotifications =
         new OneToOneConcurrentArrayQueue<>(1024);
     private final AvailableImageHandler availableImageHandler;
     private final File archiveFolder;
     private final EpochClock epochClock;
 
+    // NOTE: prevent consumer allocation on each call(shakes fist at JVM)
     private final Consumer<Image> handleNewImageNotification = this::handleNewImageNotification;
     private final ArchiverProtocolAdapter adapter = new ArchiverProtocolAdapter(this);
     private final ArchiverProtocolProxy proxy;
-    private final IdleStrategy idleStrategy;
+    private volatile boolean isClosed = false;
 
     ArchiverConductor(
         final Aeron aeron,
@@ -79,15 +78,20 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
             ctx.archiverNotificationsStreamId());
 
         this.archiveFolder = ctx.archiveFolder();
-        idleStrategy = ctx.idleStrategy();
         availableImageHandler = image ->
         {
-            while (!imageNotifications.offer(image))
+            if (!isClosed && imageNotifications.offer(image))
             {
-                idleStrategy.idle(0);
+                return;
+            }
+            // This is required since image available handler is called from the client conductor thread
+            // we can either bridge via a queue or protect access to the sessions list, which seems clumsy.
+            while (!isClosed && !imageNotifications.offer(image))
+            {
+                Thread.yield();
             }
         };
-        this.proxy = new ArchiverProtocolProxy(idleStrategy, archiverNotifications);
+        this.proxy = new ArchiverProtocolProxy(ctx.idleStrategy(), archiverNotifications);
         this.epochClock = ctx.epochClock();
 
         archiveIndex = new ArchiveIndex(archiveFolder);
@@ -112,6 +116,11 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
 
     public void onClose()
     {
+        if (isClosed)
+        {
+            return;
+        }
+        isClosed = true;
         for (final Session session : sessions)
         {
             session.abort();
@@ -162,6 +171,7 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
             {
                 archiveSubscription.close();
                 archiveSubscriptions.remove(archiveSubscription);
+                break;
                 // image archiving sessions will sort themselves out naturally
             }
         }
@@ -169,6 +179,16 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
 
     public void onArchiveStart(final String channel, final int streamId)
     {
+        for (final Subscription archiveSubscription : archiveSubscriptions)
+        {
+            if (archiveSubscription.streamId() == streamId &&
+                archiveSubscription.channel().equals(channel))
+            {
+                // we're already subscribed, don't bother
+                return;
+            }
+        }
+
         final Subscription archiveSubscription =
             aeron.addSubscription(
                 channel,

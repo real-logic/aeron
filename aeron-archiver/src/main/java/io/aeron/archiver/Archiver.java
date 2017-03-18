@@ -125,7 +125,7 @@ public class Archiver implements AutoCloseable
             }
             if (idleStrategy == null)
             {
-                idleStrategy = clientContext.idleStrategy();
+                idleStrategy = new SleepingIdleStrategy(Aeron.IDLE_SLEEP_NS);
             }
             if (epochClock == null)
             {

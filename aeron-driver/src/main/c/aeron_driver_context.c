@@ -103,13 +103,20 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->dirs_delete_on_start = false;
     _context->warn_if_dirs_exist = true;
     _context->driver_timeout_ms = 10 * 1000;
+    _context->to_driver_buffer_length = 1024 * 1024 + AERON_RB_TRAILER_LENGTH;
+    _context->to_clients_buffer_length = 1024 * 1024 + AERON_RB_TRAILER_LENGTH;
+    _context->counters_values_buffer_length = 1024 * 1024;
+    _context->counters_metadata_buffer_length = _context->counters_values_buffer_length * 2;
+    _context->error_buffer_length = 1024 * 1024;
+    _context->client_liveness_timeout_ns = 5 * 1000 * 1000 * 1000L;
 
     /* set from env */
     char *value = NULL;
 
     if ((value = getenv(AERON_DIR_ENV_VAR)))
     {
-        _context->aeron_dir = value;
+        free(_context->aeron_dir);
+        _context->aeron_dir = strndup(value, AERON_MAX_PATH);
     }
 
     if ((value = getenv(AERON_THREADING_MODE_ENV_VAR)))
@@ -137,6 +144,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         /* else leave at false */
     }
 
+    /* TODO: buffer lengths & client liveness timeout */
+
     *context = _context;
     return 0;
 }
@@ -148,6 +157,8 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
         /* TODO: EINVAL */
         return -1;
     }
+
+    munmap(context->cnc_buffer, context->cnc_buffer_length);
 
     aeron_free((void *)context->aeron_dir);
     aeron_free(context);
@@ -251,3 +262,4 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, a
 
 extern uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata);
 extern uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata);
+extern size_t aeron_cnc_computed_length(size_t total_length_of_buffers);

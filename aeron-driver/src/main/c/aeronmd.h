@@ -63,6 +63,15 @@ typedef struct aeron_driver_context_stct
     bool dirs_delete_on_start;              /* aeron.dir.delete.on.start */
     bool warn_if_dirs_exist;
     int64_t driver_timeout_ms;
+    size_t to_driver_buffer_length;         /* aeron.conductor.buffer.length = 1MB + trailer*/
+    size_t to_clients_buffer_length;        /* aeron.clients.buffer.length = 1MB + trailer */
+    size_t counters_values_buffer_length;   /* aeron.counters.buffer.length = 1MB */
+    size_t counters_metadata_buffer_length; /* = 2x values */
+    size_t error_buffer_length;             /* aeron.error.buffer.length = 1MB */
+    int64_t client_liveness_timeout_ns;     /* aeron.client.liveness.timeout = 5s */
+
+    void *cnc_buffer;
+    size_t cnc_buffer_length;
 }
 aeron_driver_context_t;
 
@@ -133,6 +142,11 @@ inline uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata)
         metadata->to_clients_buffer_length +
         metadata->counter_metadata_buffer_length +
         metadata->counter_values_buffer_length;
+}
+
+inline size_t aeron_cnc_computed_length(size_t total_length_of_buffers)
+{
+    return AERON_CNC_VERSION_AND_META_DATA_LENGTH + total_length_of_buffers;
 }
 
 #endif //AERON_AERONMD_H

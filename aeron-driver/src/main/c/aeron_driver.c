@@ -22,10 +22,12 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <concurrent/aeron_atomic.h>
 #include "aeronmd.h"
 #include "aeron_alloc.h"
 #include "concurrent/aeron_distinct_error_log.h"
 #include "util/aeron_strutil.h"
+#include "util/aeron_fileutil.h"
 
 void aeron_log_func_stderr(const char *str)
 {
@@ -198,6 +200,39 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
     return 0;
 }
 
+int aeron_driver_create_cnc_file(aeron_driver_t *driver)
+{
+    char buffer[AERON_MAX_PATH];
+    size_t cnc_file_length = aeron_cnc_computed_length(
+        driver->context->to_driver_buffer_length +
+        driver->context->to_clients_buffer_length +
+        driver->context->counters_metadata_buffer_length +
+        driver->context->counters_values_buffer_length +
+        driver->context->error_buffer_length);
+    void *cnc_mmap = NULL;
+
+    snprintf(buffer, sizeof(buffer) - 1, "%s/%s", driver->context->aeron_dir, AERON_CNC_FILE);
+
+    if (aeron_map_new_file(&cnc_mmap, buffer, cnc_file_length, 0) < 0)
+    {
+        return -1;
+    }
+
+    aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)cnc_mmap;
+    metadata->to_driver_buffer_length = (int32_t)driver->context->to_driver_buffer_length;
+    metadata->to_clients_buffer_length = (int32_t)driver->context->to_clients_buffer_length;
+    metadata->counter_metadata_buffer_length = (int32_t)driver->context->counters_metadata_buffer_length;
+    metadata->counter_values_buffer_length = (int32_t)driver->context->counters_values_buffer_length;
+    metadata->error_log_buffer_length = (int32_t)driver->context->error_buffer_length;
+    metadata->client_liveness_timeout = driver->context->client_liveness_timeout_ns;
+
+    AERON_PUT_ORDERED(metadata->cnc_version, AERON_CNC_VERSION);
+
+    driver->context->cnc_buffer = cnc_mmap;
+    driver->context->cnc_buffer_length = cnc_file_length;
+    return 0;
+}
+
 int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 {
     aeron_driver_t *_driver = NULL;
@@ -219,6 +254,10 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     {
         return -1;
     }
+
+    /* TODO: validate socket settings */
+
+
 
     *driver = _driver;
     return 0;

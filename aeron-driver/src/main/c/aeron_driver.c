@@ -224,7 +224,7 @@ int aeron_driver_create_cnc_file(aeron_driver_t *driver)
     metadata->counter_metadata_buffer_length = (int32_t)driver->context->counters_metadata_buffer_length;
     metadata->counter_values_buffer_length = (int32_t)driver->context->counters_values_buffer_length;
     metadata->error_log_buffer_length = (int32_t)driver->context->error_buffer_length;
-    metadata->client_liveness_timeout = driver->context->client_liveness_timeout_ns;
+    metadata->client_liveness_timeout = (int64_t)driver->context->client_liveness_timeout_ns;
 
     AERON_PUT_ORDERED(metadata->cnc_version, AERON_CNC_VERSION);
 

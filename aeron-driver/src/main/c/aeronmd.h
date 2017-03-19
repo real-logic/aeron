@@ -55,6 +55,13 @@ aeron_threading_mode_t;
 #define AERON_DIR_ENV_VAR "AERON_DIR"
 #define AERON_THREADING_MODE_ENV_VAR "AERON_THREADING_MODE"
 #define AERON_DIR_DELETE_ON_START_ENV_VAR "AERON_DIR_DELETE_ON_START"
+#define AERON_TO_CONDUCTOR_BUFFER_LENGTH_ENV_VAR "AERON_CONDUCTOR_BUFFER_LENGTH"
+#define AERON_TO_CLIENTS_BUFFER_LENGTH_ENV_VAR "AERON_CLIENTS_BUFFER_LENGTH"
+#define AERON_COUNTERS_VALUES_BUFFER_LENGTH_ENV_VAR "AERON_COUNTERS_BUFFER_LENGTH"
+#define AERON_ERROR_BUFFER_LENGTH_ENV_VAR "AERON_ERROR_BUFFER_LENGTH"
+#define AERON_CLIENT_LIVENESS_TIMEOUT_ENV_VAR "AERON_CLIENT_LIVENESS_TIMEOUT"
+
+typedef struct aeron_mpsc_rb_stct aeron_mpsc_rb_t;
 
 typedef struct aeron_driver_context_stct
 {
@@ -68,10 +75,12 @@ typedef struct aeron_driver_context_stct
     size_t counters_values_buffer_length;   /* aeron.counters.buffer.length = 1MB */
     size_t counters_metadata_buffer_length; /* = 2x values */
     size_t error_buffer_length;             /* aeron.error.buffer.length = 1MB */
-    int64_t client_liveness_timeout_ns;     /* aeron.client.liveness.timeout = 5s */
+    uint64_t client_liveness_timeout_ns;    /* aeron.client.liveness.timeout = 5s */
 
     void *cnc_buffer;
     size_t cnc_buffer_length;
+
+    aeron_mpsc_rb_t *to_driver_commands;
 }
 aeron_driver_context_t;
 

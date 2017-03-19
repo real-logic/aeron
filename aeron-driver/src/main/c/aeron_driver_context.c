@@ -24,6 +24,9 @@
 #include <sys/mman.h>
 #include <concurrent/aeron_mpsc_rb.h>
 #include <inttypes.h>
+#include <errno.h>
+#include <math.h>
+#include <limits.h>
 #include "aeronmd.h"
 #include "aeron_alloc.h"
 
@@ -69,6 +72,45 @@ inline static const char *username()
     }
 #endif
     return username;
+}
+
+bool aeron_config_parse_bool(const char *str, bool def)
+{
+    if (NULL != str)
+    {
+        if (strncmp(str, "1", 1) == 0 || strncmp(str, "on", 2) == 0 || strncmp(str, "true", 4) == 0)
+        {
+            return true;
+        }
+
+        if (strncmp(str, "0", 1) == 0 || strncmp(str, "off", 3) == 0 || strncmp(str, "false", 5) == 0)
+        {
+            return false;
+        }
+    }
+
+    return def;
+}
+
+uint64_t aeron_config_parse_uint64(const char *str, uint64_t def, uint64_t min, uint64_t max)
+{
+    uint64_t result = def;
+
+    if (NULL != str)
+    {
+        uint64_t value = strtoull(str, NULL, 0);
+
+        if (0 == value && EINVAL == errno)
+        {
+            value = def;
+        }
+
+        result = value;
+        result = (result > max) ? max : result;
+        result = (result < min) ? min : result;
+    }
+
+    return result;
 }
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
@@ -135,16 +177,49 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         }
     }
 
-    if ((value = getenv(AERON_DIR_DELETE_ON_START_ENV_VAR)))
-    {
-        if (strncmp(value, "1", 1) == 0 || strncmp(value, "on", 2) == 0 || strncmp(value, "true", 4) == 0)
-        {
-            _context->dirs_delete_on_start = true;
-        }
-        /* else leave at false */
-    }
+    _context->dirs_delete_on_start =
+        aeron_config_parse_bool(
+            getenv(AERON_DIR_DELETE_ON_START_ENV_VAR),
+            _context->dirs_delete_on_start);
 
-    /* TODO: buffer lengths & client liveness timeout */
+    _context->to_driver_buffer_length =
+        aeron_config_parse_uint64(
+            getenv(AERON_TO_CONDUCTOR_BUFFER_LENGTH_ENV_VAR),
+            _context->to_driver_buffer_length,
+            1024 + AERON_RB_TRAILER_LENGTH,
+            SIZE_T_MAX);
+
+    _context->to_clients_buffer_length =
+        aeron_config_parse_uint64(
+            getenv(AERON_TO_CLIENTS_BUFFER_LENGTH_ENV_VAR),
+            _context->to_clients_buffer_length,
+            1024 + AERON_RB_TRAILER_LENGTH,
+            SIZE_T_MAX);
+
+    _context->counters_values_buffer_length =
+        aeron_config_parse_uint64(
+            getenv(AERON_COUNTERS_VALUES_BUFFER_LENGTH_ENV_VAR),
+            _context->counters_values_buffer_length,
+            1024,
+            SIZE_T_MAX);
+
+    _context->counters_metadata_buffer_length = _context->counters_values_buffer_length * 2;
+
+    _context->error_buffer_length =
+        aeron_config_parse_uint64(
+            getenv(AERON_ERROR_BUFFER_LENGTH_ENV_VAR),
+            _context->error_buffer_length,
+            1024,
+            SIZE_T_MAX);
+
+    _context->client_liveness_timeout_ns =
+        aeron_config_parse_uint64(
+            getenv(AERON_CLIENT_LIVENESS_TIMEOUT_ENV_VAR),
+            _context->client_liveness_timeout_ns,
+            1000,
+            INT64_MAX);
+
+    _context->to_driver_commands = NULL;
 
     *context = _context;
     return 0;

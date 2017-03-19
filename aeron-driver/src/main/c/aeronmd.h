@@ -62,14 +62,15 @@ aeron_threading_mode_t;
 #define AERON_CLIENT_LIVENESS_TIMEOUT_ENV_VAR "AERON_CLIENT_LIVENESS_TIMEOUT"
 
 typedef struct aeron_mpsc_rb_stct aeron_mpsc_rb_t;
+typedef struct aeron_distinct_error_log_stct aeron_distinct_error_log_t;
 
 typedef struct aeron_driver_context_stct
 {
     char *aeron_dir;                        /* aeron.dir */
-    aeron_threading_mode_t threading_mode;  /* aeron.threading.mode */
-    bool dirs_delete_on_start;              /* aeron.dir.delete.on.start */
+    aeron_threading_mode_t threading_mode;  /* aeron.threading.mode = DEDICATED */
+    bool dirs_delete_on_start;              /* aeron.dir.delete.on.start = false */
     bool warn_if_dirs_exist;
-    int64_t driver_timeout_ms;
+    uint64_t driver_timeout_ms;
     size_t to_driver_buffer_length;         /* aeron.conductor.buffer.length = 1MB + trailer*/
     size_t to_clients_buffer_length;        /* aeron.clients.buffer.length = 1MB + trailer */
     size_t counters_values_buffer_length;   /* aeron.counters.buffer.length = 1MB */
@@ -81,6 +82,7 @@ typedef struct aeron_driver_context_stct
     size_t cnc_buffer_length;
 
     aeron_mpsc_rb_t *to_driver_commands;
+    aeron_distinct_error_log_t *error_log;
 }
 aeron_driver_context_t;
 

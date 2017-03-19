@@ -187,21 +187,21 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             getenv(AERON_TO_CONDUCTOR_BUFFER_LENGTH_ENV_VAR),
             _context->to_driver_buffer_length,
             1024 + AERON_RB_TRAILER_LENGTH,
-            SIZE_T_MAX);
+            INT32_MAX);
 
     _context->to_clients_buffer_length =
         aeron_config_parse_uint64(
             getenv(AERON_TO_CLIENTS_BUFFER_LENGTH_ENV_VAR),
             _context->to_clients_buffer_length,
             1024 + AERON_RB_TRAILER_LENGTH,
-            SIZE_T_MAX);
+            INT32_MAX);
 
     _context->counters_values_buffer_length =
         aeron_config_parse_uint64(
             getenv(AERON_COUNTERS_VALUES_BUFFER_LENGTH_ENV_VAR),
             _context->counters_values_buffer_length,
             1024,
-            SIZE_T_MAX);
+            INT32_MAX);
 
     _context->counters_metadata_buffer_length = _context->counters_values_buffer_length * 2;
 
@@ -210,7 +210,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             getenv(AERON_ERROR_BUFFER_LENGTH_ENV_VAR),
             _context->error_buffer_length,
             1024,
-            SIZE_T_MAX);
+            INT32_MAX);
 
     _context->client_liveness_timeout_ns =
         aeron_config_parse_uint64(
@@ -220,6 +220,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             INT64_MAX);
 
     _context->to_driver_commands = NULL;
+    _context->error_log = NULL;
 
     *context = _context;
     return 0;

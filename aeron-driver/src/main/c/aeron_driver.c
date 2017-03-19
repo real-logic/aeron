@@ -213,7 +213,7 @@ int aeron_driver_create_cnc_file(aeron_driver_t *driver)
 
     snprintf(buffer, sizeof(buffer) - 1, "%s/%s", driver->context->aeron_dir, AERON_CNC_FILE);
 
-    if (aeron_map_new_file(&cnc_mmap, buffer, cnc_file_length, 0) < 0)
+    if (aeron_map_new_file(&cnc_mmap, buffer, cnc_file_length, true) < 0)
     {
         return -1;
     }

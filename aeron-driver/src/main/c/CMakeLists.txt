@@ -19,6 +19,7 @@ SET(SOURCE
     concurrent/aeron_mpsc_rb.c
     concurrent/aeron_atomic.c
     concurrent/aeron_distinct_error_log.c
+    concurrent/aeron_broadcast_transmitter.c
     util/aeron_strutil.c
     util/aeron_fileutil.c
     aeron_driver_context.c
@@ -37,6 +38,7 @@ SET(HEADERS
     concurrent/aeron_rb.h
     concurrent/aeron_mpsc_rb.h
     concurrent/aeron_distinct_error_log.h
+    concurrent/aeron_broadcast_transmitter.h
     aeronmd.h
     aeron_alloc.h
     aeron_agent.h)

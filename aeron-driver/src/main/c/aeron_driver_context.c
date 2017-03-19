@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <math.h>
 #include <limits.h>
+#include "concurrent/aeron_broadcast_transmitter.h"
 #include "aeronmd.h"
 #include "aeron_alloc.h"
 
@@ -146,7 +147,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->warn_if_dirs_exist = true;
     _context->driver_timeout_ms = 10 * 1000;
     _context->to_driver_buffer_length = 1024 * 1024 + AERON_RB_TRAILER_LENGTH;
-    _context->to_clients_buffer_length = 1024 * 1024 + AERON_RB_TRAILER_LENGTH;
+    _context->to_clients_buffer_length = 1024 * 1024 + AERON_BROADCAST_BUFFER_TRAILER_LENGTH;
     _context->counters_values_buffer_length = 1024 * 1024;
     _context->counters_metadata_buffer_length = _context->counters_values_buffer_length * 2;
     _context->error_buffer_length = 1024 * 1024;
@@ -193,7 +194,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         aeron_config_parse_uint64(
             getenv(AERON_TO_CLIENTS_BUFFER_LENGTH_ENV_VAR),
             _context->to_clients_buffer_length,
-            1024 + AERON_RB_TRAILER_LENGTH,
+            1024 + AERON_BROADCAST_BUFFER_TRAILER_LENGTH,
             INT32_MAX);
 
     _context->counters_values_buffer_length =
@@ -220,6 +221,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             INT64_MAX);
 
     _context->to_driver_commands = NULL;
+    _context->to_clients = NULL;
     _context->error_log = NULL;
 
     *context = _context;

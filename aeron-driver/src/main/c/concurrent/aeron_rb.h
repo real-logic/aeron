@@ -53,7 +53,6 @@ aeron_rb_record_descriptor_t;
 
 #define AERON_RB_ALIGNMENT (2 * sizeof(int32_t))
 
-#define AERON_RB_RECORD_HEADER(length,type) (((int64_t)type << 32) | ((int64_t)length))
 #define AERON_RB_MESSAGE_OFFSET(index) (index + sizeof(aeron_rb_record_descriptor_t))
 #define AERON_RB_RECORD_HEADER_LENGTH (sizeof(aeron_rb_record_descriptor_t))
 

@@ -123,7 +123,7 @@ public class FragmentAssembler implements FragmentHandler
     }
 
     /**
-     * Clear down the cache of buffer by session for reassembling messages.
+     * Clear down the cache of buffers by session for reassembling messages.
      */
     public void clear()
     {

@@ -101,7 +101,7 @@ int aeron_counters_manager_free(volatile aeron_counters_manager_t *manager, int3
 
     if (manager->free_list_index >= (int32_t)manager->free_list_length)
     {
-        size_t new_length = manager->free_list_length * 2;
+        size_t new_length = manager->free_list_length + (manager->free_list_length >> 1);
         int32_t *new_array = NULL;
 
         if (aeron_alloc((void **)&new_array, sizeof(int32_t) * new_length) < 0)

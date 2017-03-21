@@ -31,7 +31,7 @@ typedef std::array<std::uint8_t, 32> insufficient_buffer_t;
 class DistinctErrorLogTest : public testing::Test
 {
 public:
-    DistinctErrorLogTest() : m_log(NULL)
+    DistinctErrorLogTest()
     {
         m_buffer.fill(0);
         clock_value = 7;
@@ -54,7 +54,7 @@ public:
 
 protected:
     AERON_DECL_ALIGNED(buffer_t m_buffer, 16);
-    aeron_distinct_error_log_t *m_log;
+    aeron_distinct_error_log_t m_log;
 
     static int64_t clock_value;
 };
@@ -67,50 +67,50 @@ TEST_F(DistinctErrorLogTest, shouldFailToRecordWhenInsufficientSpace)
 
     ASSERT_EQ(aeron_distinct_error_log_init(&m_log, buffer.data(), buffer.size(), clock, linger_resource), 0);
 
-    EXPECT_EQ(aeron_distinct_error_log_record(m_log, 1, "description", "message"), -1);
+    EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description", "message"), -1);
 }
 
 TEST_F(DistinctErrorLogTest, shouldRecordFirstObservation)
 {
     ASSERT_EQ(aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), clock, linger_resource), 0);
 
-    aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(m_log->buffer);
+    aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(m_log.buffer);
 
-    EXPECT_EQ(aeron_distinct_error_log_record(m_log, 1, "description", "message"), 0);
+    EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description", "message"), 0);
 
     EXPECT_EQ(entry->first_observation_timestamp, 7);
     EXPECT_GT(entry->length, (int32_t)AERON_ERROR_LOG_HEADER_LENGTH);
     EXPECT_EQ(entry->observation_count, 1);
     EXPECT_EQ(entry->last_observation_timestamp, 7);
-    EXPECT_EQ(atomic_load(&m_log->num_observations), (size_t)1);
+    EXPECT_EQ(atomic_load(&m_log.num_observations), (size_t)1);
 }
 
 TEST_F(DistinctErrorLogTest, shouldSummariseObservations)
 {
     ASSERT_EQ(aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), clock, linger_resource), 0);
 
-    aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(m_log->buffer);
+    aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(m_log.buffer);
 
-    EXPECT_EQ(aeron_distinct_error_log_record(m_log, 1, "description", "message"), 0);
+    EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description", "message"), 0);
     clock_value++;
-    EXPECT_EQ(aeron_distinct_error_log_record(m_log, 1, "description", "message"), 0);
+    EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description", "message"), 0);
 
     EXPECT_EQ(entry->first_observation_timestamp, 7);
     EXPECT_GT(entry->length, (int32_t)AERON_ERROR_LOG_HEADER_LENGTH);
     EXPECT_EQ(entry->observation_count, 2);
     EXPECT_EQ(entry->last_observation_timestamp, 8);
-    EXPECT_EQ(atomic_load(&m_log->num_observations), (size_t)1);
+    EXPECT_EQ(atomic_load(&m_log.num_observations), (size_t)1);
 }
 
 TEST_F(DistinctErrorLogTest, shouldRecordTwoDistinctObservations)
 {
     ASSERT_EQ(aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), clock, linger_resource), 0);
 
-    aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(m_log->buffer);
+    aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(m_log.buffer);
 
-    EXPECT_EQ(aeron_distinct_error_log_record(m_log, 1, "description 1", "message"), 0);
+    EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description 1", "message"), 0);
     clock_value++;
-    EXPECT_EQ(aeron_distinct_error_log_record(m_log, 2, "description 2", "message"), 0);
+    EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 2, "description 2", "message"), 0);
 
     EXPECT_EQ(entry->first_observation_timestamp, 7);
     EXPECT_GT(entry->length, (int32_t)AERON_ERROR_LOG_HEADER_LENGTH);
@@ -118,14 +118,14 @@ TEST_F(DistinctErrorLogTest, shouldRecordTwoDistinctObservations)
     EXPECT_EQ(entry->last_observation_timestamp, 7);
 
     size_t length = AERON_ALIGN(entry->length, AERON_ERROR_LOG_RECORD_ALIGNMENT);
-    entry = (aeron_error_log_entry_t *)((uint8_t *)m_log->buffer + length);
+    entry = (aeron_error_log_entry_t *)((uint8_t *)m_log.buffer + length);
 
     EXPECT_EQ(entry->first_observation_timestamp, 8);
     EXPECT_GT(entry->length, (int32_t)AERON_ERROR_LOG_HEADER_LENGTH);
     EXPECT_EQ(entry->observation_count, 1);
     EXPECT_EQ(entry->last_observation_timestamp, 8);
 
-    EXPECT_EQ(atomic_load(&m_log->num_observations), (size_t)2);
+    EXPECT_EQ(atomic_load(&m_log.num_observations), (size_t)2);
 }
 
 static void error_log_reader_no_entries(
@@ -168,7 +168,7 @@ TEST_F(DistinctErrorLogTest, shouldReadFirstObservation)
 {
     ASSERT_EQ(aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), clock, linger_resource), 0);
 
-    EXPECT_EQ(aeron_distinct_error_log_record(m_log, 1, "description 1", "message"), 0);
+    EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description 1", "message"), 0);
 
     EXPECT_EQ(aeron_error_log_read(
         m_buffer.data(), m_buffer.size(), error_log_reader_first_observation, NULL, 0), (size_t)1);
@@ -195,9 +195,9 @@ TEST_F(DistinctErrorLogTest, shouldReadSummarisedObservation)
 {
     ASSERT_EQ(aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), clock, linger_resource), 0);
 
-    EXPECT_EQ(aeron_distinct_error_log_record(m_log, 1, "description 1", "message"), 0);
+    EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description 1", "message"), 0);
     clock_value++;
-    EXPECT_EQ(aeron_distinct_error_log_record(m_log, 1, "description 1", "message"), 0);
+    EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description 1", "message"), 0);
 
     EXPECT_EQ(aeron_error_log_read(
         m_buffer.data(), m_buffer.size(), error_log_reader_summarised_observation, NULL, 0), (size_t)1);
@@ -238,9 +238,9 @@ TEST_F(DistinctErrorLogTest, shouldReadTwoDistinctObservations)
 {
     ASSERT_EQ(aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), clock, linger_resource), 0);
 
-    EXPECT_EQ(aeron_distinct_error_log_record(m_log, 1, "description 1", "message"), 0);
+    EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description 1", "message"), 0);
     clock_value++;
-    EXPECT_EQ(aeron_distinct_error_log_record(m_log, 2, "description 2", "message"), 0);
+    EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 2, "description 2", "message"), 0);
 
     EXPECT_EQ(aeron_error_log_read(
         m_buffer.data(), m_buffer.size(), error_log_reader_two_observations, NULL, 0), (size_t)2);
@@ -267,9 +267,9 @@ TEST_F(DistinctErrorLogTest, shouldReadOneObservationSinceTimestamp)
 {
     ASSERT_EQ(aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), clock, linger_resource), 0);
 
-    EXPECT_EQ(aeron_distinct_error_log_record(m_log, 1, "description 1", "message"), 0);
+    EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description 1", "message"), 0);
     clock_value++;
-    EXPECT_EQ(aeron_distinct_error_log_record(m_log, 2, "description 2", "message"), 0);
+    EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 2, "description 2", "message"), 0);
 
     EXPECT_EQ(aeron_error_log_read(
         m_buffer.data(), m_buffer.size(), error_log_reader_since_observation, NULL, 8), (size_t)1);

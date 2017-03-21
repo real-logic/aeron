@@ -64,6 +64,7 @@ aeron_threading_mode_t;
 typedef struct aeron_mpsc_rb_stct aeron_mpsc_rb_t;
 typedef struct aeron_distinct_error_log_stct aeron_distinct_error_log_t;
 typedef struct aeron_broadcast_transmitter_stct aeron_broadcast_transmitter_t;
+typedef struct aeron_counters_manager_stct aeron_counters_manager_t;
 
 typedef struct aeron_driver_context_stct
 {
@@ -85,6 +86,7 @@ typedef struct aeron_driver_context_stct
     aeron_mpsc_rb_t *to_driver_commands;
     aeron_broadcast_transmitter_t *to_clients;
     aeron_distinct_error_log_t *error_log;
+    aeron_counters_manager_t *counters_manager;
 }
 aeron_driver_context_t;
 

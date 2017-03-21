@@ -62,7 +62,7 @@ typedef struct aeron_distinct_error_log_stct
 aeron_distinct_error_log_t;
 
 int aeron_distinct_error_log_init(
-    aeron_distinct_error_log_t **log,
+    aeron_distinct_error_log_t *log,
     uint8_t *buffer,
     size_t buffer_size,
     aeron_clock_func_t clock,

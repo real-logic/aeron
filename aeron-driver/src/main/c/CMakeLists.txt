@@ -26,7 +26,8 @@ SET(SOURCE
     aeron_driver_context.c
     aeron_alloc.c
     aeron_driver.c
-    aeron_agent.c)
+    aeron_agent.c
+    aeron_system_counters.c)
 
 SET(HEADERS
     util/aeron_platform.h
@@ -43,7 +44,8 @@ SET(HEADERS
     concurrent/aeron_counters_manager.h
     aeronmd.h
     aeron_alloc.h
-    aeron_agent.h)
+    aeron_agent.h
+    aeron_system_counters.h)
 
 add_library(aeron_driver SHARED ${SOURCE} ${HEADERS})
 add_executable(aeronmd aeronmd.c)

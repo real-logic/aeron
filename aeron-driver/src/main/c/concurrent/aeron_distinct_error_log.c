@@ -21,35 +21,27 @@
 #include "aeron_atomic.h"
 
 int aeron_distinct_error_log_init(
-    aeron_distinct_error_log_t **log,
+    aeron_distinct_error_log_t *log,
     uint8_t *buffer,
     size_t buffer_size,
     aeron_clock_func_t clock,
     aeron_resource_linger_func_t linger)
 {
-    aeron_distinct_error_log_t *_log = NULL;
-
     if (NULL == log || NULL == clock || NULL == linger)
     {
         /* TODO: EINVAL */
         return -1;
     }
 
-    if (aeron_alloc((void **)&_log, sizeof(aeron_distinct_error_log_t)) < 0)
-    {
-        return -1;
-    }
+    log->buffer = buffer;
+    log->buffer_capacity = buffer_size;
+    log->clock = clock;
+    log->linger_resource = linger;
+    log->next_offset = 0;
+    atomic_store(&log->num_observations, 0);
+    atomic_store(&log->observations, NULL);
+    pthread_mutex_init(&log->mutex, NULL);
 
-    _log->buffer = buffer;
-    _log->buffer_capacity = buffer_size;
-    _log->clock = clock;
-    _log->linger_resource = linger;
-    _log->next_offset = 0;
-    atomic_store(&_log->num_observations, 0);
-    atomic_store(&_log->observations, NULL);
-    pthread_mutex_init(&_log->mutex, NULL);
-
-    *log = _log;
     return 0;
 }
 

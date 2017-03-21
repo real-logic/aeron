@@ -97,9 +97,9 @@ void aeron_counters_reader_foreach(
 
 #define AERON_COUNTER_OFFSET(id) (id * AERON_COUNTERS_MANAGER_VALUE_LENGTH)
 
-inline int64_t *aeron_counter_addr(uint8_t *values, size_t values_length, int32_t counter_id)
+inline int64_t *aeron_counter_addr(aeron_counters_manager_t *manager, int32_t counter_id)
 {
-    return (int64_t *)(values + AERON_COUNTER_OFFSET(counter_id));
+    return (int64_t *)(manager->values + AERON_COUNTER_OFFSET(counter_id));
 }
 
 inline void aeron_counter_set_value(int64_t *addr, int64_t value)

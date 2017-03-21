@@ -129,7 +129,7 @@ TEST_F(CountersManagerTest, shouldStoreAndLoadCounterValue)
     ASSERT_GE((id = aeron_counters_manager_allocate(&m_manager, "abc", 3, 0, null_key_func, NULL)), 0);
 
     const int64_t value = 7L;
-    int64_t *addr = aeron_counter_addr(m_values.data(), m_values.size(), id);
+    int64_t *addr = aeron_counter_addr(&m_manager, id);
 
     aeron_counter_set_value(addr, value);
     EXPECT_EQ(aeron_counter_get_value(addr), value);

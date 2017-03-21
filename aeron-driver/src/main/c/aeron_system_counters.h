@@ -22,8 +22,8 @@
 
 typedef enum aeron_system_counter_enum_stct
 {
-    AERON_SYSTEM_COUNTER_BYTES_SENT = 1,
-    AERON_SYSTEM_COUNTER_BYTES_RECEIVED = 2
+    AERON_SYSTEM_COUNTER_BYTES_SENT = 0,
+    AERON_SYSTEM_COUNTER_BYTES_RECEIVED = 1
 }
 aeron_system_counter_enum_t;
 
@@ -36,19 +36,23 @@ aeron_system_counter_t;
 
 typedef struct aeron_system_counter_map_stct
 {
-    aeron_system_counter_enum_t type;
-    int32_t counter_id;
     int64_t *addr;
+    int32_t counter_id;
 }
 aeron_system_counter_map_t;
 
 typedef struct aeron_system_counters_stct
 {
     aeron_counters_manager_t *manager;
-    aeron_system_counter_map_t counters[];
+    aeron_system_counter_map_t *counters;
 }
 aeron_system_counters_t;
 
 int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters_manager_t *manager);
+
+inline int64_t *aeron_system_counter_addr(aeron_system_counters_t *counters, aeron_system_counter_enum_t type)
+{
+    return aeron_counter_addr(counters->manager, counters->counters[type].counter_id);
+}
 
 #endif //AERON_AERON_SYSTEM_COUNTERS_H

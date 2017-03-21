@@ -145,3 +145,5 @@ void aeron_counters_reader_foreach(
         id++;
     }
 }
+
+extern int64_t *aeron_counter_addr(aeron_counters_manager_t *manager, int32_t counter_id);

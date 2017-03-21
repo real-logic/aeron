@@ -23,7 +23,29 @@
 typedef enum aeron_system_counter_enum_stct
 {
     AERON_SYSTEM_COUNTER_BYTES_SENT = 0,
-    AERON_SYSTEM_COUNTER_BYTES_RECEIVED = 1
+    AERON_SYSTEM_COUNTER_BYTES_RECEIVED = 1,
+    AERON_SYSTEM_COUNTER_RECEIVER_PROXY_FAILS = 2,
+    AERON_SYSTEM_COUNTER_SENDER_PROXY_FAILS = 3,
+    AERON_SYSTEM_COUNTER_CONDUCTOR_PROXY_FAILS = 4,
+    AERON_SYSTEM_COUNTER_NAK_MESSAGES_SENT = 5,
+    AERON_SYSTEM_COUNTER_NAK_MESSAGES_RECEIVED = 6,
+    AERON_SYSTEM_COUNTER_STATUS_MESSAGES_SENT = 7,
+    AERON_SYSTEM_COUNTER_STATUS_MESSAGES_RECEIVED = 8,
+    AERON_SYSTEM_COUNTER_HEARTBEATS_SENT = 9,
+    AERON_SYSTEM_COUNTER_HEARTBEATS_RECEIVED = 10,
+    AERON_SYSTEM_COUNTER_RETRANSMITS_SENT = 11,
+    AERON_SYSTEM_COUNTER_FLOW_CONTROL_UNDER_RUNS = 12,
+    AERON_SYSTEM_COUNTER_FLOW_CONTROL_OVER_RUNS = 13,
+    AERON_SYSTEM_COUNTER_INVALID_PACKETS = 14,
+    AERON_SYSTEM_COUNTER_ERRORS = 15,
+    AERON_SYSTEM_COUNTER_SHORT_SENDS = 16,
+    AERON_SYSTEM_COUNTER_CLIENT_KEEP_ALIVES = 17,
+    AERON_SYSTEM_COUNTER_SENDER_FLOW_CONTROL_LIMITS = 18,
+    AERON_SYSTEM_COUNTER_UNBLOCKED_PUBLICATIONS = 19,
+    AERON_SYSTEM_COUNTER_UNBLOCKED_COMMANDS = 20,
+    AERON_SYSTEM_COUNTER_POSSIBLE_TTL_ASYMMETRY = 21,
+    AERON_SYSTEM_COUNTER_CONTROLLABLE_IDLE_STRATEGY = 22,
+    AERON_SYSTEM_COUNTER_LOSS_GAP_FILLS = 23
 }
 aeron_system_counter_enum_t;
 
@@ -34,17 +56,12 @@ typedef struct aeron_system_counter_stct
 }
 aeron_system_counter_t;
 
-typedef struct aeron_system_counter_map_stct
-{
-    int64_t *addr;
-    int32_t counter_id;
-}
-aeron_system_counter_map_t;
+#define AERON_SYSTEM_COUNTER_TYPE_ID (0)
 
 typedef struct aeron_system_counters_stct
 {
     aeron_counters_manager_t *manager;
-    aeron_system_counter_map_t *counters;
+    int32_t *counter_ids;
 }
 aeron_system_counters_t;
 
@@ -52,7 +69,7 @@ int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters
 
 inline int64_t *aeron_system_counter_addr(aeron_system_counters_t *counters, aeron_system_counter_enum_t type)
 {
-    return aeron_counter_addr(counters->manager, counters->counters[type].counter_id);
+    return aeron_counter_addr(counters->manager, counters->counter_ids[type]);
 }
 
 #endif //AERON_AERON_SYSTEM_COUNTERS_H

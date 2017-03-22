@@ -15,8 +15,8 @@
  */
 package io.aeron.driver;
 
-import io.aeron.ArrayListUtil;
 import io.aeron.protocol.StatusMessageFlyweight;
+import org.agrona.collections.ArrayListUtil;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;

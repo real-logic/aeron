@@ -15,10 +15,10 @@
  */
 package io.aeron.driver;
 
-import io.aeron.ArrayListUtil;
 import io.aeron.driver.cmd.ReceiverCmd;
 import io.aeron.driver.media.DataTransportPoller;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
+import org.agrona.collections.ArrayListUtil;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.NanoClock;

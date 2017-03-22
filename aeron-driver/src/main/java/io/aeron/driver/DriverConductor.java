@@ -15,7 +15,6 @@
  */
 package io.aeron.driver;
 
-import io.aeron.ArrayListUtil;
 import io.aeron.CommonContext;
 import io.aeron.driver.buffer.RawLogFactory;
 import io.aeron.driver.MediaDriver.Context;
@@ -48,6 +47,7 @@ import static io.aeron.ErrorCode.*;
 import static io.aeron.logbuffer.FrameDescriptor.computeMaxMessageLength;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
+import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
 
 /**
  * Driver Conductor that takes commands from publishers and subscribers and orchestrates the media driver.
@@ -525,7 +525,7 @@ public class DriverConductor implements Agent
             if (registrationId == publication.registrationId())
             {
                 publicationLink = publication;
-                ArrayListUtil.fastUnorderedRemove(publicationLinks, i, lastIndex);
+                fastUnorderedRemove(publicationLinks, i, lastIndex);
                 break;
             }
         }
@@ -1090,7 +1090,7 @@ public class DriverConductor implements Agent
             if (subscription.registrationId() == registrationId)
             {
                 subscriptionLink = subscription;
-                ArrayListUtil.fastUnorderedRemove(subscriptionLinks, i, lastIndex);
+                fastUnorderedRemove(subscriptionLinks, i, lastIndex);
                 break;
             }
         }
@@ -1129,7 +1129,7 @@ public class DriverConductor implements Agent
 
             if (resource.hasReachedEndOfLife())
             {
-                ArrayListUtil.fastUnorderedRemove(list, i, lastIndex);
+                fastUnorderedRemove(list, i, lastIndex);
                 lastIndex--;
                 resource.delete();
             }

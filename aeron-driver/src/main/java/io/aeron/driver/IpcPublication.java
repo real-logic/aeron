@@ -144,7 +144,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         subscriberPosition.close();
     }
 
-    int updatePublishersLimit(final long nowInMillis)
+    int updatePublishersLimit()
     {
         int workCount = 0;
         long minSubscriberPosition = Long.MAX_VALUE;
@@ -166,8 +166,6 @@ public class IpcPublication implements DriverManagedResource, Subscribable
                 tripLimit = proposedLimit + tripGain;
 
                 cleanBuffer(minSubscriberPosition);
-
-                LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), nowInMillis);
                 workCount = 1;
             }
 

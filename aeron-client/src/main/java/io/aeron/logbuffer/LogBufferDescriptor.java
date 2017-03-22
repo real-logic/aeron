@@ -537,6 +537,31 @@ public class LogBufferDescriptor
     }
 
     /**
+     * Pack a termId and termOffset into a raw tail value.
+     *
+     * @param termId     to be packed.
+     * @param termOffset to be packed.
+     * @return the packed value.
+     */
+    public static long packTail(final int termId, final int termOffset)
+    {
+        return (((long)termId) << 32) + termOffset;
+    }
+
+    /**
+     * Set the raw value of the tail for the given partition.
+     *
+     * @param logMetaDataBuffer containing the tail counters.
+     * @param partitionIndex    for the tail counter.
+     * @param rawTail           to be stored
+     */
+    public static void rawTailVolatile(
+        final UnsafeBuffer logMetaDataBuffer, final int partitionIndex, final long rawTail)
+    {
+        logMetaDataBuffer.putLongVolatile(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex), rawTail);
+    }
+
+    /**
      * Get the raw value of the tail for the given partition.
      *
      * @param logMetaDataBuffer containing the tail counters.

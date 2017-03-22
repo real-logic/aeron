@@ -185,6 +185,34 @@ public class DriverConductorTest
     }
 
     @Test
+    public void shouldBeAbleToAddPublicationForReplay() throws Exception
+    {
+        final int mtu = 1024 * 8;
+        final int termLength = 128 * 1024;
+        final int initialTermId = 7;
+        final int termId = 11;
+        final int termOffset = 64;
+        final String params = "|mtu=" + mtu +
+            "|term-length=" + termLength +
+            "|init-term-id=" + initialTermId +
+            "|term-id=" + termId +
+            "|term-offset=" + termOffset;
+
+        driverProxy.addExclusivePublication(CHANNEL_4000 + params, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        verify(senderProxy).registerSendChannelEndpoint(any());
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
+
+        final NetworkPublication publication = captor.getValue();
+        assertThat(publication.streamId(), is(STREAM_ID_1));
+
+        verify(mockClientProxy).onPublicationReady(anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(true));
+    }
+
+    @Test
     public void shouldBeAbleToAddSingleSubscription() throws Exception
     {
         final long id = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);

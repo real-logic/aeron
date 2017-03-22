@@ -30,10 +30,7 @@ import io.aeron.driver.uri.AeronUri;
 import org.agrona.BitUtil;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.status.CountersManager;
-import org.agrona.concurrent.status.Position;
-import org.agrona.concurrent.status.ReadablePosition;
+import org.agrona.concurrent.status.*;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -42,7 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static io.aeron.CommonContext.RELIABLE_STREAM_PARAM_NAME;
+import static io.aeron.CommonContext.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.CLIENT_KEEP_ALIVES;
 import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
@@ -64,7 +61,7 @@ public class DriverConductor implements Agent
     private long timeOfLastToDriverPositionChange;
     private long lastConsumerCommandPosition;
     private long timeOfLastTimeoutCheck;
-    private long timeInMs;
+    private volatile long timeInMs;
     private int nextSessionId = BitUtil.generateRandomisedId();
 
     private final NetworkPublicationThreadLocals networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
@@ -89,6 +86,7 @@ public class DriverConductor implements Agent
 
     private final EpochClock epochClock;
     private final NanoClock nanoClock;
+    private final EpochClock cachedEpochClock = () -> timeInMs;
 
     private final Consumer<DriverConductorCmd> onDriverConductorCmdFunc = this::onDriverConductorCmd;
 
@@ -172,7 +170,7 @@ public class DriverConductor implements Agent
         final ArrayList<IpcPublication> ipcPublications = this.ipcPublications;
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
-            workCount += ipcPublications.get(i).updatePublishersLimit(timeInMs);
+            workCount += ipcPublications.get(i).updatePublishersLimit();
         }
 
         return workCount;
@@ -289,12 +287,10 @@ public class DriverConductor implements Agent
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final AeronUri aeronUri = udpChannel.aeronUri();
-        final int mtuLength = getMtuLength(aeronUri, context.mtuLength());
-        final int termLength = getTermBufferLength(aeronUri, context.publicationTermBufferLength());
+        final PublicationParams params = getPublicationParams(aeronUri, isExclusive);
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel);
 
         NetworkPublication publication = null;
-
         if (!isExclusive)
         {
             publication = findPublication(networkPublications, streamId, channelEndpoint);
@@ -302,49 +298,13 @@ public class DriverConductor implements Agent
 
         if (null == publication)
         {
-            final int sessionId = nextSessionId++;
-            final int initialTermId = BitUtil.generateRandomisedId();
-
-            final RetransmitHandler retransmitHandler = new RetransmitHandler(
-                nanoClock,
-                context.systemCounters(),
-                RETRANSMIT_UNICAST_DELAY_GENERATOR,
-                RETRANSMIT_UNICAST_LINGER_GENERATOR);
-
-            final FlowControl flowControl =
-                udpChannel.isMulticast() || udpChannel.hasExplicitControl() ?
-                    context.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
-                    context.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
-
-            publication = new NetworkPublication(
-                registrationId,
-                channelEndpoint,
-                nanoClock,
-                toDriverCommands::consumerHeartbeatTime,
-                newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId, termLength),
-                PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, channel),
-                SenderPos.allocate(countersManager, registrationId, sessionId, streamId, channel),
-                SenderLimit.allocate(countersManager, registrationId, sessionId, streamId, channel),
-                sessionId,
-                streamId,
-                initialTermId,
-                mtuLength,
-                context.systemCounters(),
-                flowControl,
-                retransmitHandler,
-                networkPublicationThreadLocals,
-                publicationUnblockTimeoutNs,
-                isExclusive);
-
-            channelEndpoint.incRef();
-            networkPublications.add(publication);
-            senderProxy.newNetworkPublication(publication);
-            linkSpies(subscriptionLinks, publication);
+            publication = newNetworkPublication(
+                registrationId, streamId, channel, udpChannel, channelEndpoint, params, isExclusive);
         }
-        else if (publication.mtuLength() != mtuLength)
+        else if (publication.mtuLength() != params.mtuLength)
         {
             throw new IllegalStateException("Existing publication has different MTU length: existing=" +
-                publication.mtuLength() + " requested=" + mtuLength);
+                publication.mtuLength() + " requested=" + params.mtuLength);
         }
 
         publicationLinks.add(new PublicationLink(registrationId, publication, getOrAddClient(clientId)));
@@ -356,6 +316,78 @@ public class DriverConductor implements Agent
             publication.rawLog().fileName(),
             publication.publisherLimitId(),
             isExclusive);
+    }
+
+    private NetworkPublication newNetworkPublication(
+        final long registrationId,
+        final int streamId,
+        final String channel,
+        final UdpChannel udpChannel,
+        final SendChannelEndpoint channelEndpoint,
+        final PublicationParams params,
+        final boolean isExclusive)
+    {
+        final int sessionId = nextSessionId++;
+        final UnsafeBufferPosition senderPosition = SenderPos.allocate(
+            countersManager, registrationId, sessionId, streamId, channel);
+        final UnsafeBufferPosition senderLimit = SenderLimit.allocate(
+            countersManager, registrationId, sessionId, streamId, channel);
+
+        int initialTermId = BitUtil.generateRandomisedId();
+        if (params.isReplay)
+        {
+            initialTermId = params.initialTermId;
+            final int bits = Integer.numberOfTrailingZeros(params.termLength);
+            final long position = computePosition(params.termId, params.termOffset, bits, params.initialTermId);
+            senderLimit.setOrdered(position);
+            senderPosition.setOrdered(position);
+        }
+
+        final RetransmitHandler retransmitHandler = new RetransmitHandler(
+            nanoClock,
+            context.systemCounters(),
+            RETRANSMIT_UNICAST_DELAY_GENERATOR,
+            RETRANSMIT_UNICAST_LINGER_GENERATOR);
+
+        final FlowControl flowControl =
+            udpChannel.isMulticast() || udpChannel.hasExplicitControl() ?
+                context.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
+                context.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
+
+        final NetworkPublication publication = new NetworkPublication(
+            registrationId,
+            channelEndpoint,
+            nanoClock,
+            cachedEpochClock,
+            newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId, params.termLength),
+            PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, channel),
+            senderPosition,
+            senderLimit,
+            sessionId,
+            streamId,
+            initialTermId,
+            params.mtuLength,
+            context.systemCounters(),
+            flowControl,
+            retransmitHandler,
+            networkPublicationThreadLocals,
+            publicationUnblockTimeoutNs,
+            isExclusive);
+
+        if (params.isReplay)
+        {
+            final int activeIndex = indexByTerm(params.initialTermId, params.termId);
+            final long rawTail = packTail(params.termId, params.termOffset);
+            rawTailVolatile(publication.rawLog().metaData(), activeIndex, rawTail);
+            activePartitionIndex(publication.rawLog().metaData(), activeIndex);
+        }
+
+        channelEndpoint.incRef();
+        networkPublications.add(publication);
+        senderProxy.newNetworkPublication(publication);
+        linkSpies(subscriptionLinks, publication);
+
+        return publication;
     }
 
     void cleanupPublication(final NetworkPublication publication)
@@ -780,19 +812,6 @@ public class DriverConductor implements Agent
         return rawLog;
     }
 
-    private static int getTermBufferLength(final AeronUri aeronUri, final int defaultTermLength)
-    {
-        final String termLengthParam = aeronUri.get(CommonContext.TERM_LENGTH_PARAM_NAME);
-        int termLength = defaultTermLength;
-        if (null != termLengthParam)
-        {
-            termLength = Integer.parseInt(termLengthParam);
-            Configuration.validateTermBufferLength(termLength);
-        }
-
-        return termLength;
-    }
-
     private RawLog newPublicationImageLog(
         final int sessionId,
         final int streamId,
@@ -1099,11 +1118,6 @@ public class DriverConductor implements Agent
         return ipcPublication;
     }
 
-    private static String generateSourceIdentity(final InetSocketAddress address)
-    {
-        return address.getHostString() + ':' + address.getPort();
-    }
-
     private <T extends DriverManagedResource> void onCheckManagedResources(
         final ArrayList<T> list, final long nowNs, final long nowMs)
     {
@@ -1118,6 +1132,18 @@ public class DriverConductor implements Agent
                 ArrayListUtil.fastUnorderedRemove(list, i, lastIndex);
                 lastIndex--;
                 resource.delete();
+            }
+        }
+    }
+
+    private void linkSpies(final ArrayList<SubscriptionLink> links, final NetworkPublication publication)
+    {
+        for (int i = 0, size = links.size(); i < size; i++)
+        {
+            final SubscriptionLink subscription = links.get(i);
+            if (subscription.matches(publication) && !subscription.isLinked(publication))
+            {
+                linkSpy(publication, subscription);
             }
         }
     }
@@ -1137,6 +1163,24 @@ public class DriverConductor implements Agent
         return workCount;
     }
 
+    private static String generateSourceIdentity(final InetSocketAddress address)
+    {
+        return address.getHostString() + ':' + address.getPort();
+    }
+
+    private static int getTermBufferLength(final AeronUri aeronUri, final int defaultTermLength)
+    {
+        final String termLengthParam = aeronUri.get(CommonContext.TERM_LENGTH_PARAM_NAME);
+        int termLength = defaultTermLength;
+        if (null != termLengthParam)
+        {
+            termLength = Integer.parseInt(termLengthParam);
+            Configuration.validateTermBufferLength(termLength);
+        }
+
+        return termLength;
+    }
+
     private static int getMtuLength(final AeronUri aeronUri, final int defaultMtuLength)
     {
         int mtuLength = defaultMtuLength;
@@ -1150,15 +1194,59 @@ public class DriverConductor implements Agent
         return mtuLength;
     }
 
-    private void linkSpies(final ArrayList<SubscriptionLink> links, final NetworkPublication publication)
+    private PublicationParams getPublicationParams(final AeronUri aeronUri, final boolean isExclusive)
     {
-        for (int i = 0, size = links.size(); i < size; i++)
+        final PublicationParams params = new PublicationParams();
+
+        params.mtuLength = getMtuLength(aeronUri, context.mtuLength());
+        params.termLength = getTermBufferLength(aeronUri, context.publicationTermBufferLength());
+
+        if (isExclusive)
         {
-            final SubscriptionLink subscription = links.get(i);
-            if (subscription.matches(publication) && !subscription.isLinked(publication))
+            int count = 0;
+
+            final String initTermIdStr = aeronUri.get(INITIAL_TERM_ID_PARAM_NAME);
+            count = initTermIdStr != null ? count + 1 : count;
+
+            final String termIdStr = aeronUri.get(TERM_ID_PARAM_NAME);
+            count = termIdStr != null ? count + 1 : count;
+
+            final String termOffsetStr = aeronUri.get(TERM_OFFSET_PARAM_NAME);
+            count = termOffsetStr != null ? count + 1 : count;
+
+            if (count > 0)
             {
-                linkSpy(publication, subscription);
+                if (count < 3)
+                {
+                    throw new IllegalStateException("Params must be used as a set: " +
+                        INITIAL_TERM_ID_PARAM_NAME + " " + TERM_ID_PARAM_NAME + " " + TERM_OFFSET_PARAM_NAME);
+                }
+
+                params.initialTermId = Integer.parseInt(initTermIdStr);
+                params.termId = Integer.parseInt(termIdStr);
+                params.termOffset = Integer.parseInt(termOffsetStr);
+
+                if (params.termOffset > params.termLength)
+                {
+                    throw new IllegalStateException(
+                        TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " > " +
+                        TERM_LENGTH_PARAM_NAME + "=" + params.termLength);
+                }
+
+                params.isReplay = true;
             }
         }
+
+        return params;
+    }
+
+    static class PublicationParams
+    {
+        int mtuLength = 0;
+        int termLength = 0;
+        int initialTermId = 0;
+        int termId = 0;
+        int termOffset = 0;
+        boolean isReplay = false;
     }
 }

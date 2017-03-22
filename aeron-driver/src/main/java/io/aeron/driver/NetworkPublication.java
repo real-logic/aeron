@@ -681,6 +681,6 @@ public class NetworkPublication
 
     public boolean unblockAtConsumerPosition()
     {
-        return LogBufferUnblocker.unblock(termBuffers, rawLog.metaData(), consumerPosition());
+        return LogBufferUnblocker.unblock(termBuffers, rawLog.metaData(), senderPosition.getVolatile());
     }
 }

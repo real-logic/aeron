@@ -192,7 +192,8 @@ public class DriverConductorTest
         final int initialTermId = 7;
         final int termId = 11;
         final int termOffset = 64;
-        final String params = "|mtu=" + mtu +
+        final String params =
+            "|mtu=" + mtu +
             "|term-length=" + termLength +
             "|init-term-id=" + initialTermId +
             "|term-id=" + termId +

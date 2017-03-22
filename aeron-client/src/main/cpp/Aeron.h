@@ -152,6 +152,21 @@ public:
         return m_conductor.findSubscription(registrationId);
     }
 
+    /**
+     * Generate the next correlation id that is unique for the connected Media Driver.
+     *
+     * This is useful generating correlation identifiers for pairing requests with responses in a clients own
+     * application protocol.
+     *
+     * This method is thread safe and will work across processes that all use the same media driver.
+     *
+     * @return next correlation id that is unique for the Media Driver.
+     */
+    inline int64_t nextCorrelationId()
+    {
+        return m_toDriverRingBuffer.nextCorrelationId();
+    }
+
 private:
     std::random_device m_randomDevice;
     std::default_random_engine m_randomEngine;

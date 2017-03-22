@@ -37,7 +37,7 @@ typedef struct aeron_counter_metadata_descriptor_stct
     int32_t type_id;
     uint8_t key[(2 * AERON_CACHE_LINE_LENGTH) - (2 * sizeof(int32_t))];
     int32_t label_length;
-    uint8_t label[(2 * AERON_CACHE_LINE_LENGTH) - sizeof(int32_t)];
+    uint8_t label[(6 * AERON_CACHE_LINE_LENGTH) - sizeof(int32_t)];
 }
 aeron_counter_metadata_descriptor_t;
 #pragma pack(pop)

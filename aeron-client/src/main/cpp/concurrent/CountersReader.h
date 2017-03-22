@@ -61,7 +61,7 @@ namespace aeron { namespace concurrent {
  *  +-+-------------------------------------------------------------+
  *  |R|                      Label Length                           |
  *  +-+-------------------------------------------------------------+
- *  |                  124 bytes of Label in UTF-8                 ...
+ *  |                  380 bytes of Label in UTF-8                 ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
  *  |                   Repeats to end of buffer                   ...
@@ -145,7 +145,7 @@ public:
         std::int32_t typeId;
         std::int8_t key[(2 * util::BitUtil::CACHE_LINE_LENGTH) - (2 * sizeof(std::int32_t))];
         std::int32_t labelLength;
-        std::int8_t label[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int32_t)];
+        std::int8_t label[(6 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int32_t)];
     };
 #pragma pack(pop)
 

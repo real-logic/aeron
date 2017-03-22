@@ -198,6 +198,9 @@ public class DriverConductorTest
             "|term-id=" + termId +
             "|term-offset=" + termOffset;
 
+        when(mockRawLogFactory.newNetworkPublication(anyString(), anyInt(), anyInt(), anyLong(), eq(termLength)))
+            .thenReturn(LogBufferHelper.newTestLogBuffers(termLength));
+
         driverProxy.addExclusivePublication(CHANNEL_4000 + params, STREAM_ID_1);
 
         driverConductor.doWork();
@@ -208,6 +211,11 @@ public class DriverConductorTest
 
         final NetworkPublication publication = captor.getValue();
         assertThat(publication.streamId(), is(STREAM_ID_1));
+        assertThat(publication.mtuLength(), is(mtu));
+
+        final long expectedPosition = termLength * (termId - initialTermId) + termOffset;
+        assertThat(publication.producerPosition(), is(expectedPosition));
+        assertThat(publication.consumerPosition(), is(expectedPosition));
 
         verify(mockClientProxy).onPublicationReady(anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(true));
     }

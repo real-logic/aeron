@@ -19,6 +19,9 @@
 namespace aeron {
 
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS(4);
+static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
+static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_16(16);
+static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_100(100);
 
 static long long currentTimeMillis()
 {
@@ -72,36 +75,71 @@ Aeron::~Aeron()
 inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
 {
     const long long startMs = currentTimeMillis();
-    while (MemoryMappedFile::getFileSize(context.cncFileName().c_str()) == -1)
+    MemoryMappedFile::ptr_t cncBuffer;
+
+    while (true)
     {
-        if (currentTimeMillis() > (startMs + context.m_mediaDriverTimeout))
+        while (MemoryMappedFile::getFileSize(context.cncFileName().c_str()) == -1)
         {
-            throw DriverTimeoutException(
-                util::strPrintf("CnC file not found: %s", context.cncFileName().c_str()), SOURCEINFO);
+            if (currentTimeMillis() > (startMs + context.m_mediaDriverTimeout))
+            {
+                throw DriverTimeoutException(
+                    util::strPrintf("CnC file not found: %s", context.cncFileName().c_str()), SOURCEINFO);
+            }
+
+            std::this_thread::sleep_for(IDLE_SLEEP_MS_16);
         }
 
-        std::this_thread::yield();
-    }
+        cncBuffer = MemoryMappedFile::mapExisting(context.cncFileName().c_str());
 
-    MemoryMappedFile::ptr_t cncBuffer = MemoryMappedFile::mapExisting(context.cncFileName().c_str());
+        std::int32_t cncVersion = 0;
 
-    std::int32_t cncVersion = 0;
-
-    while (0 == (cncVersion = CncFileDescriptor::cncVersion(cncBuffer)))
-    {
-        if (currentTimeMillis() > (startMs + context.m_mediaDriverTimeout))
+        while (0 == (cncVersion = CncFileDescriptor::cncVersion(cncBuffer)))
         {
-            throw DriverTimeoutException(
-                util::strPrintf("CnC file is created by not initialised.: %s", context.cncFileName().c_str()), SOURCEINFO);
+            if (currentTimeMillis() > (startMs + context.m_mediaDriverTimeout))
+            {
+                throw DriverTimeoutException(
+                    util::strPrintf("CnC file is created but not initialised.: %s", context.cncFileName().c_str()),
+                    SOURCEINFO);
+            }
+
+            std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
         }
 
-        std::this_thread::yield();
-    }
+        if (CncFileDescriptor::CNC_VERSION != cncVersion)
+        {
+            throw util::IllegalStateException(
+                util::strPrintf("CnC file version not supported: version=%d", cncVersion), SOURCEINFO);
+        }
 
-    if (CncFileDescriptor::CNC_VERSION != cncVersion)
-    {
-        throw util::IllegalStateException(
-            util::strPrintf("aeron cnc file version not understood: version=%d", cncVersion), SOURCEINFO);
+        AtomicBuffer toDriverBuffer(CncFileDescriptor::createToDriverBuffer(cncBuffer));
+        ManyToOneRingBuffer ringBuffer(toDriverBuffer);
+
+        while (0 == ringBuffer.consumerHeartbeatTime())
+        {
+            if (currentTimeMillis() > (startMs + context.m_mediaDriverTimeout))
+            {
+                throw DriverTimeoutException(std::string("No driver heartbeat detected."), SOURCEINFO);
+            }
+
+            std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
+        }
+
+        const long long timeMs = currentTimeMillis();
+        if (ringBuffer.consumerHeartbeatTime() < (timeMs - context.m_mediaDriverTimeout))
+        {
+            if (timeMs > (startMs + context.m_mediaDriverTimeout))
+            {
+                throw DriverTimeoutException(std::string("No driver heartbeat detected."), SOURCEINFO);
+            }
+
+            cncBuffer = nullptr;
+
+            std::this_thread::sleep_for(IDLE_SLEEP_MS_100);
+            continue;
+        }
+
+        break;
     }
 
     return cncBuffer;

@@ -129,29 +129,37 @@ int main(int argc, char** argv)
 
             srcBuffer.putBytes(0, reinterpret_cast<std::uint8_t *>(message), messageLen);
 
-            std::cout << "offering " << i << "/" << settings.numberOfMessages;
+            std::cout << "offering " << i << "/" << settings.numberOfMessages << " - ";
             std::cout.flush();
 
             const std::int64_t result = publication->offer(srcBuffer, 0, messageLen);
 
             if (result < 0)
             {
-                if (NOT_CONNECTED == result)
+                if (BACK_PRESSURED == result)
                 {
-                    std::cout << " not connected yet." << std::endl;
+                    std::cout << "Offer failed due to back pressure" << std::endl;
                 }
-                else if (BACK_PRESSURED == result)
+                else if (NOT_CONNECTED == result)
                 {
-                    std::cout << " back pressured." << std::endl;
+                    std::cout << "Offer failed because publisher is not connected to subscriber" << std::endl;
+                }
+                else if (ADMIN_ACTION == result)
+                {
+                    std::cout << "Offer failed because of an administration action in the system" << std::endl;
+                }
+                else if (PUBLICATION_CLOSED == result)
+                {
+                    std::cout << "Offer failed publication is closed" << std::endl;
                 }
                 else
                 {
-                    std::cout << " ah?! unknown " << result << std::endl;
+                    std::cout << "Offer failed due to unknown reason" << result << std::endl;
                 }
             }
             else
             {
-                std::cout << " yay!" << std::endl;
+                std::cout << "yay!" << std::endl;
             }
 
             if (!publication->isConnected())

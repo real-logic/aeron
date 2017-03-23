@@ -280,19 +280,16 @@ public class DriverConductor implements Agent
 
     IpcPublication getIpcPublication(final long registrationId)
     {
-        IpcPublication ipcPublication = null;
-
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
             final IpcPublication publication = ipcPublications.get(i);
             if (publication.registrationId() == registrationId)
             {
-                ipcPublication = publication;
-                break;
+                return publication;
             }
         }
 
-        return ipcPublication;
+        return null;
     }
 
     void onAddNetworkPublication(
@@ -303,8 +300,7 @@ public class DriverConductor implements Agent
         final boolean isExclusive)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
-        final AeronUri aeronUri = udpChannel.aeronUri();
-        final PublicationParams params = getPublicationParams(aeronUri, isExclusive, false);
+        final PublicationParams params = getPublicationParams(udpChannel.aeronUri(), isExclusive, false);
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel);
 
         NetworkPublication publication = null;

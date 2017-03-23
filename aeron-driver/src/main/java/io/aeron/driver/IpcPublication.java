@@ -41,7 +41,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
     private static final ReadablePosition[] EMPTY_POSITIONS = new ReadablePosition[0];
 
-    private final long correlationId;
+    private final long registrationId;
     private final long tripGain;
     private final int sessionId;
     private final int streamId;
@@ -66,7 +66,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
     private final AtomicCounter unblockedPublications;
 
     public IpcPublication(
-        final long correlationId,
+        final long registrationId,
         final int sessionId,
         final int streamId,
         final Position publisherLimit,
@@ -75,7 +75,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         final SystemCounters systemCounters,
         final boolean isExclusive)
     {
-        this.correlationId = correlationId;
+        this.registrationId = registrationId;
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.isExclusive = isExclusive;
@@ -90,6 +90,8 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         this.rawLog = rawLog;
         this.unblockTimeoutNs = unblockTimeoutNs;
         this.unblockedPublications = systemCounters.get(UNBLOCKED_PUBLICATIONS);
+
+        consumerPosition = producerPosition();
     }
 
     public int sessionId()
@@ -102,9 +104,9 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         return streamId;
     }
 
-    public long correlationId()
+    public long registrationId()
     {
-        return correlationId;
+        return registrationId;
     }
 
     public boolean isExclusive()
@@ -157,7 +159,12 @@ public class IpcPublication implements DriverManagedResource, Subscribable
             maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
 
-        if (subscriberPositions.length > 0)
+        if (subscriberPositions.length == 0)
+        {
+            publisherLimit.setOrdered(maxSubscriberPosition);
+            tripLimit = maxSubscriberPosition;
+        }
+        else
         {
             final long proposedLimit = minSubscriberPosition + termWindowLength;
             if (proposedLimit > tripLimit)
@@ -171,6 +178,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
             consumerPosition = maxSubscriberPosition;
         }
+
 
         return workCount;
     }

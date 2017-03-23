@@ -278,6 +278,23 @@ public class DriverConductor implements Agent
         return findIpcSharedPublication(ipcPublications, streamId);
     }
 
+    IpcPublication getIpcPublication(final long registrationId)
+    {
+        IpcPublication ipcPublication = null;
+
+        for (int i = 0, size = ipcPublications.size(); i < size; i++)
+        {
+            final IpcPublication publication = ipcPublications.get(i);
+            if (publication.registrationId() == registrationId)
+            {
+                ipcPublication = publication;
+                break;
+            }
+        }
+
+        return ipcPublication;
+    }
+
     void onAddNetworkPublication(
         final String channel,
         final int streamId,
@@ -287,7 +304,7 @@ public class DriverConductor implements Agent
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final AeronUri aeronUri = udpChannel.aeronUri();
-        final PublicationParams params = getPublicationParams(aeronUri, isExclusive);
+        final PublicationParams params = getPublicationParams(aeronUri, isExclusive, false);
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel);
 
         NetworkPublication publication = null;
@@ -446,7 +463,7 @@ public class DriverConductor implements Agent
 
     void transitionToLinger(final IpcPublication publication)
     {
-        clientProxy.onUnavailableImage(publication.correlationId(), publication.streamId(), CommonContext.IPC_CHANNEL);
+        clientProxy.onUnavailableImage(publication.registrationId(), publication.streamId(), CommonContext.IPC_CHANNEL);
     }
 
     void cleanupImage(final PublicationImage image)
@@ -501,7 +518,7 @@ public class DriverConductor implements Agent
         final long clientId,
         final boolean isExclusive)
     {
-        final IpcPublication ipcPublication = getOrAddIpcPublication(streamId, channel, isExclusive);
+        final IpcPublication ipcPublication = getOrAddIpcPublication(registrationId, streamId, channel, isExclusive);
         publicationLinks.add(new PublicationLink(registrationId, ipcPublication, getOrAddClient(clientId)));
 
         clientProxy.onPublicationReady(
@@ -946,7 +963,7 @@ public class DriverConductor implements Agent
         publication.addSubscriber(position);
 
         clientProxy.onAvailableImage(
-            publication.correlationId(),
+            publication.registrationId(),
             streamId,
             sessionId,
             publication.rawLog().fileName(),
@@ -1013,7 +1030,8 @@ public class DriverConductor implements Agent
         return client;
     }
 
-    private IpcPublication getOrAddIpcPublication(final int streamId, final String channel, final boolean isExclusive)
+    private IpcPublication getOrAddIpcPublication(
+        final long registrationId, final int streamId, final String channel, final boolean isExclusive)
     {
         IpcPublication publication = null;
 
@@ -1024,29 +1042,35 @@ public class DriverConductor implements Agent
 
         if (null == publication)
         {
-            publication = addIpcPublication(streamId, channel, isExclusive);
+            publication = addIpcPublication(registrationId, streamId, channel, isExclusive);
         }
 
         return publication;
     }
 
-    private IpcPublication addIpcPublication(final int streamId, final String channel, final boolean isExclusive)
+    private IpcPublication addIpcPublication(
+        final long registrationId, final int streamId, final String channel, final boolean isExclusive)
     {
-        final int termLength = getTermBufferLength(AeronUri.parse(channel), context.ipcTermBufferLength());
-        final long registrationId = nextImageCorrelationId();
-        final int sessionId = nextSessionId++;
-        final int initialTermId = BitUtil.generateRandomisedId();
-        final RawLog rawLog = newIpcPublicationLog(
-            termLength, sessionId, streamId, initialTermId, registrationId);
+        final PublicationParams params = getPublicationParams(AeronUri.parse(channel), isExclusive, true);
 
-        final Position publisherLimit = PublisherLimit.allocate(
-            countersManager, registrationId, sessionId, streamId, channel);
+        final int sessionId = nextSessionId++;
+        final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
+
+        final RawLog rawLog = newIpcPublicationLog(
+            params.termLength, sessionId, streamId, initialTermId, registrationId);
+
+        if (params.isReplay)
+        {
+            final int activeIndex = indexByTerm(initialTermId, params.termId);
+            activePartitionIndex(rawLog.metaData(), activeIndex);
+            rawTailVolatile(rawLog.metaData(), activeIndex, packTail(params.termId, params.termOffset));
+        }
 
         final IpcPublication publication = new IpcPublication(
             registrationId,
             sessionId,
             streamId,
-            publisherLimit,
+            PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, channel),
             rawLog,
             publicationUnblockTimeoutNs,
             context.systemCounters(),
@@ -1194,12 +1218,14 @@ public class DriverConductor implements Agent
         return mtuLength;
     }
 
-    private PublicationParams getPublicationParams(final AeronUri aeronUri, final boolean isExclusive)
+    private PublicationParams getPublicationParams(
+        final AeronUri aeronUri, final boolean isExclusive, final boolean isIpc)
     {
         final PublicationParams params = new PublicationParams();
 
         params.mtuLength = getMtuLength(aeronUri, context.mtuLength());
-        params.termLength = getTermBufferLength(aeronUri, context.publicationTermBufferLength());
+        params.termLength = getTermBufferLength(
+            aeronUri, isIpc ? context.ipcTermBufferLength() : context.publicationTermBufferLength());
 
         if (isExclusive)
         {
@@ -1230,7 +1256,7 @@ public class DriverConductor implements Agent
                 {
                     throw new IllegalStateException(
                         TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " > " +
-                        TERM_LENGTH_PARAM_NAME + "=" + params.termLength);
+                            TERM_LENGTH_PARAM_NAME + "=" + params.termLength);
                 }
 
                 params.isReplay = true;

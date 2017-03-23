@@ -52,8 +52,6 @@ public:
         AtomicBuffer& counterValuesBuffer,
         const on_new_publication_t& newPublicationHandler,
         const on_new_subscription_t& newSubscriptionHandler,
-        const on_available_image_t & newImageHandler,
-        const on_unavailable_image_t & inactiveImageHandler,
         const exception_handler_t& errorHandler,
         long driverTimeoutMs,
         long resourceLingerTimeoutMs,
@@ -64,8 +62,6 @@ public:
         m_counterValuesBuffer(counterValuesBuffer),
         m_onNewPublicationHandler(newPublicationHandler),
         m_onNewSubscriptionHandler(newSubscriptionHandler),
-        m_onAvailableImageHandler(newImageHandler),
-        m_onUnavailableImageHandler(inactiveImageHandler),
         m_errorHandler(errorHandler),
         m_epochClock(epochClock),
         m_timeOfLastKeepalive(epochClock()),
@@ -99,7 +95,11 @@ public:
     std::shared_ptr<Publication> findPublication(std::int64_t registrationId);
     void releasePublication(std::int64_t registrationId);
 
-    std::int64_t addSubscription(const std::string& channel, std::int32_t streamId);
+    std::int64_t addSubscription(
+        const std::string& channel,
+        std::int32_t streamId,
+        const on_available_image_t &onAvailableImageHandler,
+        const on_unavailable_image_t &onUnavailableImageHandler);
     std::shared_ptr<Subscription> findSubscription(std::int64_t registrationId);
     void releaseSubscription(std::int64_t registrationId, Image *images, int imagesLength);
 
@@ -185,10 +185,22 @@ private:
         std::string m_errorMessage;
         std::shared_ptr<Subscription> m_subscriptionCache;
         std::weak_ptr<Subscription> m_subscription;
+        on_available_image_t m_onAvailableImageHandler;
+        on_unavailable_image_t m_onUnavailableImageHandler;
 
         SubscriptionStateDefn(
-            const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long long now) :
-            m_channel(channel), m_registrationId(registrationId), m_streamId(streamId), m_timeOfRegistration(now)
+            const std::string& channel,
+            std::int64_t registrationId,
+            std::int32_t streamId,
+            long long now,
+            const on_available_image_t &onAvailableImageHandler,
+            const on_unavailable_image_t &onUnavailableImageHandler) :
+            m_channel(channel),
+            m_registrationId(registrationId),
+            m_streamId(streamId),
+            m_timeOfRegistration(now),
+            m_onAvailableImageHandler(onAvailableImageHandler),
+            m_onUnavailableImageHandler(onUnavailableImageHandler)
         {
         }
     };
@@ -230,8 +242,6 @@ private:
 
     on_new_publication_t m_onNewPublicationHandler;
     on_new_subscription_t m_onNewSubscriptionHandler;
-    on_available_image_t m_onAvailableImageHandler;
-    on_unavailable_image_t m_onUnavailableImageHandler;
     exception_handler_t m_errorHandler;
 
     epoch_clock_t m_epochClock;

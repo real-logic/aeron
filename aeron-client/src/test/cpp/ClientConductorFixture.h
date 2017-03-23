@@ -82,14 +82,14 @@ public:
             m_counterValuesBuffer,
             std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewPub, &m_handlers, _1, _2, _3, _4),
             std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewSub, &m_handlers, _1, _2, _3),
-            std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewImage, &m_handlers, _1),
-            std::bind(&testing::NiceMock<MockClientConductorHandlers>::onInactive, &m_handlers, _1),
             [&](const std::exception& exception) { m_errorHandler(exception); },
             DRIVER_TIMEOUT_MS,
             RESOURCE_LINGER_TIMEOUT_MS,
             INTER_SERVICE_TIMEOUT_NS,
             PUBLICATION_CONNECTION_TIMEOUT_MS),
-        m_errorHandler(defaultErrorHandler)
+        m_errorHandler(defaultErrorHandler),
+        m_onAvailableImageHandler(std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewImage, &m_handlers, _1)),
+        m_onUnavailableImageHandler(std::bind(&testing::NiceMock<MockClientConductorHandlers>::onInactive, &m_handlers, _1))
     {
         m_toDriver.fill(0);
         m_toClients.fill(0);
@@ -129,6 +129,9 @@ protected:
     exception_handler_t m_errorHandler;
 
     testing::NiceMock<MockClientConductorHandlers> m_handlers;
+
+    on_available_image_t m_onAvailableImageHandler;
+    on_unavailable_image_t m_onUnavailableImageHandler;
 };
 
 #endif //AERON_CLIENTCONDUCTORFIXTURE_H

@@ -52,8 +52,6 @@ Aeron::Aeron(Context &context) :
         m_countersValueBuffer,
         context.m_onNewPublicationHandler,
         context.m_onNewSubscriptionHandler,
-        context.m_onAvailableImageHandler,
-        context.m_onUnavailableImageHandler,
         context.m_exceptionHandler,
         context.m_mediaDriverTimeout,
         context.m_resourceLingerTimeout,

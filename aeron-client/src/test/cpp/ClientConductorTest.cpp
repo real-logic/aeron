@@ -204,7 +204,7 @@ TEST_F(ClientConductorTest, shouldReturnNullForUnknownSubscription)
 
 TEST_F(ClientConductorTest, shouldReturnNullForSubscriptionWithoutOperationSuccess)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
 
@@ -213,7 +213,7 @@ TEST_F(ClientConductorTest, shouldReturnNullForSubscriptionWithoutOperationSucce
 
 TEST_F(ClientConductorTest, shouldSendAddSubscriptionToDriver)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     static std::int32_t ADD_SUBSCRIPTION = ControlProtocolEvents::ADD_SUBSCRIPTION;
 
     int count = m_manyToOneRingBuffer.read(
@@ -232,7 +232,7 @@ TEST_F(ClientConductorTest, shouldSendAddSubscriptionToDriver)
 
 TEST_F(ClientConductorTest, shouldReturnSubscriptionAfterOperationSuccess)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_conductor.onOperationSuccess(id);
 
@@ -246,7 +246,7 @@ TEST_F(ClientConductorTest, shouldReturnSubscriptionAfterOperationSuccess)
 
 TEST_F(ClientConductorTest, shouldReleaseSubscriptionAfterGoingOutOfScope)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     static std::int32_t REMOVE_SUBSCRIPTION = ControlProtocolEvents::REMOVE_SUBSCRIPTION;
 
     // drain ring buffer
@@ -280,15 +280,15 @@ TEST_F(ClientConductorTest, shouldReleaseSubscriptionAfterGoingOutOfScope)
 
 TEST_F(ClientConductorTest, shouldReturnDifferentIdsForDuplicateAddSubscription)
 {
-    std::int64_t id1 = m_conductor.addSubscription(CHANNEL, STREAM_ID);
-    std::int64_t id2 = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id1 = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id2 = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     EXPECT_NE(id1, id2);
 }
 
 TEST_F(ClientConductorTest, shouldReturnSameFindSubscriptionAfterOperationSuccess)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_conductor.onOperationSuccess(id);
 
@@ -302,8 +302,8 @@ TEST_F(ClientConductorTest, shouldReturnSameFindSubscriptionAfterOperationSucces
 
 TEST_F(ClientConductorTest, shouldReturnDifferentSubscriptionAfterOperationSuccess)
 {
-    std::int64_t id1 = m_conductor.addSubscription(CHANNEL, STREAM_ID);
-    std::int64_t id2 = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id1 = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id2 = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_conductor.onOperationSuccess(id1);
     m_conductor.onOperationSuccess(id2);
@@ -318,7 +318,7 @@ TEST_F(ClientConductorTest, shouldReturnDifferentSubscriptionAfterOperationSucce
 
 TEST_F(ClientConductorTest, shouldIgnoreOperationSuccessForUnknownCorrelationId)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_conductor.onOperationSuccess(id + 1);
 
@@ -329,7 +329,7 @@ TEST_F(ClientConductorTest, shouldIgnoreOperationSuccessForUnknownCorrelationId)
 
 TEST_F(ClientConductorTest, shouldTimeoutAddSubscriptionWithoutOperationSuccess)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_currentTime += DRIVER_TIMEOUT_MS + 1;
 
@@ -341,7 +341,7 @@ TEST_F(ClientConductorTest, shouldTimeoutAddSubscriptionWithoutOperationSuccess)
 
 TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAddSubscription)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_conductor.onErrorResponse(id, ERROR_CODE_INVALID_CHANNEL, "invalid channel");
 
@@ -420,7 +420,7 @@ TEST_F(ClientConductorTest, shouldExceptionWhenAddSubscriptionAfterDriverInactiv
 
     ASSERT_THROW(
     {
-        m_conductor.addSubscription(CHANNEL, STREAM_ID);
+        m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     }, util::DriverTimeoutException);
 }
 
@@ -450,7 +450,7 @@ TEST_F(ClientConductorTest, shouldCallOnNewPubAfterLogBuffersCreated)
 
 TEST_F(ClientConductorTest, shouldCallOnNewSubAfterOperationSuccess)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     EXPECT_CALL(m_handlers, onNewSub(testing::StrEq(CHANNEL), STREAM_ID, id))
         .Times(1);
@@ -460,7 +460,7 @@ TEST_F(ClientConductorTest, shouldCallOnNewSubAfterOperationSuccess)
 
 TEST_F(ClientConductorTest, shouldCallNewConnectionAfterOnNewConnection)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
     testing::Sequence sequence;
 
@@ -484,7 +484,7 @@ TEST_F(ClientConductorTest, shouldCallNewConnectionAfterOnNewConnection)
 
 TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfNoOperationSuccess)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
 
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
@@ -503,7 +503,7 @@ TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfNoOperationSuccess)
 
 TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfUninterestingRegistrationId)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
 
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
@@ -524,7 +524,7 @@ TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfUninterestingRegistratio
 
 TEST_F(ClientConductorTest, shouldCallInactiveConnecitonAfterInactiveConnection)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
     testing::Sequence sequence;
 
@@ -550,7 +550,7 @@ TEST_F(ClientConductorTest, shouldCallInactiveConnecitonAfterInactiveConnection)
 
 TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfNoOperationSuccess)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
 
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
@@ -570,7 +570,7 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfNoOperationSuccess)
 
 TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfUinterestingConnectionCorrelationId)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
     testing::Sequence sequence;
 
@@ -597,7 +597,7 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfUinterestingConnect
 
 TEST_F(ClientConductorTest, shouldCallUnavailableImageIfSubscriptionReleased)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
     testing::Sequence sequence;
 
@@ -635,7 +635,7 @@ TEST_F(ClientConductorTest, shouldClosePublicationOnInterServiceTimeout)
 
 TEST_F(ClientConductorTest, shouldCloseSubscriptionOnInterServiceTimeout)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_conductor.onOperationSuccess(id);
 
@@ -651,7 +651,7 @@ TEST_F(ClientConductorTest, shouldCloseSubscriptionOnInterServiceTimeout)
 TEST_F(ClientConductorTest, shouldCloseAllPublicationsAndSubscriptionsOnInterServiceTimeout)
 {
     std::int64_t pubId = m_conductor.addPublication(CHANNEL, STREAM_ID);
-    std::int64_t subId = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t subId = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, pubId);
     m_conductor.onOperationSuccess(subId);
@@ -671,7 +671,7 @@ TEST_F(ClientConductorTest, shouldCloseAllPublicationsAndSubscriptionsOnInterSer
 
 TEST_F(ClientConductorTest, shouldRemoveImageOnInterServiceTimeout)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
 
     m_conductor.onOperationSuccess(id);

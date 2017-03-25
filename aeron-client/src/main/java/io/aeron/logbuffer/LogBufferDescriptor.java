@@ -555,6 +555,19 @@ public class LogBufferDescriptor
      * @param partitionIndex    for the tail counter.
      * @param rawTail           to be stored
      */
+    public static void rawTail(
+        final UnsafeBuffer logMetaDataBuffer, final int partitionIndex, final long rawTail)
+    {
+        logMetaDataBuffer.putLong(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex), rawTail);
+    }
+
+    /**
+     * Set the raw value of the tail for the given partition.
+     *
+     * @param logMetaDataBuffer containing the tail counters.
+     * @param partitionIndex    for the tail counter.
+     * @param rawTail           to be stored
+     */
     public static void rawTailVolatile(
         final UnsafeBuffer logMetaDataBuffer, final int partitionIndex, final long rawTail)
     {

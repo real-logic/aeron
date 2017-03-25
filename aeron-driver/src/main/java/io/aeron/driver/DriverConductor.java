@@ -351,7 +351,7 @@ public class DriverConductor implements Agent
         {
             initialTermId = params.initialTermId;
             final int bits = Integer.numberOfTrailingZeros(params.termLength);
-            final long position = computePosition(params.termId, params.termOffset, bits, params.initialTermId);
+            final long position = computePosition(params.termId, params.termOffset, bits, initialTermId);
             senderLimit.setOrdered(position);
             senderPosition.setOrdered(position);
         }
@@ -390,9 +390,9 @@ public class DriverConductor implements Agent
         if (params.isReplay)
         {
             final int activeIndex = indexByTerm(params.initialTermId, params.termId);
-            final long rawTail = packTail(params.termId, params.termOffset);
-            rawTailVolatile(publication.rawLog().metaData(), activeIndex, rawTail);
-            activePartitionIndex(publication.rawLog().metaData(), activeIndex);
+            final UnsafeBuffer logMetaDataBuffer = publication.rawLog().metaData();
+            rawTail(logMetaDataBuffer, activeIndex, packTail(params.termId, params.termOffset));
+            activePartitionIndex(logMetaDataBuffer, activeIndex);
         }
 
         channelEndpoint.incRef();
@@ -1058,8 +1058,8 @@ public class DriverConductor implements Agent
         if (params.isReplay)
         {
             final int activeIndex = indexByTerm(initialTermId, params.termId);
+            rawTail(rawLog.metaData(), activeIndex, packTail(params.termId, params.termOffset));
             activePartitionIndex(rawLog.metaData(), activeIndex);
-            rawTailVolatile(rawLog.metaData(), activeIndex, packTail(params.termId, params.termOffset));
         }
 
         final IpcPublication publication = new IpcPublication(

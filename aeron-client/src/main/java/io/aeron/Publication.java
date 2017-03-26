@@ -487,7 +487,7 @@ public class Publication implements AutoCloseable
         {
             final int nextIndex = nextPartitionIndex(index);
             termAppenders[nextIndex].tailTermId(TermAppender.termId(result) + 1);
-            LogBufferDescriptor.activePartitionIndex(logMetaDataBuffer, nextIndex);
+            LogBufferDescriptor.activePartitionIndexOrdered(logMetaDataBuffer, nextIndex);
         }
 
         return newPosition;

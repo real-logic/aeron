@@ -307,9 +307,20 @@ public class LogBufferDescriptor
      * @param logMetaDataBuffer    containing the meta data.
      * @param activePartitionIndex value of the active partition index used by the producer of this log.
      */
-    public static void activePartitionIndex(final UnsafeBuffer logMetaDataBuffer, final int activePartitionIndex)
+    public static void activePartitionIndexOrdered(final UnsafeBuffer logMetaDataBuffer, final int activePartitionIndex)
     {
         logMetaDataBuffer.putIntOrdered(LOG_ACTIVE_PARTITION_INDEX_OFFSET, activePartitionIndex);
+    }
+
+    /**
+     * Set the value of the current active partition index for the producer.
+     *
+     * @param logMetaDataBuffer    containing the meta data.
+     * @param activePartitionIndex value of the active partition index used by the producer of this log.
+     */
+    public static void activePartitionIndex(final UnsafeBuffer logMetaDataBuffer, final int activePartitionIndex)
+    {
+        logMetaDataBuffer.putInt(LOG_ACTIVE_PARTITION_INDEX_OFFSET, activePartitionIndex);
     }
 
     /**
@@ -495,7 +506,7 @@ public class LogBufferDescriptor
     {
         final int nextIndex = nextPartitionIndex(activePartitionIndex);
         initialiseTailWithTermId(logMetaDataBuffer, nextIndex, termId);
-        activePartitionIndex(logMetaDataBuffer, nextIndex);
+        activePartitionIndexOrdered(logMetaDataBuffer, nextIndex);
     }
 
     /**

@@ -495,7 +495,7 @@ public class ExclusivePublication implements AutoCloseable
             termBeginPosition = computeTermBeginPosition(nextTermId, positionBitsToShift, initialTermId);
 
             termAppenders[nextIndex].tailTermId(nextTermId);
-            LogBufferDescriptor.activePartitionIndex(logMetaDataBuffer, nextIndex);
+            LogBufferDescriptor.activePartitionIndexOrdered(logMetaDataBuffer, nextIndex);
 
             return ADMIN_ACTION;
         }

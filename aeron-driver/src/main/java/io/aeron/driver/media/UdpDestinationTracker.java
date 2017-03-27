@@ -15,8 +15,8 @@
  */
 package io.aeron.driver.media;
 
-import io.aeron.ArrayListUtil;
 import org.agrona.LangUtil;
+import org.agrona.collections.ArrayListUtil;
 import org.agrona.concurrent.NanoClock;
 
 import java.io.IOException;

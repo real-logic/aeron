@@ -98,8 +98,8 @@ subprojects {
     version = aeronVersion
 
     compileJava {
-        sourceCompatibility = 1.8
-        targetCompatibility = 1.8
+        sourceCompatibility = '1.8'
+        targetCompatibility = '1.8'
     }
 
     [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
@@ -169,7 +169,7 @@ subprojects {
     }
 }
 
-def agronaVersion = '0.9.3'
+def agronaVersion = '0.9.4-SNAPSHOT'
 
 project(':aeron-client') {
     apply plugin: 'osgi'

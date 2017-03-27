@@ -30,6 +30,7 @@ import org.agrona.concurrent.ControllableIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.status.StatusIndicator;
 
 import java.util.concurrent.TimeUnit;
@@ -158,7 +159,8 @@ public class Configuration
     public static final int COUNTERS_VALUES_BUFFER_LENGTH = getInteger(
         COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME, COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT);
 
-    public static final int COUNTERS_METADATA_BUFFER_LENGTH = COUNTERS_VALUES_BUFFER_LENGTH * 2;
+    public static final int COUNTERS_METADATA_BUFFER_LENGTH =
+        COUNTERS_VALUES_BUFFER_LENGTH * (CountersReader.METADATA_LENGTH / CountersReader.COUNTER_LENGTH);
 
     /**
      * Property name for length of the memory mapped buffer for the distinct error log.

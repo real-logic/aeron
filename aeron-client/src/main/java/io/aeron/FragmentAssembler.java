@@ -20,8 +20,6 @@ import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 
-import java.util.function.IntFunction;
-
 import static io.aeron.logbuffer.FrameDescriptor.*;
 
 /**
@@ -39,9 +37,9 @@ import static io.aeron.logbuffer.FrameDescriptor.*;
  */
 public class FragmentAssembler implements FragmentHandler
 {
+    private final int initialBufferLength;
     private final FragmentHandler delegate;
     private final Int2ObjectHashMap<BufferBuilder> builderBySessionIdMap = new Int2ObjectHashMap<>();
-    private final IntFunction<BufferBuilder> builderFunc;
 
     /**
      * Construct an adapter to reassemble message fragments and delegate on only whole messages.
@@ -61,8 +59,8 @@ public class FragmentAssembler implements FragmentHandler
      */
     public FragmentAssembler(final FragmentHandler delegate, final int initialBufferLength)
     {
+        this.initialBufferLength = initialBufferLength;
         this.delegate = delegate;
-        builderFunc = (ignore) -> new BufferBuilder(initialBufferLength);
     }
 
     /**
@@ -92,7 +90,7 @@ public class FragmentAssembler implements FragmentHandler
     {
         if ((flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG)
         {
-            final BufferBuilder builder = builderBySessionIdMap.computeIfAbsent(header.sessionId(), builderFunc);
+            final BufferBuilder builder = getBufferBuilder(header.sessionId());
             builder.reset().append(buffer, offset, length);
         }
         else
@@ -122,5 +120,26 @@ public class FragmentAssembler implements FragmentHandler
     public boolean freeSessionBuffer(final int sessionId)
     {
         return null != builderBySessionIdMap.remove(sessionId);
+    }
+
+    /**
+     * Clear down the cache of buffers by session for reassembling messages.
+     */
+    public void clear()
+    {
+        builderBySessionIdMap.clear();
+    }
+
+    private BufferBuilder getBufferBuilder(final int sessionId)
+    {
+        BufferBuilder bufferBuilder = builderBySessionIdMap.get(sessionId);
+
+        if (null == bufferBuilder)
+        {
+            bufferBuilder = new BufferBuilder(initialBufferLength);
+            builderBySessionIdMap.put(sessionId, bufferBuilder);
+        }
+
+        return bufferBuilder;
     }
 }

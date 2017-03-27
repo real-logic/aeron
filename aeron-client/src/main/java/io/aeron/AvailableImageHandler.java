@@ -16,7 +16,7 @@
 package io.aeron;
 
 /**
- * Interface for delivery of new image events to a {@link Aeron} instance.
+ * Interface for notification of new {@link Image}s becoming available under a {@link Subscription}.
  */
 @FunctionalInterface
 public interface AvailableImageHandler

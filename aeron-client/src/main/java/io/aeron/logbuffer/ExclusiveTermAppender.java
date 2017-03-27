@@ -22,6 +22,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTERS_OFFSET;
+import static io.aeron.logbuffer.LogBufferDescriptor.packTail;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -288,6 +289,6 @@ public class ExclusiveTermAppender
 
     private void putRawTailOrdered(final int termId, final int termOffset)
     {
-        UnsafeAccess.UNSAFE.putOrderedLong(tailBuffer, tailAddressOffset, (((long)termId) << 32) + termOffset);
+        UnsafeAccess.UNSAFE.putOrderedLong(tailBuffer, tailAddressOffset, packTail(termId, termOffset));
     }
 }

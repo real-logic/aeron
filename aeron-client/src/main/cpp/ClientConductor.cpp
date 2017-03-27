@@ -133,7 +133,11 @@ void ClientConductor::releasePublication(std::int64_t registrationId)
     }
 }
 
-std::int64_t ClientConductor::addSubscription(const std::string &channel, std::int32_t streamId)
+std::int64_t ClientConductor::addSubscription(
+    const std::string &channel,
+    std::int32_t streamId,
+    const on_available_image_t &onAvailableImageHandler,
+    const on_unavailable_image_t &onUnavailableImageHandler)
 {
     verifyDriverIsActive();
 
@@ -141,7 +145,8 @@ std::int64_t ClientConductor::addSubscription(const std::string &channel, std::i
 
     std::int64_t registrationId = m_driverProxy.addSubscription(channel, streamId);
 
-    m_subscriptions.emplace_back(channel, registrationId, streamId, m_epochClock());
+    m_subscriptions.emplace_back(
+        channel, registrationId, streamId, m_epochClock(), onAvailableImageHandler, onUnavailableImageHandler);
 
     return registrationId;
 }
@@ -205,7 +210,7 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, Image *im
 
         for (int i = 0; i < imagesLength; i++)
         {
-            m_onUnavailableImageHandler(images[i]);
+            (*it).m_onUnavailableImageHandler(images[i]);
         }
 
         lingerResources(m_epochClock(), images, imagesLength);
@@ -359,7 +364,7 @@ void ClientConductor::onAvailableImage(
                                 lingerResource(m_epochClock(), oldArray);
                             }
 
-                            m_onAvailableImageHandler(image);
+                            entry.m_onAvailableImageHandler(image);
                             break;
                         }
                     }
@@ -392,7 +397,7 @@ void ClientConductor::onUnavailableImage(
                     {
                         lingerResource(now, oldArray[index].logBuffers());
                         lingerResource(now, oldArray);
-                        m_onUnavailableImageHandler(oldArray[index]);
+                        entry.m_onUnavailableImageHandler(oldArray[index]);
                     }
                 }
             }

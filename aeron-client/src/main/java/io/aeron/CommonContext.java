@@ -69,6 +69,21 @@ public class CommonContext implements AutoCloseable
     public static final long DEFAULT_DRIVER_TIMEOUT_MS = 10_000;
 
     /**
+     * Initial term id to be used when creating an {@link ExclusivePublication}.
+     */
+    public static final String INITIAL_TERM_ID_PARAM_NAME = "init-term-id";
+
+    /**
+     * Current term id to be used when creating an {@link ExclusivePublication}.
+     */
+    public static final String TERM_ID_PARAM_NAME = "term-id";
+
+    /**
+     * Current term offset to be used when creating an {@link ExclusivePublication}.
+     */
+    public static final String TERM_OFFSET_PARAM_NAME = "term-offset";
+
+    /**
      * The param name to be used for the term length as a channel URI param.
      */
     public static final String TERM_LENGTH_PARAM_NAME = "term-length";

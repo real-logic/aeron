@@ -70,8 +70,6 @@ class ClientConductor implements Agent, DriverListener
     private final UnsafeBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
     private final ErrorHandler errorHandler;
-    private final AvailableImageHandler availableImageHandler;
-    private final UnavailableImageHandler unavailableImageHandler;
 
     private RegistrationException driverException;
 
@@ -85,8 +83,6 @@ class ClientConductor implements Agent, DriverListener
         counterValuesBuffer = ctx.countersValuesBuffer();
         driverProxy = ctx.driverProxy();
         logBuffersFactory = ctx.logBuffersFactory();
-        availableImageHandler = ctx.availableImageHandler();
-        unavailableImageHandler = ctx.unavailableImageHandler();
         imageMapMode = ctx.imageMapMode();
         keepAliveIntervalNs = ctx.keepAliveInterval();
         driverTimeoutMs = ctx.driverTimeoutMs();
@@ -210,12 +206,18 @@ class ClientConductor implements Agent, DriverListener
         }
     }
 
-    // TODO: remove redundant method?
-    Subscription addSubscription(
-        final String channel,
-        final int streamId)
+    Subscription addSubscription(final String channel, final int streamId)
     {
-        return addSubscription(channel, streamId, image -> {}, image -> {});
+        verifyActive();
+
+        final long correlationId = driverProxy.addSubscription(channel, streamId);
+        final Subscription subscription = new Subscription(
+            this, channel, streamId, correlationId, ctx.availableImageHandler(), ctx.unavailableImageHandler());
+        activeSubscriptions.add(subscription);
+
+        awaitResponse(correlationId, channel);
+
+        return subscription;
     }
 
     Subscription addSubscription(
@@ -227,14 +229,8 @@ class ClientConductor implements Agent, DriverListener
         verifyActive();
 
         final long correlationId = driverProxy.addSubscription(channel, streamId);
-        final Subscription subscription =
-            new Subscription(
-                this,
-                channel,
-                streamId,
-                correlationId,
-                availableImageHandler,
-                unavailableImageHandler);
+        final Subscription subscription = new Subscription(
+            this, channel, streamId, correlationId, availableImageHandler, unavailableImageHandler);
         activeSubscriptions.add(subscription);
 
         awaitResponse(correlationId, channel);
@@ -341,7 +337,11 @@ class ClientConductor implements Agent, DriverListener
 
                         try
                         {
-                            availableImageHandler.onAvailableImage(image);
+                            final AvailableImageHandler handler = subscription.availableImageHandler();
+                            if (null != handler)
+                            {
+                                handler.onAvailableImage(image);
+                            }
                         }
                         catch (final Throwable ex)
                         {
@@ -363,7 +363,11 @@ class ClientConductor implements Agent, DriverListener
                 {
                     try
                     {
-                        unavailableImageHandler.onUnavailableImage(image);
+                        final UnavailableImageHandler handler = subscription.unavailableImageHandler();
+                        if (null != handler)
+                        {
+                            handler.onUnavailableImage(image);
+                        }
                     }
                     catch (final Throwable ex)
                     {
@@ -387,11 +391,6 @@ class ClientConductor implements Agent, DriverListener
     boolean isPublicationConnected(final long timeOfLastStatusMessageMs)
     {
         return epochClock.time() <= (timeOfLastStatusMessageMs + publicationConnectionTimeoutMs);
-    }
-
-    UnavailableImageHandler unavailableImageHandler()
-    {
-        return unavailableImageHandler;
     }
 
     private int doWork(final long correlationId, final String expectedChannel)

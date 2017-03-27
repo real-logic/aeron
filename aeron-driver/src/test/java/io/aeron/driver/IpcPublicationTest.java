@@ -102,7 +102,7 @@ public class IpcPublicationTest
     @Test
     public void shouldKeepPublisherLimitZeroOnNoSubscriptionUpdate()
     {
-        ipcPublication.updatePublishersLimit(0);
+        ipcPublication.updatePublishersLimit();
         assertThat(publisherLimit.get(), is(0L));
     }
 

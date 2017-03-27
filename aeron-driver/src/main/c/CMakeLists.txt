@@ -18,23 +18,34 @@ SET(SOURCE
     concurrent/aeron_spsc_rb.c
     concurrent/aeron_mpsc_rb.c
     concurrent/aeron_atomic.c
+    concurrent/aeron_distinct_error_log.c
+    concurrent/aeron_broadcast_transmitter.c
+    concurrent/aeron_counters_manager.c
+    util/aeron_strutil.c
+    util/aeron_fileutil.c
     aeron_driver_context.c
     aeron_alloc.c
     aeron_driver.c
-    aeron_agent.c)
+    aeron_agent.c
+    aeron_system_counters.c)
 
 SET(HEADERS
     util/aeron_platform.h
     util/aeron_bitutil.h
+    util/aeron_strutil.h
+    util/aeron_fileutil.h
     concurrent/aeron_atomic.h
     concurrent/aeron_atomic64_gcc_x86_64.h
     concurrent/aeron_spsc_rb.h
     concurrent/aeron_rb.h
     concurrent/aeron_mpsc_rb.h
     concurrent/aeron_distinct_error_log.h
+    concurrent/aeron_broadcast_transmitter.h
+    concurrent/aeron_counters_manager.h
     aeronmd.h
     aeron_alloc.h
-    aeron_agent.h)
+    aeron_agent.h
+    aeron_system_counters.h)
 
 add_library(aeron_driver SHARED ${SOURCE} ${HEADERS})
 add_executable(aeronmd aeronmd.c)

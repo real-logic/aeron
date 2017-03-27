@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014 - 2017 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron;
 
-/**
- * Interface for delivery of inactive image notification to a {@link Subscription}.
- */
-@FunctionalInterface
-public interface UnavailableImageHandler
-{
-    /**
-     * Method called by Aeron to deliver notification that an {@link Image} is no longer available for polling.
-     *
-     * @param image the image that has become unavailable.
-     */
-    void onUnavailableImage(Image image);
-}
+#ifndef AERON_AERON_STRUTIL_H
+#define AERON_AERON_STRUTIL_H
+
+#include <stdint.h>
+#include <stddef.h>
+
+void aeron_format_date(char *str, size_t count, int64_t timestamp);
+
+#endif //AERON_AERON_STRUTIL_H

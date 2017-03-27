@@ -39,7 +39,6 @@ class SubscriptionFields extends SubscriptionLhsPadding
     protected volatile Image[] images = EMPTY_ARRAY;
     protected final ClientConductor clientConductor;
     protected final String channel;
-
     protected final AvailableImageHandler availableImageHandler;
     protected final UnavailableImageHandler unavailableImageHandler;
 
@@ -83,15 +82,16 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
 
     Subscription(
-        final ClientConductor clientConductor,
+        final ClientConductor conductor,
         final String channel,
         final int streamId,
         final long registrationId,
         final AvailableImageHandler availableImageHandler,
         final UnavailableImageHandler unavailableImageHandler)
     {
-        super(registrationId, streamId, clientConductor, channel, availableImageHandler, unavailableImageHandler);
+        super(registrationId, streamId, conductor, channel, availableImageHandler, unavailableImageHandler);
     }
+
     /**
      * Media address for delivery to the channel.
      *
@@ -120,6 +120,26 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     public long registrationId()
     {
         return registrationId;
+    }
+
+    /**
+     * Callback used to indicate when an {@link Image} becomes available under this {@link Subscription}.
+     *
+     * @return callback used to indicate when an {@link Image} becomes available under this {@link Subscription}.
+     */
+    public AvailableImageHandler availableImageHandler()
+    {
+        return availableImageHandler;
+    }
+
+    /**
+     * Callback used to indicate when an {@link Image} goes unavailable under this {@link Subscription}.
+     *
+     * @return Callback used to indicate when an {@link Image} goes unavailable under this {@link Subscription}.
+     */
+    public UnavailableImageHandler unavailableImageHandler()
+    {
+        return unavailableImageHandler;
     }
 
     /**
@@ -356,7 +376,10 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
 
             try
             {
-                clientConductor.unavailableImageHandler().onUnavailableImage(image);
+                if (null != unavailableImageHandler)
+                {
+                    unavailableImageHandler.onUnavailableImage(image);
+                }
             }
             catch (final Throwable ex)
             {
@@ -378,7 +401,6 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         else
         {
             images = ArrayUtil.add(images, image);
-            availableImageHandler.onAvailableImage(image);
         }
     }
 
@@ -400,7 +422,6 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         {
             images = ArrayUtil.remove(oldArray, removedImage);
             clientConductor.lingerResource(removedImage.managedResource());
-            unavailableImageHandler.onUnavailableImage(removedImage);
         }
 
         return removedImage;

@@ -127,7 +127,28 @@ public:
      */
     inline std::int64_t addSubscription(const std::string& channel, std::int32_t streamId)
     {
-        return m_conductor.addSubscription(channel, streamId);
+        return m_conductor.addSubscription(
+            channel, streamId, m_context.m_onAvailableImageHandler, m_context.m_onUnavailableImageHandler);
+    }
+
+    /**
+     * Add a new {@link Subscription} for subscribing to messages from publishers.
+     *
+     * This method will override the default handlers from the {@link Context}.
+     *
+     * @param channel                 for receiving the messages known to the media layer.
+     * @param streamId                within the channel scope.
+     * @param availableImageHandler   called when {@link Image}s become available for consumption.
+     * @param unavailableImageHandler called when {@link Image}s go unavailable for consumption.
+     * @return registration id for the subscription
+     */
+    inline std::int64_t addSubscription(
+        const std::string& channel,
+        std::int32_t streamId,
+        const on_available_image_t &onAvailableImageHandler,
+        const on_unavailable_image_t &onUnavailableImageHandler)
+    {
+        return m_conductor.addSubscription(channel, streamId, onAvailableImageHandler, onUnavailableImageHandler);
     }
 
     /**
@@ -150,6 +171,21 @@ public:
     inline std::shared_ptr<Subscription> findSubscription(std::int64_t registrationId)
     {
         return m_conductor.findSubscription(registrationId);
+    }
+
+    /**
+     * Generate the next correlation id that is unique for the connected Media Driver.
+     *
+     * This is useful generating correlation identifiers for pairing requests with responses in a clients own
+     * application protocol.
+     *
+     * This method is thread safe and will work across processes that all use the same media driver.
+     *
+     * @return next correlation id that is unique for the Media Driver.
+     */
+    inline int64_t nextCorrelationId()
+    {
+        return m_toDriverRingBuffer.nextCorrelationId();
     }
 
 private:

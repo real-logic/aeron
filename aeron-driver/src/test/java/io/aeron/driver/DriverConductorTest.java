@@ -185,6 +185,77 @@ public class DriverConductorTest
     }
 
     @Test
+    public void shouldBeAbleToAddPublicationForReplay() throws Exception
+    {
+        final int mtu = 1024 * 8;
+        final int termLength = 128 * 1024;
+        final int initialTermId = 7;
+        final int termId = 11;
+        final int termOffset = 64;
+        final String params =
+            "|mtu=" + mtu +
+            "|term-length=" + termLength +
+            "|init-term-id=" + initialTermId +
+            "|term-id=" + termId +
+            "|term-offset=" + termOffset;
+
+        when(mockRawLogFactory.newNetworkPublication(anyString(), anyInt(), anyInt(), anyLong(), eq(termLength)))
+            .thenReturn(LogBufferHelper.newTestLogBuffers(termLength));
+
+        driverProxy.addExclusivePublication(CHANNEL_4000 + params, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        verify(senderProxy).registerSendChannelEndpoint(any());
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
+
+        final NetworkPublication publication = captor.getValue();
+        assertThat(publication.streamId(), is(STREAM_ID_1));
+        assertThat(publication.mtuLength(), is(mtu));
+
+        final long expectedPosition = termLength * (termId - initialTermId) + termOffset;
+        assertThat(publication.producerPosition(), is(expectedPosition));
+        assertThat(publication.consumerPosition(), is(expectedPosition));
+
+        verify(mockClientProxy).onPublicationReady(anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(true));
+    }
+
+    @Test
+    public void shouldBeAbleToAddIpcPublicationForReplay() throws Exception
+    {
+        final int termLength = 128 * 1024;
+        final int initialTermId = 7;
+        final int termId = 11;
+        final int termOffset = 64;
+        final String params =
+            "?term-length=" + termLength +
+            "|init-term-id=" + initialTermId +
+            "|term-id=" + termId +
+            "|term-offset=" + termOffset;
+
+        when(mockRawLogFactory.newIpcPublication(anyInt(), anyInt(), anyLong(), eq(termLength)))
+            .thenReturn(LogBufferHelper.newTestLogBuffers(termLength));
+
+        driverProxy.addExclusivePublication(CHANNEL_IPC + params, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
+        verify(mockClientProxy).onPublicationReady(
+            captor.capture(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(true));
+
+        final long registrationId = captor.getValue();
+        final IpcPublication publication = driverConductor.getIpcPublication(registrationId);
+        assertThat(publication.streamId(), is(STREAM_ID_1));
+
+        final long expectedPosition = termLength * (termId - initialTermId) + termOffset;
+        assertThat(publication.producerPosition(), is(expectedPosition));
+        assertThat(publication.consumerPosition(), is(expectedPosition));
+
+    }
+
+    @Test
     public void shouldBeAbleToAddSingleSubscription() throws Exception
     {
         final long id = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
@@ -712,7 +783,7 @@ public class DriverConductorTest
             eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
         inOrder.verify(mockClientProxy).onAvailableImage(
-            eq(ipcPublication.correlationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
+            eq(ipcPublication.registrationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
             eq(ipcPublication.rawLog().fileName()), any(), anyString());
     }
 
@@ -740,13 +811,13 @@ public class DriverConductorTest
         inOrder.verify(mockClientProxy).onPublicationReady(
             eq(idPubOne), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onAvailableImage(
-            eq(ipcPublicationOne.correlationId()), eq(STREAM_ID_1), eq(ipcPublicationOne.sessionId()),
+            eq(ipcPublicationOne.registrationId()), eq(STREAM_ID_1), eq(ipcPublicationOne.sessionId()),
             eq(ipcPublicationOne.rawLog().fileName()), any(), anyString());
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idPubOneRemove));
         inOrder.verify(mockClientProxy).onPublicationReady(
             eq(idPubTwo), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onAvailableImage(
-            eq(ipcPublicationTwo.correlationId()), eq(STREAM_ID_1), eq(ipcPublicationTwo.sessionId()),
+            eq(ipcPublicationTwo.registrationId()), eq(STREAM_ID_1), eq(ipcPublicationTwo.sessionId()),
             eq(ipcPublicationTwo.rawLog().fileName()), any(), anyString());
     }
 
@@ -766,7 +837,7 @@ public class DriverConductorTest
         inOrder.verify(mockClientProxy).onPublicationReady(
             eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onAvailableImage(
-            eq(ipcPublication.correlationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
+            eq(ipcPublication.registrationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
             eq(ipcPublication.rawLog().fileName()), any(), anyString());
     }
 

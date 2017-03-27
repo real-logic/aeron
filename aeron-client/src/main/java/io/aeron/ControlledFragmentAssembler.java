@@ -20,13 +20,11 @@ import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 
-import java.util.function.IntFunction;
-
 import static io.aeron.logbuffer.FrameDescriptor.*;
 
 /**
- * A {@link ControlledFragmentHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented messages
- * so that the next handler in the chain only sees whole messages.
+ * A {@link ControlledFragmentHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented
+ * messages so that the next handler in the chain only sees whole messages.
  *
  * Unfragmented messages are delegated without copy. Fragmented messages are copied to a temporary
  * buffer for reassembly before delegation.
@@ -39,9 +37,9 @@ import static io.aeron.logbuffer.FrameDescriptor.*;
  */
 public class ControlledFragmentAssembler implements ControlledFragmentHandler
 {
+    private final int initialBufferLength;
     private final ControlledFragmentHandler delegate;
     private final Int2ObjectHashMap<BufferBuilder> builderBySessionIdMap = new Int2ObjectHashMap<>();
-    private final IntFunction<BufferBuilder> builderFunc;
 
     /**
      * Construct an adapter to reassemble message fragments and delegate on only whole messages.
@@ -61,8 +59,8 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
      */
     public ControlledFragmentAssembler(final ControlledFragmentHandler delegate, final int initialBufferLength)
     {
+        this.initialBufferLength = initialBufferLength;
         this.delegate = delegate;
-        builderFunc = (ignore) -> new BufferBuilder(initialBufferLength);
     }
 
     /**
@@ -87,7 +85,7 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
         {
             if ((flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG)
             {
-                final BufferBuilder builder = builderBySessionIdMap.computeIfAbsent(header.sessionId(), builderFunc);
+                final BufferBuilder builder = getBufferBuilder(header.sessionId());
                 builder.reset().append(buffer, offset, length);
             }
             else
@@ -129,5 +127,26 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
     public boolean freeSessionBuffer(final int sessionId)
     {
         return null != builderBySessionIdMap.remove(sessionId);
+    }
+
+    /**
+     * Clear down the cache of buffers by session for reassembling messages.
+     */
+    public void clear()
+    {
+        builderBySessionIdMap.clear();
+    }
+
+    private BufferBuilder getBufferBuilder(final int sessionId)
+    {
+        BufferBuilder bufferBuilder = builderBySessionIdMap.get(sessionId);
+
+        if (null == bufferBuilder)
+        {
+            bufferBuilder = new BufferBuilder(initialBufferLength);
+            builderBySessionIdMap.put(sessionId, bufferBuilder);
+        }
+
+        return bufferBuilder;
     }
 }

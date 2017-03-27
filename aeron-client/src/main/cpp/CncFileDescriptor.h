@@ -70,7 +70,7 @@ namespace CncFileDescriptor {
 
 static const std::string CNC_FILE = "cnc.dat";
 
-static const std::int32_t CNC_VERSION = 5;
+static const std::int32_t CNC_VERSION = 6;
 
 #pragma pack(push)
 #pragma pack(4)

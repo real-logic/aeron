@@ -45,7 +45,7 @@ do \
 #define AERON_GET_AND_ADD_INT32(original,dst,value) \
 do \
 { \
-    asm volatile( \
+    __asm__ volatile( \
         "lock; xaddl %0, %1" \
         : "=r"(original), "+m"(dst) \
         : "0"(value)); \

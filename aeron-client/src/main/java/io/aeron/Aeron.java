@@ -16,16 +16,20 @@
 package io.aeron;
 
 import io.aeron.exceptions.DriverTimeoutException;
-import org.agrona.*;
+import org.agrona.ErrorHandler;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.*;
-import org.agrona.concurrent.broadcast.*;
-import org.agrona.concurrent.ringbuffer.*;
+import org.agrona.concurrent.broadcast.BroadcastReceiver;
+import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
+import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.concurrent.*;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static org.agrona.IoUtil.mapExistingFile;
@@ -189,22 +193,39 @@ public final class Aeron implements AutoCloseable
     /**
      * Add a new {@link Subscription} for subscribing to messages from publishers.
      *
+     * The method will set up the {@link Subscription} to use the
+     * {@link Aeron.Context#availableImageHandler(AvailableImageHandler)} and
+     * {@link Aeron.Context#unavailableImageHandler(UnavailableImageHandler)} from the {@link Aeron.Context}.
+     *
      * @param channel  for receiving the messages known to the media layer.
      * @param streamId within the channel scope.
      * @return the {@link Subscription} for the channel and streamId pair.
      */
     public Subscription addSubscription(final String channel, final int streamId)
     {
-        return addSubscription(channel, streamId, image -> {}, image -> {});
+        conductor.clientLock().lock();
+        try
+        {
+            return conductor.addSubscription(channel, streamId);
+        }
+        finally
+        {
+            conductor.clientLock().unlock();
+        }
     }
 
     /**
      * Add a new {@link Subscription} for subscribing to messages from publishers.
      *
-     * @param channel  for receiving the messages known to the media layer.
-     * @param streamId within the channel scope.
-     * @param availableImageHandler subscription level available image handler
-     * @param unavailableImageHandler subscription level unavailable image handler
+     * This method will override the default handlers from the {@link Aeron.Context}, i.e.
+     * {@link Aeron.Context#availableImageHandler(AvailableImageHandler)} and
+     * {@link Aeron.Context#unavailableImageHandler(UnavailableImageHandler)}. Null values are valid and will
+     * result in no action being taken.
+     *
+     * @param channel                 for receiving the messages known to the media layer.
+     * @param streamId                within the channel scope.
+     * @param availableImageHandler   called when {@link Image}s become available for consumption.
+     * @param unavailableImageHandler called when {@link Image}s go unavailable for consumption.
      * @return the {@link Subscription} for the channel and streamId pair.
      */
     public Subscription addSubscription(
@@ -223,6 +244,7 @@ public final class Aeron implements AutoCloseable
             conductor.clientLock().unlock();
         }
     }
+
     /**
      * Generate the next correlation id that is unique for the connected Media Driver.
      *
@@ -354,16 +376,6 @@ public final class Aeron implements AutoCloseable
             if (null == errorHandler)
             {
                 errorHandler = DEFAULT_ERROR_HANDLER;
-            }
-
-            if (null == availableImageHandler)
-            {
-                availableImageHandler = (image) -> {};
-            }
-
-            if (null == unavailableImageHandler)
-            {
-                unavailableImageHandler = (image) -> {};
             }
 
             if (null == imageMapMode)
@@ -559,7 +571,7 @@ public final class Aeron implements AutoCloseable
         }
 
         /**
-         * Set up a callback for when an {@link Image} is available.
+         * Setup a default callback for when an {@link Image} is available.
          *
          * @param handler Callback method for handling available image notifications.
          * @return this Aeron.Context for method chaining.
@@ -571,7 +583,7 @@ public final class Aeron implements AutoCloseable
         }
 
         /**
-         * Get the callback handler for notifying when {@link Image}s become available.
+         * Get the default callback handler for notifying when {@link Image}s become available.
          *
          * @return the callback handler for notifying when {@link Image}s become available.
          */
@@ -581,7 +593,7 @@ public final class Aeron implements AutoCloseable
         }
 
         /**
-         * Set up a callback for when an {@link Image} is unavailable.
+         * Setup a default callback for when an {@link Image} is unavailable.
          *
          * @param handler Callback method for handling unavailable image notifications.
          * @return this Aeron.Context for method chaining.
@@ -802,9 +814,10 @@ public final class Aeron implements AutoCloseable
                     sleep(1);
                 }
 
-                if (ringBuffer.consumerHeartbeatTime() < (epochClock.time() - driverTimeoutMs()))
+                final long timeMs = epochClock.time();
+                if (ringBuffer.consumerHeartbeatTime() < (timeMs - driverTimeoutMs()))
                 {
-                    if (epochClock.time() > (startTimeMs + driverTimeoutMs()))
+                    if (timeMs > (startTimeMs + driverTimeoutMs()))
                     {
                         throw new DriverTimeoutException("No driver heartbeat detected.");
                     }

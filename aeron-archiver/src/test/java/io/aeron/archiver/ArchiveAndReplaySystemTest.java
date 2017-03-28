@@ -496,13 +496,15 @@ public class ArchiveAndReplaySystemTest
 
     private void validateArchiveFile(final int messageCount, final int streamInstanceId) throws IOException
     {
-        final StreamInstanceArchiveFragmentReader archiveDataFileReader =
-            new StreamInstanceArchiveFragmentReader(streamInstanceId, archiveFolder);
-        fragmentCount = 0;
-        remaining = totalDataLength;
-        archiveDataFileReader.controlledPoll(this::validateFragment, messageCount);
-        Assert.assertEquals(0, remaining);
-        Assert.assertEquals(messageCount, fragmentCount);
+        try(StreamInstanceArchiveFragmentReader archiveDataFileReader =
+            new StreamInstanceArchiveFragmentReader(streamInstanceId, archiveFolder))
+        {
+            fragmentCount = 0;
+            remaining = totalDataLength;
+            archiveDataFileReader.controlledPoll(this::validateFragment, messageCount);
+            Assert.assertEquals(0, remaining);
+            Assert.assertEquals(messageCount, fragmentCount);
+        }
     }
 
     private ControlledFragmentHandler.Action validateFragment(

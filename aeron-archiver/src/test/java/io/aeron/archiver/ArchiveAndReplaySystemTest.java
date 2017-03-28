@@ -161,8 +161,10 @@ public class ArchiveAndReplaySystemTest
         final int termId,
         final int termOffset,
         final long length,
-        final String replyChannel,
-        final int replyStreamId)
+        final String replayChannel,
+        final int replayStreamId,
+        final String controlChannel,
+        final int controlStreamId)
     {
         new MessageHeaderEncoder()
             .wrap(buffer, 0)
@@ -177,8 +179,10 @@ public class ArchiveAndReplaySystemTest
             .termId(termId)
             .termOffset(termOffset)
             .length((int) length)
-            .replyChannel(replyChannel)
-            .replyStreamId(replyStreamId);
+            .controlStreamId(controlStreamId)
+            .replayStreamId(replayStreamId)
+            .replayChannel(replayChannel)
+            .controlChannel(controlChannel);
 
         println(encoder.toString());
         offer(archiverServiceRequest,
@@ -438,7 +442,8 @@ public class ArchiveAndReplaySystemTest
         final int messageCount)
     {
         // request replay
-        final int replyStreamId = this.replyStreamId++;
+        final int replayStreamId = this.replyStreamId++;
+        final int controlStreamId = this.replyStreamId++;
         requestReplay(
             archiverServiceRequest,
             streamInstanceId,
@@ -446,12 +451,17 @@ public class ArchiveAndReplaySystemTest
             0,
             totalArchiveLength,
             REPLAY_URI,
-            replyStreamId);
+            replayStreamId,
+            REPLAY_URI,
+            controlStreamId);
 
-        try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, replyStreamId))
+        try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, replayStreamId);
+            Subscription control = publishingClient.addSubscription(REPLAY_URI, controlStreamId))
         {
             awaitSubscriptionIsConnected(replay, TIMEOUT);
-            poll(replay, (buffer, offset, length, header) ->
+            awaitSubscriptionIsConnected(control, TIMEOUT);
+            // wait for OK message from control
+            poll(control, (buffer, offset, length, header) ->
             {
                 final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
                 Assert.assertEquals(ArchiverResponseDecoder.TEMPLATE_ID, hDecoder.templateId());
@@ -462,7 +472,7 @@ public class ArchiveAndReplaySystemTest
                         offset + MessageHeaderDecoder.ENCODED_LENGTH,
                         hDecoder.blockLength(),
                         hDecoder.version());
-                Assert.assertEquals(mDecoder.err(), "");
+                Assert.assertEquals("", mDecoder.err());
             }, 1, TIMEOUT);
 
 

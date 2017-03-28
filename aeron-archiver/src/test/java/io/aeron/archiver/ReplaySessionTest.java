@@ -131,7 +131,8 @@ public class ReplaySessionTest
     public void shouldReplayDataFromFile()
     {
         final long length = 1024L;
-        final Publication reply = Mockito.mock(Publication.class);
+        final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
+        final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
         final Image image = Mockito.mock(Image.class);
 
         final ReplaySession replaySession =
@@ -140,30 +141,34 @@ public class ReplaySessionTest
                 INITIAL_TERM_ID,
                 INITIAL_TERM_OFFSET,
                 length,
-                reply,
+                replay,
+                control,
                 image,
                 archiveFolder,
                 proxy);
-        when(reply.isClosed()).thenReturn(false);
-        when(reply.isConnected()).thenReturn(false);
+        when(replay.isClosed()).thenReturn(false);
+        when(replay.isConnected()).thenReturn(false);
+        when(control.isClosed()).thenReturn(false);
+        when(control.isConnected()).thenReturn(false);
         // does not switch to replay mode until publications are established
         Assert.assertEquals(0, replaySession.doWork());
 
-        when(reply.isConnected()).thenReturn(true);
+        when(replay.isConnected()).thenReturn(true);
+        when(control.isConnected()).thenReturn(true);
 
         Assert.assertNotEquals(0, replaySession.doWork());
-        Mockito.verify(proxy, times(1)).sendResponse(reply, null);
+        Mockito.verify(proxy, times(1)).sendResponse(control, null);
 
         final UnsafeBuffer mockTermBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
-        when(reply.tryClaim(anyInt(), any(BufferClaim.class))).then(invocation ->
+        when(replay.tryClaim(anyInt(), any(ExclusiveBufferClaim.class))).then(invocation ->
         {
             final int claimedSize = invocation.getArgument(0);
-            final BufferClaim buffer = invocation.getArgument(1);
+            final ExclusiveBufferClaim buffer = invocation.getArgument(1);
             buffer.wrap(mockTermBuffer, 0, claimedSize + DataHeaderFlyweight.HEADER_LENGTH);
             messageIndex++;
             return (long) claimedSize;
         });
-        when(reply.maxPayloadLength()).thenReturn(4096);
+        when(replay.maxPayloadLength()).thenReturn(4096);
         Assert.assertNotEquals(0, replaySession.doWork());
         Assert.assertTrue(messageIndex > 0);
         Assert.assertEquals(ReplaySession.REPLAY_DATA_HEADER,

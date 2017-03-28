@@ -221,8 +221,10 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
 
     public void onReplayStart(
         final int sessionId,
-        final int replyStreamId,
-        final String replyChannel,
+        final int replayStreamId,
+        final String replayChannel,
+        final int controlStreamId,
+        final String controlChannel,
         final int streamInstanceId, final int termId, final int termOffset, final long length)
     {
         if (image2ReplaySession.containsKey(sessionId))
@@ -232,13 +234,15 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
         }
         // TODO: need to control construction of publications to handle errors
         final Image image = serviceRequests.imageBySessionId(sessionId);
-        final Publication replyPublication = aeron.addPublication(replyChannel, replyStreamId);
+        final ExclusivePublication replayPublication = aeron.addExclusivePublication(replayChannel, replayStreamId);
+        final ExclusivePublication controlPublication = aeron.addExclusivePublication(controlChannel, controlStreamId);
         final ReplaySession replaySession = new ReplaySession(
             streamInstanceId,
             termId,
             termOffset,
             length,
-            replyPublication,
+            replayPublication,
+            controlPublication,
             image,
             archiveFolder,
             proxy);

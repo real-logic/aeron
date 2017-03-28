@@ -17,7 +17,7 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.messages.*;
-import io.aeron.logbuffer.BufferClaim;
+import io.aeron.logbuffer.ExclusiveBufferClaim;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -60,12 +60,13 @@ class ReplaySession implements ArchiverConductor.Session
     private final int fromTermOffset;
     private final long replayLength;
 
-    private final Publication reply;
+    private final ExclusivePublication replay;
+    private final ExclusivePublication control;
     private final Image image;
 
     private final File archiveFolder;
     private final ArchiverProtocolProxy proxy;
-    private final BufferClaim bufferClaim = new BufferClaim();
+    private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
 
 
     private State state = State.INIT;
@@ -76,7 +77,8 @@ class ReplaySession implements ArchiverConductor.Session
         final int fromTermId,
         final int fromTermOffset,
         final long replayLength,
-        final Publication reply,
+        final ExclusivePublication replay,
+        final ExclusivePublication control,
         final Image image,
         final File archiveFolder,
         final ArchiverProtocolProxy proxy)
@@ -87,7 +89,8 @@ class ReplaySession implements ArchiverConductor.Session
         this.fromTermOffset = fromTermOffset;
         this.replayLength = replayLength;
 
-        this.reply = reply;
+        this.replay = replay;
+        this.control = control;
         this.image = image;
         this.archiveFolder = archiveFolder;
         this.proxy = proxy;
@@ -129,7 +132,7 @@ class ReplaySession implements ArchiverConductor.Session
 
     private int init()
     {
-        if (reply.isClosed())
+        if (replay.isClosed() || control.isClosed())
         {
             // TODO: add counter
             this.state = State.CLOSE;
@@ -137,7 +140,7 @@ class ReplaySession implements ArchiverConductor.Session
         }
 
         // wait until outgoing publications are in place
-        if (!reply.isConnected())
+        if (!replay.isConnected() || !control.isConnected())
         {
             // TODO: introduce some timeout mechanism here to prevent stale requests linger
             return 0;
@@ -215,7 +218,7 @@ class ReplaySession implements ArchiverConductor.Session
         }
         // plumbing is secured, we can kick off the replay
         // TODO: re-split the publications for data/control messages
-        proxy.sendResponse(reply, null);
+        proxy.sendResponse(control, null);
         this.state = State.REPLAY;
         return 1;
     }
@@ -247,9 +250,9 @@ class ReplaySession implements ArchiverConductor.Session
     private int closeOnErr(final Throwable e, final String err)
     {
         this.state = State.CLOSE;
-        if (reply.isConnected())
+        if (control.isConnected())
         {
-            proxy.sendResponse(reply, err);
+            proxy.sendResponse(control, err);
         }
         if (e != null)
         {
@@ -260,11 +263,12 @@ class ReplaySession implements ArchiverConductor.Session
 
     private int replay()
     {
-        final int mtu = reply.maxPayloadLength() - MessageHeaderDecoder.ENCODED_LENGTH;
+        final int mtu = replay.maxPayloadLength() - MessageHeaderDecoder.ENCODED_LENGTH;
 
         try
         {
-            final int readBytes = cursor.readChunk(this::handleChunks, mtu);
+            final StreamInstanceArchiveChunkReader.ChunkHandler handleChunks = this::handleChunks;
+            final int readBytes = cursor.readChunk(handleChunks, mtu);
             if (cursor.isDone())
             {
                 this.state = State.CLOSE;
@@ -279,7 +283,7 @@ class ReplaySession implements ArchiverConductor.Session
 
     private boolean handleChunks(final UnsafeBuffer chunkBuffer, final int chunkOffset, final int chunkLength)
     {
-        final long result = reply.tryClaim(chunkLength + MessageHeaderDecoder.ENCODED_LENGTH,
+        final long result = replay.tryClaim(chunkLength + MessageHeaderDecoder.ENCODED_LENGTH,
             bufferClaim);
         if (result > 0)
         {
@@ -304,7 +308,8 @@ class ReplaySession implements ArchiverConductor.Session
 
     private int close()
     {
-        CloseHelper.quietClose(reply);
+        CloseHelper.quietClose(replay);
+        CloseHelper.quietClose(control);
         CloseHelper.quietClose(cursor);
         this.state = State.DONE;
         return 1;

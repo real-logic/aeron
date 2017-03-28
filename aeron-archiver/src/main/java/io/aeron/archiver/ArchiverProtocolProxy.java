@@ -16,7 +16,7 @@
 
 package io.aeron.archiver;
 
-import io.aeron.Publication;
+import io.aeron.*;
 import io.aeron.archiver.messages.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -26,6 +26,11 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 class ArchiverProtocolProxy
 {
+    @FunctionalInterface
+    interface PublishDirectBufferFunction
+    {
+        long offer(DirectBuffer buffer, int offset, int length);
+    }
     // TODO: replace header usage with constants?
     private final IdleStrategy idleStrategy;
     private final Publication archiverNotifications;
@@ -53,7 +58,16 @@ class ArchiverProtocolProxy
     }
 
 
+    void sendResponse(final ExclusivePublication responsePublication, final String err)
+    {
+        sendResponseF(responsePublication::offer, err);
+    }
     void sendResponse(final Publication responsePublication, final String err)
+    {
+        sendResponseF(responsePublication::offer, err);
+    }
+
+    private void sendResponseF(final PublishDirectBufferFunction responsePublication, final String err)
     {
         outboundHeaderEncoder
             .blockLength(ArchiverResponseEncoder.BLOCK_LENGTH)

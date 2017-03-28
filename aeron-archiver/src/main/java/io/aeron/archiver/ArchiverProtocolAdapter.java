@@ -46,27 +46,37 @@ class ArchiverProtocolAdapter implements FragmentHandler
         switch (templateId)
         {
             case ReplayRequestDecoder.TEMPLATE_ID:
-                // validate image single use
-                final int sessionId1 = header.sessionId();
+            {
+                final int sessionId = header.sessionId();
                 replayRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH, headerDecoder.blockLength(),
                     headerDecoder.version());
 
-                final int replyStreamId1 = replayRequestDecoder.replyStreamId();
-                final String replyChannel = replayRequestDecoder.replyChannel();
+                final int replayStreamId = replayRequestDecoder.replayStreamId();
+                final int controlStreamId = replayRequestDecoder.controlStreamId();
                 final int streamInstanceId = replayRequestDecoder.streamInstanceId();
                 final int termId = replayRequestDecoder.termId();
                 final int termOffset = replayRequestDecoder.termOffset();
-                final long length1 = replayRequestDecoder.length();
+                final long replayLength = replayRequestDecoder.length();
+                final String replayChannel = replayRequestDecoder.replayChannel();
+                final String controlChannel = replayRequestDecoder.controlChannel();
 
-                listener.onReplayStart(sessionId1,
-                    replyStreamId1, replyChannel, streamInstanceId, termId, termOffset,
-                    length1);
+                listener.onReplayStart(
+                    sessionId,
+                    replayStreamId,
+                    replayChannel,
+                    controlStreamId,
+                    controlChannel,
+                    streamInstanceId,
+                    termId,
+                    termOffset,
+                    replayLength);
 
                 break;
-
+            }
             case ArchiveStartRequestDecoder.TEMPLATE_ID:
+            {
                 archiveStartRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -78,7 +88,7 @@ class ArchiverProtocolAdapter implements FragmentHandler
 
                 listener.onArchiveStart(channel1, streamId);
                 break;
-
+            }
             case ArchiveStopRequestDecoder.TEMPLATE_ID:
                 archiveStopRequestDecoder.wrap(
                     buffer,

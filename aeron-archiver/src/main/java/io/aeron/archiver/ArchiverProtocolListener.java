@@ -28,8 +28,10 @@ interface ArchiverProtocolListener
 
     void onReplayStart(
         int sessionId,
-        int replyStreamId,
-        String replyChannel,
+        int replayStreamId,
+        String replayChannel,
+        int controlStreamId,
+        String controlChannel,
         int streamInstanceId,
         int termId,
         int termOffset,

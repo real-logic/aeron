@@ -496,7 +496,7 @@ public class ArchiveAndReplaySystemTest
 
     private void validateArchiveFile(final int messageCount, final int streamInstanceId) throws IOException
     {
-        try(StreamInstanceArchiveFragmentReader archiveDataFileReader =
+        try (StreamInstanceArchiveFragmentReader archiveDataFileReader =
             new StreamInstanceArchiveFragmentReader(streamInstanceId, archiveFolder))
         {
             fragmentCount = 0;

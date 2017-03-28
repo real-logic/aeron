@@ -17,9 +17,8 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.messages.*;
-import io.aeron.logbuffer.ExclusiveBufferClaim;
+import io.aeron.logbuffer.*;
 import org.agrona.*;
-import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.*;
 
@@ -32,23 +31,9 @@ import java.io.*;
  * <li>Validate request parameters and respond with error, or OK message(see {@link ArchiverResponseDecoder})</li>
  * <li>Stream archived data into reply {@link Publication}</li>
  * </ul>
- * TODO: implement open ended replay
  */
-class ReplaySession implements ArchiverConductor.Session
+class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHandler
 {
-    static final long REPLAY_DATA_HEADER;
-
-    static
-    {
-        final MessageHeaderEncoder encoder = new MessageHeaderEncoder();
-        encoder.wrap(new UnsafeBuffer(new byte[8]), 0);
-        encoder.schemaId(ReplayDataDecoder.SCHEMA_ID);
-        encoder.version(ReplayDataDecoder.SCHEMA_VERSION);
-        encoder.blockLength(ReplayDataDecoder.BLOCK_LENGTH);
-        encoder.templateId(ReplayDataDecoder.TEMPLATE_ID);
-        REPLAY_DATA_HEADER = encoder.buffer().getLong(0);
-    }
-
     private enum State
     {
         INIT, REPLAY, CLOSE, DONE
@@ -70,7 +55,7 @@ class ReplaySession implements ArchiverConductor.Session
 
 
     private State state = State.INIT;
-    private StreamInstanceArchiveChunkReader cursor;
+    private StreamInstanceArchiveFragmentReader cursor;
 
     ReplaySession(
         final int streamInstanceId,
@@ -204,10 +189,9 @@ class ReplaySession implements ArchiverConductor.Session
         try
         {
             // TODO: fragement alignment, fragement reader -> exclusive publication
-            cursor = new StreamInstanceArchiveChunkReader(streamInstanceId,
+            cursor = new StreamInstanceArchiveFragmentReader(
+                streamInstanceId,
                 archiveFolder,
-                initialTermId,
-                termBufferLength,
                 fromTermId,
                 fromTermOffset,
                 replayLength);
@@ -263,17 +247,14 @@ class ReplaySession implements ArchiverConductor.Session
 
     private int replay()
     {
-        final int mtu = replay.maxPayloadLength() - MessageHeaderDecoder.ENCODED_LENGTH;
-
         try
         {
-            final StreamInstanceArchiveChunkReader.ChunkHandler handleChunks = this::handleChunks;
-            final int readBytes = cursor.readChunk(handleChunks, mtu);
+            final int polled = cursor.controlledPoll(this, 42);
             if (cursor.isDone())
             {
                 this.state = State.CLOSE;
             }
-            return readBytes;
+            return polled;
         }
         catch (Exception e)
         {
@@ -281,30 +262,6 @@ class ReplaySession implements ArchiverConductor.Session
         }
     }
 
-    private boolean handleChunks(final UnsafeBuffer chunkBuffer, final int chunkOffset, final int chunkLength)
-    {
-        final long result = replay.tryClaim(chunkLength + MessageHeaderDecoder.ENCODED_LENGTH,
-            bufferClaim);
-        if (result > 0)
-        {
-            try
-            {
-                final MutableDirectBuffer buffer = bufferClaim.buffer();
-                final int offset = bufferClaim.offset();
-                buffer.putLong(offset, REPLAY_DATA_HEADER);
-                buffer.putBytes(offset + 8, chunkBuffer, chunkOffset, chunkLength);
-            }
-            finally
-            {
-                bufferClaim.commit();
-            }
-        }
-        else if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
-        {
-            throw new IllegalStateException("Reply publication to replay requestor has shutdown mid-replay");
-        }
-        return result >= 0;
-    }
 
     private int close()
     {
@@ -313,5 +270,43 @@ class ReplaySession implements ArchiverConductor.Session
         CloseHelper.quietClose(cursor);
         this.state = State.DONE;
         return 1;
+    }
+
+    @Override
+    public Action onFragment(
+        final DirectBuffer fragmentBuffer,
+        final int fragmentOffset,
+        final int fragmentLength,
+        final Header header)
+    {
+        if (isDone())
+        {
+            return Action.ABORT;
+        }
+
+        final long result = replay.tryClaim(fragmentLength, bufferClaim);
+        if (result > 0)
+        {
+            try
+            {
+                final MutableDirectBuffer publicationBuffer = bufferClaim.buffer();
+                bufferClaim.flags(header.flags());
+                bufferClaim.reservedValue(header.reservedValue());
+                // TODO: ??? bufferClaim.headerType(header.type()); ???
+
+                final int offset = bufferClaim.offset();
+                publicationBuffer.putBytes(offset, fragmentBuffer, fragmentOffset, fragmentLength);
+            }
+            finally
+            {
+                bufferClaim.commit();
+            }
+            return Action.CONTINUE;
+        }
+        else if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
+        {
+            closeOnErr(null, "Reply publication to replay requestor has shutdown mid-replay");
+        }
+        return Action.ABORT;
     }
 }

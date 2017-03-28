@@ -18,7 +18,7 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.messages.ArchiveDescriptorDecoder;
-import io.aeron.logbuffer.RawBlockHandler;
+import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -105,7 +105,7 @@ public class ImageArchivingSessionTest
     }
 
     @Test
-    public void shouldRecordFragmentsFromImage() throws IOException
+    public void shouldRecordFragmentsFromImage() throws Exception
     {
         final EpochClock epochClock = Mockito.mock(EpochClock.class);
         when(epochClock.time()).thenReturn(42L);
@@ -160,18 +160,24 @@ public class ImageArchivingSessionTest
 
 
         // data exists and is as expected
-        final File archiveDataFile = new File(tempFolderForTest,
+        final File archiveDataFile = new File(
+            tempFolderForTest,
             archiveDataFileName(session.streamInstanceId(), 0));
         Assert.assertTrue(archiveDataFile.exists());
-        final StreamInstanceArchiveFragmentReader
-            reader = new StreamInstanceArchiveFragmentReader(session.streamInstanceId(), tempFolderForTest);
-        final int polled = reader.poll((buffer, offset, length, header) ->
+
+        try (StreamInstanceArchiveFragmentReader
+                 reader = new StreamInstanceArchiveFragmentReader(session.streamInstanceId(), tempFolderForTest))
         {
-            Assert.assertEquals(100, header.frameLength());
-            Assert.assertEquals(termOffset + DataHeaderFlyweight.HEADER_LENGTH, offset);
-            Assert.assertEquals(100 - DataHeaderFlyweight.HEADER_LENGTH, length);
-        });
-        Assert.assertEquals(1, polled);
+            final int polled = reader.controlledPoll((buffer, offset, length, header) ->
+            {
+                Assert.assertEquals(100, header.frameLength());
+                Assert.assertEquals(termOffset + DataHeaderFlyweight.HEADER_LENGTH, offset);
+                Assert.assertEquals(100 - DataHeaderFlyweight.HEADER_LENGTH, length);
+                return ControlledFragmentHandler.Action.CONTINUE;
+            }, 1);
+            Assert.assertEquals(1, polled);
+        }
+
         // next poll has no data
         when(image.rawPoll(any(), anyInt())).thenReturn(0);
         Assert.assertEquals("Expect no work", 0, session.doWork());

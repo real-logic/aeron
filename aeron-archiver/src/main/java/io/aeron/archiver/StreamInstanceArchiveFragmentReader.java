@@ -19,6 +19,7 @@ package io.aeron.archiver;
 
 import io.aeron.archiver.messages.ArchiveDescriptorDecoder;
 import io.aeron.logbuffer.*;
+import io.aeron.logbuffer.ControlledFragmentHandler.Action;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -29,24 +30,26 @@ import java.nio.channels.FileChannel;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
 
-/**
- * TODO: Make {@link AutoCloseable}
- * TODO: Is this useful beyond testing?
- * TODO: More closely reflect {@link io.aeron.Image} API
- */
-class StreamInstanceArchiveFragmentReader
+class StreamInstanceArchiveFragmentReader implements AutoCloseable
 {
     private final int streamInstanceId;
     private final File archiveFolder;
     private final int initialTermId;
     private final int termBufferLength;
     private final int initialTermOffset;
-    private final int lastTermId;
-    private final int lastTermOffset;
     private final long fullLength;
-    private final int termId;
-    private final int termOffset;
-    private final long length;
+    private final int fromTermId;
+    private final int fromTermOffset;
+    private final long replayLength;
+
+    private int archiveFileIndex;
+    private RandomAccessFile currentDataFile = null;
+    private FileChannel currentDataChannel = null;
+    private UnsafeBuffer termMappedUnsafeBuffer = null;
+    private int archiveTermStartOffset;
+    private int fragmentOffset;
+    private Header fragmentHeader;
+    private long transmitted = 0;
 
     StreamInstanceArchiveFragmentReader(final int streamInstanceId, final File archiveFolder) throws IOException
     {
@@ -59,13 +62,12 @@ class StreamInstanceArchiveFragmentReader
         termBufferLength = metaDecoder.termBufferLength();
         initialTermId = metaDecoder.initialTermId();
         initialTermOffset = metaDecoder.initialTermOffset();
-        lastTermId = metaDecoder.lastTermId();
-        lastTermOffset = metaDecoder.lastTermOffset();
         fullLength = ArchiveFileUtil.archiveFullLength(metaDecoder);
         IoUtil.unmap(metaDecoder.buffer().byteBuffer());
-        termId = initialTermId;
-        termOffset = initialTermOffset;
-        length = fullLength;
+        fromTermId = initialTermId;
+        fromTermOffset = initialTermOffset;
+        replayLength = fullLength;
+        initCursorState();
     }
 
     StreamInstanceArchiveFragmentReader(
@@ -77,9 +79,9 @@ class StreamInstanceArchiveFragmentReader
     {
         this.streamInstanceId = streamInstanceId;
         this.archiveFolder = archiveFolder;
-        this.termId = termId;
-        this.termOffset = termOffset;
-        this.length = length;
+        this.fromTermId = termId;
+        this.fromTermOffset = termOffset;
+        this.replayLength = length;
         final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
         final File archiveMetaFile = new File(archiveFolder, archiveMetaFileName);
         final ArchiveDescriptorDecoder metaDecoder =
@@ -87,126 +89,145 @@ class StreamInstanceArchiveFragmentReader
         termBufferLength = metaDecoder.termBufferLength();
         initialTermId = metaDecoder.initialTermId();
         initialTermOffset = metaDecoder.initialTermOffset();
-        lastTermId = metaDecoder.lastTermId();
-        lastTermOffset = metaDecoder.lastTermOffset();
         fullLength = ArchiveFileUtil.archiveFullLength(metaDecoder);
         IoUtil.unmap(metaDecoder.buffer().byteBuffer());
+        initCursorState();
     }
 
-    int poll(final FragmentHandler fragmentHandler) throws IOException
+    private void initCursorState() throws IOException
     {
-        return poll(fragmentHandler, initialTermId, initialTermOffset, fullLength);
-    }
-
-    int poll(
-        final FragmentHandler fragmentHandler,
-        final int fromTermId,
-        final int fromTermOffset,
-        final long replayLength) throws IOException
-    {
-        int polled = 0;
-        long transmitted = 0;
-        int archiveFileIndex = ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, fromTermId);
+        archiveFileIndex = ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, fromTermId);
         final int archiveOffset =
             ArchiveFileUtil.archiveOffset(fromTermOffset, fromTermId, initialTermId, termBufferLength);
+        archiveTermStartOffset = archiveOffset - fromTermOffset;
+        openArchiveFile();
+        termMappedUnsafeBuffer =
+            new UnsafeBuffer(currentDataChannel.map(FileChannel.MapMode.READ_ONLY,
+                archiveTermStartOffset,
+                termBufferLength));
+
+        fragmentHeader = new Header(initialTermId, Integer.numberOfLeadingZeros(termBufferLength));
+        fragmentHeader.buffer(termMappedUnsafeBuffer);
+
+        // TODO: align first fragment
+        fragmentOffset = archiveOffset & (termBufferLength - 1);
+    }
+
+    int controlledPoll(final ControlledFragmentHandler fragmentHandler, final int fragmentLimit) throws IOException
+    {
+        if (isDone())
+        {
+            return 0;
+        }
+
+        int polled = 0;
+
+
+        // read to end of term or requested data
+        while (fragmentOffset < termBufferLength &&
+               !isDone() &&
+               polled < fragmentLimit)
+        {
+            fragmentHeader.offset(fragmentOffset);
+            final int frameLength = fragmentHeader.frameLength();
+            if (frameLength <= 0)
+            {
+                final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
+                headerFlyweight.wrap(termMappedUnsafeBuffer, fragmentOffset, DataHeaderFlyweight.HEADER_LENGTH);
+                throw new IllegalStateException("Broken frame with length <= 0: " + headerFlyweight);
+            }
+
+            if (fragmentHeader.type() == PADDING_FRAME_TYPE)
+            {
+                return 0;
+            }
+
+            final int fragmentDataOffset = fragmentOffset + DataHeaderFlyweight.DATA_OFFSET;
+            final int fragmentDataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
+            final Action action = fragmentHandler.onFragment(
+                termMappedUnsafeBuffer,
+                fragmentDataOffset,
+                fragmentDataLength,
+                fragmentHeader);
+            if (action.equals(Action.ABORT))
+            {
+                return polled;
+            }
+            // move to next fragment
+            polled++;
+            final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
+            transmitted += alignedLength;
+            fragmentOffset += alignedLength;
+        }
+
+        if (!isDone() && fragmentOffset == termBufferLength)
+        {
+            fragmentOffset = 0;
+            archiveTermStartOffset += termBufferLength;
+
+            // rotate file
+            if (archiveTermStartOffset == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
+            {
+                closeArchiveFile();
+                archiveFileIndex++;
+                openArchiveFile();
+                archiveTermStartOffset = 0;
+            }
+            else
+            {
+                unmapTermBuffer();
+            }
+            // rotate term
+            termMappedUnsafeBuffer.wrap(currentDataChannel.map(
+                FileChannel.MapMode.READ_ONLY,
+                archiveTermStartOffset,
+                termBufferLength));
+            fragmentHeader.buffer(termMappedUnsafeBuffer);
+        }
+        return polled;
+    }
+
+    private void unmapTermBuffer()
+    {
+        if (termMappedUnsafeBuffer != null)
+        {
+            IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
+        }
+    }
+
+    private void closeArchiveFile()
+    {
+        unmapTermBuffer();
+        CloseHelper.quietClose(currentDataChannel);
+        CloseHelper.quietClose(currentDataFile);
+    }
+
+    private void openArchiveFile() throws IOException
+    {
         final String archiveDataFileName =
             ArchiveFileUtil.archiveDataFileName(streamInstanceId, archiveFileIndex);
         final File archiveDataFile = new File(archiveFolder, archiveDataFileName);
 
         if (!archiveDataFile.exists())
         {
-            throw new IllegalStateException(archiveDataFile.getAbsolutePath() + " not found");
+            throw new IOException(archiveDataFile.getAbsolutePath() + " not found");
         }
 
-        RandomAccessFile currentDataFile = null;
-        FileChannel currentDataChannel = null;
-        UnsafeBuffer termMappedUnsafeBuffer = null;
-        try
-        {
-            currentDataFile = new RandomAccessFile(archiveDataFile, "r");
-            currentDataChannel = currentDataFile.getChannel();
-            int archiveTermStartOffset = archiveOffset - fromTermOffset;
-            termMappedUnsafeBuffer =
-                new UnsafeBuffer(currentDataChannel.map(FileChannel.MapMode.READ_ONLY,
-                    archiveTermStartOffset,
-                    termBufferLength));
-            int fragmentOffset = archiveOffset & (termBufferLength - 1);
-            while (true)
-            {
-                final Header fragmentHeader =
-                    new Header(initialTermId, Integer.numberOfLeadingZeros(termBufferLength));
-                fragmentHeader.buffer(termMappedUnsafeBuffer);
+        currentDataFile = new RandomAccessFile(archiveDataFile, "r");
+        currentDataChannel = currentDataFile.getChannel();
+    }
 
-                // read to end of term or requested data
-                while (fragmentOffset < termBufferLength && transmitted < replayLength)
-                {
-                    fragmentHeader.offset(fragmentOffset);
-                    final int frameLength = fragmentHeader.frameLength();
-                    polled += readFragment(
-                        fragmentHandler,
-                        termMappedUnsafeBuffer,
-                        fragmentOffset,
-                        frameLength,
-                        fragmentHeader);
-                    final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
-                    transmitted += alignedLength;
-                    fragmentOffset += alignedLength;
-                }
-
-                if (transmitted >= replayLength)
-                {
-                    return polled;
-                }
-                fragmentOffset = 0;
-                archiveTermStartOffset += termBufferLength;
-
-                if (archiveTermStartOffset == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
-                {
-                    // roll file
-                    archiveTermStartOffset = 0;
-                    archiveFileIndex++;
-                    final String archiveDataFileNameN =
-                        ArchiveFileUtil.archiveDataFileName(streamInstanceId, archiveFileIndex);
-                    final File archiveDataFileN = new File(archiveFolder, archiveDataFileNameN);
-
-                    if (!archiveDataFileN.exists())
-                    {
-                        throw new IllegalStateException(archiveDataFileN.getAbsolutePath() + " not found");
-                    }
-                    IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
-                    CloseHelper.quietClose(currentDataChannel);
-                    CloseHelper.quietClose(currentDataFile);
-
-                    currentDataFile = new RandomAccessFile(archiveDataFileN, "r");
-                    currentDataChannel = currentDataFile.getChannel();
-                }
-                else
-                {
-                    IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
-                }
-                // roll term
-                termMappedUnsafeBuffer.wrap(currentDataChannel.map(FileChannel.MapMode.READ_ONLY,
-                    archiveTermStartOffset,
-                    termBufferLength));
-            }
-        }
-        finally
-        {
-            if (termMappedUnsafeBuffer != null)
-            {
-                IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
-            }
-            CloseHelper.quietClose(currentDataChannel);
-            CloseHelper.quietClose(currentDataFile);
-
-        }
+    boolean isDone()
+    {
+        return transmitted >= replayLength;
     }
 
     private int readFragment(
-        final FragmentHandler fragmentHandler,
+        final ControlledFragmentHandler fragmentHandler,
         final UnsafeBuffer termMappedUnsafeBuffer,
         final int fragmentOffset,
-        final int frameLength, final Header fragmentHeader)
+        final int frameLength,
+        final Header fragmentHeader)
     {
         if (frameLength <= 0)
         {
@@ -214,17 +235,33 @@ class StreamInstanceArchiveFragmentReader
             headerFlyweight.wrap(termMappedUnsafeBuffer, fragmentOffset, DataHeaderFlyweight.HEADER_LENGTH);
             throw new IllegalStateException("Broken frame with length <= 0: " + headerFlyweight);
         }
-        if (fragmentHeader.type() != PADDING_FRAME_TYPE)
+
+        if (fragmentHeader.type() == PADDING_FRAME_TYPE)
         {
-            final int fragmentDataOffset = fragmentOffset + DataHeaderFlyweight.DATA_OFFSET;
-            final int fragmentDataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
-            fragmentHandler.onFragment(
-                termMappedUnsafeBuffer,
-                fragmentDataOffset,
-                fragmentDataLength,
-                fragmentHeader);
+            return 0;
+        }
+
+        final int fragmentDataOffset = fragmentOffset + DataHeaderFlyweight.DATA_OFFSET;
+        final int fragmentDataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
+        final Action action = fragmentHandler.onFragment(
+            termMappedUnsafeBuffer,
+            fragmentDataOffset,
+            fragmentDataLength,
+            fragmentHeader);
+        if (action.equals(Action.ABORT))
+        {
+            return -1;
+        }
+        else
+        {
             return 1;
         }
-        return 0;
+
+
+    }
+
+    public void close()
+    {
+        closeArchiveFile();
     }
 }

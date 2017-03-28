@@ -486,9 +486,7 @@ public class ArchiveAndReplaySystemTest
             {
                 poll(replay, (termBuffer, termOffset, chunkLength, header) ->
                 {
-                    Assert.assertEquals(ReplaySession.REPLAY_DATA_HEADER, termBuffer.getLong(termOffset));
-                    validateFragmentsInChunk(mHeader, messageCount,
-                                             termBuffer, termOffset + 8, chunkLength - 8);
+                    validateFragment(termBuffer, termOffset, chunkLength, header);
                 }, 1, TIMEOUT);
             }
             Assert.assertEquals(messageCount, fragmentCount);
@@ -502,18 +500,24 @@ public class ArchiveAndReplaySystemTest
             new StreamInstanceArchiveFragmentReader(streamInstanceId, archiveFolder);
         fragmentCount = 0;
         remaining = totalDataLength;
-        archiveDataFileReader.poll(
-            (bb, offset, length, header) ->
-            {
-                Assert.assertEquals(
-                    fragmentLength[fragmentCount] - DataHeaderFlyweight.HEADER_LENGTH, length);
-                Assert.assertEquals(fragmentCount, bb.getInt(offset));
-                Assert.assertEquals('z', bb.getByte(offset + 4));
-                remaining -= fragmentLength[fragmentCount];
-                fragmentCount++;
-            });
+        archiveDataFileReader.controlledPoll(this::validateFragment, messageCount);
         Assert.assertEquals(0, remaining);
         Assert.assertEquals(messageCount, fragmentCount);
+    }
+
+    private ControlledFragmentHandler.Action validateFragment(
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final Header header)
+    {
+        Assert.assertEquals(
+            fragmentLength[fragmentCount] - DataHeaderFlyweight.HEADER_LENGTH, length);
+        Assert.assertEquals(fragmentCount, buffer.getInt(offset));
+        Assert.assertEquals('z', buffer.getByte(offset + 4));
+        remaining -= fragmentLength[fragmentCount];
+        fragmentCount++;
+        return ControlledFragmentHandler.Action.CONTINUE;
     }
 
     private void validateArchiveFileChunked(final int messageCount, final int streamInstanceId) throws IOException

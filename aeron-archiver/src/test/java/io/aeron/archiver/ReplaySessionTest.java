@@ -17,7 +17,6 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
-import io.aeron.archiver.messages.MessageHeaderDecoder;
 import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
@@ -110,15 +109,19 @@ public class ReplaySessionTest
                 return true;
             }, 1024);
         }
-        final StreamInstanceArchiveFragmentReader reader =
-            new StreamInstanceArchiveFragmentReader(STREAM_INSTANCE_ID, archiveFolder);
 
-        final int polled = reader.poll((b, offset, length, h) ->
+        try (StreamInstanceArchiveFragmentReader reader =
+            new StreamInstanceArchiveFragmentReader(STREAM_INSTANCE_ID, archiveFolder))
         {
-            Assert.assertEquals(offset, INITIAL_TERM_OFFSET + DataHeaderFlyweight.HEADER_LENGTH);
-            Assert.assertEquals(length, 1024 - DataHeaderFlyweight.HEADER_LENGTH);
-        });
-        Assert.assertEquals(1, polled);
+
+            final int polled = reader.controlledPoll((b, offset, length, h) ->
+            {
+                Assert.assertEquals(offset, INITIAL_TERM_OFFSET + DataHeaderFlyweight.HEADER_LENGTH);
+                Assert.assertEquals(length, 1024 - DataHeaderFlyweight.HEADER_LENGTH);
+                return ControlledFragmentHandler.Action.CONTINUE;
+            }, 1);
+            Assert.assertEquals(1, polled);
+        }
     }
 
     @After
@@ -159,7 +162,8 @@ public class ReplaySessionTest
         Assert.assertNotEquals(0, replaySession.doWork());
         Mockito.verify(proxy, times(1)).sendResponse(control, null);
 
-        final UnsafeBuffer mockTermBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
+        final UnsafeBuffer mockTermBuffer =
+            new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
         when(replay.tryClaim(anyInt(), any(ExclusiveBufferClaim.class))).then(invocation ->
         {
             final int claimedSize = invocation.getArgument(0);
@@ -168,13 +172,10 @@ public class ReplaySessionTest
             messageIndex++;
             return (long) claimedSize;
         });
-        when(replay.maxPayloadLength()).thenReturn(4096);
         Assert.assertNotEquals(0, replaySession.doWork());
         Assert.assertTrue(messageIndex > 0);
-        Assert.assertEquals(ReplaySession.REPLAY_DATA_HEADER,
-            mockTermBuffer.getLong(DataHeaderFlyweight.HEADER_LENGTH));
-        Assert.assertEquals(1024, mockTermBuffer.getInt(0) -
-                                  (DataHeaderFlyweight.HEADER_LENGTH + MessageHeaderDecoder.ENCODED_LENGTH));
+        Assert.assertEquals(1024, mockTermBuffer.getInt(0));
+        // TODO: add validation for reserved value and flags
 
         Assert.assertTrue(replaySession.isDone());
 

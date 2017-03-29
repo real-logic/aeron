@@ -505,8 +505,8 @@ public class ExclusivePublication implements AutoCloseable
     {
         if (length > maxPayloadLength)
         {
-            throw new IllegalArgumentException(String.format(
-                "Claim exceeds maxPayloadLength of %d, length=%d", maxPayloadLength, length));
+            throw new IllegalArgumentException(
+                "Claim exceeds maxPayloadLength of " + maxPayloadLength + ", length=" + length);
         }
     }
 
@@ -514,8 +514,8 @@ public class ExclusivePublication implements AutoCloseable
     {
         if (length > maxMessageLength)
         {
-            throw new IllegalArgumentException(String.format(
-                "Encoded message exceeds maxMessageLength of %d, length=%d", maxMessageLength, length));
+            throw new IllegalArgumentException(
+                "Message exceeds maxMessageLength of " + maxMessageLength + ", length=" + length);
         }
     }
 

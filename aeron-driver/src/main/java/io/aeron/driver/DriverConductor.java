@@ -44,7 +44,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.CLIENT_KEEP_ALIVES;
 import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
 import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_COMMANDS;
 import static io.aeron.ErrorCode.*;
-import static io.aeron.logbuffer.FrameDescriptor.computeMaxMessageLength;
+import static io.aeron.logbuffer.FrameDescriptor.computeExclusiveMaxMessageLength;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
@@ -818,7 +818,7 @@ public class DriverConductor implements Agent
         initialiseTailWithTermId(logMetaData, 0, initialTermId);
         initialTermId(logMetaData, initialTermId);
 
-        mtuLength(logMetaData, computeMaxMessageLength(termBufferLength));
+        mtuLength(logMetaData, computeExclusiveMaxMessageLength(termBufferLength));
         correlationId(logMetaData, registrationId);
         timeOfLastStatusMessage(logMetaData, 0);
 

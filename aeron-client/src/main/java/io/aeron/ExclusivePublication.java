@@ -103,7 +103,7 @@ public class ExclusivePublication implements AutoCloseable
 
         final int termLength = logBuffers.termLength();
         this.maxPayloadLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
-        this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(termLength);
+        this.maxMessageLength = FrameDescriptor.computeExclusiveMaxMessageLength(termLength);
         this.conductor = clientConductor;
         this.channel = channel;
         this.streamId = streamId;

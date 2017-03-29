@@ -112,12 +112,12 @@ public class LogBuffers implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(fileChannel);
-
         for (final MappedByteBuffer buffer : mappedByteBuffers)
         {
             IoUtil.unmap(buffer);
         }
+
+        CloseHelper.close(fileChannel);
     }
 
     public int termLength()

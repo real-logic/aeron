@@ -111,7 +111,7 @@ class ClientConductor implements Agent, DriverListener
             activePublications.close();
             activeSubscriptions.close();
 
-            Thread.yield();
+            Aeron.sleep(1);
 
             for (int i = 0, size = lingeringResources.size(); i < size; i++)
             {

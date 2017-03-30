@@ -57,6 +57,10 @@ public class TermReader
         int fragmentsRead = 0;
         int offset = termOffset;
         final int capacity = termBuffer.capacity();
+        if (header.buffer() != termBuffer)
+        {
+            header.buffer(termBuffer);
+        }
 
         try
         {
@@ -73,7 +77,6 @@ public class TermReader
 
                 if (!isPaddingFrame(termBuffer, frameOffset))
                 {
-                    header.buffer(termBuffer);
                     header.offset(frameOffset);
 
                     handler.onFragment(termBuffer, frameOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH, header);

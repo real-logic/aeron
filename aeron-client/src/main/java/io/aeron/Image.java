@@ -247,7 +247,10 @@ public class Image
         int resultingOffset = initialOffset;
         int fragmentsRead = 0;
         final UnsafeBuffer termBuffer = activeTermBuffer(initialPosition);
-        header.buffer(termBuffer);
+        if (header.buffer() != termBuffer)
+        {
+            header.buffer(termBuffer);
+        }
 
         try
         {
@@ -306,6 +309,7 @@ public class Image
         {
             updatePosition(initialPosition, initialOffset, resultingOffset);
         }
+
         return fragmentsRead;
     }
 

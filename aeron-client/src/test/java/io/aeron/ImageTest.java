@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.logbuffer.*;
+import io.aeron.logbuffer.ControlledFragmentHandler.Action;
 import io.aeron.protocol.*;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -193,7 +194,7 @@ public class ImageTest
         insertDataFrame(INITIAL_TERM_ID, offsetForFrame(0));
 
         when(mockControlledFragmentHandler.onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class)))
-            .thenReturn(ControlledFragmentHandler.Action.CONTINUE);
+            .thenReturn(Action.CONTINUE);
 
         final int fragmentsRead = image.controlledPoll(mockControlledFragmentHandler, Integer.MAX_VALUE);
 
@@ -275,7 +276,7 @@ public class ImageTest
         insertDataFrame(INITIAL_TERM_ID, offsetForFrame(0));
 
         when(mockControlledFragmentHandler.onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class)))
-            .thenReturn(ControlledFragmentHandler.Action.ABORT);
+            .thenReturn(Action.ABORT);
 
         final int fragmentsRead = image.controlledPoll(mockControlledFragmentHandler, Integer.MAX_VALUE);
 
@@ -297,7 +298,7 @@ public class ImageTest
         insertDataFrame(INITIAL_TERM_ID, offsetForFrame(1));
 
         when(mockControlledFragmentHandler.onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class)))
-            .thenReturn(ControlledFragmentHandler.Action.BREAK);
+            .thenReturn(Action.BREAK);
 
         final int fragmentsRead = image.controlledPoll(mockControlledFragmentHandler, Integer.MAX_VALUE);
 
@@ -320,7 +321,7 @@ public class ImageTest
         insertDataFrame(INITIAL_TERM_ID, offsetForFrame(1));
 
         when(mockControlledFragmentHandler.onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class)))
-            .thenReturn(ControlledFragmentHandler.Action.COMMIT);
+            .thenReturn(Action.COMMIT);
 
         final int fragmentsRead = image.controlledPoll(mockControlledFragmentHandler, Integer.MAX_VALUE);
 
@@ -337,6 +338,45 @@ public class ImageTest
     }
 
     @Test
+    public void shouldUpdatePositionToEndOfCommittedFragmentOnCommit()
+    {
+        final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        position.setOrdered(initialPosition);
+        final Image image = createImage();
+
+        insertDataFrame(INITIAL_TERM_ID, offsetForFrame(0));
+        insertDataFrame(INITIAL_TERM_ID, offsetForFrame(1));
+        insertDataFrame(INITIAL_TERM_ID, offsetForFrame(2));
+
+        when(mockControlledFragmentHandler.onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class)))
+            .thenReturn(Action.CONTINUE, Action.COMMIT, Action.CONTINUE);
+
+        final int fragmentsRead = image.controlledPoll(mockControlledFragmentHandler, Integer.MAX_VALUE);
+
+        assertThat(fragmentsRead, is(3));
+
+        final InOrder inOrder = Mockito.inOrder(position, mockControlledFragmentHandler);
+        // first fragment, continue
+        inOrder.verify(mockControlledFragmentHandler).onFragment(
+            any(UnsafeBuffer.class), eq(HEADER_LENGTH), eq(DATA.length), any(Header.class));
+
+        // second fragment, commit
+        inOrder.verify(mockControlledFragmentHandler).onFragment(
+            any(UnsafeBuffer.class),
+            eq(ALIGNED_FRAME_LENGTH + HEADER_LENGTH),
+            eq(DATA.length),
+            any(Header.class));
+        inOrder.verify(position).setOrdered(initialPosition + (ALIGNED_FRAME_LENGTH * 2));
+
+        // third fragment, continue, but position is updated because last
+        inOrder.verify(mockControlledFragmentHandler).onFragment(
+            any(UnsafeBuffer.class),
+            eq(2 * ALIGNED_FRAME_LENGTH + HEADER_LENGTH),
+            eq(DATA.length),
+            any(Header.class));
+        inOrder.verify(position).setOrdered(initialPosition + (ALIGNED_FRAME_LENGTH * 3));
+    }
+    @Test
     public void shouldPollFragmentsToControlledFragmentHandlerOnContinue()
     {
         final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
@@ -347,7 +387,7 @@ public class ImageTest
         insertDataFrame(INITIAL_TERM_ID, offsetForFrame(1));
 
         when(mockControlledFragmentHandler.onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class)))
-            .thenReturn(ControlledFragmentHandler.Action.CONTINUE);
+            .thenReturn(Action.CONTINUE);
 
         final int fragmentsRead = image.controlledPoll(mockControlledFragmentHandler, Integer.MAX_VALUE);
 

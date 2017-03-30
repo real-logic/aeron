@@ -257,6 +257,11 @@ public final class Aeron implements AutoCloseable
      */
     public long nextCorrelationId()
     {
+        if (conductor.status() != ClientConductor.Status.ACTIVE)
+        {
+            throw new IllegalStateException("Client is closed");
+        }
+
         return commandBuffer.nextCorrelationId();
     }
 
@@ -267,6 +272,11 @@ public final class Aeron implements AutoCloseable
      */
     public CountersReader countersReader()
     {
+        if (conductor.status() != ClientConductor.Status.ACTIVE)
+        {
+            throw new IllegalStateException("Client is closed");
+        }
+
         return countersReader;
     }
 

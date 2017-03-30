@@ -53,7 +53,7 @@ class ClientConductor implements Agent, DriverListener
     private long timeOfLastCheckResourcesNs;
     private long timeOfLastWorkNs;
     private boolean isDriverActive = true;
-    private Status status = ACTIVE;
+    private volatile Status status = ACTIVE;
 
     private final Lock lock = new ReentrantLock();
     private final Aeron.Context ctx;
@@ -133,7 +133,7 @@ class ClientConductor implements Agent, DriverListener
         {
             try
             {
-                if (CLOSED != status)
+                if (ACTIVE == status)
                 {
                     workCount = doWork(NO_CORRELATION_ID, null);
                 }
@@ -150,6 +150,11 @@ class ClientConductor implements Agent, DriverListener
     public String roleName()
     {
         return "aeron-client-conductor";
+    }
+
+    Status status()
+    {
+        return status;
     }
 
     Lock clientLock()

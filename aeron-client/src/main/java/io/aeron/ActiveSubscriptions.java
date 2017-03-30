@@ -18,19 +18,15 @@ package io.aeron;
 import org.agrona.collections.Int2ObjectHashMap;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.function.Consumer;
-
-import static java.util.stream.Collectors.toList;
 
 class ActiveSubscriptions
 {
-    private final Int2ObjectHashMap<List<Subscription>> subscriptionsByStreamIdMap = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<ArrayList<Subscription>> subscriptionsByStreamIdMap = new Int2ObjectHashMap<>();
 
     public void forEach(final int streamId, final Consumer<Subscription> consumer)
     {
-        final List<Subscription> subscriptions = subscriptionsByStreamIdMap.get(streamId);
+        final ArrayList<Subscription> subscriptions = subscriptionsByStreamIdMap.get(streamId);
         if (null != subscriptions)
         {
             subscriptions.forEach(consumer);
@@ -47,7 +43,7 @@ class ActiveSubscriptions
     public void remove(final Subscription subscription)
     {
         final int streamId = subscription.streamId();
-        final List<Subscription> subscriptions = subscriptionsByStreamIdMap.get(streamId);
+        final ArrayList<Subscription> subscriptions = subscriptionsByStreamIdMap.get(streamId);
 
         if (null != subscriptions && subscriptions.remove(subscription) && subscriptions.isEmpty())
         {
@@ -57,11 +53,14 @@ class ActiveSubscriptions
 
     public void close()
     {
-        subscriptionsByStreamIdMap
-            .values()
-            .stream()
-            .flatMap(Collection::stream)
-            .collect(toList())
-            .forEach(Subscription::release);
+        for (final ArrayList<Subscription> subscriptions : subscriptionsByStreamIdMap.values())
+        {
+            for (int i = 0, size = subscriptions.size(); i < size; i++)
+            {
+                subscriptions.get(i).forceClose();
+            }
+        }
+
+        subscriptionsByStreamIdMap.clear();
     }
 }

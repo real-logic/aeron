@@ -225,7 +225,11 @@ public class ExclusivePublication implements AutoCloseable
         conductor.clientLock().lock();
         try
         {
-            release();
+            if (!isClosed)
+            {
+                isClosed = true;
+                conductor.releasePublication(this);
+            }
         }
         finally
         {
@@ -244,14 +248,15 @@ public class ExclusivePublication implements AutoCloseable
     }
 
     /**
-     * Release resources and forcibly close the Publication regardless of reference count.
+     * Forcibly close the Publication and release resources
      */
-    void release()
+    void forceClose()
     {
         if (!isClosed)
         {
             isClosed = true;
-            conductor.releasePublication(this);
+            conductor.asyncReleasePublication(registrationId);
+            conductor.lingerResource(managedResource());
         }
     }
 

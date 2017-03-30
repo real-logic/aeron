@@ -28,7 +28,6 @@ import java.util.concurrent.locks.*;
 
 import static io.aeron.ClientConductor.Status.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Client conductor takes responses and notifications from Media Driver and acts on them in addition to forwarding
@@ -103,18 +102,23 @@ class ClientConductor implements Agent, DriverListener
         {
             status = CLOSING;
 
-            activeExclusivePublications
-                .values()
-                .stream()
-                .collect(toList())
-                .forEach(ExclusivePublication::release);
+            for (final ExclusivePublication publication : activeExclusivePublications.values())
+            {
+                publication.forceClose();
+            }
+            activeExclusivePublications.clear();
 
             activePublications.close();
             activeSubscriptions.close();
 
             Thread.yield();
 
-            lingeringResources.forEach(ManagedResource::delete);
+            for (int i = 0, size = lingeringResources.size(); i < size; i++)
+            {
+                lingeringResources.get(i).delete();
+            }
+            lingeringResources.clear();
+
             ctx.close();
 
             status = CLOSED;
@@ -206,6 +210,11 @@ class ClientConductor implements Agent, DriverListener
         }
     }
 
+    void asyncReleasePublication(final long registrationId)
+    {
+        driverProxy.removePublication(registrationId);
+    }
+
     Subscription addSubscription(final String channel, final int streamId)
     {
         verifyActive();
@@ -242,9 +251,14 @@ class ClientConductor implements Agent, DriverListener
     {
         verifyActive();
 
-        awaitResponse(driverProxy.removeSubscription(subscription.registrationId()), subscription.channel());
+        awaitResponse(driverProxy.removeSubscription(subscription.registrationId()), null);
 
         activeSubscriptions.remove(subscription);
+    }
+
+    void asyncReleaseSubscription(final Subscription subscription)
+    {
+        driverProxy.removeSubscription(subscription.registrationId());
     }
 
     void addDestination(final long registrationId, final String endpointChannel)

@@ -19,7 +19,6 @@ import org.agrona.collections.Int2ObjectHashMap;
 
 import java.util.*;
 
-import static java.util.stream.Collectors.toList;
 import static org.agrona.collections.CollectionUtil.getOrDefault;
 
 /**
@@ -67,11 +66,14 @@ class ActivePublications
 
     public void close()
     {
-        publicationsByChannelMap
-            .values()
-            .stream()
-            .flatMap((publicationByStreamIdMap) -> publicationByStreamIdMap.values().stream())
-            .collect(toList())
-            .forEach(Publication::release);
+        for (final Int2ObjectHashMap<Publication> publications : publicationsByChannelMap.values())
+        {
+            for (final Publication publication : publications.values())
+            {
+                publication.forceClose();
+            }
+        }
+
+        publicationsByChannelMap.clear();
     }
 }

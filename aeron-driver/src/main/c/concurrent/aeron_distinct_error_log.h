@@ -21,7 +21,9 @@
 #include <stddef.h>
 #include <stdatomic.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include "aeronmd.h"
+#include "util/aeron_bitutil.h"
 
 #pragma pack(push)
 #pragma pack(4)

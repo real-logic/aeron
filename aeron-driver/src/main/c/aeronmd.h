@@ -18,39 +18,13 @@
 #define AERON_AERONMD_H
 
 #include <stdbool.h>
-#include <stdint.h>
-#include "util/aeron_bitutil.h"
 
-#define AERON_MAX_PATH (256)
-#define AERON_CNC_FILE "cnc.dat"
-#define AERON_CNC_VERSION (6)
+typedef struct aeron_driver_context_stct aeron_driver_context_t;
+typedef struct aeron_driver_stct aeron_driver_t;
 
-#pragma pack(push)
-#pragma pack(4)
-typedef struct aeron_cnc_metadata_stct
-{
-    int32_t cnc_version;
-    int32_t to_driver_buffer_length;
-    int32_t to_clients_buffer_length;
-    int32_t counter_metadata_buffer_length;
-    int32_t counter_values_buffer_length;
-    int64_t client_liveness_timeout;
-    int32_t error_log_buffer_length;
-}
-aeron_cnc_metadata_t;
-#pragma pack(pop)
-
-#define AERON_CNC_VERSION_AND_META_DATA_LENGTH (AERON_ALIGN(sizeof(aeron_cnc_metadata_t), AERON_CACHE_LINE_LENGTH * 2))
-
-typedef int64_t (*aeron_clock_func_t)();
-
-typedef enum aeron_threading_mode_enum
-{
-    AERON_THREADING_MODE_DEDICATED,
-    AERON_THREADING_MODE_SHARED_NETWORK,
-    AERON_THREADING_MODE_SHARED
-}
-aeron_threading_mode_t;
+/*
+ * Public API for embedding driver.
+ */
 
 #define AERON_DIR_ENV_VAR "AERON_DIR"
 #define AERON_THREADING_MODE_ENV_VAR "AERON_THREADING_MODE"
@@ -61,107 +35,27 @@ aeron_threading_mode_t;
 #define AERON_ERROR_BUFFER_LENGTH_ENV_VAR "AERON_ERROR_BUFFER_LENGTH"
 #define AERON_CLIENT_LIVENESS_TIMEOUT_ENV_VAR "AERON_CLIENT_LIVENESS_TIMEOUT"
 
-typedef struct aeron_mpsc_rb_stct aeron_mpsc_rb_t;
-typedef struct aeron_distinct_error_log_stct aeron_distinct_error_log_t;
-typedef struct aeron_broadcast_transmitter_stct aeron_broadcast_transmitter_t;
-typedef struct aeron_counters_manager_stct aeron_counters_manager_t;
-
-typedef struct aeron_driver_context_stct
-{
-    char *aeron_dir;                        /* aeron.dir */
-    aeron_threading_mode_t threading_mode;  /* aeron.threading.mode = DEDICATED */
-    bool dirs_delete_on_start;              /* aeron.dir.delete.on.start = false */
-    bool warn_if_dirs_exist;
-    uint64_t driver_timeout_ms;
-    size_t to_driver_buffer_length;         /* aeron.conductor.buffer.length = 1MB + trailer*/
-    size_t to_clients_buffer_length;        /* aeron.clients.buffer.length = 1MB + trailer */
-    size_t counters_values_buffer_length;   /* aeron.counters.buffer.length = 1MB */
-    size_t counters_metadata_buffer_length; /* = 2x values */
-    size_t error_buffer_length;             /* aeron.error.buffer.length = 1MB */
-    uint64_t client_liveness_timeout_ns;    /* aeron.client.liveness.timeout = 5s */
-
-    void *cnc_buffer;
-    size_t cnc_buffer_length;
-
-    aeron_mpsc_rb_t *to_driver_commands;
-    aeron_broadcast_transmitter_t *to_clients;
-    aeron_distinct_error_log_t *error_log;
-    aeron_counters_manager_t *counters_manager;
-}
-aeron_driver_context_t;
-
-typedef struct aeron_resource_linger_stct
-{
-    uint8_t *buffer;
-    int64_t timestamp;
-    struct aeron_resource_linger_stct *next;
-}
-aeron_resource_linger_t;
-
-typedef struct aeron_driver_stct
-{
-    aeron_driver_context_t *context;
-}
-aeron_driver_t;
-
 /* load settings from Java properties file (https://en.wikipedia.org/wiki/.properties) and set env vars */
 int aeron_driver_load_properties_file(const char *filename);
 
-/* init defaults and from env vars */
+/* create and init context */
 int aeron_driver_context_init(aeron_driver_context_t **context);
+int aeron_driver_context_set(const char *setting, const char *value);
 int aeron_driver_context_close(aeron_driver_context_t *context);
 
-/* init driver from context */
+/* create and init driver from context */
 int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context);
 int aeron_driver_start(aeron_driver_t *driver);
 int aeron_driver_close(aeron_driver_t *driver);
 
 int aeron_dir_delete(const char *dirname);
 
+typedef int64_t (*aeron_clock_func_t)();
+
 int64_t aeron_nanoclock();
 int64_t aeron_epochclock();
 
 typedef void (*aeron_log_func_t)(const char *);
 bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, aeron_log_func_t log_func);
-
-inline uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata)
-{
-    return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH;
-}
-
-inline uint8_t *aeron_cnc_to_clients_buffer(aeron_cnc_metadata_t *metadata)
-{
-    return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH +
-        metadata->to_driver_buffer_length;
-}
-
-inline uint8_t *aeron_cnc_counters_metadata_buffer(aeron_cnc_metadata_t *metadata)
-{
-    return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH +
-        metadata->to_driver_buffer_length +
-        metadata->to_clients_buffer_length;
-}
-
-inline uint8_t *aeron_cnc_counters_values_buffer(aeron_cnc_metadata_t *metadata)
-{
-    return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH +
-        metadata->to_driver_buffer_length +
-        metadata->to_clients_buffer_length +
-        metadata->counter_metadata_buffer_length;
-}
-
-inline uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata)
-{
-    return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH +
-        metadata->to_driver_buffer_length +
-        metadata->to_clients_buffer_length +
-        metadata->counter_metadata_buffer_length +
-        metadata->counter_values_buffer_length;
-}
-
-inline size_t aeron_cnc_computed_length(size_t total_length_of_buffers)
-{
-    return AERON_CNC_VERSION_AND_META_DATA_LENGTH + total_length_of_buffers;
-}
 
 #endif //AERON_AERONMD_H

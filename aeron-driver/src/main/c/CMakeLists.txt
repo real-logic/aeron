@@ -27,7 +27,8 @@ SET(SOURCE
     aeron_alloc.c
     aeron_driver.c
     aeron_agent.c
-    aeron_system_counters.c)
+    aeron_system_counters.c
+    aeron_driver_conductor.c)
 
 SET(HEADERS
     util/aeron_platform.h
@@ -42,10 +43,22 @@ SET(HEADERS
     concurrent/aeron_distinct_error_log.h
     concurrent/aeron_broadcast_transmitter.h
     concurrent/aeron_counters_manager.h
+    command/aeron_control_protocol.h
     aeronmd.h
+    aeron_driver.h
+    aeron_driver_context.h
     aeron_alloc.h
     aeron_agent.h
-    aeron_system_counters.h)
+    aeron_system_counters.h
+    aeron_driver_conductor.h)
+
+set(AGENT_SOURCE
+    agent/aeron_driver_agent.c)
+
+set(AGENT_HEADERS
+    agent/aeron_driver_agent.h)
+
+add_library(aeron_driver_agent SHARED ${AGENT_SOURCE} ${AGENT_HEADERS})
 
 add_library(aeron_driver SHARED ${SOURCE} ${HEADERS})
 add_executable(aeronmd aeronmd.c)
@@ -62,3 +75,4 @@ target_link_libraries(
     ${CMAKE_THREAD_LIBS_INIT})
 
 install(TARGETS aeron_driver LIBRARY DESTINATION lib)
+install(TARGETS aeron_driver_agent LIBRARY DESTINATION lib)

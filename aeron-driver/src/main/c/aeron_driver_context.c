@@ -22,14 +22,14 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
-#include <concurrent/aeron_mpsc_rb.h>
 #include <inttypes.h>
 #include <errno.h>
 #include <math.h>
 #include <limits.h>
-#include "concurrent/aeron_broadcast_transmitter.h"
-#include "aeronmd.h"
+#include "aeron_driver_context.h"
 #include "aeron_alloc.h"
+#include "concurrent/aeron_mpsc_rb.h"
+#include "concurrent/aeron_broadcast_transmitter.h"
 
 inline static const char *tmp_dir()
 {
@@ -158,8 +158,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     if ((value = getenv(AERON_DIR_ENV_VAR)))
     {
-        free(_context->aeron_dir);
-        _context->aeron_dir = strndup(value, AERON_MAX_PATH);
+        snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s", value);
     }
 
     if ((value = getenv(AERON_THREADING_MODE_ENV_VAR)))
@@ -220,12 +219,28 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             1000,
             INT64_MAX);
 
-    _context->to_driver_commands = NULL;
-    _context->to_clients = NULL;
-    _context->error_log = NULL;
+    _context->to_driver_buffer = NULL;
+    _context->to_clients_buffer = NULL;
+    _context->counters_values_buffer = NULL;
+    _context->counters_metadata_buffer = NULL;
+    _context->error_buffer = NULL;
+
+    _context->nano_clock = aeron_nanoclock;
+    _context->epoch_clock = aeron_epochclock;
 
     *context = _context;
     return 0;
+}
+
+int aeron_driver_context_set(const char *setting, const char *value)
+{
+    if (NULL == setting || NULL == value)
+    {
+        /* TODO: EINVAL */
+        return -1;
+    }
+
+    return -1;
 }
 
 int aeron_driver_context_close(aeron_driver_context_t *context)
@@ -339,5 +354,8 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, a
 }
 
 extern uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata);
+extern uint8_t *aeron_cnc_to_clients_buffer(aeron_cnc_metadata_t *metadata);
+extern uint8_t *aeron_cnc_counters_metadata_buffer(aeron_cnc_metadata_t *metadata);
+extern uint8_t *aeron_cnc_counters_values_buffer(aeron_cnc_metadata_t *metadata);
 extern uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata);
 extern size_t aeron_cnc_computed_length(size_t total_length_of_buffers);

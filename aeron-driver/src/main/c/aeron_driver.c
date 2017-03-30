@@ -22,12 +22,13 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <inttypes.h>
-#include <concurrent/aeron_atomic.h>
 #include "aeronmd.h"
 #include "aeron_alloc.h"
-#include "concurrent/aeron_distinct_error_log.h"
 #include "util/aeron_strutil.h"
 #include "util/aeron_fileutil.h"
+#include "aeron_driver.h"
+#include "concurrent/aeron_distinct_error_log.h"
+#include "concurrent/aeron_atomic.h"
 
 void aeron_log_func_stderr(const char *str)
 {
@@ -230,6 +231,12 @@ int aeron_driver_create_cnc_file(aeron_driver_t *driver)
 
     driver->context->cnc_buffer = cnc_mmap;
     driver->context->cnc_buffer_length = cnc_file_length;
+
+    driver->context->to_driver_buffer = aeron_cnc_to_driver_buffer(metadata);
+    driver->context->to_clients_buffer = aeron_cnc_to_clients_buffer(metadata);
+    driver->context->counters_values_buffer = aeron_cnc_counters_values_buffer(metadata);
+    driver->context->counters_metadata_buffer = aeron_cnc_counters_metadata_buffer(metadata);
+    driver->context->error_buffer = aeron_cnc_error_log_buffer(metadata);
     return 0;
 }
 

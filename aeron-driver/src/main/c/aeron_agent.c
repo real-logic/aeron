@@ -19,7 +19,7 @@
 #include <dlfcn.h>
 #include "aeron_agent.h"
 #include "aeron_alloc.h"
-#include "aeronmd.h"
+#include "aeron_driver_context.h"
 
 int aeron_agent_init(
     aeron_agent_runner_t **runner,

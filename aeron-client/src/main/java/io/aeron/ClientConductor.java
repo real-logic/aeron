@@ -42,7 +42,7 @@ class ClientConductor implements Agent, DriverListener
 
     private static final long NO_CORRELATION_ID = -1;
     private static final long RESOURCE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
-    private static final long RESOURCE_LINGER_NS = TimeUnit.SECONDS.toNanos(5);
+    private static final long RESOURCE_LINGER_NS = TimeUnit.SECONDS.toNanos(3);
 
     private final long keepAliveIntervalNs;
     private final long driverTimeoutMs;

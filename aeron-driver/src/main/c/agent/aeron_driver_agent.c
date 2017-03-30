@@ -18,15 +18,14 @@
 #include <dlfcn.h>
 #include "agent/aeron_driver_agent.h"
 
-#define AERON_INTERCEPT_FUNC_RETURN_ON_ERROR(name,funcvar) \
+#define AERON_INTERCEPT_FUNC_RETURN_ON_ERROR(type,funcvar) \
 do \
 { \
     if (NULL == funcvar) \
     { \
-        if ((funcvar = (aeron_driver_conductor_on_command_t)dlsym( \
-            RTLD_NEXT, name)) == NULL) \
+        if ((funcvar = (type ## _t)dlsym(RTLD_NEXT, #type)) == NULL) \
         { \
-            fprintf(stderr, "could not hook func <%s>: %s\n", name, dlerror()); \
+            fprintf(stderr, "could not hook func <%s>: %s\n", #type, dlerror()); \
             return; \
         } \
     } \
@@ -37,8 +36,23 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 {
     static aeron_driver_conductor_on_command_t _original_func = NULL;
 
-    AERON_INTERCEPT_FUNC_RETURN_ON_ERROR("aeron_driver_conductor_on_command", _original_func);
+    AERON_INTERCEPT_FUNC_RETURN_ON_ERROR(aeron_driver_conductor_on_command, _original_func);
 
     /* TODO: add logging */
     _original_func(msg_type_id, message, length, clientd);
 }
+
+void aeron_driver_conductor_client_transmit(
+    aeron_driver_conductor_t *conductor,
+    int32_t msg_type_id,
+    const void *message,
+    size_t length)
+{
+    static aeron_driver_conductor_client_transmit_t _original_func = NULL;
+
+    AERON_INTERCEPT_FUNC_RETURN_ON_ERROR(aeron_driver_conductor_client_transmit, _original_func);
+
+    /* TODO: add logging */
+    _original_func(conductor, msg_type_id, message, length);
+}
+

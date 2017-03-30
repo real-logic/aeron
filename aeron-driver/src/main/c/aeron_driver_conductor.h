@@ -35,6 +35,12 @@ aeron_driver_conductor_t;
 
 int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *ctx);
 
+void aeron_driver_conductor_client_transmit(
+    aeron_driver_conductor_t *conductor,
+    int32_t msg_type_id,
+    const void *message,
+    size_t length);
+
 void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message, size_t length, void *clientd);
 
 int aeron_driver_conductor_do_work(void *clientd);

@@ -18,7 +18,9 @@
 #define AERON_AERON_DRIVER_AGENT_H
 
 #include "aeron_driver_conductor.h"
+#include "command/aeron_control_protocol.h"
 
 typedef void (*aeron_driver_conductor_on_command_t)(int32_t, const void *, size_t, void *);
+typedef void (*aeron_driver_conductor_client_transmit_t)(aeron_driver_conductor_t *, int32_t, const void *, size_t);
 
 #endif //AERON_AERON_DRIVER_AGENT_H

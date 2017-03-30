@@ -60,8 +60,17 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     return 0;
 }
 
+void aeron_driver_conductor_client_transmit(
+    aeron_driver_conductor_t *conductor,
+    int32_t msg_type_id,
+    const void *msg,
+    size_t length)
+{
+    aeron_broadcast_transmitter_transmit(&conductor->to_clients, AERON_RESPONSE_ON_ERROR, msg, length);
+}
+
 void aeron_driver_conductor_on_error(
-    aeron_broadcast_transmitter_t *transmitter,
+    aeron_driver_conductor_t *conductor,
     int32_t error_code,
     const char *message,
     size_t length,
@@ -75,13 +84,15 @@ void aeron_driver_conductor_on_error(
     response->error_message_length = (int32_t)length;
     memcpy(response->error_message_data, message, length);
 
-    aeron_broadcast_transmitter_transmit(
-        transmitter, AERON_RESPONSE_ON_ERROR, response, sizeof(aeron_error_response_t) + length);
+    aeron_driver_conductor_client_transmit(
+        conductor, AERON_RESPONSE_ON_ERROR, response, sizeof(aeron_error_response_t) + length);
 }
 
 void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message, size_t length, void *clientd)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
+    int64_t correlation_id = 0;
+    int result = 0;
 
     switch (msg_type_id)
     {
@@ -92,23 +103,44 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
                 if (length < sizeof(aeron_publication_command_t) ||
                     length < (sizeof(aeron_publication_command_t) + cmd->channel_length))
                 {
-                    /* TODO: track error */
                     aeron_distinct_error_log_record(
                         &conductor->error_log,
                         AERON_ERROR_CODE_MALFORMED_COMMAND,
                         "command too short",
                         "command too short");
+                    /* TODO: incr errors count */
                     return;
                 }
+
+                correlation_id = cmd->correlated.correlation_id;
+
+                /* TODO: handle */
             }
             break;
+
+        case AERON_COMMAND_CLIENT_KEEPALIVE:
+            {
+                aeron_correlated_command_t *cmd = (aeron_correlated_command_t *)message;
+
+                /* TODO: handle */
+            }
+            break;
+
         default:
             aeron_distinct_error_log_record(
                 &conductor->error_log,
                 AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID,
                 "unknown command type id",
                 "unknown command type id");
+            /* TODO: incr errors count */
             break;
+    }
+
+    if (result < 0)
+    {
+        aeron_driver_conductor_on_error(conductor, AERON_ERROR_CODE_GENERIC_ERROR, "", length, correlation_id);
+        aeron_distinct_error_log_record(&conductor->error_log, AERON_ERROR_CODE_GENERIC_ERROR, "", "");
+        /* TODO: incr errors count */
     }
 }
 

@@ -16,6 +16,7 @@
 package io.aeron.driver.buffer;
 
 import org.agrona.IoUtil;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 
@@ -28,6 +29,8 @@ import java.nio.channels.FileChannel;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
  * Encapsulates responsibility for mapping the files into memory used by the log partitions.
@@ -116,6 +119,16 @@ class MappedRawLog implements RawLog
         for (final MappedByteBuffer buffer : mappedBuffers)
         {
             IoUtil.unmap(buffer);
+        }
+
+        //noinspection EmptyTryBlock
+        try (FileChannel ignore = FileChannel.open(logFile.toPath(), WRITE, TRUNCATE_EXISTING))
+        {
+            // Truncate file to free resource in case of error
+        }
+        catch (final IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
         }
 
         if (!logFile.delete())

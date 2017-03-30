@@ -17,23 +17,19 @@ package io.aeron;
 
 import io.aeron.logbuffer.*;
 import io.aeron.logbuffer.ControlledFragmentHandler.Action;
-import org.agrona.BitUtil;
-import org.agrona.ErrorHandler;
-import org.agrona.ManagedResource;
+import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
 
 import java.nio.channels.FileChannel;
 
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static io.aeron.logbuffer.ControlledFragmentHandler.Action.*;
-import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static io.aeron.logbuffer.FrameDescriptor.frameLengthVolatile;
-import static io.aeron.logbuffer.FrameDescriptor.isPaddingFrame;
-import static io.aeron.logbuffer.LogBufferDescriptor.*;
-import static io.aeron.logbuffer.TermReader.*;
+import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.logbuffer.LogBufferDescriptor.indexByPosition;
+import static io.aeron.logbuffer.TermReader.read;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.DataHeaderFlyweight.TERM_ID_FIELD_OFFSET;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * Represents a replicated publication {@link Image} from a publisher to a {@link Subscription}.
@@ -216,11 +212,16 @@ public class Image
         final int termOffset = (int)position & termLengthMask;
         final UnsafeBuffer termBuffer = activeTermBuffer(position);
 
-        final long outcome = read(termBuffer, termOffset, fragmentHandler, fragmentLimit, header, errorHandler);
+        return read(
+            termBuffer,
+            termOffset,
+            fragmentHandler,
+            fragmentLimit,
+            header,
+            errorHandler,
+            position,
+            subscriberPosition);
 
-        updatePosition(position, termOffset, offset(outcome));
-
-        return fragmentsRead(outcome);
     }
 
     /**
@@ -241,11 +242,12 @@ public class Image
             return 0;
         }
 
-        long position = subscriberPosition.get();
-        int termOffset = (int)position & termLengthMask;
-        int resultingOffset = termOffset;
+        long initialPosition = subscriberPosition.get();
+        int initialOffset = (int)initialPosition & termLengthMask;
+        int resultingOffset = initialOffset;
         int fragmentsRead = 0;
-        final UnsafeBuffer termBuffer = activeTermBuffer(position);
+        final UnsafeBuffer termBuffer = activeTermBuffer(initialPosition);
+        header.buffer(termBuffer);
 
         try
         {
@@ -262,32 +264,36 @@ public class Image
                 final int alignedLength = BitUtil.align(length, FRAME_ALIGNMENT);
                 resultingOffset += alignedLength;
 
-                if (!isPaddingFrame(termBuffer, frameOffset))
+                if (isPaddingFrame(termBuffer, frameOffset))
                 {
-                    header.buffer(termBuffer);
-                    header.offset(frameOffset);
+                    continue;
+                }
 
-                    final Action action = fragmentHandler.onFragment(
-                        termBuffer, frameOffset + HEADER_LENGTH, length - HEADER_LENGTH, header);
+                header.offset(frameOffset);
 
-                    ++fragmentsRead;
+                final Action action = fragmentHandler.onFragment(
+                    termBuffer,
+                    frameOffset + HEADER_LENGTH,
+                    length - HEADER_LENGTH,
+                    header);
 
-                    if (action == BREAK)
-                    {
-                        break;
-                    }
-                    else if (action == ABORT)
-                    {
-                        --fragmentsRead;
-                        resultingOffset = frameOffset;
-                        break;
-                    }
-                    else if (action == COMMIT)
-                    {
-                        position += alignedLength;
-                        termOffset = resultingOffset;
-                        subscriberPosition.setOrdered(position);
-                    }
+                if (action == ABORT)
+                {
+                    resultingOffset -= alignedLength;
+                    break;
+                }
+
+                ++fragmentsRead;
+
+                if (action == BREAK)
+                {
+                    break;
+                }
+                else if (action == COMMIT)
+                {
+                    initialPosition += (resultingOffset - initialOffset);
+                    initialOffset = resultingOffset;
+                    subscriberPosition.setOrdered(initialPosition);
                 }
             }
             while (fragmentsRead < fragmentLimit && resultingOffset < capacity);
@@ -296,9 +302,10 @@ public class Image
         {
             errorHandler.onError(t);
         }
-
-        updatePosition(position, termOffset, resultingOffset);
-
+        finally
+        {
+            updatePosition(initialPosition, initialOffset, resultingOffset);
+        }
         return fragmentsRead;
     }
 
@@ -337,8 +344,10 @@ public class Image
             {
                 errorHandler.onError(t);
             }
-
-            subscriberPosition.setOrdered(position + bytesConsumed);
+            finally
+            {
+                subscriberPosition.setOrdered(position + bytesConsumed);
+            }
         }
 
         return bytesConsumed;
@@ -385,8 +394,10 @@ public class Image
             {
                 errorHandler.onError(t);
             }
-
-            subscriberPosition.setOrdered(position + length);
+            finally
+            {
+                subscriberPosition.setOrdered(position + length);
+            }
         }
 
         return length;

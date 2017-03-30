@@ -15,45 +15,30 @@
  */
 package io.aeron.driver;
 
-import io.aeron.driver.buffer.RawLog;
-import io.aeron.driver.buffer.RawLogFactory;
+import io.aeron.driver.buffer.*;
+import io.aeron.driver.cmd.*;
 import io.aeron.driver.media.*;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
-import org.agrona.concurrent.EpochClock;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import io.aeron.driver.cmd.CreatePublicationImageCmd;
-import io.aeron.driver.cmd.DriverConductorCmd;
-import io.aeron.logbuffer.FrameDescriptor;
-import io.aeron.logbuffer.Header;
-import io.aeron.logbuffer.TermReader;
-import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.protocol.HeaderFlyweight;
-import io.aeron.protocol.SetupFlyweight;
-import io.aeron.protocol.StatusMessageFlyweight;
+import io.aeron.logbuffer.*;
+import io.aeron.protocol.*;
 import org.agrona.ErrorHandler;
-import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicLongPosition;
-import org.agrona.concurrent.status.Position;
-import org.agrona.concurrent.status.ReadablePosition;
+import org.agrona.concurrent.*;
+import org.agrona.concurrent.status.*;
+import org.junit.*;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 
+import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static java.lang.Integer.numberOfTrailingZeros;
 import static junit.framework.TestCase.assertTrue;
+import static org.agrona.BitUtil.align;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.*;
-import static io.aeron.logbuffer.LogBufferDescriptor.*;
-import static org.agrona.BitUtil.align;
 
 public class ReceiverTest
 {
@@ -83,6 +68,7 @@ public class ReceiverTest
     private final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
     private final Position mockHighestReceivedPosition = spy(new AtomicLongPosition());
     private final Position mockRebuildPosition = spy(new AtomicLongPosition());
+    private final Position mockSubscriberPosition = mock(Position.class);
     private final ByteBuffer dataFrameBuffer = ByteBuffer.allocateDirect(2 * 1024);
     private final UnsafeBuffer dataBuffer = new UnsafeBuffer(dataFrameBuffer);
     private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
@@ -296,7 +282,7 @@ public class ReceiverTest
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        final long readOutcome = TermReader.read(
+        final int readOutcome = TermReader.read(
             termBuffers[ACTIVE_INDEX],
             INITIAL_TERM_OFFSET,
             (buffer, offset, length, header) ->
@@ -310,9 +296,11 @@ public class ReceiverTest
             },
             Integer.MAX_VALUE,
             header,
-            mockErrorHandler);
+            mockErrorHandler,
+            0,
+            mockSubscriberPosition);
 
-        assertThat(TermReader.fragmentsRead(readOutcome), is(1));
+        assertThat(readOutcome, is(1));
     }
 
     @Test
@@ -367,7 +355,7 @@ public class ReceiverTest
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // heartbeat with same term offset
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        final long readOutcome = TermReader.read(
+        final int readOutcome = TermReader.read(
             termBuffers[ACTIVE_INDEX],
             INITIAL_TERM_OFFSET,
             (buffer, offset, length, header) ->
@@ -381,9 +369,11 @@ public class ReceiverTest
             },
             Integer.MAX_VALUE,
             header,
-            mockErrorHandler);
+            mockErrorHandler,
+            0,
+            mockSubscriberPosition);
 
-        assertThat(TermReader.fragmentsRead(readOutcome), is(1));
+        assertThat(readOutcome, is(1));
     }
 
     @Test
@@ -438,7 +428,7 @@ public class ReceiverTest
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // initial data frame
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        final long readOutcome = TermReader.read(
+        final int readOutcome = TermReader.read(
             termBuffers[ACTIVE_INDEX],
             INITIAL_TERM_OFFSET,
             (buffer, offset, length, header) ->
@@ -452,9 +442,11 @@ public class ReceiverTest
             },
             Integer.MAX_VALUE,
             header,
-            mockErrorHandler);
+            mockErrorHandler,
+            0,
+            mockSubscriberPosition);
 
-        assertThat(TermReader.fragmentsRead(readOutcome), is(1));
+        assertThat(readOutcome, is(1));
     }
 
     @Test
@@ -514,7 +506,7 @@ public class ReceiverTest
 
         verify(mockHighestReceivedPosition).setOrdered(initialTermOffset + alignedDataFrameLength);
 
-        final long readOutcome = TermReader.read(
+        final int readOutcome = TermReader.read(
             termBuffers[ACTIVE_INDEX],
             initialTermOffset,
             (buffer, offset, length, header) ->
@@ -528,9 +520,11 @@ public class ReceiverTest
             },
             Integer.MAX_VALUE,
             header,
-            mockErrorHandler);
+            mockErrorHandler,
+            0,
+            mockSubscriberPosition);
 
-        assertThat(TermReader.fragmentsRead(readOutcome), is(1));
+        assertThat(readOutcome, is(1));
     }
 
     @Test

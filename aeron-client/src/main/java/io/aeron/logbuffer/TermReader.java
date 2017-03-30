@@ -15,9 +15,9 @@
  */
 package io.aeron.logbuffer;
 
-import org.agrona.BitUtil;
-import org.agrona.ErrorHandler;
+import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.Position;
 
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -40,15 +40,19 @@ public class TermReader
      * @param fragmentsLimit limit the number of fragments read.
      * @param header         to be used for mapping over the header for a given fragment.
      * @param errorHandler   to be notified if an error occurs during the callback.
+     * @param currentPosition prior to reading further fragments
+     * @param subscriberPosition to be updated after reading with new position
      * @return the number of fragments read
      */
-    public static long read(
+    public static int read(
         final UnsafeBuffer termBuffer,
         final int termOffset,
         final FragmentHandler handler,
         final int fragmentsLimit,
         final Header header,
-        final ErrorHandler errorHandler)
+        final ErrorHandler errorHandler,
+        final long currentPosition,
+        final Position subscriberPosition)
     {
         int fragmentsRead = 0;
         int offset = termOffset;
@@ -83,41 +87,15 @@ public class TermReader
         {
             errorHandler.onError(t);
         }
+        finally
+        {
+            final long newPosition = currentPosition + (offset - termOffset);
+            if (newPosition > currentPosition)
+            {
+                subscriberPosition.setOrdered(newPosition);
+            }
+        }
 
-        return pack(offset, fragmentsRead);
-    }
-
-    /**
-     * Pack the values for fragmentsRead and offset into a long for returning on the stack.
-     *
-     * @param offset        value to be packed.
-     * @param fragmentsRead value to be packed.
-     * @return a long with both ints packed into it.
-     */
-    public static long pack(final int offset, final int fragmentsRead)
-    {
-        return ((long)offset << 32) | fragmentsRead;
-    }
-
-    /**
-     * The number of fragments that have been read.
-     *
-     * @param readOutcome into which the fragments read value has been packed.
-     * @return the number of fragments that have been read.
-     */
-    public static int fragmentsRead(final long readOutcome)
-    {
-        return (int)readOutcome;
-    }
-
-    /**
-     * The offset up to which the term has progressed.
-     *
-     * @param readOutcome into which the offset value has been packed.
-     * @return the offset up to which the term has progressed.
-     */
-    public static int offset(final long readOutcome)
-    {
-        return (int)(readOutcome >>> 32);
+        return fragmentsRead;
     }
 }

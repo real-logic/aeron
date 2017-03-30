@@ -15,20 +15,19 @@
  */
 package io.aeron.logbuffer;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.InOrder;
-import org.mockito.Mockito;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.Position;
+import org.junit.*;
+import org.mockito.InOrder;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.*;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static org.agrona.BitUtil.align;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.*;
 
 public class TermReaderTest
 {
@@ -39,43 +38,34 @@ public class TermReaderTest
     private final Header header = new Header(INITIAL_TERM_ID, TERM_BUFFER_CAPACITY);
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
     private final ErrorHandler errorHandler = mock(ErrorHandler.class);
-    private final FragmentHandler handler = Mockito.mock(FragmentHandler.class);
-
+    private final FragmentHandler handler = mock(FragmentHandler.class);
+    private final Position subscriberPosition = mock(Position.class);
     @Before
     public void setUp()
     {
         when(termBuffer.capacity()).thenReturn(TERM_BUFFER_CAPACITY);
     }
 
-    @Test
-    public void shouldPackPaddingAndOffsetIntoResultingStatus()
-    {
-        final int offset = 77;
-        final int fragmentsRead = 999;
-
-        final long scanOutcome = TermReader.pack(offset, fragmentsRead);
-
-        assertThat(TermReader.offset(scanOutcome), is(offset));
-        assertThat(TermReader.fragmentsRead(scanOutcome), is(fragmentsRead));
-    }
 
     @Test
     public void shouldReadFirstMessage()
     {
         final int msgLength = 1;
         final int frameLength = HEADER_LENGTH + msgLength;
+        final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
         final int termOffset = 0;
 
         when(termBuffer.getIntVolatile(0)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(0))).thenReturn((short)HDR_TYPE_DATA);
 
-        final long readOutcome = TermReader.read(
-            termBuffer, termOffset, handler, Integer.MAX_VALUE, header, errorHandler);
-        assertThat(TermReader.fragmentsRead(readOutcome), is(1));
+        final int readOutcome = TermReader.read(
+            termBuffer, termOffset, handler, Integer.MAX_VALUE, header, errorHandler, 0, subscriberPosition);
+        assertThat(readOutcome, is(1));
 
-        final InOrder inOrder = inOrder(termBuffer);
+        final InOrder inOrder = inOrder(termBuffer, handler, subscriberPosition);
         inOrder.verify(termBuffer).getIntVolatile(0);
-        verify(handler).onFragment(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
+        inOrder.verify(handler).onFragment(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
+        inOrder.verify(subscriberPosition).setOrdered(alignedFrameLength);
     }
 
     @Test
@@ -83,10 +73,10 @@ public class TermReaderTest
     {
         final int termOffset = 0;
 
-        final long readOutcome = TermReader.read(
-            termBuffer, termOffset, handler, Integer.MAX_VALUE, header, errorHandler);
-        assertThat(TermReader.fragmentsRead(readOutcome), is(0));
-        assertThat(TermReader.offset(readOutcome), is(termOffset));
+        final int readOutcome = TermReader.read(
+            termBuffer, termOffset, handler, Integer.MAX_VALUE, header, errorHandler, 0, subscriberPosition);
+        assertThat(readOutcome, is(0));
+        verify(subscriberPosition, never()).setOrdered(anyLong());
 
         verify(termBuffer).getIntVolatile(0);
         verify(handler, never()).onFragment(any(), anyInt(), anyInt(), any());
@@ -97,17 +87,21 @@ public class TermReaderTest
     {
         final int msgLength = 1;
         final int frameLength = HEADER_LENGTH + msgLength;
+        final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
         final int termOffset = 0;
 
         when(termBuffer.getIntVolatile(anyInt())).thenReturn(frameLength);
         when(termBuffer.getShort(anyInt())).thenReturn((short)HDR_TYPE_DATA);
 
-        final long readOutcome = TermReader.read(termBuffer, termOffset, handler, 1, header, errorHandler);
-        assertThat(TermReader.fragmentsRead(readOutcome), is(1));
+        final int readOutcome = TermReader.read(
+            termBuffer, termOffset, handler, 1, header, errorHandler, 0, subscriberPosition);
+        assertThat(readOutcome, is(1));
 
-        final InOrder inOrder = inOrder(termBuffer, handler);
+
+        final InOrder inOrder = inOrder(termBuffer, handler, subscriberPosition);
         inOrder.verify(termBuffer).getIntVolatile(0);
         inOrder.verify(handler).onFragment(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
+        inOrder.verify(subscriberPosition).setOrdered(alignedFrameLength);
         inOrder.verifyNoMoreInteractions();
     }
 
@@ -123,12 +117,12 @@ public class TermReaderTest
         when(termBuffer.getIntVolatile(alignedFrameLength)).thenReturn(frameLength);
         when(termBuffer.getShort(anyInt())).thenReturn((short)HDR_TYPE_DATA);
 
-        final long readOutcome = TermReader.read(
-            termBuffer, termOffset, handler, Integer.MAX_VALUE, header, errorHandler);
-        assertThat(TermReader.fragmentsRead(readOutcome), is(2));
-        assertThat(TermReader.offset(readOutcome), is(alignedFrameLength * 2));
+        final int readOutcome = TermReader.read(
+            termBuffer, termOffset, handler, Integer.MAX_VALUE, header, errorHandler, 0, subscriberPosition);
+        assertThat(readOutcome, is(2));
 
-        final InOrder inOrder = inOrder(termBuffer, handler);
+
+        final InOrder inOrder = inOrder(termBuffer, handler, subscriberPosition);
         inOrder.verify(termBuffer).getIntVolatile(0);
         inOrder.verify(handler).onFragment(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
 
@@ -136,6 +130,7 @@ public class TermReaderTest
         inOrder
             .verify(handler)
             .onFragment(eq(termBuffer), eq(alignedFrameLength + HEADER_LENGTH), eq(msgLength), any(Header.class));
+        inOrder.verify(subscriberPosition).setOrdered(alignedFrameLength * 2);
     }
 
     @Test
@@ -149,15 +144,15 @@ public class TermReaderTest
         when(termBuffer.getIntVolatile(frameOffset)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
 
-        final long readOutcome = TermReader.read(
-            termBuffer, frameOffset, handler, Integer.MAX_VALUE, header, errorHandler);
-        assertThat(TermReader.fragmentsRead(readOutcome), is(1));
-        assertThat(TermReader.offset(readOutcome), is(TERM_BUFFER_CAPACITY));
+        final int readOutcome = TermReader.read(
+            termBuffer, frameOffset, handler, Integer.MAX_VALUE, header, errorHandler, 0, subscriberPosition);
+        assertThat(readOutcome, is(1));
 
-        final InOrder inOrder = inOrder(termBuffer, handler);
+        final InOrder inOrder = inOrder(termBuffer, handler, subscriberPosition);
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);
         inOrder.verify(handler).onFragment(
             eq(termBuffer), eq(frameOffset + HEADER_LENGTH), eq(msgLength), any(Header.class));
+        inOrder.verify(subscriberPosition).setOrdered(alignedFrameLength);
     }
 
     @Test
@@ -171,13 +166,13 @@ public class TermReaderTest
         when(termBuffer.getIntVolatile(frameOffset)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)PADDING_FRAME_TYPE);
 
-        final long readOutcome = TermReader.read(
-            termBuffer, frameOffset, handler, Integer.MAX_VALUE, header, errorHandler);
-        assertThat(TermReader.fragmentsRead(readOutcome), is(0));
-        assertThat(TermReader.offset(readOutcome), is(TERM_BUFFER_CAPACITY));
+        final int readOutcome = TermReader.read(
+            termBuffer, frameOffset, handler, Integer.MAX_VALUE, header, errorHandler, 0, subscriberPosition);
+        assertThat(readOutcome, is(0));
 
-        final InOrder inOrder = inOrder(termBuffer);
+        final InOrder inOrder = inOrder(termBuffer, subscriberPosition);
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);
         verify(handler, never()).onFragment(any(), anyInt(), anyInt(), any());
+        inOrder.verify(subscriberPosition).setOrdered(alignedFrameLength);
     }
 }

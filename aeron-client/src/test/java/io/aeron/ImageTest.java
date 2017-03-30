@@ -15,27 +15,22 @@
  */
 package io.aeron;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.InOrder;
-import org.mockito.Mockito;
-import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.logbuffer.*;
-import org.agrona.DirectBuffer;
-import org.agrona.ErrorHandler;
+import io.aeron.protocol.*;
+import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicLongPosition;
-import org.agrona.concurrent.status.Position;
+import org.agrona.concurrent.status.*;
+import org.junit.*;
+import org.mockito.*;
 
+import static io.aeron.logbuffer.LogBufferDescriptor.*;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.ByteBuffer.allocateDirect;
 import static junit.framework.TestCase.assertTrue;
+import static org.agrona.BitUtil.align;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.*;
-import static io.aeron.logbuffer.LogBufferDescriptor.*;
-import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static org.agrona.BitUtil.align;
 
 public class ImageTest
 {
@@ -208,6 +203,66 @@ public class ImageTest
         inOrder.verify(mockControlledFragmentHandler).onFragment(
             any(UnsafeBuffer.class), eq(HEADER_LENGTH), eq(DATA.length), any(Header.class));
         inOrder.verify(position).setOrdered(initialPosition + ALIGNED_FRAME_LENGTH);
+    }
+
+    @Test
+    public void shouldUpdatePositionOnRethrownExceptionInControlledPoll()
+    {
+        final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        position.setOrdered(initialPosition);
+        final Image image = createImage();
+
+        insertDataFrame(INITIAL_TERM_ID, offsetForFrame(0));
+
+        when(mockControlledFragmentHandler.onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class)))
+            .thenThrow(new RuntimeException());
+
+        doThrow(new RuntimeException()).when(errorHandler).onError(any());
+
+        boolean thrown = false;
+        try
+        {
+            image.controlledPoll(mockControlledFragmentHandler, Integer.MAX_VALUE);
+        }
+        catch (Exception e)
+        {
+            thrown = true;
+        }
+        assertTrue(thrown);
+        assertThat(image.position(), is(initialPosition + ALIGNED_FRAME_LENGTH));
+
+        verify(mockControlledFragmentHandler).onFragment(
+            any(UnsafeBuffer.class), eq(HEADER_LENGTH), eq(DATA.length), any(Header.class));
+    }
+
+    @Test
+    public void shouldUpdatePositionOnRethrownExceptionInPoll()
+    {
+        final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        position.setOrdered(initialPosition);
+        final Image image = createImage();
+
+        insertDataFrame(INITIAL_TERM_ID, offsetForFrame(0));
+
+        doThrow(new RuntimeException()).when(mockFragmentHandler)
+            .onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class));
+
+        doThrow(new RuntimeException()).when(errorHandler).onError(any());
+
+        boolean thrown = false;
+        try
+        {
+            image.poll(mockFragmentHandler, Integer.MAX_VALUE);
+        }
+        catch (Exception e)
+        {
+            thrown = true;
+        }
+        assertTrue(thrown);
+        assertThat(image.position(), is(initialPosition + ALIGNED_FRAME_LENGTH));
+
+        verify(mockFragmentHandler).onFragment(
+            any(UnsafeBuffer.class), eq(HEADER_LENGTH), eq(DATA.length), any(Header.class));
     }
 
     @Test

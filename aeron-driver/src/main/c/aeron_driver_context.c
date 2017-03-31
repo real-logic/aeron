@@ -228,6 +228,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->nano_clock = aeron_nanoclock;
     _context->epoch_clock = aeron_epochclock;
 
+    _context->conductor_idle_strategy_func = aeron_idle_strategy_load("yielding", &_context->conductor_idle_strategy_state);
+    _context->shared_idle_strategy_func = aeron_idle_strategy_load("yielding", &_context->shared_idle_strategy_state);
+
     *context = _context;
     return 0;
 }
@@ -239,6 +242,8 @@ int aeron_driver_context_set(const char *setting, const char *value)
         /* TODO: EINVAL */
         return -1;
     }
+
+    /* TODO: */
 
     return -1;
 }

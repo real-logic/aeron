@@ -21,11 +21,18 @@
 #include "aeron_driver_conductor.h"
 #include "aeron_agent.h"
 
+#define AERON_AGENT_RUNNER_CONDUCTOR 0
+#define AERON_AGENT_RUNNER_SENDER 1
+#define AERON_AGENT_RUNNER_RECEIVER 2
+#define AERON_AGENT_RUNNER_SHARED_NETWORK 1
+#define AERON_AGENT_RUNNER_SHARED 0
+#define AERON_AGENT_RUNNER_MAX 3
+
 typedef struct aeron_driver_stct
 {
     aeron_driver_context_t *context;
     aeron_driver_conductor_t conductor;
-    aeron_agent_runner_t conductor_runner;
+    aeron_agent_runner_t runners[AERON_AGENT_RUNNER_MAX];
 }
 aeron_driver_t;
 

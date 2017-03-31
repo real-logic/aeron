@@ -128,6 +128,7 @@ int aeron_agent_init(
     runner->idle_strategy_state = idle_strategy_state;
     runner->idle_strategy = idle_strategy_func;
     atomic_init(&runner->running, true);
+    runner->state = AERON_AGENT_STATE_INITED;
 
     return 0;
 }
@@ -167,6 +168,8 @@ int aeron_agent_start(aeron_agent_runner_t *runner)
         return -1;
     }
 
+    runner->state = AERON_AGENT_STATE_STARTED;
+
     return 0;
 }
 
@@ -181,6 +184,7 @@ int aeron_agent_close(aeron_agent_runner_t *runner)
     }
 
     atomic_store(&runner->running, false);
+    runner->state = AERON_AGENT_STATE_STOPPING;
 
     /* TODO: should use timed pthread_join _np version when available? */
 
@@ -189,6 +193,8 @@ int aeron_agent_close(aeron_agent_runner_t *runner)
         /* TODO: pthread-result has error */
         return -1;
     }
+
+    runner->state = AERON_AGENT_STATE_STOPPED;
 
     if (NULL != runner->on_close)
     {

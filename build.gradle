@@ -375,7 +375,7 @@ project(':aeron-agent') {
 
     dependencies {
         compile project(':aeron-client'), project(':aeron-driver')
-        compile "net.bytebuddy:byte-buddy:1.6.11"
+        compile "net.bytebuddy:byte-buddy:1.6.12"
     }
 
     jar {

@@ -44,7 +44,7 @@ public interface ControlledFragmentHandler
         COMMIT,
 
         /**
-         * Continue processing taking the same approach as the in
+         * Continue processing until fragment limit or no fragments with position commit at end of poll as the in
          * {@link FragmentHandler#onFragment(DirectBuffer, int, int, Header)}.
          */
         CONTINUE,

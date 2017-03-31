@@ -247,6 +247,7 @@ public class Image
         int resultingOffset = initialOffset;
         int fragmentsRead = 0;
         final UnsafeBuffer termBuffer = activeTermBuffer(initialPosition);
+        final int capacity = termBuffer.capacity();
         if (header.buffer() != termBuffer)
         {
             header.buffer(termBuffer);
@@ -254,7 +255,6 @@ public class Image
 
         try
         {
-            final int capacity = termBuffer.capacity();
             do
             {
                 final int length = frameLengthVolatile(termBuffer, resultingOffset);
@@ -307,7 +307,11 @@ public class Image
         }
         finally
         {
-            updatePosition(initialPosition, initialOffset, resultingOffset);
+            final long position = initialPosition + (resultingOffset - initialOffset);
+            if (position > initialPosition)
+            {
+                subscriberPosition.setOrdered(position);
+            }
         }
 
         return fragmentsRead;
@@ -405,15 +409,6 @@ public class Image
         }
 
         return length;
-    }
-
-    private void updatePosition(final long positionBefore, final int offsetBefore, final int offsetAfter)
-    {
-        final long position = positionBefore + (offsetAfter - offsetBefore);
-        if (position > positionBefore)
-        {
-            subscriberPosition.setOrdered(position);
-        }
     }
 
     private UnsafeBuffer activeTermBuffer(final long position)

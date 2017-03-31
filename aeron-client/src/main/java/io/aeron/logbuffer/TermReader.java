@@ -34,13 +34,13 @@ public class TermReader
      *
      * If a fragmentsLimit of 0 or less is passed then at least one read will be attempted.
      *
-     * @param termBuffer     to be read for fragments.
-     * @param termOffset     within the buffer that the read should begin.
-     * @param handler        the handler for data that has been read
-     * @param fragmentsLimit limit the number of fragments read.
-     * @param header         to be used for mapping over the header for a given fragment.
-     * @param errorHandler   to be notified if an error occurs during the callback.
-     * @param currentPosition prior to reading further fragments
+     * @param termBuffer         to be read for fragments.
+     * @param termOffset         within the buffer that the read should begin.
+     * @param handler            the handler for data that has been read
+     * @param fragmentsLimit     limit the number of fragments read.
+     * @param header             to be used for mapping over the header for a given fragment.
+     * @param errorHandler       to be notified if an error occurs during the callback.
+     * @param currentPosition    prior to reading further fragments
      * @param subscriberPosition to be updated after reading with new position
      * @return the number of fragments read
      */

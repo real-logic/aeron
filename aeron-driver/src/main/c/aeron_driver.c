@@ -29,6 +29,7 @@
 #include "aeron_driver.h"
 #include "concurrent/aeron_distinct_error_log.h"
 #include "concurrent/aeron_atomic.h"
+#include "aeron_system_counters.h"
 
 void aeron_log_func_stderr(const char *str)
 {
@@ -257,14 +258,24 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     _driver->context = context;
 
+    /* TODO: validate socket settings */
+
     if (aeron_driver_ensure_dir_is_recreated(_driver) < 0)
     {
         return -1;
     }
 
-    /* TODO: validate socket settings */
+    if (aeron_driver_create_cnc_file(_driver) < 0)
+    {
+        return -1;
+    }
 
+    if (aeron_driver_conductor_init(&_driver->conductor, context) < 0)
+    {
+        return -1;
+    }
 
+    /* TODO: init sender and receiver */
 
     *driver = _driver;
     return 0;

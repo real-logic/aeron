@@ -46,6 +46,11 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
         return -1;
     }
 
+    if (aeron_system_counters_init(&conductor->system_counters, &conductor->counters_manager) < 0)
+    {
+        return -1;
+    }
+
     if (aeron_distinct_error_log_init(
         &conductor->error_log,
         ctx->error_buffer,
@@ -55,6 +60,8 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     {
         return -1;
     }
+
+    /* TODO: create and init all command queues */
 
     conductor->context = ctx;
     return 0;

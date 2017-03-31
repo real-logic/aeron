@@ -27,9 +27,6 @@
 #include "util/aeron_strutil.h"
 #include "util/aeron_fileutil.h"
 #include "aeron_driver.h"
-#include "concurrent/aeron_distinct_error_log.h"
-#include "concurrent/aeron_atomic.h"
-#include "aeron_system_counters.h"
 
 void aeron_log_func_stderr(const char *str)
 {
@@ -241,6 +238,23 @@ int aeron_driver_create_cnc_file(aeron_driver_t *driver)
     return 0;
 }
 
+int aeron_driver_shared_do_work(void *clientd)
+{
+    aeron_driver_t *driver = (aeron_driver_t *)clientd;
+    int sum = 0;
+
+    sum += aeron_driver_conductor_do_work(&driver->conductor);
+
+    return sum;
+}
+
+void aeron_driver_shared_on_close(void *clientd)
+{
+    aeron_driver_t *driver = (aeron_driver_t *)clientd;
+
+    aeron_driver_conductor_on_close(&driver->conductor);
+}
+
 int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 {
     aeron_driver_t *_driver = NULL;
@@ -287,8 +301,35 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     switch (_driver->context->threading_mode)
     {
         case AERON_THREADING_MODE_SHARED:
-            /* TODO: use do_work and on_close composite functions, etc. */
+            if (aeron_agent_init(
+                &_driver->runners[AERON_AGENT_RUNNER_SHARED],
+                "[conductor, sender, receiver]",
+                _driver,
+                aeron_driver_shared_do_work,
+                aeron_driver_shared_on_close,
+                _driver->context->shared_idle_strategy_func,
+                _driver->context->shared_idle_strategy_state) < 0)
+            {
+                return -1;
+            }
+            break;
+
         case AERON_THREADING_MODE_SHARED_NETWORK:
+            if (aeron_agent_init(
+                &_driver->runners[AERON_AGENT_RUNNER_CONDUCTOR],
+                "conductor",
+                &_driver->conductor,
+                aeron_driver_conductor_do_work,
+                aeron_driver_conductor_on_close,
+                _driver->context->conductor_idle_strategy_func,
+                _driver->context->conductor_idle_strategy_state) < 0)
+            {
+                return -1;
+            }
+
+            /* TODO: add shared sender + receiver */
+            break;
+
         case AERON_THREADING_MODE_DEDICATED:
         default:
             if (aeron_agent_init(
@@ -302,6 +343,9 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
             {
                 return -1;
             }
+
+            /* TODO: add sender */
+            /* TODO: add receiver */
             break;
     }
 

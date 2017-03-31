@@ -259,6 +259,8 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     munmap(context->cnc_buffer, context->cnc_buffer_length);
 
     aeron_free((void *)context->aeron_dir);
+    aeron_free(context->conductor_idle_strategy_state);
+    aeron_free(context->shared_idle_strategy_state);
     aeron_free(context);
     return 0;
 }

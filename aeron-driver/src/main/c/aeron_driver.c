@@ -277,12 +277,33 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     /* TODO: init sender and receiver */
 
+
+    aeron_mpsc_rb_consumer_heartbeat_time(&_driver->conductor.to_driver_commands, aeron_epochclock());
+
     *driver = _driver;
     return 0;
 }
 
 int aeron_driver_start(aeron_driver_t *driver)
 {
+    if (NULL == driver)
+    {
+        /* TODO: EINVAL */
+        return -1;
+    }
+
+    switch (driver->context->threading_mode)
+    {
+        case AERON_THREADING_MODE_SHARED:
+        case AERON_THREADING_MODE_SHARED_NETWORK:
+        case AERON_THREADING_MODE_DEDICATED:
+        default:
+            {
+
+            }
+            break;
+    }
+
     return 0;
 }
 

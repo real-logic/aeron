@@ -19,11 +19,13 @@
 
 #include "aeron_driver_context.h"
 #include "aeron_driver_conductor.h"
+#include "aeron_agent.h"
 
 typedef struct aeron_driver_stct
 {
     aeron_driver_context_t *context;
     aeron_driver_conductor_t conductor;
+    aeron_agent_runner_t conductor_runner;
 }
 aeron_driver_t;
 

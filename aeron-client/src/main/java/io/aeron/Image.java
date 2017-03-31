@@ -209,19 +209,16 @@ public class Image
         }
 
         final long position = subscriberPosition.get();
-        final int termOffset = (int)position & termLengthMask;
-        final UnsafeBuffer termBuffer = activeTermBuffer(position);
 
         return read(
-            termBuffer,
-            termOffset,
+            activeTermBuffer(position),
+            (int)position & termLengthMask,
             fragmentHandler,
             fragmentLimit,
             header,
             errorHandler,
             position,
             subscriberPosition);
-
     }
 
     /**
@@ -242,16 +239,13 @@ public class Image
             return 0;
         }
 
+        int fragmentsRead = 0;
         long initialPosition = subscriberPosition.get();
         int initialOffset = (int)initialPosition & termLengthMask;
         int resultingOffset = initialOffset;
-        int fragmentsRead = 0;
         final UnsafeBuffer termBuffer = activeTermBuffer(initialPosition);
         final int capacity = termBuffer.capacity();
-        if (header.buffer() != termBuffer)
-        {
-            header.buffer(termBuffer);
-        }
+        header.buffer(termBuffer);
 
         try
         {

@@ -33,8 +33,8 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
  */
 public class Header
 {
-    private int positionBitsToShift;
-    private int initialTermId;
+    private final int positionBitsToShift;
+    private final int initialTermId;
     private int offset = 0;
     private DirectBuffer buffer;
 
@@ -69,16 +69,6 @@ public class Header
     public final int initialTermId()
     {
         return initialTermId;
-    }
-
-    /**
-     * Set the initial term id this stream started at.
-     *
-     * @param initialTermId this stream started at.
-     */
-    public final void initialTermId(final int initialTermId)
-    {
-        this.initialTermId = initialTermId;
     }
 
     /**
@@ -118,7 +108,10 @@ public class Header
      */
     public final void buffer(final DirectBuffer buffer)
     {
-        this.buffer = buffer;
+        if (buffer != this.buffer)
+        {
+            this.buffer = buffer;
+        }
     }
 
     /**

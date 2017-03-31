@@ -57,10 +57,7 @@ public class TermReader
         int fragmentsRead = 0;
         int offset = termOffset;
         final int capacity = termBuffer.capacity();
-        if (header.buffer() != termBuffer)
-        {
-            header.buffer(termBuffer);
-        }
+        header.buffer(termBuffer);
 
         try
         {

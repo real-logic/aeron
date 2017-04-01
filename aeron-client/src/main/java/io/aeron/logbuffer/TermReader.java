@@ -30,7 +30,8 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 public class TermReader
 {
     /**
-     * Reads data from a term in a log buffer.
+     * Reads data from a term in a log buffer and updates a passed {@link Position} so progress is not lost in the
+     * event of an exception.
      *
      * If a fragmentsLimit of 0 or less is passed then at least one read will be attempted.
      *
@@ -97,5 +98,97 @@ public class TermReader
         }
 
         return fragmentsRead;
+    }
+
+    /**
+     * Reads data from a term in a log buffer.
+     *
+     * If a fragmentsLimit of 0 or less is passed then at least one read will be attempted.
+     *
+     * @param termBuffer     to be read for fragments.
+     * @param termOffset     within the buffer that the read should begin.
+     * @param handler        the handler for data that has been read
+     * @param fragmentsLimit limit the number of fragments read.
+     * @param header         to be used for mapping over the header for a given fragment.
+     * @param errorHandler   to be notified if an error occurs during the callback.
+     * @return the number of fragments read
+     */
+    public static long read(
+        final UnsafeBuffer termBuffer,
+        final int termOffset,
+        final FragmentHandler handler,
+        final int fragmentsLimit,
+        final Header header,
+        final ErrorHandler errorHandler)
+    {
+        int fragmentsRead = 0;
+        int offset = termOffset;
+        final int capacity = termBuffer.capacity();
+
+        try
+        {
+            do
+            {
+                final int frameLength = frameLengthVolatile(termBuffer, offset);
+                if (frameLength <= 0)
+                {
+                    break;
+                }
+
+                final int frameOffset = offset;
+                offset += BitUtil.align(frameLength, FRAME_ALIGNMENT);
+
+                if (!isPaddingFrame(termBuffer, frameOffset))
+                {
+                    header.buffer(termBuffer);
+                    header.offset(frameOffset);
+
+                    handler.onFragment(termBuffer, frameOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH, header);
+
+                    ++fragmentsRead;
+                }
+            }
+            while (fragmentsRead < fragmentsLimit && offset < capacity);
+        }
+        catch (final Throwable t)
+        {
+            errorHandler.onError(t);
+        }
+
+        return pack(offset, fragmentsRead);
+    }
+
+    /**
+     * Pack the values for fragmentsRead and offset into a long for returning on the stack.
+     *
+     * @param offset        value to be packed.
+     * @param fragmentsRead value to be packed.
+     * @return a long with both ints packed into it.
+     */
+    public static long pack(final int offset, final int fragmentsRead)
+    {
+        return ((long)offset << 32) | fragmentsRead;
+    }
+
+    /**
+     * The number of fragments that have been read.
+     *
+     * @param readOutcome into which the fragments read value has been packed.
+     * @return the number of fragments that have been read.
+     */
+    public static int fragmentsRead(final long readOutcome)
+    {
+        return (int)readOutcome;
+    }
+
+    /**
+     * The offset up to which the term has progressed.
+     *
+     * @param readOutcome into which the offset value has been packed.
+     * @return the offset up to which the term has progressed.
+     */
+    public static int offset(final long readOutcome)
+    {
+        return (int)(readOutcome >>> 32);
     }
 }

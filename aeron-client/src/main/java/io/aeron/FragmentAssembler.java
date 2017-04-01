@@ -42,7 +42,7 @@ public class FragmentAssembler implements FragmentHandler
     private final Int2ObjectHashMap<BufferBuilder> builderBySessionIdMap = new Int2ObjectHashMap<>();
 
     /**
-     * Construct an adapter to reassemble message fragments and delegate on only whole messages.
+     * Construct an adapter to reassemble message fragments and delegate on whole messages.
      *
      * @param delegate onto which whole messages are forwarded.
      */
@@ -52,7 +52,7 @@ public class FragmentAssembler implements FragmentHandler
     }
 
     /**
-     * Construct an adapter to reassembly message fragments and delegate on only whole messages.
+     * Construct an adapter to reassemble message fragments and delegate on whole messages.
      *
      * @param delegate            onto which whole messages are forwarded.
      * @param initialBufferLength to be used for each session.

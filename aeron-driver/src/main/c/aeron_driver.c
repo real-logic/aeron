@@ -27,8 +27,6 @@
 #include "util/aeron_strutil.h"
 #include "util/aeron_fileutil.h"
 #include "aeron_driver.h"
-#include "concurrent/aeron_distinct_error_log.h"
-#include "concurrent/aeron_atomic.h"
 
 void aeron_log_func_stderr(const char *str)
 {
@@ -240,6 +238,23 @@ int aeron_driver_create_cnc_file(aeron_driver_t *driver)
     return 0;
 }
 
+int aeron_driver_shared_do_work(void *clientd)
+{
+    aeron_driver_t *driver = (aeron_driver_t *)clientd;
+    int sum = 0;
+
+    sum += aeron_driver_conductor_do_work(&driver->conductor);
+
+    return sum;
+}
+
+void aeron_driver_shared_on_close(void *clientd)
+{
+    aeron_driver_t *driver = (aeron_driver_t *)clientd;
+
+    aeron_driver_conductor_on_close(&driver->conductor);
+}
+
 int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 {
     aeron_driver_t *_driver = NULL;
@@ -257,13 +272,82 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     _driver->context = context;
 
+    for (int i = 0; i < AERON_AGENT_RUNNER_MAX; i++)
+    {
+        _driver->runners[i].state = AERON_AGENT_STATE_UNUSED;
+    }
+
+    /* TODO: validate socket settings */
+
     if (aeron_driver_ensure_dir_is_recreated(_driver) < 0)
     {
         return -1;
     }
 
-    /* TODO: validate socket settings */
+    if (aeron_driver_create_cnc_file(_driver) < 0)
+    {
+        return -1;
+    }
 
+    if (aeron_driver_conductor_init(&_driver->conductor, context) < 0)
+    {
+        return -1;
+    }
+
+    /* TODO: init sender and receiver */
+
+    aeron_mpsc_rb_consumer_heartbeat_time(&_driver->conductor.to_driver_commands, aeron_epochclock());
+
+    switch (_driver->context->threading_mode)
+    {
+        case AERON_THREADING_MODE_SHARED:
+            if (aeron_agent_init(
+                &_driver->runners[AERON_AGENT_RUNNER_SHARED],
+                "[conductor, sender, receiver]",
+                _driver,
+                aeron_driver_shared_do_work,
+                aeron_driver_shared_on_close,
+                _driver->context->shared_idle_strategy_func,
+                _driver->context->shared_idle_strategy_state) < 0)
+            {
+                return -1;
+            }
+            break;
+
+        case AERON_THREADING_MODE_SHARED_NETWORK:
+            if (aeron_agent_init(
+                &_driver->runners[AERON_AGENT_RUNNER_CONDUCTOR],
+                "conductor",
+                &_driver->conductor,
+                aeron_driver_conductor_do_work,
+                aeron_driver_conductor_on_close,
+                _driver->context->conductor_idle_strategy_func,
+                _driver->context->conductor_idle_strategy_state) < 0)
+            {
+                return -1;
+            }
+
+            /* TODO: add shared sender + receiver */
+            break;
+
+        case AERON_THREADING_MODE_DEDICATED:
+        default:
+            if (aeron_agent_init(
+                &_driver->runners[AERON_AGENT_RUNNER_CONDUCTOR],
+                "conductor",
+                &_driver->conductor,
+                aeron_driver_conductor_do_work,
+                aeron_driver_conductor_on_close,
+                _driver->context->conductor_idle_strategy_func,
+                _driver->context->conductor_idle_strategy_state) < 0)
+            {
+                return -1;
+            }
+
+            /* TODO: add sender */
+            /* TODO: add receiver */
+            break;
+    }
 
 
     *driver = _driver;
@@ -272,6 +356,23 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
 int aeron_driver_start(aeron_driver_t *driver)
 {
+    if (NULL == driver)
+    {
+        /* TODO: EINVAL */
+        return -1;
+    }
+
+    for (int i = 0; i < AERON_AGENT_RUNNER_MAX; i++)
+    {
+        if (driver->runners[i].state == AERON_AGENT_STATE_INITED)
+        {
+            if (aeron_agent_start(&driver->runners[i]) < 0)
+            {
+                return -1;
+            }
+        }
+    }
+
     return 0;
 }
 
@@ -281,6 +382,17 @@ int aeron_driver_close(aeron_driver_t *driver)
     {
         /* TODO: EINVAL */
         return -1;
+    }
+
+    for (int i = 0; i < AERON_AGENT_RUNNER_MAX; i++)
+    {
+        if (driver->runners[i].state == AERON_AGENT_STATE_STARTED)
+        {
+            if (aeron_agent_close(&driver->runners[i]) < 0)
+            {
+                return -1;
+            }
+        }
     }
 
     aeron_free(driver);

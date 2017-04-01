@@ -22,6 +22,7 @@
 #include <stddef.h>
 #include "aeronmd.h"
 #include "util/aeron_bitutil.h"
+#include "aeron_agent.h"
 
 #define AERON_MAX_PATH (256)
 #define AERON_CNC_FILE "cnc.dat"
@@ -77,6 +78,11 @@ typedef struct aeron_driver_context_stct
 
     aeron_clock_func_t nano_clock;
     aeron_clock_func_t epoch_clock;
+
+    aeron_idle_strategy_func_t conductor_idle_strategy_func;
+    void *conductor_idle_strategy_state;
+    aeron_idle_strategy_func_t shared_idle_strategy_func;
+    void *shared_idle_strategy_state;
 }
 aeron_driver_context_t;
 

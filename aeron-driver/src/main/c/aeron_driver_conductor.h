@@ -22,6 +22,7 @@
 #include "concurrent/aeron_broadcast_transmitter.h"
 #include "concurrent/aeron_distinct_error_log.h"
 #include "concurrent/aeron_counters_manager.h"
+#include "aeron_system_counters.h"
 
 typedef struct aeron_driver_conductor_stct
 {
@@ -30,6 +31,7 @@ typedef struct aeron_driver_conductor_stct
     aeron_broadcast_transmitter_t to_clients;
     aeron_distinct_error_log_t error_log;
     aeron_counters_manager_t counters_manager;
+    aeron_system_counters_t system_counters;
 }
 aeron_driver_conductor_t;
 

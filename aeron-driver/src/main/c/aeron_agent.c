@@ -17,63 +17,119 @@
 #include <string.h>
 #include <stdio.h>
 #include <dlfcn.h>
+#include <sched.h>
 #include "aeron_agent.h"
 #include "aeron_alloc.h"
 #include "aeron_driver_context.h"
 
-int aeron_agent_init(
-    aeron_agent_runner_t **runner,
-    const char *role_name,
+static void aeron_idle_strategy_sleeping_idle(void *state, int work_count)
+{
+    if (work_count > 0)
+    {
+        return;
+    }
+
+    nanosleep(&(struct timespec){.tv_nsec=1}, NULL);
+}
+
+static void aeron_idle_strategy_yielding_idle(void *state, int work_count)
+{
+    if (work_count > 0)
+    {
+        return;
+    }
+
+    sched_yield();
+}
+
+static void aeron_idle_strategy_noop_idle(void *state, int work_count)
+{
+    if (work_count > 0)
+    {
+        return;
+    }
+
+    __asm__ volatile("pause\n": : :"memory");
+}
+
+aeron_idle_strategy_func_t aeron_idle_strategy_load(
     const char *idle_strategy_name,
-    void *state,
-    aeron_agent_do_work_func_t do_work,
-    aeron_agent_on_close_func_t on_close)
+    void **idle_strategy_state)
 {
     char idle_func_name[AERON_MAX_PATH];
-    aeron_agent_runner_t *_runner;
     aeron_idle_strategy_func_t idle_func = NULL;
     aeron_idle_strategy_init_func_t idle_init_func = NULL;
     void *idle_state = NULL;
 
-    if (NULL == runner || NULL == do_work)
+    if (NULL == idle_strategy_name || NULL == idle_strategy_state)
+    {
+        /* TODO: EINVAL */
+        return NULL;
+    }
+
+    if (strncmp(idle_strategy_name, "sleeping", sizeof("sleeping")) == 0)
+    {
+        idle_func = aeron_idle_strategy_sleeping_idle;
+    }
+    else if (strncmp(idle_strategy_name, "yielding", sizeof("yielding")) == 0)
+    {
+        idle_func = aeron_idle_strategy_yielding_idle;
+    }
+    else if (strncmp(idle_strategy_name, "noop", sizeof("noop")) == 0)
+    {
+        idle_func = aeron_idle_strategy_noop_idle;
+    }
+    else
+    {
+        snprintf(idle_func_name, sizeof(idle_func_name) - 1, "%s_idle", idle_strategy_name);
+        if ((idle_func = (aeron_idle_strategy_func_t) dlsym(RTLD_DEFAULT, idle_func_name)) == NULL)
+        {
+            /* TODO: dlerror and EINVAL */
+            return NULL;
+        }
+
+        snprintf(idle_func_name, sizeof(idle_func_name) - 1, "%s_init", idle_strategy_name);
+        if ((idle_init_func = (aeron_idle_strategy_init_func_t) dlsym(RTLD_DEFAULT, idle_func_name)) == NULL)
+        {
+            /* TODO: dlerror and EINVAL */
+            return NULL;
+        }
+
+        if (idle_init_func(&idle_state) < 0)
+        {
+            return NULL;
+        }
+
+        *idle_strategy_state = idle_state;
+    }
+
+    return idle_func;
+}
+
+int aeron_agent_init(
+    aeron_agent_runner_t *runner,
+    const char *role_name,
+    void *state,
+    aeron_agent_do_work_func_t do_work,
+    aeron_agent_on_close_func_t on_close,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
+{
+    if (NULL == runner || NULL == do_work || NULL == idle_strategy_func)
     {
         /* TODO: EINVAL */
         return -1;
     }
 
-    snprintf(idle_func_name, sizeof(idle_func_name) - 1, "%s_idle", idle_strategy_name);
-    if ((idle_func = (aeron_idle_strategy_func_t)dlsym(RTLD_DEFAULT, idle_func_name)) == NULL)
-    {
-        /* TODO: dlerror and EINVAL */
-        return -1;
-    }
+    runner->agent_state = state;
+    runner->do_work = do_work;
+    runner->on_close = on_close;
+    runner->role_name = strndup(role_name, AERON_MAX_PATH);
+    runner->idle_strategy_state = idle_strategy_state;
+    runner->idle_strategy = idle_strategy_func;
+    atomic_init(&runner->running, true);
+    runner->state = AERON_AGENT_STATE_INITED;
 
-    snprintf(idle_func_name, sizeof(idle_func_name) - 1, "%s_init", idle_strategy_name);
-    if ((idle_init_func = (aeron_idle_strategy_init_func_t)dlsym(RTLD_DEFAULT, idle_func_name)) == NULL)
-    {
-        /* TODO: dlerror and EINVAL */
-        return -1;
-    }
-
-    if (idle_init_func(&idle_state) < 0)
-    {
-        return -1;
-    }
-
-    if (aeron_alloc((void **)&_runner, sizeof(aeron_agent_runner_t)) < 0)
-    {
-        return -1;
-    }
-
-    _runner->agent_state = state;
-    _runner->do_work = do_work;
-    _runner->on_close = on_close;
-    _runner->role_name = strndup(role_name, AERON_MAX_PATH);
-    _runner->idle_strategy_state = idle_state;
-    _runner->idle_strategy = idle_func;
-    atomic_init(&_runner->running, true);
-
-    *runner = _runner;
     return 0;
 }
 
@@ -112,6 +168,8 @@ int aeron_agent_start(aeron_agent_runner_t *runner)
         return -1;
     }
 
+    runner->state = AERON_AGENT_STATE_STARTED;
+
     return 0;
 }
 
@@ -126,6 +184,7 @@ int aeron_agent_close(aeron_agent_runner_t *runner)
     }
 
     atomic_store(&runner->running, false);
+    runner->state = AERON_AGENT_STATE_STOPPING;
 
     /* TODO: should use timed pthread_join _np version when available? */
 
@@ -134,6 +193,8 @@ int aeron_agent_close(aeron_agent_runner_t *runner)
         /* TODO: pthread-result has error */
         return -1;
     }
+
+    runner->state = AERON_AGENT_STATE_STOPPED;
 
     if (NULL != runner->on_close)
     {

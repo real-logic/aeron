@@ -33,6 +33,12 @@ typedef void (*aeron_agent_on_close_func_t)(void *);
 typedef void (*aeron_idle_strategy_func_t)(void *, int);
 typedef int (*aeron_idle_strategy_init_func_t)(void **);
 
+#define AERON_AGENT_STATE_UNUSED 0
+#define AERON_AGENT_STATE_INITED 1
+#define AERON_AGENT_STATE_STARTED 2
+#define AERON_AGENT_STATE_STOPPING 3
+#define AERON_AGENT_STATE_STOPPED 4
+
 typedef struct aeron_agent_runner_stct
 {
     const char *role_name;
@@ -43,16 +49,22 @@ typedef struct aeron_agent_runner_stct
     aeron_idle_strategy_func_t idle_strategy;
     aeron_thread_t thread;
     atomic_bool running;
+    uint8_t state;
 }
 aeron_agent_runner_t;
 
-int aeron_agent_init(
-    aeron_agent_runner_t **runner,
-    const char *role_name,
+aeron_idle_strategy_func_t aeron_idle_strategy_load(
     const char *idle_strategy_name,
+    void **idle_strategy_state);
+
+int aeron_agent_init(
+    aeron_agent_runner_t *runner,
+    const char *role_name,
     void *state,
     aeron_agent_do_work_func_t do_work,
-    aeron_agent_on_close_func_t on_close);
+    aeron_agent_on_close_func_t on_close,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state);
 
 int aeron_agent_start(aeron_agent_runner_t *runner);
 int aeron_agent_close(aeron_agent_runner_t *runner);

@@ -64,6 +64,16 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
     }
 
     /**
+     * Get the delegate unto which assembled messages are delegated.
+     *
+     * @return  the delegate unto which assembled messages are delegated.
+     */
+    public ControlledFragmentHandler delegate()
+    {
+        return delegate;
+    }
+
+    /**
      * The implementation of {@link ControlledFragmentHandler} that reassembles and forwards whole messages.
      *
      * @param buffer containing the data.

@@ -64,6 +64,16 @@ public class FragmentAssembler implements FragmentHandler
     }
 
     /**
+     * Get the delegate unto which assembled messages are delegated.
+     *
+     * @return  the delegate unto which assembled messages are delegated.
+     */
+    public FragmentHandler delegate()
+    {
+        return delegate;
+    }
+
+    /**
      * The implementation of {@link FragmentHandler} that reassembles and forwards whole messages.
      *
      * @param buffer containing the data.

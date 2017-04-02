@@ -59,6 +59,26 @@ public class ImageControlledFragmentAssembler implements ControlledFragmentHandl
     }
 
     /**
+     * Get the delegate unto which assembled messages are delegated.
+     *
+     * @return  the delegate unto which assembled messages are delegated.
+     */
+    public ControlledFragmentHandler delegate()
+    {
+        return delegate;
+    }
+
+    /**
+     * Get the {@link BufferBuilder} for resetting this assembler.
+     *
+     * @return the {@link BufferBuilder} for resetting this assembler.
+     */
+    BufferBuilder bufferBuilder()
+    {
+        return builder;
+    }
+
+    /**
      * The implementation of {@link ControlledFragmentHandler} that reassembles and forwards whole messages.
      *
      * @param buffer containing the data.

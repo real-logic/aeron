@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#define _GNU_SOURCE
+
 #include <time.h>
 #include <stdio.h>
 #include <inttypes.h>

@@ -18,6 +18,7 @@
 #define AERON_AERONMD_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef struct aeron_driver_context_stct aeron_driver_context_t;
 typedef struct aeron_driver_stct aeron_driver_t;

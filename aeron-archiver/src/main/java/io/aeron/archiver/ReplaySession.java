@@ -188,7 +188,6 @@ class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHand
 
         try
         {
-            // TODO: fragement alignment, fragement reader -> exclusive publication
             cursor = new StreamInstanceArchiveFragmentReader(
                 streamInstanceId,
                 archiveFolder,
@@ -201,7 +200,6 @@ class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHand
             return closeOnErr(e, "Failed to open archive cursor");
         }
         // plumbing is secured, we can kick off the replay
-        // TODO: re-split the publications for data/control messages
         proxy.sendResponse(control, null);
         this.state = State.REPLAY;
         return 1;

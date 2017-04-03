@@ -67,11 +67,13 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
 
 target_link_libraries(
     aeron_driver
+    ${CMAKE_DL_LIBS}
     ${CMAKE_THREAD_LIBS_INIT})
 
 target_link_libraries(
     aeronmd
     aeron_driver
+    ${CMAKE_DL_LIBS}
     ${CMAKE_THREAD_LIBS_INIT})
 
 install(TARGETS aeron_driver LIBRARY DESTINATION lib)

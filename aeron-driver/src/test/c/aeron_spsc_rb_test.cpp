@@ -17,6 +17,7 @@
 #include <array>
 #include <cstdint>
 #include <thread>
+#include <atomic>
 
 #include <gtest/gtest.h>
 

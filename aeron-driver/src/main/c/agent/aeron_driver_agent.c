@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <dlfcn.h>
 #include "agent/aeron_driver_agent.h"

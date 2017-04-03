@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-#define _XOPEN_SOURCE 700
+#define _GNU_SOURCE
+
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>

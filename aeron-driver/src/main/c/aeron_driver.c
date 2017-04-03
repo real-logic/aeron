@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+#if defined(__linux__)
+#define _GNU_SOURCE
+#endif
+
 #include <stddef.h>
 #include <sys/stat.h>
 #include <stdio.h>

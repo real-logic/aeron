@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-#define _XOPEN_SOURCE 700
+#define _GNU_SOURCE
+
 #include <string.h>
 #include <stdio.h>
 #include "aeron_alloc.h"

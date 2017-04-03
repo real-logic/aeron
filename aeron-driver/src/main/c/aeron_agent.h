@@ -18,6 +18,7 @@
 #define AERON_AERON_AGENT_H
 
 #include <stdatomic.h>
+#include <stdint.h>
 
 #if !defined(_MSC_VER)
 #include <pthread.h>

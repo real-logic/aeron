@@ -25,6 +25,7 @@ import org.junit.*;
 import org.mockito.Mockito;
 
 import java.io.File;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.archiver.TestUtil.makeTempFolder;
 import static org.mockito.ArgumentMatchers.any;
@@ -149,17 +150,38 @@ public class ReplaySessionTest
                 image,
                 archiveFolder,
                 proxy);
+
+        // this is a given since they are closed by the session only
         when(replay.isClosed()).thenReturn(false);
-        when(replay.isConnected()).thenReturn(false);
         when(control.isClosed()).thenReturn(false);
+
+        // both are disconnected(no subscribers)
+        when(replay.isConnected()).thenReturn(false);
         when(control.isConnected()).thenReturn(false);
+
         // does not switch to replay mode until publications are established
+        Assert.assertEquals(0, replaySession.doWork());
+
+        // pick one to establish first
+        if (ThreadLocalRandom.current().nextDouble() > 0.5)
+        {
+            when(replay.isConnected()).thenReturn(true);
+        }
+        else
+        {
+            when(control.isConnected()).thenReturn(true);
+        }
+
+        // does not switch to replay mode until BOTH publications are established
         Assert.assertEquals(0, replaySession.doWork());
 
         when(replay.isConnected()).thenReturn(true);
         when(control.isConnected()).thenReturn(true);
 
+        // publications are connected, so do some work
         Assert.assertNotEquals(0, replaySession.doWork());
+
+        // notifies that initiated
         Mockito.verify(proxy, times(1)).sendResponse(control, null);
 
         final UnsafeBuffer mockTermBuffer =
@@ -174,11 +196,49 @@ public class ReplaySessionTest
         });
         Assert.assertNotEquals(0, replaySession.doWork());
         Assert.assertTrue(messageIndex > 0);
+
+        //  frame length
         Assert.assertEquals(1024, mockTermBuffer.getInt(0));
         // TODO: add validation for reserved value and flags
 
         Assert.assertTrue(replaySession.isDone());
 
         Assert.assertEquals(0, replaySession.doWork());
+    }
+
+    @Test
+    public void shouldFailToReplayDataForNonExistantStream()
+    {
+        final long length = 1024L;
+        final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
+        final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
+        final Image image = Mockito.mock(Image.class);
+
+        final ReplaySession replaySession =
+            new ReplaySession(
+                STREAM_INSTANCE_ID + 1,
+                INITIAL_TERM_ID,
+                INITIAL_TERM_OFFSET,
+                length,
+                replay,
+                control,
+                image,
+                archiveFolder,
+                proxy);
+
+        // this is a given since they are closed by the session only
+        when(replay.isClosed()).thenReturn(false);
+        when(control.isClosed()).thenReturn(false);
+
+        when(replay.isConnected()).thenReturn(true);
+        when(control.isConnected()).thenReturn(true);
+
+        Assert.assertEquals(1, replaySession.doWork());
+
+        // failure notification
+        Mockito.verify(proxy, times(1)).sendResponse(eq(control), notNull());
+
+        Assert.assertTrue(replaySession.isDone());
+
     }
 }

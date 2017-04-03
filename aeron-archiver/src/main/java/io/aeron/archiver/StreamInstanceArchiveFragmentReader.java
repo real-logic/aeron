@@ -128,22 +128,30 @@ class StreamInstanceArchiveFragmentReader implements AutoCloseable
                !isDone() &&
                polled < fragmentLimit)
         {
+            final int fragmentOffset = this.fragmentOffset;
             fragmentHeader.offset(fragmentOffset);
             final int frameLength = fragmentHeader.frameLength();
             if (frameLength <= 0)
             {
                 final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
-                headerFlyweight.wrap(termMappedUnsafeBuffer, fragmentOffset, DataHeaderFlyweight.HEADER_LENGTH);
+                headerFlyweight.wrap(termMappedUnsafeBuffer, this.fragmentOffset, DataHeaderFlyweight.HEADER_LENGTH);
                 throw new IllegalStateException("Broken frame with length <= 0: " + headerFlyweight);
             }
 
+            final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
+            // cursor moves forward, importantly an exception from onFragment will not block progress
+            transmitted += alignedLength;
+            this.fragmentOffset += alignedLength;
+
             if (fragmentHeader.type() == PADDING_FRAME_TYPE)
             {
-                return 0;
+                continue;
             }
 
             final int fragmentDataOffset = fragmentOffset + DataHeaderFlyweight.DATA_OFFSET;
             final int fragmentDataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
+
+            // TODO: is the gain from familiar abstractions worth it? the only intended callee here is the ReplaySession
             final Action action = fragmentHandler.onFragment(
                 termMappedUnsafeBuffer,
                 fragmentDataOffset,
@@ -151,13 +159,13 @@ class StreamInstanceArchiveFragmentReader implements AutoCloseable
                 fragmentHeader);
             if (action.equals(Action.ABORT))
             {
+                // rollback the cursor progress
+                transmitted -= alignedLength;
+                this.fragmentOffset -= alignedLength;
                 return polled;
             }
-            // move to next fragment
+            // only count data fragments
             polled++;
-            final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
-            transmitted += alignedLength;
-            fragmentOffset += alignedLength;
         }
 
         if (!isDone() && fragmentOffset == termBufferLength)
@@ -220,44 +228,6 @@ class StreamInstanceArchiveFragmentReader implements AutoCloseable
     boolean isDone()
     {
         return transmitted >= replayLength;
-    }
-
-    private int readFragment(
-        final ControlledFragmentHandler fragmentHandler,
-        final UnsafeBuffer termMappedUnsafeBuffer,
-        final int fragmentOffset,
-        final int frameLength,
-        final Header fragmentHeader)
-    {
-        if (frameLength <= 0)
-        {
-            final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
-            headerFlyweight.wrap(termMappedUnsafeBuffer, fragmentOffset, DataHeaderFlyweight.HEADER_LENGTH);
-            throw new IllegalStateException("Broken frame with length <= 0: " + headerFlyweight);
-        }
-
-        if (fragmentHeader.type() == PADDING_FRAME_TYPE)
-        {
-            return 0;
-        }
-
-        final int fragmentDataOffset = fragmentOffset + DataHeaderFlyweight.DATA_OFFSET;
-        final int fragmentDataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
-        final Action action = fragmentHandler.onFragment(
-            termMappedUnsafeBuffer,
-            fragmentDataOffset,
-            fragmentDataLength,
-            fragmentHeader);
-        if (action.equals(Action.ABORT))
-        {
-            return -1;
-        }
-        else
-        {
-            return 1;
-        }
-
-
     }
 
     public void close()

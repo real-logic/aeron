@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <thread>
 #include <atomic>
+#include <limits>
 
 #include <gtest/gtest.h>
 
@@ -505,7 +506,8 @@ TEST(MpscRbConcurrentTest, shouldExchangeMessages)
 
     while (msgCount < (NUM_MESSAGES_PER_PUBLISHER * NUM_PUBLISHERS))
     {
-        const size_t readCount = aeron_mpsc_rb_read(&rb, mpsc_rb_concurrent_handler, counts, SIZE_T_MAX);
+        const size_t readCount =
+            aeron_mpsc_rb_read(&rb, mpsc_rb_concurrent_handler, counts, std::numeric_limits<size_t>::max());
 
         if (0 == readCount)
         {

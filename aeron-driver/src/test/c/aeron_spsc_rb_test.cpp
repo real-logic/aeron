@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <thread>
 #include <atomic>
+#include <limits>
 
 #include <gtest/gtest.h>
 
@@ -417,7 +418,8 @@ TEST(SpscRbConcurrentTest, shouldExchangeMessages)
 
     while (msgCount < NUM_MESSAGES)
     {
-        const size_t readCount = aeron_spsc_rb_read(&rb, spsc_rb_concurrent_handler, &counts, SIZE_T_MAX);
+        const size_t readCount =
+            aeron_spsc_rb_read(&rb, spsc_rb_concurrent_handler, &counts, std::numeric_limits<size_t>::max());
 
         if (0 == readCount)
         {

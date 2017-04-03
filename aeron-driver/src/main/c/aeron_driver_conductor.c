@@ -19,7 +19,7 @@
 
 static void aeron_error_log_resource_linger(uint8_t *resource)
 {
-
+    /* TODO: must be MPSC queue to delete after linger */
 }
 
 int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *ctx)

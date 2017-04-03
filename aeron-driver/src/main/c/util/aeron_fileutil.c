@@ -26,7 +26,7 @@ int aeron_map_new_file(void **addr, const char *path, size_t length, bool fill_w
 {
     int fd, result = -1;
 
-    if ((fd = open(path, O_RDWR | O_CREAT | O_EXCL)) >= 0)
+    if ((fd = open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR)) >= 0)
     {
         if (lseek(fd, (off_t)(length - 1), SEEK_SET) >= 0)
         {

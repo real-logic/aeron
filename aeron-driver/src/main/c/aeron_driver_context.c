@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#define _XOPEN_SOURCE 700
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
@@ -300,7 +301,7 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, a
 
             if (fstat(fd, &sb) == 0)
             {
-                void *cnc_mmap = mmap(NULL, (size_t)sb.st_size, PROT_READ, MAP_FILE, fd, 0);
+                void *cnc_mmap = mmap(NULL, (size_t)sb.st_size, PROT_READ, MAP_SHARED, fd, 0);
 
                 if (MAP_FAILED != cnc_mmap)
                 {

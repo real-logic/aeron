@@ -97,7 +97,7 @@ int aeron_report_existing_errors(const char *aeron_dir)
         {
             if (fstat(fd, &sb) == 0)
             {
-                void *cnc_mmap = mmap(NULL, (size_t) sb.st_size, PROT_READ, MAP_FILE, fd, 0);
+                void *cnc_mmap = mmap(NULL, (size_t) sb.st_size, PROT_READ, MAP_SHARED, fd, 0);
 
                 if (MAP_FAILED != cnc_mmap)
                 {

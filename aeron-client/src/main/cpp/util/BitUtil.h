@@ -159,7 +159,7 @@ namespace BitUtil
     }
 }
 
-}};
+}}
 
 
 #endif

@@ -78,5 +78,5 @@ private:
     RemoveMessageDefn& m_struct;
 };
 
-}};
+}}
 #endif

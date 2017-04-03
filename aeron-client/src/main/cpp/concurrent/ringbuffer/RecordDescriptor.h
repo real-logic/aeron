@@ -84,7 +84,7 @@ namespace RecordDescriptor {
                 util::strPrintf("Message type id must be greater than zero, msgTypeId=%d", msgTypeId), SOURCEINFO);
         }
     }
-};
+}
 
 }}}
 

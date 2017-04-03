@@ -172,6 +172,6 @@ inline static std::int64_t clientLivenessTimeout(MemoryMappedFile::ptr_t cncFile
 
 }
 
-};
+}
 
 #endif

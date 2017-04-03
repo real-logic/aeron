@@ -110,5 +110,5 @@ private:
     SubscriptionMessageDefn& m_struct;
 };
 
-}};
+}}
 #endif

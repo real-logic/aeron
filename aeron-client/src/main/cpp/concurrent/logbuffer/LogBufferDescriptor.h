@@ -249,7 +249,7 @@ inline static std::int32_t termOffset(const std::int64_t rawTail, const std::int
     return static_cast<std::int32_t>(std::min(tail, termLength));
 }
 
-};
+}
 
 }}}
 

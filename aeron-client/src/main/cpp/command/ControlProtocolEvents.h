@@ -58,5 +58,5 @@ struct ControlProtocolEvents
     static const std::int32_t ON_UNAVAILABLE_IMAGE = 0x0F05;
 };
 
-}};
+}}
 #endif

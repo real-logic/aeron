@@ -89,5 +89,5 @@ public:
     }
 };
 
-}};
+}}
 #endif //AERON_ERRORFLYWEIGHT_H

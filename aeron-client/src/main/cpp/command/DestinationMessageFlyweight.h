@@ -75,6 +75,6 @@ private:
     DestinationMessageDefn& m_struct;
 };
 
-}};
+}}
 
 #endif //AERON_DESTINATIONMESSAGEFLYWEIGHT_H

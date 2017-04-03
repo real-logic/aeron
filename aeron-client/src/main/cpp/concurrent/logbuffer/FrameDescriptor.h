@@ -153,7 +153,7 @@ inline static std::uint8_t frameVersion(AtomicBuffer& logBuffer, util::index_t f
     return logBuffer.getUInt8(frameOffset);
 }
 
-};
+}
 
 }}}
 

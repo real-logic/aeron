@@ -101,6 +101,6 @@ private:
     PublicationMessageDefn& m_struct;
 };
 
-}};
+}}
 
 #endif

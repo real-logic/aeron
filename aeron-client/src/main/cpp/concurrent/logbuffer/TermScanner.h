@@ -99,6 +99,6 @@ inline std::int64_t scanForAvailability(AtomicBuffer& termBuffer, std::int32_t o
 
 }
 
-}}};
+}}}
 
 #endif //AERON_TERMSCANNER_H

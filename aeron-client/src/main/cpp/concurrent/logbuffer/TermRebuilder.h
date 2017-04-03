@@ -33,7 +33,7 @@ inline void insert(AtomicBuffer& termBuffer, std::int32_t termOffset, AtomicBuff
     FrameDescriptor::frameLengthOrdered(termBuffer, termOffset, firstFrameLength);
 }
 
-};
+}
 
-}}};
+}}}
 #endif //AERON_TERMREBUILDER_H

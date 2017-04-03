@@ -26,4 +26,4 @@ MockAtomicBuffer::MockAtomicBuffer(std::uint8_t *buffer, util::index_t length) :
 
 MockAtomicBuffer::~MockAtomicBuffer() = default;
 
-}}};
+}}}

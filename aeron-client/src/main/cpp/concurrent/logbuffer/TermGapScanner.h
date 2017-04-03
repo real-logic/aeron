@@ -63,8 +63,8 @@ inline std::int32_t scanForGap(
     return gapBeginOffset;
 }
 
-};
+}
 
-}}};
+}}}
 
 #endif

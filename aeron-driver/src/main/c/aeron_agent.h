@@ -37,8 +37,9 @@ typedef int (*aeron_idle_strategy_init_func_t)(void **);
 #define AERON_AGENT_STATE_UNUSED 0
 #define AERON_AGENT_STATE_INITED 1
 #define AERON_AGENT_STATE_STARTED 2
-#define AERON_AGENT_STATE_STOPPING 3
-#define AERON_AGENT_STATE_STOPPED 4
+#define AERON_AGENT_STATE_MANUAL 3
+#define AERON_AGENT_STATE_STOPPING 4
+#define AERON_AGENT_STATE_STOPPED 5
 
 typedef struct aeron_idle_strategy_stct
 {
@@ -75,6 +76,22 @@ int aeron_agent_init(
     void *idle_strategy_state);
 
 int aeron_agent_start(aeron_agent_runner_t *runner);
+
+inline int aeron_agent_do_work(aeron_agent_runner_t *runner)
+{
+    return runner->do_work(runner->agent_state);
+}
+
+inline bool aeron_agent_is_running(aeron_agent_runner_t *runner)
+{
+    return atomic_load(&runner->running);
+}
+
+inline void aeron_agent_idle(aeron_agent_runner_t *runner, int work_count)
+{
+    runner->idle_strategy(runner->idle_strategy_state, work_count);
+}
+
 int aeron_agent_close(aeron_agent_runner_t *runner);
 
 #endif //AERON_AERON_AGENT_H

@@ -35,7 +35,7 @@ typedef struct aeron_driver_conductor_stct
 }
 aeron_driver_conductor_t;
 
-int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *ctx);
+int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *context);
 
 void aeron_driver_conductor_client_transmit(
     aeron_driver_conductor_t *conductor,

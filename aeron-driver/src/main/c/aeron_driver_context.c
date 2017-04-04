@@ -230,8 +230,16 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->nano_clock = aeron_nanoclock;
     _context->epoch_clock = aeron_epochclock;
 
-    _context->conductor_idle_strategy_func = aeron_idle_strategy_load("yielding", &_context->conductor_idle_strategy_state);
-    _context->shared_idle_strategy_func = aeron_idle_strategy_load("yielding", &_context->shared_idle_strategy_state);
+    _context->conductor_idle_strategy_func =
+        aeron_idle_strategy_load("yielding", &_context->conductor_idle_strategy_state);
+    _context->shared_idle_strategy_func =
+        aeron_idle_strategy_load("yielding", &_context->shared_idle_strategy_state);
+    _context->shared_network_idle_strategy_func =
+        aeron_idle_strategy_load("yielding", &_context->shared_network_idle_strategy_state);
+    _context->sender_idle_strategy_func =
+        aeron_idle_strategy_load("noop", &_context->sender_idle_strategy_state);
+    _context->receiver_idle_strategy_func =
+        aeron_idle_strategy_load("noop", &_context->receiver_idle_strategy_state);
 
     *context = _context;
     return 0;

@@ -46,7 +46,9 @@ int aeron_driver_context_close(aeron_driver_context_t *context);
 
 /* create and init driver from context */
 int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context);
-int aeron_driver_start(aeron_driver_t *driver);
+int aeron_driver_start(aeron_driver_t *driver, bool manual_main_loop);
+int aeron_driver_main_do_work(aeron_driver_t *driver);
+void aeron_driver_main_idle_strategy(aeron_driver_t *driver, int work_count);
 int aeron_driver_close(aeron_driver_t *driver);
 
 int aeron_dir_delete(const char *dirname);

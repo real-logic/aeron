@@ -28,7 +28,9 @@ SET(SOURCE
     aeron_driver.c
     aeron_agent.c
     aeron_system_counters.c
-    aeron_driver_conductor.c)
+    aeron_driver_conductor.c
+    aeron_driver_sender.c
+    aeron_driver_receiver.c)
 
 SET(HEADERS
     util/aeron_platform.h
@@ -50,7 +52,9 @@ SET(HEADERS
     aeron_alloc.h
     aeron_agent.h
     aeron_system_counters.h
-    aeron_driver_conductor.h)
+    aeron_driver_conductor.h
+    aeron_driver_sender.h
+    aeron_driver_receiver.h)
 
 set(AGENT_SOURCE
     agent/aeron_driver_agent.c)

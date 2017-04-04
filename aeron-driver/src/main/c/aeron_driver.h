@@ -18,8 +18,10 @@
 #define AERON_AERON_DRIVER_H
 
 #include "aeron_driver_context.h"
-#include "aeron_driver_conductor.h"
 #include "aeron_agent.h"
+#include "aeron_driver_conductor.h"
+#include "aeron_driver_sender.h"
+#include "aeron_driver_receiver.h"
 
 #define AERON_AGENT_RUNNER_CONDUCTOR 0
 #define AERON_AGENT_RUNNER_SENDER 1
@@ -32,6 +34,8 @@ typedef struct aeron_driver_stct
 {
     aeron_driver_context_t *context;
     aeron_driver_conductor_t conductor;
+    aeron_driver_sender_t sender;
+    aeron_driver_receiver_t receiver;
     aeron_agent_runner_t runners[AERON_AGENT_RUNNER_MAX];
 }
 aeron_driver_t;

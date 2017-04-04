@@ -53,14 +53,14 @@ int main(int argc, char **argv)
         goto cleanup;
     }
 
-    if (aeron_driver_start(driver) < 0)
+    if (aeron_driver_start(driver, true) < 0)
     {
         goto cleanup;
     }
 
     while (atomic_load(&running))
     {
-        nanosleep(&(struct timespec){.tv_sec=1}, NULL);
+        aeron_driver_main_idle_strategy(driver, aeron_driver_main_do_work(driver));
     }
 
     printf("Shutting down driver...\n");

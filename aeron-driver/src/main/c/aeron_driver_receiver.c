@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_DRIVER_AGENT_H
-#define AERON_AERON_DRIVER_AGENT_H
+#include "aeron_driver_receiver.h"
 
-#include "aeron_driver_conductor.h"
-#include "command/aeron_control_protocol.h"
+int aeron_driver_receiver_init(aeron_driver_receiver_t *receiver, aeron_driver_context_t *context)
+{
+    return 0;
+}
 
-typedef void (*aeron_driver_conductor_on_command_t)(int32_t, const void *, size_t, void *);
-typedef void (*aeron_driver_conductor_client_transmit_t)(aeron_driver_conductor_t *, int32_t, const void *, size_t);
+int aeron_driver_receiver_do_work(void *clientd)
+{
+    return 0;
+}
 
-/* TODO: hook aeron_driver_context_init to do initial hooks (event log, etc.) under lock */
-/* TODO: hook aeron_driver_init to display options, etc. for instance. */
+void aeron_driver_receiver_on_close(void *clientd)
+{
 
-#endif //AERON_AERON_DRIVER_AGENT_H
+}
+

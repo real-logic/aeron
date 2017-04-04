@@ -22,26 +22,26 @@ static void aeron_error_log_resource_linger(uint8_t *resource)
     /* TODO: must be MPSC queue to delete after linger */
 }
 
-int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *ctx)
+int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *context)
 {
     if (aeron_mpsc_rb_init(
-        &conductor->to_driver_commands, ctx->to_driver_buffer, ctx->to_driver_buffer_length) < 0)
+        &conductor->to_driver_commands, context->to_driver_buffer, context->to_driver_buffer_length) < 0)
     {
         return -1;
     }
 
     if (aeron_broadcast_transmitter_init(
-        &conductor->to_clients, ctx->to_clients_buffer, ctx->to_clients_buffer_length) < 0)
+        &conductor->to_clients, context->to_clients_buffer, context->to_clients_buffer_length) < 0)
     {
         return -1;
     }
 
     if (aeron_counters_manager_init(
         &conductor->counters_manager,
-        ctx->counters_metadata_buffer,
-        ctx->counters_metadata_buffer_length,
-        ctx->counters_values_buffer,
-        ctx->counters_values_buffer_length) < 0)
+        context->counters_metadata_buffer,
+        context->counters_metadata_buffer_length,
+        context->counters_values_buffer,
+        context->counters_values_buffer_length) < 0)
     {
         return -1;
     }
@@ -53,9 +53,9 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
 
     if (aeron_distinct_error_log_init(
         &conductor->error_log,
-        ctx->error_buffer,
-        ctx->error_buffer_length,
-        ctx->epoch_clock,
+        context->error_buffer,
+        context->error_buffer_length,
+        context->epoch_clock,
         aeron_error_log_resource_linger) < 0)
     {
         return -1;
@@ -63,7 +63,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
 
     /* TODO: create and init all command queues */
 
-    conductor->context = ctx;
+    conductor->context = context;
     return 0;
 }
 

@@ -49,7 +49,8 @@ typedef enum aeron_threading_mode_enum
 {
     AERON_THREADING_MODE_DEDICATED,
     AERON_THREADING_MODE_SHARED_NETWORK,
-    AERON_THREADING_MODE_SHARED
+    AERON_THREADING_MODE_SHARED,
+    AERON_THREADING_MODE_SHARED_MANUAL
 }
 aeron_threading_mode_t;
 
@@ -83,6 +84,12 @@ typedef struct aeron_driver_context_stct
     void *conductor_idle_strategy_state;
     aeron_idle_strategy_func_t shared_idle_strategy_func;
     void *shared_idle_strategy_state;
+    aeron_idle_strategy_func_t shared_network_idle_strategy_func;
+    void *shared_network_idle_strategy_state;
+    aeron_idle_strategy_func_t sender_idle_strategy_func;
+    void *sender_idle_strategy_state;
+    aeron_idle_strategy_func_t receiver_idle_strategy_func;
+    void *receiver_idle_strategy_state;
 }
 aeron_driver_context_t;
 

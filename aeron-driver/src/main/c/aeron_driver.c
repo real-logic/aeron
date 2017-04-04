@@ -248,6 +248,8 @@ int aeron_driver_shared_do_work(void *clientd)
     int sum = 0;
 
     sum += aeron_driver_conductor_do_work(&driver->conductor);
+    sum += aeron_driver_sender_do_work(&driver->sender);
+    sum += aeron_driver_receiver_do_work(&driver->receiver);
 
     return sum;
 }
@@ -257,6 +259,27 @@ void aeron_driver_shared_on_close(void *clientd)
     aeron_driver_t *driver = (aeron_driver_t *)clientd;
 
     aeron_driver_conductor_on_close(&driver->conductor);
+    aeron_driver_sender_on_close(&driver->sender);
+    aeron_driver_receiver_on_close(&driver->receiver);
+}
+
+int aeron_driver_shared_network_do_work(void *clientd)
+{
+    aeron_driver_t *driver = (aeron_driver_t *)clientd;
+    int sum = 0;
+
+    sum += aeron_driver_sender_do_work(&driver->sender);
+    sum += aeron_driver_receiver_do_work(&driver->receiver);
+
+    return sum;
+}
+
+void aeron_driver_shared_network_on_close(void *clientd)
+{
+    aeron_driver_t *driver = (aeron_driver_t *)clientd;
+
+    aeron_driver_sender_on_close(&driver->sender);
+    aeron_driver_receiver_on_close(&driver->receiver);
 }
 
 int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
@@ -293,12 +316,20 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
         return -1;
     }
 
-    if (aeron_driver_conductor_init(&_driver->conductor, context) < 0)
+    if (aeron_driver_sender_init(&_driver->sender, context) < 0)
     {
         return -1;
     }
 
-    /* TODO: init sender and receiver */
+    if (aeron_driver_receiver_init(&_driver->receiver, context) < 0)
+    {
+        return -1;
+    }
+
+    if (aeron_driver_conductor_init(&_driver->conductor, context) < 0)
+    {
+        return -1;
+    }
 
     aeron_mpsc_rb_consumer_heartbeat_time(&_driver->conductor.to_driver_commands, aeron_epochclock());
 
@@ -331,7 +362,17 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 return -1;
             }
 
-            /* TODO: add shared sender + receiver */
+            if (aeron_agent_init(
+                &_driver->runners[AERON_AGENT_RUNNER_SHARED_NETWORK],
+                "[sender, receiver]",
+                &_driver,
+                aeron_driver_shared_network_do_work,
+                aeron_driver_shared_network_on_close,
+                _driver->context->shared_network_idle_strategy_func,
+                _driver->context->shared_network_idle_strategy_state) < 0)
+            {
+                return -1;
+            }
             break;
 
         case AERON_THREADING_MODE_DEDICATED:
@@ -348,8 +389,29 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 return -1;
             }
 
-            /* TODO: add sender */
-            /* TODO: add receiver */
+            if (aeron_agent_init(
+                &_driver->runners[AERON_AGENT_RUNNER_SENDER],
+                "sender",
+                &_driver->sender,
+                aeron_driver_sender_do_work,
+                aeron_driver_sender_on_close,
+                _driver->context->sender_idle_strategy_func,
+                _driver->context->sender_idle_strategy_state) < 0)
+            {
+                return -1;
+            }
+
+            if (aeron_agent_init(
+                &_driver->runners[AERON_AGENT_RUNNER_RECEIVER],
+                "receiver",
+                &_driver->receiver,
+                aeron_driver_receiver_do_work,
+                aeron_driver_receiver_on_close,
+                _driver->context->receiver_idle_strategy_func,
+                _driver->context->receiver_idle_strategy_state) < 0)
+            {
+                return -1;
+            }
             break;
     }
 
@@ -357,7 +419,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     return 0;
 }
 
-int aeron_driver_start(aeron_driver_t *driver)
+int aeron_driver_start(aeron_driver_t *driver, bool manual_main_loop)
 {
     if (NULL == driver)
     {
@@ -365,7 +427,19 @@ int aeron_driver_start(aeron_driver_t *driver)
         return -1;
     }
 
-    for (int i = 0; i < AERON_AGENT_RUNNER_MAX; i++)
+    if (!manual_main_loop)
+    {
+        if (aeron_agent_start(&driver->runners[0]) < 0)
+        {
+            return -1;
+        }
+    }
+    else
+    {
+        driver->runners[0].state = AERON_AGENT_STATE_MANUAL;
+    }
+
+    for (int i = 1; i < AERON_AGENT_RUNNER_MAX; i++)
     {
         if (driver->runners[i].state == AERON_AGENT_STATE_INITED)
         {
@@ -379,6 +453,29 @@ int aeron_driver_start(aeron_driver_t *driver)
     return 0;
 }
 
+int aeron_driver_main_do_work(aeron_driver_t *driver)
+{
+    if (NULL == driver)
+    {
+        /* TODO: EINVAL */
+        return -1;
+    }
+
+    /* conductor and shared are on 0 */
+    return aeron_agent_do_work(&driver->runners[AERON_AGENT_RUNNER_CONDUCTOR]);
+}
+
+void aeron_driver_main_idle_strategy(aeron_driver_t *driver, int work_count)
+{
+    if (NULL == driver)
+    {
+        /* TODO: EINVAL */
+        return;
+    }
+
+    aeron_agent_idle(&driver->runners[AERON_AGENT_RUNNER_CONDUCTOR], work_count);
+}
+
 int aeron_driver_close(aeron_driver_t *driver)
 {
     if (NULL == driver)
@@ -389,12 +486,9 @@ int aeron_driver_close(aeron_driver_t *driver)
 
     for (int i = 0; i < AERON_AGENT_RUNNER_MAX; i++)
     {
-        if (driver->runners[i].state == AERON_AGENT_STATE_STARTED)
+        if (aeron_agent_close(&driver->runners[i]) < 0)
         {
-            if (aeron_agent_close(&driver->runners[i]) < 0)
-            {
-                return -1;
-            }
+            return -1;
         }
     }
 

@@ -332,12 +332,13 @@ public class Image
      * Peek for new messages in a stream by scanning forward from an initial position. If new messages are found then
      * they will be delivered to the {@link ControlledFragmentHandler} up to a limited number of fragments as specified.
      *
-     * Use a {@link ControlledFragmentAssembler} to assemble messages which span multiple fragments.
+     * Use a {@link ControlledFragmentAssembler} to assemble messages which span multiple fragments. Scans must also
+     * start at the beginning of a message so that the assembler is reset.
      *
      * @param initialPosition from which to peek forward.
      * @param fragmentHandler to which message fragments are delivered.
      * @param fragmentLimit   for the number of fragments to be consumed during one polling operation.
-     * @return the resulting position after the scan terminates.
+     * @return the resulting position after the scan terminates which is a complete message.
      * @see ControlledFragmentAssembler
      */
     public long controlledPeek(
@@ -357,7 +358,7 @@ public class Image
         final UnsafeBuffer termBuffer = activeTermBuffer(initialPosition);
         final int capacity = termBuffer.capacity();
         header.buffer(termBuffer);
-        final long resultingPosition;
+        long resultingPosition = initialPosition;
 
         try
         {
@@ -388,20 +389,22 @@ public class Image
 
                 if (action == ABORT)
                 {
-                    offset -= alignedLength;
                     break;
                 }
 
                 ++fragmentsRead;
 
+                position += (offset - initialOffset);
+                initialOffset = offset;
+
+                if ((header.flags() & END_FRAG_FLAG) == END_FRAG_FLAG)
+                {
+                    resultingPosition = position;
+                }
+
                 if (action == BREAK)
                 {
                     break;
-                }
-                else if (action == COMMIT)
-                {
-                    position += (offset - initialOffset);
-                    initialOffset = offset;
                 }
             }
             while (fragmentsRead < fragmentLimit && offset < capacity);
@@ -409,10 +412,6 @@ public class Image
         catch (final Throwable t)
         {
             errorHandler.onError(t);
-        }
-        finally
-        {
-            resultingPosition = position + (offset - initialOffset);
         }
 
         return resultingPosition;

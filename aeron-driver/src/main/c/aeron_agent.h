@@ -40,6 +40,13 @@ typedef int (*aeron_idle_strategy_init_func_t)(void **);
 #define AERON_AGENT_STATE_STOPPING 3
 #define AERON_AGENT_STATE_STOPPED 4
 
+typedef struct aeron_idle_strategy_stct
+{
+    aeron_idle_strategy_func_t idle;
+    aeron_idle_strategy_init_func_t init;
+}
+aeron_idle_strategy_t;
+
 typedef struct aeron_agent_runner_stct
 {
     const char *role_name;

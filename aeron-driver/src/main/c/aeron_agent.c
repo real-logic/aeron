@@ -69,6 +69,8 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
         return NULL;
     }
 
+    *idle_strategy_state = NULL;
+
     if (strncmp(idle_strategy_name, "sleeping", sizeof("sleeping")) == 0)
     {
         idle_func = aeron_idle_strategy_sleeping_idle;
@@ -83,19 +85,17 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
     }
     else
     {
-        snprintf(idle_func_name, sizeof(idle_func_name) - 1, "%s_idle", idle_strategy_name);
-        if ((idle_func = (aeron_idle_strategy_func_t) dlsym(RTLD_DEFAULT, idle_func_name)) == NULL)
+        aeron_idle_strategy_t *idle_strat = NULL;
+
+        snprintf(idle_func_name, sizeof(idle_func_name) - 1, "%s", idle_strategy_name);
+        if ((idle_strat = (aeron_idle_strategy_t *)dlsym(RTLD_DEFAULT, idle_func_name)) == NULL)
         {
             /* TODO: dlerror and EINVAL */
             return NULL;
         }
 
-        snprintf(idle_func_name, sizeof(idle_func_name) - 1, "%s_init", idle_strategy_name);
-        if ((idle_init_func = (aeron_idle_strategy_init_func_t) dlsym(RTLD_DEFAULT, idle_func_name)) == NULL)
-        {
-            /* TODO: dlerror and EINVAL */
-            return NULL;
-        }
+        idle_func = idle_strat->idle;
+        idle_init_func = idle_strat->init;
 
         if (idle_init_func(&idle_state) < 0)
         {

@@ -102,7 +102,7 @@ public class Image
      */
     public int termBufferLength()
     {
-        return logBuffers.termLength();
+        return termLengthMask + 1;
     }
 
     /**
@@ -181,6 +181,23 @@ public class Image
     }
 
     /**
+     * Set the subscriber position for this {@link Image} to indicate where it has been consumed to.
+     *
+     * @param newPosition for the consumption point.
+     */
+    public void position(final long newPosition)
+    {
+        if (isClosed)
+        {
+            throw new IllegalStateException("Image is closed");
+        }
+
+        validatePosition(newPosition);
+
+        subscriberPosition.setOrdered(newPosition);
+    }
+
+    /**
      * The {@link FileChannel} to the raw log of the Image.
      *
      * @return the {@link FileChannel} to the raw log of the Image.
@@ -194,7 +211,7 @@ public class Image
      * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
      * will be delivered to the {@link FragmentHandler} up to a limited number of fragments as specified.
      *
-     * To assemble messages that span multiple fragments then use {@link FragmentAssembler}.
+     * Use a {@link FragmentAssembler} to assemble messages which span multiple fragments.
      *
      * @param fragmentHandler to which message fragments are delivered.
      * @param fragmentLimit   for the number of fragments to be consumed during one polling operation.
@@ -225,7 +242,7 @@ public class Image
      * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
      * will be delivered to the {@link ControlledFragmentHandler} up to a limited number of fragments as specified.
      *
-     * To assemble messages that span multiple fragments then use {@link ControlledFragmentAssembler}.
+     * Use a {@link ControlledFragmentAssembler} to assemble messages which span multiple fragments.
      *
      * @param fragmentHandler to which message fragments are delivered.
      * @param fragmentLimit   for the number of fragments to be consumed during one polling operation.
@@ -301,14 +318,104 @@ public class Image
         }
         finally
         {
-            final long position = initialPosition + (resultingOffset - initialOffset);
-            if (position > initialPosition)
+            final long resultingPosition = initialPosition + (resultingOffset - initialOffset);
+            if (resultingPosition > initialPosition)
             {
-                subscriberPosition.setOrdered(position);
+                subscriberPosition.setOrdered(resultingPosition);
             }
         }
 
         return fragmentsRead;
+    }
+
+    /**
+     * Peek for new messages in a stream by scanning forward from an initial position. If new messages are found then
+     * they will be delivered to the {@link ControlledFragmentHandler} up to a limited number of fragments as specified.
+     *
+     * Use a {@link ControlledFragmentAssembler} to assemble messages which span multiple fragments.
+     *
+     * @param initialPosition from which to peek forward.
+     * @param fragmentHandler to which message fragments are delivered.
+     * @param fragmentLimit   for the number of fragments to be consumed during one polling operation.
+     * @return the resulting position after the scan terminates.
+     * @see ControlledFragmentAssembler
+     */
+    public long controlledPeek(
+        final long initialPosition, final ControlledFragmentHandler fragmentHandler, final int fragmentLimit)
+    {
+        if (isClosed)
+        {
+            return 0;
+        }
+
+        validatePosition(initialPosition);
+
+        int fragmentsRead = 0;
+        int initialOffset = (int)initialPosition & termLengthMask;
+        int offset = initialOffset;
+        long position = initialPosition;
+        final UnsafeBuffer termBuffer = activeTermBuffer(initialPosition);
+        final int capacity = termBuffer.capacity();
+        header.buffer(termBuffer);
+        final long resultingPosition;
+
+        try
+        {
+            do
+            {
+                final int length = frameLengthVolatile(termBuffer, offset);
+                if (length <= 0)
+                {
+                    break;
+                }
+
+                final int frameOffset = offset;
+                final int alignedLength = BitUtil.align(length, FRAME_ALIGNMENT);
+                offset += alignedLength;
+
+                if (isPaddingFrame(termBuffer, frameOffset))
+                {
+                    continue;
+                }
+
+                header.offset(frameOffset);
+
+                final Action action = fragmentHandler.onFragment(
+                    termBuffer,
+                    frameOffset + HEADER_LENGTH,
+                    length - HEADER_LENGTH,
+                    header);
+
+                if (action == ABORT)
+                {
+                    offset -= alignedLength;
+                    break;
+                }
+
+                ++fragmentsRead;
+
+                if (action == BREAK)
+                {
+                    break;
+                }
+                else if (action == COMMIT)
+                {
+                    position += (offset - initialOffset);
+                    initialOffset = offset;
+                }
+            }
+            while (fragmentsRead < fragmentLimit && offset < capacity);
+        }
+        catch (final Throwable t)
+        {
+            errorHandler.onError(t);
+        }
+        finally
+        {
+            resultingPosition = position + (offset - initialOffset);
+        }
+
+        return resultingPosition;
     }
 
     /**
@@ -408,6 +515,22 @@ public class Image
     private UnsafeBuffer activeTermBuffer(final long position)
     {
         return termBuffers[indexByPosition(position, positionBitsToShift)];
+    }
+
+    private void validatePosition(final long newPosition)
+    {
+        final long currentPosition = subscriberPosition.get();
+        final long limitPosition = currentPosition + termBufferLength();
+        if (newPosition < currentPosition || newPosition > limitPosition)
+        {
+            throw new IllegalArgumentException(
+                "newPosition of " + newPosition + " out of range " + currentPosition + "-" + limitPosition);
+        }
+
+        if (0 != (newPosition & (FRAME_ALIGNMENT - 1)))
+        {
+            throw new IllegalArgumentException("newPosition of " + newPosition + " not aligned to FRAME_ALIGNMENT");
+        }
     }
 
     ManagedResource managedResource()

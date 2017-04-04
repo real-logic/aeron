@@ -54,6 +54,30 @@ static void aeron_idle_strategy_noop_idle(void *state, int work_count)
     __asm__ volatile("pause\n": : :"memory");
 }
 
+static int aeron_idle_strategy_init_null(void **state)
+{
+    *state = NULL;
+    return 0;
+}
+
+aeron_idle_strategy_t aeron_idle_strategy_sleeping =
+    {
+        aeron_idle_strategy_sleeping_idle,
+        aeron_idle_strategy_init_null
+    };
+
+aeron_idle_strategy_t aeron_idle_strategy_yielding =
+    {
+        aeron_idle_strategy_yielding_idle,
+        aeron_idle_strategy_init_null
+    };
+
+aeron_idle_strategy_t aeron_idle_strategy_noop =
+    {
+        aeron_idle_strategy_noop_idle,
+        aeron_idle_strategy_init_null
+    };
+
 aeron_idle_strategy_func_t aeron_idle_strategy_load(
     const char *idle_strategy_name,
     void **idle_strategy_state)

@@ -40,6 +40,8 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * If the claimed space is no longer required it can be aborted by calling {@link #abort()}.
  *
  * <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#data-frame">Data Frame</a>
+ *
+ * @see io.aeron.ExclusivePublication#tryClaim(int, ExclusiveBufferClaim)
  */
 public class ExclusiveBufferClaim
 {

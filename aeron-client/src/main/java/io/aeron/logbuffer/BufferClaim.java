@@ -36,6 +36,8 @@ import static io.aeron.protocol.HeaderFlyweight.TYPE_FIELD_OFFSET;
  * When the buffer is filled with message data, use {@link #commit()} to make it available to subscribers.
  *
  * If the claimed space is no longer required it can be aborted by calling {@link #abort()}.
+ *
+ * @see io.aeron.Publication#tryClaim(int, BufferClaim)
  */
 public class BufferClaim
 {

@@ -39,6 +39,7 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
  * <b>Note:</b> ExclusivePublication instances are NOT threadsafe for offer and try claim method but are for position.
  *
  * @see Aeron#addExclusivePublication(String, int)
+ * @see ExclusiveBufferClaim
  */
 public class ExclusivePublication implements AutoCloseable
 {

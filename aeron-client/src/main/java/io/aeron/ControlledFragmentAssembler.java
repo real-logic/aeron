@@ -34,6 +34,10 @@ import static io.aeron.logbuffer.FrameDescriptor.*;
  * Session based buffers will be allocated and grown as necessary based on the length of messages to be assembled.
  * When sessions go inactive see {@link UnavailableImageHandler}, it is possible to free the buffer by calling
  * {@link #freeSessionBuffer(int)}.
+ *
+ * @see Subscription#controlledPoll(ControlledFragmentHandler, int)
+ * @see Image#controlledPoll(ControlledFragmentHandler, int)
+ * @see Image#controlledPeek(long, ControlledFragmentHandler, long)
  */
 public class ControlledFragmentAssembler implements ControlledFragmentHandler
 {

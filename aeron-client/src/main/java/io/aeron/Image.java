@@ -217,6 +217,7 @@ public class Image
      * @param fragmentLimit   for the number of fragments to be consumed during one polling operation.
      * @return the number of fragments that have been consumed.
      * @see FragmentAssembler
+     * @see ImageFragmentAssembler
      */
     public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
     {
@@ -248,6 +249,7 @@ public class Image
      * @param fragmentLimit   for the number of fragments to be consumed during one polling operation.
      * @return the number of fragments that have been consumed.
      * @see ControlledFragmentAssembler
+     * @see ImageControlledFragmentAssembler
      */
     public int controlledPoll(final ControlledFragmentHandler fragmentHandler, final int fragmentLimit)
     {
@@ -340,6 +342,7 @@ public class Image
      * @param limitPosition   up to which can be scanned.
      * @return the resulting position after the scan terminates which is a complete message.
      * @see ControlledFragmentAssembler
+     * @see ImageControlledFragmentAssembler
      */
     public long controlledPeek(
         final long initialPosition, final ControlledFragmentHandler fragmentHandler, final long limitPosition)

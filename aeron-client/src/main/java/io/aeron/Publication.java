@@ -35,6 +35,7 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
  * <b>Note:</b> Publication instances are threadsafe and can be shared between publishing threads.
  *
  * @see Aeron#addPublication(String, int)
+ * @see BufferClaim
  */
 public class Publication implements AutoCloseable
 {

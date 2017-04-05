@@ -75,6 +75,9 @@ class SubscriptionFields extends SubscriptionLhsPadding
  * <b>Note:</b>Subscriptions are not threadsafe and should not be shared between subscribers.
  *
  * @see FragmentAssembler
+ * @see ControlledFragmentHandler
+ * @see Aeron#addSubscription(String, int)
+ * @see Aeron#addSubscription(String, int, AvailableImageHandler, UnavailableImageHandler)
  */
 public class Subscription extends SubscriptionFields implements AutoCloseable
 {

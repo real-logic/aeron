@@ -114,7 +114,7 @@ on_new_length_t composeLengthGenerator(bool random, int max)
     }
     else
     {
-        return [&]() { return max; };
+        return [max]() { return max; };
     }
 }
 
@@ -137,15 +137,11 @@ int main(int argc, char **argv)
     {
         Settings settings = parseCmdLine(cp, argc, argv);
 
-        ::setlocale(LC_NUMERIC, "");
-
-        std::printf(
-            "Streaming %'ld messages of%s size %d bytes to %s on stream ID %d\n",
-            settings.numberOfMessages,
-            settings.randomMessageLength ? " random" : "",
-            settings.messageLength,
-            settings.channel.c_str(),
-            settings.streamId);
+        std::cout << "Streaming " << toStringWithCommas(settings.numberOfMessages) << " messages of"
+            << (settings.randomMessageLength ? " random" : "") << " size "
+            << settings.messageLength << " bytes to "
+            << settings.channel << " on stream ID "
+            << settings.streamId << std::endl;
 
         aeron::Context context;
 
@@ -204,6 +200,12 @@ int main(int argc, char **argv)
                 while (publication->offer(srcBuffer, 0, length) < 0L)
                 {
                     backPressureCount++;
+
+                    if (!running)
+                    {
+                        break;
+                    }
+
                     offerIdleStrategy.idle(0);
                 }
 

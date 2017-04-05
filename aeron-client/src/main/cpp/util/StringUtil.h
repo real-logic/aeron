@@ -20,6 +20,8 @@
 #include <sstream>
 #include <iostream>
 #include <type_traits>
+#include <iomanip>
+#include <locale>
 #include "Exceptions.h"
 
 namespace aeron { namespace util {
@@ -68,6 +70,16 @@ inline std::string toString (const value_t& value)
 {
     std::stringstream stream;
     stream << value;
+    return stream.str();
+}
+
+template <typename value_t>
+inline std::string toStringWithCommas(const value_t& value)
+{
+    std::stringstream stream;
+
+    stream.imbue(std::locale(""));
+    stream << std::fixed << value;
     return stream.str();
 }
 

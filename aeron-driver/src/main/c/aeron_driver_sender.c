@@ -18,6 +18,7 @@
 
 int aeron_driver_sender_init(aeron_driver_sender_t *sender, aeron_driver_context_t *context)
 {
+    sender->context = context;
     return 0;
 }
 

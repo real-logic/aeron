@@ -18,6 +18,7 @@
 
 int aeron_driver_receiver_init(aeron_driver_receiver_t *receiver, aeron_driver_context_t *context)
 {
+    receiver->context = context;
     return 0;
 }
 

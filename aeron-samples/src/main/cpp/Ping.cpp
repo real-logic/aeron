@@ -206,7 +206,6 @@ int main(int argc, char **argv)
             std::this_thread::yield();
         }
 
-        ::setlocale(LC_NUMERIC, "");
         if (settings.numberOfWarmupMessages > 0)
         {
             Settings warmupSettings = settings;
@@ -214,11 +213,15 @@ int main(int argc, char **argv)
 
             const steady_clock::time_point start = steady_clock::now();
 
-            std::printf("Warming up the media driver with %'ld messages of length %d bytes\n", warmupSettings.numberOfWarmupMessages, warmupSettings.messageLength);
+            std::cout << "Warming up the media driver with "
+                << toStringWithCommas(warmupSettings.numberOfWarmupMessages) << " messages of length "
+                << toStringWithCommas(warmupSettings.messageLength) << std::endl;
+
             sendPingAndReceivePong([](AtomicBuffer&, index_t, index_t, Header&){}, pingPublication, pongSubscription, warmupSettings);
+
             std::int64_t nanoDuration = duration<std::int64_t, std::nano>(steady_clock::now() - start).count();
 
-            std::printf("Warmed up the media driver in %'" PRId64 " [ns]\n", nanoDuration);
+            std::cout << "Warmed up the media driver in " << nanoDuration << " [ns]" << std::endl;
         }
 
         hdr_histogram* histogram;

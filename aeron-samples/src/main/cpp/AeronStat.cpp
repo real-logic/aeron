@@ -110,17 +110,15 @@ int main (int argc, char** argv)
             std::printf("\033[H\033[2J");
 
             std::printf(
-                "%s - Aeron Stat (CnC v%" PRId32 "), client liveness %'" PRId64 " ns\n",
-                currentTime, cncVersion, clientLivenessTimeoutNs);
+                "%s - Aeron Stat (CnC v%" PRId32 "), client liveness %s ns\n",
+                currentTime, cncVersion, toStringWithCommas(clientLivenessTimeoutNs).c_str());
             std::printf("===========================\n");
-
-            ::setlocale(LC_NUMERIC, "");
 
             counters.forEach([&](std::int32_t counterId, std::int32_t, const AtomicBuffer&, const std::string& l)
             {
                 std::int64_t value = counters.getCounterValue(counterId);
 
-                std::printf("%3d: %'20" PRId64 " - %s\n", counterId, value, l.c_str());
+                std::printf("%3d: %20s - %s\n", counterId, toStringWithCommas(value).c_str(), l.c_str());
             });
 
             std::this_thread::sleep_for(std::chrono::milliseconds(settings.updateIntervalms));

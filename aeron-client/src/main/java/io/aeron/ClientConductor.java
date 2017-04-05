@@ -424,6 +424,12 @@ class ClientConductor implements Agent, DriverListener
         catch (final Throwable throwable)
         {
             errorHandler.onError(throwable);
+
+            if (correlationId != NO_CORRELATION_ID)
+            {
+                // has been called from a user thread and not the conductor duty cycle.
+                throw throwable;
+            }
         }
 
         return workCount;

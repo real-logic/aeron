@@ -243,7 +243,9 @@ int main(int argc, char **argv)
                     hdr_record_value(histogram, nanoRtt);
                 });
 
-            std::printf("Pinging %'ld messages of length %d bytes\n", settings.numberOfMessages, settings.messageLength);
+            std::cout << "Pinging "
+                << toStringWithCommas(settings.numberOfMessages) << " messages of length "
+                << toStringWithCommas(settings.messageLength) << " bytes" << std::endl;
 
             sendPingAndReceivePong(fragmentAssembler.handler(), pingPublication, pongSubscription, settings);
 

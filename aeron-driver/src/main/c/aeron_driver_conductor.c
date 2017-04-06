@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "util/aeron_arrayutil.h"
 #include "command/aeron_control_protocol.h"
 #include "aeron_driver_conductor.h"
 
@@ -63,8 +64,81 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
 
     /* TODO: create and init all command queues */
 
+    if (aeron_array_ensure_capacity((uint8_t **)&conductor->clients.array, sizeof(aeron_client_t), 0, 2) < 0)
+    {
+        return -1;
+    }
+    conductor->clients.capacity = 2;
+    conductor->clients.length = 0;
+    /* TODO: set func callbacks for managed resources */
+
     conductor->context = context;
     return 0;
+}
+
+aeron_client_t *aeron_driver_conductor_find_client(aeron_driver_conductor_t *conductor, int64_t client_id)
+{
+    aeron_client_t *client = NULL;
+
+    for (int i = (int)conductor->clients.length - 1; i >= 0; i--)
+    {
+        if (client_id == conductor->clients.array[i].client_id)
+        {
+            client = &conductor->clients.array[i];
+            break;
+        }
+    }
+
+    return client;
+}
+
+aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_t *conductor, int64_t client_id)
+{
+    aeron_client_t *client = aeron_driver_conductor_find_client(conductor, client_id);
+
+    if (NULL == client)
+    {
+        if (conductor->clients.length >= conductor->clients.capacity)
+        {
+            size_t new_capacity = conductor->clients.capacity + (conductor->clients.capacity >> 1);
+
+            if (aeron_array_ensure_capacity(
+                (uint8_t **)&conductor->clients.array, sizeof(aeron_client_t), conductor->clients.capacity, new_capacity) < 0)
+            {
+                return NULL;
+            }
+            conductor->clients.capacity = new_capacity;
+        }
+
+        client = &conductor->clients.array[conductor->clients.length++];
+
+        client->client_id = client_id;
+        client->reached_end_of_life = false;
+        client->time_of_last_keepalive = conductor->context->nano_clock();
+        client->client_liveness_timeout_ns = conductor->context->client_liveness_timeout_ns;
+    }
+
+    return client;
+}
+
+#define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(l,t,now_ns,now_ms) \
+for (int last_index = (int)l.length - 1, i = last_index; i >= 0; i--) \
+{ \
+    t *elem = &l.array[i]; \
+    l.on_time_event(elem, now_ns, now_ms); \
+    if (l.has_reached_end_of_life(elem)) \
+    { \
+        aeron_array_fast_unordered_remove((uint8_t *)l.array, sizeof(t), i, last_index); \
+        last_index--; \
+        l.delete(elem); \
+    } \
+}
+
+void aeron_driver_conductor_on_check_managed_resources(
+    aeron_driver_conductor_t *conductor, int64_t now_ns, int64_t now_ms)
+{
+    AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(conductor->clients, aeron_client_t, now_ns, now_ms);
+    AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(conductor->publication_links, aeron_publication_link_t, now_ns, now_ms);
 }
 
 void aeron_driver_conductor_client_transmit(
@@ -104,34 +178,44 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
     switch (msg_type_id)
     {
         case AERON_COMMAND_ADD_PUBLICATION:
+        {
+            aeron_publication_command_t *cmd = (aeron_publication_command_t *)message;
+
+            if (length < sizeof(aeron_publication_command_t) ||
+                length < (sizeof(aeron_publication_command_t) + cmd->channel_length))
             {
-                aeron_publication_command_t *cmd = (aeron_publication_command_t *)message;
-
-                if (length < sizeof(aeron_publication_command_t) ||
-                    length < (sizeof(aeron_publication_command_t) + cmd->channel_length))
-                {
-                    aeron_distinct_error_log_record(
-                        &conductor->error_log,
-                        AERON_ERROR_CODE_MALFORMED_COMMAND,
-                        "command too short",
-                        "command too short");
-                    /* TODO: incr errors count */
-                    return;
-                }
-
-                correlation_id = cmd->correlated.correlation_id;
-
-                /* TODO: handle */
+                aeron_distinct_error_log_record(
+                    &conductor->error_log,
+                    AERON_ERROR_CODE_MALFORMED_COMMAND,
+                    "command too short",
+                    "command too short");
+                /* TODO: incr errors count */
+                return;
             }
+
+            correlation_id = cmd->correlated.correlation_id;
+
+            /* TODO: handle */
             break;
+        }
+
+        case AERON_COMMAND_REMOVE_PUBLICATION:
+        {
+            aeron_remove_command_t *cmd = (aeron_remove_command_t *)message;
+
+            correlation_id = cmd->correlated.correlation_id;
+
+            /* TODO: handle */
+            break;
+        }
 
         case AERON_COMMAND_CLIENT_KEEPALIVE:
-            {
-                aeron_correlated_command_t *cmd = (aeron_correlated_command_t *)message;
+        {
+            aeron_correlated_command_t *cmd = (aeron_correlated_command_t *)message;
 
-                /* TODO: handle */
-            }
+            /* TODO: handle */
             break;
+        }
 
         default:
             aeron_distinct_error_log_record(

@@ -14,39 +14,16 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include "aeron_alloc.h"
+#include "util/aeron_arrayutil.h"
 
-int aeron_alloc(void **ptr, size_t size)
-{
-    *ptr = malloc(size);
+extern int aeron_array_ensure_capacity(
+    uint8_t **array, size_t element_size, size_t old_capacity, size_t new_capacity);
 
-    if (NULL == *ptr)
-    {
-        errno = ENOMEM;
-        return -1;
-    }
+extern void aeron_array_fast_unordered_remove(
+    uint8_t *restrict array, size_t element_size, size_t index, size_t last_index);
 
-    memset(*ptr, 0, size);
+extern int aeron_array_add(
+    uint8_t **array, size_t element_size, size_t new_length, uint8_t *restrict element_to_add);
 
-    return 0;
-}
-
-int aeron_reallocf(void **ptr, size_t size)
-{
-    if ((*ptr = reallocf(*ptr, size)) == NULL)
-    {
-        errno = ENOMEM;
-        return -1;
-    }
-
-    return 0;
-}
-
-void aeron_free(void *ptr)
-{
-    free(ptr);
-}
-
+extern int aeron_array_remove(
+    uint8_t **array, size_t element_size, size_t index, size_t old_length);

@@ -23,6 +23,7 @@ SET(SOURCE
     concurrent/aeron_counters_manager.c
     util/aeron_strutil.c
     util/aeron_fileutil.c
+    util/aeron_arrayutil.c
     aeron_driver_context.c
     aeron_alloc.c
     aeron_driver.c
@@ -37,6 +38,7 @@ SET(HEADERS
     util/aeron_bitutil.h
     util/aeron_strutil.h
     util/aeron_fileutil.h
+    util/aeron_arrayutil.h
     concurrent/aeron_atomic.h
     concurrent/aeron_atomic64_gcc_x86_64.h
     concurrent/aeron_spsc_rb.h

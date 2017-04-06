@@ -20,6 +20,7 @@
 #include <stddef.h>
 
 int aeron_alloc(void **ptr, size_t size);
+int aeron_reallocf(void **ptr, size_t size);
 void aeron_free(void *ptr);
 
 #endif //AERON_AERON_ALLOC_H

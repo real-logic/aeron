@@ -401,15 +401,12 @@ public final class MediaDriver implements AutoCloseable
             }
             else
             {
-                final boolean driverActive = ctx.isDriverActive(ctx.driverTimeoutMs(), logProgress);
-
-                if (driverActive)
+                if (ctx.isDriverActive(ctx.driverTimeoutMs(), logProgress))
                 {
                     throw new ActiveDriverException("Active driver detected");
                 }
 
                 reportExistingErrors(ctx);
-
                 ctx.deleteAeronDirectory();
             }
         }

@@ -92,6 +92,29 @@ aeron_client_t *aeron_driver_conductor_find_client(aeron_driver_conductor_t *con
     return client;
 }
 
+aeron_client_t *aeron_driver_conductor_client_for_publication(
+    aeron_driver_conductor_t *conductor, aeron_publication_link_t *publication_link)
+{
+    aeron_client_t *client = NULL;
+
+    if (publication_link->cached_client_index < conductor->clients.length)
+    {
+        client = &conductor->clients.array[publication_link->cached_client_index];
+
+        if (client->client_id != publication_link->client_id)
+        {
+            client = NULL;
+        }
+    }
+
+    if (NULL == client)
+    {
+        client = aeron_driver_conductor_find_client(conductor, publication_link->client_id);
+    }
+
+    return client;
+}
+
 aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_t *conductor, int64_t client_id)
 {
     aeron_client_t *client = aeron_driver_conductor_find_client(conductor, client_id);

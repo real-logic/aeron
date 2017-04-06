@@ -331,13 +331,13 @@ public class CommonContext implements AutoCloseable
         {
             final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
 
-            logHandler.accept(String.format("INFO: Aeron directory %s exists", aeronDirectory));
+            logHandler.accept("INFO: Aeron directory " + aeronDirectory + " exists");
 
             if (cncFile.exists())
             {
                 MappedByteBuffer cncByteBuffer = null;
 
-                logHandler.accept(String.format("INFO: Aeron CnC file %s exists", cncFile));
+                logHandler.accept("INFO: Aeron CnC file " + cncFile + " exists");
 
                 try
                 {
@@ -359,7 +359,7 @@ public class CommonContext implements AutoCloseable
                     final long now = System.currentTimeMillis();
                     final long diff = now - timestamp;
 
-                    logHandler.accept(String.format("INFO: Aeron toDriver consumer heartbeat is %d ms old", diff));
+                    logHandler.accept("INFO: Aeron toDriver consumer heartbeat is " + diff + "ms old");
 
                     if (diff <= driverTimeoutMs)
                     {

@@ -41,7 +41,7 @@ int aeron_driver_load_properties_file(const char *filename);
 
 /* create and init context */
 int aeron_driver_context_init(aeron_driver_context_t **context);
-int aeron_driver_context_set(const char *setting, const char *value);
+int aeron_driver_context_set(aeron_driver_context_t *context, const char *setting, const char *value);
 int aeron_driver_context_close(aeron_driver_context_t *context);
 
 /* create and init driver from context */

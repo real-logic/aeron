@@ -245,19 +245,6 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     return 0;
 }
 
-int aeron_driver_context_set(const char *setting, const char *value)
-{
-    if (NULL == setting || NULL == value)
-    {
-        /* TODO: EINVAL */
-        return -1;
-    }
-
-    /* TODO: */
-
-    return -1;
-}
-
 int aeron_driver_context_close(aeron_driver_context_t *context)
 {
     if (NULL == context)
@@ -376,3 +363,16 @@ extern uint8_t *aeron_cnc_counters_metadata_buffer(aeron_cnc_metadata_t *metadat
 extern uint8_t *aeron_cnc_counters_values_buffer(aeron_cnc_metadata_t *metadata);
 extern uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata);
 extern size_t aeron_cnc_computed_length(size_t total_length_of_buffers);
+
+int aeron_driver_context_set(aeron_driver_context_t *context, const char *setting, const char *value)
+{
+    if (NULL == setting || NULL == value)
+    {
+        /* TODO: EINVAL */
+        return -1;
+    }
+
+    /* TODO: */
+
+    return -1;
+}

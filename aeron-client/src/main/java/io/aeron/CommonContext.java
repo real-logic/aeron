@@ -30,10 +30,14 @@ import java.util.Date;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import static io.aeron.CncFileDescriptor.CNC_VERSION;
 import static java.lang.System.getProperty;
 
 /**
  * This class provides the Media Driver and client with common configuration for the Aeron directory.
+ *
+ * This class should have {@link #conclude()} called before the methods are used or at least
+ * {@link #concludeAeronDirectory()} to avoid NPEs.
  *
  * Properties
  * <ul>
@@ -110,6 +114,7 @@ public class CommonContext implements AutoCloseable
 
     private long driverTimeoutMs = DEFAULT_DRIVER_TIMEOUT_MS;
     private String aeronDirectoryName;
+    private File aeronDirectory;
     private File cncFile;
     private UnsafeBuffer countersMetaDataBuffer;
     private UnsafeBuffer countersValuesBuffer;
@@ -159,7 +164,25 @@ public class CommonContext implements AutoCloseable
      */
     public CommonContext conclude()
     {
-        cncFile = new File(aeronDirectoryName, CncFileDescriptor.CNC_FILE);
+        concludeAeronDirectory();
+
+        cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
+
+        return this;
+    }
+
+    /**
+     * Conclude the {@link #aeronDirectory()} so it does not need to keep being recreated.
+     *
+     * @return this for a fluent API.
+     */
+    public CommonContext concludeAeronDirectory()
+    {
+        if (null == aeronDirectory)
+        {
+            aeronDirectory = new File(aeronDirectoryName);
+        }
+
         return this;
     }
 
@@ -172,6 +195,20 @@ public class CommonContext implements AutoCloseable
     public String aeronDirectoryName()
     {
         return aeronDirectoryName;
+    }
+
+    /**
+     * Get the directory in which the aeron config files are stored.
+     *
+     * This is valid after a call to {@link #conclude()}.
+     *
+     * @return the directory in which the aeron config files are stored.
+     *
+     * @see #aeronDirectoryName()
+     */
+    public File aeronDirectory()
+    {
+        return aeronDirectory;
     }
 
     /**
@@ -278,9 +315,7 @@ public class CommonContext implements AutoCloseable
      */
     public void deleteAeronDirectory()
     {
-        final File dirFile = new File(aeronDirectoryName);
-
-        IoUtil.delete(dirFile, false);
+        IoUtil.delete(aeronDirectory, false);
     }
 
     /**
@@ -292,13 +327,11 @@ public class CommonContext implements AutoCloseable
      */
     public boolean isDriverActive(final long driverTimeoutMs, final Consumer<String> logHandler)
     {
-        final File dirFile = new File(aeronDirectoryName);
-
-        if (dirFile.exists() && dirFile.isDirectory())
+        if (aeronDirectory.exists() && aeronDirectory.isDirectory())
         {
-            final File cncFile = new File(aeronDirectoryName, CncFileDescriptor.CNC_FILE);
+            final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
 
-            logHandler.accept(String.format("INFO: Aeron directory %s exists", dirFile));
+            logHandler.accept(String.format("INFO: Aeron directory %s exists", aeronDirectory));
 
             if (cncFile.exists())
             {
@@ -313,9 +346,10 @@ public class CommonContext implements AutoCloseable
 
                     final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
 
-                    if (CncFileDescriptor.CNC_VERSION != cncVersion)
+                    if (CNC_VERSION != cncVersion)
                     {
-                        throw new IllegalStateException("aeron cnc file version not understood: version=" + cncVersion);
+                        throw new IllegalStateException(
+                            "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
                     }
 
                     final ManyToOneRingBuffer toDriverBuffer = new ManyToOneRingBuffer(
@@ -354,12 +388,11 @@ public class CommonContext implements AutoCloseable
      */
     public int saveErrorLog(final PrintStream out)
     {
-        final File dirFile = new File(aeronDirectoryName);
         int distinctErrorCount = 0;
 
-        if (dirFile.exists() && dirFile.isDirectory())
+        if (aeronDirectory.exists() && aeronDirectory.isDirectory())
         {
-            final File cncFile = new File(aeronDirectoryName, CncFileDescriptor.CNC_FILE);
+            final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
 
             if (cncFile.exists())
             {
@@ -372,9 +405,10 @@ public class CommonContext implements AutoCloseable
 
                     final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
 
-                    if (CncFileDescriptor.CNC_VERSION != cncVersion)
+                    if (CNC_VERSION != cncVersion)
                     {
-                        throw new IllegalStateException("aeron cnc file version not understood: version=" + cncVersion);
+                        throw new IllegalStateException(
+                            "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
                     }
 
                     final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(

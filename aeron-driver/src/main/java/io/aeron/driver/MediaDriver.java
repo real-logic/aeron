@@ -158,8 +158,9 @@ public final class MediaDriver implements AutoCloseable
     {
         this.ctx = ctx;
 
-        ensureDirectoryIsRecreated(ctx);
+        ctx.concludeAeronDirectory();
 
+        ensureDirectoryIsRecreated(ctx);
         validateSufficientSocketBufferLengths(ctx);
 
         ctx
@@ -375,20 +376,18 @@ public final class MediaDriver implements AutoCloseable
         }
         catch (final IOException ex)
         {
-            throw new RuntimeException(String.format("probe socket: %s", ex.toString()), ex);
+            throw new RuntimeException("probe socket: " + ex.toString(), ex);
         }
     }
 
     private static void ensureDirectoryIsRecreated(final Context ctx)
     {
-        final File aeronDir = new File(ctx.aeronDirectoryName());
-
-        if (aeronDir.exists())
+        if (ctx.aeronDirectory().exists())
         {
             final Consumer<String> logProgress;
             if (ctx.warnIfDirectoriesExist())
             {
-                System.err.println("WARNING: " + aeronDir + " already exists.");
+                System.err.println("WARNING: " + ctx.aeronDirectory() + " already exists.");
                 logProgress = System.err::println;
             }
             else
@@ -406,7 +405,7 @@ public final class MediaDriver implements AutoCloseable
 
                 if (driverActive)
                 {
-                    throw new ActiveDriverException("active driver detected");
+                    throw new ActiveDriverException("Active driver detected");
                 }
 
                 reportExistingErrors(ctx);
@@ -424,7 +423,7 @@ public final class MediaDriver implements AutoCloseable
                 }
             };
 
-        IoUtil.ensureDirectoryIsRecreated(aeronDir, "aeron", callback);
+        IoUtil.ensureDirectoryIsRecreated(ctx.aeronDirectory(), "aeron", callback);
     }
 
     private static void reportExistingErrors(final Context ctx)

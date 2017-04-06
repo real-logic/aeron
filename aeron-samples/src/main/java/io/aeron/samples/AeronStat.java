@@ -128,7 +128,8 @@ public class AeronStat
 
         if (CncFileDescriptor.CNC_VERSION != cncVersion)
         {
-            throw new IllegalStateException("CnC version not supported: file version=" + cncVersion);
+            throw new IllegalStateException(
+                "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
         }
 
         return new CountersReader(

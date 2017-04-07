@@ -327,7 +327,7 @@ public class CommonContext implements AutoCloseable
      */
     public boolean isDriverActive(final long driverTimeoutMs, final Consumer<String> logHandler)
     {
-        if (aeronDirectory.exists() && aeronDirectory.isDirectory())
+        if (aeronDirectory.isDirectory())
         {
             final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
 
@@ -390,7 +390,7 @@ public class CommonContext implements AutoCloseable
     {
         int distinctErrorCount = 0;
 
-        if (aeronDirectory.exists() && aeronDirectory.isDirectory())
+        if (aeronDirectory.isDirectory())
         {
             final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
 

@@ -410,12 +410,13 @@ public final class MediaDriver implements AutoCloseable
                     }
 
                     reportExistingErrors(ctx, cncByteBuffer);
-                    ctx.deleteAeronDirectory();
                 }
                 finally
                 {
                     IoUtil.unmap(cncByteBuffer);
                 }
+
+                ctx.deleteAeronDirectory();
             }
         }
 

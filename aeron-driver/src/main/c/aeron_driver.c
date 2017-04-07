@@ -95,7 +95,8 @@ int aeron_report_existing_errors(void *cnc_mmap, size_t cnc_length, const char *
 
     aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *) cnc_mmap;
 
-    if (AERON_CNC_VERSION == metadata->cnc_version && aeron_error_log_exists(cnc_mmap, cnc_length))
+    if (AERON_CNC_VERSION == metadata->cnc_version &&
+        aeron_error_log_exists(aeron_cnc_error_log_buffer(cnc_mmap), (size_t)metadata->error_log_buffer_length))
     {
         char datestamp[AERON_MAX_PATH];
         FILE *saved_errors_file = NULL;
@@ -122,10 +123,6 @@ int aeron_report_existing_errors(void *cnc_mmap, size_t cnc_length, const char *
         {
             result = -1;
         }
-    }
-    else
-    {
-        result = -1;
     }
 
     return result;

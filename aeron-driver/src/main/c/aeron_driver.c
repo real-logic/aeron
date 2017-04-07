@@ -90,13 +90,12 @@ static void error_log_reader_save_to_file(
 
 int aeron_report_existing_errors(void *cnc_mmap, size_t cnc_length, const char *aeron_dir)
 {
-    struct stat sb;
     char buffer[AERON_MAX_PATH];
     int result = 0;
 
     aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *) cnc_mmap;
 
-    if (AERON_CNC_VERSION == metadata->cnc_version && aeron_error_log_exists(cnc_mmap, (size_t)sb.st_size))
+    if (AERON_CNC_VERSION == metadata->cnc_version && aeron_error_log_exists(cnc_mmap, cnc_length))
     {
         char datestamp[AERON_MAX_PATH];
         FILE *saved_errors_file = NULL;

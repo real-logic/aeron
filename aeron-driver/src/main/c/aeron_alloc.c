@@ -36,11 +36,21 @@ int aeron_alloc(void **ptr, size_t size)
 
 int aeron_reallocf(void **ptr, size_t size)
 {
+#if defined(__linux__)
+    /* mimic reallocf */
+    if ((*ptr = realloc(*ptr, size)) == NULL)
+    {
+        free(*ptr);
+        errno = ENOMEM;
+        return -1;
+    }
+#else
     if ((*ptr = reallocf(*ptr, size)) == NULL)
     {
         errno = ENOMEM;
         return -1;
     }
+#endif
 
     return 0;
 }

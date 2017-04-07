@@ -312,7 +312,7 @@ bool aeron_is_driver_active_with_cnc(
             int64_t diff = now - timestamp;
 
             snprintf(
-                buffer, sizeof(buffer) - 1, "INFO: Aeron toDriver consumer heartbeat is %'" PRId64 " ms old", diff);
+                buffer, sizeof(buffer) - 1, "INFO: Aeron toDriver consumer heartbeat is %" PRId64 " ms old", diff);
             log_func(buffer);
 
             if (diff <= timeout)

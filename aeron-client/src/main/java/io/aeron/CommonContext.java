@@ -371,6 +371,11 @@ public class CommonContext implements AutoCloseable
     public boolean isDriverActive(
         final long driverTimeoutMs, final Consumer<String> logHandler, final MappedByteBuffer cncByteBuffer)
     {
+        if (null == cncByteBuffer)
+        {
+            return false;
+        }
+
         final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
         final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
 
@@ -422,6 +427,11 @@ public class CommonContext implements AutoCloseable
      */
     public int saveErrorLog(final PrintStream out, final MappedByteBuffer cncByteBuffer)
     {
+        if (null == cncByteBuffer)
+        {
+            return 0;
+        }
+
         final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
         final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
 

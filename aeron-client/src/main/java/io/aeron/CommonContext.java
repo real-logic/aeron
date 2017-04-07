@@ -16,7 +16,6 @@
 package io.aeron;
 
 import org.agrona.IoUtil;
-import org.agrona.LangUtil;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.errors.ErrorLogReader;
@@ -203,7 +202,6 @@ public class CommonContext implements AutoCloseable
      * This is valid after a call to {@link #conclude()}.
      *
      * @return the directory in which the aeron config files are stored.
-     *
      * @see #aeronDirectoryName()
      */
     public File aeronDirectory()
@@ -319,11 +317,28 @@ public class CommonContext implements AutoCloseable
     }
 
     /**
+     * Map the CnC file if it exists.
+     *
+     * @return a new mapping for the file if it exists otherwise null;
+     */
+    public MappedByteBuffer mapExistingCncFile()
+    {
+        final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
+
+        if (cncFile.exists())
+        {
+            return IoUtil.mapExistingFile(cncFile, CncFileDescriptor.CNC_FILE);
+        }
+
+        return null;
+    }
+
+    /**
      * Is a media driver active in the current Aeron directory?
      *
-     * @param driverTimeoutMs for the driver liveness check
-     * @param logHandler      for feedback as liveness checked
-     * @return true if a driver is active or false if not
+     * @param driverTimeoutMs for the driver liveness check.
+     * @param logHandler      for feedback as liveness checked.
+     * @return true if a driver is active or false if not.
      */
     public boolean isDriverActive(final long driverTimeoutMs, final Consumer<String> logHandler)
     {
@@ -331,38 +346,10 @@ public class CommonContext implements AutoCloseable
 
         if (cncFile.exists())
         {
-            MappedByteBuffer cncByteBuffer = null;
-            logHandler.accept("INFO: Aeron CnC file " + cncFile + " exists");
-
+            final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, CncFileDescriptor.CNC_FILE);
             try
             {
-                cncByteBuffer = IoUtil.mapExistingFile(cncFile, CncFileDescriptor.CNC_FILE);
-                final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-                final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
-
-                if (CNC_VERSION != cncVersion)
-                {
-                    throw new IllegalStateException(
-                        "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
-                }
-
-                final ManyToOneRingBuffer toDriverBuffer = new ManyToOneRingBuffer(
-                    CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
-
-                final long timestamp = toDriverBuffer.consumerHeartbeatTime();
-                final long now = System.currentTimeMillis();
-                final long diff = now - timestamp;
-
-                logHandler.accept("INFO: Aeron toDriver consumer heartbeat is " + diff + "ms old");
-
-                if (diff <= driverTimeoutMs)
-                {
-                    return true;
-                }
-            }
-            catch (final Exception ex)
-            {
-                LangUtil.rethrowUnchecked(ex);
+                return isDriverActive(driverTimeoutMs, logHandler, cncByteBuffer);
             }
             finally
             {
@@ -374,57 +361,90 @@ public class CommonContext implements AutoCloseable
     }
 
     /**
+     * Is a media driver active in the current Aeron directory?
+     *
+     * @param driverTimeoutMs for the driver liveness check.
+     * @param logHandler      for feedback as liveness checked.
+     * @param cncByteBuffer   for the existing CnC file.
+     * @return true if a driver is active or false if not.
+     */
+    public boolean isDriverActive(
+        final long driverTimeoutMs, final Consumer<String> logHandler, final MappedByteBuffer cncByteBuffer)
+    {
+        final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+        final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
+
+        logHandler.accept("INFO: Aeron CnC file " + cncFile + " exists");
+
+        if (CNC_VERSION != cncVersion)
+        {
+            throw new IllegalStateException(
+                "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
+        }
+
+        final ManyToOneRingBuffer toDriverBuffer = new ManyToOneRingBuffer(
+            CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
+
+        final long timestamp = toDriverBuffer.consumerHeartbeatTime();
+        final long now = System.currentTimeMillis();
+        final long diff = now - timestamp;
+
+        logHandler.accept("INFO: Aeron toDriver consumer heartbeat is " + diff + "ms old");
+
+        return diff <= driverTimeoutMs;
+    }
+
+    /**
      * Read the error log to a given {@link PrintStream}
      *
      * @param out to write the error log contents to.
-     * @return the number of observations from the error log
+     * @return the number of observations from the error log.
      */
     public int saveErrorLog(final PrintStream out)
     {
-        int distinctErrorCount = 0;
-        final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
-
-        if (cncFile.exists())
+        final MappedByteBuffer cncByteBuffer = mapExistingCncFile();
+        try
         {
-            MappedByteBuffer cncByteBuffer = null;
-
-            try
-            {
-                cncByteBuffer = IoUtil.mapExistingFile(cncFile, CncFileDescriptor.CNC_FILE);
-                final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-                final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
-
-                if (CNC_VERSION != cncVersion)
-                {
-                    throw new IllegalStateException(
-                        "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
-                }
-
-                final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(
-                    cncByteBuffer, cncMetaDataBuffer);
-                final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
-
-                distinctErrorCount = ErrorLogReader.read(
-                    buffer,
-                    (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
-                        out.format(
-                            "***%n%d observations from %s to %s for:%n %s%n",
-                            observationCount,
-                            dateFormat.format(new Date(firstObservationTimestamp)),
-                            dateFormat.format(new Date(lastObservationTimestamp)),
-                            encodedException));
-
-                out.format("%n%d distinct errors observed.%n", distinctErrorCount);
-            }
-            catch (final Exception ex)
-            {
-                LangUtil.rethrowUnchecked(ex);
-            }
-            finally
-            {
-                IoUtil.unmap(cncByteBuffer);
-            }
+            return saveErrorLog(out, cncByteBuffer);
         }
+        finally
+        {
+            IoUtil.unmap(cncByteBuffer);
+        }
+    }
+
+    /**
+     * Read the error log to a given {@link PrintStream}
+     *
+     * @param out           to write the error log contents to.
+     * @param cncByteBuffer containing the error log.
+     * @return the number of observations from the error log.
+     */
+    public int saveErrorLog(final PrintStream out, final MappedByteBuffer cncByteBuffer)
+    {
+        final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+        final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
+
+        if (CNC_VERSION != cncVersion)
+        {
+            throw new IllegalStateException(
+                "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
+        }
+
+        final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
+        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+
+        final int distinctErrorCount = ErrorLogReader.read(
+            buffer,
+            (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
+                out.format(
+                    "***%n%d observations from %s to %s for:%n %s%n",
+                    observationCount,
+                    dateFormat.format(new Date(firstObservationTimestamp)),
+                    dateFormat.format(new Date(lastObservationTimestamp)),
+                    encodedException));
+
+        out.format("%n%d distinct errors observed.%n", distinctErrorCount);
 
         return distinctErrorCount;
     }

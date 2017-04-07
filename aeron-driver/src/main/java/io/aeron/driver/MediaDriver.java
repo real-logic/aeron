@@ -401,13 +401,21 @@ public final class MediaDriver implements AutoCloseable
             }
             else
             {
-                if (ctx.isDriverActive(ctx.driverTimeoutMs(), logProgress))
+                final MappedByteBuffer cncByteBuffer = ctx.mapExistingCncFile();
+                try
                 {
-                    throw new ActiveDriverException("Active driver detected");
-                }
+                    if (ctx.isDriverActive(ctx.driverTimeoutMs(), logProgress, cncByteBuffer))
+                    {
+                        throw new ActiveDriverException("Active driver detected");
+                    }
 
-                reportExistingErrors(ctx);
-                ctx.deleteAeronDirectory();
+                    reportExistingErrors(ctx, cncByteBuffer);
+                    ctx.deleteAeronDirectory();
+                }
+                finally
+                {
+                    IoUtil.unmap(cncByteBuffer);
+                }
             }
         }
 
@@ -423,12 +431,12 @@ public final class MediaDriver implements AutoCloseable
         IoUtil.ensureDirectoryIsRecreated(ctx.aeronDirectory(), "aeron", callback);
     }
 
-    private static void reportExistingErrors(final Context ctx)
+    private static void reportExistingErrors(final Context ctx, final MappedByteBuffer cncByteBuffer)
     {
         try
         {
             final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            final int observations = ctx.saveErrorLog(new PrintStream(baos, false, "UTF-8"));
+            final int observations = ctx.saveErrorLog(new PrintStream(baos, false, "UTF-8"), cncByteBuffer);
             if (observations > 0)
             {
                 final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");

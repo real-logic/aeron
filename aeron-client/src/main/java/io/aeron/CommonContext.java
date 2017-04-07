@@ -120,9 +120,8 @@ public class CommonContext implements AutoCloseable
 
     static
     {
-        String baseDirName = IoUtil.tmpDirName() + "aeron";
+        String baseDirName = null;
 
-        // Use shared memory on Linux to avoid contention on the page cache.
         if ("Linux".equalsIgnoreCase(System.getProperty("os.name")))
         {
             final File devShmDir = new File("/dev/shm");
@@ -133,7 +132,12 @@ public class CommonContext implements AutoCloseable
             }
         }
 
-        AERON_DIR_PROP_DEFAULT = baseDirName + "-" + System.getProperty("user.name", "default");
+        if (null == baseDirName)
+        {
+            baseDirName = IoUtil.tmpDirName() + "aeron";
+        }
+
+        AERON_DIR_PROP_DEFAULT = baseDirName + '-' + System.getProperty("user.name", "default");
     }
 
     /**
@@ -143,9 +147,7 @@ public class CommonContext implements AutoCloseable
      */
     public static String generateRandomDirName()
     {
-        final String randomDirName = UUID.randomUUID().toString();
-
-        return AERON_DIR_PROP_DEFAULT + "-" + randomDirName;
+        return AERON_DIR_PROP_DEFAULT + "-" + UUID.randomUUID().toString();
     }
 
     /**

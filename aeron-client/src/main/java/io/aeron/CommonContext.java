@@ -327,53 +327,46 @@ public class CommonContext implements AutoCloseable
      */
     public boolean isDriverActive(final long driverTimeoutMs, final Consumer<String> logHandler)
     {
-        if (aeronDirectory.isDirectory())
+        final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
+
+        if (cncFile.exists())
         {
-            final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
+            MappedByteBuffer cncByteBuffer = null;
+            logHandler.accept("INFO: Aeron CnC file " + cncFile + " exists");
 
-            logHandler.accept("INFO: Aeron directory " + aeronDirectory + " exists");
-
-            if (cncFile.exists())
+            try
             {
-                MappedByteBuffer cncByteBuffer = null;
+                cncByteBuffer = IoUtil.mapExistingFile(cncFile, CncFileDescriptor.CNC_FILE);
+                final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+                final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
 
-                logHandler.accept("INFO: Aeron CnC file " + cncFile + " exists");
-
-                try
+                if (CNC_VERSION != cncVersion)
                 {
-                    cncByteBuffer = IoUtil.mapExistingFile(cncFile, CncFileDescriptor.CNC_FILE);
-                    final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-
-                    final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
-
-                    if (CNC_VERSION != cncVersion)
-                    {
-                        throw new IllegalStateException(
-                            "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
-                    }
-
-                    final ManyToOneRingBuffer toDriverBuffer = new ManyToOneRingBuffer(
-                        CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
-
-                    final long timestamp = toDriverBuffer.consumerHeartbeatTime();
-                    final long now = System.currentTimeMillis();
-                    final long diff = now - timestamp;
-
-                    logHandler.accept("INFO: Aeron toDriver consumer heartbeat is " + diff + "ms old");
-
-                    if (diff <= driverTimeoutMs)
-                    {
-                        return true;
-                    }
+                    throw new IllegalStateException(
+                        "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
                 }
-                catch (final Exception ex)
+
+                final ManyToOneRingBuffer toDriverBuffer = new ManyToOneRingBuffer(
+                    CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
+
+                final long timestamp = toDriverBuffer.consumerHeartbeatTime();
+                final long now = System.currentTimeMillis();
+                final long diff = now - timestamp;
+
+                logHandler.accept("INFO: Aeron toDriver consumer heartbeat is " + diff + "ms old");
+
+                if (diff <= driverTimeoutMs)
                 {
-                    LangUtil.rethrowUnchecked(ex);
+                    return true;
                 }
-                finally
-                {
-                    IoUtil.unmap(cncByteBuffer);
-                }
+            }
+            catch (final Exception ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+            finally
+            {
+                IoUtil.unmap(cncByteBuffer);
             }
         }
 
@@ -389,52 +382,47 @@ public class CommonContext implements AutoCloseable
     public int saveErrorLog(final PrintStream out)
     {
         int distinctErrorCount = 0;
+        final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
 
-        if (aeronDirectory.isDirectory())
+        if (cncFile.exists())
         {
-            final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
+            MappedByteBuffer cncByteBuffer = null;
 
-            if (cncFile.exists())
+            try
             {
-                MappedByteBuffer cncByteBuffer = null;
+                cncByteBuffer = IoUtil.mapExistingFile(cncFile, CncFileDescriptor.CNC_FILE);
+                final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+                final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
 
-                try
+                if (CNC_VERSION != cncVersion)
                 {
-                    cncByteBuffer = IoUtil.mapExistingFile(cncFile, CncFileDescriptor.CNC_FILE);
-                    final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-
-                    final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
-
-                    if (CNC_VERSION != cncVersion)
-                    {
-                        throw new IllegalStateException(
-                            "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
-                    }
-
-                    final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(
-                        cncByteBuffer, cncMetaDataBuffer);
-                    final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
-
-                    distinctErrorCount = ErrorLogReader.read(
-                        buffer,
-                        (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
-                            out.format(
-                                "***%n%d observations from %s to %s for:%n %s%n",
-                                observationCount,
-                                dateFormat.format(new Date(firstObservationTimestamp)),
-                                dateFormat.format(new Date(lastObservationTimestamp)),
-                                encodedException));
-
-                    out.format("%n%d distinct errors observed.%n", distinctErrorCount);
+                    throw new IllegalStateException(
+                        "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
                 }
-                catch (final Exception ex)
-                {
-                    LangUtil.rethrowUnchecked(ex);
-                }
-                finally
-                {
-                    IoUtil.unmap(cncByteBuffer);
-                }
+
+                final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(
+                    cncByteBuffer, cncMetaDataBuffer);
+                final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+
+                distinctErrorCount = ErrorLogReader.read(
+                    buffer,
+                    (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
+                        out.format(
+                            "***%n%d observations from %s to %s for:%n %s%n",
+                            observationCount,
+                            dateFormat.format(new Date(firstObservationTimestamp)),
+                            dateFormat.format(new Date(lastObservationTimestamp)),
+                            encodedException));
+
+                out.format("%n%d distinct errors observed.%n", distinctErrorCount);
+            }
+            catch (final Exception ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+            finally
+            {
+                IoUtil.unmap(cncByteBuffer);
             }
         }
 

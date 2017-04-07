@@ -382,7 +382,7 @@ public final class MediaDriver implements AutoCloseable
 
     private static void ensureDirectoryIsRecreated(final Context ctx)
     {
-        if (ctx.aeronDirectory().exists())
+        if (ctx.aeronDirectory().isDirectory())
         {
             final Consumer<String> logProgress;
             if (ctx.warnIfDirectoriesExist())

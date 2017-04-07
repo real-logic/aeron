@@ -94,3 +94,36 @@ int aeron_map_new_file(void **addr, const char *path, size_t length, bool fill_w
     return result;
 }
 
+int aeron_map_existing_file(void **addr, const char *path, size_t *length)
+{
+    struct stat sb;
+    int fd, result = -1;
+
+    if ((fd = open(path, O_RDWR)) >= 0)
+    {
+        if (fstat(fd, &sb) == 0)
+        {
+            *length = (size_t)sb.st_size;
+
+            void *file_mmap = mmap(NULL, *length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+            if (MAP_FAILED != file_mmap)
+            {
+                *addr = file_mmap;
+                result = 0;
+            }
+            else
+            {
+                /* TODO: error */
+            }
+        }
+
+        close(fd);
+    }
+    else
+    {
+        /* TODO: grab error */
+    }
+
+    return result;
+}

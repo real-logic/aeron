@@ -88,69 +88,45 @@ static void error_log_reader_save_to_file(
         error);
 }
 
-int aeron_report_existing_errors(const char *aeron_dir)
+int aeron_report_existing_errors(void *cnc_mmap, size_t cnc_length, const char *aeron_dir)
 {
     struct stat sb;
     char buffer[AERON_MAX_PATH];
-    int fd, result = 0;
+    int result = 0;
 
-    if (stat(aeron_dir, &sb) == 0 && (S_ISDIR(sb.st_mode)))
+    aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *) cnc_mmap;
+
+    if (AERON_CNC_VERSION == metadata->cnc_version && aeron_error_log_exists(cnc_mmap, (size_t)sb.st_size))
     {
-        snprintf(buffer, sizeof(buffer) - 1, "%s/%s", aeron_dir, AERON_CNC_FILE);
-        if ((fd = open(buffer, O_RDONLY)) >= 0)
+        char datestamp[AERON_MAX_PATH];
+        FILE *saved_errors_file = NULL;
+
+        aeron_format_date(datestamp, sizeof(datestamp) - 1, aeron_epochclock());
+        snprintf(buffer, sizeof(buffer) - 1, "%s-%s-error.log", aeron_dir, datestamp);
+
+        if ((saved_errors_file = fopen(buffer, "w")) != NULL)
         {
-            if (fstat(fd, &sb) == 0)
-            {
-                void *cnc_mmap = mmap(NULL, (size_t) sb.st_size, PROT_READ, MAP_SHARED, fd, 0);
+            uint64_t observations = aeron_error_log_read(
+                aeron_cnc_error_log_buffer(metadata),
+                (size_t)metadata->error_log_buffer_length,
+                error_log_reader_save_to_file,
+                saved_errors_file,
+                0);
 
-                if (MAP_FAILED != cnc_mmap)
-                {
-                    aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *) cnc_mmap;
+            fprintf(saved_errors_file, "\n%" PRIu64 " distinct errors observed.\n", observations);
 
-                    if (AERON_CNC_VERSION == metadata->cnc_version &&
-                        aeron_error_log_exists(cnc_mmap, (size_t)sb.st_size))
-                    {
-                        char datestamp[AERON_MAX_PATH];
-                        FILE *saved_errors_file = NULL;
+            fprintf(stderr, "WARNING: Existing errors saved to: %s\n", buffer);
 
-                        aeron_format_date(datestamp, sizeof(datestamp) - 1, aeron_epochclock());
-                        snprintf(buffer, sizeof(buffer) - 1, "%s-%s-error.log", aeron_dir, datestamp);
-
-                        if ((saved_errors_file = fopen(buffer, "w")) != NULL)
-                        {
-                            uint64_t observations = aeron_error_log_read(
-                                aeron_cnc_error_log_buffer(metadata),
-                                (size_t)metadata->error_log_buffer_length,
-                                error_log_reader_save_to_file,
-                                saved_errors_file,
-                                0);
-
-                            fprintf(saved_errors_file, "\n%" PRIu64 " distinct errors observed.\n", observations);
-
-                            fprintf(stderr, "WARNING: Existing errors saved to: %s\n", buffer);
-                        }
-                        else
-                        {
-                            result = -1;
-                        }
-
-                        fclose(saved_errors_file);
-                    }
-                    else
-                    {
-                        result = -1;
-                    }
-
-                    munmap(cnc_mmap, (size_t) sb.st_size);
-                }
-                else
-                {
-                    result = -1;
-                }
-            }
-
-            close(fd);
+            fclose(saved_errors_file);
         }
+        else
+        {
+            result = -1;
+        }
+    }
+    else
+    {
+        result = -1;
     }
 
     return result;
@@ -178,17 +154,36 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
         }
         else
         {
-            if (aeron_is_driver_active(
-                driver->context->aeron_dir, driver->context->driver_timeout_ms, aeron_epochclock(), log_func))
+            void *cnc_mmap = NULL;
+            size_t cnc_length = 0;
+
+            snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_CNC_FILE);
+            if (aeron_map_existing_file(&cnc_mmap, buffer, &cnc_length) < 0)
             {
                 /* TODO: EINVAL? or ESTATE? */
+                snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to mmap CnC file");
+                log_func(buffer);
                 return -1;
             }
 
-            if (aeron_report_existing_errors(driver->context->aeron_dir) < 0)
+            snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron CnC file %s/%s exists", dirname, AERON_CNC_FILE);
+            log_func(buffer);
+
+            if (aeron_is_driver_active_with_cnc(
+                cnc_mmap, cnc_length, driver->context->driver_timeout_ms, aeron_epochclock(), log_func))
             {
+                /* TODO: EINVAL? or ESTATE? */
+                munmap(cnc_mmap, cnc_length);
                 return -1;
             }
+
+            if (aeron_report_existing_errors(cnc_mmap, cnc_length, dirname) < 0)
+            {
+                munmap(cnc_mmap, cnc_length);
+                return -1;
+            }
+
+            munmap(cnc_mmap, cnc_length);
 
             aeron_dir_delete(driver->context->aeron_dir);
         }

@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <math.h>
 #include <limits.h>
+#include "util/aeron_fileutil.h"
 #include "aeron_driver_context.h"
 #include "aeron_alloc.h"
 #include "concurrent/aeron_mpsc_rb.h"
@@ -278,83 +279,84 @@ int aeron_dir_delete(const char *dirname)
     return nftw(dirname, unlink_func, 64, FTW_DEPTH | FTW_PHYS);
 }
 
-bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, aeron_log_func_t log_func)
+bool aeron_is_driver_active_with_cnc(
+    void *cnc_mmap, size_t cnc_length, int64_t timeout, int64_t now, aeron_log_func_t log_func)
 {
-    struct stat sb;
     char buffer[AERON_MAX_PATH];
-    int fd;
+    aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)cnc_mmap;
 
-    if (stat(dirname, &sb) == 0 && (S_ISDIR(sb.st_mode)))
+    if (AERON_CNC_VERSION != metadata->cnc_version)
     {
-        snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron directory %s exists", dirname);
+        snprintf(
+            buffer,
+            sizeof(buffer) - 1,
+            "ERROR: aeron cnc file version not understood: version=%d",
+            metadata->cnc_version);
         log_func(buffer);
+    }
+    else
+    {
+        aeron_mpsc_rb_t rb;
 
-        snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_CNC_FILE);
-        if ((fd = open(buffer, O_RDONLY)) >= 0)
+        if (aeron_mpsc_rb_init(
+            &rb, aeron_cnc_to_driver_buffer(metadata), (size_t)metadata->to_driver_buffer_length) != 0)
         {
-            snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron CnC file %s/%s exists", dirname, AERON_CNC_FILE);
+            snprintf(
+                buffer, sizeof(buffer) - 1, "ERROR: aeron cnc file could not init to-driver buffer");
+            log_func(buffer);
+        }
+        else
+        {
+            int64_t timestamp = aeron_mpsc_rb_consumer_heartbeat_time_value(&rb);
+
+            int64_t diff = now - timestamp;
+
+            snprintf(
+                buffer, sizeof(buffer) - 1, "INFO: Aeron toDriver consumer heartbeat is %'" PRId64 " ms old", diff);
             log_func(buffer);
 
-            if (fstat(fd, &sb) == 0)
+            if (diff <= timeout)
             {
-                void *cnc_mmap = mmap(NULL, (size_t)sb.st_size, PROT_READ, MAP_SHARED, fd, 0);
-
-                if (MAP_FAILED != cnc_mmap)
-                {
-                    aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)cnc_mmap;
-
-                    if (AERON_CNC_VERSION != metadata->cnc_version)
-                    {
-                        snprintf(
-                            buffer,
-                            sizeof(buffer) - 1,
-                            "ERROR: aeron cnc file version not understood: version=%d",
-                            metadata->cnc_version);
-                        log_func(buffer);
-                    }
-                    else
-                    {
-                        aeron_mpsc_rb_t rb;
-
-                        if (aeron_mpsc_rb_init(
-                            &rb, aeron_cnc_to_driver_buffer(metadata), (size_t)metadata->to_driver_buffer_length) != 0)
-                        {
-                            snprintf(
-                                buffer, sizeof(buffer) - 1, "ERROR: aeron cnc file could not init to-driver buffer");
-                            log_func(buffer);
-                        }
-                        else
-                        {
-                            int64_t timestamp = aeron_mpsc_rb_consumer_heartbeat_time_value(&rb);
-
-                            int64_t diff = now - timestamp;
-
-                            snprintf(
-                                buffer, sizeof(buffer) - 1, "INFO: Aeron toDriver consumer heartbeat is %" PRId64 " ms old", diff);
-                            log_func(buffer);
-
-                            if (diff <= timeout)
-                            {
-                                return true;
-                            }
-                        }
-                    }
-
-                    munmap(cnc_mmap, (size_t) sb.st_size);
-                }
-                else
-                {
-                    /* TODO: add error info */
-                    snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to mmap CnC file");
-                    log_func(buffer);
-                }
+                return true;
             }
-
-            close(fd);
         }
     }
 
     return false;
+}
+
+bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, aeron_log_func_t log_func)
+{
+    struct stat sb;
+    char buffer[AERON_MAX_PATH];
+    bool result = false;
+
+    if (stat(dirname, &sb) == 0 && (S_ISDIR(sb.st_mode)))
+    {
+        void *cnc_mmap = NULL;
+        size_t cnc_length = 0;
+
+        snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron directory %s exists", dirname);
+        log_func(buffer);
+
+        snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_CNC_FILE);
+        if (aeron_map_existing_file(&cnc_mmap, buffer, &cnc_length) < 0)
+        {
+            /* TODO: EINVAL? or ESTATE? */
+            snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to mmap CnC file");
+            log_func(buffer);
+            return false;
+        }
+
+        snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron CnC file %s/%s exists", dirname, AERON_CNC_FILE);
+        log_func(buffer);
+
+        result = aeron_is_driver_active_with_cnc(cnc_mmap, cnc_length, timeout, aeron_epochclock(), log_func);
+
+        munmap(cnc_mmap, cnc_length);
+    }
+
+    return result;
 }
 
 extern uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata);

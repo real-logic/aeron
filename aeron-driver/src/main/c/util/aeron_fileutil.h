@@ -21,5 +21,6 @@
 #include <stdbool.h>
 
 int aeron_map_new_file(void **addr, const char *path, size_t length, bool fill_with_zeroes);
+int aeron_map_existing_file(void **addr, const char *path, size_t *length);
 
 #endif //AERON_AERON_FILEUTIL_H

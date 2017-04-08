@@ -44,7 +44,6 @@ import java.nio.channels.DatagramChannel;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ThreadFactory;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
@@ -384,23 +383,14 @@ public final class MediaDriver implements AutoCloseable
     {
         if (ctx.aeronDirectory().isDirectory())
         {
-            final Consumer<String> logProgress;
             if (ctx.warnIfDirectoriesExist())
             {
                 System.err.println("WARNING: " + ctx.aeronDirectory() + " already exists.");
-                logProgress = System.err::println;
-            }
-            else
-            {
-                logProgress = (message) -> {};
             }
 
-            if (ctx.dirsDeleteOnStart())
+            if (!ctx.dirsDeleteOnStart())
             {
-                ctx.deleteAeronDirectory();
-            }
-            else
-            {
+                final Consumer<String> logProgress = ctx.warnIfDirectoriesExist() ? System.err::println : (s) -> {};
                 final MappedByteBuffer cncByteBuffer = ctx.mapExistingCncFile();
                 try
                 {
@@ -415,21 +405,12 @@ public final class MediaDriver implements AutoCloseable
                 {
                     IoUtil.unmap(cncByteBuffer);
                 }
-
-                ctx.deleteAeronDirectory();
             }
+
+            ctx.deleteAeronDirectory();
         }
 
-        final BiConsumer<String, String> callback =
-            (path, name) ->
-            {
-                if (ctx.warnIfDirectoriesExist())
-                {
-                    System.err.println("WARNING: " + name + " directory already exists: " + path);
-                }
-            };
-
-        IoUtil.ensureDirectoryIsRecreated(ctx.aeronDirectory(), "aeron", callback);
+        IoUtil.ensureDirectoryExists(ctx.aeronDirectory(), "aeron");
     }
 
     private static void reportExistingErrors(final Context ctx, final MappedByteBuffer cncByteBuffer)

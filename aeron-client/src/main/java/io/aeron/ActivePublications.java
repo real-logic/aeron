@@ -19,14 +19,12 @@ import org.agrona.collections.Int2ObjectHashMap;
 
 import java.util.*;
 
-import static org.agrona.collections.CollectionUtil.getOrDefault;
-
 /**
  * Map for navigating to active {@link Publication}s.
  */
 class ActivePublications
 {
-    private final Map<String, Int2ObjectHashMap<Publication>> publicationsByChannelMap = new HashMap<>();
+    private final HashMap<String, Int2ObjectHashMap<Publication>> publicationsByChannelMap = new HashMap<>();
 
     public Publication get(final String channel, final int streamId)
     {
@@ -39,10 +37,15 @@ class ActivePublications
         return publicationByStreamIdMap.get(streamId);
     }
 
+    @SuppressWarnings("Java8MapApi")
     public Publication put(final String channel, final int streamId, final Publication publication)
     {
-        final Int2ObjectHashMap<Publication> publicationByStreamIdMap =
-            getOrDefault(publicationsByChannelMap, channel, (ignore) -> new Int2ObjectHashMap<>());
+        Int2ObjectHashMap<Publication> publicationByStreamIdMap = publicationsByChannelMap.get(channel);
+        if (null == publicationByStreamIdMap)
+        {
+            publicationByStreamIdMap = new Int2ObjectHashMap<>();
+            publicationsByChannelMap.put(channel, publicationByStreamIdMap);
+        }
 
         return publicationByStreamIdMap.put(streamId, publication);
     }

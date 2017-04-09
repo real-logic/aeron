@@ -15,6 +15,7 @@
  */
 package io.aeron;
 
+import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 
 import java.util.ArrayList;
@@ -35,9 +36,14 @@ class ActiveSubscriptions
 
     public void add(final Subscription subscription)
     {
-        subscriptionsByStreamIdMap
-            .computeIfAbsent(subscription.streamId(), (ignore) -> new ArrayList<>())
-            .add(subscription);
+        ArrayList<Subscription> subscriptions = subscriptionsByStreamIdMap.get(subscription.streamId());
+        if (null == subscriptions)
+        {
+            subscriptions = new ArrayList<>();
+            subscriptionsByStreamIdMap.put(subscription.streamId(), subscriptions);
+        }
+
+        subscriptions.add(subscription);
     }
 
     public void remove(final Subscription subscription)
@@ -45,7 +51,7 @@ class ActiveSubscriptions
         final int streamId = subscription.streamId();
         final ArrayList<Subscription> subscriptions = subscriptionsByStreamIdMap.get(streamId);
 
-        if (null != subscriptions && subscriptions.remove(subscription) && subscriptions.isEmpty())
+        if (null != subscriptions && remove(subscriptions, subscription) && subscriptions.isEmpty())
         {
             subscriptionsByStreamIdMap.remove(streamId);
         }
@@ -62,5 +68,19 @@ class ActiveSubscriptions
         }
 
         subscriptionsByStreamIdMap.clear();
+    }
+
+    private static boolean remove(final ArrayList<Subscription> subscriptions, final Subscription subscription)
+    {
+        for (int i = 0, size = subscriptions.size(); i < size; i++)
+        {
+            if (subscription == subscriptions.get(i))
+            {
+                ArrayListUtil.fastUnorderedRemove(subscriptions, i, size - 1);
+                return true;
+            }
+        }
+
+        return false;
     }
 }

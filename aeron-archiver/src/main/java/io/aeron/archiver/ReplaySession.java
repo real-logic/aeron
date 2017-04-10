@@ -53,7 +53,6 @@ class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHand
     private final ArchiverProtocolProxy proxy;
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
 
-
     private State state = State.INIT;
     private StreamInstanceArchiveFragmentReader cursor;
 
@@ -96,6 +95,7 @@ class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHand
         {
             workDone += close();
         }
+
         return workDone;
     }
 
@@ -109,7 +109,6 @@ class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHand
         return state == State.DONE;
     }
 
-    @Override
     public void remove(final ArchiverConductor conductor)
     {
         conductor.removeReplaySession(image.sessionId());
@@ -144,10 +143,10 @@ class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHand
         {
             metaData = ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
         }
-        catch (IOException e)
+        catch (final IOException ex)
         {
             final String err = archiveMetaFile.getAbsolutePath() + " : failed to map";
-            return closeOnErr(e, err);
+            return closeOnErr(ex, err);
         }
 
         final int initialTermId = metaData.initialTermId();
@@ -195,13 +194,15 @@ class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHand
                 fromTermOffset,
                 replayLength);
         }
-        catch (IOException e)
+        catch (final IOException ex)
         {
-            return closeOnErr(e, "Failed to open archive cursor");
+            return closeOnErr(ex, "Failed to open archive cursor");
         }
+
         // plumbing is secured, we can kick off the replay
         proxy.sendResponse(control, null);
         this.state = State.REPLAY;
+
         return 1;
     }
 
@@ -236,10 +237,12 @@ class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHand
         {
             proxy.sendResponse(control, err);
         }
+
         if (e != null)
         {
             LangUtil.rethrowUnchecked(e);
         }
+
         return 0;
     }
 
@@ -254,12 +257,11 @@ class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHand
             }
             return polled;
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
-            return closeOnErr(e, "Cursor read failed");
+            return closeOnErr(ex, "Cursor read failed");
         }
     }
-
 
     private int close()
     {
@@ -270,7 +272,6 @@ class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHand
         return 1;
     }
 
-    @Override
     public Action onFragment(
         final DirectBuffer fragmentBuffer,
         final int fragmentOffset,
@@ -299,12 +300,14 @@ class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHand
             {
                 bufferClaim.commit();
             }
+
             return Action.CONTINUE;
         }
         else if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
         {
             closeOnErr(null, "Reply publication to replay requestor has shutdown mid-replay");
         }
+
         return Action.ABORT;
     }
 }

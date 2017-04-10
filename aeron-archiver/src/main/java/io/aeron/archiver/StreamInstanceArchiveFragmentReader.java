@@ -16,7 +16,6 @@
 
 package io.aeron.archiver;
 
-
 import io.aeron.archiver.messages.ArchiveDescriptorDecoder;
 import io.aeron.logbuffer.*;
 import io.aeron.logbuffer.ControlledFragmentHandler.Action;
@@ -57,8 +56,7 @@ class StreamInstanceArchiveFragmentReader implements AutoCloseable
         this.archiveFolder = archiveFolder;
         final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
         final File archiveMetaFile = new File(archiveFolder, archiveMetaFileName);
-        final ArchiveDescriptorDecoder metaDecoder =
-            ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
+        final ArchiveDescriptorDecoder metaDecoder = ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
         termBufferLength = metaDecoder.termBufferLength();
         initialTermId = metaDecoder.initialTermId();
         initialTermOffset = metaDecoder.initialTermOffset();
@@ -84,8 +82,7 @@ class StreamInstanceArchiveFragmentReader implements AutoCloseable
         this.replayLength = length;
         final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
         final File archiveMetaFile = new File(archiveFolder, archiveMetaFileName);
-        final ArchiveDescriptorDecoder metaDecoder =
-            ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
+        final ArchiveDescriptorDecoder metaDecoder = ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
         termBufferLength = metaDecoder.termBufferLength();
         initialTermId = metaDecoder.initialTermId();
         initialTermOffset = metaDecoder.initialTermOffset();
@@ -97,8 +94,8 @@ class StreamInstanceArchiveFragmentReader implements AutoCloseable
     private void initCursorState() throws IOException
     {
         archiveFileIndex = ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, fromTermId);
-        final int archiveOffset =
-            ArchiveFileUtil.archiveOffset(fromTermOffset, fromTermId, initialTermId, termBufferLength);
+        final int archiveOffset = ArchiveFileUtil.archiveOffset(
+            fromTermOffset, fromTermId, initialTermId, termBufferLength);
         archiveTermStartOffset = archiveOffset - fromTermOffset;
         openArchiveFile();
         termMappedUnsafeBuffer =
@@ -124,9 +121,7 @@ class StreamInstanceArchiveFragmentReader implements AutoCloseable
 
 
         // read to end of term or requested data
-        while (fragmentOffset < termBufferLength &&
-               !isDone() &&
-               polled < fragmentLimit)
+        while (fragmentOffset < termBufferLength && !isDone() && polled < fragmentLimit)
         {
             final int fragmentOffset = this.fragmentOffset;
             fragmentHeader.offset(fragmentOffset);
@@ -192,6 +187,7 @@ class StreamInstanceArchiveFragmentReader implements AutoCloseable
                 termBufferLength));
             fragmentHeader.buffer(termMappedUnsafeBuffer);
         }
+
         return polled;
     }
 
@@ -212,8 +208,7 @@ class StreamInstanceArchiveFragmentReader implements AutoCloseable
 
     private void openArchiveFile() throws IOException
     {
-        final String archiveDataFileName =
-            ArchiveFileUtil.archiveDataFileName(streamInstanceId, archiveFileIndex);
+        final String archiveDataFileName = ArchiveFileUtil.archiveDataFileName(streamInstanceId, archiveFileIndex);
         final File archiveDataFile = new File(archiveFolder, archiveDataFileName);
 
         if (!archiveDataFile.exists())

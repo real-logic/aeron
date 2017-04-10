@@ -67,22 +67,12 @@ class StreamInstance
             return false;
         }
 
-        final StreamInstance that = (StreamInstance) o;
+        final StreamInstance that = (StreamInstance)o;
 
-        if (sessionId != that.sessionId)
-        {
-            return false;
-        }
-        if (streamId != that.streamId)
-        {
-            return false;
-        }
-        if (!source.equals(that.source))
-        {
-            return false;
-        }
-
-        return channel.equals(that.channel);
+        return sessionId == that.sessionId &&
+            streamId == that.streamId &&
+            source.equals(that.source) &&
+            channel.equals(that.channel);
     }
 
     public int hashCode()

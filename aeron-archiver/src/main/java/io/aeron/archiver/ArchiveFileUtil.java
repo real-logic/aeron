@@ -80,13 +80,15 @@ class ArchiveFileUtil
         try (RandomAccessFile randomAccessFile = new RandomAccessFile(metaFile, "rw");
              FileChannel metadataFileChannel = randomAccessFile.getChannel())
         {
-            final MappedByteBuffer metaDataBuffer =
-                metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, ArchiveIndex.INDEX_RECORD_SIZE);
+            final MappedByteBuffer metaDataBuffer = metadataFileChannel.map(
+                FileChannel.MapMode.READ_WRITE, 0, ArchiveIndex.INDEX_RECORD_SIZE);
             final ArchiveDescriptorDecoder decoder = new ArchiveDescriptorDecoder();
-            return decoder.wrap(new UnsafeBuffer(metaDataBuffer),
-                                ArchiveIndex.INDEX_FRAME_LENGTH,
-                                ArchiveDescriptorDecoder.BLOCK_LENGTH,
-                                ArchiveDescriptorDecoder.SCHEMA_VERSION);
+
+            return decoder.wrap(
+                new UnsafeBuffer(metaDataBuffer),
+                ArchiveIndex.INDEX_FRAME_LENGTH,
+                ArchiveDescriptorDecoder.BLOCK_LENGTH,
+                ArchiveDescriptorDecoder.SCHEMA_VERSION);
         }
     }
 
@@ -109,7 +111,7 @@ class ArchiveFileUtil
 
     static long archiveFullLength(final ArchiveDescriptorDecoder metaDecoder)
     {
-        return ((long) (metaDecoder.lastTermId() - metaDecoder.initialTermId())) * metaDecoder.termBufferLength() +
-               (metaDecoder.lastTermOffset() - metaDecoder.initialTermOffset());
+        return ((long)(metaDecoder.lastTermId() - metaDecoder.initialTermId())) * metaDecoder.termBufferLength() +
+            (metaDecoder.lastTermOffset() - metaDecoder.initialTermOffset());
     }
 }

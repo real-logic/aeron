@@ -29,7 +29,6 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 class ListDescriptorsSession implements ArchiverConductor.Session
 {
-
     static final long NOT_FOUND_HEADER;
     static final long DESCRIPTOR_HEADER;
 
@@ -97,7 +96,6 @@ class ListDescriptorsSession implements ArchiverConductor.Session
         return state == State.DONE;
     }
 
-    @Override
     public void remove(final ArchiverConductor conductor)
     {
     }
@@ -117,6 +115,7 @@ class ListDescriptorsSession implements ArchiverConductor.Session
         {
             workDone += close();
         }
+
         return workDone;
     }
 
@@ -142,8 +141,8 @@ class ListDescriptorsSession implements ArchiverConductor.Session
                     if (!conductor.readArchiveDescriptor(cursor, byteBuffer))
                     {
                         // return relevant error
-                        if (reply.tryClaim(8 +
-                                           ListStreamInstancesNotFoundResponseDecoder.BLOCK_LENGTH, bufferClaim) > 0L)
+                        if (reply.tryClaim(
+                            8 + ListStreamInstancesNotFoundResponseDecoder.BLOCK_LENGTH, bufferClaim) > 0L)
                         {
                             final MutableDirectBuffer buffer = bufferClaim.buffer();
                             final int offset = bufferClaim.offset();
@@ -153,15 +152,15 @@ class ListDescriptorsSession implements ArchiverConductor.Session
                             bufferClaim.commit();
                             state = State.CLOSE;
                         }
+
                         return 0;
                     }
                 }
-                catch (IOException e)
+                catch (final IOException ex)
                 {
                     state = State.CLOSE;
-                    LangUtil.rethrowUnchecked(e);
+                    LangUtil.rethrowUnchecked(ex);
                 }
-
             }
             else
             {
@@ -172,10 +171,12 @@ class ListDescriptorsSession implements ArchiverConductor.Session
             unsafeBuffer.putLong(ArchiveIndex.INDEX_FRAME_LENGTH - 8, DESCRIPTOR_HEADER);
             reply.offer(unsafeBuffer, ArchiveIndex.INDEX_FRAME_LENGTH - 8, length + 8);
         }
+
         if (cursor > to)
         {
             state = State.CLOSE;
         }
+
         return 4;
     }
 
@@ -201,6 +202,7 @@ class ListDescriptorsSession implements ArchiverConductor.Session
         {
             state = State.SENDING;
         }
+
         return 1;
     }
 }

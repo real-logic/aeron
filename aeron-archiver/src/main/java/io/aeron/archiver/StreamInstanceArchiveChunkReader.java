@@ -21,6 +21,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
 import static java.lang.Math.min;
@@ -36,7 +37,6 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
     private long transmitted;
     private int archiveFileIndex;
 
-    private RandomAccessFile currentDataFile;
     private FileChannel currentDataChannel;
     private UnsafeBuffer termMappedUnsafeBuffer;
 
@@ -60,10 +60,8 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
 
         transmitted = 0;
         archiveFileIndex = ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, termId);
-        final int archiveOffset =
-            ArchiveFileUtil.archiveOffset(termOffset, termId, initialTermId, termBufferLength);
-        final String archiveDataFileName =
-            ArchiveFileUtil.archiveDataFileName(streamInstanceId, archiveFileIndex);
+        final int archiveOffset = ArchiveFileUtil.archiveOffset(termOffset, termId, initialTermId, termBufferLength);
+        final String archiveDataFileName = ArchiveFileUtil.archiveDataFileName(streamInstanceId, archiveFileIndex);
         final File archiveDataFile = new File(archiveFolder, archiveDataFileName);
 
         if (!archiveDataFile.exists())
@@ -73,8 +71,7 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
 
         try
         {
-            currentDataFile = new RandomAccessFile(archiveDataFile, "r");
-            currentDataChannel = currentDataFile.getChannel();
+            currentDataChannel = FileChannel.open(archiveDataFile.toPath(), StandardOpenOption.READ);
             archiveTermStartOffset = archiveOffset - termOffset;
             currentTermOffset = termOffset;
             termMappedUnsafeBuffer = new UnsafeBuffer(
@@ -83,10 +80,10 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
                     archiveTermStartOffset,
                     termBufferLength));
         }
-        catch (IOException e)
+        catch (final IOException ex)
         {
             CloseHelper.quietClose(this);
-            throw e;
+            throw ex;
         }
     }
 
@@ -116,6 +113,7 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
         {
             return 0;
         }
+
         currentTermOffset += readSize;
         transmitted += readSize;
         if (transmitted != length && currentTermOffset == termBufferLength)
@@ -124,9 +122,9 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
             {
                 rollNextTerm();
             }
-            catch (IOException e)
+            catch (final IOException ex)
             {
-                LangUtil.rethrowUnchecked(e);
+                LangUtil.rethrowUnchecked(ex);
             }
         }
 
@@ -141,8 +139,7 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
         {
             archiveTermStartOffset = 0;
             archiveFileIndex++;
-            final String archiveDataFileNameN =
-                ArchiveFileUtil.archiveDataFileName(streamInstanceId, archiveFileIndex);
+            final String archiveDataFileNameN = ArchiveFileUtil.archiveDataFileName(streamInstanceId, archiveFileIndex);
             final File archiveDataFileN = new File(archiveFolder, archiveDataFileNameN);
 
             if (!archiveDataFileN.exists())
@@ -152,8 +149,7 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
 
             closeResources();
 
-            currentDataFile = new RandomAccessFile(archiveDataFileN, "r");
-            currentDataChannel = currentDataFile.getChannel();
+            currentDataChannel = FileChannel.open(archiveDataFileN.toPath(), StandardOpenOption.READ);
         }
         else
         {
@@ -177,7 +173,6 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
     {
         IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
         CloseHelper.quietClose(currentDataChannel);
-        CloseHelper.quietClose(currentDataFile);
     }
 
     interface ChunkHandler

@@ -27,7 +27,6 @@ import java.nio.ByteBuffer;
  */
 class ImageArchivingSession implements ArchiverConductor.Session
 {
-
     private enum State
     {
         ARCHIVING, CLOSING, DONE
@@ -72,25 +71,24 @@ class ImageArchivingSession implements ArchiverConductor.Session
             channel,
             streamId);
 
-
+        StreamInstanceArchiveWriter writer = null;
         try
         {
-            this.writer = new StreamInstanceArchiveWriter(
+            writer = new StreamInstanceArchiveWriter(
                 archiveFolder,
                 epochClock,
                 streamInstanceId,
                 termBufferLength,
                 imageInitialTermId,
                 new StreamInstance(source, sessionId, channel, streamId));
-
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
             close();
-            LangUtil.rethrowUnchecked(e);
-            // the next line is to keep compiler happy with regards to final fields init
-            throw new RuntimeException();
+            LangUtil.rethrowUnchecked(ex);
         }
+
+        this.writer = writer;
     }
 
     public void abort()
@@ -128,9 +126,9 @@ class ImageArchivingSession implements ArchiverConductor.Session
                 index.updateIndexFromMeta(streamInstanceId, writer.metaDataBuffer());
             }
         }
-        catch (IOException e)
+        catch (final IOException ex)
         {
-            LangUtil.rethrowUnchecked(e);
+            LangUtil.rethrowUnchecked(ex);
         }
         finally
         {
@@ -138,36 +136,39 @@ class ImageArchivingSession implements ArchiverConductor.Session
             proxy.notifyArchiveStopped(streamInstanceId);
             this.state = State.DONE;
         }
+
         return 1;
     }
 
     private int archive()
     {
+        int workCount = 1;
         try
         {
             // TODO: add CRC as option, per fragment, use session id to store CRC
-            final int delta = this.image.rawPoll(writer, ArchiveFileUtil.ARCHIVE_FILE_SIZE);
-            if (delta != 0)
+            workCount = image.rawPoll(writer, ArchiveFileUtil.ARCHIVE_FILE_SIZE);
+            if (workCount != 0)
             {
-                this.proxy.notifyArchiveProgress(
+                proxy.notifyArchiveProgress(
                     writer.streamInstanceId(),
                     writer.initialTermId(),
                     writer.initialTermOffset(),
                     writer.lastTermId(),
                     writer.lastTermOffset());
             }
-            if (this.image.isClosed())
+
+            if (image.isClosed())
             {
-                this.state = State.CLOSING;
+                state = State.CLOSING;
             }
-            return delta;
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
-            this.state = State.CLOSING;
-            LangUtil.rethrowUnchecked(e);
+            state = State.CLOSING;
+            LangUtil.rethrowUnchecked(ex);
         }
-        return 1;
+
+        return workCount;
     }
 
     public boolean isDone()

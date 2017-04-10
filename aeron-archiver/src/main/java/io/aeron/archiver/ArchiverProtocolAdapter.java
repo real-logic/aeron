@@ -27,15 +27,13 @@ class ArchiverProtocolAdapter implements FragmentHandler
     private final ReplayRequestDecoder replayRequestDecoder = new ReplayRequestDecoder();
     private final ArchiveStartRequestDecoder archiveStartRequestDecoder = new ArchiveStartRequestDecoder();
     private final ArchiveStopRequestDecoder archiveStopRequestDecoder = new ArchiveStopRequestDecoder();
-    private final ListStreamInstancesRequestDecoder requestDecoder =
-        new ListStreamInstancesRequestDecoder();
+    private final ListStreamInstancesRequestDecoder requestDecoder = new ListStreamInstancesRequestDecoder();
 
     ArchiverProtocolAdapter(final ArchiverProtocolListener listener)
     {
         this.listener = listener;
     }
 
-    @Override
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         headerDecoder.wrap(buffer, offset);
@@ -50,7 +48,8 @@ class ArchiverProtocolAdapter implements FragmentHandler
                 final int sessionId = header.sessionId();
                 replayRequestDecoder.wrap(
                     buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH, headerDecoder.blockLength(),
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
                     headerDecoder.version());
 
                 final int replayStreamId = replayRequestDecoder.replayStreamId();
@@ -75,6 +74,7 @@ class ArchiverProtocolAdapter implements FragmentHandler
 
                 break;
             }
+
             case ArchiveStartRequestDecoder.TEMPLATE_ID:
             {
                 archiveStartRequestDecoder.wrap(
@@ -89,7 +89,9 @@ class ArchiverProtocolAdapter implements FragmentHandler
                 listener.onArchiveStart(channel1, streamId);
                 break;
             }
+
             case ArchiveStopRequestDecoder.TEMPLATE_ID:
+            {
                 archiveStopRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -101,14 +103,18 @@ class ArchiverProtocolAdapter implements FragmentHandler
 
                 listener.onArchiveStop(channel2, streamId1);
                 break;
+            }
 
             case AbortReplayRequestDecoder.TEMPLATE_ID:
+            {
                 // TODO: replace with correlation id
                 final int sessionId = header.sessionId();
                 listener.onReplayStop(sessionId);
                 break;
+            }
 
             case ListStreamInstancesRequestDecoder.TEMPLATE_ID:
+            {
                 requestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -121,6 +127,7 @@ class ArchiverProtocolAdapter implements FragmentHandler
                 final int replyStreamId = requestDecoder.replyStreamId();
                 listener.onListStreamInstances(from, to, channel, replyStreamId);
                 break;
+            }
 
             default:
                 throw new IllegalArgumentException("Unexpected template id:" + templateId);

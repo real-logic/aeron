@@ -76,7 +76,7 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         if (((termsMask + 1) & termsMask) != 0)
         {
             throw new IllegalArgumentException(
-                "It is assumed the termBufferLength is a power of 2 smaller than 1G and that" +
+                "It is assumed the termBufferLength is a power of 2 <= 1GB and that" +
                     "therefore the number of terms in a file is also a power of 2");
         }
 
@@ -95,10 +95,10 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
             unsafeBuffer.putInt(0, metaDataWriter.encodedLength());
             metaDataBuffer.force();
         }
-        catch (IOException e)
+        catch (final IOException ex)
         {
             close();
-            LangUtil.rethrowUnchecked(e);
+            LangUtil.rethrowUnchecked(ex);
             // the next line is to keep compiler happy with regards to final fields init
             throw new RuntimeException();
         }
@@ -128,8 +128,8 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
 
     private void newArchiveFile(final int termId)
     {
-        final String archiveDataFileName =
-            archiveDataFileName(streamInstanceId, initialTermId, termBufferLength, termId);
+        final String archiveDataFileName = archiveDataFileName(
+            streamInstanceId, initialTermId, termBufferLength, termId);
         final File file = new File(archiveFolder, archiveDataFileName);
 
         try
@@ -138,10 +138,10 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
             archiveFile.setLength(ArchiveFileUtil.ARCHIVE_FILE_SIZE);
             archiveFileChannel = archiveFile.getChannel();
         }
-        catch (IOException e)
+        catch (final IOException ex)
         {
             close();
-            LangUtil.rethrowUnchecked(e);
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 
@@ -172,10 +172,10 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
 
             writePrologue(termOffset, blockLength, termId, archiveOffset);
         }
-        catch (Throwable e)
+        catch (final Exception ex)
         {
             close();
-            LangUtil.rethrowUnchecked(e);
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 
@@ -210,10 +210,10 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
 
             writePrologue(termOffset, frameLength, termId, archiveOffset);
         }
-        catch (Throwable e)
+        catch (final Exception ex)
         {
             close();
-            LangUtil.rethrowUnchecked(e);
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 
@@ -229,6 +229,7 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
             throw new IllegalArgumentException("Writing across terms is not supported:" +
                 " [offset=" + termOffset + " + length=" + writeLength + "] > termBufferLength=" + termBufferLength);
         }
+
         if (archivePosition == -1)
         {
             newArchiveFile(termId);
@@ -248,6 +249,7 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
                 bb.putInt(termOffset);
                 archiveFileChannel.write(bb);
             }
+
             metaDataWriter.initialTermOffset(termOffset);
             initialTermOffset = termOffset;
             archiveFileChannel.position(archivePosition);
@@ -303,15 +305,14 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
             return;
         }
 
-        // teardown archive file resources
         CloseHelper.quietClose(archiveFileChannel);
         CloseHelper.quietClose(archiveFile);
 
-        // teardown metadata resources
         if (metaDataBuffer != null && !stopped)
         {
             stop();
         }
+
         IoUtil.unmap(metaDataBuffer);
         CloseHelper.quietClose(metadataFileChannel);
         CloseHelper.quietClose(metadataFile);

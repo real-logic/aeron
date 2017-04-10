@@ -30,8 +30,11 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
     interface Session
     {
         void abort();
+
         boolean isDone();
+
         void remove(ArchiverConductor conductor);
+
         int doWork();
     }
 
@@ -52,8 +55,7 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
 
 
     // TODO: arguably this is a good fit for a linked array queue so that we can have minimal footprint
-    private final OneToOneConcurrentArrayQueue<Image> imageNotifications =
-        new OneToOneConcurrentArrayQueue<>(1024);
+    private final OneToOneConcurrentArrayQueue<Image> imageNotifications = new OneToOneConcurrentArrayQueue<>(1024);
     private final AvailableImageHandler availableImageHandler;
     private final File archiveFolder;
     private final EpochClock epochClock;
@@ -78,19 +80,20 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
             ctx.archiverNotificationsStreamId());
 
         this.archiveFolder = ctx.archiveFolder();
-        availableImageHandler = image ->
-        {
-            if (!isClosed && imageNotifications.offer(image))
+        availableImageHandler =
+            (image) ->
             {
-                return;
-            }
-            // This is required since image available handler is called from the client conductor thread
-            // we can either bridge via a queue or protect access to the sessions list, which seems clumsy.
-            while (!isClosed && !imageNotifications.offer(image))
-            {
-                Thread.yield();
-            }
-        };
+                if (!isClosed && imageNotifications.offer(image))
+                {
+                    return;
+                }
+                // This is required since image available handler is called from the client conductor thread
+                // we can either bridge via a queue or protect access to the sessions list, which seems clumsy.
+                while (!isClosed && !imageNotifications.offer(image))
+                {
+                    Thread.yield();
+                }
+            };
         this.proxy = new ArchiverProtocolProxy(ctx.idleStrategy(), archiverNotifications);
         this.epochClock = ctx.epochClock();
 
@@ -156,8 +159,8 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
 
     private void handleNewImageNotification(final Image image)
     {
-        final ImageArchivingSession session =
-            new ImageArchivingSession(proxy, archiveIndex, archiveFolder, image, this.epochClock);
+        final ImageArchivingSession session = new ImageArchivingSession(
+            proxy, archiveIndex, archiveFolder, image, this.epochClock);
         sessions.add(session);
         instance2ArchivingSession.put(session.streamInstanceId(), session);
     }
@@ -189,12 +192,11 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
             }
         }
 
-        final Subscription archiveSubscription =
-            aeron.addSubscription(
-                channel,
-                streamId,
-                availableImageHandler,
-                image -> {});
+        final Subscription archiveSubscription = aeron.addSubscription(
+            channel,
+            streamId,
+            availableImageHandler,
+            (image) -> {});
 
         // as subscription images are created they will get picked up and archived
         archiveSubscriptions.add(archiveSubscription);
@@ -203,8 +205,7 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
     public void onListStreamInstances(final int from, final int to, final String replyChannel, final int replyStreamId)
     {
         final Publication reply = aeron.addPublication(replyChannel, replyStreamId);
-        final Session listSession =
-            new ListDescriptorsSession(reply, from, to, this, proxy);
+        final Session listSession = new ListDescriptorsSession(reply, from, to, this, proxy);
 
         sessions.add(listSession);
     }
@@ -229,8 +230,7 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
     {
         if (image2ReplaySession.containsKey(sessionId))
         {
-            throw new IllegalStateException(
-                "Trying to request a second replay from same session:" + sessionId);
+            throw new IllegalStateException("Trying to request a second replay from same session:" + sessionId);
         }
         // TODO: need to control construction of publications to handle errors
         final Image image = serviceRequests.imageBySessionId(sessionId);

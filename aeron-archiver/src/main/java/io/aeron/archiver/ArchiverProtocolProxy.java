@@ -31,6 +31,7 @@ class ArchiverProtocolProxy
     {
         long offer(DirectBuffer buffer, int offset, int length);
     }
+
     // TODO: replace header usage with constants?
     private final IdleStrategy idleStrategy;
     private final Publication archiverNotifications;
@@ -57,11 +58,11 @@ class ArchiverProtocolProxy
         archiveStoppedNotificationEncoder.wrap(outboundBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
     }
 
-
     void sendResponse(final ExclusivePublication responsePublication, final String err)
     {
         sendResponseF(responsePublication::offer, err);
     }
+
     void sendResponse(final Publication responsePublication, final String err)
     {
         sendResponseF(responsePublication::offer, err);
@@ -82,7 +83,6 @@ class ArchiverProtocolProxy
             responseEncoder.err(err);
         }
 
-
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + responseEncoder.encodedLength();
         while (true)
         {
@@ -92,10 +92,12 @@ class ArchiverProtocolProxy
                 idleStrategy.reset();
                 break;
             }
+
             if (result == Publication.NOT_CONNECTED || result == Publication.CLOSED)
             {
                 throw new IllegalStateException("Response channel is down: " + responsePublication);
             }
+
             idleStrategy.idle();
         }
     }
@@ -122,8 +124,8 @@ class ArchiverProtocolProxy
             .source(source)
             .channel(channel);
 
-
         sendNotification(archiveStartedNotificationEncoder.encodedLength());
+
         return instanceId;
     }
 
@@ -174,10 +176,12 @@ class ArchiverProtocolProxy
                 idleStrategy.reset();
                 break;
             }
-            else if (result == Publication.CLOSED)
+
+            if (result == Publication.CLOSED)
             {
                 throw new IllegalStateException();
             }
+
             idleStrategy.idle();
         }
     }

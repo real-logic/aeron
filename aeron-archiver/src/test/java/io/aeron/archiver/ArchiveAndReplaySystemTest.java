@@ -34,6 +34,7 @@ import java.util.concurrent.locks.LockSupport;
 import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileFormatDecoder;
 import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileName;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
@@ -173,7 +174,7 @@ public class ArchiveAndReplaySystemTest
                 (b, offset, length, header) ->
                 {
                     final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(b, offset);
-                    assertEquals(ArchiverResponseDecoder.TEMPLATE_ID, hDecoder.templateId());
+                    assertThat(hDecoder.templateId(), is(ArchiverResponseDecoder.TEMPLATE_ID));
                 },
                 TIMEOUT);
         }
@@ -489,16 +490,16 @@ public class ArchiveAndReplaySystemTest
 
             if (mHeader.headerType() == DataHeaderFlyweight.HDR_TYPE_DATA)
             {
-                assertTrue("Fragments exceed messages", fragmentCount < messageCount);
-                assertEquals("Fragment:" + fragmentCount, fragmentLength[fragmentCount], frameLength);
+                assertThat("Fragments exceed messages", fragmentCount, lessThan(messageCount));
+                assertThat("Fragment:" + fragmentCount, frameLength, is(fragmentLength[fragmentCount]));
 
                 if (messageStart + 32 < termOffset + chunkLength)
                 {
                     final int index = termBuffer.getInt(messageStart + DataHeaderFlyweight.HEADER_LENGTH);
-                    assertEquals(String.format(
+                    assertThat(String.format(
                         "Fragment: length=%d, foffset=%d, getInt(0)=%d, toffset=%d",
                         frameLength, (nextFragmentOffset % chunkLength), index, termOffset),
-                        fragmentCount, index);
+                        index, is(fragmentCount));
                     printf("Fragment: length=%d \t, offset=%d \t, getInt(0)=%d %n",
                         frameLength, (nextFragmentOffset % chunkLength), index);
                 }

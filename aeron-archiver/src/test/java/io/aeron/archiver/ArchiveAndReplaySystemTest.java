@@ -243,8 +243,8 @@ public class ArchiveAndReplaySystemTest
         {
             ArchiveFileUtil.printMetaFile(metaFile);
         }
-        final ArchiveDescriptorDecoder decoder = archiveMetaFileFormatDecoder(
-            new File(archiveFolder, archiveMetaFileName(streamInstanceId)));
+
+        final ArchiveDescriptorDecoder decoder = archiveMetaFileFormatDecoder(metaFile);
         assertEquals(publication.initialTermId(), decoder.initialTermId());
         assertEquals(publication.sessionId(), decoder.sessionId());
         assertEquals(publication.streamId(), decoder.streamId());
@@ -340,9 +340,7 @@ public class ArchiveAndReplaySystemTest
     }
 
     private void validateReplay(
-        final Publication archiverServiceRequest,
-        final Publication publication,
-        final int messageCount)
+        final Publication archiverServiceRequest, final Publication publication, final int messageCount)
     {
         // request replay
         final int replayStreamId = this.replyStreamId++;
@@ -380,7 +378,7 @@ public class ArchiveAndReplaySystemTest
                 },
                 TIMEOUT);
 
-            this.nextFragmentOffset = 0;
+            nextFragmentOffset = 0;
             fragmentCount = 0;
             remaining = totalDataLength;
 
@@ -408,10 +406,7 @@ public class ArchiveAndReplaySystemTest
     }
 
     private ControlledFragmentHandler.Action validateFragment(
-        final DirectBuffer buffer,
-        final int offset,
-        final int length,
-        @SuppressWarnings("unused") final Header header)
+        final DirectBuffer buffer, final int offset, final int length, @SuppressWarnings("unused") final Header header)
     {
         assertEquals(fragmentLength[fragmentCount] - DataHeaderFlyweight.HEADER_LENGTH, length);
         assertEquals(fragmentCount, buffer.getInt(offset));
@@ -443,8 +438,9 @@ public class ArchiveAndReplaySystemTest
         {
             fragmentCount = 0;
             final HeaderFlyweight mHeader = new HeaderFlyweight();
-            this.nextFragmentOffset = 0;
+            nextFragmentOffset = 0;
             remaining = totalDataLength;
+
             while (!cursor.isDone())
             {
                 cursor.readChunk(
@@ -479,34 +475,35 @@ public class ArchiveAndReplaySystemTest
         int frameLength;
         while (nextFragmentOffset < chunkLength)
         {
-            messageStart = termOffset + this.nextFragmentOffset;
+            messageStart = termOffset + nextFragmentOffset;
             mHeader.wrap(termBuffer, messageStart, HeaderFlyweight.HEADER_LENGTH);
             frameLength = mHeader.frameLength();
 
             if (mHeader.headerType() == DataHeaderFlyweight.HDR_TYPE_DATA)
             {
-                assertTrue("Fragments exceed messages", this.fragmentCount < messageCount);
-                assertEquals("Fragment:" + this.fragmentCount, fragmentLength[fragmentCount], frameLength);
+                assertTrue("Fragments exceed messages", fragmentCount < messageCount);
+                assertEquals("Fragment:" + fragmentCount, fragmentLength[fragmentCount], frameLength);
 
                 if (messageStart + 32 < termOffset + chunkLength)
                 {
                     final int index = termBuffer.getInt(messageStart + DataHeaderFlyweight.HEADER_LENGTH);
                     assertEquals(String.format(
                         "Fragment: length=%d, foffset=%d, getInt(0)=%d, toffset=%d",
-                        frameLength, (this.nextFragmentOffset % chunkLength), index, termOffset),
-                        this.fragmentCount, index);
+                        frameLength, (nextFragmentOffset % chunkLength), index, termOffset),
+                        fragmentCount, index);
                     printf("Fragment: length=%d \t, offset=%d \t, getInt(0)=%d %n",
-                        frameLength, (this.nextFragmentOffset % chunkLength), index);
+                        frameLength, (nextFragmentOffset % chunkLength), index);
                 }
+
                 remaining -= frameLength;
-                this.fragmentCount++;
+                fragmentCount++;
             }
 
             final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
-            this.nextFragmentOffset += alignedLength;
+            nextFragmentOffset += alignedLength;
         }
 
-        this.nextFragmentOffset -= chunkLength;
+        nextFragmentOffset -= chunkLength;
     }
 
     private void trackArchiveProgress(
@@ -570,6 +567,7 @@ public class ArchiveAndReplaySystemTest
                 {
                     trackerError = throwable;
                 }
+
                 waitForData.countDown();
             });
 
@@ -728,6 +726,7 @@ public class ArchiveAndReplaySystemTest
             .controlChannel(controlChannel);
 
         println(encoder.toString());
+
         offer(archiverServiceRequest,
             buffer,
             0,
@@ -755,7 +754,9 @@ public class ArchiveAndReplaySystemTest
             .from(from)
             .to(to)
             .replyChannel(replyChannel);
+
         println(encoder.toString());
+
         offer(archiverServiceRequest,
             buffer,
             0,

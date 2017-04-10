@@ -28,6 +28,7 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
+import static java.nio.file.StandardOpenOption.READ;
 
 class StreamInstanceArchiveFragmentReader implements AutoCloseable
 {
@@ -42,7 +43,6 @@ class StreamInstanceArchiveFragmentReader implements AutoCloseable
     private final long replayLength;
 
     private int archiveFileIndex;
-    private RandomAccessFile currentDataFile = null;
     private FileChannel currentDataChannel = null;
     private UnsafeBuffer termMappedUnsafeBuffer = null;
     private int archiveTermStartOffset;
@@ -199,7 +199,6 @@ class StreamInstanceArchiveFragmentReader implements AutoCloseable
     {
         unmapTermBuffer();
         CloseHelper.quietClose(currentDataChannel);
-        CloseHelper.quietClose(currentDataFile);
     }
 
     private void openArchiveFile() throws IOException
@@ -212,8 +211,7 @@ class StreamInstanceArchiveFragmentReader implements AutoCloseable
             throw new IOException(archiveDataFile.getAbsolutePath() + " not found");
         }
 
-        currentDataFile = new RandomAccessFile(archiveDataFile, "r");
-        currentDataChannel = currentDataFile.getChannel();
+        currentDataChannel = FileChannel.open(archiveDataFile.toPath(), READ);
     }
 
     boolean isDone()

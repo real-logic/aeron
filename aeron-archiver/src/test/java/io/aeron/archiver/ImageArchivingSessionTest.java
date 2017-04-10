@@ -30,6 +30,9 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
 import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileName;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -47,7 +50,6 @@ public class ImageArchivingSessionTest
     private final int streamId = 54321;
     private final int sessionId = 12345;
 
-
     private final int initialTermId = 0;
     private final int termBufferLength = 4096;
     private final int termOffset = 1024;
@@ -58,7 +60,6 @@ public class ImageArchivingSessionTest
     private final Image image;
     private final ArchiveIndex index;
 
-    private RandomAccessFile logBufferRandomAccessFile;
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
     private File termFile;
@@ -77,9 +78,8 @@ public class ImageArchivingSessionTest
     public void setupMockTermBuff() throws IOException
     {
         termFile = File.createTempFile("archiver.test", "source");
-        logBufferRandomAccessFile = new RandomAccessFile(termFile, "rw");
         // size this file as a mock term buffer
-        mockLogBufferChannel = logBufferRandomAccessFile.getChannel();
+        mockLogBufferChannel = FileChannel.open(termFile.toPath(), CREATE, READ, WRITE);
         mockLogBufferChannel.position(termBufferLength - 1);
         mockLogBufferChannel.write(ByteBuffer.wrap(new byte[1]));
 
@@ -101,7 +101,6 @@ public class ImageArchivingSessionTest
     {
         IoUtil.unmap(mockLogBufferMapped.byteBuffer());
         CloseHelper.quietClose(mockLogBufferChannel);
-        CloseHelper.quietClose(logBufferRandomAccessFile);
         IoUtil.delete(tempFolderForTest, false);
         IoUtil.delete(termFile, false);
     }

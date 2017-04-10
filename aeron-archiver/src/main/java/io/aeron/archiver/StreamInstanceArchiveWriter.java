@@ -26,6 +26,9 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
 import static io.aeron.archiver.ArchiveFileUtil.archiveOffset;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandler, RawBlockHandler
 {
@@ -35,7 +38,6 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
     private final int streamInstanceId;
 
     private final File archiveFolder;
-    private final RandomAccessFile metadataFile;
     private final FileChannel metadataFileChannel;
     private final MappedByteBuffer metaDataBuffer;
     private final ArchiveDescriptorEncoder metaDataWriter;
@@ -83,8 +85,7 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         final File file = new File(archiveFolder, archiveMetaFileName);
         try
         {
-            metadataFile = new RandomAccessFile(file, "rw");
-            metadataFileChannel = metadataFile.getChannel();
+            metadataFileChannel = FileChannel.open(file.toPath(), CREATE_NEW, READ, WRITE);
             metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
             final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(metaDataBuffer);
             metaDataWriter = new ArchiveDescriptorEncoder().wrap(unsafeBuffer, ArchiveIndex.INDEX_FRAME_LENGTH);
@@ -178,11 +179,7 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         }
     }
 
-    public void onFragment(
-        final DirectBuffer buffer,
-        final int offset,
-        final int length,
-        final Header header)
+    public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final int termId = header.termId();
         final int termOffset = header.termOffset();
@@ -314,7 +311,7 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
 
         IoUtil.unmap(metaDataBuffer);
         CloseHelper.quietClose(metadataFileChannel);
-        CloseHelper.quietClose(metadataFile);
+
         closed = true;
     }
 

@@ -22,15 +22,13 @@ import org.agrona.concurrent.errors.DistinctErrorLog;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
-import static java.nio.file.StandardOpenOption.WRITE;
+import static java.nio.file.StandardOpenOption.*;
 
 /**
  * Encapsulates responsibility for mapping the files into memory used by the log partitions.
@@ -57,11 +55,9 @@ class MappedRawLog implements RawLog
         this.errorLog = errorLog;
         this.logFile = location;
 
-        try (RandomAccessFile raf = new RandomAccessFile(logFile, "rw");
-             FileChannel logChannel = raf.getChannel())
+        try (FileChannel logChannel = FileChannel.open(logFile.toPath(), CREATE_NEW, READ, WRITE))
         {
             final long logLength = computeLogLength(termLength);
-            raf.setLength(logLength);
 
             if (logLength <= Integer.MAX_VALUE)
             {

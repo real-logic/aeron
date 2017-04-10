@@ -34,9 +34,9 @@ import java.util.concurrent.locks.LockSupport;
 import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileFormatDecoder;
 import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileName;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.*;
 
 public class ArchiveAndReplaySystemTest
 {
@@ -142,7 +142,7 @@ public class ArchiveAndReplaySystemTest
             final int messageCount = prepAndSendMessages(archiverNotifications, publication);
             verifyDescriptorListOngoingArchive(archiverServiceRequest, publication, totalArchiveLength);
 
-            Assert.assertNull(trackerError);
+            assertNull(trackerError);
             println("All data arrived");
 
             println("Request stop archive");
@@ -180,9 +180,7 @@ public class ArchiveAndReplaySystemTest
     }
 
     private void verifyDescriptorListOngoingArchive(
-        final Publication archiverServiceRequest,
-        final Publication publication,
-        final long archiveLength)
+        final Publication archiverServiceRequest, final Publication publication, final long archiveLength)
     {
         final int replyStreamId = this.replyStreamId++;
         try (Subscription archiverListReply = publishingClient.addSubscription(REPLY_URI, replyStreamId))
@@ -190,22 +188,26 @@ public class ArchiveAndReplaySystemTest
             requestArchiveList(archiverServiceRequest, REPLY_URI, replyStreamId, streamInstanceId, streamInstanceId);
             awaitSubscriptionIsConnected(archiverListReply, TIMEOUT);
             println("Await result");
+
             poll(
                 archiverListReply,
                 (b, offset, length, header) ->
                 {
                     final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(b, offset);
-                    assertEquals(ArchiveDescriptorDecoder.TEMPLATE_ID, hDecoder.templateId());
+                    assertThat(hDecoder.templateId(), is(ArchiveDescriptorDecoder.TEMPLATE_ID));
+
                     final ArchiveDescriptorDecoder decoder = new ArchiveDescriptorDecoder();
                     decoder.wrap(b,
                         offset + MessageHeaderDecoder.ENCODED_LENGTH,
                         hDecoder.blockLength(),
                         hDecoder.version());
-                    assertEquals(streamInstanceId, decoder.streamInstanceId());
-                    assertEquals(PUBLISH_STREAM_ID, decoder.streamId());
-                    assertEquals(publication.initialTermId(), decoder.imageInitialTermId());
+
+                    assertThat(decoder.streamInstanceId(), is(streamInstanceId));
+                    assertThat(decoder.streamId(), is(PUBLISH_STREAM_ID));
+                    assertThat(decoder.imageInitialTermId(), is(publication.initialTermId()));
+
                     final long archiveFullLength = ArchiveFileUtil.archiveFullLength(decoder);
-                    assertEquals(archiveFullLength, archiveLength);
+                    assertThat(archiveFullLength, is(archiveLength));
                     //....
                 },
                 TIMEOUT);
@@ -245,14 +247,14 @@ public class ArchiveAndReplaySystemTest
         }
 
         final ArchiveDescriptorDecoder decoder = archiveMetaFileFormatDecoder(metaFile);
-        assertEquals(publication.initialTermId(), decoder.initialTermId());
-        assertEquals(publication.sessionId(), decoder.sessionId());
-        assertEquals(publication.streamId(), decoder.streamId());
-        assertEquals(publication.termBufferLength(), decoder.termBufferLength());
+        assertThat(decoder.initialTermId(), is(publication.initialTermId()));
+        assertThat(decoder.sessionId(), is(publication.sessionId()));
+        assertThat(decoder.streamId(), is(publication.streamId()));
+        assertThat(decoder.termBufferLength(), is(publication.termBufferLength()));
 
-        assertEquals(totalArchiveLength, ArchiveFileUtil.archiveFullLength(decoder));
+        assertThat(ArchiveFileUtil.archiveFullLength(decoder), is(totalArchiveLength));
         // length might exceed data sent due to padding
-        assertTrue(totalDataLength + " <= " + totalArchiveLength, totalDataLength <= totalArchiveLength);
+        assertThat(totalDataLength, lessThanOrEqualTo(totalArchiveLength));
 
         IoUtil.unmap(decoder.buffer().byteBuffer());
     }
@@ -266,7 +268,7 @@ public class ArchiveAndReplaySystemTest
             (buffer, offset, length, header) ->
             {
                 final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
-                assertEquals(ArchiveStartedNotificationDecoder.TEMPLATE_ID, hDecoder.templateId());
+                assertThat(hDecoder.templateId(), is(ArchiveStartedNotificationDecoder.TEMPLATE_ID));
 
                 final ArchiveStartedNotificationDecoder mDecoder = new ArchiveStartedNotificationDecoder()
                     .wrap(
@@ -276,10 +278,11 @@ public class ArchiveAndReplaySystemTest
                         hDecoder.version());
 
                 streamInstanceId = mDecoder.streamInstanceId();
-                assertEquals(mDecoder.streamId(), PUBLISH_STREAM_ID);
-                assertEquals(mDecoder.sessionId(), publication.sessionId());
+                assertThat(mDecoder.streamId(), is(PUBLISH_STREAM_ID));
+                assertThat(mDecoder.sessionId(), is(publication.sessionId()));
+
                 source = mDecoder.source();
-                assertEquals(mDecoder.channel(), PUBLISH_URI);
+                assertThat(mDecoder.channel(), is(PUBLISH_URI));
                 println("Archive started. source: " + source);
             },
             TIMEOUT);
@@ -292,7 +295,7 @@ public class ArchiveAndReplaySystemTest
             (buffer, offset, length, header) ->
             {
                 final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
-                assertEquals(ArchiveStoppedNotificationDecoder.TEMPLATE_ID, hDecoder.templateId());
+                assertThat(hDecoder.templateId(), is(ArchiveStoppedNotificationDecoder.TEMPLATE_ID));
 
                 final ArchiveStoppedNotificationDecoder mDecoder = new ArchiveStoppedNotificationDecoder()
                     .wrap(
@@ -301,7 +304,7 @@ public class ArchiveAndReplaySystemTest
                         hDecoder.blockLength(),
                         hDecoder.version());
 
-                assertEquals(mDecoder.streamInstanceId(), streamInstanceId);
+                assertThat(mDecoder.streamInstanceId(), is(streamInstanceId));
             },
             TIMEOUT);
 
@@ -333,9 +336,11 @@ public class ArchiveAndReplaySystemTest
             publication.position(), positionBitsToShift);
         final int termIdFromPosition = LogBufferDescriptor.computeTermIdFromPosition(
             publication.position(), positionBitsToShift, publication.initialTermId());
-        totalArchiveLength = (termIdFromPosition - publication.initialTermId()) * publication.termBufferLength() +
+        totalArchiveLength =
+            (termIdFromPosition - publication.initialTermId()) * publication.termBufferLength() +
             (lastTermOffset - initialTermOffset);
-        assertEquals(totalArchiveLength, publication.position() - initialPosition);
+
+        assertThat(publication.position() - initialPosition, is(totalArchiveLength));
         lastTermId = termIdFromPosition;
     }
 
@@ -367,14 +372,15 @@ public class ArchiveAndReplaySystemTest
                 (buffer, offset, length, header) ->
                 {
                     final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
-                    assertEquals(ArchiverResponseDecoder.TEMPLATE_ID, hDecoder.templateId());
+                    assertThat(hDecoder.templateId(), is(ArchiverResponseDecoder.TEMPLATE_ID));
 
                     final ArchiverResponseDecoder mDecoder = new ArchiverResponseDecoder().wrap(
                         buffer,
                         offset + MessageHeaderDecoder.ENCODED_LENGTH,
                         hDecoder.blockLength(),
                         hDecoder.version());
-                    assertEquals("", mDecoder.err());
+
+                    assertThat(mDecoder.err(), is(""));
                 },
                 TIMEOUT);
 
@@ -387,8 +393,8 @@ public class ArchiveAndReplaySystemTest
                 poll(replay, this::validateFragment, TIMEOUT);
             }
 
-            assertEquals(messageCount, fragmentCount);
-            assertEquals(0, remaining);
+            assertThat(fragmentCount, is(messageCount));
+            assertThat(remaining, is(0L));
         }
     }
 
@@ -400,17 +406,19 @@ public class ArchiveAndReplaySystemTest
             fragmentCount = 0;
             remaining = totalDataLength;
             archiveDataFileReader.controlledPoll(this::validateFragment, messageCount);
-            assertEquals(0, remaining);
-            assertEquals(messageCount, fragmentCount);
+
+            assertThat(remaining, is(0L));
+            assertThat(fragmentCount, is(messageCount));
         }
     }
 
     private ControlledFragmentHandler.Action validateFragment(
         final DirectBuffer buffer, final int offset, final int length, @SuppressWarnings("unused") final Header header)
     {
-        assertEquals(fragmentLength[fragmentCount] - DataHeaderFlyweight.HEADER_LENGTH, length);
-        assertEquals(fragmentCount, buffer.getInt(offset));
-        assertEquals('z', buffer.getByte(offset + 4));
+        assertThat(length, is(fragmentLength[fragmentCount] - DataHeaderFlyweight.HEADER_LENGTH));
+        assertThat(buffer.getInt(offset), is(fragmentCount));
+        assertThat(buffer.getByte(offset + 4), is((byte)'z'));
+
         remaining -= fragmentLength[fragmentCount];
         fragmentCount++;
 
@@ -458,8 +466,8 @@ public class ArchiveAndReplaySystemTest
             }
         }
 
-        assertEquals(messageCount, fragmentCount);
-        assertEquals(0, remaining);
+        assertThat(fragmentCount, is(messageCount));
+        assertThat(remaining, is(0L));
     }
 
     private void validateFragmentsInChunk(
@@ -527,7 +535,7 @@ public class ArchiveAndReplaySystemTest
                             (buffer, offset, length, header) ->
                             {
                                 final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
-                                assertEquals(ArchiveProgressNotificationDecoder.TEMPLATE_ID, hDecoder.templateId());
+                                assertThat(hDecoder.templateId(), is(ArchiveProgressNotificationDecoder.TEMPLATE_ID));
 
                                 final ArchiveProgressNotificationDecoder mDecoder =
                                     new ArchiveProgressNotificationDecoder().wrap(
@@ -535,7 +543,7 @@ public class ArchiveAndReplaySystemTest
                                         offset + MessageHeaderDecoder.ENCODED_LENGTH,
                                         hDecoder.blockLength(),
                                         hDecoder.version());
-                                assertEquals(streamInstanceId, mDecoder.streamInstanceId());
+                                assertThat(mDecoder.streamInstanceId(), is(streamInstanceId));
 
                                 println(mDecoder.toString());
                                 archived = publication.termBufferLength() *

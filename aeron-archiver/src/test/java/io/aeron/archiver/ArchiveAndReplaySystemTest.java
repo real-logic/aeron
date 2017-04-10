@@ -47,7 +47,7 @@ public class ArchiveAndReplaySystemTest
     private static final String PUBLISH_URI = "aeron:udp?endpoint=127.0.0.1:54325";
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
-    private static final double MEGABYTE = (1024.0 * 1024.0);
+    private static final double MEGABYTE = 1024.0d * 1024.0d;
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
     private Aeron publishingClient;
@@ -86,12 +86,8 @@ public class ArchiveAndReplaySystemTest
         seed = System.nanoTime();
         rnd.setSeed(seed);
 
-        final int modes = ThreadingMode.values().length;
-        final ThreadingMode threadingMode = ThreadingMode.values()[rnd.nextInt(modes)];
-        println("ThreadingMode: " + threadingMode);
-
         driverCtx
-            .threadingMode(threadingMode)
+            .threadingMode(ThreadingMode.SHARED)
             .errorHandler(LangUtil::rethrowUnchecked)
             .dirsDeleteOnStart(true);
 
@@ -118,122 +114,13 @@ public class ArchiveAndReplaySystemTest
         driverCtx.deleteAeronDirectory();
     }
 
-    private void requestArchive(final Publication archiverServiceRequest, final String channel, final int streamId)
-    {
-        new MessageHeaderEncoder()
-            .wrap(buffer, 0)
-            .templateId(ArchiveStartRequestEncoder.TEMPLATE_ID)
-            .blockLength(ArchiveStartRequestEncoder.BLOCK_LENGTH)
-            .schemaId(ArchiveStartRequestEncoder.SCHEMA_ID)
-            .version(ArchiveStartRequestEncoder.SCHEMA_VERSION);
-
-        final ArchiveStartRequestEncoder encoder = new ArchiveStartRequestEncoder()
-            .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH)
-            .channel(channel)
-            .streamId(streamId);
-
-        offer(
-            archiverServiceRequest,
-            buffer,
-            0,
-            encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH,
-            TIMEOUT);
-    }
-
-    private void requestArchiveStop(final Publication archiverServiceRequest, final String channel, final int streamId)
-    {
-        new MessageHeaderEncoder()
-            .wrap(buffer, 0)
-            .templateId(ArchiveStopRequestEncoder.TEMPLATE_ID)
-            .blockLength(ArchiveStopRequestEncoder.BLOCK_LENGTH)
-            .schemaId(ArchiveStopRequestEncoder.SCHEMA_ID)
-            .version(ArchiveStopRequestEncoder.SCHEMA_VERSION);
-
-        final ArchiveStopRequestEncoder encoder = new ArchiveStopRequestEncoder()
-            .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH)
-            .channel(channel)
-            .streamId(streamId);
-
-        offer(
-            archiverServiceRequest,
-            buffer,
-            0,
-            encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH,
-            TIMEOUT);
-    }
-
-    private void requestReplay(
-        final Publication archiverServiceRequest,
-        final int streamInstanceId,
-        final int termId,
-        final int termOffset,
-        final long length,
-        final String replayChannel,
-        final int replayStreamId,
-        final String controlChannel,
-        final int controlStreamId)
-    {
-        new MessageHeaderEncoder()
-            .wrap(buffer, 0)
-            .templateId(ReplayRequestEncoder.TEMPLATE_ID)
-            .blockLength(ReplayRequestEncoder.BLOCK_LENGTH)
-            .schemaId(ReplayRequestEncoder.SCHEMA_ID)
-            .version(ReplayRequestEncoder.SCHEMA_VERSION);
-
-        final ReplayRequestEncoder encoder = new ReplayRequestEncoder()
-            .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH)
-            .streamInstanceId(streamInstanceId)
-            .termId(termId)
-            .termOffset(termOffset)
-            .length((int)length)
-            .controlStreamId(controlStreamId)
-            .replayStreamId(replayStreamId)
-            .replayChannel(replayChannel)
-            .controlChannel(controlChannel);
-
-        println(encoder.toString());
-        offer(archiverServiceRequest,
-            buffer,
-            0,
-            encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH,
-            TIMEOUT);
-    }
-
-    private void requestArchiveList(
-        final Publication archiverServiceRequest,
-        final String replyChannel,
-        final int replyStreamId,
-        final int from,
-        final int to)
-    {
-        new MessageHeaderEncoder()
-            .wrap(buffer, 0)
-            .templateId(ListStreamInstancesRequestEncoder.TEMPLATE_ID)
-            .blockLength(ListStreamInstancesRequestEncoder.BLOCK_LENGTH)
-            .schemaId(ListStreamInstancesRequestEncoder.SCHEMA_ID)
-            .version(ListStreamInstancesRequestEncoder.SCHEMA_VERSION);
-
-        final ListStreamInstancesRequestEncoder encoder = new ListStreamInstancesRequestEncoder()
-            .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH)
-            .replyStreamId(replyStreamId)
-            .from(from)
-            .to(to)
-            .replyChannel(replyChannel);
-        println(encoder.toString());
-        offer(archiverServiceRequest,
-            buffer,
-            0,
-            encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH,
-            TIMEOUT);
-    }
-
     @Test(timeout = 60000)
     public void archiveAndReplay() throws IOException, InterruptedException
     {
         try (Publication archiverServiceRequest = publishingClient.addPublication(
-            archiverCtx.serviceRequestChannel(), archiverCtx.serviceRequestStreamId());
+                archiverCtx.serviceRequestChannel(), archiverCtx.serviceRequestStreamId());
              Subscription archiverNotifications = publishingClient.addSubscription(
-                 archiverCtx.archiverNotificationsChannel(), archiverCtx.archiverNotificationsStreamId()))
+                archiverCtx.archiverNotificationsChannel(), archiverCtx.archiverNotificationsStreamId()))
         {
             awaitPublicationIsConnected(archiverServiceRequest, TIMEOUT);
             awaitSubscriptionIsConnected(archiverNotifications, TIMEOUT);
@@ -764,5 +651,114 @@ public class ArchiveAndReplaySystemTest
         {
             System.out.println(s);
         }
+    }
+
+    private void requestArchive(final Publication archiverServiceRequest, final String channel, final int streamId)
+    {
+        new MessageHeaderEncoder()
+            .wrap(buffer, 0)
+            .templateId(ArchiveStartRequestEncoder.TEMPLATE_ID)
+            .blockLength(ArchiveStartRequestEncoder.BLOCK_LENGTH)
+            .schemaId(ArchiveStartRequestEncoder.SCHEMA_ID)
+            .version(ArchiveStartRequestEncoder.SCHEMA_VERSION);
+
+        final ArchiveStartRequestEncoder encoder = new ArchiveStartRequestEncoder()
+            .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH)
+            .channel(channel)
+            .streamId(streamId);
+
+        offer(
+            archiverServiceRequest,
+            buffer,
+            0,
+            encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH,
+            TIMEOUT);
+    }
+
+    private void requestArchiveStop(final Publication archiverServiceRequest, final String channel, final int streamId)
+    {
+        new MessageHeaderEncoder()
+            .wrap(buffer, 0)
+            .templateId(ArchiveStopRequestEncoder.TEMPLATE_ID)
+            .blockLength(ArchiveStopRequestEncoder.BLOCK_LENGTH)
+            .schemaId(ArchiveStopRequestEncoder.SCHEMA_ID)
+            .version(ArchiveStopRequestEncoder.SCHEMA_VERSION);
+
+        final ArchiveStopRequestEncoder encoder = new ArchiveStopRequestEncoder()
+            .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH)
+            .channel(channel)
+            .streamId(streamId);
+
+        offer(
+            archiverServiceRequest,
+            buffer,
+            0,
+            encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH,
+            TIMEOUT);
+    }
+
+    private void requestReplay(
+        final Publication archiverServiceRequest,
+        final int streamInstanceId,
+        final int termId,
+        final int termOffset,
+        final long length,
+        final String replayChannel,
+        final int replayStreamId,
+        final String controlChannel,
+        final int controlStreamId)
+    {
+        new MessageHeaderEncoder()
+            .wrap(buffer, 0)
+            .templateId(ReplayRequestEncoder.TEMPLATE_ID)
+            .blockLength(ReplayRequestEncoder.BLOCK_LENGTH)
+            .schemaId(ReplayRequestEncoder.SCHEMA_ID)
+            .version(ReplayRequestEncoder.SCHEMA_VERSION);
+
+        final ReplayRequestEncoder encoder = new ReplayRequestEncoder()
+            .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH)
+            .streamInstanceId(streamInstanceId)
+            .termId(termId)
+            .termOffset(termOffset)
+            .length((int)length)
+            .controlStreamId(controlStreamId)
+            .replayStreamId(replayStreamId)
+            .replayChannel(replayChannel)
+            .controlChannel(controlChannel);
+
+        println(encoder.toString());
+        offer(archiverServiceRequest,
+            buffer,
+            0,
+            encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH,
+            TIMEOUT);
+    }
+
+    private void requestArchiveList(
+        final Publication archiverServiceRequest,
+        final String replyChannel,
+        final int replyStreamId,
+        final int from,
+        final int to)
+    {
+        new MessageHeaderEncoder()
+            .wrap(buffer, 0)
+            .templateId(ListStreamInstancesRequestEncoder.TEMPLATE_ID)
+            .blockLength(ListStreamInstancesRequestEncoder.BLOCK_LENGTH)
+            .schemaId(ListStreamInstancesRequestEncoder.SCHEMA_ID)
+            .version(ListStreamInstancesRequestEncoder.SCHEMA_VERSION);
+
+        final ListStreamInstancesRequestEncoder encoder = new ListStreamInstancesRequestEncoder()
+            .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH)
+            .replyStreamId(replyStreamId)
+            .from(from)
+            .to(to)
+            .replyChannel(replyChannel);
+        println(encoder.toString());
+        offer(archiverServiceRequest,
+            buffer,
+            0,
+            encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH,
+            TIMEOUT);
     }
 }

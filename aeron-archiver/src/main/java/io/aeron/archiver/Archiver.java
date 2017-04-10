@@ -123,10 +123,12 @@ public class Archiver implements AutoCloseable
                 throw new IllegalArgumentException(
                     "Failed to create archive folder:" + archiveFolder.getAbsolutePath());
             }
+
             if (idleStrategy == null)
             {
                 idleStrategy = new SleepingIdleStrategy(Aeron.IDLE_SLEEP_NS);
             }
+
             if (epochClock == null)
             {
                 epochClock = clientContext.epochClock();

@@ -98,10 +98,8 @@ class StreamInstanceArchiveFragmentReader implements AutoCloseable
             fromTermOffset, fromTermId, initialTermId, termBufferLength);
         archiveTermStartOffset = archiveOffset - fromTermOffset;
         openArchiveFile();
-        termMappedUnsafeBuffer =
-            new UnsafeBuffer(currentDataChannel.map(FileChannel.MapMode.READ_ONLY,
-                archiveTermStartOffset,
-                termBufferLength));
+        termMappedUnsafeBuffer = new UnsafeBuffer(
+            currentDataChannel.map(FileChannel.MapMode.READ_ONLY, archiveTermStartOffset, termBufferLength));
 
         fragmentHeader = new Header(initialTermId, Integer.numberOfLeadingZeros(termBufferLength));
         fragmentHeader.buffer(termMappedUnsafeBuffer);
@@ -182,9 +180,7 @@ class StreamInstanceArchiveFragmentReader implements AutoCloseable
             }
             // rotate term
             termMappedUnsafeBuffer.wrap(currentDataChannel.map(
-                FileChannel.MapMode.READ_ONLY,
-                archiveTermStartOffset,
-                termBufferLength));
+                FileChannel.MapMode.READ_ONLY, archiveTermStartOffset, termBufferLength));
             fragmentHeader.buffer(termMappedUnsafeBuffer);
         }
 

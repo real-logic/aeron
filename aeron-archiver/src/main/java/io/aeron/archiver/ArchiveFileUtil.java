@@ -24,6 +24,9 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Date;
 
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
+
 class ArchiveFileUtil
 {
     // TODO: make configurable
@@ -77,8 +80,7 @@ class ArchiveFileUtil
     static ArchiveDescriptorDecoder archiveMetaFileFormatDecoder(final File metaFile)
         throws IOException
     {
-        try (RandomAccessFile randomAccessFile = new RandomAccessFile(metaFile, "rw");
-             FileChannel metadataFileChannel = randomAccessFile.getChannel())
+        try (FileChannel metadataFileChannel = FileChannel.open(metaFile.toPath(), READ, WRITE))
         {
             final MappedByteBuffer metaDataBuffer = metadataFileChannel.map(
                 FileChannel.MapMode.READ_WRITE, 0, ArchiveIndex.INDEX_RECORD_SIZE);

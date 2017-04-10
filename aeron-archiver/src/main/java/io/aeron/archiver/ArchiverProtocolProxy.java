@@ -166,10 +166,9 @@ class ArchiverProtocolProxy
 
     private void sendNotification(final int length)
     {
-        final Publication publication = this.archiverNotifications;
         while (true)
         {
-            final long result = publication.offer(
+            final long result = archiverNotifications.offer(
                 outboundBuffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length);
             if (result > 0 || result == Publication.NOT_CONNECTED)
             {

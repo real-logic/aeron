@@ -123,6 +123,7 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
         {
             return;
         }
+
         isClosed = true;
         for (final Session session : sessions)
         {
@@ -167,13 +168,12 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
 
     public void onArchiveStop(final String channel, final int streamId)
     {
-        for (final Subscription archiveSubscription : archiveSubscriptions)
+        for (final Subscription subscription : archiveSubscriptions)
         {
-            if (archiveSubscription.streamId() == streamId &&
-                archiveSubscription.channel().equals(channel))
+            if (subscription.streamId() == streamId && subscription.channel().equals(channel))
             {
-                archiveSubscription.close();
-                archiveSubscriptions.remove(archiveSubscription);
+                subscription.close();
+                archiveSubscriptions.remove(subscription);
                 break;
                 // image archiving sessions will sort themselves out naturally
             }
@@ -182,10 +182,9 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
 
     public void onArchiveStart(final String channel, final int streamId)
     {
-        for (final Subscription archiveSubscription : archiveSubscriptions)
+        for (final Subscription subscription : archiveSubscriptions)
         {
-            if (archiveSubscription.streamId() == streamId &&
-                archiveSubscription.channel().equals(channel))
+            if (subscription.streamId() == streamId && subscription.channel().equals(channel))
             {
                 // we're already subscribed, don't bother
                 return;
@@ -217,6 +216,7 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
         {
             throw new IllegalStateException("Trying to abort an unknown replay session:" + sessionId);
         }
+
         session.abort();
     }
 

@@ -21,10 +21,10 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
-import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
 import static java.lang.Math.min;
+import static java.nio.file.StandardOpenOption.READ;
 
 class StreamInstanceArchiveChunkReader implements AutoCloseable
 {
@@ -61,6 +61,9 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
         transmitted = 0;
         archiveFileIndex = ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, termId);
         final int archiveOffset = ArchiveFileUtil.archiveOffset(termOffset, termId, initialTermId, termBufferLength);
+        archiveTermStartOffset = archiveOffset - termOffset;
+        currentTermOffset = termOffset;
+
         final String archiveDataFileName = ArchiveFileUtil.archiveDataFileName(streamInstanceId, archiveFileIndex);
         final File archiveDataFile = new File(archiveFolder, archiveDataFileName);
 
@@ -71,14 +74,9 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
 
         try
         {
-            currentDataChannel = FileChannel.open(archiveDataFile.toPath(), StandardOpenOption.READ);
-            archiveTermStartOffset = archiveOffset - termOffset;
-            currentTermOffset = termOffset;
+            currentDataChannel = FileChannel.open(archiveDataFile.toPath(), READ);
             termMappedUnsafeBuffer = new UnsafeBuffer(
-                currentDataChannel.map(
-                    FileChannel.MapMode.READ_ONLY,
-                    archiveTermStartOffset,
-                    termBufferLength));
+                currentDataChannel.map(FileChannel.MapMode.READ_ONLY, archiveTermStartOffset, termBufferLength));
         }
         catch (final IOException ex)
         {
@@ -149,7 +147,7 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
 
             closeResources();
 
-            currentDataChannel = FileChannel.open(archiveDataFileN.toPath(), StandardOpenOption.READ);
+            currentDataChannel = FileChannel.open(archiveDataFileN.toPath(), READ);
         }
         else
         {
@@ -158,10 +156,7 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
 
         // roll term
         termMappedUnsafeBuffer.wrap(
-            currentDataChannel.map(
-                FileChannel.MapMode.READ_ONLY,
-                archiveTermStartOffset,
-                termBufferLength));
+            currentDataChannel.map(FileChannel.MapMode.READ_ONLY, archiveTermStartOffset, termBufferLength));
     }
 
     public void close()

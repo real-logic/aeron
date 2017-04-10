@@ -107,10 +107,12 @@ class ListDescriptorsSession implements ArchiverConductor.Session
         {
             workDone += init();
         }
+
         if (state == State.SENDING)
         {
             workDone += sendDescriptors();
         }
+
         if (state == State.CLOSE)
         {
             workDone += close();
@@ -123,6 +125,7 @@ class ListDescriptorsSession implements ArchiverConductor.Session
     {
         CloseHelper.quietClose(reply);
         state = State.DONE;
+
         return 1;
     }
 

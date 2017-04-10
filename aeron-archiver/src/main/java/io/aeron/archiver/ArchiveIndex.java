@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archiver.StreamInstanceArchiveWriter.initDescriptor;
+import static java.nio.file.StandardOpenOption.*;
 
 /**
  * Index file for the archiving service provides a persisted log of archives, past and present, and used to lookup
@@ -34,6 +35,8 @@ import static io.aeron.archiver.StreamInstanceArchiveWriter.initDescriptor;
  */
 class ArchiveIndex implements AutoCloseable
 {
+    // TODO: Make DSYNC optional via configuration.
+
     public static final String INDEX_FILE_NAME = "archive.idx";
     static final int INDEX_RECORD_SIZE = 4096;
     static final int INDEX_FRAME_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
@@ -55,8 +58,7 @@ class ArchiveIndex implements AutoCloseable
         try
         {
             final File indexFile = new File(archiveFolder, INDEX_FILE_NAME);
-            final RandomAccessFile archiveIndexFile = new RandomAccessFile(indexFile, "rws");
-            channel = archiveIndexFile.getChannel();
+            channel = FileChannel.open(indexFile.toPath(), CREATE, READ, WRITE, DSYNC);
             final ArchiveDescriptorDecoder decoder = new ArchiveDescriptorDecoder();
 
             while (channel.read(byteBuffer) != -1)

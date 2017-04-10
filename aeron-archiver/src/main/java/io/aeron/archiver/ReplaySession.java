@@ -255,6 +255,7 @@ class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHand
             {
                 this.state = State.CLOSE;
             }
+
             return polled;
         }
         catch (final Exception ex)
@@ -269,6 +270,7 @@ class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHand
         CloseHelper.quietClose(control);
         CloseHelper.quietClose(cursor);
         this.state = State.DONE;
+
         return 1;
     }
 

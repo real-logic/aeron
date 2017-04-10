@@ -103,6 +103,7 @@ class ImageArchivingSession implements ArchiverConductor.Session
         {
             workDone += archive();
         }
+
         if (state == State.CLOSING)
         {
             workDone += close();

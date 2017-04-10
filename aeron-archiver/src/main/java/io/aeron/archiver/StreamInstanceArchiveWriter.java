@@ -13,7 +13,6 @@
  * limitations under the License.
  *
  */
-
 package io.aeron.archiver;
 
 import io.aeron.archiver.messages.ArchiveDescriptorEncoder;

@@ -15,7 +15,6 @@
  */
 package io.aeron.archiver;
 
-
 import io.aeron.*;
 import io.aeron.archiver.messages.ArchiveDescriptorDecoder;
 import io.aeron.logbuffer.*;
@@ -31,6 +30,9 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
 import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileName;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -110,19 +112,20 @@ public class ImageArchivingSessionTest
         final EpochClock epochClock = Mockito.mock(EpochClock.class);
         when(epochClock.time()).thenReturn(42L);
 
-        final ImageArchivingSession session =
-            new ImageArchivingSession(proxy, index, tempFolderForTest, image, epochClock);
-        Assert.assertEquals(streamInstanceId, session.streamInstanceId());
+        final ImageArchivingSession session = new ImageArchivingSession(
+            proxy, index, tempFolderForTest, image, epochClock);
+        assertEquals(streamInstanceId, session.streamInstanceId());
 
         // setup the mock image to pass on the mock log buffer
-        when(image.rawPoll(any(), anyInt()))
-            .thenAnswer(invocation ->
+        when(image.rawPoll(any(), anyInt())).thenAnswer(
+            (invocation) ->
             {
                 final RawBlockHandler handle = invocation.getArgument(0);
                 if (handle == null)
                 {
                     return 0;
                 }
+
                 handle.onBlock(
                     mockLogBufferChannel,
                     0,
@@ -131,74 +134,76 @@ public class ImageArchivingSessionTest
                     100,
                     sessionId,
                     0);
+
                 return 100;
             });
 
         // expecting session to proxy the available data from the image
-        Assert.assertNotEquals("Expect some work", 0, session.doWork());
+        assertNotEquals("Expect some work", 0, session.doWork());
 
         // We now evaluate the output of the archiver...
 
         // meta data exists and is as expected
         final File archiveMetaFile = new File(tempFolderForTest, archiveMetaFileName(session.streamInstanceId()));
-        Assert.assertTrue(archiveMetaFile.exists());
+        assertTrue(archiveMetaFile.exists());
 
-        final ArchiveDescriptorDecoder metaData =
-            ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
+        final ArchiveDescriptorDecoder metaData = ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
 
-        Assert.assertEquals(streamInstanceId, metaData.streamInstanceId());
-        Assert.assertEquals(termBufferLength, metaData.termBufferLength());
-        Assert.assertEquals(initialTermId, metaData.initialTermId());
-        Assert.assertEquals(termOffset, metaData.initialTermOffset());
-        Assert.assertEquals(initialTermId, metaData.lastTermId());
-        Assert.assertEquals(streamId, metaData.streamId());
-        Assert.assertEquals(termOffset + 100, metaData.lastTermOffset());
-        Assert.assertEquals(42L, metaData.startTime());
-        Assert.assertEquals(-1L, metaData.endTime());
-        Assert.assertEquals(source, metaData.source());
-        Assert.assertEquals(channel, metaData.channel());
+        assertEquals(streamInstanceId, metaData.streamInstanceId());
+        assertEquals(termBufferLength, metaData.termBufferLength());
+        assertEquals(initialTermId, metaData.initialTermId());
+        assertEquals(termOffset, metaData.initialTermOffset());
+        assertEquals(initialTermId, metaData.lastTermId());
+        assertEquals(streamId, metaData.streamId());
+        assertEquals(termOffset + 100, metaData.lastTermOffset());
+        assertEquals(42L, metaData.startTime());
+        assertEquals(-1L, metaData.endTime());
+        assertEquals(source, metaData.source());
+        assertEquals(channel, metaData.channel());
 
 
         // data exists and is as expected
         final File archiveDataFile = new File(
             tempFolderForTest,
             archiveDataFileName(session.streamInstanceId(), 0));
-        Assert.assertTrue(archiveDataFile.exists());
+        assertTrue(archiveDataFile.exists());
 
-        try (StreamInstanceArchiveFragmentReader
-                 reader = new StreamInstanceArchiveFragmentReader(session.streamInstanceId(), tempFolderForTest))
+        try (StreamInstanceArchiveFragmentReader reader = new StreamInstanceArchiveFragmentReader(
+            session.streamInstanceId(), tempFolderForTest))
         {
-            final int polled = reader.controlledPoll((buffer, offset, length, header) ->
-            {
-                Assert.assertEquals(100, header.frameLength());
-                Assert.assertEquals(termOffset + DataHeaderFlyweight.HEADER_LENGTH, offset);
-                Assert.assertEquals(100 - DataHeaderFlyweight.HEADER_LENGTH, length);
-                return ControlledFragmentHandler.Action.CONTINUE;
-            }, 1);
-            Assert.assertEquals(1, polled);
+            final int polled = reader.controlledPoll(
+                (buffer, offset, length, header) ->
+                {
+                    assertEquals(100, header.frameLength());
+                    assertEquals(termOffset + DataHeaderFlyweight.HEADER_LENGTH, offset);
+                    assertEquals(100 - DataHeaderFlyweight.HEADER_LENGTH, length);
+                    return ControlledFragmentHandler.Action.CONTINUE;
+                },
+                1);
+
+            assertEquals(1, polled);
         }
 
         // next poll has no data
         when(image.rawPoll(any(), anyInt())).thenReturn(0);
-        Assert.assertEquals("Expect no work", 0, session.doWork());
+        assertEquals("Expect no work", 0, session.doWork());
 
         // image is closed
         when(image.isClosed()).thenReturn(true);
         when(epochClock.time()).thenReturn(128L);
 
-        Assert.assertNotEquals("Expect some work", 0, session.doWork());
-        Assert.assertTrue(session.isDone());
-        Assert.assertEquals(128L, metaData.endTime());
+        assertNotEquals("Expect some work", 0, session.doWork());
+        assertTrue(session.isDone());
+        assertEquals(128L, metaData.endTime());
         IoUtil.unmap(metaData.buffer().byteBuffer());
     }
 
-    private Subscription mockSubscription(
-        final String channel,
-        final int streamId)
+    private Subscription mockSubscription(final String channel, final int streamId)
     {
         final Subscription subscription = mock(Subscription.class);
         when(subscription.channel()).thenReturn(channel);
         when(subscription.streamId()).thenReturn(streamId);
+
         return subscription;
     }
 
@@ -216,7 +221,7 @@ public class ImageArchivingSessionTest
         when(image.subscription()).thenReturn(subscription);
         when(image.initialTermId()).thenReturn(initialTermId);
         when(image.termBufferLength()).thenReturn(termBufferLength);
+
         return image;
     }
-
 }

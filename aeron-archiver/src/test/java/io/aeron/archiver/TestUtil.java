@@ -13,7 +13,6 @@
  * limitations under the License.
  *
  */
-
 package io.aeron.archiver;
 
 import org.junit.Assert;
@@ -28,6 +27,7 @@ class TestUtil
         // we really need a temp dir, not a file... delete and remake!
         Assert.assertTrue(tempFolderForTest.delete());
         Assert.assertTrue(tempFolderForTest.mkdir());
+
         return tempFolderForTest;
     }
 }

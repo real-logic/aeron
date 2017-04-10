@@ -13,7 +13,6 @@
  * limitations under the License.
  *
  */
-
 package io.aeron.archiver;
 
 import io.aeron.*;
@@ -28,6 +27,9 @@ import java.io.File;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.archiver.TestUtil.makeTempFolder;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -50,18 +52,18 @@ public class ReplaySessionTest
         proxy = Mockito.mock(ArchiverProtocolProxy.class);
         final EpochClock epochClock = mock(EpochClock.class);
         final StreamInstance streamInstance = new StreamInstance("source", 1, "channel", 1);
-        try (StreamInstanceArchiveWriter writer =
-                 new StreamInstanceArchiveWriter(
-                     archiveFolder,
-                     epochClock,
-                     STREAM_INSTANCE_ID,
-                     TERM_BUFFER_LENGTH,
-                     INITIAL_TERM_ID,
-                     streamInstance))
+        try (StreamInstanceArchiveWriter writer = new StreamInstanceArchiveWriter(
+            archiveFolder,
+            epochClock,
+            STREAM_INSTANCE_ID,
+            TERM_BUFFER_LENGTH,
+            INITIAL_TERM_ID,
+            streamInstance))
         {
             when(epochClock.time()).thenReturn(42L);
+
             final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
-            buffer.setMemory(0, TERM_BUFFER_LENGTH, (byte) 0);
+            buffer.setMemory(0, TERM_BUFFER_LENGTH, (byte)0);
 
             final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
             headerFlyweight.wrap(buffer, INITIAL_TERM_OFFSET, DataHeaderFlyweight.HEADER_LENGTH);
@@ -73,14 +75,15 @@ public class ReplaySessionTest
             buffer.setMemory(
                 INITIAL_TERM_OFFSET + DataHeaderFlyweight.HEADER_LENGTH,
                 1024 - DataHeaderFlyweight.HEADER_LENGTH,
-                (byte) 1);
+                (byte)1);
 
             final Header header = new Header(INITIAL_TERM_ID, Integer.numberOfLeadingZeros(TERM_BUFFER_LENGTH));
             header.buffer(buffer);
             header.offset(INITIAL_TERM_OFFSET);
-            Assert.assertEquals(1024, header.frameLength());
-            Assert.assertEquals(INITIAL_TERM_ID, header.termId());
-            Assert.assertEquals(INITIAL_TERM_OFFSET, header.offset());
+
+            assertEquals(1024, header.frameLength());
+            assertEquals(INITIAL_TERM_ID, header.termId());
+            assertEquals(INITIAL_TERM_OFFSET, header.offset());
 
             writer.onFragment(
                 buffer,
@@ -91,37 +94,40 @@ public class ReplaySessionTest
             when(epochClock.time()).thenReturn(84L);
         }
 
-        try (StreamInstanceArchiveChunkReader chunkReader =
-                new StreamInstanceArchiveChunkReader(
-                    STREAM_INSTANCE_ID,
-                    archiveFolder,
-                    INITIAL_TERM_ID,
-                    TERM_BUFFER_LENGTH,
-                    INITIAL_TERM_ID,
-                    INITIAL_TERM_OFFSET,
-                    1024))
+        try (StreamInstanceArchiveChunkReader chunkReader = new StreamInstanceArchiveChunkReader(
+            STREAM_INSTANCE_ID,
+            archiveFolder,
+            INITIAL_TERM_ID,
+            TERM_BUFFER_LENGTH,
+            INITIAL_TERM_ID,
+            INITIAL_TERM_OFFSET,
+            1024))
         {
-            chunkReader.readChunk((termBuff, termOffset, length) ->
-            {
-                final DataHeaderFlyweight hf = new DataHeaderFlyweight();
-                hf.wrap(termBuff, termOffset, DataHeaderFlyweight.HEADER_LENGTH);
-                Assert.assertEquals(INITIAL_TERM_ID, hf.termId());
-                Assert.assertEquals(1024, hf.frameLength());
-                return true;
-            }, 1024);
+            chunkReader.readChunk(
+                (termBuff, termOffset, length) ->
+                {
+                    final DataHeaderFlyweight hf = new DataHeaderFlyweight();
+                    hf.wrap(termBuff, termOffset, DataHeaderFlyweight.HEADER_LENGTH);
+                    assertEquals(INITIAL_TERM_ID, hf.termId());
+                    assertEquals(1024, hf.frameLength());
+                    return true;
+                },
+                1024);
         }
 
-        try (StreamInstanceArchiveFragmentReader reader =
-            new StreamInstanceArchiveFragmentReader(STREAM_INSTANCE_ID, archiveFolder))
+        try (StreamInstanceArchiveFragmentReader reader = new StreamInstanceArchiveFragmentReader(
+            STREAM_INSTANCE_ID, archiveFolder))
         {
+            final int polled = reader.controlledPoll(
+                (b, offset, length, h) ->
+                {
+                    assertEquals(offset, INITIAL_TERM_OFFSET + DataHeaderFlyweight.HEADER_LENGTH);
+                    assertEquals(length, 1024 - DataHeaderFlyweight.HEADER_LENGTH);
+                    return ControlledFragmentHandler.Action.CONTINUE;
+                },
+                1);
 
-            final int polled = reader.controlledPoll((b, offset, length, h) ->
-            {
-                Assert.assertEquals(offset, INITIAL_TERM_OFFSET + DataHeaderFlyweight.HEADER_LENGTH);
-                Assert.assertEquals(length, 1024 - DataHeaderFlyweight.HEADER_LENGTH);
-                return ControlledFragmentHandler.Action.CONTINUE;
-            }, 1);
-            Assert.assertEquals(1, polled);
+            assertEquals(1, polled);
         }
     }
 
@@ -139,17 +145,16 @@ public class ReplaySessionTest
         final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
         final Image image = Mockito.mock(Image.class);
 
-        final ReplaySession replaySession =
-            new ReplaySession(
-                STREAM_INSTANCE_ID,
-                INITIAL_TERM_ID,
-                INITIAL_TERM_OFFSET,
-                length,
-                replay,
-                control,
-                image,
-                archiveFolder,
-                proxy);
+        final ReplaySession replaySession = new ReplaySession(
+            STREAM_INSTANCE_ID,
+            INITIAL_TERM_ID,
+            INITIAL_TERM_OFFSET,
+            length,
+            replay,
+            control,
+            image,
+            archiveFolder,
+            proxy);
 
         // this is a given since they are closed by the session only
         when(replay.isClosed()).thenReturn(false);
@@ -160,7 +165,7 @@ public class ReplaySessionTest
         when(control.isConnected()).thenReturn(false);
 
         // does not switch to replay mode until publications are established
-        Assert.assertEquals(0, replaySession.doWork());
+        assertEquals(0, replaySession.doWork());
 
         // pick one to establish first
         if (ThreadLocalRandom.current().nextDouble() > 0.5)
@@ -173,49 +178,48 @@ public class ReplaySessionTest
         }
 
         // does not switch to replay mode until BOTH publications are established
-        Assert.assertEquals(0, replaySession.doWork());
+        assertEquals(0, replaySession.doWork());
 
         when(replay.isConnected()).thenReturn(true);
         when(control.isConnected()).thenReturn(true);
 
         // publications are connected, so do some work
-        Assert.assertNotEquals(0, replaySession.doWork());
+        assertNotEquals(0, replaySession.doWork());
 
         // notifies that initiated
-        Mockito.verify(proxy, times(1)).sendResponse(control, null);
+        verify(proxy, times(1)).sendResponse(control, null);
 
-        final UnsafeBuffer mockTermBuffer =
-            new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
-        when(replay.tryClaim(anyInt(), any(ExclusiveBufferClaim.class))).then(invocation ->
-        {
-            final int claimedSize = invocation.getArgument(0);
-            final ExclusiveBufferClaim buffer = invocation.getArgument(1);
-            buffer.wrap(mockTermBuffer, 0, claimedSize + DataHeaderFlyweight.HEADER_LENGTH);
-            messageIndex++;
-            return (long) claimedSize;
-        });
-        Assert.assertNotEquals(0, replaySession.doWork());
-        Assert.assertTrue(messageIndex > 0);
+        final UnsafeBuffer mockTermBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
+        when(replay.tryClaim(anyInt(), any(ExclusiveBufferClaim.class))).then(
+            (invocation) ->
+            {
+                final int claimedSize = invocation.getArgument(0);
+                final ExclusiveBufferClaim buffer = invocation.getArgument(1);
+                buffer.wrap(mockTermBuffer, 0, claimedSize + DataHeaderFlyweight.HEADER_LENGTH);
+                messageIndex++;
+
+                return (long)claimedSize;
+            });
+        assertNotEquals(0, replaySession.doWork());
+        assertTrue(messageIndex > 0);
 
         //  frame length
-        Assert.assertEquals(1024, mockTermBuffer.getInt(0));
+        assertEquals(1024, mockTermBuffer.getInt(0));
         // TODO: add validation for reserved value and flags
 
-        Assert.assertTrue(replaySession.isDone());
-
-        Assert.assertEquals(0, replaySession.doWork());
+        assertTrue(replaySession.isDone());
+        assertEquals(0, replaySession.doWork());
     }
 
     @Test
-    public void shouldFailToReplayDataForNonExistantStream()
+    public void shouldFailToReplayDataForNonExistentStream()
     {
         final long length = 1024L;
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
         final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
         final Image image = Mockito.mock(Image.class);
 
-        final ReplaySession replaySession =
-            new ReplaySession(
+        final ReplaySession replaySession = new ReplaySession(
                 STREAM_INSTANCE_ID + 1,
                 INITIAL_TERM_ID,
                 INITIAL_TERM_OFFSET,
@@ -233,12 +237,11 @@ public class ReplaySessionTest
         when(replay.isConnected()).thenReturn(true);
         when(control.isConnected()).thenReturn(true);
 
-        Assert.assertEquals(1, replaySession.doWork());
+        assertEquals(1, replaySession.doWork());
 
         // failure notification
-        Mockito.verify(proxy, times(1)).sendResponse(eq(control), notNull());
+        verify(proxy, times(1)).sendResponse(eq(control), notNull());
 
-        Assert.assertTrue(replaySession.isDone());
-
+        assertTrue(replaySession.isDone());
     }
 }

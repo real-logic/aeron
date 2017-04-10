@@ -220,15 +220,15 @@ public class ReplaySessionTest
         final Image image = Mockito.mock(Image.class);
 
         final ReplaySession replaySession = new ReplaySession(
-                STREAM_INSTANCE_ID + 1,
-                INITIAL_TERM_ID,
-                INITIAL_TERM_OFFSET,
-                length,
-                replay,
-                control,
-                image,
-                archiveFolder,
-                proxy);
+            STREAM_INSTANCE_ID + 1,
+            INITIAL_TERM_ID,
+            INITIAL_TERM_OFFSET,
+            length,
+            replay,
+            control,
+            image,
+            archiveFolder,
+            proxy);
 
         // this is a given since they are closed by the session only
         when(replay.isClosed()).thenReturn(false);

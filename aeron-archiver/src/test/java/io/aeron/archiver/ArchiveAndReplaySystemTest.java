@@ -87,6 +87,7 @@ public class ArchiveAndReplaySystemTest
         rnd.setSeed(seed);
 
         driverCtx
+            .termBufferSparseFile(true)
             .threadingMode(ThreadingMode.SHARED)
             .errorHandler(LangUtil::rethrowUnchecked)
             .dirsDeleteOnStart(true);

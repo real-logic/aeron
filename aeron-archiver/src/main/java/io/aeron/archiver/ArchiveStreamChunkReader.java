@@ -26,7 +26,7 @@ import java.util.Objects;
 import static java.lang.Math.min;
 import static java.nio.file.StandardOpenOption.READ;
 
-class StreamInstanceArchiveChunkReader implements AutoCloseable
+class ArchiveStreamChunkReader implements AutoCloseable
 {
     private final int streamInstanceId;
     private final File archiveFolder;
@@ -43,7 +43,7 @@ class StreamInstanceArchiveChunkReader implements AutoCloseable
     private int archiveTermStartOffset;
     private int currentTermOffset;
 
-    StreamInstanceArchiveChunkReader(
+    ArchiveStreamChunkReader(
         final int streamInstanceId,
         final File archiveFolder,
         final int initialTermId,

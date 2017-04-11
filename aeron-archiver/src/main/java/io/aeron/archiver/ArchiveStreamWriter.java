@@ -30,7 +30,7 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 
-public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandler, RawBlockHandler
+public class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBlockHandler
 {
     private final int imageInitialTermId;
     private final int termBufferLength;
@@ -59,13 +59,13 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
     private boolean closed = false;
     private boolean stopped = false;
 
-    StreamInstanceArchiveWriter(
+    ArchiveStreamWriter(
         final File archiveFolder,
         final EpochClock epochClock,
         final int streamInstanceId,
         final int termBufferLength,
         final int imageInitialTermId,
-        final StreamInstance streamInstance)
+        final StreamKey streamKey)
     {
         this.streamInstanceId = streamInstanceId;
         this.archiveFolder = archiveFolder;
@@ -90,7 +90,7 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
             final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(metaDataBuffer);
             metaDataWriter = new ArchiveDescriptorEncoder().wrap(unsafeBuffer, ArchiveIndex.INDEX_FRAME_LENGTH);
 
-            initDescriptor(metaDataWriter, streamInstanceId, termBufferLength, imageInitialTermId, streamInstance);
+            initDescriptor(metaDataWriter, streamInstanceId, termBufferLength, imageInitialTermId, streamKey);
 
             unsafeBuffer.putInt(0, metaDataWriter.encodedLength());
             metaDataBuffer.force();
@@ -109,7 +109,7 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         final int streamInstanceId,
         final int termBufferLength,
         final int imageInitialTermId,
-        final StreamInstance streamInstance)
+        final StreamKey streamKey)
     {
         descriptor.streamInstanceId(streamInstanceId);
         descriptor.termBufferLength(termBufferLength);
@@ -120,10 +120,10 @@ public class StreamInstanceArchiveWriter implements AutoCloseable, FragmentHandl
         descriptor.lastTermOffset(-1);
         descriptor.endTime(-1);
         descriptor.imageInitialTermId(imageInitialTermId);
-        descriptor.sessionId(streamInstance.sessionId());
-        descriptor.streamId(streamInstance.streamId());
-        descriptor.source(streamInstance.source());
-        descriptor.channel(streamInstance.channel());
+        descriptor.sessionId(streamKey.sessionId());
+        descriptor.streamId(streamKey.streamId());
+        descriptor.source(streamKey.source());
+        descriptor.channel(streamKey.channel());
     }
 
     private void newArchiveFile(final int termId)

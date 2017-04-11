@@ -25,7 +25,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.StreamInstanceArchiveWriter.initDescriptor;
+import static io.aeron.archiver.ArchiveStreamWriter.initDescriptor;
 import static java.nio.file.StandardOpenOption.*;
 
 /**
@@ -119,7 +119,7 @@ class ArchiveIndex implements AutoCloseable
     }
 
     int addNewStreamInstance(
-        final StreamInstance newStreamInstance,
+        final StreamKey newStreamKey,
         final int termBufferLength,
         final int imageInitialTermId)
     {
@@ -131,7 +131,7 @@ class ArchiveIndex implements AutoCloseable
             newStreamInstanceId,
             termBufferLength,
             imageInitialTermId,
-            newStreamInstance);
+            newStreamKey);
 
         final int encodedLength = archiveDescriptorEncoder.encodedLength();
         unsafeBuffer.putInt(0, encodedLength);

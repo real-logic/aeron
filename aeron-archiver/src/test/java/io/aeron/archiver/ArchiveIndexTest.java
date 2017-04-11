@@ -30,10 +30,10 @@ public class ArchiveIndexTest
     static final UnsafeBuffer UB = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(ArchiveIndex.INDEX_RECORD_SIZE, 64));
     static final ArchiveDescriptorDecoder DECODER = new ArchiveDescriptorDecoder();
-    static final StreamInstance STREAM_INSTANCE_A = new StreamInstance("sourceA", 6, "channelG", 1);
-    static final StreamInstance STREAM_INSTANCE_B = new StreamInstance("sourceV", 7, "channelH", 2);
-    static final StreamInstance STREAM_INSTANCE_C = new StreamInstance("sourceB", 8, "channelK", 3);
-    static final StreamInstance STREAM_INSTANCE_D = new StreamInstance("sourceN", 9, "channelJ", 4);
+    static final StreamKey STREAM_INSTANCE_A = new StreamKey("sourceA", 6, "channelG", 1);
+    static final StreamKey STREAM_INSTANCE_B = new StreamKey("sourceV", 7, "channelH", 2);
+    static final StreamKey STREAM_INSTANCE_C = new StreamKey("sourceB", 8, "channelK", 3);
+    static final StreamKey STREAM_INSTANCE_D = new StreamKey("sourceN", 9, "channelJ", 4);
     private static File archiveFolder;
 
     static int streamInstanceAId;
@@ -74,17 +74,17 @@ public class ArchiveIndexTest
         }
     }
 
-    private void verifyArchiveForId(final ArchiveIndex archiveIndex, final int id, final StreamInstance streamInstance)
+    private void verifyArchiveForId(final ArchiveIndex archiveIndex, final int id, final StreamKey streamKey)
         throws IOException
     {
         UB.byteBuffer().clear();
         archiveIndex.readArchiveDescriptor(id, UB.byteBuffer());
         DECODER.limit(ArchiveIndex.INDEX_FRAME_LENGTH + ArchiveDescriptorDecoder.BLOCK_LENGTH);
         assertEquals(id, DECODER.streamInstanceId());
-        assertEquals(streamInstance.sessionId(), DECODER.sessionId());
-        assertEquals(streamInstance.streamId(), DECODER.streamId());
-        assertEquals(streamInstance.source(), DECODER.source());
-        assertEquals(streamInstance.channel(), DECODER.channel());
+        assertEquals(streamKey.sessionId(), DECODER.sessionId());
+        assertEquals(streamKey.streamId(), DECODER.streamId());
+        assertEquals(streamKey.source(), DECODER.source());
+        assertEquals(streamKey.channel(), DECODER.channel());
     }
 
     @Test

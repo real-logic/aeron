@@ -27,7 +27,7 @@ import java.nio.ByteBuffer;
 
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
-class ListDescriptorsSession implements ArchiverConductor.Session
+class ListDescriptorsSession implements ArchiveConductor.Session
 {
     static final long NOT_FOUND_HEADER;
     static final long DESCRIPTOR_HEADER;
@@ -65,7 +65,7 @@ class ListDescriptorsSession implements ArchiverConductor.Session
     private final Publication reply;
     private final int from;
     private final int to;
-    private final ArchiverConductor conductor;
+    private final ArchiveConductor conductor;
     private final ArchiverProtocolProxy proxy;
 
     private int cursor;
@@ -75,7 +75,7 @@ class ListDescriptorsSession implements ArchiverConductor.Session
         final Publication reply,
         final int from,
         final int to,
-        final ArchiverConductor conductor,
+        final ArchiveConductor conductor,
         final ArchiverProtocolProxy proxy)
     {
         this.reply = reply;
@@ -96,7 +96,7 @@ class ListDescriptorsSession implements ArchiverConductor.Session
         return state == State.DONE;
     }
 
-    public void remove(final ArchiverConductor conductor)
+    public void remove(final ArchiveConductor conductor)
     {
     }
 
@@ -134,7 +134,7 @@ class ListDescriptorsSession implements ArchiverConductor.Session
         final int limit = Math.min(cursor + 4, to);
         for (; cursor <= limit; cursor++)
         {
-            final ImageArchivingSession session = conductor.getArchivingSession(cursor);
+            final ArchivingSession session = conductor.getArchivingSession(cursor);
             if (session == null)
             {
                 byteBuffer.clear();

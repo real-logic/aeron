@@ -30,7 +30,7 @@ import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
 import static java.nio.file.StandardOpenOption.READ;
 
-class StreamInstanceArchiveFragmentReader implements AutoCloseable
+class ArchiveStreamFragmentReader implements AutoCloseable
 {
     private final int streamInstanceId;
     private final File archiveFolder;
@@ -50,7 +50,7 @@ class StreamInstanceArchiveFragmentReader implements AutoCloseable
     private Header fragmentHeader;
     private long transmitted = 0;
 
-    StreamInstanceArchiveFragmentReader(final int streamInstanceId, final File archiveFolder) throws IOException
+    ArchiveStreamFragmentReader(final int streamInstanceId, final File archiveFolder) throws IOException
     {
         this.streamInstanceId = streamInstanceId;
         this.archiveFolder = archiveFolder;
@@ -68,7 +68,7 @@ class StreamInstanceArchiveFragmentReader implements AutoCloseable
         initCursorState();
     }
 
-    StreamInstanceArchiveFragmentReader(
+    ArchiveStreamFragmentReader(
         final int streamInstanceId,
         final File archiveFolder,
         final int termId,

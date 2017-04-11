@@ -23,9 +23,9 @@ import java.io.*;
 import java.nio.ByteBuffer;
 
 /**
- * Consumes an {@link Image} and archives data into file using {@link StreamInstanceArchiveWriter}.
+ * Consumes an {@link Image} and archives data into file using {@link ArchiveStreamWriter}.
  */
-class ImageArchivingSession implements ArchiverConductor.Session
+class ArchivingSession implements ArchiveConductor.Session
 {
     private enum State
     {
@@ -36,11 +36,11 @@ class ImageArchivingSession implements ArchiverConductor.Session
     private final ArchiverProtocolProxy proxy;
     private final Image image;
     private final ArchiveIndex index;
-    private final StreamInstanceArchiveWriter writer;
+    private final ArchiveStreamWriter writer;
 
     private State state = State.ARCHIVING;
 
-    ImageArchivingSession(
+    ArchivingSession(
         final ArchiverProtocolProxy proxy,
         final ArchiveIndex index,
         final File archiveFolder,
@@ -60,7 +60,7 @@ class ImageArchivingSession implements ArchiverConductor.Session
         final int imageInitialTermId = image.initialTermId();
         this.index = index;
         streamInstanceId = index.addNewStreamInstance(
-            new StreamInstance(source, sessionId, channel, streamId),
+            new StreamKey(source, sessionId, channel, streamId),
             termBufferLength,
             imageInitialTermId);
 
@@ -71,16 +71,16 @@ class ImageArchivingSession implements ArchiverConductor.Session
             channel,
             streamId);
 
-        StreamInstanceArchiveWriter writer = null;
+        ArchiveStreamWriter writer = null;
         try
         {
-            writer = new StreamInstanceArchiveWriter(
+            writer = new ArchiveStreamWriter(
                 archiveFolder,
                 epochClock,
                 streamInstanceId,
                 termBufferLength,
                 imageInitialTermId,
-                new StreamInstance(source, sessionId, channel, streamId));
+                new StreamKey(source, sessionId, channel, streamId));
         }
         catch (final Exception ex)
         {
@@ -177,7 +177,7 @@ class ImageArchivingSession implements ArchiverConductor.Session
         return state == State.DONE;
     }
 
-    public void remove(final ArchiverConductor conductor)
+    public void remove(final ArchiveConductor conductor)
     {
         conductor.removeArchivingSession(streamInstanceId);
     }

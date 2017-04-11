@@ -18,14 +18,14 @@ package io.aeron.archiver;
 import java.util.Objects;
 
 // TODO: maybe remove
-class StreamInstance
+class StreamKey
 {
     private final String source;
     private final int sessionId;
     private final String channel;
     private final int streamId;
 
-    StreamInstance(final String source, final int sessionId, final String channel, final int streamId)
+    StreamKey(final String source, final int sessionId, final String channel, final int streamId)
     {
         Objects.requireNonNull(source);
         Objects.requireNonNull(channel);
@@ -67,7 +67,7 @@ class StreamInstance
             return false;
         }
 
-        final StreamInstance that = (StreamInstance)o;
+        final StreamKey that = (StreamKey)o;
 
         return sessionId == that.sessionId &&
             streamId == that.streamId &&

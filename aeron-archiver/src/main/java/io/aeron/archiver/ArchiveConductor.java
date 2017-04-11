@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
-class ArchiverConductor implements Agent, ArchiverProtocolListener
+class ArchiveConductor implements Agent, ArchiverProtocolListener
 {
     interface Session
     {
@@ -33,7 +33,7 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
 
         boolean isDone();
 
-        void remove(ArchiverConductor conductor);
+        void remove(ArchiveConductor conductor);
 
         int doWork();
     }
@@ -45,7 +45,7 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
     private final Int2ObjectHashMap<ReplaySession> replaySessionBySessionIdMap = new Int2ObjectHashMap<>();
 
     // TODO: archiving sessions index should be managed by the archive index
-    private final Int2ObjectHashMap<ImageArchivingSession> archivingSessionByStreamIdMap = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<ArchivingSession> archivingSessionByStreamInstanceIdMap = new Int2ObjectHashMap<>();
     private final ObjectHashSet<Subscription> archiveSubscriptionSet = new ObjectHashSet<>(128);
     private final ArchiveIndex archiveIndex;
 
@@ -56,22 +56,18 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
     private final File archiveFolder;
     private final EpochClock epochClock;
 
-    // NOTE: prevent consumer allocation on each call(shakes fist at JVM)
     private final Consumer<Image> newImageConsumer = this::handleNewImageNotification;
     private final ArchiverProtocolAdapter adapter = new ArchiverProtocolAdapter(this);
     private final ArchiverProtocolProxy proxy;
     private volatile boolean isClosed = false;
 
-    ArchiverConductor(final Aeron aeron, final Archiver.Context ctx)
+    ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
         this.aeron = aeron;
-        serviceRequestSubscription = aeron.addSubscription(
-            ctx.serviceRequestChannel(),
-            ctx.serviceRequestStreamId());
+        serviceRequestSubscription = aeron.addSubscription(ctx.serviceRequestChannel(), ctx.serviceRequestStreamId());
 
         archiverNotificationPublication = aeron.addPublication(
-            ctx.archiverNotificationsChannel(),
-            ctx.archiverNotificationsStreamId());
+            ctx.archiverNotificationsChannel(), ctx.archiverNotificationsStreamId());
 
         this.archiveFolder = ctx.archiveFolder();
         availableImageHandler =
@@ -88,6 +84,7 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
                     Thread.yield();
                 }
             };
+
         this.proxy = new ArchiverProtocolProxy(ctx.idleStrategy(), archiverNotificationPublication);
         this.epochClock = ctx.epochClock();
 
@@ -135,9 +132,9 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
             System.err.println("ERROR: expected empty replaySessionBySessionIdMap");
         }
 
-        if (!archivingSessionByStreamIdMap.isEmpty())
+        if (!archivingSessionByStreamInstanceIdMap.isEmpty())
         {
-            System.err.println("ERROR: expected empty archivingSessionByStreamIdMap");
+            System.err.println("ERROR: expected empty archivingSessionByStreamInstanceIdMap");
         }
 
         for (final Subscription subscription : archiveSubscriptionSet)
@@ -154,10 +151,10 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
 
     private void handleNewImageNotification(final Image image)
     {
-        final ImageArchivingSession session = new ImageArchivingSession(
+        final ArchivingSession session = new ArchivingSession(
             proxy, archiveIndex, archiveFolder, image, this.epochClock);
         sessions.add(session);
-        archivingSessionByStreamIdMap.put(session.streamInstanceId(), session);
+        archivingSessionByStreamInstanceIdMap.put(session.streamInstanceId(), session);
     }
 
     public void onArchiveStop(final String channel, final int streamId)
@@ -265,14 +262,14 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
         return workDone;
     }
 
-    ImageArchivingSession getArchivingSession(final int streamInstanceId)
+    ArchivingSession getArchivingSession(final int streamInstanceId)
     {
-        return archivingSessionByStreamIdMap.get(streamInstanceId);
+        return archivingSessionByStreamInstanceIdMap.get(streamInstanceId);
     }
 
     void removeArchivingSession(final int streamInstanceId)
     {
-        archivingSessionByStreamIdMap.remove(streamInstanceId);
+        archivingSessionByStreamInstanceIdMap.remove(streamInstanceId);
     }
 
     void removeReplaySession(final int sessionId)

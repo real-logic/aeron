@@ -24,7 +24,7 @@ import java.io.*;
 
 /**
  * A replay session with a client which works through the required request response flow and streaming of archived data.
- * The {@link ArchiverConductor} will initiate a session on receiving a ReplayRequest
+ * The {@link ArchiveConductor} will initiate a session on receiving a ReplayRequest
  * (see {@link io.aeron.archiver.messages.ReplayRequestDecoder}). The session will:
  * <ul>
  * <li>Establish a reply {@link Publication} with the initiator(or someone else possibly) </li>
@@ -32,7 +32,7 @@ import java.io.*;
  * <li>Stream archived data into reply {@link Publication}</li>
  * </ul>
  */
-class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHandler
+class ReplaySession implements ArchiveConductor.Session, ControlledFragmentHandler
 {
     private enum State
     {
@@ -54,7 +54,7 @@ class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHand
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
 
     private State state = State.INIT;
-    private StreamInstanceArchiveFragmentReader cursor;
+    private ArchiveStreamFragmentReader cursor;
 
     ReplaySession(
         final int streamInstanceId,
@@ -109,7 +109,7 @@ class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHand
         return state == State.DONE;
     }
 
-    public void remove(final ArchiverConductor conductor)
+    public void remove(final ArchiveConductor conductor)
     {
         conductor.removeReplaySession(image.sessionId());
     }
@@ -187,7 +187,7 @@ class ReplaySession implements ArchiverConductor.Session, ControlledFragmentHand
 
         try
         {
-            cursor = new StreamInstanceArchiveFragmentReader(
+            cursor = new ArchiveStreamFragmentReader(
                 streamInstanceId,
                 archiveFolder,
                 fromTermId,

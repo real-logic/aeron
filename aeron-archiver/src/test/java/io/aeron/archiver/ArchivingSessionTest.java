@@ -41,7 +41,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ImageArchivingSessionTest
+public class ArchivingSessionTest
 {
     private final int streamInstanceId = 12345;
 
@@ -64,11 +64,11 @@ public class ImageArchivingSessionTest
     private UnsafeBuffer mockLogBufferMapped;
     private File termFile;
 
-    public ImageArchivingSessionTest() throws IOException
+    public ArchivingSessionTest() throws IOException
     {
         proxy = mock(ArchiverProtocolProxy.class);
         index = mock(ArchiveIndex.class);
-        final StreamInstance instance = new StreamInstance(source, sessionId, channel, streamId);
+        final StreamKey instance = new StreamKey(source, sessionId, channel, streamId);
         when(index.addNewStreamInstance(instance, termBufferLength, initialTermId)).thenReturn(streamInstanceId);
         final Subscription subscription = mockSubscription(channel, streamId);
         image = mockImage(source, sessionId, initialTermId, termBufferLength, subscription);
@@ -111,7 +111,7 @@ public class ImageArchivingSessionTest
         final EpochClock epochClock = Mockito.mock(EpochClock.class);
         when(epochClock.time()).thenReturn(42L);
 
-        final ImageArchivingSession session = new ImageArchivingSession(
+        final ArchivingSession session = new ArchivingSession(
             proxy, index, tempFolderForTest, image, epochClock);
         assertEquals(streamInstanceId, session.streamInstanceId());
 
@@ -167,7 +167,7 @@ public class ImageArchivingSessionTest
             archiveDataFileName(session.streamInstanceId(), 0));
         assertTrue(archiveDataFile.exists());
 
-        try (StreamInstanceArchiveFragmentReader reader = new StreamInstanceArchiveFragmentReader(
+        try (ArchiveStreamFragmentReader reader = new ArchiveStreamFragmentReader(
             session.streamInstanceId(), tempFolderForTest))
         {
             final int polled = reader.controlledPoll(

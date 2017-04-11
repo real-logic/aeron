@@ -401,7 +401,7 @@ public class ArchiveAndReplaySystemTest
 
     private void validateArchiveFile(final int messageCount, final int streamInstanceId) throws IOException
     {
-        try (StreamInstanceArchiveFragmentReader archiveDataFileReader = new StreamInstanceArchiveFragmentReader(
+        try (ArchiveStreamFragmentReader archiveDataFileReader = new ArchiveStreamFragmentReader(
             streamInstanceId, archiveFolder))
         {
             fragmentCount = 0;
@@ -436,7 +436,7 @@ public class ArchiveAndReplaySystemTest
         final int initialTermOffset = decoder.initialTermOffset();
 
         IoUtil.unmap(decoder.buffer().byteBuffer());
-        try (StreamInstanceArchiveChunkReader cursor = new StreamInstanceArchiveChunkReader(
+        try (ArchiveStreamChunkReader cursor = new ArchiveStreamChunkReader(
             streamInstanceId,
             archiveFolder,
             initialTermId,

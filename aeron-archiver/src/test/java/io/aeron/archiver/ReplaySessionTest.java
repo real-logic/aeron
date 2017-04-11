@@ -51,14 +51,14 @@ public class ReplaySessionTest
         archiveFolder = makeTempFolder();
         proxy = Mockito.mock(ArchiverProtocolProxy.class);
         final EpochClock epochClock = mock(EpochClock.class);
-        final StreamInstance streamInstance = new StreamInstance("source", 1, "channel", 1);
-        try (StreamInstanceArchiveWriter writer = new StreamInstanceArchiveWriter(
+        final StreamKey streamKey = new StreamKey("source", 1, "channel", 1);
+        try (ArchiveStreamWriter writer = new ArchiveStreamWriter(
             archiveFolder,
             epochClock,
             STREAM_INSTANCE_ID,
             TERM_BUFFER_LENGTH,
             INITIAL_TERM_ID,
-            streamInstance))
+            streamKey))
         {
             when(epochClock.time()).thenReturn(42L);
 
@@ -94,7 +94,7 @@ public class ReplaySessionTest
             when(epochClock.time()).thenReturn(84L);
         }
 
-        try (StreamInstanceArchiveChunkReader chunkReader = new StreamInstanceArchiveChunkReader(
+        try (ArchiveStreamChunkReader chunkReader = new ArchiveStreamChunkReader(
             STREAM_INSTANCE_ID,
             archiveFolder,
             INITIAL_TERM_ID,
@@ -115,7 +115,7 @@ public class ReplaySessionTest
                 1024);
         }
 
-        try (StreamInstanceArchiveFragmentReader reader = new StreamInstanceArchiveFragmentReader(
+        try (ArchiveStreamFragmentReader reader = new ArchiveStreamFragmentReader(
             STREAM_INSTANCE_ID, archiveFolder))
         {
             final int polled = reader.controlledPoll(

@@ -321,14 +321,20 @@ public class CommonContext implements AutoCloseable
     /**
      * Map the CnC file if it exists.
      *
+     * @param logProgress for feedback
      * @return a new mapping for the file if it exists otherwise null;
      */
-    public MappedByteBuffer mapExistingCncFile()
+    public MappedByteBuffer mapExistingCncFile(final Consumer<String> logProgress)
     {
         final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
 
         if (cncFile.exists())
         {
+            if (null != logProgress)
+            {
+                logProgress.accept("INFO: Aeron CnC file " + cncFile + " exists");
+            }
+
             return IoUtil.mapExistingFile(cncFile, CncFileDescriptor.CNC_FILE);
         }
 
@@ -336,22 +342,26 @@ public class CommonContext implements AutoCloseable
     }
 
     /**
-     * Is a media driver active in the current Aeron directory?
+     * Is a media driver active in the given directory?
      *
+     * @param directory to check
      * @param driverTimeoutMs for the driver liveness check.
-     * @param logHandler      for feedback as liveness checked.
+     * @param logProgress for feedback as liveness checked.
      * @return true if a driver is active or false if not.
      */
-    public boolean isDriverActive(final long driverTimeoutMs, final Consumer<String> logHandler)
+    public static boolean isDriverActive(
+        final File directory, final long driverTimeoutMs, final Consumer<String> logProgress)
     {
-        final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
+        final File cncFile = new File(directory, CncFileDescriptor.CNC_FILE);
 
         if (cncFile.exists())
         {
-            final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, CncFileDescriptor.CNC_FILE);
+            logProgress.accept("INFO: Aeron CnC file " + cncFile + " exists");
+
+            final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "CnC file");
             try
             {
-                return isDriverActive(driverTimeoutMs, logHandler, cncByteBuffer);
+                return isDriverActive(driverTimeoutMs, logProgress, cncByteBuffer);
             }
             finally
             {
@@ -367,11 +377,31 @@ public class CommonContext implements AutoCloseable
      *
      * @param driverTimeoutMs for the driver liveness check.
      * @param logHandler      for feedback as liveness checked.
+     * @return true if a driver is active or false if not.
+     */
+    public boolean isDriverActive(final long driverTimeoutMs, final Consumer<String> logHandler)
+    {
+        final MappedByteBuffer cncByteBuffer = mapExistingCncFile(logHandler);
+        try
+        {
+            return isDriverActive(driverTimeoutMs, logHandler, cncByteBuffer);
+        }
+        finally
+        {
+            IoUtil.unmap(cncByteBuffer);
+        }
+    }
+
+    /**
+     * Is a media driver active in the current mapped CnC buffer?
+     *
+     * @param driverTimeoutMs for the driver liveness check.
+     * @param logProgress      for feedback as liveness checked.
      * @param cncByteBuffer   for the existing CnC file.
      * @return true if a driver is active or false if not.
      */
-    public boolean isDriverActive(
-        final long driverTimeoutMs, final Consumer<String> logHandler, final MappedByteBuffer cncByteBuffer)
+    public static boolean isDriverActive(
+        final long driverTimeoutMs, final Consumer<String> logProgress, final MappedByteBuffer cncByteBuffer)
     {
         if (null == cncByteBuffer)
         {
@@ -380,8 +410,6 @@ public class CommonContext implements AutoCloseable
 
         final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
         final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
-
-        logHandler.accept("INFO: Aeron CnC file " + cncFile + " exists");
 
         if (CNC_VERSION != cncVersion)
         {
@@ -396,7 +424,7 @@ public class CommonContext implements AutoCloseable
         final long now = System.currentTimeMillis();
         final long diff = now - timestamp;
 
-        logHandler.accept("INFO: Aeron toDriver consumer heartbeat is " + diff + "ms old");
+        logProgress.accept("INFO: Aeron toDriver consumer heartbeat is " + diff + "ms old");
 
         return diff <= driverTimeoutMs;
     }
@@ -409,7 +437,7 @@ public class CommonContext implements AutoCloseable
      */
     public int saveErrorLog(final PrintStream out)
     {
-        final MappedByteBuffer cncByteBuffer = mapExistingCncFile();
+        final MappedByteBuffer cncByteBuffer = mapExistingCncFile(null);
         try
         {
             return saveErrorLog(out, cncByteBuffer);

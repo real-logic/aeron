@@ -38,7 +38,7 @@ typedef struct aeron_publication_link_stct
     void *publication;
     int64_t client_id;
     int64_t registration_id;
-    size_t cached_client_index;
+    int cached_client_index;
     bool reached_end_of_life;
 }
 aeron_publication_link_t;

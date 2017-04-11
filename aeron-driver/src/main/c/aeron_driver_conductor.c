@@ -76,20 +76,20 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     return 0;
 }
 
-aeron_client_t *aeron_driver_conductor_find_client(aeron_driver_conductor_t *conductor, int64_t client_id)
+int aeron_driver_conductor_find_client(aeron_driver_conductor_t *conductor, int64_t client_id)
 {
-    aeron_client_t *client = NULL;
+    int index = -1;
 
     for (int i = (int)conductor->clients.length - 1; i >= 0; i--)
     {
         if (client_id == conductor->clients.array[i].client_id)
         {
-            client = &conductor->clients.array[i];
+            index = i;
             break;
         }
     }
 
-    return client;
+    return index;
 }
 
 aeron_client_t *aeron_driver_conductor_client_for_publication(
@@ -97,7 +97,7 @@ aeron_client_t *aeron_driver_conductor_client_for_publication(
 {
     aeron_client_t *client = NULL;
 
-    if (publication_link->cached_client_index < conductor->clients.length)
+    if (publication_link->cached_client_index < (int)conductor->clients.length)
     {
         client = &conductor->clients.array[publication_link->cached_client_index];
 
@@ -109,7 +109,14 @@ aeron_client_t *aeron_driver_conductor_client_for_publication(
 
     if (NULL == client)
     {
-        client = aeron_driver_conductor_find_client(conductor, publication_link->client_id);
+        int index;
+
+        if ((index = aeron_driver_conductor_find_client(conductor, publication_link->client_id)) >= 0)
+        {
+            client = &conductor->clients.array[index];
+        }
+
+        publication_link->cached_client_index = index;
     }
 
     return client;
@@ -117,9 +124,10 @@ aeron_client_t *aeron_driver_conductor_client_for_publication(
 
 aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_t *conductor, int64_t client_id)
 {
-    aeron_client_t *client = aeron_driver_conductor_find_client(conductor, client_id);
+    aeron_client_t *client = NULL;
+    int index;
 
-    if (NULL == client)
+    if ((index = aeron_driver_conductor_find_client(conductor, client_id)) == -1)
     {
         if (conductor->clients.length >= conductor->clients.capacity)
         {
@@ -133,12 +141,18 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
             conductor->clients.capacity = new_capacity;
         }
 
-        client = &conductor->clients.array[conductor->clients.length++];
+        index = (int)conductor->clients.length;
+        client = &conductor->clients.array[index];
 
         client->client_id = client_id;
         client->reached_end_of_life = false;
         client->time_of_last_keepalive = conductor->context->nano_clock();
         client->client_liveness_timeout_ns = conductor->context->client_liveness_timeout_ns;
+        conductor->clients.length++;
+    }
+    else
+    {
+        client = &conductor->clients.array[index];
     }
 
     return client;
@@ -151,9 +165,9 @@ for (int last_index = (int)l.length - 1, i = last_index; i >= 0; i--) \
     l.on_time_event(elem, now_ns, now_ms); \
     if (l.has_reached_end_of_life(elem)) \
     { \
+        l.delete(elem); \
         aeron_array_fast_unordered_remove((uint8_t *)l.array, sizeof(t), i, last_index); \
         last_index--; \
-        l.delete(elem); \
     } \
 }
 

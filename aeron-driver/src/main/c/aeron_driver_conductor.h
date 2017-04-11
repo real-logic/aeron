@@ -78,6 +78,8 @@ typedef struct aeron_driver_conductor_stct
         aeron_managed_resource_delete_func_t delete;
     }
     publication_links;
+
+    int64_t *errors_counter;
 }
 aeron_driver_conductor_t;
 

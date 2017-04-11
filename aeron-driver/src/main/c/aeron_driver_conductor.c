@@ -72,6 +72,8 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->clients.length = 0;
     /* TODO: set func callbacks for managed resources */
 
+    conductor->errors_counter = aeron_counter_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_ERRORS);
+
     conductor->context = context;
     return 0;
 }
@@ -226,7 +228,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
                     AERON_ERROR_CODE_MALFORMED_COMMAND,
                     "command too short",
                     "command too short");
-                /* TODO: incr errors count */
+                aeron_counter_increment(conductor->errors_counter, 1);
                 return;
             }
 
@@ -260,7 +262,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
                 AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID,
                 "unknown command type id",
                 "unknown command type id");
-            /* TODO: incr errors count */
+            aeron_counter_increment(conductor->errors_counter, 1);
             break;
     }
 
@@ -268,7 +270,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
     {
         aeron_driver_conductor_on_error(conductor, AERON_ERROR_CODE_GENERIC_ERROR, "", length, correlation_id);
         aeron_distinct_error_log_record(&conductor->error_log, AERON_ERROR_CODE_GENERIC_ERROR, "", "");
-        /* TODO: incr errors count */
+        aeron_counter_increment(conductor->errors_counter, 1);
     }
 }
 

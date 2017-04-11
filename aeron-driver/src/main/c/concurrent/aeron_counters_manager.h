@@ -102,17 +102,25 @@ inline int64_t *aeron_counter_addr(aeron_counters_manager_t *manager, int32_t co
     return (int64_t *)(manager->values + AERON_COUNTER_OFFSET(counter_id));
 }
 
-inline void aeron_counter_set_value(int64_t *addr, int64_t value)
+inline void aeron_counter_set_value(volatile int64_t *addr, int64_t value)
 {
     AERON_PUT_ORDERED(*addr, value);
 }
 
-inline int64_t aeron_counter_get_value(int64_t *addr)
+inline int64_t aeron_counter_get_value(volatile int64_t *addr)
 {
     int64_t value;
 
     AERON_GET_VOLATILE(value, *addr);
     return value;
+}
+
+inline int64_t aeron_counter_increment(volatile int64_t *addr, int64_t value)
+{
+    int64_t result = 0;
+
+    AERON_GET_AND_ADD_INT64(result, *addr, value);
+    return result;
 }
 
 #endif //AERON_AERON_COUNTERS_MANAGER_H

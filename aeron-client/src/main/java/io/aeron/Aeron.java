@@ -224,8 +224,10 @@ public final class Aeron implements AutoCloseable
      *
      * @param channel                 for receiving the messages known to the media layer.
      * @param streamId                within the channel scope.
-     * @param availableImageHandler   called when {@link Image}s become available for consumption.
-     * @param unavailableImageHandler called when {@link Image}s go unavailable for consumption.
+     * @param availableImageHandler   called when {@link Image}s become available for consumption. Null is valid if no
+     *                                action is to be taken.
+     * @param unavailableImageHandler called when {@link Image}s go unavailable for consumption. Null is valid if no
+     *                                action is to be taken.
      * @return the {@link Subscription} for the channel and streamId pair.
      */
     public Subscription addSubscription(

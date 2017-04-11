@@ -39,43 +39,37 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
     }
 
     private final Aeron aeron;
-    private final Subscription serviceRequests;
-    private final Publication archiverNotifications;
-
+    private final Subscription serviceRequestSubscription;
+    private final Publication archiverNotificationPublication;
     private final ArrayList<Session> sessions = new ArrayList<>();
-
-    private final Int2ObjectHashMap<ReplaySession> image2ReplaySession = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<ReplaySession> replaySessionBySessionIdMap = new Int2ObjectHashMap<>();
 
     // TODO: archiving sessions index should be managed by the archive index
-    private final Int2ObjectHashMap<ImageArchivingSession> instance2ArchivingSession = new Int2ObjectHashMap<>();
-
-    private final ObjectHashSet<Subscription> archiveSubscriptions = new ObjectHashSet<>(128);
-
+    private final Int2ObjectHashMap<ImageArchivingSession> archivingSessionByStreamIdMap = new Int2ObjectHashMap<>();
+    private final ObjectHashSet<Subscription> archiveSubscriptionSet = new ObjectHashSet<>(128);
     private final ArchiveIndex archiveIndex;
 
-
     // TODO: arguably this is a good fit for a linked array queue so that we can have minimal footprint
-    private final OneToOneConcurrentArrayQueue<Image> imageNotifications = new OneToOneConcurrentArrayQueue<>(1024);
+    private final OneToOneConcurrentArrayQueue<Image> imageNotificationQueue =
+        new OneToOneConcurrentArrayQueue<>(1024);
     private final AvailableImageHandler availableImageHandler;
     private final File archiveFolder;
     private final EpochClock epochClock;
 
     // NOTE: prevent consumer allocation on each call(shakes fist at JVM)
-    private final Consumer<Image> handleNewImageNotification = this::handleNewImageNotification;
+    private final Consumer<Image> newImageConsumer = this::handleNewImageNotification;
     private final ArchiverProtocolAdapter adapter = new ArchiverProtocolAdapter(this);
     private final ArchiverProtocolProxy proxy;
     private volatile boolean isClosed = false;
 
-    ArchiverConductor(
-        final Aeron aeron,
-        final Archiver.Context ctx)
+    ArchiverConductor(final Aeron aeron, final Archiver.Context ctx)
     {
         this.aeron = aeron;
-        serviceRequests = aeron.addSubscription(
+        serviceRequestSubscription = aeron.addSubscription(
             ctx.serviceRequestChannel(),
             ctx.serviceRequestStreamId());
 
-        archiverNotifications = aeron.addPublication(
+        archiverNotificationPublication = aeron.addPublication(
             ctx.archiverNotificationsChannel(),
             ctx.archiverNotificationsStreamId());
 
@@ -83,18 +77,18 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
         availableImageHandler =
             (image) ->
             {
-                if (!isClosed && imageNotifications.offer(image))
+                if (!isClosed && imageNotificationQueue.offer(image))
                 {
                     return;
                 }
                 // This is required since image available handler is called from the client conductor thread
                 // we can either bridge via a queue or protect access to the sessions list, which seems clumsy.
-                while (!isClosed && !imageNotifications.offer(image))
+                while (!isClosed && !imageNotificationQueue.offer(image))
                 {
                     Thread.yield();
                 }
             };
-        this.proxy = new ArchiverProtocolProxy(ctx.idleStrategy(), archiverNotifications);
+        this.proxy = new ArchiverProtocolProxy(ctx.idleStrategy(), archiverNotificationPublication);
         this.epochClock = ctx.epochClock();
 
         archiveIndex = new ArchiveIndex(archiveFolder);
@@ -110,8 +104,8 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
         int workDone = 0;
 
         // TODO: control tasks balance? shard/distribute tasks across threads?
-        workDone += imageNotifications.drain(handleNewImageNotification);
-        workDone += serviceRequests.poll(adapter, 16);
+        workDone += imageNotificationQueue.drain(newImageConsumer);
+        workDone += serviceRequestSubscription.poll(adapter, 16);
         workDone += doSessionsWork();
 
         return workDone;
@@ -136,25 +130,25 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
             System.err.println("ERROR: expected empty sessions");
         }
 
-        if (!image2ReplaySession.isEmpty())
+        if (!replaySessionBySessionIdMap.isEmpty())
         {
-            System.err.println("ERROR: expected empty image2ReplaySession");
+            System.err.println("ERROR: expected empty replaySessionBySessionIdMap");
         }
 
-        if (!instance2ArchivingSession.isEmpty())
+        if (!archivingSessionByStreamIdMap.isEmpty())
         {
-            System.err.println("ERROR: expected empty instance2ArchivingSession");
+            System.err.println("ERROR: expected empty archivingSessionByStreamIdMap");
         }
 
-        for (final Subscription subscription : archiveSubscriptions)
+        for (final Subscription subscription : archiveSubscriptionSet)
         {
             subscription.close();
         }
-        archiveSubscriptions.clear();
-        imageNotifications.clear();
+        archiveSubscriptionSet.clear();
 
-        archiverNotifications.close();
-        serviceRequests.close();
+        imageNotificationQueue.clear();
+        archiverNotificationPublication.close();
+        serviceRequestSubscription.close();
         CloseHelper.quietClose(archiveIndex);
     }
 
@@ -163,17 +157,17 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
         final ImageArchivingSession session = new ImageArchivingSession(
             proxy, archiveIndex, archiveFolder, image, this.epochClock);
         sessions.add(session);
-        instance2ArchivingSession.put(session.streamInstanceId(), session);
+        archivingSessionByStreamIdMap.put(session.streamInstanceId(), session);
     }
 
     public void onArchiveStop(final String channel, final int streamId)
     {
-        for (final Subscription subscription : archiveSubscriptions)
+        for (final Subscription subscription : archiveSubscriptionSet)
         {
             if (subscription.streamId() == streamId && subscription.channel().equals(channel))
             {
                 subscription.close();
-                archiveSubscriptions.remove(subscription);
+                archiveSubscriptionSet.remove(subscription);
                 break;
                 // image archiving sessions will sort themselves out naturally
             }
@@ -182,7 +176,7 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
 
     public void onArchiveStart(final String channel, final int streamId)
     {
-        for (final Subscription subscription : archiveSubscriptions)
+        for (final Subscription subscription : archiveSubscriptionSet)
         {
             if (subscription.streamId() == streamId && subscription.channel().equals(channel))
             {
@@ -192,13 +186,10 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
         }
 
         final Subscription archiveSubscription = aeron.addSubscription(
-            channel,
-            streamId,
-            availableImageHandler,
-            (image) -> {});
+            channel, streamId, availableImageHandler, (image) -> {});
 
         // as subscription images are created they will get picked up and archived
-        archiveSubscriptions.add(archiveSubscription);
+        archiveSubscriptionSet.add(archiveSubscription);
     }
 
     public void onListStreamInstances(final int from, final int to, final String replyChannel, final int replyStreamId)
@@ -211,7 +202,7 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
 
     public void onReplayStop(final int sessionId)
     {
-        final ReplaySession session = image2ReplaySession.get(sessionId);
+        final ReplaySession session = replaySessionBySessionIdMap.get(sessionId);
         if (session == null)
         {
             throw new IllegalStateException("Trying to abort an unknown replay session:" + sessionId);
@@ -226,14 +217,18 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
         final String replayChannel,
         final int controlStreamId,
         final String controlChannel,
-        final int streamInstanceId, final int termId, final int termOffset, final long length)
+        final int streamInstanceId,
+        final int termId,
+        final int termOffset,
+        final long length)
     {
-        if (image2ReplaySession.containsKey(sessionId))
+        if (replaySessionBySessionIdMap.containsKey(sessionId))
         {
             throw new IllegalStateException("Trying to request a second replay from same session:" + sessionId);
         }
+
         // TODO: need to control construction of publications to handle errors
-        final Image image = serviceRequests.imageBySessionId(sessionId);
+        final Image image = serviceRequestSubscription.imageBySessionId(sessionId);
         final ExclusivePublication replayPublication = aeron.addExclusivePublication(replayChannel, replayStreamId);
         final ExclusivePublication controlPublication = aeron.addExclusivePublication(controlChannel, controlStreamId);
         final ReplaySession replaySession = new ReplaySession(
@@ -247,7 +242,7 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
             archiveFolder,
             proxy);
 
-        image2ReplaySession.put(sessionId, replaySession);
+        replaySessionBySessionIdMap.put(sessionId, replaySession);
         sessions.add(replaySession);
     }
 
@@ -272,17 +267,17 @@ class ArchiverConductor implements Agent, ArchiverProtocolListener
 
     ImageArchivingSession getArchivingSession(final int streamInstanceId)
     {
-        return instance2ArchivingSession.get(streamInstanceId);
+        return archivingSessionByStreamIdMap.get(streamInstanceId);
     }
 
     void removeArchivingSession(final int streamInstanceId)
     {
-        instance2ArchivingSession.remove(streamInstanceId);
+        archivingSessionByStreamIdMap.remove(streamInstanceId);
     }
 
     void removeReplaySession(final int sessionId)
     {
-        image2ReplaySession.remove(sessionId);
+        replaySessionBySessionIdMap.remove(sessionId);
     }
 
     boolean readArchiveDescriptor(final int streamInstanceId, final ByteBuffer byteBuffer) throws IOException

@@ -163,7 +163,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
                 else if (pending.shouldElicitSetupMessage())
                 {
                     pending.channelEndpoint().sendSetupElicitingStatusMessage(
-                            pending.controlAddress(), pending.sessionId(), pending.streamId());
+                        pending.controlAddress(), pending.sessionId(), pending.streamId());
                     pending.timeOfStatusMessage(nowNs);
                 }
             }

@@ -132,11 +132,11 @@ public class DriverConductor implements Agent
 
     public void onClose()
     {
+        sendChannelEndpointByChannelMap.values().forEach(SendChannelEndpoint::close);
+        receiveChannelEndpointByChannelMap.values().forEach(ReceiveChannelEndpoint::close);
         networkPublications.forEach(NetworkPublication::close);
         publicationImages.forEach(PublicationImage::close);
         ipcPublications.forEach(IpcPublication::close);
-        sendChannelEndpointByChannelMap.values().forEach(SendChannelEndpoint::close);
-        receiveChannelEndpointByChannelMap.values().forEach(ReceiveChannelEndpoint::close);
     }
 
     public String roleName()
@@ -702,11 +702,6 @@ public class DriverConductor implements Agent
                 channelEndpoint.closeStatusIndicator();
                 receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
                 receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
-
-                while (!channelEndpoint.isClosed())
-                {
-                    Thread.yield();
-                }
             }
         }
 
@@ -1240,7 +1235,7 @@ public class DriverConductor implements Agent
             {
                 if (count < 3)
                 {
-                    throw new IllegalStateException("Params must be used as a set: " +
+                    throw new IllegalStateException("Params must be used as a complete set: " +
                         INITIAL_TERM_ID_PARAM_NAME + " " + TERM_ID_PARAM_NAME + " " + TERM_OFFSET_PARAM_NAME);
                 }
 
@@ -1252,7 +1247,7 @@ public class DriverConductor implements Agent
                 {
                     throw new IllegalStateException(
                         TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " > " +
-                            TERM_LENGTH_PARAM_NAME + "=" + params.termLength);
+                        TERM_LENGTH_PARAM_NAME + "=" + params.termLength);
                 }
 
                 params.isReplay = true;

@@ -54,7 +54,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final Int2IntCounterMap refCountByStreamIdMap = new Int2IntCounterMap(0);
 
     private final long receiverId;
-    private volatile boolean isClosed = false;
+    private boolean isClosed = false;
 
     public ReceiveChannelEndpoint(
         final UdpChannel udpChannel,
@@ -140,11 +140,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         isClosed = true;
     }
 
-    public boolean isClosed()
-    {
-        return isClosed;
-    }
-
     public void openChannel()
     {
         openDatagramChannel(statusIndicator);
@@ -190,7 +185,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
     public InetSocketAddress explicitControlAddress()
     {
-        return (udpChannel.hasExplicitControl()) ? udpChannel.localControl() : null;
+        return udpChannel.hasExplicitControl() ? udpChannel.localControl() : null;
     }
 
     public int onDataPacket(

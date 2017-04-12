@@ -90,7 +90,7 @@ public class ExclusiveBufferClaim
     }
 
     /**
-     * Get the value of the flags field. The lower 8 bits are valid.
+     * Get the value of the flags field.
      *
      * @return the value of the header flags field.
      * @see DataHeaderFlyweight
@@ -101,7 +101,7 @@ public class ExclusiveBufferClaim
     }
 
     /**
-     * Set the value of the header flags field. The lower 8 bits are valid.
+     * Set the value of the header flags field.
      *
      * @param flags value to be set in the header.
      * @return this for a fluent API.

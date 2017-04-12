@@ -235,7 +235,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             if (length < sizeof(aeron_publication_command_t) ||
                 length < (sizeof(aeron_publication_command_t) + command->channel_length))
             {
-                goto command_too_short;
+                goto malformed_command;
             }
 
             correlation_id = command->correlated.correlation_id;
@@ -257,7 +257,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 
             if (length < sizeof(aeron_remove_command_t))
             {
-                goto command_too_short;
+                goto malformed_command;
             }
 
             correlation_id = command->correlated.correlation_id;
@@ -273,7 +273,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             if (length < sizeof(aeron_subscription_command_t) ||
                 length < (sizeof(aeron_subscription_command_t) + command->channel_length))
             {
-                goto command_too_short;
+                goto malformed_command;
             }
 
             correlation_id = command->correlated.correlation_id;
@@ -299,7 +299,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 
             if (length < sizeof(aeron_remove_command_t))
             {
-                goto command_too_short;
+                goto malformed_command;
             }
 
             correlation_id = command->correlated.correlation_id;
@@ -314,7 +314,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 
             if (length < sizeof(aeron_correlated_command_t))
             {
-                goto command_too_short;
+                goto malformed_command;
             }
 
             result = aeron_driver_conductor_on_client_keepalive(conductor, command->client_id);
@@ -336,7 +336,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 
     return;
 
-    command_too_short:
+    malformed_command:
         AERON_FORMAT_BUFFER(conductor->stack_buffer, "command=%d too short: length=%lu", msg_type_id, length);
         aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_MALFORMED_COMMAND, "command too short");
         return;

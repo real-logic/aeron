@@ -22,6 +22,7 @@
 #include "concurrent/aeron_broadcast_transmitter.h"
 #include "concurrent/aeron_distinct_error_log.h"
 #include "concurrent/aeron_counters_manager.h"
+#include "command/aeron_control_protocol.h"
 #include "aeron_system_counters.h"
 
 typedef struct aeron_client_stct
@@ -79,9 +80,16 @@ typedef struct aeron_driver_conductor_stct
     }
     publication_links;
 
+    char stack_buffer[AERON_MAX_PATH];
+    int stack_error_code;
+    char *stack_error_desc;
+
     int64_t *errors_counter;
+    int64_t *client_keep_alives_counter;
 }
 aeron_driver_conductor_t;
+
+#define AERON_FORMAT_BUFFER(buffer, format, ...) snprintf(buffer, sizeof(buffer) - 1, format, __VA_ARGS__)
 
 int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *context);
 
@@ -95,5 +103,41 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 
 int aeron_driver_conductor_do_work(void *clientd);
 void aeron_driver_conductor_on_close(void *clientd);
+
+int aeron_driver_conductor_on_add_ipc_publication(
+    aeron_driver_conductor_t *conductor,
+    aeron_publication_command_t *command,
+    bool isExclusive);
+
+int aeron_driver_conductor_on_add_network_publication(
+    aeron_driver_conductor_t *conductor,
+    aeron_publication_command_t *command,
+    bool isExclusive);
+
+int aeron_driver_conductor_on_remove_publication(
+    aeron_driver_conductor_t *conductor,
+    int64_t registration_id,
+    int64_t correlation_id);
+
+int aeron_driver_conductor_on_add_ipc_subscription(
+    aeron_driver_conductor_t *conductor,
+    aeron_subscription_command_t *command);
+
+int aeron_driver_conductor_on_add_spy_subscription(
+    aeron_driver_conductor_t *conductor,
+    aeron_subscription_command_t *command);
+
+int aeron_driver_conductor_on_add_network_subscription(
+    aeron_driver_conductor_t *conductor,
+    aeron_subscription_command_t *command);
+
+int aeron_driver_conductor_on_remove_subscription(
+    aeron_driver_conductor_t *conductor,
+    int64_t registration_id,
+    int64_t correlation_id);
+
+int aeron_driver_conductor_on_client_keepalive(
+    aeron_driver_conductor_t *conductor,
+    int64_t client_id);
 
 #endif //AERON_AERON_DRIVER_CONDUCTOR_H

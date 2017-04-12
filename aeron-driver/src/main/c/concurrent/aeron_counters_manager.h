@@ -123,4 +123,12 @@ inline int64_t aeron_counter_increment(volatile int64_t *addr, int64_t value)
     return result;
 }
 
+inline int64_t aeron_counter_add_ordered(volatile int64_t *addr, int64_t value)
+{
+    int64_t current = *addr;
+
+    AERON_PUT_ORDERED(*addr, (current + value));
+    return current;
+}
+
 #endif //AERON_AERON_COUNTERS_MANAGER_H

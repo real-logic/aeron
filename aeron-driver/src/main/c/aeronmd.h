@@ -36,6 +36,9 @@ typedef struct aeron_driver_stct aeron_driver_t;
 #define AERON_ERROR_BUFFER_LENGTH_ENV_VAR "AERON_ERROR_BUFFER_LENGTH"
 #define AERON_CLIENT_LIVENESS_TIMEOUT_ENV_VAR "AERON_CLIENT_LIVENESS_TIMEOUT"
 
+#define AERON_IPC_CHANNEL "aeron:ipc"
+#define AERON_SPY_PREFIX "aeron-spy:"
+
 /* load settings from Java properties file (https://en.wikipedia.org/wiki/.properties) and set env vars */
 int aeron_driver_load_properties_file(const char *filename);
 

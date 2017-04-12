@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
 #include "util/aeron_arrayutil.h"
-#include "command/aeron_control_protocol.h"
 #include "aeron_driver_conductor.h"
 
 static void aeron_error_log_resource_linger(uint8_t *resource)
@@ -73,6 +73,8 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     /* TODO: set func callbacks for managed resources */
 
     conductor->errors_counter = aeron_counter_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_ERRORS);
+    conductor->client_keep_alives_counter =
+        aeron_counter_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_CLIENT_KEEP_ALIVES);
 
     conductor->context = context;
     return 0;
@@ -208,70 +210,136 @@ void aeron_driver_conductor_on_error(
         conductor, AERON_RESPONSE_ON_ERROR, response, sizeof(aeron_error_response_t) + length);
 }
 
+void aeron_driver_conductor_error(aeron_driver_conductor_t *conductor, int error_code, const char *description)
+{
+    aeron_distinct_error_log_record(&conductor->error_log, error_code, description, conductor->stack_buffer);
+    aeron_counter_increment(conductor->errors_counter, 1);
+}
+
 void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message, size_t length, void *clientd)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
     int64_t correlation_id = 0;
     int result = 0;
 
+    conductor->stack_buffer[0] = '\0';
+    conductor->stack_error_code = AERON_ERROR_CODE_GENERIC_ERROR;
+    conductor->stack_error_desc = "generic error";
+
     switch (msg_type_id)
     {
         case AERON_COMMAND_ADD_PUBLICATION:
         {
-            aeron_publication_command_t *cmd = (aeron_publication_command_t *)message;
+            aeron_publication_command_t *command = (aeron_publication_command_t *)message;
 
             if (length < sizeof(aeron_publication_command_t) ||
-                length < (sizeof(aeron_publication_command_t) + cmd->channel_length))
+                length < (sizeof(aeron_publication_command_t) + command->channel_length))
             {
-                aeron_distinct_error_log_record(
-                    &conductor->error_log,
-                    AERON_ERROR_CODE_MALFORMED_COMMAND,
-                    "command too short",
-                    "command too short");
-                aeron_counter_increment(conductor->errors_counter, 1);
-                return;
+                goto command_too_short;
             }
 
-            correlation_id = cmd->correlated.correlation_id;
+            correlation_id = command->correlated.correlation_id;
 
-            /* TODO: handle */
+            if (strncmp((const char *)command->channel_data, AERON_IPC_CHANNEL, strlen(AERON_IPC_CHANNEL)) == 0)
+            {
+                result = aeron_driver_conductor_on_add_ipc_publication(conductor, command, false);
+            }
+            else
+            {
+                result = aeron_driver_conductor_on_add_network_publication(conductor, command, false);
+            }
             break;
         }
 
         case AERON_COMMAND_REMOVE_PUBLICATION:
         {
-            aeron_remove_command_t *cmd = (aeron_remove_command_t *)message;
+            aeron_remove_command_t *command = (aeron_remove_command_t *)message;
 
-            correlation_id = cmd->correlated.correlation_id;
+            if (length < sizeof(aeron_remove_command_t))
+            {
+                goto command_too_short;
+            }
 
-            /* TODO: handle */
+            correlation_id = command->correlated.correlation_id;
+
+            result = aeron_driver_conductor_on_remove_publication(conductor, command->registration_id, correlation_id);
+            break;
+        }
+
+        case AERON_COMMAND_ADD_SUBSCRIPTION:
+        {
+            aeron_subscription_command_t *command = (aeron_subscription_command_t *)message;
+
+            if (length < sizeof(aeron_subscription_command_t) ||
+                length < (sizeof(aeron_subscription_command_t) + command->channel_length))
+            {
+                goto command_too_short;
+            }
+
+            correlation_id = command->correlated.correlation_id;
+
+            if (strncmp((const char *)command->channel_data, AERON_IPC_CHANNEL, strlen(AERON_IPC_CHANNEL)) == 0)
+            {
+                result = aeron_driver_conductor_on_add_ipc_subscription(conductor, command);
+            }
+            else if (strncmp((const char *)command->channel_data, AERON_SPY_PREFIX, strlen(AERON_SPY_PREFIX)) == 0)
+            {
+                result = aeron_driver_conductor_on_add_spy_subscription(conductor, command);
+            }
+            else
+            {
+                result = aeron_driver_conductor_on_add_network_subscription(conductor, command);
+            }
+            break;
+        }
+
+        case AERON_COMMAND_REMOVE_SUBSCRIPTION:
+        {
+            aeron_remove_command_t *command = (aeron_remove_command_t *)message;
+
+            if (length < sizeof(aeron_remove_command_t))
+            {
+                goto command_too_short;
+            }
+
+            correlation_id = command->correlated.correlation_id;
+
+            result = aeron_driver_conductor_on_remove_subscription(conductor, command->registration_id, correlation_id);
             break;
         }
 
         case AERON_COMMAND_CLIENT_KEEPALIVE:
         {
-            aeron_correlated_command_t *cmd = (aeron_correlated_command_t *)message;
+            aeron_correlated_command_t *command = (aeron_correlated_command_t *)message;
 
-            /* TODO: handle */
+            if (length < sizeof(aeron_correlated_command_t))
+            {
+                goto command_too_short;
+            }
+
+            result = aeron_driver_conductor_on_client_keepalive(conductor, command->client_id);
             break;
         }
 
         default:
-            aeron_distinct_error_log_record(
-                &conductor->error_log,
-                AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID,
-                "unknown command type id",
-                "unknown command type id");
-            aeron_counter_increment(conductor->errors_counter, 1);
+            AERON_FORMAT_BUFFER(conductor->stack_buffer, "command=%d unknown", msg_type_id);
+            aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID, "unknown command type id");
             break;
     }
 
     if (result < 0)
     {
-        aeron_driver_conductor_on_error(conductor, AERON_ERROR_CODE_GENERIC_ERROR, "", length, correlation_id);
-        aeron_distinct_error_log_record(&conductor->error_log, AERON_ERROR_CODE_GENERIC_ERROR, "", "");
-        aeron_counter_increment(conductor->errors_counter, 1);
+        aeron_driver_conductor_on_error(
+            conductor, conductor->stack_error_code, conductor->stack_buffer, strlen(conductor->stack_buffer), correlation_id);
+        aeron_driver_conductor_error(conductor, conductor->stack_error_code, conductor->stack_error_desc);
     }
+
+    return;
+
+    command_too_short:
+        AERON_FORMAT_BUFFER(conductor->stack_buffer, "command=%d too short: length=%lu", msg_type_id, length);
+        aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_MALFORMED_COMMAND, "command too short");
+        return;
 }
 
 int aeron_driver_conductor_do_work(void *clientd)
@@ -289,4 +357,89 @@ void aeron_driver_conductor_on_close(void *clientd)
 {
 
 
+}
+
+#define AERON_ERROR(c, code, desc, format, ...) \
+do \
+{ \
+    snprintf(c->stack_buffer, sizeof(c->stack_buffer) - 1, format, __VA_ARGS__); \
+    c->stack_error_code = code; \
+    c->stack_error_desc = desc; \
+} while (0)
+
+int aeron_driver_conductor_on_add_ipc_publication(
+    aeron_driver_conductor_t *conductor,
+    aeron_publication_command_t *command,
+    bool isExclusive)
+{
+    AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "IPC publications not currently supported");
+    return -1;
+}
+
+int aeron_driver_conductor_on_add_network_publication(
+    aeron_driver_conductor_t *conductor,
+    aeron_publication_command_t *command,
+    bool isExclusive)
+{
+    AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "network publications not currently supported");
+    return -1;
+}
+
+int aeron_driver_conductor_on_remove_publication(
+    aeron_driver_conductor_t *conductor,
+    int64_t registration_id,
+    int64_t correlation_id)
+{
+    AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "remove publications");
+    return -1;
+}
+
+int aeron_driver_conductor_on_add_ipc_subscription(
+    aeron_driver_conductor_t *conductor,
+    aeron_subscription_command_t *command)
+{
+    AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "IPC subscriptions not currently supported");
+    return -1;
+}
+
+int aeron_driver_conductor_on_add_spy_subscription(
+    aeron_driver_conductor_t *conductor,
+    aeron_subscription_command_t *command)
+{
+    AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "spy subscriptions not currently supported");
+    return -1;
+}
+
+int aeron_driver_conductor_on_add_network_subscription(
+    aeron_driver_conductor_t *conductor,
+    aeron_subscription_command_t *command)
+{
+    AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "network subscriptions not currently supported");
+    return -1;
+}
+
+int aeron_driver_conductor_on_remove_subscription(
+    aeron_driver_conductor_t *conductor,
+    int64_t registration_id,
+    int64_t correlation_id)
+{
+    AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "remove subscriptions not currently supported");
+    return -1;
+}
+
+int aeron_driver_conductor_on_client_keepalive(
+    aeron_driver_conductor_t *conductor,
+    int64_t client_id)
+{
+    int index;
+
+    aeron_counter_add_ordered(conductor->client_keep_alives_counter, 1);
+
+    if ((index = aeron_driver_conductor_find_client(conductor, client_id)) >= 0)
+    {
+        aeron_client_t *client = &conductor->clients.array[index];
+
+        client->time_of_last_keepalive = conductor->context->nano_clock();
+    }
+    return 0;
 }

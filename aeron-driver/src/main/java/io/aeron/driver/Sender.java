@@ -76,6 +76,11 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
         this.dutyCycleRatio = Configuration.sendToStatusMessagePollRatio();
     }
 
+    public void onClose()
+    {
+        controlTransportPoller.close();
+    }
+
     public int doWork()
     {
         final int workCount = commandQueue.drain(this);

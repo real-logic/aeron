@@ -51,6 +51,11 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         clock = ctx.nanoClock();
     }
 
+    public void onClose()
+    {
+        dataTransportPoller.close();
+    }
+
     public String roleName()
     {
         return "receiver";

@@ -132,8 +132,6 @@ public class DriverConductor implements Agent
 
     public void onClose()
     {
-        sendChannelEndpointByChannelMap.values().forEach(SendChannelEndpoint::close);
-        receiveChannelEndpointByChannelMap.values().forEach(ReceiveChannelEndpoint::close);
         networkPublications.forEach(NetworkPublication::close);
         publicationImages.forEach(PublicationImage::close);
         ipcPublications.forEach(IpcPublication::close);

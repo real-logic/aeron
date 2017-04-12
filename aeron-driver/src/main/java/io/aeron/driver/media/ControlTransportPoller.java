@@ -49,13 +49,21 @@ public class ControlTransportPoller extends UdpTransportPoller
 
     public ControlTransportPoller()
     {
-        byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(Configuration.MTU_LENGTH,
-            CACHE_LINE_LENGTH * 2);
-
+        byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(Configuration.MTU_LENGTH, CACHE_LINE_LENGTH * 2);
         unsafeBuffer = new UnsafeBuffer(byteBuffer);
         nakMessage = new NakFlyweight(unsafeBuffer);
         statusMessage = new StatusMessageFlyweight(unsafeBuffer);
         rttMeasurement = new RttMeasurementFlyweight(unsafeBuffer);
+    }
+
+    public void close()
+    {
+        for (final SendChannelEndpoint channelEndpoint : transports)
+        {
+            channelEndpoint.close();
+        }
+
+        super.close();
     }
 
     public int pollTransports()

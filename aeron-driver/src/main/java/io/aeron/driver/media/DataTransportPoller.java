@@ -18,7 +18,6 @@ package io.aeron.driver.media;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.SetupFlyweight;
-import org.agrona.BufferUtil;
 import org.agrona.LangUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -49,11 +48,21 @@ public class DataTransportPoller extends UdpTransportPoller
 
     public DataTransportPoller()
     {
-        byteBuffer = BufferUtil.allocateDirectAligned(MAX_UDP_PACKET, CACHE_LINE_LENGTH * 2);
+        byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(MAX_UDP_PACKET, CACHE_LINE_LENGTH * 2);
         unsafeBuffer = new UnsafeBuffer(byteBuffer);
         dataMessage = new DataHeaderFlyweight(unsafeBuffer);
         setupMessage = new SetupFlyweight(unsafeBuffer);
         rttMeasurement = new RttMeasurementFlyweight(unsafeBuffer);
+    }
+
+    public void close()
+    {
+        for (final ReceiveChannelEndpoint channelEndpoint : transports)
+        {
+            channelEndpoint.close();
+        }
+
+        super.close();
     }
 
     public int pollTransports()

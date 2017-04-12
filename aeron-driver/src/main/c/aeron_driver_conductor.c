@@ -188,7 +188,7 @@ void aeron_driver_conductor_client_transmit(
     const void *msg,
     size_t length)
 {
-    aeron_broadcast_transmitter_transmit(&conductor->to_clients, AERON_RESPONSE_ON_ERROR, msg, length);
+    aeron_broadcast_transmitter_transmit(&conductor->to_clients, msg_type_id, msg, length);
 }
 
 void aeron_driver_conductor_on_error(

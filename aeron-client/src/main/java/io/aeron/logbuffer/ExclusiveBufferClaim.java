@@ -95,9 +95,9 @@ public class ExclusiveBufferClaim
      * @return the value of the header flags field.
      * @see DataHeaderFlyweight
      */
-    public short flags()
+    public byte flags()
     {
-        return (short)(buffer.getByte(FLAGS_FIELD_OFFSET) & 0xFF);
+        return buffer.getByte(FLAGS_FIELD_OFFSET);
     }
 
     /**
@@ -107,9 +107,9 @@ public class ExclusiveBufferClaim
      * @return this for a fluent API.
      * @see DataHeaderFlyweight
      */
-    public ExclusiveBufferClaim flags(final short flags)
+    public ExclusiveBufferClaim flags(final byte flags)
     {
-        buffer.putByte(FLAGS_FIELD_OFFSET, (byte)flags);
+        buffer.putByte(FLAGS_FIELD_OFFSET, flags);
 
         return this;
     }

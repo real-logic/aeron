@@ -150,6 +150,11 @@ MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, off_
         throw IOException(std::string("Failed to open existing file: ") + filename, SOURCEINFO);
     }
 
+    OnScopeExit tidy ([&]()
+    {
+        close(fd.handle);
+    });
+
     return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, length));
 }
 #endif

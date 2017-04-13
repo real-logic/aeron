@@ -571,7 +571,6 @@ project(':aeron-archiver') {
 
     dependencies {
         compile project(':aeron-client'), project(':aeron-driver'), project(':aeron-archiver-codecs')
-        compile "uk.co.real-logic:sbe-tool:${sbeVersion}"
     }
 
     shadowJar {

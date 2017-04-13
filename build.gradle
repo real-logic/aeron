@@ -538,7 +538,7 @@ project(':aeron-archiver-codecs') {
 
     dependencies {
         compile "org.agrona:agrona:${agronaVersion}"
-        compile "uk.co.real-logic:sbe-all:${sbeVersion}"
+        compile "uk.co.real-logic:sbe-tool:${sbeVersion}"
         testCompile sourceSets.generated.output
     }
 

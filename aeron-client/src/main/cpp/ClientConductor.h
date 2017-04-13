@@ -94,6 +94,7 @@ public:
     std::int64_t addPublication(const std::string& channel, std::int32_t streamId);
     std::shared_ptr<Publication> findPublication(std::int64_t registrationId);
     void releasePublication(std::int64_t registrationId);
+    void releaseExclusivePublication(std::int64_t registrationId);
 
     std::int64_t addSubscription(
         const std::string& channel,
@@ -305,6 +306,15 @@ private:
         if (!m_driverActive)
         {
             throw DriverTimeoutException("Driver is inactive", SOURCEINFO);
+        }
+    }
+
+    inline void verifyDriverIsActiveViaErrorHandler()
+    {
+        if (!m_driverActive)
+        {
+            DriverTimeoutException exception("Driver is inactive", SOURCEINFO);
+            m_errorHandler(exception);
         }
     }
 };

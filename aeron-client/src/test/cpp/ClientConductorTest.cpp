@@ -404,10 +404,10 @@ TEST_F(ClientConductorTest, shouldExceptionWhenReleasePublicationAfterDriverInac
     doWorkUntilDriverTimeout();
     EXPECT_TRUE(called);
 
-    ASSERT_THROW(
+    ASSERT_NO_THROW(
     {
         m_conductor.releasePublication(100);
-    }, util::DriverTimeoutException);
+    });
 }
 
 TEST_F(ClientConductorTest, shouldExceptionWhenAddSubscriptionAfterDriverInactive)
@@ -432,10 +432,10 @@ TEST_F(ClientConductorTest, shouldExceptionWhenReleaseSubscriptionAfterDriverIna
     doWorkUntilDriverTimeout();
     EXPECT_TRUE(called);
 
-    ASSERT_THROW(
+    ASSERT_NO_THROW(
     {
         m_conductor.releaseSubscription(100, nullptr, 0);
-    }, util::DriverTimeoutException);
+    });
 }
 
 TEST_F(ClientConductorTest, shouldCallOnNewPubAfterLogBuffersCreated)

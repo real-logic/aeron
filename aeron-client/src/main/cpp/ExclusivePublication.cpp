@@ -64,7 +64,7 @@ ExclusivePublication::ExclusivePublication(
 
 ExclusivePublication::~ExclusivePublication()
 {
-    m_conductor.releasePublication(m_registrationId);
+    m_conductor.releaseExclusivePublication(m_registrationId);
 }
 
 bool ExclusivePublication::isPublicationConnected(std::int64_t timeOfLastStatusMessage) const

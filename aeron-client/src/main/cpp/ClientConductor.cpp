@@ -116,7 +116,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
 
 void ClientConductor::releasePublication(std::int64_t registrationId)
 {
-    verifyDriverIsActive();
+    verifyDriverIsActiveViaErrorHandler();
 
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
@@ -131,6 +131,12 @@ void ClientConductor::releasePublication(std::int64_t registrationId)
         m_driverProxy.removePublication(registrationId);
         m_publications.erase(it);
     }
+}
+
+void ClientConductor::releaseExclusivePublication(std::int64_t registrationId)
+{
+    verifyDriverIsActiveViaErrorHandler();
+
 }
 
 std::int64_t ClientConductor::addSubscription(
@@ -193,7 +199,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
 
 void ClientConductor::releaseSubscription(std::int64_t registrationId, Image *images, int imagesLength)
 {
-    verifyDriverIsActive();
+    verifyDriverIsActiveViaErrorHandler();
 
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 

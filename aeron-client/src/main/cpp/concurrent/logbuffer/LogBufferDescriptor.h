@@ -249,6 +249,12 @@ inline static std::int32_t termOffset(const std::int64_t rawTail, const std::int
     return static_cast<std::int32_t>(std::min(tail, termLength));
 }
 
+inline static std::int64_t rawTailVolatile(AtomicBuffer& logMetaDataBuffer)
+{
+    const std::int32_t partitionIndex = activePartitionIndex(logMetaDataBuffer);
+    return logMetaDataBuffer.getInt64Volatile(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)));
+}
+
 }
 
 }}}

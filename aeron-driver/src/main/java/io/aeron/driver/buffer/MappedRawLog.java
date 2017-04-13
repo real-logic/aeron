@@ -16,7 +16,6 @@
 package io.aeron.driver.buffer;
 
 import org.agrona.IoUtil;
-import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 
@@ -115,16 +114,6 @@ class MappedRawLog implements RawLog
         for (final MappedByteBuffer buffer : mappedBuffers)
         {
             IoUtil.unmap(buffer);
-        }
-
-        //noinspection EmptyTryBlock
-        try (FileChannel ignore = FileChannel.open(logFile.toPath(), WRITE, TRUNCATE_EXISTING))
-        {
-            // Truncate file to free resource in case of error
-        }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
         }
 
         if (!logFile.delete())

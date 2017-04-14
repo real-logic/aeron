@@ -25,6 +25,7 @@ static const std::string CHANNEL = "aeron:udp?endpoint=localhost:40123";
 static const std::int32_t STREAM_ID = 10;
 static const std::int32_t SESSION_ID = 200;
 static const std::int32_t PUBLICATION_LIMIT_COUNTER_ID = 0;
+static const std::int32_t PUBLICATION_LIMIT_COUNTER_ID_2 = 1;
 static const std::int32_t TERM_LENGTH = LogBufferDescriptor::TERM_MIN_LENGTH;
 static const std::int64_t LOG_FILE_LENGTH = LogBufferDescriptor::computeLogLength(TERM_LENGTH);
 static const std::string SOURCE_IDENTITY = "127.0.0.1:43567";
@@ -33,7 +34,8 @@ class ClientConductorTest : public testing::Test, public ClientConductorFixture
 {
 public:
     ClientConductorTest() :
-        m_logFileName(makeTempFileName())
+        m_logFileName(makeTempFileName()),
+        m_logFileName2(makeTempFileName())
     {
     }
 
@@ -41,17 +43,20 @@ public:
     {
         m_toDriver.fill(0);
         m_toClients.fill(0);
-        MemoryMappedFile::createNew(m_logFileName.c_str(), 0, LOG_FILE_LENGTH);
+        MemoryMappedFile::createNew(m_logFileName.c_str(), 0, static_cast<size_t>(LOG_FILE_LENGTH));
+        MemoryMappedFile::createNew(m_logFileName2.c_str(), 0, static_cast<size_t>(LOG_FILE_LENGTH));
         m_manyToOneRingBuffer.consumerHeartbeatTime(m_currentTime);
     }
 
     virtual void TearDown()
     {
         ::unlink(m_logFileName.c_str());
+        ::unlink(m_logFileName2.c_str());
     }
 
 protected:
     std::string m_logFileName;
+    std::string m_logFileName2;
 };
 
 TEST_F(ClientConductorTest, shouldReturnNullForUnknownPublication)
@@ -193,6 +198,147 @@ TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAdd
     {
         std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
     }, util::RegistrationException);
+}
+
+TEST_F(ClientConductorTest, shouldReturnNullForUnknownExclusivePublication)
+{
+    std::shared_ptr<ExclusivePublication> pub = m_conductor.findExclusivePublication(100);
+
+    EXPECT_TRUE(pub == nullptr);
+}
+
+TEST_F(ClientConductorTest, shouldReturnNullForExclusivePublicationWithoutLogBuffers)
+{
+    std::int64_t id = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
+
+    std::shared_ptr<ExclusivePublication> pub = m_conductor.findExclusivePublication(id);
+
+    EXPECT_TRUE(pub == nullptr);
+}
+
+TEST_F(ClientConductorTest, shouldSendAddExclusivePublicationToDriver)
+{
+    std::int64_t id = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
+    static std::int32_t ADD_EXCLUSIVE_PUBLICATION = ControlProtocolEvents::ADD_EXCLUSIVE_PUBLICATION;
+
+    int count = m_manyToOneRingBuffer.read(
+        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        {
+            const PublicationMessageFlyweight message(buffer, offset);
+
+            EXPECT_EQ(msgTypeId, ADD_EXCLUSIVE_PUBLICATION);
+            EXPECT_EQ(message.correlationId(), id);
+            EXPECT_EQ(message.streamId(), STREAM_ID);
+            EXPECT_EQ(message.channel(), CHANNEL);
+        });
+
+    EXPECT_EQ(count, 1);
+}
+
+TEST_F(ClientConductorTest, shouldReturnExclusivePublicationAfterLogBuffersCreated)
+{
+    std::int64_t id = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
+
+    m_conductor.onNewExclusivePublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id);
+
+    std::shared_ptr<ExclusivePublication> pub = m_conductor.findExclusivePublication(id);
+
+    ASSERT_TRUE(pub != nullptr);
+    EXPECT_EQ(pub->registrationId(), id);
+    EXPECT_EQ(pub->channel(), CHANNEL);
+    EXPECT_EQ(pub->streamId(), STREAM_ID);
+    EXPECT_EQ(pub->sessionId(), SESSION_ID);
+}
+
+TEST_F(ClientConductorTest, shouldReleaseExclusivePublicationAfterGoingOutOfScope)
+{
+    std::int64_t id = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
+    static std::int32_t REMOVE_PUBLICATION = ControlProtocolEvents::REMOVE_PUBLICATION;
+
+    // drain ring buffer
+    m_manyToOneRingBuffer.read(
+        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        {
+        });
+
+    m_conductor.onNewExclusivePublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id);
+
+    {
+        std::shared_ptr<ExclusivePublication> pub = m_conductor.findExclusivePublication(id);
+
+        ASSERT_TRUE(pub != nullptr);
+    }
+
+    int count = m_manyToOneRingBuffer.read(
+        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        {
+            const RemoveMessageFlyweight message(buffer, offset);
+
+            EXPECT_EQ(msgTypeId, REMOVE_PUBLICATION);
+            EXPECT_EQ(message.registrationId(), id);
+        });
+
+    EXPECT_EQ(count, 1);
+
+    std::shared_ptr<ExclusivePublication> pubPost = m_conductor.findExclusivePublication(id);
+    ASSERT_TRUE(pubPost == nullptr);
+}
+
+TEST_F(ClientConductorTest, shouldReturnDifferentIdForDuplicateAddExclusivePublication)
+{
+    std::int64_t id1 = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
+    std::int64_t id2 = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
+
+    EXPECT_NE(id1, id2);
+}
+
+TEST_F(ClientConductorTest, shouldReturnSameExclusivePublicationAfterLogBuffersCreated)
+{
+    std::int64_t id = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
+
+    m_conductor.onNewExclusivePublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id);
+
+    std::shared_ptr<ExclusivePublication> pub1 = m_conductor.findExclusivePublication(id);
+    std::shared_ptr<ExclusivePublication> pub2 = m_conductor.findExclusivePublication(id);
+
+    ASSERT_TRUE(pub1 != nullptr);
+    ASSERT_TRUE(pub2 != nullptr);
+    ASSERT_TRUE(pub1 == pub2);
+}
+
+TEST_F(ClientConductorTest, shouldIgnoreExclusivePublicationReadyForUnknownCorrelationId)
+{
+    std::int64_t id = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
+
+    m_conductor.onNewExclusivePublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id + 1);
+
+    std::shared_ptr<ExclusivePublication> pub = m_conductor.findExclusivePublication(id);
+
+    ASSERT_TRUE(pub == nullptr);
+}
+
+TEST_F(ClientConductorTest, shouldTimeoutAddExclusivePublicationWithoutPublicationReady)
+{
+    std::int64_t id = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
+
+    m_currentTime += DRIVER_TIMEOUT_MS + 1;
+
+    ASSERT_THROW(
+        {
+            std::shared_ptr<ExclusivePublication> pub = m_conductor.findExclusivePublication(id);
+        }, util::DriverTimeoutException);
+}
+
+TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAddExclusivePublication)
+{
+    std::int64_t id = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
+
+    m_conductor.onErrorResponse(id, ERROR_CODE_INVALID_CHANNEL, "invalid channel");
+
+    ASSERT_THROW(
+        {
+            std::shared_ptr<ExclusivePublication> pub = m_conductor.findExclusivePublication(id);
+        }, util::RegistrationException);
 }
 
 TEST_F(ClientConductorTest, shouldReturnNullForUnknownSubscription)
@@ -633,6 +779,20 @@ TEST_F(ClientConductorTest, shouldClosePublicationOnInterServiceTimeout)
     EXPECT_TRUE(pub->isClosed());
 }
 
+TEST_F(ClientConductorTest, shouldCloseExclusivePublicationOnInterServiceTimeout)
+{
+    std::int64_t id = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
+
+    m_conductor.onNewExclusivePublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id);
+
+    std::shared_ptr<ExclusivePublication> pub = m_conductor.findExclusivePublication(id);
+
+    ASSERT_TRUE(pub != nullptr);
+
+    m_conductor.onInterServiceTimeout(m_currentTime);
+    EXPECT_TRUE(pub->isClosed());
+}
+
 TEST_F(ClientConductorTest, shouldCloseSubscriptionOnInterServiceTimeout)
 {
     std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
@@ -651,9 +811,11 @@ TEST_F(ClientConductorTest, shouldCloseSubscriptionOnInterServiceTimeout)
 TEST_F(ClientConductorTest, shouldCloseAllPublicationsAndSubscriptionsOnInterServiceTimeout)
 {
     std::int64_t pubId = m_conductor.addPublication(CHANNEL, STREAM_ID);
+    std::int64_t exPubId = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
     std::int64_t subId = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, pubId);
+    m_conductor.onNewExclusivePublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID_2, m_logFileName2, exPubId);
     m_conductor.onOperationSuccess(subId);
 
     std::shared_ptr<Publication> pub = m_conductor.findPublication(pubId);
@@ -664,9 +826,14 @@ TEST_F(ClientConductorTest, shouldCloseAllPublicationsAndSubscriptionsOnInterSer
 
     ASSERT_TRUE(sub != nullptr);
 
+    std::shared_ptr<ExclusivePublication> exPub = m_conductor.findExclusivePublication(exPubId);
+
+    ASSERT_TRUE(exPub != nullptr);
+
     m_conductor.onInterServiceTimeout(m_currentTime);
     EXPECT_TRUE(pub->isClosed());
     EXPECT_TRUE(sub->isClosed());
+    EXPECT_TRUE(exPub->isClosed());
 }
 
 TEST_F(ClientConductorTest, shouldRemoveImageOnInterServiceTimeout)

@@ -85,6 +85,8 @@ public:
         {
             header.write(m_termBuffer, termOffset, frameLength, termInfo.termId);
             bufferClaim.wrap(m_termBuffer, termOffset, frameLength);
+
+            termInfo.termOffset = resultingOffset;
         }
     }
 
@@ -118,6 +120,8 @@ public:
             m_termBuffer.putInt64(termOffset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
 
             FrameDescriptor::frameLengthOrdered(m_termBuffer, termOffset, frameLength);
+
+            termInfo.termOffset = resultingOffset;
         }
     }
 
@@ -183,6 +187,8 @@ public:
                 remaining -= bytesToWrite;
             }
             while (remaining > 0);
+
+            termInfo.termOffset = resultingOffset;
         }
     }
 

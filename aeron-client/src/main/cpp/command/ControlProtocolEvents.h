@@ -33,6 +33,8 @@ struct ControlProtocolEvents
     static const std::int32_t ADD_PUBLICATION = 0x01;
     /** Remove Publication */
     static const std::int32_t REMOVE_PUBLICATION = 0x02;
+    /** Add Exclusive Publication */
+    static const std::int32_t ADD_EXCLUSIVE_PUBLICATION = 0x03;
     /** Add Subscriber */
     static const std::int32_t ADD_SUBSCRIPTION = 0x04;
     /** Remove Subscriber */
@@ -56,6 +58,8 @@ struct ControlProtocolEvents
     static const std::int32_t ON_OPERATION_SUCCESS = 0x0F04;
     /** Inform client of timeout and removal of inactive image */
     static const std::int32_t ON_UNAVAILABLE_IMAGE = 0x0F05;
+    /** New Exclusive Publication Buffer notification */
+    static const std::int32_t ON_EXCLUSIVE_PUBLICATION_READY = 0x0F06;
 };
 
 }}

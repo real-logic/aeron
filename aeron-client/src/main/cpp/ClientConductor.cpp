@@ -133,10 +133,85 @@ void ClientConductor::releasePublication(std::int64_t registrationId)
     }
 }
 
+std::int64_t ClientConductor::addExclusivePublication(const std::string& channel, std::int32_t streamId)
+{
+    verifyDriverIsActive();
+
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    std::int64_t registrationId = m_driverProxy.addExclusivePublication(channel, streamId);
+
+    m_exclusivePublications.emplace_back(channel, registrationId, streamId, m_epochClock());
+
+    return registrationId;
+}
+
+std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(std::int64_t registrationId)
+{
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+    auto it = std::find_if(m_exclusivePublications.begin(), m_exclusivePublications.end(),
+        [registrationId](const ExclusivePublicationStateDefn &entry)
+        {
+            return (registrationId == entry.m_registrationId);
+        });
+
+    if (it == m_exclusivePublications.end())
+    {
+        return std::shared_ptr<ExclusivePublication>();
+    }
+
+    ExclusivePublicationStateDefn& state = (*it);
+    std::shared_ptr<ExclusivePublication> pub(state.m_publication.lock());
+
+    if (!pub)
+    {
+        switch (state.m_status)
+        {
+            case RegistrationStatus::AWAITING_MEDIA_DRIVER:
+                if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
+                {
+                    throw DriverTimeoutException(
+                        strPrintf("No response from driver in %d ms", m_driverTimeoutMs), SOURCEINFO);
+                }
+                break;
+
+            case RegistrationStatus::REGISTERED_MEDIA_DRIVER:
+            {
+                UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_positionLimitCounterId);
+
+                pub = std::make_shared<ExclusivePublication>(
+                    *this, state.m_channel, state.m_registrationId, state.m_streamId,
+                    state.m_sessionId, publicationLimit, *(state.m_buffers));
+
+                state.m_publication = std::weak_ptr<ExclusivePublication>(pub);
+                break;
+            }
+
+            case RegistrationStatus::ERRORED_MEDIA_DRIVER:
+                throw RegistrationException(state.m_errorCode, state.m_errorMessage, SOURCEINFO);
+        }
+    }
+
+    return pub;
+}
+
 void ClientConductor::releaseExclusivePublication(std::int64_t registrationId)
 {
     verifyDriverIsActiveViaErrorHandler();
 
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+    auto it = std::find_if(m_exclusivePublications.begin(), m_exclusivePublications.end(),
+        [registrationId](const ExclusivePublicationStateDefn &entry)
+        {
+            return (registrationId == entry.m_registrationId);
+        });
+
+    if (it != m_exclusivePublications.end())
+    {
+        m_driverProxy.removePublication(registrationId);
+        m_exclusivePublications.erase(it);
+    }
 }
 
 std::int64_t ClientConductor::addSubscription(
@@ -266,6 +341,34 @@ void ClientConductor::onNewPublication(
     }
 }
 
+void ClientConductor::onNewExclusivePublication(
+    std::int32_t streamId,
+    std::int32_t sessionId,
+    std::int32_t positionLimitCounterId,
+    const std::string &logFileName,
+    std::int64_t registrationId)
+{
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+    auto it = std::find_if(m_exclusivePublications.begin(), m_exclusivePublications.end(),
+        [registrationId](const ExclusivePublicationStateDefn &entry)
+        {
+            return (registrationId == entry.m_registrationId);
+        });
+
+    if (it != m_exclusivePublications.end())
+    {
+        ExclusivePublicationStateDefn& state = (*it);
+
+        state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
+        state.m_sessionId = sessionId;
+        state.m_positionLimitCounterId = positionLimitCounterId;
+        state.m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
+
+        m_onNewPublicationHandler(state.m_channel, streamId, sessionId, registrationId);
+    }
+}
+
 void ClientConductor::onOperationSuccess(std::int64_t correlationId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
@@ -321,6 +424,20 @@ void ClientConductor::onErrorResponse(
         (*pubIt).m_status = RegistrationStatus::ERRORED_MEDIA_DRIVER;
         (*pubIt).m_errorCode = errorCode;
         (*pubIt).m_errorMessage = errorMessage;
+        return;
+    }
+
+    auto exPubIt = std::find_if(m_exclusivePublications.begin(), m_exclusivePublications.end(),
+        [offendingCommandCorrelationId](const ExclusivePublicationStateDefn &entry)
+        {
+            return (offendingCommandCorrelationId == entry.m_registrationId);
+        });
+
+    if (exPubIt != m_exclusivePublications.end())
+    {
+        (*exPubIt).m_status = RegistrationStatus::ERRORED_MEDIA_DRIVER;
+        (*exPubIt).m_errorCode = errorCode;
+        (*exPubIt).m_errorMessage = errorMessage;
         return;
     }
 }
@@ -427,6 +544,19 @@ void ClientConductor::onInterServiceTimeout(long long now)
         });
 
     m_publications.clear();
+
+    std::for_each(m_exclusivePublications.begin(), m_exclusivePublications.end(),
+        [&](ExclusivePublicationStateDefn& entry)
+        {
+            std::shared_ptr<ExclusivePublication> pub = entry.m_publication.lock();
+
+            if (nullptr != pub)
+            {
+                pub->close();
+            }
+        });
+
+    m_exclusivePublications.clear();
 
     std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
         [&](SubscriptionStateDefn& entry)

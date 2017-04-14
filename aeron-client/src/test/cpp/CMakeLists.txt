@@ -40,6 +40,7 @@ if(BUILD_TESTING)
 
     aeron_client_test(clientConductorTest ClientConductorTest.cpp)
     aeron_client_test(publicationTest PublicationTest.cpp)
+    aeron_client_test(exclusivePublicationTest ExclusivePublicationTest.cpp)
     aeron_client_test(imageTest ImageTest.cpp)
     aeron_client_test(fragmentAssemblyTest FragmentAssemblerTest.cpp)
     aeron_client_test(commandTest command/CommandTest.cpp)

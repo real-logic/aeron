@@ -60,6 +60,19 @@ public:
                     }
                     break;
 
+                    case ControlProtocolEvents::ON_EXCLUSIVE_PUBLICATION_READY:
+                    {
+                        const PublicationBuffersReadyFlyweight publicationReady(buffer, offset);
+
+                        m_driverListener.onNewExclusivePublication(
+                            publicationReady.streamId(),
+                            publicationReady.sessionId(),
+                            publicationReady.positionLimitCounterId(),
+                            publicationReady.logFileName(),
+                            publicationReady.correlationId());
+                    }
+                    break;
+
                     case ControlProtocolEvents::ON_AVAILABLE_IMAGE:
                     {
                         const ImageBuffersReadyFlyweight imageReady(buffer, offset);

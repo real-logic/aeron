@@ -116,6 +116,40 @@ public:
     }
 
     /**
+     * Add an {@link ExclusivePublication} for publishing messages to subscribers from a single thread.
+     *
+     * @param channel  for receiving the messages known to the media layer.
+     * @param streamId within the channel scope.
+     * @return registration id for the publication
+     */
+    inline std::int64_t addExclusivePublication(const std::string& channel, std::int32_t streamId)
+    {
+        return m_conductor.addExclusivePublication(channel, streamId);
+    }
+
+    /**
+     * Retrieve the ExclusivePublication associated with the given registrationId.
+     *
+     * This method is non-blocking.
+     *
+     * The value returned is dependent on what has occurred with respect to the media driver:
+     *
+     * - If the registrationId is unknown, then a nullptr is returned.
+     * - If the media driver has not answered the add command, then a nullptr is returned.
+     * - If the media driver has successfully added the ExclusivePublication then what is returned is the ExclusivePublication.
+     * - If the media driver has returned an error, this method will throw the error returned.
+     *
+     * @see Aeron::addExclusivePublication
+     *
+     * @param registrationId of the ExclusivePublication returned by Aeron::addExclusivePublication
+     * @return ExclusivePublication associated with the registrationId
+     */
+    inline std::shared_ptr<ExclusivePublication> findExclusivePublication(std::int64_t registrationId)
+    {
+        return m_conductor.findExclusivePublication(registrationId);
+    }
+
+    /**
      * Add a new {@link Subscription} for subscribing to messages from publishers.
      *
      * This function returns immediately and does not wait for the response from the media driver. The returned

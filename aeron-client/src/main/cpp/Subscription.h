@@ -95,7 +95,8 @@ public:
      *
      * @see FragmentAssembler
      */
-    inline int poll(const fragment_handler_t& fragmentHandler, int fragmentLimit)
+    template <typename F>
+    inline int poll(F&& fragmentHandler, int fragmentLimit)
     {
         int fragmentsRead = 0;
         const int length = std::atomic_load(&m_imagesLength);

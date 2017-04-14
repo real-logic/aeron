@@ -31,12 +31,6 @@ namespace aeron { namespace concurrent { namespace logbuffer {
 class ExclusiveTermAppender
 {
 public:
-    struct TermInfo
-    {
-        std::int64_t termOffset;
-        std::int32_t termId;
-    };
-
     ExclusiveTermAppender(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer, const int partitionIndex) :
         m_termBuffer(termBuffer),
         m_tailAddr(
@@ -65,33 +59,36 @@ public:
         *m_tailAddr = static_cast<std::int64_t>(termId) << 32;
     }
 
-    inline void claim(
-        TermInfo& termInfo, const HeaderWriter& header, util::index_t length, ExclusiveBufferClaim& bufferClaim)
+    inline std::int32_t claim(
+        std::int32_t termId,
+        std::int32_t termOffset,
+        const HeaderWriter& header,
+        util::index_t length,
+        ExclusiveBufferClaim& bufferClaim)
     {
         const util::index_t frameLength = length + DataFrameHeader::LENGTH;
         const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
 
         const std::int32_t termLength = m_termBuffer.capacity();
-        const std::int32_t termOffset = static_cast<std::int32_t>(termInfo.termOffset);
+        std::int32_t resultingOffset = termOffset + alignedLength;
+        putRawTailOrdered(termId, resultingOffset);
 
-        const std::int32_t resultingOffset = termOffset + alignedLength;
-        putRawTailOrdered(termInfo.termId, resultingOffset);
-
-        if (resultingOffset > termLength)
+        if (AERON_COND_EXPECT((resultingOffset > termLength), false))
         {
-            handleEndOfLogCondition(termInfo, m_termBuffer, termOffset, header, termLength);
+            resultingOffset = handleEndOfLogCondition(m_termBuffer, termId, termOffset, header, termLength);
         }
         else
         {
-            header.write(m_termBuffer, termOffset, frameLength, termInfo.termId);
+            header.write(m_termBuffer, termOffset, frameLength, termId);
             bufferClaim.wrap(m_termBuffer, termOffset, frameLength);
-
-            termInfo.termOffset = resultingOffset;
         }
+
+        return resultingOffset;
     }
 
-    inline void appendUnfragmentedMessage(
-        TermInfo& termInfo,
+    inline int32_t appendUnfragmentedMessage(
+        std::int32_t termId,
+        std::int32_t termOffset,
         const HeaderWriter& header,
         AtomicBuffer& srcBuffer,
         util::index_t srcOffset,
@@ -102,31 +99,31 @@ public:
         const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
 
         const std::int32_t termLength = m_termBuffer.capacity();
-        const std::int32_t termOffset = static_cast<std::int32_t>(termInfo.termOffset);
 
-        const std::int32_t resultingOffset = termOffset + alignedLength;
-        putRawTailOrdered(termInfo.termId, resultingOffset);
+        std::int32_t resultingOffset = termOffset + alignedLength;
+        putRawTailOrdered(termId, resultingOffset);
 
         if (resultingOffset > termLength)
         {
-            handleEndOfLogCondition(termInfo, m_termBuffer, termOffset, header, termLength);
+            resultingOffset = handleEndOfLogCondition(m_termBuffer, termId, termOffset, header, termLength);
         }
         else
         {
-            header.write(m_termBuffer, termOffset, frameLength, termInfo.termId);
+            header.write(m_termBuffer, termOffset, frameLength, termId);
             m_termBuffer.putBytes(termOffset + DataFrameHeader::LENGTH, srcBuffer, srcOffset, length);
 
             const std::int64_t reservedValue = reservedValueSupplier(m_termBuffer, termOffset, frameLength);
             m_termBuffer.putInt64(termOffset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
 
             FrameDescriptor::frameLengthOrdered(m_termBuffer, termOffset, frameLength);
-
-            termInfo.termOffset = resultingOffset;
         }
+
+        return resultingOffset;
     }
 
-    void appendFragmentedMessage(
-        TermInfo& termInfo,
+    std::int32_t appendFragmentedMessage(
+        std::int32_t termId,
+        std::int32_t termOffset,
         const HeaderWriter& header,
         AtomicBuffer& srcBuffer,
         util::index_t srcOffset,
@@ -142,14 +139,13 @@ public:
             (numMaxPayloads * (maxPayloadLength + DataFrameHeader::LENGTH)) + lastFrameLength;
 
         const std::int32_t termLength = m_termBuffer.capacity();
-        const std::int32_t termOffset = static_cast<std::int32_t>(termInfo.termOffset);
 
-        const std::int32_t resultingOffset = termOffset + requiredLength;
-        putRawTailOrdered(termInfo.termId, resultingOffset);
+        std::int32_t resultingOffset = termOffset + requiredLength;
+        putRawTailOrdered(termId, resultingOffset);
 
         if (resultingOffset > termLength)
         {
-            handleEndOfLogCondition(termInfo, m_termBuffer, termOffset, header, termLength);
+            resultingOffset = handleEndOfLogCondition(m_termBuffer, termId, termOffset, header, termLength);
         }
         else
         {
@@ -163,7 +159,7 @@ public:
                 const util::index_t frameLength = bytesToWrite + DataFrameHeader::LENGTH;
                 const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
 
-                header.write(m_termBuffer, offset, frameLength, termInfo.termId);
+                header.write(m_termBuffer, offset, frameLength, termId);
                 m_termBuffer.putBytes(
                     offset + DataFrameHeader::LENGTH,
                     srcBuffer,
@@ -187,31 +183,31 @@ public:
                 remaining -= bytesToWrite;
             }
             while (remaining > 0);
-
-            termInfo.termOffset = resultingOffset;
         }
+
+        return resultingOffset;
     }
 
 private:
     AtomicBuffer& m_termBuffer;
     std::int64_t *const m_tailAddr;
 
-    inline static void handleEndOfLogCondition(
-        TermInfo& termInfo,
+    inline static std::int32_t handleEndOfLogCondition(
         AtomicBuffer& termBuffer,
-        util::index_t termOffset,
+        std::int32_t termId,
+        std::int32_t termOffset,
         const HeaderWriter& header,
         util::index_t termLength)
     {
-        termInfo.termOffset = TERM_APPENDER_TRIPPED;
-
         if (termOffset < termLength)
         {
             const std::int32_t paddingLength = termLength - termOffset;
-            header.write(termBuffer, termOffset, paddingLength, termInfo.termId);
+            header.write(termBuffer, termOffset, paddingLength, termId);
             FrameDescriptor::frameType(termBuffer, termOffset, DataFrameHeader::HDR_TYPE_PAD);
             FrameDescriptor::frameLengthOrdered(termBuffer, termOffset, paddingLength);
         }
+
+        return TERM_APPENDER_TRIPPED;
     }
 
     inline void putRawTailOrdered(const std::int64_t termId, const std::int32_t termOffset)

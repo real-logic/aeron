@@ -233,21 +233,20 @@ public:
 
             if (position < limit)
             {
-                ExclusiveTermAppender::TermInfo termInfo = { m_termOffset, m_termId };
-
+                std::int32_t result;
                 if (length <= m_maxPayloadLength)
                 {
-                    termAppender->appendUnfragmentedMessage(
-                        termInfo, m_headerWriter, buffer, offset, length, reservedValueSupplier);
+                    result = termAppender->appendUnfragmentedMessage(
+                        m_termId, m_termOffset, m_headerWriter, buffer, offset, length, reservedValueSupplier);
                 }
                 else
                 {
                     checkForMaxMessageLength(length);
-                    termAppender->appendFragmentedMessage(
-                        termInfo, m_headerWriter, buffer, offset, length, m_maxPayloadLength, reservedValueSupplier);
+                    result = termAppender->appendFragmentedMessage(
+                        m_termId, m_termOffset, m_headerWriter, buffer, offset, length, m_maxPayloadLength, reservedValueSupplier);
                 }
 
-                newPosition = ExclusivePublication::newPosition(termInfo);
+                newPosition = ExclusivePublication::newPosition(result);
             }
             else if (isPublicationConnected(LogBufferDescriptor::timeOfLastStatusMessage(m_logMetaDataBuffer)))
             {
@@ -323,7 +322,7 @@ public:
     {
         std::int64_t newPosition = PUBLICATION_CLOSED;
 
-        if (!isClosed())
+        if (AERON_COND_EXPECT((!isClosed()), true))
         {
             checkForMaxPayloadLength(length);
 
@@ -331,12 +330,10 @@ public:
             ExclusiveTermAppender *termAppender = m_appenders[m_activePartitionIndex].get();
             const std::int64_t position = m_termBeginPosition + m_termOffset;
 
-            if (position < limit)
+            if (AERON_COND_EXPECT((position < limit), true))
             {
-                ExclusiveTermAppender::TermInfo termInfo = { m_termOffset, m_termId };
-
-                termAppender->claim(termInfo, m_headerWriter, length, bufferClaim);
-                newPosition = ExclusivePublication::newPosition(termInfo);
+                const std::int32_t result = termAppender->claim(m_termId, m_termOffset, m_headerWriter, length, bufferClaim);
+                newPosition = ExclusivePublication::newPosition(result);
             }
             else if (isPublicationConnected(LogBufferDescriptor::timeOfLastStatusMessage(m_logMetaDataBuffer)))
             {
@@ -396,15 +393,13 @@ private:
     std::unique_ptr<ExclusiveTermAppender> m_appenders[3];
     HeaderWriter m_headerWriter;
 
-    std::int64_t newPosition(const ExclusiveTermAppender::TermInfo& termInfo)
+    std::int64_t newPosition(const std::int32_t resultingOffset)
     {
-        std::int64_t newPosition = ADMIN_ACTION;
-
-        if (termInfo.termOffset > 0)
+        if (resultingOffset > 0)
         {
-            m_termOffset = static_cast<std::int32_t>(termInfo.termOffset);
+            m_termOffset = resultingOffset;
 
-            newPosition = m_termBeginPosition + termInfo.termOffset;
+            return m_termBeginPosition + resultingOffset;
         }
         else
         {
@@ -418,9 +413,9 @@ private:
 
             m_appenders[nextIndex]->tailTermId(nextTermId);
             LogBufferDescriptor::activePartitionIndex(m_logMetaDataBuffer, nextIndex);
-        }
 
-        return newPosition;
+            return ADMIN_ACTION;
+        }
     }
 
     void checkForMaxMessageLength(const util::index_t length)
@@ -435,7 +430,7 @@ private:
 
     void checkForMaxPayloadLength(const util::index_t length)
     {
-        if (length > m_maxPayloadLength)
+        if (AERON_COND_EXPECT((length > m_maxPayloadLength), false))
         {
             throw util::IllegalStateException(
                 util::strPrintf("Encoded message exceeds maxPayloadLength of %d, length=%d",

@@ -184,7 +184,6 @@ int main(int argc, char **argv)
         }
 
         BusySpinIdleStrategy offerIdleStrategy;
-        BusySpinIdleStrategy pollIdleStrategy;
 
         RateReporter rateReporter(std::chrono::seconds(1), printRate);
         FragmentAssembler fragmentAssembler(rateReporterHandler(rateReporter));
@@ -199,8 +198,10 @@ int main(int argc, char **argv)
             rateReporterThread = std::make_shared<std::thread>([&rateReporter](){ rateReporter.run(); });
         }
 
-        std::thread pollThread([&subscription, &pollIdleStrategy, &settings, &handler]()
+        std::thread pollThread([&subscription, &settings, &handler]()
         {
+            BusySpinIdleStrategy pollIdleStrategy;
+
             while (isRunning())
             {
                 const int fragmentsRead = subscription->poll(handler, settings.fragmentCountLimit);

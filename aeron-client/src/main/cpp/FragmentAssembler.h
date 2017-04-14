@@ -60,7 +60,7 @@ public:
      */
     fragment_handler_t handler()
     {
-        return [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+        return [this](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
         {
             this->onFragment(buffer, offset, length, header);
         };

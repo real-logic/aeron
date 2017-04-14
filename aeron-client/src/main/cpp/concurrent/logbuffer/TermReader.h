@@ -64,11 +64,12 @@ struct ReadOutcome
     int fragmentsRead;
 };
 
+template <typename F>
 inline void read(
     ReadOutcome& outcome,
     AtomicBuffer& termBuffer,
     std::int32_t termOffset,
-    const fragment_handler_t & handler,
+    F&& handler,
     int fragmentsLimit,
     Header& header,
     const exception_handler_t & exceptionHandler)

@@ -393,7 +393,7 @@ private:
     std::unique_ptr<ExclusiveTermAppender> m_appenders[3];
     HeaderWriter m_headerWriter;
 
-    std::int64_t newPosition(const std::int32_t resultingOffset)
+    inline std::int64_t newPosition(const std::int32_t resultingOffset)
     {
         if (resultingOffset > 0)
         {
@@ -418,7 +418,7 @@ private:
         }
     }
 
-    void checkForMaxMessageLength(const util::index_t length)
+    inline void checkForMaxMessageLength(const util::index_t length) const
     {
         if (length > m_maxMessageLength)
         {
@@ -428,7 +428,7 @@ private:
         }
     }
 
-    void checkForMaxPayloadLength(const util::index_t length)
+    inline void checkForMaxPayloadLength(const util::index_t length) const
     {
         if (AERON_COND_EXPECT((length > m_maxPayloadLength), false))
         {

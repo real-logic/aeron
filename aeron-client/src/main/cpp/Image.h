@@ -337,7 +337,8 @@ public:
      *
      * @see controlled_poll_fragment_handler_t
      */
-    int controlledPoll(const controlled_poll_fragment_handler_t& fragmentHandler, int fragmentLimit)
+    template <typename F>
+    inline int controlledPoll(F&& fragmentHandler, int fragmentLimit)
     {
         int result = IMAGE_CLOSED;
 
@@ -427,7 +428,8 @@ public:
      *
      * @see block_handler_t
      */
-    int blockPoll(const block_handler_t& blockHandler, int blockLengthLimit)
+    template <typename F>
+    inline int blockPoll(F&& blockHandler, int blockLengthLimit)
     {
         int result = IMAGE_CLOSED;
 

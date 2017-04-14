@@ -134,7 +134,8 @@ public:
      * @param blockLengthLimit for each individual block.
      * @return the number of bytes consumed.
      */
-    inline long blockPoll(const block_handler_t& blockHandler, int blockLengthLimit)
+    template <typename F>
+    inline long blockPoll(F&& blockHandler, int blockLengthLimit)
     {
         const int length = std::atomic_load(&m_imagesLength);
         Image *images = std::atomic_load(&m_images);

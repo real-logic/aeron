@@ -46,7 +46,6 @@ static const char optStreamId = 's';
 static const char optMessages = 'm';
 static const char optLinger   = 'l';
 static const char optLength   = 'L';
-static const char optRandLen  = 'r';
 static const char optProgress = 'P';
 static const char optFrags    = 'f';
 
@@ -110,7 +109,6 @@ int main(int argc, char **argv)
 {
     CommandOptionParser cp;
     cp.addOption(CommandOption (optHelp,     0, 0, "                Displays help information."));
-    cp.addOption(CommandOption (optRandLen,  0, 0, "                Random Message Length."));
     cp.addOption(CommandOption (optProgress, 0, 0, "                Print rate progress while sending."));
     cp.addOption(CommandOption (optPrefix,   1, 1, "dir             Prefix directory for aeron driver."));
     cp.addOption(CommandOption (optChannel,  1, 1, "channel         Channel."));

@@ -381,7 +381,7 @@ public:
     /// @cond HIDDEN_SYMBOLS
     inline void close()
     {
-        std::atomic_store_explicit(&m_isClosed, true, std::memory_order_seq_cst);
+        std::atomic_store_explicit(&m_isClosed, true, std::memory_order_relaxed);
     }
     /// @endcond
 

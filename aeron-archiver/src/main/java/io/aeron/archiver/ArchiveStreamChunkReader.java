@@ -24,6 +24,7 @@ import java.nio.channels.FileChannel;
 import java.util.Objects;
 
 import static java.lang.Math.min;
+import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardOpenOption.READ;
 
 class ArchiveStreamChunkReader implements AutoCloseable
@@ -35,13 +36,13 @@ class ArchiveStreamChunkReader implements AutoCloseable
     private final long length;
 
     private long transmitted;
-    private int archiveFileIndex;
+    private int fileIndex;
 
-    private FileChannel currentDataChannel;
-    private UnsafeBuffer termMappedUnsafeBuffer;
+    private FileChannel dataChannel;
+    private UnsafeBuffer termBuffer;
 
-    private int archiveTermStartOffset;
-    private int currentTermOffset;
+    private int initTermOffset;
+    private int termOffset;
 
     ArchiveStreamChunkReader(
         final int streamInstanceId,
@@ -59,12 +60,12 @@ class ArchiveStreamChunkReader implements AutoCloseable
         this.length = length;
 
         transmitted = 0;
-        archiveFileIndex = ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, termId);
+        fileIndex = ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, termId);
         final int archiveOffset = ArchiveFileUtil.archiveOffset(termOffset, termId, initialTermId, termBufferLength);
-        archiveTermStartOffset = archiveOffset - termOffset;
-        currentTermOffset = termOffset;
+        initTermOffset = archiveOffset - termOffset;
+        this.termOffset = termOffset;
 
-        final String archiveDataFileName = ArchiveFileUtil.archiveDataFileName(streamInstanceId, archiveFileIndex);
+        final String archiveDataFileName = ArchiveFileUtil.archiveDataFileName(streamInstanceId, fileIndex);
         final File archiveDataFile = new File(archiveFolder, archiveDataFileName);
 
         if (!archiveDataFile.exists())
@@ -74,9 +75,8 @@ class ArchiveStreamChunkReader implements AutoCloseable
 
         try
         {
-            currentDataChannel = FileChannel.open(archiveDataFile.toPath(), READ);
-            termMappedUnsafeBuffer = new UnsafeBuffer(
-                currentDataChannel.map(FileChannel.MapMode.READ_ONLY, archiveTermStartOffset, termBufferLength));
+            dataChannel = FileChannel.open(archiveDataFile.toPath(), READ);
+            termBuffer = new UnsafeBuffer(dataChannel.map(READ_ONLY, initTermOffset, termBufferLength));
         }
         catch (final IOException ex)
         {
@@ -98,7 +98,7 @@ class ArchiveStreamChunkReader implements AutoCloseable
         }
         Objects.requireNonNull(handler);
 
-        final int remainingInTerm = termBufferLength - currentTermOffset;
+        final int remainingInTerm = termBufferLength - termOffset;
         final long remainingInCursor = length - transmitted;
         final int readSize = (int)min(chunkLength, min(remainingInTerm, remainingInCursor));
 
@@ -107,14 +107,14 @@ class ArchiveStreamChunkReader implements AutoCloseable
             return 0;
         }
 
-        if (!handler.handle(termMappedUnsafeBuffer, currentTermOffset, readSize))
+        if (!handler.handle(termBuffer, termOffset, readSize))
         {
             return 0;
         }
 
-        currentTermOffset += readSize;
+        termOffset += readSize;
         transmitted += readSize;
-        if (transmitted != length && currentTermOffset == termBufferLength)
+        if (transmitted != length && termOffset >= termBufferLength)
         {
             try
             {
@@ -131,13 +131,13 @@ class ArchiveStreamChunkReader implements AutoCloseable
 
     private void rollNextTerm() throws IOException
     {
-        currentTermOffset = 0;
-        archiveTermStartOffset += termBufferLength;
-        if (archiveTermStartOffset == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
+        termOffset = 0;
+        initTermOffset += termBufferLength;
+        if (initTermOffset == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
         {
-            archiveTermStartOffset = 0;
-            archiveFileIndex++;
-            final String archiveDataFileNameN = ArchiveFileUtil.archiveDataFileName(streamInstanceId, archiveFileIndex);
+            initTermOffset = 0;
+            fileIndex++;
+            final String archiveDataFileNameN = ArchiveFileUtil.archiveDataFileName(streamInstanceId, fileIndex);
             final File archiveDataFileN = new File(archiveFolder, archiveDataFileNameN);
 
             if (!archiveDataFileN.exists())
@@ -147,16 +147,15 @@ class ArchiveStreamChunkReader implements AutoCloseable
 
             closeResources();
 
-            currentDataChannel = FileChannel.open(archiveDataFileN.toPath(), READ);
+            dataChannel = FileChannel.open(archiveDataFileN.toPath(), READ);
         }
         else
         {
-            IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
+            IoUtil.unmap(termBuffer.byteBuffer());
         }
 
         // roll term
-        termMappedUnsafeBuffer.wrap(
-            currentDataChannel.map(FileChannel.MapMode.READ_ONLY, archiveTermStartOffset, termBufferLength));
+        termBuffer.wrap(dataChannel.map(READ_ONLY, initTermOffset, termBufferLength));
     }
 
     public void close()
@@ -166,8 +165,8 @@ class ArchiveStreamChunkReader implements AutoCloseable
 
     private void closeResources()
     {
-        IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
-        CloseHelper.quietClose(currentDataChannel);
+        IoUtil.unmap(termBuffer.byteBuffer());
+        CloseHelper.quietClose(dataChannel);
     }
 
     interface ChunkHandler

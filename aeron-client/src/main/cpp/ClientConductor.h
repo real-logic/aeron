@@ -23,6 +23,7 @@
 #include <concurrent/status/UnsafeBufferPosition.h>
 #include <util/LangUtil.h>
 #include "Publication.h"
+#include "ExclusivePublication.h"
 #include "Subscription.h"
 #include "DriverProxy.h"
 #include "Context.h"
@@ -95,6 +96,10 @@ public:
     std::shared_ptr<Publication> findPublication(std::int64_t registrationId);
     void releasePublication(std::int64_t registrationId);
 
+    std::int64_t addExclusivePublication(const std::string& channel, std::int32_t streamId);
+    std::shared_ptr<ExclusivePublication> findExclusivePublication(std::int64_t registrationId);
+    void releaseExclusivePublication(std::int64_t registrationId);
+
     std::int64_t addSubscription(
         const std::string& channel,
         std::int32_t streamId,
@@ -104,6 +109,13 @@ public:
     void releaseSubscription(std::int64_t registrationId, Image *images, int imagesLength);
 
     void onNewPublication(
+        std::int32_t streamId,
+        std::int32_t sessionId,
+        std::int32_t positionLimitCounterId,
+        const std::string& logFileName,
+        std::int64_t registrationId);
+
+    void onNewExclusivePublication(
         std::int32_t streamId,
         std::int32_t sessionId,
         std::int32_t positionLimitCounterId,
@@ -174,6 +186,27 @@ private:
         }
     };
 
+    struct ExclusivePublicationStateDefn
+    {
+        std::string m_channel;
+        std::int64_t m_registrationId;
+        std::int32_t m_streamId;
+        std::int32_t m_sessionId = -1;
+        std::int32_t m_positionLimitCounterId = -1;
+        long long m_timeOfRegistration;
+        RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
+        std::int32_t m_errorCode;
+        std::string m_errorMessage;
+        std::shared_ptr<LogBuffers> m_buffers;
+        std::weak_ptr<ExclusivePublication> m_publication;
+
+        ExclusivePublicationStateDefn(
+            const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long long now) :
+            m_channel(channel), m_registrationId(registrationId), m_streamId(streamId), m_timeOfRegistration(now)
+        {
+        }
+    };
+
     struct SubscriptionStateDefn
     {
         std::string m_channel;
@@ -230,6 +263,7 @@ private:
     std::recursive_mutex m_adminLock;
 
     std::vector<PublicationStateDefn> m_publications;
+    std::vector<ExclusivePublicationStateDefn> m_exclusivePublications;
     std::vector<SubscriptionStateDefn> m_subscriptions;
 
     std::vector<LogBuffersLingerDefn> m_lingeringLogBuffers;
@@ -305,6 +339,15 @@ private:
         if (!m_driverActive)
         {
             throw DriverTimeoutException("Driver is inactive", SOURCEINFO);
+        }
+    }
+
+    inline void verifyDriverIsActiveViaErrorHandler()
+    {
+        if (!m_driverActive)
+        {
+            DriverTimeoutException exception("Driver is inactive", SOURCEINFO);
+            m_errorHandler(exception);
         }
     }
 };

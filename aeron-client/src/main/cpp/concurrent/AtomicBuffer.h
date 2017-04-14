@@ -372,17 +372,10 @@ public:
         return static_cast<std::int32_t>(value.length());
     }
 
-private:
-    // The internal length type used by the atomic buffer
-    typedef std::uint32_t length_t;
-
-    std::uint8_t *m_buffer;
-    length_t m_length;
-
     inline void boundsCheck(util::index_t index, std::uint64_t length) const
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
-        // This check disallows negative indices and makes sure the 
+        // This check disallows negative indices and makes sure the
         if (AERON_COND_EXPECT(index < 0 || (std::uint64_t)m_length - index < length, false))
         {
             throw aeron::util::OutOfBoundsException(
@@ -391,6 +384,13 @@ private:
         }
 #endif
     }
+
+private:
+    // The internal length type used by the atomic buffer
+    typedef std::uint32_t length_t;
+
+    std::uint8_t *m_buffer;
+    length_t m_length;
 };
 
 }}

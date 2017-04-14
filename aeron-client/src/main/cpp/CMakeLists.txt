@@ -18,6 +18,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 SET(SOURCE
     Publication.cpp
+    ExclusivePublication.cpp
     Subscription.cpp
     ClientConductor.cpp
     Aeron.cpp
@@ -41,6 +42,7 @@ SET(HEADERS
     BufferBuilder.h
     FragmentAssembler.h
     ControlledFragmentAssembler.h
+    ExclusivePublication.h
     command/ImageMessageFlyweight.h
     command/ImageBuffersReadyFlyweight.h
     command/ControlProtocolEvents.h
@@ -83,6 +85,8 @@ SET(HEADERS
     concurrent/logbuffer/TermBlockScanner.h
     concurrent/logbuffer/TermReader.h
     concurrent/logbuffer/TermScanner.h
+    concurrent/logbuffer/ExclusiveTermAppender.h
+    concurrent/logbuffer/ExclusiveBufferClaim.h
     concurrent/ringbuffer/ManyToOneRingBuffer.h
     concurrent/ringbuffer/RecordDescriptor.h
     concurrent/ringbuffer/RingBufferDescriptor.h

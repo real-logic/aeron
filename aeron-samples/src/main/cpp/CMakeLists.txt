@@ -32,6 +32,7 @@ add_executable(Pong Pong.cpp ${HEADERS})
 add_executable(Ping Ping.cpp ${HEADERS})
 add_executable(Throughput Throughput.cpp ${HEADERS})
 add_executable(ErrorStat ErrorStat.cpp ${HEADERS})
+add_executable(ExclusiveThroughput ExclusiveThroughput.cpp ${HEADERS})
 
 target_link_libraries(AeronStat
     aeron_client
@@ -72,9 +73,13 @@ target_link_libraries(Throughput
     ${CMAKE_THREAD_LIBS_INIT})
 
 target_link_libraries(ErrorStat
-        aeron_client
-        ${CMAKE_THREAD_LIBS_INIT})
+    aeron_client
+    ${CMAKE_THREAD_LIBS_INIT})
+
+target_link_libraries(ExclusiveThroughput
+    aeron_client
+    ${CMAKE_THREAD_LIBS_INIT})
 
 install(
-    TARGETS AeronStat BasicPublisher TimeTests BasicSubscriber StreamingPublisher RateSubscriber Ping Pong Throughput ErrorStat
+    TARGETS AeronStat BasicPublisher TimeTests BasicSubscriber StreamingPublisher RateSubscriber Ping Pong Throughput ErrorStat ExclusiveThroughput
     DESTINATION bin)

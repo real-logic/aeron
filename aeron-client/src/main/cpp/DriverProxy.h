@@ -69,6 +69,27 @@ public:
         return correlationId;
     }
 
+    std::int64_t addExclusivePublication(const std::string& channel, std::int32_t streamId)
+    {
+        std::int64_t correlationId = m_toDriverCommandBuffer.nextCorrelationId();
+
+        writeCommandToDriver([&](AtomicBuffer &buffer, util::index_t &length)
+        {
+            PublicationMessageFlyweight publicationMessage(buffer, 0);
+
+            publicationMessage.clientId(m_clientId);
+            publicationMessage.correlationId(correlationId);
+            publicationMessage.streamId(streamId);
+            publicationMessage.channel(channel);
+
+            length = publicationMessage.length();
+
+            return ControlProtocolEvents::ADD_EXCLUSIVE_PUBLICATION;
+        });
+
+        return correlationId;
+    }
+
     std::int64_t removePublication(std::int64_t registrationId)
     {
         std::int64_t correlationId = m_toDriverCommandBuffer.nextCorrelationId();

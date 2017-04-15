@@ -46,6 +46,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 public class Image
 {
     private final long correlationId;
+    private final long joiningPosition;
     private final int sessionId;
     private final int termLengthMask;
     private final int positionBitsToShift;
@@ -86,6 +87,7 @@ public class Image
         this.errorHandler = errorHandler;
         this.sourceIdentity = sourceIdentity;
         this.correlationId = correlationId;
+        this.joiningPosition = subscriberPosition.get();
 
         termBuffers = logBuffers.termBuffers();
 
@@ -163,6 +165,16 @@ public class Image
     public boolean isClosed()
     {
         return isClosed;
+    }
+
+    /**
+     * Get the position the subscriber joined this stream at.
+     *
+     * @return the position the subscriber joined this stream at.
+     */
+    public long joiningPosition()
+    {
+        return joiningPosition;
     }
 
     /**

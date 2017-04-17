@@ -22,6 +22,7 @@
 #include <stddef.h>
 #include "aeronmd.h"
 #include "util/aeron_bitutil.h"
+#include "util/aeron_fileutil.h"
 #include "aeron_agent.h"
 
 #define AERON_MAX_PATH (256)
@@ -68,8 +69,7 @@ typedef struct aeron_driver_context_stct
     size_t error_buffer_length;             /* aeron.error.buffer.length = 1MB */
     uint64_t client_liveness_timeout_ns;    /* aeron.client.liveness.timeout = 5s */
 
-    void *cnc_buffer;
-    size_t cnc_buffer_length;
+    aeron_mapped_file_t cnc_map;
 
     uint8_t *to_driver_buffer;
     uint8_t *to_clients_buffer;

@@ -23,7 +23,6 @@
 #include <stdio.h>
 #include <time.h>
 #include <fcntl.h>
-#include <sys/mman.h>
 #include <unistd.h>
 #include <inttypes.h>
 #include "aeronmd.h"
@@ -88,15 +87,15 @@ static void error_log_reader_save_to_file(
         error);
 }
 
-int aeron_report_existing_errors(void *cnc_mmap, size_t cnc_length, const char *aeron_dir)
+int aeron_report_existing_errors(aeron_mapped_file_t *cnc_map, const char *aeron_dir)
 {
     char buffer[AERON_MAX_PATH];
     int result = 0;
 
-    aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *) cnc_mmap;
+    aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)cnc_map->addr;
 
     if (AERON_CNC_VERSION == metadata->cnc_version &&
-        aeron_error_log_exists(aeron_cnc_error_log_buffer(cnc_mmap), (size_t)metadata->error_log_buffer_length))
+        aeron_error_log_exists(aeron_cnc_error_log_buffer(cnc_map->addr), (size_t)metadata->error_log_buffer_length))
     {
         char datestamp[AERON_MAX_PATH];
         FILE *saved_errors_file = NULL;
@@ -150,11 +149,10 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
         }
         else
         {
-            void *cnc_mmap = NULL;
-            size_t cnc_length = 0;
+            aeron_mapped_file_t cnc_mmap = { NULL, 0 };
 
             snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_CNC_FILE);
-            if (aeron_map_existing_file(&cnc_mmap, buffer, &cnc_length) < 0)
+            if (aeron_map_existing_file(&cnc_mmap, buffer) < 0)
             {
                 /* TODO: EINVAL? or ESTATE? */
                 snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to mmap CnC file");
@@ -166,20 +164,20 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
             log_func(buffer);
 
             if (aeron_is_driver_active_with_cnc(
-                cnc_mmap, cnc_length, driver->context->driver_timeout_ms, aeron_epochclock(), log_func))
+                &cnc_mmap, driver->context->driver_timeout_ms, aeron_epochclock(), log_func))
             {
                 /* TODO: EINVAL? or ESTATE? */
-                munmap(cnc_mmap, cnc_length);
+                aeron_unmap(&cnc_mmap);
                 return -1;
             }
 
-            if (aeron_report_existing_errors(cnc_mmap, cnc_length, dirname) < 0)
+            if (aeron_report_existing_errors(&cnc_mmap, dirname) < 0)
             {
-                munmap(cnc_mmap, cnc_length);
+                aeron_unmap(&cnc_mmap);
                 return -1;
             }
 
-            munmap(cnc_mmap, cnc_length);
+            aeron_unmap(&cnc_mmap);
 
             aeron_dir_delete(driver->context->aeron_dir);
         }
@@ -203,16 +201,18 @@ int aeron_driver_create_cnc_file(aeron_driver_t *driver)
         driver->context->counters_metadata_buffer_length +
         driver->context->counters_values_buffer_length +
         driver->context->error_buffer_length);
-    void *cnc_mmap = NULL;
+
+    driver->context->cnc_map.addr = NULL;
+    driver->context->cnc_map.length = cnc_file_length;
 
     snprintf(buffer, sizeof(buffer) - 1, "%s/%s", driver->context->aeron_dir, AERON_CNC_FILE);
 
-    if (aeron_map_new_file(&cnc_mmap, buffer, cnc_file_length, true) < 0)
+    if (aeron_map_new_file(&driver->context->cnc_map, buffer, true) < 0)
     {
         return -1;
     }
 
-    aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)cnc_mmap;
+    aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)driver->context->cnc_map.addr;
     metadata->to_driver_buffer_length = (int32_t)driver->context->to_driver_buffer_length;
     metadata->to_clients_buffer_length = (int32_t)driver->context->to_clients_buffer_length;
     metadata->counter_metadata_buffer_length = (int32_t)driver->context->counters_metadata_buffer_length;
@@ -221,9 +221,6 @@ int aeron_driver_create_cnc_file(aeron_driver_t *driver)
     metadata->client_liveness_timeout = (int64_t)driver->context->client_liveness_timeout_ns;
 
     AERON_PUT_ORDERED(metadata->cnc_version, AERON_CNC_VERSION);
-
-    driver->context->cnc_buffer = cnc_mmap;
-    driver->context->cnc_buffer_length = cnc_file_length;
 
     driver->context->to_driver_buffer = aeron_cnc_to_driver_buffer(metadata);
     driver->context->to_clients_buffer = aeron_cnc_to_clients_buffer(metadata);

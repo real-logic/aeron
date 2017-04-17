@@ -44,6 +44,16 @@ typedef struct aeron_publication_link_stct
 }
 aeron_publication_link_t;
 
+typedef struct aeron_subscription_link_stct
+{
+    int64_t client_id;
+    int64_t registration_id;
+    int cached_client_index;
+    int32_t stream_id;
+    int (*matches)(struct aeron_subscription_link_stct *link, void *rhs);
+}
+aeron_subscription_link_t;
+
 typedef void (*aeron_managed_resource_on_time_event_func_t)(void *clientd, int64_t, int64_t);
 typedef bool (*aeron_managed_resource_has_reached_end_of_life_func_t)(void *clientd);
 typedef void (*aeron_managed_resource_delete_func_t)(void *clientd);
@@ -79,6 +89,17 @@ typedef struct aeron_driver_conductor_stct
         aeron_managed_resource_delete_func_t delete;
     }
     publication_links;
+
+    struct subscription_links_stct
+    {
+        aeron_subscription_link_t *array;
+        size_t length;
+        size_t capacity;
+        aeron_managed_resource_on_time_event_func_t on_time_event;
+        aeron_managed_resource_has_reached_end_of_life_func_t has_reached_end_of_life;
+        aeron_managed_resource_delete_func_t delete;
+    }
+    subscription_links;
 
     char stack_buffer[AERON_MAX_PATH];
     int stack_error_code;

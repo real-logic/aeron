@@ -23,7 +23,6 @@
 #include <ftw.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/mman.h>
 #include <inttypes.h>
 #include <errno.h>
 #include <math.h>
@@ -254,7 +253,7 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
         return -1;
     }
 
-    munmap(context->cnc_buffer, context->cnc_buffer_length);
+    aeron_unmap(&context->cnc_map);
 
     aeron_free((void *)context->aeron_dir);
     aeron_free(context->conductor_idle_strategy_state);
@@ -280,10 +279,10 @@ int aeron_dir_delete(const char *dirname)
 }
 
 bool aeron_is_driver_active_with_cnc(
-    void *cnc_mmap, size_t cnc_length, int64_t timeout, int64_t now, aeron_log_func_t log_func)
+    aeron_mapped_file_t *cnc_mmap, int64_t timeout, int64_t now, aeron_log_func_t log_func)
 {
     char buffer[AERON_MAX_PATH];
-    aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)cnc_mmap;
+    aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)cnc_mmap->addr;
 
     if (AERON_CNC_VERSION != metadata->cnc_version)
     {
@@ -333,14 +332,13 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, a
 
     if (stat(dirname, &sb) == 0 && (S_ISDIR(sb.st_mode)))
     {
-        void *cnc_mmap = NULL;
-        size_t cnc_length = 0;
+        aeron_mapped_file_t cnc_map = { NULL, 0 };
 
         snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron directory %s exists", dirname);
         log_func(buffer);
 
         snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_CNC_FILE);
-        if (aeron_map_existing_file(&cnc_mmap, buffer, &cnc_length) < 0)
+        if (aeron_map_existing_file(&cnc_map, buffer) < 0)
         {
             /* TODO: EINVAL? or ESTATE? */
             snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to mmap CnC file");
@@ -351,9 +349,9 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, a
         snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron CnC file %s/%s exists", dirname, AERON_CNC_FILE);
         log_func(buffer);
 
-        result = aeron_is_driver_active_with_cnc(cnc_mmap, cnc_length, timeout, aeron_epochclock(), log_func);
+        result = aeron_is_driver_active_with_cnc(&cnc_map, timeout, aeron_epochclock(), log_func);
 
-        munmap(cnc_mmap, cnc_length);
+        aeron_unmap(&cnc_map);
     }
 
     return result;

@@ -281,5 +281,5 @@ int aeron_map_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log)
         }
     }
 
-    return 0;
+    return result;
 }

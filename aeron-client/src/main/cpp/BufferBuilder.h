@@ -16,14 +16,17 @@
 #ifndef AERON_BUFFERBUILDER_H
 #define AERON_BUFFERBUILDER_H
 
+#include <limits>
 #include "Aeron.h"
 
 namespace aeron {
 
+static const std::uint32_t BUFFER_BUILDER_MAX_CAPACITY = std::numeric_limits<std::uint32_t>::max() - 8;
+
 class BufferBuilder
 {
 public:
-    typedef BufferBuilder this_t;
+    using this_t = BufferBuilder;
 
     BufferBuilder(std::uint32_t initialLength) :
         m_capacity(BitUtil::findNextPowerOfTwo(initialLength)),
@@ -82,11 +85,28 @@ private:
     std::uint32_t m_limit = 0;
     std::unique_ptr<std::uint8_t[]> m_buffer;
 
-    inline static std::uint32_t findSuitableCapacity(std::uint32_t capacity, std::uint32_t requiredCapacity)
+    inline static std::uint32_t findSuitableCapacity(std::uint32_t currentCapacity, std::uint32_t requiredCapacity)
     {
+        std::uint32_t capacity = currentCapacity;
+
         do
         {
-            capacity <<= 1;
+            const std::uint32_t newCapacity = capacity + (capacity >> 1);
+
+            if (newCapacity < capacity || newCapacity > BUFFER_BUILDER_MAX_CAPACITY)
+            {
+                if (capacity == BUFFER_BUILDER_MAX_CAPACITY)
+                {
+                    throw util::IllegalStateException(
+                        util::strPrintf("Max capacity reached: %d", BUFFER_BUILDER_MAX_CAPACITY), SOURCEINFO);
+                }
+
+                capacity = BUFFER_BUILDER_MAX_CAPACITY;
+            }
+            else
+            {
+                capacity = newCapacity;
+            }
         }
         while (capacity < requiredCapacity);
 

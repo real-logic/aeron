@@ -46,6 +46,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     protected InetSocketAddress connectAddress;
     protected DatagramChannel sendDatagramChannel;
     protected DatagramChannel receiveDatagramChannel;
+    protected int multicastTtl = 0;
 
     public UdpChannelTransport(
         final UdpChannel udpChannel,
@@ -91,6 +92,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 if (0 != udpChannel.multicastTtl())
                 {
                     sendDatagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_TTL, udpChannel.multicastTtl());
+                    multicastTtl = getOption(StandardSocketOptions.IP_MULTICAST_TTL);
                 }
 
                 if (null != connectAddress)
@@ -166,23 +168,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     public int multicastTtl()
     {
-        int result = udpChannel.multicastTtl();
-
-        if (isMulticast())
-        {
-            if (0 == udpChannel.multicastTtl())
-            {
-                try
-                {
-                    result = sendDatagramChannel.getOption(IP_MULTICAST_TTL);
-                }
-                catch (final Exception ignore)
-                {
-                }
-            }
-        }
-
-        return result;
+        return multicastTtl;
     }
 
     /**

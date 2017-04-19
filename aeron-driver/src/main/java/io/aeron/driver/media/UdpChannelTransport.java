@@ -178,7 +178,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 }
                 catch (final Exception ignore)
                 {
-                    // ignore
                 }
             }
         }
@@ -228,28 +227,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
     public boolean isMulticast()
     {
         return udpChannel.isMulticast();
-    }
-
-    /**
-     * Return socket option value
-     *
-     * @param name of the socket option
-     * @param <T>  type of option
-     * @return option value
-     */
-    public <T> T getOption(final SocketOption<T> name)
-    {
-        T option = null;
-        try
-        {
-            option = sendDatagramChannel.getOption(name);
-        }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-
-        return option;
     }
 
     /**
@@ -303,5 +280,27 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
 
         return address;
+    }
+
+    /**
+     * Return socket option value
+     *
+     * @param socketOption of the socket option
+     * @param <T>          type of option
+     * @return option value
+     */
+    protected <T> T getOption(final SocketOption<T> socketOption)
+    {
+        T option = null;
+        try
+        {
+            option = sendDatagramChannel.getOption(socketOption);
+        }
+        catch (final IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        return option;
     }
 }

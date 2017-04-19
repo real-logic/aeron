@@ -50,10 +50,10 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter shortSends;
     private final AtomicCounter possibleTtlAsymmetry;
     private final AtomicCounter statusIndicator;
-
     private final Int2IntCounterMap refCountByStreamIdMap = new Int2IntCounterMap(0);
 
     private final long receiverId;
+    private int soRcvBufLength;
     private boolean isClosed = false;
 
     public ReceiveChannelEndpoint(
@@ -143,6 +143,8 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     public void openChannel()
     {
         openDatagramChannel(statusIndicator);
+
+        soRcvBufLength = getOption(StandardSocketOptions.SO_RCVBUF);
     }
 
     public void possibleTtlAsymmetryEncountered()
@@ -226,33 +228,29 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
     public void validateWindowMaxLength(final int windowMaxLength)
     {
-        final int soRcvbuf = getOption(StandardSocketOptions.SO_RCVBUF);
-
-        if (windowMaxLength > soRcvbuf)
+        if (windowMaxLength > soRcvBufLength)
         {
             throw new ConfigurationException(String.format(
                 "Max Window length greater than socket SO_RCVBUF, " +
                 "increase %s to match window: windowMaxLength=%d, SO_RCVBUF=%d",
                 Configuration.INITIAL_WINDOW_LENGTH_PROP_NAME,
                 windowMaxLength,
-                soRcvbuf));
+                soRcvBufLength));
         }
     }
 
     public void validateSenderMtuLength(final int senderMtuLength)
     {
-        final int soRcvbuf = getOption(StandardSocketOptions.SO_RCVBUF);
-
         Configuration.validateMtuLength(senderMtuLength);
 
-        if (senderMtuLength > soRcvbuf)
+        if (senderMtuLength > soRcvBufLength)
         {
             throw new ConfigurationException(String.format(
                 "Sender MTU greater than socket SO_RCVBUF, " +
                 "increase %s to match MTU: senderMtuLength=%d, SO_RCVBUF=%d",
                 Configuration.SOCKET_RCVBUF_LENGTH_PROP_NAME,
                 senderMtuLength,
-                soRcvbuf));
+                soRcvBufLength));
         }
     }
 

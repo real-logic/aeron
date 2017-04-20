@@ -232,7 +232,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         {
             throw new ConfigurationException(String.format(
                 "Max Window length greater than socket SO_RCVBUF, " +
-                "increase %s to match window: windowMaxLength=%d, SO_RCVBUF=%d",
+                "increase '%s' to match window: windowMaxLength=%d, SO_RCVBUF=%d",
                 Configuration.INITIAL_WINDOW_LENGTH_PROP_NAME,
                 windowMaxLength,
                 soRcvBufLength));
@@ -247,7 +247,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         {
             throw new ConfigurationException(String.format(
                 "Sender MTU greater than socket SO_RCVBUF, " +
-                "increase %s to match MTU: senderMtuLength=%d, SO_RCVBUF=%d",
+                "increase '%s' to match MTU: senderMtuLength=%d, SO_RCVBUF=%d",
                 Configuration.SOCKET_RCVBUF_LENGTH_PROP_NAME,
                 senderMtuLength,
                 soRcvBufLength));

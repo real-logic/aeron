@@ -35,7 +35,6 @@ import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.BusySpinIdleStrategy;
-import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
@@ -58,6 +57,7 @@ public class EmbeddedPingPong
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
     private static final CountDownLatch PONG_IMAGE_LATCH = new CountDownLatch(1);
     private static final BusySpinIdleStrategy PING_HANDLER_IDLE_STRATEGY = new BusySpinIdleStrategy();
+    private static final BusySpinIdleStrategy PONG_HANDLER_IDLE_STRATEGY = new BusySpinIdleStrategy();
     private static final AtomicBoolean RUNNING = new AtomicBoolean(true);
 
     public static void main(final String[] args) throws Exception
@@ -105,7 +105,7 @@ public class EmbeddedPingPong
 
             System.out.println(
                 "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS +
-                " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
+                    " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
 
             for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
             {
@@ -164,21 +164,27 @@ public class EmbeddedPingPong
         final Subscription pongSubscription,
         final int numMessages)
     {
-        final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
+        final Image image = pongSubscription.getImage(0);
 
         for (int i = 0; i < numMessages; i++)
         {
+            long offeredPosition;
+
             do
             {
                 ATOMIC_BUFFER.putLong(0, System.nanoTime());
             }
-            while (pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
+            while ((offeredPosition = pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH)) < 0L);
 
-            idleStrategy.reset();
-            while (pongSubscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) <= 0)
+            PONG_HANDLER_IDLE_STRATEGY.reset();
+            do
             {
-                idleStrategy.idle();
+                while (image.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) <= 0)
+                {
+                    PONG_HANDLER_IDLE_STRATEGY.idle();
+                }
             }
+            while (image.position() < offeredPosition);
         }
     }
 

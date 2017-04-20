@@ -100,9 +100,12 @@ void sendPingAndReceivePong(
     std::unique_ptr<std::uint8_t[]> buffer(new std::uint8_t[settings.messageLength]);
     concurrent::AtomicBuffer srcBuffer(buffer.get(), settings.messageLength);
     BusySpinIdleStrategy idleStrategy;
+    Image& image = subscription->images()->front();
 
     for (int i = 0; i < settings.numberOfMessages; i++)
     {
+        std::int64_t position;
+
         do
         {
             // timestamps in the message are relative to this app, so just send the timepoint directly.
@@ -110,12 +113,16 @@ void sendPingAndReceivePong(
 
             srcBuffer.putBytes(0, (std::uint8_t*)&start, sizeof(steady_clock::time_point));
         }
-        while (publication->offer(srcBuffer, 0, settings.messageLength) < 0L);
+        while ((position = publication->offer(srcBuffer, 0, settings.messageLength)) < 0L);
 
-        while (subscription->poll(fragmentHandler, settings.fragmentCountLimit) <= 0)
+        do
         {
-            idleStrategy.idle(0);
+            while (subscription->poll(fragmentHandler, settings.fragmentCountLimit) <= 0)
+            {
+                idleStrategy.idle(0);
+            }
         }
+        while (image.position() < position);
     }
 }
 

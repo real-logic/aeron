@@ -113,19 +113,28 @@ public class Ping
         final Subscription subscription,
         final int count)
     {
+        final Image image = subscription.getImage(0);
+
         for (int i = 0; i < count; i++)
         {
+            long offeredPosition;
+
             do
             {
                 ATOMIC_BUFFER.putLong(0, System.nanoTime());
             }
-            while (publication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
+            while ((offeredPosition = publication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH)) < 0L);
 
             POLLING_IDLE_STRATEGY.reset();
-            while (subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) <= 0)
+
+            do
             {
-                POLLING_IDLE_STRATEGY.idle();
+                while (image.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) <= 0)
+                {
+                    POLLING_IDLE_STRATEGY.idle();
+                }
             }
+            while (image.position() < offeredPosition);
         }
     }
 

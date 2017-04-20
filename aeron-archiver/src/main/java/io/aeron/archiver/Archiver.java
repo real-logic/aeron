@@ -26,7 +26,6 @@ public class Archiver implements AutoCloseable
 {
     private final Context ctx;
     private AgentRunner runner;
-    private Aeron aeron;
 
     public Archiver(final Context ctx)
     {
@@ -58,17 +57,17 @@ public class Archiver implements AutoCloseable
     public void close() throws Exception
     {
         runner.close();
-        aeron.close();
     }
 
     public void start()
     {
-        aeron = Aeron.connect(ctx.clientContext);
-
+        final Aeron aeron = Aeron.connect(ctx.clientContext);
         ctx.conclude();
+
         // TODO: Should we have replay and record on same thread?
         // TODO: Should we allow the allocation of more threads to these tasks assuming slow storage/sufficient
         // TODO: traffic/sufficient replay load?
+
         final ArchiveConductor archiveConductor = new ArchiveConductor(aeron, ctx);
 
         runner = new AgentRunner(
@@ -121,7 +120,7 @@ public class Archiver implements AutoCloseable
             if (!archiveFolder.exists() && !archiveFolder.mkdirs())
             {
                 throw new IllegalArgumentException(
-                    "Failed to create archive folder:" + archiveFolder.getAbsolutePath());
+                    "Failed to create archive folder: " + archiveFolder.getAbsolutePath());
             }
 
             if (idleStrategy == null)

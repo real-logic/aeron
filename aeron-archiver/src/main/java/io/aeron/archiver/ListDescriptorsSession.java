@@ -123,7 +123,7 @@ class ListDescriptorsSession implements ArchiveConductor.Session
 
     private int close()
     {
-        CloseHelper.quietClose(reply);
+        CloseHelper.close(reply);
         state = State.DONE;
 
         return 1;

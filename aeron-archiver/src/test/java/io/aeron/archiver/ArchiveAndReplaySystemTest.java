@@ -104,9 +104,9 @@ public class ArchiveAndReplaySystemTest
     @After
     public void closeEverything() throws Exception
     {
-        CloseHelper.quietClose(publishingClient);
-        CloseHelper.quietClose(archiver);
-        CloseHelper.quietClose(driver);
+        CloseHelper.close(publishingClient);
+        CloseHelper.close(archiver);
+        CloseHelper.close(driver);
 
         if (null != archiveFolder)
         {

@@ -100,7 +100,7 @@ public class ArchivingSessionTest
     public void teardownMockTermBuff()
     {
         IoUtil.unmap(mockLogBufferMapped.byteBuffer());
-        CloseHelper.quietClose(mockLogBufferChannel);
+        CloseHelper.close(mockLogBufferChannel);
         IoUtil.delete(tempFolderForTest, false);
         IoUtil.delete(termFile, false);
     }

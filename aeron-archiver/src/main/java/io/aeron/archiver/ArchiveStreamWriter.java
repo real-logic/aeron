@@ -279,8 +279,8 @@ public class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawB
 
         if (archivePosition == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
         {
-            CloseHelper.quietClose(archiveFileChannel);
-            CloseHelper.quietClose(archiveFile);
+            CloseHelper.close(archiveFileChannel);
+            CloseHelper.close(archiveFile);
             archivePosition = 0;
             // TODO: allocate ahead files, will also give early indication to low storage
             newArchiveFile(termId + 1);
@@ -301,8 +301,8 @@ public class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawB
             return;
         }
 
-        CloseHelper.quietClose(archiveFileChannel);
-        CloseHelper.quietClose(archiveFile);
+        CloseHelper.close(archiveFileChannel);
+        CloseHelper.close(archiveFile);
 
         if (metaDataBuffer != null && !stopped)
         {
@@ -310,7 +310,7 @@ public class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawB
         }
 
         IoUtil.unmap(metaDataBuffer);
-        CloseHelper.quietClose(metadataFileChannel);
+        CloseHelper.close(metadataFileChannel);
 
         closed = true;
     }

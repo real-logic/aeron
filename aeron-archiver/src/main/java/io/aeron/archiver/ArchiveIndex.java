@@ -157,7 +157,7 @@ class ArchiveIndex implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.quietClose(archiveIndexFileChannel);
+        CloseHelper.close(archiveIndexFileChannel);
     }
 
     boolean readArchiveDescriptor(final int streamInstanceId, final ByteBuffer buffer)

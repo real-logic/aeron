@@ -266,9 +266,9 @@ class ReplaySession implements ArchiveConductor.Session, ControlledFragmentHandl
 
     private int close()
     {
-        CloseHelper.quietClose(replay);
-        CloseHelper.quietClose(control);
-        CloseHelper.quietClose(cursor);
+        CloseHelper.close(replay);
+        CloseHelper.close(control);
+        CloseHelper.close(cursor);
         this.state = State.DONE;
 
         return 1;

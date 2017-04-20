@@ -40,7 +40,6 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
 
     private final Aeron aeron;
     private final Subscription serviceRequestSubscription;
-    private final Publication archiverNotificationPublication;
     private final ArrayList<Session> sessions = new ArrayList<>();
     private final Int2ObjectHashMap<ReplaySession> replaySessionBySessionIdMap = new Int2ObjectHashMap<>();
 
@@ -66,7 +65,7 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
         this.aeron = aeron;
         serviceRequestSubscription = aeron.addSubscription(ctx.serviceRequestChannel(), ctx.serviceRequestStreamId());
 
-        archiverNotificationPublication = aeron.addPublication(
+        final Publication archiverNotificationPublication = aeron.addPublication(
             ctx.archiverNotificationsChannel(), ctx.archiverNotificationsStreamId());
 
         this.archiveFolder = ctx.archiveFolder();
@@ -93,7 +92,7 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
 
     public String roleName()
     {
-        return "ArchiverConductor";
+        return "archive-conductor";
     }
 
     public int doWork() throws Exception
@@ -116,9 +115,14 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
         }
 
         isClosed = true;
+
         for (final Session session : sessions)
         {
             session.abort();
+            while (!session.isDone())
+            {
+                session.doWork();
+            }
         }
         doSessionsWork();
 
@@ -137,16 +141,8 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
             System.err.println("ERROR: expected empty archivingSessionByStreamInstanceIdMap");
         }
 
-        for (final Subscription subscription : archiveSubscriptionSet)
-        {
-            subscription.close();
-        }
-        archiveSubscriptionSet.clear();
-
-        imageNotificationQueue.clear();
-        archiverNotificationPublication.close();
-        serviceRequestSubscription.close();
-        CloseHelper.quietClose(archiveIndex);
+        CloseHelper.close(archiveIndex);
+        aeron.close();
     }
 
     private void handleNewImageNotification(final Image image)

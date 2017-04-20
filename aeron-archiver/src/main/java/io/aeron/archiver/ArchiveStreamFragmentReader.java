@@ -198,7 +198,7 @@ class ArchiveStreamFragmentReader implements AutoCloseable
     private void closeArchiveFile()
     {
         unmapTermBuffer();
-        CloseHelper.quietClose(currentDataChannel);
+        CloseHelper.close(currentDataChannel);
     }
 
     private void openArchiveFile() throws IOException

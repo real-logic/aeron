@@ -58,7 +58,7 @@ class ArchiveIndex implements AutoCloseable
         try
         {
             final File indexFile = new File(archiveFolder, INDEX_FILE_NAME);
-            channel = FileChannel.open(indexFile.toPath(), CREATE, READ, WRITE, DSYNC);
+            channel = FileChannel.open(indexFile.toPath(), CREATE, READ, WRITE);
             final ArchiveDescriptorDecoder decoder = new ArchiveDescriptorDecoder();
 
             while (channel.read(byteBuffer) != -1)

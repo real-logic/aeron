@@ -134,7 +134,7 @@ public class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawB
 
         try
         {
-            archiveFile = new RandomAccessFile(file, "rwd");
+            archiveFile = new RandomAccessFile(file, "rw");
             archiveFile.setLength(ArchiveFileUtil.ARCHIVE_FILE_SIZE);
             archiveFileChannel = archiveFile.getChannel();
         }

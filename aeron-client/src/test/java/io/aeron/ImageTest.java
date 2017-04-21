@@ -225,10 +225,11 @@ public class ImageTest
         {
             image.controlledPoll(mockControlledFragmentHandler, Integer.MAX_VALUE);
         }
-        catch (Exception e)
+        catch (final Exception ignore)
         {
             thrown = true;
         }
+
         assertTrue(thrown);
         assertThat(image.position(), is(initialPosition + ALIGNED_FRAME_LENGTH));
 
@@ -255,10 +256,11 @@ public class ImageTest
         {
             image.poll(mockFragmentHandler, Integer.MAX_VALUE);
         }
-        catch (Exception e)
+        catch (final Exception ignore)
         {
             thrown = true;
         }
+
         assertTrue(thrown);
         assertThat(image.position(), is(initialPosition + ALIGNED_FRAME_LENGTH));
 

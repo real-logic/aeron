@@ -27,7 +27,9 @@
 
         <module name="ConstantName"/>
 
-        <module name="FinalParameters"/>
+        <module name="FinalParameters">
+            <property name="tokens" value="METHOD_DEF, CTOR_DEF, LITERAL_CATCH, FOR_EACH_CLAUSE"/>
+        </module>
 
         <module name="FinalLocalVariable">
             <property name="validateEnhancedForLoopVariable" value="true"/>

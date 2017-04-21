@@ -971,7 +971,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Set whether or not this application will attempt to delete the Aeron directories when starting.
+         * Set whether or not the driver will immediately attempt to delete the Aeron directories when starting.
          *
          * @param dirsDeleteOnStart Attempt deletion.
          * @return this Object for method chaining.
@@ -1245,7 +1245,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Get whether or not this application will attempt to delete the Aeron directories when starting.
+         * Get whether or not the driver will immediately attempt to delete the Aeron directories when starting.
          *
          * @return true when directories will be deleted, otherwise false.
          */

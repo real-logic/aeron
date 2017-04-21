@@ -72,19 +72,11 @@ class FileMappingConvention
         final int streamId,
         final long correlationId)
     {
-        final String filename = String.format(
-            "%s-%s-%s-%s.logbuffer",
-            channel, toHexString(sessionId), toHexString(streamId), toHexString(correlationId));
-        return new File(rootDir, filename);
-    }
+        final String fileName = channel + '-' +
+            Integer.toHexString(sessionId) + '-' +
+            Integer.toHexString(streamId) + '-' +
+            Long.toHexString(correlationId) + ".logbuffer";
 
-    private static String toHexString(final int value)
-    {
-        return String.format("%X", value);
-    }
-
-    private static String toHexString(final long value)
-    {
-        return String.format("%X", value);
+        return new File(rootDir, fileName);
     }
 }

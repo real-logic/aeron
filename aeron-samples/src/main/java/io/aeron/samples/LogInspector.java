@@ -17,6 +17,7 @@ package io.aeron.samples;
 
 import io.aeron.LogBuffers;
 import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
@@ -64,9 +65,10 @@ public class LogInspector
             final UnsafeBuffer[] termBuffers = logBuffers.termBuffers();
             final int termLength = logBuffers.termLength();
             final UnsafeBuffer metaDataBuffer = logBuffers.metaDataBuffer();
+            final int initialTermId = initialTermId(metaDataBuffer);
 
             out.format("Time of last SM: %s%n", new Date(timeOfLastStatusMessage(metaDataBuffer)));
-            out.format("Initial term id: %d%n", initialTermId(metaDataBuffer));
+            out.format("Initial term id: %d%n", initialTermId);
             out.format("   Active index: %d%n", activePartitionIndex(metaDataBuffer));
             out.format("    Term length: %d%n", termLength);
             out.format("     MTU length: %d%n%n", mtuLength(metaDataBuffer));
@@ -83,17 +85,23 @@ public class LogInspector
             {
                 final long rawTail = rawTailVolatile(metaDataBuffer, 0);
                 final long termOffset = rawTail & 0xFFFF_FFFFL;
+                final int termId = termId(rawTail);
+                final int offset = (int)Math.min(termOffset, termLength);
+                final int bitsToShift = Integer.numberOfTrailingZeros(termLength);
                 out.format(
-                    "Index %d Term Meta Data termOffset=%d termId=%d rawTail=%d%n",
+                    "Index %d Term Meta Data termOffset=%d termId=%d rawTail=%d position=%d%n",
                     i,
                     termOffset,
-                    termId(rawTail),
-                    rawTail);
+                    termId,
+                    rawTail,
+                    LogBufferDescriptor.computePosition(termId, offset, bitsToShift, initialTermId)
+                );
             }
 
             for (int i = 0; i < PARTITION_COUNT; i++)
             {
-                out.println("%n======================================================================");
+                out.println();
+                out.println("======================================================================");
                 out.format("Index %d Term Data%n%n", i);
 
                 final UnsafeBuffer termBuffer = termBuffers[i];
@@ -119,7 +127,7 @@ public class LogInspector
                         }
                         catch (final Exception ex)
                         {
-                            System.out.printf("frameLength=%d offset=%d%n", frameLength, offset);
+                            System.err.printf("frameLength=%d offset=%d%n", frameLength, offset);
                             ex.printStackTrace();
                         }
 

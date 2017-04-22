@@ -126,7 +126,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         catch (final IOException ex)
         {
             statusIndicator.setOrdered(ChannelEndpointStatus.ERRORED);
-            throw new RuntimeException("Channel: " + udpChannel.originalUriString(), ex);
+            throw new RuntimeException("Erroneous channel: " + udpChannel.originalUriString(), ex);
         }
     }
 

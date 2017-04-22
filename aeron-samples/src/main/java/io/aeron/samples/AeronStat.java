@@ -41,14 +41,14 @@ import static io.aeron.driver.status.StreamPositionCounter.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 
 /**
- * Tool for printing out Aeron counters. A command-and-control (cnc) file is maintained by media driver
+ * Tool for printing out Aeron counters. A command-and-control (CnC) file is maintained by media driver
  * in shared memory. This application reads the the cnc file and prints the counters. Layout of the cnc file is
  * described in {@link CncFileDescriptor}.
  *
  * This tool accepts filters on the command line, e.g. for connections only see example below:
  *
  * <code>
- *     java -cp aeron-samples/build/libs/samples.jar io.aeron.samples.AeronStat type=[1-4] identity=12345
+ *     java -cp aeron-samples/build/libs/samples.jar io.aeron.samples.AeronStat type=[1-9] identity=12345
  * </code>
  */
 public class AeronStat
@@ -57,7 +57,8 @@ public class AeronStat
      * Types of the counters.
      * <ul>
      *     <li>0: System Counters</li>
-     *     <li>1 - 4: Stream Positions</li>
+     *     <li>1 - 5, 9: Stream Positions</li>
+     *     <li>6 - 7: Channel Endpoint Status</li>
      * </ul>
      */
     private static final String COUNTER_TYPE_ID = "type";
@@ -258,14 +259,14 @@ public class AeronStat
             if (!match(identityFilter, () -> Long.toString(keyBuffer.getLong(REGISTRATION_ID_OFFSET))) ||
                 !match(sessionFilter, () -> Integer.toString(keyBuffer.getInt(SESSION_ID_OFFSET))) ||
                 !match(streamFilter, () -> Integer.toString(keyBuffer.getInt(STREAM_ID_OFFSET))) ||
-                !match(channelFilter, () -> keyBuffer.getStringUtf8(CHANNEL_OFFSET)))
+                !match(channelFilter, () -> keyBuffer.getStringAscii(CHANNEL_OFFSET)))
             {
                 return false;
             }
         }
         else if (typeId >= SEND_CHANNEL_STATUS_TYPE_ID && typeId <= RECEIVE_CHANNEL_STATUS_TYPE_ID)
         {
-            if (!match(channelFilter, () -> keyBuffer.getStringUtf8(ChannelEndpointStatus.CHANNEL_OFFSET)))
+            if (!match(channelFilter, () -> keyBuffer.getStringAscii(ChannelEndpointStatus.CHANNEL_OFFSET)))
             {
                 return false;
             }

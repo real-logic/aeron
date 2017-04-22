@@ -20,8 +20,6 @@ import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
-import java.nio.charset.StandardCharsets;
-
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
@@ -121,12 +119,9 @@ public class StreamPositionCounter
                 buffer.putLong(REGISTRATION_ID_OFFSET, registrationId);
                 buffer.putInt(SESSION_ID_OFFSET, sessionId);
                 buffer.putInt(STREAM_ID_OFFSET, streamId);
-
-                final byte[] channelBytes = channel.getBytes(StandardCharsets.UTF_8);
-                final int length = Math.min(channelBytes.length, MAX_CHANNEL_LENGTH);
-
-                buffer.putInt(CHANNEL_OFFSET, length);
-                buffer.putBytes(CHANNEL_OFFSET + SIZE_OF_INT, channelBytes, 0, length);
+                buffer.putStringAscii(
+                    CHANNEL_OFFSET,
+                    channel.length() > MAX_CHANNEL_LENGTH ? channel.substring(0, MAX_CHANNEL_LENGTH) : channel);
             }
         );
 

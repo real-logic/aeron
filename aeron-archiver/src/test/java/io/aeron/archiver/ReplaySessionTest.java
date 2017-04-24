@@ -27,9 +27,7 @@ import java.io.File;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.archiver.TestUtil.makeTempFolder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -58,7 +56,7 @@ public class ReplaySessionTest
             STREAM_INSTANCE_ID,
             TERM_BUFFER_LENGTH,
             INITIAL_TERM_ID,
-            streamKey))
+            streamKey, true, true))
         {
             when(epochClock.time()).thenReturn(42L);
 

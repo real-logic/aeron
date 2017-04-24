@@ -26,23 +26,24 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
 import static io.aeron.archiver.ArchiveFileUtil.archiveOffset;
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
+import static java.nio.file.StandardOpenOption.*;
 
 public class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBlockHandler
 {
-    private final int imageInitialTermId;
+    private final boolean forceWrites;
+    private final boolean forceMetadataUpdates;
+
     private final int termBufferLength;
     private final int termsMask;
     private final int streamInstanceId;
 
     private final File archiveFolder;
+    private final EpochClock epochClock;
+
     private final FileChannel metadataFileChannel;
     private final MappedByteBuffer metaDataBuffer;
     private final ArchiveDescriptorEncoder metaDataWriter;
 
-    private final EpochClock epochClock;
     /**
      * Index is in the range 0:ARCHIVE_FILE_SIZE, except before the first block for this image is received indicated
      * by -1
@@ -65,15 +66,18 @@ public class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawB
         final int streamInstanceId,
         final int termBufferLength,
         final int imageInitialTermId,
-        final StreamKey streamKey)
+        final StreamKey streamKey,
+        final boolean forceWrites,
+        final boolean forceMetadataUpdates)
     {
         this.streamInstanceId = streamInstanceId;
         this.archiveFolder = archiveFolder;
         this.termBufferLength = termBufferLength;
         this.epochClock = epochClock;
-        this.imageInitialTermId = imageInitialTermId;
 
         this.termsMask = (ArchiveFileUtil.ARCHIVE_FILE_SIZE / termBufferLength) - 1;
+        this.forceWrites = forceWrites;
+        this.forceMetadataUpdates = forceMetadataUpdates;
         if (((termsMask + 1) & termsMask) != 0)
         {
             throw new IllegalArgumentException(
@@ -134,6 +138,8 @@ public class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawB
 
         try
         {
+            // NOTE: using 'rwd' options would force sync on data writes(not sync metadata), but is slower than forcing
+            // externally.
             archiveFile = new RandomAccessFile(file, "rw");
             archiveFile.setLength(ArchiveFileUtil.ARCHIVE_FILE_SIZE);
             archiveFileChannel = archiveFile.getChannel();
@@ -169,6 +175,10 @@ public class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawB
             prepareWrite(termOffset, termId, archiveOffset, blockLength);
 
             fileChannel.transferTo(fileOffset, blockLength, archiveFileChannel);
+            if (forceWrites)
+            {
+                archiveFileChannel.force(false);
+            }
 
             writePrologue(termOffset, blockLength, termId, archiveOffset);
         }
@@ -275,7 +285,10 @@ public class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawB
         final int endTermOffset = termOffset + blockLength;
         metaDataWriter.lastTermOffset(endTermOffset);
         lastTermOffset = endTermOffset;
-        metaDataBuffer.force();
+        if (forceMetadataUpdates)
+        {
+            metaDataBuffer.force();
+        }
 
         if (archivePosition == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
         {

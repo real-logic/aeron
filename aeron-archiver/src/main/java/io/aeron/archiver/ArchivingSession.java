@@ -80,7 +80,7 @@ class ArchivingSession implements ArchiveConductor.Session
                 streamInstanceId,
                 termBufferLength,
                 imageInitialTermId,
-                new StreamKey(source, sessionId, channel, streamId));
+                new StreamKey(source, sessionId, channel, streamId), true, true);
         }
         catch (final Exception ex)
         {

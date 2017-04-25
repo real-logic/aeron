@@ -54,7 +54,7 @@ public class PreferredMulticastFlowControl implements FlowControl
     private static final String PREFERRED_ASF_PROP_NAME = "aeron.PreferredMulticastFlowControl.asf";
 
     /**
-     * Default ASF value
+     * Default Application Specific Feedback (ASF) value
      */
     private static final String PREFERRED_ASF_DEFAULT = "FFFFFFFF";
 

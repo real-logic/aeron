@@ -74,13 +74,16 @@ class ArchivingSession implements ArchiveConductor.Session
         ArchiveStreamWriter writer = null;
         try
         {
-            writer = new ArchiveStreamWriter(
-                archiveFolder,
-                epochClock,
-                streamInstanceId,
-                termBufferLength,
-                imageInitialTermId,
-                new StreamKey(source, sessionId, channel, streamId), true, true);
+            writer = new ArchiveStreamWriter.ArchiveStreamWriterBuilder()
+                .archiveFolder(archiveFolder)
+                .epochClock(epochClock)
+                .streamInstanceId(streamInstanceId)
+                .termBufferLength(termBufferLength)
+                .imageInitialTermId(imageInitialTermId)
+                .streamKey(new StreamKey(source, sessionId, channel, streamId))
+                .forceWrites(true)
+                .forceMetadataUpdates(true)
+                .build();
         }
         catch (final Exception ex)
         {

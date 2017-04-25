@@ -50,13 +50,16 @@ public class ReplaySessionTest
         proxy = Mockito.mock(ArchiverProtocolProxy.class);
         final EpochClock epochClock = mock(EpochClock.class);
         final StreamKey streamKey = new StreamKey("source", 1, "channel", 1);
-        try (ArchiveStreamWriter writer = new ArchiveStreamWriter(
-            archiveFolder,
-            epochClock,
-            STREAM_INSTANCE_ID,
-            TERM_BUFFER_LENGTH,
-            INITIAL_TERM_ID,
-            streamKey, true, true))
+        try (ArchiveStreamWriter writer = new ArchiveStreamWriter.ArchiveStreamWriterBuilder()
+            .archiveFolder(archiveFolder)
+            .epochClock(epochClock)
+            .streamInstanceId(STREAM_INSTANCE_ID)
+            .termBufferLength(TERM_BUFFER_LENGTH)
+            .imageInitialTermId(INITIAL_TERM_ID)
+            .streamKey(streamKey)
+            .forceWrites(true)
+            .forceMetadataUpdates(true)
+            .build())
         {
             when(epochClock.time()).thenReturn(42L);
 

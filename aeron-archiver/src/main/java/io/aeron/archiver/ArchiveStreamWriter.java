@@ -28,8 +28,80 @@ import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
 import static io.aeron.archiver.ArchiveFileUtil.archiveOffset;
 import static java.nio.file.StandardOpenOption.*;
 
-public class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBlockHandler
+final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBlockHandler
 {
+    static class ArchiveStreamWriterBuilder
+    {
+        private File archiveFolder;
+        private EpochClock epochClock;
+        private int streamInstanceId;
+        private int termBufferLength;
+        private int imageInitialTermId;
+        private StreamKey streamKey;
+        private boolean forceWrites = true;
+        private boolean forceMetadataUpdates = true;
+
+        ArchiveStreamWriterBuilder archiveFolder(final File archiveFolder)
+        {
+            this.archiveFolder = archiveFolder;
+            return this;
+        }
+
+        ArchiveStreamWriterBuilder epochClock(final EpochClock epochClock)
+        {
+            this.epochClock = epochClock;
+            return this;
+        }
+
+        ArchiveStreamWriterBuilder streamInstanceId(final int streamInstanceId)
+        {
+            this.streamInstanceId = streamInstanceId;
+            return this;
+        }
+
+        ArchiveStreamWriterBuilder termBufferLength(final int termBufferLength)
+        {
+            this.termBufferLength = termBufferLength;
+            return this;
+        }
+
+        ArchiveStreamWriterBuilder imageInitialTermId(final int imageInitialTermId)
+        {
+            this.imageInitialTermId = imageInitialTermId;
+            return this;
+        }
+
+        ArchiveStreamWriterBuilder streamKey(final StreamKey streamKey)
+        {
+            this.streamKey = streamKey;
+            return this;
+        }
+
+        ArchiveStreamWriterBuilder forceWrites(final boolean forceWrites)
+        {
+            this.forceWrites = forceWrites;
+            return this;
+        }
+
+        ArchiveStreamWriterBuilder forceMetadataUpdates(final boolean forceMetadataUpdates)
+        {
+            this.forceMetadataUpdates = forceMetadataUpdates;
+            return this;
+        }
+
+        ArchiveStreamWriter build()
+        {
+            return new ArchiveStreamWriter(
+                archiveFolder,
+                epochClock,
+                streamInstanceId,
+                termBufferLength,
+                imageInitialTermId,
+                streamKey,
+                forceWrites,
+                forceMetadataUpdates);
+        }
+    }
     private final boolean forceWrites;
     private final boolean forceMetadataUpdates;
 
@@ -60,7 +132,7 @@ public class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawB
     private boolean closed = false;
     private boolean stopped = false;
 
-    ArchiveStreamWriter(
+    private ArchiveStreamWriter(
         final File archiveFolder,
         final EpochClock epochClock,
         final int streamInstanceId,

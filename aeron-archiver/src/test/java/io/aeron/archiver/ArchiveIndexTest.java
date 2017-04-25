@@ -30,10 +30,8 @@ public class ArchiveIndexTest
     static final UnsafeBuffer UB = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(ArchiveIndex.INDEX_RECORD_SIZE, 64));
     static final ArchiveDescriptorDecoder DECODER = new ArchiveDescriptorDecoder();
-    static final StreamKey STREAM_INSTANCE_A = new StreamKey("sourceA", 6, "channelG", 1);
-    static final StreamKey STREAM_INSTANCE_B = new StreamKey("sourceV", 7, "channelH", 2);
-    static final StreamKey STREAM_INSTANCE_C = new StreamKey("sourceB", 8, "channelK", 3);
-    static final StreamKey STREAM_INSTANCE_D = new StreamKey("sourceN", 9, "channelJ", 4);
+
+
     private static File archiveFolder;
 
     static int streamInstanceAId;
@@ -51,9 +49,9 @@ public class ArchiveIndexTest
         archiveFolder = TestUtil.makeTempFolder();
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
         {
-            streamInstanceAId = archiveIndex.addNewStreamInstance(STREAM_INSTANCE_A, 4096, 0);
-            streamInstanceBId = archiveIndex.addNewStreamInstance(STREAM_INSTANCE_B, 4096, 0);
-            streamInstanceCId = archiveIndex.addNewStreamInstance(STREAM_INSTANCE_C, 4096, 0);
+            streamInstanceAId = archiveIndex.addNewStreamInstance("sourceA", 6, "channelG", 1, 4096, 0);
+            streamInstanceBId = archiveIndex.addNewStreamInstance("sourceV", 7, "channelH", 2, 4096, 0);
+            streamInstanceCId = archiveIndex.addNewStreamInstance("sourceB", 8, "channelK", 3, 4096, 0);
         }
     }
 
@@ -68,23 +66,27 @@ public class ArchiveIndexTest
     {
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
         {
-            verifyArchiveForId(archiveIndex, streamInstanceAId, STREAM_INSTANCE_A);
-            verifyArchiveForId(archiveIndex, streamInstanceBId, STREAM_INSTANCE_B);
-            verifyArchiveForId(archiveIndex, streamInstanceCId, STREAM_INSTANCE_C);
+            verifyArchiveForId(archiveIndex, streamInstanceAId, "sourceA", 6, "channelG", 1);
+            verifyArchiveForId(archiveIndex, streamInstanceBId, "sourceV", 7, "channelH", 2);
+            verifyArchiveForId(archiveIndex, streamInstanceCId, "sourceB", 8, "channelK", 3);
         }
     }
 
-    private void verifyArchiveForId(final ArchiveIndex archiveIndex, final int id, final StreamKey streamKey)
+    private void verifyArchiveForId(
+        final ArchiveIndex archiveIndex,
+        final int id,
+        final String source,
+        final int sessionId, final String channel, final int streamId)
         throws IOException
     {
         UB.byteBuffer().clear();
         archiveIndex.readArchiveDescriptor(id, UB.byteBuffer());
         DECODER.limit(ArchiveIndex.INDEX_FRAME_LENGTH + ArchiveDescriptorDecoder.BLOCK_LENGTH);
         assertEquals(id, DECODER.streamInstanceId());
-        assertEquals(streamKey.sessionId(), DECODER.sessionId());
-        assertEquals(streamKey.streamId(), DECODER.streamId());
-        assertEquals(streamKey.source(), DECODER.source());
-        assertEquals(streamKey.channel(), DECODER.channel());
+        assertEquals(sessionId, DECODER.sessionId());
+        assertEquals(streamId, DECODER.streamId());
+        assertEquals(source, DECODER.source());
+        assertEquals(channel, DECODER.channel());
     }
 
     @Test
@@ -93,13 +95,13 @@ public class ArchiveIndexTest
         final int newStreamInstanceId;
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
         {
-            newStreamInstanceId = archiveIndex.addNewStreamInstance(STREAM_INSTANCE_D, 4096, 0);
+            newStreamInstanceId = archiveIndex.addNewStreamInstance("sourceN", 9, "channelJ", 4, 4096, 0);
         }
 
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
         {
-            verifyArchiveForId(archiveIndex, streamInstanceAId, STREAM_INSTANCE_A);
-            verifyArchiveForId(archiveIndex, newStreamInstanceId, STREAM_INSTANCE_D);
+            verifyArchiveForId(archiveIndex, streamInstanceAId, "sourceA", 6, "channelG", 1);
+            verifyArchiveForId(archiveIndex, newStreamInstanceId, "sourceN", 9, "channelJ", 4);
         }
     }
 
@@ -109,7 +111,7 @@ public class ArchiveIndexTest
         final int newStreamInstanceId;
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
         {
-            newStreamInstanceId = archiveIndex.addNewStreamInstance(STREAM_INSTANCE_A, 4096, 0);
+            newStreamInstanceId = archiveIndex.addNewStreamInstance("sourceA", 6, "channelG", 1, 4096, 0);
             assertNotEquals(streamInstanceAId, newStreamInstanceId);
         }
     }

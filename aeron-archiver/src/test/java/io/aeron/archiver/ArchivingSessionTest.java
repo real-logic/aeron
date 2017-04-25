@@ -30,12 +30,8 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
 import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileName;
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static java.nio.file.StandardOpenOption.*;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -68,8 +64,15 @@ public class ArchivingSessionTest
     {
         proxy = mock(ArchiverProtocolProxy.class);
         index = mock(ArchiveIndex.class);
-        final StreamKey instance = new StreamKey(source, sessionId, channel, streamId);
-        when(index.addNewStreamInstance(instance, termBufferLength, initialTermId)).thenReturn(streamInstanceId);
+        when(
+            index.addNewStreamInstance(
+                source,
+                sessionId,
+                channel,
+                streamId,
+                termBufferLength,
+                initialTermId))
+                .thenReturn(streamInstanceId);
         final Subscription subscription = mockSubscription(channel, streamId);
         image = mockImage(source, sessionId, initialTermId, termBufferLength, subscription);
     }

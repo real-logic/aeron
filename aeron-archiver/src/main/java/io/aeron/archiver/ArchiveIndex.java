@@ -90,6 +90,7 @@ class ArchiveIndex implements AutoCloseable
         }
     }
 
+    // TODO: prep for some lookup method construction
     private int loadIntoIndex(
         final ByteBuffer dst, final UnsafeBuffer unsafeBuffer, final ArchiveDescriptorDecoder decoder)
     {
@@ -108,10 +109,10 @@ class ArchiveIndex implements AutoCloseable
             ArchiveDescriptorDecoder.SCHEMA_VERSION);
 
         final int streamInstanceId = decoder.streamInstanceId();
-        final int sessionId = decoder.sessionId();
-        final int streamId = decoder.streamId();
-        final String source = decoder.source();
-        final String channel = decoder.channel();
+//        final int sessionId = decoder.sessionId();
+//        final int streamId = decoder.streamId();
+//        final String source = decoder.source();
+//        final String channel = decoder.channel();
 
         streamInstanceIdSeq = Math.max(streamInstanceId + 1, streamInstanceIdSeq);
 
@@ -119,7 +120,10 @@ class ArchiveIndex implements AutoCloseable
     }
 
     int addNewStreamInstance(
-        final StreamKey newStreamKey,
+        final String source,
+        final int sessionId,
+        final String channel,
+        final int streamId,
         final int termBufferLength,
         final int imageInitialTermId)
     {
@@ -131,7 +135,10 @@ class ArchiveIndex implements AutoCloseable
             newStreamInstanceId,
             termBufferLength,
             imageInitialTermId,
-            newStreamKey);
+            source,
+            sessionId,
+            channel,
+            streamId);
 
         final int encodedLength = archiveDescriptorEncoder.encodedLength();
         unsafeBuffer.putInt(0, encodedLength);

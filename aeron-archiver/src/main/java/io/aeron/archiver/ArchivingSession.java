@@ -60,7 +60,10 @@ class ArchivingSession implements ArchiveConductor.Session
         final int imageInitialTermId = image.initialTermId();
         this.index = index;
         streamInstanceId = index.addNewStreamInstance(
-            new StreamKey(source, sessionId, channel, streamId),
+            source,
+            sessionId,
+            channel,
+            streamId,
             termBufferLength,
             imageInitialTermId);
 
@@ -80,7 +83,10 @@ class ArchivingSession implements ArchiveConductor.Session
                 .streamInstanceId(streamInstanceId)
                 .termBufferLength(termBufferLength)
                 .imageInitialTermId(imageInitialTermId)
-                .streamKey(new StreamKey(source, sessionId, channel, streamId))
+                .source(source)
+                .sessionId(sessionId)
+                .channel(channel)
+                .streamId(streamId)
                 .forceWrites(true)
                 .forceMetadataUpdates(true)
                 .build();

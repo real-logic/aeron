@@ -37,9 +37,12 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
         private int streamInstanceId;
         private int termBufferLength;
         private int imageInitialTermId;
-        private StreamKey streamKey;
         private boolean forceWrites = true;
         private boolean forceMetadataUpdates = true;
+        private int sessionId;
+        private int streamId;
+        private String source;
+        private String channel;
 
         ArchiveStreamWriterBuilder archiveFolder(final File archiveFolder)
         {
@@ -71,12 +74,6 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
             return this;
         }
 
-        ArchiveStreamWriterBuilder streamKey(final StreamKey streamKey)
-        {
-            this.streamKey = streamKey;
-            return this;
-        }
-
         ArchiveStreamWriterBuilder forceWrites(final boolean forceWrites)
         {
             this.forceWrites = forceWrites;
@@ -89,17 +86,33 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
             return this;
         }
 
+        ArchiveStreamWriterBuilder sessionId(final int sessionId)
+        {
+            this.sessionId = sessionId;
+            return this;
+        }
+
+        ArchiveStreamWriterBuilder streamId(final int streamId)
+        {
+            this.streamId = streamId;
+            return this;
+        }
+
+        ArchiveStreamWriterBuilder source(final String source)
+        {
+            this.source = source;
+            return this;
+        }
+
+        ArchiveStreamWriterBuilder channel(final String channel)
+        {
+            this.channel = channel;
+            return this;
+        }
+
         ArchiveStreamWriter build()
         {
-            return new ArchiveStreamWriter(
-                archiveFolder,
-                epochClock,
-                streamInstanceId,
-                termBufferLength,
-                imageInitialTermId,
-                streamKey,
-                forceWrites,
-                forceMetadataUpdates);
+            return new ArchiveStreamWriter(this);
         }
     }
     private final boolean forceWrites;
@@ -132,24 +145,16 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
     private boolean closed = false;
     private boolean stopped = false;
 
-    private ArchiveStreamWriter(
-        final File archiveFolder,
-        final EpochClock epochClock,
-        final int streamInstanceId,
-        final int termBufferLength,
-        final int imageInitialTermId,
-        final StreamKey streamKey,
-        final boolean forceWrites,
-        final boolean forceMetadataUpdates)
+    private ArchiveStreamWriter(final ArchiveStreamWriterBuilder builder)
     {
-        this.streamInstanceId = streamInstanceId;
-        this.archiveFolder = archiveFolder;
-        this.termBufferLength = termBufferLength;
-        this.epochClock = epochClock;
+        this.streamInstanceId = builder.streamInstanceId;
+        this.archiveFolder = builder.archiveFolder;
+        this.termBufferLength = builder.termBufferLength;
+        this.epochClock = builder.epochClock;
 
         this.termsMask = (ArchiveFileUtil.ARCHIVE_FILE_SIZE / termBufferLength) - 1;
-        this.forceWrites = forceWrites;
-        this.forceMetadataUpdates = forceMetadataUpdates;
+        this.forceWrites = builder.forceWrites;
+        this.forceMetadataUpdates = builder.forceMetadataUpdates;
         if (((termsMask + 1) & termsMask) != 0)
         {
             throw new IllegalArgumentException(
@@ -166,7 +171,16 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
             final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(metaDataBuffer);
             metaDataWriter = new ArchiveDescriptorEncoder().wrap(unsafeBuffer, ArchiveIndex.INDEX_FRAME_LENGTH);
 
-            initDescriptor(metaDataWriter, streamInstanceId, termBufferLength, imageInitialTermId, streamKey);
+            initDescriptor(
+                metaDataWriter,
+                streamInstanceId,
+                termBufferLength,
+                builder.imageInitialTermId,
+                builder.source,
+                builder.sessionId,
+                builder.channel,
+                builder.streamId
+            );
 
             unsafeBuffer.putInt(0, metaDataWriter.encodedLength());
             metaDataBuffer.force();
@@ -185,7 +199,10 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
         final int streamInstanceId,
         final int termBufferLength,
         final int imageInitialTermId,
-        final StreamKey streamKey)
+        final String source,
+        final int sessionId,
+        final String channel,
+        final int streamId)
     {
         descriptor.streamInstanceId(streamInstanceId);
         descriptor.termBufferLength(termBufferLength);
@@ -196,10 +213,10 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
         descriptor.lastTermOffset(-1);
         descriptor.endTime(-1);
         descriptor.imageInitialTermId(imageInitialTermId);
-        descriptor.sessionId(streamKey.sessionId());
-        descriptor.streamId(streamKey.streamId());
-        descriptor.source(streamKey.source());
-        descriptor.channel(streamKey.channel());
+        descriptor.sessionId(sessionId);
+        descriptor.streamId(streamId);
+        descriptor.source(source);
+        descriptor.channel(channel);
     }
 
     private void newArchiveFile(final int termId)

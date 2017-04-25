@@ -57,7 +57,7 @@ public class MinMulticastFlowControl implements FlowControl
         final long senderLimit,
         final int initialTermId,
         final int positionBitsToShift,
-        final long now)
+        final long nowNs)
     {
         final long position = computePosition(
             flyweight.consumptionTermId(),
@@ -78,7 +78,7 @@ public class MinMulticastFlowControl implements FlowControl
             if (receiverId == receiver.receiverId)
             {
                 receiver.lastPositionPlusWindow = position + windowLength;
-                receiver.timeOfLastStatusMessage = now;
+                receiver.timeOfLastStatusMessage = nowNs;
                 isExisting = true;
             }
 
@@ -87,7 +87,7 @@ public class MinMulticastFlowControl implements FlowControl
 
         if (!isExisting)
         {
-            receiverList.add(new Receiver(position + windowLength, now, receiverId, receiverAddress));
+            receiverList.add(new Receiver(position + windowLength, nowNs, receiverId, receiverAddress));
             minPosition = Math.min(minPosition, position + windowLength);
         }
 
@@ -104,7 +104,7 @@ public class MinMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public long onIdle(final long now, final long senderLimit)
+    public long onIdle(final long nowNs, final long senderLimit)
     {
         long minPosition = Long.MAX_VALUE;
         final ArrayList<Receiver> receiverList = this.receiverList;
@@ -112,7 +112,7 @@ public class MinMulticastFlowControl implements FlowControl
         for (int lastIndex = receiverList.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final Receiver receiver = receiverList.get(i);
-            if (now > (receiver.timeOfLastStatusMessage + RECEIVER_TIMEOUT))
+            if (nowNs > (receiver.timeOfLastStatusMessage + RECEIVER_TIMEOUT))
             {
                 ArrayListUtil.fastUnorderedRemove(receiverList, i, lastIndex);
                 lastIndex--;

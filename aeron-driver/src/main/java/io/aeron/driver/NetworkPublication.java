@@ -186,9 +186,9 @@ public class NetworkPublication
         termLengthMask = termLength - 1;
         flowControl.initialize(initialTermId, termLength);
 
-        final long time = nanoClock.nanoTime();
-        timeOfLastSendOrHeartbeat = time - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
-        timeOfLastSetup = time - PUBLICATION_SETUP_TIMEOUT_NS - 1;
+        final long nowNs = nanoClock.nanoTime();
+        timeOfLastSendOrHeartbeat = nowNs - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
+        timeOfLastSetup = nowNs - PUBLICATION_SETUP_TIMEOUT_NS - 1;
 
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
@@ -351,7 +351,7 @@ public class NetworkPublication
 
             rttMeasurementHeader
                 .receiverId(msg.receiverId())
-                .echoTimestamp(msg.echoTimestamp())
+                .echoTimestampNs(msg.echoTimestampNs())
                 .receptionDelta(0)
                 .sessionId(sessionId)
                 .streamId(streamId)

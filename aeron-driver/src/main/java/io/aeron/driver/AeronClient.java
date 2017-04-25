@@ -22,14 +22,14 @@ public class AeronClient implements DriverManagedResource
 {
     private final long clientId;
     private final long clientLivenessTimeoutNs;
-    private long timeOfLastKeepalive;
+    private long timeOfLastKeepaliveNs;
     private boolean reachedEndOfLife = false;
 
-    public AeronClient(final long clientId, final long clientLivenessTimeoutNs, final long now)
+    public AeronClient(final long clientId, final long clientLivenessTimeoutNs, final long nowNs)
     {
         this.clientId = clientId;
         this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
-        this.timeOfLastKeepalive = now;
+        this.timeOfLastKeepaliveNs = nowNs;
     }
 
     public long clientId()
@@ -39,22 +39,22 @@ public class AeronClient implements DriverManagedResource
 
     public long timeOfLastKeepalive()
     {
-        return timeOfLastKeepalive;
+        return timeOfLastKeepaliveNs;
     }
 
-    public void timeOfLastKeepalive(final long now)
+    public void timeOfLastKeepalive(final long nowNs)
     {
-        timeOfLastKeepalive = now;
+        timeOfLastKeepaliveNs = nowNs;
     }
 
-    public boolean hasTimedOut(final long now)
+    public boolean hasTimedOut(final long nowNs)
     {
-        return now > (timeOfLastKeepalive + clientLivenessTimeoutNs);
+        return nowNs > (timeOfLastKeepaliveNs + clientLivenessTimeoutNs);
     }
 
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
-        if (timeNs > (timeOfLastKeepalive + clientLivenessTimeoutNs))
+        if (timeNs > (timeOfLastKeepaliveNs + clientLivenessTimeoutNs))
         {
             reachedEndOfLife = true;
         }
@@ -65,14 +65,14 @@ public class AeronClient implements DriverManagedResource
         return reachedEndOfLife;
     }
 
-    public void timeOfLastStateChange(final long time)
+    public void timeOfLastStateChange(final long timeNs)
     {
-        timeOfLastKeepalive = time;
+        timeOfLastKeepaliveNs = timeNs;
     }
 
     public long timeOfLastStateChange()
     {
-        return timeOfLastKeepalive;
+        return timeOfLastKeepaliveNs;
     }
 
     public void delete()

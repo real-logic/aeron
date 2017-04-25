@@ -326,7 +326,7 @@ public class EventDissector
             msg.frameLength(),
             msg.sessionId(),
             msg.streamId(),
-            msg.echoTimestamp(),
+            msg.echoTimestampNs(),
             msg.receptionDelta(),
             msg.receiverId());
     }

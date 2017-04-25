@@ -27,7 +27,7 @@ public class PendingSetupMessageFromSource
     private final boolean periodic;
     private final InetSocketAddress controlAddress;
 
-    private long timeOfStatusMessage;
+    private long timeOfStatusMessageNs;
 
     public PendingSetupMessageFromSource(
         final int sessionId,
@@ -73,14 +73,14 @@ public class PendingSetupMessageFromSource
         return controlAddress;
     }
 
-    public long timeOfStatusMessage()
+    public long timeOfStatusMessageNs()
     {
-        return timeOfStatusMessage;
+        return timeOfStatusMessageNs;
     }
 
-    public void timeOfStatusMessage(final long now)
+    public void timeOfStatusMessageNs(final long now)
     {
-        timeOfStatusMessage = now;
+        timeOfStatusMessageNs = now;
     }
 
     public void removeFromDataPacketDispatcher()

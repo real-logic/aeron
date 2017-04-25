@@ -98,12 +98,12 @@ public class RttMeasurementFlyweight extends HeaderFlyweight
         return this;
     }
 
-    public long echoTimestamp()
+    public long echoTimestampNs()
     {
         return getLong(ECHO_TIMESTAMP_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
-    public RttMeasurementFlyweight echoTimestamp(final long timestamp)
+    public RttMeasurementFlyweight echoTimestampNs(final long timestamp)
     {
         putLong(ECHO_TIMESTAMP_FIELD_OFFSET, timestamp, LITTLE_ENDIAN);
 
@@ -146,7 +146,7 @@ public class RttMeasurementFlyweight extends HeaderFlyweight
             .append(" type=").append(headerType())
             .append(" session_id=").append(sessionId())
             .append(" stream_id=").append(streamId())
-            .append(" echo_timestamp=").append(echoTimestamp())
+            .append(" echo_timestamp=").append(echoTimestampNs())
             .append(" reception_delta=").append(receptionDelta())
             .append(" receiver_id=").append(receiverId())
             .append("}");

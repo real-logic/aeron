@@ -521,8 +521,8 @@ class ClientConductor implements Agent, DriverListener
 
     private void checkDriverHeartbeat()
     {
-        final long lastDriverKeepalive = driverProxy.timeOfLastDriverKeepalive();
-        final long timeoutDeadlineMs = lastDriverKeepalive + driverTimeoutMs;
+        final long lastDriverKeepaliveMs = driverProxy.timeOfLastDriverKeepaliveMs();
+        final long timeoutDeadlineMs = lastDriverKeepaliveMs + driverTimeoutMs;
         if (isDriverActive && (epochClock.time() > timeoutDeadlineMs))
         {
             isDriverActive = false;

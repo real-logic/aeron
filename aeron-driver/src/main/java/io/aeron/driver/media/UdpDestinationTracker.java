@@ -37,7 +37,7 @@ public class UdpDestinationTracker
     private final ArrayList<Destination> destinationList = new ArrayList<>();
     private final NanoClock nanoClock;
     private final PreSendFunction preSendFunction;
-    private final long destinationTimeout;
+    private final long destinationTimeoutNs;
 
     public UdpDestinationTracker(
         final NanoClock nanoClock,
@@ -46,27 +46,27 @@ public class UdpDestinationTracker
     {
         this.nanoClock = nanoClock;
         this.preSendFunction = preSendFunction;
-        this.destinationTimeout = timeout;
+        this.destinationTimeoutNs = timeout;
     }
 
     public UdpDestinationTracker(final PreSendFunction preSendFunction)
     {
         this.nanoClock = () -> 0;
         this.preSendFunction = preSendFunction;
-        this.destinationTimeout = 0;
+        this.destinationTimeoutNs = 0;
     }
 
     public int sendToDestinations(final DatagramChannel sendDatagramChannel, final ByteBuffer buffer)
     {
         final ArrayList<Destination> destinationList = this.destinationList;
-        final long now = nanoClock.nanoTime();
+        final long nowNs = nanoClock.nanoTime();
         int minByteSent = buffer.remaining();
 
         for (int lastIndex = destinationList.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final Destination destination = destinationList.get(i);
 
-            if (now > (destination.timeOfLastActivity + destinationTimeout))
+            if (nowNs > (destination.timeOfLastActivityNs + destinationTimeoutNs))
             {
                 ArrayListUtil.fastUnorderedRemove(destinationList, i, lastIndex);
                 lastIndex--;
@@ -99,10 +99,10 @@ public class UdpDestinationTracker
 
     public void destinationActivity(final long receiverId, final InetSocketAddress destAddress)
     {
-        if (destinationTimeout > 0)
+        if (destinationTimeoutNs > 0)
         {
             final ArrayList<Destination> destinationList = this.destinationList;
-            final long now = nanoClock.nanoTime();
+            final long nowNs = nanoClock.nanoTime();
             boolean isExisting = false;
 
             for (int i = 0, size = destinationList.size(); i < size; i++)
@@ -111,7 +111,7 @@ public class UdpDestinationTracker
 
                 if (receiverId == destination.receiverId && destAddress.getPort() == destination.port)
                 {
-                    destination.timeOfLastActivity = now;
+                    destination.timeOfLastActivityNs = nowNs;
                     isExisting = true;
                     break;
                 }
@@ -119,14 +119,14 @@ public class UdpDestinationTracker
 
             if (!isExisting)
             {
-                destinationList.add(new Destination(now, receiverId, destAddress));
+                destinationList.add(new Destination(nowNs, receiverId, destAddress));
             }
         }
     }
 
     public boolean isManualControlMode()
     {
-        return destinationTimeout == 0;
+        return destinationTimeoutNs == 0;
     }
 
     public void addDestination(final InetSocketAddress address)
@@ -152,14 +152,14 @@ public class UdpDestinationTracker
 
     public static class Destination
     {
-        long timeOfLastActivity;
+        long timeOfLastActivityNs;
         long receiverId;
         int port;
         InetSocketAddress address;
 
         Destination(final long now, final long receiverId, final InetSocketAddress address)
         {
-            this.timeOfLastActivity = now;
+            this.timeOfLastActivityNs = now;
             this.receiverId = receiverId;
             this.address = address;
             this.port = address.getPort();

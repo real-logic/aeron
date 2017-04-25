@@ -158,7 +158,7 @@ public class CubicCongestionControl implements CongestionControl
 
     public long onTrackRebuild(
         final long nowNs,
-        final long newConsumptiopnPosition,
+        final long newConsumptionPosition,
         final long lastSmPosition,
         final long hwmPosition,
         final long startingRebuildPosition,

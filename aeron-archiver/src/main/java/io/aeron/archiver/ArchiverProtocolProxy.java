@@ -13,11 +13,10 @@
  * limitations under the License.
  *
  */
-
 package io.aeron.archiver;
 
 import io.aeron.*;
-import io.aeron.archiver.messages.*;
+import io.aeron.archiver.codecs.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import uk.co.real_logic.sbe.ir.generated.MessageHeaderEncoder;

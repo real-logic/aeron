@@ -16,7 +16,7 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
-import io.aeron.archiver.messages.ArchiveDescriptorDecoder;
+import io.aeron.archiver.codecs.ArchiveDescriptorDecoder;
 import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;

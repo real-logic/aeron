@@ -16,7 +16,7 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
-import io.aeron.archiver.messages.*;
+import io.aeron.archiver.codecs.*;
 import io.aeron.logbuffer.*;
 import org.agrona.*;
 
@@ -25,7 +25,7 @@ import java.io.*;
 /**
  * A replay session with a client which works through the required request response flow and streaming of archived data.
  * The {@link ArchiveConductor} will initiate a session on receiving a ReplayRequest
- * (see {@link io.aeron.archiver.messages.ReplayRequestDecoder}). The session will:
+ * (see {@link io.aeron.archiver.codecs.ReplayRequestDecoder}). The session will:
  * <ul>
  * <li>Establish a reply {@link Publication} with the initiator(or someone else possibly) </li>
  * <li>Validate request parameters and respond with error, or OK message(see {@link ArchiverResponseDecoder})</li>

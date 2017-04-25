@@ -16,7 +16,7 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
-import io.aeron.archiver.messages.*;
+import io.aeron.archiver.codecs.*;
 import io.aeron.driver.*;
 import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;

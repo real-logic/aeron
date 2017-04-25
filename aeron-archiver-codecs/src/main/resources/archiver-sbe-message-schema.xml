@@ -1,98 +1,100 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<messageSchema package="io.aeron.archiver.messages"
+<messageSchema package="io.aeron.archiver.codecs"
                id="1"
                semanticVersion="5.2"
                description="Archiver Protocol"
                byteOrder="littleEndian">
     <types>
         <composite name="messageHeader" description="Message identifiers and length of message root">
-            <type name="blockLength"    primitiveType="uint16"/>
-            <type name="templateId"     primitiveType="uint16"/>
-            <type name="schemaId"       primitiveType="uint16"/>
-            <type name="version"        primitiveType="uint16"/>
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="templateId" primitiveType="uint16"/>
+            <type name="schemaId" primitiveType="uint16"/>
+            <type name="version" primitiveType="uint16"/>
         </composite>
         <composite name="varDataEncoding">
-            <type name="length"     primitiveType="uint32" maxValue="1073741824"/>
-            <type name="varData"    primitiveType="uint8" length="0" characterEncoding="ASCII"/>
+            <type name="length" primitiveType="uint32" maxValue="1073741824"/>
+            <type name="varData" primitiveType="uint8" length="0" characterEncoding="ASCII"/>
         </composite>
     </types>
 
-    <message name="ArchiverResponse" id="1" description="Empty error is an OK response" >
-        <data   name="err"  id="1" type="varDataEncoding" />
+    <message name="ArchiverResponse" id="1" description="Empty error is an OK response">
+        <data name="err" id="1" type="varDataEncoding"/>
     </message>
 
-    <message name="ArchiveStartRequest"   id="2" description="Request a channel + stream be archived" >
-        <field  name="streamId"       id="1" type="int32" />
-        <data   name="channel"        id="2" type="varDataEncoding" />
+    <message name="ArchiveStartRequest" id="2" description="Request a channel + stream be archived">
+        <field name="streamId" id="1" type="int32"/>
+        <data name="channel" id="2" type="varDataEncoding"/>
     </message>
 
-    <message name="ArchiveStartedNotification" id="21" description="Describes a new stream instance" >
-        <field  name="streamInstanceId" id="1" type="int32" />
-        <field  name="sessionId"        id="2" type="int32" />
-        <field  name="streamId"         id="3" type="int32" />
-        <data   name="source"           id="4" type="varDataEncoding" />
-        <data   name="channel"          id="5" type="varDataEncoding" />
+    <message name="ArchiveStartedNotification" id="21" description="Describes a new stream instance">
+        <field name="streamInstanceId" id="1" type="int32"/>
+        <field name="sessionId" id="2" type="int32"/>
+        <field name="streamId" id="3" type="int32"/>
+        <data name="source" id="4" type="varDataEncoding"/>
+        <data name="channel" id="5" type="varDataEncoding"/>
     </message>
 
-    <message name="ArchiveProgressNotification" id="22" description="Archival progress" >
-        <field  name="streamInstanceId"  id="1" type="int32" />
-        <field  name="initialTermId"     id="2" type="int32" />
-        <field  name="initialTermOffset" id="3" type="int32" />
-        <field  name="termId"            id="4" type="int32" />
-        <field  name="termOffset"        id="5" type="int32" />
+    <message name="ArchiveProgressNotification" id="22" description="Archival progress">
+        <field name="streamInstanceId" id="1" type="int32"/>
+        <field name="initialTermId" id="2" type="int32"/>
+        <field name="initialTermOffset" id="3" type="int32"/>
+        <field name="termId" id="4" type="int32"/>
+        <field name="termOffset" id="5" type="int32"/>
     </message>
 
-    <message name="ArchiveStoppedNotification" id="23" description="Archival terminator" >
-        <field  name="streamInstanceId"        id="1" type="int32" />
+    <message name="ArchiveStoppedNotification" id="23" description="Archival terminator">
+        <field name="streamInstanceId" id="1" type="int32"/>
     </message>
 
-    <message name="ArchiveStopRequest"   id="3" description="Request a channel + stream stop archiving" >
-        <field  name="streamId"             id="1" type="int32" />
-        <data   name="channel"              id="2" type="varDataEncoding" />
+    <message name="ArchiveStopRequest" id="3" description="Request a channel + stream stop archiving">
+        <field name="streamId" id="1" type="int32"/>
+        <data name="channel" id="2" type="varDataEncoding"/>
     </message>
 
-    <message name="ReplayRequest"   id="4" description="Replay archive range request" >
-        <field  name="streamInstanceId"     id="1" type="int32" />
-        <field  name="termId"               id="2" type="int32" />
-        <field  name="termOffset"           id="3" type="int32" />
-        <field  name="replayStreamId"       id="4" type="int32" />
-        <field  name="length"               id="5" type="int64" />
-        <field  name="controlStreamId"      id="6" type="int32" />
-        <data   name="replayChannel"        id="7"  type="varDataEncoding" />
-        <data   name="controlChannel"       id="8"  type="varDataEncoding" />
+    <message name="ReplayRequest" id="4" description="Replay archive range request">
+        <field name="streamInstanceId" id="1" type="int32"/>
+        <field name="termId" id="2" type="int32"/>
+        <field name="termOffset" id="3" type="int32"/>
+        <field name="replayStreamId" id="4" type="int32"/>
+        <field name="length" id="5" type="int64"/>
+        <field name="controlStreamId" id="6" type="int32"/>
+        <data name="replayChannel" id="7" type="varDataEncoding"/>
+        <data name="controlChannel" id="8" type="varDataEncoding"/>
     </message>
 
-    <message name="ReplayData" id="41" description="Data chunk header" >
+    <message name="ReplayData" id="41" description="Data chunk header">
     </message>
 
-    <message name="AbortReplayRequest" id="5" description="Abort replay" >
+    <message name="AbortReplayRequest" id="5" description="Abort replay">
     </message>
 
-    <message name="ListStreamInstancesRequest" id="6" description="Request a range of stream instance archive descriptors" >
-        <field  name="replyStreamId"        id="1" type="int32" />
-        <field  name="from"                 id="2" type="int32" />
-        <field  name="to"                   id="3" type="int32" />
-        <data   name="replyChannel"         id="4" type="varDataEncoding" />
+    <message name="ListStreamInstancesRequest" id="6"
+             description="Request a range of stream instance archive descriptors">
+        <field name="replyStreamId" id="1" type="int32"/>
+        <field name="from" id="2" type="int32"/>
+        <field name="to" id="3" type="int32"/>
+        <data name="replyChannel" id="4" type="varDataEncoding"/>
     </message>
 
-    <message name="ListStreamInstancesNotFoundResponse" id="61" description="Failed to find stream instance, also terminates query" >
-        <field  name="streamInstanceId"        id="1" type="int32" />
-        <field  name="maxStreamInstanceId"     id="2" type="int32" />
+    <message name="ListStreamInstancesNotFoundResponse" id="61"
+             description="Failed to find stream instance, also terminates query">
+        <field name="streamInstanceId" id="1" type="int32"/>
+        <field name="maxStreamInstanceId" id="2" type="int32"/>
     </message>
 
-    <message name="ArchiveDescriptor" id="7" description="Describes an archive in the meta file and index" >
-        <field  name="streamInstanceId"     id="1" type="int32" />
-        <field  name="termBufferLength"     id="2" type="int32" />
-        <field  name="startTime"            id="3" type="int64" />
-        <field  name="initialTermId"        id="4" type="int32" />
-        <field  name="initialTermOffset"    id="5" type="int32" />
-        <field  name="lastTermId"           id="6" type="int32" />
-        <field  name="lastTermOffset"       id="7" type="int32" />
-        <field  name="endTime"              id="8" type="int64" />
-        <field  name="imageInitialTermId"   id="9" type="int32" />
-        <field  name="sessionId"            id="10" type="int32" />
-        <field  name="streamId"             id="11" type="int32" />
-        <data   name="source"               id="12" type="varDataEncoding" />
-        <data   name="channel"              id="13" type="varDataEncoding" />
+    <message name="ArchiveDescriptor" id="7" description="Describes an archive in the meta file and index">
+        <field name="streamInstanceId" id="1" type="int32"/>
+        <field name="termBufferLength" id="2" type="int32"/>
+        <field name="startTime" id="3" type="int64"/>
+        <field name="initialTermId" id="4" type="int32"/>
+        <field name="initialTermOffset" id="5" type="int32"/>
+        <field name="lastTermId" id="6" type="int32"/>
+        <field name="lastTermOffset" id="7" type="int32"/>
+        <field name="endTime" id="8" type="int64"/>
+        <field name="imageInitialTermId" id="9" type="int32"/>
+        <field name="sessionId" id="10" type="int32"/>
+        <field name="streamId" id="11" type="int32"/>
+        <data name="source" id="12" type="varDataEncoding"/>
+        <data name="channel" id="13" type="varDataEncoding"/>
     </message>
 </messageSchema>

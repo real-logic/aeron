@@ -15,7 +15,7 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.archiver.messages.ArchiveDescriptorEncoder;
+import io.aeron.archiver.codecs.ArchiveDescriptorEncoder;
 import io.aeron.logbuffer.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;

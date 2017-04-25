@@ -13,10 +13,9 @@
  * limitations under the License.
  *
  */
-
 package io.aeron.archiver;
 
-import io.aeron.archiver.messages.ArchiveDescriptorDecoder;
+import io.aeron.archiver.codecs.ArchiveDescriptorDecoder;
 import io.aeron.logbuffer.*;
 import io.aeron.logbuffer.ControlledFragmentHandler.Action;
 import io.aeron.protocol.DataHeaderFlyweight;

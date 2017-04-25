@@ -13,10 +13,9 @@
  * limitations under the License.
  *
  */
-
 package io.aeron.archiver;
 
-import io.aeron.archiver.messages.*;
+import io.aeron.archiver.codecs.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;

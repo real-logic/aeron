@@ -47,13 +47,13 @@ import static io.aeron.driver.CongestionControlUtil.packOutcome;
  */
 public class CubicCongestionControl implements CongestionControl
 {
-    private static final boolean RTT_MEASUREMENT = false;
+    private static final boolean RTT_MEASUREMENT = CubicCongestionControlConfiguration.MEASURE_RTT;
+    private static final boolean TCP_MODE = CubicCongestionControlConfiguration.TCP_MODE;
+
     private static final long RTT_MEASUREMENT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(10);
     private static final long SECOND_IN_NS = TimeUnit.SECONDS.toNanos(1);
     private static final long RTT_MAX_TIMEOUT_NS = SECOND_IN_NS;
     private static final int MAX_OUTSTANDING_RTT_MEASUREMENTS = 1;
-
-    private static final boolean TCP_MODE = false;
 
     private static final double C = 0.4;
     private static final double B = 0.2;
@@ -97,7 +97,7 @@ public class CubicCongestionControl implements CongestionControl
         k = Math.cbrt((double)w_max * B / C);
 
         // determine interval for adjustment based on heuristic of MTU, max window, and/or RTT estimate
-        rttInNanos = TimeUnit.MICROSECONDS.toNanos(100); // initial RTT
+        rttInNanos = CubicCongestionControlConfiguration.INITIAL_RTT_NS;
         windowUpdateTimeout = rttInNanos;
 
         rttIndicator = PerImageIndicator.allocate(

@@ -38,7 +38,7 @@ public class UnicastFlowControl implements FlowControl
         final long senderLimit,
         final int initialTermId,
         final int positionBitsToShift,
-        final long now)
+        final long nowNs)
     {
         final long position =
             computePosition(
@@ -60,7 +60,7 @@ public class UnicastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public long onIdle(final long now, final long senderLimit)
+    public long onIdle(final long nowNs, final long senderLimit)
     {
         return senderLimit;
     }

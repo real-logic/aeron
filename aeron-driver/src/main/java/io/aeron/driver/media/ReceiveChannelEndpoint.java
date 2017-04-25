@@ -312,7 +312,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final InetSocketAddress controlAddress,
         final int sessionId,
         final int streamId,
-        final long echoTimestamp,
+        final long echoTimestampNs,
         final long receptionDelta,
         final boolean isReply)
     {
@@ -322,7 +322,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
                 .sessionId(sessionId)
                 .streamId(streamId)
                 .receiverId(receiverId)
-                .echoTimestamp(echoTimestamp)
+                .echoTimestampNs(echoTimestampNs)
                 .receptionDelta(receptionDelta)
                 .flags(isReply ? RttMeasurementFlyweight.REPLY_FLAG : 0);
 

@@ -209,7 +209,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
                         channelEndpoint.isMulticast() ? channelEndpoint.udpChannel().remoteControl() : srcAddress;
 
                     channelEndpoint.sendRttMeasurement(
-                        controlAddress, sessionId, streamId, header.echoTimestamp(), 0, false);
+                        controlAddress, sessionId, streamId, header.echoTimestampNs(), 0, false);
                 }
                 else
                 {

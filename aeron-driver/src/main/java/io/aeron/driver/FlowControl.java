@@ -32,7 +32,7 @@ public interface FlowControl
      * @param senderLimit         the current sender position limit.
      * @param initialTermId       for the term buffers.
      * @param positionBitsToShift in use for the length of each term buffer.
-     * @param now                 current nano clock time (in nanoseconds). {@link System#nanoTime()}
+     * @param nowNs                 current nano clock time (in nanoseconds). {@link System#nanoTime()}
      * @return the new position limit to be employed by the sender.
      */
     long onStatusMessage(
@@ -41,7 +41,7 @@ public interface FlowControl
         long senderLimit,
         int initialTermId,
         int positionBitsToShift,
-        long now);
+        long nowNs);
 
     /**
      * Initialize the flow control strategy
@@ -54,9 +54,9 @@ public interface FlowControl
     /**
      * Perform any maintenance needed by the flow control strategy and return current position
      *
-     * @param now         time in nanoseconds.
+     * @param nowNs         time in nanoseconds.
      * @param senderLimit for the current sender position.
      * @return the position limit to be employed by the sender.
      */
-    long onIdle(long now, long senderLimit);
+    long onIdle(long nowNs, long senderLimit);
 }

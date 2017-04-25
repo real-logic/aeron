@@ -58,9 +58,9 @@ public class DriverConductor implements Agent
     private final long clientLivenessTimeoutNs;
     private final long publicationUnblockTimeoutNs;
     private final long statusMessageTimeoutNs;
-    private long timeOfLastToDriverPositionChange;
+    private long timeOfLastToDriverPositionChangeNs;
+    private long timeOfLastTimeoutCheckNs;
     private long lastConsumerCommandPosition;
-    private long timeOfLastTimeoutCheck;
     private volatile long timeInMs;
     private int nextSessionId = BitUtil.generateRandomisedId();
 
@@ -124,9 +124,9 @@ public class DriverConductor implements Agent
         timeInMs = epochClock.time();
         toDriverCommands.consumerHeartbeatTime(timeInMs);
 
-        final long now = nanoClock.nanoTime();
-        timeOfLastTimeoutCheck = now;
-        timeOfLastToDriverPositionChange = now;
+        final long nowNs = nanoClock.nanoTime();
+        timeOfLastTimeoutCheckNs = nowNs;
+        timeOfLastToDriverPositionChangeNs = nowNs;
         lastConsumerCommandPosition = toDriverCommands.consumerPosition();
     }
 
@@ -731,14 +731,14 @@ public class DriverConductor implements Agent
         onCheckManagedResources(ipcPublications, nowNs, nowMs);
     }
 
-    private void onCheckForBlockedToDriverCommands(final long nanoTimeNow)
+    private void onCheckForBlockedToDriverCommands(final long nowNs)
     {
         final long consumerPosition = toDriverCommands.consumerPosition();
 
         if (consumerPosition == lastConsumerCommandPosition)
         {
             if (toDriverCommands.producerPosition() > consumerPosition &&
-                nanoTimeNow > (timeOfLastToDriverPositionChange + clientLivenessTimeoutNs))
+                nowNs > (timeOfLastToDriverPositionChangeNs + clientLivenessTimeoutNs))
             {
                 if (toDriverCommands.unblock())
                 {
@@ -748,7 +748,7 @@ public class DriverConductor implements Agent
         }
         else
         {
-            timeOfLastToDriverPositionChange = nanoTimeNow;
+            timeOfLastToDriverPositionChangeNs = nowNs;
             lastConsumerCommandPosition = consumerPosition;
         }
     }
@@ -1165,11 +1165,11 @@ public class DriverConductor implements Agent
     {
         int workCount = 0;
 
-        if (nowNs > (timeOfLastTimeoutCheck + HEARTBEAT_TIMEOUT_NS))
+        if (nowNs > (timeOfLastTimeoutCheckNs + HEARTBEAT_TIMEOUT_NS))
         {
             onHeartbeatCheckTimeouts(nowNs);
             onCheckForBlockedToDriverCommands(nowNs);
-            timeOfLastTimeoutCheck = nowNs;
+            timeOfLastTimeoutCheckNs = nowNs;
             workCount = 1;
         }
 
@@ -1233,7 +1233,7 @@ public class DriverConductor implements Agent
             {
                 if (count < 3)
                 {
-                    throw new IllegalStateException("Params must be used as a complete set: " +
+                    throw new IllegalArgumentException("Params must be used as a complete set: " +
                         INITIAL_TERM_ID_PARAM_NAME + " " + TERM_ID_PARAM_NAME + " " + TERM_OFFSET_PARAM_NAME);
                 }
 
@@ -1243,7 +1243,7 @@ public class DriverConductor implements Agent
 
                 if (params.termOffset > params.termLength)
                 {
-                    throw new IllegalStateException(
+                    throw new IllegalArgumentException(
                         TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " > " +
                         TERM_LENGTH_PARAM_NAME + "=" + params.termLength);
                 }

@@ -62,7 +62,7 @@ class PublicationImagePadding2 extends PublicationImageConductorFields
 
 class PublicationImageHotFields extends PublicationImagePadding2
 {
-    protected long lastPacketTimestamp;
+    protected long lastPacketTimestampNs;
 }
 
 class PublicationImagePadding3 extends PublicationImageHotFields
@@ -83,7 +83,7 @@ public class PublicationImage
         INIT, ACTIVE, INACTIVE, LINGER
     }
 
-    private long timeOfLastStatusChange;
+    private long timeOfLastStatusChangeNs;
     private long lastLossChangeNumber = -1;
     private long lastSmChangeNumber = -1;
 
@@ -178,9 +178,9 @@ public class PublicationImage
 
         this.nanoClock = nanoClock;
         this.epochClock = epochClock;
-        final long time = nanoClock.nanoTime();
-        timeOfLastStatusChange = time;
-        lastPacketTimestamp = time;
+        final long nowNs = nanoClock.nanoTime();
+        timeOfLastStatusChangeNs = nowNs;
+        lastPacketTimestampNs = nowNs;
 
         termBuffers = rawLog.termBuffers();
         lossDetector = new LossDetector(lossFeedbackDelayGenerator, this);
@@ -322,7 +322,7 @@ public class PublicationImage
      */
     public void status(final Status status)
     {
-        timeOfLastStatusChange = nanoClock.nanoTime();
+        timeOfLastStatusChangeNs = nanoClock.nanoTime();
         this.status = status;
     }
 
@@ -504,7 +504,7 @@ public class PublicationImage
     {
         boolean activity = true;
 
-        if (nowNs > (lastPacketTimestamp + imageLivenessTimeoutNs))
+        if (nowNs > (lastPacketTimestampNs + imageLivenessTimeoutNs))
         {
             activity = false;
         }
@@ -621,7 +621,7 @@ public class PublicationImage
     public void onRttMeasurement(final RttMeasurementFlyweight header, final InetSocketAddress srcAddress)
     {
         final long nowNs = nanoClock.nanoTime();
-        final long rttInNs = nowNs - header.echoTimestamp() - header.receptionDelta();
+        final long rttInNs = nowNs - header.echoTimestampNs() - header.receptionDelta();
 
         congestionControl.onRttMeasurement(nowNs, rttInNs, srcAddress);
     }
@@ -651,7 +651,7 @@ public class PublicationImage
         switch (status)
         {
             case INACTIVE:
-                if (isDrained() || timeNs > (timeOfLastStatusChange + imageLivenessTimeoutNs))
+                if (isDrained() || timeNs > (timeOfLastStatusChangeNs + imageLivenessTimeoutNs))
                 {
                     status(PublicationImage.Status.LINGER);
                     conductor.transitionToLinger(this);
@@ -659,7 +659,7 @@ public class PublicationImage
                 break;
 
             case LINGER:
-                if (timeNs > (timeOfLastStatusChange + imageLivenessTimeoutNs))
+                if (timeNs > (timeOfLastStatusChangeNs + imageLivenessTimeoutNs))
                 {
                     reachedEndOfLife = true;
                     conductor.cleanupImage(this);
@@ -679,7 +679,7 @@ public class PublicationImage
 
     public long timeOfLastStateChange()
     {
-        return timeOfLastStatusChange;
+        return timeOfLastStatusChangeNs;
     }
 
     public void delete()
@@ -709,7 +709,7 @@ public class PublicationImage
 
     private void hwmCandidate(final long proposedPosition)
     {
-        lastPacketTimestamp = nanoClock.nanoTime();
+        lastPacketTimestampNs = nanoClock.nanoTime();
         hwmPosition.proposeMaxOrdered(proposedPosition);
     }
 

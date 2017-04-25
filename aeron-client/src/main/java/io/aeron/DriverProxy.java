@@ -58,7 +58,7 @@ public class DriverProxy
         correlatedMessage.clientId(clientId);
     }
 
-    public long timeOfLastDriverKeepalive()
+    public long timeOfLastDriverKeepaliveMs()
     {
         return toDriverCommandBuffer.consumerHeartbeatTime();
     }

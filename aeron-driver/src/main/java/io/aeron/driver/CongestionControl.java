@@ -25,19 +25,19 @@ public interface CongestionControl extends AutoCloseable
     /**
      * Polled by {@link Receiver} to determine when to initiate an RTT measurement to a Sender.
      *
-     * @param now in nanoseconds
+     * @param nowNs in nanoseconds
      * @return true for should measure RTT now or false for no measurement
      */
-    boolean shouldMeasureRtt(long now);
+    boolean shouldMeasureRtt(long nowNs);
 
     /**
      * Called by {@link Receiver} on reception of an RTT Measurement.
      *
-     * @param now        in nanoseconds
+     * @param nowNs      in nanoseconds
      * @param rttInNanos to the Sender
      * @param srcAddress of the Sender
      */
-    void onRttMeasurement(long now, long rttInNanos, InetSocketAddress srcAddress);
+    void onRttMeasurement(long nowNs, long rttInNanos, InetSocketAddress srcAddress);
 
     /**
      * Called by {@link DriverConductor} upon execution of {@link PublicationImage#trackRebuild(long, long)} to
@@ -45,7 +45,7 @@ public interface CongestionControl extends AutoCloseable
      *
      * The return value must be packed using {@link CongestionControlUtil#packOutcome(int, boolean)}.
      *
-     * @param now                     in nanoseconds
+     * @param nowNs                   in nanoseconds
      * @param newConsumptionPosition  of the Subscribers
      * @param lastSmPosition          of the image
      * @param hwmPosition             of the image
@@ -55,7 +55,7 @@ public interface CongestionControl extends AutoCloseable
      * @return outcome of congestion control calculation containing window length and whether to force sending an SM.
      */
     long onTrackRebuild(
-        long now,
+        long nowNs,
         long newConsumptionPosition,
         long lastSmPosition,
         long hwmPosition,

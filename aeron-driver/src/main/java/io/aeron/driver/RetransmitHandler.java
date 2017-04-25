@@ -129,11 +129,11 @@ public class RetransmitHandler
     /**
      * Called to process any outstanding timeouts.
      *
-     * @param now              time in nanoseconds
+     * @param nowNs            time in nanoseconds
      * @param retransmitSender to call on retransmissions
      * @return count of expired actions performed
      */
-    public int processTimeouts(final long now, final RetransmitSender retransmitSender)
+    public int processTimeouts(final long nowNs, final RetransmitSender retransmitSender)
     {
         int result = 0;
 
@@ -144,7 +144,7 @@ public class RetransmitHandler
                 switch (action.state)
                 {
                     case DELAYED:
-                        if (now > action.expire)
+                        if (nowNs > action.expireNs)
                         {
                             retransmitSender.resend(action.termId, action.termOffset, action.length);
                             action.linger(determineLingerTimeout(), nanoClock.nanoTime());
@@ -153,7 +153,7 @@ public class RetransmitHandler
                         break;
 
                     case LINGERING:
-                        if (now > action.expire)
+                        if (nowNs > action.expireNs)
                         {
                             action.cancel();
                             activeRetransmitsMap.remove(action.termId, action.termOffset);
@@ -211,22 +211,22 @@ public class RetransmitHandler
 
     static final class RetransmitAction
     {
-        long expire;
+        long expireNs;
         int termId;
         int termOffset;
         int length;
         State state = State.INACTIVE;
 
-        public void delay(final long delay, final long now)
+        public void delay(final long delayNs, final long nowNs)
         {
             state = State.DELAYED;
-            expire = now + delay;
+            expireNs = nowNs + delayNs;
         }
 
-        public void linger(final long timeout, final long now)
+        public void linger(final long timeoutNs, final long nowNs)
         {
             state = State.LINGERING;
-            expire = now + timeout;
+            expireNs = nowNs + timeoutNs;
         }
 
         public void cancel()

@@ -102,7 +102,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     {
         final PendingSetupMessageFromSource cmd = new PendingSetupMessageFromSource(
             sessionId, streamId, channelEndpoint, periodic, controlAddress);
-        cmd.timeOfStatusMessage(clock.nanoTime());
+        cmd.timeOfStatusMessageNs(clock.nanoTime());
         pendingSetupMessages.add(cmd);
     }
 
@@ -157,7 +157,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         {
             final PendingSetupMessageFromSource pending = pendingSetupMessages.get(i);
 
-            if (nowNs > (pending.timeOfStatusMessage() + PENDING_SETUPS_TIMEOUT_NS))
+            if (nowNs > (pending.timeOfStatusMessageNs() + PENDING_SETUPS_TIMEOUT_NS))
             {
                 if (!pending.isPeriodic())
                 {
@@ -169,7 +169,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
                 {
                     pending.channelEndpoint().sendSetupElicitingStatusMessage(
                         pending.controlAddress(), pending.sessionId(), pending.streamId());
-                    pending.timeOfStatusMessage(nowNs);
+                    pending.timeOfStatusMessageNs(nowNs);
                 }
             }
         }

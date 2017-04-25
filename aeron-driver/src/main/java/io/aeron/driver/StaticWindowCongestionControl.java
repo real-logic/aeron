@@ -43,17 +43,17 @@ public class StaticWindowCongestionControl implements CongestionControl
     {
     }
 
-    public boolean shouldMeasureRtt(final long now)
+    public boolean shouldMeasureRtt(final long nowNs)
     {
         return false;
     }
 
-    public void onRttMeasurement(final long now, final long rttInNanos, final InetSocketAddress srcAddress)
+    public void onRttMeasurement(final long nowNs, final long rttInNanos, final InetSocketAddress srcAddress)
     {
     }
 
     public long onTrackRebuild(
-        final long now,
+        final long nowNs,
         final long newConsumptionPosition,
         final long lastSmPosition,
         final long hwmPosition,

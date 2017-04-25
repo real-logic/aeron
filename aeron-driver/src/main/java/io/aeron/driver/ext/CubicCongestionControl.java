@@ -48,8 +48,9 @@ import static io.aeron.driver.CongestionControlUtil.packOutcome;
 public class CubicCongestionControl implements CongestionControl
 {
     private static final boolean RTT_MEASUREMENT = false;
-    private static final long RTT_MEASUREMENT_TIMEOUT = TimeUnit.MILLISECONDS.toNanos(10);
-    private static final long RTT_MAX_TIMEOUT = TimeUnit.SECONDS.toNanos(1);
+    private static final long RTT_MEASUREMENT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(10);
+    private static final long SECOND_IN_NS = TimeUnit.SECONDS.toNanos(1);
+    private static final long RTT_MAX_TIMEOUT_NS = SECOND_IN_NS;
     private static final int MAX_OUTSTANDING_RTT_MEASUREMENTS = 1;
 
     private static final boolean TCP_MODE = false;
@@ -61,8 +62,8 @@ public class CubicCongestionControl implements CongestionControl
     private final int mtu;
     private final int maxCwnd;
 
-    private long lastLossTimestamp;
-    private long lastUpdateTimestamp;
+    private long lastLossTimestampNs;
+    private long lastUpdateTimestampNs;
     private long lastRttTimestamp = 0;
     private long windowUpdateTimeout;
     private long rttInNanos;
@@ -120,25 +121,25 @@ public class CubicCongestionControl implements CongestionControl
         rttIndicator.setOrdered(0);
         windowIndicator.setOrdered(minWindow);
 
-        lastLossTimestamp = clock.nanoTime();
-        lastUpdateTimestamp = lastLossTimestamp;
+        lastLossTimestampNs = clock.nanoTime();
+        lastUpdateTimestampNs = lastLossTimestampNs;
     }
 
-    public boolean shouldMeasureRtt(final long now)
+    public boolean shouldMeasureRtt(final long nowNs)
     {
         boolean result = false;
 
         if (RTT_MEASUREMENT && outstandingRttMeasurements < MAX_OUTSTANDING_RTT_MEASUREMENTS)
         {
-            if (now > (lastRttTimestamp + RTT_MAX_TIMEOUT))
+            if (nowNs > (lastRttTimestamp + RTT_MAX_TIMEOUT_NS))
             {
-                lastRttTimestamp = now;
+                lastRttTimestamp = nowNs;
                 outstandingRttMeasurements++;
                 result = true;
             }
-            else if (now > (lastRttTimestamp + RTT_MEASUREMENT_TIMEOUT))
+            else if (nowNs > (lastRttTimestamp + RTT_MEASUREMENT_TIMEOUT_NS))
             {
-                lastRttTimestamp = now;
+                lastRttTimestamp = nowNs;
                 outstandingRttMeasurements++;
                 result = true;
             }
@@ -147,16 +148,16 @@ public class CubicCongestionControl implements CongestionControl
         return result;
     }
 
-    public void onRttMeasurement(final long now, final long rttInNanos, final InetSocketAddress srcAddress)
+    public void onRttMeasurement(final long nowNs, final long rttInNanos, final InetSocketAddress srcAddress)
     {
         outstandingRttMeasurements--;
-        lastRttTimestamp = now;
+        lastRttTimestamp = nowNs;
         this.rttInNanos = rttInNanos;
         rttIndicator.setOrdered(rttInNanos);
     }
 
     public long onTrackRebuild(
-        final long now,
+        final long nowNs,
         final long newConsumptiopnPosition,
         final long lastSmPosition,
         final long hwmPosition,
@@ -171,13 +172,13 @@ public class CubicCongestionControl implements CongestionControl
             w_max = cwnd;
             k = Math.cbrt((double)w_max * B / C);
             cwnd = Math.min(1, (int)(cwnd * (1.0 - B)));
-            lastLossTimestamp = now;
+            lastLossTimestampNs = nowNs;
             forceStatusMessage = true;
         }
-        else if (cwnd < maxCwnd && now > (lastUpdateTimestamp + windowUpdateTimeout))
+        else if (cwnd < maxCwnd && nowNs > (lastUpdateTimestampNs + windowUpdateTimeout))
         {
             // W_cubic = C(T - K)^3 + w_max
-            final double durationSinceDecr = (double)(now - lastLossTimestamp) / (double)TimeUnit.SECONDS.toNanos(1);
+            final double durationSinceDecr = (double)(nowNs - lastLossTimestampNs) / (double)SECOND_IN_NS;
             final double diffToK = durationSinceDecr - k;
             final double incr = C * diffToK * diffToK * diffToK;
 
@@ -188,14 +189,14 @@ public class CubicCongestionControl implements CongestionControl
             {
                 // W_tcp(t) = w_max*(1-B) + 3*B/(2-B)* t/RTT
 
-                final double rttInSeconds = (double)rttInNanos / (double)TimeUnit.SECONDS.toNanos(1);
+                final double rttInSeconds = (double)rttInNanos / (double)SECOND_IN_NS;
                 final double wTcp =
                     (double)w_max * (1.0 - B) + ((3.0 * B / (2.0 * B)) * (durationSinceDecr / rttInSeconds));
 
                 cwnd = Math.max(cwnd, (int)wTcp);
             }
 
-            lastUpdateTimestamp = now;
+            lastUpdateTimestampNs = nowNs;
         }
 
         final int window = cwnd * mtu;

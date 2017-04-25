@@ -37,7 +37,7 @@ class SenderLhsPadding
 
 class SenderHotFields extends SenderLhsPadding
 {
-    protected long controlPollTimeout;
+    protected long controlPollTimeoutNs;
     protected int dutyCycleCounter;
     protected int roundRobinIndex = 0;
 }
@@ -55,7 +55,7 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
 {
     private static final NetworkPublication[] EMPTY_PUBLICATIONS = new NetworkPublication[0];
 
-    private final long statusMessageReadTimeout;
+    private final long statusMessageReadTimeoutNs;
     private final int dutyCycleRatio;
     private final ControlTransportPoller controlTransportPoller;
     private final OneToOneConcurrentArrayQueue<SenderCmd> commandQueue;
@@ -72,7 +72,7 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
         this.conductorProxy = ctx.fromSenderDriverConductorProxy();
         this.totalBytesSent = ctx.systemCounters().get(BYTES_SENT);
         this.nanoClock = ctx.nanoClock();
-        this.statusMessageReadTimeout = ctx.statusMessageTimeout() / 2;
+        this.statusMessageReadTimeoutNs = ctx.statusMessageTimeout() / 2;
         this.dutyCycleRatio = Configuration.sendToStatusMessagePollRatio();
     }
 
@@ -85,17 +85,17 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
     {
         final int workCount = commandQueue.drain(this);
 
-        final long now = nanoClock.nanoTime();
-        final int bytesSent = doSend(now);
+        final long nowNs = nanoClock.nanoTime();
+        final int bytesSent = doSend(nowNs);
 
         int bytesReceived = 0;
 
-        if (0 == bytesSent || ++dutyCycleCounter == dutyCycleRatio || now >= controlPollTimeout)
+        if (0 == bytesSent || ++dutyCycleCounter == dutyCycleRatio || nowNs >= controlPollTimeoutNs)
         {
             bytesReceived = controlTransportPoller.pollTransports();
 
             dutyCycleCounter = 0;
-            controlPollTimeout = now + statusMessageReadTimeout;
+            controlPollTimeoutNs = nowNs + statusMessageReadTimeoutNs;
         }
 
         return workCount + bytesSent + bytesReceived;

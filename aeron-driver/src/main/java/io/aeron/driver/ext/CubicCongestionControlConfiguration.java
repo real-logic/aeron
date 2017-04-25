@@ -24,7 +24,9 @@ import java.util.concurrent.TimeUnit;
 public class CubicCongestionControlConfiguration
 {
     /**
-     * Property name for measuring RTT or using static constant.
+     * Property name for measuring RTT or using static constant based on initial value.
+     *
+     * @see CubicCongestionControlConfiguration#INITIAL_RTT_NS_PROP_NAME
      */
     public static final String MEASURE_RTT_PROP_NAME = "aeron.CubicCongestionControl.measureRtt";
 
@@ -40,6 +42,9 @@ public class CubicCongestionControlConfiguration
 
     /**
      * Property name for accounting for TCP behavior in low RTT values after a loss.
+     *
+     * WARNING: Be aware that throughput utilization becomes important. Turning this on may drastically be off the
+     * necessary throughput if utilization is low.
      */
     public static final String TCP_MODE_PROP_NAME = "aeron.CubicCongestionControl.tcpMode";
 

@@ -1233,7 +1233,7 @@ public class DriverConductor implements Agent
             {
                 if (count < 3)
                 {
-                    throw new IllegalStateException("Params must be used as a complete set: " +
+                    throw new IllegalArgumentException("Params must be used as a complete set: " +
                         INITIAL_TERM_ID_PARAM_NAME + " " + TERM_ID_PARAM_NAME + " " + TERM_OFFSET_PARAM_NAME);
                 }
 
@@ -1243,7 +1243,7 @@ public class DriverConductor implements Agent
 
                 if (params.termOffset > params.termLength)
                 {
-                    throw new IllegalStateException(
+                    throw new IllegalArgumentException(
                         TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " > " +
                         TERM_LENGTH_PARAM_NAME + "=" + params.termLength);
                 }

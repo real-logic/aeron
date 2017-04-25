@@ -77,7 +77,7 @@ class ArchivingSession implements ArchiveConductor.Session
         ArchiveStreamWriter writer = null;
         try
         {
-            writer = new ArchiveStreamWriter.ArchiveStreamWriterBuilder()
+            writer = new ArchiveStreamWriter.Builder()
                 .archiveFolder(archiveFolder)
                 .epochClock(epochClock)
                 .streamInstanceId(streamInstanceId)

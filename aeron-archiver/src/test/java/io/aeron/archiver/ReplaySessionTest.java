@@ -49,7 +49,7 @@ public class ReplaySessionTest
         archiveFolder = makeTempFolder();
         proxy = Mockito.mock(ArchiverProtocolProxy.class);
         final EpochClock epochClock = mock(EpochClock.class);
-        try (ArchiveStreamWriter writer = new ArchiveStreamWriter.ArchiveStreamWriterBuilder()
+        try (ArchiveStreamWriter writer = new ArchiveStreamWriter.Builder()
             .archiveFolder(archiveFolder)
             .epochClock(epochClock)
             .streamInstanceId(STREAM_INSTANCE_ID)

@@ -30,7 +30,7 @@ import static java.nio.file.StandardOpenOption.*;
 
 final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBlockHandler
 {
-    static class ArchiveStreamWriterBuilder
+    static class Builder
     {
         private File archiveFolder;
         private EpochClock epochClock;
@@ -44,67 +44,67 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
         private String source;
         private String channel;
 
-        ArchiveStreamWriterBuilder archiveFolder(final File archiveFolder)
+        Builder archiveFolder(final File archiveFolder)
         {
             this.archiveFolder = archiveFolder;
             return this;
         }
 
-        ArchiveStreamWriterBuilder epochClock(final EpochClock epochClock)
+        Builder epochClock(final EpochClock epochClock)
         {
             this.epochClock = epochClock;
             return this;
         }
 
-        ArchiveStreamWriterBuilder streamInstanceId(final int streamInstanceId)
+        Builder streamInstanceId(final int streamInstanceId)
         {
             this.streamInstanceId = streamInstanceId;
             return this;
         }
 
-        ArchiveStreamWriterBuilder termBufferLength(final int termBufferLength)
+        Builder termBufferLength(final int termBufferLength)
         {
             this.termBufferLength = termBufferLength;
             return this;
         }
 
-        ArchiveStreamWriterBuilder imageInitialTermId(final int imageInitialTermId)
+        Builder imageInitialTermId(final int imageInitialTermId)
         {
             this.imageInitialTermId = imageInitialTermId;
             return this;
         }
 
-        ArchiveStreamWriterBuilder forceWrites(final boolean forceWrites)
+        Builder forceWrites(final boolean forceWrites)
         {
             this.forceWrites = forceWrites;
             return this;
         }
 
-        ArchiveStreamWriterBuilder forceMetadataUpdates(final boolean forceMetadataUpdates)
+        Builder forceMetadataUpdates(final boolean forceMetadataUpdates)
         {
             this.forceMetadataUpdates = forceMetadataUpdates;
             return this;
         }
 
-        ArchiveStreamWriterBuilder sessionId(final int sessionId)
+        Builder sessionId(final int sessionId)
         {
             this.sessionId = sessionId;
             return this;
         }
 
-        ArchiveStreamWriterBuilder streamId(final int streamId)
+        Builder streamId(final int streamId)
         {
             this.streamId = streamId;
             return this;
         }
 
-        ArchiveStreamWriterBuilder source(final String source)
+        Builder source(final String source)
         {
             this.source = source;
             return this;
         }
 
-        ArchiveStreamWriterBuilder channel(final String channel)
+        Builder channel(final String channel)
         {
             this.channel = channel;
             return this;
@@ -145,7 +145,7 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
     private boolean closed = false;
     private boolean stopped = false;
 
-    private ArchiveStreamWriter(final ArchiveStreamWriterBuilder builder)
+    private ArchiveStreamWriter(final Builder builder)
     {
         this.streamInstanceId = builder.streamInstanceId;
         this.archiveFolder = builder.archiveFolder;

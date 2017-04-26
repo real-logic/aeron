@@ -115,7 +115,9 @@ class ArchiverProtocolProxy
             .version(ArchiveStartedNotificationEncoder.SCHEMA_VERSION);
 
         // reset encoder limit is required for variable length messages
-        responseEncoder.limit(MessageHeaderEncoder.ENCODED_LENGTH + ArchiveStartedNotificationEncoder.BLOCK_LENGTH);
+        archiveStartedNotificationEncoder
+            .limit(MessageHeaderEncoder.ENCODED_LENGTH + ArchiveStartedNotificationEncoder.BLOCK_LENGTH);
+
         archiveStartedNotificationEncoder
             .streamInstanceId(instanceId)
             .sessionId(sessionId)

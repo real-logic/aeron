@@ -1,3 +1,6 @@
+Under Construction, USE AT YOUR OWN RISK
+===
+
 The aeron-archiver is an Aeron client application which enables
 published data persistance and replay support. Currently implemented
 fuctionality is limited to the following:

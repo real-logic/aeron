@@ -41,6 +41,7 @@ class ArchiveIndex implements AutoCloseable
     static final int INDEX_RECORD_SIZE = 4096;
     static final int INDEX_FRAME_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     private static final int PAGE_SIZE = 4096;
+    static final int NULL_STREAM_INDEX = -1;
 
     private final ArchiveDescriptorEncoder archiveDescriptorEncoder = new ArchiveDescriptorEncoder();
     private final Int2ObjectHashMap<ArchivingSession> archivingSessionByStreamInstanceIdMap = new Int2ObjectHashMap<>();

@@ -116,6 +116,12 @@ public class ArchivingSessionTest
 
         final ArchivingSession session = new ArchivingSession(
             proxy, index, tempFolderForTest, image, epochClock);
+
+        // pre-init
+        assertEquals(ArchiveIndex.NULL_STREAM_INDEX, session.streamInstanceId());
+
+        session.doWork();
+
         assertEquals(streamInstanceId, session.streamInstanceId());
 
         // setup the mock image to pass on the mock log buffer

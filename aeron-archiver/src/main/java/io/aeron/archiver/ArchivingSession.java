@@ -32,7 +32,7 @@ class ArchivingSession implements ArchiveConductor.Session
         INIT, ARCHIVING, CLOSING, DONE
     }
 
-    private int streamInstanceId = -1;
+    private int streamInstanceId = ArchiveIndex.NULL_STREAM_INDEX;
     private final ArchiverProtocolProxy proxy;
     private final File archiveFolder;
     private final Image image;
@@ -142,7 +142,7 @@ class ArchivingSession implements ArchiveConductor.Session
 
     int streamInstanceId()
     {
-        return writer.streamInstanceId();
+        return streamInstanceId;
     }
 
     private int close()

@@ -521,14 +521,13 @@ class ClientConductor implements Agent, DriverListener
 
     private void checkDriverHeartbeat()
     {
-        final long lastDriverKeepaliveMs = driverProxy.timeOfLastDriverKeepaliveMs();
-        final long timeoutDeadlineMs = lastDriverKeepaliveMs + driverTimeoutMs;
-        if (isDriverActive && (epochClock.time() > timeoutDeadlineMs))
+        final long deadlineMs = driverProxy.timeOfLastDriverKeepaliveMs() + driverTimeoutMs;
+        if (isDriverActive && (epochClock.time() > deadlineMs))
         {
             isDriverActive = false;
 
-            final String msg = "MediaDriver has been inactive for over " + driverTimeoutMs + "ms";
-            errorHandler.onError(new DriverTimeoutException(msg));
+            errorHandler.onError(new DriverTimeoutException(
+                "MediaDriver has been inactive for > " + driverTimeoutMs + "ms"));
         }
     }
 }

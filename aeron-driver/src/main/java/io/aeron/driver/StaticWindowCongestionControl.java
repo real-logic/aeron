@@ -48,7 +48,7 @@ public class StaticWindowCongestionControl implements CongestionControl
         return false;
     }
 
-    public void onRttMeasurement(final long nowNs, final long rttInNanos, final InetSocketAddress srcAddress)
+    public void onRttMeasurement(final long nowNs, final long rttInNs, final InetSocketAddress srcAddress)
     {
     }
 

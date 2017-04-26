@@ -66,7 +66,7 @@ public class CubicCongestionControl implements CongestionControl
     private long lastUpdateTimestampNs;
     private long lastRttTimestamp = 0;
     private long windowUpdateTimeout;
-    private long rttInNanos;
+    private long rttInNs;
     private double k;
     private int cwnd;
     private int w_max;
@@ -97,8 +97,8 @@ public class CubicCongestionControl implements CongestionControl
         k = Math.cbrt((double)w_max * B / C);
 
         // determine interval for adjustment based on heuristic of MTU, max window, and/or RTT estimate
-        rttInNanos = CubicCongestionControlConfiguration.INITIAL_RTT_NS;
-        windowUpdateTimeout = rttInNanos;
+        rttInNs = CubicCongestionControlConfiguration.INITIAL_RTT_NS;
+        windowUpdateTimeout = rttInNs;
 
         rttIndicator = PerImageIndicator.allocate(
             "rcv-cc-cubic-rtt",
@@ -148,12 +148,12 @@ public class CubicCongestionControl implements CongestionControl
         return result;
     }
 
-    public void onRttMeasurement(final long nowNs, final long rttInNanos, final InetSocketAddress srcAddress)
+    public void onRttMeasurement(final long nowNs, final long rttInNs, final InetSocketAddress srcAddress)
     {
         outstandingRttMeasurements--;
         lastRttTimestamp = nowNs;
-        this.rttInNanos = rttInNanos;
-        rttIndicator.setOrdered(rttInNanos);
+        this.rttInNs = rttInNs;
+        rttIndicator.setOrdered(rttInNs);
     }
 
     public long onTrackRebuild(
@@ -189,7 +189,7 @@ public class CubicCongestionControl implements CongestionControl
             {
                 // W_tcp(t) = w_max*(1-B) + 3*B/(2-B)* t/RTT
 
-                final double rttInSeconds = (double)rttInNanos / (double)SECOND_IN_NS;
+                final double rttInSeconds = (double)rttInNs / (double)SECOND_IN_NS;
                 final double wTcp =
                     (double)w_max * (1.0 - B) + ((3.0 * B / (2.0 * B)) * (durationSinceDecr / rttInSeconds));
 

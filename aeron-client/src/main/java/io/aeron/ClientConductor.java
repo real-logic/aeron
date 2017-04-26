@@ -352,8 +352,6 @@ class ClientConductor implements Agent, DriverListener
                             sourceIdentity,
                             correlationId);
 
-                        subscription.addImage(image);
-
                         try
                         {
                             final AvailableImageHandler handler = subscription.availableImageHandler();
@@ -366,6 +364,8 @@ class ClientConductor implements Agent, DriverListener
                         {
                             errorHandler.onError(ex);
                         }
+
+                        subscription.addImage(image);
                     }
                 }
             });

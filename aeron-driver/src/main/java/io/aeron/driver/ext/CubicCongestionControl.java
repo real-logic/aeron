@@ -148,12 +148,12 @@ public class CubicCongestionControl implements CongestionControl
         return result;
     }
 
-    public void onRttMeasurement(final long nowNs, final long rttInNs, final InetSocketAddress srcAddress)
+    public void onRttMeasurement(final long nowNs, final long rttNs, final InetSocketAddress srcAddress)
     {
         outstandingRttMeasurements--;
         lastRttTimestamp = nowNs;
-        this.rttInNs = rttInNs;
-        rttIndicator.setOrdered(rttInNs);
+        this.rttInNs = rttNs;
+        rttIndicator.setOrdered(rttNs);
     }
 
     public long onTrackRebuild(

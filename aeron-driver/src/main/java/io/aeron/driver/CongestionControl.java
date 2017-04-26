@@ -34,10 +34,10 @@ public interface CongestionControl extends AutoCloseable
      * Called by {@link Receiver} on reception of an RTT Measurement.
      *
      * @param nowNs      in nanoseconds
-     * @param rttInNs    to the Sender in nanoseconds
+     * @param rttNs      to the Sender in nanoseconds
      * @param srcAddress of the Sender
      */
-    void onRttMeasurement(long nowNs, long rttInNs, InetSocketAddress srcAddress);
+    void onRttMeasurement(long nowNs, long rttNs, InetSocketAddress srcAddress);
 
     /**
      * Called by {@link DriverConductor} upon execution of {@link PublicationImage#trackRebuild(long, long)} to

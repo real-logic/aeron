@@ -481,14 +481,14 @@ void ClientConductor::onAvailableImage(
                                 logBuffers,
                                 m_errorHandler);
 
+                            entry.m_onAvailableImageHandler(image);
+
                             Image* oldArray = subscription->addImage(image);
 
                             if (nullptr != oldArray)
                             {
                                 lingerResource(m_epochClock(), oldArray);
                             }
-
-                            entry.m_onAvailableImageHandler(image);
                             break;
                         }
                     }

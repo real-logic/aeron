@@ -438,7 +438,7 @@ class ClientConductor implements Agent, DriverListener
     private void awaitResponse(final long correlationId, final String expectedChannel)
     {
         driverException = null;
-        final long timeoutDeadlineNs = nanoClock.nanoTime() + driverTimeoutNs;
+        final long deadlineNs = nanoClock.nanoTime() + driverTimeoutNs;
 
         do
         {
@@ -456,7 +456,7 @@ class ClientConductor implements Agent, DriverListener
                 return;
             }
         }
-        while (nanoClock.nanoTime() < timeoutDeadlineNs);
+        while (nanoClock.nanoTime() < deadlineNs);
 
         throw new DriverTimeoutException("No response within driver timeout");
     }

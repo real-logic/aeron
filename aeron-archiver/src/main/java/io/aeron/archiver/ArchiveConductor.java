@@ -43,8 +43,6 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
     private final ArrayList<Session> sessions = new ArrayList<>();
     private final Int2ObjectHashMap<ReplaySession> replaySessionBySessionIdMap = new Int2ObjectHashMap<>();
 
-    // TODO: archiving sessions index should be managed by the archive index
-    private final Int2ObjectHashMap<ArchivingSession> archivingSessionByStreamInstanceIdMap = new Int2ObjectHashMap<>();
     private final ObjectHashSet<Subscription> archiveSubscriptionSet = new ObjectHashSet<>(128);
     private final ArchiveIndex archiveIndex;
 
@@ -136,11 +134,6 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
             System.err.println("ERROR: expected empty replaySessionBySessionIdMap");
         }
 
-        if (!archivingSessionByStreamInstanceIdMap.isEmpty())
-        {
-            System.err.println("ERROR: expected empty archivingSessionByStreamInstanceIdMap");
-        }
-
         CloseHelper.close(archiveIndex);
         aeron.close();
     }
@@ -150,7 +143,6 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
         final ArchivingSession session = new ArchivingSession(
             proxy, archiveIndex, archiveFolder, image, this.epochClock);
         sessions.add(session);
-        archivingSessionByStreamInstanceIdMap.put(session.streamInstanceId(), session);
     }
 
     public void onArchiveStop(final String channel, final int streamId)
@@ -188,7 +180,7 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
     public void onListStreamInstances(final int from, final int to, final String replyChannel, final int replyStreamId)
     {
         final Publication reply = aeron.addPublication(replyChannel, replyStreamId);
-        final Session listSession = new ListDescriptorsSession(reply, from, to, this, proxy);
+        final Session listSession = new ListDescriptorsSession(reply, from, to, archiveIndex, proxy);
 
         sessions.add(listSession);
     }
@@ -256,16 +248,6 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
         }
 
         return workDone;
-    }
-
-    ArchivingSession getArchivingSession(final int streamInstanceId)
-    {
-        return archivingSessionByStreamInstanceIdMap.get(streamInstanceId);
-    }
-
-    void removeArchivingSession(final int streamInstanceId)
-    {
-        archivingSessionByStreamInstanceIdMap.remove(streamInstanceId);
     }
 
     void removeReplaySession(final int sessionId)

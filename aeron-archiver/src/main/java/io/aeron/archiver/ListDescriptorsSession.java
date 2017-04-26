@@ -64,7 +64,7 @@ class ListDescriptorsSession implements ArchiveConductor.Session
     private final Publication reply;
     private final int from;
     private final int to;
-    private final ArchiveConductor conductor;
+    private final ArchiveIndex index;
     private final ArchiverProtocolProxy proxy;
 
     private int cursor;
@@ -74,14 +74,14 @@ class ListDescriptorsSession implements ArchiveConductor.Session
         final Publication reply,
         final int from,
         final int to,
-        final ArchiveConductor conductor,
+        final ArchiveIndex index,
         final ArchiverProtocolProxy proxy)
     {
         this.reply = reply;
         cursor = from;
         this.from = from;
         this.to = to;
-        this.conductor = conductor;
+        this.index = index;
         this.proxy = proxy;
     }
 
@@ -133,14 +133,14 @@ class ListDescriptorsSession implements ArchiveConductor.Session
         final int limit = Math.min(cursor + 4, to);
         for (; cursor <= limit; cursor++)
         {
-            final ArchivingSession session = conductor.getArchivingSession(cursor);
+            final ArchivingSession session = index.getArchivingSession(cursor);
             if (session == null)
             {
                 byteBuffer.clear();
                 unsafeBuffer.wrap(byteBuffer);
                 try
                 {
-                    if (!conductor.readArchiveDescriptor(cursor, byteBuffer))
+                    if (!index.readArchiveDescriptor(cursor, byteBuffer))
                     {
                         // return relevant error
                         if (reply.tryClaim(
@@ -150,7 +150,7 @@ class ListDescriptorsSession implements ArchiveConductor.Session
                             final int offset = bufferClaim.offset();
                             buffer.putLong(offset, NOT_FOUND_HEADER);
                             buffer.putInt(offset + 8, cursor);
-                            buffer.putInt(offset + 12, conductor.maxStreamInstanceId());
+                            buffer.putInt(offset + 12, index.maxStreamInstanceId());
                             bufferClaim.commit();
                             state = State.CLOSE;
                         }
@@ -195,7 +195,7 @@ class ListDescriptorsSession implements ArchiveConductor.Session
             proxy.sendResponse(reply, "Requested range is reversed (to < from)");
             state = State.CLOSE;
         }
-        else if (to > conductor.maxStreamInstanceId())
+        else if (to > index.maxStreamInstanceId())
         {
             proxy.sendResponse(reply, "Requested range exceeds available range (to > max)");
             state = State.CLOSE;

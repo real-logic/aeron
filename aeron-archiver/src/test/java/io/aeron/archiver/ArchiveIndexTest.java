@@ -24,6 +24,7 @@ import java.io.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.mockito.Mockito.mock;
 
 public class ArchiveIndexTest
 {
@@ -38,6 +39,7 @@ public class ArchiveIndexTest
     static int streamInstanceBId;
     static int streamInstanceCId;
 
+    static ArchivingSession mockSession = mock(ArchivingSession.class);
     @BeforeClass
     public static void setup() throws Exception
     {
@@ -47,11 +49,15 @@ public class ArchiveIndexTest
             ArchiveDescriptorDecoder.BLOCK_LENGTH,
             ArchiveDescriptorDecoder.SCHEMA_VERSION);
         archiveFolder = TestUtil.makeTempFolder();
+
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
         {
-            streamInstanceAId = archiveIndex.addNewStreamInstance("sourceA", 6, "channelG", 1, 4096, 0);
-            streamInstanceBId = archiveIndex.addNewStreamInstance("sourceV", 7, "channelH", 2, 4096, 0);
-            streamInstanceCId = archiveIndex.addNewStreamInstance("sourceB", 8, "channelK", 3, 4096, 0);
+            streamInstanceAId = archiveIndex.addNewStreamInstance("sourceA", 6, "channelG", 1, 4096, 0, mockSession);
+            streamInstanceBId = archiveIndex.addNewStreamInstance("sourceV", 7, "channelH", 2, 4096, 0, mockSession);
+            streamInstanceCId = archiveIndex.addNewStreamInstance("sourceB", 8, "channelK", 3, 4096, 0, mockSession);
+            archiveIndex.removeArchivingSession(streamInstanceAId);
+            archiveIndex.removeArchivingSession(streamInstanceBId);
+            archiveIndex.removeArchivingSession(streamInstanceCId);
         }
     }
 
@@ -95,7 +101,8 @@ public class ArchiveIndexTest
         final int newStreamInstanceId;
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
         {
-            newStreamInstanceId = archiveIndex.addNewStreamInstance("sourceN", 9, "channelJ", 4, 4096, 0);
+            newStreamInstanceId = archiveIndex.addNewStreamInstance("sourceN", 9, "channelJ", 4, 4096, 0, mockSession);
+            archiveIndex.removeArchivingSession(newStreamInstanceId);
         }
 
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
@@ -111,7 +118,8 @@ public class ArchiveIndexTest
         final int newStreamInstanceId;
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
         {
-            newStreamInstanceId = archiveIndex.addNewStreamInstance("sourceA", 6, "channelG", 1, 4096, 0);
+            newStreamInstanceId = archiveIndex.addNewStreamInstance("sourceA", 6, "channelG", 1, 4096, 0, mockSession);
+            archiveIndex.removeArchivingSession(newStreamInstanceId);
             assertNotEquals(streamInstanceAId, newStreamInstanceId);
         }
     }

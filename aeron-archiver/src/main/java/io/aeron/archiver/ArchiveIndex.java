@@ -18,6 +18,7 @@ package io.aeron.archiver;
 import io.aeron.archiver.codecs.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.*;
@@ -42,6 +43,7 @@ class ArchiveIndex implements AutoCloseable
     private static final int PAGE_SIZE = 4096;
 
     private final ArchiveDescriptorEncoder archiveDescriptorEncoder = new ArchiveDescriptorEncoder();
+    private final Int2ObjectHashMap<ArchivingSession> archivingSessionByStreamInstanceIdMap = new Int2ObjectHashMap<>();
 
     private final ByteBuffer byteBuffer;
     private final UnsafeBuffer unsafeBuffer;
@@ -124,7 +126,8 @@ class ArchiveIndex implements AutoCloseable
         final String channel,
         final int streamId,
         final int termBufferLength,
-        final int imageInitialTermId)
+        final int imageInitialTermId,
+        final ArchivingSession session)
     {
         final int newStreamInstanceId = streamInstanceIdSeq;
 
@@ -157,13 +160,18 @@ class ArchiveIndex implements AutoCloseable
         }
 
         streamInstanceIdSeq++;
-
+        archivingSessionByStreamInstanceIdMap.put(newStreamInstanceId, session);
         return newStreamInstanceId;
     }
 
     public void close()
     {
         CloseHelper.close(archiveIndexFileChannel);
+
+        if (!archivingSessionByStreamInstanceIdMap.isEmpty())
+        {
+            System.err.println("ERROR: expected empty archivingSessionByStreamInstanceIdMap");
+        }
     }
 
     boolean readArchiveDescriptor(final int streamInstanceId, final ByteBuffer buffer)
@@ -196,5 +204,15 @@ class ArchiveIndex implements AutoCloseable
     int maxStreamInstanceId()
     {
         return streamInstanceIdSeq;
+    }
+
+    ArchivingSession getArchivingSession(final int streamInstanceId)
+    {
+        return archivingSessionByStreamInstanceIdMap.get(streamInstanceId);
+    }
+
+    void removeArchivingSession(final int streamInstanceId)
+    {
+        archivingSessionByStreamInstanceIdMap.remove(streamInstanceId);
     }
 }

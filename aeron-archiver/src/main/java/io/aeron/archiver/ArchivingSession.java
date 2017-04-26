@@ -29,16 +29,18 @@ class ArchivingSession implements ArchiveConductor.Session
 {
     private enum State
     {
-        ARCHIVING, CLOSING, DONE
+        INIT, ARCHIVING, CLOSING, DONE
     }
 
-    private final int streamInstanceId;
+    private int streamInstanceId = -1;
     private final ArchiverProtocolProxy proxy;
+    private final File archiveFolder;
     private final Image image;
     private final ArchiveIndex index;
-    private final ArchiveStreamWriter writer;
+    private final EpochClock epochClock;
+    private ArchiveStreamWriter writer;
 
-    private State state = State.ARCHIVING;
+    private State state = State.INIT;
 
     ArchivingSession(
         final ArchiverProtocolProxy proxy,
@@ -48,8 +50,42 @@ class ArchivingSession implements ArchiveConductor.Session
         final EpochClock epochClock)
     {
         this.proxy = proxy;
+        this.archiveFolder = archiveFolder;
         this.image = image;
 
+        this.index = index;
+        this.epochClock = epochClock;
+    }
+
+    public void abort()
+    {
+        this.state = State.CLOSING;
+    }
+
+    public int doWork()
+    {
+        int workDone = 0;
+
+        if (state == State.INIT)
+        {
+            workDone += init();
+        }
+
+        if (state == State.ARCHIVING)
+        {
+            workDone += archive();
+        }
+
+        if (state == State.CLOSING)
+        {
+            workDone += close();
+        }
+
+        return workDone;
+    }
+
+    private int init()
+    {
         final Subscription subscription = image.subscription();
         final int streamId = subscription.streamId();
         final String channel = subscription.channel();
@@ -58,25 +94,27 @@ class ArchivingSession implements ArchiveConductor.Session
         final int termBufferLength = image.termBufferLength();
 
         final int imageInitialTermId = image.initialTermId();
-        this.index = index;
-        streamInstanceId = index.addNewStreamInstance(
-            source,
-            sessionId,
-            channel,
-            streamId,
-            termBufferLength,
-            imageInitialTermId);
 
-        proxy.notifyArchiveStarted(
-            streamInstanceId,
-            source,
-            sessionId,
-            channel,
-            streamId);
 
         ArchiveStreamWriter writer = null;
         try
         {
+            streamInstanceId = index.addNewStreamInstance(
+                source,
+                sessionId,
+                channel,
+                streamId,
+                termBufferLength,
+                imageInitialTermId,
+                this);
+
+            proxy.notifyArchiveStarted(
+                streamInstanceId,
+                source,
+                sessionId,
+                channel,
+                streamId);
+
             writer = new ArchiveStreamWriter.Builder()
                 .archiveFolder(archiveFolder)
                 .epochClock(epochClock)
@@ -98,27 +136,8 @@ class ArchivingSession implements ArchiveConductor.Session
         }
 
         this.writer = writer;
-    }
-
-    public void abort()
-    {
-        this.state = State.CLOSING;
-    }
-
-    public int doWork()
-    {
-        int workDone = 0;
-        if (state == State.ARCHIVING)
-        {
-            workDone += archive();
-        }
-
-        if (state == State.CLOSING)
-        {
-            workDone += close();
-        }
-
-        return workDone;
+        this.state = State.ARCHIVING;
+        return 1;
     }
 
     int streamInstanceId()
@@ -188,7 +207,7 @@ class ArchivingSession implements ArchiveConductor.Session
 
     public void remove(final ArchiveConductor conductor)
     {
-        conductor.removeArchivingSession(streamInstanceId);
+        index.removeArchivingSession(streamInstanceId);
     }
 
     ByteBuffer metaDataBuffer()

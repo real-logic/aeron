@@ -116,8 +116,12 @@ public class ArchivingSessionTest
         final EpochClock epochClock = Mockito.mock(EpochClock.class);
         when(epochClock.time()).thenReturn(42L);
 
+        final ArchiveStreamWriter.Builder builder = new ArchiveStreamWriter.Builder()
+            .archiveFileSize(ARCHIVE_FILE_SIZE)
+            .archiveFolder(tempFolderForTest)
+            .epochClock(epochClock);
         final ArchivingSession session = new ArchivingSession(
-            proxy, index, tempFolderForTest, image, epochClock, ARCHIVE_FILE_SIZE);
+            proxy, index, image, builder);
 
         // pre-init
         assertEquals(ArchiveIndex.NULL_STREAM_INDEX, session.streamInstanceId());

@@ -17,9 +17,8 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import org.agrona.*;
-import org.agrona.concurrent.EpochClock;
 
-import java.io.*;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
@@ -34,11 +33,9 @@ class ArchivingSession implements ArchiveConductor.Session
 
     private int streamInstanceId = ArchiveIndex.NULL_STREAM_INDEX;
     private final ArchiverProtocolProxy proxy;
-    private final File archiveFolder;
     private final Image image;
     private final ArchiveIndex index;
-    private final EpochClock epochClock;
-    private final int archiveFileSize;
+    private final ArchiveStreamWriter.Builder builder;
 
     private ArchiveStreamWriter writer;
 
@@ -47,18 +44,13 @@ class ArchivingSession implements ArchiveConductor.Session
     ArchivingSession(
         final ArchiverProtocolProxy proxy,
         final ArchiveIndex index,
-        final File archiveFolder,
         final Image image,
-        final EpochClock epochClock,
-        final int archiveFileSize)
+        final ArchiveStreamWriter.Builder builder)
     {
         this.proxy = proxy;
-        this.archiveFolder = archiveFolder;
         this.image = image;
-
         this.index = index;
-        this.epochClock = epochClock;
-        this.archiveFileSize = archiveFileSize;
+        this.builder = builder;
     }
 
     public void abort()
@@ -111,7 +103,7 @@ class ArchivingSession implements ArchiveConductor.Session
                 termBufferLength,
                 imageInitialTermId,
                 this,
-                archiveFileSize);
+                builder.archiveFileSize());
 
             proxy.notifyArchiveStarted(
                 streamInstanceId,
@@ -120,9 +112,7 @@ class ArchivingSession implements ArchiveConductor.Session
                 channel,
                 streamId);
 
-            writer = new ArchiveStreamWriter.Builder()
-                .archiveFolder(archiveFolder)
-                .epochClock(epochClock)
+            writer = builder
                 .streamInstanceId(streamInstanceId)
                 .termBufferLength(termBufferLength)
                 .imageInitialTermId(imageInitialTermId)
@@ -130,9 +120,6 @@ class ArchivingSession implements ArchiveConductor.Session
                 .sessionId(sessionId)
                 .channel(channel)
                 .streamId(streamId)
-                .forceWrites(true)
-                .forceMetadataUpdates(true)
-                .archiveFileSize(archiveFileSize)
                 .build();
         }
         catch (final Exception ex)

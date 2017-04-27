@@ -101,6 +101,8 @@ public class Archiver implements AutoCloseable
         private IdleStrategy idleStrategy;
         private EpochClock epochClock;
         private int archiveFileSize = 128 * 1024 * 1024;
+        private boolean forceMetadataUpdates = true;
+        private boolean forceWrites = true;
 
         public Context()
         {
@@ -241,9 +243,29 @@ public class Archiver implements AutoCloseable
             return archiveFileSize;
         }
 
-        public void setArchiveFileSize(final int archiveFileSize)
+        public void archiveFileSize(final int archiveFileSize)
         {
             this.archiveFileSize = archiveFileSize;
+        }
+
+        boolean forceMetadataUpdates()
+        {
+            return forceMetadataUpdates;
+        }
+
+        public void forceMetadataUpdates(final boolean forceMetadataUpdates)
+        {
+            this.forceMetadataUpdates = forceMetadataUpdates;
+        }
+
+        boolean forceWrites()
+        {
+            return forceWrites;
+        }
+
+        public void forceWrites(final boolean forceWrites)
+        {
+            this.forceWrites = forceWrites;
         }
     }
 }

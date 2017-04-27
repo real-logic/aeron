@@ -121,6 +121,11 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
         {
             return new ArchiveStreamWriter(this);
         }
+
+        int archiveFileSize()
+        {
+            return archiveFileSize;
+        }
     }
     private final boolean forceWrites;
     private final boolean forceMetadataUpdates;

@@ -20,8 +20,7 @@ import org.agrona.CloseHelper;
 import org.agrona.collections.*;
 import org.agrona.concurrent.*;
 
-import java.io.*;
-import java.nio.ByteBuffer;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
@@ -51,24 +50,33 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
         new OneToOneConcurrentArrayQueue<>(1024);
     private final AvailableImageHandler availableImageHandler;
     private final File archiveFolder;
-    private final EpochClock epochClock;
 
     private final Consumer<Image> newImageConsumer = this::handleNewImageNotification;
     private final ArchiverProtocolAdapter adapter = new ArchiverProtocolAdapter(this);
     private final ArchiverProtocolProxy proxy;
     private volatile boolean isClosed = false;
-    private final int archiveFileSize;
+    private final ArchiveStreamWriter.Builder archiveWriterBuilder = new ArchiveStreamWriter.Builder();
 
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
         this.aeron = aeron;
+
+        archiveFolder = ctx.archiveFolder();
+        archiveIndex = new ArchiveIndex(archiveFolder);
+
+        archiveWriterBuilder.archiveFileSize(ctx.archiveFileSize());
+        archiveWriterBuilder.archiveFolder(ctx.archiveFolder());
+        archiveWriterBuilder.epochClock(ctx.epochClock());
+        archiveWriterBuilder.forceMetadataUpdates(ctx.forceMetadataUpdates());
+        archiveWriterBuilder.forceWrites(ctx.forceWrites());
+
         serviceRequestSubscription = aeron.addSubscription(ctx.serviceRequestChannel(), ctx.serviceRequestStreamId());
 
         final Publication archiverNotificationPublication = aeron.addPublication(
             ctx.archiverNotificationsChannel(), ctx.archiverNotificationsStreamId());
 
-        this.archiveFolder = ctx.archiveFolder();
-        archiveFileSize = ctx.archiveFileSize();
+        proxy = new ArchiverProtocolProxy(ctx.idleStrategy(), archiverNotificationPublication);
+
         availableImageHandler =
             (image) ->
             {
@@ -84,10 +92,8 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
                 }
             };
 
-        this.proxy = new ArchiverProtocolProxy(ctx.idleStrategy(), archiverNotificationPublication);
-        this.epochClock = ctx.epochClock();
 
-        archiveIndex = new ArchiveIndex(archiveFolder);
+
     }
 
     public String roleName()
@@ -142,8 +148,7 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
 
     private void handleNewImageNotification(final Image image)
     {
-        final ArchivingSession session = new ArchivingSession(
-            proxy, archiveIndex, archiveFolder, image, this.epochClock, archiveFileSize);
+        final ArchivingSession session = new ArchivingSession(proxy, archiveIndex, image, archiveWriterBuilder);
         sessions.add(session);
     }
 
@@ -255,15 +260,5 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
     void removeReplaySession(final int sessionId)
     {
         replaySessionBySessionIdMap.remove(sessionId);
-    }
-
-    boolean readArchiveDescriptor(final int streamInstanceId, final ByteBuffer byteBuffer) throws IOException
-    {
-        return archiveIndex.readArchiveDescriptor(streamInstanceId, byteBuffer);
-    }
-
-    int maxStreamInstanceId()
-    {
-        return archiveIndex.maxStreamInstanceId();
     }
 }

@@ -31,6 +31,7 @@ public class ArchiveIndexTest
     static final UnsafeBuffer UB = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(ArchiveIndex.INDEX_RECORD_SIZE, 64));
     static final ArchiveDescriptorDecoder DECODER = new ArchiveDescriptorDecoder();
+    public static final int ARCHIVE_FILE_SIZE = 128 * 1024 * 1024;
 
 
     private static File archiveFolder;
@@ -52,9 +53,12 @@ public class ArchiveIndexTest
 
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
         {
-            streamInstanceAId = archiveIndex.addNewStreamInstance("sourceA", 6, "channelG", 1, 4096, 0, mockSession);
-            streamInstanceBId = archiveIndex.addNewStreamInstance("sourceV", 7, "channelH", 2, 4096, 0, mockSession);
-            streamInstanceCId = archiveIndex.addNewStreamInstance("sourceB", 8, "channelK", 3, 4096, 0, mockSession);
+            streamInstanceAId = archiveIndex.addNewStreamInstance("sourceA", 6, "channelG", 1, 4096, 0, mockSession,
+                ARCHIVE_FILE_SIZE);
+            streamInstanceBId = archiveIndex.addNewStreamInstance("sourceV", 7, "channelH", 2, 4096, 0, mockSession,
+                ARCHIVE_FILE_SIZE);
+            streamInstanceCId = archiveIndex.addNewStreamInstance("sourceB", 8, "channelK", 3, 4096, 0, mockSession,
+                ARCHIVE_FILE_SIZE);
             archiveIndex.removeArchivingSession(streamInstanceAId);
             archiveIndex.removeArchivingSession(streamInstanceBId);
             archiveIndex.removeArchivingSession(streamInstanceCId);
@@ -101,7 +105,8 @@ public class ArchiveIndexTest
         final int newStreamInstanceId;
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
         {
-            newStreamInstanceId = archiveIndex.addNewStreamInstance("sourceN", 9, "channelJ", 4, 4096, 0, mockSession);
+            newStreamInstanceId = archiveIndex.addNewStreamInstance("sourceN", 9, "channelJ", 4, 4096, 0, mockSession,
+                ARCHIVE_FILE_SIZE);
             archiveIndex.removeArchivingSession(newStreamInstanceId);
         }
 
@@ -118,7 +123,8 @@ public class ArchiveIndexTest
         final int newStreamInstanceId;
         try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
         {
-            newStreamInstanceId = archiveIndex.addNewStreamInstance("sourceA", 6, "channelG", 1, 4096, 0, mockSession);
+            newStreamInstanceId = archiveIndex.addNewStreamInstance("sourceA", 6, "channelG", 1, 4096, 0, mockSession,
+                ARCHIVE_FILE_SIZE);
             archiveIndex.removeArchivingSession(newStreamInstanceId);
             assertNotEquals(streamInstanceAId, newStreamInstanceId);
         }

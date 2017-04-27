@@ -29,9 +29,6 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 class ArchiveFileUtil
 {
-    // TODO: make configurable
-    static final int ARCHIVE_FILE_SIZE = 1024 * 1024 * 128;
-
     static String archiveMetaFileName(final int streamInstanceId)
     {
         return streamInstanceId + ".meta";
@@ -46,16 +43,21 @@ class ArchiveFileUtil
         final int streamInstanceId,
         final int initialTermId,
         final int termBufferLength,
-        final int termId)
+        final int termId,
+        final int archiveFileSize)
     {
-        final int index = archiveDataFileIndex(initialTermId, termBufferLength, termId);
+        final int index = archiveDataFileIndex(initialTermId, termBufferLength, termId, archiveFileSize);
 
         return archiveDataFileName(streamInstanceId, index);
     }
 
-    static int archiveDataFileIndex(final int initialTermId, final int termBufferLength, final int termId)
+    static int archiveDataFileIndex(
+        final int initialTermId,
+        final int termBufferLength,
+        final int termId,
+        final int archiveFileSize)
     {
-        final int termsPerFile = ARCHIVE_FILE_SIZE / termBufferLength;
+        final int termsPerFile = archiveFileSize / termBufferLength;
         return (termId - initialTermId) / termsPerFile;
     }
 
@@ -94,10 +96,14 @@ class ArchiveFileUtil
         }
     }
 
-    static int archiveOffset(
-        final int termOffset, final int termId, final int initialTermId, final int termBufferLength)
+    static int offsetInArchiveFile(
+        final int termOffset,
+        final int termId,
+        final int initialTermId,
+        final int termBufferLength,
+        final int archiveFileSize)
     {
-        final int termsMask = ((ARCHIVE_FILE_SIZE / termBufferLength) - 1);
+        final int termsMask = ((archiveFileSize / termBufferLength) - 1);
         return archiveOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
     }
 

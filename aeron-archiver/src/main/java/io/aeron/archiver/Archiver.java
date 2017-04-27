@@ -100,6 +100,8 @@ public class Archiver implements AutoCloseable
         private int archiverNotificationsStreamId;
         private IdleStrategy idleStrategy;
         private EpochClock epochClock;
+        private int archiveFileSize = 128 * 1024 * 1024;
+
         public Context()
         {
             this(new Aeron.Context(), new File("archive"));
@@ -232,6 +234,16 @@ public class Archiver implements AutoCloseable
         public EpochClock epochClock()
         {
             return epochClock;
+        }
+
+        int archiveFileSize()
+        {
+            return archiveFileSize;
+        }
+
+        public void setArchiveFileSize(final int archiveFileSize)
+        {
+            this.archiveFileSize = archiveFileSize;
         }
     }
 }

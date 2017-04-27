@@ -43,6 +43,7 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
         private int streamId;
         private String source;
         private String channel;
+        private int archiveFileSize = 128 * 1024 * 1024;
 
         Builder archiveFolder(final File archiveFolder)
         {
@@ -110,6 +111,12 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
             return this;
         }
 
+        Builder archiveFileSize(final int archiveFileSize)
+        {
+            this.archiveFileSize = archiveFileSize;
+            return this;
+        }
+
         ArchiveStreamWriter build()
         {
             return new ArchiveStreamWriter(this);
@@ -128,9 +135,10 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
     private final FileChannel metadataFileChannel;
     private final MappedByteBuffer metaDataBuffer;
     private final ArchiveDescriptorEncoder metaDataWriter;
+    private final int archiveFileSize;
 
     /**
-     * Index is in the range 0:ARCHIVE_FILE_SIZE, except before the first block for this image is received indicated
+     * Index is in the range 0:archiveFileSize, except before the first block for this image is received indicated
      * by -1
      */
     private int archivePosition = -1;
@@ -151,8 +159,9 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
         this.archiveFolder = builder.archiveFolder;
         this.termBufferLength = builder.termBufferLength;
         this.epochClock = builder.epochClock;
+        this.archiveFileSize = builder.archiveFileSize;
 
-        this.termsMask = (ArchiveFileUtil.ARCHIVE_FILE_SIZE / termBufferLength) - 1;
+        this.termsMask = (builder.archiveFileSize / termBufferLength) - 1;
         this.forceWrites = builder.forceWrites;
         this.forceMetadataUpdates = builder.forceMetadataUpdates;
         if (((termsMask + 1) & termsMask) != 0)
@@ -175,6 +184,7 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
                 metaDataWriter,
                 streamInstanceId,
                 termBufferLength,
+                archiveFileSize,
                 builder.imageInitialTermId,
                 builder.source,
                 builder.sessionId,
@@ -198,6 +208,7 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
         final ArchiveDescriptorEncoder descriptor,
         final int streamInstanceId,
         final int termBufferLength,
+        final int archiveFileSize,
         final int imageInitialTermId,
         final String source,
         final int sessionId,
@@ -215,6 +226,7 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
         descriptor.imageInitialTermId(imageInitialTermId);
         descriptor.sessionId(sessionId);
         descriptor.streamId(streamId);
+        descriptor.archiveFileSize(archiveFileSize);
         descriptor.source(source);
         descriptor.channel(channel);
     }
@@ -222,7 +234,7 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
     private void newArchiveFile(final int termId)
     {
         final String archiveDataFileName = archiveDataFileName(
-            streamInstanceId, initialTermId, termBufferLength, termId);
+            streamInstanceId, initialTermId, termBufferLength, termId, archiveFileSize);
         final File file = new File(archiveFolder, archiveDataFileName);
 
         try
@@ -230,7 +242,7 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
             // NOTE: using 'rwd' options would force sync on data writes(not sync metadata), but is slower than forcing
             // externally.
             archiveFile = new RandomAccessFile(file, "rw");
-            archiveFile.setLength(ArchiveFileUtil.ARCHIVE_FILE_SIZE);
+            archiveFile.setLength(archiveFileSize);
             archiveFileChannel = archiveFile.getChannel();
         }
         catch (final IOException ex)
@@ -379,7 +391,7 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
             metaDataBuffer.force();
         }
 
-        if (archivePosition == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
+        if (archivePosition == archiveFileSize)
         {
             CloseHelper.close(archiveFileChannel);
             CloseHelper.close(archiveFile);
@@ -445,5 +457,10 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
     ByteBuffer metaDataBuffer()
     {
         return metaDataBuffer;
+    }
+
+    int archiveFileSize()
+    {
+        return archiveFileSize;
     }
 }

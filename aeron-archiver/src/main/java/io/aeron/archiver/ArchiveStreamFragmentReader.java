@@ -23,10 +23,13 @@ import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.*;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
+import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
+import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardOpenOption.READ;
 
 class ArchiveStreamFragmentReader implements AutoCloseable
@@ -40,6 +43,7 @@ class ArchiveStreamFragmentReader implements AutoCloseable
     private final int fromTermId;
     private final int fromTermOffset;
     private final long replayLength;
+    private final int archiveFileSize;
 
     private int archiveFileIndex;
     private FileChannel currentDataChannel = null;
@@ -59,6 +63,7 @@ class ArchiveStreamFragmentReader implements AutoCloseable
         termBufferLength = metaDecoder.termBufferLength();
         initialTermId = metaDecoder.initialTermId();
         initialTermOffset = metaDecoder.initialTermOffset();
+        archiveFileSize = metaDecoder.archiveFileSize();
         fullLength = ArchiveFileUtil.archiveFullLength(metaDecoder);
         IoUtil.unmap(metaDecoder.buffer().byteBuffer());
         fromTermId = initialTermId;
@@ -85,6 +90,7 @@ class ArchiveStreamFragmentReader implements AutoCloseable
         termBufferLength = metaDecoder.termBufferLength();
         initialTermId = metaDecoder.initialTermId();
         initialTermOffset = metaDecoder.initialTermOffset();
+        archiveFileSize = metaDecoder.archiveFileSize();
         fullLength = ArchiveFileUtil.archiveFullLength(metaDecoder);
         IoUtil.unmap(metaDecoder.buffer().byteBuffer());
         initCursorState();
@@ -92,13 +98,14 @@ class ArchiveStreamFragmentReader implements AutoCloseable
 
     private void initCursorState() throws IOException
     {
-        archiveFileIndex = ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, fromTermId);
-        final int archiveOffset = ArchiveFileUtil.archiveOffset(
-            fromTermOffset, fromTermId, initialTermId, termBufferLength);
+        archiveFileIndex = ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, fromTermId,
+            archiveFileSize);
+        final int archiveOffset = ArchiveFileUtil.offsetInArchiveFile(
+            fromTermOffset, fromTermId, initialTermId, termBufferLength, archiveFileSize);
         archiveTermStartOffset = archiveOffset - fromTermOffset;
         openArchiveFile();
         termMappedUnsafeBuffer = new UnsafeBuffer(
-            currentDataChannel.map(FileChannel.MapMode.READ_ONLY, archiveTermStartOffset, termBufferLength));
+            currentDataChannel.map(READ_ONLY, archiveTermStartOffset, termBufferLength));
 
         fragmentHeader = new Header(initialTermId, Integer.numberOfLeadingZeros(termBufferLength));
         fragmentHeader.buffer(termMappedUnsafeBuffer);
@@ -166,7 +173,7 @@ class ArchiveStreamFragmentReader implements AutoCloseable
             archiveTermStartOffset += termBufferLength;
 
             // rotate file
-            if (archiveTermStartOffset == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
+            if (archiveTermStartOffset == archiveFileSize)
             {
                 closeArchiveFile();
                 archiveFileIndex++;
@@ -178,8 +185,9 @@ class ArchiveStreamFragmentReader implements AutoCloseable
                 unmapTermBuffer();
             }
             // rotate term
-            termMappedUnsafeBuffer.wrap(currentDataChannel.map(
-                FileChannel.MapMode.READ_ONLY, archiveTermStartOffset, termBufferLength));
+            final MappedByteBuffer mappedByteBuffer =
+                currentDataChannel.map(READ_ONLY, archiveTermStartOffset, termBufferLength);
+            termMappedUnsafeBuffer.wrap(mappedByteBuffer);
             fragmentHeader.buffer(termMappedUnsafeBuffer);
         }
 
@@ -202,7 +210,7 @@ class ArchiveStreamFragmentReader implements AutoCloseable
 
     private void openArchiveFile() throws IOException
     {
-        final String archiveDataFileName = ArchiveFileUtil.archiveDataFileName(streamInstanceId, archiveFileIndex);
+        final String archiveDataFileName = archiveDataFileName(streamInstanceId, archiveFileIndex);
         final File archiveDataFile = new File(archiveFolder, archiveDataFileName);
 
         if (!archiveDataFile.exists())

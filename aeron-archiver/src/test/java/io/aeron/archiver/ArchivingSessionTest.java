@@ -38,6 +38,7 @@ import static org.mockito.Mockito.when;
 
 public class ArchivingSessionTest
 {
+    private static final int ARCHIVE_FILE_SIZE = 128 * 1024 * 1024;
     private final int streamInstanceId = 12345;
 
     private final String channel = "channel";
@@ -71,7 +72,8 @@ public class ArchivingSessionTest
                 eq(streamId),
                 eq(termBufferLength),
                 eq(initialTermId),
-                any(ArchivingSession.class)))
+                any(ArchivingSession.class),
+                eq(ARCHIVE_FILE_SIZE)))
                 .thenReturn(streamInstanceId);
         final Subscription subscription = mockSubscription(channel, streamId);
         image = mockImage(source, sessionId, initialTermId, termBufferLength, subscription);
@@ -115,7 +117,7 @@ public class ArchivingSessionTest
         when(epochClock.time()).thenReturn(42L);
 
         final ArchivingSession session = new ArchivingSession(
-            proxy, index, tempFolderForTest, image, epochClock);
+            proxy, index, tempFolderForTest, image, epochClock, ARCHIVE_FILE_SIZE);
 
         // pre-init
         assertEquals(ArchiveIndex.NULL_STREAM_INDEX, session.streamInstanceId());

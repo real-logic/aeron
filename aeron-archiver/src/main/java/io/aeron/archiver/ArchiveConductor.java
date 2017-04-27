@@ -57,6 +57,7 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
     private final ArchiverProtocolAdapter adapter = new ArchiverProtocolAdapter(this);
     private final ArchiverProtocolProxy proxy;
     private volatile boolean isClosed = false;
+    private final int archiveFileSize;
 
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
@@ -67,6 +68,7 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
             ctx.archiverNotificationsChannel(), ctx.archiverNotificationsStreamId());
 
         this.archiveFolder = ctx.archiveFolder();
+        archiveFileSize = ctx.archiveFileSize();
         availableImageHandler =
             (image) ->
             {
@@ -141,7 +143,7 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
     private void handleNewImageNotification(final Image image)
     {
         final ArchivingSession session = new ArchivingSession(
-            proxy, archiveIndex, archiveFolder, image, this.epochClock);
+            proxy, archiveIndex, archiveFolder, image, this.epochClock, archiveFileSize);
         sessions.add(session);
     }
 

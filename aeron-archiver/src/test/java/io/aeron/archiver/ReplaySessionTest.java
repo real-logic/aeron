@@ -104,7 +104,8 @@ public class ReplaySessionTest
             TERM_BUFFER_LENGTH,
             INITIAL_TERM_ID,
             INITIAL_TERM_OFFSET,
-            1024))
+            1024,
+            128 * 1024 * 1024))
         {
             chunkReader.readChunk(
                 (termBuff, termOffset, length) ->

@@ -443,7 +443,8 @@ public class ArchiveAndReplaySystemTest
             termBufferLength,
             initialTermId,
             initialTermOffset,
-            archiveFullLength))
+            archiveFullLength,
+            128 * 1024 * 1024))
         {
             fragmentCount = 0;
             final HeaderFlyweight mHeader = new HeaderFlyweight();

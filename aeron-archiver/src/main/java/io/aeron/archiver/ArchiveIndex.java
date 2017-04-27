@@ -128,7 +128,8 @@ class ArchiveIndex implements AutoCloseable
         final int streamId,
         final int termBufferLength,
         final int imageInitialTermId,
-        final ArchivingSession session)
+        final ArchivingSession session,
+        final int archiveFileSize)
     {
         final int newStreamInstanceId = streamInstanceIdSeq;
 
@@ -137,6 +138,7 @@ class ArchiveIndex implements AutoCloseable
             archiveDescriptorEncoder,
             newStreamInstanceId,
             termBufferLength,
+            archiveFileSize,
             imageInitialTermId,
             source,
             sessionId,

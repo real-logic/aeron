@@ -32,6 +32,7 @@ class ArchiveStreamChunkReader implements AutoCloseable
     private final int streamInstanceId;
     private final File archiveFolder;
     private final int termBufferLength;
+    private final int archiveFileSize;
 
     private final long length;
 
@@ -51,8 +52,10 @@ class ArchiveStreamChunkReader implements AutoCloseable
         final int termBufferLength,
         final int termId,
         final int termOffset,
-        final long length) throws IOException
+        final long length,
+        final int archiveFileSize) throws IOException
     {
+        this.archiveFileSize = archiveFileSize;
         this.streamInstanceId = streamInstanceId;
         this.archiveFolder = archiveFolder;
         this.termBufferLength = termBufferLength;
@@ -60,8 +63,13 @@ class ArchiveStreamChunkReader implements AutoCloseable
         this.length = length;
 
         transmitted = 0;
-        fileIndex = ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, termId);
-        final int archiveOffset = ArchiveFileUtil.archiveOffset(termOffset, termId, initialTermId, termBufferLength);
+        fileIndex = ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, termId, archiveFileSize);
+        final int archiveOffset = ArchiveFileUtil.offsetInArchiveFile(
+                termOffset,
+                termId,
+                initialTermId,
+                termBufferLength,
+                archiveFileSize);
         initTermOffset = archiveOffset - termOffset;
         this.termOffset = termOffset;
 
@@ -133,7 +141,7 @@ class ArchiveStreamChunkReader implements AutoCloseable
     {
         termOffset = 0;
         initTermOffset += termBufferLength;
-        if (initTermOffset == ArchiveFileUtil.ARCHIVE_FILE_SIZE)
+        if (initTermOffset == archiveFileSize)
         {
             initTermOffset = 0;
             fileIndex++;

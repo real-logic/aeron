@@ -38,6 +38,8 @@ class ArchivingSession implements ArchiveConductor.Session
     private final Image image;
     private final ArchiveIndex index;
     private final EpochClock epochClock;
+    private final int archiveFileSize;
+
     private ArchiveStreamWriter writer;
 
     private State state = State.INIT;
@@ -47,7 +49,8 @@ class ArchivingSession implements ArchiveConductor.Session
         final ArchiveIndex index,
         final File archiveFolder,
         final Image image,
-        final EpochClock epochClock)
+        final EpochClock epochClock,
+        final int archiveFileSize)
     {
         this.proxy = proxy;
         this.archiveFolder = archiveFolder;
@@ -55,6 +58,7 @@ class ArchivingSession implements ArchiveConductor.Session
 
         this.index = index;
         this.epochClock = epochClock;
+        this.archiveFileSize = archiveFileSize;
     }
 
     public void abort()
@@ -106,7 +110,8 @@ class ArchivingSession implements ArchiveConductor.Session
                 streamId,
                 termBufferLength,
                 imageInitialTermId,
-                this);
+                this,
+                archiveFileSize);
 
             proxy.notifyArchiveStarted(
                 streamInstanceId,
@@ -127,6 +132,7 @@ class ArchivingSession implements ArchiveConductor.Session
                 .streamId(streamId)
                 .forceWrites(true)
                 .forceMetadataUpdates(true)
+                .archiveFileSize(archiveFileSize)
                 .build();
         }
         catch (final Exception ex)
@@ -175,7 +181,7 @@ class ArchivingSession implements ArchiveConductor.Session
         try
         {
             // TODO: add CRC as option, per fragment, use session id to store CRC
-            workCount = image.rawPoll(writer, ArchiveFileUtil.ARCHIVE_FILE_SIZE);
+            workCount = image.rawPoll(writer, writer.archiveFileSize());
             if (workCount != 0)
             {
                 proxy.notifyArchiveProgress(

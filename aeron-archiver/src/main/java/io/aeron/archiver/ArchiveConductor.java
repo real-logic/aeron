@@ -48,10 +48,10 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
     // TODO: arguably this is a good fit for a linked array queue so that we can have minimal footprint
     private final OneToOneConcurrentArrayQueue<Image> imageNotificationQueue =
         new OneToOneConcurrentArrayQueue<>(1024);
-    private final AvailableImageHandler availableImageHandler;
     private final File archiveFolder;
 
     private final Consumer<Image> newImageConsumer = this::handleNewImageNotification;
+    private final AvailableImageHandler availableImageHandler = this::onAvailableImage;
     private final ArchiverProtocolAdapter adapter = new ArchiverProtocolAdapter(this);
     private final ArchiverProtocolProxy proxy;
     private volatile boolean isClosed = false;
@@ -76,24 +76,6 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
             ctx.archiverNotificationsChannel(), ctx.archiverNotificationsStreamId());
 
         proxy = new ArchiverProtocolProxy(ctx.idleStrategy(), archiverNotificationPublication);
-
-        availableImageHandler =
-            (image) ->
-            {
-                if (!isClosed && imageNotificationQueue.offer(image))
-                {
-                    return;
-                }
-                // This is required since image available handler is called from the client conductor thread
-                // we can either bridge via a queue or protect access to the sessions list, which seems clumsy.
-                while (!isClosed && !imageNotificationQueue.offer(image))
-                {
-                    Thread.yield();
-                }
-            };
-
-
-
     }
 
     public String roleName()
@@ -106,7 +88,10 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
         int workDone = 0;
 
         // TODO: control tasks balance? shard/distribute tasks across threads?
+
+        // this will trigger callbacks into handleNewImageNotification
         workDone += imageNotificationQueue.drain(newImageConsumer);
+        // this will trigger callbacks into ArchiverProtocolListener::on* methods
         workDone += serviceRequestSubscription.poll(adapter, 16);
         workDone += doSessionsWork();
 
@@ -129,13 +114,9 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
             {
                 session.doWork();
             }
+            session.remove(this);
         }
-        doSessionsWork();
-
-        if (!sessions.isEmpty())
-        {
-            System.err.println("ERROR: expected empty sessions");
-        }
+        sessions.clear();
 
         if (!replaySessionBySessionIdMap.isEmpty())
         {
@@ -143,13 +124,6 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
         }
 
         CloseHelper.close(archiveIndex);
-        aeron.close();
-    }
-
-    private void handleNewImageNotification(final Image image)
-    {
-        final ArchivingSession session = new ArchivingSession(proxy, archiveIndex, image, archiveWriterBuilder);
-        sessions.add(session);
     }
 
     public void onArchiveStop(final String channel, final int streamId)
@@ -238,6 +212,11 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
         sessions.add(replaySession);
     }
 
+    void removeReplaySession(final int sessionId)
+    {
+        replaySessionBySessionIdMap.remove(sessionId);
+    }
+
     private int doSessionsWork()
     {
         int workDone = 0;
@@ -257,8 +236,23 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
         return workDone;
     }
 
-    void removeReplaySession(final int sessionId)
+    private void handleNewImageNotification(final Image image)
     {
-        replaySessionBySessionIdMap.remove(sessionId);
+        final ArchivingSession session = new ArchivingSession(proxy, archiveIndex, image, archiveWriterBuilder);
+        sessions.add(session);
+    }
+
+    private void onAvailableImage(final Image image)
+    {
+        if (!isClosed && imageNotificationQueue.offer(image))
+        {
+            return;
+        }
+        // This is required since image available handler is called from the client conductor thread
+        // we can either bridge via a queue or protect access to the sessions list, which seems clumsy.
+        while (!isClosed && !imageNotificationQueue.offer(image))
+        {
+            Thread.yield();
+        }
     }
 }

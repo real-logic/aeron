@@ -16,6 +16,7 @@
 package io.aeron.archiver;
 
 import io.aeron.Aeron;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.*;
 
 import java.io.File;
@@ -26,6 +27,7 @@ public class Archiver implements AutoCloseable
 {
     private final Context ctx;
     private AgentRunner runner;
+    private Aeron aeron;
 
     public Archiver(final Context ctx)
     {
@@ -56,12 +58,13 @@ public class Archiver implements AutoCloseable
 
     public void close() throws Exception
     {
-        runner.close();
+        CloseHelper.close(runner);
+        CloseHelper.close(aeron);
     }
 
     public void start()
     {
-        final Aeron aeron = Aeron.connect(ctx.clientContext);
+        aeron = Aeron.connect(ctx.clientContext);
         ctx.conclude();
 
         // TODO: Should we have replay and record on same thread?

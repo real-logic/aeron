@@ -393,6 +393,8 @@ public class DriverConductor implements Agent
 
     void cleanupPublication(final NetworkPublication publication)
     {
+        senderProxy.removeNetworkPublication(publication);
+
         if (publication.hasSpies())
         {
             clientProxy.onUnavailableImage(
@@ -405,8 +407,6 @@ public class DriverConductor implements Agent
                 subscriptionLinks.get(i).unlink(publication);
             }
         }
-
-        senderProxy.removeNetworkPublication(publication);
 
         final SendChannelEndpoint channelEndpoint = publication.channelEndpoint();
         if (channelEndpoint.shouldBeClosed())

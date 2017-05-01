@@ -49,10 +49,10 @@ class NetworkPublicationPadding1
 
 class NetworkPublicationConductorFields extends NetworkPublicationPadding1
 {
-    private static final ReadablePosition[] EMPTY_POSITIONS = new ReadablePosition[0];
+    protected static final ReadablePosition[] EMPTY_POSITIONS = new ReadablePosition[0];
 
     protected long cleanPosition = 0;
-    protected long timeOfLastActivity = 0;
+    protected long timeOfLastActivityNs = 0;
     protected long lastSenderPosition = 0;
     protected long lastConsumerPosition = 0;
     protected long timeOfLastConsumerPositionChange = 0;
@@ -524,24 +524,26 @@ public class NetworkPublication
         return bytesSent;
     }
 
-    private boolean isUnreferencedAndPotentiallyInactive(final long now)
+    private boolean isUnreferencedAndPotentiallyInactive(final long nowNs)
     {
-        boolean result = false;
-
-        if (refCount == 0)
+        if (refCount > 0)
         {
-            final long senderPosition = this.senderPosition.getVolatile();
-
-            timeOfLastActivity = senderPosition == lastSenderPosition ? timeOfLastActivity : now;
-            lastSenderPosition = senderPosition;
-            result = true;
+            timeOfLastActivityNs = nowNs;
+            return false;
         }
         else
         {
-            timeOfLastActivity = now;
-        }
+            final long senderPosition = this.senderPosition.getVolatile();
 
-        return result;
+            if (senderPosition != lastSenderPosition)
+            {
+                lastSenderPosition = senderPosition;
+                timeOfLastActivityNs = nowNs;
+                return false;
+            }
+
+            return true;
+        }
     }
 
     private void cleanBuffer(final long publisherLimit)
@@ -601,14 +603,26 @@ public class NetworkPublication
 
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
-        if (isUnreferencedAndPotentiallyInactive(timeNs) &&
-            timeNs > (timeOfLastActivity + PUBLICATION_LINGER_NS) &&
-            haveSpiesCaughtUpWithTheSender())
+        if (isUnreferencedAndPotentiallyInactive(timeNs) && haveSpiesCaughtUpWithTheSender())
         {
-            if (Status.LINGER == status)
+            if (hasSpies())
             {
-                status = Status.INACTIVE;
-                conductor.cleanupPublication(NetworkPublication.this);
+                conductor.cleanupSpies(NetworkPublication.this);
+                for (final ReadablePosition position : spyPositions)
+                {
+                    position.close();
+                }
+
+                spyPositions = EMPTY_POSITIONS;
+                timeOfLastActivityNs = timeNs;
+            }
+            else if (timeNs > (timeOfLastActivityNs + PUBLICATION_LINGER_NS))
+            {
+                if (Status.LINGER == status)
+                {
+                    status = Status.INACTIVE;
+                    conductor.cleanupPublication(NetworkPublication.this);
+                }
             }
         }
         else
@@ -637,7 +651,7 @@ public class NetworkPublication
 
     public long timeOfLastStateChange()
     {
-        return timeOfLastActivity;
+        return timeOfLastActivityNs;
     }
 
     public void delete()

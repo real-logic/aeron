@@ -391,22 +391,22 @@ public class DriverConductor implements Agent
         return publication;
     }
 
+    void cleanupSpies(final NetworkPublication publication)
+    {
+        clientProxy.onUnavailableImage(
+            correlationId(publication.rawLog().metaData()),
+            publication.streamId(),
+            publication.channelEndpoint().originalUriString());
+
+        for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
+        {
+            subscriptionLinks.get(i).unlink(publication);
+        }
+    }
+
     void cleanupPublication(final NetworkPublication publication)
     {
         senderProxy.removeNetworkPublication(publication);
-
-        if (publication.hasSpies())
-        {
-            clientProxy.onUnavailableImage(
-                correlationId(publication.rawLog().metaData()),
-                publication.streamId(),
-                publication.channelEndpoint().originalUriString());
-
-            for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
-            {
-                subscriptionLinks.get(i).unlink(publication);
-            }
-        }
 
         final SendChannelEndpoint channelEndpoint = publication.channelEndpoint();
         if (channelEndpoint.shouldBeClosed())

@@ -1073,7 +1073,6 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        verify(senderProxy).removeNetworkPublication(eq(publication));
         verify(mockClientProxy).onUnavailableImage(
             eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), anyString());
     }

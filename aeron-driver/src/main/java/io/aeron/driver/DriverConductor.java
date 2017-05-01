@@ -40,6 +40,7 @@ import java.util.function.Consumer;
 
 import static io.aeron.CommonContext.*;
 import static io.aeron.driver.Configuration.*;
+import static io.aeron.driver.PublicationParams.getPublicationParams;
 import static io.aeron.driver.status.SystemCounterDescriptor.CLIENT_KEEP_ALIVES;
 import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
 import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_COMMANDS;
@@ -288,7 +289,7 @@ public class DriverConductor implements Agent
         final boolean isExclusive)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
-        final PublicationParams params = getPublicationParams(udpChannel.aeronUri(), isExclusive, false);
+        final PublicationParams params = getPublicationParams(context, udpChannel.aeronUri(), isExclusive, false);
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel);
 
         NetworkPublication publication = null;
@@ -1030,8 +1031,7 @@ public class DriverConductor implements Agent
     private IpcPublication addIpcPublication(
         final long registrationId, final int streamId, final String channel, final boolean isExclusive)
     {
-        final PublicationParams params = getPublicationParams(AeronUri.parse(channel), isExclusive, true);
-
+        final PublicationParams params = getPublicationParams(context, AeronUri.parse(channel), isExclusive, true);
         final int sessionId = nextSessionId++;
         final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
 
@@ -1169,89 +1169,5 @@ public class DriverConductor implements Agent
     private static String generateSourceIdentity(final InetSocketAddress address)
     {
         return address.getHostString() + ':' + address.getPort();
-    }
-
-    private static int getTermBufferLength(final AeronUri aeronUri, final int defaultTermLength)
-    {
-        final String termLengthParam = aeronUri.get(CommonContext.TERM_LENGTH_PARAM_NAME);
-        int termLength = defaultTermLength;
-        if (null != termLengthParam)
-        {
-            termLength = Integer.parseInt(termLengthParam);
-            Configuration.validateTermBufferLength(termLength);
-        }
-
-        return termLength;
-    }
-
-    private static int getMtuLength(final AeronUri aeronUri, final int defaultMtuLength)
-    {
-        int mtuLength = defaultMtuLength;
-        final String mtu = aeronUri.get(CommonContext.MTU_LENGTH_URI_PARAM_NAME);
-        if (null != mtu)
-        {
-            mtuLength = Integer.parseInt(mtu);
-            Configuration.validateMtuLength(mtuLength);
-        }
-
-        return mtuLength;
-    }
-
-    private PublicationParams getPublicationParams(
-        final AeronUri aeronUri, final boolean isExclusive, final boolean isIpc)
-    {
-        final PublicationParams params = new PublicationParams();
-
-        params.mtuLength = getMtuLength(aeronUri, context.mtuLength());
-        params.termLength = getTermBufferLength(
-            aeronUri, isIpc ? context.ipcTermBufferLength() : context.publicationTermBufferLength());
-
-        if (isExclusive)
-        {
-            int count = 0;
-
-            final String initTermIdStr = aeronUri.get(INITIAL_TERM_ID_PARAM_NAME);
-            count = initTermIdStr != null ? count + 1 : count;
-
-            final String termIdStr = aeronUri.get(TERM_ID_PARAM_NAME);
-            count = termIdStr != null ? count + 1 : count;
-
-            final String termOffsetStr = aeronUri.get(TERM_OFFSET_PARAM_NAME);
-            count = termOffsetStr != null ? count + 1 : count;
-
-            if (count > 0)
-            {
-                if (count < 3)
-                {
-                    throw new IllegalArgumentException("Params must be used as a complete set: " +
-                        INITIAL_TERM_ID_PARAM_NAME + " " + TERM_ID_PARAM_NAME + " " + TERM_OFFSET_PARAM_NAME);
-                }
-
-                params.initialTermId = Integer.parseInt(initTermIdStr);
-                params.termId = Integer.parseInt(termIdStr);
-                params.termOffset = Integer.parseInt(termOffsetStr);
-
-                if (params.termOffset > params.termLength)
-                {
-                    throw new IllegalArgumentException(
-                        TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " > " +
-                        TERM_LENGTH_PARAM_NAME + "=" + params.termLength);
-                }
-
-                params.isReplay = true;
-            }
-        }
-
-        return params;
-    }
-
-    static class PublicationParams
-    {
-        int mtuLength = 0;
-        int termLength = 0;
-        int initialTermId = 0;
-        int termId = 0;
-        int termOffset = 0;
-        boolean isReplay = false;
     }
 }

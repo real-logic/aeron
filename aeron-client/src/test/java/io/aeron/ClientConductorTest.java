@@ -34,8 +34,10 @@ import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 
 import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 import java.util.function.Function;
 
+import static java.lang.Boolean.TRUE;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
@@ -86,8 +88,12 @@ public class ClientConductorTest
 
     private final UnsafeBuffer counterValuesBuffer = new UnsafeBuffer(allocateDirect(COUNTER_BUFFER_LENGTH));
 
-    private final EpochClock epochClock = new SystemEpochClock();
-    private final NanoClock nanoClock = new SystemNanoClock();
+    private long timeMs = 0;
+    private final EpochClock epochClock = () -> timeMs += 10;
+
+    private long timeNs = 0;
+    private final NanoClock nanoClock = () -> timeNs += 10_000_000;
+
     private final ErrorHandler mockClientErrorHandler = spy(new PrintError());
 
     private DriverProxy driverProxy = mock(DriverProxy.class);
@@ -95,6 +101,7 @@ public class ClientConductorTest
     private AvailableImageHandler mockAvailableImageHandler = mock(AvailableImageHandler.class);
     private UnavailableImageHandler mockUnavailableImageHandler = mock(UnavailableImageHandler.class);
     private LogBuffersFactory logBuffersFactory = mock(LogBuffersFactory.class);
+    private Lock mockClientLock = mock(Lock.class);
     private Long2LongHashMap subscriberPositionMap = new Long2LongHashMap(-1L);
     private boolean suppressPrintError = false;
 
@@ -118,13 +125,15 @@ public class ClientConductorTest
 
         ctx.countersValuesBuffer(counterValuesBuffer);
 
+        when(mockClientLock.tryLock()).thenReturn(TRUE);
+
         when(driverProxy.addPublication(CHANNEL, STREAM_ID_1)).thenReturn(CORRELATION_ID);
         when(driverProxy.addPublication(CHANNEL, STREAM_ID_2)).thenReturn(CORRELATION_ID_2);
         when(driverProxy.removePublication(CORRELATION_ID)).thenReturn(CLOSE_CORRELATION_ID);
         when(driverProxy.addSubscription(anyString(), anyInt())).thenReturn(CORRELATION_ID);
         when(driverProxy.removeSubscription(CORRELATION_ID)).thenReturn(CLOSE_CORRELATION_ID);
 
-        conductor = new ClientConductor(ctx);
+        conductor = new ClientConductor(ctx, mockClientLock);
 
         publicationReady.wrap(publicationReadyBuffer, 0);
         correlatedMessage.wrap(correlatedMessageBuffer, 0);
@@ -202,7 +211,7 @@ public class ClientConductorTest
         verify(logBuffersFactory).map(SESSION_ID_1 + "-log", READ_WRITE);
     }
 
-    @Test(expected = DriverTimeoutException.class)
+    @Test(expected = DriverTimeoutException.class, timeout = 5_000)
     public void addPublicationShouldTimeoutWithoutReadyMessage()
     {
         conductor.addPublication(CHANNEL, STREAM_ID_1);
@@ -435,7 +444,7 @@ public class ClientConductorTest
         verify(driverProxy).removeSubscription(CORRELATION_ID);
     }
 
-    @Test(expected = DriverTimeoutException.class)
+    @Test(expected = DriverTimeoutException.class, timeout = 5_000)
     public void addSubscriptionShouldTimeoutWithoutOperationSuccessful()
     {
         conductor.addSubscription(CHANNEL, STREAM_ID_1);
@@ -529,7 +538,9 @@ public class ClientConductorTest
         suppressPrintError = true;
 
         conductor.doWork();
-        Thread.sleep(INTER_SERVICE_TIMEOUT_MS + 100);
+
+        timeNs += (TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS) + 1);
+
         conductor.doWork();
 
         verify(mockClientErrorHandler).onError(any(ConductorServiceTimeoutException.class));

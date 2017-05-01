@@ -30,6 +30,8 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static org.agrona.IoUtil.mapExistingFile;
@@ -83,6 +85,7 @@ public final class Aeron implements AutoCloseable
      */
     public static final long PUBLICATION_CONNECTION_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
 
+    private final Lock clientLock = new ReentrantLock();
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;
     private final RingBuffer commandBuffer;
@@ -94,7 +97,7 @@ public final class Aeron implements AutoCloseable
 
         commandBuffer = ctx.toDriverBuffer;
         countersReader = new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer());
-        conductor = new ClientConductor(ctx);
+        conductor = new ClientConductor(ctx, clientLock);
         conductorRunner = new AgentRunner(ctx.idleStrategy, ctx.errorHandler, null, conductor);
     }
 
@@ -139,14 +142,14 @@ public final class Aeron implements AutoCloseable
      */
     public void close()
     {
-        conductor.clientLock().lock();
+        clientLock.lock();
         try
         {
             conductorRunner.close();
         }
         finally
         {
-            conductor.clientLock().unlock();
+            clientLock.unlock();
         }
     }
 
@@ -159,14 +162,14 @@ public final class Aeron implements AutoCloseable
      */
     public Publication addPublication(final String channel, final int streamId)
     {
-        conductor.clientLock().lock();
+        clientLock.lock();
         try
         {
             return conductor.addPublication(channel, streamId);
         }
         finally
         {
-            conductor.clientLock().unlock();
+            clientLock.unlock();
         }
     }
 
@@ -179,14 +182,14 @@ public final class Aeron implements AutoCloseable
      */
     public ExclusivePublication addExclusivePublication(final String channel, final int streamId)
     {
-        conductor.clientLock().lock();
+        clientLock.lock();
         try
         {
             return conductor.addExclusivePublication(channel, streamId);
         }
         finally
         {
-            conductor.clientLock().unlock();
+            clientLock.unlock();
         }
     }
 
@@ -203,14 +206,14 @@ public final class Aeron implements AutoCloseable
      */
     public Subscription addSubscription(final String channel, final int streamId)
     {
-        conductor.clientLock().lock();
+        clientLock.lock();
         try
         {
             return conductor.addSubscription(channel, streamId);
         }
         finally
         {
-            conductor.clientLock().unlock();
+            clientLock.unlock();
         }
     }
 
@@ -236,14 +239,14 @@ public final class Aeron implements AutoCloseable
         final AvailableImageHandler availableImageHandler,
         final UnavailableImageHandler unavailableImageHandler)
     {
-        conductor.clientLock().lock();
+        clientLock.lock();
         try
         {
             return conductor.addSubscription(channel, streamId, availableImageHandler, unavailableImageHandler);
         }
         finally
         {
-            conductor.clientLock().unlock();
+            clientLock.unlock();
         }
     }
 

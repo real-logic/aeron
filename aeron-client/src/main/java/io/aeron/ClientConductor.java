@@ -55,7 +55,7 @@ class ClientConductor implements Agent, DriverListener
     private boolean isDriverActive = true;
     private volatile Status status = ACTIVE;
 
-    private final Lock lock = new ReentrantLock();
+    private final Lock clientLock;
     private final Aeron.Context ctx;
     private final EpochClock epochClock;
     private final FileChannel.MapMode imageMapMode;
@@ -72,9 +72,10 @@ class ClientConductor implements Agent, DriverListener
 
     private RegistrationException driverException;
 
-    ClientConductor(final Aeron.Context ctx)
+    ClientConductor(final Aeron.Context ctx, final Lock clientLock)
     {
         this.ctx = ctx;
+        this.clientLock = clientLock;
 
         epochClock = ctx.epochClock();
         nanoClock = ctx.nanoClock();
@@ -129,7 +130,7 @@ class ClientConductor implements Agent, DriverListener
     {
         int workCount = 0;
 
-        if (lock.tryLock())
+        if (clientLock.tryLock())
         {
             try
             {
@@ -140,7 +141,7 @@ class ClientConductor implements Agent, DriverListener
             }
             finally
             {
-                lock.unlock();
+                clientLock.unlock();
             }
         }
 
@@ -159,7 +160,7 @@ class ClientConductor implements Agent, DriverListener
 
     Lock clientLock()
     {
-        return lock;
+        return clientLock;
     }
 
     void handleError(final Throwable ex)

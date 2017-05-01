@@ -394,7 +394,7 @@ public class DriverConductor implements Agent
     void cleanupSpies(final NetworkPublication publication)
     {
         clientProxy.onUnavailableImage(
-            correlationId(publication.rawLog().metaData()),
+            publication.registrationId(),
             publication.streamId(),
             publication.channelEndpoint().originalUriString());
 

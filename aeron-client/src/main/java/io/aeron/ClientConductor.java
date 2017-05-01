@@ -153,6 +153,11 @@ class ClientConductor implements Agent, DriverListener
         return "aeron-client-conductor";
     }
 
+    Aeron.Context context()
+    {
+        return ctx;
+    }
+
     Status status()
     {
         return status;

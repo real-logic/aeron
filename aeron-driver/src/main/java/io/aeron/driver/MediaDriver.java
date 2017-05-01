@@ -590,7 +590,6 @@ public final class MediaDriver implements AutoCloseable
                 driverConductorProxy(new DriverConductorProxy(
                     threadingMode, driverCommandQueue, systemCounters.get(CONDUCTOR_PROXY_FAILS)));
 
-
                 rawLogBuffersFactory(new RawLogFactory(
                     aeronDirectoryName(),
                     maxTermBufferLength,

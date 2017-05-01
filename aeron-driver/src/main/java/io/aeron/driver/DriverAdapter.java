@@ -31,7 +31,7 @@ import static io.aeron.command.ControlProtocolEvents.*;
 /**
  * Receives commands from Aeron clients and dispatches them to the {@link DriverConductor} for processing.
  */
-class ClientListenerAdapter implements MessageHandler
+class DriverAdapter implements MessageHandler
 {
     /**
      * Limit for the number of messages to be read in each receive.
@@ -49,7 +49,7 @@ class ClientListenerAdapter implements MessageHandler
     private final AtomicCounter errors;
     private final DistinctErrorLog errorLog;
 
-    ClientListenerAdapter(
+    DriverAdapter(
         final AtomicCounter errors,
         final DistinctErrorLog errorLog,
         final RingBuffer toDriverCommands,

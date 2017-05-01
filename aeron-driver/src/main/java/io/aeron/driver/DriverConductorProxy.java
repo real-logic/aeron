@@ -27,7 +27,7 @@ import java.util.Queue;
 import static io.aeron.driver.ThreadingMode.SHARED;
 
 /**
- * Proxy for sending commands to the media conductor.
+ * Proxy for sending commands to the {@link DriverConductor}.
  */
 public class DriverConductorProxy
 {
@@ -113,7 +113,7 @@ public class DriverConductorProxy
     {
         while (!commandQueue.offer(cmd))
         {
-            failCount.orderedIncrement();
+            failCount.increment();
             Thread.yield();
         }
     }

@@ -94,7 +94,7 @@ public class ReceiverTest
     private InetSocketAddress senderAddress = new InetSocketAddress("localhost", 40123);
     private Receiver receiver;
     private ReceiverProxy receiverProxy;
-    private OneToOneConcurrentArrayQueue<DriverConductorCmd> toConductorQueue;
+    private ManyToOneConcurrentArrayQueue<DriverConductorCmd> toConductorQueue;
 
     private MediaDriver.Context context = new MediaDriver.Context();
     private ReceiveChannelEndpoint receiveChannelEndpoint;
@@ -114,7 +114,7 @@ public class ReceiverTest
         when(congestionControl.initialWindowLength()).thenReturn(INITIAL_WINDOW_LENGTH);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
+            .driverCommandQueue(new ManyToOneConcurrentArrayQueue<>(1024))
             .dataTransportPoller(mockDataTransportPoller)
             .controlTransportPoller(mockControlTransportPoller)
             .rawLogBuffersFactory(mockRawLogFactory)
@@ -122,10 +122,10 @@ public class ReceiverTest
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .nanoClock(() -> currentTime);
 
-        toConductorQueue = ctx.toConductorFromReceiverCommandQueue();
+        toConductorQueue = ctx.driverCommandQueue();
         final DriverConductorProxy driverConductorProxy =
             new DriverConductorProxy(ThreadingMode.DEDICATED, toConductorQueue, mock(AtomicCounter.class));
-        ctx.fromReceiverDriverConductorProxy(driverConductorProxy);
+        ctx.driverConductorProxy(driverConductorProxy);
 
         receiverProxy = new ReceiverProxy(
             ThreadingMode.DEDICATED, ctx.receiverCommandQueue(), mock(AtomicCounter.class));

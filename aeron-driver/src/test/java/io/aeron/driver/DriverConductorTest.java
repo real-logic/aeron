@@ -28,10 +28,7 @@ import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.TermAppender;
 import io.aeron.protocol.StatusMessageFlyweight;
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import org.agrona.concurrent.SystemEpochClock;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
@@ -86,8 +83,7 @@ public class DriverConductorTest
 
     private final SenderProxy senderProxy = mock(SenderProxy.class);
     private final ReceiverProxy receiverProxy = mock(ReceiverProxy.class);
-    private final DriverConductorProxy fromSenderConductorProxy = mock(DriverConductorProxy.class);
-    private final DriverConductorProxy fromReceiverConductorProxy = mock(DriverConductorProxy.class);
+    private final DriverConductorProxy driverConductorProxy = mock(DriverConductorProxy.class);
 
     private long currentTimeNs;
     private NanoClock nanoClock = () -> currentTimeNs;
@@ -129,8 +125,7 @@ public class DriverConductorTest
             .unicastFlowControlSupplier(Configuration.unicastFlowControlSupplier())
             .multicastFlowControlSupplier(Configuration.multicastFlowControlSupplier())
                 // TODO: remove
-            .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .toConductorFromSenderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
+            .driverCommandQueue(new ManyToOneConcurrentArrayQueue<>(1024))
             .errorLog(mockErrorLog)
             .rawLogBuffersFactory(mockRawLogFactory)
             .countersManager(countersManager)
@@ -150,8 +145,7 @@ public class DriverConductorTest
         ctx.epochClock(new SystemEpochClock());
         ctx.receiverProxy(receiverProxy);
         ctx.senderProxy(senderProxy);
-        ctx.fromReceiverDriverConductorProxy(fromReceiverConductorProxy);
-        ctx.fromSenderDriverConductorProxy(fromSenderConductorProxy);
+        ctx.driverConductorProxy(driverConductorProxy);
         ctx.clientLivenessTimeoutNs(CLIENT_LIVENESS_TIMEOUT_NS);
         ctx.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(ctx));
 

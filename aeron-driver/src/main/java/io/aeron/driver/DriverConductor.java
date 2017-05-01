@@ -70,11 +70,9 @@ public class DriverConductor implements Agent
     private final ReceiverProxy receiverProxy;
     private final SenderProxy senderProxy;
     private final ClientProxy clientProxy;
-    private final DriverConductorProxy fromReceiverConductorProxy;
     private final RingBuffer toDriverCommands;
-    private final ClientListenerAdapter clientListenerAdapter;
-    private final OneToOneConcurrentArrayQueue<DriverConductorCmd> fromReceiverDriverConductorCmdQueue;
-    private final OneToOneConcurrentArrayQueue<DriverConductorCmd> fromSenderDriverConductorCmdQueue;
+    private final DriverAdapter driverAdapter;
+    private final ManyToOneConcurrentArrayQueue<DriverConductorCmd> driverCmdQueue;
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
     private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
     private final ArrayList<PublicationLink> publicationLinks = new ArrayList<>();
@@ -100,8 +98,7 @@ public class DriverConductor implements Agent
         clientLivenessTimeoutNs = ctx.clientLivenessTimeoutNs();
         publicationUnblockTimeoutNs = ctx.publicationUnblockTimeoutNs();
         statusMessageTimeoutNs = ctx.statusMessageTimeout();
-        fromReceiverDriverConductorCmdQueue = ctx.toConductorFromReceiverCommandQueue();
-        fromSenderDriverConductorCmdQueue = ctx.toConductorFromSenderCommandQueue();
+        driverCmdQueue = ctx.driverCommandQueue();
         receiverProxy = ctx.receiverProxy();
         senderProxy = ctx.senderProxy();
         rawLogFactory = ctx.rawLogBuffersFactory();
@@ -109,12 +106,11 @@ public class DriverConductor implements Agent
         nanoClock = ctx.nanoClock();
         toDriverCommands = ctx.toDriverCommands();
         clientProxy = ctx.clientProxy();
-        fromReceiverConductorProxy = ctx.fromReceiverDriverConductorProxy();
 
         countersManager = context.countersManager();
         clientKeepAlives = context.systemCounters().get(CLIENT_KEEP_ALIVES);
 
-        clientListenerAdapter = new ClientListenerAdapter(
+        driverAdapter = new DriverAdapter(
             context.systemCounters().get(ERRORS),
             ctx.errorLog(),
             toDriverCommands,
@@ -146,9 +142,8 @@ public class DriverConductor implements Agent
     {
         int workCount = 0;
 
-        workCount += clientListenerAdapter.receive();
-        workCount += fromReceiverDriverConductorCmdQueue.drain(onDriverConductorCmdFunc);
-        workCount += fromSenderDriverConductorCmdQueue.drain(onDriverConductorCmdFunc);
+        workCount += driverAdapter.receive();
+        workCount += driverCmdQueue.drain(onDriverConductorCmdFunc, 10);
 
         final long nowNs = nanoClock.nanoTime();
         workCount += processTimers(nowNs);
@@ -991,7 +986,7 @@ public class DriverConductor implements Agent
         {
             channelEndpoint = context.receiveChannelEndpointSupplier().newInstance(
                 udpChannel,
-                new DataPacketDispatcher(fromReceiverConductorProxy, receiverProxy.receiver()),
+                new DataPacketDispatcher(context.driverConductorProxy(), receiverProxy.receiver()),
                 ReceiveChannelStatus.allocate(countersManager, udpChannel.originalUriString()),
                 context);
 

@@ -524,26 +524,31 @@ public class NetworkPublication
         return bytesSent;
     }
 
-    private boolean isUnreferencedAndPotentiallyInactive(final long nowNs)
+    private boolean isUnreferencedAndInactive(final long nowNs)
     {
         if (refCount > 0)
         {
+            return false;
+        }
+
+        final long senderPosition = this.senderPosition.getVolatile();
+
+        if (senderPosition != lastSenderPosition)
+        {
+            lastSenderPosition = senderPosition;
             timeOfLastActivityNs = nowNs;
             return false;
         }
-        else
-        {
-            final long senderPosition = this.senderPosition.getVolatile();
 
-            if (senderPosition != lastSenderPosition)
+        for (final ReadablePosition spyPosition : spyPositions)
+        {
+            if (spyPosition.getVolatile() < senderPosition)
             {
-                lastSenderPosition = senderPosition;
-                timeOfLastActivityNs = nowNs;
                 return false;
             }
-
-            return true;
         }
+
+        return true;
     }
 
     private void cleanBuffer(final long publisherLimit)
@@ -586,24 +591,9 @@ public class NetworkPublication
         }
     }
 
-    private boolean haveSpiesCaughtUpWithTheSender()
-    {
-        final long senderPosition = this.senderPosition.getVolatile();
-
-        for (final ReadablePosition spyPosition : spyPositions)
-        {
-            if (spyPosition.getVolatile() < senderPosition)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
-        if (isUnreferencedAndPotentiallyInactive(timeNs) && haveSpiesCaughtUpWithTheSender())
+        if (isUnreferencedAndInactive(timeNs))
         {
             if (hasSpies())
             {
@@ -667,6 +657,7 @@ public class NetworkPublication
         {
             status = Status.LINGER;
             channelEndpoint.decRef();
+            timeOfLastActivityNs = nanoClock.nanoTime();
         }
 
         return count;

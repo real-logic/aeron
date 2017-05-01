@@ -15,7 +15,6 @@
  */
 package io.aeron.driver;
 
-import io.aeron.driver.cmd.CloseNetworkPublicationCmd;
 import io.aeron.driver.cmd.CreatePublicationImageCmd;
 import io.aeron.driver.cmd.DriverConductorCmd;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
@@ -89,18 +88,6 @@ public class DriverConductorProxy
                 controlAddress,
                 srcAddress,
                 channelEndpoint));
-        }
-    }
-
-    public void closeNetworkPublication(final NetworkPublication publication)
-    {
-        if (isShared())
-        {
-            driverConductor.onClosePublication(publication);
-        }
-        else
-        {
-            offer(new CloseNetworkPublicationCmd(publication));
         }
     }
 

@@ -59,7 +59,6 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
     private final int dutyCycleRatio;
     private final ControlTransportPoller controlTransportPoller;
     private final OneToOneConcurrentArrayQueue<SenderCmd> commandQueue;
-    private final DriverConductorProxy conductorProxy;
     private final AtomicCounter totalBytesSent;
     private final NanoClock nanoClock;
 
@@ -69,7 +68,6 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
     {
         this.controlTransportPoller = ctx.controlTransportPoller();
         this.commandQueue = ctx.senderCommandQueue();
-        this.conductorProxy = ctx.driverConductorProxy();
         this.totalBytesSent = ctx.systemCounters().get(BYTES_SENT);
         this.nanoClock = ctx.nanoClock();
         this.statusMessageReadTimeoutNs = ctx.statusMessageTimeout() / 2;
@@ -128,7 +126,7 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
     {
         networkPublications = ArrayUtil.remove(networkPublications, publication);
         publication.channelEndpoint().unregisterForSend(publication);
-        conductorProxy.closeNetworkPublication(publication);
+        publication.status(NetworkPublication.Status.CLOSED);
     }
 
     public void onAddDestination(final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)

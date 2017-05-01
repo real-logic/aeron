@@ -521,7 +521,7 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        assertTrue(publication.hasReachedEndOfLife());
+        assertThat(publication.status(), is(NetworkPublication.Status.INACTIVE));
 
         verify(senderProxy).removeNetworkPublication(eq(publication));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));

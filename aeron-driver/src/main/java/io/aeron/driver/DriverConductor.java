@@ -169,11 +169,6 @@ public class DriverConductor implements Agent
         return workCount;
     }
 
-    public void onClosePublication(final NetworkPublication publication)
-    {
-        publication.close();
-    }
-
     public void onCreatePublicationImage(
         final int sessionId,
         final int streamId,

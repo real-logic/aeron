@@ -89,7 +89,7 @@ public class NetworkPublication
 {
     public enum Status
     {
-        ACTIVE, INACTIVE
+        ACTIVE, LINGER, INACTIVE, CLOSED
     }
 
     private final long registrationId;
@@ -103,8 +103,7 @@ public class NetworkPublication
     private final int streamId;
     private final boolean isExclusive;
     private volatile boolean isConnected = false;
-    private boolean hasReachedEndOfLife = false;
-    private Status status = Status.ACTIVE;
+    private volatile Status status = Status.ACTIVE;
 
     private final UnsafeBuffer[] termBuffers;
     private final ByteBuffer[] sendBuffers;
@@ -529,7 +528,7 @@ public class NetworkPublication
     {
         boolean result = false;
 
-        if (0 == refCount)
+        if (refCount == 0)
         {
             final long senderPosition = this.senderPosition.getVolatile();
 
@@ -606,8 +605,11 @@ public class NetworkPublication
             timeNs > (timeOfLastActivity + PUBLICATION_LINGER_NS) &&
             haveSpiesCaughtUpWithTheSender())
         {
-            hasReachedEndOfLife = true;
-            conductor.cleanupPublication(NetworkPublication.this);
+            if (Status.LINGER == status)
+            {
+                status = Status.INACTIVE;
+                conductor.cleanupPublication(NetworkPublication.this);
+            }
         }
         else
         {
@@ -626,7 +628,7 @@ public class NetworkPublication
 
     public boolean hasReachedEndOfLife()
     {
-        return hasReachedEndOfLife;
+        return status == Status.CLOSED;
     }
 
     public void timeOfLastStateChange(final long time)
@@ -640,7 +642,7 @@ public class NetworkPublication
 
     public void delete()
     {
-        // close is done once sender thread has removed
+        close();
     }
 
     public int decRef()
@@ -649,7 +651,7 @@ public class NetworkPublication
 
         if (0 == count)
         {
-            status = Status.INACTIVE;
+            status = Status.LINGER;
             channelEndpoint.decRef();
         }
 
@@ -664,6 +666,11 @@ public class NetworkPublication
     public Status status()
     {
         return status;
+    }
+
+    public void status(final Status status)
+    {
+        this.status = status;
     }
 
     public long producerPosition()

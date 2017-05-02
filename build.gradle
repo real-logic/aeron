@@ -553,7 +553,7 @@ project(':aeron-archiver-codecs') {
             'sbe.output.dir': generatedDir,
             'sbe.target.language': 'Java',
             'sbe.validation.stop.on.error': 'true')
-        args = [ 'src/main/resources/archiver-sbe-message-schema.xml' ]
+        args = [ 'src/main/resources/archiver-message-schema.xml' ]
     }
 
     jar {

@@ -89,7 +89,7 @@ public class NetworkPublication
 {
     public enum Status
     {
-        ACTIVE, LINGER, INACTIVE, CLOSED
+        ACTIVE, LINGER, CLOSING
     }
 
     private final long registrationId;
@@ -102,8 +102,9 @@ public class NetworkPublication
     private final int sessionId;
     private final int streamId;
     private final boolean isExclusive;
-    private volatile boolean isConnected = false;
-    private volatile Status status = Status.ACTIVE;
+    private volatile boolean isConnected;
+    private volatile boolean hasSenderReleased;
+    private Status status = Status.ACTIVE;
 
     private final UnsafeBuffer[] termBuffers;
     private final ByteBuffer[] sendBuffers;
@@ -610,8 +611,8 @@ public class NetworkPublication
             {
                 if (Status.LINGER == status)
                 {
-                    status = Status.INACTIVE;
                     conductor.cleanupPublication(NetworkPublication.this);
+                    status = Status.CLOSING;
                 }
             }
         }
@@ -632,7 +633,7 @@ public class NetworkPublication
 
     public boolean hasReachedEndOfLife()
     {
-        return status == Status.CLOSED;
+        return hasSenderReleased;
     }
 
     public void timeOfLastStateChange(final long time)
@@ -673,9 +674,9 @@ public class NetworkPublication
         return status;
     }
 
-    public void status(final Status status)
+    public void senderRelease()
     {
-        this.status = status;
+        hasSenderReleased = true;
     }
 
     public long producerPosition()

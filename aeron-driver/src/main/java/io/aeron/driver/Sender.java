@@ -126,7 +126,7 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
     {
         networkPublications = ArrayUtil.remove(networkPublications, publication);
         publication.channelEndpoint().unregisterForSend(publication);
-        publication.status(NetworkPublication.Status.CLOSED);
+        publication.senderRelease();
     }
 
     public void onAddDestination(final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)

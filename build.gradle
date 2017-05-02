@@ -536,6 +536,8 @@ project(':aeron-archiver-codecs') {
         generated.java.srcDir generatedDir
     }
 
+    def projectSrcDir = project(':aeron-archiver-codecs').projectDir.toString();
+
     dependencies {
         compile "org.agrona:agrona:${agronaVersion}"
         compile "uk.co.real-logic:sbe-tool:${sbeVersion}"
@@ -552,6 +554,7 @@ project(':aeron-archiver-codecs') {
         systemProperties(
             'sbe.output.dir': generatedDir,
             'sbe.target.language': 'Java',
+            'sbe.validation.xsd': projectSrcDir + '/src/main/resources/fpl/sbe.xsd',
             'sbe.validation.stop.on.error': 'true')
         args = [ 'src/main/resources/archiver-message-schema.xml' ]
     }

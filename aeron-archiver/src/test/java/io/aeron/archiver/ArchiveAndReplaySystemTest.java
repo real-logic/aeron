@@ -40,11 +40,12 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
+@Ignore
 public class ArchiveAndReplaySystemTest
 {
     private static final int TIMEOUT = 5000;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
-    private static final int NANOS_SLEEP_TIME = 5000;
+    private static final int SLEEP_TIME_NS = 5000;
 
     private static final boolean DEBUG = false;
     private static final String REPLY_URI = "aeron:udp?endpoint=127.0.0.1:54327";
@@ -618,7 +619,7 @@ public class ArchiveAndReplaySystemTest
         final long limit = System.currentTimeMillis() + TIMEOUT;
         while (!forIt.getAsBoolean())
         {
-            LockSupport.parkNanos(NANOS_SLEEP_TIME);
+            LockSupport.parkNanos(SLEEP_TIME_NS);
             if (limit < System.currentTimeMillis())
             {
                 fail();

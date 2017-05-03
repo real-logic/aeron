@@ -34,8 +34,7 @@ class ArchiverProtocolProxy
     // TODO: replace header usage with constants?
     private final IdleStrategy idleStrategy;
     private final Publication archiverNotifications;
-    private final UnsafeBuffer outboundBuffer =
-        new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, CACHE_LINE_LENGTH));
+    private final UnsafeBuffer outboundBuffer;
 
     private final MessageHeaderEncoder outboundHeaderEncoder = new MessageHeaderEncoder();
     private final ArchiverResponseEncoder responseEncoder = new ArchiverResponseEncoder();
@@ -50,6 +49,11 @@ class ArchiverProtocolProxy
     {
         this.idleStrategy = idleStrategy;
         this.archiverNotifications = archiverNotifications;
+
+        //TODO: How will the buffer length be verified?
+        final int maxPayloadAligned = BitUtil.align(archiverNotifications.maxPayloadLength(), 128);
+        outboundBuffer =  new UnsafeBuffer(BufferUtil.allocateDirectAligned(maxPayloadAligned, CACHE_LINE_LENGTH));
+
         outboundHeaderEncoder.wrap(outboundBuffer, 0);
         responseEncoder.wrap(outboundBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
         archiveStartedNotificationEncoder.wrap(outboundBuffer, MessageHeaderEncoder.ENCODED_LENGTH);

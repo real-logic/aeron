@@ -48,6 +48,7 @@ public class Image
     private final long correlationId;
     private final long joiningPosition;
     private final int sessionId;
+    private final int initialTermId;
     private final int termLengthMask;
     private final int positionBitsToShift;
     private volatile boolean isClosed;
@@ -94,7 +95,8 @@ public class Image
         final int termLength = logBuffers.termLength();
         this.termLengthMask = termLength - 1;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
-        header = new Header(LogBufferDescriptor.initialTermId(logBuffers.metaDataBuffer()), positionBitsToShift);
+        this.initialTermId = LogBufferDescriptor.initialTermId(logBuffers.metaDataBuffer());
+        header = new Header(initialTermId, positionBitsToShift);
     }
 
     /**
@@ -134,7 +136,7 @@ public class Image
      */
     public int initialTermId()
     {
-        return header.initialTermId();
+        return initialTermId;
     }
 
     /**

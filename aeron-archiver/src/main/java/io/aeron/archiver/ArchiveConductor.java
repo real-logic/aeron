@@ -65,11 +65,12 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
         archiveFolder = ctx.archiveFolder();
         archiveIndex = new ArchiveIndex(archiveFolder);
 
-        archiveWriterBuilder.archiveFileSize(ctx.archiveFileSize());
-        archiveWriterBuilder.archiveFolder(ctx.archiveFolder());
-        archiveWriterBuilder.epochClock(ctx.epochClock());
-        archiveWriterBuilder.forceMetadataUpdates(ctx.forceMetadataUpdates());
-        archiveWriterBuilder.forceWrites(ctx.forceWrites());
+        archiveWriterBuilder
+            .archiveFileSize(ctx.archiveFileSize())
+            .archiveFolder(ctx.archiveFolder())
+            .epochClock(ctx.epochClock())
+            .forceMetadataUpdates(ctx.forceMetadataUpdates())
+            .forceWrites(ctx.forceWrites());
 
         serviceRequestSubscription = aeron.addSubscription(ctx.serviceRequestChannel(), ctx.serviceRequestStreamId());
 
@@ -91,7 +92,7 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
         // TODO: control tasks balance? shard/distribute tasks across threads?
 
         // this will trigger callbacks into handleNewImageNotification
-        workDone += imageNotificationQueue.drain(newImageConsumer);
+        workDone += imageNotificationQueue.drain(newImageConsumer, 10);
         // this will trigger callbacks into ArchiverProtocolListener::on* methods
         workDone += serviceRequestSubscription.poll(adapter, 16);
         workDone += doSessionsWork();
@@ -153,7 +154,7 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
         }
 
         final Subscription archiveSubscription = aeron.addSubscription(
-            channel, streamId, availableImageHandler, (image) -> {});
+            channel, streamId, availableImageHandler, null);
 
         // as subscription images are created they will get picked up and archived
         archiveSubscriptionSet.add(archiveSubscription);

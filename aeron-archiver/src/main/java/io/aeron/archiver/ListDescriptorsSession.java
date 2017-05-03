@@ -33,6 +33,7 @@ class ListDescriptorsSession implements ArchiveConductor.Session
 
     static
     {
+        // TODO: What does the following code do?
         final MessageHeaderEncoder encoder = new MessageHeaderEncoder();
         encoder.wrap(new UnsafeBuffer(new byte[8]), 0);
         encoder.schemaId(ListStreamInstancesNotFoundResponseDecoder.SCHEMA_ID);

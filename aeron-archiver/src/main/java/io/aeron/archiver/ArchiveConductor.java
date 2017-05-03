@@ -190,6 +190,7 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
         final int termOffset,
         final long length)
     {
+        // TODO: What if a different consumer asks for the same sessionId? This should be valid.
         if (replaySessionBySessionIdMap.containsKey(sessionId))
         {
             throw new IllegalStateException("Trying to request a second replay from same session:" + sessionId);

@@ -160,6 +160,7 @@ public class ArchiverClient
 
     public int pollNotifications(final ArchiverNotificationListener listener, final int count)
     {
+        // TODO: This code allocates and is not a good example
         return archiverNotifications.poll((b, offset, length, header) ->
         {
             final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(b, offset);

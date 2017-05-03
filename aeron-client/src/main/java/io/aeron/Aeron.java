@@ -85,7 +85,7 @@ public final class Aeron implements AutoCloseable
      */
     public static final long PUBLICATION_CONNECTION_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
 
-    private final Lock clientLock = new ReentrantLock();
+    private final Lock clientLock;
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;
     private final RingBuffer commandBuffer;
@@ -94,8 +94,9 @@ public final class Aeron implements AutoCloseable
     {
         ctx.conclude();
 
+        clientLock = ctx.clientLock();
         commandBuffer = ctx.toDriverBuffer;
-        conductor = new ClientConductor(ctx, clientLock);
+        conductor = new ClientConductor(ctx);
         conductorRunner = new AgentRunner(ctx.idleStrategy, ctx.errorHandler, null, conductor);
     }
 
@@ -301,6 +302,7 @@ public final class Aeron implements AutoCloseable
      */
     public static class Context extends CommonContext
     {
+        private Lock clientLock;
         private EpochClock epochClock;
         private NanoClock nanoClock;
         private IdleStrategy idleStrategy;
@@ -329,6 +331,11 @@ public final class Aeron implements AutoCloseable
         public Context conclude()
         {
             super.conclude();
+
+            if (null == clientLock)
+            {
+                clientLock = new ReentrantLock();
+            }
 
             if (null == epochClock)
             {
@@ -403,6 +410,28 @@ public final class Aeron implements AutoCloseable
             }
 
             return this;
+        }
+
+        /**
+         * The {@link Lock} that is used to provide mutual exclusion in the Aeron client.
+         *
+         * @param lock that is used to provide mutual exclusion in the Aeron client.
+         * @return this for a fluent API.
+         */
+        public Context clientLock(final Lock lock)
+        {
+            clientLock = lock;
+            return this;
+        }
+
+        /**
+         * Get the {@link Lock} that is used to provide mutual exclusion in the Aeron client.
+         *
+         * @return the {@link Lock} that is used to provide mutual exclusion in the Aeron client.
+         */
+        public Lock clientLock()
+        {
+            return clientLock;
         }
 
         /**

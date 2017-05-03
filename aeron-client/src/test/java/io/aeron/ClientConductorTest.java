@@ -109,6 +109,7 @@ public class ClientConductorTest
     public void setUp() throws Exception
     {
         final Aeron.Context ctx = new Aeron.Context()
+            .clientLock(mockClientLock)
             .epochClock(epochClock)
             .nanoClock(nanoClock)
             .toClientBuffer(mockToClientReceiver)
@@ -133,7 +134,7 @@ public class ClientConductorTest
         when(driverProxy.addSubscription(anyString(), anyInt())).thenReturn(CORRELATION_ID);
         when(driverProxy.removeSubscription(CORRELATION_ID)).thenReturn(CLOSE_CORRELATION_ID);
 
-        conductor = new ClientConductor(ctx, mockClientLock);
+        conductor = new ClientConductor(ctx);
 
         publicationReady.wrap(publicationReadyBuffer, 0);
         correlatedMessage.wrap(correlatedMessageBuffer, 0);

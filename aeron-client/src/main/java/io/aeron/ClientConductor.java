@@ -72,11 +72,11 @@ class ClientConductor implements Agent, DriverListener
 
     private RegistrationException driverException;
 
-    ClientConductor(final Aeron.Context ctx, final Lock clientLock)
+    ClientConductor(final Aeron.Context ctx)
     {
         this.ctx = ctx;
-        this.clientLock = clientLock;
 
+        clientLock = ctx.clientLock();
         epochClock = ctx.epochClock();
         nanoClock = ctx.nanoClock();
         errorHandler = ctx.errorHandler();

@@ -46,6 +46,7 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
     private final ArchiveIndex archiveIndex;
 
     // TODO: arguably this is a good fit for a linked array queue so that we can have minimal footprint
+    // TODO: But its only a single queue and insignificant compared to the files.
     private final OneToOneConcurrentArrayQueue<Image> imageNotificationQueue =
         new OneToOneConcurrentArrayQueue<>(1024);
     private final File archiveFolder;

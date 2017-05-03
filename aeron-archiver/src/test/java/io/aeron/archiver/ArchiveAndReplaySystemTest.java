@@ -40,7 +40,6 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
-@Ignore
 public class ArchiveAndReplaySystemTest
 {
     private static final int TIMEOUT = 5000;
@@ -270,7 +269,7 @@ public class ArchiveAndReplaySystemTest
         final Publication publication)
         throws InterruptedException
     {
-        final int messageCount = 128 + rnd.nextInt(10000);
+        final int messageCount = 5000 + rnd.nextInt(10000);
         fragmentLength = new int[messageCount];
         for (int i = 0; i < messageCount; i++)
         {
@@ -392,6 +391,7 @@ public class ArchiveAndReplaySystemTest
 
             while (remaining > 0)
             {
+                printf("Fragment [%d of %d]%n", fragmentCount + 1, fragmentLength.length);
                 poll(replay, this::validateFragment2);
             }
 
@@ -436,9 +436,9 @@ public class ArchiveAndReplaySystemTest
         assertThat(length, is(fragmentLength[fragmentCount] - DataHeaderFlyweight.HEADER_LENGTH));
         assertThat(buffer.getInt(offset), is(fragmentCount));
         assertThat(buffer.getByte(offset + 4), is((byte)'z'));
-
         remaining -= fragmentLength[fragmentCount];
         fragmentCount++;
+        printf("Fragment2: offset=%d length=%d %n",  offset, length);
     }
     private void validateArchiveFileChunked(final int messageCount, final int streamInstanceId) throws IOException
     {
@@ -614,7 +614,7 @@ public class ArchiveAndReplaySystemTest
 
     private void poll(final Subscription subscription, final FragmentHandler handler)
     {
-        wait(() -> (0 >= subscription.poll(handler, 1)));
+        wait(() -> (subscription.poll(handler, 1) > 0));
     }
 
     private void offer(

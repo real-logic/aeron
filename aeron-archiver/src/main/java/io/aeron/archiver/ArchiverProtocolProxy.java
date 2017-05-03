@@ -75,7 +75,7 @@ class ArchiverProtocolProxy
             .schemaId(ArchiverResponseEncoder.SCHEMA_ID)
             .version(ArchiverResponseEncoder.SCHEMA_VERSION);
 
-        // reset encoder limit is required for varible length messages
+        // reset encoder limit is required for variable length messages
         responseEncoder.limit(MessageHeaderEncoder.ENCODED_LENGTH + ArchiverResponseEncoder.BLOCK_LENGTH);
         if (!Strings.isEmpty(err))
         {

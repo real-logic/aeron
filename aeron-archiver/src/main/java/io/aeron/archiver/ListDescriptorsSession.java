@@ -103,19 +103,21 @@ class ListDescriptorsSession implements ArchiveConductor.Session
     public int doWork()
     {
         int workDone = 0;
-        if (state == State.INIT)
-        {
-            workDone += init();
-        }
 
-        if (state == State.SENDING)
+        switch (state)
         {
-            workDone += sendDescriptors();
-        }
+            case INIT:
+                workDone += init();
+                break;
 
-        if (state == State.CLOSE)
-        {
-            workDone += close();
+            case SENDING:
+                workDone += sendDescriptors();
+                break;
+
+            case CLOSE:
+                workDone += close();
+                break;
+
         }
 
         return workDone;

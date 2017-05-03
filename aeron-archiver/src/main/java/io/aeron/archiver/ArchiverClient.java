@@ -13,18 +13,17 @@
  * limitations under the License.
  *
  */
-
 package io.aeron.archiver;
-
 
 import io.aeron.*;
 import io.aeron.archiver.codecs.*;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 
 public class ArchiverClient
 {
     public static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
-    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
+    private final MutableDirectBuffer buffer = new ExpandableArrayBuffer();
     private final Publication archiverServiceRequest;
     private final Subscription archiverNotifications;
     private final MessageHeaderEncoder messageHeaderEncoder;
@@ -184,14 +183,14 @@ public class ArchiverClient
                     );
                     break;
                 }
+
                 case ArchiveStartedNotificationDecoder.TEMPLATE_ID:
                 {
-                    final ArchiveStartedNotificationDecoder mDecoder = new ArchiveStartedNotificationDecoder()
-                        .wrap(
-                            b,
-                            offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                            hDecoder.blockLength(),
-                            hDecoder.version());
+                    final ArchiveStartedNotificationDecoder mDecoder = new ArchiveStartedNotificationDecoder().wrap(
+                        b,
+                        offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                        hDecoder.blockLength(),
+                        hDecoder.version());
 
                     listener.onStart(
                         mDecoder.streamInstanceId(),
@@ -201,18 +200,19 @@ public class ArchiverClient
                         mDecoder.source());
                     break;
                 }
+
                 case ArchiveStoppedNotificationDecoder.TEMPLATE_ID:
                 {
-                    final ArchiveStoppedNotificationDecoder mDecoder = new ArchiveStoppedNotificationDecoder()
-                        .wrap(
-                            b,
-                            offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                            hDecoder.blockLength(),
-                            hDecoder.version());
+                    final ArchiveStoppedNotificationDecoder mDecoder = new ArchiveStoppedNotificationDecoder().wrap(
+                        b,
+                        offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                        hDecoder.blockLength(),
+                        hDecoder.version());
 
                     listener.onStop(mDecoder.streamInstanceId());
                     break;
                 }
+
                 default:
                     throw new RuntimeException();
             }
@@ -221,15 +221,8 @@ public class ArchiverClient
 
     private boolean offer(final int length)
     {
-        final long newPosition = archiverServiceRequest.offer(
-            this.buffer,
-            0,
-            length + HEADER_LENGTH);
+        final long newPosition = archiverServiceRequest.offer(buffer, 0, length + HEADER_LENGTH);
 
-        if (newPosition < 0)
-        {
-            return false;
-        }
-        return true;
+        return newPosition >= 0;
     }
 }

@@ -13,7 +13,6 @@
  * limitations under the License.
  *
  */
-
 package io.aeron.archiver;
 
 import org.agrona.*;
@@ -65,11 +64,11 @@ class ArchiveStreamChunkReader implements AutoCloseable
         transmitted = 0;
         fileIndex = ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, termId, archiveFileSize);
         final int archiveOffset = ArchiveFileUtil.offsetInArchiveFile(
-                termOffset,
-                termId,
-                initialTermId,
-                termBufferLength,
-                archiveFileSize);
+            termOffset,
+            termId,
+            initialTermId,
+            termBufferLength,
+            archiveFileSize);
         initTermOffset = archiveOffset - termOffset;
         this.termOffset = termOffset;
 

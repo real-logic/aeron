@@ -75,6 +75,7 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
             return this;
         }
 
+        // TODO: Forcing of writes should have the option of SYNC or DSYNC so best via channel rather than mapped buffer
         Builder forceWrites(final boolean forceWrites)
         {
             this.forceWrites = forceWrites;

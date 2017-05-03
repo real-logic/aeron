@@ -58,6 +58,7 @@ class ArchiveStreamFragmentReader implements AutoCloseable
         this.streamInstanceId = streamInstanceId;
         this.archiveFolder = archiveFolder;
         final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
+        // TODO: Should this just be read rather than mapped given the one of read?
         final File archiveMetaFile = new File(archiveFolder, archiveMetaFileName);
         final ArchiveDescriptorDecoder metaDecoder = ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
         termBufferLength = metaDecoder.termBufferLength();

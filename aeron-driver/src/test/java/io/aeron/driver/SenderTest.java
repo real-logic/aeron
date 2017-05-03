@@ -87,7 +87,7 @@ public class SenderTest
     private final SetupFlyweight setupHeader = new SetupFlyweight();
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
     private final OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue =
-        new OneToOneConcurrentArrayQueue<>(1024);
+        new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY);
 
     private final HeaderWriter headerWriter = new HeaderWriter(HEADER);
 

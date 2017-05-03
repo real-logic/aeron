@@ -125,7 +125,7 @@ public class DriverConductorTest
             .unicastFlowControlSupplier(Configuration.unicastFlowControlSupplier())
             .multicastFlowControlSupplier(Configuration.multicastFlowControlSupplier())
                 // TODO: remove
-            .driverCommandQueue(new ManyToOneConcurrentArrayQueue<>(1024))
+            .driverCommandQueue(new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
             .errorLog(mockErrorLog)
             .rawLogBuffersFactory(mockRawLogFactory)
             .countersManager(countersManager)

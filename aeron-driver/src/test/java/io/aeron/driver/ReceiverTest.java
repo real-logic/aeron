@@ -114,12 +114,12 @@ public class ReceiverTest
         when(congestionControl.initialWindowLength()).thenReturn(INITIAL_WINDOW_LENGTH);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .driverCommandQueue(new ManyToOneConcurrentArrayQueue<>(1024))
+            .driverCommandQueue(new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
             .dataTransportPoller(mockDataTransportPoller)
             .controlTransportPoller(mockControlTransportPoller)
             .rawLogBuffersFactory(mockRawLogFactory)
             .systemCounters(mockSystemCounters)
-            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
+            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
             .nanoClock(() -> currentTime);
 
         toConductorQueue = ctx.driverCommandQueue();

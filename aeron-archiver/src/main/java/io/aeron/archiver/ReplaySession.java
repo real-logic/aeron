@@ -17,7 +17,8 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.codecs.*;
-import io.aeron.logbuffer.*;
+import io.aeron.logbuffer.ExclusiveBufferClaim;
+import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 
 import java.io.*;
@@ -32,7 +33,7 @@ import java.io.*;
  * <li>Stream archived data into reply {@link Publication}</li>
  * </ul>
  */
-class ReplaySession implements ArchiveConductor.Session, ControlledFragmentHandler
+class ReplaySession implements ArchiveConductor.Session, ArchiveStreamFragmentReader.SimplifiedControlledPoll
 {
     private enum State
     {
@@ -274,15 +275,15 @@ class ReplaySession implements ArchiveConductor.Session, ControlledFragmentHandl
         return 1;
     }
 
-    public Action onFragment(
+    public boolean onFragment(
         final DirectBuffer fragmentBuffer,
         final int fragmentOffset,
         final int fragmentLength,
-        final Header header)
+        final DataHeaderFlyweight header)
     {
         if (isDone())
         {
-            return Action.ABORT;
+            return false;
         }
 
         final long result = replay.tryClaim(fragmentLength, bufferClaim);
@@ -291,7 +292,7 @@ class ReplaySession implements ArchiveConductor.Session, ControlledFragmentHandl
             try
             {
                 final MutableDirectBuffer publicationBuffer = bufferClaim.buffer();
-                bufferClaim.flags(header.flags());
+                bufferClaim.flags((byte) header.flags());
                 bufferClaim.reservedValue(header.reservedValue());
                 // TODO: ??? bufferClaim.headerType(header.type()); ???
 
@@ -303,13 +304,13 @@ class ReplaySession implements ArchiveConductor.Session, ControlledFragmentHandl
                 bufferClaim.commit();
             }
 
-            return Action.CONTINUE;
+            return true;
         }
         else if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
         {
             closeOnErr(null, "Reply publication to replay requestor has shutdown mid-replay");
         }
 
-        return Action.ABORT;
+        return false;
     }
 }

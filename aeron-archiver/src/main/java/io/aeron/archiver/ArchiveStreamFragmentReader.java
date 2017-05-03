@@ -16,8 +16,6 @@
 package io.aeron.archiver;
 
 import io.aeron.archiver.codecs.ArchiveDescriptorDecoder;
-import io.aeron.logbuffer.*;
-import io.aeron.logbuffer.ControlledFragmentHandler.Action;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -50,8 +48,8 @@ class ArchiveStreamFragmentReader implements AutoCloseable
     private UnsafeBuffer termMappedUnsafeBuffer = null;
     private int archiveTermStartOffset;
     private int fragmentOffset;
-    private Header fragmentHeader;
     private long transmitted = 0;
+    private final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
 
     ArchiveStreamFragmentReader(final int streamInstanceId, final File archiveFolder) throws IOException
     {
@@ -108,14 +106,11 @@ class ArchiveStreamFragmentReader implements AutoCloseable
         termMappedUnsafeBuffer = new UnsafeBuffer(
             currentDataChannel.map(READ_ONLY, archiveTermStartOffset, termBufferLength));
 
-        fragmentHeader = new Header(initialTermId, Integer.numberOfLeadingZeros(termBufferLength));
-        fragmentHeader.buffer(termMappedUnsafeBuffer);
-
         // TODO: align first fragment
         fragmentOffset = archiveOffset & (termBufferLength - 1);
     }
 
-    int controlledPoll(final ControlledFragmentHandler fragmentHandler, final int fragmentLimit) throws IOException
+    int controlledPoll(final SimplifiedControlledPoll fragmentHandler, final int fragmentLimit) throws IOException
     {
         if (isDone())
         {
@@ -129,12 +124,10 @@ class ArchiveStreamFragmentReader implements AutoCloseable
         while (fragmentOffset < termBufferLength && !isDone() && polled < fragmentLimit)
         {
             final int fragmentOffset = this.fragmentOffset;
-            fragmentHeader.offset(fragmentOffset);
-            final int frameLength = fragmentHeader.frameLength();
+            headerFlyweight.wrap(termMappedUnsafeBuffer, this.fragmentOffset, DataHeaderFlyweight.HEADER_LENGTH);
+            final int frameLength = headerFlyweight.frameLength();
             if (frameLength <= 0)
             {
-                final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
-                headerFlyweight.wrap(termMappedUnsafeBuffer, this.fragmentOffset, DataHeaderFlyweight.HEADER_LENGTH);
                 throw new IllegalStateException("Broken frame with length <= 0: " + headerFlyweight);
             }
 
@@ -143,7 +136,7 @@ class ArchiveStreamFragmentReader implements AutoCloseable
             transmitted += alignedLength;
             this.fragmentOffset += alignedLength;
 
-            if (fragmentHeader.type() == PADDING_FRAME_TYPE)
+            if (headerFlyweight.headerType() == PADDING_FRAME_TYPE)
             {
                 continue;
             }
@@ -151,13 +144,11 @@ class ArchiveStreamFragmentReader implements AutoCloseable
             final int fragmentDataOffset = fragmentOffset + DataHeaderFlyweight.DATA_OFFSET;
             final int fragmentDataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
 
-            // TODO: is the gain from familiar abstractions worth it? the only intended callee here is the ReplaySession
-            final Action action = fragmentHandler.onFragment(
+            if (!fragmentHandler.onFragment(
                 termMappedUnsafeBuffer,
                 fragmentDataOffset,
                 fragmentDataLength,
-                fragmentHeader);
-            if (action.equals(Action.ABORT))
+                headerFlyweight))
             {
                 // rollback the cursor progress
                 transmitted -= alignedLength;
@@ -189,7 +180,6 @@ class ArchiveStreamFragmentReader implements AutoCloseable
             final MappedByteBuffer mappedByteBuffer =
                 currentDataChannel.map(READ_ONLY, archiveTermStartOffset, termBufferLength);
             termMappedUnsafeBuffer.wrap(mappedByteBuffer);
-            fragmentHeader.buffer(termMappedUnsafeBuffer);
         }
 
         return polled;
@@ -230,5 +220,14 @@ class ArchiveStreamFragmentReader implements AutoCloseable
     public void close()
     {
         closeArchiveFile();
+    }
+
+    interface SimplifiedControlledPoll
+    {
+        boolean onFragment(
+            DirectBuffer fragmentBuffer,
+            int fragmentOffset,
+            int fragmentLength,
+            DataHeaderFlyweight header);
     }
 }

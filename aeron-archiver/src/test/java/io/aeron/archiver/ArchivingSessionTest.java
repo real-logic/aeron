@@ -17,7 +17,7 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.codecs.ArchiveDescriptorDecoder;
-import io.aeron.logbuffer.*;
+import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -191,7 +191,7 @@ public class ArchivingSessionTest
                     assertEquals(100, header.frameLength());
                     assertEquals(termOffset + DataHeaderFlyweight.HEADER_LENGTH, offset);
                     assertEquals(100 - DataHeaderFlyweight.HEADER_LENGTH, length);
-                    return ControlledFragmentHandler.Action.CONTINUE;
+                    return true;
                 },
                 1);
 

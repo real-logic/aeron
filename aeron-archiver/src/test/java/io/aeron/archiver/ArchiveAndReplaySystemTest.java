@@ -392,7 +392,7 @@ public class ArchiveAndReplaySystemTest
 
             while (remaining > 0)
             {
-                poll(replay, this::validateFragment);
+                poll(replay, this::validateFragment2);
             }
 
             assertThat(fragmentCount, is(messageCount));
@@ -407,14 +407,28 @@ public class ArchiveAndReplaySystemTest
         {
             fragmentCount = 0;
             remaining = totalDataLength;
-            archiveDataFileReader.controlledPoll(this::validateFragment, messageCount);
+            archiveDataFileReader.controlledPoll(this::validateFragment1, messageCount);
 
             assertThat(remaining, is(0L));
             assertThat(fragmentCount, is(messageCount));
         }
     }
 
-    private ControlledFragmentHandler.Action validateFragment(
+    private boolean validateFragment1(
+        final DirectBuffer buffer,
+        final int offset, final int length,
+        @SuppressWarnings("unused") final DataHeaderFlyweight header)
+    {
+        assertThat(length, is(fragmentLength[fragmentCount] - DataHeaderFlyweight.HEADER_LENGTH));
+        assertThat(buffer.getInt(offset), is(fragmentCount));
+        assertThat(buffer.getByte(offset + 4), is((byte)'z'));
+
+        remaining -= fragmentLength[fragmentCount];
+        fragmentCount++;
+
+        return true;
+    }
+    private void validateFragment2(
         final DirectBuffer buffer,
         final int offset, final int length,
         @SuppressWarnings("unused") final Header header)
@@ -425,10 +439,7 @@ public class ArchiveAndReplaySystemTest
 
         remaining -= fragmentLength[fragmentCount];
         fragmentCount++;
-
-        return ControlledFragmentHandler.Action.CONTINUE;
     }
-
     private void validateArchiveFileChunked(final int messageCount, final int streamInstanceId) throws IOException
     {
         final ArchiveDescriptorDecoder decoder = archiveMetaFileFormatDecoder(

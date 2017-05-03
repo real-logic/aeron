@@ -127,7 +127,7 @@ public class ReplaySessionTest
                 {
                     assertEquals(offset, INITIAL_TERM_OFFSET + DataHeaderFlyweight.HEADER_LENGTH);
                     assertEquals(length, 1024 - DataHeaderFlyweight.HEADER_LENGTH);
-                    return ControlledFragmentHandler.Action.CONTINUE;
+                    return true;
                 },
                 1);
 

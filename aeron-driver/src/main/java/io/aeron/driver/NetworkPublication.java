@@ -54,8 +54,6 @@ class NetworkPublicationConductorFields extends NetworkPublicationPadding1
     protected long cleanPosition = 0;
     protected long timeOfLastActivityNs = 0;
     protected long lastSenderPosition = 0;
-    protected long lastConsumerPosition = 0;
-    protected long timeOfLastConsumerPositionChange = 0;
     protected int refCount = 0;
     protected ReadablePosition[] spyPositions = EMPTY_POSITIONS;
 }
@@ -525,33 +523,6 @@ public class NetworkPublication
         return bytesSent;
     }
 
-    private boolean isUnreferencedAndInactive(final long nowNs)
-    {
-        if (refCount > 0)
-        {
-            return false;
-        }
-
-        final long senderPosition = this.senderPosition.getVolatile();
-
-        if (senderPosition != lastSenderPosition)
-        {
-            lastSenderPosition = senderPosition;
-            timeOfLastActivityNs = nowNs;
-            return false;
-        }
-
-        for (final ReadablePosition spyPosition : spyPositions)
-        {
-            if (spyPosition.getVolatile() < senderPosition)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     private void cleanBuffer(final long publisherLimit)
     {
         final long cleanPosition = this.cleanPosition;
@@ -571,13 +542,29 @@ public class NetworkPublication
         }
     }
 
-    private void checkForBlockedPublisher(final long timeNs)
+    private boolean isUnreferencedAndInactive(final long nowNs, final long senderPosition)
     {
-        final long consumerPosition = senderPosition.getVolatile();
-        if (consumerPosition == lastConsumerPosition)
+        if (refCount > 0)
         {
-            if (producerPosition() > consumerPosition &&
-                timeNs > (timeOfLastConsumerPositionChange + unblockTimeoutNs))
+            return false;
+        }
+
+        if (senderPosition != lastSenderPosition)
+        {
+            lastSenderPosition = senderPosition;
+            timeOfLastActivityNs = nowNs;
+            return false;
+        }
+
+        return true;
+    }
+
+    private void checkForBlockedPublisher(final long timeNs, final long senderPosition)
+    {
+        if (senderPosition == lastSenderPosition)
+        {
+            if (producerPosition() > senderPosition &&
+                timeNs > (timeOfLastActivityNs + unblockTimeoutNs))
             {
                 if (unblockAtConsumerPosition())
                 {
@@ -587,17 +574,27 @@ public class NetworkPublication
         }
         else
         {
-            timeOfLastConsumerPositionChange = timeNs;
-            lastConsumerPosition = consumerPosition;
+            timeOfLastActivityNs = timeNs;
+            lastSenderPosition = senderPosition;
         }
     }
 
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
-        if (isUnreferencedAndInactive(timeNs))
+        final long senderPosition = this.senderPosition.getVolatile();
+
+        if (isUnreferencedAndInactive(timeNs, senderPosition))
         {
             if (hasSpies())
             {
+                for (final ReadablePosition spyPosition : spyPositions)
+                {
+                    if (spyPosition.getVolatile() < senderPosition)
+                    {
+                        return;
+                    }
+                }
+
                 conductor.cleanupSpies(NetworkPublication.this);
                 for (final ReadablePosition position : spyPositions)
                 {
@@ -618,10 +615,7 @@ public class NetworkPublication
         }
         else
         {
-            if (!isExclusive)
-            {
-                checkForBlockedPublisher(timeNs);
-            }
+            checkForBlockedPublisher(timeNs, senderPosition);
 
             if (isConnected &&
                 timeMs > (timeOfLastStatusMessage(rawLog.metaData()) + PUBLICATION_CONNECTION_TIMEOUT_MS))

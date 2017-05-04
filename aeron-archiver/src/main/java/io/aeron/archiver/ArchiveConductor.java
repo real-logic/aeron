@@ -44,12 +44,9 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
 
     private final ObjectHashSet<Subscription> archiveSubscriptionSet = new ObjectHashSet<>(128);
     private final ArchiveIndex archiveIndex;
-
-    // TODO: arguably this is a good fit for a linked array queue so that we can have minimal footprint
-    // TODO: But its only a single queue and insignificant compared to the files.
     private final OneToOneConcurrentArrayQueue<Image> imageNotificationQueue =
         new OneToOneConcurrentArrayQueue<>(1024);
-    private final File archiveFolder;
+    private final File archiveDir;
 
     private final Consumer<Image> newImageConsumer = this::handleNewImageNotification;
     private final AvailableImageHandler availableImageHandler = this::onAvailableImage;
@@ -62,8 +59,8 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
     {
         this.aeron = aeron;
 
-        archiveFolder = ctx.archiveFolder();
-        archiveIndex = new ArchiveIndex(archiveFolder);
+        archiveDir = ctx.archiveFolder();
+        archiveIndex = new ArchiveIndex(archiveDir);
 
         archiveWriterBuilder
             .archiveFileSize(ctx.archiveFileSize())
@@ -89,11 +86,7 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
     {
         int workDone = 0;
 
-        // TODO: control tasks balance? shard/distribute tasks across threads?
-
-        // this will trigger callbacks into handleNewImageNotification
         workDone += imageNotificationQueue.drain(newImageConsumer, 10);
-        // this will trigger callbacks into ArchiverProtocolListener::on* methods
         workDone += serviceRequestSubscription.poll(adapter, 16);
         workDone += doSessionsWork();
 
@@ -122,6 +115,7 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
 
         if (!replaySessionBySessionIdMap.isEmpty())
         {
+            // TODO: Use an error log.
             System.err.println("ERROR: expected empty replaySessionBySessionIdMap");
         }
 
@@ -208,7 +202,7 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
             replayPublication,
             controlPublication,
             image,
-            archiveFolder,
+            archiveDir,
             proxy);
 
         replaySessionBySessionIdMap.put(sessionId, replaySession);

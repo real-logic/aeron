@@ -263,6 +263,60 @@ public class PublicationImage
     }
 
     /**
+     * Remove a {@link ReadablePosition} for a subscriber that has been removed so it is not tracked for flow control.
+     *
+     * @param subscriberPosition for the subscriber that has been removed.
+     */
+    public void removeSubscriber(final ReadablePosition subscriberPosition)
+    {
+        subscriberPositions = ArrayUtil.remove(subscriberPositions, subscriberPosition);
+        subscriberPosition.close();
+    }
+
+    /**
+     * Add a new subscriber to this image so their position can be tracked for flow control.
+     *
+     * @param subscriberPosition for the subscriber to be added.
+     */
+    public void addSubscriber(final ReadablePosition subscriberPosition)
+    {
+        subscriberPositions = ArrayUtil.add(subscriberPositions, subscriberPosition);
+    }
+
+    /**
+     * Called from the {@link LossDetector} when gap is detected by the {@link DriverConductor} thread.
+     *
+     * @see LossHandler
+     */
+    public void onGapDetected(final int termId, final int termOffset, final int length)
+    {
+        final long changeNumber = beginLossChange + 1;
+
+        beginLossChange = changeNumber;
+
+        lossTermId = termId;
+        lossTermOffset = termOffset;
+        lossLength = length;
+
+        endLossChange = changeNumber;
+
+        if (null != reportEntry)
+        {
+            reportEntry.recordObservation(length, epochClock.time());
+        }
+        else if (null != lossReport)
+        {
+            reportEntry = lossReport.createEntry(
+                length, epochClock.time(), sessionId, streamId, channelUriString(), sourceAddress.toString());
+
+            if (null == reportEntry)
+            {
+                lossReport = null;
+            }
+        }
+    }
+
+    /**
      * The address of the source associated with the image.
      *
      * @return source address
@@ -306,7 +360,7 @@ public class PublicationImage
      *
      * @return status of the image
      */
-    public Status status()
+    Status status()
     {
         return status;
     }
@@ -320,46 +374,13 @@ public class PublicationImage
      *
      * @param status of the image
      */
-    public void status(final Status status)
+    void status(final Status status)
     {
         timeOfLastStatusChangeNs = nanoClock.nanoTime();
         this.status = status;
     }
 
-    /**
-     * Called from the {@link LossDetector} when gap is detected by the {@link DriverConductor} thread.
-     *
-     * @see LossHandler
-     */
-    public void onGapDetected(final int termId, final int termOffset, final int length)
-    {
-        final long changeNumber = beginLossChange + 1;
-
-        beginLossChange = changeNumber;
-
-        lossTermId = termId;
-        lossTermOffset = termOffset;
-        lossLength = length;
-
-        endLossChange = changeNumber;
-
-        if (null != reportEntry)
-        {
-            reportEntry.recordObservation(length, epochClock.time());
-        }
-        else if (null != lossReport)
-        {
-            reportEntry = lossReport.createEntry(
-                length, epochClock.time(), sessionId, streamId, channelUriString(), sourceAddress.toString());
-
-            if (null == reportEntry)
-            {
-                lossReport = null;
-            }
-        }
-    }
-
-    public void scheduleStatusMessage(final long nowNs, final long smPosition, final int receiverWindowLength)
+    private void scheduleStatusMessage(final long nowNs, final long smPosition, final int receiverWindowLength)
     {
         final long changeNumber = beginSmChange + 1;
 
@@ -370,27 +391,6 @@ public class PublicationImage
         lastStatusMessageTimestamp = nowNs;
 
         endSmChange = changeNumber;
-    }
-
-    /**
-     * Remove a {@link ReadablePosition} for a subscriber that has been removed so it is not tracked for flow control.
-     *
-     * @param subscriberPosition for the subscriber that has been removed.
-     */
-    public void removeSubscriber(final ReadablePosition subscriberPosition)
-    {
-        subscriberPositions = ArrayUtil.remove(subscriberPositions, subscriberPosition);
-        subscriberPosition.close();
-    }
-
-    /**
-     * Add a new subscriber to this image so their position can be tracked for flow control.
-     *
-     * @param subscriberPosition for the subscriber to be added.
-     */
-    public void addSubscriber(final ReadablePosition subscriberPosition)
-    {
-        subscriberPositions = ArrayUtil.add(subscriberPositions, subscriberPosition);
     }
 
     /**
@@ -618,7 +618,7 @@ public class PublicationImage
      * @param header     of the measurement
      * @param srcAddress from the sender of the measurement
      */
-    public void onRttMeasurement(final RttMeasurementFlyweight header, final InetSocketAddress srcAddress)
+    void onRttMeasurement(final RttMeasurementFlyweight header, final InetSocketAddress srcAddress)
     {
         final long nowNs = nanoClock.nanoTime();
         final long rttInNs = nowNs - header.echoTimestampNs() - header.receptionDelta();

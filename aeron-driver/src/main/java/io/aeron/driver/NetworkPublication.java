@@ -585,7 +585,7 @@ public class NetworkPublication
 
         if (isUnreferencedAndInactive(timeNs, senderPosition))
         {
-            if (hasSpies())
+            if (spyPositions.length > 0)
             {
                 for (final ReadablePosition spyPosition : spyPositions)
                 {

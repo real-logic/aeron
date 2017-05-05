@@ -48,7 +48,6 @@ class ReplaySession implements ArchiveConductor.Session, ArchiveStreamFragmentRe
 
     private final ExclusivePublication replay;
     private final ExclusivePublication control;
-    private final Image image;
 
     private final File archiveFolder;
     private final ArchiverProtocolProxy proxy;
@@ -56,6 +55,8 @@ class ReplaySession implements ArchiveConductor.Session, ArchiveStreamFragmentRe
 
     private State state = State.INIT;
     private ArchiveStreamFragmentReader cursor;
+    private final int replaySessionId;
+    private final int correlationId;
 
     ReplaySession(
         final int streamInstanceId,
@@ -64,9 +65,9 @@ class ReplaySession implements ArchiveConductor.Session, ArchiveStreamFragmentRe
         final long replayLength,
         final ExclusivePublication replay,
         final ExclusivePublication control,
-        final Image image,
         final File archiveFolder,
-        final ArchiverProtocolProxy proxy)
+        final ArchiverProtocolProxy proxy,
+        final int replaySessionId, final int correlationId)
     {
         this.streamInstanceId = streamInstanceId;
 
@@ -76,9 +77,10 @@ class ReplaySession implements ArchiveConductor.Session, ArchiveStreamFragmentRe
 
         this.replay = replay;
         this.control = control;
-        this.image = image;
         this.archiveFolder = archiveFolder;
         this.proxy = proxy;
+        this.replaySessionId = replaySessionId;
+        this.correlationId = correlationId;
     }
 
     public int doWork()
@@ -112,7 +114,7 @@ class ReplaySession implements ArchiveConductor.Session, ArchiveStreamFragmentRe
 
     public void remove(final ArchiveConductor conductor)
     {
-        conductor.removeReplaySession(image.sessionId());
+        conductor.removeReplaySession(replaySessionId);
     }
 
     private int init()
@@ -201,7 +203,7 @@ class ReplaySession implements ArchiveConductor.Session, ArchiveStreamFragmentRe
         }
 
         // plumbing is secured, we can kick off the replay
-        proxy.sendResponse(control, null);
+        proxy.sendResponse(control, null, correlationId);
         this.state = State.REPLAY;
 
         return 1;
@@ -236,7 +238,7 @@ class ReplaySession implements ArchiveConductor.Session, ArchiveStreamFragmentRe
         this.state = State.CLOSE;
         if (control.isConnected())
         {
-            proxy.sendResponse(control, err);
+            proxy.sendResponse(control, err, correlationId);
         }
 
         if (e != null)
@@ -268,7 +270,6 @@ class ReplaySession implements ArchiveConductor.Session, ArchiveStreamFragmentRe
     private int close()
     {
         CloseHelper.close(replay);
-        CloseHelper.close(control);
         CloseHelper.close(cursor);
         this.state = State.DONE;
 

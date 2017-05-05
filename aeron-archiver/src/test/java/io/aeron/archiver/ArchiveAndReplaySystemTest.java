@@ -48,6 +48,7 @@ public class ArchiveAndReplaySystemTest
 
     private static final boolean DEBUG = false;
     private static final String REPLY_URI = "aeron:udp?endpoint=127.0.0.1:54327";
+    private static final int REPLY_STREAM_ID = 100;
     private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
     private static final String PUBLISH_URI = "aeron:udp?endpoint=127.0.0.1:54325";
     private static final int PUBLISH_STREAM_ID = 1;
@@ -72,7 +73,6 @@ public class ArchiveAndReplaySystemTest
     private Throwable trackerError;
     private Random rnd = new Random();
     private long seed;
-    private int replyStreamId = 100;
 
     @Rule
     public TestWatcher testWatcher = new TestWatcher()
@@ -83,6 +83,7 @@ public class ArchiveAndReplaySystemTest
                 "ArchiveAndReplaySystemTest failed with random seed: " + ArchiveAndReplaySystemTest.this.seed);
         }
     };
+    private Subscription reply;
 
     @Before
     public void setUp() throws Exception
@@ -131,13 +132,18 @@ public class ArchiveAndReplaySystemTest
 
             awaitPublicationIsConnected(archiverServiceRequest);
             awaitSubscriptionIsConnected(archiverNotifications);
-
             println("Archive service connected");
+
+            reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
+            client.clientInit(REPLY_URI, REPLY_STREAM_ID);
+            awaitSubscriptionIsConnected(reply);
+            println("Client connected");
+
             verifyEmptyDescriptorList(client);
 
             wait(() -> client.requestArchiveStart(PUBLISH_URI, PUBLISH_STREAM_ID));
-
             println("Archive requested");
+
             final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(publication);
 
@@ -211,20 +217,18 @@ public class ArchiveAndReplaySystemTest
 
     private void verifyEmptyDescriptorList(final ArchiverClient client)
     {
-        final int replyStreamId = this.replyStreamId++;
-        try (Subscription archiverListReply = publishingClient.addSubscription(REPLY_URI, replyStreamId))
-        {
-            client.requestListStreamInstances(REPLY_URI, replyStreamId, 0, 100);
-            awaitSubscriptionIsConnected(archiverListReply);
-            poll(
-                archiverListReply,
-                (b, offset, length, header) ->
-                {
-                    final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(b, offset);
-                    assertThat(hDecoder.templateId(), is(ArchiverResponseDecoder.TEMPLATE_ID));
-                }
-            );
-        }
+        client.requestListStreamInstances(0, 100);
+        poll(
+            reply,
+            (b, offset, length, header) ->
+            {
+                final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(b, offset);
+                assertThat(hDecoder.templateId(), is(ArchiverResponseDecoder.TEMPLATE_ID));
+                println(new ArchiverResponseDecoder()
+                    .wrap(b, offset + MessageHeaderDecoder.ENCODED_LENGTH, hDecoder.blockLength(), hDecoder.version())
+                    .err());
+            }
+        );
     }
 
     private void verifyDescriptorListOngoingArchive(
@@ -232,36 +236,43 @@ public class ArchiveAndReplaySystemTest
         final Publication publication,
         final long archiveLength)
     {
-        final int replyStreamId = this.replyStreamId++;
-        try (Subscription archiverListReply = publishingClient.addSubscription(REPLY_URI, replyStreamId))
-        {
-            client.requestListStreamInstances(REPLY_URI, replyStreamId, streamInstanceId, streamInstanceId);
-            awaitSubscriptionIsConnected(archiverListReply);
-            println("Await result");
+        client.requestListStreamInstances(streamInstanceId, streamInstanceId);
+        println("Await result");
 
-            poll(
-                archiverListReply,
-                (b, offset, length, header) ->
+        poll(
+            reply,
+            (b, offset, length, header) ->
+            {
+                final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(b, offset);
+                if (hDecoder.templateId() != ArchiveDescriptorDecoder.TEMPLATE_ID)
                 {
-                    final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(b, offset);
-                    assertThat(hDecoder.templateId(), is(ArchiveDescriptorDecoder.TEMPLATE_ID));
-
-                    final ArchiveDescriptorDecoder decoder = new ArchiveDescriptorDecoder();
-                    decoder.wrap(b,
-                        offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                        hDecoder.blockLength(),
-                        hDecoder.version());
-
-                    assertThat(decoder.streamInstanceId(), is(streamInstanceId));
-                    assertThat(decoder.streamId(), is(PUBLISH_STREAM_ID));
-                    assertThat(decoder.imageInitialTermId(), is(publication.initialTermId()));
-
-                    final long archiveFullLength = ArchiveFileUtil.archiveFullLength(decoder);
-                    assertThat(archiveFullLength, is(archiveLength));
-                    //....
+                    println("Got:" + hDecoder.templateId());
+                    println(new ArchiverResponseDecoder()
+                        .wrap(
+                            b,
+                            offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                            hDecoder.blockLength(),
+                            hDecoder.version())
+                        .err());
                 }
-            );
-        }
+                assertThat(hDecoder.templateId(), is(ArchiveDescriptorDecoder.TEMPLATE_ID));
+
+                final ArchiveDescriptorDecoder decoder = new ArchiveDescriptorDecoder();
+                decoder.wrap(
+                    b,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    hDecoder.blockLength(),
+                    hDecoder.version());
+                println(decoder.toString());
+                assertThat(decoder.streamInstanceId(), is(streamInstanceId));
+                assertThat(decoder.streamId(), is(PUBLISH_STREAM_ID));
+                assertThat(decoder.imageInitialTermId(), is(publication.initialTermId()));
+
+                final long archiveFullLength = ArchiveFileUtil.archiveFullLength(decoder);
+                assertThat(archiveFullLength, is(archiveLength));
+                //....
+            }
+        );
     }
 
     private int prepAndSendMessages(
@@ -350,26 +361,21 @@ public class ArchiveAndReplaySystemTest
         final int messageCount)
     {
         // request replay
-        final int replayStreamId = this.replyStreamId++;
-        final int controlStreamId = this.replyStreamId++;
         wait(() -> client.requestReplay(
             streamInstanceId,
             publication.initialTermId(),
             0,
             totalArchiveLength,
             REPLAY_URI,
-            replayStreamId,
-            REPLAY_URI,
-            controlStreamId));
+            101
+        ));
 
-        try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, replayStreamId);
-             Subscription control = publishingClient.addSubscription(REPLAY_URI, controlStreamId))
+        try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, 101))
         {
             awaitSubscriptionIsConnected(replay);
-            awaitSubscriptionIsConnected(control);
             // wait for OK message from control
             poll(
-                control,
+                reply,
                 (buffer, offset, length, header) ->
                 {
                     final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);

@@ -15,9 +15,9 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.Publication;
+import io.aeron.ExclusivePublication;
 import io.aeron.archiver.codecs.*;
-import io.aeron.logbuffer.BufferClaim;
+import io.aeron.logbuffer.ExclusiveBufferClaim;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -33,7 +33,7 @@ class ListDescriptorsSession implements ArchiveConductor.Session
 
     static
     {
-        // TODO: What does the following code do?
+        // create constant header values to avoid recalcuation on each meassage sent
         final MessageHeaderEncoder encoder = new MessageHeaderEncoder();
         encoder.wrap(new UnsafeBuffer(new byte[8]), 0);
         encoder.schemaId(ListStreamInstancesNotFoundResponseDecoder.SCHEMA_ID);
@@ -48,8 +48,6 @@ class ListDescriptorsSession implements ArchiveConductor.Session
         DESCRIPTOR_HEADER = encoder.buffer().getLong(0);
     }
 
-    private BufferClaim bufferClaim = new BufferClaim();
-
     private enum State
     {
         INIT,
@@ -61,18 +59,20 @@ class ListDescriptorsSession implements ArchiveConductor.Session
     private final ByteBuffer byteBuffer =
         BufferUtil.allocateDirectAligned(ArchiveIndex.INDEX_RECORD_SIZE, CACHE_LINE_LENGTH);
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
+    private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
 
-    private final Publication reply;
+    private final ExclusivePublication reply;
     private final int from;
     private final int to;
     private final ArchiveIndex index;
     private final ArchiverProtocolProxy proxy;
+    private final int correlationId;
 
     private int cursor;
     private State state = State.INIT;
 
     ListDescriptorsSession(
-        final Publication reply,
+        final int correlationId, final ExclusivePublication reply,
         final int from,
         final int to,
         final ArchiveIndex index,
@@ -84,6 +84,7 @@ class ListDescriptorsSession implements ArchiveConductor.Session
         this.to = to;
         this.index = index;
         this.proxy = proxy;
+        this.correlationId = correlationId;
     }
 
     public void abort()
@@ -125,9 +126,7 @@ class ListDescriptorsSession implements ArchiveConductor.Session
 
     private int close()
     {
-        CloseHelper.close(reply);
         state = State.DONE;
-
         return 1;
     }
 
@@ -195,12 +194,12 @@ class ListDescriptorsSession implements ArchiveConductor.Session
 
         if (from > to)
         {
-            proxy.sendResponse(reply, "Requested range is reversed (to < from)");
+            proxy.sendResponse(reply, "Requested range is reversed (to < from)", correlationId);
             state = State.CLOSE;
         }
         else if (to > index.maxStreamInstanceId())
         {
-            proxy.sendResponse(reply, "Requested range exceeds available range (to > max)");
+            proxy.sendResponse(reply, "Requested range exceeds available range (to > max)", correlationId);
             state = State.CLOSE;
         }
         else

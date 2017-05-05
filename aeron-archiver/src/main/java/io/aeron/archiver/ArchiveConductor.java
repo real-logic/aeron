@@ -24,7 +24,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
-class ArchiveConductor implements Agent, ArchiverProtocolListener
+class ArchiveConductor implements Agent
 {
     interface Session
     {
@@ -40,7 +40,7 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
     private final Aeron aeron;
     private final Subscription serviceRequestSubscription;
     private final ArrayList<Session> sessions = new ArrayList<>();
-    private final Int2ObjectHashMap<ReplaySession> replaySessionBySessionIdMap = new Int2ObjectHashMap<>();
+    private final Long2ObjectHashMap<ReplaySession> replaySessionBySessionIdMap = new Long2ObjectHashMap<>();
 
     private final ObjectHashSet<Subscription> archiveSubscriptionSet = new ObjectHashSet<>(128);
     private final ArchiveIndex archiveIndex;
@@ -50,10 +50,11 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
 
     private final Consumer<Image> newImageConsumer = this::handleNewImageNotification;
     private final AvailableImageHandler availableImageHandler = this::onAvailableImage;
-    private final ArchiverProtocolAdapter adapter = new ArchiverProtocolAdapter(this);
+
     private final ArchiverProtocolProxy proxy;
     private volatile boolean isClosed = false;
     private final ArchiveStreamWriter.Builder archiveWriterBuilder = new ArchiveStreamWriter.Builder();
+    private int replaySessionId;
 
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
@@ -69,7 +70,11 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
             .forceMetadataUpdates(ctx.forceMetadataUpdates())
             .forceWrites(ctx.forceWrites());
 
-        serviceRequestSubscription = aeron.addSubscription(ctx.serviceRequestChannel(), ctx.serviceRequestStreamId());
+        serviceRequestSubscription = aeron.addSubscription(
+            ctx.serviceRequestChannel(),
+            ctx.serviceRequestStreamId(),
+            availableImageHandler,
+            null);
 
         final Publication archiverNotificationPublication = aeron.addPublication(
             ctx.archiverNotificationsChannel(), ctx.archiverNotificationsStreamId());
@@ -87,7 +92,6 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
         int workDone = 0;
 
         workDone += imageNotificationQueue.drain(newImageConsumer, 10);
-        workDone += serviceRequestSubscription.poll(adapter, 16);
         workDone += doSessionsWork();
 
         return workDone;
@@ -122,92 +126,6 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
         CloseHelper.close(archiveIndex);
     }
 
-    public void onArchiveStop(final String channel, final int streamId)
-    {
-        for (final Subscription subscription : archiveSubscriptionSet)
-        {
-            if (subscription.streamId() == streamId && subscription.channel().equals(channel))
-            {
-                subscription.close();
-                archiveSubscriptionSet.remove(subscription);
-                break;
-                // image archiving sessions will sort themselves out naturally
-            }
-        }
-    }
-
-    public void onArchiveStart(final String channel, final int streamId)
-    {
-        for (final Subscription subscription : archiveSubscriptionSet)
-        {
-            if (subscription.streamId() == streamId && subscription.channel().equals(channel))
-            {
-                // we're already subscribed, don't bother
-                return;
-            }
-        }
-
-        final Subscription archiveSubscription = aeron.addSubscription(
-            channel, streamId, availableImageHandler, null);
-
-        // as subscription images are created they will get picked up and archived
-        archiveSubscriptionSet.add(archiveSubscription);
-    }
-
-    public void onListStreamInstances(final int from, final int to, final String replyChannel, final int replyStreamId)
-    {
-        final Publication reply = aeron.addPublication(replyChannel, replyStreamId);
-        final Session listSession = new ListDescriptorsSession(reply, from, to, archiveIndex, proxy);
-
-        sessions.add(listSession);
-    }
-
-    public void onReplayStop(final int sessionId)
-    {
-        final ReplaySession session = replaySessionBySessionIdMap.get(sessionId);
-        if (session == null)
-        {
-            throw new IllegalStateException("Trying to abort an unknown replay session:" + sessionId);
-        }
-
-        session.abort();
-    }
-
-    public void onReplayStart(
-        final int sessionId,
-        final int replayStreamId,
-        final String replayChannel,
-        final int controlStreamId,
-        final String controlChannel,
-        final int streamInstanceId,
-        final int termId,
-        final int termOffset,
-        final long length)
-    {
-        // TODO: What if a different consumer asks for the same sessionId? This should be valid.
-        if (replaySessionBySessionIdMap.containsKey(sessionId))
-        {
-            throw new IllegalStateException("Trying to request a second replay from same session:" + sessionId);
-        }
-
-        // TODO: need to control construction of publications to handle errors
-        final Image image = serviceRequestSubscription.imageBySessionId(sessionId);
-        final ExclusivePublication replayPublication = aeron.addExclusivePublication(replayChannel, replayStreamId);
-        final ExclusivePublication controlPublication = aeron.addExclusivePublication(controlChannel, controlStreamId);
-        final ReplaySession replaySession = new ReplaySession(
-            streamInstanceId,
-            termId,
-            termOffset,
-            length,
-            replayPublication,
-            controlPublication,
-            image,
-            archiveDir,
-            proxy);
-
-        replaySessionBySessionIdMap.put(sessionId, replaySession);
-        sessions.add(replaySession);
-    }
 
     void removeReplaySession(final int sessionId)
     {
@@ -235,7 +153,15 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
 
     private void handleNewImageNotification(final Image image)
     {
-        final ArchivingSession session = new ArchivingSession(proxy, archiveIndex, image, archiveWriterBuilder);
+        final Session session;
+        if (image.subscription() == serviceRequestSubscription)
+        {
+            session = new ArchiverClientSession(image, proxy, this);
+        }
+        else
+        {
+            session = new ArchivingSession(proxy, archiveIndex, image, archiveWriterBuilder);
+        }
         sessions.add(session);
     }
 
@@ -251,5 +177,92 @@ class ArchiveConductor implements Agent, ArchiverProtocolListener
         {
             Thread.yield();
         }
+    }
+
+    void stopArchive(final String channel, final int streamId)
+    {
+        for (final Subscription subscription : archiveSubscriptionSet)
+        {
+            if (subscription.streamId() == streamId && subscription.channel().equals(channel))
+            {
+                subscription.close();
+                archiveSubscriptionSet.remove(subscription);
+                break;
+                // image archiving sessions will sort themselves out naturally
+            }
+        }
+    }
+
+    public void startArchive(final String channel, final int streamId)
+    {
+        for (final Subscription subscription : archiveSubscriptionSet)
+        {
+            if (subscription.streamId() == streamId && subscription.channel().equals(channel))
+            {
+                // we're already subscribed, don't bother
+                return;
+            }
+        }
+
+        final Subscription archiveSubscription = aeron.addSubscription(
+            channel, streamId, availableImageHandler, null);
+
+        // as subscription images are created they will get picked up and archived
+        archiveSubscriptionSet.add(archiveSubscription);
+    }
+
+    public void listStreamInstances(
+        final int correlationId,
+        final ExclusivePublication reply,
+        final int from,
+        final int to)
+    {
+        final Session listSession = new ListDescriptorsSession(correlationId, reply, from, to, archiveIndex, proxy);
+
+        sessions.add(listSession);
+    }
+
+    public void stopReplay(final int sessionId)
+    {
+        final ReplaySession session = replaySessionBySessionIdMap.get(sessionId);
+        if (session == null)
+        {
+            throw new IllegalStateException("Trying to abort an unknown replay session:" + sessionId);
+        }
+
+        session.abort();
+    }
+
+    void startReplay(
+        final int correlationId,
+        final ExclusivePublication reply,
+        final int replayStreamId,
+        final String replayChannel,
+        final int streamInstanceId,
+        final int termId,
+        final int termOffset,
+        final long length)
+    {
+        final int newId = replaySessionId++;
+        final ExclusivePublication replayPublication = aeron.addExclusivePublication(replayChannel, replayStreamId);
+        final ReplaySession replaySession = new ReplaySession(
+            streamInstanceId,
+            termId,
+            termOffset,
+            length,
+            replayPublication,
+            reply,
+            archiveDir,
+            proxy,
+            newId,
+            correlationId);
+
+        replaySessionBySessionIdMap.put(newId, replaySession);
+        sessions.add(replaySession);
+    }
+
+    ExclusivePublication clientInit(final String channel, final int streamId)
+    {
+        return aeron.addExclusivePublication(channel, streamId);
     }
 }

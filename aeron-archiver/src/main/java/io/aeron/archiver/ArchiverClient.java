@@ -17,8 +17,7 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.codecs.*;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.*;
 
 public class ArchiverClient
 {
@@ -27,12 +26,22 @@ public class ArchiverClient
     private final Publication archiverServiceRequest;
     private final Subscription archiverNotifications;
     private final MessageHeaderEncoder messageHeaderEncoder;
+    private final ArchiverClientInitEncoder archiverClientInitEncoder;
     private final ArchiveStartRequestEncoder archiveStartRequestEncoder;
     private final ReplayRequestEncoder replayRequestEncoder;
     private final ArchiveStopRequestEncoder archiveStopRequestEncoder;
     private final ListStreamInstancesRequestEncoder listStreamInstancesRequestEncoder;
+    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+    private final ArchiveProgressNotificationDecoder archiveProgressNotificationDecoder =
+        new ArchiveProgressNotificationDecoder();
+    private final ArchiveStartedNotificationDecoder archiveStartedNotificationDecoder =
+        new ArchiveStartedNotificationDecoder();
+    private final ArchiveStoppedNotificationDecoder archiveStoppedNotificationDecoder =
+        new ArchiveStoppedNotificationDecoder();
 
-    public ArchiverClient(final Publication archiverServiceRequest, final Subscription archiverNotifications)
+    public ArchiverClient(
+        final Publication archiverServiceRequest,
+        final Subscription archiverNotifications)
     {
         this.archiverServiceRequest = archiverServiceRequest;
         this.archiverNotifications = archiverNotifications;
@@ -45,6 +54,27 @@ public class ArchiverClient
             .wrap(buffer, HEADER_LENGTH);
         listStreamInstancesRequestEncoder = new ListStreamInstancesRequestEncoder()
             .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH);
+        archiverClientInitEncoder = new ArchiverClientInitEncoder()
+                .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH);
+    }
+
+    public boolean clientInit(
+        final String channel,
+        final int streamId)
+    {
+        messageHeaderEncoder
+            .templateId(ArchiverClientInitEncoder.TEMPLATE_ID)
+            .blockLength(ArchiverClientInitEncoder.BLOCK_LENGTH)
+            .schemaId(ArchiverClientInitEncoder.SCHEMA_ID)
+            .version(ArchiverClientInitEncoder.SCHEMA_VERSION);
+
+        archiverClientInitEncoder.limit(ArchiverClientInitEncoder.BLOCK_LENGTH + HEADER_LENGTH);
+
+        archiverClientInitEncoder
+            .replyChannel(channel)
+            .replyStreamId(streamId);
+
+        return offer(archiverClientInitEncoder.encodedLength());
     }
 
     public boolean requestArchiveStart(
@@ -91,9 +121,7 @@ public class ArchiverClient
         final int termOffset,
         final long length,
         final String replayChannel,
-        final int replayStreamId,
-        final String controlChannel,
-        final int controlStreamId)
+        final int replayStreamId)
     {
         messageHeaderEncoder
             .templateId(ReplayRequestEncoder.TEMPLATE_ID)
@@ -108,17 +136,13 @@ public class ArchiverClient
             .termId(termId)
             .termOffset(termOffset)
             .length((int)length)
-            .controlStreamId(controlStreamId)
             .replayStreamId(replayStreamId)
-            .replayChannel(replayChannel)
-            .controlChannel(controlChannel);
+            .replayChannel(replayChannel);
 
         return offer(replayRequestEncoder.encodedLength());
     }
 
     public boolean requestListStreamInstances(
-        final String replyChannel,
-        final int replyStreamId,
         final int from,
         final int to)
     {
@@ -131,10 +155,8 @@ public class ArchiverClient
         listStreamInstancesRequestEncoder.limit(ListStreamInstancesRequestEncoder.BLOCK_LENGTH + HEADER_LENGTH);
 
         listStreamInstancesRequestEncoder
-            .replyStreamId(replyStreamId)
             .from(from)
-            .to(to)
-            .replyChannel(replyChannel);
+            .to(to);
 
         return offer(listStreamInstancesRequestEncoder.encodedLength());
     }
@@ -160,62 +182,60 @@ public class ArchiverClient
 
     public int pollNotifications(final ArchiverNotificationListener listener, final int count)
     {
-        // TODO: This code allocates and is not a good example
         return archiverNotifications.poll((b, offset, length, header) ->
         {
-            final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(b, offset);
+            messageHeaderDecoder.wrap(b, offset);
 
-            switch (hDecoder.templateId())
+            switch (messageHeaderDecoder.templateId())
             {
                 case ArchiveProgressNotificationDecoder.TEMPLATE_ID:
                 {
-                    final ArchiveProgressNotificationDecoder mDecoder =
-                        new ArchiveProgressNotificationDecoder().wrap(
+                    archiveProgressNotificationDecoder.wrap(
                             b,
                             offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                            hDecoder.blockLength(),
-                            hDecoder.version());
+                            messageHeaderDecoder.blockLength(),
+                            messageHeaderDecoder.version());
                     listener.onProgress(
-                        mDecoder.streamInstanceId(),
-                        mDecoder.initialTermId(),
-                        mDecoder.initialTermOffset(),
-                        mDecoder.termId(),
-                        mDecoder.termOffset()
+                        archiveProgressNotificationDecoder.streamInstanceId(),
+                        archiveProgressNotificationDecoder.initialTermId(),
+                        archiveProgressNotificationDecoder.initialTermOffset(),
+                        archiveProgressNotificationDecoder.termId(),
+                        archiveProgressNotificationDecoder.termOffset()
                     );
                     break;
                 }
 
                 case ArchiveStartedNotificationDecoder.TEMPLATE_ID:
                 {
-                    final ArchiveStartedNotificationDecoder mDecoder = new ArchiveStartedNotificationDecoder().wrap(
+                    archiveStartedNotificationDecoder.wrap(
                         b,
                         offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                        hDecoder.blockLength(),
-                        hDecoder.version());
+                        messageHeaderDecoder.blockLength(),
+                        messageHeaderDecoder.version());
 
                     listener.onStart(
-                        mDecoder.streamInstanceId(),
-                        mDecoder.sessionId(),
-                        mDecoder.streamId(),
-                        mDecoder.channel(),
-                        mDecoder.source());
+                        archiveStartedNotificationDecoder.streamInstanceId(),
+                        archiveStartedNotificationDecoder.sessionId(),
+                        archiveStartedNotificationDecoder.streamId(),
+                        archiveStartedNotificationDecoder.channel(),
+                        archiveStartedNotificationDecoder.source());
                     break;
                 }
 
                 case ArchiveStoppedNotificationDecoder.TEMPLATE_ID:
                 {
-                    final ArchiveStoppedNotificationDecoder mDecoder = new ArchiveStoppedNotificationDecoder().wrap(
+                    archiveStoppedNotificationDecoder.wrap(
                         b,
                         offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                        hDecoder.blockLength(),
-                        hDecoder.version());
+                        messageHeaderDecoder.blockLength(),
+                        messageHeaderDecoder.version());
 
-                    listener.onStop(mDecoder.streamInstanceId());
+                    listener.onStop(archiveStoppedNotificationDecoder.streamInstanceId());
                     break;
                 }
 
                 default:
-                    throw new RuntimeException();
+                    throw new IllegalStateException();
             }
         }, count);
     }

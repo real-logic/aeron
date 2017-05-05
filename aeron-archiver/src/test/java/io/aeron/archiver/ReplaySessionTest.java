@@ -15,7 +15,7 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.*;
+import io.aeron.ExclusivePublication;
 import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
@@ -34,7 +34,6 @@ import static org.mockito.Mockito.*;
 public class ReplaySessionTest
 {
     private static final int STREAM_INSTANCE_ID = 0;
-    private static final long START_TIME = 42L;
     private static final int TERM_BUFFER_LENGTH = 4096;
     private static final int INITIAL_TERM_ID = 8231773;
     private static final int INITIAL_TERM_OFFSET = 1024;
@@ -147,7 +146,6 @@ public class ReplaySessionTest
         final long length = 1024L;
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
         final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
-        final Image image = Mockito.mock(Image.class);
 
         final ReplaySession replaySession = new ReplaySession(
             STREAM_INSTANCE_ID,
@@ -156,9 +154,10 @@ public class ReplaySessionTest
             length,
             replay,
             control,
-            image,
             archiveFolder,
-            proxy);
+            proxy,
+            0,
+            1);
 
         // this is a given since they are closed by the session only
         when(replay.isClosed()).thenReturn(false);
@@ -191,7 +190,7 @@ public class ReplaySessionTest
         assertNotEquals(0, replaySession.doWork());
 
         // notifies that initiated
-        verify(proxy, times(1)).sendResponse(control, null);
+        verify(proxy, times(1)).sendResponse(control, null, 1);
 
         final UnsafeBuffer mockTermBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
         when(replay.tryClaim(anyInt(), any(ExclusiveBufferClaim.class))).then(
@@ -221,7 +220,6 @@ public class ReplaySessionTest
         final long length = 1024L;
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
         final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
-        final Image image = Mockito.mock(Image.class);
 
         final ReplaySession replaySession = new ReplaySession(
             STREAM_INSTANCE_ID + 1,
@@ -230,9 +228,10 @@ public class ReplaySessionTest
             length,
             replay,
             control,
-            image,
             archiveFolder,
-            proxy);
+            proxy,
+            0,
+            1);
 
         // this is a given since they are closed by the session only
         when(replay.isClosed()).thenReturn(false);
@@ -244,7 +243,8 @@ public class ReplaySessionTest
         assertEquals(1, replaySession.doWork());
 
         // failure notification
-        verify(proxy, times(1)).sendResponse(eq(control), notNull());
+        verify(proxy, times(1)).sendResponse(eq(control), notNull(),
+            eq(1));
 
         assertTrue(replaySession.isDone());
     }

@@ -61,17 +61,7 @@ class ArchiverProtocolProxy
         archiveStoppedNotificationEncoder.wrap(outboundBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
     }
 
-    void sendResponse(final ExclusivePublication responsePublication, final String err)
-    {
-        sendResponseF(responsePublication::offer, err);
-    }
-
-    void sendResponse(final Publication responsePublication, final String err)
-    {
-        sendResponseF(responsePublication::offer, err);
-    }
-
-    private void sendResponseF(final PublishDirectBufferFunction responsePublication, final String err)
+    void sendResponse(final ExclusivePublication reply, final String err, final int correlationId)
     {
         outboundHeaderEncoder
             .blockLength(ArchiverResponseEncoder.BLOCK_LENGTH)
@@ -81,6 +71,7 @@ class ArchiverProtocolProxy
 
         // reset encoder limit is required for variable length messages
         responseEncoder.limit(MessageHeaderEncoder.ENCODED_LENGTH + ArchiverResponseEncoder.BLOCK_LENGTH);
+        responseEncoder.correlationId(correlationId);
         if (!Strings.isEmpty(err))
         {
             responseEncoder.err(err);
@@ -89,7 +80,7 @@ class ArchiverProtocolProxy
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + responseEncoder.encodedLength();
         while (true)
         {
-            final long result = responsePublication.offer(outboundBuffer, 0, length);
+            final long result = reply.offer(outboundBuffer, 0, length);
             if (result > 0)
             {
                 idleStrategy.reset();
@@ -98,12 +89,13 @@ class ArchiverProtocolProxy
 
             if (result == Publication.NOT_CONNECTED || result == Publication.CLOSED)
             {
-                throw new IllegalStateException("Response channel is down: " + responsePublication);
+                throw new IllegalStateException("Response channel is down: " + reply);
             }
 
             idleStrategy.idle();
         }
     }
+
 
     int notifyArchiveStarted(
         final int instanceId,

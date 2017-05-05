@@ -54,8 +54,8 @@ public class ArchiverLoadTest
     private String source;
     private int[] fragmentLength;
     private long totalDataLength;
-    private long totalArchiveLength;
-    private long archived;
+    private long totalRecordingLength;
+    private long recorded;
     private volatile int lastTermId = -1;
     private Throwable trackerError;
     private Random rnd = new Random();
@@ -118,19 +118,19 @@ public class ArchiverLoadTest
             awaitSubscriptionIsConnected(archiverNotifications, TIMEOUT);
             println("Archive service connected");
 
-            requestArchive(archiverServiceRequest, PUBLISH_URI, PUBLISH_STREAM_ID);
+            requestRecording(archiverServiceRequest, PUBLISH_URI, PUBLISH_STREAM_ID);
 
             println("Archive requested");
 
             final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(publication, TIMEOUT);
 
-            awaitArchiveForPublicationStartedNotification(archiverNotifications, publication);
+            awaitStartedRecordingNotification(archiverNotifications, publication);
 
             for (int i = 0; i < 100; i++)
             {
                 prepAndSendMessages(archiverNotifications, publication, 200000);
-                System.out.printf("Sent %d : %d %n", i, totalArchiveLength);
+                System.out.printf("Sent %d : %d %n", i, totalRecordingLength);
             }
 
             assertNull(trackerError);
@@ -156,14 +156,14 @@ public class ArchiverLoadTest
         printf("Sending %d messages, total length=%d %n", messageCount, totalDataLength);
 
         lastTermId = -1;
-        trackArchiveProgress(publication, archiverNotifications, waitForData);
-        publishDataToBeArchived(publication, messageCount);
+        trackRecordingProgress(publication, archiverNotifications, waitForData);
+        publishDataToBeRecorded(publication, messageCount);
         waitForData.await();
 
     }
 
 
-    private void awaitArchiveForPublicationStartedNotification(
+    private void awaitStartedRecordingNotification(
         final Subscription archiverNotifications, final Publication publication)
     {
         // the archiver has subscribed to the publication, now we wait for the archive start message
@@ -192,7 +192,7 @@ public class ArchiverLoadTest
             TIMEOUT);
     }
 
-    private void publishDataToBeArchived(final Publication publication, final int messageCount)
+    private void publishDataToBeRecorded(final Publication publication, final int messageCount)
     {
         final int positionBitsToShift = Integer.numberOfTrailingZeros(publication.termBufferLength());
 
@@ -220,15 +220,15 @@ public class ArchiverLoadTest
             lastPosition, positionBitsToShift);
         final int lastTermIdFromPosition = LogBufferDescriptor.computeTermIdFromPosition(
             lastPosition, positionBitsToShift, publication.initialTermId());
-        totalArchiveLength =
+        totalRecordingLength =
             (lastTermIdFromPosition - startTermIdFromPosition) * publication.termBufferLength() +
             (lastTermOffset - startTermOffset);
 
-        assertThat(lastPosition - initialPosition, is(totalArchiveLength));
+        assertThat(lastPosition - initialPosition, is(totalRecordingLength));
         lastTermId = lastTermIdFromPosition;
     }
 
-    private void trackArchiveProgress(
+    private void trackRecordingProgress(
         final Publication publication,
         final Subscription archiverNotifications,
         final CountDownLatch waitForData)
@@ -239,10 +239,10 @@ public class ArchiverLoadTest
                 try
                 {
                     long start = System.currentTimeMillis();
-                    long startBytes = archived;
-                    final long initialArchived = archived;
+                    long startBytes = recorded;
+                    final long initialArchived = recorded;
                     // each message is fragmentLength[fragmentCount]
-                    while (lastTermId == -1 || archived < initialArchived + totalArchiveLength)
+                    while (lastTermId == -1 || recorded < initialArchived + totalRecordingLength)
                     {
                         poll(
                             archiverNotifications,
@@ -260,10 +260,10 @@ public class ArchiverLoadTest
                                 assertThat(mDecoder.recordingId(), is(recordingId));
 
                                 println(mDecoder.toString());
-                                archived = publication.termBufferLength() *
+                                recorded = publication.termBufferLength() *
                                     (mDecoder.termId() - mDecoder.initialTermId()) +
                                     (mDecoder.termOffset() - mDecoder.initialTermOffset());
-                                System.out.printf("a=%d total=%d %n", archived, totalArchiveLength);
+                                System.out.printf("a=%d total=%d %n", recorded, totalRecordingLength);
                             },
                             50000);
 
@@ -272,8 +272,8 @@ public class ArchiverLoadTest
                         if (deltaTime > 1000)
                         {
                             start = end;
-                            final long deltaBytes = archived - startBytes;
-                            startBytes = archived;
+                            final long deltaBytes = recorded - startBytes;
+                            startBytes = recorded;
                             final double mbps = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
                             System.out.printf("Archive reported speed: %f MB/s %n", mbps);
                         }
@@ -281,7 +281,7 @@ public class ArchiverLoadTest
                     final long end = System.currentTimeMillis();
                     final long deltaTime = end - start;
 
-                    final long deltaBytes = archived - startBytes;
+                    final long deltaBytes = recorded - startBytes;
                     final double mbps = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
                     System.out.printf("-Archive reported speed: %f MB/s %n", mbps);
                 }
@@ -405,7 +405,7 @@ public class ArchiverLoadTest
         }
     }
 
-    private void requestArchive(final Publication archiverServiceRequest, final String channel, final int streamId)
+    private void requestRecording(final Publication serviceRequest, final String channel, final int streamId)
     {
         new MessageHeaderEncoder()
             .wrap(buffer, 0)
@@ -420,7 +420,7 @@ public class ArchiverLoadTest
             .streamId(streamId);
 
         offer(
-            archiverServiceRequest,
+            serviceRequest,
             buffer,
             0,
             encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH,

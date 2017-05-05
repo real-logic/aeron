@@ -185,7 +185,7 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
             metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
             final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(metaDataBuffer);
             metaDataEncoder = new RecordingDescriptorEncoder()
-                .wrap(unsafeBuffer, ArchiveIndex.INDEX_FRAME_LENGTH);
+                .wrap(unsafeBuffer, Catalog.CATALOG_FRAME_LENGTH);
 
             initDescriptor(
                 metaDataEncoder,

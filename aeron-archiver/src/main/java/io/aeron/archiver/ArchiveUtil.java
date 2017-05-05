@@ -85,12 +85,12 @@ class ArchiveUtil
         try (FileChannel metadataFileChannel = FileChannel.open(metaFile.toPath(), READ, WRITE))
         {
             final MappedByteBuffer metaDataBuffer = metadataFileChannel.map(
-                FileChannel.MapMode.READ_WRITE, 0, ArchiveIndex.INDEX_RECORD_LENGTH);
+                FileChannel.MapMode.READ_WRITE, 0, Catalog.RECORD_LENGTH);
             final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();
 
             return decoder.wrap(
                 new UnsafeBuffer(metaDataBuffer),
-                ArchiveIndex.INDEX_FRAME_LENGTH,
+                Catalog.CATALOG_FRAME_LENGTH,
                 RecordingDescriptorDecoder.BLOCK_LENGTH,
                 RecordingDescriptorDecoder.SCHEMA_VERSION);
         }

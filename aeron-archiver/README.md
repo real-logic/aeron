@@ -1,18 +1,17 @@
 Under Construction, USE AT YOUR OWN RISK
 ===
 
-The aeron-archiver is an Aeron client application which enables
-published data persistance and replay support. Currently implemented
-fuctionality is limited to the following:
-- Archive: service can record a particular subscription, described
+The aeron-archiver is an application which enables data stream recording and replay support from an archive. 
+Currently implemented functionality is limited to the following:
+- Record: service can record a particular subscription, described
 by <__channel,streamId__>. Each resulting image for the subscription
-will be recorded under a new __stream instance id__.
+will be recorded under a new __recording id__.
 
-- Replay: service can replay a recorded __stream instance id__ from
+- Replay: service can replay a recorded __recording id__ from
 a particular __termId+termOffset__, and for a particular length.
 
 - Query: service provides a rudimentary query interface which
-allows __stream instance id__ discovery and description.
+allows __recording id__ discovery and description.
 
 Protocol
 =====
@@ -23,34 +22,34 @@ Archiver communicates via the following interfaces:
  notification messages specified in the codec.
  - Requests channel: this allows clients to initiate replay or queries
  conversations with the archiver. Conversations have a conversationId sent
- on the intiating request. The conversationId is expected to be managed by
+ on the initiating request. The correlationId is expected to be managed by
  the clients and is offered as a means for clients to track multiple
- concurrent conversations. A conversation will typically involve the
+ concurrent requests. A request will typically involve the
  archiver sending data back on a reply channel specified by the client.
 
 Notifications
 ----
 
-Start/Stop Archive Interaction 
+Start/Stop Recording Interaction 
 ----
 
-Start/Abort Archive Replay Interaction 
+Start/Abort Replay Interaction 
 ----
 
-Query Archive Descriptors
+Query Recording Descriptors
 ----
 
 Persisted Format
 =====
 The Archiver is backed by 3 file types, all of which are expected to reside in the __archiver folder__.
 
- -  Index (one per archive folder): The index contains fixed size (4k) records of archive descriptors. The descriptors
- can be queried as described above. Each descriptor is 4k aligned, and the __stream instance id__
+ -  Catalog (one per archive folder): The catalog contains fixed size (4k) records of archive descriptors. The 
+ descriptors can be queried as described above. Each descriptor is 4k aligned, and the __recording id__
  is a simple sequence, which means lookup is a straight dead reconning operation. See the codec
  fo full descriptor details.
- - Archive Metadata (one per stream instance): This is a duplicate of the data kept in the index, but the file
+ - Recording Metadata (one per recorded stream): This is a duplicate of the data kept in the catalog, but the file
  is memory mapped and updated on the go while recording.
- - Archive Data (many per stream instance): This is where the recorded data is kept.
+ - Recording Data (many per recorded stream): This is where the recorded data is kept.
  
  Usage
  ===

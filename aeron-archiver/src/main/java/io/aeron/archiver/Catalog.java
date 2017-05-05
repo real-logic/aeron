@@ -29,36 +29,36 @@ import static io.aeron.archiver.ImageRecorder.initDescriptor;
 import static java.nio.file.StandardOpenOption.*;
 
 /**
- * Index file for the archive keeps an archive of recorded images, past and present, and used to lookup
- * details. The index format is simple, allocating a fixed 4KB record for each archive descriptor. This allows offset
+ * Catalog for the archive keeps an archive of recorded images, past and present, and used to lookup
+ * details. The format is simple, allocating a fixed 4KB record for each record descriptor. This allows offset
  * based look up of a descriptor in the file.
  */
-class ArchiveIndex implements AutoCloseable
+class Catalog implements AutoCloseable
 {
-    public static final String INDEX_FILE_NAME = "archive.idx";
-    static final int INDEX_RECORD_LENGTH = 4096;
-    static final int INDEX_FRAME_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
+    public static final String INDEX_FILE_NAME = "archive.cat";
+    static final int RECORD_LENGTH = 4096;
+    static final int CATALOG_FRAME_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     private static final int PAGE_SIZE = 4096;
-    static final int NULL_STREAM_INDEX = -1;
+    static final int NULL_INDEX = -1;
 
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
     private final Int2ObjectHashMap<RecordingSession> recordSessionByIdMap = new Int2ObjectHashMap<>();
 
     private final ByteBuffer byteBuffer;
     private final UnsafeBuffer unsafeBuffer;
-    private final FileChannel indexFileChannel;
+    private final FileChannel catalogFileChannel;
     private int recordingIdSeq = 0;
 
-    ArchiveIndex(final File archiveFolder)
+    Catalog(final File archiveFolder)
     {
-        byteBuffer = BufferUtil.allocateDirectAligned(INDEX_RECORD_LENGTH, PAGE_SIZE);
+        byteBuffer = BufferUtil.allocateDirectAligned(RECORD_LENGTH, PAGE_SIZE);
         unsafeBuffer = new UnsafeBuffer(byteBuffer);
 
         FileChannel channel = null;
         try
         {
-            final File indexFile = new File(archiveFolder, INDEX_FILE_NAME);
-            channel = FileChannel.open(indexFile.toPath(), CREATE, READ, WRITE);
+            final File catalogFile = new File(archiveFolder, INDEX_FILE_NAME);
+            channel = FileChannel.open(catalogFile.toPath(), CREATE, READ, WRITE);
             final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();
 
             while (channel.read(byteBuffer) != -1)
@@ -69,16 +69,16 @@ class ArchiveIndex implements AutoCloseable
                     break;
                 }
 
-                if (byteBuffer.remaining() != INDEX_RECORD_LENGTH)
+                if (byteBuffer.remaining() != RECORD_LENGTH)
                 {
                     throw new IllegalStateException();
                 }
 
-                loadIntoIndex(byteBuffer, unsafeBuffer, decoder);
+                loadIntoCatalog(byteBuffer, unsafeBuffer, decoder);
                 byteBuffer.clear();
             }
 
-            recordingDescriptorEncoder.wrap(unsafeBuffer, INDEX_FRAME_LENGTH);
+            recordingDescriptorEncoder.wrap(unsafeBuffer, CATALOG_FRAME_LENGTH);
         }
         catch (final IOException ex)
         {
@@ -86,12 +86,12 @@ class ArchiveIndex implements AutoCloseable
         }
         finally
         {
-            indexFileChannel = channel;
+            catalogFileChannel = channel;
         }
     }
 
     // TODO: prep for some lookup method construction
-    private int loadIntoIndex(
+    private int loadIntoCatalog(
         final ByteBuffer dst, final UnsafeBuffer unsafeBuffer, final RecordingDescriptorDecoder decoder)
     {
         if (dst.remaining() == 0)
@@ -104,7 +104,7 @@ class ArchiveIndex implements AutoCloseable
 
         decoder.wrap(
             unsafeBuffer,
-            INDEX_FRAME_LENGTH,
+            CATALOG_FRAME_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
 
@@ -116,7 +116,7 @@ class ArchiveIndex implements AutoCloseable
 
         recordingIdSeq = Math.max(recordingId + 1, recordingIdSeq);
 
-        return length + INDEX_FRAME_LENGTH;
+        return length + CATALOG_FRAME_LENGTH;
     }
 
     int addNewRecording(
@@ -131,7 +131,7 @@ class ArchiveIndex implements AutoCloseable
     {
         final int newRecordingId = recordingIdSeq;
 
-        recordingDescriptorEncoder.limit(INDEX_FRAME_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH);
+        recordingDescriptorEncoder.limit(CATALOG_FRAME_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH);
         initDescriptor(
             recordingDescriptorEncoder,
             newRecordingId,
@@ -149,8 +149,8 @@ class ArchiveIndex implements AutoCloseable
         try
         {
             byteBuffer.clear();
-            final int written = indexFileChannel.write(byteBuffer);
-            if (written != INDEX_RECORD_LENGTH)
+            final int written = catalogFileChannel.write(byteBuffer);
+            if (written != RECORD_LENGTH)
             {
                 throw new IllegalStateException();
             }
@@ -167,7 +167,7 @@ class ArchiveIndex implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(indexFileChannel);
+        CloseHelper.close(catalogFileChannel);
 
         if (!recordSessionByIdMap.isEmpty())
         {
@@ -178,18 +178,18 @@ class ArchiveIndex implements AutoCloseable
     boolean readDescriptor(final int recordingId, final ByteBuffer buffer)
         throws IOException
     {
-        if (buffer.remaining() != INDEX_RECORD_LENGTH)
+        if (buffer.remaining() != RECORD_LENGTH)
         {
-            throw new IllegalArgumentException("buffer must have exactly INDEX_RECORD_LENGTH remaining to read into");
+            throw new IllegalArgumentException("buffer must have exactly RECORD_LENGTH remaining to read into");
         }
 
-        final int read = indexFileChannel.read(buffer, recordingId * INDEX_RECORD_LENGTH);
+        final int read = catalogFileChannel.read(buffer, recordingId * RECORD_LENGTH);
         if (read == 0 || read == -1)
         {
             return false;
         }
 
-        if (read != INDEX_RECORD_LENGTH)
+        if (read != RECORD_LENGTH)
         {
             throw new IllegalStateException("Wrong read size:" + read);
         }
@@ -197,9 +197,9 @@ class ArchiveIndex implements AutoCloseable
         return true;
     }
 
-    void updateIndexFromMeta(final int recordingId, final ByteBuffer metaDataBuffer) throws IOException
+    void updateCatalogFromMeta(final int recordingId, final ByteBuffer metaDataBuffer) throws IOException
     {
-        indexFileChannel.write(metaDataBuffer, recordingId * INDEX_RECORD_LENGTH);
+        catalogFileChannel.write(metaDataBuffer, recordingId * RECORD_LENGTH);
     }
 
     int maxRecordingId()

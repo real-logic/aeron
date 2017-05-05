@@ -31,10 +31,10 @@ class RecordingSession implements ArchiveConductor.Session
         INIT, ARCHIVING, CLOSING, DONE
     }
 
-    private int recordingId = ArchiveIndex.NULL_STREAM_INDEX;
+    private int recordingId = Catalog.NULL_INDEX;
     private final ClientProxy proxy;
     private final Image image;
-    private final ArchiveIndex index;
+    private final Catalog index;
     private final ImageRecorder.Builder builder;
 
     private ImageRecorder recorder;
@@ -43,7 +43,7 @@ class RecordingSession implements ArchiveConductor.Session
 
     RecordingSession(
         final ClientProxy proxy,
-        final ArchiveIndex index,
+        final Catalog index,
         final Image image,
         final ImageRecorder.Builder builder)
     {
@@ -145,7 +145,7 @@ class RecordingSession implements ArchiveConductor.Session
             if (recorder != null)
             {
                 recorder.stop();
-                index.updateIndexFromMeta(recordingId, recorder.metaDataBuffer());
+                index.updateCatalogFromMeta(recordingId, recorder.metaDataBuffer());
             }
         }
         catch (final IOException ex)

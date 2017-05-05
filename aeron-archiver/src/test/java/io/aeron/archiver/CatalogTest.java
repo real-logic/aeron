@@ -26,11 +26,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.mock;
 
-public class ArchiveIndexTest
+public class CatalogTest
 {
-    public static final int ARCHIVE_FILE_SIZE = 128 * 1024 * 1024;
+    public static final int RECORDING_FILE_SIZE = 128 * 1024 * 1024;
     static final UnsafeBuffer UB = new UnsafeBuffer(
-        BufferUtil.allocateDirectAligned(ArchiveIndex.INDEX_RECORD_LENGTH, 64));
+        BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, 64));
     static final RecordingDescriptorDecoder DECODER = new RecordingDescriptorDecoder();
     static int recordingAId;
     static int recordingBId;
@@ -43,25 +43,25 @@ public class ArchiveIndexTest
     {
         DECODER.wrap(
             UB,
-            ArchiveIndex.INDEX_FRAME_LENGTH,
+            Catalog.CATALOG_FRAME_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
         archiveFolder = TestUtil.makeTempFolder();
 
-        try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
+        try (Catalog catalog = new Catalog(archiveFolder))
         {
             recordingAId =
-                archiveIndex.addNewRecording("sourceA", 6, "channelG", 1, 4096, 0, mockSession,
-                    ARCHIVE_FILE_SIZE);
+                catalog.addNewRecording("sourceA", 6, "channelG", 1, 4096, 0, mockSession,
+                    RECORDING_FILE_SIZE);
             recordingBId =
-                archiveIndex.addNewRecording("sourceV", 7, "channelH", 2, 4096, 0, mockSession,
-                    ARCHIVE_FILE_SIZE);
+                catalog.addNewRecording("sourceV", 7, "channelH", 2, 4096, 0, mockSession,
+                    RECORDING_FILE_SIZE);
             recordingCId =
-                archiveIndex.addNewRecording("sourceB", 8, "channelK", 3, 4096, 0, mockSession,
-                    ARCHIVE_FILE_SIZE);
-            archiveIndex.removeRecordingSession(recordingAId);
-            archiveIndex.removeRecordingSession(recordingBId);
-            archiveIndex.removeRecordingSession(recordingCId);
+                catalog.addNewRecording("sourceB", 8, "channelK", 3, 4096, 0, mockSession,
+                    RECORDING_FILE_SIZE);
+            catalog.removeRecordingSession(recordingAId);
+            catalog.removeRecordingSession(recordingBId);
+            catalog.removeRecordingSession(recordingCId);
         }
     }
 
@@ -74,16 +74,16 @@ public class ArchiveIndexTest
     @Test
     public void shouldReloadExistingIndex() throws Exception
     {
-        try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
+        try (Catalog catalog = new Catalog(archiveFolder))
         {
-            verifyRecordingForId(archiveIndex, recordingAId, "sourceA", 6, "channelG", 1);
-            verifyRecordingForId(archiveIndex, recordingBId, "sourceV", 7, "channelH", 2);
-            verifyRecordingForId(archiveIndex, recordingCId, "sourceB", 8, "channelK", 3);
+            verifyRecordingForId(catalog, recordingAId, "sourceA", 6, "channelG", 1);
+            verifyRecordingForId(catalog, recordingBId, "sourceV", 7, "channelH", 2);
+            verifyRecordingForId(catalog, recordingCId, "sourceB", 8, "channelK", 3);
         }
     }
 
     private void verifyRecordingForId(
-        final ArchiveIndex archiveIndex,
+        final Catalog catalog,
         final int id,
         final String source,
         final int sessionId,
@@ -92,8 +92,8 @@ public class ArchiveIndexTest
         throws IOException
     {
         UB.byteBuffer().clear();
-        archiveIndex.readDescriptor(id, UB.byteBuffer());
-        DECODER.limit(ArchiveIndex.INDEX_FRAME_LENGTH + RecordingDescriptorDecoder.BLOCK_LENGTH);
+        catalog.readDescriptor(id, UB.byteBuffer());
+        DECODER.limit(Catalog.CATALOG_FRAME_LENGTH + RecordingDescriptorDecoder.BLOCK_LENGTH);
         assertEquals(id, DECODER.recordingId());
         assertEquals(sessionId, DECODER.sessionId());
         assertEquals(streamId, DECODER.streamId());
@@ -105,18 +105,18 @@ public class ArchiveIndexTest
     public void shouldAppendToExistingIndex() throws Exception
     {
         final int newRecordingId;
-        try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
+        try (Catalog catalog = new Catalog(archiveFolder))
         {
             newRecordingId =
-                archiveIndex.addNewRecording("sourceN", 9, "channelJ", 4, 4096, 0, mockSession,
-                    ARCHIVE_FILE_SIZE);
-            archiveIndex.removeRecordingSession(newRecordingId);
+                catalog.addNewRecording("sourceN", 9, "channelJ", 4, 4096, 0, mockSession,
+                    RECORDING_FILE_SIZE);
+            catalog.removeRecordingSession(newRecordingId);
         }
 
-        try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
+        try (Catalog catalog = new Catalog(archiveFolder))
         {
-            verifyRecordingForId(archiveIndex, recordingAId, "sourceA", 6, "channelG", 1);
-            verifyRecordingForId(archiveIndex, newRecordingId, "sourceN", 9, "channelJ", 4);
+            verifyRecordingForId(catalog, recordingAId, "sourceA", 6, "channelG", 1);
+            verifyRecordingForId(catalog, newRecordingId, "sourceN", 9, "channelJ", 4);
         }
     }
 
@@ -124,12 +124,12 @@ public class ArchiveIndexTest
     public void shouldAllowMultipleInstancesForSameStream() throws Exception
     {
         final int newRecordingId;
-        try (ArchiveIndex archiveIndex = new ArchiveIndex(archiveFolder))
+        try (Catalog catalog = new Catalog(archiveFolder))
         {
             newRecordingId =
-                archiveIndex.addNewRecording("sourceA", 6, "channelG", 1, 4096, 0, mockSession,
-                    ARCHIVE_FILE_SIZE);
-            archiveIndex.removeRecordingSession(newRecordingId);
+                catalog.addNewRecording("sourceA", 6, "channelG", 1, 4096, 0, mockSession,
+                    RECORDING_FILE_SIZE);
+            catalog.removeRecordingSession(newRecordingId);
             assertNotEquals(recordingAId, newRecordingId);
         }
     }

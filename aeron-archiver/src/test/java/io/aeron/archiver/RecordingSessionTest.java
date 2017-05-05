@@ -53,7 +53,7 @@ public class RecordingSessionTest
     private final ClientProxy proxy;
 
     private final Image image;
-    private final ArchiveIndex index;
+    private final Catalog index;
 
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
@@ -62,7 +62,7 @@ public class RecordingSessionTest
     public RecordingSessionTest() throws IOException
     {
         proxy = mock(ClientProxy.class);
-        index = mock(ArchiveIndex.class);
+        index = mock(Catalog.class);
         when(
             index.addNewRecording(
                 eq(source),
@@ -123,7 +123,7 @@ public class RecordingSessionTest
             proxy, index, image, builder);
 
         // pre-init
-        assertEquals(ArchiveIndex.NULL_STREAM_INDEX, session.recordingId());
+        assertEquals(Catalog.NULL_INDEX, session.recordingId());
 
         session.doWork();
 

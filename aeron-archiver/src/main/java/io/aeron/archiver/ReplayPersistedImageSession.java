@@ -25,7 +25,7 @@ import java.io.*;
 
 /**
  * A replay session with a client which works through the required request response flow and streaming of archived data.
- * The {@link ArchiveConductor} will initiate a session on receiving a ReplayRequest
+ * The {@link ArchiverConductor} will initiate a session on receiving a ReplayRequest
  * (see {@link io.aeron.archiver.codecs.ReplayRequestDecoder}). The session will:
  * <ul>
  * <li>Establish a reply {@link Publication} with the initiator(or someone else possibly) </li>
@@ -33,7 +33,9 @@ import java.io.*;
  * <li>Stream archived data into reply {@link Publication}</li>
  * </ul>
  */
-class ReplaySession implements ArchiveConductor.Session, ArchiveStreamFragmentReader.SimplifiedControlledPoll
+class ReplayPersistedImageSession implements
+    ArchiverConductor.Session,
+    PersistedImageFragmentReader.SimplifiedControlledPoll
 {
     private enum State
     {
@@ -41,7 +43,7 @@ class ReplaySession implements ArchiveConductor.Session, ArchiveStreamFragmentRe
     }
 
     // replay boundaries
-    private final int streamInstanceId;
+    private final int persistedImageId;
     private final int fromTermId;
     private final int fromTermOffset;
     private final long replayLength;
@@ -54,12 +56,12 @@ class ReplaySession implements ArchiveConductor.Session, ArchiveStreamFragmentRe
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
 
     private State state = State.INIT;
-    private ArchiveStreamFragmentReader cursor;
+    private PersistedImageFragmentReader cursor;
     private final int replaySessionId;
     private final int correlationId;
 
-    ReplaySession(
-        final int streamInstanceId,
+    ReplayPersistedImageSession(
+        final int persistedImageId,
         final int fromTermId,
         final int fromTermOffset,
         final long replayLength,
@@ -69,7 +71,7 @@ class ReplaySession implements ArchiveConductor.Session, ArchiveStreamFragmentRe
         final ArchiverProtocolProxy proxy,
         final int replaySessionId, final int correlationId)
     {
-        this.streamInstanceId = streamInstanceId;
+        this.persistedImageId = persistedImageId;
 
         this.fromTermId = fromTermId;
         this.fromTermOffset = fromTermOffset;
@@ -112,7 +114,7 @@ class ReplaySession implements ArchiveConductor.Session, ArchiveStreamFragmentRe
         return state == State.DONE;
     }
 
-    public void remove(final ArchiveConductor conductor)
+    public void remove(final ArchiverConductor conductor)
     {
         conductor.removeReplaySession(replaySessionId);
     }
@@ -133,7 +135,7 @@ class ReplaySession implements ArchiveConductor.Session, ArchiveStreamFragmentRe
             return 0;
         }
 
-        final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
+        final String archiveMetaFileName = PersistedImageFileUtil.archiveMetaFileName(persistedImageId);
         final File archiveMetaFile = new File(archiveFolder, archiveMetaFileName);
         if (!archiveMetaFile.exists())
         {
@@ -144,7 +146,7 @@ class ReplaySession implements ArchiveConductor.Session, ArchiveStreamFragmentRe
         final ArchiveDescriptorDecoder metaData;
         try
         {
-            metaData = ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
+            metaData = PersistedImageFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
         }
         catch (final IOException ex)
         {
@@ -190,8 +192,8 @@ class ReplaySession implements ArchiveConductor.Session, ArchiveStreamFragmentRe
 
         try
         {
-            cursor = new ArchiveStreamFragmentReader(
-                streamInstanceId,
+            cursor = new PersistedImageFragmentReader(
+                persistedImageId,
                 archiveFolder,
                 fromTermId,
                 fromTermOffset,

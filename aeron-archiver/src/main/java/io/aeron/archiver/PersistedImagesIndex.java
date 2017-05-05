@@ -25,7 +25,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.ArchiveStreamWriter.initDescriptor;
+import static io.aeron.archiver.PersistedImageWriter.initDescriptor;
 import static java.nio.file.StandardOpenOption.*;
 
 /**
@@ -33,7 +33,7 @@ import static java.nio.file.StandardOpenOption.*;
  * details. The index format is simple, allocating a fixed 4KB record for each archive descriptor. This allows offset
  * based look up of a descriptor in the file.
  */
-class ArchiveIndex implements AutoCloseable
+class PersistedImagesIndex implements AutoCloseable
 {
     // TODO: Make DSYNC optional via configuration.
 
@@ -44,14 +44,14 @@ class ArchiveIndex implements AutoCloseable
     static final int NULL_STREAM_INDEX = -1;
 
     private final ArchiveDescriptorEncoder archiveDescriptorEncoder = new ArchiveDescriptorEncoder();
-    private final Int2ObjectHashMap<ArchivingSession> archivingSessionByStreamInstanceIdMap = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<RecordPersistedImageSession> recordSession2IdMap = new Int2ObjectHashMap<>();
 
     private final ByteBuffer byteBuffer;
     private final UnsafeBuffer unsafeBuffer;
     private final FileChannel archiveIndexFileChannel;
-    private int streamInstanceIdSeq = 0;
+    private int persistedImageIdSeq = 0;
 
-    ArchiveIndex(final File archiveFolder)
+    PersistedImagesIndex(final File archiveFolder)
     {
         byteBuffer = BufferUtil.allocateDirectAligned(INDEX_RECORD_SIZE, PAGE_SIZE);
         unsafeBuffer = new UnsafeBuffer(byteBuffer);
@@ -110,13 +110,13 @@ class ArchiveIndex implements AutoCloseable
             ArchiveDescriptorDecoder.BLOCK_LENGTH,
             ArchiveDescriptorDecoder.SCHEMA_VERSION);
 
-        final int streamInstanceId = decoder.streamInstanceId();
+        final int persistedImageId = decoder.persistedImageId();
 //        final int sessionId = decoder.sessionId();
 //        final int streamId = decoder.streamId();
 //        final String source = decoder.source();
 //        final String channel = decoder.channel();
 
-        streamInstanceIdSeq = Math.max(streamInstanceId + 1, streamInstanceIdSeq);
+        persistedImageIdSeq = Math.max(persistedImageId + 1, persistedImageIdSeq);
 
         return length + INDEX_FRAME_LENGTH;
     }
@@ -128,10 +128,10 @@ class ArchiveIndex implements AutoCloseable
         final int streamId,
         final int termBufferLength,
         final int imageInitialTermId,
-        final ArchivingSession session,
+        final RecordPersistedImageSession session,
         final int archiveFileSize)
     {
-        final int newStreamInstanceId = streamInstanceIdSeq;
+        final int newStreamInstanceId = persistedImageIdSeq;
 
         archiveDescriptorEncoder.limit(INDEX_FRAME_LENGTH + ArchiveDescriptorEncoder.BLOCK_LENGTH);
         initDescriptor(
@@ -162,8 +162,8 @@ class ArchiveIndex implements AutoCloseable
             LangUtil.rethrowUnchecked(ex);
         }
 
-        streamInstanceIdSeq++;
-        archivingSessionByStreamInstanceIdMap.put(newStreamInstanceId, session);
+        persistedImageIdSeq++;
+        recordSession2IdMap.put(newStreamInstanceId, session);
         return newStreamInstanceId;
     }
 
@@ -171,13 +171,13 @@ class ArchiveIndex implements AutoCloseable
     {
         CloseHelper.close(archiveIndexFileChannel);
 
-        if (!archivingSessionByStreamInstanceIdMap.isEmpty())
+        if (!recordSession2IdMap.isEmpty())
         {
-            System.err.println("ERROR: expected empty archivingSessionByStreamInstanceIdMap");
+            System.err.println("ERROR: expected empty recordSession2IdMap");
         }
     }
 
-    boolean readArchiveDescriptor(final int streamInstanceId, final ByteBuffer buffer)
+    boolean readArchiveDescriptor(final int persistedImageId, final ByteBuffer buffer)
         throws IOException
     {
         if (buffer.remaining() != INDEX_RECORD_SIZE)
@@ -185,7 +185,7 @@ class ArchiveIndex implements AutoCloseable
             throw new IllegalArgumentException("buffer must have exactly INDEX_RECORD_SIZE remaining to read into");
         }
 
-        final int read = archiveIndexFileChannel.read(buffer, streamInstanceId * INDEX_RECORD_SIZE);
+        final int read = archiveIndexFileChannel.read(buffer, persistedImageId * INDEX_RECORD_SIZE);
         if (read == 0 || read == -1)
         {
             return false;
@@ -199,23 +199,23 @@ class ArchiveIndex implements AutoCloseable
         return true;
     }
 
-    void updateIndexFromMeta(final int streamInstanceId, final ByteBuffer metaDataBuffer) throws IOException
+    void updateIndexFromMeta(final int persistedImageId, final ByteBuffer metaDataBuffer) throws IOException
     {
-        archiveIndexFileChannel.write(metaDataBuffer, streamInstanceId * INDEX_RECORD_SIZE);
+        archiveIndexFileChannel.write(metaDataBuffer, persistedImageId * INDEX_RECORD_SIZE);
     }
 
     int maxStreamInstanceId()
     {
-        return streamInstanceIdSeq;
+        return persistedImageIdSeq;
     }
 
-    ArchivingSession getArchivingSession(final int streamInstanceId)
+    RecordPersistedImageSession getArchivingSession(final int persistedImageId)
     {
-        return archivingSessionByStreamInstanceIdMap.get(streamInstanceId);
+        return recordSession2IdMap.get(persistedImageId);
     }
 
-    void removeArchivingSession(final int streamInstanceId)
+    void removeArchivingSession(final int persistedImageId)
     {
-        archivingSessionByStreamInstanceIdMap.remove(streamInstanceId);
+        recordSession2IdMap.remove(persistedImageId);
     }
 }

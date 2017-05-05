@@ -22,11 +22,13 @@ import java.io.*;
 import java.nio.channels.FileChannel;
 import java.util.Objects;
 
+import static io.aeron.archiver.PersistedImageFileUtil.offsetInPersistedImageFile;
+import static io.aeron.archiver.PersistedImageFileUtil.persistedImageDataFileIndex;
 import static java.lang.Math.min;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardOpenOption.READ;
 
-class ArchiveStreamChunkReader implements AutoCloseable
+class PersistedImageChunkReader implements AutoCloseable
 {
     private final int streamInstanceId;
     private final File archiveFolder;
@@ -44,7 +46,7 @@ class ArchiveStreamChunkReader implements AutoCloseable
     private int initTermOffset;
     private int termOffset;
 
-    ArchiveStreamChunkReader(
+    PersistedImageChunkReader(
         final int streamInstanceId,
         final File archiveFolder,
         final int initialTermId,
@@ -62,8 +64,8 @@ class ArchiveStreamChunkReader implements AutoCloseable
         this.length = length;
 
         transmitted = 0;
-        fileIndex = ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, termId, archiveFileSize);
-        final int archiveOffset = ArchiveFileUtil.offsetInArchiveFile(
+        fileIndex = persistedImageDataFileIndex(initialTermId, termBufferLength, termId, archiveFileSize);
+        final int archiveOffset = offsetInPersistedImageFile(
             termOffset,
             termId,
             initialTermId,
@@ -72,7 +74,7 @@ class ArchiveStreamChunkReader implements AutoCloseable
         initTermOffset = archiveOffset - termOffset;
         this.termOffset = termOffset;
 
-        final String archiveDataFileName = ArchiveFileUtil.archiveDataFileName(streamInstanceId, fileIndex);
+        final String archiveDataFileName = PersistedImageFileUtil.archiveDataFileName(streamInstanceId, fileIndex);
         final File archiveDataFile = new File(archiveFolder, archiveDataFileName);
 
         if (!archiveDataFile.exists())
@@ -144,7 +146,7 @@ class ArchiveStreamChunkReader implements AutoCloseable
         {
             initTermOffset = 0;
             fileIndex++;
-            final String archiveDataFileNameN = ArchiveFileUtil.archiveDataFileName(streamInstanceId, fileIndex);
+            final String archiveDataFileNameN = PersistedImageFileUtil.archiveDataFileName(streamInstanceId, fileIndex);
             final File archiveDataFileN = new File(archiveFolder, archiveDataFileNameN);
 
             if (!archiveDataFileN.exists())

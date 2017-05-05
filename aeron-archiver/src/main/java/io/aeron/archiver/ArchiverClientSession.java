@@ -19,7 +19,7 @@ package io.aeron.archiver;
 import io.aeron.*;
 import org.agrona.*;
 
-class ArchiverClientSession implements ArchiveConductor.Session, ArchiverProtocolListener
+class ArchiverClientSession implements ArchiverConductor.Session, ArchiverProtocolListener
 {
     enum State
     {
@@ -28,12 +28,12 @@ class ArchiverClientSession implements ArchiveConductor.Session, ArchiverProtoco
 
     private final Image image;
     private final ArchiverProtocolProxy proxy;
-    private final ArchiveConductor conductor;
+    private final ArchiverConductor conductor;
     private final ArchiverProtocolAdapter adapter = new ArchiverProtocolAdapter(this);
     private ExclusivePublication reply;
     private State state = State.INIT;
 
-    ArchiverClientSession(final Image image, final ArchiverProtocolProxy proxy, final ArchiveConductor conductor)
+    ArchiverClientSession(final Image image, final ArchiverProtocolProxy proxy, final ArchiverConductor conductor)
     {
         this.image = image;
         this.proxy = proxy;
@@ -51,7 +51,7 @@ class ArchiverClientSession implements ArchiveConductor.Session, ArchiverProtoco
     }
 
     @Override
-    public void remove(final ArchiveConductor conductor)
+    public void remove(final ArchiverConductor conductor)
     {
     }
 
@@ -184,7 +184,7 @@ class ArchiverClientSession implements ArchiveConductor.Session, ArchiverProtoco
         final int correlationId,
         final int replayStreamId,
         final String replayChannel,
-        final int streamInstanceId,
+        final int persistedImageId,
         final int termId,
         final int termOffset,
         final long length)
@@ -198,7 +198,7 @@ class ArchiverClientSession implements ArchiveConductor.Session, ArchiverProtoco
             reply,
             replayStreamId,
             replayChannel,
-            streamInstanceId,
+            persistedImageId,
             termId,
             termOffset,
             length);

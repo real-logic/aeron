@@ -22,30 +22,30 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * Consumes an {@link Image} and archives data into file using {@link ArchiveStreamWriter}.
+ * Consumes an {@link Image} and archives data into file using {@link PersistedImageWriter}.
  */
-class ArchivingSession implements ArchiveConductor.Session
+class RecordPersistedImageSession implements ArchiverConductor.Session
 {
     private enum State
     {
         INIT, ARCHIVING, CLOSING, DONE
     }
 
-    private int streamInstanceId = ArchiveIndex.NULL_STREAM_INDEX;
+    private int persistedImageId = PersistedImagesIndex.NULL_STREAM_INDEX;
     private final ArchiverProtocolProxy proxy;
     private final Image image;
-    private final ArchiveIndex index;
-    private final ArchiveStreamWriter.Builder builder;
+    private final PersistedImagesIndex index;
+    private final PersistedImageWriter.Builder builder;
 
-    private ArchiveStreamWriter writer;
+    private PersistedImageWriter writer;
 
     private State state = State.INIT;
 
-    ArchivingSession(
+    RecordPersistedImageSession(
         final ArchiverProtocolProxy proxy,
-        final ArchiveIndex index,
+        final PersistedImagesIndex index,
         final Image image,
-        final ArchiveStreamWriter.Builder builder)
+        final PersistedImageWriter.Builder builder)
     {
         this.proxy = proxy;
         this.image = image;
@@ -92,10 +92,10 @@ class ArchivingSession implements ArchiveConductor.Session
         final int imageInitialTermId = image.initialTermId();
 
 
-        ArchiveStreamWriter writer = null;
+        PersistedImageWriter writer = null;
         try
         {
-            streamInstanceId = index.addNewStreamInstance(
+            persistedImageId = index.addNewStreamInstance(
                 source,
                 sessionId,
                 channel,
@@ -106,14 +106,14 @@ class ArchivingSession implements ArchiveConductor.Session
                 builder.archiveFileSize());
 
             proxy.notifyArchiveStarted(
-                streamInstanceId,
+                persistedImageId,
                 source,
                 sessionId,
                 channel,
                 streamId);
 
             writer = builder
-                .streamInstanceId(streamInstanceId)
+                .persistedImageId(persistedImageId)
                 .termBufferLength(termBufferLength)
                 .imageInitialTermId(imageInitialTermId)
                 .source(source)
@@ -133,9 +133,9 @@ class ArchivingSession implements ArchiveConductor.Session
         return 1;
     }
 
-    int streamInstanceId()
+    int persistedImageId()
     {
-        return streamInstanceId;
+        return persistedImageId;
     }
 
     private int close()
@@ -145,7 +145,7 @@ class ArchivingSession implements ArchiveConductor.Session
             if (writer != null)
             {
                 writer.stop();
-                index.updateIndexFromMeta(streamInstanceId, writer.metaDataBuffer());
+                index.updateIndexFromMeta(persistedImageId, writer.metaDataBuffer());
             }
         }
         catch (final IOException ex)
@@ -155,7 +155,7 @@ class ArchivingSession implements ArchiveConductor.Session
         finally
         {
             CloseHelper.quietClose(writer);
-            proxy.notifyArchiveStopped(streamInstanceId);
+            proxy.notifyArchiveStopped(persistedImageId);
             this.state = State.DONE;
         }
 
@@ -172,7 +172,7 @@ class ArchivingSession implements ArchiveConductor.Session
             if (workCount != 0)
             {
                 proxy.notifyArchiveProgress(
-                    writer.streamInstanceId(),
+                    writer.persistedImageId(),
                     writer.initialTermId(),
                     writer.initialTermOffset(),
                     writer.lastTermId(),
@@ -198,9 +198,9 @@ class ArchivingSession implements ArchiveConductor.Session
         return state == State.DONE;
     }
 
-    public void remove(final ArchiveConductor conductor)
+    public void remove(final ArchiverConductor conductor)
     {
-        index.removeArchivingSession(streamInstanceId);
+        index.removeArchivingSession(persistedImageId);
     }
 
     ByteBuffer metaDataBuffer()

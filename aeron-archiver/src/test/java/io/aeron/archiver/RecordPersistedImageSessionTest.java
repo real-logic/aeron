@@ -28,18 +28,18 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
-import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileName;
+import static io.aeron.archiver.PersistedImageFileUtil.archiveDataFileName;
+import static io.aeron.archiver.PersistedImageFileUtil.archiveMetaFileName;
 import static java.nio.file.StandardOpenOption.*;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ArchivingSessionTest
+public class RecordPersistedImageSessionTest
 {
     private static final int ARCHIVE_FILE_SIZE = 128 * 1024 * 1024;
-    private final int streamInstanceId = 12345;
+    private final int persistedImageId = 12345;
 
     private final String channel = "channel";
     private final String source = "sourceIdentity";
@@ -54,16 +54,16 @@ public class ArchivingSessionTest
     private final ArchiverProtocolProxy proxy;
 
     private final Image image;
-    private final ArchiveIndex index;
+    private final PersistedImagesIndex index;
 
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
     private File termFile;
 
-    public ArchivingSessionTest() throws IOException
+    public RecordPersistedImageSessionTest() throws IOException
     {
         proxy = mock(ArchiverProtocolProxy.class);
-        index = mock(ArchiveIndex.class);
+        index = mock(PersistedImagesIndex.class);
         when(
             index.addNewStreamInstance(
                 eq(source),
@@ -72,9 +72,9 @@ public class ArchivingSessionTest
                 eq(streamId),
                 eq(termBufferLength),
                 eq(initialTermId),
-                any(ArchivingSession.class),
+                any(RecordPersistedImageSession.class),
                 eq(ARCHIVE_FILE_SIZE)))
-                .thenReturn(streamInstanceId);
+                .thenReturn(persistedImageId);
         final Subscription subscription = mockSubscription(channel, streamId);
         image = mockImage(source, sessionId, initialTermId, termBufferLength, subscription);
     }
@@ -116,19 +116,19 @@ public class ArchivingSessionTest
         final EpochClock epochClock = Mockito.mock(EpochClock.class);
         when(epochClock.time()).thenReturn(42L);
 
-        final ArchiveStreamWriter.Builder builder = new ArchiveStreamWriter.Builder()
+        final PersistedImageWriter.Builder builder = new PersistedImageWriter.Builder()
             .archiveFileSize(ARCHIVE_FILE_SIZE)
             .archiveFolder(tempFolderForTest)
             .epochClock(epochClock);
-        final ArchivingSession session = new ArchivingSession(
+        final RecordPersistedImageSession session = new RecordPersistedImageSession(
             proxy, index, image, builder);
 
         // pre-init
-        assertEquals(ArchiveIndex.NULL_STREAM_INDEX, session.streamInstanceId());
+        assertEquals(PersistedImagesIndex.NULL_STREAM_INDEX, session.persistedImageId());
 
         session.doWork();
 
-        assertEquals(streamInstanceId, session.streamInstanceId());
+        assertEquals(persistedImageId, session.persistedImageId());
 
         // setup the mock image to pass on the mock log buffer
         when(image.rawPoll(any(), anyInt())).thenAnswer(
@@ -158,12 +158,12 @@ public class ArchivingSessionTest
         // We now evaluate the output of the archiver...
 
         // meta data exists and is as expected
-        final File archiveMetaFile = new File(tempFolderForTest, archiveMetaFileName(session.streamInstanceId()));
+        final File archiveMetaFile = new File(tempFolderForTest, archiveMetaFileName(session.persistedImageId()));
         assertTrue(archiveMetaFile.exists());
 
-        final ArchiveDescriptorDecoder metaData = ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
+        final ArchiveDescriptorDecoder metaData = PersistedImageFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
 
-        assertEquals(streamInstanceId, metaData.streamInstanceId());
+        assertEquals(persistedImageId, metaData.persistedImageId());
         assertEquals(termBufferLength, metaData.termBufferLength());
         assertEquals(initialTermId, metaData.initialTermId());
         assertEquals(termOffset, metaData.initialTermOffset());
@@ -179,11 +179,11 @@ public class ArchivingSessionTest
         // data exists and is as expected
         final File archiveDataFile = new File(
             tempFolderForTest,
-            archiveDataFileName(session.streamInstanceId(), 0));
+            archiveDataFileName(session.persistedImageId(), 0));
         assertTrue(archiveDataFile.exists());
 
-        try (ArchiveStreamFragmentReader reader = new ArchiveStreamFragmentReader(
-            session.streamInstanceId(), tempFolderForTest))
+        try (PersistedImageFragmentReader reader = new PersistedImageFragmentReader(
+            session.persistedImageId(), tempFolderForTest))
         {
             final int polled = reader.controlledPoll(
                 (buffer, offset, length, header) ->

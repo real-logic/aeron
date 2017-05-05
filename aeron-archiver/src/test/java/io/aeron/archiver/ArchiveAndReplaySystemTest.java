@@ -32,8 +32,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
-import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileFormatDecoder;
-import static io.aeron.archiver.ArchiveFileUtil.archiveMetaFileName;
+import static io.aeron.archiver.PersistedImageFileUtil.archiveMetaFileFormatDecoder;
+import static io.aeron.archiver.PersistedImageFileUtil.archiveMetaFileName;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -60,7 +60,7 @@ public class ArchiveAndReplaySystemTest
     private MediaDriver driver;
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private File archiveFolder;
-    private int streamInstanceId;
+    private int persistedImageId;
     private String source;
     private long remaining;
     private int nextFragmentOffset;
@@ -151,13 +151,13 @@ public class ArchiveAndReplaySystemTest
             wait(() -> (client.pollNotifications(new ArchiverClient.ArchiverNotificationListener()
             {
                 public void onStart(
-                    final int iStreamInstanceId,
+                    final int persistedImageId0,
                     final int sessionId,
                     final int streamId,
                     final String iSource,
                     final String channel)
                 {
-                    streamInstanceId = iStreamInstanceId;
+                    persistedImageId = persistedImageId0;
                     assertThat(streamId, is(PUBLISH_STREAM_ID));
                     assertThat(sessionId, is(publication.sessionId()));
 
@@ -198,18 +198,18 @@ public class ArchiveAndReplaySystemTest
                 }
                 public void onStop(final int s)
                 {
-                    assertThat(s, is(streamInstanceId));
+                    assertThat(s, is(persistedImageId));
                 }
             }, 1) != 0));
 
             verifyDescriptorListOngoingArchive(client, publication, totalArchiveLength);
 
-            println("Stream instance id: " + streamInstanceId);
+            println("Stream instance id: " + persistedImageId);
             println("Meta data file printout: ");
 
             validateMetaDataFile(publication);
-            validateArchiveFile(messageCount, streamInstanceId);
-            validateArchiveFileChunked(messageCount, streamInstanceId);
+            validateArchiveFile(messageCount, persistedImageId);
+            validateArchiveFileChunked(messageCount, persistedImageId);
 
             validateReplay(client, publication, messageCount);
         }
@@ -236,7 +236,7 @@ public class ArchiveAndReplaySystemTest
         final Publication publication,
         final long archiveLength)
     {
-        client.requestListStreamInstances(streamInstanceId, streamInstanceId);
+        client.requestListStreamInstances(persistedImageId, persistedImageId);
         println("Await result");
 
         poll(
@@ -264,11 +264,11 @@ public class ArchiveAndReplaySystemTest
                     hDecoder.blockLength(),
                     hDecoder.version());
                 println(decoder.toString());
-                assertThat(decoder.streamInstanceId(), is(streamInstanceId));
+                assertThat(decoder.persistedImageId(), is(persistedImageId));
                 assertThat(decoder.streamId(), is(PUBLISH_STREAM_ID));
                 assertThat(decoder.imageInitialTermId(), is(publication.initialTermId()));
 
-                final long archiveFullLength = ArchiveFileUtil.archiveFullLength(decoder);
+                final long archiveFullLength = PersistedImageFileUtil.archiveFullLength(decoder);
                 assertThat(archiveFullLength, is(archiveLength));
                 //....
             }
@@ -301,12 +301,12 @@ public class ArchiveAndReplaySystemTest
 
     private void validateMetaDataFile(final Publication publication) throws IOException
     {
-        final File metaFile = new File(archiveFolder, archiveMetaFileName(streamInstanceId));
+        final File metaFile = new File(archiveFolder, archiveMetaFileName(persistedImageId));
         assertTrue(metaFile.exists());
 
         if (DEBUG)
         {
-            ArchiveFileUtil.printMetaFile(metaFile);
+            PersistedImageFileUtil.printMetaFile(metaFile);
         }
 
         final ArchiveDescriptorDecoder decoder = archiveMetaFileFormatDecoder(metaFile);
@@ -315,7 +315,7 @@ public class ArchiveAndReplaySystemTest
         assertThat(decoder.streamId(), is(publication.streamId()));
         assertThat(decoder.termBufferLength(), is(publication.termBufferLength()));
 
-        assertThat(ArchiveFileUtil.archiveFullLength(decoder), is(totalArchiveLength));
+        assertThat(PersistedImageFileUtil.archiveFullLength(decoder), is(totalArchiveLength));
         // length might exceed data sent due to padding
         assertThat(totalDataLength, lessThanOrEqualTo(totalArchiveLength));
 
@@ -362,7 +362,7 @@ public class ArchiveAndReplaySystemTest
     {
         // request replay
         wait(() -> client.requestReplay(
-            streamInstanceId,
+            persistedImageId,
             publication.initialTermId(),
             0,
             totalArchiveLength,
@@ -406,10 +406,10 @@ public class ArchiveAndReplaySystemTest
         }
     }
 
-    private void validateArchiveFile(final int messageCount, final int streamInstanceId) throws IOException
+    private void validateArchiveFile(final int messageCount, final int persistedImageId) throws IOException
     {
-        try (ArchiveStreamFragmentReader archiveDataFileReader = new ArchiveStreamFragmentReader(
-            streamInstanceId, archiveFolder))
+        try (PersistedImageFragmentReader archiveDataFileReader = new PersistedImageFragmentReader(
+            persistedImageId, archiveFolder))
         {
             fragmentCount = 0;
             remaining = totalDataLength;
@@ -446,18 +446,18 @@ public class ArchiveAndReplaySystemTest
         fragmentCount++;
         printf("Fragment2: offset=%d length=%d %n",  offset, length);
     }
-    private void validateArchiveFileChunked(final int messageCount, final int streamInstanceId) throws IOException
+    private void validateArchiveFileChunked(final int messageCount, final int persistedImageId) throws IOException
     {
         final ArchiveDescriptorDecoder decoder = archiveMetaFileFormatDecoder(
-            new File(archiveFolder, archiveMetaFileName(streamInstanceId)));
-        final long archiveFullLength = ArchiveFileUtil.archiveFullLength(decoder);
+            new File(archiveFolder, archiveMetaFileName(persistedImageId)));
+        final long archiveFullLength = PersistedImageFileUtil.archiveFullLength(decoder);
         final int initialTermId = decoder.initialTermId();
         final int termBufferLength = decoder.termBufferLength();
         final int initialTermOffset = decoder.initialTermOffset();
 
         IoUtil.unmap(decoder.buffer().byteBuffer());
-        try (ArchiveStreamChunkReader cursor = new ArchiveStreamChunkReader(
-            streamInstanceId,
+        try (PersistedImageChunkReader cursor = new PersistedImageChunkReader(
+            persistedImageId,
             archiveFolder,
             initialTermId,
             termBufferLength,
@@ -556,13 +556,13 @@ public class ArchiveAndReplaySystemTest
                         {
                             @Override
                             public void onProgress(
-                                final int iStreamInstanceId,
+                                final int persistedImageId0,
                                 final int initialTermId,
                                 final int initialTermOffset,
                                 final int termId,
                                 final int termOffset)
                             {
-                                assertThat(iStreamInstanceId, is(streamInstanceId));
+                                assertThat(persistedImageId0, is(persistedImageId));
                                 archived = termBufferLength *
                                     (termId - initialTermId) +
                                     (termOffset - initialTermOffset);
@@ -571,7 +571,7 @@ public class ArchiveAndReplaySystemTest
 
                             @Override
                             public void onStart(
-                                final int streamInstanceId,
+                                final int persistedImageId,
                                 final int sessionId,
                                 final int streamId,
                                 final String source,
@@ -581,7 +581,7 @@ public class ArchiveAndReplaySystemTest
                             }
 
                             @Override
-                            public void onStop(final int streamInstanceId)
+                            public void onStop(final int persistedImageId0)
                             {
                                 fail();
                             }

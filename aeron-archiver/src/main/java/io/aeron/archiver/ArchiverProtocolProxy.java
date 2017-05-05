@@ -25,12 +25,6 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 class ArchiverProtocolProxy
 {
-    @FunctionalInterface
-    interface PublishDirectBufferFunction
-    {
-        long offer(DirectBuffer buffer, int offset, int length);
-    }
-
     // TODO: replace header usage with constants?
     private final IdleStrategy idleStrategy;
     private final Publication archiverNotifications;
@@ -98,7 +92,7 @@ class ArchiverProtocolProxy
 
 
     int notifyArchiveStarted(
-        final int instanceId,
+        final int persistedImageId,
         final String source,
         final int sessionId,
         final String channel,
@@ -115,7 +109,7 @@ class ArchiverProtocolProxy
             .limit(MessageHeaderEncoder.ENCODED_LENGTH + ArchiveStartedNotificationEncoder.BLOCK_LENGTH);
 
         archiveStartedNotificationEncoder
-            .streamInstanceId(instanceId)
+            .persistedImageId(persistedImageId)
             .sessionId(sessionId)
             .streamId(streamId)
             .source(source)
@@ -123,11 +117,11 @@ class ArchiverProtocolProxy
 
         sendNotification(archiveStartedNotificationEncoder.encodedLength());
 
-        return instanceId;
+        return persistedImageId;
     }
 
     void notifyArchiveProgress(
-        final int instanceId,
+        final int persistedImageId,
         final int initialTermId,
         final int initialTermOffset,
         final int termId,
@@ -140,7 +134,7 @@ class ArchiverProtocolProxy
             .version(ArchiveProgressNotificationEncoder.SCHEMA_VERSION);
 
         archiveProgressNotificationEncoder
-            .streamInstanceId(instanceId)
+            .persistedImageId(persistedImageId)
             .initialTermId(initialTermId)
             .initialTermOffset(initialTermOffset)
             .termId(termId)
@@ -149,7 +143,7 @@ class ArchiverProtocolProxy
         sendNotification(archiveProgressNotificationEncoder.encodedLength());
     }
 
-    void notifyArchiveStopped(final int instanceId)
+    void notifyArchiveStopped(final int persistedImageId)
     {
         outboundHeaderEncoder
             .blockLength(ArchiveStoppedNotificationEncoder.BLOCK_LENGTH)
@@ -157,7 +151,7 @@ class ArchiverProtocolProxy
             .schemaId(ArchiveStoppedNotificationEncoder.SCHEMA_ID)
             .version(ArchiveStoppedNotificationEncoder.SCHEMA_VERSION);
 
-        archiveStoppedNotificationEncoder.streamInstanceId(instanceId);
+        archiveStoppedNotificationEncoder.persistedImageId(persistedImageId);
         sendNotification(archiveStoppedNotificationEncoder.encodedLength());
     }
 

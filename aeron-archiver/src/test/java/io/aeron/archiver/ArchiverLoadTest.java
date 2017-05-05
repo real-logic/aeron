@@ -35,7 +35,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
 @Ignore
-public class ArchiveLoadTest
+public class ArchiverLoadTest
 {
     private static final int TIMEOUT = 5000;
     private static final boolean DEBUG = false;
@@ -67,7 +67,7 @@ public class ArchiveLoadTest
         protected void failed(final Throwable t, final Description description)
         {
             System.err.println(
-                "ArchiveAndReplaySystemTest failed with random seed: " + ArchiveLoadTest.this.seed);
+                "ArchiveAndReplaySystemTest failed with random seed: " + ArchiverLoadTest.this.seed);
         }
     };
 
@@ -181,7 +181,7 @@ public class ArchiveLoadTest
                         hDecoder.blockLength(),
                         hDecoder.version());
 
-                streamInstanceId = mDecoder.streamInstanceId();
+                streamInstanceId = mDecoder.persistedImageId();
                 assertThat(mDecoder.streamId(), is(PUBLISH_STREAM_ID));
                 assertThat(mDecoder.sessionId(), is(publication.sessionId()));
 
@@ -257,7 +257,7 @@ public class ArchiveLoadTest
                                         offset + MessageHeaderDecoder.ENCODED_LENGTH,
                                         hDecoder.blockLength(),
                                         hDecoder.version());
-                                assertThat(mDecoder.streamInstanceId(), is(streamInstanceId));
+                                assertThat(mDecoder.persistedImageId(), is(streamInstanceId));
 
                                 println(mDecoder.toString());
                                 archived = publication.termBufferLength() *

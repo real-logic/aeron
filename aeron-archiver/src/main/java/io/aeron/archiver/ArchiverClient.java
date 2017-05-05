@@ -116,7 +116,7 @@ public class ArchiverClient
     }
 
     public boolean requestReplay(
-        final int streamInstanceId,
+        final int persistedImageId,
         final int termId,
         final int termOffset,
         final long length,
@@ -132,7 +132,7 @@ public class ArchiverClient
         replayRequestEncoder.limit(ReplayRequestEncoder.BLOCK_LENGTH + HEADER_LENGTH);
 
         replayRequestEncoder
-            .streamInstanceId(streamInstanceId)
+            .persistedImageId(persistedImageId)
             .termId(termId)
             .termOffset(termOffset)
             .length((int)length)
@@ -164,20 +164,20 @@ public class ArchiverClient
     interface ArchiverNotificationListener
     {
         void onProgress(
-            int streamInstanceId,
+            int persistedImageId,
             int initialTermId,
             int initialTermOffset,
             int termId,
             int termOffset);
 
         void onStart(
-            int streamInstanceId,
+            int persistedImageId,
             int sessionId,
             int streamId,
             String source,
             String channel);
 
-        void onStop(int streamInstanceId);
+        void onStop(int persistedImageId);
     }
 
     public int pollNotifications(final ArchiverNotificationListener listener, final int count)
@@ -196,7 +196,7 @@ public class ArchiverClient
                             messageHeaderDecoder.blockLength(),
                             messageHeaderDecoder.version());
                     listener.onProgress(
-                        archiveProgressNotificationDecoder.streamInstanceId(),
+                        archiveProgressNotificationDecoder.persistedImageId(),
                         archiveProgressNotificationDecoder.initialTermId(),
                         archiveProgressNotificationDecoder.initialTermOffset(),
                         archiveProgressNotificationDecoder.termId(),
@@ -214,7 +214,7 @@ public class ArchiverClient
                         messageHeaderDecoder.version());
 
                     listener.onStart(
-                        archiveStartedNotificationDecoder.streamInstanceId(),
+                        archiveStartedNotificationDecoder.persistedImageId(),
                         archiveStartedNotificationDecoder.sessionId(),
                         archiveStartedNotificationDecoder.streamId(),
                         archiveStartedNotificationDecoder.channel(),
@@ -230,7 +230,7 @@ public class ArchiverClient
                         messageHeaderDecoder.blockLength(),
                         messageHeaderDecoder.version());
 
-                    listener.onStop(archiveStoppedNotificationDecoder.streamInstanceId());
+                    listener.onStop(archiveStoppedNotificationDecoder.persistedImageId());
                     break;
                 }
 

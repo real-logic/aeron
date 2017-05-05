@@ -24,13 +24,13 @@ import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
+import static io.aeron.archiver.PersistedImageFileUtil.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardOpenOption.READ;
 
-class ArchiveStreamFragmentReader implements AutoCloseable
+class PersistedImageFragmentReader implements AutoCloseable
 {
     private final int streamInstanceId;
     private final File archiveFolder;
@@ -51,19 +51,19 @@ class ArchiveStreamFragmentReader implements AutoCloseable
     private long transmitted = 0;
     private final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
 
-    ArchiveStreamFragmentReader(final int streamInstanceId, final File archiveFolder) throws IOException
+    PersistedImageFragmentReader(final int streamInstanceId, final File archiveFolder) throws IOException
     {
         this.streamInstanceId = streamInstanceId;
         this.archiveFolder = archiveFolder;
-        final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
+        final String archiveMetaFileName = archiveMetaFileName(streamInstanceId);
         // TODO: Should this just be read rather than mapped given the one of read?
         final File archiveMetaFile = new File(archiveFolder, archiveMetaFileName);
-        final ArchiveDescriptorDecoder metaDecoder = ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
+        final ArchiveDescriptorDecoder metaDecoder = archiveMetaFileFormatDecoder(archiveMetaFile);
         termBufferLength = metaDecoder.termBufferLength();
         initialTermId = metaDecoder.initialTermId();
         initialTermOffset = metaDecoder.initialTermOffset();
         archiveFileSize = metaDecoder.archiveFileSize();
-        fullLength = ArchiveFileUtil.archiveFullLength(metaDecoder);
+        fullLength = PersistedImageFileUtil.archiveFullLength(metaDecoder);
         IoUtil.unmap(metaDecoder.buffer().byteBuffer());
         fromTermId = initialTermId;
         fromTermOffset = initialTermOffset;
@@ -71,7 +71,7 @@ class ArchiveStreamFragmentReader implements AutoCloseable
         initCursorState();
     }
 
-    ArchiveStreamFragmentReader(
+    PersistedImageFragmentReader(
         final int streamInstanceId,
         final File archiveFolder,
         final int termId,
@@ -83,23 +83,23 @@ class ArchiveStreamFragmentReader implements AutoCloseable
         this.fromTermId = termId;
         this.fromTermOffset = termOffset;
         this.replayLength = length;
-        final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
+        final String archiveMetaFileName = archiveMetaFileName(streamInstanceId);
         final File archiveMetaFile = new File(archiveFolder, archiveMetaFileName);
-        final ArchiveDescriptorDecoder metaDecoder = ArchiveFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
+        final ArchiveDescriptorDecoder metaDecoder = archiveMetaFileFormatDecoder(archiveMetaFile);
         termBufferLength = metaDecoder.termBufferLength();
         initialTermId = metaDecoder.initialTermId();
         initialTermOffset = metaDecoder.initialTermOffset();
         archiveFileSize = metaDecoder.archiveFileSize();
-        fullLength = ArchiveFileUtil.archiveFullLength(metaDecoder);
+        fullLength = PersistedImageFileUtil.archiveFullLength(metaDecoder);
         IoUtil.unmap(metaDecoder.buffer().byteBuffer());
         initCursorState();
     }
 
     private void initCursorState() throws IOException
     {
-        archiveFileIndex = ArchiveFileUtil.archiveDataFileIndex(initialTermId, termBufferLength, fromTermId,
+        archiveFileIndex = persistedImageDataFileIndex(initialTermId, termBufferLength, fromTermId,
             archiveFileSize);
-        final int archiveOffset = ArchiveFileUtil.offsetInArchiveFile(
+        final int archiveOffset = offsetInPersistedImageFile(
             fromTermOffset, fromTermId, initialTermId, termBufferLength, archiveFileSize);
         archiveTermStartOffset = archiveOffset - fromTermOffset;
         openArchiveFile();

@@ -30,7 +30,7 @@ interface ArchiverProtocolListener
         int correlationId,
         int replayStreamId,
         String replayChannel,
-        int streamInstanceId,
+        int persistedImageId,
         int termId,
         int termOffset,
         long length);

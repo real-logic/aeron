@@ -27,31 +27,31 @@ import java.util.Date;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 
-class ArchiveFileUtil
+class PersistedImageFileUtil
 {
-    static String archiveMetaFileName(final int streamInstanceId)
+    static String archiveMetaFileName(final int persistedImageId)
     {
-        return streamInstanceId + ".meta";
+        return persistedImageId + ".meta";
     }
 
-    static String archiveDataFileName(final int streamInstanceId, final int index)
+    static String archiveDataFileName(final int persistedImageId, final int index)
     {
-        return streamInstanceId + "." + index + ".aaf";
+        return persistedImageId + "." + index + ".aaf";
     }
 
     static String archiveDataFileName(
-        final int streamInstanceId,
+        final int persistedImageId,
         final int initialTermId,
         final int termBufferLength,
         final int termId,
         final int archiveFileSize)
     {
-        final int index = archiveDataFileIndex(initialTermId, termBufferLength, termId, archiveFileSize);
+        final int index = persistedImageDataFileIndex(initialTermId, termBufferLength, termId, archiveFileSize);
 
-        return archiveDataFileName(streamInstanceId, index);
+        return archiveDataFileName(persistedImageId, index);
     }
 
-    static int archiveDataFileIndex(
+    static int persistedImageDataFileIndex(
         final int initialTermId,
         final int termBufferLength,
         final int termId,
@@ -64,7 +64,7 @@ class ArchiveFileUtil
     static void printMetaFile(final File metaFile) throws IOException
     {
         final ArchiveDescriptorDecoder formatDecoder = archiveMetaFileFormatDecoder(metaFile);
-        System.out.println("streamInstanceId: " + formatDecoder.streamInstanceId());
+        System.out.println("persistedImageId: " + formatDecoder.persistedImageId());
         System.out.println("termBufferLength: " + formatDecoder.termBufferLength());
         System.out.println("start time: " + new Date(formatDecoder.startTime()));
         System.out.println("initialTermId: " + formatDecoder.initialTermId());
@@ -85,18 +85,18 @@ class ArchiveFileUtil
         try (FileChannel metadataFileChannel = FileChannel.open(metaFile.toPath(), READ, WRITE))
         {
             final MappedByteBuffer metaDataBuffer = metadataFileChannel.map(
-                FileChannel.MapMode.READ_WRITE, 0, ArchiveIndex.INDEX_RECORD_SIZE);
+                FileChannel.MapMode.READ_WRITE, 0, PersistedImagesIndex.INDEX_RECORD_SIZE);
             final ArchiveDescriptorDecoder decoder = new ArchiveDescriptorDecoder();
 
             return decoder.wrap(
                 new UnsafeBuffer(metaDataBuffer),
-                ArchiveIndex.INDEX_FRAME_LENGTH,
+                PersistedImagesIndex.INDEX_FRAME_LENGTH,
                 ArchiveDescriptorDecoder.BLOCK_LENGTH,
                 ArchiveDescriptorDecoder.SCHEMA_VERSION);
         }
     }
 
-    static int offsetInArchiveFile(
+    static int offsetInPersistedImageFile(
         final int termOffset,
         final int termId,
         final int initialTermId,

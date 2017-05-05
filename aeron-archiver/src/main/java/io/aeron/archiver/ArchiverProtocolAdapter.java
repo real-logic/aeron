@@ -69,7 +69,7 @@ class ArchiverProtocolAdapter implements FragmentHandler
                     replayRequestDecoder.correlationId(),
                     replayRequestDecoder.replayStreamId(),
                     replayRequestDecoder.replayChannel(),
-                    replayRequestDecoder.streamInstanceId(),
+                    replayRequestDecoder.persistedImageId(),
                     replayRequestDecoder.termId(),
                     replayRequestDecoder.termOffset(),
                     replayRequestDecoder.length());

@@ -24,17 +24,17 @@ import java.io.*;
 import java.nio.*;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.ArchiveFileUtil.archiveDataFileName;
-import static io.aeron.archiver.ArchiveFileUtil.archiveOffset;
+import static io.aeron.archiver.PersistedImageFileUtil.archiveDataFileName;
+import static io.aeron.archiver.PersistedImageFileUtil.archiveOffset;
 import static java.nio.file.StandardOpenOption.*;
 
-final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBlockHandler
+final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawBlockHandler
 {
     static class Builder
     {
         private File archiveFolder;
         private EpochClock epochClock;
-        private int streamInstanceId;
+        private int persistedImageId;
         private int termBufferLength;
         private int imageInitialTermId;
         private boolean forceWrites = true;
@@ -57,9 +57,9 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
             return this;
         }
 
-        Builder streamInstanceId(final int streamInstanceId)
+        Builder persistedImageId(final int persistedImageId)
         {
-            this.streamInstanceId = streamInstanceId;
+            this.persistedImageId = persistedImageId;
             return this;
         }
 
@@ -118,9 +118,9 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
             return this;
         }
 
-        ArchiveStreamWriter build()
+        PersistedImageWriter build()
         {
-            return new ArchiveStreamWriter(this);
+            return new PersistedImageWriter(this);
         }
 
         int archiveFileSize()
@@ -133,7 +133,7 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
 
     private final int termBufferLength;
     private final int termsMask;
-    private final int streamInstanceId;
+    private final int persistedImageId;
 
     private final File archiveFolder;
     private final EpochClock epochClock;
@@ -159,9 +159,9 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
     private boolean closed = false;
     private boolean stopped = false;
 
-    private ArchiveStreamWriter(final Builder builder)
+    private PersistedImageWriter(final Builder builder)
     {
-        this.streamInstanceId = builder.streamInstanceId;
+        this.persistedImageId = builder.persistedImageId;
         this.archiveFolder = builder.archiveFolder;
         this.termBufferLength = builder.termBufferLength;
         this.epochClock = builder.epochClock;
@@ -177,18 +177,18 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
                     "therefore the number of terms in a file is also a power of 2");
         }
 
-        final String archiveMetaFileName = ArchiveFileUtil.archiveMetaFileName(streamInstanceId);
+        final String archiveMetaFileName = PersistedImageFileUtil.archiveMetaFileName(persistedImageId);
         final File file = new File(archiveFolder, archiveMetaFileName);
         try
         {
             metadataFileChannel = FileChannel.open(file.toPath(), CREATE_NEW, READ, WRITE);
             metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
             final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(metaDataBuffer);
-            metaDataWriter = new ArchiveDescriptorEncoder().wrap(unsafeBuffer, ArchiveIndex.INDEX_FRAME_LENGTH);
+            metaDataWriter = new ArchiveDescriptorEncoder().wrap(unsafeBuffer, PersistedImagesIndex.INDEX_FRAME_LENGTH);
 
             initDescriptor(
                 metaDataWriter,
-                streamInstanceId,
+                persistedImageId,
                 termBufferLength,
                 archiveFileSize,
                 builder.imageInitialTermId,
@@ -212,7 +212,7 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
 
     static void initDescriptor(
         final ArchiveDescriptorEncoder descriptor,
-        final int streamInstanceId,
+        final int persistedImageId,
         final int termBufferLength,
         final int archiveFileSize,
         final int imageInitialTermId,
@@ -221,7 +221,7 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
         final String channel,
         final int streamId)
     {
-        descriptor.streamInstanceId(streamInstanceId);
+        descriptor.persistedImageId(persistedImageId);
         descriptor.termBufferLength(termBufferLength);
         descriptor.startTime(-1);
         descriptor.initialTermId(-1);
@@ -240,7 +240,7 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
     private void newArchiveFile(final int termId)
     {
         final String archiveDataFileName = archiveDataFileName(
-            streamInstanceId, initialTermId, termBufferLength, termId, archiveFileSize);
+            persistedImageId, initialTermId, termBufferLength, termId, archiveFileSize);
         final File file = new File(archiveFolder, archiveDataFileName);
 
         try
@@ -435,9 +435,9 @@ final class ArchiveStreamWriter implements AutoCloseable, FragmentHandler, RawBl
         closed = true;
     }
 
-    int streamInstanceId()
+    int persistedImageId()
     {
-        return streamInstanceId;
+        return persistedImageId;
     }
 
     int initialTermId()

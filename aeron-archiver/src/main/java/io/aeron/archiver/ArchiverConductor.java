@@ -24,7 +24,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
-class ArchiveConductor implements Agent
+class ArchiverConductor implements Agent
 {
     interface Session
     {
@@ -32,7 +32,7 @@ class ArchiveConductor implements Agent
 
         boolean isDone();
 
-        void remove(ArchiveConductor conductor);
+        void remove(ArchiverConductor conductor);
 
         int doWork();
     }
@@ -40,10 +40,10 @@ class ArchiveConductor implements Agent
     private final Aeron aeron;
     private final Subscription serviceRequestSubscription;
     private final ArrayList<Session> sessions = new ArrayList<>();
-    private final Long2ObjectHashMap<ReplaySession> replaySessionBySessionIdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<ReplayPersistedImageSession> replaySession2IdMap = new Long2ObjectHashMap<>();
 
     private final ObjectHashSet<Subscription> archiveSubscriptionSet = new ObjectHashSet<>(128);
-    private final ArchiveIndex archiveIndex;
+    private final PersistedImagesIndex persistedImagesIndex;
     private final OneToOneConcurrentArrayQueue<Image> imageNotificationQueue =
         new OneToOneConcurrentArrayQueue<>(1024);
     private final File archiveDir;
@@ -53,15 +53,15 @@ class ArchiveConductor implements Agent
 
     private final ArchiverProtocolProxy proxy;
     private volatile boolean isClosed = false;
-    private final ArchiveStreamWriter.Builder archiveWriterBuilder = new ArchiveStreamWriter.Builder();
+    private final PersistedImageWriter.Builder archiveWriterBuilder = new PersistedImageWriter.Builder();
     private int replaySessionId;
 
-    ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
+    ArchiverConductor(final Aeron aeron, final Archiver.Context ctx)
     {
         this.aeron = aeron;
 
         archiveDir = ctx.archiveFolder();
-        archiveIndex = new ArchiveIndex(archiveDir);
+        persistedImagesIndex = new PersistedImagesIndex(archiveDir);
 
         archiveWriterBuilder
             .archiveFileSize(ctx.archiveFileSize())
@@ -117,19 +117,19 @@ class ArchiveConductor implements Agent
         }
         sessions.clear();
 
-        if (!replaySessionBySessionIdMap.isEmpty())
+        if (!replaySession2IdMap.isEmpty())
         {
             // TODO: Use an error log.
-            System.err.println("ERROR: expected empty replaySessionBySessionIdMap");
+            System.err.println("ERROR: expected empty replaySession2IdMap");
         }
 
-        CloseHelper.close(archiveIndex);
+        CloseHelper.close(persistedImagesIndex);
     }
 
 
     void removeReplaySession(final int sessionId)
     {
-        replaySessionBySessionIdMap.remove(sessionId);
+        replaySession2IdMap.remove(sessionId);
     }
 
     private int doSessionsWork()
@@ -160,7 +160,7 @@ class ArchiveConductor implements Agent
         }
         else
         {
-            session = new ArchivingSession(proxy, archiveIndex, image, archiveWriterBuilder);
+            session = new RecordPersistedImageSession(proxy, persistedImagesIndex, image, archiveWriterBuilder);
         }
         sessions.add(session);
     }
@@ -217,14 +217,15 @@ class ArchiveConductor implements Agent
         final int from,
         final int to)
     {
-        final Session listSession = new ListDescriptorsSession(correlationId, reply, from, to, archiveIndex, proxy);
+        final Session listSession = new ListPersistedImageDescriptorsSession(correlationId, reply, from, to,
+            persistedImagesIndex, proxy);
 
         sessions.add(listSession);
     }
 
     public void stopReplay(final int sessionId)
     {
-        final ReplaySession session = replaySessionBySessionIdMap.get(sessionId);
+        final ReplayPersistedImageSession session = replaySession2IdMap.get(sessionId);
         if (session == null)
         {
             throw new IllegalStateException("Trying to abort an unknown replay session:" + sessionId);
@@ -245,7 +246,7 @@ class ArchiveConductor implements Agent
     {
         final int newId = replaySessionId++;
         final ExclusivePublication replayPublication = aeron.addExclusivePublication(replayChannel, replayStreamId);
-        final ReplaySession replaySession = new ReplaySession(
+        final ReplayPersistedImageSession replayPersistedImageSession = new ReplayPersistedImageSession(
             streamInstanceId,
             termId,
             termOffset,
@@ -257,8 +258,8 @@ class ArchiveConductor implements Agent
             newId,
             correlationId);
 
-        replaySessionBySessionIdMap.put(newId, replaySession);
-        sessions.add(replaySession);
+        replaySession2IdMap.put(newId, replayPersistedImageSession);
+        sessions.add(replayPersistedImageSession);
     }
 
     ExclusivePublication clientInit(final String channel, final int streamId)

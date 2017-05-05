@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
-class ListDescriptorsSession implements ArchiveConductor.Session
+class ListPersistedImageDescriptorsSession implements ArchiverConductor.Session
 {
     static final long NOT_FOUND_HEADER;
     static final long DESCRIPTOR_HEADER;
@@ -57,25 +57,25 @@ class ListDescriptorsSession implements ArchiveConductor.Session
     }
 
     private final ByteBuffer byteBuffer =
-        BufferUtil.allocateDirectAligned(ArchiveIndex.INDEX_RECORD_SIZE, CACHE_LINE_LENGTH);
+        BufferUtil.allocateDirectAligned(PersistedImagesIndex.INDEX_RECORD_SIZE, CACHE_LINE_LENGTH);
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
 
     private final ExclusivePublication reply;
     private final int from;
     private final int to;
-    private final ArchiveIndex index;
+    private final PersistedImagesIndex index;
     private final ArchiverProtocolProxy proxy;
     private final int correlationId;
 
     private int cursor;
     private State state = State.INIT;
 
-    ListDescriptorsSession(
+    ListPersistedImageDescriptorsSession(
         final int correlationId, final ExclusivePublication reply,
         final int from,
         final int to,
-        final ArchiveIndex index,
+        final PersistedImagesIndex index,
         final ArchiverProtocolProxy proxy)
     {
         this.reply = reply;
@@ -97,7 +97,7 @@ class ListDescriptorsSession implements ArchiveConductor.Session
         return state == State.DONE;
     }
 
-    public void remove(final ArchiveConductor conductor)
+    public void remove(final ArchiverConductor conductor)
     {
     }
 
@@ -135,7 +135,7 @@ class ListDescriptorsSession implements ArchiveConductor.Session
         final int limit = Math.min(cursor + 4, to);
         for (; cursor <= limit; cursor++)
         {
-            final ArchivingSession session = index.getArchivingSession(cursor);
+            final RecordPersistedImageSession session = index.getArchivingSession(cursor);
             if (session == null)
             {
                 byteBuffer.clear();
@@ -172,8 +172,8 @@ class ListDescriptorsSession implements ArchiveConductor.Session
             }
 
             final int length = unsafeBuffer.getInt(0);
-            unsafeBuffer.putLong(ArchiveIndex.INDEX_FRAME_LENGTH - 8, DESCRIPTOR_HEADER);
-            reply.offer(unsafeBuffer, ArchiveIndex.INDEX_FRAME_LENGTH - 8, length + 8);
+            unsafeBuffer.putLong(PersistedImagesIndex.INDEX_FRAME_LENGTH - 8, DESCRIPTOR_HEADER);
+            reply.offer(unsafeBuffer, PersistedImagesIndex.INDEX_FRAME_LENGTH - 8, length + 8);
         }
 
         if (cursor > to)

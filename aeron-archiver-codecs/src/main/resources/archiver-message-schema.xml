@@ -26,7 +26,7 @@
     <sbe:message name="ArchiveStartedNotification"
                  id="101"
                  description="Describes a new stream instance">
-        <field name="streamInstanceId"    id="1" type="int32" />
+        <field name="persistedImageId"    id="1" type="int32" />
         <field name="sessionId"           id="2" type="int32" />
         <field name="streamId"            id="3" type="int32" />
         <data  name="source"              id="4" type="varStringEncoding" />
@@ -36,7 +36,7 @@
     <sbe:message name="ArchiveProgressNotification"
                  id="102"
                  description="Archival progress notification">
-        <field name="streamInstanceId"    id="1" type="int32" />
+        <field name="persistedImageId"    id="1" type="int32" />
         <field name="initialTermId"       id="2" type="int32" />
         <field name="initialTermOffset"   id="3" type="int32" />
         <field name="termId"              id="4" type="int32" />
@@ -46,7 +46,7 @@
     <sbe:message name="ArchiveStoppedNotification"
                  id="103"
                  description="Archival termination notification">
-        <field name="streamInstanceId"    id="1" type="int32" />
+        <field name="persistedImageId"    id="1" type="int32" />
     </sbe:message>
 
     <sbe:message name="ArchiverResponse"
@@ -76,7 +76,7 @@
                  id="4"
                  description="Replay archive range request">
         <field name="correlationId"        id="1" type="int32" />
-        <field name="streamInstanceId"     id="2" type="int32" />
+        <field name="persistedImageId"     id="2" type="int32" />
         <field name="termId"               id="3" type="int32" />
         <field name="termOffset"           id="4" type="int32" />
         <field name="length"               id="5" type="int64" />
@@ -110,14 +110,14 @@
                  id="61"
                  description="Failed to find stream instance, also terminates query">
         <field name="correlationId"       id="1" type="int32" />
-        <field name="streamInstanceId"    id="2" type="int32" />
-        <field name="maxStreamInstanceId" id="3" type="int32" />
+        <field name="persistedImageId"    id="2" type="int32" />
+        <field name="maxPersistedImageId" id="3" type="int32" />
     </sbe:message>
 
     <sbe:message name="ArchiveDescriptor"
                  id="7"
                  description="Describes an archive in the meta file and index">
-        <field name="streamInstanceId"      id="1" type="int32"/>
+        <field name="persistedImageId"      id="1" type="int32"/>
         <field name="termBufferLength"      id="2" type="int32"/>
         <field name="startTime"             id="3" type="int64"/>
         <field name="initialTermId"         id="4" type="int32"/>

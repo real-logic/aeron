@@ -43,7 +43,7 @@ class RecordingFragmentReader implements AutoCloseable
     private final long replayLength;
     private final int segmentFileLength;
 
-    private int recordingFileIndex;
+    private int segmentFileIndex;
     private FileChannel currentDataChannel = null;
     private UnsafeBuffer termMappedUnsafeBuffer = null;
     private int recordingTermStartOffset;
@@ -97,7 +97,7 @@ class RecordingFragmentReader implements AutoCloseable
 
     private void initCursorState() throws IOException
     {
-        recordingFileIndex = segmentFileIndex(initialTermId, termBufferLength, fromTermId, segmentFileLength);
+        segmentFileIndex = segmentFileIndex(initialTermId, termBufferLength, fromTermId, segmentFileLength);
         final int archiveOffset = offsetInSegmentFile(
             fromTermOffset, fromTermId, initialTermId, termBufferLength, segmentFileLength);
         recordingTermStartOffset = archiveOffset - fromTermOffset;
@@ -167,7 +167,7 @@ class RecordingFragmentReader implements AutoCloseable
             if (recordingTermStartOffset == segmentFileLength)
             {
                 closeRecordingFile();
-                recordingFileIndex++;
+                segmentFileIndex++;
                 openRecordingFile();
                 recordingTermStartOffset = 0;
             }
@@ -200,7 +200,7 @@ class RecordingFragmentReader implements AutoCloseable
 
     private void openRecordingFile() throws IOException
     {
-        final String recordingDataFileName = recordingDataFileName(recordingId, recordingFileIndex);
+        final String recordingDataFileName = recordingDataFileName(recordingId, segmentFileIndex);
         final File recordingDataFile = new File(archiveDir, recordingDataFileName);
 
         if (!recordingDataFile.exists())

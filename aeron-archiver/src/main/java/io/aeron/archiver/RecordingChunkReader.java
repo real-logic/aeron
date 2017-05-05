@@ -22,8 +22,8 @@ import java.io.*;
 import java.nio.channels.FileChannel;
 import java.util.Objects;
 
-import static io.aeron.archiver.ArchiveUtil.offsetInRecordedFile;
-import static io.aeron.archiver.ArchiveUtil.recordingDataFileIndex;
+import static io.aeron.archiver.ArchiveUtil.offsetInSegmentFile;
+import static io.aeron.archiver.ArchiveUtil.segmentFileIndex;
 import static java.lang.Math.min;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardOpenOption.READ;
@@ -31,7 +31,7 @@ import static java.nio.file.StandardOpenOption.READ;
 class RecordingChunkReader implements AutoCloseable
 {
     private final int recordingId;
-    private final File archiveFolder;
+    private final File archiveDir;
     private final int termBufferLength;
     private final int archiveFileSize;
 
@@ -48,7 +48,7 @@ class RecordingChunkReader implements AutoCloseable
 
     RecordingChunkReader(
         final int recordingId,
-        final File archiveFolder,
+        final File archiveDir,
         final int initialTermId,
         final int termBufferLength,
         final int termId,
@@ -58,14 +58,14 @@ class RecordingChunkReader implements AutoCloseable
     {
         this.archiveFileSize = archiveFileSize;
         this.recordingId = recordingId;
-        this.archiveFolder = archiveFolder;
+        this.archiveDir = archiveDir;
         this.termBufferLength = termBufferLength;
 
         this.length = length;
 
         transmitted = 0;
-        fileIndex = recordingDataFileIndex(initialTermId, termBufferLength, termId, archiveFileSize);
-        final int archiveOffset = offsetInRecordedFile(
+        fileIndex = segmentFileIndex(initialTermId, termBufferLength, termId, archiveFileSize);
+        final int archiveOffset = offsetInSegmentFile(
             termOffset,
             termId,
             initialTermId,
@@ -75,7 +75,7 @@ class RecordingChunkReader implements AutoCloseable
         this.termOffset = termOffset;
 
         final String archiveDataFileName = ArchiveUtil.recordingDataFileName(recordingId, fileIndex);
-        final File archiveDataFile = new File(archiveFolder, archiveDataFileName);
+        final File archiveDataFile = new File(archiveDir, archiveDataFileName);
 
         if (!archiveDataFile.exists())
         {
@@ -147,7 +147,7 @@ class RecordingChunkReader implements AutoCloseable
             initTermOffset = 0;
             fileIndex++;
             final String archiveDataFileNameN = ArchiveUtil.recordingDataFileName(recordingId, fileIndex);
-            final File archiveDataFileN = new File(archiveFolder, archiveDataFileNameN);
+            final File archiveDataFileN = new File(archiveDir, archiveDataFileNameN);
 
             if (!archiveDataFileN.exists())
             {

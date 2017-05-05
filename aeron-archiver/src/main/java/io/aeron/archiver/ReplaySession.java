@@ -51,7 +51,7 @@ class ReplaySession implements
     private final ExclusivePublication replay;
     private final ExclusivePublication control;
 
-    private final File archiveFolder;
+    private final File archiveDir;
     private final ClientProxy proxy;
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
 
@@ -67,9 +67,10 @@ class ReplaySession implements
         final long replayLength,
         final ExclusivePublication replay,
         final ExclusivePublication control,
-        final File archiveFolder,
+        final File archiveDir,
         final ClientProxy proxy,
-        final int replaySessionId, final int correlationId)
+        final int replaySessionId,
+        final int correlationId)
     {
         this.recordingId = recordingId;
 
@@ -79,7 +80,7 @@ class ReplaySession implements
 
         this.replay = replay;
         this.control = control;
-        this.archiveFolder = archiveFolder;
+        this.archiveDir = archiveDir;
         this.proxy = proxy;
         this.replaySessionId = replaySessionId;
         this.correlationId = correlationId;
@@ -137,22 +138,22 @@ class ReplaySession implements
             return 0;
         }
 
-        final String archiveMetaFileName = ArchiveUtil.recordingMetaFileName(recordingId);
-        final File archiveMetaFile = new File(archiveFolder, archiveMetaFileName);
-        if (!archiveMetaFile.exists())
+        final String recordingMetaFileName = ArchiveUtil.recordingMetaFileName(recordingId);
+        final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
+        if (!recordingMetaFile.exists())
         {
-            final String err = archiveMetaFile.getAbsolutePath() + " not found";
+            final String err = recordingMetaFile.getAbsolutePath() + " not found";
             return closeOnErr(null, err);
         }
 
         final RecordingDescriptorDecoder metaData;
         try
         {
-            metaData = ArchiveUtil.recordingMetaFileFormatDecoder(archiveMetaFile);
+            metaData = ArchiveUtil.recordingMetaFileFormatDecoder(recordingMetaFile);
         }
         catch (final IOException ex)
         {
-            final String err = archiveMetaFile.getAbsolutePath() + " : failed to map";
+            final String err = recordingMetaFile.getAbsolutePath() + " : failed to map";
             return closeOnErr(ex, err);
         }
 
@@ -196,7 +197,7 @@ class ReplaySession implements
         {
             cursor = new RecordingFragmentReader(
                 recordingId,
-                archiveFolder,
+                archiveDir,
                 fromTermId,
                 fromTermOffset,
                 replayLength);
@@ -297,7 +298,7 @@ class ReplaySession implements
             try
             {
                 final MutableDirectBuffer publicationBuffer = bufferClaim.buffer();
-                bufferClaim.flags((byte) header.flags());
+                bufferClaim.flags((byte)header.flags());
                 bufferClaim.reservedValue(header.reservedValue());
                 // TODO: ??? bufferClaim.headerType(header.type()); ???
 

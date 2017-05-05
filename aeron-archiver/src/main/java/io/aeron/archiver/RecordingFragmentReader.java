@@ -33,7 +33,7 @@ import static java.nio.file.StandardOpenOption.READ;
 class RecordingFragmentReader implements AutoCloseable
 {
     private final int recordingId;
-    private final File archiveFolder;
+    private final File archiveDir;
     private final int initialTermId;
     private final int termBufferLength;
     private final int initialTermOffset;
@@ -41,7 +41,7 @@ class RecordingFragmentReader implements AutoCloseable
     private final int fromTermId;
     private final int fromTermOffset;
     private final long replayLength;
-    private final int recordingFileLength;
+    private final int segmentFileLength;
 
     private int recordingFileIndex;
     private FileChannel currentDataChannel = null;
@@ -51,18 +51,18 @@ class RecordingFragmentReader implements AutoCloseable
     private long transmitted = 0;
     private final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
 
-    RecordingFragmentReader(final int recordingId, final File archiveFolder) throws IOException
+    RecordingFragmentReader(final int recordingId, final File archiveDir) throws IOException
     {
         this.recordingId = recordingId;
-        this.archiveFolder = archiveFolder;
+        this.archiveDir = archiveDir;
         final String recordingMetaFileName = recordingMetaFileName(recordingId);
         // TODO: Should this just be read rather than mapped given the one of read?
-        final File recordingMetaFile = new File(archiveFolder, recordingMetaFileName);
+        final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
         final RecordingDescriptorDecoder metaDecoder = recordingMetaFileFormatDecoder(recordingMetaFile);
         termBufferLength = metaDecoder.termBufferLength();
         initialTermId = metaDecoder.initialTermId();
         initialTermOffset = metaDecoder.initialTermOffset();
-        recordingFileLength = metaDecoder.fileLength();
+        segmentFileLength = metaDecoder.segmentFileLength();
         fullLength = ArchiveUtil.recordingFileFullLength(metaDecoder);
         IoUtil.unmap(metaDecoder.buffer().byteBuffer());
         fromTermId = initialTermId;
@@ -73,23 +73,23 @@ class RecordingFragmentReader implements AutoCloseable
 
     RecordingFragmentReader(
         final int recordingId,
-        final File archiveFolder,
+        final File archiveDir,
         final int termId,
         final int termOffset,
         final long length) throws IOException
     {
         this.recordingId = recordingId;
-        this.archiveFolder = archiveFolder;
+        this.archiveDir = archiveDir;
         this.fromTermId = termId;
         this.fromTermOffset = termOffset;
         this.replayLength = length;
         final String recordingMetaFileName = recordingMetaFileName(recordingId);
-        final File recordingMetaFile = new File(archiveFolder, recordingMetaFileName);
+        final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
         final RecordingDescriptorDecoder metaDecoder = recordingMetaFileFormatDecoder(recordingMetaFile);
         termBufferLength = metaDecoder.termBufferLength();
         initialTermId = metaDecoder.initialTermId();
         initialTermOffset = metaDecoder.initialTermOffset();
-        recordingFileLength = metaDecoder.fileLength();
+        segmentFileLength = metaDecoder.segmentFileLength();
         fullLength = ArchiveUtil.recordingFileFullLength(metaDecoder);
         IoUtil.unmap(metaDecoder.buffer().byteBuffer());
         initCursorState();
@@ -97,9 +97,9 @@ class RecordingFragmentReader implements AutoCloseable
 
     private void initCursorState() throws IOException
     {
-        recordingFileIndex = recordingDataFileIndex(initialTermId, termBufferLength, fromTermId, recordingFileLength);
-        final int archiveOffset = offsetInRecordedFile(
-            fromTermOffset, fromTermId, initialTermId, termBufferLength, recordingFileLength);
+        recordingFileIndex = segmentFileIndex(initialTermId, termBufferLength, fromTermId, segmentFileLength);
+        final int archiveOffset = offsetInSegmentFile(
+            fromTermOffset, fromTermId, initialTermId, termBufferLength, segmentFileLength);
         recordingTermStartOffset = archiveOffset - fromTermOffset;
         openRecordingFile();
         termMappedUnsafeBuffer = new UnsafeBuffer(
@@ -164,7 +164,7 @@ class RecordingFragmentReader implements AutoCloseable
             recordingTermStartOffset += termBufferLength;
 
             // rotate file
-            if (recordingTermStartOffset == recordingFileLength)
+            if (recordingTermStartOffset == segmentFileLength)
             {
                 closeRecordingFile();
                 recordingFileIndex++;
@@ -201,7 +201,7 @@ class RecordingFragmentReader implements AutoCloseable
     private void openRecordingFile() throws IOException
     {
         final String recordingDataFileName = recordingDataFileName(recordingId, recordingFileIndex);
-        final File recordingDataFile = new File(archiveFolder, recordingDataFileName);
+        final File recordingDataFile = new File(archiveDir, recordingDataFileName);
 
         if (!recordingDataFile.exists())
         {

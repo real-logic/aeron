@@ -31,7 +31,7 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
 {
     static class Builder
     {
-        private File archiveFolder;
+        private File archiveDir;
         private EpochClock epochClock;
         private int recordingId;
         private int termBufferLength;
@@ -42,11 +42,11 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         private int streamId;
         private String source;
         private String channel;
-        private int recordingFileLength = 128 * 1024 * 1024;
+        private int segmentFileLength = 128 * 1024 * 1024;
 
-        Builder archiveFolder(final File archiveFolder)
+        Builder archiveDir(final File archiveDir)
         {
-            this.archiveFolder = archiveFolder;
+            this.archiveDir = archiveDir;
             return this;
         }
 
@@ -113,7 +113,7 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
 
         Builder recordingFileLength(final int recordingFileSize)
         {
-            this.recordingFileLength = recordingFileSize;
+            this.segmentFileLength = recordingFileSize;
             return this;
         }
 
@@ -124,7 +124,7 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
 
         int recordingFileLength()
         {
-            return recordingFileLength;
+            return segmentFileLength;
         }
     }
 
@@ -135,16 +135,16 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
     private final int termsMask;
     private final int recordingId;
 
-    private final File archiveFolder;
+    private final File archiveDir;
     private final EpochClock epochClock;
 
     private final FileChannel metadataFileChannel;
     private final MappedByteBuffer metaDataBuffer;
     private final RecordingDescriptorEncoder metaDataEncoder;
-    private final int recordingFileLength;
+    private final int segmentFileLength;
 
     /**
-     * Index is in the range 0:recordingFileLength, except before the first block for this image is received indicated
+     * Index is in the range 0:segmentFileLength, except before the first block for this image is received indicated
      * by -1
      */
     private int recordingPosition = -1;
@@ -162,12 +162,12 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
     private ImageRecorder(final Builder builder)
     {
         this.recordingId = builder.recordingId;
-        this.archiveFolder = builder.archiveFolder;
+        this.archiveDir = builder.archiveDir;
         this.termBufferLength = builder.termBufferLength;
         this.epochClock = builder.epochClock;
-        this.recordingFileLength = builder.recordingFileLength;
+        this.segmentFileLength = builder.segmentFileLength;
 
-        this.termsMask = (builder.recordingFileLength / termBufferLength) - 1;
+        this.termsMask = (builder.segmentFileLength / termBufferLength) - 1;
         this.forceWrites = builder.forceWrites;
         this.forceMetadataUpdates = builder.forceMetadataUpdates;
         if (((termsMask + 1) & termsMask) != 0)
@@ -178,7 +178,7 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         }
 
         final String archiveMetaFileName = ArchiveUtil.recordingMetaFileName(recordingId);
-        final File file = new File(archiveFolder, archiveMetaFileName);
+        final File file = new File(archiveDir, archiveMetaFileName);
         try
         {
             metadataFileChannel = FileChannel.open(file.toPath(), CREATE_NEW, READ, WRITE);
@@ -191,7 +191,7 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
                 metaDataEncoder,
                 recordingId,
                 termBufferLength,
-                recordingFileLength,
+                segmentFileLength,
                 builder.imageInitialTermId,
                 builder.source,
                 builder.sessionId,
@@ -214,7 +214,7 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         final RecordingDescriptorEncoder descriptor,
         final int recordingId,
         final int termBufferLength,
-        final int fileLength,
+        final int segmentFileLength,
         final int imageInitialTermId,
         final String source,
         final int sessionId,
@@ -232,23 +232,21 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         descriptor.imageInitialTermId(imageInitialTermId);
         descriptor.sessionId(sessionId);
         descriptor.streamId(streamId);
-        descriptor.fileLength(fileLength);
+        descriptor.segmentFileLength(segmentFileLength);
         descriptor.source(source);
         descriptor.channel(channel);
     }
 
-    private void newRecordingFile(final int termId)
+    private void newRecordingSegmentFile(final int termId)
     {
-        final String archiveDataFileName = ArchiveUtil.recordingDataFileName(
-            recordingId, initialTermId, termBufferLength, termId, recordingFileLength);
-        final File file = new File(archiveFolder, archiveDataFileName);
+        final String segmentFileName = ArchiveUtil.recordingDataFileName(
+            recordingId, initialTermId, termBufferLength, termId, segmentFileLength);
+        final File file = new File(archiveDir, segmentFileName);
 
         try
         {
-            // NOTE: using 'rwd' options would force sync on data writes(not sync metadata), but is slower than forcing
-            // externally.
             recordingFile = new RandomAccessFile(file, "rw");
-            recordingFile.setLength(recordingFileLength);
+            recordingFile.setLength(segmentFileLength);
             recordingFileChannel = recordingFile.getChannel();
         }
         catch (final IOException ex)
@@ -345,7 +343,7 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
 
         if (recordingPosition == -1)
         {
-            newRecordingFile(termId);
+            newRecordingSegmentFile(termId);
             if (recordingFileChannel.position() != 0)
             {
                 throw new IllegalArgumentException(
@@ -397,13 +395,13 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
             metaDataBuffer.force();
         }
 
-        if (recordingPosition == recordingFileLength)
+        if (recordingPosition == segmentFileLength)
         {
             CloseHelper.close(recordingFileChannel);
             CloseHelper.close(recordingFile);
             recordingPosition = 0;
             // TODO: allocate ahead files, will also give early indication to low storage
-            newRecordingFile(termId + 1);
+            newRecordingSegmentFile(termId + 1);
         }
     }
 
@@ -465,8 +463,8 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         return metaDataBuffer;
     }
 
-    int recordingFileLength()
+    int segmentFileLength()
     {
-        return recordingFileLength;
+        return segmentFileLength;
     }
 }

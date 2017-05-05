@@ -60,12 +60,12 @@ class ArchiveConductor implements Agent
     {
         this.aeron = aeron;
 
-        archiveDir = ctx.archiveFolder();
+        archiveDir = ctx.archiveDir();
         catalog = new Catalog(archiveDir);
 
         imageRecorderBuilder
-            .recordingFileLength(ctx.recordingFileLength())
-            .archiveFolder(ctx.archiveFolder())
+            .recordingFileLength(ctx.segmentFileLength())
+            .archiveDir(ctx.archiveDir())
             .epochClock(ctx.epochClock())
             .forceMetadataUpdates(ctx.forceMetadataUpdates())
             .forceWrites(ctx.forceWrites());

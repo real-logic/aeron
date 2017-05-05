@@ -49,7 +49,7 @@ public class ArchiverLoadTest
     private Archiver archiver;
     private MediaDriver driver;
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
-    private File archiveFolder;
+    private File archiveDir;
     private int recordingId;
     private String source;
     private int[] fragmentLength;
@@ -84,10 +84,10 @@ public class ArchiverLoadTest
             .dirsDeleteOnStart(true);
 
         driver = MediaDriver.launch(driverCtx);
-        archiveFolder = TestUtil.makeTempFolder();
-        archiverCtx.archiveFolder(archiveFolder);
+        archiveDir = TestUtil.makeTempDir();
+        archiverCtx.archiveDir(archiveDir);
         archiver = Archiver.launch(archiverCtx);
-        println("Archiver started, folder: " + archiverCtx.archiveFolder().getAbsolutePath());
+        println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
         publishingClient = Aeron.connect();
     }
 
@@ -98,9 +98,9 @@ public class ArchiverLoadTest
         CloseHelper.quietClose(archiver);
         CloseHelper.quietClose(driver);
 
-        if (null != archiveFolder)
+        if (null != archiveDir)
         {
-            IoUtil.delete(archiveFolder, false);
+            IoUtil.delete(archiveDir, false);
         }
 
         driverCtx.deleteAeronDirectory();
@@ -159,9 +159,7 @@ public class ArchiverLoadTest
         trackRecordingProgress(publication, archiverNotifications, waitForData);
         publishDataToBeRecorded(publication, messageCount);
         waitForData.await();
-
     }
-
 
     private void awaitStartedRecordingNotification(
         final Subscription archiverNotifications, final Publication publication)
@@ -187,7 +185,7 @@ public class ArchiverLoadTest
 
                 source = decoder.source();
                 assertThat(decoder.channel(), is(PUBLISH_URI));
-                println("Archive started. source: " + source);
+                println("Recording started. source: " + source);
             },
             TIMEOUT);
     }
@@ -240,9 +238,9 @@ public class ArchiverLoadTest
                 {
                     long start = System.currentTimeMillis();
                     long startBytes = recorded;
-                    final long initialArchived = recorded;
+                    final long initialRecorded = recorded;
                     // each message is fragmentLength[fragmentCount]
-                    while (lastTermId == -1 || recorded < initialArchived + totalRecordingLength)
+                    while (lastTermId == -1 || recorded < initialRecorded + totalRecordingLength)
                     {
                         poll(
                             archiverNotifications,
@@ -360,6 +358,7 @@ public class ArchiverLoadTest
                 fail("Offer has timed out");
             }
         }
+
         return newPosition;
     }
 

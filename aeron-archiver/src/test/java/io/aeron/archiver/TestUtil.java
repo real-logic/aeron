@@ -21,13 +21,13 @@ import java.io.*;
 
 class TestUtil
 {
-    static File makeTempFolder() throws IOException
+    static File makeTempDir() throws IOException
     {
-        final File tempFolderForTest = File.createTempFile("archiver.test", "tmp");
+        final File tempDirForTest = File.createTempFile("archiver.test", "tmp");
         // we really need a temp dir, not a file... delete and remake!
-        Assert.assertTrue(tempFolderForTest.delete());
-        Assert.assertTrue(tempFolderForTest.mkdir());
+        Assert.assertTrue(tempDirForTest.delete());
+        Assert.assertTrue(tempDirForTest.mkdir());
 
-        return tempFolderForTest;
+        return tempDirForTest;
     }
 }

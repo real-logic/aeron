@@ -41,15 +41,15 @@ Query Recording Descriptors
 
 Persisted Format
 =====
-The Archiver is backed by 3 file types, all of which are expected to reside in the __archiver folder__.
+The Archiver is backed by 3 file types, all of which are expected to reside in the __archiver dir__.
 
- -  Catalog (one per archive folder): The catalog contains fixed size (4k) records of archive descriptors. The 
+ -  Catalog (one per archive): The catalog contains fixed size (4k) records of archive descriptors. The 
  descriptors can be queried as described above. Each descriptor is 4k aligned, and the __recording id__
  is a simple sequence, which means lookup is a straight dead reconning operation. See the codec
  fo full descriptor details.
  - Recording Metadata (one per recorded stream): This is a duplicate of the data kept in the catalog, but the file
  is memory mapped and updated on the go while recording.
- - Recording Data (many per recorded stream): This is where the recorded data is kept.
+ - Recording Segment Data (many per recorded stream): This is where the recorded data is kept.
  
  Usage
  ===

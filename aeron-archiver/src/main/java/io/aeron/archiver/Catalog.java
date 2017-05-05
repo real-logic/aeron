@@ -49,7 +49,7 @@ class Catalog implements AutoCloseable
     private final FileChannel catalogFileChannel;
     private int recordingIdSeq = 0;
 
-    Catalog(final File archiveFolder)
+    Catalog(final File archiveDir)
     {
         byteBuffer = BufferUtil.allocateDirectAligned(RECORD_LENGTH, PAGE_SIZE);
         unsafeBuffer = new UnsafeBuffer(byteBuffer);
@@ -57,7 +57,7 @@ class Catalog implements AutoCloseable
         FileChannel channel = null;
         try
         {
-            final File catalogFile = new File(archiveFolder, INDEX_FILE_NAME);
+            final File catalogFile = new File(archiveDir, INDEX_FILE_NAME);
             channel = FileChannel.open(catalogFile.toPath(), CREATE, READ, WRITE);
             final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();
 
@@ -127,7 +127,7 @@ class Catalog implements AutoCloseable
         final int termBufferLength,
         final int imageInitialTermId,
         final RecordingSession session,
-        final int archiveFileSize)
+        final int segmentFileLength)
     {
         final int newRecordingId = recordingIdSeq;
 
@@ -136,7 +136,7 @@ class Catalog implements AutoCloseable
             recordingDescriptorEncoder,
             newRecordingId,
             termBufferLength,
-            archiveFileSize,
+            segmentFileLength,
             imageInitialTermId,
             source,
             sessionId,

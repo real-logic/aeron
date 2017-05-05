@@ -28,7 +28,7 @@ import static org.mockito.Mockito.mock;
 
 public class CatalogTest
 {
-    public static final int RECORDING_FILE_SIZE = 128 * 1024 * 1024;
+    public static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
     static final UnsafeBuffer UB = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, 64));
     static final RecordingDescriptorDecoder DECODER = new RecordingDescriptorDecoder();
@@ -36,7 +36,7 @@ public class CatalogTest
     static int recordingBId;
     static int recordingCId;
     static RecordingSession mockSession = mock(RecordingSession.class);
-    private static File archiveFolder;
+    private static File archiveDir;
 
     @BeforeClass
     public static void setup() throws Exception
@@ -46,19 +46,19 @@ public class CatalogTest
             Catalog.CATALOG_FRAME_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
-        archiveFolder = TestUtil.makeTempFolder();
+        archiveDir = TestUtil.makeTempDir();
 
-        try (Catalog catalog = new Catalog(archiveFolder))
+        try (Catalog catalog = new Catalog(archiveDir))
         {
             recordingAId =
                 catalog.addNewRecording("sourceA", 6, "channelG", 1, 4096, 0, mockSession,
-                    RECORDING_FILE_SIZE);
+                    SEGMENT_FILE_SIZE);
             recordingBId =
                 catalog.addNewRecording("sourceV", 7, "channelH", 2, 4096, 0, mockSession,
-                    RECORDING_FILE_SIZE);
+                    SEGMENT_FILE_SIZE);
             recordingCId =
                 catalog.addNewRecording("sourceB", 8, "channelK", 3, 4096, 0, mockSession,
-                    RECORDING_FILE_SIZE);
+                    SEGMENT_FILE_SIZE);
             catalog.removeRecordingSession(recordingAId);
             catalog.removeRecordingSession(recordingBId);
             catalog.removeRecordingSession(recordingCId);
@@ -68,13 +68,13 @@ public class CatalogTest
     @AfterClass
     public static void teardown()
     {
-        IoUtil.delete(archiveFolder, false);
+        IoUtil.delete(archiveDir, false);
     }
 
     @Test
     public void shouldReloadExistingIndex() throws Exception
     {
-        try (Catalog catalog = new Catalog(archiveFolder))
+        try (Catalog catalog = new Catalog(archiveDir))
         {
             verifyRecordingForId(catalog, recordingAId, "sourceA", 6, "channelG", 1);
             verifyRecordingForId(catalog, recordingBId, "sourceV", 7, "channelH", 2);
@@ -105,15 +105,15 @@ public class CatalogTest
     public void shouldAppendToExistingIndex() throws Exception
     {
         final int newRecordingId;
-        try (Catalog catalog = new Catalog(archiveFolder))
+        try (Catalog catalog = new Catalog(archiveDir))
         {
             newRecordingId =
                 catalog.addNewRecording("sourceN", 9, "channelJ", 4, 4096, 0, mockSession,
-                    RECORDING_FILE_SIZE);
+                    SEGMENT_FILE_SIZE);
             catalog.removeRecordingSession(newRecordingId);
         }
 
-        try (Catalog catalog = new Catalog(archiveFolder))
+        try (Catalog catalog = new Catalog(archiveDir))
         {
             verifyRecordingForId(catalog, recordingAId, "sourceA", 6, "channelG", 1);
             verifyRecordingForId(catalog, newRecordingId, "sourceN", 9, "channelJ", 4);
@@ -124,11 +124,11 @@ public class CatalogTest
     public void shouldAllowMultipleInstancesForSameStream() throws Exception
     {
         final int newRecordingId;
-        try (Catalog catalog = new Catalog(archiveFolder))
+        try (Catalog catalog = new Catalog(archiveDir))
         {
             newRecordingId =
                 catalog.addNewRecording("sourceA", 6, "channelG", 1, 4096, 0, mockSession,
-                    RECORDING_FILE_SIZE);
+                    SEGMENT_FILE_SIZE);
             catalog.removeRecordingSession(newRecordingId);
             assertNotEquals(recordingAId, newRecordingId);
         }

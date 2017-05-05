@@ -128,7 +128,7 @@
         <field name="imageInitialTermId"   id="9" type="int32"/>
         <field name="sessionId"            id="10" type="int32"/>
         <field name="streamId"             id="11" type="int32"/>
-        <field name="fileLength"           id="12" type="int32"/>
+        <field name="segmentFileLength"    id="12" type="int32"/>
         <field name="correlationId"        id="13" type="int32" />
         <data  name="source"               id="14" type="varStringEncoding"/>
         <data  name="channel"              id="15" type="varStringEncoding"/>

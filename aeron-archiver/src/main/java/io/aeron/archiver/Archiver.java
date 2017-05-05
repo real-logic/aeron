@@ -96,14 +96,14 @@ public class Archiver implements AutoCloseable
     public static class Context
     {
         private Aeron.Context clientContext;
-        private File archiveFolder;
+        private File archiveDir;
         private String serviceRequestChannel;
         private int serviceRequestStreamId;
         private String archiverNotificationsChannel;
         private int archiverNotificationsStreamId;
         private IdleStrategy idleStrategy;
         private EpochClock epochClock;
-        private int recordingFileLength = 128 * 1024 * 1024;
+        private int segmentFileLength = 128 * 1024 * 1024;
         private boolean forceMetadataUpdates = true;
         private boolean forceWrites = true;
 
@@ -112,10 +112,10 @@ public class Archiver implements AutoCloseable
             this(new Aeron.Context(), new File("archive"));
         }
 
-        public Context(final Aeron.Context clientContext, final File archiveFolder)
+        public Context(final Aeron.Context clientContext, final File archiveDir)
         {
             this.clientContext = clientContext;
-            this.archiveFolder = archiveFolder;
+            this.archiveDir = archiveDir;
             serviceRequestChannel = "aeron:udp?endpoint=localhost:8010";
             serviceRequestStreamId = 0;
             archiverNotificationsChannel = "aeron:udp?endpoint=localhost:8011";
@@ -124,10 +124,10 @@ public class Archiver implements AutoCloseable
 
         void conclude()
         {
-            if (!archiveFolder.exists() && !archiveFolder.mkdirs())
+            if (!archiveDir.exists() && !archiveDir.mkdirs())
             {
                 throw new IllegalArgumentException(
-                    "Failed to create archive folder: " + archiveFolder.getAbsolutePath());
+                    "Failed to create archive dir: " + archiveDir.getAbsolutePath());
             }
 
             if (idleStrategy == null)
@@ -141,14 +141,14 @@ public class Archiver implements AutoCloseable
             }
         }
 
-        public File archiveFolder()
+        public File archiveDir()
         {
-            return archiveFolder;
+            return archiveDir;
         }
 
-        public Context archiveFolder(final File f)
+        public Context archiveDir(final File archiveDir)
         {
-            this.archiveFolder = f;
+            this.archiveDir = archiveDir;
             return this;
         }
 
@@ -241,14 +241,14 @@ public class Archiver implements AutoCloseable
             return epochClock;
         }
 
-        int recordingFileLength()
+        int segmentFileLength()
         {
-            return recordingFileLength;
+            return segmentFileLength;
         }
 
-        public void recordingFileLength(final int recordingFileLength)
+        public void segmentFileLength(final int segmentFileLength)
         {
-            this.recordingFileLength = recordingFileLength;
+            this.segmentFileLength = segmentFileLength;
         }
 
         boolean forceMetadataUpdates()

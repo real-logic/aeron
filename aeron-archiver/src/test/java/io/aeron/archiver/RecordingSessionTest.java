@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 
 public class RecordingSessionTest
 {
-    private static final int ARCHIVE_FILE_SIZE = 128 * 1024 * 1024;
+    private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
     private final int recordingId = 12345;
 
     private final String channel = "channel";
@@ -49,7 +49,7 @@ public class RecordingSessionTest
     private final int termBufferLength = 4096;
     private final int termOffset = 1024;
 
-    private final File tempFolderForTest = TestUtil.makeTempFolder();
+    private final File tempDirForTest = TestUtil.makeTempDir();
     private final ClientProxy proxy;
 
     private final Image image;
@@ -72,7 +72,7 @@ public class RecordingSessionTest
                 eq(termBufferLength),
                 eq(initialTermId),
                 any(RecordingSession.class),
-                eq(ARCHIVE_FILE_SIZE)))
+                eq(SEGMENT_FILE_SIZE)))
                 .thenReturn(recordingId);
         final Subscription subscription = mockSubscription(channel, streamId);
         image = mockImage(source, sessionId, initialTermId, termBufferLength, subscription);
@@ -105,7 +105,7 @@ public class RecordingSessionTest
     {
         IoUtil.unmap(mockLogBufferMapped.byteBuffer());
         CloseHelper.close(mockLogBufferChannel);
-        IoUtil.delete(tempFolderForTest, false);
+        IoUtil.delete(tempDirForTest, false);
         IoUtil.delete(termFile, false);
     }
 
@@ -116,8 +116,8 @@ public class RecordingSessionTest
         when(epochClock.time()).thenReturn(42L);
 
         final ImageRecorder.Builder builder = new ImageRecorder.Builder()
-            .recordingFileLength(ARCHIVE_FILE_SIZE)
-            .archiveFolder(tempFolderForTest)
+            .recordingFileLength(SEGMENT_FILE_SIZE)
+            .archiveDir(tempDirForTest)
             .epochClock(epochClock);
         final RecordingSession session = new RecordingSession(
             proxy, index, image, builder);
@@ -157,10 +157,10 @@ public class RecordingSessionTest
         // We now evaluate the output of the archiver...
 
         // meta data exists and is as expected
-        final File archiveMetaFile = new File(tempFolderForTest, recordingMetaFileName(session.recordingId()));
-        assertTrue(archiveMetaFile.exists());
+        final File recordingMetaFile = new File(tempDirForTest, recordingMetaFileName(session.recordingId()));
+        assertTrue(recordingMetaFile.exists());
 
-        final RecordingDescriptorDecoder metaData = ArchiveUtil.recordingMetaFileFormatDecoder(archiveMetaFile);
+        final RecordingDescriptorDecoder metaData = ArchiveUtil.recordingMetaFileFormatDecoder(recordingMetaFile);
 
         assertEquals(recordingId, metaData.recordingId());
         assertEquals(termBufferLength, metaData.termBufferLength());
@@ -176,12 +176,12 @@ public class RecordingSessionTest
 
 
         // data exists and is as expected
-        final File archiveFile = new File(
-            tempFolderForTest, ArchiveUtil.recordingDataFileName(session.recordingId(), 0));
-        assertTrue(archiveFile.exists());
+        final File segmentFile = new File(
+            tempDirForTest, ArchiveUtil.recordingDataFileName(session.recordingId(), 0));
+        assertTrue(segmentFile.exists());
 
         try (RecordingFragmentReader reader = new RecordingFragmentReader(
-            session.recordingId(), tempFolderForTest))
+            session.recordingId(), tempDirForTest))
         {
             final int polled = reader.controlledPoll(
                 (buffer, offset, length, header) ->

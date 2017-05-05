@@ -26,7 +26,7 @@ import org.mockito.Mockito;
 import java.io.File;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static io.aeron.archiver.TestUtil.makeTempFolder;
+import static io.aeron.archiver.TestUtil.makeTempDir;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -37,7 +37,7 @@ public class ReplaySessionTest
     private static final int TERM_BUFFER_LENGTH = 4096;
     private static final int INITIAL_TERM_ID = 8231773;
     private static final int INITIAL_TERM_OFFSET = 1024;
-    private File archiveFolder;
+    private File archiveDir;
 
     private int messageIndex = 0;
     private ClientProxy proxy;
@@ -45,11 +45,11 @@ public class ReplaySessionTest
     @Before
     public void setup() throws Exception
     {
-        archiveFolder = makeTempFolder();
+        archiveDir = makeTempDir();
         proxy = Mockito.mock(ClientProxy.class);
         final EpochClock epochClock = mock(EpochClock.class);
         try (ImageRecorder recorder = new ImageRecorder.Builder()
-            .archiveFolder(archiveFolder)
+            .archiveDir(archiveDir)
             .epochClock(epochClock)
             .recordingId(RECORDING_ID)
             .termBufferLength(TERM_BUFFER_LENGTH)
@@ -98,7 +98,7 @@ public class ReplaySessionTest
 
         try (RecordingChunkReader chunkReader = new RecordingChunkReader(
             RECORDING_ID,
-            archiveFolder,
+            archiveDir,
             INITIAL_TERM_ID,
             TERM_BUFFER_LENGTH,
             INITIAL_TERM_ID,
@@ -119,7 +119,7 @@ public class ReplaySessionTest
         }
 
         try (RecordingFragmentReader reader = new RecordingFragmentReader(
-            RECORDING_ID, archiveFolder))
+            RECORDING_ID, archiveDir))
         {
             final int polled = reader.controlledPoll(
                 (b, offset, length, h) ->
@@ -137,7 +137,7 @@ public class ReplaySessionTest
     @After
     public void teardown()
     {
-        IoUtil.delete(archiveFolder, false);
+        IoUtil.delete(archiveDir, false);
     }
 
     @Test
@@ -154,7 +154,7 @@ public class ReplaySessionTest
             length,
             replay,
             control,
-            archiveFolder,
+            archiveDir,
             proxy,
             0,
             1);
@@ -228,7 +228,7 @@ public class ReplaySessionTest
             length,
             replay,
             control,
-            archiveFolder,
+            archiveDir,
             proxy,
             0,
             1);

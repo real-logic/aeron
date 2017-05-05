@@ -34,9 +34,9 @@ class ArchiveUtil
         return recordingId + ".inf";
     }
 
-    static String recordingDataFileName(final int recordingId, final int index)
+    static String recordingDataFileName(final int recordingId, final int segmentIndex)
     {
-        return recordingId + "." + index + ".rec";
+        return recordingId + "." + segmentIndex + ".rec";
     }
 
     static String recordingDataFileName(
@@ -44,20 +44,20 @@ class ArchiveUtil
         final int initialTermId,
         final int termBufferLength,
         final int termId,
-        final int recordedFileLength)
+        final int segmentFileLength)
     {
-        final int index = recordingDataFileIndex(initialTermId, termBufferLength, termId, recordedFileLength);
+        final int segmentIndex = segmentFileIndex(initialTermId, termBufferLength, termId, segmentFileLength);
 
-        return recordingDataFileName(recordingId, index);
+        return recordingDataFileName(recordingId, segmentIndex);
     }
 
-    static int recordingDataFileIndex(
+    static int segmentFileIndex(
         final int initialTermId,
         final int termBufferLength,
         final int termId,
-        final int recordedFileLength)
+        final int segmentFileLength)
     {
-        final int termsPerFile = recordedFileLength / termBufferLength;
+        final int termsPerFile = segmentFileLength / termBufferLength;
         return (termId - initialTermId) / termsPerFile;
     }
 
@@ -96,14 +96,14 @@ class ArchiveUtil
         }
     }
 
-    static int offsetInRecordedFile(
+    static int offsetInSegmentFile(
         final int termOffset,
         final int termId,
         final int initialTermId,
         final int termBufferLength,
-        final int recordedFileLength)
+        final int segmentFileLength)
     {
-        final int termsMask = ((recordedFileLength / termBufferLength) - 1);
+        final int termsMask = ((segmentFileLength / termBufferLength) - 1);
         return recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
     }
 

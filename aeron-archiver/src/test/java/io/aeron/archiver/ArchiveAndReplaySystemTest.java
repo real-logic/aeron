@@ -59,7 +59,7 @@ public class ArchiveAndReplaySystemTest
     private Archiver archiver;
     private MediaDriver driver;
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
-    private File archiveFolder;
+    private File archiveDir;
     private int recordingId;
     private String source;
     private long remaining;
@@ -98,10 +98,10 @@ public class ArchiveAndReplaySystemTest
             .dirsDeleteOnStart(true);
 
         driver = MediaDriver.launch(driverCtx);
-        archiveFolder = TestUtil.makeTempFolder();
-        archiverCtx.archiveFolder(archiveFolder);
+        archiveDir = TestUtil.makeTempDir();
+        archiverCtx.archiveDir(archiveDir);
         archiver = Archiver.launch(archiverCtx);
-        println("Archiver started, folder: " + archiverCtx.archiveFolder().getAbsolutePath());
+        println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
         publishingClient = Aeron.connect();
     }
 
@@ -112,9 +112,9 @@ public class ArchiveAndReplaySystemTest
         CloseHelper.close(archiver);
         CloseHelper.close(driver);
 
-        if (null != archiveFolder)
+        if (null != archiveDir)
         {
-            IoUtil.delete(archiveFolder, false);
+            IoUtil.delete(archiveDir, false);
         }
 
         driverCtx.deleteAeronDirectory();
@@ -299,7 +299,7 @@ public class ArchiveAndReplaySystemTest
 
     private void validateMetaDataFile(final Publication publication) throws IOException
     {
-        final File metaFile = new File(archiveFolder, recordingMetaFileName(recordingId));
+        final File metaFile = new File(archiveDir, recordingMetaFileName(recordingId));
         assertTrue(metaFile.exists());
 
         if (DEBUG)
@@ -407,7 +407,7 @@ public class ArchiveAndReplaySystemTest
     private void validateArchiveFile(final int messageCount, final int recordingId) throws IOException
     {
         try (RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
-            recordingId, archiveFolder))
+            recordingId, archiveDir))
         {
             fragmentCount = 0;
             remaining = totalDataLength;
@@ -447,7 +447,7 @@ public class ArchiveAndReplaySystemTest
     private void validateArchiveFileChunked(final int messageCount, final int recordingId) throws IOException
     {
         final RecordingDescriptorDecoder decoder = recordingMetaFileFormatDecoder(
-            new File(archiveFolder, recordingMetaFileName(recordingId)));
+            new File(archiveDir, recordingMetaFileName(recordingId)));
         final long archiveFullLength = ArchiveUtil.recordingFileFullLength(decoder);
         final int initialTermId = decoder.initialTermId();
         final int termBufferLength = decoder.termBufferLength();
@@ -456,7 +456,7 @@ public class ArchiveAndReplaySystemTest
         IoUtil.unmap(decoder.buffer().byteBuffer());
         try (RecordingChunkReader cursor = new RecordingChunkReader(
             recordingId,
-            archiveFolder,
+            archiveDir,
             initialTermId,
             termBufferLength,
             initialTermId,

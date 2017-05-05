@@ -168,7 +168,7 @@ class RecordingSession implements ArchiveConductor.Session
         try
         {
             // TODO: add CRC as option, per fragment, use session id to store CRC
-            workCount = image.rawPoll(recorder, recorder.recordingFileLength());
+            workCount = image.rawPoll(recorder, recorder.segmentFileLength());
             if (workCount != 0)
             {
                 proxy.recordingProgress(

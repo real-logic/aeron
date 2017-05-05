@@ -22,7 +22,7 @@ import static io.aeron.driver.MediaDriver.loadPropertiesFiles;
 public class ArchiverWithEmbeddedDriver
 {
     /**
-     * Start an {@link ArchiverConductor} as a stand-alone process, with an embedded {@link MediaDriver}.
+     * Start an {@link ArchiveConductor} as a stand-alone process, with an embedded {@link MediaDriver}.
      *
      * @param args command line arguments
      * @throws Exception if an error occurs

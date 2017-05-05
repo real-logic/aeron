@@ -19,7 +19,7 @@ package io.aeron.archiver;
 import io.aeron.*;
 import org.agrona.*;
 
-class ArchiverClientSession implements ArchiverConductor.Session, ArchiverProtocolListener
+class ArchiveClientSession implements ArchiveConductor.Session, ArchiveRequestListener
 {
     enum State
     {
@@ -27,13 +27,13 @@ class ArchiverClientSession implements ArchiverConductor.Session, ArchiverProtoc
     }
 
     private final Image image;
-    private final ArchiverProtocolProxy proxy;
-    private final ArchiverConductor conductor;
-    private final ArchiverProtocolAdapter adapter = new ArchiverProtocolAdapter(this);
+    private final ClientProxy proxy;
+    private final ArchiveConductor conductor;
+    private final ArchiveRequestAdapter adapter = new ArchiveRequestAdapter(this);
     private ExclusivePublication reply;
     private State state = State.INIT;
 
-    ArchiverClientSession(final Image image, final ArchiverProtocolProxy proxy, final ArchiverConductor conductor)
+    ArchiveClientSession(final Image image, final ClientProxy proxy, final ArchiveConductor conductor)
     {
         this.image = image;
         this.proxy = proxy;
@@ -50,18 +50,17 @@ class ArchiverClientSession implements ArchiverConductor.Session, ArchiverProtoc
         return state == State.DONE;
     }
 
-    @Override
-    public void remove(final ArchiverConductor conductor)
+    public void remove(final ArchiveConductor conductor)
     {
     }
 
-    @Override
     public int doWork()
     {
         switch (state)
         {
             case INIT:
-                return waitForInitMessage();
+                return waitForConnection();
+
             case WORKING:
                 if (image.isClosed() || !reply.isConnected())
                 {
@@ -72,19 +71,23 @@ class ArchiverClientSession implements ArchiverConductor.Session, ArchiverProtoc
                     return image.poll(adapter, 16);
                 }
                 break;
+
             case CLOSE:
                 CloseHelper.quietClose(reply);
                 state = State.DONE;
                 break;
+
             case DONE:
                 break;
+
             default:
                 throw new IllegalStateException();
         }
+
         return 0;
     }
 
-    private int waitForInitMessage()
+    private int waitForConnection()
     {
         if (reply == null)
         {
@@ -102,10 +105,11 @@ class ArchiverClientSession implements ArchiverConductor.Session, ArchiverProtoc
         {
             state = State.WORKING;
         }
+
         return 0;
     }
 
-    public void onClientInit(
+    public void onConnect(
         final String channel,
         final int streamId)
     {
@@ -113,10 +117,11 @@ class ArchiverClientSession implements ArchiverConductor.Session, ArchiverProtoc
         {
             throw new IllegalStateException();
         }
-        reply = conductor.clientInit(channel, streamId);
+
+        reply = conductor.clientConnect(channel, streamId);
     }
 
-    public void onArchiveStop(
+    public void onStopRecording(
         final int correlationId,
         final String channel,
         final int streamId)
@@ -125,9 +130,10 @@ class ArchiverClientSession implements ArchiverConductor.Session, ArchiverProtoc
         {
             throw new IllegalStateException();
         }
+
         try
         {
-            conductor.stopArchive(channel, streamId);
+            conductor.stopRecording(channel, streamId);
             //proxy.sendResponse(reply, null, correlationId);
         }
         catch (final Exception e)
@@ -136,7 +142,7 @@ class ArchiverClientSession implements ArchiverConductor.Session, ArchiverProtoc
         }
     }
 
-    public void onArchiveStart(
+    public void onStartRecording(
         final int correlationId,
         final String channel,
         final int streamId)
@@ -148,7 +154,7 @@ class ArchiverClientSession implements ArchiverConductor.Session, ArchiverProtoc
 
         try
         {
-            conductor.startArchive(channel, streamId);
+            conductor.startRecording(channel, streamId);
             //proxy.sendResponse(reply, null, correlationId);
         }
         catch (final Exception e)
@@ -156,19 +162,19 @@ class ArchiverClientSession implements ArchiverConductor.Session, ArchiverProtoc
             e.printStackTrace();
             //proxy.sendResponse(reply, e.getMessage(), correlationId);
         }
-
     }
 
-    public void onListStreamInstances(
+    public void onListRecordings(
         final int correlationId,
-        final int from,
-        final int to)
+        final int fromId,
+        final int toId)
     {
         if (state != State.WORKING)
         {
             throw new IllegalStateException();
         }
-        conductor.listStreamInstances(correlationId, reply, from, to);
+
+        conductor.listRecordings(correlationId, reply, fromId, toId);
     }
 
     public void onAbortReplay(final int correlationId)
@@ -177,6 +183,7 @@ class ArchiverClientSession implements ArchiverConductor.Session, ArchiverProtoc
         {
             throw new IllegalStateException();
         }
+
         conductor.stopReplay(0);
     }
 
@@ -184,7 +191,7 @@ class ArchiverClientSession implements ArchiverConductor.Session, ArchiverProtoc
         final int correlationId,
         final int replayStreamId,
         final String replayChannel,
-        final int persistedImageId,
+        final int recordingId,
         final int termId,
         final int termOffset,
         final long length)
@@ -193,15 +200,15 @@ class ArchiverClientSession implements ArchiverConductor.Session, ArchiverProtoc
         {
             throw new IllegalStateException();
         }
+
         conductor.startReplay(
             correlationId,
             reply,
             replayStreamId,
             replayChannel,
-            persistedImageId,
+            recordingId,
             termId,
             termOffset,
             length);
     }
-
 }

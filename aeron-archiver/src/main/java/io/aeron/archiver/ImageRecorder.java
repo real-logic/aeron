@@ -15,7 +15,7 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.archiver.codecs.ArchiveDescriptorEncoder;
+import io.aeron.archiver.codecs.RecordingDescriptorEncoder;
 import io.aeron.logbuffer.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -24,17 +24,16 @@ import java.io.*;
 import java.nio.*;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.PersistedImageFileUtil.archiveDataFileName;
-import static io.aeron.archiver.PersistedImageFileUtil.archiveOffset;
+import static io.aeron.archiver.ArchiveUtil.recordingOffset;
 import static java.nio.file.StandardOpenOption.*;
 
-final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawBlockHandler
+final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHandler
 {
     static class Builder
     {
         private File archiveFolder;
         private EpochClock epochClock;
-        private int persistedImageId;
+        private int recordingId;
         private int termBufferLength;
         private int imageInitialTermId;
         private boolean forceWrites = true;
@@ -43,7 +42,7 @@ final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawB
         private int streamId;
         private String source;
         private String channel;
-        private int archiveFileSize = 128 * 1024 * 1024;
+        private int recordingFileLength = 128 * 1024 * 1024;
 
         Builder archiveFolder(final File archiveFolder)
         {
@@ -57,9 +56,9 @@ final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawB
             return this;
         }
 
-        Builder persistedImageId(final int persistedImageId)
+        Builder recordingId(final int recordingId)
         {
-            this.persistedImageId = persistedImageId;
+            this.recordingId = recordingId;
             return this;
         }
 
@@ -112,44 +111,45 @@ final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawB
             return this;
         }
 
-        Builder archiveFileSize(final int archiveFileSize)
+        Builder recordingFileLength(final int recordingFileSize)
         {
-            this.archiveFileSize = archiveFileSize;
+            this.recordingFileLength = recordingFileSize;
             return this;
         }
 
-        PersistedImageWriter build()
+        ImageRecorder build()
         {
-            return new PersistedImageWriter(this);
+            return new ImageRecorder(this);
         }
 
-        int archiveFileSize()
+        int recordingFileLength()
         {
-            return archiveFileSize;
+            return recordingFileLength;
         }
     }
+
     private final boolean forceWrites;
     private final boolean forceMetadataUpdates;
 
     private final int termBufferLength;
     private final int termsMask;
-    private final int persistedImageId;
+    private final int recordingId;
 
     private final File archiveFolder;
     private final EpochClock epochClock;
 
     private final FileChannel metadataFileChannel;
     private final MappedByteBuffer metaDataBuffer;
-    private final ArchiveDescriptorEncoder metaDataWriter;
-    private final int archiveFileSize;
+    private final RecordingDescriptorEncoder metaDataEncoder;
+    private final int recordingFileSize;
 
     /**
-     * Index is in the range 0:archiveFileSize, except before the first block for this image is received indicated
+     * Index is in the range 0:recordingFileLength, except before the first block for this image is received indicated
      * by -1
      */
     private int archivePosition = -1;
-    private RandomAccessFile archiveFile;
-    private FileChannel archiveFileChannel;
+    private RandomAccessFile recordingFile;
+    private FileChannel recordingFileChannel;
 
     private int initialTermId = -1;
     private int initialTermOffset = -1;
@@ -159,15 +159,15 @@ final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawB
     private boolean closed = false;
     private boolean stopped = false;
 
-    private PersistedImageWriter(final Builder builder)
+    private ImageRecorder(final Builder builder)
     {
-        this.persistedImageId = builder.persistedImageId;
+        this.recordingId = builder.recordingId;
         this.archiveFolder = builder.archiveFolder;
         this.termBufferLength = builder.termBufferLength;
         this.epochClock = builder.epochClock;
-        this.archiveFileSize = builder.archiveFileSize;
+        this.recordingFileSize = builder.recordingFileLength;
 
-        this.termsMask = (builder.archiveFileSize / termBufferLength) - 1;
+        this.termsMask = (builder.recordingFileLength / termBufferLength) - 1;
         this.forceWrites = builder.forceWrites;
         this.forceMetadataUpdates = builder.forceMetadataUpdates;
         if (((termsMask + 1) & termsMask) != 0)
@@ -177,28 +177,28 @@ final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawB
                     "therefore the number of terms in a file is also a power of 2");
         }
 
-        final String archiveMetaFileName = PersistedImageFileUtil.archiveMetaFileName(persistedImageId);
+        final String archiveMetaFileName = ArchiveUtil.recordingMetaFileName(recordingId);
         final File file = new File(archiveFolder, archiveMetaFileName);
         try
         {
             metadataFileChannel = FileChannel.open(file.toPath(), CREATE_NEW, READ, WRITE);
             metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
             final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(metaDataBuffer);
-            metaDataWriter = new ArchiveDescriptorEncoder().wrap(unsafeBuffer, PersistedImagesIndex.INDEX_FRAME_LENGTH);
+            metaDataEncoder = new RecordingDescriptorEncoder()
+                .wrap(unsafeBuffer, RecordingIndex.INDEX_FRAME_LENGTH);
 
             initDescriptor(
-                metaDataWriter,
-                persistedImageId,
+                metaDataEncoder,
+                recordingId,
                 termBufferLength,
-                archiveFileSize,
+                recordingFileSize,
                 builder.imageInitialTermId,
                 builder.source,
                 builder.sessionId,
                 builder.channel,
-                builder.streamId
-            );
+                builder.streamId);
 
-            unsafeBuffer.putInt(0, metaDataWriter.encodedLength());
+            unsafeBuffer.putInt(0, metaDataEncoder.encodedLength());
             metaDataBuffer.force();
         }
         catch (final IOException ex)
@@ -211,17 +211,17 @@ final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawB
     }
 
     static void initDescriptor(
-        final ArchiveDescriptorEncoder descriptor,
-        final int persistedImageId,
+        final RecordingDescriptorEncoder descriptor,
+        final int recordingId,
         final int termBufferLength,
-        final int archiveFileSize,
+        final int fileLength,
         final int imageInitialTermId,
         final String source,
         final int sessionId,
         final String channel,
         final int streamId)
     {
-        descriptor.persistedImageId(persistedImageId);
+        descriptor.recordingId(recordingId);
         descriptor.termBufferLength(termBufferLength);
         descriptor.startTime(-1);
         descriptor.initialTermId(-1);
@@ -232,24 +232,24 @@ final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawB
         descriptor.imageInitialTermId(imageInitialTermId);
         descriptor.sessionId(sessionId);
         descriptor.streamId(streamId);
-        descriptor.archiveFileSize(archiveFileSize);
+        descriptor.fileLength(fileLength);
         descriptor.source(source);
         descriptor.channel(channel);
     }
 
     private void newArchiveFile(final int termId)
     {
-        final String archiveDataFileName = archiveDataFileName(
-            persistedImageId, initialTermId, termBufferLength, termId, archiveFileSize);
+        final String archiveDataFileName = ArchiveUtil.recordingDataFileName(
+            recordingId, initialTermId, termBufferLength, termId, recordingFileSize);
         final File file = new File(archiveFolder, archiveDataFileName);
 
         try
         {
             // NOTE: using 'rwd' options would force sync on data writes(not sync metadata), but is slower than forcing
             // externally.
-            archiveFile = new RandomAccessFile(file, "rw");
-            archiveFile.setLength(archiveFileSize);
-            archiveFileChannel = archiveFile.getChannel();
+            recordingFile = new RandomAccessFile(file, "rw");
+            recordingFile.setLength(recordingFileSize);
+            recordingFileChannel = recordingFile.getChannel();
         }
         catch (final IOException ex)
         {
@@ -271,20 +271,20 @@ final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawB
         if (archivePosition == -1 && termId != initialTermId)
         {
             // archiving an ongoing publication
-            metaDataWriter.initialTermId(termId);
+            metaDataEncoder.initialTermId(termId);
             initialTermId = termId;
         }
         // TODO: if assumptions below are valid the computation is redundant for all but the first time this
         // TODO: ...method is called
-        final int archiveOffset = archiveOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
+        final int archiveOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
         try
         {
             prepareWrite(termOffset, termId, archiveOffset, blockLength);
 
-            fileChannel.transferTo(fileOffset, blockLength, archiveFileChannel);
+            fileChannel.transferTo(fileOffset, blockLength, recordingFileChannel);
             if (forceWrites)
             {
-                archiveFileChannel.force(false);
+                recordingFileChannel.force(false);
             }
 
             writePrologue(termOffset, blockLength, termId, archiveOffset);
@@ -306,12 +306,12 @@ final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawB
         if (archivePosition == -1 && termId != initialTermId)
         {
             // archiving an ongoing publication
-            metaDataWriter.initialTermId(termId);
+            metaDataEncoder.initialTermId(termId);
             initialTermId = termId;
         }
         // TODO: if assumptions below are valid the computation is redundant for all but the first time this
         // TODO: ...method is called
-        final int archiveOffset = archiveOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
+        final int archiveOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
 
         try
         {
@@ -319,7 +319,7 @@ final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawB
 
             final ByteBuffer src = buffer.byteBuffer().duplicate();
             src.position(termOffset).limit(termOffset + frameLength);
-            archiveFileChannel.write(src);
+            recordingFileChannel.write(src);
 
             writePrologue(termOffset, frameLength, termId, archiveOffset);
         }
@@ -346,10 +346,10 @@ final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawB
         if (archivePosition == -1)
         {
             newArchiveFile(termId);
-            if (archiveFileChannel.position() != 0)
+            if (recordingFileChannel.position() != 0)
             {
                 throw new IllegalArgumentException(
-                    "It is assumed that archiveFileChannel.position() is 0 on first write");
+                    "It is assumed that recordingFileChannel.position() is 0 on first write");
             }
 
             archivePosition = termOffset;
@@ -360,20 +360,20 @@ final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawB
                 final ByteBuffer bb = ByteBuffer.allocate(128);
                 bb.putInt(0);
                 bb.putInt(termOffset);
-                archiveFileChannel.write(bb);
+                recordingFileChannel.write(bb);
             }
 
-            metaDataWriter.initialTermOffset(termOffset);
+            metaDataEncoder.initialTermOffset(termOffset);
             initialTermOffset = termOffset;
-            archiveFileChannel.position(archivePosition);
-            metaDataWriter.startTime(epochClock.time());
+            recordingFileChannel.position(archivePosition);
+            metaDataEncoder.startTime(epochClock.time());
         }
         else if (archiveOffset != archivePosition)
         {
             throw new IllegalArgumentException(
-                "It is assumed that archivePosition tracks the calculated archiveOffset");
+                "It is assumed that archivePosition tracks the calculated recordingOffset");
         }
-        else if (archiveFileChannel.position() != archivePosition)
+        else if (recordingFileChannel.position() != archivePosition)
         {
             throw new IllegalArgumentException("It is assumed that archivePosition tracks the file position");
         }
@@ -387,20 +387,20 @@ final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawB
         throws IOException
     {
         archivePosition = archiveOffset + blockLength;
-        metaDataWriter.lastTermId(termId);
+        metaDataEncoder.lastTermId(termId);
         lastTermId = termId;
         final int endTermOffset = termOffset + blockLength;
-        metaDataWriter.lastTermOffset(endTermOffset);
+        metaDataEncoder.lastTermOffset(endTermOffset);
         lastTermOffset = endTermOffset;
         if (forceMetadataUpdates)
         {
             metaDataBuffer.force();
         }
 
-        if (archivePosition == archiveFileSize)
+        if (archivePosition == recordingFileSize)
         {
-            CloseHelper.close(archiveFileChannel);
-            CloseHelper.close(archiveFile);
+            CloseHelper.close(recordingFileChannel);
+            CloseHelper.close(recordingFile);
             archivePosition = 0;
             // TODO: allocate ahead files, will also give early indication to low storage
             newArchiveFile(termId + 1);
@@ -409,7 +409,7 @@ final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawB
 
     void stop()
     {
-        metaDataWriter.endTime(epochClock.time());
+        metaDataEncoder.endTime(epochClock.time());
         metaDataBuffer.force();
         stopped = true;
     }
@@ -421,8 +421,8 @@ final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawB
             return;
         }
 
-        CloseHelper.close(archiveFileChannel);
-        CloseHelper.close(archiveFile);
+        CloseHelper.close(recordingFileChannel);
+        CloseHelper.close(recordingFile);
 
         if (metaDataBuffer != null && !stopped)
         {
@@ -435,9 +435,9 @@ final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawB
         closed = true;
     }
 
-    int persistedImageId()
+    int recordingId()
     {
-        return persistedImageId;
+        return recordingId;
     }
 
     int initialTermId()
@@ -467,6 +467,6 @@ final class PersistedImageWriter implements AutoCloseable, FragmentHandler, RawB
 
     int archiveFileSize()
     {
-        return archiveFileSize;
+        return recordingFileSize;
     }
 }

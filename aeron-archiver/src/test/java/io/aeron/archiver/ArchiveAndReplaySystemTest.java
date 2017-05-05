@@ -32,8 +32,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
-import static io.aeron.archiver.PersistedImageFileUtil.archiveMetaFileFormatDecoder;
-import static io.aeron.archiver.PersistedImageFileUtil.archiveMetaFileName;
+import static io.aeron.archiver.ArchiveUtil.recordingMetaFileFormatDecoder;
+import static io.aeron.archiver.ArchiveUtil.recordingMetaFileName;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -60,15 +60,15 @@ public class ArchiveAndReplaySystemTest
     private MediaDriver driver;
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private File archiveFolder;
-    private int persistedImageId;
+    private int recordingId;
     private String source;
     private long remaining;
     private int nextFragmentOffset;
     private int fragmentCount;
     private int[] fragmentLength;
     private long totalDataLength;
-    private long totalArchiveLength;
-    private long archived;
+    private long totalRecordingLength;
+    private long recorded;
     private volatile int lastTermId = -1;
     private Throwable trackerError;
     private Random rnd = new Random();
@@ -121,49 +121,48 @@ public class ArchiveAndReplaySystemTest
     }
 
     @Test(timeout = 60000)
-    public void archiveAndReplay() throws IOException, InterruptedException
+    public void recordAndReplay() throws IOException, InterruptedException
     {
         try (Publication archiverServiceRequest = publishingClient.addPublication(
                 archiverCtx.serviceRequestChannel(), archiverCtx.serviceRequestStreamId());
              Subscription archiverNotifications = publishingClient.addSubscription(
                 archiverCtx.archiverNotificationsChannel(), archiverCtx.archiverNotificationsStreamId()))
         {
-            final ArchiverClient client = new ArchiverClient(archiverServiceRequest, archiverNotifications);
+            final ArchiveClient client = new ArchiveClient(archiverServiceRequest, archiverNotifications);
 
             awaitPublicationIsConnected(archiverServiceRequest);
             awaitSubscriptionIsConnected(archiverNotifications);
             println("Archive service connected");
 
             reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
-            client.clientInit(REPLY_URI, REPLY_STREAM_ID);
+            client.connect(REPLY_URI, REPLY_STREAM_ID);
             awaitSubscriptionIsConnected(reply);
             println("Client connected");
 
             verifyEmptyDescriptorList(client);
 
-            wait(() -> client.requestArchiveStart(PUBLISH_URI, PUBLISH_STREAM_ID));
-            println("Archive requested");
+            wait(() -> client.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID));
+            println("Recording requested");
 
             final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(publication);
 
-            // awaitArchiveForPublicationStartedNotification
-            wait(() -> (client.pollNotifications(new ArchiverClient.ArchiverNotificationListener()
+            wait(() -> (client.pollEvents(new ArchiveClient.RecordingProgressListener()
             {
                 public void onStart(
-                    final int persistedImageId0,
+                    final int recordingId0,
                     final int sessionId,
                     final int streamId,
                     final String iSource,
                     final String channel)
                 {
-                    persistedImageId = persistedImageId0;
+                    recordingId = recordingId0;
                     assertThat(streamId, is(PUBLISH_STREAM_ID));
                     assertThat(sessionId, is(publication.sessionId()));
 
                     source = iSource;
                     assertThat(channel, is(PUBLISH_URI));
-                    println("Archive started. source: " + source);
+                    println("Recording started. source: " + source);
                 }
                 public void onProgress(final int s, final int i1, final int i2, final int t1, final int t2)
                 {
@@ -177,16 +176,15 @@ public class ArchiveAndReplaySystemTest
 
             verifyDescriptorListOngoingArchive(client, publication, 0);
             final int messageCount = prepAndSendMessages(client, publication);
-            verifyDescriptorListOngoingArchive(client, publication, totalArchiveLength);
+            verifyDescriptorListOngoingArchive(client, publication, totalRecordingLength);
 
             assertNull(trackerError);
             println("All data arrived");
 
-            println("Request stop archive");
-            wait(() -> client.requestArchiveStop(PUBLISH_URI, PUBLISH_STREAM_ID));
+            println("Request stop recording");
+            wait(() -> client.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID));
 
-            // awaitArchiveStoppedNotification
-            wait(() -> (client.pollNotifications(new ArchiverClient.ArchiverNotificationListener()
+            wait(() -> (client.pollEvents(new ArchiveClient.RecordingProgressListener()
             {
                 public void onProgress(final int s, final int i1, final int i2, final int t1, final int t2)
                 {
@@ -198,26 +196,26 @@ public class ArchiveAndReplaySystemTest
                 }
                 public void onStop(final int s)
                 {
-                    assertThat(s, is(persistedImageId));
+                    assertThat(s, is(recordingId));
                 }
             }, 1) != 0));
 
-            verifyDescriptorListOngoingArchive(client, publication, totalArchiveLength);
+            verifyDescriptorListOngoingArchive(client, publication, totalRecordingLength);
 
-            println("Stream instance id: " + persistedImageId);
+            println("Recording id: " + recordingId);
             println("Meta data file printout: ");
 
             validateMetaDataFile(publication);
-            validateArchiveFile(messageCount, persistedImageId);
-            validateArchiveFileChunked(messageCount, persistedImageId);
+            validateArchiveFile(messageCount, recordingId);
+            validateArchiveFileChunked(messageCount, recordingId);
 
             validateReplay(client, publication, messageCount);
         }
     }
 
-    private void verifyEmptyDescriptorList(final ArchiverClient client)
+    private void verifyEmptyDescriptorList(final ArchiveClient client)
     {
-        client.requestListStreamInstances(0, 100);
+        client.listRecordings(0, 100);
         poll(
             reply,
             (b, offset, length, header) ->
@@ -232,11 +230,11 @@ public class ArchiveAndReplaySystemTest
     }
 
     private void verifyDescriptorListOngoingArchive(
-        final ArchiverClient client,
+        final ArchiveClient client,
         final Publication publication,
         final long archiveLength)
     {
-        client.requestListStreamInstances(persistedImageId, persistedImageId);
+        client.listRecordings(recordingId, recordingId);
         println("Await result");
 
         poll(
@@ -244,7 +242,7 @@ public class ArchiveAndReplaySystemTest
             (b, offset, length, header) ->
             {
                 final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(b, offset);
-                if (hDecoder.templateId() != ArchiveDescriptorDecoder.TEMPLATE_ID)
+                if (hDecoder.templateId() != RecordingDescriptorDecoder.TEMPLATE_ID)
                 {
                     println("Got:" + hDecoder.templateId());
                     println(new ArchiverResponseDecoder()
@@ -255,20 +253,20 @@ public class ArchiveAndReplaySystemTest
                             hDecoder.version())
                         .err());
                 }
-                assertThat(hDecoder.templateId(), is(ArchiveDescriptorDecoder.TEMPLATE_ID));
+                assertThat(hDecoder.templateId(), is(RecordingDescriptorDecoder.TEMPLATE_ID));
 
-                final ArchiveDescriptorDecoder decoder = new ArchiveDescriptorDecoder();
+                final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();
                 decoder.wrap(
                     b,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     hDecoder.blockLength(),
                     hDecoder.version());
                 println(decoder.toString());
-                assertThat(decoder.persistedImageId(), is(persistedImageId));
+                assertThat(decoder.recordingId(), is(recordingId));
                 assertThat(decoder.streamId(), is(PUBLISH_STREAM_ID));
                 assertThat(decoder.imageInitialTermId(), is(publication.initialTermId()));
 
-                final long archiveFullLength = PersistedImageFileUtil.archiveFullLength(decoder);
+                final long archiveFullLength = ArchiveUtil.recordingFileFullLength(decoder);
                 assertThat(archiveFullLength, is(archiveLength));
                 //....
             }
@@ -276,7 +274,7 @@ public class ArchiveAndReplaySystemTest
     }
 
     private int prepAndSendMessages(
-        final ArchiverClient client,
+        final ArchiveClient client,
         final Publication publication)
         throws InterruptedException
     {
@@ -292,8 +290,8 @@ public class ArchiveAndReplaySystemTest
         final CountDownLatch waitForData = new CountDownLatch(1);
         printf("Sending %d messages, total length=%d %n", messageCount, totalDataLength);
 
-        trackArchiveProgress(client, publication.termBufferLength(), waitForData);
-        publishDataToBeArchived(publication, messageCount);
+        trackRecordingProgress(client, publication.termBufferLength(), waitForData);
+        publishDataToRecorded(publication, messageCount);
         waitForData.await();
 
         return messageCount;
@@ -301,28 +299,28 @@ public class ArchiveAndReplaySystemTest
 
     private void validateMetaDataFile(final Publication publication) throws IOException
     {
-        final File metaFile = new File(archiveFolder, archiveMetaFileName(persistedImageId));
+        final File metaFile = new File(archiveFolder, recordingMetaFileName(recordingId));
         assertTrue(metaFile.exists());
 
         if (DEBUG)
         {
-            PersistedImageFileUtil.printMetaFile(metaFile);
+            ArchiveUtil.printMetaFile(metaFile);
         }
 
-        final ArchiveDescriptorDecoder decoder = archiveMetaFileFormatDecoder(metaFile);
+        final RecordingDescriptorDecoder decoder = recordingMetaFileFormatDecoder(metaFile);
         assertThat(decoder.initialTermId(), is(publication.initialTermId()));
         assertThat(decoder.sessionId(), is(publication.sessionId()));
         assertThat(decoder.streamId(), is(publication.streamId()));
         assertThat(decoder.termBufferLength(), is(publication.termBufferLength()));
 
-        assertThat(PersistedImageFileUtil.archiveFullLength(decoder), is(totalArchiveLength));
+        assertThat(ArchiveUtil.recordingFileFullLength(decoder), is(totalRecordingLength));
         // length might exceed data sent due to padding
-        assertThat(totalDataLength, lessThanOrEqualTo(totalArchiveLength));
+        assertThat(totalDataLength, lessThanOrEqualTo(totalRecordingLength));
 
         IoUtil.unmap(decoder.buffer().byteBuffer());
     }
 
-    private void publishDataToBeArchived(final Publication publication, final int messageCount)
+    private void publishDataToRecorded(final Publication publication, final int messageCount)
     {
         final int positionBitsToShift = Integer.numberOfTrailingZeros(publication.termBufferLength());
         final long initialPosition = publication.position();
@@ -347,25 +345,25 @@ public class ArchiveAndReplaySystemTest
             publication.position(), positionBitsToShift);
         final int termIdFromPosition = LogBufferDescriptor.computeTermIdFromPosition(
             publication.position(), positionBitsToShift, publication.initialTermId());
-        totalArchiveLength =
+        totalRecordingLength =
             (termIdFromPosition - publication.initialTermId()) * publication.termBufferLength() +
             (lastTermOffset - initialTermOffset);
 
-        assertThat(publication.position() - initialPosition, is(totalArchiveLength));
+        assertThat(publication.position() - initialPosition, is(totalRecordingLength));
         lastTermId = termIdFromPosition;
     }
 
     private void validateReplay(
-        final ArchiverClient client,
+        final ArchiveClient client,
         final Publication publication,
         final int messageCount)
     {
         // request replay
-        wait(() -> client.requestReplay(
-            persistedImageId,
+        wait(() -> client.replay(
+            recordingId,
             publication.initialTermId(),
             0,
-            totalArchiveLength,
+            totalRecordingLength,
             REPLAY_URI,
             101
         ));
@@ -406,10 +404,10 @@ public class ArchiveAndReplaySystemTest
         }
     }
 
-    private void validateArchiveFile(final int messageCount, final int persistedImageId) throws IOException
+    private void validateArchiveFile(final int messageCount, final int recordingId) throws IOException
     {
-        try (PersistedImageFragmentReader archiveDataFileReader = new PersistedImageFragmentReader(
-            persistedImageId, archiveFolder))
+        try (RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
+            recordingId, archiveFolder))
         {
             fragmentCount = 0;
             remaining = totalDataLength;
@@ -446,18 +444,18 @@ public class ArchiveAndReplaySystemTest
         fragmentCount++;
         printf("Fragment2: offset=%d length=%d %n",  offset, length);
     }
-    private void validateArchiveFileChunked(final int messageCount, final int persistedImageId) throws IOException
+    private void validateArchiveFileChunked(final int messageCount, final int recordingId) throws IOException
     {
-        final ArchiveDescriptorDecoder decoder = archiveMetaFileFormatDecoder(
-            new File(archiveFolder, archiveMetaFileName(persistedImageId)));
-        final long archiveFullLength = PersistedImageFileUtil.archiveFullLength(decoder);
+        final RecordingDescriptorDecoder decoder = recordingMetaFileFormatDecoder(
+            new File(archiveFolder, recordingMetaFileName(recordingId)));
+        final long archiveFullLength = ArchiveUtil.recordingFileFullLength(decoder);
         final int initialTermId = decoder.initialTermId();
         final int termBufferLength = decoder.termBufferLength();
         final int initialTermOffset = decoder.initialTermOffset();
 
         IoUtil.unmap(decoder.buffer().byteBuffer());
-        try (PersistedImageChunkReader cursor = new PersistedImageChunkReader(
-            persistedImageId,
+        try (RecordingChunkReader cursor = new RecordingChunkReader(
+            recordingId,
             archiveFolder,
             initialTermId,
             termBufferLength,
@@ -536,8 +534,8 @@ public class ArchiveAndReplaySystemTest
         nextFragmentOffset -= chunkLength;
     }
 
-    private void trackArchiveProgress(
-        final ArchiverClient client,
+    private void trackRecordingProgress(
+        final ArchiveClient client,
         final int termBufferLength,
         final CountDownLatch waitForData)
     {
@@ -546,32 +544,30 @@ public class ArchiveAndReplaySystemTest
             {
                 try
                 {
-                    archived = 0;
+                    recorded = 0;
                     long start = System.currentTimeMillis();
                     long startBytes = remaining;
                     // each message is fragmentLength[fragmentCount]
-                    while (lastTermId == -1 || archived < totalArchiveLength)
+                    while (lastTermId == -1 || recorded < totalRecordingLength)
                     {
-                        wait(() -> (client.pollNotifications(new ArchiverClient.ArchiverNotificationListener()
+                        wait(() -> (client.pollEvents(new ArchiveClient.RecordingProgressListener()
                         {
-                            @Override
                             public void onProgress(
-                                final int persistedImageId0,
+                                final int recordingId0,
                                 final int initialTermId,
                                 final int initialTermOffset,
                                 final int termId,
                                 final int termOffset)
                             {
-                                assertThat(persistedImageId0, is(persistedImageId));
-                                archived = termBufferLength *
+                                assertThat(recordingId0, is(recordingId));
+                                recorded = termBufferLength *
                                     (termId - initialTermId) +
                                     (termOffset - initialTermOffset);
-                                printf("a=%d total=%d %n", archived, totalArchiveLength);
+                                printf("a=%d total=%d %n", recorded, totalRecordingLength);
                             }
 
-                            @Override
                             public void onStart(
-                                final int persistedImageId,
+                                final int recordingId,
                                 final int sessionId,
                                 final int streamId,
                                 final String source,
@@ -580,8 +576,7 @@ public class ArchiveAndReplaySystemTest
                                 fail();
                             }
 
-                            @Override
-                            public void onStop(final int persistedImageId0)
+                            public void onStop(final int recordingId0)
                             {
                                 fail();
                             }

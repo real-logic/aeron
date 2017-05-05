@@ -50,7 +50,7 @@ public class ArchiverLoadTest
     private MediaDriver driver;
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private File archiveFolder;
-    private int streamInstanceId;
+    private int recordingId;
     private String source;
     private int[] fragmentLength;
     private long totalDataLength;
@@ -172,21 +172,21 @@ public class ArchiverLoadTest
             (buffer, offset, length, header) ->
             {
                 final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
-                assertThat(hDecoder.templateId(), is(ArchiveStartedNotificationDecoder.TEMPLATE_ID));
+                assertThat(hDecoder.templateId(), is(RecordingStartedDecoder.TEMPLATE_ID));
 
-                final ArchiveStartedNotificationDecoder mDecoder = new ArchiveStartedNotificationDecoder()
+                final RecordingStartedDecoder decoder = new RecordingStartedDecoder()
                     .wrap(
                         buffer,
                         offset + MessageHeaderDecoder.ENCODED_LENGTH,
                         hDecoder.blockLength(),
                         hDecoder.version());
 
-                streamInstanceId = mDecoder.persistedImageId();
-                assertThat(mDecoder.streamId(), is(PUBLISH_STREAM_ID));
-                assertThat(mDecoder.sessionId(), is(publication.sessionId()));
+                recordingId = decoder.recordingId();
+                assertThat(decoder.streamId(), is(PUBLISH_STREAM_ID));
+                assertThat(decoder.sessionId(), is(publication.sessionId()));
 
-                source = mDecoder.source();
-                assertThat(mDecoder.channel(), is(PUBLISH_URI));
+                source = decoder.source();
+                assertThat(decoder.channel(), is(PUBLISH_URI));
                 println("Archive started. source: " + source);
             },
             TIMEOUT);
@@ -249,15 +249,15 @@ public class ArchiverLoadTest
                             (buffer, offset, length, header) ->
                             {
                                 final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
-                                assertThat(hDecoder.templateId(), is(ArchiveProgressNotificationDecoder.TEMPLATE_ID));
+                                assertThat(hDecoder.templateId(), is(RecordingProgressDecoder.TEMPLATE_ID));
 
-                                final ArchiveProgressNotificationDecoder mDecoder =
-                                    new ArchiveProgressNotificationDecoder().wrap(
+                                final RecordingProgressDecoder mDecoder =
+                                    new RecordingProgressDecoder().wrap(
                                         buffer,
                                         offset + MessageHeaderDecoder.ENCODED_LENGTH,
                                         hDecoder.blockLength(),
                                         hDecoder.version());
-                                assertThat(mDecoder.persistedImageId(), is(streamInstanceId));
+                                assertThat(mDecoder.recordingId(), is(recordingId));
 
                                 println(mDecoder.toString());
                                 archived = publication.termBufferLength() *
@@ -409,12 +409,12 @@ public class ArchiverLoadTest
     {
         new MessageHeaderEncoder()
             .wrap(buffer, 0)
-            .templateId(ArchiveStartRequestEncoder.TEMPLATE_ID)
-            .blockLength(ArchiveStartRequestEncoder.BLOCK_LENGTH)
-            .schemaId(ArchiveStartRequestEncoder.SCHEMA_ID)
-            .version(ArchiveStartRequestEncoder.SCHEMA_VERSION);
+            .templateId(StartRecordingRequestEncoder.TEMPLATE_ID)
+            .blockLength(StartRecordingRequestEncoder.BLOCK_LENGTH)
+            .schemaId(StartRecordingRequestEncoder.SCHEMA_ID)
+            .version(StartRecordingRequestEncoder.SCHEMA_VERSION);
 
-        final ArchiveStartRequestEncoder encoder = new ArchiveStartRequestEncoder()
+        final StartRecordingRequestEncoder encoder = new StartRecordingRequestEncoder()
             .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH)
             .channel(channel)
             .streamId(streamId);
@@ -426,5 +426,4 @@ public class ArchiverLoadTest
             encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH,
             TIMEOUT);
     }
-
 }

@@ -22,30 +22,30 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * Consumes an {@link Image} and archives data into file using {@link PersistedImageWriter}.
+ * Consumes an {@link Image} and records data to file using an {@link ImageRecorder}.
  */
-class RecordPersistedImageSession implements ArchiverConductor.Session
+class RecordingSession implements ArchiveConductor.Session
 {
     private enum State
     {
         INIT, ARCHIVING, CLOSING, DONE
     }
 
-    private int persistedImageId = PersistedImagesIndex.NULL_STREAM_INDEX;
-    private final ArchiverProtocolProxy proxy;
+    private int recordingId = RecordingIndex.NULL_STREAM_INDEX;
+    private final ClientProxy proxy;
     private final Image image;
-    private final PersistedImagesIndex index;
-    private final PersistedImageWriter.Builder builder;
+    private final RecordingIndex index;
+    private final ImageRecorder.Builder builder;
 
-    private PersistedImageWriter writer;
+    private ImageRecorder recorder;
 
     private State state = State.INIT;
 
-    RecordPersistedImageSession(
-        final ArchiverProtocolProxy proxy,
-        final PersistedImagesIndex index,
+    RecordingSession(
+        final ClientProxy proxy,
+        final RecordingIndex index,
         final Image image,
-        final PersistedImageWriter.Builder builder)
+        final ImageRecorder.Builder builder)
     {
         this.proxy = proxy;
         this.image = image;
@@ -92,10 +92,10 @@ class RecordPersistedImageSession implements ArchiverConductor.Session
         final int imageInitialTermId = image.initialTermId();
 
 
-        PersistedImageWriter writer = null;
+        ImageRecorder recorder = null;
         try
         {
-            persistedImageId = index.addNewPersistedImage(
+            recordingId = index.addNewRecording(
                 source,
                 sessionId,
                 channel,
@@ -103,17 +103,17 @@ class RecordPersistedImageSession implements ArchiverConductor.Session
                 termBufferLength,
                 imageInitialTermId,
                 this,
-                builder.archiveFileSize());
+                builder.recordingFileLength());
 
-            proxy.notifyArchiveStarted(
-                persistedImageId,
+            proxy.recordingStarted(
+                recordingId,
                 source,
                 sessionId,
                 channel,
                 streamId);
 
-            writer = builder
-                .persistedImageId(persistedImageId)
+            recorder = builder
+                .recordingId(recordingId)
                 .termBufferLength(termBufferLength)
                 .imageInitialTermId(imageInitialTermId)
                 .source(source)
@@ -128,24 +128,24 @@ class RecordPersistedImageSession implements ArchiverConductor.Session
             LangUtil.rethrowUnchecked(ex);
         }
 
-        this.writer = writer;
+        this.recorder = recorder;
         this.state = State.ARCHIVING;
         return 1;
     }
 
-    int persistedImageId()
+    int recordingId()
     {
-        return persistedImageId;
+        return recordingId;
     }
 
     private int close()
     {
         try
         {
-            if (writer != null)
+            if (recorder != null)
             {
-                writer.stop();
-                index.updateIndexFromMeta(persistedImageId, writer.metaDataBuffer());
+                recorder.stop();
+                index.updateIndexFromMeta(recordingId, recorder.metaDataBuffer());
             }
         }
         catch (final IOException ex)
@@ -154,8 +154,8 @@ class RecordPersistedImageSession implements ArchiverConductor.Session
         }
         finally
         {
-            CloseHelper.quietClose(writer);
-            proxy.notifyArchiveStopped(persistedImageId);
+            CloseHelper.quietClose(recorder);
+            proxy.recordingStopped(recordingId);
             this.state = State.DONE;
         }
 
@@ -168,15 +168,15 @@ class RecordPersistedImageSession implements ArchiverConductor.Session
         try
         {
             // TODO: add CRC as option, per fragment, use session id to store CRC
-            workCount = image.rawPoll(writer, writer.archiveFileSize());
+            workCount = image.rawPoll(recorder, recorder.archiveFileSize());
             if (workCount != 0)
             {
-                proxy.notifyArchiveProgress(
-                    writer.persistedImageId(),
-                    writer.initialTermId(),
-                    writer.initialTermOffset(),
-                    writer.lastTermId(),
-                    writer.lastTermOffset());
+                proxy.recordingProgress(
+                    recorder.recordingId(),
+                    recorder.initialTermId(),
+                    recorder.initialTermOffset(),
+                    recorder.lastTermId(),
+                    recorder.lastTermOffset());
             }
 
             if (image.isClosed())
@@ -198,13 +198,13 @@ class RecordPersistedImageSession implements ArchiverConductor.Session
         return state == State.DONE;
     }
 
-    public void remove(final ArchiverConductor conductor)
+    public void remove(final ArchiveConductor conductor)
     {
-        index.removeRecordingSession(persistedImageId);
+        index.removeRecordingSession(recordingId);
     }
 
     ByteBuffer metaDataBuffer()
     {
-        return writer.metaDataBuffer();
+        return recorder.metaDataBuffer();
     }
 }

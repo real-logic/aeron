@@ -15,7 +15,7 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.archiver.codecs.ArchiveDescriptorDecoder;
+import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -24,15 +24,15 @@ import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.PersistedImageFileUtil.*;
+import static io.aeron.archiver.ArchiveUtil.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardOpenOption.READ;
 
-class PersistedImageFragmentReader implements AutoCloseable
+class RecordingFragmentReader implements AutoCloseable
 {
-    private final int streamInstanceId;
+    private final int recordingId;
     private final File archiveFolder;
     private final int initialTermId;
     private final int termBufferLength;
@@ -41,29 +41,29 @@ class PersistedImageFragmentReader implements AutoCloseable
     private final int fromTermId;
     private final int fromTermOffset;
     private final long replayLength;
-    private final int archiveFileSize;
+    private final int recordingFileLength;
 
-    private int archiveFileIndex;
+    private int recordingFileIndex;
     private FileChannel currentDataChannel = null;
     private UnsafeBuffer termMappedUnsafeBuffer = null;
-    private int archiveTermStartOffset;
+    private int recordingTermStartOffset;
     private int fragmentOffset;
     private long transmitted = 0;
     private final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
 
-    PersistedImageFragmentReader(final int streamInstanceId, final File archiveFolder) throws IOException
+    RecordingFragmentReader(final int recordingId, final File archiveFolder) throws IOException
     {
-        this.streamInstanceId = streamInstanceId;
+        this.recordingId = recordingId;
         this.archiveFolder = archiveFolder;
-        final String archiveMetaFileName = archiveMetaFileName(streamInstanceId);
+        final String recordingMetaFileName = recordingMetaFileName(recordingId);
         // TODO: Should this just be read rather than mapped given the one of read?
-        final File archiveMetaFile = new File(archiveFolder, archiveMetaFileName);
-        final ArchiveDescriptorDecoder metaDecoder = archiveMetaFileFormatDecoder(archiveMetaFile);
+        final File recordingMetaFile = new File(archiveFolder, recordingMetaFileName);
+        final RecordingDescriptorDecoder metaDecoder = recordingMetaFileFormatDecoder(recordingMetaFile);
         termBufferLength = metaDecoder.termBufferLength();
         initialTermId = metaDecoder.initialTermId();
         initialTermOffset = metaDecoder.initialTermOffset();
-        archiveFileSize = metaDecoder.archiveFileSize();
-        fullLength = PersistedImageFileUtil.archiveFullLength(metaDecoder);
+        recordingFileLength = metaDecoder.fileLength();
+        fullLength = ArchiveUtil.recordingFileFullLength(metaDecoder);
         IoUtil.unmap(metaDecoder.buffer().byteBuffer());
         fromTermId = initialTermId;
         fromTermOffset = initialTermOffset;
@@ -71,40 +71,39 @@ class PersistedImageFragmentReader implements AutoCloseable
         initCursorState();
     }
 
-    PersistedImageFragmentReader(
-        final int streamInstanceId,
+    RecordingFragmentReader(
+        final int recordingId,
         final File archiveFolder,
         final int termId,
         final int termOffset,
         final long length) throws IOException
     {
-        this.streamInstanceId = streamInstanceId;
+        this.recordingId = recordingId;
         this.archiveFolder = archiveFolder;
         this.fromTermId = termId;
         this.fromTermOffset = termOffset;
         this.replayLength = length;
-        final String archiveMetaFileName = archiveMetaFileName(streamInstanceId);
-        final File archiveMetaFile = new File(archiveFolder, archiveMetaFileName);
-        final ArchiveDescriptorDecoder metaDecoder = archiveMetaFileFormatDecoder(archiveMetaFile);
+        final String recordingMetaFileName = recordingMetaFileName(recordingId);
+        final File recordingMetaFile = new File(archiveFolder, recordingMetaFileName);
+        final RecordingDescriptorDecoder metaDecoder = recordingMetaFileFormatDecoder(recordingMetaFile);
         termBufferLength = metaDecoder.termBufferLength();
         initialTermId = metaDecoder.initialTermId();
         initialTermOffset = metaDecoder.initialTermOffset();
-        archiveFileSize = metaDecoder.archiveFileSize();
-        fullLength = PersistedImageFileUtil.archiveFullLength(metaDecoder);
+        recordingFileLength = metaDecoder.fileLength();
+        fullLength = ArchiveUtil.recordingFileFullLength(metaDecoder);
         IoUtil.unmap(metaDecoder.buffer().byteBuffer());
         initCursorState();
     }
 
     private void initCursorState() throws IOException
     {
-        archiveFileIndex = persistedImageDataFileIndex(initialTermId, termBufferLength, fromTermId,
-            archiveFileSize);
-        final int archiveOffset = offsetInPersistedImageFile(
-            fromTermOffset, fromTermId, initialTermId, termBufferLength, archiveFileSize);
-        archiveTermStartOffset = archiveOffset - fromTermOffset;
-        openArchiveFile();
+        recordingFileIndex = recordingDataFileIndex(initialTermId, termBufferLength, fromTermId, recordingFileLength);
+        final int archiveOffset = offsetInArchivedFile(
+            fromTermOffset, fromTermId, initialTermId, termBufferLength, recordingFileLength);
+        recordingTermStartOffset = archiveOffset - fromTermOffset;
+        openRecordingFile();
         termMappedUnsafeBuffer = new UnsafeBuffer(
-            currentDataChannel.map(READ_ONLY, archiveTermStartOffset, termBufferLength));
+            currentDataChannel.map(READ_ONLY, recordingTermStartOffset, termBufferLength));
 
         // TODO: align first fragment
         fragmentOffset = archiveOffset & (termBufferLength - 1);
@@ -162,23 +161,23 @@ class PersistedImageFragmentReader implements AutoCloseable
         if (!isDone() && fragmentOffset == termBufferLength)
         {
             fragmentOffset = 0;
-            archiveTermStartOffset += termBufferLength;
+            recordingTermStartOffset += termBufferLength;
 
             // rotate file
-            if (archiveTermStartOffset == archiveFileSize)
+            if (recordingTermStartOffset == recordingFileLength)
             {
-                closeArchiveFile();
-                archiveFileIndex++;
-                openArchiveFile();
-                archiveTermStartOffset = 0;
+                closeRecordingFile();
+                recordingFileIndex++;
+                openRecordingFile();
+                recordingTermStartOffset = 0;
             }
             else
             {
                 unmapTermBuffer();
             }
             // rotate term
-            final MappedByteBuffer mappedByteBuffer =
-                currentDataChannel.map(READ_ONLY, archiveTermStartOffset, termBufferLength);
+            final MappedByteBuffer mappedByteBuffer = currentDataChannel.map(
+                READ_ONLY, recordingTermStartOffset, termBufferLength);
             termMappedUnsafeBuffer.wrap(mappedByteBuffer);
         }
 
@@ -193,23 +192,23 @@ class PersistedImageFragmentReader implements AutoCloseable
         }
     }
 
-    private void closeArchiveFile()
+    private void closeRecordingFile()
     {
         unmapTermBuffer();
         CloseHelper.close(currentDataChannel);
     }
 
-    private void openArchiveFile() throws IOException
+    private void openRecordingFile() throws IOException
     {
-        final String archiveDataFileName = archiveDataFileName(streamInstanceId, archiveFileIndex);
-        final File archiveDataFile = new File(archiveFolder, archiveDataFileName);
+        final String recordingDataFileName = recordingDataFileName(recordingId, recordingFileIndex);
+        final File recordingDataFile = new File(archiveFolder, recordingDataFileName);
 
-        if (!archiveDataFile.exists())
+        if (!recordingDataFile.exists())
         {
-            throw new IOException(archiveDataFile.getAbsolutePath() + " not found");
+            throw new IOException(recordingDataFile.getAbsolutePath() + " not found");
         }
 
-        currentDataChannel = FileChannel.open(archiveDataFile.toPath(), READ);
+        currentDataChannel = FileChannel.open(recordingDataFile.toPath(), READ);
     }
 
     boolean isDone()
@@ -219,7 +218,7 @@ class PersistedImageFragmentReader implements AutoCloseable
 
     public void close()
     {
-        closeArchiveFile();
+        closeRecordingFile();
     }
 
     interface SimplifiedControlledPoll

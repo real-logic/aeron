@@ -15,7 +15,7 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.archiver.codecs.ArchiveDescriptorDecoder;
+import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -27,31 +27,31 @@ import java.util.Date;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 
-class PersistedImageFileUtil
+class ArchiveUtil
 {
-    static String archiveMetaFileName(final int persistedImageId)
+    static String recordingMetaFileName(final int recordingId)
     {
-        return persistedImageId + ".meta";
+        return recordingId + ".inf";
     }
 
-    static String archiveDataFileName(final int persistedImageId, final int index)
+    static String recordingDataFileName(final int recordingId, final int index)
     {
-        return persistedImageId + "." + index + ".aaf";
+        return recordingId + "." + index + ".dat";
     }
 
-    static String archiveDataFileName(
-        final int persistedImageId,
+    static String recordingDataFileName(
+        final int recordingId,
         final int initialTermId,
         final int termBufferLength,
         final int termId,
         final int archiveFileSize)
     {
-        final int index = persistedImageDataFileIndex(initialTermId, termBufferLength, termId, archiveFileSize);
+        final int index = recordingDataFileIndex(initialTermId, termBufferLength, termId, archiveFileSize);
 
-        return archiveDataFileName(persistedImageId, index);
+        return recordingDataFileName(recordingId, index);
     }
 
-    static int persistedImageDataFileIndex(
+    static int recordingDataFileIndex(
         final int initialTermId,
         final int termBufferLength,
         final int termId,
@@ -63,8 +63,8 @@ class PersistedImageFileUtil
 
     static void printMetaFile(final File metaFile) throws IOException
     {
-        final ArchiveDescriptorDecoder formatDecoder = archiveMetaFileFormatDecoder(metaFile);
-        System.out.println("persistedImageId: " + formatDecoder.persistedImageId());
+        final RecordingDescriptorDecoder formatDecoder = recordingMetaFileFormatDecoder(metaFile);
+        System.out.println("recordingId: " + formatDecoder.recordingId());
         System.out.println("termBufferLength: " + formatDecoder.termBufferLength());
         System.out.println("start time: " + new Date(formatDecoder.startTime()));
         System.out.println("initialTermId: " + formatDecoder.initialTermId());
@@ -79,24 +79,24 @@ class PersistedImageFileUtil
         IoUtil.unmap(formatDecoder.buffer().byteBuffer());
     }
 
-    static ArchiveDescriptorDecoder archiveMetaFileFormatDecoder(final File metaFile)
+    static RecordingDescriptorDecoder recordingMetaFileFormatDecoder(final File metaFile)
         throws IOException
     {
         try (FileChannel metadataFileChannel = FileChannel.open(metaFile.toPath(), READ, WRITE))
         {
             final MappedByteBuffer metaDataBuffer = metadataFileChannel.map(
-                FileChannel.MapMode.READ_WRITE, 0, PersistedImagesIndex.INDEX_RECORD_SIZE);
-            final ArchiveDescriptorDecoder decoder = new ArchiveDescriptorDecoder();
+                FileChannel.MapMode.READ_WRITE, 0, RecordingIndex.INDEX_RECORD_SIZE);
+            final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();
 
             return decoder.wrap(
                 new UnsafeBuffer(metaDataBuffer),
-                PersistedImagesIndex.INDEX_FRAME_LENGTH,
-                ArchiveDescriptorDecoder.BLOCK_LENGTH,
-                ArchiveDescriptorDecoder.SCHEMA_VERSION);
+                RecordingIndex.INDEX_FRAME_LENGTH,
+                RecordingDescriptorDecoder.BLOCK_LENGTH,
+                RecordingDescriptorDecoder.SCHEMA_VERSION);
         }
     }
 
-    static int offsetInPersistedImageFile(
+    static int offsetInArchivedFile(
         final int termOffset,
         final int termId,
         final int initialTermId,
@@ -104,10 +104,10 @@ class PersistedImageFileUtil
         final int archiveFileSize)
     {
         final int termsMask = ((archiveFileSize / termBufferLength) - 1);
-        return archiveOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
+        return recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
     }
 
-    static int archiveOffset(
+    static int recordingOffset(
         final int termOffset,
         final int termId,
         final int initialTermId,
@@ -117,7 +117,7 @@ class PersistedImageFileUtil
         return ((termId - initialTermId) & termsMask) * termBufferLength + termOffset;
     }
 
-    static long archiveFullLength(final ArchiveDescriptorDecoder metaDecoder)
+    static long recordingFileFullLength(final RecordingDescriptorDecoder metaDecoder)
     {
         return ((long)(metaDecoder.lastTermId() - metaDecoder.initialTermId())) * metaDecoder.termBufferLength() +
             (metaDecoder.lastTermOffset() - metaDecoder.initialTermOffset());

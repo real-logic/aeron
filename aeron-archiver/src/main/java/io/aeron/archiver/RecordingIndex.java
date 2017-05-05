@@ -25,15 +25,15 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.PersistedImageWriter.initDescriptor;
+import static io.aeron.archiver.ImageRecorder.initDescriptor;
 import static java.nio.file.StandardOpenOption.*;
 
 /**
- * Index file for the archiving service provides a persisted log of archives, past and present, and used to lookup
+ * Index file for the archiving service keeps an archive of recorded images, past and present, and used to lookup
  * details. The index format is simple, allocating a fixed 4KB record for each archive descriptor. This allows offset
  * based look up of a descriptor in the file.
  */
-class PersistedImagesIndex implements AutoCloseable
+class RecordingIndex implements AutoCloseable
 {
     // TODO: Make DSYNC optional via configuration.
 
@@ -43,15 +43,15 @@ class PersistedImagesIndex implements AutoCloseable
     private static final int PAGE_SIZE = 4096;
     static final int NULL_STREAM_INDEX = -1;
 
-    private final ArchiveDescriptorEncoder archiveDescriptorEncoder = new ArchiveDescriptorEncoder();
-    private final Int2ObjectHashMap<RecordPersistedImageSession> recordSession2IdMap = new Int2ObjectHashMap<>();
+    private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
+    private final Int2ObjectHashMap<RecordingSession> recordSession2IdMap = new Int2ObjectHashMap<>();
 
     private final ByteBuffer byteBuffer;
     private final UnsafeBuffer unsafeBuffer;
-    private final FileChannel archiveIndexFileChannel;
-    private int persistedImageIdSeq = 0;
+    private final FileChannel recordingIndexFileChannel;
+    private int recordingIdSeq = 0;
 
-    PersistedImagesIndex(final File archiveFolder)
+    RecordingIndex(final File archiveFolder)
     {
         byteBuffer = BufferUtil.allocateDirectAligned(INDEX_RECORD_SIZE, PAGE_SIZE);
         unsafeBuffer = new UnsafeBuffer(byteBuffer);
@@ -61,7 +61,7 @@ class PersistedImagesIndex implements AutoCloseable
         {
             final File indexFile = new File(archiveFolder, INDEX_FILE_NAME);
             channel = FileChannel.open(indexFile.toPath(), CREATE, READ, WRITE);
-            final ArchiveDescriptorDecoder decoder = new ArchiveDescriptorDecoder();
+            final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();
 
             while (channel.read(byteBuffer) != -1)
             {
@@ -80,7 +80,7 @@ class PersistedImagesIndex implements AutoCloseable
                 byteBuffer.clear();
             }
 
-            archiveDescriptorEncoder.wrap(unsafeBuffer, INDEX_FRAME_LENGTH);
+            recordingDescriptorEncoder.wrap(unsafeBuffer, INDEX_FRAME_LENGTH);
         }
         catch (final IOException ex)
         {
@@ -88,13 +88,13 @@ class PersistedImagesIndex implements AutoCloseable
         }
         finally
         {
-            archiveIndexFileChannel = channel;
+            recordingIndexFileChannel = channel;
         }
     }
 
     // TODO: prep for some lookup method construction
     private int loadIntoIndex(
-        final ByteBuffer dst, final UnsafeBuffer unsafeBuffer, final ArchiveDescriptorDecoder decoder)
+        final ByteBuffer dst, final UnsafeBuffer unsafeBuffer, final RecordingDescriptorDecoder decoder)
     {
         if (dst.remaining() == 0)
         {
@@ -107,36 +107,36 @@ class PersistedImagesIndex implements AutoCloseable
         decoder.wrap(
             unsafeBuffer,
             INDEX_FRAME_LENGTH,
-            ArchiveDescriptorDecoder.BLOCK_LENGTH,
-            ArchiveDescriptorDecoder.SCHEMA_VERSION);
+            RecordingDescriptorDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.SCHEMA_VERSION);
 
-        final int persistedImageId = decoder.persistedImageId();
+        final int recordingId = decoder.recordingId();
 //        final int sessionId = decoder.sessionId();
 //        final int streamId = decoder.streamId();
 //        final String source = decoder.source();
 //        final String channel = decoder.channel();
 
-        persistedImageIdSeq = Math.max(persistedImageId + 1, persistedImageIdSeq);
+        recordingIdSeq = Math.max(recordingId + 1, recordingIdSeq);
 
         return length + INDEX_FRAME_LENGTH;
     }
 
-    int addNewPersistedImage(
+    int addNewRecording(
         final String source,
         final int sessionId,
         final String channel,
         final int streamId,
         final int termBufferLength,
         final int imageInitialTermId,
-        final RecordPersistedImageSession session,
+        final RecordingSession session,
         final int archiveFileSize)
     {
-        final int newStreamInstanceId = persistedImageIdSeq;
+        final int newRecordingId = recordingIdSeq;
 
-        archiveDescriptorEncoder.limit(INDEX_FRAME_LENGTH + ArchiveDescriptorEncoder.BLOCK_LENGTH);
+        recordingDescriptorEncoder.limit(INDEX_FRAME_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH);
         initDescriptor(
-            archiveDescriptorEncoder,
-            newStreamInstanceId,
+            recordingDescriptorEncoder,
+            newRecordingId,
             termBufferLength,
             archiveFileSize,
             imageInitialTermId,
@@ -145,13 +145,13 @@ class PersistedImagesIndex implements AutoCloseable
             channel,
             streamId);
 
-        final int encodedLength = archiveDescriptorEncoder.encodedLength();
+        final int encodedLength = recordingDescriptorEncoder.encodedLength();
         unsafeBuffer.putInt(0, encodedLength);
 
         try
         {
             byteBuffer.clear();
-            final int written = archiveIndexFileChannel.write(byteBuffer);
+            final int written = recordingIndexFileChannel.write(byteBuffer);
             if (written != INDEX_RECORD_SIZE)
             {
                 throw new IllegalStateException();
@@ -162,14 +162,14 @@ class PersistedImagesIndex implements AutoCloseable
             LangUtil.rethrowUnchecked(ex);
         }
 
-        persistedImageIdSeq++;
-        recordSession2IdMap.put(newStreamInstanceId, session);
-        return newStreamInstanceId;
+        recordingIdSeq++;
+        recordSession2IdMap.put(newRecordingId, session);
+        return newRecordingId;
     }
 
     public void close()
     {
-        CloseHelper.close(archiveIndexFileChannel);
+        CloseHelper.close(recordingIndexFileChannel);
 
         if (!recordSession2IdMap.isEmpty())
         {
@@ -177,7 +177,7 @@ class PersistedImagesIndex implements AutoCloseable
         }
     }
 
-    boolean readArchiveDescriptor(final int persistedImageId, final ByteBuffer buffer)
+    boolean readRecordingDescriptor(final int recordingId, final ByteBuffer buffer)
         throws IOException
     {
         if (buffer.remaining() != INDEX_RECORD_SIZE)
@@ -185,7 +185,7 @@ class PersistedImagesIndex implements AutoCloseable
             throw new IllegalArgumentException("buffer must have exactly INDEX_RECORD_SIZE remaining to read into");
         }
 
-        final int read = archiveIndexFileChannel.read(buffer, persistedImageId * INDEX_RECORD_SIZE);
+        final int read = recordingIndexFileChannel.read(buffer, recordingId * INDEX_RECORD_SIZE);
         if (read == 0 || read == -1)
         {
             return false;
@@ -199,23 +199,23 @@ class PersistedImagesIndex implements AutoCloseable
         return true;
     }
 
-    void updateIndexFromMeta(final int persistedImageId, final ByteBuffer metaDataBuffer) throws IOException
+    void updateIndexFromMeta(final int recordingId, final ByteBuffer metaDataBuffer) throws IOException
     {
-        archiveIndexFileChannel.write(metaDataBuffer, persistedImageId * INDEX_RECORD_SIZE);
+        recordingIndexFileChannel.write(metaDataBuffer, recordingId * INDEX_RECORD_SIZE);
     }
 
-    int maxStreamInstanceId()
+    int maxRecordingId()
     {
-        return persistedImageIdSeq;
+        return recordingIdSeq;
     }
 
-    RecordPersistedImageSession getArchivingSession(final int persistedImageId)
+    RecordingSession getRecordingSession(final int recordingId)
     {
-        return recordSession2IdMap.get(persistedImageId);
+        return recordSession2IdMap.get(recordingId);
     }
 
-    void removeRecordingSession(final int persistedImageId)
+    void removeRecordingSession(final int recordingId)
     {
-        recordSession2IdMap.remove(persistedImageId);
+        recordSession2IdMap.remove(recordingId);
     }
 }

@@ -25,7 +25,7 @@ import java.io.*;
 
 /**
  * A replay session with a client which works through the required request response flow and streaming of archived data.
- * The {@link ArchiverConductor} will initiate a session on receiving a ReplayRequest
+ * The {@link ArchiveConductor} will initiate a session on receiving a ReplayRequest
  * (see {@link io.aeron.archiver.codecs.ReplayRequestDecoder}). The session will:
  * <ul>
  * <li>Establish a reply {@link Publication} with the initiator(or someone else possibly) </li>
@@ -33,9 +33,9 @@ import java.io.*;
  * <li>Stream archived data into reply {@link Publication}</li>
  * </ul>
  */
-class ReplayPersistedImageSession implements
-    ArchiverConductor.Session,
-    PersistedImageFragmentReader.SimplifiedControlledPoll
+class ReplaySession implements
+    ArchiveConductor.Session,
+    RecordingFragmentReader.SimplifiedControlledPoll
 {
     private enum State
     {
@@ -43,7 +43,7 @@ class ReplayPersistedImageSession implements
     }
 
     // replay boundaries
-    private final int persistedImageId;
+    private final int recordingId;
     private final int fromTermId;
     private final int fromTermOffset;
     private final long replayLength;
@@ -52,26 +52,26 @@ class ReplayPersistedImageSession implements
     private final ExclusivePublication control;
 
     private final File archiveFolder;
-    private final ArchiverProtocolProxy proxy;
+    private final ClientProxy proxy;
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
 
     private State state = State.INIT;
-    private PersistedImageFragmentReader cursor;
+    private RecordingFragmentReader cursor;
     private final int replaySessionId;
     private final int correlationId;
 
-    ReplayPersistedImageSession(
-        final int persistedImageId,
+    ReplaySession(
+        final int recordingId,
         final int fromTermId,
         final int fromTermOffset,
         final long replayLength,
         final ExclusivePublication replay,
         final ExclusivePublication control,
         final File archiveFolder,
-        final ArchiverProtocolProxy proxy,
+        final ClientProxy proxy,
         final int replaySessionId, final int correlationId)
     {
-        this.persistedImageId = persistedImageId;
+        this.recordingId = recordingId;
 
         this.fromTermId = fromTermId;
         this.fromTermOffset = fromTermOffset;
@@ -92,10 +92,12 @@ class ReplayPersistedImageSession implements
         {
             workDone += replay();
         }
+
         else if (state == State.INIT)
         {
             workDone += init();
         }
+
         if (state == State.CLOSE)
         {
             workDone += close();
@@ -114,7 +116,7 @@ class ReplayPersistedImageSession implements
         return state == State.DONE;
     }
 
-    public void remove(final ArchiverConductor conductor)
+    public void remove(final ArchiveConductor conductor)
     {
         conductor.removeReplaySession(replaySessionId);
     }
@@ -135,7 +137,7 @@ class ReplayPersistedImageSession implements
             return 0;
         }
 
-        final String archiveMetaFileName = PersistedImageFileUtil.archiveMetaFileName(persistedImageId);
+        final String archiveMetaFileName = ArchiveUtil.recordingMetaFileName(recordingId);
         final File archiveMetaFile = new File(archiveFolder, archiveMetaFileName);
         if (!archiveMetaFile.exists())
         {
@@ -143,10 +145,10 @@ class ReplayPersistedImageSession implements
             return closeOnErr(null, err);
         }
 
-        final ArchiveDescriptorDecoder metaData;
+        final RecordingDescriptorDecoder metaData;
         try
         {
-            metaData = PersistedImageFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
+            metaData = ArchiveUtil.recordingMetaFileFormatDecoder(archiveMetaFile);
         }
         catch (final IOException ex)
         {
@@ -192,8 +194,8 @@ class ReplayPersistedImageSession implements
 
         try
         {
-            cursor = new PersistedImageFragmentReader(
-                persistedImageId,
+            cursor = new RecordingFragmentReader(
+                recordingId,
                 archiveFolder,
                 fromTermId,
                 fromTermOffset,

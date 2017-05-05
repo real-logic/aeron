@@ -15,14 +15,15 @@
  */
 package io.aeron.archiver;
 
-interface ArchiverProtocolListener
+interface ArchiveRequestListener
 {
-    void onClientInit(String channel, int streamId);
-    void onArchiveStop(int correlationId, String channel, int streamId);
+    void onConnect(String channel, int streamId);
 
-    void onArchiveStart(int correlationId, String channel1, int streamId);
+    void onStopRecording(int correlationId, String channel, int streamId);
 
-    void onListStreamInstances(int correlationId, int from, int to);
+    void onStartRecording(int correlationId, String channel, int streamId);
+
+    void onListRecordings(int correlationId, int fromId, int toId);
 
     void onAbortReplay(int correlationId);
 
@@ -30,7 +31,7 @@ interface ArchiverProtocolListener
         int correlationId,
         int replayStreamId,
         String replayChannel,
-        int persistedImageId,
+        int recordingId,
         int termId,
         int termOffset,
         long length);

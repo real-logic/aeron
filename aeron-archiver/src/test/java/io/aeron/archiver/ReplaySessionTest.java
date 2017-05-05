@@ -31,27 +31,27 @@ import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-public class ReplayPersistedImageSessionTest
+public class ReplaySessionTest
 {
-    private static final int PERSISTED_IMAGE_ID = 0;
+    private static final int RECORDING_ID = 0;
     private static final int TERM_BUFFER_LENGTH = 4096;
     private static final int INITIAL_TERM_ID = 8231773;
     private static final int INITIAL_TERM_OFFSET = 1024;
     private File archiveFolder;
 
     private int messageIndex = 0;
-    private ArchiverProtocolProxy proxy;
+    private ClientProxy proxy;
 
     @Before
     public void setup() throws Exception
     {
         archiveFolder = makeTempFolder();
-        proxy = Mockito.mock(ArchiverProtocolProxy.class);
+        proxy = Mockito.mock(ClientProxy.class);
         final EpochClock epochClock = mock(EpochClock.class);
-        try (PersistedImageWriter writer = new PersistedImageWriter.Builder()
+        try (ImageRecorder recorder = new ImageRecorder.Builder()
             .archiveFolder(archiveFolder)
             .epochClock(epochClock)
-            .persistedImageId(PERSISTED_IMAGE_ID)
+            .recordingId(RECORDING_ID)
             .termBufferLength(TERM_BUFFER_LENGTH)
             .imageInitialTermId(INITIAL_TERM_ID)
             .source("source")
@@ -87,7 +87,7 @@ public class ReplayPersistedImageSessionTest
             assertEquals(INITIAL_TERM_ID, header.termId());
             assertEquals(INITIAL_TERM_OFFSET, header.offset());
 
-            writer.onFragment(
+            recorder.onFragment(
                 buffer,
                 header.offset() + DataHeaderFlyweight.HEADER_LENGTH,
                 header.frameLength() - DataHeaderFlyweight.HEADER_LENGTH,
@@ -96,8 +96,8 @@ public class ReplayPersistedImageSessionTest
             when(epochClock.time()).thenReturn(84L);
         }
 
-        try (PersistedImageChunkReader chunkReader = new PersistedImageChunkReader(
-            PERSISTED_IMAGE_ID,
+        try (RecordingChunkReader chunkReader = new RecordingChunkReader(
+            RECORDING_ID,
             archiveFolder,
             INITIAL_TERM_ID,
             TERM_BUFFER_LENGTH,
@@ -118,8 +118,8 @@ public class ReplayPersistedImageSessionTest
                 1024);
         }
 
-        try (PersistedImageFragmentReader reader = new PersistedImageFragmentReader(
-            PERSISTED_IMAGE_ID, archiveFolder))
+        try (RecordingFragmentReader reader = new RecordingFragmentReader(
+            RECORDING_ID, archiveFolder))
         {
             final int polled = reader.controlledPoll(
                 (b, offset, length, h) ->
@@ -147,8 +147,8 @@ public class ReplayPersistedImageSessionTest
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
         final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
 
-        final ReplayPersistedImageSession replayPersistedImageSession = new ReplayPersistedImageSession(
-            PERSISTED_IMAGE_ID,
+        final ReplaySession replaySession = new ReplaySession(
+            RECORDING_ID,
             INITIAL_TERM_ID,
             INITIAL_TERM_OFFSET,
             length,
@@ -168,7 +168,7 @@ public class ReplayPersistedImageSessionTest
         when(control.isConnected()).thenReturn(false);
 
         // does not switch to replay mode until publications are established
-        assertEquals(0, replayPersistedImageSession.doWork());
+        assertEquals(0, replaySession.doWork());
 
         // pick one to establish first
         if (ThreadLocalRandom.current().nextDouble() > 0.5)
@@ -181,13 +181,13 @@ public class ReplayPersistedImageSessionTest
         }
 
         // does not switch to replay mode until BOTH publications are established
-        assertEquals(0, replayPersistedImageSession.doWork());
+        assertEquals(0, replaySession.doWork());
 
         when(replay.isConnected()).thenReturn(true);
         when(control.isConnected()).thenReturn(true);
 
         // publications are connected, so do some work
-        assertNotEquals(0, replayPersistedImageSession.doWork());
+        assertNotEquals(0, replaySession.doWork());
 
         // notifies that initiated
         verify(proxy, times(1)).sendResponse(control, null, 1);
@@ -203,15 +203,15 @@ public class ReplayPersistedImageSessionTest
 
                 return (long)claimedSize;
             });
-        assertNotEquals(0, replayPersistedImageSession.doWork());
+        assertNotEquals(0, replaySession.doWork());
         assertTrue(messageIndex > 0);
 
         //  frame length
         assertEquals(1024, mockTermBuffer.getInt(0));
         // TODO: add validation for reserved value and flags
 
-        assertTrue(replayPersistedImageSession.isDone());
-        assertEquals(0, replayPersistedImageSession.doWork());
+        assertTrue(replaySession.isDone());
+        assertEquals(0, replaySession.doWork());
     }
 
     @Test
@@ -221,8 +221,8 @@ public class ReplayPersistedImageSessionTest
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
         final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
 
-        final ReplayPersistedImageSession replayPersistedImageSession = new ReplayPersistedImageSession(
-            PERSISTED_IMAGE_ID + 1,
+        final ReplaySession replaySession = new ReplaySession(
+            RECORDING_ID + 1,
             INITIAL_TERM_ID,
             INITIAL_TERM_OFFSET,
             length,
@@ -240,12 +240,12 @@ public class ReplayPersistedImageSessionTest
         when(replay.isConnected()).thenReturn(true);
         when(control.isConnected()).thenReturn(true);
 
-        assertEquals(1, replayPersistedImageSession.doWork());
+        assertEquals(1, replaySession.doWork());
 
         // failure notification
         verify(proxy, times(1)).sendResponse(eq(control), notNull(),
             eq(1));
 
-        assertTrue(replayPersistedImageSession.isDone());
+        assertTrue(replaySession.isDone());
     }
 }

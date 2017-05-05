@@ -71,13 +71,13 @@ public class Archiver implements AutoCloseable
         // TODO: Should we allow the allocation of more threads to these tasks assuming slow storage/sufficient
         // TODO: traffic/sufficient replay load?
 
-        final ArchiverConductor archiverConductor = new ArchiverConductor(aeron, ctx);
+        final ArchiveConductor archiveConductor = new ArchiveConductor(aeron, ctx);
 
         runner = new AgentRunner(
             ctx.clientContext.idleStrategy(),
             ctx.clientContext.errorHandler(),
             null,
-            archiverConductor);
+            archiveConductor);
         AgentRunner.startOnThread(runner, ctx.clientContext.threadFactory());
     }
 

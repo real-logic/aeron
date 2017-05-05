@@ -16,7 +16,7 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
-import io.aeron.archiver.codecs.ArchiveDescriptorDecoder;
+import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
@@ -28,18 +28,17 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.PersistedImageFileUtil.archiveDataFileName;
-import static io.aeron.archiver.PersistedImageFileUtil.archiveMetaFileName;
+import static io.aeron.archiver.ArchiveUtil.recordingMetaFileName;
 import static java.nio.file.StandardOpenOption.*;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class RecordPersistedImageSessionTest
+public class RecordingSessionTest
 {
     private static final int ARCHIVE_FILE_SIZE = 128 * 1024 * 1024;
-    private final int persistedImageId = 12345;
+    private final int recordingId = 12345;
 
     private final String channel = "channel";
     private final String source = "sourceIdentity";
@@ -51,30 +50,30 @@ public class RecordPersistedImageSessionTest
     private final int termOffset = 1024;
 
     private final File tempFolderForTest = TestUtil.makeTempFolder();
-    private final ArchiverProtocolProxy proxy;
+    private final ClientProxy proxy;
 
     private final Image image;
-    private final PersistedImagesIndex index;
+    private final RecordingIndex index;
 
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
     private File termFile;
 
-    public RecordPersistedImageSessionTest() throws IOException
+    public RecordingSessionTest() throws IOException
     {
-        proxy = mock(ArchiverProtocolProxy.class);
-        index = mock(PersistedImagesIndex.class);
+        proxy = mock(ClientProxy.class);
+        index = mock(RecordingIndex.class);
         when(
-            index.addNewPersistedImage(
+            index.addNewRecording(
                 eq(source),
                 eq(sessionId),
                 eq(channel),
                 eq(streamId),
                 eq(termBufferLength),
                 eq(initialTermId),
-                any(RecordPersistedImageSession.class),
+                any(RecordingSession.class),
                 eq(ARCHIVE_FILE_SIZE)))
-                .thenReturn(persistedImageId);
+                .thenReturn(recordingId);
         final Subscription subscription = mockSubscription(channel, streamId);
         image = mockImage(source, sessionId, initialTermId, termBufferLength, subscription);
     }
@@ -116,19 +115,19 @@ public class RecordPersistedImageSessionTest
         final EpochClock epochClock = Mockito.mock(EpochClock.class);
         when(epochClock.time()).thenReturn(42L);
 
-        final PersistedImageWriter.Builder builder = new PersistedImageWriter.Builder()
-            .archiveFileSize(ARCHIVE_FILE_SIZE)
+        final ImageRecorder.Builder builder = new ImageRecorder.Builder()
+            .recordingFileLength(ARCHIVE_FILE_SIZE)
             .archiveFolder(tempFolderForTest)
             .epochClock(epochClock);
-        final RecordPersistedImageSession session = new RecordPersistedImageSession(
+        final RecordingSession session = new RecordingSession(
             proxy, index, image, builder);
 
         // pre-init
-        assertEquals(PersistedImagesIndex.NULL_STREAM_INDEX, session.persistedImageId());
+        assertEquals(RecordingIndex.NULL_STREAM_INDEX, session.recordingId());
 
         session.doWork();
 
-        assertEquals(persistedImageId, session.persistedImageId());
+        assertEquals(recordingId, session.recordingId());
 
         // setup the mock image to pass on the mock log buffer
         when(image.rawPoll(any(), anyInt())).thenAnswer(
@@ -158,12 +157,12 @@ public class RecordPersistedImageSessionTest
         // We now evaluate the output of the archiver...
 
         // meta data exists and is as expected
-        final File archiveMetaFile = new File(tempFolderForTest, archiveMetaFileName(session.persistedImageId()));
+        final File archiveMetaFile = new File(tempFolderForTest, recordingMetaFileName(session.recordingId()));
         assertTrue(archiveMetaFile.exists());
 
-        final ArchiveDescriptorDecoder metaData = PersistedImageFileUtil.archiveMetaFileFormatDecoder(archiveMetaFile);
+        final RecordingDescriptorDecoder metaData = ArchiveUtil.recordingMetaFileFormatDecoder(archiveMetaFile);
 
-        assertEquals(persistedImageId, metaData.persistedImageId());
+        assertEquals(recordingId, metaData.recordingId());
         assertEquals(termBufferLength, metaData.termBufferLength());
         assertEquals(initialTermId, metaData.initialTermId());
         assertEquals(termOffset, metaData.initialTermOffset());
@@ -177,13 +176,12 @@ public class RecordPersistedImageSessionTest
 
 
         // data exists and is as expected
-        final File archiveDataFile = new File(
-            tempFolderForTest,
-            archiveDataFileName(session.persistedImageId(), 0));
-        assertTrue(archiveDataFile.exists());
+        final File archiveFile = new File(
+            tempFolderForTest, ArchiveUtil.recordingDataFileName(session.recordingId(), 0));
+        assertTrue(archiveFile.exists());
 
-        try (PersistedImageFragmentReader reader = new PersistedImageFragmentReader(
-            session.persistedImageId(), tempFolderForTest))
+        try (RecordingFragmentReader reader = new RecordingFragmentReader(
+            session.recordingId(), tempFolderForTest))
         {
             final int polled = reader.controlledPoll(
                 (buffer, offset, length, header) ->

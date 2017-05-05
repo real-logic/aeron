@@ -22,15 +22,15 @@ import java.io.*;
 import java.nio.channels.FileChannel;
 import java.util.Objects;
 
-import static io.aeron.archiver.PersistedImageFileUtil.offsetInPersistedImageFile;
-import static io.aeron.archiver.PersistedImageFileUtil.persistedImageDataFileIndex;
+import static io.aeron.archiver.ArchiveUtil.offsetInArchivedFile;
+import static io.aeron.archiver.ArchiveUtil.recordingDataFileIndex;
 import static java.lang.Math.min;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardOpenOption.READ;
 
-class PersistedImageChunkReader implements AutoCloseable
+class RecordingChunkReader implements AutoCloseable
 {
-    private final int streamInstanceId;
+    private final int recordingId;
     private final File archiveFolder;
     private final int termBufferLength;
     private final int archiveFileSize;
@@ -46,8 +46,8 @@ class PersistedImageChunkReader implements AutoCloseable
     private int initTermOffset;
     private int termOffset;
 
-    PersistedImageChunkReader(
-        final int streamInstanceId,
+    RecordingChunkReader(
+        final int recordingId,
         final File archiveFolder,
         final int initialTermId,
         final int termBufferLength,
@@ -57,15 +57,15 @@ class PersistedImageChunkReader implements AutoCloseable
         final int archiveFileSize) throws IOException
     {
         this.archiveFileSize = archiveFileSize;
-        this.streamInstanceId = streamInstanceId;
+        this.recordingId = recordingId;
         this.archiveFolder = archiveFolder;
         this.termBufferLength = termBufferLength;
 
         this.length = length;
 
         transmitted = 0;
-        fileIndex = persistedImageDataFileIndex(initialTermId, termBufferLength, termId, archiveFileSize);
-        final int archiveOffset = offsetInPersistedImageFile(
+        fileIndex = recordingDataFileIndex(initialTermId, termBufferLength, termId, archiveFileSize);
+        final int archiveOffset = offsetInArchivedFile(
             termOffset,
             termId,
             initialTermId,
@@ -74,7 +74,7 @@ class PersistedImageChunkReader implements AutoCloseable
         initTermOffset = archiveOffset - termOffset;
         this.termOffset = termOffset;
 
-        final String archiveDataFileName = PersistedImageFileUtil.archiveDataFileName(streamInstanceId, fileIndex);
+        final String archiveDataFileName = ArchiveUtil.recordingDataFileName(recordingId, fileIndex);
         final File archiveDataFile = new File(archiveFolder, archiveDataFileName);
 
         if (!archiveDataFile.exists())
@@ -146,7 +146,7 @@ class PersistedImageChunkReader implements AutoCloseable
         {
             initTermOffset = 0;
             fileIndex++;
-            final String archiveDataFileNameN = PersistedImageFileUtil.archiveDataFileName(streamInstanceId, fileIndex);
+            final String archiveDataFileNameN = ArchiveUtil.recordingDataFileName(recordingId, fileIndex);
             final File archiveDataFileN = new File(archiveFolder, archiveDataFileNameN);
 
             if (!archiveDataFileN.exists())

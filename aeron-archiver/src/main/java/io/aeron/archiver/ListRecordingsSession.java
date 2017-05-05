@@ -26,25 +26,25 @@ import java.nio.ByteBuffer;
 
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
-class ListPersistedImageDescriptorsSession implements ArchiverConductor.Session
+class ListRecordingsSession implements ArchiveConductor.Session
 {
     static final long NOT_FOUND_HEADER;
     static final long DESCRIPTOR_HEADER;
 
     static
     {
-        // create constant header values to avoid recalcuation on each meassage sent
+        // create constant header values to avoid recalculation on each message sent
         final MessageHeaderEncoder encoder = new MessageHeaderEncoder();
         encoder.wrap(new UnsafeBuffer(new byte[8]), 0);
-        encoder.schemaId(ListStreamInstancesNotFoundResponseDecoder.SCHEMA_ID);
-        encoder.version(ListStreamInstancesNotFoundResponseDecoder.SCHEMA_VERSION);
-        encoder.blockLength(ListStreamInstancesNotFoundResponseDecoder.BLOCK_LENGTH);
-        encoder.templateId(ListStreamInstancesNotFoundResponseDecoder.TEMPLATE_ID);
+        encoder.schemaId(RecordingNotFoundResponseEncoder.SCHEMA_ID);
+        encoder.version(RecordingNotFoundResponseEncoder.SCHEMA_VERSION);
+        encoder.blockLength(RecordingNotFoundResponseEncoder.BLOCK_LENGTH);
+        encoder.templateId(RecordingNotFoundResponseEncoder.TEMPLATE_ID);
         NOT_FOUND_HEADER = encoder.buffer().getLong(0);
-        encoder.schemaId(ArchiveDescriptorDecoder.SCHEMA_ID);
-        encoder.version(ArchiveDescriptorDecoder.SCHEMA_VERSION);
-        encoder.blockLength(ArchiveDescriptorDecoder.BLOCK_LENGTH);
-        encoder.templateId(ArchiveDescriptorDecoder.TEMPLATE_ID);
+        encoder.schemaId(RecordingDescriptorEncoder.SCHEMA_ID);
+        encoder.version(RecordingDescriptorEncoder.SCHEMA_VERSION);
+        encoder.blockLength(RecordingDescriptorEncoder.BLOCK_LENGTH);
+        encoder.templateId(RecordingDescriptorEncoder.TEMPLATE_ID);
         DESCRIPTOR_HEADER = encoder.buffer().getLong(0);
     }
 
@@ -57,31 +57,31 @@ class ListPersistedImageDescriptorsSession implements ArchiverConductor.Session
     }
 
     private final ByteBuffer byteBuffer =
-        BufferUtil.allocateDirectAligned(PersistedImagesIndex.INDEX_RECORD_SIZE, CACHE_LINE_LENGTH);
+        BufferUtil.allocateDirectAligned(RecordingIndex.INDEX_RECORD_SIZE, CACHE_LINE_LENGTH);
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
 
     private final ExclusivePublication reply;
-    private final int from;
-    private final int to;
-    private final PersistedImagesIndex index;
-    private final ArchiverProtocolProxy proxy;
+    private final int fromId;
+    private final int toId;
+    private final RecordingIndex index;
+    private final ClientProxy proxy;
     private final int correlationId;
 
     private int cursor;
     private State state = State.INIT;
 
-    ListPersistedImageDescriptorsSession(
+    ListRecordingsSession(
         final int correlationId, final ExclusivePublication reply,
-        final int from,
-        final int to,
-        final PersistedImagesIndex index,
-        final ArchiverProtocolProxy proxy)
+        final int fromId,
+        final int toId,
+        final RecordingIndex index,
+        final ClientProxy proxy)
     {
         this.reply = reply;
-        cursor = from;
-        this.from = from;
-        this.to = to;
+        cursor = fromId;
+        this.fromId = fromId;
+        this.toId = toId;
         this.index = index;
         this.proxy = proxy;
         this.correlationId = correlationId;
@@ -97,7 +97,7 @@ class ListPersistedImageDescriptorsSession implements ArchiverConductor.Session
         return state == State.DONE;
     }
 
-    public void remove(final ArchiverConductor conductor)
+    public void remove(final ArchiveConductor conductor)
     {
     }
 
@@ -132,27 +132,27 @@ class ListPersistedImageDescriptorsSession implements ArchiverConductor.Session
 
     private int sendDescriptors()
     {
-        final int limit = Math.min(cursor + 4, to);
+        final int limit = Math.min(cursor + 4, toId);
         for (; cursor <= limit; cursor++)
         {
-            final RecordPersistedImageSession session = index.getArchivingSession(cursor);
+            final RecordingSession session = index.getRecordingSession(cursor);
             if (session == null)
             {
                 byteBuffer.clear();
                 unsafeBuffer.wrap(byteBuffer);
                 try
                 {
-                    if (!index.readArchiveDescriptor(cursor, byteBuffer))
+                    if (!index.readRecordingDescriptor(cursor, byteBuffer))
                     {
                         // return relevant error
                         if (reply.tryClaim(
-                            8 + ListStreamInstancesNotFoundResponseDecoder.BLOCK_LENGTH, bufferClaim) > 0L)
+                            8 + RecordingNotFoundResponseDecoder.BLOCK_LENGTH, bufferClaim) > 0L)
                         {
                             final MutableDirectBuffer buffer = bufferClaim.buffer();
                             final int offset = bufferClaim.offset();
                             buffer.putLong(offset, NOT_FOUND_HEADER);
                             buffer.putInt(offset + 8, cursor);
-                            buffer.putInt(offset + 12, index.maxStreamInstanceId());
+                            buffer.putInt(offset + 12, index.maxRecordingId());
                             bufferClaim.commit();
                             state = State.CLOSE;
                         }
@@ -172,11 +172,11 @@ class ListPersistedImageDescriptorsSession implements ArchiverConductor.Session
             }
 
             final int length = unsafeBuffer.getInt(0);
-            unsafeBuffer.putLong(PersistedImagesIndex.INDEX_FRAME_LENGTH - 8, DESCRIPTOR_HEADER);
-            reply.offer(unsafeBuffer, PersistedImagesIndex.INDEX_FRAME_LENGTH - 8, length + 8);
+            unsafeBuffer.putLong(RecordingIndex.INDEX_FRAME_LENGTH - 8, DESCRIPTOR_HEADER);
+            reply.offer(unsafeBuffer, RecordingIndex.INDEX_FRAME_LENGTH - 8, length + 8);
         }
 
-        if (cursor > to)
+        if (cursor > toId)
         {
             state = State.CLOSE;
         }
@@ -192,12 +192,12 @@ class ListPersistedImageDescriptorsSession implements ArchiverConductor.Session
             return 0;
         }
 
-        if (from > to)
+        if (fromId > toId)
         {
             proxy.sendResponse(reply, "Requested range is reversed (to < from)", correlationId);
             state = State.CLOSE;
         }
-        else if (to > index.maxStreamInstanceId())
+        else if (toId > index.maxRecordingId())
         {
             proxy.sendResponse(reply, "Requested range exceeds available range (to > max)", correlationId);
             state = State.CLOSE;

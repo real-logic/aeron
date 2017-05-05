@@ -19,44 +19,45 @@ import io.aeron.archiver.codecs.*;
 import io.aeron.logbuffer.*;
 import org.agrona.DirectBuffer;
 
-class ArchiverProtocolAdapter implements FragmentHandler
+class ArchiveRequestAdapter implements FragmentHandler
 {
-    private final ArchiverProtocolListener listener;
+    private final ArchiveRequestListener listener;
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ReplayRequestDecoder replayRequestDecoder = new ReplayRequestDecoder();
     private final AbortReplayRequestDecoder abortReplayRequestDecoder = new AbortReplayRequestDecoder();
-    private final ArchiveStartRequestDecoder archiveStartRequestDecoder = new ArchiveStartRequestDecoder();
-    private final ArchiveStopRequestDecoder archiveStopRequestDecoder = new ArchiveStopRequestDecoder();
-    private final ListStreamInstancesRequestDecoder listStreamInstancesRequestDecoder =
-        new ListStreamInstancesRequestDecoder();
-    private final ArchiverClientInitDecoder archiverClientInitDecoder = new ArchiverClientInitDecoder();
+    private final StartRecordingRequestDecoder startRecordingRequestDecoder = new StartRecordingRequestDecoder();
+    private final StopRecordingRequestDecoder stopRecordingRequestDecoder = new StopRecordingRequestDecoder();
+    private final ListRecordingsRequestDecoder listRecordingsRequestDecoder = new ListRecordingsRequestDecoder();
+    private final ConnectRequestDecoder connectRequestDecoder = new ConnectRequestDecoder();
 
-    ArchiverProtocolAdapter(final ArchiverProtocolListener listener)
+    ArchiveRequestAdapter(final ArchiveRequestListener listener)
     {
         this.listener = listener;
     }
 
+    @SuppressWarnings("MethodLength")
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         headerDecoder.wrap(buffer, offset);
         final int templateId = headerDecoder.templateId();
-        // TODO: handle message versions
 
         switch (templateId)
         {
-            case ArchiverClientInitDecoder.TEMPLATE_ID:
+            case ConnectRequestDecoder.TEMPLATE_ID:
             {
-                archiverClientInitDecoder.wrap(
+                connectRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     headerDecoder.blockLength(),
                     headerDecoder.version());
 
-                listener.onClientInit(
-                    archiverClientInitDecoder.replyChannel(),
-                    archiverClientInitDecoder.replyStreamId());
+                listener.onConnect(
+                    connectRequestDecoder.responseChannel(),
+                    connectRequestDecoder.responseStreamId()
+                );
                 break;
             }
+
             case ReplayRequestDecoder.TEMPLATE_ID:
             {
                 replayRequestDecoder.wrap(
@@ -69,40 +70,43 @@ class ArchiverProtocolAdapter implements FragmentHandler
                     replayRequestDecoder.correlationId(),
                     replayRequestDecoder.replayStreamId(),
                     replayRequestDecoder.replayChannel(),
-                    replayRequestDecoder.persistedImageId(),
+                    replayRequestDecoder.recordingId(),
                     replayRequestDecoder.termId(),
                     replayRequestDecoder.termOffset(),
                     replayRequestDecoder.length());
                 break;
             }
-            case ArchiveStartRequestDecoder.TEMPLATE_ID:
+
+            case StartRecordingRequestDecoder.TEMPLATE_ID:
             {
-                archiveStartRequestDecoder.wrap(
+                startRecordingRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     headerDecoder.blockLength(),
                     headerDecoder.version());
 
-                listener.onArchiveStart(
-                    archiveStartRequestDecoder.correlationId(),
-                    archiveStartRequestDecoder.channel(),
-                    archiveStartRequestDecoder.streamId());
+                listener.onStartRecording(
+                    startRecordingRequestDecoder.correlationId(),
+                    startRecordingRequestDecoder.channel(),
+                    startRecordingRequestDecoder.streamId());
                 break;
             }
-            case ArchiveStopRequestDecoder.TEMPLATE_ID:
+
+            case StopRecordingRequestDecoder.TEMPLATE_ID:
             {
-                archiveStopRequestDecoder.wrap(
+                stopRecordingRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     headerDecoder.blockLength(),
                     headerDecoder.version());
 
-                listener.onArchiveStop(
-                    archiveStopRequestDecoder.correlationId(),
-                    archiveStopRequestDecoder.channel(),
-                    archiveStopRequestDecoder.streamId());
+                listener.onStopRecording(
+                    stopRecordingRequestDecoder.correlationId(),
+                    stopRecordingRequestDecoder.channel(),
+                    stopRecordingRequestDecoder.streamId());
                 break;
             }
+
             case AbortReplayRequestDecoder.TEMPLATE_ID:
             {
                 abortReplayRequestDecoder.wrap(
@@ -115,20 +119,22 @@ class ArchiverProtocolAdapter implements FragmentHandler
                     abortReplayRequestDecoder.correlationId());
                 break;
             }
-            case ListStreamInstancesRequestDecoder.TEMPLATE_ID:
+
+            case ListRecordingsRequestDecoder.TEMPLATE_ID:
             {
-                listStreamInstancesRequestDecoder.wrap(
+                listRecordingsRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     headerDecoder.blockLength(),
                     headerDecoder.version());
 
-                listener.onListStreamInstances(
-                    listStreamInstancesRequestDecoder.correlationId(),
-                    listStreamInstancesRequestDecoder.from(),
-                    listStreamInstancesRequestDecoder.to());
+                listener.onListRecordings(
+                    listRecordingsRequestDecoder.correlationId(),
+                    listRecordingsRequestDecoder.fromId(),
+                    listRecordingsRequestDecoder.toId());
                 break;
             }
+
             default:
                 throw new IllegalArgumentException("Unexpected template id:" + templateId);
         }

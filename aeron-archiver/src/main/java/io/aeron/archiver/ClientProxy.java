@@ -23,7 +23,7 @@ import uk.co.real_logic.sbe.ir.generated.MessageHeaderEncoder;
 
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
-class ArchiverProtocolProxy
+class ClientProxy
 {
     // TODO: replace header usage with constants?
     private final IdleStrategy idleStrategy;
@@ -32,14 +32,11 @@ class ArchiverProtocolProxy
 
     private final MessageHeaderEncoder outboundHeaderEncoder = new MessageHeaderEncoder();
     private final ArchiverResponseEncoder responseEncoder = new ArchiverResponseEncoder();
-    private final ArchiveStartedNotificationEncoder archiveStartedNotificationEncoder =
-        new ArchiveStartedNotificationEncoder();
-    private final ArchiveProgressNotificationEncoder archiveProgressNotificationEncoder =
-        new ArchiveProgressNotificationEncoder();
-    private final ArchiveStoppedNotificationEncoder archiveStoppedNotificationEncoder =
-        new ArchiveStoppedNotificationEncoder();
+    private final RecordingStartedEncoder recordingStartedEncoder = new RecordingStartedEncoder();
+    private final RecordingProgressEncoder recordingProgressEncoder = new RecordingProgressEncoder();
+    private final RecordingStoppedEncoder recordingStoppedEncoder = new RecordingStoppedEncoder();
 
-    ArchiverProtocolProxy(final IdleStrategy idleStrategy, final Publication archiverNotifications)
+    ClientProxy(final IdleStrategy idleStrategy, final Publication archiverNotifications)
     {
         this.idleStrategy = idleStrategy;
         this.archiverNotifications = archiverNotifications;
@@ -50,9 +47,9 @@ class ArchiverProtocolProxy
 
         outboundHeaderEncoder.wrap(outboundBuffer, 0);
         responseEncoder.wrap(outboundBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
-        archiveStartedNotificationEncoder.wrap(outboundBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
-        archiveProgressNotificationEncoder.wrap(outboundBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
-        archiveStoppedNotificationEncoder.wrap(outboundBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
+        recordingStartedEncoder.wrap(outboundBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
+        recordingProgressEncoder.wrap(outboundBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
+        recordingStoppedEncoder.wrap(outboundBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
     }
 
     void sendResponse(final ExclusivePublication reply, final String err, final int correlationId)
@@ -91,71 +88,71 @@ class ArchiverProtocolProxy
     }
 
 
-    int notifyArchiveStarted(
-        final int persistedImageId,
+    int recordingStarted(
+        final int recordingId,
         final String source,
         final int sessionId,
         final String channel,
         final int streamId)
     {
         outboundHeaderEncoder
-            .blockLength(ArchiveStartedNotificationEncoder.BLOCK_LENGTH)
-            .templateId(ArchiveStartedNotificationEncoder.TEMPLATE_ID)
-            .schemaId(ArchiveStartedNotificationEncoder.SCHEMA_ID)
-            .version(ArchiveStartedNotificationEncoder.SCHEMA_VERSION);
+            .blockLength(RecordingStartedEncoder.BLOCK_LENGTH)
+            .templateId(RecordingStartedEncoder.TEMPLATE_ID)
+            .schemaId(RecordingStartedEncoder.SCHEMA_ID)
+            .version(RecordingStartedEncoder.SCHEMA_VERSION);
 
         // reset encoder limit is required for variable length messages
-        archiveStartedNotificationEncoder
-            .limit(MessageHeaderEncoder.ENCODED_LENGTH + ArchiveStartedNotificationEncoder.BLOCK_LENGTH);
+        recordingStartedEncoder
+            .limit(MessageHeaderEncoder.ENCODED_LENGTH + RecordingStartedEncoder.BLOCK_LENGTH);
 
-        archiveStartedNotificationEncoder
-            .persistedImageId(persistedImageId)
+        recordingStartedEncoder
+            .recordingId(recordingId)
             .sessionId(sessionId)
             .streamId(streamId)
             .source(source)
             .channel(channel);
 
-        sendNotification(archiveStartedNotificationEncoder.encodedLength());
+        send(recordingStartedEncoder.encodedLength());
 
-        return persistedImageId;
+        return recordingId;
     }
 
-    void notifyArchiveProgress(
-        final int persistedImageId,
+    void recordingProgress(
+        final int recordingId,
         final int initialTermId,
         final int initialTermOffset,
         final int termId,
         final int endTermOffset)
     {
         outboundHeaderEncoder
-            .blockLength(ArchiveProgressNotificationEncoder.BLOCK_LENGTH)
-            .templateId(ArchiveProgressNotificationEncoder.TEMPLATE_ID)
-            .schemaId(ArchiveProgressNotificationEncoder.SCHEMA_ID)
-            .version(ArchiveProgressNotificationEncoder.SCHEMA_VERSION);
+            .blockLength(RecordingProgressEncoder.BLOCK_LENGTH)
+            .templateId(RecordingProgressEncoder.TEMPLATE_ID)
+            .schemaId(RecordingProgressEncoder.SCHEMA_ID)
+            .version(RecordingProgressEncoder.SCHEMA_VERSION);
 
-        archiveProgressNotificationEncoder
-            .persistedImageId(persistedImageId)
+        recordingProgressEncoder
+            .recordingId(recordingId)
             .initialTermId(initialTermId)
             .initialTermOffset(initialTermOffset)
             .termId(termId)
             .termOffset(endTermOffset);
 
-        sendNotification(archiveProgressNotificationEncoder.encodedLength());
+        send(recordingProgressEncoder.encodedLength());
     }
 
-    void notifyArchiveStopped(final int persistedImageId)
+    void recordingStopped(final int recordingId)
     {
         outboundHeaderEncoder
-            .blockLength(ArchiveStoppedNotificationEncoder.BLOCK_LENGTH)
-            .templateId(ArchiveStoppedNotificationEncoder.TEMPLATE_ID)
-            .schemaId(ArchiveStoppedNotificationEncoder.SCHEMA_ID)
-            .version(ArchiveStoppedNotificationEncoder.SCHEMA_VERSION);
+            .blockLength(RecordingStoppedEncoder.BLOCK_LENGTH)
+            .templateId(RecordingStoppedEncoder.TEMPLATE_ID)
+            .schemaId(RecordingStoppedEncoder.SCHEMA_ID)
+            .version(RecordingStoppedEncoder.SCHEMA_VERSION);
 
-        archiveStoppedNotificationEncoder.persistedImageId(persistedImageId);
-        sendNotification(archiveStoppedNotificationEncoder.encodedLength());
+        recordingStoppedEncoder.recordingId(recordingId);
+        send(recordingStoppedEncoder.encodedLength());
     }
 
-    private void sendNotification(final int length)
+    private void send(final int length)
     {
         while (true)
         {

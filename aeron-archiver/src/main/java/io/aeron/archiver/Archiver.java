@@ -103,7 +103,7 @@ public class Archiver implements AutoCloseable
         private int archiverNotificationsStreamId;
         private IdleStrategy idleStrategy;
         private EpochClock epochClock;
-        private int archiveFileSize = 128 * 1024 * 1024;
+        private int recordingFileLength = 128 * 1024 * 1024;
         private boolean forceMetadataUpdates = true;
         private boolean forceWrites = true;
 
@@ -241,14 +241,14 @@ public class Archiver implements AutoCloseable
             return epochClock;
         }
 
-        int archiveFileSize()
+        int recordingFileLength()
         {
-            return archiveFileSize;
+            return recordingFileLength;
         }
 
-        public void archiveFileSize(final int archiveFileSize)
+        public void recordingFileLength(final int recordingFileLength)
         {
-            this.archiveFileSize = archiveFileSize;
+            this.recordingFileLength = recordingFileLength;
         }
 
         boolean forceMetadataUpdates()

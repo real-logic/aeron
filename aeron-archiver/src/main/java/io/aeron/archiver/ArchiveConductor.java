@@ -64,7 +64,7 @@ class ArchiveConductor implements Agent
         recordingIndex = new RecordingIndex(archiveDir);
 
         imageRecorderBuilder
-            .recordingFileLength(ctx.archiveFileSize())
+            .recordingFileLength(ctx.recordingFileLength())
             .archiveFolder(ctx.archiveFolder())
             .epochClock(ctx.epochClock())
             .forceMetadataUpdates(ctx.forceMetadataUpdates())

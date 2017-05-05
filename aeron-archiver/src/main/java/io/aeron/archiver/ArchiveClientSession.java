@@ -27,16 +27,16 @@ class ArchiveClientSession implements ArchiveConductor.Session, ArchiveRequestLi
     }
 
     private final Image image;
-    private final ClientProxy proxy;
+    private final ClientProxy clientProxy;
     private final ArchiveConductor conductor;
     private final ArchiveRequestAdapter adapter = new ArchiveRequestAdapter(this);
     private ExclusivePublication reply;
     private State state = State.INIT;
 
-    ArchiveClientSession(final Image image, final ClientProxy proxy, final ArchiveConductor conductor)
+    ArchiveClientSession(final Image image, final ClientProxy clientProxy, final ArchiveConductor conductor)
     {
         this.image = image;
-        this.proxy = proxy;
+        this.clientProxy = clientProxy;
         this.conductor = conductor;
     }
 
@@ -134,11 +134,11 @@ class ArchiveClientSession implements ArchiveConductor.Session, ArchiveRequestLi
         try
         {
             conductor.stopRecording(channel, streamId);
-            //proxy.sendResponse(reply, null, correlationId);
+            //clientProxy.sendResponse(reply, null, correlationId);
         }
         catch (final Exception e)
         {
-            //proxy.sendResponse(reply, e.getMessage(), correlationId);
+            //clientProxy.sendResponse(reply, e.getMessage(), correlationId);
         }
     }
 
@@ -155,12 +155,12 @@ class ArchiveClientSession implements ArchiveConductor.Session, ArchiveRequestLi
         try
         {
             conductor.startRecording(channel, streamId);
-            //proxy.sendResponse(reply, null, correlationId);
+            //clientProxy.sendResponse(reply, null, correlationId);
         }
         catch (final Exception e)
         {
             e.printStackTrace();
-            //proxy.sendResponse(reply, e.getMessage(), correlationId);
+            //clientProxy.sendResponse(reply, e.getMessage(), correlationId);
         }
     }
 

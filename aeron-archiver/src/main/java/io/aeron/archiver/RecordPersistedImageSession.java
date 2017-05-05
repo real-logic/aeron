@@ -95,7 +95,7 @@ class RecordPersistedImageSession implements ArchiverConductor.Session
         PersistedImageWriter writer = null;
         try
         {
-            persistedImageId = index.addNewStreamInstance(
+            persistedImageId = index.addNewPersistedImage(
                 source,
                 sessionId,
                 channel,
@@ -200,7 +200,7 @@ class RecordPersistedImageSession implements ArchiverConductor.Session
 
     public void remove(final ArchiverConductor conductor)
     {
-        index.removeArchivingSession(persistedImageId);
+        index.removeRecordingSession(persistedImageId);
     }
 
     ByteBuffer metaDataBuffer()

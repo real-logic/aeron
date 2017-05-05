@@ -65,7 +65,7 @@ public class RecordPersistedImageSessionTest
         proxy = mock(ArchiverProtocolProxy.class);
         index = mock(PersistedImagesIndex.class);
         when(
-            index.addNewStreamInstance(
+            index.addNewPersistedImage(
                 eq(source),
                 eq(sessionId),
                 eq(channel),

@@ -121,7 +121,7 @@ class PersistedImagesIndex implements AutoCloseable
         return length + INDEX_FRAME_LENGTH;
     }
 
-    int addNewStreamInstance(
+    int addNewPersistedImage(
         final String source,
         final int sessionId,
         final String channel,
@@ -214,7 +214,7 @@ class PersistedImagesIndex implements AutoCloseable
         return recordSession2IdMap.get(persistedImageId);
     }
 
-    void removeArchivingSession(final int persistedImageId)
+    void removeRecordingSession(final int persistedImageId)
     {
         recordSession2IdMap.remove(persistedImageId);
     }

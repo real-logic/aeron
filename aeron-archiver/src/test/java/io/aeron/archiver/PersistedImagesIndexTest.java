@@ -32,9 +32,9 @@ public class PersistedImagesIndexTest
     static final UnsafeBuffer UB = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(PersistedImagesIndex.INDEX_RECORD_SIZE, 64));
     static final ArchiveDescriptorDecoder DECODER = new ArchiveDescriptorDecoder();
-    static int streamInstanceAId;
-    static int streamInstanceBId;
-    static int streamInstanceCId;
+    static int persistedImageAId;
+    static int persistedImageBId;
+    static int persistedImageCId;
     static RecordPersistedImageSession mockSession = mock(RecordPersistedImageSession.class);
     private static File archiveFolder;
 
@@ -50,18 +50,18 @@ public class PersistedImagesIndexTest
 
         try (PersistedImagesIndex persistedImagesIndex = new PersistedImagesIndex(archiveFolder))
         {
-            streamInstanceAId =
-                persistedImagesIndex.addNewStreamInstance("sourceA", 6, "channelG", 1, 4096, 0, mockSession,
+            persistedImageAId =
+                persistedImagesIndex.addNewPersistedImage("sourceA", 6, "channelG", 1, 4096, 0, mockSession,
                     ARCHIVE_FILE_SIZE);
-            streamInstanceBId =
-                persistedImagesIndex.addNewStreamInstance("sourceV", 7, "channelH", 2, 4096, 0, mockSession,
+            persistedImageBId =
+                persistedImagesIndex.addNewPersistedImage("sourceV", 7, "channelH", 2, 4096, 0, mockSession,
                     ARCHIVE_FILE_SIZE);
-            streamInstanceCId =
-                persistedImagesIndex.addNewStreamInstance("sourceB", 8, "channelK", 3, 4096, 0, mockSession,
+            persistedImageCId =
+                persistedImagesIndex.addNewPersistedImage("sourceB", 8, "channelK", 3, 4096, 0, mockSession,
                     ARCHIVE_FILE_SIZE);
-            persistedImagesIndex.removeArchivingSession(streamInstanceAId);
-            persistedImagesIndex.removeArchivingSession(streamInstanceBId);
-            persistedImagesIndex.removeArchivingSession(streamInstanceCId);
+            persistedImagesIndex.removeRecordingSession(persistedImageAId);
+            persistedImagesIndex.removeRecordingSession(persistedImageBId);
+            persistedImagesIndex.removeRecordingSession(persistedImageCId);
         }
     }
 
@@ -76,9 +76,9 @@ public class PersistedImagesIndexTest
     {
         try (PersistedImagesIndex persistedImagesIndex = new PersistedImagesIndex(archiveFolder))
         {
-            verifyArchiveForId(persistedImagesIndex, streamInstanceAId, "sourceA", 6, "channelG", 1);
-            verifyArchiveForId(persistedImagesIndex, streamInstanceBId, "sourceV", 7, "channelH", 2);
-            verifyArchiveForId(persistedImagesIndex, streamInstanceCId, "sourceB", 8, "channelK", 3);
+            verifyArchiveForId(persistedImagesIndex, persistedImageAId, "sourceA", 6, "channelG", 1);
+            verifyArchiveForId(persistedImagesIndex, persistedImageBId, "sourceV", 7, "channelH", 2);
+            verifyArchiveForId(persistedImagesIndex, persistedImageCId, "sourceB", 8, "channelK", 3);
         }
     }
 
@@ -102,33 +102,33 @@ public class PersistedImagesIndexTest
     @Test
     public void shouldAppendToExistingIndex() throws Exception
     {
-        final int newStreamInstanceId;
+        final int newPersistedImageId;
         try (PersistedImagesIndex persistedImagesIndex = new PersistedImagesIndex(archiveFolder))
         {
-            newStreamInstanceId =
-                persistedImagesIndex.addNewStreamInstance("sourceN", 9, "channelJ", 4, 4096, 0, mockSession,
+            newPersistedImageId =
+                persistedImagesIndex.addNewPersistedImage("sourceN", 9, "channelJ", 4, 4096, 0, mockSession,
                     ARCHIVE_FILE_SIZE);
-            persistedImagesIndex.removeArchivingSession(newStreamInstanceId);
+            persistedImagesIndex.removeRecordingSession(newPersistedImageId);
         }
 
         try (PersistedImagesIndex persistedImagesIndex = new PersistedImagesIndex(archiveFolder))
         {
-            verifyArchiveForId(persistedImagesIndex, streamInstanceAId, "sourceA", 6, "channelG", 1);
-            verifyArchiveForId(persistedImagesIndex, newStreamInstanceId, "sourceN", 9, "channelJ", 4);
+            verifyArchiveForId(persistedImagesIndex, persistedImageAId, "sourceA", 6, "channelG", 1);
+            verifyArchiveForId(persistedImagesIndex, newPersistedImageId, "sourceN", 9, "channelJ", 4);
         }
     }
 
     @Test
     public void shouldAllowMultipleInstancesForSameStream() throws Exception
     {
-        final int newStreamInstanceId;
+        final int newPersistedImageId;
         try (PersistedImagesIndex persistedImagesIndex = new PersistedImagesIndex(archiveFolder))
         {
-            newStreamInstanceId =
-                persistedImagesIndex.addNewStreamInstance("sourceA", 6, "channelG", 1, 4096, 0, mockSession,
+            newPersistedImageId =
+                persistedImagesIndex.addNewPersistedImage("sourceA", 6, "channelG", 1, 4096, 0, mockSession,
                     ARCHIVE_FILE_SIZE);
-            persistedImagesIndex.removeArchivingSession(newStreamInstanceId);
-            assertNotEquals(streamInstanceAId, newStreamInstanceId);
+            persistedImagesIndex.removeRecordingSession(newPersistedImageId);
+            assertNotEquals(persistedImageAId, newPersistedImageId);
         }
     }
 }

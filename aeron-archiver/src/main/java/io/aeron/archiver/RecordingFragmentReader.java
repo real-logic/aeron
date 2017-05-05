@@ -98,7 +98,7 @@ class RecordingFragmentReader implements AutoCloseable
     private void initCursorState() throws IOException
     {
         recordingFileIndex = recordingDataFileIndex(initialTermId, termBufferLength, fromTermId, recordingFileLength);
-        final int archiveOffset = offsetInArchivedFile(
+        final int archiveOffset = offsetInRecordedFile(
             fromTermOffset, fromTermId, initialTermId, termBufferLength, recordingFileLength);
         recordingTermStartOffset = archiveOffset - fromTermOffset;
         openRecordingFile();

@@ -141,13 +141,13 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
     private final FileChannel metadataFileChannel;
     private final MappedByteBuffer metaDataBuffer;
     private final RecordingDescriptorEncoder metaDataEncoder;
-    private final int recordingFileSize;
+    private final int recordingFileLength;
 
     /**
      * Index is in the range 0:recordingFileLength, except before the first block for this image is received indicated
      * by -1
      */
-    private int archivePosition = -1;
+    private int recordingPosition = -1;
     private RandomAccessFile recordingFile;
     private FileChannel recordingFileChannel;
 
@@ -165,7 +165,7 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         this.archiveFolder = builder.archiveFolder;
         this.termBufferLength = builder.termBufferLength;
         this.epochClock = builder.epochClock;
-        this.recordingFileSize = builder.recordingFileLength;
+        this.recordingFileLength = builder.recordingFileLength;
 
         this.termsMask = (builder.recordingFileLength / termBufferLength) - 1;
         this.forceWrites = builder.forceWrites;
@@ -185,13 +185,13 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
             metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
             final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(metaDataBuffer);
             metaDataEncoder = new RecordingDescriptorEncoder()
-                .wrap(unsafeBuffer, RecordingIndex.INDEX_FRAME_LENGTH);
+                .wrap(unsafeBuffer, ArchiveIndex.INDEX_FRAME_LENGTH);
 
             initDescriptor(
                 metaDataEncoder,
                 recordingId,
                 termBufferLength,
-                recordingFileSize,
+                recordingFileLength,
                 builder.imageInitialTermId,
                 builder.source,
                 builder.sessionId,
@@ -237,10 +237,10 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         descriptor.channel(channel);
     }
 
-    private void newArchiveFile(final int termId)
+    private void newRecordingFile(final int termId)
     {
         final String archiveDataFileName = ArchiveUtil.recordingDataFileName(
-            recordingId, initialTermId, termBufferLength, termId, recordingFileSize);
+            recordingId, initialTermId, termBufferLength, termId, recordingFileLength);
         final File file = new File(archiveFolder, archiveDataFileName);
 
         try
@@ -248,7 +248,7 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
             // NOTE: using 'rwd' options would force sync on data writes(not sync metadata), but is slower than forcing
             // externally.
             recordingFile = new RandomAccessFile(file, "rw");
-            recordingFile.setLength(recordingFileSize);
+            recordingFile.setLength(recordingFileLength);
             recordingFileChannel = recordingFile.getChannel();
         }
         catch (final IOException ex)
@@ -268,7 +268,7 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         final int termId)
     {
         // detect first write
-        if (archivePosition == -1 && termId != initialTermId)
+        if (recordingPosition == -1 && termId != initialTermId)
         {
             // archiving an ongoing publication
             metaDataEncoder.initialTermId(termId);
@@ -279,7 +279,7 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         final int archiveOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
         try
         {
-            prepareWrite(termOffset, termId, archiveOffset, blockLength);
+            prepareRecording(termOffset, termId, archiveOffset, blockLength);
 
             fileChannel.transferTo(fileOffset, blockLength, recordingFileChannel);
             if (forceWrites)
@@ -303,7 +303,7 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         final int frameLength = header.frameLength();
 
         // detect first write
-        if (archivePosition == -1 && termId != initialTermId)
+        if (recordingPosition == -1 && termId != initialTermId)
         {
             // archiving an ongoing publication
             metaDataEncoder.initialTermId(termId);
@@ -315,7 +315,7 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
 
         try
         {
-            prepareWrite(termOffset, termId, archiveOffset, header.frameLength());
+            prepareRecording(termOffset, termId, archiveOffset, header.frameLength());
 
             final ByteBuffer src = buffer.byteBuffer().duplicate();
             src.position(termOffset).limit(termOffset + frameLength);
@@ -330,31 +330,31 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         }
     }
 
-    private void prepareWrite(
+    private void prepareRecording(
         final int termOffset,
         final int termId,
-        final int archiveOffset,
+        final int recordingOffset,
         final int writeLength)
         throws IOException
     {
         if (termOffset + writeLength > termBufferLength)
         {
-            throw new IllegalArgumentException("Writing across terms is not supported:" +
+            throw new IllegalArgumentException("Recording across terms is not supported:" +
                 " [offset=" + termOffset + " + length=" + writeLength + "] > termBufferLength=" + termBufferLength);
         }
 
-        if (archivePosition == -1)
+        if (recordingPosition == -1)
         {
-            newArchiveFile(termId);
+            newRecordingFile(termId);
             if (recordingFileChannel.position() != 0)
             {
                 throw new IllegalArgumentException(
                     "It is assumed that recordingFileChannel.position() is 0 on first write");
             }
 
-            archivePosition = termOffset;
+            recordingPosition = termOffset;
             // first write to the logs is not at beginning of file. We need to insert a padding indicator.
-            if (archiveOffset != 0)
+            if (recordingOffset != 0)
             {
                 // would be nice to use the log buffer header for this, but actually makes no difference.
                 final ByteBuffer bb = ByteBuffer.allocate(128);
@@ -365,17 +365,17 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
 
             metaDataEncoder.initialTermOffset(termOffset);
             initialTermOffset = termOffset;
-            recordingFileChannel.position(archivePosition);
+            recordingFileChannel.position(recordingPosition);
             metaDataEncoder.startTime(epochClock.time());
         }
-        else if (archiveOffset != archivePosition)
+        else if (recordingOffset != recordingPosition)
         {
             throw new IllegalArgumentException(
-                "It is assumed that archivePosition tracks the calculated recordingOffset");
+                "It is assumed that recordingPosition tracks the calculated recordingOffset");
         }
-        else if (recordingFileChannel.position() != archivePosition)
+        else if (recordingFileChannel.position() != recordingPosition)
         {
-            throw new IllegalArgumentException("It is assumed that archivePosition tracks the file position");
+            throw new IllegalArgumentException("It is assumed that recordingPosition tracks the file position");
         }
     }
 
@@ -383,10 +383,10 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         final int termOffset,
         final int blockLength,
         final int termId,
-        final int archiveOffset)
+        final int recordingOffset)
         throws IOException
     {
-        archivePosition = archiveOffset + blockLength;
+        recordingPosition = recordingOffset + blockLength;
         metaDataEncoder.lastTermId(termId);
         lastTermId = termId;
         final int endTermOffset = termOffset + blockLength;
@@ -397,13 +397,13 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
             metaDataBuffer.force();
         }
 
-        if (archivePosition == recordingFileSize)
+        if (recordingPosition == recordingFileLength)
         {
             CloseHelper.close(recordingFileChannel);
             CloseHelper.close(recordingFile);
-            archivePosition = 0;
+            recordingPosition = 0;
             // TODO: allocate ahead files, will also give early indication to low storage
-            newArchiveFile(termId + 1);
+            newRecordingFile(termId + 1);
         }
     }
 
@@ -465,8 +465,8 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         return metaDataBuffer;
     }
 
-    int archiveFileSize()
+    int recordingFileLength()
     {
-        return recordingFileSize;
+        return recordingFileLength;
     }
 }

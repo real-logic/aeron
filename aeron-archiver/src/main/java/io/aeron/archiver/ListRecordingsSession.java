@@ -57,14 +57,14 @@ class ListRecordingsSession implements ArchiveConductor.Session
     }
 
     private final ByteBuffer byteBuffer =
-        BufferUtil.allocateDirectAligned(RecordingIndex.INDEX_RECORD_SIZE, CACHE_LINE_LENGTH);
+        BufferUtil.allocateDirectAligned(ArchiveIndex.INDEX_RECORD_LENGTH, CACHE_LINE_LENGTH);
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
 
     private final ExclusivePublication reply;
     private final int fromId;
     private final int toId;
-    private final RecordingIndex index;
+    private final ArchiveIndex index;
     private final ClientProxy proxy;
     private final int correlationId;
 
@@ -75,7 +75,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
         final int correlationId, final ExclusivePublication reply,
         final int fromId,
         final int toId,
-        final RecordingIndex index,
+        final ArchiveIndex index,
         final ClientProxy proxy)
     {
         this.reply = reply;
@@ -142,7 +142,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
                 unsafeBuffer.wrap(byteBuffer);
                 try
                 {
-                    if (!index.readRecordingDescriptor(cursor, byteBuffer))
+                    if (!index.readDescriptor(cursor, byteBuffer))
                     {
                         // return relevant error
                         if (reply.tryClaim(
@@ -172,8 +172,8 @@ class ListRecordingsSession implements ArchiveConductor.Session
             }
 
             final int length = unsafeBuffer.getInt(0);
-            unsafeBuffer.putLong(RecordingIndex.INDEX_FRAME_LENGTH - 8, DESCRIPTOR_HEADER);
-            reply.offer(unsafeBuffer, RecordingIndex.INDEX_FRAME_LENGTH - 8, length + 8);
+            unsafeBuffer.putLong(ArchiveIndex.INDEX_FRAME_LENGTH - 8, DESCRIPTOR_HEADER);
+            reply.offer(unsafeBuffer, ArchiveIndex.INDEX_FRAME_LENGTH - 8, length + 8);
         }
 
         if (cursor > toId)

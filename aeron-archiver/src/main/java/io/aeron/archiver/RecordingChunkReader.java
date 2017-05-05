@@ -22,7 +22,7 @@ import java.io.*;
 import java.nio.channels.FileChannel;
 import java.util.Objects;
 
-import static io.aeron.archiver.ArchiveUtil.offsetInArchivedFile;
+import static io.aeron.archiver.ArchiveUtil.offsetInRecordedFile;
 import static io.aeron.archiver.ArchiveUtil.recordingDataFileIndex;
 import static java.lang.Math.min;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
@@ -65,7 +65,7 @@ class RecordingChunkReader implements AutoCloseable
 
         transmitted = 0;
         fileIndex = recordingDataFileIndex(initialTermId, termBufferLength, termId, archiveFileSize);
-        final int archiveOffset = offsetInArchivedFile(
+        final int archiveOffset = offsetInRecordedFile(
             termOffset,
             termId,
             initialTermId,

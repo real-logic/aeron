@@ -31,10 +31,10 @@ class RecordingSession implements ArchiveConductor.Session
         INIT, ARCHIVING, CLOSING, DONE
     }
 
-    private int recordingId = RecordingIndex.NULL_STREAM_INDEX;
+    private int recordingId = ArchiveIndex.NULL_STREAM_INDEX;
     private final ClientProxy proxy;
     private final Image image;
-    private final RecordingIndex index;
+    private final ArchiveIndex index;
     private final ImageRecorder.Builder builder;
 
     private ImageRecorder recorder;
@@ -43,7 +43,7 @@ class RecordingSession implements ArchiveConductor.Session
 
     RecordingSession(
         final ClientProxy proxy,
-        final RecordingIndex index,
+        final ArchiveIndex index,
         final Image image,
         final ImageRecorder.Builder builder)
     {
@@ -168,7 +168,7 @@ class RecordingSession implements ArchiveConductor.Session
         try
         {
             // TODO: add CRC as option, per fragment, use session id to store CRC
-            workCount = image.rawPoll(recorder, recorder.archiveFileSize());
+            workCount = image.rawPoll(recorder, recorder.recordingFileLength());
             if (workCount != 0)
             {
                 proxy.recordingProgress(

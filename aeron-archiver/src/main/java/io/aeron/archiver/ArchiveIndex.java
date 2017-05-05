@@ -29,31 +29,29 @@ import static io.aeron.archiver.ImageRecorder.initDescriptor;
 import static java.nio.file.StandardOpenOption.*;
 
 /**
- * Index file for the archiving service keeps an archive of recorded images, past and present, and used to lookup
+ * Index file for the archive keeps an archive of recorded images, past and present, and used to lookup
  * details. The index format is simple, allocating a fixed 4KB record for each archive descriptor. This allows offset
  * based look up of a descriptor in the file.
  */
-class RecordingIndex implements AutoCloseable
+class ArchiveIndex implements AutoCloseable
 {
-    // TODO: Make DSYNC optional via configuration.
-
     public static final String INDEX_FILE_NAME = "archive.idx";
-    static final int INDEX_RECORD_SIZE = 4096;
+    static final int INDEX_RECORD_LENGTH = 4096;
     static final int INDEX_FRAME_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     private static final int PAGE_SIZE = 4096;
     static final int NULL_STREAM_INDEX = -1;
 
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
-    private final Int2ObjectHashMap<RecordingSession> recordSession2IdMap = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<RecordingSession> recordSessionByIdMap = new Int2ObjectHashMap<>();
 
     private final ByteBuffer byteBuffer;
     private final UnsafeBuffer unsafeBuffer;
-    private final FileChannel recordingIndexFileChannel;
+    private final FileChannel indexFileChannel;
     private int recordingIdSeq = 0;
 
-    RecordingIndex(final File archiveFolder)
+    ArchiveIndex(final File archiveFolder)
     {
-        byteBuffer = BufferUtil.allocateDirectAligned(INDEX_RECORD_SIZE, PAGE_SIZE);
+        byteBuffer = BufferUtil.allocateDirectAligned(INDEX_RECORD_LENGTH, PAGE_SIZE);
         unsafeBuffer = new UnsafeBuffer(byteBuffer);
 
         FileChannel channel = null;
@@ -71,7 +69,7 @@ class RecordingIndex implements AutoCloseable
                     break;
                 }
 
-                if (byteBuffer.remaining() != INDEX_RECORD_SIZE)
+                if (byteBuffer.remaining() != INDEX_RECORD_LENGTH)
                 {
                     throw new IllegalStateException();
                 }
@@ -88,7 +86,7 @@ class RecordingIndex implements AutoCloseable
         }
         finally
         {
-            recordingIndexFileChannel = channel;
+            indexFileChannel = channel;
         }
     }
 
@@ -151,8 +149,8 @@ class RecordingIndex implements AutoCloseable
         try
         {
             byteBuffer.clear();
-            final int written = recordingIndexFileChannel.write(byteBuffer);
-            if (written != INDEX_RECORD_SIZE)
+            final int written = indexFileChannel.write(byteBuffer);
+            if (written != INDEX_RECORD_LENGTH)
             {
                 throw new IllegalStateException();
             }
@@ -163,35 +161,35 @@ class RecordingIndex implements AutoCloseable
         }
 
         recordingIdSeq++;
-        recordSession2IdMap.put(newRecordingId, session);
+        recordSessionByIdMap.put(newRecordingId, session);
         return newRecordingId;
     }
 
     public void close()
     {
-        CloseHelper.close(recordingIndexFileChannel);
+        CloseHelper.close(indexFileChannel);
 
-        if (!recordSession2IdMap.isEmpty())
+        if (!recordSessionByIdMap.isEmpty())
         {
-            System.err.println("ERROR: expected empty recordSession2IdMap");
+            System.err.println("ERROR: expected empty recordSessionByIdMap");
         }
     }
 
-    boolean readRecordingDescriptor(final int recordingId, final ByteBuffer buffer)
+    boolean readDescriptor(final int recordingId, final ByteBuffer buffer)
         throws IOException
     {
-        if (buffer.remaining() != INDEX_RECORD_SIZE)
+        if (buffer.remaining() != INDEX_RECORD_LENGTH)
         {
-            throw new IllegalArgumentException("buffer must have exactly INDEX_RECORD_SIZE remaining to read into");
+            throw new IllegalArgumentException("buffer must have exactly INDEX_RECORD_LENGTH remaining to read into");
         }
 
-        final int read = recordingIndexFileChannel.read(buffer, recordingId * INDEX_RECORD_SIZE);
+        final int read = indexFileChannel.read(buffer, recordingId * INDEX_RECORD_LENGTH);
         if (read == 0 || read == -1)
         {
             return false;
         }
 
-        if (read != INDEX_RECORD_SIZE)
+        if (read != INDEX_RECORD_LENGTH)
         {
             throw new IllegalStateException("Wrong read size:" + read);
         }
@@ -201,7 +199,7 @@ class RecordingIndex implements AutoCloseable
 
     void updateIndexFromMeta(final int recordingId, final ByteBuffer metaDataBuffer) throws IOException
     {
-        recordingIndexFileChannel.write(metaDataBuffer, recordingId * INDEX_RECORD_SIZE);
+        indexFileChannel.write(metaDataBuffer, recordingId * INDEX_RECORD_LENGTH);
     }
 
     int maxRecordingId()
@@ -211,11 +209,11 @@ class RecordingIndex implements AutoCloseable
 
     RecordingSession getRecordingSession(final int recordingId)
     {
-        return recordSession2IdMap.get(recordingId);
+        return recordSessionByIdMap.get(recordingId);
     }
 
     void removeRecordingSession(final int recordingId)
     {
-        recordSession2IdMap.remove(recordingId);
+        recordSessionByIdMap.remove(recordingId);
     }
 }

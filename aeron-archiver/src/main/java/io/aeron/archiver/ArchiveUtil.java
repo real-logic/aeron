@@ -36,7 +36,7 @@ class ArchiveUtil
 
     static String recordingDataFileName(final int recordingId, final int index)
     {
-        return recordingId + "." + index + ".dat";
+        return recordingId + "." + index + ".rec";
     }
 
     static String recordingDataFileName(
@@ -44,9 +44,9 @@ class ArchiveUtil
         final int initialTermId,
         final int termBufferLength,
         final int termId,
-        final int archiveFileSize)
+        final int recordedFileLength)
     {
-        final int index = recordingDataFileIndex(initialTermId, termBufferLength, termId, archiveFileSize);
+        final int index = recordingDataFileIndex(initialTermId, termBufferLength, termId, recordedFileLength);
 
         return recordingDataFileName(recordingId, index);
     }
@@ -55,9 +55,9 @@ class ArchiveUtil
         final int initialTermId,
         final int termBufferLength,
         final int termId,
-        final int archiveFileSize)
+        final int recordedFileLength)
     {
-        final int termsPerFile = archiveFileSize / termBufferLength;
+        final int termsPerFile = recordedFileLength / termBufferLength;
         return (termId - initialTermId) / termsPerFile;
     }
 
@@ -85,25 +85,25 @@ class ArchiveUtil
         try (FileChannel metadataFileChannel = FileChannel.open(metaFile.toPath(), READ, WRITE))
         {
             final MappedByteBuffer metaDataBuffer = metadataFileChannel.map(
-                FileChannel.MapMode.READ_WRITE, 0, RecordingIndex.INDEX_RECORD_SIZE);
+                FileChannel.MapMode.READ_WRITE, 0, ArchiveIndex.INDEX_RECORD_LENGTH);
             final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();
 
             return decoder.wrap(
                 new UnsafeBuffer(metaDataBuffer),
-                RecordingIndex.INDEX_FRAME_LENGTH,
+                ArchiveIndex.INDEX_FRAME_LENGTH,
                 RecordingDescriptorDecoder.BLOCK_LENGTH,
                 RecordingDescriptorDecoder.SCHEMA_VERSION);
         }
     }
 
-    static int offsetInArchivedFile(
+    static int offsetInRecordedFile(
         final int termOffset,
         final int termId,
         final int initialTermId,
         final int termBufferLength,
-        final int archiveFileSize)
+        final int recordedFileLength)
     {
-        final int termsMask = ((archiveFileSize / termBufferLength) - 1);
+        final int termsMask = ((recordedFileLength / termBufferLength) - 1);
         return recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
     }
 

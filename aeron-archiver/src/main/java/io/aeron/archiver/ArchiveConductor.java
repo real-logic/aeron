@@ -43,7 +43,7 @@ class ArchiveConductor implements Agent
     private final Long2ObjectHashMap<ReplaySession> replaySession2IdMap = new Long2ObjectHashMap<>();
 
     private final ObjectHashSet<Subscription> archiveSubscriptionSet = new ObjectHashSet<>(128);
-    private final RecordingIndex recordingIndex;
+    private final ArchiveIndex archiveIndex;
     private final OneToOneConcurrentArrayQueue<Image> imageNotificationQueue =
         new OneToOneConcurrentArrayQueue<>(1024);
     private final File archiveDir;
@@ -61,7 +61,7 @@ class ArchiveConductor implements Agent
         this.aeron = aeron;
 
         archiveDir = ctx.archiveFolder();
-        recordingIndex = new RecordingIndex(archiveDir);
+        archiveIndex = new ArchiveIndex(archiveDir);
 
         imageRecorderBuilder
             .recordingFileLength(ctx.recordingFileLength())
@@ -123,7 +123,7 @@ class ArchiveConductor implements Agent
             System.err.println("ERROR: expected empty replaySession2IdMap");
         }
 
-        CloseHelper.close(recordingIndex);
+        CloseHelper.close(archiveIndex);
     }
 
 
@@ -160,7 +160,7 @@ class ArchiveConductor implements Agent
         }
         else
         {
-            session = new RecordingSession(proxy, recordingIndex, image, imageRecorderBuilder);
+            session = new RecordingSession(proxy, archiveIndex, image, imageRecorderBuilder);
         }
         sessions.add(session);
     }
@@ -218,7 +218,7 @@ class ArchiveConductor implements Agent
         final int to)
     {
         final Session listSession = new ListRecordingsSession(
-            correlationId, reply, from, to, recordingIndex, proxy);
+            correlationId, reply, from, to, archiveIndex, proxy);
 
         sessions.add(listSession);
     }

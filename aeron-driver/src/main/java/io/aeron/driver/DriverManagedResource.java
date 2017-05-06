@@ -54,34 +54,4 @@ public interface DriverManagedResource extends ManagedResource
     {
         return 0;
     }
-
-    /**
-     * Position of the producer for this resource.
-     *
-     * @return position of the producer
-     */
-    default long producerPosition()
-    {
-        return 0;
-    }
-
-    /**
-     * Position of the consumer for this resource.
-     *
-     * @return position of the consumer
-     */
-    default long consumerPosition()
-    {
-        return 0;
-    }
-
-    /**
-     * Unblock the resource at consumer position.
-     *
-     * @return whether unblocking was necessary or not
-     */
-    default boolean unblockAtConsumerPosition()
-    {
-        return false;
-    }
 }

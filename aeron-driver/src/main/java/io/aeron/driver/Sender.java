@@ -144,7 +144,7 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
         cmd.execute(this);
     }
 
-    private int doSend(final long now)
+    private int doSend(final long nowNs)
     {
         int bytesSent = 0;
         final NetworkPublication[] publications = this.networkPublications;
@@ -158,12 +158,12 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
 
         for (int i = startingIndex; i < length; i++)
         {
-            bytesSent += publications[i].send(now);
+            bytesSent += publications[i].send(nowNs);
         }
 
         for (int i = 0; i < startingIndex; i++)
         {
-            bytesSent += publications[i].send(now);
+            bytesSent += publications[i].send(nowNs);
         }
 
         totalBytesSent.addOrdered(bytesSent);

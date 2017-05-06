@@ -284,11 +284,6 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         return consumerPosition;
     }
 
-    public boolean unblockAtConsumerPosition()
-    {
-        return LogBufferUnblocker.unblock(termBuffers, rawLog.metaData(), consumerPosition);
-    }
-
     Status status()
     {
         return status;
@@ -316,7 +311,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
             if (producerPosition() > consumerPosition &&
                 timeNs > (timeOfLastConsumerPositionChange + unblockTimeoutNs))
             {
-                if (unblockAtConsumerPosition())
+                if (LogBufferUnblocker.unblock(termBuffers, rawLog.metaData(), consumerPosition))
                 {
                     unblockedPublications.orderedIncrement();
                 }

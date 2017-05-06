@@ -66,8 +66,8 @@ class NetworkPublicationPadding2 extends NetworkPublicationConductorFields
 
 class NetworkPublicationSenderFields extends NetworkPublicationPadding2
 {
-    protected long timeOfLastSendOrHeartbeat;
-    protected long timeOfLastSetup;
+    protected long timeOfLastSendOrHeartbeatNs;
+    protected long timeOfLastSetupNs;
     protected boolean trackSenderLimits = true;
     protected boolean shouldSendSetupFrame = true;
 }
@@ -87,7 +87,7 @@ public class NetworkPublication
 {
     public enum Status
     {
-        ACTIVE, LINGER, CLOSING
+        ACTIVE, DRAINING, LINGER, CLOSING
     }
 
     private final long registrationId;
@@ -185,8 +185,8 @@ public class NetworkPublication
         flowControl.initialize(initialTermId, termLength);
 
         final long nowNs = nanoClock.nanoTime();
-        timeOfLastSendOrHeartbeat = nowNs - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
-        timeOfLastSetup = nowNs - PUBLICATION_SETUP_TIMEOUT_NS - 1;
+        timeOfLastSendOrHeartbeatNs = nowNs - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
+        timeOfLastSetupNs = nowNs - PUBLICATION_SETUP_TIMEOUT_NS - 1;
 
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
@@ -220,7 +220,7 @@ public class NetworkPublication
         return isExclusive;
     }
 
-    public int send(final long now)
+    public int send(final long nowNs)
     {
         final long senderPosition = this.senderPosition.get();
         final int activeTermId = computeTermIdFromPosition(senderPosition, positionBitsToShift, initialTermId);
@@ -228,18 +228,18 @@ public class NetworkPublication
 
         if (shouldSendSetupFrame)
         {
-            setupMessageCheck(now, activeTermId, termOffset);
+            setupMessageCheck(nowNs, activeTermId, termOffset);
         }
 
-        int bytesSent = sendData(now, senderPosition, termOffset);
+        int bytesSent = sendData(nowNs, senderPosition, termOffset);
 
         if (0 == bytesSent)
         {
-            bytesSent = heartbeatMessageCheck(now, activeTermId, termOffset);
-            senderLimit.setOrdered(flowControl.onIdle(now, senderLimit.get()));
+            bytesSent = heartbeatMessageCheck(nowNs, activeTermId, termOffset);
+            senderLimit.setOrdered(flowControl.onIdle(nowNs, senderLimit.get()));
         }
 
-        retransmitHandler.processTimeouts(now, this);
+        retransmitHandler.processTimeouts(nowNs, this);
 
         return bytesSent;
     }
@@ -384,9 +384,10 @@ public class NetworkPublication
     {
         int workCount = 0;
 
+        final long senderPosition = this.senderPosition.getVolatile();
         if (isConnected)
         {
-            long minConsumerPosition = senderPosition.getVolatile();
+            long minConsumerPosition = senderPosition;
             if (spyPositions.length > 0)
             {
                 for (final ReadablePosition spyPosition : spyPositions)
@@ -402,9 +403,9 @@ public class NetworkPublication
                 workCount = 1;
             }
         }
-        else
+        else if (publisherLimit.get() > senderPosition)
         {
-            publisherLimit.setOrdered(senderPosition.getVolatile());
+            publisherLimit.setOrdered(senderPosition);
         }
 
         return workCount;
@@ -427,7 +428,7 @@ public class NetworkPublication
         return maxSpyPosition;
     }
 
-    private int sendData(final long now, final long senderPosition, final int termOffset)
+    private int sendData(final long nowNs, final long senderPosition, final int termOffset)
     {
         int bytesSent = 0;
         final int availableWindow = (int)(senderLimit.get() - senderPosition);
@@ -445,7 +446,7 @@ public class NetworkPublication
 
                 if (available == channelEndpoint.send(sendBuffer))
                 {
-                    timeOfLastSendOrHeartbeat = now;
+                    timeOfLastSendOrHeartbeatNs = nowNs;
                     trackSenderLimits = true;
 
                     bytesSent = available;
@@ -468,7 +469,7 @@ public class NetworkPublication
 
     private void setupMessageCheck(final long nowNs, final int activeTermId, final int termOffset)
     {
-        if (nowNs > (timeOfLastSetup + PUBLICATION_SETUP_TIMEOUT_NS))
+        if (nowNs > (timeOfLastSetupNs + PUBLICATION_SETUP_TIMEOUT_NS))
         {
             setupBuffer.clear();
             setupHeader
@@ -487,8 +488,8 @@ public class NetworkPublication
                 shortSends.increment();
             }
 
-            timeOfLastSetup = nowNs;
-            timeOfLastSendOrHeartbeat = nowNs;
+            timeOfLastSetupNs = nowNs;
+            timeOfLastSendOrHeartbeatNs = nowNs;
 
             if (isConnected)
             {
@@ -501,7 +502,7 @@ public class NetworkPublication
     {
         int bytesSent = 0;
 
-        if (nowNs > (timeOfLastSendOrHeartbeat + PUBLICATION_HEARTBEAT_TIMEOUT_NS))
+        if (nowNs > (timeOfLastSendOrHeartbeatNs + PUBLICATION_HEARTBEAT_TIMEOUT_NS))
         {
             heartbeatBuffer.clear();
             heartbeatDataHeader
@@ -517,7 +518,7 @@ public class NetworkPublication
             }
 
             heartbeatsSent.orderedIncrement();
-            timeOfLastSendOrHeartbeat = nowNs;
+            timeOfLastSendOrHeartbeatNs = nowNs;
         }
 
         return bytesSent;
@@ -542,23 +543,6 @@ public class NetworkPublication
         }
     }
 
-    private boolean isUnreferencedAndInactive(final long nowNs, final long senderPosition)
-    {
-        if (refCount > 0)
-        {
-            return false;
-        }
-
-        if (senderPosition != lastSenderPosition)
-        {
-            lastSenderPosition = senderPosition;
-            timeOfLastActivityNs = nowNs;
-            return false;
-        }
-
-        return true;
-    }
-
     private void checkForBlockedPublisher(final long timeNs, final long senderPosition)
     {
         if (senderPosition == lastSenderPosition)
@@ -566,7 +550,7 @@ public class NetworkPublication
             if (producerPosition() > senderPosition &&
                 timeNs > (timeOfLastActivityNs + unblockTimeoutNs))
             {
-                if (unblockAtConsumerPosition())
+                if (LogBufferUnblocker.unblock(termBuffers, rawLog.metaData(), senderPosition))
                 {
                     unblockedPublications.orderedIncrement();
                 }
@@ -579,51 +563,74 @@ public class NetworkPublication
         }
     }
 
+    private boolean spiesNotBehindSender(final DriverConductor conductor, final long senderPosition)
+    {
+        if (spyPositions.length > 0)
+        {
+            for (final ReadablePosition spyPosition : spyPositions)
+            {
+                if (spyPosition.getVolatile() < senderPosition)
+                {
+                    return false;
+                }
+            }
+
+            conductor.cleanupSpies(NetworkPublication.this);
+            for (final ReadablePosition position : spyPositions)
+            {
+                position.close();
+            }
+
+            spyPositions = EMPTY_POSITIONS;
+        }
+
+        return true;
+    }
+
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
-        final long senderPosition = this.senderPosition.getVolatile();
-
-        if (isUnreferencedAndInactive(timeNs, senderPosition))
+        switch (status)
         {
-            if (spyPositions.length > 0)
-            {
-                for (final ReadablePosition spyPosition : spyPositions)
+            case ACTIVE:
+                checkForBlockedPublisher(timeNs, this.senderPosition.getVolatile());
+
+                if (isConnected &&
+                    timeMs > (timeOfLastStatusMessage(rawLog.metaData()) + PUBLICATION_CONNECTION_TIMEOUT_MS))
                 {
-                    if (spyPosition.getVolatile() < senderPosition)
+                    isConnected = false;
+                }
+                break;
+
+            case DRAINING:
+                final long senderPosition = this.senderPosition.getVolatile();
+                if (senderPosition == lastSenderPosition)
+                {
+                    if (spiesNotBehindSender(conductor, senderPosition))
                     {
-                        return;
+                        timeOfLastActivityNs = timeNs;
+                        status = Status.LINGER;
                     }
                 }
-
-                conductor.cleanupSpies(NetworkPublication.this);
-                for (final ReadablePosition position : spyPositions)
+                else
                 {
-                    position.close();
+                    lastSenderPosition = senderPosition;
+                    timeOfLastActivityNs = timeNs;
                 }
+                break;
 
-                spyPositions = EMPTY_POSITIONS;
-                timeOfLastActivityNs = timeNs;
-            }
-            else if (timeNs > (timeOfLastActivityNs + PUBLICATION_LINGER_NS))
-            {
-                if (Status.LINGER == status)
+            case LINGER:
+                if (timeNs > (timeOfLastActivityNs + PUBLICATION_LINGER_NS))
                 {
                     conductor.cleanupPublication(NetworkPublication.this);
                     status = Status.CLOSING;
                 }
-            }
-        }
-        else
-        {
-            checkForBlockedPublisher(timeNs, senderPosition);
+                break;
 
-            if (isConnected &&
-                timeMs > (timeOfLastStatusMessage(rawLog.metaData()) + PUBLICATION_CONNECTION_TIMEOUT_MS))
-            {
-                isConnected = false;
-            }
+            case CLOSING:
+                break;
         }
     }
+
 
     public boolean hasReachedEndOfLife()
     {
@@ -650,7 +657,7 @@ public class NetworkPublication
 
         if (0 == count)
         {
-            status = Status.LINGER;
+            status = Status.DRAINING;
             channelEndpoint.decRef();
             timeOfLastActivityNs = nanoClock.nanoTime();
         }
@@ -684,10 +691,5 @@ public class NetworkPublication
     public long consumerPosition()
     {
         return senderPosition.getVolatile();
-    }
-
-    public boolean unblockAtConsumerPosition()
-    {
-        return LogBufferUnblocker.unblock(termBuffers, rawLog.metaData(), senderPosition.getVolatile());
     }
 }

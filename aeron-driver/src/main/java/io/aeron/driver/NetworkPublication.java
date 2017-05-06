@@ -670,17 +670,17 @@ public class NetworkPublication
         return ++refCount;
     }
 
-    public Status status()
+    Status status()
     {
         return status;
     }
 
-    public void senderRelease()
+    void senderRelease()
     {
         hasSenderReleased = true;
     }
 
-    public long producerPosition()
+    long producerPosition()
     {
         final long rawTail = rawTailVolatile(rawLog.metaData());
         final int termOffset = termOffset(rawTail, rawLog.termLength());
@@ -688,7 +688,7 @@ public class NetworkPublication
         return computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);
     }
 
-    public long consumerPosition()
+    long consumerPosition()
     {
         return senderPosition.getVolatile();
     }

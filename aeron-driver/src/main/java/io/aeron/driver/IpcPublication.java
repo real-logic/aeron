@@ -279,7 +279,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         return count;
     }
 
-    public long consumerPosition()
+    long consumerPosition()
     {
         return consumerPosition;
     }

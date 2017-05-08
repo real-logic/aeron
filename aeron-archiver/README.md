@@ -21,11 +21,12 @@ Archiver communicates via the following interfaces:
  to track the creation/termination/progress of archives. These are the
  notification messages specified in the codec.
  - Requests channel: this allows clients to initiate replay or queries
- conversations with the archiver. Conversations have a conversationId sent
+ interactions with the archiver. Requests have a correlationId sent
  on the initiating request. The correlationId is expected to be managed by
  the clients and is offered as a means for clients to track multiple
  concurrent requests. A request will typically involve the
- archiver sending data back on a reply channel specified by the client.
+ archiver sending data back on the reply channel specified by the client 
+ on the ClientInit message.
 
 Notifications
 ----

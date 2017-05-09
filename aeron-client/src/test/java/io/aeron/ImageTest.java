@@ -378,6 +378,7 @@ public class ImageTest
             any(Header.class));
         inOrder.verify(position).setOrdered(initialPosition + (ALIGNED_FRAME_LENGTH * 3));
     }
+
     @Test
     public void shouldPollFragmentsToControlledFragmentHandlerOnContinue()
     {

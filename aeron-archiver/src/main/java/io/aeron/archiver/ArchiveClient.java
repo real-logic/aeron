@@ -71,6 +71,7 @@ public class ArchiveClient
             int maxRecordingId,
             int correlationId);
     }
+
     interface RecordingEventsListener
     {
         void onProgress(
@@ -89,6 +90,7 @@ public class ArchiveClient
 
         void onStop(int recordingId);
     }
+
     private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
     private final MutableDirectBuffer buffer = new ExpandableArrayBuffer();
     private final Publication archiveServiceRequest;
@@ -397,7 +399,6 @@ public class ArchiveClient
             replayAbortedDecoder.lastTermId(),
             replayAbortedDecoder.lastTermOffset(),
             replayAbortedDecoder.correlationId());
-        return;
     }
 
     private void handleReplayStarted(

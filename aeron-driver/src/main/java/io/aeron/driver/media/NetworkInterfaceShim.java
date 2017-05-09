@@ -24,7 +24,9 @@ import java.util.List;
 interface NetworkInterfaceShim
 {
     Enumeration<NetworkInterface> getNetworkInterfaces() throws SocketException;
+
     List<InterfaceAddress> getInterfaceAddresses(NetworkInterface ifc);
+
     boolean isLoopback(NetworkInterface ifc) throws SocketException;
 
     NetworkInterfaceShim DEFAULT = new NetworkInterfaceShim()

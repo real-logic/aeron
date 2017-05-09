@@ -52,6 +52,7 @@ public class ArchiveAndReplaySystemTest
         {
             fail();
         }
+
         public void onStart(
             final int recordingId,
             final String source,
@@ -61,25 +62,30 @@ public class ArchiveAndReplaySystemTest
         {
             fail();
         }
+
         public void onStop(final int recordingId)
         {
             fail();
         }
     }
+
     class FailResponseListener implements ArchiveClient.ResponseListener
     {
         public void onResponse(final String err, final int correlationId)
         {
             fail();
         }
+
         public void onReplayStarted(final int replayId, final int correlationId)
         {
             fail();
         }
+
         public void onReplayAborted(final int lastTermId, final int lastTermOffset, final int correlationId)
         {
             fail();
         }
+
         public void onRecordingStarted(
             final int recordingId,
             final String source,
@@ -90,6 +96,7 @@ public class ArchiveAndReplaySystemTest
         {
             fail();
         }
+
         public void onRecordingStopped(
             final int recordingId,
             final int lastTermId,
@@ -98,6 +105,7 @@ public class ArchiveAndReplaySystemTest
         {
             fail();
         }
+
         public void onRecordingDescriptor(
             final int recordingId,
             final int segmentFileLength,
@@ -116,11 +124,13 @@ public class ArchiveAndReplaySystemTest
         {
             fail();
         }
+
         public void onRecordingNotFound(final int recordingId, final int maxRecordingId, final int correlationId)
         {
             fail();
         }
     }
+
     private static final int TIMEOUT = 5000;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
     private static final int SLEEP_TIME_NS = 5000;
@@ -204,9 +214,9 @@ public class ArchiveAndReplaySystemTest
     public void recordAndReplay() throws IOException, InterruptedException
     {
         try (Publication archiverServiceRequest = publishingClient.addPublication(
-                archiverCtx.serviceRequestChannel(), archiverCtx.serviceRequestStreamId());
+            archiverCtx.serviceRequestChannel(), archiverCtx.serviceRequestStreamId());
              Subscription archiverNotifications = publishingClient.addSubscription(
-                archiverCtx.archiverNotificationsChannel(), archiverCtx.archiverNotificationsStreamId()))
+                 archiverCtx.archiverNotificationsChannel(), archiverCtx.archiverNotificationsStreamId()))
         {
             final ArchiveClient client = new ArchiveClient(archiverServiceRequest, archiverNotifications);
 
@@ -221,17 +231,14 @@ public class ArchiveAndReplaySystemTest
 
             verifyEmptyDescriptorList(client);
             final int startRecordingCorrelationId = this.correlationId++;
-            wait(() ->
-            {
-                return client.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId);
-            });
+            wait(() -> client.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
             println("Recording requested");
             waitForOk(client, startRecordingCorrelationId);
 
             final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(publication);
 
-            wait(() -> (client.pollEvents(new FailRecordingEventsListener()
+            wait(() -> client.pollEvents(new FailRecordingEventsListener()
             {
                 public void onStart(
                     final int recordingId0,
@@ -246,7 +253,7 @@ public class ArchiveAndReplaySystemTest
                     assertThat(channel, is(PUBLISH_URI));
                     println("Recording started. source: " + source);
                 }
-            }, 1) != 0));
+            }, 1) != 0);
 
             verifyDescriptorListOngoingArchive(client, publication, 0);
             final int messageCount = prepAndSendMessages(client, publication);
@@ -260,13 +267,13 @@ public class ArchiveAndReplaySystemTest
             wait(() -> client.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID, requestStopCorrelationId));
             waitForOk(client, requestStopCorrelationId);
 
-            wait(() -> (client.pollEvents(new FailRecordingEventsListener()
+            wait(() -> client.pollEvents(new FailRecordingEventsListener()
             {
                 public void onStop(final int rId)
                 {
                     assertThat(rId, is(recordingId));
                 }
-            }, 1) != 0));
+            }, 1) != 0);
 
             verifyDescriptorListOngoingArchive(client, publication, totalRecordingLength);
 
@@ -283,29 +290,28 @@ public class ArchiveAndReplaySystemTest
 
     private void waitForOk(final ArchiveClient client, final int correlationId)
     {
-        wait(() -> (client.pollResponses(reply, new FailResponseListener()
+        wait(() -> client.pollResponses(reply, new FailResponseListener()
         {
-            @Override
             public void onResponse(final String err, final int correlationId)
             {
                 assertThat(err, isEmptyOrNullString());
                 assertThat(correlationId, is(correlationId));
             }
-        }, 1) != 0));
+        }, 1) != 0);
     }
 
     private void waitForFail(final ArchiveClient client, final int correlationId)
     {
-        wait(() -> (client.pollResponses(reply, new FailResponseListener()
+        wait(() -> client.pollResponses(reply, new FailResponseListener()
         {
-            @Override
             public void onResponse(final String err, final int correlationId)
             {
                 assertThat(err, is(notNullValue()));
                 assertThat(correlationId, is(correlationId));
             }
-        }, 1) != 0));
+        }, 1) != 0);
     }
+
     private void verifyEmptyDescriptorList(final ArchiveClient client)
     {
         final int requestRecordingsCorrelationId = this.correlationId++;
@@ -321,9 +327,8 @@ public class ArchiveAndReplaySystemTest
         final int requestRecordingsCorrelationId = this.correlationId++;
         client.listRecordings(recordingId, recordingId, requestRecordingsCorrelationId);
         println("Await result");
-        wait(() -> (client.pollResponses(reply, new FailResponseListener()
+        wait(() -> client.pollResponses(reply, new FailResponseListener()
         {
-            @Override
             public void onRecordingDescriptor(
                 final int rId,
                 final int segmentFileLength,
@@ -347,7 +352,7 @@ public class ArchiveAndReplaySystemTest
 
                 assertThat(correlationId, is(requestRecordingsCorrelationId));
             }
-        }, 1) != 0));
+        }, 1) != 0);
     }
 
     private int prepAndSendMessages(
@@ -424,7 +429,7 @@ public class ArchiveAndReplaySystemTest
             publication.position(), positionBitsToShift, publication.initialTermId());
         totalRecordingLength =
             (termIdFromPosition - publication.initialTermId()) * publication.termBufferLength() +
-            (lastTermOffset - initialTermOffset);
+                (lastTermOffset - initialTermOffset);
 
         assertThat(publication.position() - initialPosition, is(totalRecordingLength));
         lastTermId = termIdFromPosition;
@@ -510,6 +515,7 @@ public class ArchiveAndReplaySystemTest
 
         return true;
     }
+
     private void validateFragment2(
         final DirectBuffer buffer,
         final int offset, final int length,
@@ -520,8 +526,9 @@ public class ArchiveAndReplaySystemTest
         assertThat(buffer.getByte(offset + 4), is((byte)'z'));
         remaining -= fragmentLength[fragmentCount];
         fragmentCount++;
-        printf("Fragment2: offset=%d length=%d %n",  offset, length);
+        printf("Fragment2: offset=%d length=%d %n", offset, length);
     }
+
     private void validateArchiveFileChunked(final int messageCount, final int recordingId) throws IOException
     {
         final RecordingDescriptorDecoder decoder = recordingMetaFileFormatDecoder(
@@ -646,8 +653,10 @@ public class ArchiveAndReplaySystemTest
 
                             public void onStart(
                                 final int recordingId,
-                                final String source, final int sessionId,
-                                final String channel, final int streamId)
+                                final String source,
+                                final int sessionId,
+                                final String channel,
+                                final int streamId)
                             {
                                 fail();
                             }
@@ -691,7 +700,7 @@ public class ArchiveAndReplaySystemTest
 
     private void poll(final Subscription subscription, final FragmentHandler handler)
     {
-        wait(() -> (subscription.poll(handler, 1) > 0));
+        wait(() -> subscription.poll(handler, 1) > 0);
     }
 
     private void offer(
@@ -699,7 +708,7 @@ public class ArchiveAndReplaySystemTest
         final UnsafeBuffer buffer,
         final int length)
     {
-        wait(() -> (publication.offer(buffer, 0, length) > 0));
+        wait(() -> publication.offer(buffer, 0, length) > 0);
     }
 
     private void wait(final BooleanSupplier forIt)
@@ -717,7 +726,7 @@ public class ArchiveAndReplaySystemTest
 
     private void awaitSubscriptionIsConnected(final Subscription subscription)
     {
-        wait(() -> (subscription.imageCount() > 0));
+        wait(() -> subscription.imageCount() > 0);
     }
 
     private void awaitPublicationIsConnected(final Publication publication)

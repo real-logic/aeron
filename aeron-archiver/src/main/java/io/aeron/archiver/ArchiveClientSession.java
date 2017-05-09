@@ -134,11 +134,12 @@ class ArchiveClientSession implements ArchiveConductor.Session, ArchiveRequestLi
         try
         {
             conductor.stopRecording(channel, streamId);
-            //clientProxy.sendResponse(reply, null, correlationId);
+            clientProxy.sendResponse(reply, null, correlationId);
         }
         catch (final Exception e)
         {
-            //clientProxy.sendResponse(reply, e.getMessage(), correlationId);
+            // e.printStackTrace(); TODO: logging?
+            clientProxy.sendResponse(reply, e.getMessage(), correlationId);
         }
     }
 
@@ -155,12 +156,12 @@ class ArchiveClientSession implements ArchiveConductor.Session, ArchiveRequestLi
         try
         {
             conductor.startRecording(channel, streamId);
-            //clientProxy.sendResponse(reply, null, correlationId);
+            clientProxy.sendResponse(reply, null, correlationId);
         }
         catch (final Exception e)
         {
-            e.printStackTrace();
-            //clientProxy.sendResponse(reply, e.getMessage(), correlationId);
+            // e.printStackTrace(); TODO: logging?
+            clientProxy.sendResponse(reply, e.getMessage(), correlationId);
         }
     }
 

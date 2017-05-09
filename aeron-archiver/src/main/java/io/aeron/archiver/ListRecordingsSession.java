@@ -28,8 +28,8 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 class ListRecordingsSession implements ArchiveConductor.Session
 {
-    static final long NOT_FOUND_HEADER;
-    static final long DESCRIPTOR_HEADER;
+    private static final long NOT_FOUND_HEADER;
+    private static final long DESCRIPTOR_HEADER;
 
     static
     {
@@ -68,7 +68,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
     private final ClientProxy proxy;
     private final int correlationId;
 
-    private int cursor;
+    private int recordingId;
     private State state = State.INIT;
 
     ListRecordingsSession(
@@ -79,7 +79,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
         final ClientProxy proxy)
     {
         this.reply = reply;
-        cursor = fromId;
+        recordingId = fromId;
         this.fromId = fromId;
         this.toId = toId;
         this.index = index;
@@ -132,17 +132,17 @@ class ListRecordingsSession implements ArchiveConductor.Session
 
     private int sendDescriptors()
     {
-        final int limit = Math.min(cursor + 4, toId);
-        for (; cursor <= limit; cursor++)
+        final int limit = Math.min(recordingId + 4, toId);
+        for (; recordingId <= limit; recordingId++)
         {
-            final RecordingSession session = index.getRecordingSession(cursor);
+            final RecordingSession session = index.getRecordingSession(recordingId);
             if (session == null)
             {
                 byteBuffer.clear();
                 unsafeBuffer.wrap(byteBuffer);
                 try
                 {
-                    if (!index.readDescriptor(cursor, byteBuffer))
+                    if (!index.readDescriptor(recordingId, byteBuffer))
                     {
                         // return relevant error
                         if (reply.tryClaim(
@@ -151,8 +151,9 @@ class ListRecordingsSession implements ArchiveConductor.Session
                             final MutableDirectBuffer buffer = bufferClaim.buffer();
                             final int offset = bufferClaim.offset();
                             buffer.putLong(offset, NOT_FOUND_HEADER);
-                            buffer.putInt(offset + 8, cursor);
+                            buffer.putInt(offset + 8, recordingId);
                             buffer.putInt(offset + 12, index.maxRecordingId());
+                            buffer.putInt(offset + 16, correlationId);
                             bufferClaim.commit();
                             state = State.CLOSE;
                         }
@@ -173,10 +174,14 @@ class ListRecordingsSession implements ArchiveConductor.Session
 
             final int length = unsafeBuffer.getInt(0);
             unsafeBuffer.putLong(Catalog.CATALOG_FRAME_LENGTH - 8, DESCRIPTOR_HEADER);
+            unsafeBuffer.putInt(
+                Catalog.CATALOG_FRAME_LENGTH + RecordingDescriptorDecoder.correlationIdEncodingOffset(),
+                correlationId);
+
             reply.offer(unsafeBuffer, Catalog.CATALOG_FRAME_LENGTH - 8, length + 8);
         }
 
-        if (cursor > toId)
+        if (recordingId > toId)
         {
             state = State.CLOSE;
         }
@@ -186,12 +191,6 @@ class ListRecordingsSession implements ArchiveConductor.Session
 
     private int init()
     {
-        if (!reply.isConnected())
-        {
-            // TODO: timeout
-            return 0;
-        }
-
         if (fromId > toId)
         {
             proxy.sendResponse(reply, "Requested range is reversed (to < from)", correlationId);

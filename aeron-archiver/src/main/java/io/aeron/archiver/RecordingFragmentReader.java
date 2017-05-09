@@ -56,7 +56,7 @@ class RecordingFragmentReader implements AutoCloseable
         this.recordingId = recordingId;
         this.archiveDir = archiveDir;
         final String recordingMetaFileName = recordingMetaFileName(recordingId);
-        // TODO: Should this just be read rather than mapped given the one of read?
+        // TODO: Use metadata from catalog
         final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
         final RecordingDescriptorDecoder metaDecoder = recordingMetaFileFormatDecoder(recordingMetaFile);
         termBufferLength = metaDecoder.termBufferLength();

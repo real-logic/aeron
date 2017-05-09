@@ -53,7 +53,6 @@ public class ReplaySessionTest
             .epochClock(epochClock)
             .recordingId(RECORDING_ID)
             .termBufferLength(TERM_BUFFER_LENGTH)
-            .imageInitialTermId(INITIAL_TERM_ID)
             .source("source")
             .sessionId(1)
             .channel("channel")

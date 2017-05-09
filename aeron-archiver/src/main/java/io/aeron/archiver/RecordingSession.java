@@ -115,7 +115,6 @@ class RecordingSession implements ArchiveConductor.Session
             recorder = builder
                 .recordingId(recordingId)
                 .termBufferLength(termBufferLength)
-                .imageInitialTermId(imageInitialTermId)
                 .source(source)
                 .sessionId(sessionId)
                 .channel(channel)
@@ -167,7 +166,6 @@ class RecordingSession implements ArchiveConductor.Session
         int workCount = 1;
         try
         {
-            // TODO: add CRC as option, per fragment, use session id to store CRC
             workCount = image.rawPoll(recorder, recorder.segmentFileLength());
             if (workCount != 0)
             {

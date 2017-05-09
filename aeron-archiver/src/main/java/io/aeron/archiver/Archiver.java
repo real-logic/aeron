@@ -67,10 +67,6 @@ public class Archiver implements AutoCloseable
         aeron = Aeron.connect(ctx.clientContext);
         ctx.conclude();
 
-        // TODO: Should we have replay and record on same thread?
-        // TODO: Should we allow the allocation of more threads to these tasks assuming slow storage/sufficient
-        // TODO: traffic/sufficient replay load?
-
         final ArchiveConductor archiveConductor = new ArchiveConductor(aeron, ctx);
 
         runner = new AgentRunner(

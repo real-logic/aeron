@@ -35,7 +35,6 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         private EpochClock epochClock;
         private int recordingId;
         private int termBufferLength;
-        private int imageInitialTermId;
         private boolean forceWrites = true;
         private boolean forceMetadataUpdates = true;
         private int sessionId;
@@ -68,13 +67,6 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
             return this;
         }
 
-        Builder imageInitialTermId(final int imageInitialTermId)
-        {
-            this.imageInitialTermId = imageInitialTermId;
-            return this;
-        }
-
-        // TODO: Forcing of writes should have the option of SYNC or DSYNC so best via channel rather than mapped buffer
         Builder forceWrites(final boolean forceWrites)
         {
             this.forceWrites = forceWrites;
@@ -192,7 +184,6 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
                 recordingId,
                 termBufferLength,
                 segmentFileLength,
-                builder.imageInitialTermId,
                 builder.source,
                 builder.sessionId,
                 builder.channel,
@@ -215,7 +206,6 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         final int recordingId,
         final int termBufferLength,
         final int segmentFileLength,
-        final int imageInitialTermId,
         final String source,
         final int sessionId,
         final String channel,
@@ -229,7 +219,6 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         descriptor.lastTermId(-1);
         descriptor.lastTermOffset(-1);
         descriptor.endTime(-1);
-        descriptor.imageInitialTermId(imageInitialTermId);
         descriptor.sessionId(sessionId);
         descriptor.streamId(streamId);
         descriptor.segmentFileLength(segmentFileLength);
@@ -272,8 +261,6 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
             metaDataEncoder.initialTermId(termId);
             initialTermId = termId;
         }
-        // TODO: if assumptions below are valid the computation is redundant for all but the first time this
-        // TODO: ...method is called
         final int archiveOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
         try
         {
@@ -307,10 +294,8 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
             metaDataEncoder.initialTermId(termId);
             initialTermId = termId;
         }
-        // TODO: if assumptions below are valid the computation is redundant for all but the first time this
-        // TODO: ...method is called
-        final int archiveOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
 
+        final int archiveOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
         try
         {
             prepareRecording(termOffset, termId, archiveOffset, header.frameLength());
@@ -371,6 +356,7 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
             throw new IllegalArgumentException(
                 "It is assumed that recordingPosition tracks the calculated recordingOffset");
         }
+        // TODO: potentially redundant call to position() could be an assert
         else if (recordingFileChannel.position() != recordingPosition)
         {
             throw new IllegalArgumentException("It is assumed that recordingPosition tracks the file position");
@@ -400,7 +386,6 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
             CloseHelper.close(recordingFileChannel);
             CloseHelper.close(recordingFile);
             recordingPosition = 0;
-            // TODO: allocate ahead files, will also give early indication to low storage
             newRecordingSegmentFile(termId + 1);
         }
     }

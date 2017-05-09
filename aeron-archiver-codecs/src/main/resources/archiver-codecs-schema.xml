@@ -25,12 +25,13 @@
 
     <sbe:message name="RecordingStarted"
                  id="101"
-                 description="Describes a new image recording">
-        <field name="recordingId"         id="1" type="int32"/>
-        <field name="sessionId"           id="2" type="int32"/>
-        <field name="streamId"            id="3" type="int32"/>
-        <data  name="source"              id="4" type="varStringEncoding"/>
-        <data  name="channel"             id="5" type="varStringEncoding"/>
+                 description="Describes a new image recording, sent both as notification and reply">
+        <field name="correlationId"       id="1" type="int32"/>
+        <field name="recordingId"         id="2" type="int32"/>
+        <field name="sessionId"           id="3" type="int32"/>
+        <field name="streamId"            id="4" type="int32"/>
+        <data  name="source"              id="5" type="varStringEncoding"/>
+        <data  name="channel"             id="6" type="varStringEncoding"/>
     </sbe:message>
 
     <sbe:message name="RecordingProgress"
@@ -46,7 +47,10 @@
     <sbe:message name="RecordingStopped"
                  id="103"
                  description="Recording termination notification">
-        <field name="recordingId"         id="1" type="int32"/>
+        <field name="correlationId"       id="1" type="int32"/>
+        <field name="recordingId"         id="2" type="int32"/>
+        <field name="lastTermId"          id="3" type="int32"/>
+        <field name="lastTermOffset"      id="4" type="int32"/>
     </sbe:message>
 
     <sbe:message name="ArchiverResponse"
@@ -98,6 +102,15 @@
         <field name="replayId"           id="2" type="int32"/>
     </sbe:message>
 
+    <sbe:message name="ReplayAborted"
+                 id="51"
+                 description="Replay abort response" >
+        <field name="correlationId"      id="1" type="int32"/>
+        <field name="replayId"           id="2" type="int32"/>
+        <field name="lastTermId"         id="3" type="int32"/>
+        <field name="lastTermOffset"     id="4" type="int32"/>
+    </sbe:message>
+
     <sbe:message name="ListRecordingsRequest"
                  id="6"
                  description="Request a range of recording descriptors">
@@ -125,7 +138,6 @@
         <field name="lastTermId"           id="6" type="int32"/>
         <field name="lastTermOffset"       id="7" type="int32"/>
         <field name="endTime"              id="8" type="int64"/>
-        <field name="imageInitialTermId"   id="9" type="int32"/>
         <field name="sessionId"            id="10" type="int32"/>
         <field name="streamId"             id="11" type="int32"/>
         <field name="segmentFileLength"    id="12" type="int32"/>

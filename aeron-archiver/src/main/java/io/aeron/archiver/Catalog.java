@@ -90,16 +90,17 @@ class Catalog implements AutoCloseable
         }
     }
 
-    // TODO: prep for some lookup method construction
     private int loadIntoCatalog(
-        final ByteBuffer dst, final UnsafeBuffer unsafeBuffer, final RecordingDescriptorDecoder decoder)
+        final ByteBuffer dst,
+        final UnsafeBuffer unsafeBuffer,
+        final RecordingDescriptorDecoder decoder)
     {
         if (dst.remaining() == 0)
         {
             return 0;
         }
 
-        // frame
+        // Note: prep for some lookup method construction
         final int length = unsafeBuffer.getInt(0);
 
         decoder.wrap(
@@ -137,7 +138,6 @@ class Catalog implements AutoCloseable
             newRecordingId,
             termBufferLength,
             segmentFileLength,
-            imageInitialTermId,
             source,
             sessionId,
             channel,

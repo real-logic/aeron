@@ -35,13 +35,92 @@ import java.util.function.BooleanSupplier;
 import static io.aeron.archiver.ArchiveUtil.recordingMetaFileFormatDecoder;
 import static io.aeron.archiver.ArchiveUtil.recordingMetaFileName;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
 public class ArchiveAndReplaySystemTest
 {
+    class FailRecordingEventsListener implements ArchiveClient.RecordingEventsListener
+    {
+        public void onProgress(
+            final int recordingId,
+            final int initialTermId,
+            final int initialTermOffset,
+            final int termId,
+            final int termOffset)
+        {
+            fail();
+        }
+        public void onStart(
+            final int recordingId,
+            final String source,
+            final int sessionId,
+            final String channel,
+            final int streamId)
+        {
+            fail();
+        }
+        public void onStop(final int recordingId)
+        {
+            fail();
+        }
+    }
+    class FailResponseListener implements ArchiveClient.ResponseListener
+    {
+        public void onResponse(final String err, final int correlationId)
+        {
+            fail();
+        }
+        public void onReplayStarted(final int replayId, final int correlationId)
+        {
+            fail();
+        }
+        public void onReplayAborted(final int lastTermId, final int lastTermOffset, final int correlationId)
+        {
+            fail();
+        }
+        public void onRecordingStarted(
+            final int recordingId,
+            final String source,
+            final int sessionId,
+            final String channel,
+            final int streamId,
+            final int correlationId)
+        {
+            fail();
+        }
+        public void onRecordingStopped(
+            final int recordingId,
+            final int lastTermId,
+            final int lastTermOffset,
+            final int correlationId)
+        {
+            fail();
+        }
+        public void onRecordingDescriptor(
+            final int recordingId,
+            final int segmentFileLength,
+            final int termBufferLength,
+            final long startTime,
+            final int initialTermId,
+            final int initialTermOffset,
+            final long endTime,
+            final int lastTermId,
+            final int lastTermOffset,
+            final String source,
+            final int sessionId,
+            final String channel,
+            final int streamId,
+            final int correlationId)
+        {
+            fail();
+        }
+        public void onRecordingNotFound(final int recordingId, final int maxRecordingId, final int correlationId)
+        {
+            fail();
+        }
+    }
     private static final int TIMEOUT = 5000;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
     private static final int SLEEP_TIME_NS = 5000;
@@ -84,6 +163,7 @@ public class ArchiveAndReplaySystemTest
         }
     };
     private Subscription reply;
+    private int correlationId;
 
     @Before
     public void setUp() throws Exception
@@ -140,21 +220,23 @@ public class ArchiveAndReplaySystemTest
             println("Client connected");
 
             verifyEmptyDescriptorList(client);
-
-            wait(() -> client.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID));
+            final int startRecordingCorrelationId = this.correlationId++;
+            wait(() ->
+            {
+                return client.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId);
+            });
             println("Recording requested");
+            waitForOk(client, startRecordingCorrelationId);
 
             final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(publication);
 
-            wait(() -> (client.pollEvents(new ArchiveClient.RecordingProgressListener()
+            wait(() -> (client.pollEvents(new FailRecordingEventsListener()
             {
                 public void onStart(
                     final int recordingId0,
-                    final int sessionId,
-                    final int streamId,
-                    final String iSource,
-                    final String channel)
+                    final String iSource, final int sessionId,
+                    final String channel, final int streamId)
                 {
                     recordingId = recordingId0;
                     assertThat(streamId, is(PUBLISH_STREAM_ID));
@@ -163,14 +245,6 @@ public class ArchiveAndReplaySystemTest
                     source = iSource;
                     assertThat(channel, is(PUBLISH_URI));
                     println("Recording started. source: " + source);
-                }
-                public void onProgress(final int s, final int i1, final int i2, final int t1, final int t2)
-                {
-                    fail();
-                }
-                public void onStop(final int s)
-                {
-                    fail();
                 }
             }, 1) != 0));
 
@@ -182,21 +256,15 @@ public class ArchiveAndReplaySystemTest
             println("All data arrived");
 
             println("Request stop recording");
-            wait(() -> client.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID));
+            final int requestStopCorrelationId = this.correlationId++;
+            wait(() -> client.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID, requestStopCorrelationId));
+            waitForOk(client, requestStopCorrelationId);
 
-            wait(() -> (client.pollEvents(new ArchiveClient.RecordingProgressListener()
+            wait(() -> (client.pollEvents(new FailRecordingEventsListener()
             {
-                public void onProgress(final int s, final int i1, final int i2, final int t1, final int t2)
+                public void onStop(final int rId)
                 {
-                    fail();
-                }
-                public void onStart(final int s1, final int s2, final int s3, final String s4, final String c)
-                {
-                    fail();
-                }
-                public void onStop(final int s)
-                {
-                    assertThat(s, is(recordingId));
+                    assertThat(rId, is(recordingId));
                 }
             }, 1) != 0));
 
@@ -213,20 +281,36 @@ public class ArchiveAndReplaySystemTest
         }
     }
 
+    private void waitForOk(final ArchiveClient client, final int correlationId)
+    {
+        wait(() -> (client.pollResponses(reply, new FailResponseListener()
+        {
+            @Override
+            public void onResponse(final String err, final int correlationId)
+            {
+                assertThat(err, isEmptyOrNullString());
+                assertThat(correlationId, is(correlationId));
+            }
+        }, 1) != 0));
+    }
+
+    private void waitForFail(final ArchiveClient client, final int correlationId)
+    {
+        wait(() -> (client.pollResponses(reply, new FailResponseListener()
+        {
+            @Override
+            public void onResponse(final String err, final int correlationId)
+            {
+                assertThat(err, is(notNullValue()));
+                assertThat(correlationId, is(correlationId));
+            }
+        }, 1) != 0));
+    }
     private void verifyEmptyDescriptorList(final ArchiveClient client)
     {
-        client.listRecordings(0, 100);
-        poll(
-            reply,
-            (b, offset, length, header) ->
-            {
-                final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(b, offset);
-                assertThat(hDecoder.templateId(), is(ArchiverResponseDecoder.TEMPLATE_ID));
-                println(new ArchiverResponseDecoder()
-                    .wrap(b, offset + MessageHeaderDecoder.ENCODED_LENGTH, hDecoder.blockLength(), hDecoder.version())
-                    .err());
-            }
-        );
+        final int requestRecordingsCorrelationId = this.correlationId++;
+        client.listRecordings(0, 100, requestRecordingsCorrelationId);
+        waitForFail(client, requestRecordingsCorrelationId);
     }
 
     private void verifyDescriptorListOngoingArchive(
@@ -234,43 +318,36 @@ public class ArchiveAndReplaySystemTest
         final Publication publication,
         final long archiveLength)
     {
-        client.listRecordings(recordingId, recordingId);
+        final int requestRecordingsCorrelationId = this.correlationId++;
+        client.listRecordings(recordingId, recordingId, requestRecordingsCorrelationId);
         println("Await result");
-
-        poll(
-            reply,
-            (b, offset, length, header) ->
+        wait(() -> (client.pollResponses(reply, new FailResponseListener()
+        {
+            @Override
+            public void onRecordingDescriptor(
+                final int rId,
+                final int segmentFileLength,
+                final int termBufferLength,
+                final long startTime,
+                final int initialTermId,
+                final int initialTermOffset,
+                final long endTime,
+                final int lastTermId,
+                final int lastTermOffset,
+                final String source,
+                final int sessionId,
+                final String channel,
+                final int streamId,
+                final int correlationId)
             {
-                final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(b, offset);
-                if (hDecoder.templateId() != RecordingDescriptorDecoder.TEMPLATE_ID)
-                {
-                    println("Got:" + hDecoder.templateId());
-                    println(new ArchiverResponseDecoder()
-                        .wrap(
-                            b,
-                            offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                            hDecoder.blockLength(),
-                            hDecoder.version())
-                        .err());
-                }
-                assertThat(hDecoder.templateId(), is(RecordingDescriptorDecoder.TEMPLATE_ID));
+                assertThat(rId, is(recordingId));
+                assertThat(termBufferLength, is(publication.termBufferLength()));
 
-                final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();
-                decoder.wrap(
-                    b,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    hDecoder.blockLength(),
-                    hDecoder.version());
-                println(decoder.toString());
-                assertThat(decoder.recordingId(), is(recordingId));
-                assertThat(decoder.streamId(), is(PUBLISH_STREAM_ID));
-                assertThat(decoder.imageInitialTermId(), is(publication.initialTermId()));
+                assertThat(streamId, is(PUBLISH_STREAM_ID));
 
-                final long archiveFullLength = ArchiveUtil.recordingFileFullLength(decoder);
-                assertThat(archiveFullLength, is(archiveLength));
-                //....
+                assertThat(correlationId, is(requestRecordingsCorrelationId));
             }
-        );
+        }, 1) != 0));
     }
 
     private int prepAndSendMessages(
@@ -365,7 +442,8 @@ public class ArchiveAndReplaySystemTest
             0,
             totalRecordingLength,
             REPLAY_URI,
-            101
+            101,
+            correlationId++
         ));
 
         try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, 101))
@@ -550,7 +628,7 @@ public class ArchiveAndReplaySystemTest
                     // each message is fragmentLength[fragmentCount]
                     while (lastTermId == -1 || recorded < totalRecordingLength)
                     {
-                        wait(() -> (client.pollEvents(new ArchiveClient.RecordingProgressListener()
+                        wait(() -> (client.pollEvents(new ArchiveClient.RecordingEventsListener()
                         {
                             public void onProgress(
                                 final int recordingId0,
@@ -568,10 +646,8 @@ public class ArchiveAndReplaySystemTest
 
                             public void onStart(
                                 final int recordingId,
-                                final int sessionId,
-                                final int streamId,
-                                final String source,
-                                final String channel)
+                                final String source, final int sessionId,
+                                final String channel, final int streamId)
                             {
                                 fail();
                             }

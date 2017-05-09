@@ -25,7 +25,6 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 class ClientProxy
 {
-    // TODO: replace header usage with constants?
     private final IdleStrategy idleStrategy;
     private final Publication archiverNotifications;
     private final UnsafeBuffer outboundBuffer;

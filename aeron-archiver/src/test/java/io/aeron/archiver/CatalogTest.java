@@ -29,7 +29,7 @@ import static org.mockito.Mockito.mock;
 public class CatalogTest
 {
     public static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
-    static final UnsafeBuffer UB = new UnsafeBuffer(
+    static final UnsafeBuffer BUFFER = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, 64));
     static final RecordingDescriptorDecoder DECODER = new RecordingDescriptorDecoder();
     static int recordingAId;
@@ -42,7 +42,7 @@ public class CatalogTest
     public static void setup() throws Exception
     {
         DECODER.wrap(
-            UB,
+            BUFFER,
             Catalog.CATALOG_FRAME_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
@@ -91,8 +91,8 @@ public class CatalogTest
         final int streamId)
         throws IOException
     {
-        UB.byteBuffer().clear();
-        catalog.readDescriptor(id, UB.byteBuffer());
+        BUFFER.byteBuffer().clear();
+        catalog.readDescriptor(id, BUFFER.byteBuffer());
         DECODER.limit(Catalog.CATALOG_FRAME_LENGTH + RecordingDescriptorDecoder.BLOCK_LENGTH);
         assertEquals(id, DECODER.recordingId());
         assertEquals(sessionId, DECODER.sessionId());

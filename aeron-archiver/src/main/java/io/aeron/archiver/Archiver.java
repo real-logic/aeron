@@ -95,8 +95,8 @@ public class Archiver implements AutoCloseable
         private File archiveDir;
         private String controlRequestChannel;
         private int controlRequestStreamId;
-        private String archiverNotificationsChannel;
-        private int archiverNotificationsStreamId;
+        private String recordingEventsChannel;
+        private int recordingEventsStreamId;
         private IdleStrategy idleStrategy;
         private EpochClock epochClock;
         private int segmentFileLength = 128 * 1024 * 1024;
@@ -116,8 +116,8 @@ public class Archiver implements AutoCloseable
             this.archiveDir = archiveDir;
             controlRequestChannel = "aeron:udp?endpoint=localhost:8010";
             controlRequestStreamId = 0;
-            archiverNotificationsChannel = "aeron:udp?endpoint=localhost:8011";
-            archiverNotificationsStreamId = 0;
+            recordingEventsChannel = "aeron:udp?endpoint=localhost:8011";
+            recordingEventsStreamId = 0;
         }
 
         void conclude()
@@ -183,25 +183,25 @@ public class Archiver implements AutoCloseable
             return this;
         }
 
-        public String archiverNotificationsChannel()
+        public String recordingEventsChannel()
         {
-            return archiverNotificationsChannel;
+            return recordingEventsChannel;
         }
 
-        public Context archiverNotificationsChannel(final String archiverNotificationsChannel)
+        public Context recordingEventsChannel(final String recordingEventsChannel)
         {
-            this.archiverNotificationsChannel = archiverNotificationsChannel;
+            this.recordingEventsChannel = recordingEventsChannel;
             return this;
         }
 
-        public int archiverNotificationsStreamId()
+        public int recordingEventsStreamId()
         {
-            return archiverNotificationsStreamId;
+            return recordingEventsStreamId;
         }
 
-        public Context archiverNotificationsStreamId(final int archiverNotificationsStreamId)
+        public Context recordingEventsStreamId(final int recordingEventsStreamId)
         {
-            this.archiverNotificationsStreamId = archiverNotificationsStreamId;
+            this.recordingEventsStreamId = recordingEventsStreamId;
             return this;
         }
 

@@ -117,8 +117,7 @@ public class ReplaySessionTest
                 1024);
         }
 
-        try (RecordingFragmentReader reader = new RecordingFragmentReader(
-            RECORDING_ID, archiveDir))
+        try (RecordingFragmentReader reader = new RecordingFragmentReader(RECORDING_ID, archiveDir))
         {
             final int polled = reader.controlledPoll(
                 (b, offset, length, h) ->
@@ -242,8 +241,7 @@ public class ReplaySessionTest
         assertEquals(1, replaySession.doWork());
 
         // failure notification
-        verify(proxy, times(1)).sendResponse(eq(control), notNull(),
-            eq(1));
+        verify(proxy, times(1)).sendResponse(eq(control), notNull(), eq(1));
 
         assertTrue(replaySession.isDone());
     }

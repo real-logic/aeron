@@ -386,7 +386,7 @@ public class ArchiveClient
         );
     }
 
-    public int pollEvents(final RecordingEventsListener progressListener, final int count)
+    public int pollEvents(final RecordingEventsListener recordingEventsListener, final int count)
     {
         return recordingEvents.poll(
             (buffer, offset, length, header) ->
@@ -402,7 +402,7 @@ public class ArchiveClient
                             messageHeaderDecoder.blockLength(),
                             messageHeaderDecoder.version());
 
-                        progressListener.onProgress(
+                        recordingEventsListener.onProgress(
                             recordingProgressDecoder.recordingId(),
                             recordingProgressDecoder.initialTermId(),
                             recordingProgressDecoder.initialTermOffset(),
@@ -418,7 +418,7 @@ public class ArchiveClient
                             messageHeaderDecoder.blockLength(),
                             messageHeaderDecoder.version());
 
-                        progressListener.onStart(
+                        recordingEventsListener.onStart(
                             recordingStartedDecoder.recordingId(),
                             recordingStartedDecoder.channel(), recordingStartedDecoder.sessionId(),
                             recordingStartedDecoder.source(), recordingStartedDecoder.streamId()
@@ -432,7 +432,7 @@ public class ArchiveClient
                             messageHeaderDecoder.blockLength(),
                             messageHeaderDecoder.version());
 
-                        progressListener.onStop(recordingStoppedDecoder.recordingId());
+                        recordingEventsListener.onStop(recordingStoppedDecoder.recordingId());
                         break;
 
                     default:

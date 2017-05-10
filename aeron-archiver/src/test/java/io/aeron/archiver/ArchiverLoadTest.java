@@ -111,11 +111,11 @@ public class ArchiverLoadTest
     {
         try (Publication controlPublication = publishingClient.addPublication(
                 archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
-             Subscription archiverNotifications = publishingClient.addSubscription(
-                archiverCtx.archiverNotificationsChannel(), archiverCtx.archiverNotificationsStreamId()))
+             Subscription recordingEvents = publishingClient.addSubscription(
+                archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
             awaitPublicationIsConnected(controlPublication, TIMEOUT);
-            awaitSubscriptionIsConnected(archiverNotifications, TIMEOUT);
+            awaitSubscriptionIsConnected(recordingEvents, TIMEOUT);
             println("Archive service connected");
 
             requestRecording(controlPublication, PUBLISH_URI, PUBLISH_STREAM_ID);
@@ -125,11 +125,11 @@ public class ArchiverLoadTest
             final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(publication, TIMEOUT);
 
-            awaitStartedRecordingNotification(archiverNotifications, publication);
+            awaitStartedRecordingNotification(recordingEvents, publication);
 
             for (int i = 0; i < 100; i++)
             {
-                prepAndSendMessages(archiverNotifications, publication, 200000);
+                prepAndSendMessages(recordingEvents, publication, 200000);
                 System.out.printf("Sent %d : %d %n", i, totalRecordingLength);
             }
 
@@ -139,7 +139,7 @@ public class ArchiverLoadTest
     }
 
     private void prepAndSendMessages(
-        final Subscription archiverNotifications,
+        final Subscription recordingEvents,
         final Publication publication,
         final int messageCount)
         throws InterruptedException
@@ -156,17 +156,17 @@ public class ArchiverLoadTest
         printf("Sending %d messages, total length=%d %n", messageCount, totalDataLength);
 
         lastTermId = -1;
-        trackRecordingProgress(publication, archiverNotifications, waitForData);
+        trackRecordingProgress(publication, recordingEvents, waitForData);
         publishDataToBeRecorded(publication, messageCount);
         waitForData.await();
     }
 
     private void awaitStartedRecordingNotification(
-        final Subscription archiverNotifications, final Publication publication)
+        final Subscription recordingEvents, final Publication publication)
     {
         // the archiver has subscribed to the publication, now we wait for the archive start message
         poll(
-            archiverNotifications,
+            recordingEvents,
             (buffer, offset, length, header) ->
             {
                 final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
@@ -228,7 +228,7 @@ public class ArchiverLoadTest
 
     private void trackRecordingProgress(
         final Publication publication,
-        final Subscription archiverNotifications,
+        final Subscription recordingEvents,
         final CountDownLatch waitForData)
     {
         final Thread t = new Thread(
@@ -243,7 +243,7 @@ public class ArchiverLoadTest
                     while (lastTermId == -1 || recorded < initialRecorded + totalRecordingLength)
                     {
                         poll(
-                            archiverNotifications,
+                            recordingEvents,
                             (buffer, offset, length, header) ->
                             {
                                 final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);

@@ -119,8 +119,7 @@ public class RecordingSessionTest
             .recordingFileLength(SEGMENT_FILE_SIZE)
             .archiveDir(tempDirForTest)
             .epochClock(epochClock);
-        final RecordingSession session = new RecordingSession(
-            proxy, index, image, builder);
+        final RecordingSession session = new RecordingSession(proxy, index, image, builder);
 
         // pre-init
         assertEquals(Catalog.NULL_INDEX, session.recordingId());
@@ -180,8 +179,7 @@ public class RecordingSessionTest
             tempDirForTest, ArchiveUtil.recordingDataFileName(session.recordingId(), 0));
         assertTrue(segmentFile.exists());
 
-        try (RecordingFragmentReader reader = new RecordingFragmentReader(
-            session.recordingId(), tempDirForTest))
+        try (RecordingFragmentReader reader = new RecordingFragmentReader(session.recordingId(), tempDirForTest))
         {
             final int polled = reader.controlledPoll(
                 (buffer, offset, length, header) ->

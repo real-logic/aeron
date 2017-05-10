@@ -78,14 +78,14 @@ class ArchiveConductor implements Agent
             null);
 
         final Publication archiverNotificationPublication = aeron.addPublication(
-            ctx.archiverNotificationsChannel(), ctx.archiverNotificationsStreamId());
+            ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
 
         proxy = new ClientProxy(ctx.idleStrategy(), archiverNotificationPublication);
     }
 
     public String roleName()
     {
-        return "archive-conductor";
+        return "archiver";
     }
 
     public int doWork() throws Exception

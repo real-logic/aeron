@@ -215,13 +215,13 @@ public class ArchiveAndReplaySystemTest
     {
         try (Publication controlPublication = publishingClient.addPublication(
             archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
-             Subscription archiverNotifications = publishingClient.addSubscription(
-                 archiverCtx.archiverNotificationsChannel(), archiverCtx.archiverNotificationsStreamId()))
+             Subscription recordingEvents = publishingClient.addSubscription(
+                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
-            final ArchiveClient client = new ArchiveClient(controlPublication, archiverNotifications);
+            final ArchiveClient client = new ArchiveClient(controlPublication, recordingEvents);
 
             awaitPublicationIsConnected(controlPublication);
-            awaitSubscriptionIsConnected(archiverNotifications);
+            awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 
             reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);

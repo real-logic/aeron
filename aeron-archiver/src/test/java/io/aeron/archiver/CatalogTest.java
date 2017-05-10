@@ -107,9 +107,9 @@ public class CatalogTest
         final int newRecordingId;
         try (Catalog catalog = new Catalog(archiveDir))
         {
-            newRecordingId =
-                catalog.addNewRecording("sourceN", 9, "channelJ", 4, 4096, 0, mockSession,
-                    SEGMENT_FILE_SIZE);
+            newRecordingId = catalog.addNewRecording(
+                "sourceN", 9, "channelJ", 4, 4096, 0,
+                mockSession, SEGMENT_FILE_SIZE);
             catalog.removeRecordingSession(newRecordingId);
         }
 
@@ -126,9 +126,9 @@ public class CatalogTest
         final int newRecordingId;
         try (Catalog catalog = new Catalog(archiveDir))
         {
-            newRecordingId =
-                catalog.addNewRecording("sourceA", 6, "channelG", 1, 4096, 0, mockSession,
-                    SEGMENT_FILE_SIZE);
+            newRecordingId = catalog.addNewRecording(
+                "sourceA", 6, "channelG", 1, 4096, 0,
+                mockSession, SEGMENT_FILE_SIZE);
             catalog.removeRecordingSession(newRecordingId);
             assertNotEquals(recordingAId, newRecordingId);
         }

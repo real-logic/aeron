@@ -215,38 +215,38 @@ public class ArchiveClient
         final int count)
     {
         return reply.poll(
-            (b, offset, length, header) ->
+            (buffer, offset, length, header) ->
             {
-                messageHeaderDecoder.wrap(b, offset);
+                messageHeaderDecoder.wrap(buffer, offset);
 
                 switch (messageHeaderDecoder.templateId())
                 {
                     case ArchiverResponseDecoder.TEMPLATE_ID:
-                        handleArchiverResponse(responseListener, b, offset);
+                        handleArchiverResponse(responseListener, buffer, offset);
                         break;
 
                     case RecordingStartedDecoder.TEMPLATE_ID:
-                        handleRecordingStarted(responseListener, b, offset);
+                        handleRecordingStarted(responseListener, buffer, offset);
                         break;
 
                     case RecordingStoppedDecoder.TEMPLATE_ID:
-                        handleRecordingStopped(responseListener, b, offset);
+                        handleRecordingStopped(responseListener, buffer, offset);
                         break;
 
                     case ReplayAbortedDecoder.TEMPLATE_ID:
-                        handleReplayAborted(responseListener, b, offset);
+                        handleReplayAborted(responseListener, buffer, offset);
                         break;
 
                     case ReplayStartedDecoder.TEMPLATE_ID:
-                        handleReplayStarted(responseListener, b, offset);
+                        handleReplayStarted(responseListener, buffer, offset);
                         break;
 
                     case RecordingDescriptorDecoder.TEMPLATE_ID:
-                        handleRecordingDescriptor(responseListener, b, offset);
+                        handleRecordingDescriptor(responseListener, buffer, offset);
                         break;
 
                     case RecordingNotFoundResponseDecoder.TEMPLATE_ID:
-                        handleRecordingNotFoundResponse(responseListener, b, offset);
+                        handleRecordingNotFoundResponse(responseListener, buffer, offset);
                         break;
 
                     default:
@@ -389,15 +389,15 @@ public class ArchiveClient
     public int pollEvents(final RecordingEventsListener progressListener, final int count)
     {
         return recordingEvents.poll(
-            (b, offset, length, header) ->
+            (buffer, offset, length, header) ->
             {
-                messageHeaderDecoder.wrap(b, offset);
+                messageHeaderDecoder.wrap(buffer, offset);
 
                 switch (messageHeaderDecoder.templateId())
                 {
                     case RecordingProgressDecoder.TEMPLATE_ID:
                         recordingProgressDecoder.wrap(
-                            b,
+                            buffer,
                             offset + MessageHeaderDecoder.ENCODED_LENGTH,
                             messageHeaderDecoder.blockLength(),
                             messageHeaderDecoder.version());
@@ -413,7 +413,7 @@ public class ArchiveClient
 
                     case RecordingStartedDecoder.TEMPLATE_ID:
                         recordingStartedDecoder.wrap(
-                            b,
+                            buffer,
                             offset + MessageHeaderDecoder.ENCODED_LENGTH,
                             messageHeaderDecoder.blockLength(),
                             messageHeaderDecoder.version());
@@ -427,7 +427,7 @@ public class ArchiveClient
 
                     case RecordingStoppedDecoder.TEMPLATE_ID:
                         recordingStoppedDecoder.wrap(
-                            b,
+                            buffer,
                             offset + MessageHeaderDecoder.ENCODED_LENGTH,
                             messageHeaderDecoder.blockLength(),
                             messageHeaderDecoder.version());

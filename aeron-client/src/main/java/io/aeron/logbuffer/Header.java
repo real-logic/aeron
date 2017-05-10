@@ -37,6 +37,7 @@ public class Header
     private final int initialTermId;
     private int offset = 0;
     private DirectBuffer buffer;
+    private final Object context;
 
     /**
      * Construct a header that references a buffer for the log.
@@ -46,8 +47,31 @@ public class Header
      */
     public Header(final int initialTermId, final int positionBitsToShift)
     {
+        this(initialTermId, positionBitsToShift, null);
+    }
+
+    /**
+     * Construct a header that references a buffer for the log.
+     *
+     * @param initialTermId       this stream started at.
+     * @param positionBitsToShift for calculating positions.
+     * @param context             for storing state when which can be accessed with {@link #context()}.
+     */
+    public Header(final int initialTermId, final int positionBitsToShift, final Object context)
+    {
         this.initialTermId = initialTermId;
         this.positionBitsToShift = positionBitsToShift;
+        this.context = context;
+    }
+
+    /**
+     * Context for storing state related to the context of the callback where the header is used.
+     *
+     * @return context for storing state related to the context of the callback where the header is used.
+     */
+    public Object context()
+    {
+        return context;
     }
 
     /**

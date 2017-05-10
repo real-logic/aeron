@@ -94,7 +94,7 @@ public class ArchiveClient
     private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
 
     private final MutableDirectBuffer buffer = new ExpandableArrayBuffer();
-    private final Publication archiveServiceRequest;
+    private final Publication controlRequest;
     private final Subscription recordingEvents;
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ConnectRequestEncoder connectRequestEncoder = new ConnectRequestEncoder();
@@ -111,15 +111,15 @@ public class ArchiveClient
     private final ReplayAbortedDecoder replayAbortedDecoder = new ReplayAbortedDecoder();
     private final ReplayStartedDecoder replayStartedDecoder = new ReplayStartedDecoder();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
-    private final ArchiverResponseDecoder archiverResponseDecoder = new ArchiverResponseDecoder();
+    private final ControlResponseDecoder archiverResponseDecoder = new ControlResponseDecoder();
     private final RecordingNotFoundResponseDecoder recordingNotFoundResponseDecoder =
         new RecordingNotFoundResponseDecoder();
 
     public ArchiveClient(
-        final Publication archiveServiceRequest,
+        final Publication controlRequest,
         final Subscription recordingEvents)
     {
-        this.archiveServiceRequest = archiveServiceRequest;
+        this.controlRequest = controlRequest;
         this.recordingEvents = recordingEvents;
     }
 
@@ -221,7 +221,7 @@ public class ArchiveClient
 
                 switch (messageHeaderDecoder.templateId())
                 {
-                    case ArchiverResponseDecoder.TEMPLATE_ID:
+                    case ControlResponseDecoder.TEMPLATE_ID:
                         handleArchiverResponse(responseListener, buffer, offset);
                         break;
 
@@ -443,7 +443,7 @@ public class ArchiveClient
 
     private boolean offer(final int length)
     {
-        final long newPosition = archiveServiceRequest.offer(buffer, 0, HEADER_LENGTH + length);
+        final long newPosition = controlRequest.offer(buffer, 0, HEADER_LENGTH + length);
 
         return newPosition >= 0;
     }

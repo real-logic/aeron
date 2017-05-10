@@ -26,7 +26,7 @@ class ClientProxy
     private final Publication recordingNotifications;
     private final MutableDirectBuffer outboundBuffer = new ExpandableArrayBuffer();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    private final ArchiverResponseEncoder responseEncoder = new ArchiverResponseEncoder();
+    private final ControlResponseEncoder responseEncoder = new ControlResponseEncoder();
     private final RecordingStartedEncoder recordingStartedEncoder = new RecordingStartedEncoder();
     private final RecordingProgressEncoder recordingProgressEncoder = new RecordingProgressEncoder();
     private final RecordingStoppedEncoder recordingStoppedEncoder = new RecordingStoppedEncoder();

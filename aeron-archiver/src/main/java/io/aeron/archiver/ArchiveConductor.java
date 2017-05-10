@@ -39,7 +39,7 @@ class ArchiveConductor implements Agent
 
     private final Aeron aeron;
     private final AgentInvoker aeronClientAgentInvoker;
-    private final Subscription serviceRequestSubscription;
+    private final Subscription controlSubscription;
     private final ArrayList<Session> sessions = new ArrayList<>();
     private final Long2ObjectHashMap<ReplaySession> replaySession2IdMap = new Long2ObjectHashMap<>();
 
@@ -71,9 +71,9 @@ class ArchiveConductor implements Agent
             .forceMetadataUpdates(ctx.forceMetadataUpdates())
             .forceWrites(ctx.forceWrites());
 
-        serviceRequestSubscription = aeron.addSubscription(
-            ctx.serviceRequestChannel(),
-            ctx.serviceRequestStreamId(),
+        controlSubscription = aeron.addSubscription(
+            ctx.controlRequestChannel(),
+            ctx.controlRequestStreamId(),
             availableImageHandler,
             null);
 
@@ -156,14 +156,15 @@ class ArchiveConductor implements Agent
     private void availableImageHandler(final Image image)
     {
         final Session session;
-        if (image.subscription() == serviceRequestSubscription)
+        if (image.subscription() == controlSubscription)
         {
-            session = new ClientSession(image, proxy, this);
+            session = new ControlSession(image, proxy, this);
         }
         else
         {
             session = new RecordingSession(proxy, catalog, image, imageRecorderBuilder);
         }
+
         sessions.add(session);
     }
 

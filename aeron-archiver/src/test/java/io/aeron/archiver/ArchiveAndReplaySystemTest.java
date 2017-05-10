@@ -213,14 +213,14 @@ public class ArchiveAndReplaySystemTest
     @Test(timeout = 60000)
     public void recordAndReplay() throws IOException, InterruptedException
     {
-        try (Publication archiverServiceRequest = publishingClient.addPublication(
-            archiverCtx.serviceRequestChannel(), archiverCtx.serviceRequestStreamId());
+        try (Publication controlPublication = publishingClient.addPublication(
+            archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
              Subscription archiverNotifications = publishingClient.addSubscription(
                  archiverCtx.archiverNotificationsChannel(), archiverCtx.archiverNotificationsStreamId()))
         {
-            final ArchiveClient client = new ArchiveClient(archiverServiceRequest, archiverNotifications);
+            final ArchiveClient client = new ArchiveClient(controlPublication, archiverNotifications);
 
-            awaitPublicationIsConnected(archiverServiceRequest);
+            awaitPublicationIsConnected(controlPublication);
             awaitSubscriptionIsConnected(archiverNotifications);
             println("Archive service connected");
 
@@ -322,7 +322,7 @@ public class ArchiveAndReplaySystemTest
     private void verifyDescriptorListOngoingArchive(
         final ArchiveClient client,
         final Publication publication,
-        final long archiveLength)
+        final long recordingLength)
     {
         final int requestRecordingsCorrelationId = this.correlationId++;
         client.listRecordings(recordingId, recordingId, requestRecordingsCorrelationId);
@@ -460,9 +460,9 @@ public class ArchiveAndReplaySystemTest
                 (buffer, offset, length, header) ->
                 {
                     final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
-                    assertThat(hDecoder.templateId(), is(ArchiverResponseDecoder.TEMPLATE_ID));
+                    assertThat(hDecoder.templateId(), is(ControlResponseDecoder.TEMPLATE_ID));
 
-                    final ArchiverResponseDecoder mDecoder = new ArchiverResponseDecoder().wrap(
+                    final ControlResponseDecoder mDecoder = new ControlResponseDecoder().wrap(
                         buffer,
                         offset + MessageHeaderDecoder.ENCODED_LENGTH,
                         hDecoder.blockLength(),

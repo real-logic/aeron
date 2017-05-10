@@ -93,8 +93,8 @@ public class Archiver implements AutoCloseable
     {
         private Aeron.Context clientContext;
         private File archiveDir;
-        private String serviceRequestChannel;
-        private int serviceRequestStreamId;
+        private String controlRequestChannel;
+        private int controlRequestStreamId;
         private String archiverNotificationsChannel;
         private int archiverNotificationsStreamId;
         private IdleStrategy idleStrategy;
@@ -114,8 +114,8 @@ public class Archiver implements AutoCloseable
             clientContext.clientLock(new NoOpLock());
             this.clientContext = clientContext;
             this.archiveDir = archiveDir;
-            serviceRequestChannel = "aeron:udp?endpoint=localhost:8010";
-            serviceRequestStreamId = 0;
+            controlRequestChannel = "aeron:udp?endpoint=localhost:8010";
+            controlRequestStreamId = 0;
             archiverNotificationsChannel = "aeron:udp?endpoint=localhost:8011";
             archiverNotificationsStreamId = 0;
         }
@@ -161,25 +161,25 @@ public class Archiver implements AutoCloseable
             return this;
         }
 
-        public String serviceRequestChannel()
+        public String controlRequestChannel()
         {
-            return serviceRequestChannel;
+            return controlRequestChannel;
         }
 
-        public Context serviceRequestChannel(final String serviceRequestChannel)
+        public Context controlRequestChannel(final String controlRequestChannel)
         {
-            this.serviceRequestChannel = serviceRequestChannel;
+            this.controlRequestChannel = controlRequestChannel;
             return this;
         }
 
-        public int serviceRequestStreamId()
+        public int controlRequestStreamId()
         {
-            return serviceRequestStreamId;
+            return controlRequestStreamId;
         }
 
-        public Context serviceRequestStreamId(final int serviceRequestStreamId)
+        public Context controlRequestStreamId(final int controlRequestStreamId)
         {
-            this.serviceRequestStreamId = serviceRequestStreamId;
+            this.controlRequestStreamId = controlRequestStreamId;
             return this;
         }
 

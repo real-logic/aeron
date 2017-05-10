@@ -53,9 +53,9 @@
         <field name="lastTermOffset"      id="4" type="int32"/>
     </sbe:message>
 
-    <sbe:message name="ArchiverResponse"
+    <sbe:message name="ControlResponse"
                  id="1"
-                 description="Generic response. Empty error is an OK response">
+                 description="Generic response to a control request. Empty error is an OK response">
         <field name="correlationId"       id="1" type="int32"/>
         <data  name="err"                 id="2" type="varStringEncoding"/>
     </sbe:message>

@@ -109,16 +109,16 @@ public class ArchiverLoadTest
     @Test
     public void archive() throws IOException, InterruptedException
     {
-        try (Publication archiverServiceRequest = publishingClient.addPublication(
-                archiverCtx.serviceRequestChannel(), archiverCtx.serviceRequestStreamId());
+        try (Publication controlPublication = publishingClient.addPublication(
+                archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
              Subscription archiverNotifications = publishingClient.addSubscription(
                 archiverCtx.archiverNotificationsChannel(), archiverCtx.archiverNotificationsStreamId()))
         {
-            awaitPublicationIsConnected(archiverServiceRequest, TIMEOUT);
+            awaitPublicationIsConnected(controlPublication, TIMEOUT);
             awaitSubscriptionIsConnected(archiverNotifications, TIMEOUT);
             println("Archive service connected");
 
-            requestRecording(archiverServiceRequest, PUBLISH_URI, PUBLISH_STREAM_ID);
+            requestRecording(controlPublication, PUBLISH_URI, PUBLISH_STREAM_ID);
 
             println("Archive requested");
 
@@ -404,22 +404,15 @@ public class ArchiverLoadTest
         }
     }
 
-    private void requestRecording(final Publication serviceRequest, final String channel, final int streamId)
+    private void requestRecording(final Publication controlPublication, final String channel, final int streamId)
     {
-        new MessageHeaderEncoder()
-            .wrap(buffer, 0)
-            .templateId(StartRecordingRequestEncoder.TEMPLATE_ID)
-            .blockLength(StartRecordingRequestEncoder.BLOCK_LENGTH)
-            .schemaId(StartRecordingRequestEncoder.SCHEMA_ID)
-            .version(StartRecordingRequestEncoder.SCHEMA_VERSION);
-
         final StartRecordingRequestEncoder encoder = new StartRecordingRequestEncoder()
-            .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH)
+            .wrapAndApplyHeader(buffer, 0, new MessageHeaderEncoder())
             .channel(channel)
             .streamId(streamId);
 
         offer(
-            serviceRequest,
+            controlPublication,
             buffer,
             0,
             encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH,

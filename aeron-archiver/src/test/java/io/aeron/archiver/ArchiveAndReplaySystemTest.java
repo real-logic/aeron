@@ -144,7 +144,7 @@ public class ArchiveAndReplaySystemTest
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
-    private Aeron publishingClient;
+    private Aeron aeronClient;
     private Archiver archiver;
     private MediaDriver driver;
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
@@ -192,13 +192,13 @@ public class ArchiveAndReplaySystemTest
         archiverCtx.archiveDir(archiveDir);
         archiver = Archiver.launch(archiverCtx);
         println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
-        publishingClient = Aeron.connect();
+        aeronClient = Aeron.connect();
     }
 
     @After
     public void closeEverything() throws Exception
     {
-        CloseHelper.close(publishingClient);
+        CloseHelper.close(aeronClient);
         CloseHelper.close(archiver);
         CloseHelper.close(driver);
 
@@ -213,10 +213,10 @@ public class ArchiveAndReplaySystemTest
     @Test(timeout = 60000)
     public void recordAndReplay() throws IOException, InterruptedException
     {
-        try (Publication controlPublication = publishingClient.addPublication(
-            archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
-             Subscription recordingEvents = publishingClient.addSubscription(
-                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
+        try (Publication controlPublication = aeronClient.addPublication(
+                archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
+             Subscription recordingEvents = aeronClient.addSubscription(
+                archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
             final ArchiveClient client = new ArchiveClient(controlPublication, recordingEvents);
 
@@ -224,7 +224,7 @@ public class ArchiveAndReplaySystemTest
             awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 
-            reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
+            reply = aeronClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
             client.connect(REPLY_URI, REPLY_STREAM_ID);
             awaitSubscriptionIsConnected(reply);
             println("Client connected");
@@ -235,7 +235,7 @@ public class ArchiveAndReplaySystemTest
             println("Recording requested");
             waitForOk(client, startRecordingCorrelationId);
 
-            final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
+            final Publication publication = aeronClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(publication);
 
             wait(() -> client.pollEvents(new FailRecordingEventsListener()
@@ -451,7 +451,7 @@ public class ArchiveAndReplaySystemTest
             correlationId++
         ));
 
-        try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, 101))
+        try (Subscription replay = aeronClient.addSubscription(REPLAY_URI, 101))
         {
             awaitSubscriptionIsConnected(replay);
             // wait for OK message from control

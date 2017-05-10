@@ -19,9 +19,9 @@ import io.aeron.archiver.codecs.*;
 import io.aeron.logbuffer.*;
 import org.agrona.DirectBuffer;
 
-class ArchiveRequestAdapter implements FragmentHandler
+class ControlRequestAdapter implements FragmentHandler
 {
-    private final ArchiveRequestListener listener;
+    private final ControlRequestListener listener;
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ReplayRequestDecoder replayRequestDecoder = new ReplayRequestDecoder();
     private final AbortReplayRequestDecoder abortReplayRequestDecoder = new AbortReplayRequestDecoder();
@@ -30,7 +30,7 @@ class ArchiveRequestAdapter implements FragmentHandler
     private final ListRecordingsRequestDecoder listRecordingsRequestDecoder = new ListRecordingsRequestDecoder();
     private final ConnectRequestDecoder connectRequestDecoder = new ConnectRequestDecoder();
 
-    ArchiveRequestAdapter(final ArchiveRequestListener listener)
+    ControlRequestAdapter(final ControlRequestListener listener)
     {
         this.listener = listener;
     }

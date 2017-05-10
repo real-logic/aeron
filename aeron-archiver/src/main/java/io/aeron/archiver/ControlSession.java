@@ -19,7 +19,7 @@ package io.aeron.archiver;
 import io.aeron.*;
 import org.agrona.*;
 
-class ControlSession implements ArchiveConductor.Session, ArchiveRequestListener
+class ControlSession implements ArchiveConductor.Session, ControlRequestListener
 {
     enum State
     {
@@ -29,7 +29,7 @@ class ControlSession implements ArchiveConductor.Session, ArchiveRequestListener
     private final Image image;
     private final ClientProxy clientProxy;
     private final ArchiveConductor conductor;
-    private final ArchiveRequestAdapter adapter = new ArchiveRequestAdapter(this);
+    private final ControlRequestAdapter adapter = new ControlRequestAdapter(this);
     private ExclusivePublication reply;
     private State state = State.INIT;
 

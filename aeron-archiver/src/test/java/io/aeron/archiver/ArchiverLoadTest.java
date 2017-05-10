@@ -45,7 +45,7 @@ public class ArchiverLoadTest
     private static final double MEGABYTE = 1024.0d * 1024.0d;
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
-    private Aeron publishingClient;
+    private Aeron aeronClient;
     private Archiver archiver;
     private MediaDriver driver;
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
@@ -88,13 +88,13 @@ public class ArchiverLoadTest
         archiverCtx.archiveDir(archiveDir);
         archiver = Archiver.launch(archiverCtx);
         println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
-        publishingClient = Aeron.connect();
+        aeronClient = Aeron.connect();
     }
 
     @After
     public void closeEverything() throws Exception
     {
-        CloseHelper.quietClose(publishingClient);
+        CloseHelper.quietClose(aeronClient);
         CloseHelper.quietClose(archiver);
         CloseHelper.quietClose(driver);
 
@@ -109,9 +109,9 @@ public class ArchiverLoadTest
     @Test
     public void archive() throws IOException, InterruptedException
     {
-        try (Publication controlPublication = publishingClient.addPublication(
+        try (Publication controlPublication = aeronClient.addPublication(
                 archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
-             Subscription recordingEvents = publishingClient.addSubscription(
+             Subscription recordingEvents = aeronClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
             awaitPublicationIsConnected(controlPublication, TIMEOUT);
@@ -122,7 +122,7 @@ public class ArchiverLoadTest
 
             println("Archive requested");
 
-            final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
+            final Publication publication = aeronClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(publication, TIMEOUT);
 
             awaitStartedRecordingNotification(recordingEvents, publication);

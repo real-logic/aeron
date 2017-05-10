@@ -15,7 +15,7 @@
  */
 package io.aeron.archiver;
 
-interface ArchiveRequestListener
+interface ControlRequestListener
 {
     void onConnect(String channel, int streamId);
 

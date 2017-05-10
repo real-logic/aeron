@@ -62,7 +62,7 @@ public class Archiver implements AutoCloseable
         CloseHelper.close(aeron);
     }
 
-    public void start()
+    public Archiver start()
     {
         aeron = Aeron.connect(ctx.clientContext);
         ctx.conclude();
@@ -75,6 +75,8 @@ public class Archiver implements AutoCloseable
             null,
             archiveConductor);
         AgentRunner.startOnThread(runner, ctx.clientContext.threadFactory());
+
+        return this;
     }
 
     public static Archiver launch()
@@ -84,9 +86,7 @@ public class Archiver implements AutoCloseable
 
     public static Archiver launch(final Context ctx)
     {
-        final Archiver archiver = new Archiver(ctx);
-        archiver.start();
-        return archiver;
+        return new Archiver(ctx).start();
     }
 
     public static class Context

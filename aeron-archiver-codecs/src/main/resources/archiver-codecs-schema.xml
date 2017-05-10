@@ -78,7 +78,7 @@
 
     <sbe:message name="ReplayRequest"
                  id="4"
-                 description="Replay archive range request">
+                 description="Replay recording range request">
         <field name="correlationId"        id="1" type="int32"/>
         <field name="recordingId"          id="2" type="int32"/>
         <field name="termId"               id="3" type="int32"/>
@@ -148,7 +148,7 @@
 
     <sbe:message name="ConnectRequest"
                  id="8"
-                 description="Request a connection to the archiver and provide the response stream details">
+                 description="Request a connection to the archive and provide the response stream details">
         <field name="responseStreamId"     id="1" type="int32"/>
         <data  name="responseChannel"      id="2" type="varStringEncoding"/>
     </sbe:message>

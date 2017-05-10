@@ -28,7 +28,7 @@ class RecordingSession implements ArchiveConductor.Session
 {
     private enum State
     {
-        INIT, ARCHIVING, CLOSING, DONE
+        INIT, RECORDING, CLOSING, DONE
     }
 
     private int recordingId = Catalog.NULL_INDEX;
@@ -67,7 +67,7 @@ class RecordingSession implements ArchiveConductor.Session
             workDone += init();
         }
 
-        if (state == State.ARCHIVING)
+        if (state == State.RECORDING)
         {
             workDone += archive();
         }
@@ -90,7 +90,6 @@ class RecordingSession implements ArchiveConductor.Session
         final int termBufferLength = image.termBufferLength();
 
         final int imageInitialTermId = image.initialTermId();
-
 
         ImageRecorder recorder = null;
         try
@@ -128,7 +127,8 @@ class RecordingSession implements ArchiveConductor.Session
         }
 
         this.recorder = recorder;
-        this.state = State.ARCHIVING;
+        this.state = State.RECORDING;
+
         return 1;
     }
 

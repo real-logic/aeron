@@ -44,7 +44,6 @@ class ArchiveRequestAdapter implements FragmentHandler
         switch (templateId)
         {
             case ConnectRequestDecoder.TEMPLATE_ID:
-            {
                 connectRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -56,10 +55,8 @@ class ArchiveRequestAdapter implements FragmentHandler
                     connectRequestDecoder.responseStreamId()
                 );
                 break;
-            }
 
             case ReplayRequestDecoder.TEMPLATE_ID:
-            {
                 replayRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -75,10 +72,8 @@ class ArchiveRequestAdapter implements FragmentHandler
                     replayRequestDecoder.termOffset(),
                     replayRequestDecoder.length());
                 break;
-            }
 
             case StartRecordingRequestDecoder.TEMPLATE_ID:
-            {
                 startRecordingRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -90,10 +85,8 @@ class ArchiveRequestAdapter implements FragmentHandler
                     startRecordingRequestDecoder.channel(),
                     startRecordingRequestDecoder.streamId());
                 break;
-            }
 
             case StopRecordingRequestDecoder.TEMPLATE_ID:
-            {
                 stopRecordingRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -105,10 +98,8 @@ class ArchiveRequestAdapter implements FragmentHandler
                     stopRecordingRequestDecoder.channel(),
                     stopRecordingRequestDecoder.streamId());
                 break;
-            }
 
             case AbortReplayRequestDecoder.TEMPLATE_ID:
-            {
                 abortReplayRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -118,10 +109,8 @@ class ArchiveRequestAdapter implements FragmentHandler
                 listener.onAbortReplay(
                     abortReplayRequestDecoder.correlationId());
                 break;
-            }
 
             case ListRecordingsRequestDecoder.TEMPLATE_ID:
-            {
                 listRecordingsRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -133,7 +122,6 @@ class ArchiveRequestAdapter implements FragmentHandler
                     listRecordingsRequestDecoder.fromId(),
                     listRecordingsRequestDecoder.toId());
                 break;
-            }
 
             default:
                 throw new IllegalArgumentException("Unexpected template id:" + templateId);

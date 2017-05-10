@@ -43,13 +43,12 @@ class ArchiveConductor implements Agent
     private final ArrayList<Session> sessions = new ArrayList<>();
     private final Long2ObjectHashMap<ReplaySession> replaySession2IdMap = new Long2ObjectHashMap<>();
 
-    private final ObjectHashSet<Subscription> archiveSubscriptionSet = new ObjectHashSet<>(128);
+    private final ObjectHashSet<Subscription> recordingSubscriptionSet = new ObjectHashSet<>(128);
     private final Catalog catalog;
-    private final OneToOneConcurrentArrayQueue<Image> imageNotificationQueue =
-        new OneToOneConcurrentArrayQueue<>(1024);
+    private final OneToOneConcurrentArrayQueue<Image> availableImageQueue = new OneToOneConcurrentArrayQueue<>(1024);
     private final File archiveDir;
 
-    private final Consumer<Image> newImageConsumer = this::handleNewImageNotification;
+    private final Consumer<Image> newImageConsumer = this::availableImageHandler;
     private final AvailableImageHandler availableImageHandler = this::onAvailableImage;
 
     private final ClientProxy proxy;
@@ -94,7 +93,7 @@ class ArchiveConductor implements Agent
         int workDone = 0;
 
         workDone += aeronClientAgentInvoker.invoke();
-        workDone += imageNotificationQueue.drain(newImageConsumer, 10);
+        workDone += availableImageQueue.drain(newImageConsumer, 10);
         workDone += doSessionsWork();
 
         return workDone;
@@ -154,12 +153,12 @@ class ArchiveConductor implements Agent
         return workDone;
     }
 
-    private void handleNewImageNotification(final Image image)
+    private void availableImageHandler(final Image image)
     {
         final Session session;
         if (image.subscription() == serviceRequestSubscription)
         {
-            session = new ArchiveClientSession(image, proxy, this);
+            session = new ClientSession(image, proxy, this);
         }
         else
         {
@@ -170,13 +169,13 @@ class ArchiveConductor implements Agent
 
     private void onAvailableImage(final Image image)
     {
-        if (!isClosed && imageNotificationQueue.offer(image))
+        if (!isClosed && availableImageQueue.offer(image))
         {
             return;
         }
         // This is required since image available handler is called from the client conductor thread
         // we can either bridge via a queue or protect access to the sessions list, which seems clumsy.
-        while (!isClosed && !imageNotificationQueue.offer(image))
+        while (!isClosed && !availableImageQueue.offer(image))
         {
             Thread.yield();
         }
@@ -184,12 +183,12 @@ class ArchiveConductor implements Agent
 
     void stopRecording(final String channel, final int streamId)
     {
-        for (final Subscription subscription : archiveSubscriptionSet)
+        for (final Subscription subscription : recordingSubscriptionSet)
         {
             if (subscription.streamId() == streamId && subscription.channel().equals(channel))
             {
                 subscription.close();
-                archiveSubscriptionSet.remove(subscription);
+                recordingSubscriptionSet.remove(subscription);
                 break;
                 // image archiving sessions will sort themselves out naturally
             }
@@ -198,7 +197,7 @@ class ArchiveConductor implements Agent
 
     public void startRecording(final String channel, final int streamId)
     {
-        for (final Subscription subscription : archiveSubscriptionSet)
+        for (final Subscription subscription : recordingSubscriptionSet)
         {
             if (subscription.streamId() == streamId && subscription.channel().equals(channel))
             {
@@ -207,11 +206,11 @@ class ArchiveConductor implements Agent
             }
         }
 
-        final Subscription archiveSubscription = aeron.addSubscription(
+        final Subscription recordingSubscription = aeron.addSubscription(
             channel, streamId, availableImageHandler, null);
 
         // as subscription images are created they will get picked up and archived
-        archiveSubscriptionSet.add(archiveSubscription);
+        recordingSubscriptionSet.add(recordingSubscription);
     }
 
     public void listRecordings(
@@ -220,8 +219,7 @@ class ArchiveConductor implements Agent
         final int from,
         final int to)
     {
-        final Session listSession = new ListRecordingsSession(
-            correlationId, reply, from, to, catalog, proxy);
+        final Session listSession = new ListRecordingsSession(correlationId, reply, from, to, catalog, proxy);
 
         sessions.add(listSession);
     }

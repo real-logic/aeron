@@ -28,6 +28,7 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 class ListRecordingsSession implements ArchiveConductor.Session
 {
+    private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
     private static final long NOT_FOUND_HEADER;
     private static final long DESCRIPTOR_HEADER;
 
@@ -35,12 +36,13 @@ class ListRecordingsSession implements ArchiveConductor.Session
     {
         // create constant header values to avoid recalculation on each message sent
         final MessageHeaderEncoder encoder = new MessageHeaderEncoder();
-        encoder.wrap(new UnsafeBuffer(new byte[8]), 0);
+        encoder.wrap(new UnsafeBuffer(new byte[HEADER_LENGTH]), 0);
         encoder.schemaId(RecordingNotFoundResponseEncoder.SCHEMA_ID);
         encoder.version(RecordingNotFoundResponseEncoder.SCHEMA_VERSION);
         encoder.blockLength(RecordingNotFoundResponseEncoder.BLOCK_LENGTH);
         encoder.templateId(RecordingNotFoundResponseEncoder.TEMPLATE_ID);
         NOT_FOUND_HEADER = encoder.buffer().getLong(0);
+
         encoder.schemaId(RecordingDescriptorEncoder.SCHEMA_ID);
         encoder.version(RecordingDescriptorEncoder.SCHEMA_VERSION);
         encoder.blockLength(RecordingDescriptorEncoder.BLOCK_LENGTH);
@@ -146,7 +148,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
                     {
                         // return relevant error
                         if (reply.tryClaim(
-                            8 + RecordingNotFoundResponseDecoder.BLOCK_LENGTH, bufferClaim) > 0L)
+                            HEADER_LENGTH + RecordingNotFoundResponseDecoder.BLOCK_LENGTH, bufferClaim) > 0L)
                         {
                             final MutableDirectBuffer buffer = bufferClaim.buffer();
                             final int offset = bufferClaim.offset();
@@ -173,12 +175,12 @@ class ListRecordingsSession implements ArchiveConductor.Session
             }
 
             final int length = unsafeBuffer.getInt(0);
-            unsafeBuffer.putLong(Catalog.CATALOG_FRAME_LENGTH - 8, DESCRIPTOR_HEADER);
+            unsafeBuffer.putLong(Catalog.CATALOG_FRAME_LENGTH - HEADER_LENGTH, DESCRIPTOR_HEADER);
             unsafeBuffer.putInt(
                 Catalog.CATALOG_FRAME_LENGTH + RecordingDescriptorDecoder.correlationIdEncodingOffset(),
                 correlationId);
 
-            reply.offer(unsafeBuffer, Catalog.CATALOG_FRAME_LENGTH - 8, length + 8);
+            reply.offer(unsafeBuffer, Catalog.CATALOG_FRAME_LENGTH - HEADER_LENGTH, length + HEADER_LENGTH);
         }
 
         if (recordingId > toId)
@@ -186,7 +188,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
             state = State.CLOSE;
         }
 
-        return 4;
+        return 1;
     }
 
     private int init()

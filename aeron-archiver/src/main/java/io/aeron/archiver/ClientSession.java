@@ -19,7 +19,7 @@ package io.aeron.archiver;
 import io.aeron.*;
 import org.agrona.*;
 
-class ArchiveClientSession implements ArchiveConductor.Session, ArchiveRequestListener
+class ClientSession implements ArchiveConductor.Session, ArchiveRequestListener
 {
     enum State
     {
@@ -33,7 +33,7 @@ class ArchiveClientSession implements ArchiveConductor.Session, ArchiveRequestLi
     private ExclusivePublication reply;
     private State state = State.INIT;
 
-    ArchiveClientSession(final Image image, final ClientProxy clientProxy, final ArchiveConductor conductor)
+    ClientSession(final Image image, final ClientProxy clientProxy, final ArchiveConductor conductor)
     {
         this.image = image;
         this.clientProxy = clientProxy;

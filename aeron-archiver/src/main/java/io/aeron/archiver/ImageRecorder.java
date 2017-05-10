@@ -257,7 +257,6 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         // detect first write
         if (recordingPosition == -1 && termId != initialTermId)
         {
-            // archiving an ongoing publication
             metaDataEncoder.initialTermId(termId);
             initialTermId = termId;
         }
@@ -290,7 +289,6 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         // detect first write
         if (recordingPosition == -1 && termId != initialTermId)
         {
-            // archiving an ongoing publication
             metaDataEncoder.initialTermId(termId);
             initialTermId = termId;
         }

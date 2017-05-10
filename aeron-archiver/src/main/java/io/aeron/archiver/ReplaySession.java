@@ -38,7 +38,7 @@ class ReplaySession implements
 {
     private enum State
     {
-        INIT, REPLAY, CLOSE, DONE
+        INIT, REPLAY, CLOSING, CLOSED
     }
 
     // replay boundaries
@@ -98,7 +98,7 @@ class ReplaySession implements
             workDone += init();
         }
 
-        if (state == State.CLOSE)
+        if (state == State.CLOSING)
         {
             workDone += close();
         }
@@ -108,12 +108,12 @@ class ReplaySession implements
 
     public void abort()
     {
-        this.state = State.CLOSE;
+        this.state = State.CLOSING;
     }
 
     public boolean isDone()
     {
-        return state == State.DONE;
+        return state == State.CLOSED;
     }
 
     public void remove(final ArchiveConductor conductor)
@@ -126,7 +126,7 @@ class ReplaySession implements
         if (replay.isClosed() || control.isClosed())
         {
             // TODO: add counter
-            this.state = State.CLOSE;
+            this.state = State.CLOSING;
             return 0;
         }
 
@@ -239,7 +239,7 @@ class ReplaySession implements
 
     private int closeOnErr(final Throwable e, final String err)
     {
-        this.state = State.CLOSE;
+        this.state = State.CLOSING;
         if (control.isConnected())
         {
             proxy.sendResponse(control, err, correlationId);
@@ -260,7 +260,7 @@ class ReplaySession implements
             final int polled = cursor.controlledPoll(this, 42);
             if (cursor.isDone())
             {
-                this.state = State.CLOSE;
+                this.state = State.CLOSING;
             }
 
             return polled;
@@ -275,7 +275,7 @@ class ReplaySession implements
     {
         CloseHelper.close(replay);
         CloseHelper.close(cursor);
-        this.state = State.DONE;
+        this.state = State.CLOSED;
 
         return 1;
     }

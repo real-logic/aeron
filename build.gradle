@@ -454,79 +454,7 @@ project(':aeron-agent') {
     }
 }
 
-project(':aeron-all') {
-    apply plugin: 'com.github.johnrengelman.shadow'
-
-    dependencies {
-        compile project(':aeron-client'), project(':aeron-driver'), project(':aeron-samples')
-    }
-
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                beforeDeployment {
-                    MavenDeployment deployment -> signing.signPom(deployment)
-                }
-
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                pom.project(projectPom)
-            }
-        }
-    }
-
-    uploadShadow {
-        repositories {
-            mavenDeployer {
-                beforeDeployment {
-                    MavenDeployment deployment -> signing.signPom(deployment)
-                }
-
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                pom.project(projectPom)
-            }
-        }
-
-        mustRunAfter 'uploadArchives'
-    }
-
-    task sourcesJar(type: Jar) {
-        classifier = 'sources'
-        from project(':aeron-client').sourceSets.main.allSource
-        from project(':aeron-driver').sourceSets.main.allSource
-    }
-
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        classifier = 'javadoc'
-        from project(':aeron-client').javadoc.destinationDir
-        from project(':aeron-driver').javadoc.destinationDir
-    }
-
-    shadowJar {
-        classifier = ''
-        relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
-    }
-
-    artifacts {
-        archives sourcesJar
-        archives javadocJar
-    }
-}
-
-def sbeVersion = '1.6.2'
+def sbeVersion = '1.7.0-SNAPSHOT'
 
 project(':aeron-archiver-codecs') {
     apply plugin: 'com.github.johnrengelman.shadow'
@@ -619,6 +547,78 @@ project(':aeron-archiver') {
         dependencies {
             compile project(':aeron-archiver-codecs').sourceSets.generated.output
         }
+    }
+}
+
+project(':aeron-all') {
+    apply plugin: 'com.github.johnrengelman.shadow'
+
+    dependencies {
+        compile project(':aeron-client'), project(':aeron-driver'), project(':aeron-samples')
+    }
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                beforeDeployment {
+                    MavenDeployment deployment -> signing.signPom(deployment)
+                }
+
+                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                pom.project(projectPom)
+            }
+        }
+    }
+
+    uploadShadow {
+        repositories {
+            mavenDeployer {
+                beforeDeployment {
+                    MavenDeployment deployment -> signing.signPom(deployment)
+                }
+
+                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                pom.project(projectPom)
+            }
+        }
+
+        mustRunAfter 'uploadArchives'
+    }
+
+    task sourcesJar(type: Jar) {
+        classifier = 'sources'
+        from project(':aeron-client').sourceSets.main.allSource
+        from project(':aeron-driver').sourceSets.main.allSource
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from project(':aeron-client').javadoc.destinationDir
+        from project(':aeron-driver').javadoc.destinationDir
+    }
+
+    shadowJar {
+        classifier = ''
+        relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
+    }
+
+    artifacts {
+        archives sourcesJar
+        archives javadocJar
     }
 }
 

@@ -28,7 +28,7 @@ class RecordingSession implements ArchiveConductor.Session
 {
     private enum State
     {
-        INIT, RECORDING, CLOSING, DONE
+        INIT, RECORDING, INACTIVE, CLOSED
     }
 
     private int recordingId = Catalog.NULL_INDEX;
@@ -55,7 +55,7 @@ class RecordingSession implements ArchiveConductor.Session
 
     public void abort()
     {
-        this.state = State.CLOSING;
+        this.state = State.INACTIVE;
     }
 
     public int doWork()
@@ -72,7 +72,7 @@ class RecordingSession implements ArchiveConductor.Session
             workDone += archive();
         }
 
-        if (state == State.CLOSING)
+        if (state == State.INACTIVE)
         {
             workDone += close();
         }
@@ -155,7 +155,7 @@ class RecordingSession implements ArchiveConductor.Session
         {
             CloseHelper.quietClose(recorder);
             proxy.recordingStopped(recordingId);
-            this.state = State.DONE;
+            this.state = State.CLOSED;
         }
 
         return 1;
@@ -179,12 +179,12 @@ class RecordingSession implements ArchiveConductor.Session
 
             if (image.isClosed())
             {
-                state = State.CLOSING;
+                state = State.INACTIVE;
             }
         }
         catch (final Exception ex)
         {
-            state = State.CLOSING;
+            state = State.INACTIVE;
             LangUtil.rethrowUnchecked(ex);
         }
 
@@ -193,7 +193,7 @@ class RecordingSession implements ArchiveConductor.Session
 
     public boolean isDone()
     {
-        return state == State.DONE;
+        return state == State.CLOSED;
     }
 
     public void remove(final ArchiveConductor conductor)

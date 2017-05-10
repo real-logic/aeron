@@ -23,7 +23,7 @@ class ClientSession implements ArchiveConductor.Session, ArchiveRequestListener
 {
     enum State
     {
-        INIT, WORKING, CLOSE, DONE
+        INIT, ACTIVE, INACTIVE, CLOSED
     }
 
     private final Image image;
@@ -42,12 +42,12 @@ class ClientSession implements ArchiveConductor.Session, ArchiveRequestListener
 
     public void abort()
     {
-        state = State.CLOSE;
+        state = State.INACTIVE;
     }
 
     public boolean isDone()
     {
-        return state == State.DONE;
+        return state == State.CLOSED;
     }
 
     public void remove(final ArchiveConductor conductor)
@@ -61,10 +61,10 @@ class ClientSession implements ArchiveConductor.Session, ArchiveRequestListener
             case INIT:
                 return waitForConnection();
 
-            case WORKING:
+            case ACTIVE:
                 if (image.isClosed() || !reply.isConnected())
                 {
-                    state = State.CLOSE;
+                    state = State.INACTIVE;
                 }
                 else
                 {
@@ -72,12 +72,12 @@ class ClientSession implements ArchiveConductor.Session, ArchiveRequestListener
                 }
                 break;
 
-            case CLOSE:
+            case INACTIVE:
                 CloseHelper.quietClose(reply);
-                state = State.DONE;
+                state = State.CLOSED;
                 break;
 
-            case DONE:
+            case CLOSED:
                 break;
 
             default:
@@ -97,13 +97,13 @@ class ClientSession implements ArchiveConductor.Session, ArchiveRequestListener
             }
             catch (final Exception e)
             {
-                state = State.CLOSE;
+                state = State.INACTIVE;
                 LangUtil.rethrowUnchecked(e);
             }
         }
         else if (reply.isConnected())
         {
-            state = State.WORKING;
+            state = State.ACTIVE;
         }
 
         return 0;
@@ -126,7 +126,7 @@ class ClientSession implements ArchiveConductor.Session, ArchiveRequestListener
         final String channel,
         final int streamId)
     {
-        if (state != State.WORKING)
+        if (state != State.ACTIVE)
         {
             throw new IllegalStateException();
         }
@@ -148,7 +148,7 @@ class ClientSession implements ArchiveConductor.Session, ArchiveRequestListener
         final String channel,
         final int streamId)
     {
-        if (state != State.WORKING)
+        if (state != State.ACTIVE)
         {
             throw new IllegalStateException();
         }
@@ -170,7 +170,7 @@ class ClientSession implements ArchiveConductor.Session, ArchiveRequestListener
         final int fromId,
         final int toId)
     {
-        if (state != State.WORKING)
+        if (state != State.ACTIVE)
         {
             throw new IllegalStateException();
         }
@@ -180,7 +180,7 @@ class ClientSession implements ArchiveConductor.Session, ArchiveRequestListener
 
     public void onAbortReplay(final int correlationId)
     {
-        if (state != State.WORKING)
+        if (state != State.ACTIVE)
         {
             throw new IllegalStateException();
         }
@@ -197,7 +197,7 @@ class ClientSession implements ArchiveConductor.Session, ArchiveRequestListener
         final int termOffset,
         final long length)
     {
-        if (state != State.WORKING)
+        if (state != State.ACTIVE)
         {
             throw new IllegalStateException();
         }

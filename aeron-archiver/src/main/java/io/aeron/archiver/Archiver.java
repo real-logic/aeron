@@ -110,6 +110,8 @@ public class Archiver implements AutoCloseable
 
         public Context(final Aeron.Context clientContext, final File archiveDir)
         {
+            clientContext.useConductorAgentInvoker(true);
+            clientContext.clientLock(new NoOpLock());
             this.clientContext = clientContext;
             this.archiveDir = archiveDir;
             serviceRequestChannel = "aeron:udp?endpoint=localhost:8010";

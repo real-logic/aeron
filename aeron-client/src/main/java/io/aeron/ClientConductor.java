@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.*;
 
+import static io.aeron.Aeron.IDLE_SLEEP_NS;
+import static io.aeron.Aeron.sleep;
 import static io.aeron.ClientConductor.Status.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -112,7 +114,7 @@ class ClientConductor implements Agent, DriverListener
             activePublications.close();
             activeSubscriptions.close();
 
-            Aeron.sleep(1);
+            Thread.yield();
 
             for (int i = 0, size = lingeringResources.size(); i < size; i++)
             {
@@ -448,7 +450,7 @@ class ClientConductor implements Agent, DriverListener
 
         do
         {
-            LockSupport.parkNanos(1);
+            sleep(1);
 
             doWork(correlationId, expectedChannel);
 
@@ -482,8 +484,13 @@ class ClientConductor implements Agent, DriverListener
 
     private int onCheckTimeouts()
     {
+        int workCount = 0;
         final long nowNs = nanoClock.nanoTime();
-        int result = 0;
+
+        if (nowNs < (timeOfLastWorkNs + IDLE_SLEEP_NS))
+        {
+            return workCount;
+        }
 
         if (nowNs > (timeOfLastWorkNs + interServiceTimeoutNs))
         {
@@ -501,7 +508,7 @@ class ClientConductor implements Agent, DriverListener
             checkDriverHeartbeat();
 
             timeOfLastKeepaliveNs = nowNs;
-            result++;
+            workCount++;
         }
 
         if (nowNs > (timeOfLastCheckResourcesNs + RESOURCE_TIMEOUT_NS))
@@ -519,10 +526,10 @@ class ClientConductor implements Agent, DriverListener
             }
 
             timeOfLastCheckResourcesNs = nowNs;
-            result++;
+            workCount++;
         }
 
-        return result;
+        return workCount;
     }
 
     private void checkDriverHeartbeat()

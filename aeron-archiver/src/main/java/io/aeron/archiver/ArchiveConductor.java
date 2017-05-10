@@ -38,6 +38,7 @@ class ArchiveConductor implements Agent
     }
 
     private final Aeron aeron;
+    private final AgentInvoker aeronClientAgentInvoker;
     private final Subscription serviceRequestSubscription;
     private final ArrayList<Session> sessions = new ArrayList<>();
     private final Long2ObjectHashMap<ReplaySession> replaySession2IdMap = new Long2ObjectHashMap<>();
@@ -59,6 +60,7 @@ class ArchiveConductor implements Agent
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
         this.aeron = aeron;
+        this.aeronClientAgentInvoker = ctx.clientContext().conductorAgentInvoker();
 
         archiveDir = ctx.archiveDir();
         catalog = new Catalog(archiveDir);
@@ -91,6 +93,7 @@ class ArchiveConductor implements Agent
     {
         int workDone = 0;
 
+        workDone += aeronClientAgentInvoker.invoke();
         workDone += imageNotificationQueue.drain(newImageConsumer, 10);
         workDone += doSessionsWork();
 

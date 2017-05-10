@@ -88,6 +88,7 @@ public final class Aeron implements AutoCloseable
     private final Lock clientLock;
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;
+    private final AgentInvoker conductorInvoker;
     private final RingBuffer commandBuffer;
 
     Aeron(final Context ctx)
@@ -97,7 +98,18 @@ public final class Aeron implements AutoCloseable
         clientLock = ctx.clientLock();
         commandBuffer = ctx.toDriverBuffer;
         conductor = new ClientConductor(ctx);
-        conductorRunner = new AgentRunner(ctx.idleStrategy, ctx.errorHandler, null, conductor);
+
+        if (ctx.useConductorAgentInvoker())
+        {
+            conductorInvoker = new AgentInvoker(ctx.errorHandler, null, conductor);
+            conductorRunner = null;
+            ctx.conductorAgentInvoker(conductorInvoker);
+        }
+        else
+        {
+            conductorInvoker = null;
+            conductorRunner = new AgentRunner(ctx.idleStrategy, ctx.errorHandler, null, conductor);
+        }
     }
 
     /**
@@ -127,7 +139,13 @@ public final class Aeron implements AutoCloseable
     {
         try
         {
-            return new Aeron(ctx).start(ctx.threadFactory);
+            final Aeron aeron = new Aeron(ctx);
+            if (ctx.useConductorAgentInvoker())
+            {
+                return aeron;
+            }
+
+            return aeron.start(ctx.threadFactory);
         }
         catch (final Exception ex)
         {
@@ -144,7 +162,14 @@ public final class Aeron implements AutoCloseable
         clientLock.lock();
         try
         {
-            conductorRunner.close();
+            if (null != conductorRunner)
+            {
+                conductorRunner.close();
+            }
+            else
+            {
+                conductorInvoker.close();
+            }
         }
         finally
         {
@@ -302,6 +327,8 @@ public final class Aeron implements AutoCloseable
      */
     public static class Context extends CommonContext
     {
+        private boolean useConductorAgentInvoker = false;
+        private AgentInvoker conductorAgentInvoker;
         private Lock clientLock;
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -410,6 +437,46 @@ public final class Aeron implements AutoCloseable
             }
 
             return this;
+        }
+
+        /**
+         * Should an {@link AgentInvoker} be used for running the {@link ClientConductor} rather than run it on
+         * a thread with a {@link AgentRunner}.
+         *
+         * @param useConductorAgentInvoker use {@link AgentInvoker} be used for running the {@link ClientConductor}?
+         * @return this for a fluent API.
+         */
+        public Context useConductorAgentInvoker(final boolean useConductorAgentInvoker)
+        {
+            this.useConductorAgentInvoker = useConductorAgentInvoker;
+            return this;
+        }
+
+        /**
+         * Should an {@link AgentInvoker} be used for running the {@link ClientConductor} rather than run it on
+         * a thread with a {@link AgentRunner}.
+         *
+         * @return true if the {@link ClientConductor} will be run with an {@link AgentInvoker} otherwise false.
+         */
+        public boolean useConductorAgentInvoker()
+        {
+            return useConductorAgentInvoker;
+        }
+
+        Context conductorAgentInvoker(final AgentInvoker conductorAgentInvoker)
+        {
+            this.conductorAgentInvoker = conductorAgentInvoker;
+            return this;
+        }
+
+        /**
+         * Get the {@link AgentInvoker} that is used to run the {@link ClientConductor}.
+         *
+         * @return the {@link AgentInvoker} that is used to run the {@link ClientConductor}.
+         */
+        public AgentInvoker conductorAgentInvoker()
+        {
+            return conductorAgentInvoker;
         }
 
         /**

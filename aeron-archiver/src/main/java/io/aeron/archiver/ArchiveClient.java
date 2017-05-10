@@ -222,46 +222,32 @@ public class ArchiveClient
                 switch (messageHeaderDecoder.templateId())
                 {
                     case ArchiverResponseDecoder.TEMPLATE_ID:
-                    {
                         handleArchiverResponse(responseListener, b, offset);
                         break;
-                    }
 
                     case RecordingStartedDecoder.TEMPLATE_ID:
-                    {
                         handleRecordingStarted(responseListener, b, offset);
                         break;
-                    }
 
                     case RecordingStoppedDecoder.TEMPLATE_ID:
-                    {
                         handleRecordingStopped(responseListener, b, offset);
                         break;
-                    }
 
                     case ReplayAbortedDecoder.TEMPLATE_ID:
-                    {
                         handleReplayAborted(responseListener, b, offset);
                         break;
-                    }
 
                     case ReplayStartedDecoder.TEMPLATE_ID:
-                    {
                         handleReplayStarted(responseListener, b, offset);
                         break;
-                    }
 
                     case RecordingDescriptorDecoder.TEMPLATE_ID:
-                    {
                         handleRecordingDescriptor(responseListener, b, offset);
                         break;
-                    }
 
                     case RecordingNotFoundResponseDecoder.TEMPLATE_ID:
-                    {
                         handleRecordingNotFoundResponse(responseListener, b, offset);
                         break;
-                    }
 
                     default:
                         throw new IllegalStateException();
@@ -410,12 +396,12 @@ public class ArchiveClient
                 switch (messageHeaderDecoder.templateId())
                 {
                     case RecordingProgressDecoder.TEMPLATE_ID:
-                    {
                         recordingProgressDecoder.wrap(
                             b,
                             offset + MessageHeaderDecoder.ENCODED_LENGTH,
                             messageHeaderDecoder.blockLength(),
                             messageHeaderDecoder.version());
+
                         progressListener.onProgress(
                             recordingProgressDecoder.recordingId(),
                             recordingProgressDecoder.initialTermId(),
@@ -424,10 +410,8 @@ public class ArchiveClient
                             recordingProgressDecoder.termOffset()
                         );
                         break;
-                    }
 
                     case RecordingStartedDecoder.TEMPLATE_ID:
-                    {
                         recordingStartedDecoder.wrap(
                             b,
                             offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -440,10 +424,8 @@ public class ArchiveClient
                             recordingStartedDecoder.source(), recordingStartedDecoder.streamId()
                         );
                         break;
-                    }
 
                     case RecordingStoppedDecoder.TEMPLATE_ID:
-                    {
                         recordingStoppedDecoder.wrap(
                             b,
                             offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -452,7 +434,6 @@ public class ArchiveClient
 
                         progressListener.onStop(recordingStoppedDecoder.recordingId());
                         break;
-                    }
 
                     default:
                         throw new IllegalStateException();

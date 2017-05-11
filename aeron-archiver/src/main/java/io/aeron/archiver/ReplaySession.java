@@ -28,7 +28,8 @@ import java.io.*;
  * The {@link ArchiveConductor} will initiate a session on receiving a ReplayRequest
  * (see {@link io.aeron.archiver.codecs.ReplayRequestDecoder}). The session will:
  * <ul>
- * <li>Validate request parameters and respond with error, or OK message(see {@link ControlResponseDecoder})</li>
+ * <li>Validate request parameters and respond with error,
+ *     or OK message(see {@link io.aeron.archiver.codecs.ControlResponseDecoder})</li>
  * <li>Stream archived data into the replay {@link Publication}</li>
  * </ul>
  */

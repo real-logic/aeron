@@ -130,7 +130,6 @@ class ArchiveConductor implements Agent
         CloseHelper.close(catalog);
     }
 
-
     void removeReplaySession(final int sessionId)
     {
         replaySession2IdMap.remove(sessionId);

@@ -24,6 +24,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static io.aeron.archiver.Catalog.CATALOG_FRAME_LENGTH;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 class ListRecordingsSession implements ArchiveConductor.Session
@@ -60,8 +61,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
         DONE
     }
 
-    private final ByteBuffer byteBuffer =
-        BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, CACHE_LINE_LENGTH);
+    private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, CACHE_LINE_LENGTH);
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
 
@@ -177,12 +177,11 @@ class ListRecordingsSession implements ArchiveConductor.Session
             }
 
             final int length = unsafeBuffer.getInt(0);
-            unsafeBuffer.putLong(Catalog.CATALOG_FRAME_LENGTH - HEADER_LENGTH, DESCRIPTOR_HEADER);
+            unsafeBuffer.putLong(CATALOG_FRAME_LENGTH - HEADER_LENGTH, DESCRIPTOR_HEADER);
             unsafeBuffer.putInt(
-                Catalog.CATALOG_FRAME_LENGTH + RecordingDescriptorDecoder.correlationIdEncodingOffset(),
-                correlationId);
+                CATALOG_FRAME_LENGTH + RecordingDescriptorDecoder.correlationIdEncodingOffset(), correlationId);
 
-            reply.offer(unsafeBuffer, Catalog.CATALOG_FRAME_LENGTH - HEADER_LENGTH, length + HEADER_LENGTH);
+            reply.offer(unsafeBuffer, CATALOG_FRAME_LENGTH - HEADER_LENGTH, length + HEADER_LENGTH);
         }
 
         if (recordingId > toId)

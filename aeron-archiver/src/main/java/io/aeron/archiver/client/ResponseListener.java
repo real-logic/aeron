@@ -13,12 +13,8 @@
  * limitations under the License.
  *
  */
-
 package io.aeron.archiver.client;
 
-/**
- * Created by yak on 2017/05/10.
- */
 public interface ResponseListener
 {
     void onResponse(

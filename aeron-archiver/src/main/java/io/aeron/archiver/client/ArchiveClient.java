@@ -22,7 +22,6 @@ import org.agrona.*;
 
 public class ArchiveClient
 {
-
     private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
 
     private final MutableDirectBuffer buffer = new ExpandableArrayBuffer();
@@ -158,10 +157,8 @@ public class ArchiveClient
                         break;
 
                     case ReplayAbortedDecoder.TEMPLATE_ID:
-                    {
                         handleReplayAborted(responseListener, buffer, offset);
                         break;
-                    }
 
                     case ReplayStartedDecoder.TEMPLATE_ID:
                         handleReplayStarted(responseListener, buffer, offset);

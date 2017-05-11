@@ -36,7 +36,6 @@ class NotificationsProxy
         this.recordingNotifications = recordingNotifications;
     }
 
-
     int recordingStarted(
         final int recordingId,
         final String source,

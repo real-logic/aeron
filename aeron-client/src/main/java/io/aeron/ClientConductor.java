@@ -71,6 +71,7 @@ class ClientConductor implements Agent, DriverListener
     private final UnsafeBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
     private final ErrorHandler errorHandler;
+    private final AgentInvoker driverAgentInvoker;
 
     private RegistrationException driverException;
 
@@ -92,6 +93,7 @@ class ClientConductor implements Agent, DriverListener
         interServiceTimeoutNs = ctx.interServiceTimeout();
         publicationConnectionTimeoutMs = ctx.publicationConnectionTimeout();
         driverListener = new DriverListenerAdapter(ctx.toClientBuffer(), this);
+        driverAgentInvoker = ctx.driverAgentInvoker();
 
         final long nowNs = nanoClock.nanoTime();
         timeOfLastKeepaliveNs = nowNs;
@@ -450,7 +452,14 @@ class ClientConductor implements Agent, DriverListener
 
         do
         {
-            sleep(1);
+            if (null == driverAgentInvoker)
+            {
+                sleep(1);
+            }
+            else
+            {
+                driverAgentInvoker.invoke();
+            }
 
             doWork(correlationId, expectedChannel);
 
@@ -466,7 +475,7 @@ class ClientConductor implements Agent, DriverListener
         }
         while (nanoClock.nanoTime() < deadlineNs);
 
-        throw new DriverTimeoutException("No response within driver timeout");
+        throw new DriverTimeoutException("No response from driver within timeout");
     }
 
     private void verifyActive()
@@ -540,7 +549,7 @@ class ClientConductor implements Agent, DriverListener
             isDriverActive = false;
 
             errorHandler.onError(new DriverTimeoutException(
-                "MediaDriver has been inactive for > " + driverTimeoutMs + "ms"));
+                "MediaDriver has been inactive for over " + driverTimeoutMs + "ms"));
         }
     }
 }

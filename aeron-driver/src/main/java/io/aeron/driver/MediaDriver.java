@@ -76,6 +76,7 @@ public final class MediaDriver implements AutoCloseable
     private final AgentRunner conductorRunner;
     private final AgentRunner receiverRunner;
     private final AgentRunner senderRunner;
+    private final AgentInvoker sharedInvoker;
     private final Context ctx;
 
     /**
@@ -175,13 +176,23 @@ public final class MediaDriver implements AutoCloseable
         ctx.receiverProxy().receiver(receiver);
         ctx.senderProxy().sender(sender);
         ctx.driverConductorProxy().driverConductor(conductor);
-        ctx.toDriverCommands().consumerHeartbeatTime(ctx.epochClock().time());
 
         final AtomicCounter errorCounter = ctx.systemCounters().get(ERRORS);
         final ErrorHandler errorHandler = ctx.errorHandler();
 
         switch (ctx.threadingMode)
         {
+            case NONE:
+                this.sharedInvoker = new AgentInvoker(
+                    errorHandler, errorCounter, new CompositeAgent(sender, receiver, conductor));
+                this.sharedRunner = null;
+                this.sharedNetworkRunner = null;
+                this.conductorRunner = null;
+                this.receiverRunner = null;
+                this.senderRunner = null;
+                ctx.driverAgentInvoker = this.sharedInvoker;
+                break;
+
             case SHARED:
                 this.sharedRunner = new AgentRunner(
                     ctx.sharedIdleStrategy,
@@ -192,6 +203,7 @@ public final class MediaDriver implements AutoCloseable
                 this.conductorRunner = null;
                 this.receiverRunner = null;
                 this.senderRunner = null;
+                this.sharedInvoker = null;
                 break;
 
             case SHARED_NETWORK:
@@ -205,6 +217,7 @@ public final class MediaDriver implements AutoCloseable
                 this.sharedRunner = null;
                 this.receiverRunner = null;
                 this.senderRunner = null;
+                this.sharedInvoker = null;
                 break;
 
             default:
@@ -215,6 +228,8 @@ public final class MediaDriver implements AutoCloseable
                     ctx.conductorIdleStrategy, errorHandler, errorCounter, conductor);
                 this.sharedNetworkRunner = null;
                 this.sharedRunner = null;
+                this.sharedInvoker = null;
+                break;
         }
     }
 
@@ -280,6 +295,7 @@ public final class MediaDriver implements AutoCloseable
         CloseHelper.quietClose(receiverRunner);
         CloseHelper.quietClose(senderRunner);
         CloseHelper.quietClose(conductorRunner);
+        CloseHelper.quietClose(sharedInvoker);
 
         ctx.close();
     }
@@ -498,6 +514,8 @@ public final class MediaDriver implements AutoCloseable
         private byte[] applicationSpecificFeedback = Configuration.SM_APPLICATION_SPECIFIC_FEEDBACK;
 
         private CongestionControlSupplier congestionControlSupplier;
+
+        private AgentInvoker driverAgentInvoker;
 
         public Context()
         {
@@ -729,7 +747,6 @@ public final class MediaDriver implements AutoCloseable
             this.driverCommandQueue = queue;
             return this;
         }
-
 
         public Context rawLogBuffersFactory(final RawLogFactory rawLogFactory)
         {
@@ -1002,6 +1019,11 @@ public final class MediaDriver implements AutoCloseable
         {
             this.congestionControlSupplier = supplier;
             return this;
+        }
+
+        public AgentInvoker driverAgentInvoker()
+        {
+            return driverAgentInvoker;
         }
 
         public EpochClock epochClock()

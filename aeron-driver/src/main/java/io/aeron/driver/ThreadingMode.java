@@ -16,14 +16,22 @@
 package io.aeron.driver;
 
 /**
- * Threading mode to be employed by the agents in the media driver.
+ * Threading mode to be employed by the {@link org.agrona.concurrent.Agent}s in the {@link MediaDriver}.
  */
 public enum ThreadingMode
 {
     /**
-     * 3 Threads, one dedicated to each of the agents.
+     * No threads are started in the {@link MediaDriver}.
+     *
+     * All 3 {@link org.agrona.concurrent.Agent}s will be composed a {@link org.agrona.concurrent.CompositeAgent} and
+     * made runnable via an {@link org.agrona.concurrent.AgentInvoker} in the {@link MediaDriver.Context}.
      */
-    DEDICATED,
+    NONE,
+
+    /**
+     * One thread shared by all 3 {@link org.agrona.concurrent.Agent}s.
+     */
+    SHARED,
 
     /**
      * One thread shared by both the {@link Sender} and {@link Receiver} agents,
@@ -32,7 +40,7 @@ public enum ThreadingMode
     SHARED_NETWORK,
 
     /**
-     * One thread shared by all 3 agents.
+     * 3 Threads, one dedicated to each of the {@link org.agrona.concurrent.Agent}s.
      */
-    SHARED
+    DEDICATED,
 }

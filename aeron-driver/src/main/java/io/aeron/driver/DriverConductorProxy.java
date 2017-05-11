@@ -23,6 +23,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import java.net.InetSocketAddress;
 import java.util.Queue;
 
+import static io.aeron.driver.ThreadingMode.NONE;
 import static io.aeron.driver.ThreadingMode.SHARED;
 
 /**
@@ -61,7 +62,7 @@ public class DriverConductorProxy
         final InetSocketAddress srcAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
-        if (isShared())
+        if (notConcurrent())
         {
             driverConductor.onCreatePublicationImage(
                 sessionId,
@@ -91,9 +92,9 @@ public class DriverConductorProxy
         }
     }
 
-    private boolean isShared()
+    private boolean notConcurrent()
     {
-        return threadingMode == SHARED;
+        return threadingMode == SHARED || threadingMode == NONE;
     }
 
     private void offer(final DriverConductorCmd cmd)

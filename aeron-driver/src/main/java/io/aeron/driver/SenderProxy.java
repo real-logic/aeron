@@ -22,6 +22,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import java.net.InetSocketAddress;
 import java.util.Queue;
 
+import static io.aeron.driver.ThreadingMode.NONE;
 import static io.aeron.driver.ThreadingMode.SHARED;
 
 /**
@@ -49,7 +50,7 @@ public class SenderProxy
 
     public void registerSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
     {
-        if (isSharedThread())
+        if (notConcurrent())
         {
             sender.onRegisterSendChannelEndpoint(channelEndpoint);
         }
@@ -61,7 +62,7 @@ public class SenderProxy
 
     public void closeSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
     {
-        if (isSharedThread())
+        if (notConcurrent())
         {
             sender.onCloseSendChannelEndpoint(channelEndpoint);
         }
@@ -73,7 +74,7 @@ public class SenderProxy
 
     public void removeNetworkPublication(final NetworkPublication publication)
     {
-        if (isSharedThread())
+        if (notConcurrent())
         {
             sender.onRemoveNetworkPublication(publication);
         }
@@ -85,7 +86,7 @@ public class SenderProxy
 
     public void newNetworkPublication(final NetworkPublication publication)
     {
-        if (isSharedThread())
+        if (notConcurrent())
         {
             sender.onNewNetworkPublication(publication);
         }
@@ -97,7 +98,7 @@ public class SenderProxy
 
     public void addDestination(final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
     {
-        if (isSharedThread())
+        if (notConcurrent())
         {
             sender.onAddDestination(channelEndpoint, address);
         }
@@ -109,7 +110,7 @@ public class SenderProxy
 
     public void removeDestination(final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
     {
-        if (isSharedThread())
+        if (notConcurrent())
         {
             sender.onRemoveDestination(channelEndpoint, address);
         }
@@ -119,9 +120,9 @@ public class SenderProxy
         }
     }
 
-    private boolean isSharedThread()
+    private boolean notConcurrent()
     {
-        return threadingMode == SHARED;
+        return threadingMode == SHARED || threadingMode == NONE;
     }
 
     private void offer(final SenderCmd cmd)

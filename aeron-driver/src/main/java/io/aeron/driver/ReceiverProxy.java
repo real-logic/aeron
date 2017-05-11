@@ -21,6 +21,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 
 import java.util.Queue;
 
+import static io.aeron.driver.ThreadingMode.NONE;
 import static io.aeron.driver.ThreadingMode.SHARED;
 
 /**
@@ -54,7 +55,7 @@ public class ReceiverProxy
 
     public void addSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
     {
-        if (isSharedThread())
+        if (notConcurrent())
         {
             receiver.onAddSubscription(mediaEndpoint, streamId);
         }
@@ -66,7 +67,7 @@ public class ReceiverProxy
 
     public void removeSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
     {
-        if (isSharedThread())
+        if (notConcurrent())
         {
             receiver.onRemoveSubscription(mediaEndpoint, streamId);
         }
@@ -78,7 +79,7 @@ public class ReceiverProxy
 
     public void newPublicationImage(final ReceiveChannelEndpoint channelEndpoint, final PublicationImage image)
     {
-        if (isSharedThread())
+        if (notConcurrent())
         {
             receiver.onNewPublicationImage(channelEndpoint, image);
         }
@@ -90,7 +91,7 @@ public class ReceiverProxy
 
     public void registerReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
-        if (isSharedThread())
+        if (notConcurrent())
         {
             receiver.onRegisterReceiveChannelEndpoint(channelEndpoint);
         }
@@ -102,7 +103,7 @@ public class ReceiverProxy
 
     public void closeReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
-        if (isSharedThread())
+        if (notConcurrent())
         {
             receiver.onCloseReceiveChannelEndpoint(channelEndpoint);
         }
@@ -114,7 +115,7 @@ public class ReceiverProxy
 
     public void removeCoolDown(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
     {
-        if (isSharedThread())
+        if (notConcurrent())
         {
             receiver.onRemoveCoolDown(channelEndpoint, sessionId, streamId);
         }
@@ -124,9 +125,9 @@ public class ReceiverProxy
         }
     }
 
-    private boolean isSharedThread()
+    private boolean notConcurrent()
     {
-        return threadingMode == SHARED;
+        return threadingMode == SHARED || threadingMode == NONE;
     }
 
     private void offer(final ReceiverCmd cmd)

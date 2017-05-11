@@ -29,11 +29,6 @@ public class Archiver implements AutoCloseable
     private AgentRunner runner;
     private Aeron aeron;
 
-    public Archiver(final Context ctx)
-    {
-        this.ctx = ctx;
-    }
-
     /**
      * Start an ArchiverConductor as a stand-alone process.
      *
@@ -44,16 +39,16 @@ public class Archiver implements AutoCloseable
     {
         loadPropertiesFiles(args);
 
-        setup();
-    }
-
-    static void setup() throws Exception
-    {
         try (Archiver ignore = Archiver.launch())
         {
             new ShutdownSignalBarrier().await();
             System.out.println("Shutdown Archiver...");
         }
+    }
+
+    public Archiver(final Context ctx)
+    {
+        this.ctx = ctx;
     }
 
     public void close() throws Exception
@@ -64,6 +59,7 @@ public class Archiver implements AutoCloseable
 
     public Archiver start()
     {
+        ctx.clientContext.driverAgentInvoker(ctx.driverAgentInvoker());
         aeron = Aeron.connect(ctx.clientContext);
         ctx.conclude();
 
@@ -102,6 +98,7 @@ public class Archiver implements AutoCloseable
         private int segmentFileLength = 128 * 1024 * 1024;
         private boolean forceMetadataUpdates = true;
         private boolean forceWrites = true;
+        private AgentInvoker driverAgentInvoker;
 
         public Context()
         {
@@ -244,9 +241,10 @@ public class Archiver implements AutoCloseable
             return segmentFileLength;
         }
 
-        public void segmentFileLength(final int segmentFileLength)
+        public Context segmentFileLength(final int segmentFileLength)
         {
             this.segmentFileLength = segmentFileLength;
+            return this;
         }
 
         boolean forceMetadataUpdates()
@@ -254,9 +252,10 @@ public class Archiver implements AutoCloseable
             return forceMetadataUpdates;
         }
 
-        public void forceMetadataUpdates(final boolean forceMetadataUpdates)
+        public Context forceMetadataUpdates(final boolean forceMetadataUpdates)
         {
             this.forceMetadataUpdates = forceMetadataUpdates;
+            return this;
         }
 
         boolean forceWrites()
@@ -264,9 +263,32 @@ public class Archiver implements AutoCloseable
             return forceWrites;
         }
 
-        public void forceWrites(final boolean forceWrites)
+        public Context forceWrites(final boolean forceWrites)
         {
             this.forceWrites = forceWrites;
+            return this;
+        }
+
+        /**
+         * Get the {@link AgentInvoker} that should be used for the Media Driver if running in a lightweight mode.
+         *
+         * @return the {@link AgentInvoker} that should be used for the Media Driver if running in a lightweight mode.
+         */
+        AgentInvoker driverAgentInvoker()
+        {
+            return driverAgentInvoker;
+        }
+
+        /**
+         * Set the {@link AgentInvoker} that should be used for the Media Driver if running in a lightweight mode.
+         *
+         * @param driverAgentInvoker that should be used for the Media Driver if running in a lightweight mode.
+         * @return this for a fluent API.
+         */
+        public Context driverAgentInvoker(final AgentInvoker driverAgentInvoker)
+        {
+            this.driverAgentInvoker = driverAgentInvoker;
+            return this;
         }
     }
 }

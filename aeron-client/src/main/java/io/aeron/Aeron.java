@@ -335,6 +335,7 @@ public final class Aeron implements AutoCloseable
     {
         private boolean useConductorAgentInvoker = false;
         private AgentInvoker conductorAgentInvoker;
+        private AgentInvoker driverAgentInvoker;
         private Lock clientLock;
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -483,6 +484,30 @@ public final class Aeron implements AutoCloseable
         public AgentInvoker conductorAgentInvoker()
         {
             return conductorAgentInvoker;
+        }
+
+        /**
+         * Set the {@link AgentInvoker} for the Media Driver to be used while awaiting a synchronous response.
+         *
+         * Useful for when running on a low thread count scenario.
+         *
+         * @param driverAgentInvoker to be invoked while awaiting a response in the client.
+         * @return this for a fluent API.
+         */
+        public Context driverAgentInvoker(final AgentInvoker driverAgentInvoker)
+        {
+            this.driverAgentInvoker = driverAgentInvoker;
+            return this;
+        }
+
+        /**
+         * Get the {@link AgentInvoker} that is used to run the Media Driver while awaiting a synchronous response.
+         *
+         * @return the {@link AgentInvoker} that is used for running the Media Driver.
+         */
+        public AgentInvoker driverAgentInvoker()
+        {
+            return driverAgentInvoker;
         }
 
         /**

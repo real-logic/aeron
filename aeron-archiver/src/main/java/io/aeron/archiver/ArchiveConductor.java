@@ -26,6 +26,11 @@ import java.util.function.Consumer;
 
 class ArchiveConductor implements Agent
 {
+    /**
+     * Limit on the number of items drained from the available image queue per work cycle.
+     */
+    private static final int QUEUE_DRAIN_LIMIT = 10;
+
     interface Session
     {
         void abort();
@@ -39,13 +44,14 @@ class ArchiveConductor implements Agent
 
     private final Aeron aeron;
     private final AgentInvoker aeronClientAgentInvoker;
+    private final AgentInvoker driverAgentInvoker;
     private final Subscription controlSubscription;
     private final ArrayList<Session> sessions = new ArrayList<>();
     private final Long2ObjectHashMap<ReplaySession> replaySession2IdMap = new Long2ObjectHashMap<>();
 
     private final ObjectHashSet<Subscription> recordingSubscriptionSet = new ObjectHashSet<>(128);
     private final Catalog catalog;
-    private final OneToOneConcurrentArrayQueue<Image> availableImageQueue = new OneToOneConcurrentArrayQueue<>(1024);
+    private final OneToOneConcurrentArrayQueue<Image> availableImageQueue = new OneToOneConcurrentArrayQueue<>(512);
     private final File archiveDir;
 
     private final Consumer<Image> newImageConsumer = this::availableImageHandler;
@@ -61,6 +67,7 @@ class ArchiveConductor implements Agent
     {
         this.aeron = aeron;
         this.aeronClientAgentInvoker = ctx.clientContext().conductorAgentInvoker();
+        this.driverAgentInvoker = ctx.driverAgentInvoker();
 
         archiveDir = ctx.archiveDir();
         catalog = new Catalog(archiveDir);
@@ -94,8 +101,13 @@ class ArchiveConductor implements Agent
     {
         int workDone = 0;
 
+        if (null != driverAgentInvoker)
+        {
+            workDone += driverAgentInvoker.invoke();
+        }
+
         workDone += aeronClientAgentInvoker.invoke();
-        workDone += availableImageQueue.drain(newImageConsumer, 10);
+        workDone += availableImageQueue.drain(newImageConsumer, QUEUE_DRAIN_LIMIT);
         workDone += doSessionsWork();
 
         return workDone;

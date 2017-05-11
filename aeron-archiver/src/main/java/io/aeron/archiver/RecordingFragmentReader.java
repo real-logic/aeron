@@ -49,7 +49,6 @@ class RecordingFragmentReader implements AutoCloseable
     private int recordingTermStartOffset;
     private int fragmentOffset;
     private long transmitted = 0;
-    private long transmittedFragments = 0;
     private final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
 
     RecordingFragmentReader(final int recordingId, final File archiveDir) throws IOException
@@ -158,7 +157,6 @@ class RecordingFragmentReader implements AutoCloseable
             }
             // only count data fragments
             polled++;
-            transmittedFragments++;
         }
 
         if (!isDone() && fragmentOffset == termBufferLength)
@@ -176,7 +174,7 @@ class RecordingFragmentReader implements AutoCloseable
             }
             else
             {
-                unmapTermBuffer();
+                IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
             }
             // rotate term
             final MappedByteBuffer mappedByteBuffer = currentDataChannel.map(
@@ -187,17 +185,9 @@ class RecordingFragmentReader implements AutoCloseable
         return polled;
     }
 
-    private void unmapTermBuffer()
-    {
-        if (termMappedUnsafeBuffer != null)
-        {
-            IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
-        }
-    }
-
     private void closeRecordingFile()
     {
-        unmapTermBuffer();
+        IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
         CloseHelper.close(currentDataChannel);
     }
 

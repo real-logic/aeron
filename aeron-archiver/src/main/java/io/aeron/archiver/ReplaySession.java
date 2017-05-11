@@ -39,7 +39,7 @@ class ReplaySession implements
 {
     private enum State
     {
-        INIT, REPLAY, INACTIVE, CLOSED, LINGER
+        INIT, REPLAY, LINGER, INACTIVE, CLOSED
     }
 
     // replay boundaries

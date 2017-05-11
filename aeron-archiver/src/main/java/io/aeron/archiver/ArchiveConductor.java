@@ -244,7 +244,7 @@ class ArchiveConductor implements Agent
         final ReplaySession session = replaySession2IdMap.get(sessionId);
         if (session == null)
         {
-            throw new IllegalStateException("Trying to abort an unknown replay session:" + sessionId);
+            throw new IllegalStateException("Trying to abort an unknown replay session: " + sessionId);
         }
 
         session.abort();

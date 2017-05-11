@@ -71,19 +71,17 @@ public class ArchiveAndReplaySystemTest
 
     public static class FailResponseListener implements ResponseListener
     {
-        public void onResponse(final String err, final int correlationId)
+        public void onResponse(final String err, final long correlationId)
         {
             fail();
         }
 
-
-        public void onReplayStarted(final int replayId, final int correlationId)
+        public void onReplayStarted(final int replayId, final long correlationId)
         {
             fail();
         }
 
-
-        public void onReplayAborted(final int lastTermId, final int lastTermOffset, final int correlationId)
+        public void onReplayAborted(final int lastTermId, final int lastTermOffset, final long correlationId)
         {
             fail();
         }
@@ -102,12 +100,12 @@ public class ArchiveAndReplaySystemTest
             final int sessionId,
             final String channel,
             final int streamId,
-            final int correlationId)
+            final long correlationId)
         {
             fail();
         }
 
-        public void onRecordingNotFound(final int recordingId, final int maxRecordingId, final int correlationId)
+        public void onRecordingNotFound(final int recordingId, final int maxRecordingId, final long correlationId)
         {
             fail();
         }
@@ -152,7 +150,7 @@ public class ArchiveAndReplaySystemTest
         }
     };
     private Subscription reply;
-    private int correlationId;
+    private long correlationId;
 
     @Before
     public void setUp() throws Exception
@@ -193,9 +191,9 @@ public class ArchiveAndReplaySystemTest
     public void recordAndReplay() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
-                archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
+            archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
-                archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
+                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
             final ArchiveClient client = new ArchiveClient(controlPublication, recordingEvents);
 
@@ -209,7 +207,7 @@ public class ArchiveAndReplaySystemTest
             println("Client connected");
 
             verifyEmptyDescriptorList(client);
-            final int startRecordingCorrelationId = this.correlationId++;
+            final long startRecordingCorrelationId = this.correlationId++;
             waitFor(() -> client.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
             println("Recording requested");
             waitForOk(client, reply, startRecordingCorrelationId);
@@ -221,8 +219,10 @@ public class ArchiveAndReplaySystemTest
             {
                 public void onStart(
                     final int recordingId0,
-                    final String iSource, final int sessionId,
-                    final String channel, final int streamId)
+                    final String iSource,
+                    final int sessionId,
+                    final String channel,
+                    final int streamId)
                 {
                     recordingId = recordingId0;
                     assertThat(streamId, is(PUBLISH_STREAM_ID));
@@ -242,7 +242,7 @@ public class ArchiveAndReplaySystemTest
             println("All data arrived");
 
             println("Request stop recording");
-            final int requestStopCorrelationId = this.correlationId++;
+            final long requestStopCorrelationId = this.correlationId++;
             waitFor(() -> client.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID, requestStopCorrelationId));
             waitForOk(client, reply, requestStopCorrelationId);
 
@@ -269,7 +269,7 @@ public class ArchiveAndReplaySystemTest
 
     private void verifyEmptyDescriptorList(final ArchiveClient client)
     {
-        final int requestRecordingsCorrelationId = this.correlationId++;
+        final long requestRecordingsCorrelationId = this.correlationId++;
         client.listRecordings(0, 100, requestRecordingsCorrelationId);
         TestUtil.waitForFail(client, reply, requestRecordingsCorrelationId);
     }
@@ -279,7 +279,7 @@ public class ArchiveAndReplaySystemTest
         final Publication publication,
         final long recordingLength)
     {
-        final int requestRecordingsCorrelationId = this.correlationId++;
+        final long requestRecordingsCorrelationId = this.correlationId++;
         client.listRecordings(recordingId, recordingId, requestRecordingsCorrelationId);
         println("Await result");
         waitFor(() -> client.pollResponses(reply, new FailResponseListener()
@@ -298,7 +298,7 @@ public class ArchiveAndReplaySystemTest
                 final int sessionId,
                 final String channel,
                 final int streamId,
-                final int correlationId)
+                final long correlationId)
             {
                 assertThat(rId, is(recordingId));
                 assertThat(termBufferLength, is(publication.termBufferLength()));
@@ -397,7 +397,7 @@ public class ArchiveAndReplaySystemTest
     {
         try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, 101))
         {
-            final int replayCorrelationId = correlationId++;
+            final long replayCorrelationId = correlationId++;
             // request replay
             waitFor(() -> client.replay(
                 recordingId,
@@ -429,8 +429,7 @@ public class ArchiveAndReplaySystemTest
 
     private void validateArchiveFile(final int messageCount, final int recordingId) throws IOException
     {
-        try (RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
-            recordingId, archiveDir))
+        try (RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(recordingId, archiveDir))
         {
             fragmentCount = 0;
             remaining = totalDataLength;
@@ -640,5 +639,4 @@ public class ArchiveAndReplaySystemTest
         t.setDaemon(true);
         t.start();
     }
-
 }

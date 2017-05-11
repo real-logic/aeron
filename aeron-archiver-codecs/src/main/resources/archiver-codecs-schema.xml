@@ -54,14 +54,14 @@
     <sbe:message name="ControlResponse"
                  id="1"
                  description="Generic response to a control request. Empty error is an OK response">
-        <field name="correlationId"       id="1" type="int32"/>
+        <field name="correlationId"       id="1" type="int64"/>
         <data  name="err"                 id="2" type="varStringEncoding"/>
     </sbe:message>
 
     <sbe:message name="StartRecordingRequest"
                  id="2"
                  description="Request a channel:stream be recorded">
-        <field name="correlationId"       id="1" type="int32"/>
+        <field name="correlationId"       id="1" type="int64"/>
         <field name="streamId"            id="2" type="int32"/>
         <data  name="channel"             id="3" type="varStringEncoding"/>
     </sbe:message>
@@ -69,7 +69,7 @@
     <sbe:message name="StopRecordingRequest"
                  id="3"
                  description="Request a channel:stream stop recording">
-        <field name="correlationId"       id="1" type="int32"/>
+        <field name="correlationId"       id="1" type="int64"/>
         <field name="streamId"            id="2" type="int32"/>
         <data  name="channel"             id="3" type="varStringEncoding"/>
     </sbe:message>
@@ -77,7 +77,7 @@
     <sbe:message name="ReplayRequest"
                  id="4"
                  description="Replay recording range request">
-        <field name="correlationId"        id="1" type="int32"/>
+        <field name="correlationId"        id="1" type="int64"/>
         <field name="recordingId"          id="2" type="int32"/>
         <field name="termId"               id="3" type="int32"/>
         <field name="termOffset"           id="4" type="int32"/>
@@ -89,21 +89,21 @@
     <sbe:message name="ReplayStarted"
                  id="41"
                  description="Replay started response" >
-        <field name="correlationId"      id="1" type="int32"/>
+        <field name="correlationId"      id="1" type="int64"/>
         <field name="replayId"           id="2" type="int32"/>
     </sbe:message>
 
     <sbe:message name="AbortReplayRequest"
                  id="5"
                  description="Abort replay of a requested stream" >
-        <field name="correlationId"      id="1" type="int32"/>
+        <field name="correlationId"      id="1" type="int64"/>
         <field name="replayId"           id="2" type="int32"/>
     </sbe:message>
 
     <sbe:message name="ReplayAborted"
                  id="51"
                  description="Replay abort response" >
-        <field name="correlationId"      id="1" type="int32"/>
+        <field name="correlationId"      id="1" type="int64"/>
         <field name="replayId"           id="2" type="int32"/>
         <field name="lastTermId"         id="3" type="int32"/>
         <field name="lastTermOffset"     id="4" type="int32"/>
@@ -112,7 +112,7 @@
     <sbe:message name="ListRecordingsRequest"
                  id="6"
                  description="Request a range of recording descriptors">
-        <field name="correlationId"        id="1" type="int32"/>
+        <field name="correlationId"        id="1" type="int64"/>
         <field name="fromId"               id="2" type="int32"/>
         <field name="toId"                 id="3" type="int32"/>
     </sbe:message>
@@ -120,7 +120,7 @@
     <sbe:message name="RecordingNotFoundResponse"
                  id="61"
                  description="Failed to find a recording, also terminates query">
-        <field name="correlationId"        id="1" type="int32"/>
+        <field name="correlationId"        id="1" type="int64"/>
         <field name="recordingId"          id="2" type="int32"/>
         <field name="maxRecordingId"       id="3" type="int32"/>
     </sbe:message>
@@ -128,6 +128,7 @@
     <sbe:message name="RecordingDescriptor"
                  id="7"
                  description="Describes a recording in the meta file and index">
+        <field name="correlationId"        id="13" type="int64" />
         <field name="recordingId"          id="1" type="int32"/>
         <field name="termBufferLength"     id="2" type="int32"/>
         <field name="startTime"            id="3" type="int64"/>
@@ -139,7 +140,6 @@
         <field name="sessionId"            id="10" type="int32"/>
         <field name="streamId"             id="11" type="int32"/>
         <field name="segmentFileLength"    id="12" type="int32"/>
-        <field name="correlationId"        id="13" type="int32" />
         <data  name="source"               id="14" type="varStringEncoding"/>
         <data  name="channel"              id="15" type="varStringEncoding"/>
     </sbe:message>

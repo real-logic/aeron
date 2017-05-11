@@ -42,9 +42,7 @@ public class ArchiveReplayLoadTest
 {
     private static final int TIMEOUT = 5000;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
-    private static final int SLEEP_TIME_NS = 5000;
 
-    private static final boolean DEBUG = false;
     static final String REPLY_URI = "aeron:udp?endpoint=127.0.0.1:54327";
     static final int REPLY_STREAM_ID = 100;
     private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
@@ -81,7 +79,7 @@ public class ArchiveReplayLoadTest
         }
     };
     private Subscription reply;
-    private int correlationId;
+    private long correlationId;
 
     @Before
     public void setUp() throws Exception
@@ -137,7 +135,7 @@ public class ArchiveReplayLoadTest
             awaitSubscriptionIsConnected(reply);
             println("Client connected");
 
-            final int startRecordingCorrelationId = this.correlationId++;
+            final long startRecordingCorrelationId = this.correlationId++;
             waitFor(() -> client.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
             println("Recording requested");
             waitForOk(client, reply, startRecordingCorrelationId);
@@ -150,7 +148,7 @@ public class ArchiveReplayLoadTest
             println("All data arrived");
 
             println("Request stop recording");
-            final int requestStopCorrelationId = this.correlationId++;
+            final long requestStopCorrelationId = this.correlationId++;
             waitFor(() -> client.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID, requestStopCorrelationId));
             waitForOk(client, reply, requestStopCorrelationId);
             final long limit = System.currentTimeMillis() + 120000;
@@ -228,11 +226,12 @@ public class ArchiveReplayLoadTest
         final Publication publication,
         final int messageCount)
     {
+        final int replayStreamId = (int)correlationId;
 
-        try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, correlationId))
+        try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, replayStreamId))
         {
             // request replay
-            final int correlationId = this.correlationId++;
+            final long correlationId = this.correlationId++;
 
             TestUtil.waitFor(() -> client.replay(
                 recordingId,
@@ -240,7 +239,7 @@ public class ArchiveReplayLoadTest
                 0,
                 totalRecordingLength,
                 REPLAY_URI,
-                correlationId,
+                replayStreamId,
                 correlationId
             ));
 

@@ -75,7 +75,7 @@ public class ArchiveRecordingLoadTest
         }
     };
     private Subscription reply;
-    private int correlationId;
+    private long correlationId;
 
     @Before
     public void setUp() throws Exception
@@ -131,7 +131,7 @@ public class ArchiveRecordingLoadTest
             TestUtil.awaitSubscriptionIsConnected(reply);
             println("Client connected");
 
-            final int startRecordingCorrelationId = this.correlationId++;
+            final long startRecordingCorrelationId = this.correlationId++;
             waitFor(() -> client.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
             println("Recording requested");
             waitForOk(client, reply, startRecordingCorrelationId);

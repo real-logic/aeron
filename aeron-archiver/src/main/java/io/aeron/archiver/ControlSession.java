@@ -121,7 +121,7 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
     }
 
     public void onStopRecording(
-        final int correlationId,
+        final long correlationId,
         final String channel,
         final int streamId)
     {
@@ -143,7 +143,7 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
     }
 
     public void onStartRecording(
-        final int correlationId,
+        final long correlationId,
         final String channel,
         final int streamId)
     {
@@ -165,7 +165,7 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
     }
 
     public void onListRecordings(
-        final int correlationId,
+        final long correlationId,
         final int fromId,
         final int toId)
     {
@@ -177,7 +177,7 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
         conductor.listRecordings(correlationId, reply, fromId, toId);
     }
 
-    public void onAbortReplay(final int correlationId)
+    public void onAbortReplay(final long correlationId)
     {
         if (state != State.ACTIVE)
         {
@@ -188,7 +188,7 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
     }
 
     public void onStartReplay(
-        final int correlationId,
+        final long correlationId,
         final int replayStreamId,
         final String replayChannel,
         final int recordingId,

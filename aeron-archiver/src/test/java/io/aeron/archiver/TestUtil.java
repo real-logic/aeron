@@ -63,11 +63,11 @@ public class TestUtil
         }
     }
 
-    public static void waitForOk(final ArchiveClient client, final Subscription reply, final int correlationId)
+    public static void waitForOk(final ArchiveClient client, final Subscription reply, final long correlationId)
     {
         waitFor(() -> client.pollResponses(reply, new ArchiveAndReplaySystemTest.FailResponseListener()
         {
-            public void onResponse(final String err, final int correlationId)
+            public void onResponse(final String err, final long correlationId)
             {
                 assertThat(err, isEmptyOrNullString());
                 assertThat(correlationId, is(correlationId));
@@ -75,11 +75,11 @@ public class TestUtil
         }, 1) != 0);
     }
 
-    public static void waitForFail(final ArchiveClient client, final Subscription reply, final int correlationId)
+    public static void waitForFail(final ArchiveClient client, final Subscription reply, final long correlationId)
     {
         waitFor(() -> client.pollResponses(reply, new ArchiveAndReplaySystemTest.FailResponseListener()
         {
-            public void onResponse(final String err, final int correlationId)
+            public void onResponse(final String err, final long correlationId)
             {
                 assertThat(err, is(notNullValue()));
                 assertThat(correlationId, is(correlationId));

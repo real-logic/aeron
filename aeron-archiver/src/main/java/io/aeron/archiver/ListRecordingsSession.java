@@ -70,13 +70,14 @@ class ListRecordingsSession implements ArchiveConductor.Session
     private final int toId;
     private final Catalog index;
     private final ClientSessionProxy proxy;
-    private final int correlationId;
+    private final long correlationId;
 
     private int recordingId;
     private State state = State.INIT;
 
     ListRecordingsSession(
-        final int correlationId, final ExclusivePublication reply,
+        final long correlationId,
+        final ExclusivePublication reply,
         final int fromId,
         final int toId,
         final Catalog index,
@@ -136,6 +137,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
 
     private int sendDescriptors()
     {
+        // TODO: What the magic number 4?
         final int limit = Math.min(recordingId + 4, toId);
         for (; recordingId <= limit; recordingId++)
         {
@@ -155,9 +157,10 @@ class ListRecordingsSession implements ArchiveConductor.Session
                             final MutableDirectBuffer buffer = bufferClaim.buffer();
                             final int offset = bufferClaim.offset();
                             buffer.putLong(offset, NOT_FOUND_HEADER);
+                            // TODO: Why have we magic numbers here???
                             buffer.putInt(offset + 8, recordingId);
                             buffer.putInt(offset + 12, index.maxRecordingId());
-                            buffer.putInt(offset + 16, correlationId);
+                            buffer.putLong(offset + 16, correlationId);
                             bufferClaim.commit();
                             state = State.CLOSE;
                         }
@@ -178,7 +181,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
 
             final int length = unsafeBuffer.getInt(0);
             unsafeBuffer.putLong(CATALOG_FRAME_LENGTH - HEADER_LENGTH, DESCRIPTOR_HEADER);
-            unsafeBuffer.putInt(
+            unsafeBuffer.putLong(
                 CATALOG_FRAME_LENGTH + RecordingDescriptorDecoder.correlationIdEncodingOffset(), correlationId);
 
             reply.offer(unsafeBuffer, CATALOG_FRAME_LENGTH - HEADER_LENGTH, length + HEADER_LENGTH);

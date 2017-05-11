@@ -58,7 +58,7 @@ class ReplaySession implements
     private State state = State.INIT;
     private RecordingFragmentReader cursor;
     private final int replaySessionId;
-    private final int correlationId;
+    private final long correlationId;
     private int lingerCounter;
 
     ReplaySession(
@@ -71,7 +71,7 @@ class ReplaySession implements
         final File archiveDir,
         final ClientSessionProxy proxy,
         final int replaySessionId,
-        final int correlationId)
+        final long correlationId)
     {
         this.recordingId = recordingId;
 
@@ -272,6 +272,7 @@ class ReplaySession implements
     {
         try
         {
+            // TODO: Really, 42 as a magic number?
             final int polled = cursor.controlledPoll(this, 42);
             if (cursor.isDone())
             {

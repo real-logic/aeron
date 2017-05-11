@@ -68,7 +68,7 @@ public class ArchiveClient
     public boolean startRecording(
         final String channel,
         final int streamId,
-        final int correlationId)
+        final long correlationId)
     {
         startRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
@@ -82,7 +82,7 @@ public class ArchiveClient
     public boolean stopRecording(
         final String channel,
         final int streamId,
-        final int correlationId)
+        final long correlationId)
     {
         stopRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
@@ -100,7 +100,7 @@ public class ArchiveClient
         final long length,
         final String replayChannel,
         final int replayStreamId,
-        final int correlationId)
+        final long correlationId)
     {
         replayRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
@@ -115,7 +115,7 @@ public class ArchiveClient
         return offer(replayRequestEncoder.encodedLength());
     }
 
-    public boolean abortReplay(final int replayId, final int correlationId)
+    public boolean abortReplay(final int replayId, final long correlationId)
     {
         abortReplayRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
@@ -128,7 +128,7 @@ public class ArchiveClient
     public boolean listRecordings(
         final int fromId,
         final int toId,
-        final int correlationId)
+        final long correlationId)
     {
         listRecordingsRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)

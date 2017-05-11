@@ -216,7 +216,7 @@ class ArchiveConductor implements Agent
     }
 
     public void listRecordings(
-        final int correlationId,
+        final long correlationId,
         final ExclusivePublication reply,
         final int from,
         final int to)
@@ -239,7 +239,7 @@ class ArchiveConductor implements Agent
     }
 
     void startReplay(
-        final int correlationId,
+        final long correlationId,
         final ExclusivePublication reply,
         final int replayStreamId,
         final String replayChannel,

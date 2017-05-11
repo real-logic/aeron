@@ -46,7 +46,7 @@ class ClientSessionProxy
         recordingStoppedEncoder.wrap(outboundBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
     }
 
-    void sendResponse(final ExclusivePublication reply, final String err, final int correlationId)
+    void sendResponse(final ExclusivePublication reply, final String err, final long correlationId)
     {
         outboundHeaderEncoder
             .blockLength(ControlResponseEncoder.BLOCK_LENGTH)

@@ -19,16 +19,16 @@ public interface ResponseListener
 {
     void onResponse(
         String err,
-        int correlationId);
+        long correlationId);
 
     void onReplayStarted(
         int replayId,
-        int correlationId);
+        long correlationId);
 
     void onReplayAborted(
         int lastTermId,
         int lastTermOffset,
-        int correlationId);
+        long correlationId);
 
     void onRecordingDescriptor(
         int recordingId,
@@ -44,10 +44,10 @@ public interface ResponseListener
         int sessionId,
         String channel,
         int streamId,
-        int correlationId);
+        long correlationId);
 
     void onRecordingNotFound(
         int recordingId,
         int maxRecordingId,
-        int correlationId);
+        long correlationId);
 }

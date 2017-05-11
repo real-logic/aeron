@@ -120,7 +120,7 @@ public class ReplaySessionTest
         try (RecordingFragmentReader reader = new RecordingFragmentReader(RECORDING_ID, archiveDir))
         {
             final int polled = reader.controlledPoll(
-                (b, offset, length, h) ->
+                (buffer, offset, length, header) ->
                 {
                     assertEquals(offset, INITIAL_TERM_OFFSET + DataHeaderFlyweight.HEADER_LENGTH);
                     assertEquals(length, 1024 - DataHeaderFlyweight.HEADER_LENGTH);
@@ -142,6 +142,7 @@ public class ReplaySessionTest
     public void shouldReplayDataFromFile()
     {
         final long length = 1024L;
+        final long correlationId = 1L;
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
         final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
 
@@ -155,7 +156,7 @@ public class ReplaySessionTest
             archiveDir,
             proxy,
             0,
-            1);
+            correlationId);
 
         // this is a given since they are closed by the session only
         when(replay.isClosed()).thenReturn(false);
@@ -188,7 +189,7 @@ public class ReplaySessionTest
         assertNotEquals(0, replaySession.doWork());
 
         // notifies that initiated
-        verify(proxy, times(1)).sendResponse(control, null, 1);
+        verify(proxy, times(1)).sendResponse(control, null, correlationId);
 
         final UnsafeBuffer mockTermBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
         when(replay.tryClaim(anyInt(), any(ExclusiveBufferClaim.class))).then(
@@ -204,8 +205,8 @@ public class ReplaySessionTest
         assertNotEquals(0, replaySession.doWork());
         assertTrue(messageIndex > 0);
 
-        //  frame length
-        assertEquals(1024, mockTermBuffer.getInt(0));
+        final int expectedFrameLength = 1024;
+        assertEquals(expectedFrameLength, mockTermBuffer.getInt(0));
         // TODO: add validation for reserved value and flags
 
         assertTrue(replaySession.isDone());
@@ -216,6 +217,7 @@ public class ReplaySessionTest
     public void shouldFailToReplayDataForNonExistentStream()
     {
         final long length = 1024L;
+        final long correlationId = 1L;
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
         final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
 
@@ -229,7 +231,7 @@ public class ReplaySessionTest
             archiveDir,
             proxy,
             0,
-            1);
+            correlationId);
 
         // this is a given since they are closed by the session only
         when(replay.isClosed()).thenReturn(false);
@@ -241,7 +243,7 @@ public class ReplaySessionTest
         assertEquals(1, replaySession.doWork());
 
         // failure notification
-        verify(proxy, times(1)).sendResponse(eq(control), notNull(), eq(1));
+        verify(proxy, times(1)).sendResponse(eq(control), notNull(), eq(correlationId));
 
         assertTrue(replaySession.isDone());
     }

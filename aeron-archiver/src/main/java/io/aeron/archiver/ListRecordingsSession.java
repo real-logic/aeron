@@ -34,6 +34,8 @@ class ListRecordingsSession implements ArchiveConductor.Session
 
     static
     {
+        // TODO: How will this cope on a Big Endian machine?
+
         // create constant header values to avoid recalculation on each message sent
         final MessageHeaderEncoder encoder = new MessageHeaderEncoder();
         encoder.wrap(new UnsafeBuffer(new byte[HEADER_LENGTH]), 0);

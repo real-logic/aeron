@@ -86,6 +86,7 @@ class RecordingFragmentReader implements AutoCloseable
         this.replayLength = length;
         final String recordingMetaFileName = recordingMetaFileName(recordingId);
         final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
+        // TODO: Can this be done without mapping and unmapping?
         final RecordingDescriptorDecoder metaDecoder = recordingMetaFileFormatDecoder(recordingMetaFile);
         termBufferLength = metaDecoder.termBufferLength();
         initialTermId = metaDecoder.initialTermId();

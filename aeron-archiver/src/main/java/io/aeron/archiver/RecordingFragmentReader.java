@@ -221,7 +221,6 @@ class RecordingFragmentReader implements AutoCloseable
 
     public void close()
     {
-        System.err.printf("Transmitted %d bytes, in %d fragments %n", transmitted, transmittedFragments);
         closeRecordingFile();
     }
 

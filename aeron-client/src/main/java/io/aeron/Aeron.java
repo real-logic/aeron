@@ -66,9 +66,14 @@ public final class Aeron implements AutoCloseable
         };
 
     /**
+     * Duration in milliseconds for which the client conductor will sleep between duty cycles.
+     */
+    public static final long IDLE_SLEEP_MS = 16L;
+
+    /**
      * Duration in nanoseconds for which the client conductor will sleep between duty cycles.
      */
-    public static final long IDLE_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(16);
+    public static final long IDLE_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(IDLE_SLEEP_MS);
 
     /**
      * Default interval between sending keepalive control messages to the driver.
@@ -307,6 +312,7 @@ public final class Aeron implements AutoCloseable
         }
 
         final Context ctx = conductor.context();
+
         return new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer());
     }
 
@@ -376,7 +382,7 @@ public final class Aeron implements AutoCloseable
 
             if (null == idleStrategy)
             {
-                idleStrategy = new SleepingIdleStrategy(IDLE_SLEEP_NS);
+                idleStrategy = new SleepingMillisIdleStrategy(IDLE_SLEEP_MS);
             }
 
             if (cncFile() != null)
@@ -950,14 +956,15 @@ public final class Aeron implements AutoCloseable
         }
     }
 
-    static void sleep(final long timeInMs)
+    static void sleep(final long durationMs)
     {
         try
         {
-            Thread.sleep(timeInMs);
+            Thread.sleep(durationMs);
         }
         catch (final InterruptedException ignore)
         {
+            Thread.interrupted();
         }
     }
 }

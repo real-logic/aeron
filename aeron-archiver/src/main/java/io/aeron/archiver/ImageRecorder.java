@@ -357,7 +357,8 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
         // TODO: potentially redundant call to position() could be an assert
         else if (recordingFileChannel.position() != recordingPosition)
         {
-            throw new IllegalArgumentException("It is assumed that recordingPosition tracks the file position");
+            throw new IllegalArgumentException("It is assumed that recordingPosition:" + recordingPosition +
+                " tracks the file position:" + recordingFileChannel.position());
         }
     }
 

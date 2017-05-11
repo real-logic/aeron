@@ -51,7 +51,8 @@ class ArchiveConductor implements Agent
     private final Consumer<Image> newImageConsumer = this::availableImageHandler;
     private final AvailableImageHandler availableImageHandler = this::onAvailableImage;
 
-    private final ClientProxy proxy;
+    private final NotificationsProxy notificationsProxy;
+    private final ClientSessionProxy clientProxy;
     private volatile boolean isClosed = false;
     private final ImageRecorder.Builder imageRecorderBuilder = new ImageRecorder.Builder();
     private int replaySessionId;
@@ -80,7 +81,8 @@ class ArchiveConductor implements Agent
         final Publication archiverNotificationPublication = aeron.addPublication(
             ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
 
-        proxy = new ClientProxy(ctx.idleStrategy(), archiverNotificationPublication);
+        notificationsProxy = new NotificationsProxy(ctx.idleStrategy(), archiverNotificationPublication);
+        clientProxy = new ClientSessionProxy(ctx.idleStrategy());
     }
 
     public String roleName()
@@ -158,11 +160,11 @@ class ArchiveConductor implements Agent
         final Session session;
         if (image.subscription() == controlSubscription)
         {
-            session = new ControlSession(image, proxy, this);
+            session = new ControlSession(image, clientProxy, this);
         }
         else
         {
-            session = new RecordingSession(proxy, catalog, image, imageRecorderBuilder);
+            session = new RecordingSession(notificationsProxy, catalog, image, imageRecorderBuilder);
         }
 
         sessions.add(session);
@@ -220,7 +222,8 @@ class ArchiveConductor implements Agent
         final int from,
         final int to)
     {
-        final Session listSession = new ListRecordingsSession(correlationId, reply, from, to, catalog, proxy);
+        final Session listSession = new ListRecordingsSession(
+            correlationId, reply, from, to, catalog, clientProxy);
 
         sessions.add(listSession);
     }
@@ -256,7 +259,7 @@ class ArchiveConductor implements Agent
             replayPublication,
             reply,
             archiveDir,
-            proxy,
+            clientProxy,
             newId,
             correlationId);
 

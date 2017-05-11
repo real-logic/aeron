@@ -15,13 +15,29 @@
  */
 package io.aeron.archiver;
 
+import io.aeron.*;
+import io.aeron.archiver.client.ArchiveClient;
+import io.aeron.logbuffer.FragmentHandler;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Assert;
 
 import java.io.*;
+import java.util.concurrent.locks.LockSupport;
+import java.util.function.BooleanSupplier;
 
-class TestUtil
+import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
+public class TestUtil
 {
-    static File makeTempDir() throws IOException
+    public static final int TIMEOUT = 5000;
+    public static final boolean DEBUG = false;
+    public static final int SLEEP_TIME_NS = 5000;
+
+    public static File makeTempDir() throws IOException
     {
         final File tempDirForTest = File.createTempFile("archiver.test", "tmp");
         // we really need a temp dir, not a file... delete and remake!
@@ -29,5 +45,81 @@ class TestUtil
         Assert.assertTrue(tempDirForTest.mkdir());
 
         return tempDirForTest;
+    }
+
+    public static void printf(final String s, final Object... args)
+    {
+        if (DEBUG)
+        {
+            System.out.printf(s, args);
+        }
+    }
+
+    public static void println(final String s)
+    {
+        if (DEBUG)
+        {
+            System.out.println(s);
+        }
+    }
+
+    public static void waitForOk(final ArchiveClient client, final Subscription reply, final int correlationId)
+    {
+        waitFor(() -> client.pollResponses(reply, new ArchiveAndReplaySystemTest.FailResponseListener()
+        {
+            public void onResponse(final String err, final int correlationId)
+            {
+                assertThat(err, isEmptyOrNullString());
+                assertThat(correlationId, is(correlationId));
+            }
+        }, 1) != 0);
+    }
+
+    public static void waitForFail(final ArchiveClient client, final Subscription reply, final int correlationId)
+    {
+        waitFor(() -> client.pollResponses(reply, new ArchiveAndReplaySystemTest.FailResponseListener()
+        {
+            public void onResponse(final String err, final int correlationId)
+            {
+                assertThat(err, is(notNullValue()));
+                assertThat(correlationId, is(correlationId));
+            }
+        }, 1) != 0);
+    }
+
+    public static void poll(final Subscription subscription, final FragmentHandler handler)
+    {
+        waitFor(() -> subscription.poll(handler, 1) > 0);
+    }
+
+    public static void offer(
+        final Publication publication,
+        final UnsafeBuffer buffer,
+        final int length)
+    {
+        waitFor(() -> publication.offer(buffer, 0, length) > 0);
+    }
+
+    public static void waitFor(final BooleanSupplier forIt)
+    {
+        final long limit = System.currentTimeMillis() + TIMEOUT;
+        while (!forIt.getAsBoolean())
+        {
+            LockSupport.parkNanos(SLEEP_TIME_NS);
+            if (limit < System.currentTimeMillis())
+            {
+                fail();
+            }
+        }
+    }
+
+    public static void awaitSubscriptionIsConnected(final Subscription subscription)
+    {
+        waitFor(() -> subscription.imageCount() > 0);
+    }
+
+    public static void awaitPublicationIsConnected(final Publication publication)
+    {
+        waitFor(publication::isConnected);
     }
 }

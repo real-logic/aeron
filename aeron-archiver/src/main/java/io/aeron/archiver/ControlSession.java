@@ -27,16 +27,16 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
     }
 
     private final Image image;
-    private final ClientProxy clientProxy;
+    private final ClientSessionProxy proxy;
     private final ArchiveConductor conductor;
     private final ControlRequestAdapter adapter = new ControlRequestAdapter(this);
     private ExclusivePublication reply;
     private State state = State.INIT;
 
-    ControlSession(final Image image, final ClientProxy clientProxy, final ArchiveConductor conductor)
+    ControlSession(final Image image, final ClientSessionProxy clientProxy, final ArchiveConductor conductor)
     {
         this.image = image;
-        this.clientProxy = clientProxy;
+        this.proxy = clientProxy;
         this.conductor = conductor;
     }
 
@@ -134,12 +134,12 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
         try
         {
             conductor.stopRecording(channel, streamId);
-            clientProxy.sendResponse(reply, null, correlationId);
+            proxy.sendResponse(reply, null, correlationId);
         }
         catch (final Exception e)
         {
             // e.printStackTrace(); TODO: logging?
-            clientProxy.sendResponse(reply, e.getMessage(), correlationId);
+            proxy.sendResponse(reply, e.getMessage(), correlationId);
         }
     }
 
@@ -156,12 +156,12 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
         try
         {
             conductor.startRecording(channel, streamId);
-            clientProxy.sendResponse(reply, null, correlationId);
+            proxy.sendResponse(reply, null, correlationId);
         }
         catch (final Exception e)
         {
             // e.printStackTrace(); TODO: logging?
-            clientProxy.sendResponse(reply, e.getMessage(), correlationId);
+            proxy.sendResponse(reply, e.getMessage(), correlationId);
         }
     }
 

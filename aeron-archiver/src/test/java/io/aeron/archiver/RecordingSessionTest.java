@@ -50,7 +50,7 @@ public class RecordingSessionTest
     private final int termOffset = 1024;
 
     private final File tempDirForTest = TestUtil.makeTempDir();
-    private final ClientProxy proxy;
+    private final NotificationsProxy proxy;
 
     private final Image image;
     private final Catalog index;
@@ -61,7 +61,7 @@ public class RecordingSessionTest
 
     public RecordingSessionTest() throws IOException
     {
-        proxy = mock(ClientProxy.class);
+        proxy = mock(NotificationsProxy.class);
         index = mock(Catalog.class);
         when(
             index.addNewRecording(

@@ -67,7 +67,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
     private final int fromId;
     private final int toId;
     private final Catalog index;
-    private final ClientProxy proxy;
+    private final ClientSessionProxy proxy;
     private final int correlationId;
 
     private int recordingId;
@@ -78,7 +78,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
         final int fromId,
         final int toId,
         final Catalog index,
-        final ClientProxy proxy)
+        final ClientSessionProxy proxy)
     {
         this.reply = reply;
         recordingId = fromId;

@@ -13,7 +13,8 @@
  * limitations under the License.
  *
  */
-package io.aeron.archiver;
+
+package io.aeron.archiver.client;
 
 import io.aeron.*;
 import io.aeron.archiver.codecs.*;
@@ -21,75 +22,6 @@ import org.agrona.*;
 
 public class ArchiveClient
 {
-    interface ResponseListener
-    {
-        void onResponse(
-            String err,
-            int correlationId);
-
-        void onReplayStarted(
-            int replayId,
-            int correlationId);
-
-        void onReplayAborted(
-            int lastTermId,
-            int lastTermOffset,
-            int correlationId);
-
-        void onRecordingStarted(
-            int recordingId,
-            String source,
-            int sessionId,
-            String channel,
-            int streamId,
-            int correlationId);
-
-        void onRecordingStopped(
-            int recordingId,
-            int lastTermId,
-            int lastTermOffset,
-            int correlationId);
-
-        void onRecordingDescriptor(
-            int recordingId,
-            int segmentFileLength,
-            int termBufferLength,
-            long startTime,
-            int initialTermId,
-            int initialTermOffset,
-            long endTime,
-            int lastTermId,
-            int lastTermOffset,
-            String source,
-            int sessionId,
-            String channel,
-            int streamId,
-            int correlationId);
-
-        void onRecordingNotFound(
-            int recordingId,
-            int maxRecordingId,
-            int correlationId);
-    }
-
-    interface RecordingEventsListener
-    {
-        void onProgress(
-            int recordingId,
-            int initialTermId,
-            int initialTermOffset,
-            int termId,
-            int termOffset);
-
-        void onStart(
-            int recordingId,
-            String source,
-            int sessionId,
-            String channel,
-            int streamId);
-
-        void onStop(int recordingId);
-    }
 
     private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
 
@@ -225,17 +157,11 @@ public class ArchiveClient
                         handleArchiverResponse(responseListener, buffer, offset);
                         break;
 
-                    case RecordingStartedDecoder.TEMPLATE_ID:
-                        handleRecordingStarted(responseListener, buffer, offset);
-                        break;
-
-                    case RecordingStoppedDecoder.TEMPLATE_ID:
-                        handleRecordingStopped(responseListener, buffer, offset);
-                        break;
-
                     case ReplayAbortedDecoder.TEMPLATE_ID:
+                    {
                         handleReplayAborted(responseListener, buffer, offset);
                         break;
+                    }
 
                     case ReplayStartedDecoder.TEMPLATE_ID:
                         handleReplayStarted(responseListener, buffer, offset);
@@ -286,42 +212,6 @@ public class ArchiveClient
         responseListener.onResponse(
             archiverResponseDecoder.err(),
             archiverResponseDecoder.correlationId());
-    }
-
-    private void handleRecordingStarted(
-        final ResponseListener responseListener,
-        final DirectBuffer buffer,
-        final int offset)
-    {
-        recordingStartedDecoder.wrap(
-            buffer,
-            offset + HEADER_LENGTH,
-            messageHeaderDecoder.blockLength(),
-            messageHeaderDecoder.version());
-
-        responseListener.onRecordingStarted(
-            recordingStartedDecoder.recordingId(),
-            recordingStartedDecoder.channel(), recordingStartedDecoder.sessionId(),
-            recordingStartedDecoder.source(), recordingStartedDecoder.streamId(),
-            recordingStartedDecoder.correlationId());
-    }
-
-    private void handleRecordingStopped(
-        final ResponseListener responseListener,
-        final DirectBuffer buffer,
-        final int offset)
-    {
-        recordingStoppedDecoder.wrap(
-            buffer,
-            offset + HEADER_LENGTH,
-            messageHeaderDecoder.blockLength(),
-            messageHeaderDecoder.version());
-
-        responseListener.onRecordingStopped(
-            recordingStoppedDecoder.recordingId(),
-            recordingStoppedDecoder.lastTermId(),
-            recordingStoppedDecoder.lastTermOffset(),
-            recordingStoppedDecoder.correlationId());
     }
 
     private void handleReplayAborted(

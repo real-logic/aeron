@@ -27,7 +27,7 @@ import java.util.Date;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 
-class ArchiveUtil
+public class ArchiveUtil
 {
     static String recordingMetaFileName(final int recordingId)
     {
@@ -119,7 +119,21 @@ class ArchiveUtil
 
     static long recordingFileFullLength(final RecordingDescriptorDecoder metaDecoder)
     {
-        return ((long)(metaDecoder.lastTermId() - metaDecoder.initialTermId())) * metaDecoder.termBufferLength() +
-            (metaDecoder.lastTermOffset() - metaDecoder.initialTermOffset());
+        final int termBufferLength = metaDecoder.termBufferLength();
+        final int initialTermId = metaDecoder.initialTermId();
+        final int initialTermOffset = metaDecoder.initialTermOffset();
+        final int lastTermId = metaDecoder.lastTermId();
+        final int lastTermOffset = metaDecoder.lastTermOffset();
+        return recordingLength(termBufferLength, initialTermId, initialTermOffset, lastTermId, lastTermOffset);
+    }
+
+    public static long recordingLength(
+        final int termBufferLength,
+        final int initialTermId,
+        final int initialTermOffset,
+        final int lastTermId, final int lastTermOffset)
+    {
+        return ((long)(lastTermId - initialTermId)) * termBufferLength +
+            (lastTermOffset - initialTermOffset);
     }
 }

@@ -16,7 +16,8 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
-import io.aeron.archiver.codecs.*;
+import io.aeron.archiver.client.*;
+import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.driver.*;
 import io.aeron.logbuffer.*;
 import io.aeron.protocol.*;
@@ -29,19 +30,18 @@ import org.junit.runner.Description;
 import java.io.*;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.locks.LockSupport;
-import java.util.function.BooleanSupplier;
 
-import static io.aeron.archiver.ArchiveUtil.recordingMetaFileFormatDecoder;
-import static io.aeron.archiver.ArchiveUtil.recordingMetaFileName;
+import static io.aeron.archiver.ArchiveUtil.*;
+import static io.aeron.archiver.TestUtil.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
 public class ArchiveAndReplaySystemTest
 {
-    class FailRecordingEventsListener implements ArchiveClient.RecordingEventsListener
+    public static class FailRecordingEventsListener implements RecordingEventsListener
     {
         public void onProgress(
             final int recordingId,
@@ -69,39 +69,21 @@ public class ArchiveAndReplaySystemTest
         }
     }
 
-    class FailResponseListener implements ArchiveClient.ResponseListener
+    public static class FailResponseListener implements ResponseListener
     {
         public void onResponse(final String err, final int correlationId)
         {
             fail();
         }
 
+
         public void onReplayStarted(final int replayId, final int correlationId)
         {
             fail();
         }
 
+
         public void onReplayAborted(final int lastTermId, final int lastTermOffset, final int correlationId)
-        {
-            fail();
-        }
-
-        public void onRecordingStarted(
-            final int recordingId,
-            final String source,
-            final int sessionId,
-            final String channel,
-            final int streamId,
-            final int correlationId)
-        {
-            fail();
-        }
-
-        public void onRecordingStopped(
-            final int recordingId,
-            final int lastTermId,
-            final int lastTermOffset,
-            final int correlationId)
         {
             fail();
         }
@@ -131,20 +113,17 @@ public class ArchiveAndReplaySystemTest
         }
     }
 
-    private static final int TIMEOUT = 5000;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
-    private static final int SLEEP_TIME_NS = 5000;
 
-    private static final boolean DEBUG = false;
     private static final String REPLY_URI = "aeron:udp?endpoint=127.0.0.1:54327";
     private static final int REPLY_STREAM_ID = 100;
-    private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
+    private static final String REPLAY_URI = "aeron:ipc?endpoint=127.0.0.1:54326";
     private static final String PUBLISH_URI = "aeron:udp?endpoint=127.0.0.1:54325";
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
-    private Aeron aeronClient;
+    private Aeron publishingClient;
     private Archiver archiver;
     private MediaDriver driver;
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
@@ -192,13 +171,13 @@ public class ArchiveAndReplaySystemTest
         archiverCtx.archiveDir(archiveDir);
         archiver = Archiver.launch(archiverCtx);
         println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
-        aeronClient = Aeron.connect();
+        publishingClient = Aeron.connect();
     }
 
     @After
     public void closeEverything() throws Exception
     {
-        CloseHelper.close(aeronClient);
+        CloseHelper.close(publishingClient);
         CloseHelper.close(archiver);
         CloseHelper.close(driver);
 
@@ -213,32 +192,32 @@ public class ArchiveAndReplaySystemTest
     @Test(timeout = 60000)
     public void recordAndReplay() throws IOException, InterruptedException
     {
-        try (Publication controlPublication = aeronClient.addPublication(
+        try (Publication controlPublication = publishingClient.addPublication(
                 archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
-             Subscription recordingEvents = aeronClient.addSubscription(
+             Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
             final ArchiveClient client = new ArchiveClient(controlPublication, recordingEvents);
 
-            awaitPublicationIsConnected(controlPublication);
-            awaitSubscriptionIsConnected(recordingEvents);
+            TestUtil.awaitPublicationIsConnected(controlPublication);
+            TestUtil.awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 
-            reply = aeronClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
+            reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
             client.connect(REPLY_URI, REPLY_STREAM_ID);
-            awaitSubscriptionIsConnected(reply);
+            TestUtil.awaitSubscriptionIsConnected(reply);
             println("Client connected");
 
             verifyEmptyDescriptorList(client);
             final int startRecordingCorrelationId = this.correlationId++;
-            wait(() -> client.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
+            waitFor(() -> client.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
             println("Recording requested");
-            waitForOk(client, startRecordingCorrelationId);
+            waitForOk(client, reply, startRecordingCorrelationId);
 
-            final Publication publication = aeronClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
-            awaitPublicationIsConnected(publication);
+            final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
+            TestUtil.awaitPublicationIsConnected(publication);
 
-            wait(() -> client.pollEvents(new FailRecordingEventsListener()
+            waitFor(() -> client.pollEvents(new FailRecordingEventsListener()
             {
                 public void onStart(
                     final int recordingId0,
@@ -264,10 +243,10 @@ public class ArchiveAndReplaySystemTest
 
             println("Request stop recording");
             final int requestStopCorrelationId = this.correlationId++;
-            wait(() -> client.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID, requestStopCorrelationId));
-            waitForOk(client, requestStopCorrelationId);
+            waitFor(() -> client.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID, requestStopCorrelationId));
+            waitForOk(client, reply, requestStopCorrelationId);
 
-            wait(() -> client.pollEvents(new FailRecordingEventsListener()
+            waitFor(() -> client.pollEvents(new FailRecordingEventsListener()
             {
                 public void onStop(final int rId)
                 {
@@ -288,35 +267,11 @@ public class ArchiveAndReplaySystemTest
         }
     }
 
-    private void waitForOk(final ArchiveClient client, final int correlationId)
-    {
-        wait(() -> client.pollResponses(reply, new FailResponseListener()
-        {
-            public void onResponse(final String err, final int correlationId)
-            {
-                assertThat(err, isEmptyOrNullString());
-                assertThat(correlationId, is(correlationId));
-            }
-        }, 1) != 0);
-    }
-
-    private void waitForFail(final ArchiveClient client, final int correlationId)
-    {
-        wait(() -> client.pollResponses(reply, new FailResponseListener()
-        {
-            public void onResponse(final String err, final int correlationId)
-            {
-                assertThat(err, is(notNullValue()));
-                assertThat(correlationId, is(correlationId));
-            }
-        }, 1) != 0);
-    }
-
     private void verifyEmptyDescriptorList(final ArchiveClient client)
     {
         final int requestRecordingsCorrelationId = this.correlationId++;
         client.listRecordings(0, 100, requestRecordingsCorrelationId);
-        waitForFail(client, requestRecordingsCorrelationId);
+        TestUtil.waitForFail(client, reply, requestRecordingsCorrelationId);
     }
 
     private void verifyDescriptorListOngoingArchive(
@@ -327,7 +282,7 @@ public class ArchiveAndReplaySystemTest
         final int requestRecordingsCorrelationId = this.correlationId++;
         client.listRecordings(recordingId, recordingId, requestRecordingsCorrelationId);
         println("Await result");
-        wait(() -> client.pollResponses(reply, new FailResponseListener()
+        waitFor(() -> client.pollResponses(reply, new FailResponseListener()
         {
             public void onRecordingDescriptor(
                 final int rId,
@@ -384,7 +339,7 @@ public class ArchiveAndReplaySystemTest
         final File metaFile = new File(archiveDir, recordingMetaFileName(recordingId));
         assertTrue(metaFile.exists());
 
-        if (DEBUG)
+        if (TestUtil.DEBUG)
         {
             ArchiveUtil.printMetaFile(metaFile);
         }
@@ -420,7 +375,7 @@ public class ArchiveAndReplaySystemTest
             final int dataLength = fragmentLength[i] - DataHeaderFlyweight.HEADER_LENGTH;
             buffer.putInt(0, i);
             printf("Sending: index=%d length=%d %n", i, dataLength);
-            offer(publication, buffer, dataLength);
+            TestUtil.offer(publication, buffer, dataLength);
         }
 
         final int lastTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(
@@ -440,37 +395,22 @@ public class ArchiveAndReplaySystemTest
         final Publication publication,
         final int messageCount)
     {
-        // request replay
-        wait(() -> client.replay(
-            recordingId,
-            publication.initialTermId(),
-            0,
-            totalRecordingLength,
-            REPLAY_URI,
-            101,
-            correlationId++
-        ));
-
-        try (Subscription replay = aeronClient.addSubscription(REPLAY_URI, 101))
+        try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, 101))
         {
-            awaitSubscriptionIsConnected(replay);
-            // wait for OK message from control
-            poll(
-                reply,
-                (buffer, offset, length, header) ->
-                {
-                    final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
-                    assertThat(hDecoder.templateId(), is(ControlResponseDecoder.TEMPLATE_ID));
+            final int replayCorrelationId = correlationId++;
+            // request replay
+            waitFor(() -> client.replay(
+                recordingId,
+                publication.initialTermId(),
+                0,
+                totalRecordingLength,
+                REPLAY_URI,
+                101,
+                correlationId++
+            ));
+            waitForOk(client, reply, replayCorrelationId);
 
-                    final ControlResponseDecoder mDecoder = new ControlResponseDecoder().wrap(
-                        buffer,
-                        offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                        hDecoder.blockLength(),
-                        hDecoder.version());
-
-                    assertThat(mDecoder.err(), is(""));
-                }
-            );
+            TestUtil.awaitSubscriptionIsConnected(replay);
 
             nextFragmentOffset = 0;
             fragmentCount = 0;
@@ -635,7 +575,7 @@ public class ArchiveAndReplaySystemTest
                     // each message is fragmentLength[fragmentCount]
                     while (lastTermId == -1 || recorded < totalRecordingLength)
                     {
-                        wait(() -> (client.pollEvents(new ArchiveClient.RecordingEventsListener()
+                        waitFor(() -> (client.pollEvents(new RecordingEventsListener()
                         {
                             public void onProgress(
                                 final int recordingId0,
@@ -645,9 +585,12 @@ public class ArchiveAndReplaySystemTest
                                 final int termOffset)
                             {
                                 assertThat(recordingId0, is(recordingId));
-                                recorded = termBufferLength *
-                                    (termId - initialTermId) +
-                                    (termOffset - initialTermOffset);
+                                recorded = recordingLength(
+                                    termBufferLength,
+                                    initialTermId,
+                                    initialTermOffset,
+                                    termId,
+                                    termOffset);
                                 printf("a=%d total=%d %n", recorded, totalRecordingLength);
                             }
 
@@ -670,7 +613,7 @@ public class ArchiveAndReplaySystemTest
 
                         final long end = System.currentTimeMillis();
                         final long deltaTime = end - start;
-                        if (deltaTime > TIMEOUT)
+                        if (deltaTime > TestUtil.TIMEOUT)
                         {
                             start = end;
                             final long deltaBytes = remaining - startBytes;
@@ -698,55 +641,4 @@ public class ArchiveAndReplaySystemTest
         t.start();
     }
 
-    private void poll(final Subscription subscription, final FragmentHandler handler)
-    {
-        wait(() -> subscription.poll(handler, 1) > 0);
-    }
-
-    private void offer(
-        final Publication publication,
-        final UnsafeBuffer buffer,
-        final int length)
-    {
-        wait(() -> publication.offer(buffer, 0, length) > 0);
-    }
-
-    private void wait(final BooleanSupplier forIt)
-    {
-        final long limit = System.currentTimeMillis() + TIMEOUT;
-        while (!forIt.getAsBoolean())
-        {
-            LockSupport.parkNanos(SLEEP_TIME_NS);
-            if (limit < System.currentTimeMillis())
-            {
-                fail();
-            }
-        }
-    }
-
-    private void awaitSubscriptionIsConnected(final Subscription subscription)
-    {
-        wait(() -> subscription.imageCount() > 0);
-    }
-
-    private void awaitPublicationIsConnected(final Publication publication)
-    {
-        wait(publication::isConnected);
-    }
-
-    private void printf(final String s, final Object... args)
-    {
-        if (DEBUG)
-        {
-            System.out.printf(s, args);
-        }
-    }
-
-    private void println(final String s)
-    {
-        if (DEBUG)
-        {
-            System.out.println(s);
-        }
-    }
 }

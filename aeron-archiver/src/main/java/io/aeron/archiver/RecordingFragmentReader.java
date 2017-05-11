@@ -49,6 +49,7 @@ class RecordingFragmentReader implements AutoCloseable
     private int recordingTermStartOffset;
     private int fragmentOffset;
     private long transmitted = 0;
+    private long transmittedFragments = 0;
     private final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
 
     RecordingFragmentReader(final int recordingId, final File archiveDir) throws IOException
@@ -156,6 +157,7 @@ class RecordingFragmentReader implements AutoCloseable
             }
             // only count data fragments
             polled++;
+            transmittedFragments++;
         }
 
         if (!isDone() && fragmentOffset == termBufferLength)
@@ -218,6 +220,7 @@ class RecordingFragmentReader implements AutoCloseable
 
     public void close()
     {
+        System.err.printf("Transmitted %d bytes, in %d fragments %n", transmitted, transmittedFragments);
         closeRecordingFile();
     }
 

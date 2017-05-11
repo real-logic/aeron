@@ -26,7 +26,6 @@
     <sbe:message name="RecordingStarted"
                  id="101"
                  description="Describes a new image recording, sent both as notification and reply">
-        <field name="correlationId"       id="1" type="int32"/>
         <field name="recordingId"         id="2" type="int32"/>
         <field name="sessionId"           id="3" type="int32"/>
         <field name="streamId"            id="4" type="int32"/>
@@ -47,7 +46,6 @@
     <sbe:message name="RecordingStopped"
                  id="103"
                  description="Recording termination notification">
-        <field name="correlationId"       id="1" type="int32"/>
         <field name="recordingId"         id="2" type="int32"/>
         <field name="lastTermId"          id="3" type="int32"/>
         <field name="lastTermOffset"      id="4" type="int32"/>

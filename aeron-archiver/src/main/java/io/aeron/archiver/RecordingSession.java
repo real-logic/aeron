@@ -32,7 +32,7 @@ class RecordingSession implements ArchiveConductor.Session
     }
 
     private int recordingId = Catalog.NULL_INDEX;
-    private final ClientProxy proxy;
+    private final NotificationsProxy notificationsProxy;
     private final Image image;
     private final Catalog index;
     private final ImageRecorder.Builder builder;
@@ -42,12 +42,12 @@ class RecordingSession implements ArchiveConductor.Session
     private State state = State.INIT;
 
     RecordingSession(
-        final ClientProxy proxy,
+        final NotificationsProxy notificationsProxy,
         final Catalog index,
         final Image image,
         final ImageRecorder.Builder builder)
     {
-        this.proxy = proxy;
+        this.notificationsProxy = notificationsProxy;
         this.image = image;
         this.index = index;
         this.builder = builder;
@@ -104,7 +104,7 @@ class RecordingSession implements ArchiveConductor.Session
                 this,
                 builder.recordingFileLength());
 
-            proxy.recordingStarted(
+            notificationsProxy.recordingStarted(
                 recordingId,
                 source,
                 sessionId,
@@ -154,7 +154,7 @@ class RecordingSession implements ArchiveConductor.Session
         finally
         {
             CloseHelper.quietClose(recorder);
-            proxy.recordingStopped(recordingId);
+            notificationsProxy.recordingStopped(recordingId);
             this.state = State.CLOSED;
         }
 
@@ -169,7 +169,7 @@ class RecordingSession implements ArchiveConductor.Session
             workCount = image.rawPoll(recorder, recorder.segmentFileLength());
             if (workCount != 0)
             {
-                proxy.recordingProgress(
+                notificationsProxy.recordingProgress(
                     recorder.recordingId(),
                     recorder.initialTermId(),
                     recorder.initialTermOffset(),

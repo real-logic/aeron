@@ -13,12 +13,15 @@
  * limitations under the License.
  *
  */
-package io.aeron.archiver;
+
+package io.aeron.archiver.workloads;
 
 import io.aeron.*;
+import io.aeron.archiver.*;
+import io.aeron.archiver.client.ArchiveClient;
 import io.aeron.archiver.codecs.*;
 import io.aeron.driver.*;
-import io.aeron.logbuffer.*;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -31,21 +34,22 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.LockSupport;
 
+import static io.aeron.archiver.TestUtil.*;
+import static io.aeron.archiver.workloads.ArchiveReplayLoadTest.REPLY_STREAM_ID;
+import static io.aeron.archiver.workloads.ArchiveReplayLoadTest.REPLY_URI;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
 @Ignore
-public class ArchiverLoadTest
+public class ArchiveRecordingLoadTest
 {
-    private static final int TIMEOUT = 5000;
-    private static final boolean DEBUG = false;
     private static final String PUBLISH_URI = "aeron:ipc?endpoint=127.0.0.1:54325";
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
-    private Aeron aeronClient;
+    private Aeron publishingClient;
     private Archiver archiver;
     private MediaDriver driver;
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
@@ -67,9 +71,11 @@ public class ArchiverLoadTest
         protected void failed(final Throwable t, final Description description)
         {
             System.err.println(
-                "ArchiveAndReplaySystemTest failed with random seed: " + ArchiverLoadTest.this.seed);
+                "ArchiveAndReplaySystemTest failed with random seed: " + ArchiveRecordingLoadTest.this.seed);
         }
     };
+    private Subscription reply;
+    private int correlationId;
 
     @Before
     public void setUp() throws Exception
@@ -88,13 +94,13 @@ public class ArchiverLoadTest
         archiverCtx.archiveDir(archiveDir);
         archiver = Archiver.launch(archiverCtx);
         println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
-        aeronClient = Aeron.connect();
+        publishingClient = Aeron.connect();
     }
 
     @After
     public void closeEverything() throws Exception
     {
-        CloseHelper.quietClose(aeronClient);
+        CloseHelper.quietClose(publishingClient);
         CloseHelper.quietClose(archiver);
         CloseHelper.quietClose(driver);
 
@@ -109,21 +115,29 @@ public class ArchiverLoadTest
     @Test
     public void archive() throws IOException, InterruptedException
     {
-        try (Publication controlPublication = aeronClient.addPublication(
+        try (Publication control = publishingClient.addPublication(
                 archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
-             Subscription recordingEvents = aeronClient.addSubscription(
+            Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
-            awaitPublicationIsConnected(controlPublication, TIMEOUT);
-            awaitSubscriptionIsConnected(recordingEvents, TIMEOUT);
+            final ArchiveClient client = new ArchiveClient(control, recordingEvents);
+
+            TestUtil.awaitPublicationIsConnected(control);
+            TestUtil.awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 
-            requestRecording(controlPublication, PUBLISH_URI, PUBLISH_STREAM_ID);
+            reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
+            client.connect(REPLY_URI, REPLY_STREAM_ID);
+            TestUtil.awaitSubscriptionIsConnected(reply);
+            println("Client connected");
 
-            println("Archive requested");
+            final int startRecordingCorrelationId = this.correlationId++;
+            waitFor(() -> client.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
+            println("Recording requested");
+            waitForOk(client, reply, startRecordingCorrelationId);
 
-            final Publication publication = aeronClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
-            awaitPublicationIsConnected(publication, TIMEOUT);
+            final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
+            awaitPublicationIsConnected(publication);
 
             awaitStartedRecordingNotification(recordingEvents, publication);
 
@@ -186,8 +200,8 @@ public class ArchiverLoadTest
                 source = decoder.source();
                 assertThat(decoder.channel(), is(PUBLISH_URI));
                 println("Recording started. source: " + source);
-            },
-            TIMEOUT);
+            }
+        );
     }
 
     private void publishDataToBeRecorded(final Publication publication, final int messageCount)
@@ -197,7 +211,7 @@ public class ArchiverLoadTest
         // clear out the buffer we write
         for (int i = 0; i < 1024; i++)
         {
-            buffer.putByte(i, (byte)'z');
+            buffer.putByte(i, (byte) 'z');
         }
         buffer.putStringAscii(32, "TEST");
         final long initialPosition = publication.position();
@@ -220,7 +234,7 @@ public class ArchiverLoadTest
             lastPosition, positionBitsToShift, publication.initialTermId());
         totalRecordingLength =
             (lastTermIdFromPosition - startTermIdFromPosition) * publication.termBufferLength() +
-            (lastTermOffset - startTermOffset);
+                (lastTermOffset - startTermOffset);
 
         assertThat(lastPosition - initialPosition, is(totalRecordingLength));
         lastTermId = lastTermIdFromPosition;
@@ -237,13 +251,12 @@ public class ArchiverLoadTest
                 try
                 {
                     long start = System.currentTimeMillis();
-                    long startBytes = recorded;
                     final long initialRecorded = recorded;
+                    long startBytes = recorded;
                     // each message is fragmentLength[fragmentCount]
-                    while (lastTermId == -1 || recorded < initialRecorded + totalRecordingLength)
+                    while (lastTermId == -1 || (recorded - initialRecorded) < totalRecordingLength)
                     {
-                        poll(
-                            recordingEvents,
+                        if (recordingEvents.poll(
                             (buffer, offset, length, header) ->
                             {
                                 final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
@@ -258,15 +271,21 @@ public class ArchiverLoadTest
                                 assertThat(mDecoder.recordingId(), is(recordingId));
 
                                 println(mDecoder.toString());
-                                recorded = publication.termBufferLength() *
-                                    (mDecoder.termId() - mDecoder.initialTermId()) +
-                                    (mDecoder.termOffset() - mDecoder.initialTermOffset());
-                                System.out.printf("a=%d total=%d %n", recorded, totalRecordingLength);
-                            },
-                            50000);
+                                recorded = ArchiveUtil.recordingLength(publication.termBufferLength(),
+                                    mDecoder.initialTermId(),
+                                    mDecoder.initialTermOffset(),
+                                    mDecoder.termId(),
+                                    mDecoder.termOffset());
+                                System.out.printf("a=%d total=%d %n", (recorded - initialRecorded),
+                                    totalRecordingLength);
+                            }, 1) == 0)
+                        {
+                            LockSupport.parkNanos(1000000);
+                        }
 
                         final long end = System.currentTimeMillis();
                         final long deltaTime = end - start;
+
                         if (deltaTime > 1000)
                         {
                             start = end;
@@ -294,19 +313,6 @@ public class ArchiverLoadTest
 
         t.setDaemon(true);
         t.start();
-    }
-
-    private void poll(final Subscription subscription, final FragmentHandler handler, final long timeout)
-    {
-        final long limit = System.currentTimeMillis() + timeout;
-        while (0 >= subscription.poll(handler, 1))
-        {
-            LockSupport.parkNanos(TIMEOUT);
-            if (limit < System.currentTimeMillis())
-            {
-                fail("Poll has timed out");
-            }
-        }
     }
 
     private long offer(
@@ -360,62 +366,5 @@ public class ArchiverLoadTest
         }
 
         return newPosition;
-    }
-
-    private void awaitSubscriptionIsConnected(final Subscription subscription, final long timeout)
-    {
-        final long limit = System.currentTimeMillis() + timeout;
-        while (subscription.imageCount() == 0)
-        {
-            LockSupport.parkNanos(TIMEOUT);
-            if (limit < System.currentTimeMillis())
-            {
-                fail("awaitSubscriptionIsConnected has timed out");
-            }
-        }
-    }
-
-    private void awaitPublicationIsConnected(final Publication publication, final long timeout)
-    {
-        final long limit = System.currentTimeMillis() + timeout;
-        while (!publication.isConnected())
-        {
-            LockSupport.parkNanos(TIMEOUT);
-            if (limit < System.currentTimeMillis())
-            {
-                fail("awaitPublicationIsConnected has timed out");
-            }
-        }
-    }
-
-    private void printf(final String s, final Object... args)
-    {
-        if (DEBUG)
-        {
-            System.out.printf(s, args);
-        }
-    }
-
-    private void println(final String s)
-    {
-        if (DEBUG)
-        {
-            System.out.println(s);
-        }
-    }
-
-    private void requestRecording(final Publication controlPublication, final String channel, final int streamId)
-    {
-        final StartRecordingRequestEncoder encoder = new StartRecordingRequestEncoder()
-            .wrapAndApplyHeader(buffer, 0, new MessageHeaderEncoder())
-            .channel(channel)
-            .streamId(streamId);
-
-        offer(
-            controlPublication,
-            buffer,
-            0,
-            encoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH,
-            TIMEOUT);
     }
 }

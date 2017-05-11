@@ -16,7 +16,7 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
-import io.aeron.archiver.codecs.*;
+import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
@@ -28,7 +28,7 @@ import java.io.*;
  * The {@link ArchiveConductor} will initiate a session on receiving a ReplayRequest
  * (see {@link io.aeron.archiver.codecs.ReplayRequestDecoder}). The session will:
  * <ul>
- * <li>Validate request parameters and respond with error, or OK message(see {@link ArchiverResponseDecoder})</li>
+ * <li>Validate request parameters and respond with error, or OK message(see {@link ControlResponseDecoder})</li>
  * <li>Stream archived data into the replay {@link Publication}</li>
  * </ul>
  */
@@ -38,7 +38,7 @@ class ReplaySession implements
 {
     private enum State
     {
-        INIT, REPLAY, INACTIVE, CLOSED
+        INIT, REPLAY, INACTIVE, CLOSED, LINGER
     }
 
     // replay boundaries
@@ -51,13 +51,14 @@ class ReplaySession implements
     private final ExclusivePublication control;
 
     private final File archiveDir;
-    private final ClientProxy proxy;
+    private final ClientSessionProxy proxy;
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
 
     private State state = State.INIT;
     private RecordingFragmentReader cursor;
     private final int replaySessionId;
     private final int correlationId;
+    private int lingerCounter;
 
     ReplaySession(
         final int recordingId,
@@ -67,7 +68,7 @@ class ReplaySession implements
         final ExclusivePublication replay,
         final ExclusivePublication control,
         final File archiveDir,
-        final ClientProxy proxy,
+        final ClientSessionProxy proxy,
         final int replaySessionId,
         final int correlationId)
     {
@@ -98,12 +99,27 @@ class ReplaySession implements
             workDone += init();
         }
 
+        else if (state == State.LINGER)
+        {
+            workDone += linger();
+        }
+
         if (state == State.INACTIVE)
         {
             workDone += close();
         }
 
         return workDone;
+    }
+
+    private int linger()
+    {
+        lingerCounter++;
+        if (lingerCounter == 10000)
+        {
+            this.state = State.INACTIVE;
+        }
+        return 0;
     }
 
     public void abort()

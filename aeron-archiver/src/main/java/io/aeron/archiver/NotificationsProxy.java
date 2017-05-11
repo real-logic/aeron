@@ -15,57 +15,27 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.*;
+import io.aeron.Publication;
 import io.aeron.archiver.codecs.*;
 import org.agrona.*;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.IdleStrategy;
 
-class ClientProxy
+class NotificationsProxy
 {
     private final IdleStrategy idleStrategy;
     private final Publication recordingNotifications;
     private final MutableDirectBuffer outboundBuffer = new ExpandableArrayBuffer();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    private final ControlResponseEncoder responseEncoder = new ControlResponseEncoder();
     private final RecordingStartedEncoder recordingStartedEncoder = new RecordingStartedEncoder();
     private final RecordingProgressEncoder recordingProgressEncoder = new RecordingProgressEncoder();
     private final RecordingStoppedEncoder recordingStoppedEncoder = new RecordingStoppedEncoder();
 
-    ClientProxy(final IdleStrategy idleStrategy, final Publication recordingNotifications)
+    NotificationsProxy(final IdleStrategy idleStrategy, final Publication recordingNotifications)
     {
         this.idleStrategy = idleStrategy;
         this.recordingNotifications = recordingNotifications;
     }
 
-    void sendResponse(final ExclusivePublication reply, final String err, final int correlationId)
-    {
-        responseEncoder
-            .wrapAndApplyHeader(outboundBuffer, 0, messageHeaderEncoder)
-            .correlationId(correlationId);
-
-        if (!Strings.isEmpty(err))
-        {
-            responseEncoder.err(err);
-        }
-
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + responseEncoder.encodedLength();
-        while (true)
-        {
-            final long result = reply.offer(outboundBuffer, 0, length);
-            if (result > 0)
-            {
-                idleStrategy.reset();
-                break;
-            }
-
-            if (result == Publication.NOT_CONNECTED || result == Publication.CLOSED)
-            {
-                throw new IllegalStateException("Response channel is down: " + reply);
-            }
-
-            idleStrategy.idle();
-        }
-    }
 
     int recordingStarted(
         final int recordingId,

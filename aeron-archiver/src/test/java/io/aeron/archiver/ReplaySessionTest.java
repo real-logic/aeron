@@ -40,13 +40,13 @@ public class ReplaySessionTest
     private File archiveDir;
 
     private int messageIndex = 0;
-    private ClientProxy proxy;
+    private ClientSessionProxy proxy;
 
     @Before
     public void setup() throws Exception
     {
         archiveDir = makeTempDir();
-        proxy = Mockito.mock(ClientProxy.class);
+        proxy = Mockito.mock(ClientSessionProxy.class);
         final EpochClock epochClock = mock(EpochClock.class);
         try (ImageRecorder recorder = new ImageRecorder.Builder()
             .archiveDir(archiveDir)

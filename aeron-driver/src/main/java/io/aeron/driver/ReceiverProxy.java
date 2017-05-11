@@ -21,7 +21,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 
 import java.util.Queue;
 
-import static io.aeron.driver.ThreadingMode.NONE;
+import static io.aeron.driver.ThreadingMode.INVOKER;
 import static io.aeron.driver.ThreadingMode.SHARED;
 
 /**
@@ -127,7 +127,7 @@ public class ReceiverProxy
 
     private boolean notConcurrent()
     {
-        return threadingMode == SHARED || threadingMode == NONE;
+        return threadingMode == SHARED || threadingMode == INVOKER;
     }
 
     private void offer(final ReceiverCmd cmd)

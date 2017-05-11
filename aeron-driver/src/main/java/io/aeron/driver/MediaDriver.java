@@ -182,7 +182,7 @@ public final class MediaDriver implements AutoCloseable
 
         switch (ctx.threadingMode)
         {
-            case NONE:
+            case INVOKER:
                 this.sharedInvoker = new AgentInvoker(
                     errorHandler, errorCounter, new CompositeAgent(sender, receiver, conductor));
                 this.sharedRunner = null;

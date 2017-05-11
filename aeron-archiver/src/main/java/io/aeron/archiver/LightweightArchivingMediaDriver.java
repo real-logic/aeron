@@ -37,7 +37,7 @@ public class LightweightArchivingMediaDriver
         loadPropertiesFiles(args);
 
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .threadingMode(ThreadingMode.NONE);
+            .threadingMode(ThreadingMode.INVOKER);
         final MediaDriver mediaDriver = MediaDriver.launch(driverCtx);
 
         final Archiver.Context archiverCtx = new Archiver.Context()

@@ -94,12 +94,10 @@ class ReplaySession implements
         {
             workDone += replay();
         }
-
         else if (state == State.INIT)
         {
             workDone += init();
         }
-
         else if (state == State.LINGER)
         {
             workDone += linger();

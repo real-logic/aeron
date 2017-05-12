@@ -96,8 +96,13 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         final Int2ObjectHashMap<PublicationImage> imageBySessionIdMap = sessionsByStreamIdMap.get(streamId);
         if (null != imageBySessionIdMap)
         {
-            imageBySessionIdMap.remove(sessionId);
-            ignoredSessionsMap.remove(sessionId, streamId);
+            final PublicationImage mappedImage = imageBySessionIdMap.get(sessionId);
+
+            if (null != mappedImage && mappedImage.correlationId() == image.correlationId())
+            {
+                imageBySessionIdMap.remove(sessionId);
+                ignoredSessionsMap.remove(sessionId, streamId);
+            }
         }
 
         image.ifActiveGoInactive();

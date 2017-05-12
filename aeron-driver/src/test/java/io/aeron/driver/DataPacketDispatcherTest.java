@@ -30,6 +30,8 @@ import static org.mockito.Mockito.*;
 
 public class DataPacketDispatcherTest
 {
+    private static final long CORRELATION_ID_1 = 101;
+    private static final long CORRELATION_ID_2 = 102;
     private static final int STREAM_ID = 10;
     private static final int INITIAL_TERM_ID = 3;
     private static final int ACTIVE_TERM_ID = 3;
@@ -206,5 +208,31 @@ public class DataPacketDispatcherTest
 
         verify(mockImage).status(PublicationImage.Status.ACTIVE);
         verify(mockImage).insertPacket(ACTIVE_TERM_ID, TERM_OFFSET, mockBuffer, LENGTH);
+    }
+
+    @Test
+    public void shouldNotRemoveNewPublicationImageFromOldRemovePublicationImageAfterRemoveSubscription()
+    {
+        final PublicationImage mockImage1 = mock(PublicationImage.class);
+        final PublicationImage mockImage2 = mock(PublicationImage.class);
+
+        when(mockImage1.sessionId()).thenReturn(SESSION_ID);
+        when(mockImage1.streamId()).thenReturn(STREAM_ID);
+        when(mockImage1.correlationId()).thenReturn(CORRELATION_ID_1);
+
+        when(mockImage2.sessionId()).thenReturn(SESSION_ID);
+        when(mockImage2.streamId()).thenReturn(STREAM_ID);
+        when(mockImage2.correlationId()).thenReturn(CORRELATION_ID_2);
+
+        dispatcher.addSubscription(STREAM_ID);
+        dispatcher.addPublicationImage(mockImage1);
+        dispatcher.removeSubscription(STREAM_ID);
+        dispatcher.addSubscription(STREAM_ID);
+        dispatcher.addPublicationImage(mockImage2);
+        dispatcher.removePublicationImage(mockImage1);
+        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
+
+        verify(mockImage1, never()).insertPacket(anyInt(), anyInt(), any(), anyInt());
+        verify(mockImage2).insertPacket(ACTIVE_TERM_ID, TERM_OFFSET, mockBuffer, LENGTH);
     }
 }

@@ -19,7 +19,6 @@ import io.aeron.*;
 import io.aeron.archiver.codecs.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
-import uk.co.real_logic.sbe.ir.generated.MessageHeaderEncoder;
 
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
@@ -29,34 +28,21 @@ class ClientSessionProxy
     private final IdleStrategy idleStrategy;
     private final UnsafeBuffer outboundBuffer;
 
-    private final MessageHeaderEncoder outboundHeaderEncoder = new MessageHeaderEncoder();
+    private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ControlResponseEncoder responseEncoder = new ControlResponseEncoder();
-    private final RecordingStartedEncoder recordingStartedEncoder = new RecordingStartedEncoder();
-    private final RecordingStoppedEncoder recordingStoppedEncoder = new RecordingStoppedEncoder();
 
     ClientSessionProxy(final IdleStrategy idleStrategy)
     {
         this.idleStrategy = idleStrategy;
         //TODO: How will the buffer length be verified?
         outboundBuffer =  new UnsafeBuffer(BufferUtil.allocateDirectAligned(4 * 1024, CACHE_LINE_LENGTH));
-
-        outboundHeaderEncoder.wrap(outboundBuffer, 0);
-        responseEncoder.wrap(outboundBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
-        recordingStartedEncoder.wrap(outboundBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
-        recordingStoppedEncoder.wrap(outboundBuffer, MessageHeaderEncoder.ENCODED_LENGTH);
     }
 
     void sendResponse(final ExclusivePublication reply, final String err, final long correlationId)
     {
-        outboundHeaderEncoder
-            .blockLength(ControlResponseEncoder.BLOCK_LENGTH)
-            .templateId(ControlResponseEncoder.TEMPLATE_ID)
-            .schemaId(ControlResponseEncoder.SCHEMA_ID)
-            .version(ControlResponseEncoder.SCHEMA_VERSION);
+        responseEncoder.wrapAndApplyHeader(outboundBuffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId);
 
-        // reset encoder limit is required for variable length messages
-        responseEncoder.limit(MessageHeaderEncoder.ENCODED_LENGTH + ControlResponseEncoder.BLOCK_LENGTH);
-        responseEncoder.correlationId(correlationId);
         if (!Strings.isEmpty(err))
         {
             responseEncoder.err(err);

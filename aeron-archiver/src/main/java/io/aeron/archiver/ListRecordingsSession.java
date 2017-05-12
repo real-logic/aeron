@@ -56,9 +56,9 @@ class ListRecordingsSession implements ArchiveConductor.Session
     private enum State
     {
         INIT,
-        SENDING,
-        CLOSE,
-        DONE
+        ACTIVE,
+        INACTIVE,
+        CLOSED
     }
 
     private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, CACHE_LINE_LENGTH);
@@ -94,12 +94,12 @@ class ListRecordingsSession implements ArchiveConductor.Session
 
     public void abort()
     {
-        state = State.CLOSE;
+        state = State.INACTIVE;
     }
 
     public boolean isDone()
     {
-        return state == State.DONE;
+        return state == State.CLOSED;
     }
 
     public void remove(final ArchiveConductor conductor)
@@ -116,14 +116,13 @@ class ListRecordingsSession implements ArchiveConductor.Session
                 workDone += init();
                 break;
 
-            case SENDING:
+            case ACTIVE:
                 workDone += sendDescriptors();
                 break;
 
-            case CLOSE:
+            case INACTIVE:
                 workDone += close();
                 break;
-
         }
 
         return workDone;
@@ -131,13 +130,13 @@ class ListRecordingsSession implements ArchiveConductor.Session
 
     private int close()
     {
-        state = State.DONE;
+        state = State.CLOSED;
         return 1;
     }
 
     private int sendDescriptors()
     {
-        // TODO: What the magic number 4?
+        // TODO: What is the magic number 4?
         final int limit = Math.min(recordingId + 4, toId);
         for (; recordingId <= limit; recordingId++)
         {
@@ -162,7 +161,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
                             buffer.putInt(offset + 12, index.maxRecordingId());
                             buffer.putLong(offset + 16, correlationId);
                             bufferClaim.commit();
-                            state = State.CLOSE;
+                            state = State.INACTIVE;
                         }
 
                         return 0;
@@ -170,7 +169,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
                 }
                 catch (final IOException ex)
                 {
-                    state = State.CLOSE;
+                    state = State.INACTIVE;
                     LangUtil.rethrowUnchecked(ex);
                 }
             }
@@ -189,7 +188,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
 
         if (recordingId > toId)
         {
-            state = State.CLOSE;
+            state = State.INACTIVE;
         }
 
         return 1;
@@ -200,16 +199,16 @@ class ListRecordingsSession implements ArchiveConductor.Session
         if (fromId > toId)
         {
             proxy.sendResponse(reply, "Requested range is reversed (to < from)", correlationId);
-            state = State.CLOSE;
+            state = State.INACTIVE;
         }
         else if (toId > index.maxRecordingId())
         {
             proxy.sendResponse(reply, "Requested range exceeds available range (to > max)", correlationId);
-            state = State.CLOSE;
+            state = State.INACTIVE;
         }
         else
         {
-            state = State.SENDING;
+            state = State.ACTIVE;
         }
 
         return 1;

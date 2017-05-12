@@ -72,9 +72,9 @@ public class ArchiveClient
     {
         startRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-            .channel(channel)
+            .correlationId(correlationId)
             .streamId(streamId)
-            .correlationId(correlationId);
+            .channel(channel);
 
         return offer(startRecordingRequestEncoder.encodedLength());
     }
@@ -86,9 +86,9 @@ public class ArchiveClient
     {
         stopRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-            .channel(channel)
+            .correlationId(correlationId)
             .streamId(streamId)
-            .correlationId(correlationId);
+            .channel(channel);
 
         return offer(stopRecordingRequestEncoder.encodedLength());
     }
@@ -104,13 +104,13 @@ public class ArchiveClient
     {
         replayRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId)
             .recordingId(recordingId)
             .termId(termId)
             .termOffset(termOffset)
             .length(length)
             .replayStreamId(replayStreamId)
-            .replayChannel(replayChannel)
-            .correlationId(correlationId);
+            .replayChannel(replayChannel);
 
         return offer(replayRequestEncoder.encodedLength());
     }
@@ -119,8 +119,8 @@ public class ArchiveClient
     {
         abortReplayRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-            .replayId(replayId)
-            .correlationId(correlationId);
+            .correlationId(correlationId)
+            .replayId(replayId);
 
         return offer(abortReplayRequestEncoder.encodedLength());
     }
@@ -132,9 +132,9 @@ public class ArchiveClient
     {
         listRecordingsRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId)
             .fromId(fromId)
-            .toId(toId)
-            .correlationId(correlationId);
+            .toId(toId);
 
         return offer(listRecordingsRequestEncoder.encodedLength());
     }

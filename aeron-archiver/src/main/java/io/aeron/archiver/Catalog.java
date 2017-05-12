@@ -35,11 +35,12 @@ import static java.nio.file.StandardOpenOption.*;
  */
 class Catalog implements AutoCloseable
 {
-    public static final String INDEX_FILE_NAME = "archive.cat";
+    static final String INDEX_FILE_NAME = "archive.cat";
     static final int RECORD_LENGTH = 4096;
     static final int CATALOG_FRAME_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
-    private static final int PAGE_SIZE = 4096;
     static final int NULL_INDEX = -1;
+
+    private static final int PAGE_SIZE = 4096;
 
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
     private final Int2ObjectHashMap<RecordingSession> recordSessionByIdMap = new Int2ObjectHashMap<>();

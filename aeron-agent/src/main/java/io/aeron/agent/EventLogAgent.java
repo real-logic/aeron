@@ -117,13 +117,16 @@ public class EventLogAgent
             .type(nameEndsWith("DriverConductor"))
             .transform((builder, typeDescription, classLoader, javaModule) ->
                 builder
-                    .visit(to(CmdInterceptor.class).on(named("onClientCommand")))
                     .visit(to(CleanupInterceptor.DriverConductorInterceptor.CleanupImage.class)
                         .on(named("cleanupImage")))
                     .visit(to(CleanupInterceptor.DriverConductorInterceptor.CleanupPublication.class)
                         .on(named("cleanupPublication")))
                     .visit(to(CleanupInterceptor.DriverConductorInterceptor.CleanupSubscriptionLink.class)
                         .on(named("cleanupSubscriptionLink"))))
+            .type(nameEndsWith("DriverAdapter"))
+            .transform((builder, typeDescription, classLoader, javaModule) ->
+                builder
+                    .visit(to(CmdInterceptor.class).on(named("onMessage"))))
             .type(nameEndsWith("ClientProxy"))
             .transform((builder, typeDescription, classLoader, javaModule) ->
                 builder.visit(to(CmdInterceptor.class).on(named("transmit"))))

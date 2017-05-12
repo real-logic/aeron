@@ -87,7 +87,7 @@ public class IpcPublicationTest
         driverProxy.addPublication(CommonContext.IPC_CHANNEL, STREAM_ID);
         driverConductor.doWork();
 
-        ipcPublication = driverConductor.getIpcSharedPublication(STREAM_ID);
+        ipcPublication = driverConductor.getSharedIpcPublication(STREAM_ID);
 
         publisherLimit = new UnsafeBufferPosition(counterBuffer, ipcPublication.publisherLimitId());
     }

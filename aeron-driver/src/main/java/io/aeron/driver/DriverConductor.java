@@ -262,9 +262,9 @@ public class DriverConductor implements Agent
         return receiveChannelEndpointByChannelMap.get(channel.canonicalForm());
     }
 
-    IpcPublication getIpcSharedPublication(final long streamId)
+    IpcPublication getSharedIpcPublication(final long streamId)
     {
-        return findIpcSharedPublication(ipcPublications, streamId);
+        return findSharedIpcPublication(ipcPublications, streamId);
     }
 
     IpcPublication getIpcPublication(final long registrationId)
@@ -1017,7 +1017,7 @@ public class DriverConductor implements Agent
 
         if (!isExclusive)
         {
-            publication = findIpcSharedPublication(ipcPublications, streamId);
+            publication = findSharedIpcPublication(ipcPublications, streamId);
         }
 
         if (null == publication)
@@ -1101,7 +1101,7 @@ public class DriverConductor implements Agent
         return subscriptionLink;
     }
 
-    private static IpcPublication findIpcSharedPublication(
+    private static IpcPublication findSharedIpcPublication(
         final ArrayList<IpcPublication> ipcPublications, final long streamId)
     {
         IpcPublication ipcPublication = null;

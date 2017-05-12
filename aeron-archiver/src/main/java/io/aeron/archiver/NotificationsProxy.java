@@ -24,7 +24,7 @@ class NotificationsProxy
 {
     private final IdleStrategy idleStrategy;
     private final Publication recordingNotifications;
-    private final MutableDirectBuffer outboundBuffer = new ExpandableArrayBuffer();
+    private final ExpandableArrayBuffer outboundBuffer = new ExpandableArrayBuffer();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final RecordingStartedEncoder recordingStartedEncoder = new RecordingStartedEncoder();
     private final RecordingProgressEncoder recordingProgressEncoder = new RecordingProgressEncoder();

@@ -20,13 +20,11 @@ import io.aeron.archiver.codecs.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
-
 class ClientSessionProxy
 {
     private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
     private final IdleStrategy idleStrategy;
-    private final UnsafeBuffer outboundBuffer;
+    private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ControlResponseEncoder responseEncoder = new ControlResponseEncoder();
@@ -34,13 +32,12 @@ class ClientSessionProxy
     ClientSessionProxy(final IdleStrategy idleStrategy)
     {
         this.idleStrategy = idleStrategy;
-        //TODO: How will the buffer length be verified?
-        outboundBuffer =  new UnsafeBuffer(BufferUtil.allocateDirectAligned(4 * 1024, CACHE_LINE_LENGTH));
     }
 
     void sendResponse(final ExclusivePublication reply, final String err, final long correlationId)
     {
-        responseEncoder.wrapAndApplyHeader(outboundBuffer, 0, messageHeaderEncoder)
+        responseEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId);
 
         if (!Strings.isEmpty(err))
@@ -51,7 +48,7 @@ class ClientSessionProxy
         final int length = HEADER_LENGTH + responseEncoder.encodedLength();
         while (true)
         {
-            final long result = reply.offer(outboundBuffer, 0, length);
+            final long result = reply.offer(buffer, 0, length);
             if (result > 0)
             {
                 idleStrategy.reset();

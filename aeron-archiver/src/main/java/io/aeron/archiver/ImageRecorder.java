@@ -169,8 +169,8 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
                     "therefore the number of terms in a file is also a power of 2");
         }
 
-        final String archiveMetaFileName = ArchiveUtil.recordingMetaFileName(recordingId);
-        final File file = new File(archiveDir, archiveMetaFileName);
+        final String recordingMetaFileName = ArchiveUtil.recordingMetaFileName(recordingId);
+        final File file = new File(archiveDir, recordingMetaFileName);
         try
         {
             metadataFileChannel = FileChannel.open(file.toPath(), CREATE_NEW, READ, WRITE);
@@ -260,10 +260,10 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
             metaDataEncoder.initialTermId(termId);
             initialTermId = termId;
         }
-        final int archiveOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
+        final int recordingOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
         try
         {
-            prepareRecording(termOffset, termId, archiveOffset, blockLength);
+            prepareRecording(termOffset, termId, recordingOffset, blockLength);
 
             fileChannel.transferTo(fileOffset, blockLength, recordingFileChannel);
             if (forceWrites)
@@ -271,7 +271,7 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
                 recordingFileChannel.force(false);
             }
 
-            writePrologue(termOffset, blockLength, termId, archiveOffset);
+            writePrologue(termOffset, blockLength, termId, recordingOffset);
         }
         catch (final Exception ex)
         {
@@ -293,16 +293,16 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
             initialTermId = termId;
         }
 
-        final int archiveOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
+        final int recordingOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
         try
         {
-            prepareRecording(termOffset, termId, archiveOffset, header.frameLength());
+            prepareRecording(termOffset, termId, recordingOffset, header.frameLength());
 
             final ByteBuffer src = buffer.byteBuffer().duplicate();
             src.position(termOffset).limit(termOffset + frameLength);
             recordingFileChannel.write(src);
 
-            writePrologue(termOffset, frameLength, termId, archiveOffset);
+            writePrologue(termOffset, frameLength, termId, recordingOffset);
         }
         catch (final Exception ex)
         {

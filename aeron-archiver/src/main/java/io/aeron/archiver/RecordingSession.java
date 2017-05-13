@@ -34,7 +34,7 @@ class RecordingSession implements ArchiveConductor.Session
     private int recordingId = Catalog.NULL_INDEX;
     private final NotificationsProxy notificationsProxy;
     private final Image image;
-    private final Catalog index;
+    private final Catalog catalog;
     private final ImageRecorder.Builder builder;
 
     private ImageRecorder recorder;
@@ -43,13 +43,13 @@ class RecordingSession implements ArchiveConductor.Session
 
     RecordingSession(
         final NotificationsProxy notificationsProxy,
-        final Catalog index,
+        final Catalog catalog,
         final Image image,
         final ImageRecorder.Builder builder)
     {
         this.notificationsProxy = notificationsProxy;
         this.image = image;
-        this.index = index;
+        this.catalog = catalog;
         this.builder = builder;
     }
 
@@ -94,7 +94,7 @@ class RecordingSession implements ArchiveConductor.Session
         ImageRecorder recorder = null;
         try
         {
-            recordingId = index.addNewRecording(
+            recordingId = catalog.addNewRecording(
                 source,
                 sessionId,
                 channel,
@@ -144,7 +144,7 @@ class RecordingSession implements ArchiveConductor.Session
             if (recorder != null)
             {
                 recorder.stop();
-                index.updateCatalogFromMeta(recordingId, recorder.metaDataBuffer());
+                catalog.updateCatalogFromMeta(recordingId, recorder.metaDataBuffer());
             }
         }
         catch (final IOException ex)
@@ -198,7 +198,7 @@ class RecordingSession implements ArchiveConductor.Session
 
     public void remove(final ArchiveConductor conductor)
     {
-        index.removeRecordingSession(recordingId);
+        catalog.removeRecordingSession(recordingId);
     }
 
     ByteBuffer metaDataBuffer()

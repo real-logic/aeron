@@ -71,7 +71,7 @@ public class ArchiveAndReplaySystemTest
 
     public static class FailResponseListener implements ResponseListener
     {
-        public void onResponse(final String err, final long correlationId)
+        public void onResponse(final String errorMessage, final long correlationId)
         {
             fail();
         }

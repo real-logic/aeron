@@ -53,9 +53,9 @@
 
     <sbe:message name="ControlResponse"
                  id="1"
-                 description="Generic response to a control request. Empty error is an OK response">
+                 description="Generic response to a control request. Empty error message is an OK response">
         <field name="correlationId"       id="1" type="int64"/>
-        <data  name="err"                 id="2" type="varStringEncoding"/>
+        <data  name="errorMessage"        id="2" type="varStringEncoding"/>
     </sbe:message>
 
     <sbe:message name="StartRecordingRequest"

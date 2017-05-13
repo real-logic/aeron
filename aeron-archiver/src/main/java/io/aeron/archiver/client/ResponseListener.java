@@ -18,7 +18,7 @@ package io.aeron.archiver.client;
 public interface ResponseListener
 {
     void onResponse(
-        String err,
+        String errorMessage,
         long correlationId);
 
     void onReplayStarted(

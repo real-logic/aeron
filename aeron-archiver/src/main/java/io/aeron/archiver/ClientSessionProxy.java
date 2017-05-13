@@ -34,15 +34,15 @@ class ClientSessionProxy
         this.idleStrategy = idleStrategy;
     }
 
-    void sendResponse(final ExclusivePublication reply, final String err, final long correlationId)
+    void sendResponse(final ExclusivePublication reply, final String errorMessage, final long correlationId)
     {
         responseEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId);
 
-        if (!Strings.isEmpty(err))
+        if (!Strings.isEmpty(errorMessage))
         {
-            responseEncoder.err(err);
+            responseEncoder.errorMessage(errorMessage);
         }
 
         final int length = HEADER_LENGTH + responseEncoder.encodedLength();

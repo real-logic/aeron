@@ -67,9 +67,9 @@ public class TestUtil
     {
         waitFor(() -> client.pollResponses(reply, new ArchiveAndReplaySystemTest.FailResponseListener()
         {
-            public void onResponse(final String err, final long correlationId)
+            public void onResponse(final String errorMessage, final long correlationId)
             {
-                assertThat(err, isEmptyOrNullString());
+                assertThat(errorMessage, isEmptyOrNullString());
                 assertThat(correlationId, is(correlationId));
             }
         }, 1) != 0);
@@ -79,9 +79,9 @@ public class TestUtil
     {
         waitFor(() -> client.pollResponses(reply, new ArchiveAndReplaySystemTest.FailResponseListener()
         {
-            public void onResponse(final String err, final long correlationId)
+            public void onResponse(final String errorMessage, final long correlationId)
             {
-                assertThat(err, is(notNullValue()));
+                assertThat(errorMessage, is(notNullValue()));
                 assertThat(correlationId, is(correlationId));
             }
         }, 1) != 0);

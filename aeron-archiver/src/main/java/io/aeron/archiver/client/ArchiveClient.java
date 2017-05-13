@@ -206,7 +206,7 @@ public class ArchiveClient
             messageHeaderDecoder.version());
 
         responseListener.onResponse(
-            archiverResponseDecoder.err(),
+            archiverResponseDecoder.errorMessage(),
             archiverResponseDecoder.correlationId());
     }
 

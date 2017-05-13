@@ -261,6 +261,7 @@ class ArchiveConductor implements Agent
         final long length)
     {
         final int newId = replaySessionId++;
+        // TODO: Replay channel not setup with the correct term-length, init-term-id, term-id, term-offset, and mtu
         final ExclusivePublication replayPublication = aeron.addExclusivePublication(replayChannel, replayStreamId);
         final ReplaySession replaySession = new ReplaySession(
             recordingId,

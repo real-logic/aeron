@@ -30,7 +30,7 @@ import java.io.*;
  * <ul>
  * <li>Validate request parameters and respond with error,
  *     or OK message(see {@link io.aeron.archiver.codecs.ControlResponseDecoder})</li>
- * <li>Stream archived data into the replay {@link Publication}</li>
+ * <li>Stream archived data into the replayPublication {@link Publication}</li>
  * </ul>
  */
 class ReplaySession implements
@@ -42,17 +42,16 @@ class ReplaySession implements
         INIT, REPLAY, LINGER, INACTIVE, CLOSED
     }
 
-    // replay boundaries
     private final int recordingId;
     private final int fromTermId;
     private final int fromTermOffset;
     private final long replayLength;
 
-    private final ExclusivePublication replay;
-    private final ExclusivePublication control;
+    private final ExclusivePublication replayPublication;
+    private final ExclusivePublication controlPublication;
 
     private final File archiveDir;
-    private final ClientSessionProxy proxy;
+    private final ClientSessionProxy clientSessionProxy;
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
 
     private State state = State.INIT;
@@ -66,10 +65,10 @@ class ReplaySession implements
         final int fromTermId,
         final int fromTermOffset,
         final long replayLength,
-        final ExclusivePublication replay,
-        final ExclusivePublication control,
+        final ExclusivePublication replayPublication,
+        final ExclusivePublication controlPublication,
         final File archiveDir,
-        final ClientSessionProxy proxy,
+        final ClientSessionProxy clientSessionProxy,
         final int replaySessionId,
         final long correlationId)
     {
@@ -79,10 +78,10 @@ class ReplaySession implements
         this.fromTermOffset = fromTermOffset;
         this.replayLength = replayLength;
 
-        this.replay = replay;
-        this.control = control;
+        this.replayPublication = replayPublication;
+        this.controlPublication = controlPublication;
         this.archiveDir = archiveDir;
-        this.proxy = proxy;
+        this.clientSessionProxy = clientSessionProxy;
         this.replaySessionId = replaySessionId;
         this.correlationId = correlationId;
     }
@@ -118,6 +117,7 @@ class ReplaySession implements
         {
             this.state = State.INACTIVE;
         }
+
         return 0;
     }
 
@@ -138,15 +138,14 @@ class ReplaySession implements
 
     private int init()
     {
-        if (replay.isClosed() || control.isClosed())
+        if (replayPublication.isClosed() || controlPublication.isClosed())
         {
             // TODO: add counter
             this.state = State.INACTIVE;
             return 0;
         }
 
-        // wait until outgoing publications are in place
-        if (!replay.isConnected() || !control.isConnected())
+        if (!replayPublication.isConnected() || !controlPublication.isConnected())
         {
             // TODO: introduce some timeout mechanism here to prevent stale requests linger
             return 0;
@@ -221,8 +220,7 @@ class ReplaySession implements
             return closeOnErr(ex, "Failed to open archive cursor");
         }
 
-        // plumbing is secured, we can kick off the replay
-        proxy.sendResponse(control, null, correlationId);
+        clientSessionProxy.sendResponse(controlPublication, null, correlationId);
         this.state = State.REPLAY;
 
         return 1;
@@ -255,9 +253,9 @@ class ReplaySession implements
     private int closeOnErr(final Throwable e, final String err)
     {
         this.state = State.INACTIVE;
-        if (control.isConnected())
+        if (controlPublication.isConnected())
         {
-            proxy.sendResponse(control, err, correlationId);
+            clientSessionProxy.sendResponse(controlPublication, err, correlationId);
         }
 
         if (e != null)
@@ -289,7 +287,7 @@ class ReplaySession implements
 
     private int close()
     {
-        CloseHelper.close(replay);
+        CloseHelper.close(replayPublication);
         CloseHelper.close(cursor);
         this.state = State.CLOSED;
 
@@ -307,7 +305,7 @@ class ReplaySession implements
             return false;
         }
 
-        final long result = replay.tryClaim(fragmentLength, bufferClaim);
+        final long result = replayPublication.tryClaim(fragmentLength, bufferClaim);
         if (result > 0)
         {
             try
@@ -316,6 +314,7 @@ class ReplaySession implements
                 bufferClaim.flags((byte)header.flags());
                 bufferClaim.reservedValue(header.reservedValue());
                 // TODO: ??? bufferClaim.headerType(header.type()); ???
+                // TODO: Need to handle padding records
 
                 final int offset = bufferClaim.offset();
                 publicationBuffer.putBytes(offset, fragmentBuffer, fragmentOffset, fragmentLength);

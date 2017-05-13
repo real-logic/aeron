@@ -155,8 +155,7 @@ class ReplaySession implements
         final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
         if (!recordingMetaFile.exists())
         {
-            final String err = recordingMetaFile.getAbsolutePath() + " not found";
-            return closeOnErr(null, err);
+            return closeOnError(null, recordingMetaFile.getAbsolutePath() + " not found");
         }
 
         final RecordingDescriptorDecoder metaData;
@@ -166,8 +165,7 @@ class ReplaySession implements
         }
         catch (final IOException ex)
         {
-            final String err = recordingMetaFile.getAbsolutePath() + " : failed to map";
-            return closeOnErr(ex, err);
+            return closeOnError(ex, recordingMetaFile.getAbsolutePath() + " : failed to map");
         }
 
         final int initialTermId = metaData.initialTermId();
@@ -201,9 +199,9 @@ class ReplaySession implements
                 replayEndTermId,
                 replayEndTermOffset))
         {
-            return closeOnErr(null, "Requested replay is out of recorded range [(" +
-                initialTermId + "," + initialTermOffset + "),(" +
-                lastTermId + "," + lastTermOffset + ")]");
+            return closeOnError(null, "Requested replay is out of recorded range [(" +
+                initialTermId + ", " + initialTermOffset + "), (" +
+                lastTermId + ", " + lastTermOffset + ")]");
         }
 
         try
@@ -217,7 +215,7 @@ class ReplaySession implements
         }
         catch (final IOException ex)
         {
-            return closeOnErr(ex, "Failed to open cursor for a recording");
+            return closeOnError(ex, "Failed to open cursor for a recording");
         }
 
         clientSessionProxy.sendResponse(controlPublication, null, correlationId);
@@ -250,12 +248,12 @@ class ReplaySession implements
         }
     }
 
-    private int closeOnErr(final Throwable e, final String err)
+    private int closeOnError(final Throwable e, final String errorMessage)
     {
         this.state = State.INACTIVE;
         if (controlPublication.isConnected())
         {
-            clientSessionProxy.sendResponse(controlPublication, err, correlationId);
+            clientSessionProxy.sendResponse(controlPublication, errorMessage, correlationId);
         }
 
         if (e != null)
@@ -281,7 +279,7 @@ class ReplaySession implements
         }
         catch (final Exception ex)
         {
-            return closeOnErr(ex, "Cursor read failed");
+            return closeOnError(ex, "Cursor read failed");
         }
     }
 
@@ -328,7 +326,7 @@ class ReplaySession implements
         }
         else if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
         {
-            closeOnErr(null, "Reply publication to replay requestor has shutdown mid-replay");
+            closeOnError(null, "Reply publication to replay requestor has shutdown mid-replay");
         }
 
         return false;

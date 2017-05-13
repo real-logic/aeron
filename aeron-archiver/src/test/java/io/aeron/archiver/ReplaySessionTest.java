@@ -48,7 +48,7 @@ public class ReplaySessionTest
         archiveDir = makeTempDir();
         proxy = Mockito.mock(ClientSessionProxy.class);
         final EpochClock epochClock = mock(EpochClock.class);
-        try (ImageRecorder recorder = new ImageRecorder.Builder()
+        try (Recorder recorder = new Recorder.Builder()
             .archiveDir(archiveDir)
             .epochClock(epochClock)
             .recordingId(RECORDING_ID)

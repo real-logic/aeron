@@ -39,7 +39,7 @@ public class TestUtil
 
     public static File makeTempDir() throws IOException
     {
-        final File tempDirForTest = File.createTempFile("archiver.test", "tmp");
+        final File tempDirForTest = File.createTempFile("test.rec", "tmp");
         // we really need a temp dir, not a file... delete and remake!
         Assert.assertTrue(tempDirForTest.delete());
         Assert.assertTrue(tempDirForTest.mkdir());
@@ -100,10 +100,10 @@ public class TestUtil
         waitFor(() -> publication.offer(buffer, 0, length) > 0);
     }
 
-    public static void waitFor(final BooleanSupplier forIt)
+    public static void waitFor(final BooleanSupplier conditionSupplier)
     {
         final long limit = System.currentTimeMillis() + TIMEOUT;
-        while (!forIt.getAsBoolean())
+        while (!conditionSupplier.getAsBoolean())
         {
             LockSupport.parkNanos(SLEEP_TIME_NS);
             if (limit < System.currentTimeMillis())

@@ -178,7 +178,7 @@ public class ArchiveRecordingLoadTest
     private void awaitStartedRecordingNotification(
         final Subscription recordingEvents, final Publication publication)
     {
-        // the archiver has subscribed to the publication, now we wait for the archive start message
+        // the archiver has subscribed to the publication, now we wait for the recording start message
         poll(
             recordingEvents,
             (buffer, offset, length, header) ->

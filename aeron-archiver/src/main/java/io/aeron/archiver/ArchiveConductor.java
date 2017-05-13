@@ -60,7 +60,7 @@ class ArchiveConductor implements Agent
     private final NotificationsProxy notificationsProxy;
     private final ClientSessionProxy clientProxy;
     private volatile boolean isClosed = false;
-    private final ImageRecorder.Builder imageRecorderBuilder = new ImageRecorder.Builder();
+    private final Recorder.Builder imageRecorderBuilder = new Recorder.Builder();
     private int replaySessionId;
 
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
@@ -223,7 +223,7 @@ class ArchiveConductor implements Agent
         final Subscription recordingSubscription = aeron.addSubscription(
             channel, streamId, availableImageHandler, null);
 
-        // as subscription images are created they will get picked up and archived
+        // as subscription images are created they will get picked up and recorded
         recordingSubscriptionSet.add(recordingSubscription);
     }
 

@@ -25,12 +25,12 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.ImageRecorder.initDescriptor;
+import static io.aeron.archiver.Recorder.initDescriptor;
 import static java.nio.file.StandardOpenOption.*;
 
 /**
- * Catalog for the archive keeps an archive of recorded images, past and present, and used to lookup
- * details. The format is simple, allocating a fixed 4KB record for each record descriptor. This allows offset
+ * Catalog for the archive keeps details of recorded images, past and present, and used for browsing.
+ * The format is simple, allocating a fixed 4KB record for each record descriptor. This allows offset
  * based look up of a descriptor in the file.
  */
 class Catalog implements AutoCloseable

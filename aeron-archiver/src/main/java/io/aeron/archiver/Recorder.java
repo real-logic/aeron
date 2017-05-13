@@ -27,7 +27,7 @@ import java.nio.channels.FileChannel;
 import static io.aeron.archiver.ArchiveUtil.recordingOffset;
 import static java.nio.file.StandardOpenOption.*;
 
-final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHandler
+final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
 {
     static class Builder
     {
@@ -109,9 +109,9 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
             return this;
         }
 
-        ImageRecorder build()
+        Recorder build()
         {
-            return new ImageRecorder(this);
+            return new Recorder(this);
         }
 
         int recordingFileLength()
@@ -151,7 +151,7 @@ final class ImageRecorder implements AutoCloseable, FragmentHandler, RawBlockHan
     private boolean closed = false;
     private boolean stopped = false;
 
-    private ImageRecorder(final Builder builder)
+    private Recorder(final Builder builder)
     {
         this.recordingId = builder.recordingId;
         this.archiveDir = builder.archiveDir;

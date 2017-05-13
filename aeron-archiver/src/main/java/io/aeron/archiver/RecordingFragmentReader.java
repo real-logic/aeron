@@ -99,15 +99,15 @@ class RecordingFragmentReader implements AutoCloseable
     private void initCursorState() throws IOException
     {
         segmentFileIndex = segmentFileIndex(initialTermId, termBufferLength, fromTermId, segmentFileLength);
-        final int archiveOffset = offsetInSegmentFile(
+        final int recordingOffset = offsetInSegmentFile(
             fromTermOffset, fromTermId, initialTermId, termBufferLength, segmentFileLength);
-        recordingTermStartOffset = archiveOffset - fromTermOffset;
+        recordingTermStartOffset = recordingOffset - fromTermOffset;
         openRecordingFile();
         termMappedUnsafeBuffer = new UnsafeBuffer(
             currentDataChannel.map(READ_ONLY, recordingTermStartOffset, termBufferLength));
 
         // TODO: align first fragment
-        fragmentOffset = archiveOffset & (termBufferLength - 1);
+        fragmentOffset = recordingOffset & (termBufferLength - 1);
     }
 
     int controlledPoll(final SimplifiedControlledPoll fragmentHandler, final int fragmentLimit) throws IOException

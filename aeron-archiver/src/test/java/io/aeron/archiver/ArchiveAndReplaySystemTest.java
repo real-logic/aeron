@@ -472,7 +472,7 @@ public class ArchiveAndReplaySystemTest
     {
         final RecordingDescriptorDecoder decoder = recordingMetaFileFormatDecoder(
             new File(archiveDir, recordingMetaFileName(recordingId)));
-        final long archiveFullLength = ArchiveUtil.recordingFileFullLength(decoder);
+        final long recordingFullLength = ArchiveUtil.recordingFileFullLength(decoder);
         final int initialTermId = decoder.initialTermId();
         final int termBufferLength = decoder.termBufferLength();
         final int initialTermOffset = decoder.initialTermOffset();
@@ -485,7 +485,7 @@ public class ArchiveAndReplaySystemTest
             termBufferLength,
             initialTermId,
             initialTermOffset,
-            archiveFullLength,
+            recordingFullLength,
             128 * 1024 * 1024))
         {
             fragmentCount = 0;

@@ -24,13 +24,13 @@ import org.agrona.*;
 import java.io.*;
 
 /**
- * A replay session with a client which works through the required request response flow and streaming of archived data.
+ * A replay session with a client which works through the required request response flow and streaming of recorded data.
  * The {@link ArchiveConductor} will initiate a session on receiving a ReplayRequest
  * (see {@link io.aeron.archiver.codecs.ReplayRequestDecoder}). The session will:
  * <ul>
  * <li>Validate request parameters and respond with error,
  *     or OK message(see {@link io.aeron.archiver.codecs.ControlResponseDecoder})</li>
- * <li>Stream archived data into the replayPublication {@link Publication}</li>
+ * <li>Stream recorded data into the replayPublication {@link Publication}</li>
  * </ul>
  */
 class ReplaySession implements
@@ -201,7 +201,7 @@ class ReplaySession implements
                 replayEndTermId,
                 replayEndTermOffset))
         {
-            return closeOnErr(null, "Requested replay is out of archive range [(" +
+            return closeOnErr(null, "Requested replay is out of recorded range [(" +
                 initialTermId + "," + initialTermOffset + "),(" +
                 lastTermId + "," + lastTermOffset + ")]");
         }
@@ -217,7 +217,7 @@ class ReplaySession implements
         }
         catch (final IOException ex)
         {
-            return closeOnErr(ex, "Failed to open archive cursor");
+            return closeOnErr(ex, "Failed to open cursor for a recording");
         }
 
         clientSessionProxy.sendResponse(controlPublication, null, correlationId);

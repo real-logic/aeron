@@ -81,7 +81,7 @@ public class RecordingSessionTest
     @Before
     public void setupMockTermBuff() throws IOException
     {
-        termFile = File.createTempFile("archiver.test", "source");
+        termFile = File.createTempFile("test.rec", "source");
         // size this file as a mock term buffer
         mockLogBufferChannel = FileChannel.open(termFile.toPath(), CREATE, READ, WRITE);
         mockLogBufferChannel.position(termBufferLength - 1);
@@ -115,7 +115,7 @@ public class RecordingSessionTest
         final EpochClock epochClock = Mockito.mock(EpochClock.class);
         when(epochClock.time()).thenReturn(42L);
 
-        final ImageRecorder.Builder builder = new ImageRecorder.Builder()
+        final Recorder.Builder builder = new Recorder.Builder()
             .recordingFileLength(SEGMENT_FILE_SIZE)
             .archiveDir(tempDirForTest)
             .epochClock(epochClock);

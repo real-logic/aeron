@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * Consumes an {@link Image} and records data to file using an {@link ImageRecorder}.
+ * Consumes an {@link Image} and records data to file using an {@link Recorder}.
  */
 class RecordingSession implements ArchiveConductor.Session
 {
@@ -35,9 +35,9 @@ class RecordingSession implements ArchiveConductor.Session
     private final NotificationsProxy notificationsProxy;
     private final Image image;
     private final Catalog catalog;
-    private final ImageRecorder.Builder builder;
+    private final Recorder.Builder builder;
 
-    private ImageRecorder recorder;
+    private Recorder recorder;
 
     private State state = State.INIT;
 
@@ -45,7 +45,7 @@ class RecordingSession implements ArchiveConductor.Session
         final NotificationsProxy notificationsProxy,
         final Catalog catalog,
         final Image image,
-        final ImageRecorder.Builder builder)
+        final Recorder.Builder builder)
     {
         this.notificationsProxy = notificationsProxy;
         this.image = image;
@@ -69,7 +69,7 @@ class RecordingSession implements ArchiveConductor.Session
 
         if (state == State.RECORDING)
         {
-            workDone += archive();
+            workDone += record();
         }
 
         if (state == State.INACTIVE)
@@ -91,7 +91,7 @@ class RecordingSession implements ArchiveConductor.Session
 
         final int imageInitialTermId = image.initialTermId();
 
-        ImageRecorder recorder = null;
+        Recorder recorder = null;
         try
         {
             recordingId = catalog.addNewRecording(
@@ -161,7 +161,7 @@ class RecordingSession implements ArchiveConductor.Session
         return 1;
     }
 
-    private int archive()
+    private int record()
     {
         int workCount = 1;
         try

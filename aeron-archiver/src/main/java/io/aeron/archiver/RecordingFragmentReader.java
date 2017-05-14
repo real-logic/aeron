@@ -216,6 +216,11 @@ class RecordingFragmentReader implements AutoCloseable
 
     interface SimplifiedControlledPoll
     {
+        /**
+         * Called by the {@link RecordingFragmentReader}. Implementors need only process DATA fragments.
+         *
+         * @return true if fragment processed, false to abort.
+         */
         boolean onFragment(
             DirectBuffer fragmentBuffer,
             int fragmentOffset,

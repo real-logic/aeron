@@ -236,7 +236,8 @@ public class ReplaySessionTest
             archiveDir,
             proxy,
             0,
-            correlationId, epochClock);
+            correlationId,
+            epochClock);
 
         // this is a given since they are closed by the session only
         when(replay.isClosed()).thenReturn(false);
@@ -251,5 +252,55 @@ public class ReplaySessionTest
         verify(proxy, times(1)).sendResponse(eq(control), notNull(), eq(correlationId));
 
         assertTrue(replaySession.isDone());
+    }
+
+    @Test
+    public void shouldGiveUpIfPublishersAreNotConnectedAfterOneSecond()
+    {
+        final long length = 1024L;
+        final long correlationId = 1L;
+        final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
+        final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
+
+        final ReplaySession replaySession = new ReplaySession(
+            RECORDING_ID,
+            INITIAL_TERM_ID,
+            INITIAL_TERM_OFFSET,
+            length,
+            replay,
+            control,
+            archiveDir,
+            proxy,
+            0,
+            correlationId,
+            epochClock);
+
+        // this is a given since they are closed by the session only
+        when(replay.isClosed()).thenReturn(false);
+        when(control.isClosed()).thenReturn(false);
+
+        // both are disconnected(no subscribers)
+        when(replay.isConnected()).thenReturn(false);
+        when(control.isConnected()).thenReturn(false);
+
+        // does not switch to replay mode until publications are established
+        assertEquals(0, replaySession.doWork());
+
+        // pick one to establish first
+        if (ThreadLocalRandom.current().nextDouble() > 0.5)
+        {
+            when(replay.isConnected()).thenReturn(true);
+        }
+        else
+        {
+            when(control.isConnected()).thenReturn(true);
+        }
+
+        // does not switch to replay mode until BOTH publications are established
+        assertEquals(0, replaySession.doWork());
+
+        when(epochClock.time()).thenReturn(1001L);
+        assertEquals(0, replaySession.doWork());
+        assertTrue(!replaySession.isDone());
     }
 }

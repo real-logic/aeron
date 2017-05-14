@@ -41,13 +41,14 @@ public class ReplaySessionTest
 
     private int messageIndex = 0;
     private ClientSessionProxy proxy;
+    private EpochClock epochClock;
 
     @Before
     public void setup() throws Exception
     {
         archiveDir = makeTempDir();
         proxy = Mockito.mock(ClientSessionProxy.class);
-        final EpochClock epochClock = mock(EpochClock.class);
+        epochClock = mock(EpochClock.class);
         try (Recorder recorder = new Recorder.Builder()
             .archiveDir(archiveDir)
             .epochClock(epochClock)
@@ -156,7 +157,8 @@ public class ReplaySessionTest
             archiveDir,
             proxy,
             0,
-            correlationId);
+            correlationId,
+            epochClock);
 
         // this is a given since they are closed by the session only
         when(replay.isClosed()).thenReturn(false);
@@ -209,8 +211,11 @@ public class ReplaySessionTest
         assertEquals(expectedFrameLength, mockTermBuffer.getInt(0));
         // TODO: add validation for reserved value and flags
 
-        assertTrue(replaySession.isDone());
+        assertFalse(replaySession.isDone());
+        // move clock to finish lingering
+        when(epochClock.time()).thenReturn(1001L);
         assertEquals(0, replaySession.doWork());
+        assertTrue(!replaySession.isDone());
     }
 
     @Test
@@ -231,7 +236,7 @@ public class ReplaySessionTest
             archiveDir,
             proxy,
             0,
-            correlationId);
+            correlationId, epochClock);
 
         // this is a given since they are closed by the session only
         when(replay.isClosed()).thenReturn(false);

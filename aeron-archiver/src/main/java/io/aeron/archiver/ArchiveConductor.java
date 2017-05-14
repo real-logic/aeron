@@ -59,6 +59,7 @@ class ArchiveConductor implements Agent
 
     private final NotificationsProxy notificationsProxy;
     private final ClientSessionProxy clientProxy;
+    private final EpochClock epochClock;
     private volatile boolean isClosed = false;
     private final Recorder.Builder imageRecorderBuilder = new Recorder.Builder();
     private int replaySessionId;
@@ -90,6 +91,7 @@ class ArchiveConductor implements Agent
 
         notificationsProxy = new NotificationsProxy(ctx.idleStrategy(), archiverNotificationPublication);
         clientProxy = new ClientSessionProxy(ctx.idleStrategy());
+        epochClock = ctx.epochClock();
     }
 
     public String roleName()
@@ -273,7 +275,8 @@ class ArchiveConductor implements Agent
             archiveDir,
             clientProxy,
             newId,
-            correlationId);
+            correlationId,
+            this.epochClock);
 
         replaySession2IdMap.put(newId, replaySession);
         sessions.add(replaySession);

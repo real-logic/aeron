@@ -20,6 +20,7 @@ import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
+import org.agrona.concurrent.EpochClock;
 
 import java.io.*;
 
@@ -42,6 +43,9 @@ class ReplaySession implements
         INIT, REPLAY, LINGER, INACTIVE, CLOSED
     }
 
+    public static final int REPLAY_SEND_BATCH_SIZE = 8;
+    public static final int LINGER_LENGTH_MS = 1000;
+
     private final int recordingId;
     private final int fromTermId;
     private final int fromTermOffset;
@@ -58,7 +62,8 @@ class ReplaySession implements
     private RecordingFragmentReader cursor;
     private final int replaySessionId;
     private final long correlationId;
-    private int lingerCounter;
+    private final EpochClock epochClock;
+    private long lingerSinceMs;
 
     ReplaySession(
         final int recordingId,
@@ -70,7 +75,7 @@ class ReplaySession implements
         final File archiveDir,
         final ClientSessionProxy clientSessionProxy,
         final int replaySessionId,
-        final long correlationId)
+        final long correlationId, final EpochClock epochClock)
     {
         this.recordingId = recordingId;
 
@@ -84,6 +89,8 @@ class ReplaySession implements
         this.clientSessionProxy = clientSessionProxy;
         this.replaySessionId = replaySessionId;
         this.correlationId = correlationId;
+        this.epochClock = epochClock;
+        this.lingerSinceMs = epochClock.time();
     }
 
     public int doWork()
@@ -112,13 +119,17 @@ class ReplaySession implements
 
     private int linger()
     {
-        lingerCounter++;
-        if (lingerCounter == 10000)
+        if (isLingerDone())
         {
             this.state = State.INACTIVE;
         }
 
         return 0;
+    }
+
+    private boolean isLingerDone()
+    {
+        return epochClock.time() - LINGER_LENGTH_MS > lingerSinceMs;
     }
 
     public void abort()
@@ -147,7 +158,11 @@ class ReplaySession implements
 
         if (!replayPublication.isConnected() || !controlPublication.isConnected())
         {
-            // TODO: introduce some timeout mechanism here to prevent stale requests linger
+            if (isLingerDone())
+            {
+                // TODO: add counter
+                this.state = State.INACTIVE;
+            }
             return 0;
         }
 
@@ -268,13 +283,12 @@ class ReplaySession implements
     {
         try
         {
-            // TODO: Really, 42 as a magic number?
-            final int polled = cursor.controlledPoll(this, 42);
+            final int polled = cursor.controlledPoll(this, REPLAY_SEND_BATCH_SIZE);
             if (cursor.isDone())
             {
-                this.state = State.INACTIVE;
+                lingerSinceMs = epochClock.time();
+                this.state = State.LINGER;
             }
-
             return polled;
         }
         catch (final Exception ex)
@@ -312,7 +326,6 @@ class ReplaySession implements
                 bufferClaim.flags((byte)header.flags());
                 bufferClaim.reservedValue(header.reservedValue());
                 // TODO: ??? bufferClaim.headerType(header.type()); ???
-                // TODO: Need to handle padding records
 
                 final int offset = bufferClaim.offset();
                 publicationBuffer.putBytes(offset, fragmentBuffer, fragmentOffset, fragmentLength);

@@ -43,19 +43,33 @@ public class ImageFragmentAssembler implements FragmentHandler
      */
     public ImageFragmentAssembler(final FragmentHandler delegate)
     {
-        this(delegate, BufferBuilder.INITIAL_CAPACITY);
+        this(delegate, 0, false);
     }
 
     /**
      * Construct an adapter to reassemble message fragments and delegate on only whole messages.
      *
      * @param delegate            onto which whole messages are forwarded.
-     * @param initialBufferLength to be used for each session.
+     * @param initialBufferLength to be used for the session.
      */
     public ImageFragmentAssembler(final FragmentHandler delegate, final int initialBufferLength)
     {
         this.delegate = delegate;
-        this.builder = new BufferBuilder(initialBufferLength);
+        this.builder = new BufferBuilder(initialBufferLength, false);
+    }
+
+    /**
+     * Construct an adapter to reassemble message fragments and delegate on only whole messages.
+     *
+     * @param delegate            onto which whole messages are forwarded.
+     * @param initialBufferLength to be used for the session.
+     * @param isDirectByteBuffer  is the underlying buffer to be a direct {@link java.nio.ByteBuffer}?
+     */
+    public ImageFragmentAssembler(
+        final FragmentHandler delegate, final int initialBufferLength, final boolean isDirectByteBuffer)
+    {
+        this.delegate = delegate;
+        this.builder = new BufferBuilder(initialBufferLength, isDirectByteBuffer);
     }
 
     /**

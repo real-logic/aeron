@@ -15,54 +15,72 @@
  */
 package io.aeron;
 
-import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
- * Reusable Builder for appending a sequence of buffers that grows internal capacity as needed.
+ * Reusable Builder for appending a sequence of buffer fragments which grows internal capacity as needed.
+ *
+ * The underlying buffer can be byte[] backed or a direct {@link ByteBuffer} if the isDirect param to the constructor
+ * is true.
  *
  * Similar in concept to {@link StringBuilder}.
  */
 public class BufferBuilder
 {
     /**
-     * Maximum capacity to which the array can grow.
+     * Maximum capacity to which the buffer can grow.
      */
     public static final int MAX_CAPACITY = Integer.MAX_VALUE - 8;
 
     /**
-     * Initial capacity for the internal buffer.
+     * Initial minimum capacity for the internal buffer when used.
      */
-    public static final int INITIAL_CAPACITY = 4096;
+    public static final int MIN_ALLOCATED_CAPACITY = 4096;
 
-    private final MutableDirectBuffer mutableDirectBuffer;
-
-    private byte[] buffer;
+    private final boolean isDirect;
     private int limit = 0;
-    private int capacity;
+    private final UnsafeBuffer buffer;
 
     /**
-     * Construct a buffer builder with a default growth increment of {@link #INITIAL_CAPACITY}
+     * Construct a buffer builder with an initial capacity of zero and isDirect false.
      */
     public BufferBuilder()
     {
-        this(INITIAL_CAPACITY);
+        this(0, false);
     }
 
     /**
-     * Construct a buffer builder with an initial capacity that will be rounded up to the nearest power of 2.
+     * Construct a buffer builder with an initial capacity and isDirect false.
      *
      * @param initialCapacity at which the capacity will start.
      */
     public BufferBuilder(final int initialCapacity)
     {
-        capacity = BitUtil.findNextPositivePowerOfTwo(initialCapacity);
-        buffer = new byte[capacity];
-        mutableDirectBuffer = new UnsafeBuffer(buffer);
+        this(initialCapacity, false);
+    }
+
+    /**
+     * Construct a buffer builder with an initial capacity.
+     *
+     * @param initialCapacity at which the capacity will start.
+     * @param isDirect        is the underlying buffer to be a direct {@link ByteBuffer}
+     */
+    public BufferBuilder(final int initialCapacity, final boolean isDirect)
+    {
+        this.isDirect = isDirect;
+        if (isDirect)
+        {
+            buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(initialCapacity));
+        }
+        else
+        {
+            buffer = new UnsafeBuffer(new byte[initialCapacity]);
+        }
     }
 
     /**
@@ -72,7 +90,7 @@ public class BufferBuilder
      */
     public int capacity()
     {
-        return capacity;
+        return buffer.capacity();
     }
 
     /**
@@ -92,10 +110,10 @@ public class BufferBuilder
      */
     public void limit(final int limit)
     {
-        if (limit < 0 || limit >= capacity)
+        if (limit < 0 || limit >= buffer.capacity())
         {
-            throw new IllegalArgumentException(String.format(
-                "Limit outside range: capacity=%d limit=%d", capacity, limit));
+            throw new IllegalArgumentException(
+                "Limit outside range: capacity=" + buffer.capacity() + " limit=" + limit);
         }
 
         this.limit = limit;
@@ -108,7 +126,7 @@ public class BufferBuilder
      */
     public MutableDirectBuffer buffer()
     {
-        return mutableDirectBuffer;
+        return buffer;
     }
 
     /**
@@ -129,9 +147,7 @@ public class BufferBuilder
      */
     public BufferBuilder compact()
     {
-        capacity = Math.max(INITIAL_CAPACITY, BitUtil.findNextPositivePowerOfTwo(limit));
-        buffer = Arrays.copyOf(buffer, capacity);
-        mutableDirectBuffer.wrap(buffer);
+        resize(Math.max(MIN_ALLOCATED_CAPACITY, limit));
 
         return this;
     }
@@ -148,7 +164,7 @@ public class BufferBuilder
     {
         ensureCapacity(length);
 
-        srcBuffer.getBytes(srcOffset, buffer, limit, length);
+        buffer.putBytes(limit, srcBuffer, srcOffset, length);
         limit += length;
 
         return this;
@@ -156,22 +172,32 @@ public class BufferBuilder
 
     private void ensureCapacity(final int additionalCapacity)
     {
-        final int requiredCapacity = limit + additionalCapacity;
+        final long requiredCapacity = (long)limit + additionalCapacity;
 
-        if (requiredCapacity < 0)
+        if (requiredCapacity > MAX_CAPACITY)
         {
-            final String s = String.format("Insufficient capacity: limit=%d additional=%d", limit, additionalCapacity);
-            throw new IllegalStateException(s);
+            throw new IllegalStateException(
+                "Max capacity exceeded: limit=" + limit + " required=" + requiredCapacity);
         }
 
+        final int capacity = buffer.capacity();
         if (requiredCapacity > capacity)
         {
-            final int newCapacity = findSuitableCapacity(capacity, requiredCapacity);
-            final byte[] newBuffer = Arrays.copyOf(buffer, newCapacity);
+            resize(findSuitableCapacity(capacity, (int)requiredCapacity));
+        }
+    }
 
-            capacity = newCapacity;
-            buffer = newBuffer;
-            mutableDirectBuffer.wrap(newBuffer);
+    private void resize(final int newCapacity)
+    {
+        if (isDirect)
+        {
+            final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(newCapacity);
+            buffer.getBytes(0, byteBuffer, 0, limit);
+            buffer.wrap(byteBuffer);
+        }
+        else
+        {
+            buffer.wrap(Arrays.copyOf(buffer.byteArray(), newCapacity));
         }
     }
 
@@ -181,7 +207,7 @@ public class BufferBuilder
 
         do
         {
-            final int newCapacity = capacity + (capacity >> 1);
+            final int newCapacity = Math.max(capacity + (capacity >> 1), MIN_ALLOCATED_CAPACITY);
 
             if (newCapacity < 0 || newCapacity > MAX_CAPACITY)
             {

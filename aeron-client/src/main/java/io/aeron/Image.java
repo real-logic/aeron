@@ -130,6 +130,16 @@ public class Image
     }
 
     /**
+     * The length in bytes of the MTU (Maximum Transmission Unit) the Sender used for the datagram.
+     *
+     * @return length in bytes of the MTU (Maximum Transmission Unit) the Sender used for the datagram.
+     */
+    public int mtuLength()
+    {
+        return LogBufferDescriptor.mtuLength(logBuffers.metaDataBuffer());
+    }
+
+    /**
      * The initial term at which the stream started for this session.
      *
      * @return the initial term id.

@@ -40,6 +40,7 @@ import static io.aeron.logbuffer.FrameDescriptor.*;
  */
 public class FragmentAssembler implements FragmentHandler
 {
+    private final boolean isDirectByteBuffer;
     private final int initialBufferLength;
     private final FragmentHandler delegate;
     private final Int2ObjectHashMap<BufferBuilder> builderBySessionIdMap = new Int2ObjectHashMap<>();
@@ -51,7 +52,7 @@ public class FragmentAssembler implements FragmentHandler
      */
     public FragmentAssembler(final FragmentHandler delegate)
     {
-        this(delegate, BufferBuilder.INITIAL_CAPACITY);
+        this(delegate, 0, false);
     }
 
     /**
@@ -62,8 +63,22 @@ public class FragmentAssembler implements FragmentHandler
      */
     public FragmentAssembler(final FragmentHandler delegate, final int initialBufferLength)
     {
+        this(delegate, initialBufferLength, false);
+    }
+
+    /**
+     * Construct an adapter to reassemble message fragments and delegate on whole messages.
+     *
+     * @param delegate            onto which whole messages are forwarded.
+     * @param initialBufferLength to be used for each session.
+     * @param isDirectByteBuffer  is the underlying buffer to be a direct {@link java.nio.ByteBuffer}?
+     */
+    public FragmentAssembler(
+        final FragmentHandler delegate, final int initialBufferLength, final boolean isDirectByteBuffer)
+    {
         this.initialBufferLength = initialBufferLength;
         this.delegate = delegate;
+        this.isDirectByteBuffer = isDirectByteBuffer;
     }
 
     /**
@@ -74,6 +89,16 @@ public class FragmentAssembler implements FragmentHandler
     public FragmentHandler delegate()
     {
         return delegate;
+    }
+
+    /**
+     * Is the underlying buffer used to assemble fragments a direct {@link java.nio.ByteBuffer}?
+     *
+     * @return true if the underlying buffer used to assemble fragments is a direct {@link java.nio.ByteBuffer}
+     */
+    public boolean isDirectByteBuffer()
+    {
+        return isDirectByteBuffer;
     }
 
     /**
@@ -149,7 +174,7 @@ public class FragmentAssembler implements FragmentHandler
 
         if (null == bufferBuilder)
         {
-            bufferBuilder = new BufferBuilder(initialBufferLength);
+            bufferBuilder = new BufferBuilder(initialBufferLength, isDirectByteBuffer);
             builderBySessionIdMap.put(sessionId, bufferBuilder);
         }
 

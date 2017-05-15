@@ -19,10 +19,14 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
  * Reusable Builder for appending a sequence of buffer fragments which grows internal capacity as needed.
+ *
+ * The underlying buffer can be byte[] backed or a direct {@link ByteBuffer} if the isDirect param to the constructor
+ * is true.
  *
  * Similar in concept to {@link StringBuilder}.
  */
@@ -34,29 +38,49 @@ public class BufferBuilder
     public static final int MAX_CAPACITY = Integer.MAX_VALUE - 8;
 
     /**
-     * Initial capacity for the internal buffer.
+     * Initial minimum capacity for the internal buffer when used.
      */
-    public static final int INITIAL_CAPACITY = 4096;
+    public static final int MIN_ALLOCATED_CAPACITY = 4096;
 
-    private final UnsafeBuffer buffer;
+    private final boolean isDirect;
     private int limit = 0;
+    private final UnsafeBuffer buffer;
 
     /**
-     * Construct a buffer builder with a default growth increment of {@link #INITIAL_CAPACITY}
+     * Construct a buffer builder with an initial capacity of zero and isDirect false.
      */
     public BufferBuilder()
     {
-        this(INITIAL_CAPACITY);
+        this(0, false);
+    }
+
+    /**
+     * Construct a buffer builder with an initial capacity and isDirect false.
+     *
+     * @param initialCapacity at which the capacity will start.
+     */
+    public BufferBuilder(final int initialCapacity)
+    {
+        this(initialCapacity, false);
     }
 
     /**
      * Construct a buffer builder with an initial capacity.
      *
      * @param initialCapacity at which the capacity will start.
+     * @param isDirect        is the underlying buffer to be a direct {@link ByteBuffer}
      */
-    public BufferBuilder(final int initialCapacity)
+    public BufferBuilder(final int initialCapacity, final boolean isDirect)
     {
-        buffer = new UnsafeBuffer(new byte[initialCapacity]);
+        this.isDirect = isDirect;
+        if (isDirect)
+        {
+            buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(initialCapacity));
+        }
+        else
+        {
+            buffer = new UnsafeBuffer(new byte[initialCapacity]);
+        }
     }
 
     /**
@@ -123,7 +147,7 @@ public class BufferBuilder
      */
     public BufferBuilder compact()
     {
-        resize(Math.max(INITIAL_CAPACITY, limit));
+        resize(Math.max(MIN_ALLOCATED_CAPACITY, limit));
 
         return this;
     }
@@ -165,7 +189,16 @@ public class BufferBuilder
 
     private void resize(final int newCapacity)
     {
-        buffer.wrap(Arrays.copyOf(buffer.byteArray(), newCapacity));
+        if (isDirect)
+        {
+            final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(newCapacity);
+            buffer.getBytes(0, byteBuffer, 0, limit);
+            buffer.wrap(byteBuffer);
+        }
+        else
+        {
+            buffer.wrap(Arrays.copyOf(buffer.byteArray(), newCapacity));
+        }
     }
 
     private static int findSuitableCapacity(final int currentCapacity, final int requiredCapacity)
@@ -174,7 +207,7 @@ public class BufferBuilder
 
         do
         {
-            final int newCapacity = capacity + (capacity >> 1);
+            final int newCapacity = Math.max(capacity + (capacity >> 1), MIN_ALLOCATED_CAPACITY);
 
             if (newCapacity < 0 || newCapacity > MAX_CAPACITY)
             {

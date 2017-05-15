@@ -41,6 +41,7 @@ import static io.aeron.logbuffer.FrameDescriptor.*;
  */
 public class ControlledFragmentAssembler implements ControlledFragmentHandler
 {
+    private final boolean isDirectByteBuffer;
     private final int initialBufferLength;
     private final ControlledFragmentHandler delegate;
     private final Int2ObjectHashMap<BufferBuilder> builderBySessionIdMap = new Int2ObjectHashMap<>();
@@ -52,7 +53,7 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
      */
     public ControlledFragmentAssembler(final ControlledFragmentHandler delegate)
     {
-        this(delegate, BufferBuilder.INITIAL_CAPACITY);
+        this(delegate, 0, false);
     }
 
     /**
@@ -63,8 +64,22 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
      */
     public ControlledFragmentAssembler(final ControlledFragmentHandler delegate, final int initialBufferLength)
     {
+        this(delegate, initialBufferLength, false);
+    }
+
+    /**
+     * Construct an adapter to reassemble message fragments and delegate on whole messages.
+     *
+     * @param delegate            onto which whole messages are forwarded.
+     * @param initialBufferLength to be used for each session.
+     * @param isDirectByteBuffer  is the underlying buffer to be a direct {@link java.nio.ByteBuffer}?
+     */
+    public ControlledFragmentAssembler(
+        final ControlledFragmentHandler delegate, final int initialBufferLength, final boolean isDirectByteBuffer)
+    {
         this.initialBufferLength = initialBufferLength;
         this.delegate = delegate;
+        this.isDirectByteBuffer = isDirectByteBuffer;
     }
 
     /**
@@ -75,6 +90,16 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
     public ControlledFragmentHandler delegate()
     {
         return delegate;
+    }
+
+    /**
+     * Is the underlying buffer used to assemble fragments a direct {@link java.nio.ByteBuffer}?
+     *
+     * @return true if the underlying buffer used to assemble fragments is a direct {@link java.nio.ByteBuffer}
+     */
+    public boolean isDirectByteBuffer()
+    {
+        return isDirectByteBuffer;
     }
 
     /**
@@ -157,7 +182,7 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
 
         if (null == bufferBuilder)
         {
-            bufferBuilder = new BufferBuilder(initialBufferLength);
+            bufferBuilder = new BufferBuilder(initialBufferLength, isDirectByteBuffer);
             builderBySessionIdMap.put(sessionId, bufferBuilder);
         }
 

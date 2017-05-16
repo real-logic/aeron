@@ -22,24 +22,21 @@ public interface ResponseListener
         long correlationId);
 
     void onReplayStarted(
-        int replayId,
+        long replayId,
         long correlationId);
 
     void onReplayAborted(
-        int lastTermId,
-        int lastTermOffset,
+        long lastPosition,
         long correlationId);
 
     void onRecordingDescriptor(
-        int recordingId,
+        long recordingId,
         int segmentFileLength,
         int termBufferLength,
         long startTime,
-        int initialTermId,
-        int initialTermOffset,
+        long initialPosition,
         long endTime,
-        int lastTermId,
-        int lastTermOffset,
+        long lastPosition,
         String source,
         int sessionId,
         String channel,
@@ -47,7 +44,7 @@ public interface ResponseListener
         long correlationId);
 
     void onRecordingNotFound(
-        int recordingId,
-        int maxRecordingId,
+        long recordingId,
+        long maxRecordingId,
         long correlationId);
 }

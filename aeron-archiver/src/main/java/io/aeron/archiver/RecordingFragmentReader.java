@@ -32,14 +32,12 @@ import static java.nio.file.StandardOpenOption.READ;
 
 class RecordingFragmentReader implements AutoCloseable
 {
-    private final int recordingId;
+    private final long recordingId;
     private final File archiveDir;
-    private final int initialTermId;
     private final int termBufferLength;
-    private final int initialTermOffset;
+    private final long initialPosition;
     private final long fullLength;
-    private final int fromTermId;
-    private final int fromTermOffset;
+    private final long fromPosition;
     private final long replayLength;
     private final int segmentFileLength;
 
@@ -51,7 +49,7 @@ class RecordingFragmentReader implements AutoCloseable
     private long transmitted = 0;
     private final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
 
-    RecordingFragmentReader(final int recordingId, final File archiveDir) throws IOException
+    RecordingFragmentReader(final long recordingId, final File archiveDir) throws IOException
     {
         this.recordingId = recordingId;
         this.archiveDir = archiveDir;
@@ -60,36 +58,31 @@ class RecordingFragmentReader implements AutoCloseable
         final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
         final RecordingDescriptorDecoder metaDecoder = recordingMetaFileFormatDecoder(recordingMetaFile);
         termBufferLength = metaDecoder.termBufferLength();
-        initialTermId = metaDecoder.initialTermId();
-        initialTermOffset = metaDecoder.initialTermOffset();
+        initialPosition = metaDecoder.initialPosition();
         segmentFileLength = metaDecoder.segmentFileLength();
         fullLength = ArchiveUtil.recordingFileFullLength(metaDecoder);
         IoUtil.unmap(metaDecoder.buffer().byteBuffer());
-        fromTermId = initialTermId;
-        fromTermOffset = initialTermOffset;
+        fromPosition = initialPosition;
         replayLength = fullLength;
         initCursorState();
     }
 
     RecordingFragmentReader(
-        final int recordingId,
+        final long recordingId,
         final File archiveDir,
-        final int termId,
-        final int termOffset,
+        final long position,
         final long length) throws IOException
     {
         this.recordingId = recordingId;
         this.archiveDir = archiveDir;
-        this.fromTermId = termId;
-        this.fromTermOffset = termOffset;
+        this.fromPosition = position;
         this.replayLength = length;
         final String recordingMetaFileName = recordingMetaFileName(recordingId);
         final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
         // TODO: Can this be done without mapping and unmapping?
         final RecordingDescriptorDecoder metaDecoder = recordingMetaFileFormatDecoder(recordingMetaFile);
         termBufferLength = metaDecoder.termBufferLength();
-        initialTermId = metaDecoder.initialTermId();
-        initialTermOffset = metaDecoder.initialTermOffset();
+        initialPosition = metaDecoder.initialPosition();
         segmentFileLength = metaDecoder.segmentFileLength();
         fullLength = ArchiveUtil.recordingFileFullLength(metaDecoder);
         IoUtil.unmap(metaDecoder.buffer().byteBuffer());
@@ -98,16 +91,15 @@ class RecordingFragmentReader implements AutoCloseable
 
     private void initCursorState() throws IOException
     {
-        segmentFileIndex = segmentFileIndex(initialTermId, termBufferLength, fromTermId, segmentFileLength);
-        final int recordingOffset = offsetInSegmentFile(
-            fromTermOffset, fromTermId, initialTermId, termBufferLength, segmentFileLength);
-        recordingTermStartOffset = recordingOffset - fromTermOffset;
+        segmentFileIndex = segmentFileIndex(initialPosition, fromPosition, segmentFileLength);
+        final long recordingOffset = fromPosition & (segmentFileLength - 1);
+        recordingTermStartOffset = (int) (recordingOffset - (recordingOffset & (termBufferLength - 1)));
         openRecordingFile();
         termMappedUnsafeBuffer = new UnsafeBuffer(
             currentDataChannel.map(READ_ONLY, recordingTermStartOffset, termBufferLength));
 
         // TODO: align first fragment
-        fragmentOffset = recordingOffset & (termBufferLength - 1);
+        fragmentOffset = (int) (recordingOffset & (termBufferLength - 1));
     }
 
     int controlledPoll(final SimplifiedControlledPoll fragmentHandler, final int fragmentLimit) throws IOException

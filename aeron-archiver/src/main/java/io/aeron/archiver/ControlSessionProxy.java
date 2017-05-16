@@ -20,7 +20,7 @@ import io.aeron.archiver.codecs.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 
-class ClientSessionProxy
+class ControlSessionProxy
 {
     private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
     private final IdleStrategy idleStrategy;
@@ -28,8 +28,11 @@ class ClientSessionProxy
 
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ControlResponseEncoder responseEncoder = new ControlResponseEncoder();
+    private final RecordingNotFoundResponseEncoder recordingNotFoundResponseEncoder =
+        new RecordingNotFoundResponseEncoder();
+    private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
 
-    ClientSessionProxy(final IdleStrategy idleStrategy)
+    ControlSessionProxy(final IdleStrategy idleStrategy)
     {
         this.idleStrategy = idleStrategy;
     }
@@ -46,9 +49,58 @@ class ClientSessionProxy
         }
 
         final int length = HEADER_LENGTH + responseEncoder.encodedLength();
+        // TODO: handle dead/slow subscriber, this is not an acceptable place to get stuck
+        send(reply, length);
+    }
+
+    private void send(final ExclusivePublication reply, final int length)
+    {
         while (true)
         {
             final long result = reply.offer(buffer, 0, length);
+            if (result > 0)
+            {
+                idleStrategy.reset();
+                break;
+            }
+
+            if (result == Publication.NOT_CONNECTED || result == Publication.CLOSED)
+            {
+                throw new IllegalStateException("Response channel is down: " + reply);
+            }
+
+            idleStrategy.idle();
+        }
+    }
+
+    void sendDescriptorNotFound(
+        final ExclusivePublication reply,
+        final long recordingId,
+        final long maxRecordingId,
+        final long correlationId)
+    {
+        recordingNotFoundResponseEncoder.wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId)
+            .recordingId(recordingId)
+            .maxRecordingId(maxRecordingId);
+
+        final int length = HEADER_LENGTH + responseEncoder.encodedLength();
+        // TODO: handle dead/slow subscriber, this is not an acceptable place to get stuck
+        send(reply, length);
+    }
+
+    void sendDescriptor(final ExclusivePublication reply,
+        final UnsafeBuffer descriptorBuffer,
+        final long correlationId)
+    {
+        recordingDescriptorEncoder
+            .wrapAndApplyHeader(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH - HEADER_LENGTH, messageHeaderEncoder)
+            .correlationId(correlationId);
+
+        final int length = descriptorBuffer.getInt(0) + HEADER_LENGTH;
+        while (true)
+        {
+            final long result = reply.offer(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH - HEADER_LENGTH, length);
             if (result > 0)
             {
                 idleStrategy.reset();

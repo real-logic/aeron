@@ -68,8 +68,7 @@ class ControlRequestAdapter implements FragmentHandler
                     replayRequestDecoder.replayStreamId(),
                     replayRequestDecoder.replayChannel(),
                     replayRequestDecoder.recordingId(),
-                    replayRequestDecoder.termId(),
-                    replayRequestDecoder.termOffset(),
+                    replayRequestDecoder.position(),
                     replayRequestDecoder.length());
                 break;
 
@@ -95,8 +94,7 @@ class ControlRequestAdapter implements FragmentHandler
 
                 listener.onStopRecording(
                     stopRecordingRequestDecoder.correlationId(),
-                    stopRecordingRequestDecoder.channel(),
-                    stopRecordingRequestDecoder.streamId());
+                    stopRecordingRequestDecoder.recordingId());
                 break;
 
             case AbortReplayRequestDecoder.TEMPLATE_ID:

@@ -18,18 +18,17 @@ package io.aeron.archiver.client;
 public interface RecordingEventsListener
 {
     void onProgress(
-        int recordingId,
-        int initialTermId,
-        int initialTermOffset,
-        int termId,
-        int termOffset);
+        long recordingId,
+        long initialPosition,
+        long currentPosition);
 
     void onStart(
-        int recordingId,
+        long recordingId,
         String source,
         int sessionId,
         String channel,
         int streamId);
 
-    void onStop(int recordingId);
+    void onStop(long recordingId);
+
 }

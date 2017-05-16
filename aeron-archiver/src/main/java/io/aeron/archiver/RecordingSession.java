@@ -31,7 +31,7 @@ class RecordingSession implements ArchiveConductor.Session
         INIT, RECORDING, INACTIVE, CLOSED
     }
 
-    private int recordingId = Catalog.NULL_INDEX;
+    private long recordingId = Catalog.NULL_INDEX;
     private final NotificationsProxy notificationsProxy;
     private final Image image;
     private final Catalog catalog;
@@ -88,7 +88,7 @@ class RecordingSession implements ArchiveConductor.Session
         final int sessionId = image.sessionId();
         final String source = image.sourceIdentity();
         final int termBufferLength = image.termBufferLength();
-
+        final int mtuLength = image.mtuLength();
         final int imageInitialTermId = image.initialTermId();
 
         Recorder recorder = null;
@@ -100,6 +100,7 @@ class RecordingSession implements ArchiveConductor.Session
                 channel,
                 streamId,
                 termBufferLength,
+                mtuLength,
                 imageInitialTermId,
                 this,
                 builder.recordingFileLength());
@@ -118,6 +119,8 @@ class RecordingSession implements ArchiveConductor.Session
                 .sessionId(sessionId)
                 .channel(channel)
                 .streamId(streamId)
+                .initialTermId(image.initialTermId())
+                .mtuLength(mtuLength)
                 .build();
         }
         catch (final Exception ex)
@@ -132,7 +135,7 @@ class RecordingSession implements ArchiveConductor.Session
         return 1;
     }
 
-    int recordingId()
+    long recordingId()
     {
         return recordingId;
     }
@@ -171,10 +174,8 @@ class RecordingSession implements ArchiveConductor.Session
             {
                 notificationsProxy.recordingProgress(
                     recorder.recordingId(),
-                    recorder.initialTermId(),
-                    recorder.initialTermOffset(),
-                    recorder.lastTermId(),
-                    recorder.lastTermOffset());
+                    recorder.initialPosition(),
+                    recorder.lastPosition());
             }
 
             if (image.isClosed())

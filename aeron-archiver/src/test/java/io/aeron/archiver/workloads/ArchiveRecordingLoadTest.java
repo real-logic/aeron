@@ -54,7 +54,7 @@ public class ArchiveRecordingLoadTest
     private MediaDriver driver;
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private File archiveDir;
-    private int recordingId;
+    private long recordingId;
     private String source;
     private int[] fragmentLength;
     private long totalDataLength;
@@ -271,11 +271,7 @@ public class ArchiveRecordingLoadTest
                                 assertThat(mDecoder.recordingId(), is(recordingId));
 
                                 println(mDecoder.toString());
-                                recorded = ArchiveUtil.recordingLength(publication.termBufferLength(),
-                                    mDecoder.initialTermId(),
-                                    mDecoder.initialTermOffset(),
-                                    mDecoder.termId(),
-                                    mDecoder.termOffset());
+                                recorded = mDecoder.currentPosition() - mDecoder.initialPosition();
                                 System.out.printf("a=%d total=%d %n", (recorded - initialRecorded),
                                     totalRecordingLength);
                             }, 1) == 0)

@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
 public class RecordingSessionTest
 {
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
-    private final int recordingId = 12345;
+    private final long recordingId = 12345;
 
     private final String channel = "channel";
     private final String source = "sourceIdentity";
@@ -48,6 +48,7 @@ public class RecordingSessionTest
     private final int initialTermId = 0;
     private final int termBufferLength = 4096;
     private final int termOffset = 1024;
+    private final int mtuLength = 1024;
 
     private final File tempDirForTest = TestUtil.makeTempDir();
     private final NotificationsProxy proxy;
@@ -70,6 +71,7 @@ public class RecordingSessionTest
                 eq(channel),
                 eq(streamId),
                 eq(termBufferLength),
+                eq(mtuLength),
                 eq(initialTermId),
                 any(RecordingSession.class),
                 eq(SEGMENT_FILE_SIZE)))
@@ -163,11 +165,7 @@ public class RecordingSessionTest
 
         assertEquals(recordingId, metaData.recordingId());
         assertEquals(termBufferLength, metaData.termBufferLength());
-        assertEquals(initialTermId, metaData.initialTermId());
-        assertEquals(termOffset, metaData.initialTermOffset());
-        assertEquals(initialTermId, metaData.lastTermId());
         assertEquals(streamId, metaData.streamId());
-        assertEquals(termOffset + 100, metaData.lastTermOffset());
         assertEquals(42L, metaData.startTime());
         assertEquals(-1L, metaData.endTime());
         assertEquals(source, metaData.source());
@@ -176,7 +174,7 @@ public class RecordingSessionTest
 
         // data exists and is as expected
         final File segmentFile = new File(
-            tempDirForTest, ArchiveUtil.recordingDataFileName(session.recordingId(), 0));
+            tempDirForTest, ArchiveUtil.recordingDataFileName(recordingId, 0));
         assertTrue(segmentFile.exists());
 
         try (RecordingFragmentReader reader = new RecordingFragmentReader(session.recordingId(), tempDirForTest))
@@ -231,7 +229,7 @@ public class RecordingSessionTest
         when(image.subscription()).thenReturn(subscription);
         when(image.initialTermId()).thenReturn(initialTermId);
         when(image.termBufferLength()).thenReturn(termBufferLength);
-
+        when(image.mtuLength()).thenReturn(mtuLength);
         return image;
     }
 }

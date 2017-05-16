@@ -26,13 +26,13 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
     }
 
     private final Image image;
-    private final ClientSessionProxy proxy;
+    private final ControlSessionProxy proxy;
     private final ArchiveConductor conductor;
     private final ControlRequestAdapter adapter = new ControlRequestAdapter(this);
     private ExclusivePublication reply;
     private State state = State.INIT;
 
-    ControlSession(final Image image, final ClientSessionProxy clientProxy, final ArchiveConductor conductor)
+    ControlSession(final Image image, final ControlSessionProxy clientProxy, final ArchiveConductor conductor)
     {
         this.image = image;
         this.proxy = clientProxy;
@@ -122,8 +122,7 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
 
     public void onStopRecording(
         final long correlationId,
-        final String channel,
-        final int streamId)
+        final long recordingId)
     {
         if (state != State.ACTIVE)
         {
@@ -132,12 +131,11 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
 
         try
         {
-            conductor.stopRecording(channel, streamId);
+            conductor.stopRecording(recordingId);
             proxy.sendResponse(reply, null, correlationId);
         }
         catch (final Exception e)
         {
-            // e.printStackTrace(); TODO: logging?
             proxy.sendResponse(reply, e.getMessage(), correlationId);
         }
     }
@@ -166,8 +164,8 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
 
     public void onListRecordings(
         final long correlationId,
-        final int fromId,
-        final int toId)
+        final long fromId,
+        final long toId)
     {
         if (state != State.ACTIVE)
         {
@@ -191,9 +189,8 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
         final long correlationId,
         final int replayStreamId,
         final String replayChannel,
-        final int recordingId,
-        final int termId,
-        final int termOffset,
+        final long recordingId,
+        final long position,
         final long length)
     {
         if (state != State.ACTIVE)
@@ -207,8 +204,7 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
             replayStreamId,
             replayChannel,
             recordingId,
-            termId,
-            termOffset,
+            position,
             length);
     }
 }

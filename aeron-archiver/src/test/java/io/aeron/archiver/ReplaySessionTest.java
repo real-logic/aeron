@@ -40,20 +40,21 @@ public class ReplaySessionTest
     private File archiveDir;
 
     private int messageIndex = 0;
-    private ClientSessionProxy proxy;
+    private ControlSessionProxy proxy;
     private EpochClock epochClock;
 
     @Before
     public void setup() throws Exception
     {
         archiveDir = makeTempDir();
-        proxy = Mockito.mock(ClientSessionProxy.class);
+        proxy = Mockito.mock(ControlSessionProxy.class);
         epochClock = mock(EpochClock.class);
         try (Recorder recorder = new Recorder.Builder()
             .archiveDir(archiveDir)
             .epochClock(epochClock)
             .recordingId(RECORDING_ID)
             .termBufferLength(TERM_BUFFER_LENGTH)
+            .initialTermId(INITIAL_TERM_ID)
             .source("source")
             .sessionId(1)
             .channel("channel")
@@ -96,28 +97,6 @@ public class ReplaySessionTest
             when(epochClock.time()).thenReturn(84L);
         }
 
-        try (RecordingChunkReader chunkReader = new RecordingChunkReader(
-            RECORDING_ID,
-            archiveDir,
-            INITIAL_TERM_ID,
-            TERM_BUFFER_LENGTH,
-            INITIAL_TERM_ID,
-            INITIAL_TERM_OFFSET,
-            1024,
-            128 * 1024 * 1024))
-        {
-            chunkReader.readChunk(
-                (termBuff, termOffset, length) ->
-                {
-                    final DataHeaderFlyweight hf = new DataHeaderFlyweight();
-                    hf.wrap(termBuff, termOffset, DataHeaderFlyweight.HEADER_LENGTH);
-                    assertEquals(INITIAL_TERM_ID, hf.termId());
-                    assertEquals(1024, hf.frameLength());
-                    return true;
-                },
-                1024);
-        }
-
         try (RecordingFragmentReader reader = new RecordingFragmentReader(RECORDING_ID, archiveDir))
         {
             final int polled = reader.controlledPoll(
@@ -149,7 +128,6 @@ public class ReplaySessionTest
 
         final ReplaySession replaySession = new ReplaySession(
             RECORDING_ID,
-            INITIAL_TERM_ID,
             INITIAL_TERM_OFFSET,
             length,
             replay,
@@ -228,7 +206,6 @@ public class ReplaySessionTest
 
         final ReplaySession replaySession = new ReplaySession(
             RECORDING_ID + 1,
-            INITIAL_TERM_ID,
             INITIAL_TERM_OFFSET,
             length,
             replay,
@@ -264,7 +241,6 @@ public class ReplaySessionTest
 
         final ReplaySession replaySession = new ReplaySession(
             RECORDING_ID,
-            INITIAL_TERM_ID,
             INITIAL_TERM_OFFSET,
             length,
             replay,

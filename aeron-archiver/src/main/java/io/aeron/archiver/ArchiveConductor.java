@@ -58,7 +58,7 @@ class ArchiveConductor implements Agent
     private final AvailableImageHandler availableImageHandler = this::onAvailableImage;
 
     private final NotificationsProxy notificationsProxy;
-    private final ClientSessionProxy clientProxy;
+    private final ControlSessionProxy clientProxy;
     private final EpochClock epochClock;
     private volatile boolean isClosed = false;
     private final Recorder.Builder imageRecorderBuilder = new Recorder.Builder();
@@ -90,7 +90,7 @@ class ArchiveConductor implements Agent
             ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
 
         notificationsProxy = new NotificationsProxy(ctx.idleStrategy(), archiverNotificationPublication);
-        clientProxy = new ClientSessionProxy(ctx.idleStrategy());
+        clientProxy = new ControlSessionProxy(ctx.idleStrategy());
         epochClock = ctx.epochClock();
     }
 
@@ -197,18 +197,9 @@ class ArchiveConductor implements Agent
         }
     }
 
-    void stopRecording(final String channel, final int streamId)
+    void stopRecording(final long recordingId)
     {
-        for (final Subscription subscription : recordingSubscriptionSet)
-        {
-            if (subscription.streamId() == streamId && subscription.channel().equals(channel))
-            {
-                subscription.close();
-                recordingSubscriptionSet.remove(subscription);
-                break;
-                // image archiving sessions will sort themselves out naturally
-            }
-        }
+        catalog.getRecordingSession(recordingId).abort();
     }
 
     public void startRecording(final String channel, final int streamId)
@@ -232,8 +223,8 @@ class ArchiveConductor implements Agent
     public void listRecordings(
         final long correlationId,
         final ExclusivePublication replyPublication,
-        final int fromId,
-        final int toId)
+        final long fromId,
+        final long toId)
     {
         final Session listSession = new ListRecordingsSession(
             correlationId, replyPublication, fromId, toId, catalog, clientProxy);
@@ -256,10 +247,10 @@ class ArchiveConductor implements Agent
         final long correlationId,
         final ExclusivePublication reply,
         final int replayStreamId,
+        // TODO: replace with host/port?
         final String replayChannel,
-        final int recordingId,
-        final int termId,
-        final int termOffset,
+        final long recordingId,
+        final long position,
         final long length)
     {
         final int newId = replaySessionId++;
@@ -267,8 +258,7 @@ class ArchiveConductor implements Agent
         final ExclusivePublication replayPublication = aeron.addExclusivePublication(replayChannel, replayStreamId);
         final ReplaySession replaySession = new ReplaySession(
             recordingId,
-            termId,
-            termOffset,
+            position,
             length,
             replayPublication,
             reply,

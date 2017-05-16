@@ -16,7 +16,6 @@
 package io.aeron.archiver;
 
 import io.aeron.ExclusivePublication;
-import io.aeron.archiver.codecs.*;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -24,35 +23,10 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import static io.aeron.archiver.Catalog.CATALOG_FRAME_LENGTH;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 class ListRecordingsSession implements ArchiveConductor.Session
 {
-    private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
-    private static final long NOT_FOUND_HEADER;
-    private static final long DESCRIPTOR_HEADER;
-
-    static
-    {
-        // TODO: How will this cope on a Big Endian machine?
-
-        // create constant header values to avoid recalculation on each message sent
-        final MessageHeaderEncoder encoder = new MessageHeaderEncoder();
-        encoder.wrap(new UnsafeBuffer(new byte[HEADER_LENGTH]), 0);
-        encoder.schemaId(RecordingNotFoundResponseEncoder.SCHEMA_ID);
-        encoder.version(RecordingNotFoundResponseEncoder.SCHEMA_VERSION);
-        encoder.blockLength(RecordingNotFoundResponseEncoder.BLOCK_LENGTH);
-        encoder.templateId(RecordingNotFoundResponseEncoder.TEMPLATE_ID);
-        NOT_FOUND_HEADER = encoder.buffer().getLong(0);
-
-        encoder.schemaId(RecordingDescriptorEncoder.SCHEMA_ID);
-        encoder.version(RecordingDescriptorEncoder.SCHEMA_VERSION);
-        encoder.blockLength(RecordingDescriptorEncoder.BLOCK_LENGTH);
-        encoder.templateId(RecordingDescriptorEncoder.TEMPLATE_ID);
-        DESCRIPTOR_HEADER = encoder.buffer().getLong(0);
-    }
-
     private enum State
     {
         INIT,
@@ -62,26 +36,26 @@ class ListRecordingsSession implements ArchiveConductor.Session
     }
 
     private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, CACHE_LINE_LENGTH);
-    private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
+    private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer(byteBuffer);
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
 
     private final ExclusivePublication reply;
-    private final int fromId;
-    private final int toId;
+    private final long fromId;
+    private final long toId;
     private final Catalog index;
-    private final ClientSessionProxy proxy;
+    private final ControlSessionProxy proxy;
     private final long correlationId;
 
-    private int recordingId;
+    private long recordingId;
     private State state = State.INIT;
 
     ListRecordingsSession(
         final long correlationId,
         final ExclusivePublication reply,
-        final int fromId,
-        final int toId,
+        final long fromId,
+        final long toId,
         final Catalog index,
-        final ClientSessionProxy proxy)
+        final ControlSessionProxy proxy)
     {
         this.reply = reply;
         recordingId = fromId;
@@ -136,57 +110,34 @@ class ListRecordingsSession implements ArchiveConductor.Session
 
     private int sendDescriptors()
     {
-        // TODO: What is the magic number 4?
-        final int limit = Math.min(recordingId + 4, toId);
-        for (; recordingId <= limit; recordingId++)
+        final RecordingSession session = index.getRecordingSession(recordingId);
+        if (session == null)
         {
-            final RecordingSession session = index.getRecordingSession(recordingId);
-            if (session == null)
+            byteBuffer.clear();
+            descriptorBuffer.wrap(byteBuffer);
+            try
             {
-                byteBuffer.clear();
-                unsafeBuffer.wrap(byteBuffer);
-                try
+                if (!index.readDescriptor(recordingId, byteBuffer))
                 {
-                    if (!index.readDescriptor(recordingId, byteBuffer))
-                    {
-                        // return relevant error
-                        if (reply.tryClaim(
-                            HEADER_LENGTH + RecordingNotFoundResponseDecoder.BLOCK_LENGTH, bufferClaim) > 0L)
-                        {
-                            final MutableDirectBuffer buffer = bufferClaim.buffer();
-                            final int offset = bufferClaim.offset();
-                            buffer.putLong(offset, NOT_FOUND_HEADER);
-                            // TODO: Why have we magic numbers here???
-                            buffer.putInt(offset + 8, recordingId);
-                            buffer.putInt(offset + 12, index.maxRecordingId());
-                            buffer.putLong(offset + 16, correlationId);
-                            bufferClaim.commit();
-                            state = State.INACTIVE;
-                        }
-
-                        return 0;
-                    }
-                }
-                catch (final IOException ex)
-                {
+                    proxy.sendDescriptorNotFound(reply, recordingId, index.maxRecordingId(), correlationId);
                     state = State.INACTIVE;
-                    LangUtil.rethrowUnchecked(ex);
+                    return 0;
                 }
             }
-            else
+            catch (final IOException ex)
             {
-                unsafeBuffer.wrap(session.metaDataBuffer());
+                state = State.INACTIVE;
+                LangUtil.rethrowUnchecked(ex);
             }
-
-            final int length = unsafeBuffer.getInt(0);
-            unsafeBuffer.putLong(CATALOG_FRAME_LENGTH - HEADER_LENGTH, DESCRIPTOR_HEADER);
-            unsafeBuffer.putLong(
-                CATALOG_FRAME_LENGTH + RecordingDescriptorDecoder.correlationIdEncodingOffset(), correlationId);
-
-            reply.offer(unsafeBuffer, CATALOG_FRAME_LENGTH - HEADER_LENGTH, length + HEADER_LENGTH);
+        }
+        else
+        {
+            descriptorBuffer.wrap(session.metaDataBuffer());
         }
 
-        if (recordingId > toId)
+        proxy.sendDescriptor(reply, descriptorBuffer, correlationId);
+
+        if (++recordingId > toId)
         {
             state = State.INACTIVE;
         }

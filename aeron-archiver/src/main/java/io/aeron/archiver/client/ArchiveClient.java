@@ -80,23 +80,20 @@ public class ArchiveClient
     }
 
     public boolean stopRecording(
-        final String channel,
-        final int streamId,
+        final long recordingId,
         final long correlationId)
     {
         stopRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
-            .streamId(streamId)
-            .channel(channel);
+            .recordingId(recordingId);
 
         return offer(stopRecordingRequestEncoder.encodedLength());
     }
 
     public boolean replay(
-        final int recordingId,
-        final int termId,
-        final int termOffset,
+        final long recordingId,
+        final long position,
         final long length,
         final String replayChannel,
         final int replayStreamId,
@@ -106,8 +103,7 @@ public class ArchiveClient
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
             .recordingId(recordingId)
-            .termId(termId)
-            .termOffset(termOffset)
+            .position(position)
             .length(length)
             .replayStreamId(replayStreamId)
             .replayChannel(replayChannel);
@@ -126,8 +122,8 @@ public class ArchiveClient
     }
 
     public boolean listRecordings(
-        final int fromId,
-        final int toId,
+        final long fromId,
+        final long toId,
         final long correlationId)
     {
         listRecordingsRequestEncoder
@@ -222,8 +218,7 @@ public class ArchiveClient
             messageHeaderDecoder.version());
 
         responseListener.onReplayAborted(
-            replayAbortedDecoder.lastTermId(),
-            replayAbortedDecoder.lastTermOffset(),
+            replayAbortedDecoder.lastPosition(),
             replayAbortedDecoder.correlationId());
     }
 
@@ -259,11 +254,9 @@ public class ArchiveClient
             recordingDescriptorDecoder.segmentFileLength(),
             recordingDescriptorDecoder.termBufferLength(),
             recordingDescriptorDecoder.startTime(),
-            recordingDescriptorDecoder.initialTermId(),
-            recordingDescriptorDecoder.initialTermOffset(),
+            recordingDescriptorDecoder.initialPosition(),
             recordingDescriptorDecoder.endTime(),
-            recordingDescriptorDecoder.lastTermId(),
-            recordingDescriptorDecoder.lastTermOffset(),
+            recordingDescriptorDecoder.lastPosition(),
             recordingDescriptorDecoder.source(),
             recordingDescriptorDecoder.sessionId(),
             recordingDescriptorDecoder.channel(),
@@ -290,10 +283,8 @@ public class ArchiveClient
 
                         recordingEventsListener.onProgress(
                             recordingProgressDecoder.recordingId(),
-                            recordingProgressDecoder.initialTermId(),
-                            recordingProgressDecoder.initialTermOffset(),
-                            recordingProgressDecoder.termId(),
-                            recordingProgressDecoder.termOffset()
+                            recordingProgressDecoder.initialPosition(),
+                            recordingProgressDecoder.currentPosition()
                         );
                         break;
 

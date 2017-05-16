@@ -27,13 +27,13 @@ import java.nio.channels.FileChannel;
 import static io.aeron.archiver.ArchiveUtil.recordingOffset;
 import static java.nio.file.StandardOpenOption.*;
 
-final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
+final class Recorder implements AutoCloseable, RawBlockHandler
 {
     static class Builder
     {
         private File archiveDir;
         private EpochClock epochClock;
-        private int recordingId;
+        private long recordingId;
         private int termBufferLength;
         private boolean forceWrites = true;
         private boolean forceMetadataUpdates = true;
@@ -42,6 +42,8 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
         private String source;
         private String channel;
         private int segmentFileLength = 128 * 1024 * 1024;
+        private int initialTermId;
+        private int mtuLength;
 
         Builder archiveDir(final File archiveDir)
         {
@@ -55,7 +57,7 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
             return this;
         }
 
-        Builder recordingId(final int recordingId)
+        Builder recordingId(final long recordingId)
         {
             this.recordingId = recordingId;
             return this;
@@ -109,6 +111,12 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
             return this;
         }
 
+        Builder initialTermId(final int initialTermId)
+        {
+            this.initialTermId = initialTermId;
+            return this;
+        }
+
         Recorder build()
         {
             return new Recorder(this);
@@ -118,14 +126,21 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
         {
             return segmentFileLength;
         }
+
+        Builder mtuLength(final int mtuLength)
+        {
+            this.mtuLength = mtuLength;
+            return this;
+        }
     }
 
     private final boolean forceWrites;
     private final boolean forceMetadataUpdates;
 
+    private final int initialTermId;
     private final int termBufferLength;
     private final int termsMask;
-    private final int recordingId;
+    private final long recordingId;
 
     private final File archiveDir;
     private final EpochClock epochClock;
@@ -140,16 +155,14 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
      * by -1
      */
     private int recordingPosition = -1;
+    private int segmentIndex = 0;
     private RandomAccessFile recordingFile;
     private FileChannel recordingFileChannel;
 
-    private int initialTermId = -1;
-    private int initialTermOffset = -1;
-    private int lastTermId = -1;
-    private int lastTermOffset = -1;
-
     private boolean closed = false;
     private boolean stopped = false;
+    private long initialPosition;
+    private long lastPosition;
 
     private Recorder(final Builder builder)
     {
@@ -158,7 +171,7 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
         this.termBufferLength = builder.termBufferLength;
         this.epochClock = builder.epochClock;
         this.segmentFileLength = builder.segmentFileLength;
-
+        this.initialTermId = builder.initialTermId;
         this.termsMask = (builder.segmentFileLength / termBufferLength) - 1;
         this.forceWrites = builder.forceWrites;
         this.forceMetadataUpdates = builder.forceMetadataUpdates;
@@ -184,6 +197,8 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
                 recordingId,
                 termBufferLength,
                 segmentFileLength,
+                builder.mtuLength,
+                builder.initialTermId,
                 builder.source,
                 builder.sessionId,
                 builder.channel,
@@ -203,9 +218,11 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
 
     static void initDescriptor(
         final RecordingDescriptorEncoder descriptor,
-        final int recordingId,
+        final long recordingId,
         final int termBufferLength,
         final int segmentFileLength,
+        final int mtuLength,
+        final int initialTermId,
         final String source,
         final int sessionId,
         final String channel,
@@ -214,11 +231,11 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
         descriptor.recordingId(recordingId);
         descriptor.termBufferLength(termBufferLength);
         descriptor.startTime(-1);
-        descriptor.initialTermId(-1);
-        descriptor.initialTermOffset(-1);
-        descriptor.lastTermId(-1);
-        descriptor.lastTermOffset(-1);
+        descriptor.initialPosition(-1);
+        descriptor.lastPosition(-1);
         descriptor.endTime(-1);
+        descriptor.mtuLength(mtuLength);
+        descriptor.initialTermId(initialTermId);
         descriptor.sessionId(sessionId);
         descriptor.streamId(streamId);
         descriptor.segmentFileLength(segmentFileLength);
@@ -226,10 +243,9 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
         descriptor.channel(channel);
     }
 
-    private void newRecordingSegmentFile(final int termId)
+    private void newRecordingSegmentFile()
     {
-        final String segmentFileName = ArchiveUtil.recordingDataFileName(
-            recordingId, initialTermId, termBufferLength, termId, segmentFileLength);
+        final String segmentFileName = ArchiveUtil.recordingDataFileName(recordingId, segmentIndex);
         final File file = new File(archiveDir, segmentFileName);
 
         try
@@ -255,15 +271,20 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
         final int termId)
     {
         // detect first write
-        if (recordingPosition == -1 && termId != initialTermId)
+        if (recordingPosition == -1)
         {
-            metaDataEncoder.initialTermId(termId);
-            initialTermId = termId;
+            metaDataEncoder.initialPosition(termOffset);
+            initialPosition = termOffset;
+            if (termId != initialTermId)
+            {
+                throw new IllegalStateException("Expected to record from publication start, " +
+                    "but first termId=" + termId + " and not initialTermId=" + initialTermId);
+            }
         }
         final int recordingOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
         try
         {
-            prepareRecording(termOffset, termId, recordingOffset, blockLength);
+            prepareRecording(termOffset, recordingOffset, blockLength);
 
             fileChannel.transferTo(fileOffset, blockLength, recordingFileChannel);
             if (forceWrites)
@@ -287,16 +308,21 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
         final int frameLength = header.frameLength();
 
         // detect first write
-        if (recordingPosition == -1 && termId != initialTermId)
+        // detect first write
+        if (recordingPosition == -1)
         {
-            metaDataEncoder.initialTermId(termId);
-            initialTermId = termId;
+            metaDataEncoder.initialPosition(termOffset);
+            if (termId != initialTermId)
+            {
+                throw new IllegalStateException("Expected to record from publication start, " +
+                    "but first termId=" + termId + " and not initialTermId=" + initialTermId);
+            }
         }
 
         final int recordingOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
         try
         {
-            prepareRecording(termOffset, termId, recordingOffset, header.frameLength());
+            prepareRecording(termOffset, recordingOffset, header.frameLength());
 
             final ByteBuffer src = buffer.byteBuffer().duplicate();
             src.position(termOffset).limit(termOffset + frameLength);
@@ -313,7 +339,6 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
 
     private void prepareRecording(
         final int termOffset,
-        final int termId,
         final int recordingOffset,
         final int writeLength)
         throws IOException
@@ -326,7 +351,7 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
 
         if (recordingPosition == -1)
         {
-            newRecordingSegmentFile(termId);
+            newRecordingSegmentFile();
             if (recordingFileChannel.position() != 0)
             {
                 throw new IllegalArgumentException(
@@ -334,18 +359,9 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
             }
 
             recordingPosition = termOffset;
-            // first write to the logs is not at beginning of file. We need to insert a padding indicator.
-            if (recordingOffset != 0)
-            {
-                // would be nice to use the log buffer header for this, but actually makes no difference.
-                final ByteBuffer bb = ByteBuffer.allocate(128);
-                bb.putInt(0);
-                bb.putInt(termOffset);
-                recordingFileChannel.write(bb);
-            }
+            // TODO: if first write to the logs is not at beginning of file, insert a padding frame?
 
-            metaDataEncoder.initialTermOffset(termOffset);
-            initialTermOffset = termOffset;
+            metaDataEncoder.initialPosition(termOffset);
             recordingFileChannel.position(recordingPosition);
             metaDataEncoder.startTime(epochClock.time());
         }
@@ -370,11 +386,10 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
         throws IOException
     {
         recordingPosition = recordingOffset + blockLength;
-        metaDataEncoder.lastTermId(termId);
-        lastTermId = termId;
         final int endTermOffset = termOffset + blockLength;
-        metaDataEncoder.lastTermOffset(endTermOffset);
-        lastTermOffset = endTermOffset;
+        final long position = ((long)(termId - initialTermId)) * termBufferLength + endTermOffset;
+        metaDataEncoder.lastPosition(position);
+        lastPosition = position;
         if (forceMetadataUpdates)
         {
             metaDataBuffer.force();
@@ -385,7 +400,8 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
             CloseHelper.close(recordingFileChannel);
             CloseHelper.close(recordingFile);
             recordingPosition = 0;
-            newRecordingSegmentFile(termId + 1);
+            segmentIndex++;
+            newRecordingSegmentFile();
         }
     }
 
@@ -417,29 +433,9 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
         closed = true;
     }
 
-    int recordingId()
+    long recordingId()
     {
         return recordingId;
-    }
-
-    int initialTermId()
-    {
-        return initialTermId;
-    }
-
-    int initialTermOffset()
-    {
-        return initialTermOffset;
-    }
-
-    int lastTermId()
-    {
-        return lastTermId;
-    }
-
-    int lastTermOffset()
-    {
-        return lastTermOffset;
     }
 
     ByteBuffer metaDataBuffer()
@@ -450,5 +446,15 @@ final class Recorder implements AutoCloseable, FragmentHandler, RawBlockHandler
     int segmentFileLength()
     {
         return segmentFileLength;
+    }
+
+    long initialPosition()
+    {
+        return initialPosition;
+    }
+
+    long lastPosition()
+    {
+        return lastPosition;
     }
 }

@@ -43,12 +43,13 @@ public class ArchiveReplayLoadTest
     private static final int TIMEOUT = 5000;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
 
-    static final String REPLY_URI = "aeron:udp?endpoint=127.0.0.1:54327";
+    static final String REPLY_URI = "aeron:ipc?endpoint=127.0.0.1:54327";
     static final int REPLY_STREAM_ID = 100;
-    private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
-    private static final String PUBLISH_URI = "aeron:udp?endpoint=127.0.0.1:54325";
+    private static final String REPLAY_URI = "aeron:ipc?endpoint=127.0.0.1:54326";
+    private static final String PUBLISH_URI = "aeron:ipc?endpoint=127.0.0.1:54325";
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
+    public static final int MESSAGE_COUNT = 100000;
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
     private Aeron publishingClient;
@@ -80,6 +81,7 @@ public class ArchiveReplayLoadTest
     };
     private Subscription reply;
     private long correlationId;
+    private long initialPosition;
 
     @Before
     public void setUp() throws Exception
@@ -149,7 +151,7 @@ public class ArchiveReplayLoadTest
 
             println("Request stop recording");
             final long requestStopCorrelationId = this.correlationId++;
-            waitFor(() -> client.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID, requestStopCorrelationId));
+            waitFor(() -> client.stopRecording(recordingId, requestStopCorrelationId));
             waitForOk(client, reply, requestStopCorrelationId);
             final long limit = System.currentTimeMillis() + 120000;
             int i = 0;
@@ -169,7 +171,7 @@ public class ArchiveReplayLoadTest
         final Publication publication)
         throws InterruptedException
     {
-        final int messageCount = 200000;
+        final int messageCount = MESSAGE_COUNT;
         fragmentLength = new int[messageCount];
         for (int i = 0; i < messageCount; i++)
         {
@@ -179,7 +181,7 @@ public class ArchiveReplayLoadTest
         }
 
         final CountDownLatch waitForData = new CountDownLatch(1);
-        printf("Sending %d messages, total length=%d %n", messageCount, totalDataLength);
+        System.out.printf("Sending %d messages, total length=%d %n", messageCount, totalDataLength);
 
         trackRecordingProgress(client, publication.termBufferLength(), waitForData);
         publishDataToRecorded(publication, messageCount);
@@ -191,7 +193,7 @@ public class ArchiveReplayLoadTest
     private void publishDataToRecorded(final Publication publication, final int messageCount)
     {
         final int positionBitsToShift = Integer.numberOfTrailingZeros(publication.termBufferLength());
-        final long initialPosition = publication.position();
+        initialPosition = publication.position();
         final int initialTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(
             initialPosition, positionBitsToShift);
         // clear out the buffer we write
@@ -235,8 +237,7 @@ public class ArchiveReplayLoadTest
 
             TestUtil.waitFor(() -> client.replay(
                 recordingId,
-                publication.initialTermId(),
-                0,
+                initialPosition,
                 totalRecordingLength,
                 REPLAY_URI,
                 replayStreamId,
@@ -288,28 +289,25 @@ public class ArchiveReplayLoadTest
                     {
                         TestUtil.waitFor(() -> (client.pollEvents(new RecordingEventsListener()
                         {
+                            @Override
                             public void onProgress(
-                                final int recordingId0,
-                                final int initialTermId,
-                                final int initialTermOffset,
-                                final int termId,
-                                final int termOffset)
+                                final long recordingId0,
+                                final long initialPosition,
+                                final long currentPosition)
                             {
                                 assertThat(recordingId0, is(recordingId));
-                                recorded = termBufferLength *
-                                    (termId - initialTermId) +
-                                    (termOffset - initialTermOffset);
+                                recorded = currentPosition - initialPosition;
                                 printf("a=%d total=%d %n", recorded, totalRecordingLength);
                             }
 
                             public void onStart(
-                                final int recordingId,
+                                final long recordingId,
                                 final String source, final int sessionId,
                                 final String channel, final int streamId)
                             {
                             }
 
-                            public void onStop(final int recordingId0)
+                            public void onStop(final long recordingId0)
                             {
                             }
                         }, 1)) != 0);

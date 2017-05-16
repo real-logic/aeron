@@ -20,7 +20,7 @@ import io.aeron.archiver.client.*;
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.driver.*;
 import io.aeron.logbuffer.*;
-import io.aeron.protocol.*;
+import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
@@ -31,10 +31,9 @@ import java.io.*;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
-import static io.aeron.archiver.ArchiveUtil.*;
+import static io.aeron.archiver.ArchiveUtil.recordingMetaFileFormatDecoder;
+import static io.aeron.archiver.ArchiveUtil.recordingMetaFileName;
 import static io.aeron.archiver.TestUtil.*;
-import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
@@ -43,18 +42,13 @@ public class ArchiveAndReplaySystemTest
 {
     public static class FailRecordingEventsListener implements RecordingEventsListener
     {
-        public void onProgress(
-            final int recordingId,
-            final int initialTermId,
-            final int initialTermOffset,
-            final int termId,
-            final int termOffset)
+        public void onProgress(final long recordingId, final long initialPosition, final long currentPosition)
         {
             fail();
         }
 
         public void onStart(
-            final int recordingId,
+            final long recordingId,
             final String source,
             final int sessionId,
             final String channel,
@@ -63,7 +57,7 @@ public class ArchiveAndReplaySystemTest
             fail();
         }
 
-        public void onStop(final int recordingId)
+        public void onStop(final long recordingId)
         {
             fail();
         }
@@ -76,26 +70,25 @@ public class ArchiveAndReplaySystemTest
             fail();
         }
 
-        public void onReplayStarted(final int replayId, final long correlationId)
+        public void onReplayStarted(final long replayId, final long correlationId)
         {
             fail();
         }
 
-        public void onReplayAborted(final int lastTermId, final int lastTermOffset, final long correlationId)
+        public void onReplayAborted(final long lastPosition, final long correlationId)
         {
             fail();
         }
 
+        @Override
         public void onRecordingDescriptor(
-            final int recordingId,
+            final long recordingId,
             final int segmentFileLength,
             final int termBufferLength,
             final long startTime,
-            final int initialTermId,
-            final int initialTermOffset,
+            final long initialPosition,
             final long endTime,
-            final int lastTermId,
-            final int lastTermOffset,
+            final long lastPosition,
             final String source,
             final int sessionId,
             final String channel,
@@ -105,7 +98,7 @@ public class ArchiveAndReplaySystemTest
             fail();
         }
 
-        public void onRecordingNotFound(final int recordingId, final int maxRecordingId, final long correlationId)
+        public void onRecordingNotFound(final long recordingId, final long maxRecordingId, final long correlationId)
         {
             fail();
         }
@@ -115,10 +108,12 @@ public class ArchiveAndReplaySystemTest
 
     private static final String REPLY_URI = "aeron:udp?endpoint=127.0.0.1:54327";
     private static final int REPLY_STREAM_ID = 100;
-    private static final String REPLAY_URI = "aeron:ipc?endpoint=127.0.0.1:54326";
+    private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
     private static final String PUBLISH_URI = "aeron:udp?endpoint=127.0.0.1:54325";
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
+    public static final int REPLAY_STREAM_ID = 101;
+
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
     private Aeron publishingClient;
@@ -126,7 +121,7 @@ public class ArchiveAndReplaySystemTest
     private MediaDriver driver;
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private File archiveDir;
-    private int recordingId;
+    private long recordingId;
     private String source;
     private long remaining;
     private int nextFragmentOffset;
@@ -135,7 +130,7 @@ public class ArchiveAndReplaySystemTest
     private long totalDataLength;
     private long totalRecordingLength;
     private long recorded;
-    private volatile int lastTermId = -1;
+    private volatile long lastPosition = -1;
     private Throwable trackerError;
     private Random rnd = new Random();
     private long seed;
@@ -151,6 +146,7 @@ public class ArchiveAndReplaySystemTest
     };
     private Subscription reply;
     private long correlationId;
+    private long initialPosition;
 
     @Before
     public void setUp() throws Exception
@@ -218,7 +214,7 @@ public class ArchiveAndReplaySystemTest
             waitFor(() -> client.pollEvents(new FailRecordingEventsListener()
             {
                 public void onStart(
-                    final int recordingId0,
+                    final long recordingId0,
                     final String iSource,
                     final int sessionId,
                     final String channel,
@@ -243,12 +239,12 @@ public class ArchiveAndReplaySystemTest
 
             println("Request stop recording");
             final long requestStopCorrelationId = this.correlationId++;
-            waitFor(() -> client.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID, requestStopCorrelationId));
+            waitFor(() -> client.stopRecording(recordingId, requestStopCorrelationId));
             waitForOk(client, reply, requestStopCorrelationId);
 
             waitFor(() -> client.pollEvents(new FailRecordingEventsListener()
             {
-                public void onStop(final int rId)
+                public void onStop(final long rId)
                 {
                     assertThat(rId, is(recordingId));
                 }
@@ -261,7 +257,6 @@ public class ArchiveAndReplaySystemTest
 
             validateMetaDataFile(publication);
             validateArchiveFile(messageCount, recordingId);
-            validateArchiveFileChunked(messageCount, recordingId);
 
             validateReplay(client, publication, messageCount);
         }
@@ -285,15 +280,13 @@ public class ArchiveAndReplaySystemTest
         waitFor(() -> client.pollResponses(reply, new FailResponseListener()
         {
             public void onRecordingDescriptor(
-                final int rId,
+                final long rId,
                 final int segmentFileLength,
                 final int termBufferLength,
                 final long startTime,
-                final int initialTermId,
-                final int initialTermOffset,
+                final long initialPosition,
                 final long endTime,
-                final int lastTermId,
-                final int lastTermOffset,
+                final long lastPosition,
                 final String source,
                 final int sessionId,
                 final String channel,
@@ -345,7 +338,6 @@ public class ArchiveAndReplaySystemTest
         }
 
         final RecordingDescriptorDecoder decoder = recordingMetaFileFormatDecoder(metaFile);
-        assertThat(decoder.initialTermId(), is(publication.initialTermId()));
         assertThat(decoder.sessionId(), is(publication.sessionId()));
         assertThat(decoder.streamId(), is(publication.streamId()));
         assertThat(decoder.termBufferLength(), is(publication.termBufferLength()));
@@ -360,7 +352,7 @@ public class ArchiveAndReplaySystemTest
     private void publishDataToRecorded(final Publication publication, final int messageCount)
     {
         final int positionBitsToShift = Integer.numberOfTrailingZeros(publication.termBufferLength());
-        final long initialPosition = publication.position();
+        initialPosition = publication.position();
         final int initialTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(
             initialPosition, positionBitsToShift);
         // clear out the buffer we write
@@ -378,16 +370,9 @@ public class ArchiveAndReplaySystemTest
             TestUtil.offer(publication, buffer, dataLength);
         }
 
-        final int lastTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(
-            publication.position(), positionBitsToShift);
-        final int termIdFromPosition = LogBufferDescriptor.computeTermIdFromPosition(
-            publication.position(), positionBitsToShift, publication.initialTermId());
-        totalRecordingLength =
-            (termIdFromPosition - publication.initialTermId()) * publication.termBufferLength() +
-                (lastTermOffset - initialTermOffset);
-
-        assertThat(publication.position() - initialPosition, is(totalRecordingLength));
-        lastTermId = termIdFromPosition;
+        final long position = publication.position();
+        totalRecordingLength = position - initialPosition;
+        lastPosition = position;
     }
 
     private void validateReplay(
@@ -395,17 +380,16 @@ public class ArchiveAndReplaySystemTest
         final Publication publication,
         final int messageCount)
     {
-        try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, 101))
+        try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
         {
             final long replayCorrelationId = correlationId++;
             // request replay
             waitFor(() -> client.replay(
                 recordingId,
-                publication.initialTermId(),
-                0,
+                initialPosition,
                 totalRecordingLength,
                 REPLAY_URI,
-                101,
+                REPLAY_STREAM_ID,
                 correlationId++
             ));
             waitForOk(client, reply, replayCorrelationId);
@@ -427,7 +411,7 @@ public class ArchiveAndReplaySystemTest
         }
     }
 
-    private void validateArchiveFile(final int messageCount, final int recordingId) throws IOException
+    private void validateArchiveFile(final int messageCount, final long recordingId) throws IOException
     {
         try (RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(recordingId, archiveDir))
         {
@@ -468,96 +452,6 @@ public class ArchiveAndReplaySystemTest
         printf("Fragment2: offset=%d length=%d %n", offset, length);
     }
 
-    private void validateArchiveFileChunked(final int messageCount, final int recordingId) throws IOException
-    {
-        final RecordingDescriptorDecoder decoder = recordingMetaFileFormatDecoder(
-            new File(archiveDir, recordingMetaFileName(recordingId)));
-        final long recordingFullLength = ArchiveUtil.recordingFileFullLength(decoder);
-        final int initialTermId = decoder.initialTermId();
-        final int termBufferLength = decoder.termBufferLength();
-        final int initialTermOffset = decoder.initialTermOffset();
-
-        IoUtil.unmap(decoder.buffer().byteBuffer());
-        try (RecordingChunkReader cursor = new RecordingChunkReader(
-            recordingId,
-            archiveDir,
-            initialTermId,
-            termBufferLength,
-            initialTermId,
-            initialTermOffset,
-            recordingFullLength,
-            128 * 1024 * 1024))
-        {
-            fragmentCount = 0;
-            final HeaderFlyweight mHeader = new HeaderFlyweight();
-            nextFragmentOffset = 0;
-            remaining = totalDataLength;
-
-            while (!cursor.isDone())
-            {
-                cursor.readChunk(
-                    (termBuffer, termOffset, chunkLength) ->
-                    {
-                        validateFragmentsInChunk(
-                            mHeader,
-                            messageCount,
-                            termBuffer,
-                            termOffset,
-                            chunkLength);
-                        return true;
-                    },
-                    4096 - DataHeaderFlyweight.HEADER_LENGTH);
-            }
-        }
-
-        assertThat(fragmentCount, is(messageCount));
-        assertThat(remaining, is(0L));
-    }
-
-    private void validateFragmentsInChunk(
-        final HeaderFlyweight mHeader,
-        final int messageCount,
-        final DirectBuffer termBuffer,
-        final int termOffset,
-        final int chunkLength)
-    {
-        printf("Chunk: length=%d \t, offset=%d%n", chunkLength, termOffset);
-
-        int messageStart;
-        int frameLength;
-        while (nextFragmentOffset < chunkLength)
-        {
-            messageStart = termOffset + nextFragmentOffset;
-            mHeader.wrap(termBuffer, messageStart, HeaderFlyweight.HEADER_LENGTH);
-            frameLength = mHeader.frameLength();
-
-            if (mHeader.headerType() == DataHeaderFlyweight.HDR_TYPE_DATA)
-            {
-                assertThat("Fragments exceed messages", fragmentCount, lessThan(messageCount));
-                assertThat("Fragment:" + fragmentCount, frameLength, is(fragmentLength[fragmentCount]));
-
-                if (messageStart + 32 < termOffset + chunkLength)
-                {
-                    final int index = termBuffer.getInt(messageStart + DataHeaderFlyweight.HEADER_LENGTH);
-                    assertThat(String.format(
-                        "Fragment: length=%d, foffset=%d, getInt(0)=%d, toffset=%d",
-                        frameLength, (nextFragmentOffset % chunkLength), index, termOffset),
-                        index, is(fragmentCount));
-                    printf("Fragment: length=%d \t, offset=%d \t, getInt(0)=%d %n",
-                        frameLength, (nextFragmentOffset % chunkLength), index);
-                }
-
-                remaining -= frameLength;
-                fragmentCount++;
-            }
-
-            final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
-            nextFragmentOffset += alignedLength;
-        }
-
-        nextFragmentOffset -= chunkLength;
-    }
-
     private void trackRecordingProgress(
         final ArchiveClient client,
         final int termBufferLength,
@@ -572,40 +466,18 @@ public class ArchiveAndReplaySystemTest
                     long start = System.currentTimeMillis();
                     long startBytes = remaining;
                     // each message is fragmentLength[fragmentCount]
-                    while (lastTermId == -1 || recorded < totalRecordingLength)
+                    while (lastPosition == -1 || recorded < totalRecordingLength)
                     {
-                        waitFor(() -> (client.pollEvents(new RecordingEventsListener()
+                        waitFor(() -> (client.pollEvents(new FailRecordingEventsListener()
                         {
                             public void onProgress(
-                                final int recordingId0,
-                                final int initialTermId,
-                                final int initialTermOffset,
-                                final int termId,
-                                final int termOffset)
+                                final long recordingId0,
+                                final long initialPosition,
+                                final long currentPosition)
                             {
                                 assertThat(recordingId0, is(recordingId));
-                                recorded = recordingLength(
-                                    termBufferLength,
-                                    initialTermId,
-                                    initialTermOffset,
-                                    termId,
-                                    termOffset);
+                                recorded = currentPosition - initialPosition;
                                 printf("a=%d total=%d %n", recorded, totalRecordingLength);
-                            }
-
-                            public void onStart(
-                                final int recordingId,
-                                final String source,
-                                final int sessionId,
-                                final String channel,
-                                final int streamId)
-                            {
-                                fail();
-                            }
-
-                            public void onStop(final int recordingId0)
-                            {
-                                fail();
                             }
                         }, 1)) != 0);
 
@@ -630,6 +502,7 @@ public class ArchiveAndReplaySystemTest
                 }
                 catch (final Throwable throwable)
                 {
+                    throwable.printStackTrace();
                     trackerError = throwable;
                 }
 

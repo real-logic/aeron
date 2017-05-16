@@ -17,7 +17,7 @@ package io.aeron.archiver;
 
 import io.aeron.Publication;
 import io.aeron.archiver.codecs.*;
-import org.agrona.*;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.IdleStrategy;
 
 class NotificationsProxy
@@ -36,8 +36,8 @@ class NotificationsProxy
         this.recordingNotifications = recordingNotifications;
     }
 
-    int recordingStarted(
-        final int recordingId,
+    void recordingStarted(
+        final long recordingId,
         final String source,
         final int sessionId,
         final String channel,
@@ -52,29 +52,23 @@ class NotificationsProxy
             .channel(channel);
 
         send(recordingStartedEncoder.encodedLength());
-
-        return recordingId;
     }
 
     void recordingProgress(
-        final int recordingId,
-        final int initialTermId,
-        final int initialTermOffset,
-        final int termId,
-        final int endTermOffset)
+        final long recordingId,
+        final long initialPosition,
+        final long currentPosition)
     {
         recordingProgressEncoder
             .wrapAndApplyHeader(outboundBuffer, 0, messageHeaderEncoder)
             .recordingId(recordingId)
-            .initialTermId(initialTermId)
-            .initialTermOffset(initialTermOffset)
-            .termId(termId)
-            .termOffset(endTermOffset);
+            .initialPosition(initialPosition)
+            .currentPosition(currentPosition);
 
         send(recordingProgressEncoder.encodedLength());
     }
 
-    void recordingStopped(final int recordingId)
+    void recordingStopped(final long recordingId)
     {
         recordingStoppedEncoder
             .wrapAndApplyHeader(outboundBuffer, 0, messageHeaderEncoder)

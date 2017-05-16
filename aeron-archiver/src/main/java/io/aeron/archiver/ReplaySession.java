@@ -46,16 +46,15 @@ class ReplaySession implements
     public static final int REPLAY_SEND_BATCH_SIZE = 8;
     public static final int LINGER_LENGTH_MS = 1000;
 
-    private final int recordingId;
-    private final int fromTermId;
-    private final int fromTermOffset;
+    private final long recordingId;
+    private final long fromPosition;
     private final long replayLength;
 
     private final ExclusivePublication replayPublication;
     private final ExclusivePublication controlPublication;
 
     private final File archiveDir;
-    private final ClientSessionProxy clientSessionProxy;
+    private final ControlSessionProxy controlSessionProxy;
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
 
     private State state = State.INIT;
@@ -66,27 +65,26 @@ class ReplaySession implements
     private long lingerSinceMs;
 
     ReplaySession(
-        final int recordingId,
-        final int fromTermId,
-        final int fromTermOffset,
+        final long recordingId,
+        final long fromPosition,
         final long replayLength,
         final ExclusivePublication replayPublication,
         final ExclusivePublication controlPublication,
         final File archiveDir,
-        final ClientSessionProxy clientSessionProxy,
+        final ControlSessionProxy controlSessionProxy,
         final int replaySessionId,
         final long correlationId, final EpochClock epochClock)
     {
+        // TODO: set position, set MTU (add to metadata)
         this.recordingId = recordingId;
 
-        this.fromTermId = fromTermId;
-        this.fromTermOffset = fromTermOffset;
+        this.fromPosition = fromPosition;
         this.replayLength = replayLength;
 
         this.replayPublication = replayPublication;
         this.controlPublication = controlPublication;
         this.archiveDir = archiveDir;
-        this.clientSessionProxy = clientSessionProxy;
+        this.controlSessionProxy = controlSessionProxy;
         this.replaySessionId = replaySessionId;
         this.correlationId = correlationId;
         this.epochClock = epochClock;
@@ -149,6 +147,8 @@ class ReplaySession implements
 
     private int init()
     {
+        // TODO: reflect changes to controlPublication management
+        // TODO: can only create the replay publication after reading the metadata, so create it here
         if (replayPublication.isClosed() || controlPublication.isClosed())
         {
             // TODO: add counter
@@ -183,57 +183,27 @@ class ReplaySession implements
             return closeOnError(ex, recordingMetaFile.getAbsolutePath() + " : failed to map");
         }
 
-        final int initialTermId = metaData.initialTermId();
-        final int initialTermOffset = metaData.initialTermOffset();
-
-        final int lastTermId = metaData.lastTermId();
-        final int lastTermOffset = metaData.lastTermOffset();
-        final int termBufferLength = metaData.termBufferLength();
+        final long initialPosition = metaData.initialPosition();
+        final long lastPosition = metaData.lastPosition();
 
         // Note: when debugging this may cause a crash as the debugger might try to call metaData.toString after unmap
         IoUtil.unmap(metaData.buffer().byteBuffer());
 
-        final int replayEndTermId = (int)(fromTermId + (replayLength / termBufferLength));
-        final int replayEndTermOffset = (int)((replayLength + fromTermOffset) % termBufferLength);
-
-        if (fromTermOffset >= termBufferLength || fromTermOffset < 0 ||
-            !isTermIdInRange(fromTermId, initialTermId, lastTermId) ||
-            !isTermOffsetInRange(
-                initialTermId,
-                initialTermOffset,
-                lastTermId,
-                lastTermOffset,
-                fromTermId,
-                fromTermOffset) ||
-            !isTermIdInRange(replayEndTermId, initialTermId, lastTermId) ||
-            !isTermOffsetInRange(
-                initialTermId,
-                initialTermOffset,
-                lastTermId,
-                lastTermOffset,
-                replayEndTermId,
-                replayEndTermOffset))
-        {
-            return closeOnError(null, "Requested replay is out of recorded range [(" +
-                initialTermId + ", " + initialTermOffset + "), (" +
-                lastTermId + ", " + lastTermOffset + ")]");
-        }
+        // TODO: validate range
 
         try
         {
             cursor = new RecordingFragmentReader(
                 recordingId,
                 archiveDir,
-                fromTermId,
-                fromTermOffset,
+                fromPosition,
                 replayLength);
         }
         catch (final IOException ex)
         {
             return closeOnError(ex, "Failed to open cursor for a recording");
         }
-
-        clientSessionProxy.sendResponse(controlPublication, null, correlationId);
+        controlSessionProxy.sendResponse(controlPublication, null, correlationId);
         this.state = State.REPLAY;
 
         return 1;
@@ -268,7 +238,7 @@ class ReplaySession implements
         this.state = State.INACTIVE;
         if (controlPublication.isConnected())
         {
-            clientSessionProxy.sendResponse(controlPublication, errorMessage, correlationId);
+            controlSessionProxy.sendResponse(controlPublication, errorMessage, correlationId);
         }
 
         if (e != null)

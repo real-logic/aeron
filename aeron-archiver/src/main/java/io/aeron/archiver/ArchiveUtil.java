@@ -29,36 +29,45 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 public class ArchiveUtil
 {
-    static String recordingMetaFileName(final int recordingId)
+    static String recordingMetaFileName(final long recordingId)
     {
         return recordingId + ".inf";
     }
 
-    static String recordingDataFileName(final int recordingId, final int segmentIndex)
+    static String recordingDataFileName(
+        final long recordingId,
+        final int segmentIndex)
     {
         return recordingId + "." + segmentIndex + ".rec";
     }
 
     static String recordingDataFileName(
-        final int recordingId,
+        final long recordingId,
         final int initialTermId,
         final int termBufferLength,
         final int termId,
         final int segmentFileLength)
     {
-        final int segmentIndex = segmentFileIndex(initialTermId, termBufferLength, termId, segmentFileLength);
+        final int segmentIndex = segmentFileIndex(initialTermId, termId, termBufferLength, segmentFileLength);
 
         return recordingDataFileName(recordingId, segmentIndex);
     }
 
-    static int segmentFileIndex(
+    private static int segmentFileIndex(
         final int initialTermId,
-        final int termBufferLength,
         final int termId,
+        final int termBufferLength,
         final int segmentFileLength)
     {
-        final int termsPerFile = segmentFileLength / termBufferLength;
-        return (termId - initialTermId) / termsPerFile;
+        return (int) (((termId - initialTermId) * (long)termBufferLength) / segmentFileLength);
+    }
+
+    static int segmentFileIndex(
+        final long initialPosition,
+        final long position,
+        final int segmentFileLength)
+    {
+        return (int) ((position - initialPosition) / segmentFileLength);
     }
 
     static void printMetaFile(final File metaFile) throws IOException
@@ -67,10 +76,8 @@ public class ArchiveUtil
         System.out.println("recordingId: " + formatDecoder.recordingId());
         System.out.println("termBufferLength: " + formatDecoder.termBufferLength());
         System.out.println("start time: " + new Date(formatDecoder.startTime()));
-        System.out.println("initialTermId: " + formatDecoder.initialTermId());
-        System.out.println("initial term offset: " + formatDecoder.initialTermOffset());
-        System.out.println("last term: " + formatDecoder.lastTermId());
-        System.out.println("last term offset: " + formatDecoder.lastTermOffset());
+        System.out.println("initial position: " + formatDecoder.initialPosition());
+        System.out.println("last position: " + formatDecoder.lastPosition());
         System.out.println("end time: " + new Date(formatDecoder.endTime()));
         System.out.println("source: " + formatDecoder.source());
         System.out.println("sessionId: " + formatDecoder.sessionId());
@@ -119,12 +126,8 @@ public class ArchiveUtil
 
     static long recordingFileFullLength(final RecordingDescriptorDecoder metaDecoder)
     {
-        final int termBufferLength = metaDecoder.termBufferLength();
-        final int initialTermId = metaDecoder.initialTermId();
-        final int initialTermOffset = metaDecoder.initialTermOffset();
-        final int lastTermId = metaDecoder.lastTermId();
-        final int lastTermOffset = metaDecoder.lastTermOffset();
-        return recordingLength(termBufferLength, initialTermId, initialTermOffset, lastTermId, lastTermOffset);
+
+        return metaDecoder.lastPosition() - metaDecoder.initialPosition();
     }
 
     public static long recordingLength(

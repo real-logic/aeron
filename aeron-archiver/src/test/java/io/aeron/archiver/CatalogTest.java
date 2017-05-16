@@ -32,9 +32,9 @@ public class CatalogTest
     static final UnsafeBuffer BUFFER = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, 64));
     static final RecordingDescriptorDecoder DECODER = new RecordingDescriptorDecoder();
-    static int recordingAId;
-    static int recordingBId;
-    static int recordingCId;
+    static long recordingAId;
+    static long recordingBId;
+    static long recordingCId;
     static RecordingSession mockSession = mock(RecordingSession.class);
     private static File archiveDir;
 
@@ -51,13 +51,13 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir))
         {
             recordingAId =
-                catalog.addNewRecording("sourceA", 6, "channelG", 1, 4096, 0, mockSession,
+                catalog.addNewRecording("sourceA", 6, "channelG", 1, 4096, 1024, 0, mockSession,
                     SEGMENT_FILE_SIZE);
             recordingBId =
-                catalog.addNewRecording("sourceV", 7, "channelH", 2, 4096, 0, mockSession,
+                catalog.addNewRecording("sourceV", 7, "channelH", 2, 4096, 1024, 0, mockSession,
                     SEGMENT_FILE_SIZE);
             recordingCId =
-                catalog.addNewRecording("sourceB", 8, "channelK", 3, 4096, 0, mockSession,
+                catalog.addNewRecording("sourceB", 8, "channelK", 3, 4096, 1024, 0, mockSession,
                     SEGMENT_FILE_SIZE);
             catalog.removeRecordingSession(recordingAId);
             catalog.removeRecordingSession(recordingBId);
@@ -84,7 +84,7 @@ public class CatalogTest
 
     private void verifyRecordingForId(
         final Catalog catalog,
-        final int id,
+        final long id,
         final String source,
         final int sessionId,
         final String channel,
@@ -104,11 +104,11 @@ public class CatalogTest
     @Test
     public void shouldAppendToExistingIndex() throws Exception
     {
-        final int newRecordingId;
+        final long newRecordingId;
         try (Catalog catalog = new Catalog(archiveDir))
         {
             newRecordingId = catalog.addNewRecording(
-                "sourceN", 9, "channelJ", 4, 4096, 0,
+                "sourceN", 9, "channelJ", 4, 4096, 1024, 0,
                 mockSession, SEGMENT_FILE_SIZE);
             catalog.removeRecordingSession(newRecordingId);
         }
@@ -123,11 +123,11 @@ public class CatalogTest
     @Test
     public void shouldAllowMultipleInstancesForSameStream() throws Exception
     {
-        final int newRecordingId;
+        final long newRecordingId;
         try (Catalog catalog = new Catalog(archiveDir))
         {
             newRecordingId = catalog.addNewRecording(
-                "sourceA", 6, "channelG", 1, 4096, 0,
+                "sourceA", 6, "channelG", 1, 4096,  1024, 0,
                 mockSession, SEGMENT_FILE_SIZE);
             catalog.removeRecordingSession(newRecordingId);
             assertNotEquals(recordingAId, newRecordingId);

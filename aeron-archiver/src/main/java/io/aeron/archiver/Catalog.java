@@ -18,7 +18,7 @@ package io.aeron.archiver;
 import io.aeron.archiver.codecs.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
-import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.*;
@@ -43,12 +43,12 @@ class Catalog implements AutoCloseable
     private static final int PAGE_SIZE = 4096;
 
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
-    private final Int2ObjectHashMap<RecordingSession> recordSessionByIdMap = new Int2ObjectHashMap<>();
+    private final Long2ObjectHashMap<RecordingSession> recordSessionByIdMap = new Long2ObjectHashMap<>();
 
     private final ByteBuffer byteBuffer;
     private final UnsafeBuffer unsafeBuffer;
     private final FileChannel catalogFileChannel;
-    private int recordingIdSeq = 0;
+    private long recordingIdSeq = 0;
 
     Catalog(final File archiveDir)
     {
@@ -110,28 +110,25 @@ class Catalog implements AutoCloseable
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
 
-        final int recordingId = decoder.recordingId();
-//        final int sessionId = decoder.sessionId();
-//        final int streamId = decoder.streamId();
-//        final String source = decoder.source();
-//        final String channel = decoder.channel();
+        final long recordingId = decoder.recordingId();
 
         recordingIdSeq = Math.max(recordingId + 1, recordingIdSeq);
 
         return length + CATALOG_FRAME_LENGTH;
     }
 
-    int addNewRecording(
+    long addNewRecording(
         final String source,
         final int sessionId,
         final String channel,
         final int streamId,
         final int termBufferLength,
+        final int mtuLength,
         final int imageInitialTermId,
         final RecordingSession session,
         final int segmentFileLength)
     {
-        final int newRecordingId = recordingIdSeq;
+        final long newRecordingId = recordingIdSeq;
 
         recordingDescriptorEncoder.limit(CATALOG_FRAME_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH);
         initDescriptor(
@@ -139,6 +136,8 @@ class Catalog implements AutoCloseable
             newRecordingId,
             termBufferLength,
             segmentFileLength,
+            mtuLength,
+            imageInitialTermId,
             source,
             sessionId,
             channel,
@@ -176,7 +175,7 @@ class Catalog implements AutoCloseable
         }
     }
 
-    boolean readDescriptor(final int recordingId, final ByteBuffer buffer)
+    boolean readDescriptor(final long recordingId, final ByteBuffer buffer)
         throws IOException
     {
         if (buffer.remaining() != RECORD_LENGTH)
@@ -198,22 +197,22 @@ class Catalog implements AutoCloseable
         return true;
     }
 
-    void updateCatalogFromMeta(final int recordingId, final ByteBuffer metaDataBuffer) throws IOException
+    void updateCatalogFromMeta(final long recordingId, final ByteBuffer metaDataBuffer) throws IOException
     {
         catalogFileChannel.write(metaDataBuffer, recordingId * RECORD_LENGTH);
     }
 
-    int maxRecordingId()
+    long maxRecordingId()
     {
         return recordingIdSeq;
     }
 
-    RecordingSession getRecordingSession(final int recordingId)
+    RecordingSession getRecordingSession(final long recordingId)
     {
         return recordSessionByIdMap.get(recordingId);
     }
 
-    void removeRecordingSession(final int recordingId)
+    void removeRecordingSession(final long recordingId)
     {
         recordSessionByIdMap.remove(recordingId);
     }

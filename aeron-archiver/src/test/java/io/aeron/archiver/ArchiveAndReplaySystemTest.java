@@ -395,6 +395,11 @@ public class ArchiveAndReplaySystemTest
             waitForOk(client, reply, replayCorrelationId);
 
             TestUtil.awaitSubscriptionIsConnected(replay);
+            final Image image = replay.images().get(0);
+            assertThat(image.initialTermId(), is(publication.initialTermId()));
+            assertThat(image.mtuLength(), is(publication.maxPayloadLength() + DataHeaderFlyweight.HEADER_LENGTH));
+            assertThat(image.termBufferLength(), is(publication.termBufferLength()));
+            assertThat(image.position(), is(initialPosition));
 
             nextFragmentOffset = 0;
             fragmentCount = 0;

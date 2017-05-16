@@ -49,7 +49,6 @@ class ArchiveConductor implements Agent
     private final ArrayList<Session> sessions = new ArrayList<>();
     private final Long2ObjectHashMap<ReplaySession> replaySession2IdMap = new Long2ObjectHashMap<>();
 
-    private final ObjectHashSet<Subscription> recordingSubscriptionSet = new ObjectHashSet<>(128);
     private final Catalog catalog;
     private final OneToOneConcurrentArrayQueue<Image> availableImageQueue = new OneToOneConcurrentArrayQueue<>(512);
     private final File archiveDir;
@@ -144,7 +143,7 @@ class ArchiveConductor implements Agent
         CloseHelper.close(catalog);
     }
 
-    void removeReplaySession(final int sessionId)
+    void removeReplaySession(final long sessionId)
     {
         replaySession2IdMap.remove(sessionId);
     }
@@ -204,20 +203,9 @@ class ArchiveConductor implements Agent
 
     public void startRecording(final String channel, final int streamId)
     {
-        for (final Subscription subscription : recordingSubscriptionSet)
-        {
-            if (subscription.streamId() == streamId && subscription.channel().equals(channel))
-            {
-                // we're already subscribed, don't bother
-                return;
-            }
-        }
 
         final Subscription recordingSubscription = aeron.addSubscription(
             channel, streamId, availableImageHandler, null);
-
-        // as subscription images are created they will get picked up and recorded
-        recordingSubscriptionSet.add(recordingSubscription);
     }
 
     public void listRecordings(
@@ -254,19 +242,19 @@ class ArchiveConductor implements Agent
         final long length)
     {
         final int newId = replaySessionId++;
-        // TODO: Replay channel not setup with the correct term-length, init-term-id, term-id, term-offset, and mtu
-        final ExclusivePublication replayPublication = aeron.addExclusivePublication(replayChannel, replayStreamId);
         final ReplaySession replaySession = new ReplaySession(
             recordingId,
             position,
             length,
-            replayPublication,
+            this,
             reply,
             archiveDir,
             clientProxy,
             newId,
             correlationId,
-            this.epochClock);
+            this.epochClock,
+            replayChannel,
+            replayStreamId);
 
         replaySession2IdMap.put(newId, replaySession);
         sessions.add(replaySession);
@@ -275,5 +263,40 @@ class ArchiveConductor implements Agent
     ExclusivePublication clientConnect(final String channel, final int streamId)
     {
         return aeron.addExclusivePublication(channel, streamId);
+    }
+
+    ExclusivePublication newReplayPublication(
+        final String replayChannel,
+        final int replayStreamId,
+        final long fromPosition,
+        final int mtuLength,
+        final int initialTermId,
+        final int termBufferLength)
+    {
+        final int termId = (int) (fromPosition / termBufferLength + initialTermId);
+        final int termOffset = (int) (fromPosition % termBufferLength);
+        // TODO: can cache and reuse builder
+        final StringBuilder builder = new StringBuilder(replayChannel.length() + 128);
+        builder.append(replayChannel);
+        if (replayChannel.contains("?"))
+        {
+            builder.append("|");
+        }
+        else
+        {
+            builder.append("?");
+        }
+        builder
+            .append(CommonContext.INITIAL_TERM_ID_PARAM_NAME).append("=").append(initialTermId)
+            .append("|")
+            .append(CommonContext.MTU_LENGTH_URI_PARAM_NAME).append("=").append(mtuLength)
+            .append("|")
+            .append(CommonContext.TERM_LENGTH_PARAM_NAME).append("=").append(termBufferLength)
+            .append("|")
+            .append(CommonContext.TERM_ID_PARAM_NAME).append("=").append(termId)
+            .append("|")
+            .append(CommonContext.TERM_OFFSET_PARAM_NAME).append("=").append(termOffset);
+
+        return aeron.addExclusivePublication(builder.toString(), replayStreamId);
     }
 }

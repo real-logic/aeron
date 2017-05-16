@@ -20,7 +20,7 @@ import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.*;
-import java.nio.MappedByteBuffer;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Date;
 
@@ -91,27 +91,15 @@ public class ArchiveUtil
     {
         try (FileChannel metadataFileChannel = FileChannel.open(metaFile.toPath(), READ, WRITE))
         {
-            final MappedByteBuffer metaDataBuffer = metadataFileChannel.map(
-                FileChannel.MapMode.READ_WRITE, 0, Catalog.RECORD_LENGTH);
+            final ByteBuffer metaDataBuffer = ByteBuffer.allocate(Catalog.RECORD_LENGTH);
+            metadataFileChannel.read(metaDataBuffer);
             final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();
-
             return decoder.wrap(
                 new UnsafeBuffer(metaDataBuffer),
                 Catalog.CATALOG_FRAME_LENGTH,
                 RecordingDescriptorDecoder.BLOCK_LENGTH,
                 RecordingDescriptorDecoder.SCHEMA_VERSION);
         }
-    }
-
-    static int offsetInSegmentFile(
-        final int termOffset,
-        final int termId,
-        final int initialTermId,
-        final int termBufferLength,
-        final int segmentFileLength)
-    {
-        final int termsMask = ((segmentFileLength / termBufferLength) - 1);
-        return recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
     }
 
     static int recordingOffset(

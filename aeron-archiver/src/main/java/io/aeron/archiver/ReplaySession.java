@@ -50,7 +50,7 @@ class ReplaySession implements
     private final long fromPosition;
     private final long replayLength;
 
-    private final ExclusivePublication replayPublication;
+    private final ArchiveConductor conductor;
     private final ExclusivePublication controlPublication;
 
     private final File archiveDir;
@@ -59,29 +59,39 @@ class ReplaySession implements
 
     private State state = State.INIT;
     private RecordingFragmentReader cursor;
-    private final int replaySessionId;
+    private final long replaySessionId;
     private final long correlationId;
     private final EpochClock epochClock;
+    private final String replayChannel;
+    private final int replayStreamId;
+
+    private ExclusivePublication replayPublication;
+    private int mtuLength;
+    private int termBufferLength;
+    private int initialTermId;
     private long lingerSinceMs;
+
 
     ReplaySession(
         final long recordingId,
         final long fromPosition,
         final long replayLength,
-        final ExclusivePublication replayPublication,
+        final ArchiveConductor conductor,
         final ExclusivePublication controlPublication,
         final File archiveDir,
         final ControlSessionProxy controlSessionProxy,
-        final int replaySessionId,
-        final long correlationId, final EpochClock epochClock)
+        final long replaySessionId,
+        final long correlationId,
+        final EpochClock epochClock,
+        final String replayChannel, final int replayStreamId)
     {
         // TODO: set position, set MTU (add to metadata)
         this.recordingId = recordingId;
 
         this.fromPosition = fromPosition;
         this.replayLength = replayLength;
+        this.conductor = conductor;
 
-        this.replayPublication = replayPublication;
         this.controlPublication = controlPublication;
         this.archiveDir = archiveDir;
         this.controlSessionProxy = controlSessionProxy;
@@ -89,6 +99,9 @@ class ReplaySession implements
         this.correlationId = correlationId;
         this.epochClock = epochClock;
         this.lingerSinceMs = epochClock.time();
+
+        this.replayChannel = replayChannel;
+        this.replayStreamId = replayStreamId;
     }
 
     public int doWork()
@@ -147,16 +160,71 @@ class ReplaySession implements
 
     private int init()
     {
-        // TODO: reflect changes to controlPublication management
-        // TODO: can only create the replay publication after reading the metadata, so create it here
-        if (replayPublication.isClosed() || controlPublication.isClosed())
+        if (cursor == null)
         {
-            // TODO: add counter
-            this.state = State.INACTIVE;
-            return 0;
+            final String recordingMetaFileName = ArchiveUtil.recordingMetaFileName(recordingId);
+            final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
+            if (!recordingMetaFile.exists())
+            {
+                return closeOnError(null, recordingMetaFile.getAbsolutePath() + " not found");
+            }
+
+            final RecordingDescriptorDecoder metaData;
+            try
+            {
+                metaData = ArchiveUtil.recordingMetaFileFormatDecoder(recordingMetaFile);
+            }
+            catch (final IOException ex)
+            {
+                return closeOnError(ex, recordingMetaFile.getAbsolutePath() + " : failed to map");
+            }
+
+            final long initialPosition = metaData.initialPosition();
+            final long lastPosition = metaData.lastPosition();
+            mtuLength = metaData.mtuLength();
+            termBufferLength = metaData.termBufferLength();
+            initialTermId = metaData.initialTermId();
+
+            IoUtil.unmap(metaData.buffer().byteBuffer());
+
+            if (this.fromPosition < initialPosition)
+            {
+                return closeOnError(null, "Requested replay start position(=" + fromPosition +
+                    ") is less than recording initial position(=" + initialPosition + ")");
+            }
+            final long toPosition = this.replayLength + fromPosition;
+            if (toPosition > lastPosition)
+            {
+                return closeOnError(null, "Requested replay end position(=" + toPosition +
+                    ") is more than recording end position(=" + lastPosition + ")");
+            }
+
+            try
+            {
+                cursor = new RecordingFragmentReader(
+                    recordingId,
+                    archiveDir,
+                    fromPosition,
+                    replayLength);
+            }
+            catch (final IOException ex)
+            {
+                return closeOnError(ex, "Failed to open cursor for a recording");
+            }
         }
 
-        if (!replayPublication.isConnected() || !controlPublication.isConnected())
+        if (replayPublication == null)
+        {
+            replayPublication = conductor.newReplayPublication(
+                replayChannel,
+                replayStreamId,
+                fromPosition,
+                mtuLength,
+                initialTermId,
+                termBufferLength);
+        }
+
+        if (!replayPublication.isConnected())
         {
             if (isLingerDone())
             {
@@ -166,43 +234,7 @@ class ReplaySession implements
             return 0;
         }
 
-        final String recordingMetaFileName = ArchiveUtil.recordingMetaFileName(recordingId);
-        final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
-        if (!recordingMetaFile.exists())
-        {
-            return closeOnError(null, recordingMetaFile.getAbsolutePath() + " not found");
-        }
 
-        final RecordingDescriptorDecoder metaData;
-        try
-        {
-            metaData = ArchiveUtil.recordingMetaFileFormatDecoder(recordingMetaFile);
-        }
-        catch (final IOException ex)
-        {
-            return closeOnError(ex, recordingMetaFile.getAbsolutePath() + " : failed to map");
-        }
-
-        final long initialPosition = metaData.initialPosition();
-        final long lastPosition = metaData.lastPosition();
-
-        // Note: when debugging this may cause a crash as the debugger might try to call metaData.toString after unmap
-        IoUtil.unmap(metaData.buffer().byteBuffer());
-
-        // TODO: validate range
-
-        try
-        {
-            cursor = new RecordingFragmentReader(
-                recordingId,
-                archiveDir,
-                fromPosition,
-                replayLength);
-        }
-        catch (final IOException ex)
-        {
-            return closeOnError(ex, "Failed to open cursor for a recording");
-        }
         controlSessionProxy.sendResponse(controlPublication, null, correlationId);
         this.state = State.REPLAY;
 

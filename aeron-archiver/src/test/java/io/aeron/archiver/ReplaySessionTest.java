@@ -118,7 +118,6 @@ public class ReplaySessionTest
         IoUtil.delete(archiveDir, false);
     }
 
-    @Ignore
     @Test
     public void shouldReplayDataFromFile()
     {

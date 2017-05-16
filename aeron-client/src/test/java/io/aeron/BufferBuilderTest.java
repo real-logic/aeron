@@ -42,6 +42,23 @@ public class BufferBuilderTest
     }
 
     @Test
+    public void shouldGrowDirectBuffer()
+    {
+        final BufferBuilder builder = new BufferBuilder(0, true);
+        assertThat(builder.capacity(), is(0));
+        assertThat(builder.buffer().capacity(), is(0));
+        assertThat(builder.limit(), is(0));
+
+        final int appendedLength = 10;
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[appendedLength]);
+        builder.append(srcBuffer, 0, srcBuffer.capacity());
+
+        assertThat(builder.capacity(), is(MIN_ALLOCATED_CAPACITY));
+        assertThat(builder.buffer().capacity(), is(MIN_ALLOCATED_CAPACITY));
+        assertThat(builder.limit(), is(appendedLength));
+    }
+
+    @Test
     public void shouldAppendNothingForZeroLength()
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[MIN_ALLOCATED_CAPACITY]);

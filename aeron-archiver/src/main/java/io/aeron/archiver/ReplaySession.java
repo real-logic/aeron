@@ -44,7 +44,7 @@ class ReplaySession implements
     }
 
     public static final int REPLAY_SEND_BATCH_SIZE = 8;
-    public static final int LINGER_LENGTH_MS = 1000;
+    public static final long LINGER_LENGTH_MS = 1000;
 
     private final long recordingId;
     private final long fromPosition;
@@ -207,30 +207,6 @@ class ReplaySession implements
         this.state = State.REPLAY;
 
         return 1;
-    }
-
-    private static boolean isTermOffsetInRange(
-        final int initialTermId,
-        final int initialTermOffset,
-        final int lastTermId,
-        final int lastTermOffset,
-        final int termId,
-        final int termOffset)
-    {
-        return (initialTermId == termId && termOffset >= initialTermOffset) ||
-            (lastTermId == termId && termOffset <= lastTermOffset);
-    }
-
-    private static boolean isTermIdInRange(final int term, final int start, final int end)
-    {
-        if (start <= end)
-        {
-            return term >= start && term <= end;
-        }
-        else
-        {
-            return term >= start || term <= end;
-        }
     }
 
     private int closeOnError(final Throwable e, final String errorMessage)

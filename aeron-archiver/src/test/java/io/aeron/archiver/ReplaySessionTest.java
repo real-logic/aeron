@@ -37,6 +37,7 @@ public class ReplaySessionTest
     private static final int TERM_BUFFER_LENGTH = 4096;
     private static final int INITIAL_TERM_ID = 8231773;
     private static final int INITIAL_TERM_OFFSET = 1024;
+    private static final long TIME = 0;
     private File archiveDir;
 
     private int messageIndex = 0;
@@ -63,7 +64,7 @@ public class ReplaySessionTest
             .forceMetadataUpdates(true)
             .build())
         {
-            when(epochClock.time()).thenReturn(42L);
+            when(epochClock.time()).thenReturn(TIME);
 
             final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
             buffer.setMemory(0, TERM_BUFFER_LENGTH, (byte)0);
@@ -94,7 +95,6 @@ public class ReplaySessionTest
                 header.frameLength() - DataHeaderFlyweight.HEADER_LENGTH,
                 header);
 
-            when(epochClock.time()).thenReturn(84L);
         }
 
         try (RecordingFragmentReader reader = new RecordingFragmentReader(RECORDING_ID, archiveDir))
@@ -191,9 +191,9 @@ public class ReplaySessionTest
 
         assertFalse(replaySession.isDone());
         // move clock to finish lingering
-        when(epochClock.time()).thenReturn(1001L);
-        assertEquals(0, replaySession.doWork());
-        assertTrue(!replaySession.isDone());
+        when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
+        replaySession.doWork();
+        assertTrue(replaySession.isDone());
     }
 
     @Test
@@ -275,8 +275,8 @@ public class ReplaySessionTest
         // does not switch to replay mode until BOTH publications are established
         assertEquals(0, replaySession.doWork());
 
-        when(epochClock.time()).thenReturn(1001L);
-        assertEquals(0, replaySession.doWork());
-        assertTrue(!replaySession.isDone());
+        when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
+        replaySession.doWork();
+        assertTrue(replaySession.isDone());
     }
 }

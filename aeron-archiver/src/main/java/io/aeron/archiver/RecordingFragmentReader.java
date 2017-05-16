@@ -168,6 +168,7 @@ class RecordingFragmentReader implements AutoCloseable
             {
                 IoUtil.unmap(termMappedUnsafeBuffer.byteBuffer());
             }
+            // TODO: Is a mapping created per term? Would it not be more effecient to do it per segment?
             // rotate term
             final MappedByteBuffer mappedByteBuffer = currentDataChannel.map(
                 READ_ONLY, recordingTermStartOffset, termBufferLength);

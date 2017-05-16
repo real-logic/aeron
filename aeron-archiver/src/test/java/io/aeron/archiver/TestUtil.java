@@ -39,7 +39,7 @@ public class TestUtil
 
     public static File makeTempDir() throws IOException
     {
-        final File tempDirForTest = File.createTempFile("test.rec", "tmp");
+        final File tempDirForTest = File.createTempFile("archiver", "tmp");
         // we really need a temp dir, not a file... delete and remake!
         Assert.assertTrue(tempDirForTest.delete());
         Assert.assertTrue(tempDirForTest.mkdir());

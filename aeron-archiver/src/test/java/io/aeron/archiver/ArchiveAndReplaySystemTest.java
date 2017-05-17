@@ -80,7 +80,6 @@ public class ArchiveAndReplaySystemTest
             fail();
         }
 
-        @Override
         public void onRecordingDescriptor(
             final long recordingId,
             final int segmentFileLength,

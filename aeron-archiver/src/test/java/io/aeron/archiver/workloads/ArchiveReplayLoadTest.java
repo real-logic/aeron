@@ -289,7 +289,6 @@ public class ArchiveReplayLoadTest
                     {
                         TestUtil.waitFor(() -> (client.pollEvents(new RecordingEventsListener()
                         {
-                            @Override
                             public void onProgress(
                                 final long recordingId0,
                                 final long initialPosition,

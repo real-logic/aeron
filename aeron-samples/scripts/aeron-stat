@@ -16,5 +16,5 @@
 ##
 
 ${JAVA_HOME}/bin/java \
-    -cp aeron-samples/build/libs/samples.jar \
+    -cp ../build/libs/samples.jar \
     io.aeron.samples.AeronStat "$@"

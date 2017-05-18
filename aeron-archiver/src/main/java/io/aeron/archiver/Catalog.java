@@ -43,7 +43,7 @@ class Catalog implements AutoCloseable
     private static final int PAGE_SIZE = 4096;
 
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
-    private final Long2ObjectHashMap<RecordingSession> recordSessionByIdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
 
     private final ByteBuffer byteBuffer;
     private final UnsafeBuffer unsafeBuffer;
@@ -161,7 +161,7 @@ class Catalog implements AutoCloseable
         }
 
         recordingIdSeq++;
-        recordSessionByIdMap.put(newRecordingId, session);
+        recordingSessionByIdMap.put(newRecordingId, session);
         return newRecordingId;
     }
 
@@ -169,9 +169,9 @@ class Catalog implements AutoCloseable
     {
         CloseHelper.close(catalogFileChannel);
 
-        if (!recordSessionByIdMap.isEmpty())
+        if (!recordingSessionByIdMap.isEmpty())
         {
-            System.err.println("ERROR: expected empty recordSessionByIdMap");
+            System.err.println("ERROR: expected empty recordingSessionByIdMap");
         }
     }
 
@@ -209,11 +209,11 @@ class Catalog implements AutoCloseable
 
     RecordingSession getRecordingSession(final long recordingId)
     {
-        return recordSessionByIdMap.get(recordingId);
+        return recordingSessionByIdMap.get(recordingId);
     }
 
     void removeRecordingSession(final long recordingId)
     {
-        recordSessionByIdMap.remove(recordingId);
+        recordingSessionByIdMap.remove(recordingId);
     }
 }

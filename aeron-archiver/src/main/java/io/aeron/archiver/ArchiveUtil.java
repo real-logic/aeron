@@ -114,7 +114,6 @@ public class ArchiveUtil
 
     static long recordingFileFullLength(final RecordingDescriptorDecoder metaDecoder)
     {
-
         return metaDecoder.lastPosition() - metaDecoder.initialPosition();
     }
 

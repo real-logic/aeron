@@ -154,7 +154,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
      * Index is in the range 0:segmentFileLength, except before the first block for this image is received indicated
      * by -1
      */
-    private int recordingPosition = -1;
+    private int segmentPosition = -1;
     private int segmentIndex = 0;
     private RandomAccessFile recordingFile;
     private FileChannel recordingFileChannel;
@@ -271,7 +271,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         final int termId)
     {
         // detect first write
-        if (recordingPosition == -1)
+        if (segmentPosition == -1)
         {
             metaDataEncoder.initialPosition(termOffset);
             initialPosition = termOffset;
@@ -309,7 +309,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
 
         // detect first write
         // detect first write
-        if (recordingPosition == -1)
+        if (segmentPosition == -1)
         {
             metaDataEncoder.initialPosition(termOffset);
             if (termId != initialTermId)
@@ -349,7 +349,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
                 " [offset=" + termOffset + " + length=" + writeLength + "] > termBufferLength=" + termBufferLength);
         }
 
-        if (recordingPosition == -1)
+        if (segmentPosition == -1)
         {
             newRecordingSegmentFile();
             if (recordingFileChannel.position() != 0)
@@ -358,22 +358,22 @@ final class Recorder implements AutoCloseable, RawBlockHandler
                     "It is assumed that recordingFileChannel.position() is 0 on first write");
             }
 
-            recordingPosition = termOffset;
+            segmentPosition = termOffset;
             // TODO: if first write to the logs is not at beginning of file, insert a padding frame?
 
             metaDataEncoder.initialPosition(termOffset);
-            recordingFileChannel.position(recordingPosition);
+            recordingFileChannel.position(segmentPosition);
             metaDataEncoder.startTime(epochClock.time());
         }
-        else if (recordingOffset != recordingPosition)
+        else if (recordingOffset != segmentPosition)
         {
             throw new IllegalArgumentException(
                 "It is assumed that recordingPosition tracks the calculated recordingOffset");
         }
         // TODO: potentially redundant call to position() could be an assert
-        else if (recordingFileChannel.position() != recordingPosition)
+        else if (recordingFileChannel.position() != segmentPosition)
         {
-            throw new IllegalArgumentException("It is assumed that recordingPosition:" + recordingPosition +
+            throw new IllegalArgumentException("It is assumed that segmentPosition:" + segmentPosition +
                 " tracks the file position:" + recordingFileChannel.position());
         }
     }
@@ -385,7 +385,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         final int recordingOffset)
         throws IOException
     {
-        recordingPosition = recordingOffset + blockLength;
+        segmentPosition = recordingOffset + blockLength;
         final int endTermOffset = termOffset + blockLength;
         final long position = ((long)(termId - initialTermId)) * termBufferLength + endTermOffset;
         metaDataEncoder.lastPosition(position);
@@ -395,11 +395,11 @@ final class Recorder implements AutoCloseable, RawBlockHandler
             metaDataBuffer.force();
         }
 
-        if (recordingPosition == segmentFileLength)
+        if (segmentPosition == segmentFileLength)
         {
             CloseHelper.close(recordingFileChannel);
             CloseHelper.close(recordingFile);
-            recordingPosition = 0;
+            segmentPosition = 0;
             segmentIndex++;
             newRecordingSegmentFile();
         }

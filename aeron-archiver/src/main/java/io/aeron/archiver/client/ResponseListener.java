@@ -34,7 +34,7 @@ public interface ResponseListener
         int segmentFileLength,
         int termBufferLength,
         long startTime,
-        long initialPosition,
+        long joiningPosition,
         long endTime,
         long lastPosition,
         String source,

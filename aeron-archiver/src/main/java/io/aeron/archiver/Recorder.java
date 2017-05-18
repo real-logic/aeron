@@ -161,7 +161,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
 
     private boolean closed = false;
     private boolean stopped = false;
-    private long initialPosition;
+    private long joiningPosition;
     private long lastPosition;
 
     private Recorder(final Builder builder)
@@ -231,7 +231,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         descriptor.recordingId(recordingId);
         descriptor.termBufferLength(termBufferLength);
         descriptor.startTime(-1);
-        descriptor.initialPosition(-1);
+        descriptor.joiningPosition(-1);
         descriptor.lastPosition(-1);
         descriptor.endTime(-1);
         descriptor.mtuLength(mtuLength);
@@ -273,8 +273,8 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         // detect first write
         if (segmentPosition == -1)
         {
-            metaDataEncoder.initialPosition(termOffset);
-            initialPosition = termOffset;
+            metaDataEncoder.joiningPosition(termOffset);
+            joiningPosition = termOffset;
             if (termId != initialTermId)
             {
                 throw new IllegalStateException("Expected to record from publication start, " +
@@ -311,7 +311,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         // detect first write
         if (segmentPosition == -1)
         {
-            metaDataEncoder.initialPosition(termOffset);
+            metaDataEncoder.joiningPosition(termOffset);
             if (termId != initialTermId)
             {
                 throw new IllegalStateException("Expected to record from publication start, " +
@@ -361,7 +361,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
             segmentPosition = termOffset;
             // TODO: if first write to the logs is not at beginning of file, insert a padding frame?
 
-            metaDataEncoder.initialPosition(termOffset);
+            metaDataEncoder.joiningPosition(termOffset);
             recordingFileChannel.position(segmentPosition);
             metaDataEncoder.startTime(epochClock.time());
         }
@@ -448,9 +448,9 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         return segmentFileLength;
     }
 
-    long initialPosition()
+    long joiningPosition()
     {
-        return initialPosition;
+        return joiningPosition;
     }
 
     long lastPosition()

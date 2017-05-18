@@ -35,7 +35,7 @@ class RecordingFragmentReader implements AutoCloseable
     private final long recordingId;
     private final File archiveDir;
     private final int termBufferLength;
-    private final long initialPosition;
+    private final long joiningPosition;
     private final long fullLength;
     private final long fromPosition;
     private final long replayLength;
@@ -58,11 +58,11 @@ class RecordingFragmentReader implements AutoCloseable
         final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
         final RecordingDescriptorDecoder metaDecoder = recordingMetaFileFormatDecoder(recordingMetaFile);
         termBufferLength = metaDecoder.termBufferLength();
-        initialPosition = metaDecoder.initialPosition();
+        joiningPosition = metaDecoder.joiningPosition();
         segmentFileLength = metaDecoder.segmentFileLength();
         fullLength = ArchiveUtil.recordingFileFullLength(metaDecoder);
         IoUtil.unmap(metaDecoder.buffer().byteBuffer());
-        fromPosition = initialPosition;
+        fromPosition = joiningPosition;
         replayLength = fullLength;
         initCursorState();
     }
@@ -82,7 +82,7 @@ class RecordingFragmentReader implements AutoCloseable
         // TODO: Can this be done without mapping and unmapping?
         final RecordingDescriptorDecoder metaDecoder = recordingMetaFileFormatDecoder(recordingMetaFile);
         termBufferLength = metaDecoder.termBufferLength();
-        initialPosition = metaDecoder.initialPosition();
+        joiningPosition = metaDecoder.joiningPosition();
         segmentFileLength = metaDecoder.segmentFileLength();
         fullLength = ArchiveUtil.recordingFileFullLength(metaDecoder);
         IoUtil.unmap(metaDecoder.buffer().byteBuffer());
@@ -91,7 +91,7 @@ class RecordingFragmentReader implements AutoCloseable
 
     private void initCursorState() throws IOException
     {
-        segmentFileIndex = segmentFileIndex(initialPosition, fromPosition, segmentFileLength);
+        segmentFileIndex = segmentFileIndex(joiningPosition, fromPosition, segmentFileLength);
         final long recordingOffset = fromPosition & (segmentFileLength - 1);
         recordingTermStartOffset = (int) (recordingOffset - (recordingOffset & (termBufferLength - 1)));
         openRecordingFile();

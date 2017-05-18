@@ -56,13 +56,13 @@ class NotificationsProxy
 
     void recordingProgress(
         final long recordingId,
-        final long initialPosition,
+        final long joiningPosition,
         final long currentPosition)
     {
         recordingProgressEncoder
             .wrapAndApplyHeader(outboundBuffer, 0, messageHeaderEncoder)
             .recordingId(recordingId)
-            .initialPosition(initialPosition)
+            .joiningPosition(joiningPosition)
             .currentPosition(currentPosition);
 
         send(recordingProgressEncoder.encodedLength());

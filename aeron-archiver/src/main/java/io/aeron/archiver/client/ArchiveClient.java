@@ -254,7 +254,7 @@ public class ArchiveClient
             recordingDescriptorDecoder.segmentFileLength(),
             recordingDescriptorDecoder.termBufferLength(),
             recordingDescriptorDecoder.startTime(),
-            recordingDescriptorDecoder.initialPosition(),
+            recordingDescriptorDecoder.joiningPosition(),
             recordingDescriptorDecoder.endTime(),
             recordingDescriptorDecoder.lastPosition(),
             recordingDescriptorDecoder.source(),
@@ -283,7 +283,7 @@ public class ArchiveClient
 
                         recordingEventsListener.onProgress(
                             recordingProgressDecoder.recordingId(),
-                            recordingProgressDecoder.initialPosition(),
+                            recordingProgressDecoder.joiningPosition(),
                             recordingProgressDecoder.currentPosition()
                         );
                         break;

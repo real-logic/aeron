@@ -63,11 +63,11 @@ public class ArchiveUtil
     }
 
     static int segmentFileIndex(
-        final long initialPosition,
+        final long joiningPosition,
         final long position,
         final int segmentFileLength)
     {
-        return (int) ((position - initialPosition) / segmentFileLength);
+        return (int)((position - joiningPosition) / segmentFileLength);
     }
 
     static void printMetaFile(final File metaFile) throws IOException
@@ -76,7 +76,7 @@ public class ArchiveUtil
         System.out.println("recordingId: " + formatDecoder.recordingId());
         System.out.println("termBufferLength: " + formatDecoder.termBufferLength());
         System.out.println("start time: " + new Date(formatDecoder.startTime()));
-        System.out.println("initial position: " + formatDecoder.initialPosition());
+        System.out.println("joining position: " + formatDecoder.joiningPosition());
         System.out.println("last position: " + formatDecoder.lastPosition());
         System.out.println("end time: " + new Date(formatDecoder.endTime()));
         System.out.println("source: " + formatDecoder.source());
@@ -114,7 +114,7 @@ public class ArchiveUtil
 
     static long recordingFileFullLength(final RecordingDescriptorDecoder metaDecoder)
     {
-        return metaDecoder.lastPosition() - metaDecoder.initialPosition();
+        return metaDecoder.lastPosition() - metaDecoder.joiningPosition();
     }
 
     public static long recordingLength(

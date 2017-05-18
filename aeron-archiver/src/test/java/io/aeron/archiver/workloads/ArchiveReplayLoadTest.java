@@ -81,7 +81,7 @@ public class ArchiveReplayLoadTest
     };
     private Subscription reply;
     private long correlationId;
-    private long initialPosition;
+    private long joiningPosition;
 
     @Before
     public void setUp() throws Exception
@@ -193,9 +193,9 @@ public class ArchiveReplayLoadTest
     private void publishDataToRecorded(final Publication publication, final int messageCount)
     {
         final int positionBitsToShift = Integer.numberOfTrailingZeros(publication.termBufferLength());
-        initialPosition = publication.position();
+        joiningPosition = publication.position();
         final int initialTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(
-            initialPosition, positionBitsToShift);
+            joiningPosition, positionBitsToShift);
         // clear out the buffer we write
         for (int i = 0; i < 1024; i++)
         {
@@ -219,7 +219,7 @@ public class ArchiveReplayLoadTest
             (termIdFromPosition - publication.initialTermId()) * publication.termBufferLength() +
             (lastTermOffset - initialTermOffset);
 
-        assertThat(publication.position() - initialPosition, is(totalRecordingLength));
+        assertThat(publication.position() - joiningPosition, is(totalRecordingLength));
         lastTermId = termIdFromPosition;
     }
 
@@ -237,7 +237,7 @@ public class ArchiveReplayLoadTest
 
             TestUtil.waitFor(() -> client.replay(
                 recordingId,
-                initialPosition,
+                joiningPosition,
                 totalRecordingLength,
                 REPLAY_URI,
                 replayStreamId,
@@ -291,11 +291,11 @@ public class ArchiveReplayLoadTest
                         {
                             public void onProgress(
                                 final long recordingId0,
-                                final long initialPosition,
+                                final long joiningPosition,
                                 final long currentPosition)
                             {
                                 assertThat(recordingId0, is(recordingId));
-                                recorded = currentPosition - initialPosition;
+                                recorded = currentPosition - joiningPosition;
                                 printf("a=%d total=%d %n", recorded, totalRecordingLength);
                             }
 
@@ -334,6 +334,7 @@ public class ArchiveReplayLoadTest
                 {
                     trackerError = throwable;
                 }
+
                 waitForData.countDown();
             });
 

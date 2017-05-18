@@ -214,11 +214,11 @@ public class ArchiveRecordingLoadTest
             buffer.putByte(i, (byte) 'z');
         }
         buffer.putStringAscii(32, "TEST");
-        final long initialPosition = publication.position();
+        final long joiningPosition = publication.position();
         final int startTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(
-            initialPosition, positionBitsToShift);
+            joiningPosition, positionBitsToShift);
         final int startTermIdFromPosition = LogBufferDescriptor.computeTermIdFromPosition(
-            initialPosition, positionBitsToShift, publication.initialTermId());
+            joiningPosition, positionBitsToShift, publication.initialTermId());
         for (int i = 0; i < messageCount; i++)
         {
             final int dataLength = fragmentLength[i] - DataHeaderFlyweight.HEADER_LENGTH;
@@ -236,7 +236,7 @@ public class ArchiveRecordingLoadTest
             (lastTermIdFromPosition - startTermIdFromPosition) * publication.termBufferLength() +
                 (lastTermOffset - startTermOffset);
 
-        assertThat(lastPosition - initialPosition, is(totalRecordingLength));
+        assertThat(lastPosition - joiningPosition, is(totalRecordingLength));
         lastTermId = lastTermIdFromPosition;
     }
 
@@ -271,7 +271,7 @@ public class ArchiveRecordingLoadTest
                                 assertThat(mDecoder.recordingId(), is(recordingId));
 
                                 println(mDecoder.toString());
-                                recorded = mDecoder.currentPosition() - mDecoder.initialPosition();
+                                recorded = mDecoder.currentPosition() - mDecoder.joiningPosition();
                                 System.out.printf("a=%d total=%d %n", (recorded - initialRecorded),
                                     totalRecordingLength);
                             }, 1) == 0)
@@ -344,6 +344,7 @@ public class ArchiveRecordingLoadTest
                 return newPosition;
             }
         }
+
         for (int i = 0; i < 100; i++)
         {
             if ((newPosition = publication.offer(buffer, offset, length)) > 0)
@@ -352,6 +353,7 @@ public class ArchiveRecordingLoadTest
             }
             Thread.yield();
         }
+
         while ((newPosition = publication.offer(buffer, offset, length)) < 0)
         {
             LockSupport.parkNanos(TIMEOUT);

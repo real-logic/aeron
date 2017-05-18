@@ -174,7 +174,7 @@ class RecordingSession implements ArchiveConductor.Session
             {
                 notificationsProxy.recordingProgress(
                     recorder.recordingId(),
-                    recorder.initialPosition(),
+                    recorder.joiningPosition(),
                     recorder.lastPosition());
             }
 

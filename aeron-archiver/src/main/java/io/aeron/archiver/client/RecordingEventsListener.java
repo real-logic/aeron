@@ -19,7 +19,7 @@ public interface RecordingEventsListener
 {
     void onProgress(
         long recordingId,
-        long initialPosition,
+        long joiningPosition,
         long currentPosition);
 
     void onStart(

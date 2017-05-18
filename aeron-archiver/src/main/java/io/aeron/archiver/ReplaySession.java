@@ -47,7 +47,7 @@ class ReplaySession implements
     public static final long LINGER_LENGTH_MS = 1000;
 
     private final long recordingId;
-    private final long fromPosition;
+    private final long replayPosition;
     private final long replayLength;
 
     private final ArchiveConductor conductor;
@@ -74,7 +74,7 @@ class ReplaySession implements
 
     ReplaySession(
         final long recordingId,
-        final long fromPosition,
+        final long replayPosition,
         final long replayLength,
         final ArchiveConductor conductor,
         final ExclusivePublication controlPublication,
@@ -88,7 +88,7 @@ class ReplaySession implements
         // TODO: set position, set MTU (add to metadata)
         this.recordingId = recordingId;
 
-        this.fromPosition = fromPosition;
+        this.replayPosition = replayPosition;
         this.replayLength = replayLength;
         this.conductor = conductor;
 
@@ -179,7 +179,7 @@ class ReplaySession implements
                 return closeOnError(ex, recordingMetaFile.getAbsolutePath() + " : failed to map");
             }
 
-            final long initialPosition = metaData.initialPosition();
+            final long joiningPosition = metaData.joiningPosition();
             final long lastPosition = metaData.lastPosition();
             mtuLength = metaData.mtuLength();
             termBufferLength = metaData.termBufferLength();
@@ -187,12 +187,12 @@ class ReplaySession implements
 
             IoUtil.unmap(metaData.buffer().byteBuffer());
 
-            if (this.fromPosition < initialPosition)
+            if (this.replayPosition < joiningPosition)
             {
-                return closeOnError(null, "Requested replay start position(=" + fromPosition +
-                    ") is less than recording initial position(=" + initialPosition + ")");
+                return closeOnError(null, "Requested replay start position(=" + replayPosition +
+                    ") is less than recording initial position(=" + joiningPosition + ")");
             }
-            final long toPosition = this.replayLength + fromPosition;
+            final long toPosition = this.replayLength + replayPosition;
             if (toPosition > lastPosition)
             {
                 return closeOnError(null, "Requested replay end position(=" + toPosition +
@@ -204,7 +204,7 @@ class ReplaySession implements
                 cursor = new RecordingFragmentReader(
                     recordingId,
                     archiveDir,
-                    fromPosition,
+                    replayPosition,
                     replayLength);
             }
             catch (final IOException ex)
@@ -218,7 +218,7 @@ class ReplaySession implements
             replayPublication = conductor.newReplayPublication(
                 replayChannel,
                 replayStreamId,
-                fromPosition,
+                replayPosition,
                 mtuLength,
                 initialTermId,
                 termBufferLength);

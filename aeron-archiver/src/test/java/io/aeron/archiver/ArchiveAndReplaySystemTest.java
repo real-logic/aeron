@@ -42,7 +42,7 @@ public class ArchiveAndReplaySystemTest
 {
     public static class FailRecordingEventsListener implements RecordingEventsListener
     {
-        public void onProgress(final long recordingId, final long initialPosition, final long currentPosition)
+        public void onProgress(final long recordingId, final long joiningPosition, final long currentPosition)
         {
             fail();
         }
@@ -85,7 +85,7 @@ public class ArchiveAndReplaySystemTest
             final int segmentFileLength,
             final int termBufferLength,
             final long startTime,
-            final long initialPosition,
+            final long joiningPosition,
             final long endTime,
             final long lastPosition,
             final String source,
@@ -145,7 +145,7 @@ public class ArchiveAndReplaySystemTest
     };
     private Subscription reply;
     private long correlationId;
-    private long initialPosition;
+    private long joiningPosition;
 
     @Before
     public void setUp() throws Exception
@@ -283,7 +283,7 @@ public class ArchiveAndReplaySystemTest
                 final int segmentFileLength,
                 final int termBufferLength,
                 final long startTime,
-                final long initialPosition,
+                final long joiningPosition,
                 final long endTime,
                 final long lastPosition,
                 final String source,
@@ -351,9 +351,9 @@ public class ArchiveAndReplaySystemTest
     private void publishDataToRecorded(final Publication publication, final int messageCount)
     {
         final int positionBitsToShift = Integer.numberOfTrailingZeros(publication.termBufferLength());
-        initialPosition = publication.position();
+        joiningPosition = publication.position();
         final int initialTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(
-            initialPosition, positionBitsToShift);
+            joiningPosition, positionBitsToShift);
         // clear out the buffer we write
         for (int i = 0; i < 1024; i++)
         {
@@ -370,7 +370,7 @@ public class ArchiveAndReplaySystemTest
         }
 
         final long position = publication.position();
-        totalRecordingLength = position - initialPosition;
+        totalRecordingLength = position - joiningPosition;
         lastPosition = position;
     }
 
@@ -385,7 +385,7 @@ public class ArchiveAndReplaySystemTest
             // request replay
             waitFor(() -> client.replay(
                 recordingId,
-                initialPosition,
+                joiningPosition,
                 totalRecordingLength,
                 REPLAY_URI,
                 REPLAY_STREAM_ID,
@@ -398,7 +398,7 @@ public class ArchiveAndReplaySystemTest
             assertThat(image.initialTermId(), is(publication.initialTermId()));
             assertThat(image.mtuLength(), is(publication.maxPayloadLength() + DataHeaderFlyweight.HEADER_LENGTH));
             assertThat(image.termBufferLength(), is(publication.termBufferLength()));
-            assertThat(image.position(), is(initialPosition));
+            assertThat(image.position(), is(joiningPosition));
 
             nextFragmentOffset = 0;
             fragmentCount = 0;
@@ -476,11 +476,11 @@ public class ArchiveAndReplaySystemTest
                         {
                             public void onProgress(
                                 final long recordingId0,
-                                final long initialPosition,
+                                final long joiningPosition,
                                 final long currentPosition)
                             {
                                 assertThat(recordingId0, is(recordingId));
-                                recorded = currentPosition - initialPosition;
+                                recorded = currentPosition - joiningPosition;
                                 printf("a=%d total=%d %n", recorded, totalRecordingLength);
                             }
                         }, 1)) != 0);

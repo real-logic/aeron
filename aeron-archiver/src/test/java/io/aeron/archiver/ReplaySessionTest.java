@@ -100,7 +100,6 @@ public class ReplaySessionTest
                 header.offset() + DataHeaderFlyweight.HEADER_LENGTH,
                 header.frameLength() - DataHeaderFlyweight.HEADER_LENGTH,
                 header);
-
         }
 
         try (RecordingFragmentReader reader = new RecordingFragmentReader(RECORDING_ID, archiveDir))

@@ -189,8 +189,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
             metadataFileChannel = FileChannel.open(file.toPath(), CREATE_NEW, READ, WRITE);
             metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
             final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(metaDataBuffer);
-            metaDataEncoder = new RecordingDescriptorEncoder()
-                .wrap(unsafeBuffer, Catalog.CATALOG_FRAME_LENGTH);
+            metaDataEncoder = new RecordingDescriptorEncoder().wrap(unsafeBuffer, Catalog.CATALOG_FRAME_LENGTH);
 
             initDescriptor(
                 metaDataEncoder,
@@ -228,19 +227,20 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         final String channel,
         final int streamId)
     {
-        descriptor.recordingId(recordingId);
-        descriptor.termBufferLength(termBufferLength);
-        descriptor.startTime(-1);
-        descriptor.joiningPosition(-1);
-        descriptor.lastPosition(-1);
-        descriptor.endTime(-1);
-        descriptor.mtuLength(mtuLength);
-        descriptor.initialTermId(initialTermId);
-        descriptor.sessionId(sessionId);
-        descriptor.streamId(streamId);
-        descriptor.segmentFileLength(segmentFileLength);
-        descriptor.source(source);
-        descriptor.channel(channel);
+        descriptor
+            .recordingId(recordingId)
+            .termBufferLength(termBufferLength)
+            .startTime(-1)
+            .joiningPosition(-1)
+            .lastPosition(-1)
+            .endTime(-1)
+            .mtuLength(mtuLength)
+            .initialTermId(initialTermId)
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .segmentFileLength(segmentFileLength)
+            .source(source)
+            .channel(channel);
     }
 
     private void newRecordingSegmentFile()

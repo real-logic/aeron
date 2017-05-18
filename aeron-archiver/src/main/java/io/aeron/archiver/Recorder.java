@@ -27,6 +27,7 @@ import java.nio.channels.FileChannel;
 import static io.aeron.archiver.ArchiveUtil.recordingOffset;
 import static java.nio.file.StandardOpenOption.*;
 
+// TODO: Should this class not be folded into RecordingSession? Why the separation and indirection?
 final class Recorder implements AutoCloseable, RawBlockHandler
 {
     private final boolean forceWrites;

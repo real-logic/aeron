@@ -176,6 +176,8 @@ class ArchiveConductor implements Agent
         }
         else
         {
+            // TODO: What happens to the state of the builder if two recordings are added before their
+            // TODO: init() get called? Should the setup not happen in the constructor?
             session = new RecordingSession(notificationsProxy, catalog, image, imageRecorderBuilder);
         }
 

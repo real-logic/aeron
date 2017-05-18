@@ -89,7 +89,7 @@ class RecordingSession implements ArchiveConductor.Session
         final String source = image.sourceIdentity();
         final int termBufferLength = image.termBufferLength();
         final int mtuLength = image.mtuLength();
-        final int imageInitialTermId = image.initialTermId();
+        final int initialTermId = image.initialTermId();
 
         Recorder recorder = null;
         try
@@ -101,7 +101,7 @@ class RecordingSession implements ArchiveConductor.Session
                 streamId,
                 termBufferLength,
                 mtuLength,
-                imageInitialTermId,
+                initialTermId,
                 this,
                 builder.recordingFileLength());
 
@@ -119,7 +119,7 @@ class RecordingSession implements ArchiveConductor.Session
                 .sessionId(sessionId)
                 .channel(channel)
                 .streamId(streamId)
-                .initialTermId(image.initialTermId())
+                .initialTermId(initialTermId)
                 .mtuLength(mtuLength)
                 .build();
         }

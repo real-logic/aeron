@@ -125,6 +125,7 @@ class Catalog implements AutoCloseable
         final int termBufferLength,
         final int mtuLength,
         final int imageInitialTermId,
+        final long joiningPosition,
         final RecordingSession session,
         final int segmentFileLength)
     {
@@ -138,6 +139,7 @@ class Catalog implements AutoCloseable
             segmentFileLength,
             mtuLength,
             imageInitialTermId,
+            joiningPosition,
             source,
             sessionId,
             channel,

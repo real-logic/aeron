@@ -46,6 +46,7 @@ public class RecordingSessionTest
     private final int sessionId = 12345;
 
     private final int initialTermId = 0;
+    private final long joiningPosition = 0L;
     private final int termBufferLength = 4096;
     private final int termOffset = 1024;
     private final int mtuLength = 1024;
@@ -73,6 +74,7 @@ public class RecordingSessionTest
                 eq(termBufferLength),
                 eq(mtuLength),
                 eq(initialTermId),
+                eq(joiningPosition),
                 any(RecordingSession.class),
                 eq(SEGMENT_FILE_SIZE)))
                 .thenReturn(recordingId);

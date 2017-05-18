@@ -71,7 +71,6 @@ class ReplaySession implements
     private int initialTermId;
     private long lingerSinceMs;
 
-
     ReplaySession(
         final long recordingId,
         final long replayPosition,
@@ -83,7 +82,8 @@ class ReplaySession implements
         final long replaySessionId,
         final long correlationId,
         final EpochClock epochClock,
-        final String replayChannel, final int replayStreamId)
+        final String replayChannel,
+        final int replayStreamId)
     {
         // TODO: set position, set MTU (add to metadata)
         this.recordingId = recordingId;
@@ -201,11 +201,7 @@ class ReplaySession implements
 
             try
             {
-                cursor = new RecordingFragmentReader(
-                    recordingId,
-                    archiveDir,
-                    replayPosition,
-                    replayLength);
+                cursor = new RecordingFragmentReader(recordingId, archiveDir, replayPosition, replayLength);
             }
             catch (final IOException ex)
             {
@@ -231,9 +227,9 @@ class ReplaySession implements
                 // TODO: add counter
                 this.state = State.INACTIVE;
             }
+
             return 0;
         }
-
 
         controlSessionProxy.sendResponse(controlPublication, null, correlationId);
         this.state = State.REPLAY;
@@ -267,6 +263,7 @@ class ReplaySession implements
                 lingerSinceMs = epochClock.time();
                 this.state = State.LINGER;
             }
+
             return polled;
         }
         catch (final Exception ex)
@@ -317,7 +314,7 @@ class ReplaySession implements
         }
         else if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
         {
-            closeOnError(null, "Reply publication to replay requestor has shutdown mid-replay");
+            closeOnError(null, "Reply stream has been shutdown mid-replay");
         }
 
         return false;

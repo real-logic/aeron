@@ -123,7 +123,6 @@ public class ArchiveAndReplaySystemTest
     private long recordingId;
     private String source;
     private long remaining;
-    private int nextFragmentOffset;
     private int fragmentCount;
     private int[] fragmentLength;
     private long totalDataLength;
@@ -186,9 +185,9 @@ public class ArchiveAndReplaySystemTest
     public void recordAndReplay() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
-            archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
+                archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
-                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
+                archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
             final ArchiveClient client = new ArchiveClient(controlPublication, recordingEvents);
 
@@ -229,9 +228,9 @@ public class ArchiveAndReplaySystemTest
                 }
             }, 1) != 0);
 
-            verifyDescriptorListOngoingArchive(client, publication, 0);
+            verifyDescriptorListOngoingArchive(client, publication);
             final int messageCount = prepAndSendMessages(client, publication);
-            verifyDescriptorListOngoingArchive(client, publication, totalRecordingLength);
+            verifyDescriptorListOngoingArchive(client, publication);
 
             assertNull(trackerError);
             println("All data arrived");
@@ -249,7 +248,7 @@ public class ArchiveAndReplaySystemTest
                 }
             }, 1) != 0);
 
-            verifyDescriptorListOngoingArchive(client, publication, totalRecordingLength);
+            verifyDescriptorListOngoingArchive(client, publication);
 
             println("Recording id: " + recordingId);
             println("Meta data file printout: ");
@@ -269,9 +268,7 @@ public class ArchiveAndReplaySystemTest
     }
 
     private void verifyDescriptorListOngoingArchive(
-        final ArchiveClient client,
-        final Publication publication,
-        final long recordingLength)
+        final ArchiveClient client, final Publication publication)
     {
         final long requestRecordingsCorrelationId = this.correlationId++;
         client.listRecordings(recordingId, recordingId, requestRecordingsCorrelationId);
@@ -319,7 +316,7 @@ public class ArchiveAndReplaySystemTest
         final CountDownLatch waitForData = new CountDownLatch(1);
         printf("Sending %d messages, total length=%d %n", messageCount, totalDataLength);
 
-        trackRecordingProgress(client, publication.termBufferLength(), waitForData);
+        trackRecordingProgress(client, waitForData);
         publishDataToRecorded(publication, messageCount);
         waitForData.await();
 
@@ -350,10 +347,8 @@ public class ArchiveAndReplaySystemTest
 
     private void publishDataToRecorded(final Publication publication, final int messageCount)
     {
-        final int positionBitsToShift = Integer.numberOfTrailingZeros(publication.termBufferLength());
         joiningPosition = publication.position();
-        final int initialTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(
-            joiningPosition, positionBitsToShift);
+
         // clear out the buffer we write
         for (int i = 0; i < 1024; i++)
         {
@@ -400,7 +395,6 @@ public class ArchiveAndReplaySystemTest
             assertThat(image.termBufferLength(), is(publication.termBufferLength()));
             assertThat(image.position(), is(joiningPosition));
 
-            nextFragmentOffset = 0;
             fragmentCount = 0;
             remaining = totalDataLength;
 
@@ -456,10 +450,7 @@ public class ArchiveAndReplaySystemTest
         printf("Fragment2: offset=%d length=%d %n", offset, length);
     }
 
-    private void trackRecordingProgress(
-        final ArchiveClient client,
-        final int termBufferLength,
-        final CountDownLatch waitForData)
+    private void trackRecordingProgress(final ArchiveClient client, final CountDownLatch waitForData)
     {
         final Thread t = new Thread(
             () ->
@@ -484,7 +475,6 @@ public class ArchiveAndReplaySystemTest
                                 printf("a=%d total=%d %n", recorded, totalRecordingLength);
                             }
                         }, 1)) != 0);
-
 
                         final long end = System.currentTimeMillis();
                         final long deltaTime = end - start;

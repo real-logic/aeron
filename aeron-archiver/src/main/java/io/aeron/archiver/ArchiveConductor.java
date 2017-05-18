@@ -47,7 +47,7 @@ class ArchiveConductor implements Agent
     private final AgentInvoker driverAgentInvoker;
     private final Subscription controlSubscription;
     private final ArrayList<Session> sessions = new ArrayList<>();
-    private final Long2ObjectHashMap<ReplaySession> replaySession2IdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
 
     private final Catalog catalog;
     private final OneToOneConcurrentArrayQueue<Image> availableImageQueue = new OneToOneConcurrentArrayQueue<>(512);
@@ -134,10 +134,10 @@ class ArchiveConductor implements Agent
         }
         sessions.clear();
 
-        if (!replaySession2IdMap.isEmpty())
+        if (!replaySessionByIdMap.isEmpty())
         {
             // TODO: Use an error log.
-            System.err.println("ERROR: expected empty replaySession2IdMap");
+            System.err.println("ERROR: expected empty replaySessionByIdMap");
         }
 
         CloseHelper.close(catalog);
@@ -145,7 +145,7 @@ class ArchiveConductor implements Agent
 
     void removeReplaySession(final long sessionId)
     {
-        replaySession2IdMap.remove(sessionId);
+        replaySessionByIdMap.remove(sessionId);
     }
 
     private int doSessionsWork()
@@ -205,7 +205,6 @@ class ArchiveConductor implements Agent
 
     public void startRecording(final String channel, final int streamId)
     {
-
         final Subscription recordingSubscription = aeron.addSubscription(
             channel, streamId, availableImageHandler, null);
     }
@@ -224,7 +223,7 @@ class ArchiveConductor implements Agent
 
     public void stopReplay(final int sessionId)
     {
-        final ReplaySession session = replaySession2IdMap.get(sessionId);
+        final ReplaySession session = replaySessionByIdMap.get(sessionId);
         if (session == null)
         {
             throw new IllegalStateException("Trying to abort an unknown replay session: " + sessionId);
@@ -258,7 +257,7 @@ class ArchiveConductor implements Agent
             replayChannel,
             replayStreamId);
 
-        replaySession2IdMap.put(newId, replaySession);
+        replaySessionByIdMap.put(newId, replaySession);
         sessions.add(replaySession);
     }
 
@@ -275,8 +274,8 @@ class ArchiveConductor implements Agent
         final int initialTermId,
         final int termBufferLength)
     {
-        final int termId = (int) (fromPosition / termBufferLength + initialTermId);
-        final int termOffset = (int) (fromPosition % termBufferLength);
+        final int termId = (int)(fromPosition / termBufferLength + initialTermId);
+        final int termOffset = (int)(fromPosition % termBufferLength);
         // TODO: can cache and reuse builder
         final StringBuilder builder = new StringBuilder(replayChannel.length() + 128);
         builder.append(replayChannel);
@@ -288,16 +287,17 @@ class ArchiveConductor implements Agent
         {
             builder.append("?");
         }
+
         builder
-            .append(CommonContext.INITIAL_TERM_ID_PARAM_NAME).append("=").append(initialTermId)
-            .append("|")
-            .append(CommonContext.MTU_LENGTH_URI_PARAM_NAME).append("=").append(mtuLength)
-            .append("|")
-            .append(CommonContext.TERM_LENGTH_PARAM_NAME).append("=").append(termBufferLength)
-            .append("|")
-            .append(CommonContext.TERM_ID_PARAM_NAME).append("=").append(termId)
-            .append("|")
-            .append(CommonContext.TERM_OFFSET_PARAM_NAME).append("=").append(termOffset);
+            .append(CommonContext.INITIAL_TERM_ID_PARAM_NAME).append('=').append(initialTermId)
+            .append('|')
+            .append(CommonContext.MTU_LENGTH_URI_PARAM_NAME).append('=').append(mtuLength)
+            .append('|')
+            .append(CommonContext.TERM_LENGTH_PARAM_NAME).append('=').append(termBufferLength)
+            .append('|')
+            .append(CommonContext.TERM_ID_PARAM_NAME).append('=').append(termId)
+            .append('|')
+            .append(CommonContext.TERM_OFFSET_PARAM_NAME).append('=').append(termOffset);
 
         return aeron.addExclusivePublication(builder.toString(), replayStreamId);
     }

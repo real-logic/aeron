@@ -89,7 +89,8 @@ class ControlSessionProxy
         send(reply, length);
     }
 
-    void sendDescriptor(final ExclusivePublication reply,
+    void sendDescriptor(
+        final ExclusivePublication reply,
         final UnsafeBuffer descriptorBuffer,
         final long correlationId)
     {

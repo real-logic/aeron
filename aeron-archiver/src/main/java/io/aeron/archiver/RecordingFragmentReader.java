@@ -102,7 +102,8 @@ class RecordingFragmentReader implements AutoCloseable
         fragmentOffset = (int) (recordingOffset & (termBufferLength - 1));
     }
 
-    int controlledPoll(final SimplifiedControlledPoll fragmentHandler, final int fragmentLimit) throws IOException
+    int controlledPoll(final SimplifiedControlledPoll fragmentHandler, final int fragmentLimit)
+        throws IOException
     {
         if (isDone())
         {
@@ -110,7 +111,6 @@ class RecordingFragmentReader implements AutoCloseable
         }
 
         int polled = 0;
-
 
         // read to end of term or requested data
         while (fragmentOffset < termBufferLength && !isDone() && polled < fragmentLimit)

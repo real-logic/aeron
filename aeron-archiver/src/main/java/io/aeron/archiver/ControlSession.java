@@ -109,9 +109,7 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
         return 0;
     }
 
-    public void onConnect(
-        final String channel,
-        final int streamId)
+    public void onConnect(final String channel, final int streamId)
     {
         if (state != State.INIT)
         {
@@ -121,9 +119,7 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
         reply = conductor.clientConnect(channel, streamId);
     }
 
-    public void onStopRecording(
-        final long correlationId,
-        final long recordingId)
+    public void onStopRecording(final long correlationId, final long recordingId)
     {
         if (state != State.ACTIVE)
         {
@@ -141,10 +137,7 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
         }
     }
 
-    public void onStartRecording(
-        final long correlationId,
-        final String channel,
-        final int streamId)
+    public void onStartRecording(final long correlationId, final String channel, final int streamId)
     {
         if (state != State.ACTIVE)
         {
@@ -163,10 +156,7 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
         }
     }
 
-    public void onListRecordings(
-        final long correlationId,
-        final long fromId,
-        final long toId)
+    public void onListRecordings(final long correlationId, final long fromId, final long toId)
     {
         if (state != State.ACTIVE)
         {

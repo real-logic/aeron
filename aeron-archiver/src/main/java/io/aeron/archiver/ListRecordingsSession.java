@@ -16,7 +16,6 @@
 package io.aeron.archiver;
 
 import io.aeron.ExclusivePublication;
-import io.aeron.logbuffer.ExclusiveBufferClaim;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -37,7 +36,6 @@ class ListRecordingsSession implements ArchiveConductor.Session
 
     private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, CACHE_LINE_LENGTH);
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer(byteBuffer);
-    private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
 
     private final ExclusivePublication reply;
     private final long fromId;

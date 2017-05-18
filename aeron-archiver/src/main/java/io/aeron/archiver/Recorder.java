@@ -170,15 +170,6 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         final int sessionId,
         final int termId)
     {
-        // detect first write
-        if (segmentPosition == -1)
-        {
-            if (termId != initialTermId)
-            {
-                throw new IllegalStateException("Expected to record from publication start, " +
-                    "but first termId=" + termId + " and not initialTermId=" + initialTermId);
-            }
-        }
         final int recordingOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
         try
         {
@@ -205,17 +196,6 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         final int termOffset = header.termOffset();
         final int frameLength = header.frameLength();
 
-        // detect first write
-        // detect first write
-        if (segmentPosition == -1)
-        {
-            if (termId != initialTermId)
-            {
-                throw new IllegalStateException("Expected to record from publication start, " +
-                    "but first termId=" + termId + " and not initialTermId=" + initialTermId);
-            }
-        }
-
         final int recordingOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
         try
         {
@@ -240,38 +220,14 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         final int writeLength)
         throws IOException
     {
-        if (termOffset + writeLength > termBufferLength)
-        {
-            throw new IllegalArgumentException("Recording across terms is not supported:" +
-                " [offset=" + termOffset + " + length=" + writeLength + "] > termBufferLength=" + termBufferLength);
-        }
-
         if (segmentPosition == -1)
         {
             newRecordingSegmentFile();
-            if (recordingFileChannel.position() != 0)
-            {
-                throw new IllegalArgumentException(
-                    "It is assumed that recordingFileChannel.position() is 0 on first write");
-            }
 
             segmentPosition = termOffset;
-            // TODO: if first write to the logs is not at beginning of file, insert a padding frame?
-
             metaDataEncoder.joiningPosition(termOffset);
             recordingFileChannel.position(segmentPosition);
             metaDataEncoder.startTime(epochClock.time());
-        }
-        else if (recordingOffset != segmentPosition)
-        {
-            throw new IllegalArgumentException(
-                "It is assumed that recordingPosition tracks the calculated recordingOffset");
-        }
-        // TODO: potentially redundant call to position() could be an assert
-        else if (recordingFileChannel.position() != segmentPosition)
-        {
-            throw new IllegalArgumentException("It is assumed that segmentPosition:" + segmentPosition +
-                " tracks the file position:" + recordingFileChannel.position());
         }
     }
 

@@ -32,12 +32,13 @@ import static org.mockito.Mockito.*;
 
 public class ReplaySessionTest
 {
-    public static final String REPLAY_CHANNEL = "aeron:ipc";
-    public static final int REPLAY_STREAM_ID = 101;
+    private static final String REPLAY_CHANNEL = "aeron:ipc";
+    private static final int REPLAY_STREAM_ID = 101;
     private static final int RECORDING_ID = 0;
     private static final int TERM_BUFFER_LENGTH = 4096 * 4;
     private static final int INITIAL_TERM_ID = 8231773;
     private static final int INITIAL_TERM_OFFSET = 1024;
+    private static final long JOINING_POSITION = INITIAL_TERM_OFFSET;
     private static final long RECORDING_POSITION = INITIAL_TERM_OFFSET;
     private static final int MTU_LENGTH = 4096;
     private static final long TIME = 0;
@@ -59,6 +60,7 @@ public class ReplaySessionTest
             .recordingId(RECORDING_ID)
             .termBufferLength(TERM_BUFFER_LENGTH)
             .initialTermId(INITIAL_TERM_ID)
+            .joiningPosition(JOINING_POSITION)
             .mtuLength(MTU_LENGTH)
             .source("source")
             .sessionId(1)
@@ -132,9 +134,8 @@ public class ReplaySessionTest
 
         final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
 
-        final ReplaySession replaySession =
-            replaySession(RECORDING_ID, length, correlationId, replay, control, conductor);
-
+        final ReplaySession replaySession = replaySession(
+            RECORDING_ID, length, correlationId, replay, control, conductor);
 
         when(control.isClosed()).thenReturn(false);
         when(control.isConnected()).thenReturn(true);
@@ -186,8 +187,8 @@ public class ReplaySessionTest
         final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
 
         final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
-        final ReplaySession replaySession =
-            replaySession(RECORDING_ID + 1, length, correlationId, replay, control, conductor);
+        final ReplaySession replaySession = replaySession(
+            RECORDING_ID + 1, length, correlationId, replay, control, conductor);
 
         // this is a given since they are closed by the session only
         when(replay.isClosed()).thenReturn(false);
@@ -213,8 +214,8 @@ public class ReplaySessionTest
         final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
 
         final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
-        final ReplaySession replaySession =
-            replaySession(RECORDING_ID, length, correlationId, replay, control, conductor);
+        final ReplaySession replaySession = replaySession(
+            RECORDING_ID, length, correlationId, replay, control, conductor);
 
         when(replay.isClosed()).thenReturn(false);
         when(control.isClosed()).thenReturn(false);
@@ -229,11 +230,12 @@ public class ReplaySessionTest
     }
 
     private ReplaySession replaySession(
-        final long reconrdingId,
+        final long recordingId,
         final long length,
         final long correlationId,
         final ExclusivePublication replay,
-        final ExclusivePublication control, final ArchiveConductor conductor)
+        final ExclusivePublication control,
+        final ArchiveConductor conductor)
     {
         when(conductor.newReplayPublication(
             eq(REPLAY_CHANNEL),
@@ -241,10 +243,11 @@ public class ReplaySessionTest
             eq(RECORDING_POSITION),
             eq(MTU_LENGTH),
             eq(INITIAL_TERM_ID),
-            eq(TERM_BUFFER_LENGTH))).thenReturn(replay);
+            eq(TERM_BUFFER_LENGTH)))
+            .thenReturn(replay);
 
         return new ReplaySession(
-            reconrdingId,
+            recordingId,
             RECORDING_POSITION,
             length,
             conductor,

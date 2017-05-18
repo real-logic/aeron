@@ -46,10 +46,10 @@ public class RecordingSessionTest
     private final int sessionId = 12345;
 
     private final int initialTermId = 0;
-    private final long joiningPosition = 0L;
     private final int termBufferLength = 4096;
     private final int termOffset = 1024;
     private final int mtuLength = 1024;
+    private final long joiningPosition = termOffset;
 
     private final File tempDirForTest = TestUtil.makeTempDir();
     private final NotificationsProxy proxy;
@@ -175,8 +175,7 @@ public class RecordingSessionTest
 
 
         // data exists and is as expected
-        final File segmentFile = new File(
-            tempDirForTest, ArchiveUtil.recordingDataFileName(recordingId, 0));
+        final File segmentFile = new File(tempDirForTest, ArchiveUtil.recordingDataFileName(recordingId, 0));
         assertTrue(segmentFile.exists());
 
         try (RecordingFragmentReader reader = new RecordingFragmentReader(session.recordingId(), tempDirForTest))
@@ -213,6 +212,7 @@ public class RecordingSessionTest
     private Subscription mockSubscription(final String channel, final int streamId)
     {
         final Subscription subscription = mock(Subscription.class);
+
         when(subscription.channel()).thenReturn(channel);
         when(subscription.streamId()).thenReturn(streamId);
 
@@ -234,6 +234,8 @@ public class RecordingSessionTest
         when(image.initialTermId()).thenReturn(initialTermId);
         when(image.termBufferLength()).thenReturn(termBufferLength);
         when(image.mtuLength()).thenReturn(mtuLength);
+        when(image.joiningPosition()).thenReturn(joiningPosition);
+
         return image;
     }
 }

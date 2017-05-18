@@ -115,7 +115,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
     }
 
     static void initDescriptor(
-        final RecordingDescriptorEncoder descriptor,
+        final RecordingDescriptorEncoder recordingDescriptorEncoder,
         final long recordingId,
         final int termBufferLength,
         final int segmentFileLength,
@@ -127,7 +127,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         final String channel,
         final int streamId)
     {
-        descriptor
+        recordingDescriptorEncoder
             .recordingId(recordingId)
             .termBufferLength(termBufferLength)
             .startTime(-1)
@@ -225,7 +225,6 @@ final class Recorder implements AutoCloseable, RawBlockHandler
             newRecordingSegmentFile();
 
             segmentPosition = termOffset;
-            metaDataEncoder.joiningPosition(termOffset);
             recordingFileChannel.position(segmentPosition);
             metaDataEncoder.startTime(epochClock.time());
         }

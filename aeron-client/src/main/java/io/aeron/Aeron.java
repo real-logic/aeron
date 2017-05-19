@@ -513,6 +513,9 @@ public final class Aeron implements AutoCloseable
         /**
          * The {@link Lock} that is used to provide mutual exclusion in the Aeron client.
          *
+         * If the {@link #conductorAgentInvoker(AgentInvoker)} is set and only one thread accesses the client
+         * then the lock can be set to {@link NoOpLock} to elide the lock overhead.
+         *
          * @param lock that is used to provide mutual exclusion in the Aeron client.
          * @return this for a fluent API.
          */

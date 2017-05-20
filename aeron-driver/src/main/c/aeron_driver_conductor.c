@@ -70,7 +70,9 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     }
     conductor->clients.capacity = 2;
     conductor->clients.length = 0;
-    /* TODO: set func callbacks for managed resources */
+    conductor->clients.on_time_event = aeron_client_on_time_event;
+    conductor->clients.has_reached_end_of_life = aeron_client_has_reached_end_of_life;
+    conductor->clients.delete = aeron_client_delete;
 
     conductor->errors_counter = aeron_counter_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_ERRORS);
     conductor->client_keep_alives_counter =
@@ -96,36 +98,6 @@ int aeron_driver_conductor_find_client(aeron_driver_conductor_t *conductor, int6
     return index;
 }
 
-aeron_client_t *aeron_driver_conductor_client_for_publication(
-    aeron_driver_conductor_t *conductor, aeron_publication_link_t *publication_link)
-{
-    aeron_client_t *client = NULL;
-
-    if (publication_link->cached_client_index < (int)conductor->clients.length)
-    {
-        client = &conductor->clients.array[publication_link->cached_client_index];
-
-        if (client->client_id != publication_link->client_id)
-        {
-            client = NULL;
-        }
-    }
-
-    if (NULL == client)
-    {
-        int index;
-
-        if ((index = aeron_driver_conductor_find_client(conductor, publication_link->client_id)) >= 0)
-        {
-            client = &conductor->clients.array[index];
-        }
-
-        publication_link->cached_client_index = index;
-    }
-
-    return client;
-}
-
 aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_t *conductor, int64_t client_id)
 {
     aeron_client_t *client = NULL;
@@ -138,7 +110,10 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
             size_t new_capacity = conductor->clients.capacity + (conductor->clients.capacity >> 1);
 
             if (aeron_array_ensure_capacity(
-                (uint8_t **)&conductor->clients.array, sizeof(aeron_client_t), conductor->clients.capacity, new_capacity) < 0)
+                (uint8_t **)&conductor->clients.array,
+                sizeof(aeron_client_t),
+                conductor->clients.capacity,
+                new_capacity) < 0)
             {
                 return NULL;
             }
@@ -152,6 +127,9 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
         client->reached_end_of_life = false;
         client->time_of_last_keepalive = conductor->context->nano_clock();
         client->client_liveness_timeout_ns = conductor->context->client_liveness_timeout_ns;
+        client->publication_links.array = NULL;
+        client->publication_links.length = 0;
+        client->publication_links.capacity = 0;
         conductor->clients.length++;
     }
     else
@@ -160,6 +138,61 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
     }
 
     return client;
+}
+
+void aeron_client_on_time_event(aeron_client_t *client, int64_t now_ns, int64_t now_ms)
+{
+    if (now_ns > (client->time_of_last_keepalive + client->client_liveness_timeout_ns))
+    {
+        client->reached_end_of_life = true;
+    }
+}
+
+bool aeron_client_has_reached_end_of_life(aeron_client_t *client)
+{
+    return client->reached_end_of_life;
+}
+
+void aeron_client_delete(aeron_client_t *client)
+{
+    for (size_t i = 0; i < client->publication_links.length; i++)
+    {
+        aeron_driver_managed_resource_t *resource = client->publication_links.array[i].resource;
+
+        resource->refcnt--;
+    }
+
+    client->publication_links.length = 0; /* reuse array if it exists. */
+    client->client_id = -1;
+}
+
+aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
+    aeron_driver_conductor_t *conductor, aeron_client_t *client, int32_t stream_id, bool is_exclusive)
+{
+    aeron_ipc_publication_t *publication = NULL;
+
+    if (!is_exclusive)
+    {
+        for (size_t i = 0; i < conductor->ipc_publications.length; i++)
+        {
+            aeron_ipc_publication_entry_t *entry = &conductor->ipc_publications.array[i];
+
+            if (stream_id == entry->publication->stream_id)
+            {
+                publication = entry->publication;
+                break;
+            }
+        }
+    }
+
+    if (NULL == publication)
+    {
+        /* TODO: create IPC pub and add entry */
+    }
+
+    /* TODO: add client publication_list entry */
+
+    return publication;
 }
 
 #define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(l,t,now_ns,now_ms) \
@@ -179,7 +212,6 @@ void aeron_driver_conductor_on_check_managed_resources(
     aeron_driver_conductor_t *conductor, int64_t now_ns, int64_t now_ms)
 {
     AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(conductor->clients, aeron_client_t, now_ns, now_ms);
-    AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(conductor->publication_links, aeron_publication_link_t, now_ns, now_ms);
 }
 
 void aeron_driver_conductor_client_transmit(
@@ -370,8 +402,35 @@ do \
 int aeron_driver_conductor_on_add_ipc_publication(
     aeron_driver_conductor_t *conductor,
     aeron_publication_command_t *command,
-    bool isExclusive)
+    bool is_exclusive)
 {
+    aeron_client_t *client = NULL;
+    aeron_ipc_publication_t *publication = NULL;
+
+    if ((client = aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id)) == NULL ||
+        (publication = aeron_driver_conductor_get_or_add_ipc_publication(conductor, client, command->stream_id, is_exclusive)) == NULL)
+    {
+        return -1;
+    }
+
+    /* TODO: pre-populate OOM in distinct_error_log so that it never needs to allocate if OOMed */
+
+    /* TODO: link pub into client */
+
+    /* TODO: send pub ready */
+
+    /* TODO: link IPC subscriptions */
+
+    for (size_t i = 0; i < conductor->ipc_subscriptions.length; i++)
+    {
+        aeron_subscription_link_t *subscription_link = &conductor->ipc_subscriptions.array[i];
+
+        if (command->stream_id == subscription_link->stream_id)
+        {
+            /* TODO: could be old pub, so have to check to see if already linked */
+        }
+    }
+
     AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "IPC publications not currently supported");
     return -1;
 }
@@ -379,7 +438,7 @@ int aeron_driver_conductor_on_add_ipc_publication(
 int aeron_driver_conductor_on_add_network_publication(
     aeron_driver_conductor_t *conductor,
     aeron_publication_command_t *command,
-    bool isExclusive)
+    bool is_exclusive)
 {
     AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "network publications not currently supported");
     return -1;

@@ -17,9 +17,7 @@
 #ifndef AERON_AERON_DRIVER_CONTEXT_H
 #define AERON_AERON_DRIVER_CONTEXT_H
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <stddef.h>
+#include "aeron_driver_common.h"
 #include "aeronmd.h"
 #include "util/aeron_bitutil.h"
 #include "util/aeron_fileutil.h"

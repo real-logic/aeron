@@ -17,6 +17,7 @@
 #ifndef AERON_AERON_DRIVER_CONDUCTOR_H
 #define AERON_AERON_DRIVER_CONDUCTOR_H
 
+#include "aeron_driver_common.h"
 #include "aeron_driver_context.h"
 #include "concurrent/aeron_mpsc_rb.h"
 #include "concurrent/aeron_broadcast_transmitter.h"
@@ -24,6 +25,13 @@
 #include "concurrent/aeron_counters_manager.h"
 #include "command/aeron_control_protocol.h"
 #include "aeron_system_counters.h"
+#include "aeron_ipc_publication.h"
+
+typedef struct aeron_publication_link_stct
+{
+    aeron_driver_managed_resource_t *resource;
+}
+aeron_publication_link_t;
 
 typedef struct aeron_client_stct
 {
@@ -31,37 +39,50 @@ typedef struct aeron_client_stct
     int64_t client_liveness_timeout_ns;
     int64_t time_of_last_keepalive;
     bool reached_end_of_life;
+
+    struct publication_link_stct
+    {
+        aeron_publication_link_t *array;
+        size_t length;
+        size_t capacity;
+    }
+    publication_links;
 }
 aeron_client_t;
 
-typedef struct aeron_publication_link_stct
+typedef struct aeron_subscribeable_list_entry_stct
 {
-    void *publication;
-    int64_t client_id;
-    int64_t registration_id;
-    int cached_client_index;
-    bool reached_end_of_life;
+    aeron_subscribeable_t *subscribeable;
+    int64_t counter_id;
 }
-aeron_publication_link_t;
+aeron_subscribeable_list_entry_t;
 
 typedef struct aeron_subscription_link_stct
 {
+    /* TODO: channel */
+    int32_t stream_id;
     int64_t client_id;
     int64_t registration_id;
-    int cached_client_index;
-    int32_t stream_id;
-    int (*matches)(struct aeron_subscription_link_stct *link, void *rhs);
+
+    struct subscribeable_list_stct
+    {
+        aeron_subscribeable_list_entry_t *array;
+        size_t length;
+        size_t capacity;
+    }
+    subscribeable_list;
 }
 aeron_subscription_link_t;
 
-typedef void (*aeron_managed_resource_on_time_event_func_t)(void *clientd, int64_t, int64_t);
-typedef bool (*aeron_managed_resource_has_reached_end_of_life_func_t)(void *clientd);
-typedef void (*aeron_managed_resource_delete_func_t)(void *clientd);
+typedef struct aeron_ipc_publication_entry_stct
+{
+    aeron_ipc_publication_t *publication;
+}
+aeron_ipc_publication_entry_t;
 
 typedef struct aeron_driver_conductor_stct
 {
     aeron_driver_context_t *context;
-
     aeron_mpsc_rb_t to_driver_commands;
     aeron_broadcast_transmitter_t to_clients;
     aeron_distinct_error_log_t error_log;
@@ -73,33 +94,27 @@ typedef struct aeron_driver_conductor_stct
         aeron_client_t *array;
         size_t length;
         size_t capacity;
-        aeron_managed_resource_on_time_event_func_t on_time_event;
-        aeron_managed_resource_has_reached_end_of_life_func_t has_reached_end_of_life;
-        aeron_managed_resource_delete_func_t delete;
+        void (*on_time_event)(aeron_client_t *, int64_t, int64_t);
+        bool (*has_reached_end_of_life)(aeron_client_t *);
+        void (*delete)(aeron_client_t *);
     }
     clients;
 
-    struct publication_links_stct
-    {
-        aeron_publication_link_t *array;
-        size_t length;
-        size_t capacity;
-        aeron_managed_resource_on_time_event_func_t on_time_event;
-        aeron_managed_resource_has_reached_end_of_life_func_t has_reached_end_of_life;
-        aeron_managed_resource_delete_func_t delete;
-    }
-    publication_links;
-
-    struct subscription_links_stct
+    struct ipc_subscriptions_stct
     {
         aeron_subscription_link_t *array;
         size_t length;
         size_t capacity;
-        aeron_managed_resource_on_time_event_func_t on_time_event;
-        aeron_managed_resource_has_reached_end_of_life_func_t has_reached_end_of_life;
-        aeron_managed_resource_delete_func_t delete;
     }
-    subscription_links;
+    ipc_subscriptions;
+
+    struct ipc_publication_stct
+    {
+        aeron_ipc_publication_entry_t *array;
+        size_t length;
+        size_t capacity;
+    }
+    ipc_publications;
 
     char stack_buffer[AERON_MAX_PATH];
     int stack_error_code;
@@ -111,6 +126,10 @@ typedef struct aeron_driver_conductor_stct
 aeron_driver_conductor_t;
 
 #define AERON_FORMAT_BUFFER(buffer, format, ...) snprintf(buffer, sizeof(buffer) - 1, format, __VA_ARGS__)
+
+void aeron_client_on_time_event(aeron_client_t *client, int64_t now_ns, int64_t now_ms);
+bool aeron_client_has_reached_end_of_life(aeron_client_t *client);
+void aeron_client_delete(aeron_client_t *);
 
 int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *context);
 
@@ -128,12 +147,12 @@ void aeron_driver_conductor_on_close(void *clientd);
 int aeron_driver_conductor_on_add_ipc_publication(
     aeron_driver_conductor_t *conductor,
     aeron_publication_command_t *command,
-    bool isExclusive);
+    bool is_exclusive);
 
 int aeron_driver_conductor_on_add_network_publication(
     aeron_driver_conductor_t *conductor,
     aeron_publication_command_t *command,
-    bool isExclusive);
+    bool is_exclusive);
 
 int aeron_driver_conductor_on_remove_publication(
     aeron_driver_conductor_t *conductor,

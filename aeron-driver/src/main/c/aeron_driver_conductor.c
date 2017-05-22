@@ -82,6 +82,17 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     return 0;
 }
 
+#define AERON_DRIVER_CONDUCTOR_ENSURE_CAPACITY(r,a,t) \
+if (a.length >= a.capacity) \
+{ \
+    size_t new_capacity = a.capacity + (a.capacity >> 1); \
+    r = aeron_array_ensure_capacity((uint8_t **)&a.array, sizeof(t), a.capacity, new_capacity); \
+    if (r > 0) \
+    { \
+       a.capacity = new_capacity; \
+    } \
+}
+
 int aeron_driver_conductor_find_client(aeron_driver_conductor_t *conductor, int64_t client_id)
 {
     int index = -1;
@@ -105,32 +116,24 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
 
     if ((index = aeron_driver_conductor_find_client(conductor, client_id)) == -1)
     {
-        if (conductor->clients.length >= conductor->clients.capacity)
+        int ensure_capacity_result = 0;
+
+        AERON_DRIVER_CONDUCTOR_ENSURE_CAPACITY(ensure_capacity_result, conductor->clients, aeron_client_t);
+
+        if (ensure_capacity_result >= 0)
         {
-            size_t new_capacity = conductor->clients.capacity + (conductor->clients.capacity >> 1);
+            index = (int) conductor->clients.length;
+            client = &conductor->clients.array[index];
 
-            if (aeron_array_ensure_capacity(
-                (uint8_t **)&conductor->clients.array,
-                sizeof(aeron_client_t),
-                conductor->clients.capacity,
-                new_capacity) < 0)
-            {
-                return NULL;
-            }
-            conductor->clients.capacity = new_capacity;
+            client->client_id = client_id;
+            client->reached_end_of_life = false;
+            client->time_of_last_keepalive = conductor->context->nano_clock();
+            client->client_liveness_timeout_ns = conductor->context->client_liveness_timeout_ns;
+            client->publication_links.array = NULL;
+            client->publication_links.length = 0;
+            client->publication_links.capacity = 0;
+            conductor->clients.length++;
         }
-
-        index = (int)conductor->clients.length;
-        client = &conductor->clients.array[index];
-
-        client->client_id = client_id;
-        client->reached_end_of_life = false;
-        client->time_of_last_keepalive = conductor->context->nano_clock();
-        client->client_liveness_timeout_ns = conductor->context->client_liveness_timeout_ns;
-        client->publication_links.array = NULL;
-        client->publication_links.length = 0;
-        client->publication_links.capacity = 0;
-        conductor->clients.length++;
     }
     else
     {
@@ -170,6 +173,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
     aeron_driver_conductor_t *conductor, aeron_client_t *client, int32_t stream_id, bool is_exclusive)
 {
     aeron_ipc_publication_t *publication = NULL;
+    int ensure_capacity_result = 0;
 
     if (!is_exclusive)
     {
@@ -185,14 +189,31 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
         }
     }
 
-    if (NULL == publication)
+    AERON_DRIVER_CONDUCTOR_ENSURE_CAPACITY(ensure_capacity_result, client->publication_links, aeron_publication_link_t);
+
+    if (ensure_capacity_result >= 0)
     {
-        /* TODO: create IPC pub and add entry */
+        if (NULL == publication)
+        {
+            AERON_DRIVER_CONDUCTOR_ENSURE_CAPACITY(ensure_capacity_result, conductor->ipc_publications, aeron_ipc_publication_entry_t);
+
+            if (ensure_capacity_result >= 0)
+            {
+                if (aeron_ipc_publication_create(&publication, stream_id) >= 0)
+                {
+                    client->publication_links.array[client->publication_links.length++].resource =
+                        &publication->conductor_fields.managed_resource;
+                }
+            }
+        }
+        else
+        {
+            client->publication_links.array[client->publication_links.length++].resource =
+                &publication->conductor_fields.managed_resource;
+        }
     }
 
-    /* TODO: add client publication_list entry */
-
-    return publication;
+    return ensure_capacity_result >= 0 ? publication : NULL;
 }
 
 #define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(l,t,now_ns,now_ms) \
@@ -415,8 +436,6 @@ int aeron_driver_conductor_on_add_ipc_publication(
 
     /* TODO: pre-populate OOM in distinct_error_log so that it never needs to allocate if OOMed */
 
-    /* TODO: link pub into client */
-
     /* TODO: send pub ready */
 
     /* TODO: link IPC subscriptions */
@@ -457,6 +476,40 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     aeron_driver_conductor_t *conductor,
     aeron_subscription_command_t *command)
 {
+    aeron_client_t *client = NULL;
+    int ensure_capacity_result = 0;
+
+    if ((client = aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id)) == NULL)
+    {
+        return -1;
+    }
+
+    AERON_DRIVER_CONDUCTOR_ENSURE_CAPACITY(ensure_capacity_result, conductor->ipc_subscriptions, aeron_subscription_link_t);
+    if (ensure_capacity_result >= 0)
+    {
+        aeron_subscription_link_t *link = &conductor->ipc_subscriptions.array[conductor->ipc_subscriptions.length++];
+
+        link->stream_id = command->stream_id;
+        link->client_id = command->correlated.client_id;
+        link->registration_id = command->correlated.correlation_id;
+        link->subscribeable_list.length = 0;
+        link->subscribeable_list.capacity = 0;
+        link->subscribeable_list.array = NULL;
+
+        /* TODO: send operation success */
+
+        for (size_t i = 0; i < conductor->ipc_publications.length; i++)
+        {
+            aeron_ipc_publication_entry_t *publication_entry = &conductor->ipc_publications.array[i];
+
+            if (command->stream_id == publication_entry->publication->stream_id)
+            {
+                /* TODO: link up and send available image */
+            }
+        }
+
+    }
+
     AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "IPC subscriptions not currently supported");
     return -1;
 }

@@ -16,7 +16,7 @@
 
 #include "aeron_ipc_publication.h"
 
-int aeron_ipc_publication_create(aeron_ipc_publication_t **publication)
+int aeron_ipc_publication_create(aeron_ipc_publication_t **publication, int32_t stream_id)
 {
     return -1;
 }

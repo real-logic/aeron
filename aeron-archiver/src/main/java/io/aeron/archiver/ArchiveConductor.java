@@ -61,6 +61,7 @@ class ArchiveConductor implements Agent
     private final EpochClock epochClock;
     private volatile boolean isClosed = false;
     private final Recorder.Builder imageRecorderBuilder = new Recorder.Builder();
+    private final StringBuilder replayUriBuilder = new StringBuilder(1024);
     private int replaySessionId;
 
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
@@ -283,19 +284,18 @@ class ArchiveConductor implements Agent
     {
         final int termId = (int)(fromPosition / termBufferLength + initialTermId);
         final int termOffset = (int)(fromPosition % termBufferLength);
-        // TODO: can cache and reuse builder
-        final StringBuilder builder = new StringBuilder(replayChannel.length() + 128);
-        builder.append(replayChannel);
+        replayUriBuilder.setLength(0);
+        replayUriBuilder.append(replayChannel);
         if (replayChannel.contains("?"))
         {
-            builder.append("|");
+            replayUriBuilder.append("|");
         }
         else
         {
-            builder.append("?");
+            replayUriBuilder.append("?");
         }
 
-        builder
+        replayUriBuilder
             .append(CommonContext.INITIAL_TERM_ID_PARAM_NAME).append('=').append(initialTermId)
             .append('|')
             .append(CommonContext.MTU_LENGTH_URI_PARAM_NAME).append('=').append(mtuLength)
@@ -306,6 +306,6 @@ class ArchiveConductor implements Agent
             .append('|')
             .append(CommonContext.TERM_OFFSET_PARAM_NAME).append('=').append(termOffset);
 
-        return aeron.addExclusivePublication(builder.toString(), replayStreamId);
+        return aeron.addExclusivePublication(replayUriBuilder.toString(), replayStreamId);
     }
 }

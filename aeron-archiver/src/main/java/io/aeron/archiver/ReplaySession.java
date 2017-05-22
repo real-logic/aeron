@@ -16,7 +16,7 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
-import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
+import io.aeron.archiver.codecs.*;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
@@ -85,7 +85,6 @@ class ReplaySession implements
         final String replayChannel,
         final int replayStreamId)
     {
-        // TODO: set position, set MTU (add to metadata)
         this.recordingId = recordingId;
 
         this.replayPosition = replayPosition;
@@ -190,7 +189,7 @@ class ReplaySession implements
             if (this.replayPosition < joiningPosition)
             {
                 return closeOnError(null, "Requested replay start position(=" + replayPosition +
-                    ") is less than recording initial position(=" + joiningPosition + ")");
+                    ") is less than recording joining position(=" + joiningPosition + ")");
             }
             final long toPosition = this.replayLength + replayPosition;
             if (toPosition > lastPosition)
@@ -231,7 +230,7 @@ class ReplaySession implements
             return 0;
         }
 
-        controlSessionProxy.sendResponse(controlPublication, null, correlationId);
+        controlSessionProxy.sendOkResponse(controlPublication, correlationId);
         this.state = State.REPLAY;
 
         return 1;
@@ -242,7 +241,7 @@ class ReplaySession implements
         this.state = State.INACTIVE;
         if (controlPublication.isConnected())
         {
-            controlSessionProxy.sendResponse(controlPublication, errorMessage, correlationId);
+            controlSessionProxy.sendError(controlPublication, ControlResponseCode.ERROR, errorMessage, correlationId);
         }
 
         if (e != null)

@@ -198,18 +198,24 @@ class ArchiveConductor implements Agent
         }
     }
 
-    void stopRecording(final long recordingId)
+    boolean stopRecording(final long recordingId)
     {
-        catalog.getRecordingSession(recordingId).abort();
+        final RecordingSession recordingSession = catalog.getRecordingSession(recordingId);
+        if (recordingSession == null)
+        {
+            return false;
+        }
+        recordingSession.abort();
+        return true;
     }
 
-    public void startRecording(final String channel, final int streamId)
+    void startRecording(final String channel, final int streamId)
     {
         final Subscription recordingSubscription = aeron.addSubscription(
             channel, streamId, availableImageHandler, null);
     }
 
-    public void listRecordings(
+    void listRecordings(
         final long correlationId,
         final ExclusivePublication replyPublication,
         final long fromId,
@@ -221,15 +227,16 @@ class ArchiveConductor implements Agent
         sessions.add(listSession);
     }
 
-    public void stopReplay(final int sessionId)
+    boolean stopReplay(final long replayId)
     {
-        final ReplaySession session = replaySessionByIdMap.get(sessionId);
+        final ReplaySession session = replaySessionByIdMap.get(replayId);
         if (session == null)
         {
-            throw new IllegalStateException("Trying to abort an unknown replay session: " + sessionId);
+            return false;
         }
 
         session.abort();
+        return true;
     }
 
     void startReplay(

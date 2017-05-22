@@ -201,9 +201,12 @@ public class ArchiveClient
             messageHeaderDecoder.blockLength(),
             messageHeaderDecoder.version());
 
+        final long correlationId = archiverResponseDecoder.correlationId();
+        final ControlResponseCode code = archiverResponseDecoder.code();
         responseListener.onResponse(
+            code,
             archiverResponseDecoder.errorMessage(),
-            archiverResponseDecoder.correlationId());
+            correlationId);
     }
 
     private void handleReplayAborted(

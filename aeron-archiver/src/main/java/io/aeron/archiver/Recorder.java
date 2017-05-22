@@ -76,8 +76,8 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         if (((termsMask + 1) & termsMask) != 0)
         {
             throw new IllegalArgumentException(
-                "It is assumed the termBufferLength is a power of 2 <= 1GB and that" +
-                    "therefore the number of terms in a file is also a power of 2");
+                "It is assumed the termBufferLength is a power of 2, and that the number of terms" +
+                    "in a file is also a power of 2");
         }
 
         final String recordingMetaFileName = ArchiveUtil.recordingMetaFileName(recordingId);

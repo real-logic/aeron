@@ -37,11 +37,23 @@ class ControlSessionProxy
         this.idleStrategy = idleStrategy;
     }
 
-    void sendResponse(final ExclusivePublication reply, final String errorMessage, final long correlationId)
+    void sendOkResponse(
+        final ExclusivePublication reply,
+        final long correlationId)
+    {
+        sendError(reply, ControlResponseCode.OK, null, correlationId);
+    }
+
+    void sendError(
+        final ExclusivePublication reply,
+        final ControlResponseCode code,
+        final String errorMessage,
+        final long correlationId)
     {
         responseEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-            .correlationId(correlationId);
+            .correlationId(correlationId)
+            .code(code);
 
         if (!Strings.isEmpty(errorMessage))
         {

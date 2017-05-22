@@ -16,6 +16,7 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
+import io.aeron.archiver.codecs.ControlResponseCode;
 import org.agrona.*;
 
 class ControlSession implements ArchiveConductor.Session, ControlRequestListener
@@ -121,59 +122,53 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
 
     public void onStopRecording(final long correlationId, final long recordingId)
     {
-        if (state != State.ACTIVE)
+        validateActive();
+
+        if (conductor.stopRecording(recordingId))
         {
-            throw new IllegalStateException();
+            proxy.sendOkResponse(reply, correlationId);
+        }
+        else
+        {
+            proxy.sendError(reply, ControlResponseCode.RECORDING_NOT_FOUND, null, correlationId);
         }
 
-        try
-        {
-            conductor.stopRecording(recordingId);
-            proxy.sendResponse(reply, null, correlationId);
-        }
-        catch (final Exception e)
-        {
-            proxy.sendResponse(reply, e.getMessage(), correlationId);
-        }
     }
 
     public void onStartRecording(final long correlationId, final String channel, final int streamId)
     {
-        if (state != State.ACTIVE)
-        {
-            throw new IllegalStateException();
-        }
+        validateActive();
 
         try
         {
             conductor.startRecording(channel, streamId);
-            proxy.sendResponse(reply, null, correlationId);
+            proxy.sendOkResponse(reply, correlationId);
         }
         catch (final Exception e)
         {
-            // e.printStackTrace(); TODO: logging?
-            proxy.sendResponse(reply, e.getMessage(), correlationId);
+            proxy.sendError(reply, ControlResponseCode.ERROR, e.getMessage(), correlationId);
         }
     }
 
     public void onListRecordings(final long correlationId, final long fromId, final long toId)
     {
-        if (state != State.ACTIVE)
-        {
-            throw new IllegalStateException();
-        }
+        validateActive();
 
         conductor.listRecordings(correlationId, reply, fromId, toId);
     }
 
-    public void onAbortReplay(final long correlationId)
+    public void onAbortReplay(final long correlationId, final long replyId)
     {
-        if (state != State.ACTIVE)
-        {
-            throw new IllegalStateException();
-        }
+        validateActive();
 
-        conductor.stopReplay(0);
+        if (conductor.stopReplay(replyId))
+        {
+            proxy.sendOkResponse(reply, correlationId);
+        }
+        else
+        {
+            proxy.sendError(reply, ControlResponseCode.REPLAY_NOT_FOUND, null, correlationId);
+        }
     }
 
     public void onStartReplay(
@@ -184,10 +179,7 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
         final long position,
         final long length)
     {
-        if (state != State.ACTIVE)
-        {
-            throw new IllegalStateException();
-        }
+        validateActive();
 
         conductor.startReplay(
             correlationId,
@@ -198,4 +190,13 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
             position,
             length);
     }
+
+    private void validateActive()
+    {
+        if (state != State.ACTIVE)
+        {
+            throw new IllegalStateException();
+        }
+    }
+
 }

@@ -105,7 +105,8 @@ class ControlRequestAdapter implements FragmentHandler
                     headerDecoder.version());
 
                 listener.onAbortReplay(
-                    abortReplayRequestDecoder.correlationId());
+                    abortReplayRequestDecoder.correlationId(),
+                    abortReplayRequestDecoder.replayId());
                 break;
 
             case ListRecordingsRequestDecoder.TEMPLATE_ID:

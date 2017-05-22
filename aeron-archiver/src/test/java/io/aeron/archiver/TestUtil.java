@@ -17,6 +17,7 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.client.ArchiveClient;
+import io.aeron.archiver.codecs.ControlResponseCode;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Assert;
@@ -26,7 +27,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
 import static org.hamcrest.Matchers.isEmptyOrNullString;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -67,8 +68,9 @@ public class TestUtil
     {
         waitFor(() -> client.pollResponses(reply, new ArchiveAndReplaySystemTest.FailResponseListener()
         {
-            public void onResponse(final String errorMessage, final long correlationId)
+            public void onResponse(final ControlResponseCode code, final String errorMessage, final long correlationId)
             {
+                assertThat(code, is(ControlResponseCode.OK));
                 assertThat(errorMessage, isEmptyOrNullString());
                 assertThat(correlationId, is(correlationId));
             }
@@ -79,9 +81,9 @@ public class TestUtil
     {
         waitFor(() -> client.pollResponses(reply, new ArchiveAndReplaySystemTest.FailResponseListener()
         {
-            public void onResponse(final String errorMessage, final long correlationId)
+            public void onResponse(final ControlResponseCode code, final String errorMessage, final long correlationId)
             {
-                assertThat(errorMessage, is(notNullValue()));
+                assertThat(code, not(ControlResponseCode.OK));
                 assertThat(correlationId, is(correlationId));
             }
         }, 1) != 0);

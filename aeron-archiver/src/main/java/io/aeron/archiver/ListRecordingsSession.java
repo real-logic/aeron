@@ -16,6 +16,7 @@
 package io.aeron.archiver;
 
 import io.aeron.ExclusivePublication;
+import io.aeron.archiver.codecs.ControlResponseCode;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -147,12 +148,20 @@ class ListRecordingsSession implements ArchiveConductor.Session
     {
         if (fromId > toId)
         {
-            proxy.sendResponse(reply, "Requested range is reversed (to < from)", correlationId);
+            proxy.sendError(
+                reply,
+                ControlResponseCode.ERROR,
+                "Requested range is reversed (to < from)",
+                correlationId);
             state = State.INACTIVE;
         }
         else if (toId > index.maxRecordingId())
         {
-            proxy.sendResponse(reply, "Requested range exceeds available range (to > max)", correlationId);
+            proxy.sendError(
+                reply,
+                ControlResponseCode.ERROR,
+                "Requested range exceeds available range (to > max)",
+                correlationId);
             state = State.INACTIVE;
         }
         else

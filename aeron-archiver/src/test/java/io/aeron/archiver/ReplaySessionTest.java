@@ -16,6 +16,7 @@
 package io.aeron.archiver;
 
 import io.aeron.ExclusivePublication;
+import io.aeron.archiver.codecs.ControlResponseCode;
 import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
@@ -150,7 +151,7 @@ public class ReplaySessionTest
         replaySession.doWork();
 
         // notifies that initiated
-        verify(proxy, times(1)).sendResponse(control, null, correlationId);
+        verify(proxy, times(1)).sendOkResponse(control, correlationId);
 
         final UnsafeBuffer mockTermBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
         when(replay.tryClaim(anyInt(), any(ExclusiveBufferClaim.class))).then(
@@ -199,7 +200,8 @@ public class ReplaySessionTest
         assertEquals(1, replaySession.doWork());
 
         // failure notification
-        verify(proxy, times(1)).sendResponse(eq(control), notNull(), eq(correlationId));
+        verify(proxy, times(1))
+            .sendError(eq(control), eq(ControlResponseCode.ERROR), notNull(), eq(correlationId));
 
         assertTrue(replaySession.isDone());
     }

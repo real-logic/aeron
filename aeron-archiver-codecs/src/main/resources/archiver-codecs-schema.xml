@@ -21,7 +21,15 @@
             <type name="length"  primitiveType="uint32" maxValue="1073741824"/>
             <type name="varData" primitiveType="uint8" length="0" characterEncoding="US-ASCII"/>
         </composite>
+        <enum name="ControlResponseCode" encodingType="uint8">
+            <validValue name="OK">0</validValue>
+            <validValue name="ERROR">1</validValue>
+            <validValue name="RECORDING_NOT_FOUND">2</validValue>
+            <validValue name="REPLAY_NOT_FOUND">3</validValue>
+        </enum>
     </types>
+
+
 
     <sbe:message name="RecordingStarted"
                  id="101"
@@ -52,7 +60,8 @@
                  id="1"
                  description="Generic response to a control request. Empty error message is an OK response">
         <field name="correlationId"       id="1" type="int64"/>
-        <data  name="errorMessage"        id="2" type="varStringEncoding"/>
+        <field name="code"                id="2" type="ControlResponseCode"/>
+        <data  name="errorMessage"        id="3" type="varStringEncoding"/>
     </sbe:message>
 
     <sbe:message name="StartRecordingRequest"

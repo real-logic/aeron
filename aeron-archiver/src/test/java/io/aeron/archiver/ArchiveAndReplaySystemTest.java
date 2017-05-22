@@ -17,9 +17,9 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.client.*;
-import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
+import io.aeron.archiver.codecs.*;
 import io.aeron.driver.*;
-import io.aeron.logbuffer.*;
+import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -65,7 +65,7 @@ public class ArchiveAndReplaySystemTest
 
     public static class FailResponseListener implements ResponseListener
     {
-        public void onResponse(final String errorMessage, final long correlationId)
+        public void onResponse(final ControlResponseCode code, final String errorMessage, final long correlationId)
         {
             fail();
         }

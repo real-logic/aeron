@@ -15,9 +15,12 @@
  */
 package io.aeron.archiver.client;
 
+import io.aeron.archiver.codecs.ControlResponseCode;
+
 public interface ResponseListener
 {
     void onResponse(
+        ControlResponseCode code,
         String errorMessage,
         long correlationId);
 

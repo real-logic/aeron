@@ -38,13 +38,13 @@ class ReplaySession implements
     ArchiveConductor.Session,
     RecordingFragmentReader.SimplifiedControlledPoll
 {
-    private enum State
+    enum State
     {
         INIT, REPLAY, LINGER, INACTIVE, CLOSED
     }
 
-    public static final int REPLAY_SEND_BATCH_SIZE = 8;
-    public static final long LINGER_LENGTH_MS = 1000;
+    private static final int REPLAY_SEND_BATCH_SIZE = 8;
+    static final long LINGER_LENGTH_MS = 1000;
 
     private final long recordingId;
     private final long replayPosition;
@@ -144,6 +144,14 @@ class ReplaySession implements
 
     public void abort()
     {
+        if (!controlPublication.isClosed() && controlPublication.isConnected())
+        {
+            controlSessionProxy.sendReplayAborted(
+                controlPublication,
+                correlationId,
+                replaySessionId,
+                replayPublication.position());
+        }
         this.state = State.INACTIVE;
     }
 
@@ -317,5 +325,10 @@ class ReplaySession implements
         }
 
         return false;
+    }
+
+    State state()
+    {
+        return state;
     }
 }

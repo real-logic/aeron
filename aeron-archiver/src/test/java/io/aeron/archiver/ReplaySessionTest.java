@@ -43,6 +43,7 @@ public class ReplaySessionTest
     private static final long RECORDING_POSITION = INITIAL_TERM_OFFSET;
     private static final int MTU_LENGTH = 4096;
     private static final long TIME = 0;
+    private static final int REPLAY_SESSION_ID = 0;
     private File archiveDir;
 
     private int messageIndex = 0;
@@ -145,13 +146,23 @@ public class ReplaySessionTest
 
         replaySession.doWork();
 
+        assertEquals(replaySession.state(), ReplaySession.State.INIT);
+
         when(replay.isConnected()).thenReturn(true);
         when(control.isConnected()).thenReturn(true);
 
         replaySession.doWork();
+        assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
         // notifies that initiated
         verify(proxy, times(1)).sendOkResponse(control, correlationId);
+        verify(conductor).newReplayPublication(
+            REPLAY_CHANNEL,
+            REPLAY_STREAM_ID,
+            RECORDING_POSITION,
+            MTU_LENGTH,
+            INITIAL_TERM_ID,
+            TERM_BUFFER_LENGTH);
 
         final UnsafeBuffer mockTermBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
         when(replay.tryClaim(anyInt(), any(ExclusiveBufferClaim.class))).then(
@@ -176,6 +187,35 @@ public class ReplaySessionTest
         when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
         replaySession.doWork();
         assertTrue(replaySession.isDone());
+    }
+
+    @Test
+    public void shouldAbortReplay()
+    {
+        final long length = 1024L;
+        final long correlationId = 1L;
+        final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
+        final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
+
+        final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
+
+        final ReplaySession replaySession = replaySession(
+            RECORDING_ID, length, correlationId, replay, control, conductor);
+
+        when(control.isClosed()).thenReturn(false);
+        when(replay.isClosed()).thenReturn(false);
+        when(replay.isConnected()).thenReturn(true);
+        when(control.isConnected()).thenReturn(true);
+
+        replaySession.doWork();
+
+        // notifies that initiated
+        verify(proxy, times(1)).sendOkResponse(control, correlationId);
+        assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
+
+        replaySession.abort();
+        assertEquals(replaySession.state(), ReplaySession.State.INACTIVE);
+        verify(proxy, times(1)).sendReplayAborted(control, correlationId, REPLAY_SESSION_ID, replay.position());
     }
 
     @Test
@@ -255,7 +295,7 @@ public class ReplaySessionTest
             control,
             archiveDir,
             proxy,
-            0,
+            REPLAY_SESSION_ID,
             correlationId,
             epochClock,
             REPLAY_CHANNEL,

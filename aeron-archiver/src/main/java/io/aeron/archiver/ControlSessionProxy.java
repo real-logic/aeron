@@ -31,6 +31,7 @@ class ControlSessionProxy
     private final RecordingNotFoundResponseEncoder recordingNotFoundResponseEncoder =
         new RecordingNotFoundResponseEncoder();
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
+    private final ReplayAbortedEncoder replayAbortedEncoder = new ReplayAbortedEncoder();
 
     ControlSessionProxy(final IdleStrategy idleStrategy)
     {
@@ -61,15 +62,26 @@ class ControlSessionProxy
         }
 
         final int length = HEADER_LENGTH + responseEncoder.encodedLength();
-        // TODO: handle dead/slow subscriber, this is not an acceptable place to get stuck
         send(reply, length);
     }
 
     private void send(final ExclusivePublication reply, final int length)
     {
+        final ExpandableArrayBuffer buffer = this.buffer;
+        final int offset = 0;
+        send(reply, buffer, offset, length);
+    }
+
+    private void send(
+        final ExclusivePublication reply,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
+    {
+        // TODO: handle dead/slow subscriber, this is not an acceptable place to get stuck
         while (true)
         {
-            final long result = reply.offer(buffer, 0, length);
+            final long result = reply.offer(buffer, offset, length);
             if (result > 0)
             {
                 idleStrategy.reset();
@@ -96,8 +108,7 @@ class ControlSessionProxy
             .recordingId(recordingId)
             .maxRecordingId(maxRecordingId);
 
-        final int length = HEADER_LENGTH + responseEncoder.encodedLength();
-        // TODO: handle dead/slow subscriber, this is not an acceptable place to get stuck
+        final int length = HEADER_LENGTH + recordingNotFoundResponseEncoder.encodedLength();
         send(reply, length);
     }
 
@@ -106,26 +117,28 @@ class ControlSessionProxy
         final UnsafeBuffer descriptorBuffer,
         final long correlationId)
     {
+        final int offset = Catalog.CATALOG_FRAME_LENGTH - HEADER_LENGTH;
+        final int length = descriptorBuffer.getInt(0) + HEADER_LENGTH;
+
         recordingDescriptorEncoder
-            .wrapAndApplyHeader(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH - HEADER_LENGTH, messageHeaderEncoder)
+            .wrapAndApplyHeader(descriptorBuffer, offset, messageHeaderEncoder)
             .correlationId(correlationId);
 
-        final int length = descriptorBuffer.getInt(0) + HEADER_LENGTH;
-        while (true)
-        {
-            final long result = reply.offer(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH - HEADER_LENGTH, length);
-            if (result > 0)
-            {
-                idleStrategy.reset();
-                break;
-            }
+        send(reply, descriptorBuffer, offset, length);
+    }
 
-            if (result == Publication.NOT_CONNECTED || result == Publication.CLOSED)
-            {
-                throw new IllegalStateException("Response channel is down: " + reply);
-            }
-
-            idleStrategy.idle();
-        }
+    void sendReplayAborted(
+        final ExclusivePublication reply,
+        final long correlationId,
+        final long replaySessionId,
+        final long position)
+    {
+        replayAbortedEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId)
+            .replayId(replaySessionId)
+            .lastPosition(position);
+        final int length = HEADER_LENGTH + replayAbortedEncoder.encodedLength();
+        send(reply, length);
     }
 }

@@ -48,7 +48,7 @@ class Catalog implements AutoCloseable
     private final ByteBuffer byteBuffer;
     private final UnsafeBuffer unsafeBuffer;
     private final FileChannel catalogFileChannel;
-    private long recordingIdSeq = 0;
+    private long nextRecordingId = 0;
 
     Catalog(final File archiveDir)
     {
@@ -112,7 +112,7 @@ class Catalog implements AutoCloseable
 
         final long recordingId = decoder.recordingId();
 
-        recordingIdSeq = Math.max(recordingId + 1, recordingIdSeq);
+        nextRecordingId = Math.max(recordingId + 1, nextRecordingId);
 
         return length + CATALOG_FRAME_LENGTH;
     }
@@ -129,7 +129,7 @@ class Catalog implements AutoCloseable
         final RecordingSession session,
         final int segmentFileLength)
     {
-        final long newRecordingId = recordingIdSeq;
+        final long newRecordingId = nextRecordingId;
 
         recordingDescriptorEncoder.limit(CATALOG_FRAME_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH);
         initDescriptor(
@@ -162,7 +162,7 @@ class Catalog implements AutoCloseable
             LangUtil.rethrowUnchecked(ex);
         }
 
-        recordingIdSeq++;
+        nextRecordingId++;
         recordingSessionByIdMap.put(newRecordingId, session);
         return newRecordingId;
     }
@@ -204,9 +204,9 @@ class Catalog implements AutoCloseable
         catalogFileChannel.write(metaDataBuffer, recordingId * RECORD_LENGTH);
     }
 
-    long maxRecordingId()
+    long nextRecordingId()
     {
-        return recordingIdSeq;
+        return nextRecordingId;
     }
 
     RecordingSession getRecordingSession(final long recordingId)

@@ -219,10 +219,10 @@ class ArchiveConductor implements Agent
         final long correlationId,
         final ExclusivePublication replyPublication,
         final long fromId,
-        final long toId)
+        final int count)
     {
         final Session listSession = new ListRecordingsSession(
-            correlationId, replyPublication, fromId, toId, catalog, clientProxy);
+            correlationId, replyPublication, fromId, count, catalog, clientProxy);
 
         sessions.add(listSession);
     }

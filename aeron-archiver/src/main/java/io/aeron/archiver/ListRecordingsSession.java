@@ -52,14 +52,14 @@ class ListRecordingsSession implements ArchiveConductor.Session
         final long correlationId,
         final ExclusivePublication reply,
         final long fromId,
-        final long toId,
+        final int count,
         final Catalog index,
         final ControlSessionProxy proxy)
     {
         this.reply = reply;
         recordingId = fromId;
         this.fromId = fromId;
-        this.toId = toId;
+        this.toId = fromId + count;
         this.index = index;
         this.proxy = proxy;
         this.correlationId = correlationId;
@@ -118,7 +118,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
             {
                 if (!index.readDescriptor(recordingId, byteBuffer))
                 {
-                    proxy.sendDescriptorNotFound(reply, recordingId, index.maxRecordingId(), correlationId);
+                    proxy.sendDescriptorNotFound(reply, recordingId, index.nextRecordingId(), correlationId);
                     state = State.INACTIVE;
                     return 0;
                 }
@@ -136,7 +136,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
 
         proxy.sendDescriptor(reply, descriptorBuffer, correlationId);
 
-        if (++recordingId > toId)
+        if (++recordingId >= toId)
         {
             state = State.INACTIVE;
         }
@@ -146,21 +146,12 @@ class ListRecordingsSession implements ArchiveConductor.Session
 
     private int init()
     {
-        if (fromId > toId)
+        if (fromId >= index.nextRecordingId())
         {
             proxy.sendError(
                 reply,
-                ControlResponseCode.ERROR,
-                "Requested range is reversed (to < from)",
-                correlationId);
-            state = State.INACTIVE;
-        }
-        else if (toId > index.maxRecordingId())
-        {
-            proxy.sendError(
-                reply,
-                ControlResponseCode.ERROR,
-                "Requested range exceeds available range (to > max)",
+                ControlResponseCode.RECORDING_NOT_FOUND,
+                "Requested start id exceeds max known id",
                 correlationId);
             state = State.INACTIVE;
         }

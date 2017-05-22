@@ -271,7 +271,7 @@ public class ArchiveAndReplaySystemTest
         final ArchiveClient client, final Publication publication)
     {
         final long requestRecordingsCorrelationId = this.correlationId++;
-        client.listRecordings(recordingId, recordingId, requestRecordingsCorrelationId);
+        client.listRecordings(recordingId, 1, requestRecordingsCorrelationId);
         println("Await result");
         waitFor(() -> client.pollResponses(reply, new FailResponseListener()
         {

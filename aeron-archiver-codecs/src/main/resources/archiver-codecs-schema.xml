@@ -29,8 +29,6 @@
         </enum>
     </types>
 
-
-
     <sbe:message name="RecordingStarted"
                  id="101"
                  description="Describes a new image recording, sent both as notification and reply">

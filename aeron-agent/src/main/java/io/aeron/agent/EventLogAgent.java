@@ -50,6 +50,14 @@ public class EventLogAgent
 
     private static final AgentBuilder.Listener LISTENER = new AgentBuilder.Listener()
     {
+        public void onDiscovery(
+            final String typeName,
+            final ClassLoader classLoader,
+            final JavaModule module,
+            final boolean loaded)
+        {
+        }
+
         public void onTransformation(
             final TypeDescription typeDescription,
             final ClassLoader classLoader,
@@ -57,7 +65,7 @@ public class EventLogAgent
             final boolean loaded,
             final DynamicType dynamicType)
         {
-            System.out.format("TRANSFORM %s%n", typeDescription.getName());
+            System.out.println("TRANSFORM " + typeDescription.getName());
         }
 
         public void onIgnored(
@@ -75,12 +83,15 @@ public class EventLogAgent
             final boolean loaded,
             final Throwable throwable)
         {
-            System.out.format("ERROR %s%n", typeName);
+            System.out.println("ERROR " + typeName);
             throwable.printStackTrace(System.out);
         }
 
         public void onComplete(
-            final String typeName, final ClassLoader classLoader, final JavaModule module, final boolean loaded)
+            final String typeName,
+            final ClassLoader classLoader,
+            final JavaModule module,
+            final boolean loaded)
         {
         }
     };

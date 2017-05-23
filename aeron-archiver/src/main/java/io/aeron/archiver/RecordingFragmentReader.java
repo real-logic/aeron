@@ -128,10 +128,7 @@ class RecordingFragmentReader implements AutoCloseable
             transmitted += alignedLength;
             this.fragmentOffset += alignedLength;
 
-            if (headerFlyweight.headerType() == PADDING_FRAME_TYPE)
-            {
-                continue;
-            }
+
 
             final int fragmentDataOffset = fragmentOffset + DataHeaderFlyweight.DATA_OFFSET;
             final int fragmentDataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
@@ -147,8 +144,13 @@ class RecordingFragmentReader implements AutoCloseable
                 this.fragmentOffset -= alignedLength;
                 return polled;
             }
-            // only count data fragments
-            polled++;
+
+            // only count data fragments, consistent with sent fragment count
+            if (headerFlyweight.headerType() != PADDING_FRAME_TYPE)
+            {
+                polled++;
+            }
+
         }
 
         if (!isDone() && fragmentOffset == termBufferLength)

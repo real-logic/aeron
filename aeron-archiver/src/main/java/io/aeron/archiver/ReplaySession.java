@@ -307,7 +307,7 @@ class ReplaySession implements
                 final MutableDirectBuffer publicationBuffer = bufferClaim.buffer();
                 bufferClaim.flags((byte)header.flags());
                 bufferClaim.reservedValue(header.reservedValue());
-                // TODO: ??? bufferClaim.headerType(header.type()); ???
+                bufferClaim.headerType(header.headerType());
 
                 final int offset = bufferClaim.offset();
                 publicationBuffer.putBytes(offset, fragmentBuffer, fragmentOffset, fragmentLength);

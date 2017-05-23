@@ -216,6 +216,9 @@ public class ReplaySessionTest
         replaySession.abort();
         assertEquals(replaySession.state(), ReplaySession.State.INACTIVE);
         verify(proxy, times(1)).sendReplayAborted(control, correlationId, REPLAY_SESSION_ID, replay.position());
+
+        replaySession.doWork();
+        assertTrue(replaySession.isDone());
     }
 
     @Test

@@ -263,6 +263,25 @@ void aeron_driver_conductor_on_error(
         conductor, AERON_RESPONSE_ON_ERROR, response, sizeof(aeron_error_response_t) + length);
 }
 
+void aeron_driver_conductor_on_operation_succeeded(aeron_driver_conductor_t *conductor, int64_t correlation_id)
+{
+    char response_buffer[sizeof(aeron_correlated_command_t)];
+    aeron_correlated_command_t *response = (aeron_correlated_command_t *)response_buffer;
+
+    response->client_id = 0;
+    response->correlation_id = correlation_id;
+
+    aeron_driver_conductor_client_transmit(
+        conductor, AERON_RESPONSE_ON_OPERATION_SUCCESS, response, sizeof(aeron_correlated_command_t));
+}
+
+void aeron_driver_conductor_on_available_image(
+    aeron_driver_conductor_t *conductor,
+    int64_t correlation_id)
+{
+
+}
+
 void aeron_driver_conductor_error(aeron_driver_conductor_t *conductor, int error_code, const char *description)
 {
     aeron_distinct_error_log_record(&conductor->error_log, error_code, description, conductor->stack_buffer);
@@ -420,6 +439,49 @@ do \
     c->stack_error_desc = desc; \
 } while (0)
 
+int aeron_driver_conductor_link_subscribeable(
+    aeron_driver_conductor_t *conductor,
+    aeron_subscription_link_t *link,
+    aeron_subscribeable_t *subscribeable)
+{
+    int ensure_capacity_result = 0, result = -1;
+
+    AERON_DRIVER_CONDUCTOR_ENSURE_CAPACITY(ensure_capacity_result, link->subscribeable_list, aeron_subscribeable_list_entry_t);
+
+    if (ensure_capacity_result >= 0)
+    {
+        int64_t counter_id = -1;
+
+        /* TODO: allocate counter and get counter_id */
+
+        aeron_subscribeable_list_entry_t *entry = &link->subscribeable_list.array[link->subscribeable_list.length++];
+        entry->subscribeable = subscribeable;
+        entry->counter_id = counter_id;
+        result = 0;
+    }
+
+    return result;
+}
+
+inline static bool aeron_driver_conductor_is_subscribeable_linked(
+    aeron_subscription_link_t *link, aeron_subscribeable_t *subscribeable)
+{
+    bool result = false;
+
+    for (size_t i = 0; i < link->subscribeable_list.length; i++)
+    {
+        aeron_subscribeable_list_entry_t *entry = &link->subscribeable_list.array[i];
+
+        if (subscribeable == entry->subscribeable)
+        {
+            result = true;
+            break;
+        }
+    }
+
+    return result;
+}
+
 int aeron_driver_conductor_on_add_ipc_publication(
     aeron_driver_conductor_t *conductor,
     aeron_publication_command_t *command,
@@ -434,19 +496,27 @@ int aeron_driver_conductor_on_add_ipc_publication(
         return -1;
     }
 
+    aeron_subscribeable_t *subscribeable = &publication->conductor_fields.subscribeable;
+
     /* TODO: pre-populate OOM in distinct_error_log so that it never needs to allocate if OOMed */
 
     /* TODO: send pub ready */
-
-    /* TODO: link IPC subscriptions */
 
     for (size_t i = 0; i < conductor->ipc_subscriptions.length; i++)
     {
         aeron_subscription_link_t *subscription_link = &conductor->ipc_subscriptions.array[i];
 
-        if (command->stream_id == subscription_link->stream_id)
+        /* could be old pub, so have to check to see if already linked */
+        /* TODO: add test for case */
+        if (command->stream_id == subscription_link->stream_id &&
+            !aeron_driver_conductor_is_subscribeable_linked(subscription_link, subscribeable))
         {
-            /* TODO: could be old pub, so have to check to see if already linked */
+            if (aeron_driver_conductor_link_subscribeable(conductor, subscription_link, subscribeable) < 0)
+            {
+                break;
+            }
+
+            /* TODO: send available image */
         }
     }
 
@@ -496,7 +566,7 @@ int aeron_driver_conductor_on_add_ipc_subscription(
         link->subscribeable_list.capacity = 0;
         link->subscribeable_list.array = NULL;
 
-        /* TODO: send operation success */
+        aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
 
         for (size_t i = 0; i < conductor->ipc_publications.length; i++)
         {
@@ -504,10 +574,15 @@ int aeron_driver_conductor_on_add_ipc_subscription(
 
             if (command->stream_id == publication_entry->publication->stream_id)
             {
-                /* TODO: link up and send available image */
+                if (aeron_driver_conductor_link_subscribeable(
+                    conductor, link, &publication_entry->publication->conductor_fields.subscribeable) < 0)
+                {
+                    break;
+                }
+
+                /* TODO: send available image */
             }
         }
-
     }
 
     AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "IPC subscriptions not currently supported");

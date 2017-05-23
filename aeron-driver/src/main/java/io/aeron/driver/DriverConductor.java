@@ -46,6 +46,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
 import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_COMMANDS;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.logbuffer.FrameDescriptor.computeExclusiveMaxMessageLength;
+import static io.aeron.logbuffer.FrameDescriptor.computeMaxMessageLength;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
@@ -789,20 +790,22 @@ public class DriverConductor implements Agent
     }
 
     private RawLog newIpcPublicationLog(
-        final int termBufferLength,
+        final boolean isExclusive,
+        final int termLength,
         final int sessionId,
         final int streamId,
         final int initialTermId,
         final long registrationId)
     {
-        final RawLog rawLog = rawLogFactory.newIpcPublication(sessionId, streamId, registrationId, termBufferLength);
+        final RawLog rawLog = rawLogFactory.newIpcPublication(sessionId, streamId, registrationId, termLength);
 
         final UnsafeBuffer logMetaData = rawLog.metaData();
         storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
         initialiseTailWithTermId(logMetaData, 0, initialTermId);
         initialTermId(logMetaData, initialTermId);
 
-        mtuLength(logMetaData, computeExclusiveMaxMessageLength(termBufferLength));
+        mtuLength(logMetaData,
+            isExclusive ? computeExclusiveMaxMessageLength(termLength) : computeMaxMessageLength(termLength));
         correlationId(logMetaData, registrationId);
         timeOfLastStatusMessage(logMetaData, 0);
 
@@ -1036,7 +1039,7 @@ public class DriverConductor implements Agent
         final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
 
         final RawLog rawLog = newIpcPublicationLog(
-            params.termLength, sessionId, streamId, initialTermId, registrationId);
+            isExclusive, params.termLength, sessionId, streamId, initialTermId, registrationId);
 
         if (params.isReplay)
         {

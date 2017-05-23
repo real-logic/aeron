@@ -128,8 +128,6 @@ class RecordingFragmentReader implements AutoCloseable
             transmitted += alignedLength;
             this.fragmentOffset += alignedLength;
 
-
-
             final int fragmentDataOffset = fragmentOffset + DataHeaderFlyweight.DATA_OFFSET;
             final int fragmentDataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
 

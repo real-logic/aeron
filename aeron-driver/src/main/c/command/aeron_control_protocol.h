@@ -21,6 +21,8 @@
 
 #define AERON_COMMAND_ADD_PUBLICATION (0x01)
 #define AERON_COMMAND_REMOVE_PUBLICATION (0x02)
+#define AERON_COMMAND_ADD_EXCLUSIVE_PUBLICATION (0x03)
+
 #define AERON_COMMAND_ADD_SUBSCRIPTION (0x04)
 #define AERON_COMMAND_REMOVE_SUBSCRIPTION (0x05)
 #define AERON_COMMAND_CLIENT_KEEPALIVE (0x06)
@@ -32,6 +34,7 @@
 #define AERON_RESPONSE_ON_PUBLICATION_READY (0x0F03)
 #define AERON_RESPONSE_ON_OPERATION_SUCCESS (0x0F04)
 #define AERON_RESPONSE_ON_UNAVAILABLE_IMAGE (0x0F05)
+#define AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY (0x0F06)
 
 /* error codes */
 #define AERON_ERROR_CODE_GENERIC_ERROR (0)
@@ -65,7 +68,7 @@ typedef struct aeron_publication_buffers_ready_stct
     int64_t correlation_id;
     int32_t session_id;
     int32_t stream_id;
-    int32_t position_imit_counter_id;
+    int32_t position_limit_counter_id;
     int32_t log_file_length;
     int8_t  log_file_data[1];
 }

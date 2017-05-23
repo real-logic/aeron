@@ -263,7 +263,36 @@ void aeron_driver_conductor_on_error(
         conductor, AERON_RESPONSE_ON_ERROR, response, sizeof(aeron_error_response_t) + length);
 }
 
-void aeron_driver_conductor_on_operation_succeeded(aeron_driver_conductor_t *conductor, int64_t correlation_id)
+void aeron_driver_conductor_on_publication_ready(
+    aeron_driver_conductor_t *conductor,
+    int64_t registration_id,
+    int32_t stream_id,
+    int32_t session_id,
+    int32_t position_limit_counter_id,
+    bool is_exclusive,
+    const char *log_file_name,
+    size_t log_file_name_length)
+{
+    char response_buffer[sizeof(aeron_publication_buffers_ready_t) + AERON_MAX_PATH];
+    aeron_publication_buffers_ready_t *response = (aeron_publication_buffers_ready_t *)response_buffer;
+
+    response->correlation_id = registration_id;
+    response->stream_id = stream_id;
+    response->session_id = session_id;
+    response->position_limit_counter_id = position_limit_counter_id;
+    response->log_file_length = (int32_t)log_file_name_length;
+    memcpy(response->log_file_data, log_file_name, log_file_name_length);
+
+    aeron_driver_conductor_client_transmit(
+        conductor,
+        is_exclusive ? AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY : AERON_RESPONSE_ON_PUBLICATION_READY,
+        response,
+        sizeof(aeron_publication_buffers_ready_t) + log_file_name_length);
+}
+
+void aeron_driver_conductor_on_operation_succeeded(
+    aeron_driver_conductor_t *conductor,
+    int64_t correlation_id)
 {
     char response_buffer[sizeof(aeron_correlated_command_t)];
     aeron_correlated_command_t *response = (aeron_correlated_command_t *)response_buffer;
@@ -275,11 +304,75 @@ void aeron_driver_conductor_on_operation_succeeded(aeron_driver_conductor_t *con
         conductor, AERON_RESPONSE_ON_OPERATION_SUCCESS, response, sizeof(aeron_correlated_command_t));
 }
 
+#define AERON_MAX_SUB_POSITIONS_PER_MESSAGE 10
+
 void aeron_driver_conductor_on_available_image(
     aeron_driver_conductor_t *conductor,
-    int64_t correlation_id)
+    int64_t correlation_id,
+    int32_t stream_id,
+    int32_t session_id,
+    const char *log_file_name,
+    size_t log_file_name_length,
+    const aeron_image_buffers_ready_subscriber_position_t *subscriber_positions,
+    size_t subscriber_positions_count,
+    const char *source_identity,
+    size_t source_identity_length)
 {
+    char response_buffer[
+        sizeof(aeron_image_buffers_ready_t) +
+        (sizeof(aeron_image_buffers_ready_subscriber_position_t) * AERON_MAX_SUB_POSITIONS_PER_MESSAGE) +
+        (2 * AERON_MAX_PATH)];
+    char *response_ptr = response_buffer;
+    char *ptr = response_buffer;
+    aeron_image_buffers_ready_t *response;
+    size_t subscriber_positions_length =
+        sizeof(aeron_image_buffers_ready_subscriber_position_t) * subscriber_positions_count;
+    size_t response_length =
+        sizeof(aeron_image_buffers_ready_t) +
+        subscriber_positions_length +
+        log_file_name_length +
+        source_identity_length +
+        (2 * sizeof(int32_t));
 
+    if (response_length > sizeof(response_buffer))
+    {
+        if (aeron_alloc((void **)&ptr, response_length) < 0)
+        {
+            return;
+        }
+
+        response_ptr = ptr;
+    }
+
+    response = (aeron_image_buffers_ready_t *)ptr;
+
+    response->correlation_id = correlation_id;
+    response->stream_id = stream_id;
+    response->session_id = session_id;
+    response->subscriber_position_block_length = sizeof(aeron_image_buffers_ready_subscriber_position_t);
+    response->subscriber_position_count = (int32_t)subscriber_positions_count;
+    ptr += sizeof(aeron_image_buffers_ready_t);
+
+    memcpy(ptr, subscriber_positions, subscriber_positions_length);
+    ptr += subscriber_positions_length;
+
+    *((int32_t *)ptr) = (int32_t)log_file_name_length;
+    ptr += sizeof(int32_t);
+    memcpy(ptr, log_file_name, log_file_name_length);
+    ptr += log_file_name_length;
+
+    *((int32_t *)ptr) = (int32_t)source_identity;
+    ptr += sizeof(int32_t);
+    memcpy(ptr, source_identity, source_identity_length);
+    /* ptr += source_identity_length; */
+
+    aeron_driver_conductor_client_transmit(
+        conductor, AERON_RESPONSE_ON_AVAILABLE_IMAGE, response_ptr, response_length);
+
+    if (response_buffer != response_ptr)
+    {
+        aeron_free(response_ptr);
+    }
 }
 
 void aeron_driver_conductor_error(aeron_driver_conductor_t *conductor, int error_code, const char *description)

@@ -189,7 +189,6 @@ public class ReplaySessionTest
         assertTrue(replaySession.isDone());
     }
 
-    @Ignore
     @Test
     public void shouldAbortReplay()
     {

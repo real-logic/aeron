@@ -122,15 +122,15 @@ public class ArchiveClient
     }
 
     public boolean listRecordings(
-        final long fromId,
-        final int count,
+        final long fromRecordingId,
+        final int recordCount,
         final long correlationId)
     {
         listRecordingsRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
-            .fromId(fromId)
-            .count(count);
+            .fromRecordingId(fromRecordingId)
+            .recordCount(recordCount);
 
         return offer(listRecordingsRequestEncoder.encodedLength());
     }

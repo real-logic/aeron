@@ -118,8 +118,8 @@ class ControlRequestAdapter implements FragmentHandler
 
                 listener.onListRecordings(
                     listRecordingsRequestDecoder.correlationId(),
-                    listRecordingsRequestDecoder.fromId(),
-                    listRecordingsRequestDecoder.count());
+                    listRecordingsRequestDecoder.fromRecordingId(),
+                    listRecordingsRequestDecoder.recordCount());
                 break;
 
             default:

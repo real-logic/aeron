@@ -149,11 +149,11 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
         }
     }
 
-    public void onListRecordings(final long correlationId, final long fromId, final int count)
+    public void onListRecordings(final long correlationId, final long fromRecordingId, final int recordCount)
     {
         validateActive();
 
-        conductor.listRecordings(correlationId, reply, fromId, count);
+        conductor.listRecordings(correlationId, reply, fromRecordingId, recordCount);
     }
 
     public void onAbortReplay(final long correlationId, final long replyId)

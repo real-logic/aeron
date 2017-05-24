@@ -41,7 +41,7 @@ public class RecordingSessionTest
     private final long recordingId = 12345;
 
     private final String channel = "channel";
-    private final String source = "sourceIdentity";
+    private final String sourceIdentity = "sourceIdentity";
     private final int streamId = 54321;
     private final int sessionId = 12345;
 
@@ -66,10 +66,10 @@ public class RecordingSessionTest
         proxy = mock(NotificationsProxy.class);
         catalog = mock(Catalog.class);
         when(catalog.addNewRecording(
-            eq(source),
             eq(sessionId),
-            eq(channel),
             eq(streamId),
+            eq(channel),
+            eq(sourceIdentity),
             eq(termBufferLength),
             eq(mtuLength),
             eq(initialTermId),
@@ -77,13 +77,14 @@ public class RecordingSessionTest
             any(RecordingSession.class),
             eq(SEGMENT_FILE_SIZE))).thenReturn(recordingId);
 
-        image = mockImage(source, sessionId, initialTermId, termBufferLength, mockSubscription(channel, streamId));
+        image = mockImage(
+            sessionId, initialTermId, sourceIdentity, termBufferLength, mockSubscription(channel, streamId));
     }
 
     @Before
     public void before() throws IOException
     {
-        termFile = File.createTempFile("test.rec", "source");
+        termFile = File.createTempFile("test.rec", "sourceIdentity");
 
         mockLogBufferChannel = FileChannel.open(termFile.toPath(), CREATE, READ, WRITE);
         mockLogBufferChannel.position(termBufferLength - 1);
@@ -160,8 +161,8 @@ public class RecordingSessionTest
         assertEquals(streamId, metaData.streamId());
         assertEquals(42L, metaData.startTime());
         assertEquals(-1L, metaData.endTime());
-        assertEquals(source, metaData.source());
         assertEquals(channel, metaData.channel());
+        assertEquals(sourceIdentity, metaData.sourceIdentity());
 
         final File segmentFile = new File(tempDirForTest, ArchiveUtil.recordingDataFileName(recordingId, 0));
         assertTrue(segmentFile.exists());
@@ -206,19 +207,19 @@ public class RecordingSessionTest
     }
 
     private Image mockImage(
-        final String sourceIdentity,
         final int sessionId,
         final int initialTermId,
+        final String sourceIdentity,
         final int termBufferLength,
         final Subscription subscription)
     {
         final Image image = mock(Image.class);
 
         when(image.sessionId()).thenReturn(sessionId);
-        when(image.sourceIdentity()).thenReturn(sourceIdentity);
-        when(image.subscription()).thenReturn(subscription);
         when(image.initialTermId()).thenReturn(initialTermId);
+        when(image.sourceIdentity()).thenReturn(sourceIdentity);
         when(image.termBufferLength()).thenReturn(termBufferLength);
+        when(image.subscription()).thenReturn(subscription);
         when(image.mtuLength()).thenReturn(mtuLength);
         when(image.joiningPosition()).thenReturn(joiningPosition);
 

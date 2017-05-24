@@ -58,7 +58,6 @@ public class ArchiveReplayLoadTest
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private File archiveDir;
     private int recordingId;
-    private String source;
     private long remaining;
     private int fragmentCount;
     private int[] fragmentLength;
@@ -301,8 +300,10 @@ public class ArchiveReplayLoadTest
 
                             public void onStart(
                                 final long recordingId,
-                                final String source, final int sessionId,
-                                final String channel, final int streamId)
+                                final int sessionId,
+                                final int streamId,
+                                final String channel,
+                                final String sourceIdentity)
                             {
                             }
 

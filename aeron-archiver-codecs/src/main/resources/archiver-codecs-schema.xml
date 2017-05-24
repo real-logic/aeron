@@ -35,8 +35,8 @@
         <field name="recordingId"          id="1" type="int64"/>
         <field name="sessionId"            id="2" type="int32"/>
         <field name="streamId"             id="3" type="int32"/>
-        <data  name="source"               id="4" type="varAsciiEncoding"/>
         <data  name="channel"              id="5" type="varAsciiEncoding"/>
+        <data  name="sourceIdentity"       id="4" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="RecordingProgress"
@@ -141,8 +141,8 @@
         <field name="segmentFileLength"    id="10" type="int32"/>
         <field name="sessionId"            id="11" type="int32"/>
         <field name="streamId"             id="12" type="int32"/>
-        <data  name="source"               id="13" type="varAsciiEncoding"/>
         <data  name="channel"              id="14" type="varAsciiEncoding"/>
+        <data  name="sourceIdentity"       id="13" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="ConnectRequest"

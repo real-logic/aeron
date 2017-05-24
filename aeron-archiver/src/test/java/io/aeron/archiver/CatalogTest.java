@@ -50,11 +50,11 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir))
         {
             recordingOneId = catalog.addNewRecording(
-                "sourceA", 6, "channelG", 1, 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
+                6, 1, "channelG", "sourceA", 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
             recordingTwoId = catalog.addNewRecording(
-                "sourceV", 7, "channelH", 2, 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
+                7, 2, "channelH", "sourceV", 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
             recordingThreeId = catalog.addNewRecording(
-                "sourceB", 8, "channelK", 3, 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
+                8, 3, "channelK", "sourceB", 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
             catalog.removeRecordingSession(recordingOneId);
             catalog.removeRecordingSession(recordingTwoId);
             catalog.removeRecordingSession(recordingThreeId);
@@ -72,19 +72,19 @@ public class CatalogTest
     {
         try (Catalog catalog = new Catalog(archiveDir))
         {
-            verifyRecordingForId(catalog, recordingOneId, "sourceA", 6, "channelG", 1);
-            verifyRecordingForId(catalog, recordingTwoId, "sourceV", 7, "channelH", 2);
-            verifyRecordingForId(catalog, recordingThreeId, "sourceB", 8, "channelK", 3);
+            verifyRecordingForId(catalog, recordingOneId, 6, 1, "channelG", "sourceA");
+            verifyRecordingForId(catalog, recordingTwoId, 7, 2, "channelH", "sourceV");
+            verifyRecordingForId(catalog, recordingThreeId, 8, 3, "channelK", "sourceB");
         }
     }
 
     private void verifyRecordingForId(
         final Catalog catalog,
         final long id,
-        final String source,
         final int sessionId,
+        final int streamId,
         final String channel,
-        final int streamId)
+        final String sourceIdentity)
         throws IOException
     {
         BUFFER.byteBuffer().clear();
@@ -93,8 +93,8 @@ public class CatalogTest
         assertEquals(id, DECODER.recordingId());
         assertEquals(sessionId, DECODER.sessionId());
         assertEquals(streamId, DECODER.streamId());
-        assertEquals(source, DECODER.source());
         assertEquals(channel, DECODER.channel());
+        assertEquals(sourceIdentity, DECODER.sourceIdentity());
     }
 
     @Test
@@ -104,14 +104,14 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir))
         {
             newRecordingId = catalog.addNewRecording(
-                "sourceN", 9, "channelJ", 4, 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
+                9, 4, "channelJ", "sourceN", 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
             catalog.removeRecordingSession(newRecordingId);
         }
 
         try (Catalog catalog = new Catalog(archiveDir))
         {
-            verifyRecordingForId(catalog, recordingOneId, "sourceA", 6, "channelG", 1);
-            verifyRecordingForId(catalog, newRecordingId, "sourceN", 9, "channelJ", 4);
+            verifyRecordingForId(catalog, recordingOneId, 6, 1, "channelG", "sourceA");
+            verifyRecordingForId(catalog, newRecordingId, 9, 4, "channelJ", "sourceN");
         }
     }
 
@@ -121,7 +121,7 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir))
         {
             final long newRecordingId = catalog.addNewRecording(
-                "sourceA", 6, "channelG", 1, 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
+                6, 1, "channelG", "sourceA", 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
             catalog.removeRecordingSession(newRecordingId);
             assertNotEquals(recordingOneId, newRecordingId);
         }

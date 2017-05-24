@@ -102,10 +102,10 @@ class RecordingSession implements ArchiveConductor.Session
     private int init()
     {
         final Subscription subscription = image.subscription();
+        final int sessionId = image.sessionId();
         final int streamId = subscription.streamId();
         final String channel = subscription.channel();
-        final int sessionId = image.sessionId();
-        final String source = image.sourceIdentity();
+        final String sourceIdentity = image.sourceIdentity();
         final int termBufferLength = image.termBufferLength();
         final int mtuLength = image.mtuLength();
         final int initialTermId = image.initialTermId();
@@ -115,10 +115,10 @@ class RecordingSession implements ArchiveConductor.Session
         try
         {
             recordingId = catalog.addNewRecording(
-                source,
                 sessionId,
-                channel,
                 streamId,
+                channel,
+                sourceIdentity,
                 termBufferLength,
                 mtuLength,
                 initialTermId,
@@ -128,18 +128,19 @@ class RecordingSession implements ArchiveConductor.Session
 
             notificationsProxy.recordingStarted(
                 recordingId,
-                source,
                 sessionId,
+                streamId,
                 channel,
-                streamId);
+                sourceIdentity
+            );
 
             recorder = builder
                 .recordingId(recordingId)
                 .termBufferLength(termBufferLength)
-                .source(source)
                 .sessionId(sessionId)
-                .channel(channel)
                 .streamId(streamId)
+                .channel(channel)
+                .sourceIdentity(sourceIdentity)
                 .initialTermId(initialTermId)
                 .mtuLength(mtuLength)
                 .joiningPosition(joiningPosition)

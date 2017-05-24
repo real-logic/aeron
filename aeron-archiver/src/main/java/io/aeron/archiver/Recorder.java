@@ -97,10 +97,11 @@ final class Recorder implements AutoCloseable, RawBlockHandler
                 builder.mtuLength,
                 builder.initialTermId,
                 builder.joiningPosition,
-                builder.source,
                 builder.sessionId,
+                builder.streamId,
                 builder.channel,
-                builder.streamId);
+                builder.sourceIdentity
+            );
 
             unsafeBuffer.putInt(0, metaDataEncoder.encodedLength());
             metaDataBuffer.force();
@@ -122,10 +123,10 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         final int mtuLength,
         final int initialTermId,
         final long joiningPosition,
-        final String source,
         final int sessionId,
+        final int streamId,
         final String channel,
-        final int streamId)
+        final String sourceIdentity)
     {
         recordingDescriptorEncoder
             .recordingId(recordingId)
@@ -139,8 +140,8 @@ final class Recorder implements AutoCloseable, RawBlockHandler
             .sessionId(sessionId)
             .streamId(streamId)
             .segmentFileLength(segmentFileLength)
-            .source(source)
-            .channel(channel);
+            .channel(channel)
+            .sourceIdentity(sourceIdentity);
     }
 
     private void newRecordingSegmentFile()
@@ -321,8 +322,8 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         private boolean forceMetadataUpdates = true;
         private int sessionId;
         private int streamId;
-        private String source;
         private String channel;
+        private String sourceIdentity;
         private int segmentFileLength = 128 * 1024 * 1024;
         private int initialTermId;
         private int mtuLength;
@@ -376,15 +377,15 @@ final class Recorder implements AutoCloseable, RawBlockHandler
             return this;
         }
 
-        Builder source(final String source)
-        {
-            this.source = source;
-            return this;
-        }
-
         Builder channel(final String channel)
         {
             this.channel = channel;
+            return this;
+        }
+
+        Builder sourceIdentity(final String sourceIdentity)
+        {
+            this.sourceIdentity = sourceIdentity;
             return this;
         }
 

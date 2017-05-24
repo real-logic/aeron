@@ -55,8 +55,8 @@ public class ArchiveRecordingLoadTest
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private File archiveDir;
     private long recordingId;
-    private String source;
     private int[] fragmentLength;
+    private String sourceIdentity;
     private long totalDataLength;
     private long totalRecordingLength;
     private long recorded;
@@ -116,9 +116,9 @@ public class ArchiveRecordingLoadTest
     public void archive() throws IOException, InterruptedException
     {
         try (Publication control = publishingClient.addPublication(
-                archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
-            Subscription recordingEvents = publishingClient.addSubscription(
-                archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
+            archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
+             Subscription recordingEvents = publishingClient.addSubscription(
+                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
             final ArchiveClient client = new ArchiveClient(control, recordingEvents);
 
@@ -170,7 +170,7 @@ public class ArchiveRecordingLoadTest
         printf("Sending %d messages, total length=%d %n", messageCount, totalDataLength);
 
         lastTermId = -1;
-        trackRecordingProgress(publication, recordingEvents, waitForData);
+        trackRecordingProgress(recordingEvents, waitForData);
         publishDataToBeRecorded(publication, messageCount);
         waitForData.await();
     }
@@ -186,20 +186,19 @@ public class ArchiveRecordingLoadTest
                 final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
                 assertThat(hDecoder.templateId(), is(RecordingStartedDecoder.TEMPLATE_ID));
 
-                final RecordingStartedDecoder decoder = new RecordingStartedDecoder()
-                    .wrap(
-                        buffer,
-                        offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                        hDecoder.blockLength(),
-                        hDecoder.version());
+                final RecordingStartedDecoder decoder = new RecordingStartedDecoder().wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    hDecoder.blockLength(),
+                    hDecoder.version());
 
                 recordingId = decoder.recordingId();
                 assertThat(decoder.streamId(), is(PUBLISH_STREAM_ID));
                 assertThat(decoder.sessionId(), is(publication.sessionId()));
 
-                source = decoder.source();
                 assertThat(decoder.channel(), is(PUBLISH_URI));
-                println("Recording started. source: " + source);
+                sourceIdentity = decoder.sourceIdentity();
+                println("Recording started. sourceIdentity: " + sourceIdentity);
             }
         );
     }
@@ -211,7 +210,7 @@ public class ArchiveRecordingLoadTest
         // clear out the buffer we write
         for (int i = 0; i < 1024; i++)
         {
-            buffer.putByte(i, (byte) 'z');
+            buffer.putByte(i, (byte)'z');
         }
         buffer.putStringAscii(32, "TEST");
         final long joiningPosition = publication.position();
@@ -241,7 +240,6 @@ public class ArchiveRecordingLoadTest
     }
 
     private void trackRecordingProgress(
-        final Publication publication,
         final Subscription recordingEvents,
         final CountDownLatch waitForData)
     {

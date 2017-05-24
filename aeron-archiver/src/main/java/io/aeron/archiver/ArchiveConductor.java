@@ -223,10 +223,8 @@ class ArchiveConductor implements Agent
         final long fromId,
         final int count)
     {
-        final Session listSession = new ListRecordingsSession(
-            correlationId, replyPublication, fromId, count, catalog, clientProxy);
-
-        sessions.add(listSession);
+        sessions.add(new ListRecordingsSession(
+            correlationId, replyPublication, fromId, count, catalog, clientProxy));
     }
 
     boolean stopReplay(final long replayId)

@@ -56,7 +56,7 @@ public class ReplaySessionTest
     private EpochClock epochClock;
 
     @Before
-    public void setup() throws Exception
+    public void before() throws Exception
     {
         archiveDir = makeTempDir();
         proxy = Mockito.mock(ControlSessionProxy.class);
@@ -69,10 +69,10 @@ public class ReplaySessionTest
             .initialTermId(INITIAL_TERM_ID)
             .joiningPosition(JOINING_POSITION)
             .mtuLength(MTU_LENGTH)
-            .source("source")
             .sessionId(1)
-            .channel("channel")
             .streamId(1)
+            .channel("channel")
+            .sourceIdentity("sourceIdentity")
             .forceWrites(true)
             .forceMetadataUpdates(true)
             .build())
@@ -80,7 +80,7 @@ public class ReplaySessionTest
             when(epochClock.time()).thenReturn(TIME);
 
             final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
-            buffer.setMemory(0, TERM_BUFFER_LENGTH, (byte) 0);
+            buffer.setMemory(0, TERM_BUFFER_LENGTH, (byte)0);
 
             final DataHeaderFlyweight headerFwt = new DataHeaderFlyweight();
             final Header header = new Header(INITIAL_TERM_ID, Integer.numberOfLeadingZeros(TERM_BUFFER_LENGTH));
@@ -90,8 +90,13 @@ public class ReplaySessionTest
             recordFragment(recorder, buffer, headerFwt, header, 1, FrameDescriptor.BEGIN_FRAG_FLAG, HDR_TYPE_DATA);
             recordFragment(recorder, buffer, headerFwt, header, 2, FrameDescriptor.END_FRAG_FLAG, HDR_TYPE_DATA);
             recordFragment(recorder, buffer, headerFwt, header, 3, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_PAD);
-
         }
+    }
+
+    @After
+    public void after()
+    {
+        IoUtil.delete(archiveDir, false);
     }
 
     private void recordFragment(
@@ -116,7 +121,7 @@ public class ReplaySessionTest
         buffer.setMemory(
             offset + HEADER_LENGTH,
             FRAME_LENGTH - HEADER_LENGTH,
-            (byte) message);
+            (byte)message);
 
         header.offset(offset);
 
@@ -139,7 +144,7 @@ public class ReplaySessionTest
                     assertEquals(offset, INITIAL_TERM_OFFSET + HEADER_LENGTH);
                     assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
                     assertEquals(header.headerType(), HDR_TYPE_DATA);
-                    assertEquals((byte) header.flags(), FrameDescriptor.UNFRAGMENTED);
+                    assertEquals((byte)header.flags(), FrameDescriptor.UNFRAGMENTED);
 
                     return true;
                 },
@@ -152,7 +157,7 @@ public class ReplaySessionTest
                     assertEquals(offset, INITIAL_TERM_OFFSET + FRAME_LENGTH + HEADER_LENGTH);
                     assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
                     assertEquals(header.headerType(), HDR_TYPE_DATA);
-                    assertEquals((byte) header.flags(), FrameDescriptor.BEGIN_FRAG_FLAG);
+                    assertEquals((byte)header.flags(), FrameDescriptor.BEGIN_FRAG_FLAG);
 
                     return true;
                 },
@@ -165,7 +170,7 @@ public class ReplaySessionTest
                     assertEquals(offset, INITIAL_TERM_OFFSET + 2 * FRAME_LENGTH + HEADER_LENGTH);
                     assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
                     assertEquals(header.headerType(), HDR_TYPE_DATA);
-                    assertEquals((byte) header.flags(), FrameDescriptor.END_FRAG_FLAG);
+                    assertEquals((byte)header.flags(), FrameDescriptor.END_FRAG_FLAG);
 
                     return true;
                 },
@@ -178,7 +183,7 @@ public class ReplaySessionTest
                     assertEquals(offset, INITIAL_TERM_OFFSET + 3 * FRAME_LENGTH + HEADER_LENGTH);
                     assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
                     assertEquals(header.headerType(), HDR_TYPE_PAD);
-                    assertEquals((byte) header.flags(), FrameDescriptor.UNFRAGMENTED);
+                    assertEquals((byte)header.flags(), FrameDescriptor.UNFRAGMENTED);
 
                     return true;
                 },
@@ -186,12 +191,6 @@ public class ReplaySessionTest
 
             assertEquals(0, polled);
         }
-    }
-
-    @After
-    public void teardown()
-    {
-        IoUtil.delete(archiveDir, false);
     }
 
     @Test
@@ -222,7 +221,6 @@ public class ReplaySessionTest
         replaySession.doWork();
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        // notifies that initiated
         verify(proxy, times(1)).sendOkResponse(control, correlationId);
         verify(conductor).newReplayPublication(
             REPLAY_CHANNEL,
@@ -241,7 +239,7 @@ public class ReplaySessionTest
         // TODO: add validation for reserved value and flags
 
         assertFalse(replaySession.isDone());
-        // move clock to finish lingering
+
         when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
         replaySession.doWork();
         assertTrue(replaySession.isDone());
@@ -257,10 +255,9 @@ public class ReplaySessionTest
                 buffer.wrap(mockTermBuffer, messageCounter * FRAME_LENGTH, claimedSize + HEADER_LENGTH);
                 messageCounter++;
 
-                return (long) claimedSize;
+                return (long)claimedSize;
             });
     }
-
 
     @Test
     public void shouldReplayFullDataFromFile()
@@ -291,7 +288,6 @@ public class ReplaySessionTest
         replaySession.doWork();
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        // notifies that initiated
         verify(proxy, times(1)).sendOkResponse(control, correlationId);
         verify(conductor).newReplayPublication(
             REPLAY_CHANNEL,
@@ -307,31 +303,30 @@ public class ReplaySessionTest
         assertNotEquals(0, replaySession.doWork());
         assertThat(messageCounter, is(4));
 
-        vadlidateFrame(termBuffer, 0, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_DATA);
-        vadlidateFrame(termBuffer, 1, FrameDescriptor.BEGIN_FRAG_FLAG, HDR_TYPE_DATA);
-        vadlidateFrame(termBuffer, 2, FrameDescriptor.END_FRAG_FLAG, HDR_TYPE_DATA);
-        vadlidateFrame(termBuffer, 3, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_PAD);
-
+        validateFrame(termBuffer, 0, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_DATA);
+        validateFrame(termBuffer, 1, FrameDescriptor.BEGIN_FRAG_FLAG, HDR_TYPE_DATA);
+        validateFrame(termBuffer, 2, FrameDescriptor.END_FRAG_FLAG, HDR_TYPE_DATA);
+        validateFrame(termBuffer, 3, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_PAD);
 
         assertFalse(replaySession.isDone());
-        // move clock to finish lingering
+
         when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
         replaySession.doWork();
         assertTrue(replaySession.isDone());
     }
 
-    private void vadlidateFrame(
-        final UnsafeBuffer b,
+    private void validateFrame(
+        final UnsafeBuffer buffer,
         final int message,
         final byte flags,
         final int type)
     {
         final int offset = message * FRAME_LENGTH;
-        assertEquals(FRAME_LENGTH, b.getInt(offset + DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET));
-        assertEquals(flags, b.getByte(offset + DataHeaderFlyweight.FLAGS_FIELD_OFFSET));
-        assertEquals(message, b.getLong(offset + DataHeaderFlyweight.RESERVED_VALUE_OFFSET));
-        assertEquals(type, b.getInt(offset + DataHeaderFlyweight.TYPE_FIELD_OFFSET));
-        assertEquals(message, b.getByte(offset + DataHeaderFlyweight.HEADER_LENGTH));
+        assertEquals(FRAME_LENGTH, buffer.getInt(offset + DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET));
+        assertEquals(flags, buffer.getByte(offset + DataHeaderFlyweight.FLAGS_FIELD_OFFSET));
+        assertEquals(message, buffer.getLong(offset + DataHeaderFlyweight.RESERVED_VALUE_OFFSET));
+        assertEquals(type, buffer.getInt(offset + DataHeaderFlyweight.TYPE_FIELD_OFFSET));
+        assertEquals(message, buffer.getByte(offset + DataHeaderFlyweight.HEADER_LENGTH));
     }
 
     @Test
@@ -354,7 +349,6 @@ public class ReplaySessionTest
 
         replaySession.doWork();
 
-        // notifies that initiated
         verify(proxy, times(1)).sendOkResponse(control, correlationId);
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
@@ -378,7 +372,6 @@ public class ReplaySessionTest
         final ReplaySession replaySession = replaySession(
             RECORDING_ID + 1, length, correlationId, replay, control, conductor);
 
-        // this is a given since they are closed by the session only
         when(replay.isClosed()).thenReturn(false);
         when(control.isClosed()).thenReturn(false);
 
@@ -387,7 +380,6 @@ public class ReplaySessionTest
 
         assertEquals(1, replaySession.doWork());
 
-        // failure notification
         verify(proxy, times(1))
             .sendError(eq(control), eq(ControlResponseCode.ERROR), notNull(), eq(correlationId));
 
@@ -432,8 +424,7 @@ public class ReplaySessionTest
             eq(RECORDING_POSITION),
             eq(MTU_LENGTH),
             eq(INITIAL_TERM_ID),
-            eq(TERM_BUFFER_LENGTH)))
-            .thenReturn(replay);
+            eq(TERM_BUFFER_LENGTH))).thenReturn(replay);
 
         return new ReplaySession(
             recordingId,

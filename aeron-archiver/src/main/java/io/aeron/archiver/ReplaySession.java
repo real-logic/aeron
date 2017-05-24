@@ -30,13 +30,12 @@ import java.io.*;
  * (see {@link io.aeron.archiver.codecs.ReplayRequestDecoder}). The session will:
  * <ul>
  * <li>Validate request parameters and respond with error,
- *     or OK message(see {@link io.aeron.archiver.codecs.ControlResponseDecoder})</li>
+ * or OK message(see {@link io.aeron.archiver.codecs.ControlResponseDecoder})</li>
  * <li>Stream recorded data into the replayPublication {@link Publication}</li>
  * </ul>
  */
-class ReplaySession implements
-    ArchiveConductor.Session,
-    RecordingFragmentReader.SimplifiedControlledPoll
+class ReplaySession
+    implements ArchiveConductor.Session, RecordingFragmentReader.SimplifiedControlledPoll
 {
     enum State
     {
@@ -137,6 +136,7 @@ class ReplaySession implements
                 replaySessionId,
                 replayPublication.position());
         }
+
         this.state = State.INACTIVE;
     }
 

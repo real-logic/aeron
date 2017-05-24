@@ -34,17 +34,12 @@ public class ArchiveUtil
         return recordingId + ".inf";
     }
 
-    static String recordingDataFileName(
-        final long recordingId,
-        final int segmentIndex)
+    static String recordingDataFileName(final long recordingId, final int segmentIndex)
     {
         return recordingId + "." + segmentIndex + ".rec";
     }
 
-    static int segmentFileIndex(
-        final long joiningPosition,
-        final long position,
-        final int segmentFileLength)
+    static int segmentFileIndex(final long joiningPosition, final long position, final int segmentFileLength)
     {
         return (int)((position - joiningPosition) / segmentFileLength);
     }
@@ -59,10 +54,10 @@ public class ArchiveUtil
         System.out.println("joining position: " + formatDecoder.joiningPosition());
         System.out.println("last position: " + formatDecoder.lastPosition());
         System.out.println("end time: " + new Date(formatDecoder.endTime()));
-        System.out.println("source: " + formatDecoder.source());
         System.out.println("sessionId: " + formatDecoder.sessionId());
-        System.out.println("channel: " + formatDecoder.channel());
         System.out.println("streamId: " + formatDecoder.streamId());
+        System.out.println("channel: " + formatDecoder.channel());
+        System.out.println("sourceIdentity: " + formatDecoder.sourceIdentity());
         IoUtil.unmap(formatDecoder.buffer().byteBuffer());
     }
 

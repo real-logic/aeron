@@ -24,11 +24,10 @@ public interface RecordingEventsListener
 
     void onStart(
         long recordingId,
-        String source,
         int sessionId,
+        int streamId,
         String channel,
-        int streamId);
+        String sourceIdentity);
 
     void onStop(long recordingId);
-
 }

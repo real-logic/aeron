@@ -49,10 +49,10 @@ public class ArchiveAndReplaySystemTest
 
         public void onStart(
             final long recordingId,
-            final String source,
             final int sessionId,
+            final int streamId,
             final String channel,
-            final int streamId)
+            final String sourceIdentity)
         {
             fail();
         }
@@ -81,6 +81,7 @@ public class ArchiveAndReplaySystemTest
         }
 
         public void onRecordingDescriptor(
+            final long correlationId,
             final long recordingId,
             final int segmentFileLength,
             final int termBufferLength,
@@ -88,11 +89,10 @@ public class ArchiveAndReplaySystemTest
             final long joiningPosition,
             final long endTime,
             final long lastPosition,
-            final String source,
             final int sessionId,
-            final String channel,
             final int streamId,
-            final long correlationId)
+            final String channel,
+            final String sourceIdentity)
         {
             fail();
         }
@@ -121,7 +121,7 @@ public class ArchiveAndReplaySystemTest
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private File archiveDir;
     private long recordingId;
-    private String source;
+    private String sourceIdentity;
     private long remaining;
     private int fragmentCount;
     private int[] fragmentLength;
@@ -147,7 +147,7 @@ public class ArchiveAndReplaySystemTest
     private long joiningPosition;
 
     @Before
-    public void setUp() throws Exception
+    public void before() throws Exception
     {
         seed = System.nanoTime();
         rnd.setSeed(seed);
@@ -167,7 +167,7 @@ public class ArchiveAndReplaySystemTest
     }
 
     @After
-    public void closeEverything() throws Exception
+    public void after() throws Exception
     {
         CloseHelper.close(publishingClient);
         CloseHelper.close(archiver);
@@ -213,18 +213,18 @@ public class ArchiveAndReplaySystemTest
             {
                 public void onStart(
                     final long recordingId0,
-                    final String iSource,
                     final int sessionId,
+                    final int streamId,
                     final String channel,
-                    final int streamId)
+                    final String sourceIdentity)
                 {
                     recordingId = recordingId0;
                     assertThat(streamId, is(PUBLISH_STREAM_ID));
                     assertThat(sessionId, is(publication.sessionId()));
 
-                    source = iSource;
+                    ArchiveAndReplaySystemTest.this.sourceIdentity = sourceIdentity;
                     assertThat(channel, is(PUBLISH_URI));
-                    println("Recording started. source: " + source);
+                    println("Recording started. sourceIdentity: " + ArchiveAndReplaySystemTest.this.sourceIdentity);
                 }
             }, 1) != 0);
 
@@ -275,20 +275,20 @@ public class ArchiveAndReplaySystemTest
         waitFor(() -> client.pollResponses(reply, new FailResponseListener()
         {
             public void onRecordingDescriptor(
-                final long rId,
+                final long correlationId,
+                final long recordingId,
                 final int segmentFileLength,
                 final int termBufferLength,
                 final long startTime,
                 final long joiningPosition,
                 final long endTime,
                 final long lastPosition,
-                final String source,
                 final int sessionId,
-                final String channel,
                 final int streamId,
-                final long correlationId)
+                final String channel,
+                final String sourceIdentity)
             {
-                assertThat(rId, is(recordingId));
+                assertThat(recordingId, is(ArchiveAndReplaySystemTest.this.recordingId));
                 assertThat(termBufferLength, is(publication.termBufferLength()));
 
                 assertThat(streamId, is(PUBLISH_STREAM_ID));

@@ -33,6 +33,7 @@ public interface ResponseListener
         long correlationId);
 
     void onRecordingDescriptor(
+        long correlationId,
         long recordingId,
         int segmentFileLength,
         int termBufferLength,
@@ -40,11 +41,10 @@ public interface ResponseListener
         long joiningPosition,
         long endTime,
         long lastPosition,
-        String source,
         int sessionId,
-        String channel,
         int streamId,
-        long correlationId);
+        String channel,
+        String sourceIdentity);
 
     void onRecordingNotFound(
         long recordingId,

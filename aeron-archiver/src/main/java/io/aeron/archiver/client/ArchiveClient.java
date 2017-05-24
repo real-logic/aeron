@@ -253,6 +253,7 @@ public class ArchiveClient
             messageHeaderDecoder.version());
 
         responseListener.onRecordingDescriptor(
+            recordingDescriptorDecoder.correlationId(),
             recordingDescriptorDecoder.recordingId(),
             recordingDescriptorDecoder.segmentFileLength(),
             recordingDescriptorDecoder.termBufferLength(),
@@ -260,11 +261,10 @@ public class ArchiveClient
             recordingDescriptorDecoder.joiningPosition(),
             recordingDescriptorDecoder.endTime(),
             recordingDescriptorDecoder.lastPosition(),
-            recordingDescriptorDecoder.source(),
             recordingDescriptorDecoder.sessionId(),
-            recordingDescriptorDecoder.channel(),
             recordingDescriptorDecoder.streamId(),
-            recordingDescriptorDecoder.correlationId()
+            recordingDescriptorDecoder.channel(),
+            recordingDescriptorDecoder.sourceIdentity()
         );
     }
 
@@ -300,8 +300,10 @@ public class ArchiveClient
 
                         recordingEventsListener.onStart(
                             recordingStartedDecoder.recordingId(),
-                            recordingStartedDecoder.channel(), recordingStartedDecoder.sessionId(),
-                            recordingStartedDecoder.source(), recordingStartedDecoder.streamId()
+                            recordingStartedDecoder.sessionId(),
+                            recordingStartedDecoder.streamId(),
+                            recordingStartedDecoder.channel(),
+                            recordingStartedDecoder.sourceIdentity()
                         );
                         break;
 

@@ -92,9 +92,7 @@ class Catalog implements AutoCloseable
     }
 
     private int loadIntoCatalog(
-        final ByteBuffer dst,
-        final UnsafeBuffer unsafeBuffer,
-        final RecordingDescriptorDecoder decoder)
+        final ByteBuffer dst, final UnsafeBuffer unsafeBuffer, final RecordingDescriptorDecoder decoder)
     {
         if (dst.remaining() == 0)
         {
@@ -118,10 +116,10 @@ class Catalog implements AutoCloseable
     }
 
     long addNewRecording(
-        final String source,
         final int sessionId,
-        final String channel,
         final int streamId,
+        final String channel,
+        final String sourceIdentity,
         final int termBufferLength,
         final int mtuLength,
         final int imageInitialTermId,
@@ -140,10 +138,11 @@ class Catalog implements AutoCloseable
             mtuLength,
             imageInitialTermId,
             joiningPosition,
-            source,
             sessionId,
+            streamId,
             channel,
-            streamId);
+            sourceIdentity
+        );
 
         final int encodedLength = recordingDescriptorEncoder.encodedLength();
         unsafeBuffer.putInt(0, encodedLength);

@@ -38,18 +38,18 @@ class NotificationsProxy
 
     void recordingStarted(
         final long recordingId,
-        final String source,
         final int sessionId,
+        final int streamId,
         final String channel,
-        final int streamId)
+        final String sourceIdentity)
     {
         recordingStartedEncoder
             .wrapAndApplyHeader(outboundBuffer, 0, messageHeaderEncoder)
             .recordingId(recordingId)
             .sessionId(sessionId)
             .streamId(streamId)
-            .source(source)
-            .channel(channel);
+            .channel(channel)
+            .sourceIdentity(sourceIdentity);
 
         send(recordingStartedEncoder.encodedLength());
     }

@@ -28,10 +28,10 @@ class ControlSessionProxy
 
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ControlResponseEncoder responseEncoder = new ControlResponseEncoder();
-    private final RecordingNotFoundResponseEncoder recordingNotFoundResponseEncoder =
-        new RecordingNotFoundResponseEncoder();
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
     private final ReplayAbortedEncoder replayAbortedEncoder = new ReplayAbortedEncoder();
+    private final RecordingNotFoundResponseEncoder recordingNotFoundResponseEncoder =
+        new RecordingNotFoundResponseEncoder();
 
     ControlSessionProxy(final IdleStrategy idleStrategy)
     {

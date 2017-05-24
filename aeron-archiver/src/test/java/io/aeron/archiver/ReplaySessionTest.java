@@ -24,9 +24,13 @@ import org.agrona.concurrent.*;
 import org.junit.*;
 import org.mockito.Mockito;
 
-import java.io.File;
+import java.io.*;
 
 import static io.aeron.archiver.TestUtil.makeTempDir;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
+import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -44,9 +48,10 @@ public class ReplaySessionTest
     private static final int MTU_LENGTH = 4096;
     private static final long TIME = 0;
     private static final int REPLAY_SESSION_ID = 0;
+    private static final int FRAME_LENGTH = 1024;
     private File archiveDir;
 
-    private int messageIndex = 0;
+    private int messageCounter = 0;
     private ControlSessionProxy proxy;
     private EpochClock epochClock;
 
@@ -77,45 +82,109 @@ public class ReplaySessionTest
             final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
             buffer.setMemory(0, TERM_BUFFER_LENGTH, (byte) 0);
 
-            final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
-            headerFlyweight.wrap(buffer, INITIAL_TERM_OFFSET, DataHeaderFlyweight.HEADER_LENGTH);
-            headerFlyweight
-                .termOffset(INITIAL_TERM_OFFSET)
-                .termId(INITIAL_TERM_ID)
-                .headerType(DataHeaderFlyweight.HDR_TYPE_DATA)
-                .frameLength(1024);
-            buffer.setMemory(
-                INITIAL_TERM_OFFSET + DataHeaderFlyweight.HEADER_LENGTH,
-                1024 - DataHeaderFlyweight.HEADER_LENGTH,
-                (byte) 1);
-
+            final DataHeaderFlyweight headerFwt = new DataHeaderFlyweight();
             final Header header = new Header(INITIAL_TERM_ID, Integer.numberOfLeadingZeros(TERM_BUFFER_LENGTH));
             header.buffer(buffer);
-            header.offset(INITIAL_TERM_OFFSET);
 
-            assertEquals(1024, header.frameLength());
-            assertEquals(INITIAL_TERM_ID, header.termId());
-            assertEquals(INITIAL_TERM_OFFSET, header.offset());
+            recordFragment(recorder, buffer, headerFwt, header, 0, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_DATA);
+            recordFragment(recorder, buffer, headerFwt, header, 1, FrameDescriptor.BEGIN_FRAG_FLAG, HDR_TYPE_DATA);
+            recordFragment(recorder, buffer, headerFwt, header, 2, FrameDescriptor.END_FRAG_FLAG, HDR_TYPE_DATA);
+            recordFragment(recorder, buffer, headerFwt, header, 3, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_PAD);
 
-            recorder.onFragment(
-                buffer,
-                header.offset() + DataHeaderFlyweight.HEADER_LENGTH,
-                header.frameLength() - DataHeaderFlyweight.HEADER_LENGTH,
-                header);
         }
+    }
 
+    private void recordFragment(
+        final Recorder recorder,
+        final UnsafeBuffer buffer,
+        final DataHeaderFlyweight headerFlyweight,
+        final Header header,
+        final int message,
+        final byte flags,
+        final int type)
+    {
+        final int offset = INITIAL_TERM_OFFSET + message * FRAME_LENGTH;
+        headerFlyweight.wrap(buffer, offset, HEADER_LENGTH);
+        headerFlyweight
+            .termOffset(offset)
+            .termId(INITIAL_TERM_ID)
+            .reservedValue(message)
+            .headerType(type)
+            .flags(flags)
+            .frameLength(FRAME_LENGTH);
+
+        buffer.setMemory(
+            offset + HEADER_LENGTH,
+            FRAME_LENGTH - HEADER_LENGTH,
+            (byte) message);
+
+        header.offset(offset);
+
+        recorder.onFragment(
+            buffer,
+            header.offset() + HEADER_LENGTH,
+            header.frameLength() - HEADER_LENGTH,
+            header);
+    }
+
+    @Test
+    public void verifyRecordingFile() throws IOException
+    {
+        // Verify file reader matches file writer
         try (RecordingFragmentReader reader = new RecordingFragmentReader(RECORDING_ID, archiveDir))
         {
-            final int polled = reader.controlledPoll(
+            int polled = reader.controlledPoll(
                 (buffer, offset, length, header) ->
                 {
-                    assertEquals(offset, INITIAL_TERM_OFFSET + DataHeaderFlyweight.HEADER_LENGTH);
-                    assertEquals(length, 1024 - DataHeaderFlyweight.HEADER_LENGTH);
+                    assertEquals(offset, INITIAL_TERM_OFFSET + HEADER_LENGTH);
+                    assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
+                    assertEquals(header.headerType(), HDR_TYPE_DATA);
+                    assertEquals((byte) header.flags(), FrameDescriptor.UNFRAGMENTED);
+
                     return true;
                 },
                 1);
 
             assertEquals(1, polled);
+            polled = reader.controlledPoll(
+                (buffer, offset, length, header) ->
+                {
+                    assertEquals(offset, INITIAL_TERM_OFFSET + FRAME_LENGTH + HEADER_LENGTH);
+                    assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
+                    assertEquals(header.headerType(), HDR_TYPE_DATA);
+                    assertEquals((byte) header.flags(), FrameDescriptor.BEGIN_FRAG_FLAG);
+
+                    return true;
+                },
+                1);
+
+            assertEquals(1, polled);
+            polled = reader.controlledPoll(
+                (buffer, offset, length, header) ->
+                {
+                    assertEquals(offset, INITIAL_TERM_OFFSET + 2 * FRAME_LENGTH + HEADER_LENGTH);
+                    assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
+                    assertEquals(header.headerType(), HDR_TYPE_DATA);
+                    assertEquals((byte) header.flags(), FrameDescriptor.END_FRAG_FLAG);
+
+                    return true;
+                },
+                1);
+
+            assertEquals(1, polled);
+            polled = reader.controlledPoll(
+                (buffer, offset, length, header) ->
+                {
+                    assertEquals(offset, INITIAL_TERM_OFFSET + 3 * FRAME_LENGTH + HEADER_LENGTH);
+                    assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
+                    assertEquals(header.headerType(), HDR_TYPE_PAD);
+                    assertEquals((byte) header.flags(), FrameDescriptor.UNFRAGMENTED);
+
+                    return true;
+                },
+                1);
+
+            assertEquals(0, polled);
         }
     }
 
@@ -126,9 +195,77 @@ public class ReplaySessionTest
     }
 
     @Test
-    public void shouldReplayDataFromFile()
+    public void shouldReplayPartialDataFromFile()
     {
-        final long length = 1024L;
+        final long correlationId = 1L;
+        final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
+        final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
+
+        final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
+
+        final ReplaySession replaySession = replaySession(
+            RECORDING_ID, FRAME_LENGTH, correlationId, replay, control, conductor);
+
+        when(control.isClosed()).thenReturn(false);
+        when(control.isConnected()).thenReturn(true);
+
+        when(replay.isClosed()).thenReturn(false);
+        when(replay.isConnected()).thenReturn(false);
+
+        replaySession.doWork();
+
+        assertEquals(replaySession.state(), ReplaySession.State.INIT);
+
+        when(replay.isConnected()).thenReturn(true);
+        when(control.isConnected()).thenReturn(true);
+
+        replaySession.doWork();
+        assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
+
+        // notifies that initiated
+        verify(proxy, times(1)).sendOkResponse(control, correlationId);
+        verify(conductor).newReplayPublication(
+            REPLAY_CHANNEL,
+            REPLAY_STREAM_ID,
+            RECORDING_POSITION,
+            MTU_LENGTH,
+            INITIAL_TERM_ID,
+            TERM_BUFFER_LENGTH);
+
+        final UnsafeBuffer mockTermBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
+        mockTryClaim(replay, mockTermBuffer);
+        assertNotEquals(0, replaySession.doWork());
+        assertThat(messageCounter, is(1));
+        final int expectedFrameLength = 1024;
+        assertEquals(expectedFrameLength, mockTermBuffer.getInt(0));
+        // TODO: add validation for reserved value and flags
+
+        assertFalse(replaySession.isDone());
+        // move clock to finish lingering
+        when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
+        replaySession.doWork();
+        assertTrue(replaySession.isDone());
+    }
+
+    private void mockTryClaim(final ExclusivePublication replay, final UnsafeBuffer mockTermBuffer)
+    {
+        when(replay.tryClaim(anyInt(), any(ExclusiveBufferClaim.class))).then(
+            (invocation) ->
+            {
+                final int claimedSize = invocation.getArgument(0);
+                final ExclusiveBufferClaim buffer = invocation.getArgument(1);
+                buffer.wrap(mockTermBuffer, messageCounter * FRAME_LENGTH, claimedSize + HEADER_LENGTH);
+                messageCounter++;
+
+                return (long) claimedSize;
+            });
+    }
+
+
+    @Test
+    public void shouldReplayFullDataFromFile()
+    {
+        final long length = 4 * FRAME_LENGTH;
         final long correlationId = 1L;
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
         final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
@@ -164,29 +301,37 @@ public class ReplaySessionTest
             INITIAL_TERM_ID,
             TERM_BUFFER_LENGTH);
 
-        final UnsafeBuffer mockTermBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
-        when(replay.tryClaim(anyInt(), any(ExclusiveBufferClaim.class))).then(
-            (invocation) ->
-            {
-                final int claimedSize = invocation.getArgument(0);
-                final ExclusiveBufferClaim buffer = invocation.getArgument(1);
-                buffer.wrap(mockTermBuffer, 0, claimedSize + DataHeaderFlyweight.HEADER_LENGTH);
-                messageIndex++;
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
+        mockTryClaim(replay, termBuffer);
 
-                return (long) claimedSize;
-            });
         assertNotEquals(0, replaySession.doWork());
-        assertTrue(messageIndex > 0);
+        assertThat(messageCounter, is(4));
 
-        final int expectedFrameLength = 1024;
-        assertEquals(expectedFrameLength, mockTermBuffer.getInt(0));
-        // TODO: add validation for reserved value and flags
+        vadlidateFrame(termBuffer, 0, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_DATA);
+        vadlidateFrame(termBuffer, 1, FrameDescriptor.BEGIN_FRAG_FLAG, HDR_TYPE_DATA);
+        vadlidateFrame(termBuffer, 2, FrameDescriptor.END_FRAG_FLAG, HDR_TYPE_DATA);
+        vadlidateFrame(termBuffer, 3, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_PAD);
+
 
         assertFalse(replaySession.isDone());
         // move clock to finish lingering
         when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
         replaySession.doWork();
         assertTrue(replaySession.isDone());
+    }
+
+    private void vadlidateFrame(
+        final UnsafeBuffer b,
+        final int message,
+        final byte flags,
+        final int type)
+    {
+        final int offset = message * FRAME_LENGTH;
+        assertEquals(FRAME_LENGTH, b.getInt(offset + DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET));
+        assertEquals(flags, b.getByte(offset + DataHeaderFlyweight.FLAGS_FIELD_OFFSET));
+        assertEquals(message, b.getLong(offset + DataHeaderFlyweight.RESERVED_VALUE_OFFSET));
+        assertEquals(type, b.getInt(offset + DataHeaderFlyweight.TYPE_FIELD_OFFSET));
+        assertEquals(message, b.getByte(offset + DataHeaderFlyweight.HEADER_LENGTH));
     }
 
     @Test

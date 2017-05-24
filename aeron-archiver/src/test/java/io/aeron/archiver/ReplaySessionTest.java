@@ -48,7 +48,7 @@ public class ReplaySessionTest
     private static final int MTU_LENGTH = 4096;
     private static final long TIME = 0;
     private static final int REPLAY_SESSION_ID = 0;
-    public static final int FRAME_LENGTH = 1024;
+    private static final int FRAME_LENGTH = 1024;
     private File archiveDir;
 
     private int messageCounter = 0;

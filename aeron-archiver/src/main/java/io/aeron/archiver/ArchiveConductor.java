@@ -288,11 +288,11 @@ class ArchiveConductor implements Agent
         replayUriBuilder.append(replayChannel);
         if (replayChannel.contains("?"))
         {
-            replayUriBuilder.append("|");
+            replayUriBuilder.append('|');
         }
         else
         {
-            replayUriBuilder.append("?");
+            replayUriBuilder.append('?');
         }
 
         replayUriBuilder

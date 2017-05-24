@@ -38,7 +38,6 @@ class RecordingSession implements ArchiveConductor.Session
     private final Recorder.Builder builder;
 
     private Recorder recorder;
-
     private State state = State.INIT;
 
     RecordingSession(
@@ -51,6 +50,16 @@ class RecordingSession implements ArchiveConductor.Session
         this.image = image;
         this.catalog = catalog;
         this.builder = builder;
+    }
+
+    public boolean isDone()
+    {
+        return state == State.CLOSED;
+    }
+
+    public void remove(final ArchiveConductor conductor)
+    {
+        catalog.removeRecordingSession(recordingId);
     }
 
     public void abort()
@@ -78,6 +87,16 @@ class RecordingSession implements ArchiveConductor.Session
         }
 
         return workDone;
+    }
+
+    ByteBuffer metaDataBuffer()
+    {
+        return recorder.metaDataBuffer();
+    }
+
+    long recordingId()
+    {
+        return recordingId;
     }
 
     private int init()
@@ -138,11 +157,6 @@ class RecordingSession implements ArchiveConductor.Session
         return 1;
     }
 
-    long recordingId()
-    {
-        return recordingId;
-    }
-
     private int close()
     {
         try
@@ -193,20 +207,5 @@ class RecordingSession implements ArchiveConductor.Session
         }
 
         return workCount;
-    }
-
-    public boolean isDone()
-    {
-        return state == State.CLOSED;
-    }
-
-    public void remove(final ArchiveConductor conductor)
-    {
-        catalog.removeRecordingSession(recordingId);
-    }
-
-    ByteBuffer metaDataBuffer()
-    {
-        return recorder.metaDataBuffer();
     }
 }

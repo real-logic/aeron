@@ -127,21 +127,6 @@ class ReplaySession implements
         return workDone;
     }
 
-    private int linger()
-    {
-        if (isLingerDone())
-        {
-            this.state = State.INACTIVE;
-        }
-
-        return 0;
-    }
-
-    private boolean isLingerDone()
-    {
-        return epochClock.time() - LINGER_LENGTH_MS > lingerSinceMs;
-    }
-
     public void abort()
     {
         if (!controlPublication.isClosed() && controlPublication.isConnected())
@@ -163,6 +148,65 @@ class ReplaySession implements
     public void remove(final ArchiveConductor conductor)
     {
         conductor.removeReplaySession(replaySessionId);
+    }
+
+    public boolean onFragment(
+        final DirectBuffer fragmentBuffer,
+        final int fragmentOffset,
+        final int fragmentLength,
+        final DataHeaderFlyweight header)
+    {
+        if (isDone())
+        {
+            return false;
+        }
+
+        final long result = replayPublication.tryClaim(fragmentLength, bufferClaim);
+        if (result > 0)
+        {
+            try
+            {
+                final MutableDirectBuffer publicationBuffer = bufferClaim.buffer();
+                bufferClaim.flags((byte)header.flags());
+                bufferClaim.reservedValue(header.reservedValue());
+                bufferClaim.headerType(header.headerType());
+
+                final int offset = bufferClaim.offset();
+                publicationBuffer.putBytes(offset, fragmentBuffer, fragmentOffset, fragmentLength);
+            }
+            finally
+            {
+                bufferClaim.commit();
+            }
+
+            return true;
+        }
+        else if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
+        {
+            closeOnError(null, "Reply stream has been shutdown mid-replay");
+        }
+
+        return false;
+    }
+
+    State state()
+    {
+        return state;
+    }
+
+    private int linger()
+    {
+        if (isLingerDone())
+        {
+            this.state = State.INACTIVE;
+        }
+
+        return 0;
+    }
+
+    private boolean isLingerDone()
+    {
+        return epochClock.time() - LINGER_LENGTH_MS > lingerSinceMs;
     }
 
     private int init()
@@ -286,49 +330,5 @@ class ReplaySession implements
         this.state = State.CLOSED;
 
         return 1;
-    }
-
-    public boolean onFragment(
-        final DirectBuffer fragmentBuffer,
-        final int fragmentOffset,
-        final int fragmentLength,
-        final DataHeaderFlyweight header)
-    {
-        if (isDone())
-        {
-            return false;
-        }
-
-        final long result = replayPublication.tryClaim(fragmentLength, bufferClaim);
-        if (result > 0)
-        {
-            try
-            {
-                final MutableDirectBuffer publicationBuffer = bufferClaim.buffer();
-                bufferClaim.flags((byte)header.flags());
-                bufferClaim.reservedValue(header.reservedValue());
-                bufferClaim.headerType(header.headerType());
-
-                final int offset = bufferClaim.offset();
-                publicationBuffer.putBytes(offset, fragmentBuffer, fragmentOffset, fragmentLength);
-            }
-            finally
-            {
-                bufferClaim.commit();
-            }
-
-            return true;
-        }
-        else if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
-        {
-            closeOnError(null, "Reply stream has been shutdown mid-replay");
-        }
-
-        return false;
-    }
-
-    State state()
-    {
-        return state;
     }
 }

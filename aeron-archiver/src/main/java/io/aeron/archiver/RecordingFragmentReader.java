@@ -32,6 +32,20 @@ import static java.nio.file.StandardOpenOption.READ;
 
 class RecordingFragmentReader implements AutoCloseable
 {
+    interface SimplifiedControlledPoll
+    {
+        /**
+         * Called by the {@link RecordingFragmentReader}. Implementors need only process DATA fragments.
+         *
+         * @return true if fragment processed, false to abort.
+         */
+        boolean onFragment(
+            DirectBuffer fragmentBuffer,
+            int fragmentOffset,
+            int fragmentLength,
+            DataHeaderFlyweight header);
+    }
+
     private final long recordingId;
     private final File archiveDir;
     private final int termBufferLength;
@@ -93,13 +107,13 @@ class RecordingFragmentReader implements AutoCloseable
     {
         segmentFileIndex = segmentFileIndex(joiningPosition, fromPosition, segmentFileLength);
         final long recordingOffset = fromPosition & (segmentFileLength - 1);
-        recordingTermStartOffset = (int) (recordingOffset - (recordingOffset & (termBufferLength - 1)));
+        recordingTermStartOffset = (int)(recordingOffset - (recordingOffset & (termBufferLength - 1)));
         openRecordingFile();
         termMappedUnsafeBuffer = new UnsafeBuffer(
             currentDataChannel.map(READ_ONLY, recordingTermStartOffset, termBufferLength));
 
         // TODO: align first fragment
-        fragmentOffset = (int) (recordingOffset & (termBufferLength - 1));
+        fragmentOffset = (int)(recordingOffset & (termBufferLength - 1));
     }
 
     int controlledPoll(final SimplifiedControlledPoll fragmentHandler, final int fragmentLimit)
@@ -148,7 +162,6 @@ class RecordingFragmentReader implements AutoCloseable
             {
                 polled++;
             }
-
         }
 
         if (!isDone() && fragmentOffset == termBufferLength)
@@ -205,19 +218,5 @@ class RecordingFragmentReader implements AutoCloseable
     public void close()
     {
         closeRecordingFile();
-    }
-
-    interface SimplifiedControlledPoll
-    {
-        /**
-         * Called by the {@link RecordingFragmentReader}. Implementors need only process DATA fragments.
-         *
-         * @return true if fragment processed, false to abort.
-         */
-        boolean onFragment(
-            DirectBuffer fragmentBuffer,
-            int fragmentOffset,
-            int fragmentLength,
-            DataHeaderFlyweight header);
     }
 }

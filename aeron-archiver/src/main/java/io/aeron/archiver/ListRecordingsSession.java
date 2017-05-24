@@ -41,7 +41,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
     private final ExclusivePublication reply;
     private final long fromId;
     private final long toId;
-    private final Catalog index;
+    private final Catalog catalog;
     private final ControlSessionProxy proxy;
     private final long correlationId;
 
@@ -53,14 +53,14 @@ class ListRecordingsSession implements ArchiveConductor.Session
         final ExclusivePublication reply,
         final long fromId,
         final int count,
-        final Catalog index,
+        final Catalog catalog,
         final ControlSessionProxy proxy)
     {
         this.reply = reply;
         recordingId = fromId;
         this.fromId = fromId;
         this.toId = fromId + count;
-        this.index = index;
+        this.catalog = catalog;
         this.proxy = proxy;
         this.correlationId = correlationId;
     }
@@ -109,16 +109,16 @@ class ListRecordingsSession implements ArchiveConductor.Session
 
     private int sendDescriptors()
     {
-        final RecordingSession session = index.getRecordingSession(recordingId);
+        final RecordingSession session = catalog.getRecordingSession(recordingId);
         if (session == null)
         {
             byteBuffer.clear();
             descriptorBuffer.wrap(byteBuffer);
             try
             {
-                if (!index.readDescriptor(recordingId, byteBuffer))
+                if (!catalog.readDescriptor(recordingId, byteBuffer))
                 {
-                    proxy.sendDescriptorNotFound(reply, recordingId, index.nextRecordingId(), correlationId);
+                    proxy.sendDescriptorNotFound(reply, recordingId, catalog.nextRecordingId(), correlationId);
                     state = State.INACTIVE;
                     return 0;
                 }
@@ -146,7 +146,7 @@ class ListRecordingsSession implements ArchiveConductor.Session
 
     private int init()
     {
-        if (fromId >= index.nextRecordingId())
+        if (fromId >= catalog.nextRecordingId())
         {
             proxy.sendError(
                 reply,

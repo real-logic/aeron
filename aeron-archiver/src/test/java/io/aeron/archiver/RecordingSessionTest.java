@@ -55,7 +55,7 @@ public class RecordingSessionTest
     private final NotificationsProxy proxy;
 
     private final Image image;
-    private final Catalog index;
+    private final Catalog catalog;
 
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
@@ -64,8 +64,8 @@ public class RecordingSessionTest
     public RecordingSessionTest() throws IOException
     {
         proxy = mock(NotificationsProxy.class);
-        index = mock(Catalog.class);
-        when(index.addNewRecording(
+        catalog = mock(Catalog.class);
+        when(catalog.addNewRecording(
             eq(source),
             eq(sessionId),
             eq(channel),
@@ -119,7 +119,7 @@ public class RecordingSessionTest
             .recordingFileLength(SEGMENT_FILE_SIZE)
             .archiveDir(tempDirForTest)
             .epochClock(epochClock);
-        final RecordingSession session = new RecordingSession(proxy, index, image, builder);
+        final RecordingSession session = new RecordingSession(proxy, catalog, image, builder);
 
         assertEquals(Catalog.NULL_RECORD_ID, session.recordingId());
 

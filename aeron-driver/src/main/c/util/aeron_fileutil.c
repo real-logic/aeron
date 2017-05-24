@@ -20,6 +20,9 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <string.h>
+#include <sys/statvfs.h>
+#include <stdio.h>
+#include <inttypes.h>
 #include "util/aeron_fileutil.h"
 
 #define BLOCK_SIZE (4 * 1024)
@@ -153,6 +156,37 @@ inline static void aeron_allocate_pages(uint8_t *base, size_t length)
     {
         *(base + i) = 0;
     }
+}
+
+uint64_t aeron_usable_fs_space(const char *path)
+{
+    struct statvfs vfs;
+    uint64_t result = 0;
+
+    if (statvfs(path, &vfs) == 0)
+    {
+        result = vfs.f_bsize * vfs.f_bavail;
+    }
+
+    return result;
+}
+
+/*
+ * stream location:
+ * dir/channel-sessionId(hex)-streamId(hex)-correlationId(hex).logbuffer
+ */
+int aeron_ipc_publication_location(
+    char *dst,
+    size_t length,
+    const char *aeron_dir,
+    int32_t session_id,
+    int32_t stream_id,
+    int64_t correlation_id)
+{
+    return snprintf(
+        dst, length,
+        "%s/" AERON_PUBLICATIONS_DIR "/ipc-%" PRIx32 "-%" PRIx32 "-%" PRIx64 ".logbuffer",
+        aeron_dir, session_id, stream_id, correlation_id);
 }
 
 int aeron_map_raw_log(

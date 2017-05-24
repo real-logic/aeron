@@ -170,7 +170,11 @@ void aeron_client_delete(aeron_client_t *client)
 }
 
 aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
-    aeron_driver_conductor_t *conductor, aeron_client_t *client, int32_t stream_id, bool is_exclusive)
+    aeron_driver_conductor_t *conductor,
+    aeron_client_t *client,
+    int64_t registration_id,
+    int32_t stream_id,
+    bool is_exclusive)
 {
     aeron_ipc_publication_t *publication = NULL;
     int ensure_capacity_result = 0;
@@ -199,10 +203,16 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 
             if (ensure_capacity_result >= 0)
             {
-                if (aeron_ipc_publication_create(&publication, stream_id) >= 0)
+                /* TODO: generate session_id */
+                int32_t session_id = 0;
+
+                if (aeron_ipc_publication_create(
+                    &publication, conductor->context, session_id, stream_id, registration_id, conductor->context->ipc_term_buffer_length) >= 0)
                 {
                     client->publication_links.array[client->publication_links.length++].resource =
                         &publication->conductor_fields.managed_resource;
+
+                    publication->conductor_fields.managed_resource.time_of_last_status_change = conductor->context->nano_clock();
                 }
             }
         }
@@ -584,7 +594,7 @@ int aeron_driver_conductor_on_add_ipc_publication(
     aeron_ipc_publication_t *publication = NULL;
 
     if ((client = aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id)) == NULL ||
-        (publication = aeron_driver_conductor_get_or_add_ipc_publication(conductor, client, command->stream_id, is_exclusive)) == NULL)
+        (publication = aeron_driver_conductor_get_or_add_ipc_publication(conductor, client, command->correlated.correlation_id, command->stream_id, is_exclusive)) == NULL)
     {
         return -1;
     }
@@ -593,7 +603,18 @@ int aeron_driver_conductor_on_add_ipc_publication(
 
     /* TODO: pre-populate OOM in distinct_error_log so that it never needs to allocate if OOMed */
 
-    /* TODO: send pub ready */
+    /* TODO: allocate pub-lmt */
+    int32_t position_limit_counter_id = 0;
+
+    aeron_driver_conductor_on_publication_ready(
+        conductor,
+        command->correlated.correlation_id,
+        publication->stream_id,
+        publication->session_id,
+        position_limit_counter_id,
+        is_exclusive,
+        publication->log_file_name,
+        publication->log_file_name_length);
 
     for (size_t i = 0; i < conductor->ipc_subscriptions.length; i++)
     {
@@ -604,12 +625,28 @@ int aeron_driver_conductor_on_add_ipc_publication(
         if (command->stream_id == subscription_link->stream_id &&
             !aeron_driver_conductor_is_subscribeable_linked(subscription_link, subscribeable))
         {
+            aeron_image_buffers_ready_subscriber_position_t position;
+
             if (aeron_driver_conductor_link_subscribeable(conductor, subscription_link, subscribeable) < 0)
             {
                 break;
             }
 
-            /* TODO: send available image */
+            position.registration_id = subscription_link->registration_id;
+            /* TODO: allocate sub-pos */
+            position.indicator_id = 0;
+
+            aeron_driver_conductor_on_available_image(
+                conductor,
+                publication->conductor_fields.managed_resource.registration_id,
+                publication->stream_id,
+                publication->session_id,
+                publication->log_file_name,
+                publication->log_file_name_length,
+                &position,
+                1,
+                AERON_IPC_CHANNEL,
+                strlen(AERON_IPC_CHANNEL));
         }
     }
 
@@ -667,13 +704,30 @@ int aeron_driver_conductor_on_add_ipc_subscription(
 
             if (command->stream_id == publication_entry->publication->stream_id)
             {
+                aeron_ipc_publication_t *publication = publication_entry->publication;
+                aeron_image_buffers_ready_subscriber_position_t position;
+
                 if (aeron_driver_conductor_link_subscribeable(
                     conductor, link, &publication_entry->publication->conductor_fields.subscribeable) < 0)
                 {
                     break;
                 }
 
-                /* TODO: send available image */
+                position.registration_id = link->registration_id;
+                /* TODO: allocate sub-pos */
+                position.indicator_id = 0;
+
+                aeron_driver_conductor_on_available_image(
+                    conductor,
+                    publication->conductor_fields.managed_resource.registration_id,
+                    publication->stream_id,
+                    publication->session_id,
+                    publication->log_file_name,
+                    publication->log_file_name_length,
+                    &position,
+                    1,
+                    AERON_IPC_CHANNEL,
+                    strlen(AERON_IPC_CHANNEL));
             }
         }
     }

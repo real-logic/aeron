@@ -19,6 +19,8 @@
 
 #include "aeron_driver_common.h"
 #include "util/aeron_bitutil.h"
+#include "aeron_driver_context.h"
+#include "util/aeron_fileutil.h"
 
 typedef struct aeron_ipc_publication_stct
 {
@@ -29,12 +31,25 @@ typedef struct aeron_ipc_publication_stct
     }
     conductor_fields;
 
-    uint8_t conductor_fields_pad[(2 * AERON_CACHE_LINE_LENGTH) - sizeof(struct conductor_fields_stct)];
+    /* uint8_t conductor_fields_pad[(2 * AERON_CACHE_LINE_LENGTH) - sizeof(struct conductor_fields_stct)]; */
 
+    aeron_mapped_raw_log_t mapped_raw_log;
+
+    char *log_file_name;
+    int32_t session_id;
     int32_t stream_id;
+    size_t log_file_name_length;
 }
 aeron_ipc_publication_t;
 
-int aeron_ipc_publication_create(aeron_ipc_publication_t **publication, int32_t stream_id);
+int aeron_ipc_publication_create(
+    aeron_ipc_publication_t **publication,
+    aeron_driver_context_t *context,
+    int32_t session_id,
+    int32_t stream_id,
+    int64_t registration_id,
+    size_t term_buffer_length);
+
+void aeron_ipc_publication_close(aeron_ipc_publication_t *publication);
 
 #endif //AERON_AERON_IPC_PUBLICATION_H

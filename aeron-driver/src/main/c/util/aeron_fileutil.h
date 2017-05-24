@@ -39,6 +39,8 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
 int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path);
 int aeron_unmap(aeron_mapped_file_t *mapped_file);
 
+uint64_t aeron_usable_fs_space(const char *path);
+
 #define AERON_PARTITION_COUNT (3)
 
 /* TODO: replace with actual value */
@@ -54,6 +56,17 @@ typedef struct aeron_mapped_raw_log_stct
     size_t num_mapped_files;
 }
 aeron_mapped_raw_log_t;
+
+#define AERON_PUBLICATIONS_DIR "publications"
+#define AERON_IMAGES_DIR "images"
+
+int aeron_ipc_publication_location(
+    char *dst,
+    size_t length,
+    const char *aeron_dir,
+    int32_t session_id,
+    int32_t stream_id,
+    int64_t correlation_id);
 
 int aeron_map_raw_log(
     aeron_mapped_raw_log_t *mapped_raw_log, const char *path, bool use_sparse_files, uint64_t term_length);

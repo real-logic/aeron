@@ -59,13 +59,16 @@ typedef struct aeron_driver_context_stct
     aeron_threading_mode_t threading_mode;  /* aeron.threading.mode = DEDICATED */
     bool dirs_delete_on_start;              /* aeron.dir.delete.on.start = false */
     bool warn_if_dirs_exist;
+    bool term_buffer_sparse_file;           /* aeron.term.buffer.sparse.file = false */
     uint64_t driver_timeout_ms;
+    uint64_t client_liveness_timeout_ns;    /* aeron.client.liveness.timeout = 5s */
     size_t to_driver_buffer_length;         /* aeron.conductor.buffer.length = 1MB + trailer*/
     size_t to_clients_buffer_length;        /* aeron.clients.buffer.length = 1MB + trailer */
     size_t counters_values_buffer_length;   /* aeron.counters.buffer.length = 1MB */
     size_t counters_metadata_buffer_length; /* = 2x values */
     size_t error_buffer_length;             /* aeron.error.buffer.length = 1MB */
-    uint64_t client_liveness_timeout_ns;    /* aeron.client.liveness.timeout = 5s */
+    size_t term_buffer_length;              /* aeron.term.buffer.length = 16 * 1024 * 1024 */
+    size_t ipc_term_buffer_length;          /* aeron.ipc.term.buffer.length = 64 * 1024 * 1024 */
 
     aeron_mapped_file_t cnc_map;
 

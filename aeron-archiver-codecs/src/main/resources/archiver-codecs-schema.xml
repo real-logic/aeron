@@ -147,7 +147,7 @@
 
     <sbe:message name="ConnectRequest"
                  id="8"
-                 description="Request a connection to the archive and provide the response stream details">
+                 description="Request a connection to the archive and provide response stream details">
         <field name="responseStreamId"     id="1" type="int32"/>
         <data  name="responseChannel"      id="2" type="varAsciiEncoding"/>
     </sbe:message>

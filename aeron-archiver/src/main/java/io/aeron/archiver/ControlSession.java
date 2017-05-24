@@ -95,10 +95,10 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
             {
                 image.poll(adapter, 1);
             }
-            catch (final Exception e)
+            catch (final Exception ex)
             {
                 state = State.INACTIVE;
-                LangUtil.rethrowUnchecked(e);
+                LangUtil.rethrowUnchecked(ex);
             }
         }
         else if (reply.isConnected())
@@ -132,7 +132,6 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
         {
             proxy.sendError(reply, ControlResponseCode.RECORDING_NOT_FOUND, null, correlationId);
         }
-
     }
 
     public void onStartRecording(final long correlationId, final String channel, final int streamId)
@@ -144,9 +143,9 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
             conductor.startRecording(channel, streamId);
             proxy.sendOkResponse(reply, correlationId);
         }
-        catch (final Exception e)
+        catch (final Exception ex)
         {
-            proxy.sendError(reply, ControlResponseCode.ERROR, e.getMessage(), correlationId);
+            proxy.sendError(reply, ControlResponseCode.ERROR, ex.getMessage(), correlationId);
         }
     }
 
@@ -198,5 +197,4 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
             throw new IllegalStateException();
         }
     }
-
 }

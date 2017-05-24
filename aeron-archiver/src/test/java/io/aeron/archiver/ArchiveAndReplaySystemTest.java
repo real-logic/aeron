@@ -267,8 +267,7 @@ public class ArchiveAndReplaySystemTest
         TestUtil.waitForFail(client, reply, requestRecordingsCorrelationId);
     }
 
-    private void verifyDescriptorListOngoingArchive(
-        final ArchiveClient client, final Publication publication)
+    private void verifyDescriptorListOngoingArchive(final ArchiveClient client, final Publication publication)
     {
         final long requestRecordingsCorrelationId = this.correlationId++;
         client.listRecordings(recordingId, 1, requestRecordingsCorrelationId);
@@ -349,11 +348,7 @@ public class ArchiveAndReplaySystemTest
     {
         joiningPosition = publication.position();
 
-        // clear out the buffer we write
-        for (int i = 0; i < 1024; i++)
-        {
-            buffer.putByte(i, (byte)'z');
-        }
+        buffer.setMemory(0, 1024, (byte)'z');
         buffer.putStringAscii(32, "TEST");
 
         for (int i = 0; i < messageCount; i++)
@@ -377,7 +372,7 @@ public class ArchiveAndReplaySystemTest
         try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
         {
             final long replayCorrelationId = correlationId++;
-            // request replay
+
             waitFor(() -> client.replay(
                 recordingId,
                 joiningPosition,
@@ -483,16 +478,16 @@ public class ArchiveAndReplaySystemTest
                             start = end;
                             final long deltaBytes = remaining - startBytes;
                             startBytes = remaining;
-                            final double mbps = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
-                            printf("Archive reported speed: %f MB/s %n", mbps);
+                            final double rate = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
+                            printf("Archive reported rate: %f MB/s %n", rate);
                         }
                     }
                     final long end = System.currentTimeMillis();
                     final long deltaTime = end - start;
 
                     final long deltaBytes = remaining - startBytes;
-                    final double mbps = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
-                    printf("Archive reported speed: %f MB/s %n", mbps);
+                    final double rate = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
+                    printf("Archive reported rate: %f MB/s %n", rate);
                 }
                 catch (final Throwable throwable)
                 {

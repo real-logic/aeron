@@ -29,17 +29,16 @@ import static org.mockito.Mockito.mock;
 public class CatalogTest
 {
     public static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
-    static final UnsafeBuffer BUFFER = new UnsafeBuffer(
-        BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, 64));
+    static final UnsafeBuffer BUFFER = new UnsafeBuffer(BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, 64));
     static final RecordingDescriptorDecoder DECODER = new RecordingDescriptorDecoder();
-    static long recordingAId;
-    static long recordingBId;
-    static long recordingCId;
+    static long recordingOneId;
+    static long recordingTwoId;
+    static long recordingThreeId;
     static RecordingSession mockSession = mock(RecordingSession.class);
     private static File archiveDir;
 
     @BeforeClass
-    public static void setup() throws Exception
+    public static void before() throws Exception
     {
         DECODER.wrap(
             BUFFER,
@@ -50,20 +49,20 @@ public class CatalogTest
 
         try (Catalog catalog = new Catalog(archiveDir))
         {
-            recordingAId = catalog.addNewRecording("sourceA", 6, "channelG", 1, 4096, 1024, 0, 0L,
-                mockSession, SEGMENT_FILE_SIZE);
-            recordingBId = catalog.addNewRecording("sourceV", 7, "channelH", 2, 4096, 1024, 0, 0L,
-                mockSession, SEGMENT_FILE_SIZE);
-            recordingCId = catalog.addNewRecording("sourceB", 8, "channelK", 3, 4096, 1024, 0, 0L,
-                mockSession, SEGMENT_FILE_SIZE);
-            catalog.removeRecordingSession(recordingAId);
-            catalog.removeRecordingSession(recordingBId);
-            catalog.removeRecordingSession(recordingCId);
+            recordingOneId = catalog.addNewRecording(
+                "sourceA", 6, "channelG", 1, 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
+            recordingTwoId = catalog.addNewRecording(
+                "sourceV", 7, "channelH", 2, 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
+            recordingThreeId = catalog.addNewRecording(
+                "sourceB", 8, "channelK", 3, 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
+            catalog.removeRecordingSession(recordingOneId);
+            catalog.removeRecordingSession(recordingTwoId);
+            catalog.removeRecordingSession(recordingThreeId);
         }
     }
 
     @AfterClass
-    public static void teardown()
+    public static void after()
     {
         IoUtil.delete(archiveDir, false);
     }
@@ -73,9 +72,9 @@ public class CatalogTest
     {
         try (Catalog catalog = new Catalog(archiveDir))
         {
-            verifyRecordingForId(catalog, recordingAId, "sourceA", 6, "channelG", 1);
-            verifyRecordingForId(catalog, recordingBId, "sourceV", 7, "channelH", 2);
-            verifyRecordingForId(catalog, recordingCId, "sourceB", 8, "channelK", 3);
+            verifyRecordingForId(catalog, recordingOneId, "sourceA", 6, "channelG", 1);
+            verifyRecordingForId(catalog, recordingTwoId, "sourceV", 7, "channelH", 2);
+            verifyRecordingForId(catalog, recordingThreeId, "sourceB", 8, "channelK", 3);
         }
     }
 
@@ -105,14 +104,13 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir))
         {
             newRecordingId = catalog.addNewRecording(
-                "sourceN", 9, "channelJ", 4, 4096, 1024, 0,
-                0L, mockSession, SEGMENT_FILE_SIZE);
+                "sourceN", 9, "channelJ", 4, 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
             catalog.removeRecordingSession(newRecordingId);
         }
 
         try (Catalog catalog = new Catalog(archiveDir))
         {
-            verifyRecordingForId(catalog, recordingAId, "sourceA", 6, "channelG", 1);
+            verifyRecordingForId(catalog, recordingOneId, "sourceA", 6, "channelG", 1);
             verifyRecordingForId(catalog, newRecordingId, "sourceN", 9, "channelJ", 4);
         }
     }
@@ -120,14 +118,12 @@ public class CatalogTest
     @Test
     public void shouldAllowMultipleInstancesForSameStream() throws Exception
     {
-        final long newRecordingId;
         try (Catalog catalog = new Catalog(archiveDir))
         {
-            newRecordingId = catalog.addNewRecording(
-                "sourceA", 6, "channelG", 1, 4096, 1024, 0,
-                0L, mockSession, SEGMENT_FILE_SIZE);
+            final long newRecordingId = catalog.addNewRecording(
+                "sourceA", 6, "channelG", 1, 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
             catalog.removeRecordingSession(newRecordingId);
-            assertNotEquals(recordingAId, newRecordingId);
+            assertNotEquals(recordingOneId, newRecordingId);
         }
     }
 }

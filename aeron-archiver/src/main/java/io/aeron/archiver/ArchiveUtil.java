@@ -41,27 +41,6 @@ public class ArchiveUtil
         return recordingId + "." + segmentIndex + ".rec";
     }
 
-    static String recordingDataFileName(
-        final long recordingId,
-        final int initialTermId,
-        final int termBufferLength,
-        final int termId,
-        final int segmentFileLength)
-    {
-        final int segmentIndex = segmentFileIndex(initialTermId, termId, termBufferLength, segmentFileLength);
-
-        return recordingDataFileName(recordingId, segmentIndex);
-    }
-
-    private static int segmentFileIndex(
-        final int initialTermId,
-        final int termId,
-        final int termBufferLength,
-        final int segmentFileLength)
-    {
-        return (int) (((termId - initialTermId) * (long)termBufferLength) / segmentFileLength);
-    }
-
     static int segmentFileIndex(
         final long joiningPosition,
         final long position,
@@ -72,6 +51,7 @@ public class ArchiveUtil
 
     static void printMetaFile(final File metaFile) throws IOException
     {
+        // TODO: Take a different approach to mapping and unmapping for such a case.
         final RecordingDescriptorDecoder formatDecoder = recordingMetaFileFormatDecoder(metaFile);
         System.out.println("recordingId: " + formatDecoder.recordingId());
         System.out.println("termBufferLength: " + formatDecoder.termBufferLength());
@@ -93,8 +73,8 @@ public class ArchiveUtil
         {
             final ByteBuffer metaDataBuffer = ByteBuffer.allocate(Catalog.RECORD_LENGTH);
             metadataFileChannel.read(metaDataBuffer);
-            final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();
-            return decoder.wrap(
+
+            return new RecordingDescriptorDecoder().wrap(
                 new UnsafeBuffer(metaDataBuffer),
                 Catalog.CATALOG_FRAME_LENGTH,
                 RecordingDescriptorDecoder.BLOCK_LENGTH,
@@ -115,15 +95,5 @@ public class ArchiveUtil
     static long recordingFileFullLength(final RecordingDescriptorDecoder metaDecoder)
     {
         return metaDecoder.lastPosition() - metaDecoder.joiningPosition();
-    }
-
-    public static long recordingLength(
-        final int termBufferLength,
-        final int initialTermId,
-        final int initialTermOffset,
-        final int lastTermId, final int lastTermOffset)
-    {
-        return ((long)(lastTermId - initialTermId)) * termBufferLength +
-            (lastTermOffset - initialTermOffset);
     }
 }

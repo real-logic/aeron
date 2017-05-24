@@ -65,47 +65,43 @@ public class RecordingSessionTest
     {
         proxy = mock(NotificationsProxy.class);
         index = mock(Catalog.class);
-        when(
-            index.addNewRecording(
-                eq(source),
-                eq(sessionId),
-                eq(channel),
-                eq(streamId),
-                eq(termBufferLength),
-                eq(mtuLength),
-                eq(initialTermId),
-                eq(joiningPosition),
-                any(RecordingSession.class),
-                eq(SEGMENT_FILE_SIZE)))
-                .thenReturn(recordingId);
-        final Subscription subscription = mockSubscription(channel, streamId);
-        image = mockImage(source, sessionId, initialTermId, termBufferLength, subscription);
+        when(index.addNewRecording(
+            eq(source),
+            eq(sessionId),
+            eq(channel),
+            eq(streamId),
+            eq(termBufferLength),
+            eq(mtuLength),
+            eq(initialTermId),
+            eq(joiningPosition),
+            any(RecordingSession.class),
+            eq(SEGMENT_FILE_SIZE))).thenReturn(recordingId);
+
+        image = mockImage(source, sessionId, initialTermId, termBufferLength, mockSubscription(channel, streamId));
     }
 
     @Before
-    public void setupMockTermBuff() throws IOException
+    public void before() throws IOException
     {
         termFile = File.createTempFile("test.rec", "source");
-        // size this file as a mock term buffer
+
         mockLogBufferChannel = FileChannel.open(termFile.toPath(), CREATE, READ, WRITE);
         mockLogBufferChannel.position(termBufferLength - 1);
         mockLogBufferChannel.write(ByteBuffer.wrap(new byte[1]));
 
-        // write some data at term offset
         final ByteBuffer bb = ByteBuffer.allocate(100);
         mockLogBufferChannel.position(termOffset);
         mockLogBufferChannel.write(bb);
         mockLogBufferMapped = new UnsafeBuffer(
             mockLogBufferChannel.map(FileChannel.MapMode.READ_WRITE, 0, termBufferLength));
 
-        // prep a single message in the log buffer
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
         headerFlyweight.wrap(mockLogBufferMapped);
         headerFlyweight.headerType(DataHeaderFlyweight.HDR_TYPE_DATA).frameLength(100);
     }
 
     @After
-    public void teardownMockTermBuff()
+    public void after()
     {
         IoUtil.unmap(mockLogBufferMapped.byteBuffer());
         CloseHelper.close(mockLogBufferChannel);
@@ -125,14 +121,12 @@ public class RecordingSessionTest
             .epochClock(epochClock);
         final RecordingSession session = new RecordingSession(proxy, index, image, builder);
 
-        // pre-init
         assertEquals(Catalog.NULL_RECORD_ID, session.recordingId());
 
         session.doWork();
 
         assertEquals(recordingId, session.recordingId());
 
-        // setup the mock image to pass on the mock log buffer
         when(image.rawPoll(any(), anyInt())).thenAnswer(
             (invocation) ->
             {
@@ -154,12 +148,8 @@ public class RecordingSessionTest
                 return 100;
             });
 
-        // expecting session to proxy the available data from the image
         assertNotEquals("Expect some work", 0, session.doWork());
 
-        // We now evaluate the output of the archiver...
-
-        // meta data exists and is as expected
         final File recordingMetaFile = new File(tempDirForTest, recordingMetaFileName(session.recordingId()));
         assertTrue(recordingMetaFile.exists());
 
@@ -173,8 +163,6 @@ public class RecordingSessionTest
         assertEquals(source, metaData.source());
         assertEquals(channel, metaData.channel());
 
-
-        // data exists and is as expected
         final File segmentFile = new File(tempDirForTest, ArchiveUtil.recordingDataFileName(recordingId, 0));
         assertTrue(segmentFile.exists());
 
@@ -193,11 +181,9 @@ public class RecordingSessionTest
             assertEquals(1, polled);
         }
 
-        // next poll has no data
         when(image.rawPoll(any(), anyInt())).thenReturn(0);
         assertEquals("Expect no work", 0, session.doWork());
 
-        // image is closed
         when(image.isClosed()).thenReturn(true);
         when(epochClock.time()).thenReturn(128L);
 

@@ -214,6 +214,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         }
     }
 
+    // TODO: Why the unused params?
     private void prepareRecording(
         final int termOffset,
         final int recordingOffset,

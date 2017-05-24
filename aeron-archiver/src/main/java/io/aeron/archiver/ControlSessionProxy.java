@@ -54,6 +54,7 @@ class ControlSessionProxy
             .correlationId(correlationId)
             .code(code);
 
+        // TODO: What if errorMessage is empty? Then SBE needs an empty encoding to have the length set.
         if (!Strings.isEmpty(errorMessage))
         {
             responseEncoder.errorMessage(errorMessage);

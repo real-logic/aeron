@@ -38,9 +38,7 @@ class ControlSessionProxy
         this.idleStrategy = idleStrategy;
     }
 
-    void sendOkResponse(
-        final ExclusivePublication reply,
-        final long correlationId)
+    void sendOkResponse(final ExclusivePublication reply, final long correlationId)
     {
         sendError(reply, ControlResponseCode.OK, null, correlationId);
     }
@@ -61,15 +59,12 @@ class ControlSessionProxy
             responseEncoder.errorMessage(errorMessage);
         }
 
-        final int length = HEADER_LENGTH + responseEncoder.encodedLength();
-        send(reply, length);
+        send(reply, HEADER_LENGTH + responseEncoder.encodedLength());
     }
 
     private void send(final ExclusivePublication reply, final int length)
     {
-        final ExpandableArrayBuffer buffer = this.buffer;
-        final int offset = 0;
-        send(reply, buffer, offset, length);
+        send(reply, buffer, 0, length);
     }
 
     private void send(
@@ -108,8 +103,7 @@ class ControlSessionProxy
             .recordingId(recordingId)
             .maxRecordingId(maxRecordingId);
 
-        final int length = HEADER_LENGTH + recordingNotFoundResponseEncoder.encodedLength();
-        send(reply, length);
+        send(reply, HEADER_LENGTH + recordingNotFoundResponseEncoder.encodedLength());
     }
 
     void sendDescriptor(
@@ -138,7 +132,7 @@ class ControlSessionProxy
             .correlationId(correlationId)
             .replayId(replaySessionId)
             .lastPosition(position);
-        final int length = HEADER_LENGTH + replayAbortedEncoder.encodedLength();
-        send(reply, length);
+
+        send(reply, HEADER_LENGTH + replayAbortedEncoder.encodedLength());
     }
 }

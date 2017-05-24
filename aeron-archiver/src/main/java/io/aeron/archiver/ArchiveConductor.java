@@ -212,6 +212,7 @@ class ArchiveConductor implements Agent
 
     void startRecording(final String channel, final int streamId)
     {
+        // TODO: How is this subscription tracked and closed?
         final Subscription recordingSubscription = aeron.addSubscription(
             channel, streamId, availableImageHandler, null);
     }

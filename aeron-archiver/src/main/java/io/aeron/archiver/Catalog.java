@@ -35,10 +35,10 @@ import static java.nio.file.StandardOpenOption.*;
  */
 class Catalog implements AutoCloseable
 {
-    static final String INDEX_FILE_NAME = "archive.cat";
+    static final String CATALOG_FILE_NAME = "archive.cat";
     static final int RECORD_LENGTH = 4096;
     static final int CATALOG_FRAME_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
-    static final int NULL_INDEX = -1;
+    static final int NULL_RECORD_ID = -1;
 
     private static final int PAGE_SIZE = 4096;
 
@@ -58,7 +58,7 @@ class Catalog implements AutoCloseable
         FileChannel channel = null;
         try
         {
-            final File catalogFile = new File(archiveDir, INDEX_FILE_NAME);
+            final File catalogFile = new File(archiveDir, CATALOG_FILE_NAME);
             channel = FileChannel.open(catalogFile.toPath(), CREATE, READ, WRITE);
             final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();
 

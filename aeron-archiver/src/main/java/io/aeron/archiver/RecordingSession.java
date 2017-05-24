@@ -31,7 +31,7 @@ class RecordingSession implements ArchiveConductor.Session
         INIT, RECORDING, INACTIVE, CLOSED
     }
 
-    private long recordingId = Catalog.NULL_INDEX;
+    private long recordingId = Catalog.NULL_RECORD_ID;
     private final NotificationsProxy notificationsProxy;
     private final Image image;
     private final Catalog catalog;

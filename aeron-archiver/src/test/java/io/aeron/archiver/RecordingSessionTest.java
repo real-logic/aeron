@@ -126,7 +126,7 @@ public class RecordingSessionTest
         final RecordingSession session = new RecordingSession(proxy, index, image, builder);
 
         // pre-init
-        assertEquals(Catalog.NULL_INDEX, session.recordingId());
+        assertEquals(Catalog.NULL_RECORD_ID, session.recordingId());
 
         session.doWork();
 

@@ -19,7 +19,6 @@ package io.aeron.archiver.workloads;
 import io.aeron.*;
 import io.aeron.archiver.*;
 import io.aeron.archiver.client.ArchiveClient;
-import io.aeron.archiver.codecs.*;
 import io.aeron.driver.*;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -31,14 +30,16 @@ import org.junit.runner.Description;
 
 import java.io.*;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.BooleanSupplier;
 
 import static io.aeron.archiver.TestUtil.*;
 import static io.aeron.archiver.workloads.ArchiveReplayLoadTest.REPLY_STREAM_ID;
 import static io.aeron.archiver.workloads.ArchiveReplayLoadTest.REPLY_URI;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 @Ignore
 public class ArchiveRecordingLoadTest
@@ -47,22 +48,21 @@ public class ArchiveRecordingLoadTest
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
+    private static final int MESSAGE_COUNT = 300000;
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
     private Aeron publishingClient;
     private Archiver archiver;
     private MediaDriver driver;
-    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private File archiveDir;
     private long recordingId;
     private int[] fragmentLength;
-    private String sourceIdentity;
     private long totalDataLength;
     private long totalRecordingLength;
     private long recorded;
-    private volatile int lastTermId = -1;
-    private Throwable trackerError;
-    private Random rnd = new Random();
+    private boolean doneRecording;
+    private final Random rnd = new Random();
     private long seed;
 
     @Rule
@@ -74,8 +74,9 @@ public class ArchiveRecordingLoadTest
                 "ArchiveAndReplaySystemTest failed with random seed: " + ArchiveRecordingLoadTest.this.seed);
         }
     };
-    private Subscription reply;
     private long correlationId;
+    private BooleanSupplier recordingStartedIndicator;
+    private BooleanSupplier recordingEndIndicator;
 
     @Before
     public void setUp() throws Exception
@@ -121,86 +122,104 @@ public class ArchiveRecordingLoadTest
                  archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
             final ArchiveClient client = new ArchiveClient(control, recordingEvents);
-
+            initRecordingStartIndicator(client);
+            initRecordingEndIndicator(client);
             TestUtil.awaitPublicationIsConnected(control);
             TestUtil.awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 
-            reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
+            final Subscription reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
             client.connect(REPLY_URI, REPLY_STREAM_ID);
             TestUtil.awaitSubscriptionIsConnected(reply);
             println("Client connected");
 
-            final long startRecordingCorrelationId = this.correlationId++;
-            waitFor(() -> client.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
-            println("Recording requested");
-            waitForOk(client, reply, startRecordingCorrelationId);
-
-            final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
-            awaitPublicationIsConnected(publication);
-
-            awaitStartedRecordingNotification(recordingEvents, publication);
-
-            for (int i = 0; i < 100; i++)
+            long start;
+            final long testLimit = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(180);
+            while (System.currentTimeMillis() < testLimit)
             {
-                prepAndSendMessages(recordingEvents, publication, 200000);
-                System.out.printf("Sent %d : %d %n", i, totalRecordingLength);
+                final long startRecordingCorrelationId = this.correlationId++;
+                waitFor(() -> client.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
+                waitForOk(client, reply, startRecordingCorrelationId);
+                println("Recording requested");
+
+                try (Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID))
+                {
+                    awaitPublicationIsConnected(publication);
+                    waitFor(recordingStartedIndicator);
+                    start = System.currentTimeMillis();
+
+                    prepAndSendMessages(publication);
+                }
+
+                while (!doneRecording)
+                {
+                    waitFor(recordingEndIndicator);
+                }
+                doneRecording = false;
+                assertThat(totalRecordingLength, is(recorded));
+                final long time = System.currentTimeMillis() - start;
+                final double recordedMbps = (totalRecordingLength * 1000.0 / time) / MEGABYTE;
+                final double recordedMb = totalRecordingLength / MEGABYTE;
+                System.out.printf("%d : sent=%f Mb speed=%f Mbps %n", recordingId, recordedMb, recordedMbps);
             }
 
-            assertNull(trackerError);
             println("All data arrived");
         }
     }
 
-    private void prepAndSendMessages(
-        final Subscription recordingEvents,
-        final Publication publication,
-        final int messageCount)
-        throws InterruptedException
+    private void initRecordingStartIndicator(final ArchiveClient client)
     {
-        fragmentLength = new int[messageCount];
-        for (int i = 0; i < messageCount; i++)
+        recordingStartedIndicator = () -> client.pollEvents(new ArchiveAndReplaySystemTest.FailRecordingEventsListener()
+        {
+            public void onStart(
+                final long recordingId0,
+                final int sessionId,
+                final int streamId,
+                final String channel,
+                final String sourceIdentity)
+            {
+                recordingId = recordingId0;
+                assertThat(streamId, is(PUBLISH_STREAM_ID));
+                assertThat(channel, is(PUBLISH_URI));
+            }
+        }, 1) != 0;
+    }
+
+    private void initRecordingEndIndicator(final ArchiveClient client)
+    {
+        recordingEndIndicator = () -> client.pollEvents(new ArchiveAndReplaySystemTest.FailRecordingEventsListener()
+        {
+            public void onProgress(
+                final long recordingId0,
+                final long joiningPosition,
+                final long currentPosition)
+            {
+                assertThat(recordingId0, is(recordingId));
+                recorded = currentPosition - joiningPosition;
+            }
+
+            public void onStop(final long recordingId0)
+            {
+                doneRecording = true;
+                assertThat(recordingId0, is(recordingId));
+            }
+        }, 1) != 0;
+    }
+
+    private void prepAndSendMessages(
+        final Publication publication)
+    {
+        fragmentLength = new int[ArchiveRecordingLoadTest.MESSAGE_COUNT];
+        for (int i = 0; i < ArchiveRecordingLoadTest.MESSAGE_COUNT; i++)
         {
             final int messageLength = 64 + rnd.nextInt(MAX_FRAGMENT_SIZE - 64) - DataHeaderFlyweight.HEADER_LENGTH;
             fragmentLength[i] = messageLength + DataHeaderFlyweight.HEADER_LENGTH;
             totalDataLength += fragmentLength[i];
         }
 
-        final CountDownLatch waitForData = new CountDownLatch(1);
-        printf("Sending %d messages, total length=%d %n", messageCount, totalDataLength);
+        printf("Sending %d messages, total length=%d %n", ArchiveRecordingLoadTest.MESSAGE_COUNT, totalDataLength);
 
-        lastTermId = -1;
-        trackRecordingProgress(recordingEvents, waitForData);
-        publishDataToBeRecorded(publication, messageCount);
-        waitForData.await();
-    }
-
-    private void awaitStartedRecordingNotification(
-        final Subscription recordingEvents, final Publication publication)
-    {
-        // the archiver has subscribed to the publication, now we wait for the recording start message
-        poll(
-            recordingEvents,
-            (buffer, offset, length, header) ->
-            {
-                final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
-                assertThat(hDecoder.templateId(), is(RecordingStartedDecoder.TEMPLATE_ID));
-
-                final RecordingStartedDecoder decoder = new RecordingStartedDecoder().wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    hDecoder.blockLength(),
-                    hDecoder.version());
-
-                recordingId = decoder.recordingId();
-                assertThat(decoder.streamId(), is(PUBLISH_STREAM_ID));
-                assertThat(decoder.sessionId(), is(publication.sessionId()));
-
-                assertThat(decoder.channel(), is(PUBLISH_URI));
-                sourceIdentity = decoder.sourceIdentity();
-                println("Recording started. sourceIdentity: " + sourceIdentity);
-            }
-        );
+        publishDataToBeRecorded(publication, ArchiveRecordingLoadTest.MESSAGE_COUNT);
     }
 
     private void publishDataToBeRecorded(final Publication publication, final int messageCount)
@@ -222,8 +241,8 @@ public class ArchiveRecordingLoadTest
         {
             final int dataLength = fragmentLength[i] - DataHeaderFlyweight.HEADER_LENGTH;
             buffer.putInt(0, i);
-            printf("Sending: index=%d length=%d %n", i, dataLength);
-            offer(publication, buffer, 0, dataLength, TIMEOUT);
+            //printf("Sending: index=%d length=%d %n", i, dataLength);
+            offer(publication, buffer, dataLength);
         }
 
         final long lastPosition = publication.position();
@@ -236,123 +255,44 @@ public class ArchiveRecordingLoadTest
                 (lastTermOffset - startTermOffset);
 
         assertThat(lastPosition - joiningPosition, is(totalRecordingLength));
-        lastTermId = lastTermIdFromPosition;
     }
 
-    private void trackRecordingProgress(
-        final Subscription recordingEvents,
-        final CountDownLatch waitForData)
-    {
-        final Thread t = new Thread(
-            () ->
-            {
-                try
-                {
-                    long start = System.currentTimeMillis();
-                    final long initialRecorded = recorded;
-                    long startBytes = recorded;
-                    // each message is fragmentLength[fragmentCount]
-                    while (lastTermId == -1 || (recorded - initialRecorded) < totalRecordingLength)
-                    {
-                        if (recordingEvents.poll(
-                            (buffer, offset, length, header) ->
-                            {
-                                final MessageHeaderDecoder hDecoder = new MessageHeaderDecoder().wrap(buffer, offset);
-                                assertThat(hDecoder.templateId(), is(RecordingProgressDecoder.TEMPLATE_ID));
-
-                                final RecordingProgressDecoder mDecoder =
-                                    new RecordingProgressDecoder().wrap(
-                                        buffer,
-                                        offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                                        hDecoder.blockLength(),
-                                        hDecoder.version());
-                                assertThat(mDecoder.recordingId(), is(recordingId));
-
-                                println(mDecoder.toString());
-                                recorded = mDecoder.currentPosition() - mDecoder.joiningPosition();
-                                System.out.printf("a=%d total=%d %n", (recorded - initialRecorded),
-                                    totalRecordingLength);
-                            }, 1) == 0)
-                        {
-                            LockSupport.parkNanos(1000000);
-                        }
-
-                        final long end = System.currentTimeMillis();
-                        final long deltaTime = end - start;
-
-                        if (deltaTime > 1000)
-                        {
-                            start = end;
-                            final long deltaBytes = recorded - startBytes;
-                            startBytes = recorded;
-                            final double mbps = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
-                            System.out.printf("Archive reported speed: %f MB/s %n", mbps);
-                        }
-                    }
-                    final long end = System.currentTimeMillis();
-                    final long deltaTime = end - start;
-
-                    final long deltaBytes = recorded - startBytes;
-                    final double mbps = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
-                    System.out.printf("-Archive reported speed: %f MB/s %n", mbps);
-                }
-                catch (final Throwable throwable)
-                {
-                    throwable.printStackTrace();
-                    trackerError = throwable;
-                }
-
-                waitForData.countDown();
-            });
-
-        t.setDaemon(true);
-        t.start();
-    }
-
-    private long offer(
+    private void offer(
         final Publication publication,
         final UnsafeBuffer buffer,
-        final int offset,
-        final int length,
-        final long timeout)
+        final int length)
     {
-        final long limit = System.currentTimeMillis() + timeout;
-        final long newPosition;
-
-        if ((newPosition = publication.offer(buffer, offset, length)) < 0)
+        final long limit = System.currentTimeMillis() + (long) TestUtil.TIMEOUT;
+        if (publication.offer(buffer, 0, length) < 0)
         {
-            return slowOffer(publication, buffer, offset, length, limit);
+            slowOffer(publication, buffer, length, limit);
         }
-
-        return newPosition;
     }
 
-    private long slowOffer(
+    private void slowOffer(
         final Publication publication,
         final UnsafeBuffer buffer,
-        final int offset,
         final int length,
         final long limit)
     {
-        long newPosition;
         for (int i = 0; i < 100; i++)
         {
-            if ((newPosition = publication.offer(buffer, offset, length)) > 0)
+            if (publication.offer(buffer, 0, length) > 0)
             {
-                return newPosition;
+                return;
             }
         }
 
         for (int i = 0; i < 100; i++)
         {
-            if ((newPosition = publication.offer(buffer, offset, length)) > 0)
+            if (publication.offer(buffer, 0, length) > 0)
             {
-                return newPosition;
+                return;
             }
             Thread.yield();
         }
 
-        while ((newPosition = publication.offer(buffer, offset, length)) < 0)
+        while (publication.offer(buffer, 0, length) < 0)
         {
             LockSupport.parkNanos(TIMEOUT);
             if (limit < System.currentTimeMillis())
@@ -360,7 +300,5 @@ public class ArchiveRecordingLoadTest
                 fail("Offer has timed out");
             }
         }
-
-        return newPosition;
     }
 }

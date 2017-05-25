@@ -82,6 +82,9 @@ static const util::index_t LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT;
  *  |                 Time of Last Status Message                   |
  *  |                                                               |
  *  +---------------------------------------------------------------+
+ *  |                    End of Stream Position                     |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
  *  |                      Cache Line Padding                      ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
@@ -113,7 +116,8 @@ struct LogMetaDataDefn
     std::int32_t activePartitionIndex;
     std::int8_t pad1[(2 * util::BitUtil::CACHE_LINE_LENGTH) - ((PARTITION_COUNT * sizeof(std::int64_t)) + sizeof(std::int32_t))];
     std::int64_t timeOfLastStatusMessage;
-    std::int8_t pad2[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int64_t)];
+    std::int64_t endOfStreamPosition;
+    std::int8_t pad2[(2 * util::BitUtil::CACHE_LINE_LENGTH) - (2 * sizeof(std::int64_t))];
     std::int64_t correlationId;
     std::int32_t initialTermId;
     std::int32_t defaultFrameHeaderLength;
@@ -126,6 +130,7 @@ static const util::index_t TERM_TAIL_COUNTER_OFFSET = (util::index_t)offsetof(Lo
 
 static const util::index_t LOG_ACTIVE_PARTITION_INDEX_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, activePartitionIndex);
 static const util::index_t LOG_TIME_OF_LAST_STATUS_MESSAGE_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, timeOfLastStatusMessage);
+static const util::index_t LOG_END_OF_STREAM_POSITION_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, endOfStreamPosition);
 static const util::index_t LOG_INITIAL_TERM_ID_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, initialTermId);
 static const util::index_t LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, defaultFrameHeaderLength);
 static const util::index_t LOG_MTU_LENGTH_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, mtuLength);
@@ -189,6 +194,16 @@ inline static std::int64_t timeOfLastStatusMessage(AtomicBuffer &logMetaDataBuff
 inline static void timeOfLastStatusMessage(AtomicBuffer &logMetaDataBuffer, std::int64_t value) AERON_NOEXCEPT
 {
     logMetaDataBuffer.putInt64Ordered(LOG_TIME_OF_LAST_STATUS_MESSAGE_OFFSET, value);
+}
+
+inline static std::int64_t endOfStreamPosition(AtomicBuffer &logMetaDataBuffer) AERON_NOEXCEPT
+{
+    return logMetaDataBuffer.getInt64Volatile(LOG_END_OF_STREAM_POSITION_OFFSET);
+}
+
+inline static void endOfStreamPosition(AtomicBuffer &logMetaDataBuffer, std::int64_t position) AERON_NOEXCEPT
+{
+    logMetaDataBuffer.putInt64Ordered(LOG_END_OF_STREAM_POSITION_OFFSET, position);
 }
 
 inline static int indexByTerm(std::int32_t initialTermId, std::int32_t activeTermId) AERON_NOEXCEPT

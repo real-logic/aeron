@@ -175,6 +175,8 @@ class RecordingSession implements ArchiveConductor.Session
         finally
         {
             CloseHelper.quietClose(recorder);
+            // this reflects the single local recording assumption
+            CloseHelper.quietClose(image.subscription());
             notificationsProxy.recordingStopped(recordingId);
             this.state = State.CLOSED;
         }

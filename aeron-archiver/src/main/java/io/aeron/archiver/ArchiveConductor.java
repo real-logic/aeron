@@ -177,8 +177,7 @@ class ArchiveConductor implements Agent
         }
         else
         {
-            // TODO: What happens to the state of the builder if two recordings are added before their
-            // TODO: init() get called? Should the setup not happen in the constructor?
+            // TODO: simplify builder responsibility split to avoid confusion
             session = new RecordingSession(notificationsProxy, catalog, image, imageRecorderBuilder);
         }
 
@@ -212,9 +211,8 @@ class ArchiveConductor implements Agent
 
     void startRecording(final String channel, final int streamId)
     {
-        // TODO: How is this subscription tracked and closed?
-        final Subscription recordingSubscription = aeron.addSubscription(
-            channel, streamId, availableImageHandler, null);
+        // Subscription is closed on RecordingSession close(this is consistent with local archiver usage)
+        aeron.addSubscription(channel, streamId, availableImageHandler, null);
     }
 
     void listRecordings(

@@ -77,6 +77,11 @@ public class LogBufferDescriptor
     public static final int LOG_TIME_OF_LAST_SM_OFFSET;
 
     /**
+     * Offset within the log meta data where the position of the End of Stream is stored.
+     */
+    public static final int LOG_END_OF_STREAM_POSITION_OFFSET;
+
+    /**
      * Offset within the log meta data where the active term id is stored.
      */
     public static final int LOG_INITIAL_TERM_ID_OFFSET;
@@ -116,6 +121,7 @@ public class LogBufferDescriptor
 
         offset = (CACHE_LINE_LENGTH * 2);
         LOG_TIME_OF_LAST_SM_OFFSET = offset;
+        LOG_END_OF_STREAM_POSITION_OFFSET = LOG_TIME_OF_LAST_SM_OFFSET + SIZE_OF_LONG;
 
         offset += (CACHE_LINE_LENGTH * 2);
         LOG_CORRELATION_ID_OFFSET = offset;
@@ -151,6 +157,9 @@ public class LogBufferDescriptor
      * ...                                                              |
      *  +---------------------------------------------------------------+
      *  |                 Time of Last Status Message                   |
+     *  |                                                               |
+     *  +---------------------------------------------------------------+
+     *  |                    End of Stream Position                     |
      *  |                                                               |
      *  +---------------------------------------------------------------+
      *  |                      Cache Line Padding                      ...
@@ -287,6 +296,28 @@ public class LogBufferDescriptor
     public static void timeOfLastStatusMessage(final UnsafeBuffer logMetaDataBuffer, final long timeInMillis)
     {
         logMetaDataBuffer.putLongOrdered(LOG_TIME_OF_LAST_SM_OFFSET, timeInMillis);
+    }
+
+    /**
+     * Get the value of the end of stream position.
+     *
+     * @param logMetaDataBuffer containing the meta data.
+     * @return the value of end of stream position
+     */
+    public static long endOfStreamPosition(final UnsafeBuffer logMetaDataBuffer)
+    {
+        return logMetaDataBuffer.getLongVolatile(LOG_END_OF_STREAM_POSITION_OFFSET);
+    }
+
+    /**
+     * Set the value of the end of stream position.
+     *
+     * @param logMetaDataBuffer containing the meta data.
+     * @param position          value of the end of stream position
+     */
+    public static void endOfStreamPosition(final UnsafeBuffer logMetaDataBuffer, final long position)
+    {
+        logMetaDataBuffer.putLongOrdered(LOG_END_OF_STREAM_POSITION_OFFSET, position);
     }
 
     /**

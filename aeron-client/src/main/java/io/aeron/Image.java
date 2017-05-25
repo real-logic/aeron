@@ -222,6 +222,23 @@ public class Image
     }
 
     /**
+     * Is the current consumed position at the end of the stream?
+     *
+     * @return true if at the end of the stream or false if not.
+     */
+    public boolean isEndOfStream()
+    {
+        if (isClosed)
+        {
+            return false;
+        }
+
+        final long eosPosition = LogBufferDescriptor.endOfStreamPosition(logBuffers.metaDataBuffer());
+
+        return (subscriberPosition.get() >= eosPosition);
+    }
+
+    /**
      * The {@link FileChannel} to the raw log of the Image.
      *
      * @return the {@link FileChannel} to the raw log of the Image.

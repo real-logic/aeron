@@ -48,6 +48,16 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public static final short BEGIN_AND_END_FLAGS = BEGIN_FLAG | END_FLAG;
 
+    /**
+     * End of Stream Flag
+     */
+    public static final short EOS_FLAG = 0x20;
+
+    /**
+     * Begin, End, and End of Stream Flags
+     */
+    public static final short BEGIN_END_AND_EOS_FLAGS = BEGIN_FLAG | END_FLAG | EOS_FLAG;
+
     public static final long DEFAULT_RESERVE_VALUE = 0L;
 
     public static final int TERM_OFFSET_FIELD_OFFSET = 8;

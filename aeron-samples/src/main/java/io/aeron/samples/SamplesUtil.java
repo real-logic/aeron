@@ -67,9 +67,22 @@ public class SamplesUtil
             {
                 try
                 {
+                    boolean reachedEos = false;
+
                     while (running.get())
                     {
-                        idleStrategy.idle(subscription.poll(fragmentHandler, limit));
+                        final int fragmentsRead = subscription.poll(fragmentHandler, limit);
+
+                        if (0 == fragmentsRead)
+                        {
+                            if (!reachedEos && subscription.isEndOfAllStreams())
+                            {
+                                reachedEos = true;
+                                System.out.println("End of Stream");
+                            }
+                        }
+
+                        idleStrategy.idle(fragmentsRead);
                     }
                 }
                 catch (final Exception ex)

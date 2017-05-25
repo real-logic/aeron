@@ -511,6 +511,15 @@ public class NetworkPublication
                 .termId(activeTermId)
                 .termOffset(termOffset);
 
+            if (status == Status.LINGER)
+            {
+                heartbeatDataHeader.flags((byte)DataHeaderFlyweight.BEGIN_END_AND_EOS_FLAGS);
+            }
+            else
+            {
+                heartbeatDataHeader.flags((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS);
+            }
+
             bytesSent = channelEndpoint.send(heartbeatBuffer);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {

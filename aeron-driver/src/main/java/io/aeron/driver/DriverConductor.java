@@ -830,6 +830,7 @@ public class DriverConductor implements Agent
         mtuLength(logMetaData, senderMtuLength);
         correlationId(logMetaData, correlationId);
         timeOfLastStatusMessage(logMetaData, 0);
+        endOfStreamPosition(logMetaData, Long.MAX_VALUE);
 
         return rawLog;
     }

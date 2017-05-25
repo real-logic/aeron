@@ -146,6 +146,22 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
+     * Is the current consumed position at the end of the stream for all images?
+     *
+     * @return true if at the end of the stream or false if not.
+     */
+    public boolean isEndOfAllStreams()
+    {
+        boolean eosResult = images.length != 0;
+        for (final Image image : images)
+        {
+            eosResult = eosResult && image.isEndOfStream();
+        }
+
+        return eosResult;
+    }
+
+    /**
      * Poll the {@link Image}s under the subscription for available message fragments.
      *
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come

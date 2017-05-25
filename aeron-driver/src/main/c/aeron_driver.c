@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <stdlib.h>
 #include "aeronmd.h"
 #include "aeron_alloc.h"
 #include "util/aeron_strutil.h"
@@ -61,6 +62,15 @@ int64_t aeron_epochclock()
     }
 
     return (ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+}
+
+int32_t aeron_randomised_int32()
+{
+    uint32_t value = arc4random();
+    int32_t result;
+
+    memcpy(&result, &value, sizeof(int32_t));
+    return result;
 }
 
 static void error_log_reader_save_to_file(

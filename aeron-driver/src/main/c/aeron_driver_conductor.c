@@ -78,6 +78,8 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->client_keep_alives_counter =
         aeron_counter_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_CLIENT_KEEP_ALIVES);
 
+    conductor->next_session_id = aeron_randomised_int32();
+
     conductor->context = context;
     return 0;
 }
@@ -203,8 +205,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 
             if (ensure_capacity_result >= 0)
             {
-                /* TODO: generate session_id */
-                int32_t session_id = 0;
+                int32_t session_id = conductor->next_session_id++;
 
                 if (aeron_ipc_publication_create(
                     &publication, conductor->context, session_id, stream_id, registration_id, conductor->context->ipc_term_buffer_length) >= 0)
@@ -213,6 +214,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                         &publication->conductor_fields.managed_resource;
 
                     publication->conductor_fields.managed_resource.time_of_last_status_change = conductor->context->nano_clock();
+                    publication->conductor_fields.managed_resource.refcnt = 1;
                 }
             }
         }
@@ -220,6 +222,8 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
         {
             client->publication_links.array[client->publication_links.length++].resource =
                 &publication->conductor_fields.managed_resource;
+
+            publication->conductor_fields.managed_resource.refcnt++;
         }
     }
 

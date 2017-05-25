@@ -17,12 +17,14 @@
 #ifndef AERON_BITUTIL_H
 #define AERON_BITUTIL_H
 
-#include <util/aeron_platform.h>
+#include "util/aeron_platform.h"
 
 #define AERON_CACHE_LINE_LENGTH (64)
 
 #define AERON_ALIGN(value,alignment) ((value + (alignment - 1)) & ~(alignment - 1))
 
 #define AERON_IS_POWER_OF_TWO(value) (value > 0 && ((value & (~value + 1)) == value))
+
+int32_t aeron_randomised_int32();
 
 #endif //AERON_BITUTIL_H

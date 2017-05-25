@@ -122,6 +122,8 @@ typedef struct aeron_driver_conductor_stct
 
     int64_t *errors_counter;
     int64_t *client_keep_alives_counter;
+
+    int32_t next_session_id;
 }
 aeron_driver_conductor_t;
 

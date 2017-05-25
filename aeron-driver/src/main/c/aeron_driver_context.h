@@ -25,7 +25,7 @@
 
 #define AERON_MAX_PATH (256)
 #define AERON_CNC_FILE "cnc.dat"
-#define AERON_CNC_VERSION (6)
+#define AERON_CNC_VERSION (7)
 
 #pragma pack(push)
 #pragma pack(4)

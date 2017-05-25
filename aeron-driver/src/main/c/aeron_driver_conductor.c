@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include "util/aeron_arrayutil.h"
 #include "aeron_driver_conductor.h"
+#include "aeron_position.h"
 
 static void aeron_error_log_resource_linger(uint8_t *resource)
 {
@@ -206,9 +207,19 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
             if (ensure_capacity_result >= 0)
             {
                 int32_t session_id = conductor->next_session_id++;
+                int32_t pub_lmt_id =
+                    aeron_counter_publisher_limit_allocate(
+                        &conductor->counters_manager, registration_id, session_id, stream_id, AERON_IPC_CHANNEL);
 
-                if (aeron_ipc_publication_create(
-                    &publication, conductor->context, session_id, stream_id, registration_id, conductor->context->ipc_term_buffer_length) >= 0)
+                if (pub_lmt_id >= 0 &&
+                    aeron_ipc_publication_create(
+                        &publication,
+                        conductor->context,
+                        session_id,
+                        stream_id,
+                        registration_id,
+                        pub_lmt_id,
+                        conductor->context->ipc_term_buffer_length) >= 0)
                 {
                     client->publication_links.array[client->publication_links.length++].resource =
                         &publication->conductor_fields.managed_resource;
@@ -607,15 +618,12 @@ int aeron_driver_conductor_on_add_ipc_publication(
 
     /* TODO: pre-populate OOM in distinct_error_log so that it never needs to allocate if OOMed */
 
-    /* TODO: allocate pub-lmt */
-    int32_t position_limit_counter_id = 0;
-
     aeron_driver_conductor_on_publication_ready(
         conductor,
         command->correlated.correlation_id,
         publication->stream_id,
         publication->session_id,
-        position_limit_counter_id,
+        publication->pub_lmt_counter_id,
         is_exclusive,
         publication->log_file_name,
         publication->log_file_name_length);

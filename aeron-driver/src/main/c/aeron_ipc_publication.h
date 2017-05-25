@@ -38,6 +38,7 @@ typedef struct aeron_ipc_publication_stct
     char *log_file_name;
     int32_t session_id;
     int32_t stream_id;
+    int32_t pub_lmt_counter_id;
     size_t log_file_name_length;
 }
 aeron_ipc_publication_t;
@@ -48,6 +49,7 @@ int aeron_ipc_publication_create(
     int32_t session_id,
     int32_t stream_id,
     int64_t registration_id,
+    int32_t pub_lmt_counter_id,
     size_t term_buffer_length);
 
 void aeron_ipc_publication_close(aeron_ipc_publication_t *publication);

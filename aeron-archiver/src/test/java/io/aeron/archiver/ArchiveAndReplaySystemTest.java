@@ -111,17 +111,16 @@ public class ArchiveAndReplaySystemTest
     private static final String PUBLISH_URI = "aeron:udp?endpoint=127.0.0.1:54325";
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
-    public static final int REPLAY_STREAM_ID = 101;
+    private static final int REPLAY_STREAM_ID = 101;
 
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
     private Aeron publishingClient;
     private Archiver archiver;
     private MediaDriver driver;
-    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private File archiveDir;
     private long recordingId;
-    private String sourceIdentity;
     private long remaining;
     private int fragmentCount;
     private int[] fragmentLength;
@@ -130,7 +129,7 @@ public class ArchiveAndReplaySystemTest
     private long recorded;
     private volatile long lastPosition = -1;
     private Throwable trackerError;
-    private Random rnd = new Random();
+    private final Random rnd = new Random();
     private long seed;
 
     @Rule
@@ -191,13 +190,13 @@ public class ArchiveAndReplaySystemTest
         {
             final ArchiveClient client = new ArchiveClient(controlPublication, recordingEvents);
 
-            TestUtil.awaitPublicationIsConnected(controlPublication);
-            TestUtil.awaitSubscriptionIsConnected(recordingEvents);
+            awaitPublicationIsConnected(controlPublication);
+            awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 
             reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
             client.connect(REPLY_URI, REPLY_STREAM_ID);
-            TestUtil.awaitSubscriptionIsConnected(reply);
+            awaitSubscriptionIsConnected(reply);
             println("Client connected");
 
             verifyEmptyDescriptorList(client);
@@ -207,7 +206,7 @@ public class ArchiveAndReplaySystemTest
             waitForOk(client, reply, startRecordingCorrelationId);
 
             final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
-            TestUtil.awaitPublicationIsConnected(publication);
+            awaitPublicationIsConnected(publication);
 
             waitFor(() -> client.pollEvents(new FailRecordingEventsListener()
             {
@@ -221,10 +220,8 @@ public class ArchiveAndReplaySystemTest
                     recordingId = recordingId0;
                     assertThat(streamId, is(PUBLISH_STREAM_ID));
                     assertThat(sessionId, is(publication.sessionId()));
-
-                    ArchiveAndReplaySystemTest.this.sourceIdentity = sourceIdentity;
                     assertThat(channel, is(PUBLISH_URI));
-                    println("Recording started. sourceIdentity: " + ArchiveAndReplaySystemTest.this.sourceIdentity);
+                    println("Recording started. sourceIdentity: " + sourceIdentity);
                 }
             }, 1) != 0);
 
@@ -383,7 +380,7 @@ public class ArchiveAndReplaySystemTest
             ));
             waitForOk(client, reply, replayCorrelationId);
 
-            TestUtil.awaitSubscriptionIsConnected(replay);
+            awaitSubscriptionIsConnected(replay);
             final Image image = replay.images().get(0);
             assertThat(image.initialTermId(), is(publication.initialTermId()));
             assertThat(image.mtuLength(), is(publication.maxPayloadLength() + DataHeaderFlyweight.HEADER_LENGTH));
@@ -417,6 +414,7 @@ public class ArchiveAndReplaySystemTest
         }
     }
 
+    @SuppressWarnings("SameReturnValue")
     private boolean validateFragment1(
         final DirectBuffer buffer,
         final int offset, final int length,

@@ -158,8 +158,7 @@ int aeron_driver_conductor_on_add_network_publication(
 
 int aeron_driver_conductor_on_remove_publication(
     aeron_driver_conductor_t *conductor,
-    int64_t registration_id,
-    int64_t correlation_id);
+    aeron_remove_command_t *command);
 
 int aeron_driver_conductor_on_add_ipc_subscription(
     aeron_driver_conductor_t *conductor,
@@ -175,8 +174,7 @@ int aeron_driver_conductor_on_add_network_subscription(
 
 int aeron_driver_conductor_on_remove_subscription(
     aeron_driver_conductor_t *conductor,
-    int64_t registration_id,
-    int64_t correlation_id);
+    aeron_remove_command_t *command);
 
 int aeron_driver_conductor_on_client_keepalive(
     aeron_driver_conductor_t *conductor,

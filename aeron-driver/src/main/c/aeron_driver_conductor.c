@@ -15,6 +15,7 @@
  */
 
 #include <stdio.h>
+#include <inttypes.h>
 #include "util/aeron_arrayutil.h"
 #include "aeron_driver_conductor.h"
 #include "aeron_position.h"
@@ -452,7 +453,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 
             correlation_id = command->correlated.correlation_id;
 
-            result = aeron_driver_conductor_on_remove_publication(conductor, command->registration_id, correlation_id);
+            result = aeron_driver_conductor_on_remove_publication(conductor, command);
             break;
         }
 
@@ -494,7 +495,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 
             correlation_id = command->correlated.correlation_id;
 
-            result = aeron_driver_conductor_on_remove_subscription(conductor, command->registration_id, correlation_id);
+            result = aeron_driver_conductor_on_remove_subscription(conductor, command);
             break;
         }
 
@@ -677,10 +678,38 @@ int aeron_driver_conductor_on_add_network_publication(
 
 int aeron_driver_conductor_on_remove_publication(
     aeron_driver_conductor_t *conductor,
-    int64_t registration_id,
-    int64_t correlation_id)
+    aeron_remove_command_t *command)
 {
-    AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "remove publications");
+    int index;
+
+    if ((index = aeron_driver_conductor_find_client(conductor, command->correlated.client_id)) >= 0)
+    {
+        aeron_client_t *client = &conductor->clients.array[index];
+
+        for (size_t i = 0, size = client->publication_links.length, last_index = size - 1; i < size; i++)
+        {
+            aeron_driver_managed_resource_t *resource = client->publication_links.array[i].resource;
+
+            if (command->registration_id == resource->registration_id)
+            {
+                resource->refcnt--;
+
+                aeron_array_fast_unordered_remove(
+                    (uint8_t *)client->publication_links.array, sizeof(aeron_publication_link_t), i, last_index);
+
+                aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
+                return 0;
+            }
+        }
+    }
+
+    AERON_ERROR(
+        conductor,
+        AERON_ERROR_CODE_UNKNOWN_PUBLICAITON,
+        "unknown publication",
+        "client_id=%" PRId64 ", registration_id=%" PRId64,
+        command->correlated.client_id,
+        command->registration_id);
     return -1;
 }
 
@@ -766,10 +795,36 @@ int aeron_driver_conductor_on_add_network_subscription(
 
 int aeron_driver_conductor_on_remove_subscription(
     aeron_driver_conductor_t *conductor,
-    int64_t registration_id,
-    int64_t correlation_id)
+    aeron_remove_command_t *command)
 {
-    AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "remove subscriptions not currently supported");
+
+    for (size_t i = 0, size = conductor->ipc_subscriptions.length, last_index = size - 1; i < size; i++)
+    {
+        aeron_subscription_link_t *link = &conductor->ipc_subscriptions.array[i];
+
+        if (command->registration_id == link->registration_id)
+        {
+            /* TODO: handle subscriptions link removal by iterating through subscribeable_list */
+
+            aeron_array_fast_unordered_remove(
+                (uint8_t *)conductor->ipc_subscriptions.array, sizeof(aeron_subscription_link_t), i, last_index);
+
+            aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
+            return 0;
+        }
+    }
+
+    /* TODO: search network subscriptions */
+
+    /* TODO: search spy subscriptions */
+
+    AERON_ERROR(
+        conductor,
+        AERON_ERROR_CODE_UNKNOWN_SUBSCRIPTION,
+        "unknown subscription",
+        "client_id=%" PRId64 ", registration_id=%" PRId64,
+        command->correlated.client_id,
+        command->registration_id);
     return -1;
 }
 

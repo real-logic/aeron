@@ -23,6 +23,7 @@ import org.agrona.concurrent.*;
 class ControlSessionProxy
 {
     private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
+    private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
     private final IdleStrategy idleStrategy;
     private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
@@ -54,10 +55,13 @@ class ControlSessionProxy
             .correlationId(correlationId)
             .code(code);
 
-        // TODO: What if errorMessage is empty? Then SBE needs an empty encoding to have the length set.
         if (!Strings.isEmpty(errorMessage))
         {
             responseEncoder.errorMessage(errorMessage);
+        }
+        else
+        {
+            responseEncoder.putErrorMessage(EMPTY_BYTE_ARRAY, 0, 0);
         }
 
         send(reply, HEADER_LENGTH + responseEncoder.encodedLength());

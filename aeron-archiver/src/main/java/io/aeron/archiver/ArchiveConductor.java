@@ -241,7 +241,6 @@ class ArchiveConductor implements Agent
         final long correlationId,
         final ExclusivePublication reply,
         final int replayStreamId,
-        // TODO: replace with host/port?
         final String replayChannel,
         final long recordingId,
         final long position,

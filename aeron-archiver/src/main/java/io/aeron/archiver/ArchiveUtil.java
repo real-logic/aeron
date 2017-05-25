@@ -16,7 +16,6 @@
 package io.aeron.archiver;
 
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
-import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.*;
@@ -46,8 +45,7 @@ public class ArchiveUtil
 
     static void printMetaFile(final File metaFile) throws IOException
     {
-        // TODO: Take a different approach to mapping and unmapping for such a case.
-        final RecordingDescriptorDecoder formatDecoder = recordingMetaFileFormatDecoder(metaFile);
+        final RecordingDescriptorDecoder formatDecoder = loadRecordingDescriptor(metaFile);
         System.out.println("recordingId: " + formatDecoder.recordingId());
         System.out.println("termBufferLength: " + formatDecoder.termBufferLength());
         System.out.println("start time: " + new Date(formatDecoder.startTime()));
@@ -58,10 +56,9 @@ public class ArchiveUtil
         System.out.println("streamId: " + formatDecoder.streamId());
         System.out.println("channel: " + formatDecoder.channel());
         System.out.println("sourceIdentity: " + formatDecoder.sourceIdentity());
-        IoUtil.unmap(formatDecoder.buffer().byteBuffer());
     }
 
-    static RecordingDescriptorDecoder recordingMetaFileFormatDecoder(final File metaFile)
+    static RecordingDescriptorDecoder loadRecordingDescriptor(final File metaFile)
         throws IOException
     {
         try (FileChannel metadataFileChannel = FileChannel.open(metaFile.toPath(), READ, WRITE))

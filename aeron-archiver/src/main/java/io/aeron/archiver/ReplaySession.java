@@ -223,7 +223,7 @@ class ReplaySession
             final RecordingDescriptorDecoder metaData;
             try
             {
-                metaData = ArchiveUtil.recordingMetaFileFormatDecoder(recordingMetaFile);
+                metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
             }
             catch (final IOException ex)
             {
@@ -235,8 +235,6 @@ class ReplaySession
             mtuLength = metaData.mtuLength();
             termBufferLength = metaData.termBufferLength();
             initialTermId = metaData.initialTermId();
-
-            IoUtil.unmap(metaData.buffer().byteBuffer());
 
             if (this.replayPosition < joiningPosition)
             {

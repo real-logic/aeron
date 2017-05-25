@@ -31,7 +31,7 @@ import java.io.*;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
-import static io.aeron.archiver.ArchiveUtil.recordingMetaFileFormatDecoder;
+import static io.aeron.archiver.ArchiveUtil.loadRecordingDescriptor;
 import static io.aeron.archiver.ArchiveUtil.recordingMetaFileName;
 import static io.aeron.archiver.TestUtil.*;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -329,7 +329,7 @@ public class ArchiveAndReplaySystemTest
             ArchiveUtil.printMetaFile(metaFile);
         }
 
-        final RecordingDescriptorDecoder decoder = recordingMetaFileFormatDecoder(metaFile);
+        final RecordingDescriptorDecoder decoder = loadRecordingDescriptor(metaFile);
         assertThat(decoder.sessionId(), is(publication.sessionId()));
         assertThat(decoder.streamId(), is(publication.streamId()));
         assertThat(decoder.termBufferLength(), is(publication.termBufferLength()));
@@ -337,8 +337,6 @@ public class ArchiveAndReplaySystemTest
         assertThat(ArchiveUtil.recordingFileFullLength(decoder), is(totalRecordingLength));
         // length might exceed data sent due to padding
         assertThat(totalDataLength, lessThanOrEqualTo(totalRecordingLength));
-
-        IoUtil.unmap(decoder.buffer().byteBuffer());
     }
 
     private void publishDataToRecorded(final Publication publication, final int messageCount)

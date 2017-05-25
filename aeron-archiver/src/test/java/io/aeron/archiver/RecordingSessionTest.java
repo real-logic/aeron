@@ -154,7 +154,7 @@ public class RecordingSessionTest
         final File recordingMetaFile = new File(tempDirForTest, recordingMetaFileName(session.recordingId()));
         assertTrue(recordingMetaFile.exists());
 
-        RecordingDescriptorDecoder metaData = ArchiveUtil.recordingMetaFileFormatDecoder(recordingMetaFile);
+        RecordingDescriptorDecoder metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
 
         assertEquals(recordingId, metaData.recordingId());
         assertEquals(termBufferLength, metaData.termBufferLength());
@@ -191,9 +191,8 @@ public class RecordingSessionTest
         assertNotEquals("Expect some work", 0, session.doWork());
         assertTrue(session.isDone());
 
-        metaData = ArchiveUtil.recordingMetaFileFormatDecoder(recordingMetaFile);
+        metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
         assertEquals(128L, metaData.endTime());
-        IoUtil.unmap(metaData.buffer().byteBuffer());
     }
 
     private Subscription mockSubscription(final String channel, final int streamId)

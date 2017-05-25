@@ -70,7 +70,7 @@ class RecordingFragmentReader implements AutoCloseable
         final String recordingMetaFileName = recordingMetaFileName(recordingId);
         // TODO: Use metadata from catalog
         final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
-        final RecordingDescriptorDecoder metaDecoder = recordingMetaFileFormatDecoder(recordingMetaFile);
+        final RecordingDescriptorDecoder metaDecoder = loadRecordingDescriptor(recordingMetaFile);
         termBufferLength = metaDecoder.termBufferLength();
         joiningPosition = metaDecoder.joiningPosition();
         segmentFileLength = metaDecoder.segmentFileLength();
@@ -93,13 +93,11 @@ class RecordingFragmentReader implements AutoCloseable
         this.replayLength = length;
         final String recordingMetaFileName = recordingMetaFileName(recordingId);
         final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
-        // TODO: Can this be done without mapping and unmapping?
-        final RecordingDescriptorDecoder metaDecoder = recordingMetaFileFormatDecoder(recordingMetaFile);
+        final RecordingDescriptorDecoder metaDecoder = loadRecordingDescriptor(recordingMetaFile);
         termBufferLength = metaDecoder.termBufferLength();
         joiningPosition = metaDecoder.joiningPosition();
         segmentFileLength = metaDecoder.segmentFileLength();
         fullLength = ArchiveUtil.recordingFileFullLength(metaDecoder);
-        IoUtil.unmap(metaDecoder.buffer().byteBuffer());
         initCursorState();
     }
 

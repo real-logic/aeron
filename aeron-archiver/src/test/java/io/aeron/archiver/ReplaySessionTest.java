@@ -234,8 +234,6 @@ public class ReplaySessionTest
         assertThat(messageCounter, is(1));
         final int expectedFrameLength = 1024;
         assertEquals(expectedFrameLength, mockTermBuffer.getInt(0));
-        // TODO: add validation for reserved value and flags
-
         assertFalse(replaySession.isDone());
 
         when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);

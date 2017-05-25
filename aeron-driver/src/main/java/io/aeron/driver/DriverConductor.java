@@ -808,6 +808,7 @@ public class DriverConductor implements Agent
             isExclusive ? computeExclusiveMaxMessageLength(termLength) : computeMaxMessageLength(termLength));
         correlationId(logMetaData, registrationId);
         timeOfLastStatusMessage(logMetaData, 0);
+        endOfStreamPosition(logMetaData, Long.MAX_VALUE);
 
         return rawLog;
     }

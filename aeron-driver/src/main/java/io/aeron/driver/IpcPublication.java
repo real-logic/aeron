@@ -274,6 +274,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         if (0 == count)
         {
             status = Status.INACTIVE;
+            LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), producerPosition());
         }
 
         return count;

@@ -174,7 +174,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         final int recordingOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
         try
         {
-            prepareRecording(termOffset, recordingOffset, blockLength);
+            prepareRecording(termOffset);
 
             fileChannel.transferTo(fileOffset, blockLength, recordingFileChannel);
             if (forceWrites)
@@ -191,7 +191,10 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         }
     }
 
-    public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    /**
+     * Convenience moethod for testing purposes.
+     */
+    void writeFragment(final DirectBuffer buffer, final Header header)
     {
         final int termId = header.termId();
         final int termOffset = header.termOffset();
@@ -200,7 +203,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         final int recordingOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
         try
         {
-            prepareRecording(termOffset, recordingOffset, header.frameLength());
+            prepareRecording(termOffset);
 
             final ByteBuffer src = buffer.byteBuffer().duplicate();
             src.position(termOffset).limit(termOffset + frameLength);
@@ -215,11 +218,8 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         }
     }
 
-    // TODO: Why the unused params?
     private void prepareRecording(
-        final int termOffset,
-        final int recordingOffset,
-        final int writeLength)
+        final int termOffset)
         throws IOException
     {
         if (segmentPosition == -1)
@@ -401,11 +401,6 @@ final class Recorder implements AutoCloseable, RawBlockHandler
             return this;
         }
 
-        Recorder build()
-        {
-            return new Recorder(this);
-        }
-
         int recordingFileLength()
         {
             return segmentFileLength;
@@ -417,15 +412,15 @@ final class Recorder implements AutoCloseable, RawBlockHandler
             return this;
         }
 
-        long joiningPosition()
-        {
-            return joiningPosition;
-        }
-
         Builder joiningPosition(final long joiningPosition)
         {
             this.joiningPosition = joiningPosition;
             return this;
+        }
+
+        Recorder build()
+        {
+            return new Recorder(this);
         }
     }
 }

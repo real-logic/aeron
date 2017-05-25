@@ -125,10 +125,8 @@ public class ReplaySessionTest
 
         header.offset(offset);
 
-        recorder.onFragment(
+        recorder.writeFragment(
             buffer,
-            header.offset() + HEADER_LENGTH,
-            header.frameLength() - HEADER_LENGTH,
             header);
     }
 

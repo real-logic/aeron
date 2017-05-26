@@ -55,6 +55,7 @@ class PublicationParams
         return mtuLength;
     }
 
+    @SuppressWarnings("ConstantConditions")
     static PublicationParams getPublicationParams(
         final MediaDriver.Context context,
         final AeronUri aeronUri,

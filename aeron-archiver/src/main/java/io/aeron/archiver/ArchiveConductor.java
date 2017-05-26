@@ -278,11 +278,12 @@ class ArchiveConductor implements Agent
         final int initialTermId,
         final int termBufferLength)
     {
-        final int termId = (int)(fromPosition / termBufferLength + initialTermId);
+        final int termId = (int)((fromPosition / termBufferLength) + initialTermId);
         final int termOffset = (int)(fromPosition % termBufferLength);
         replayUriBuilder.setLength(0);
         replayUriBuilder.append(replayChannel);
-        if (replayChannel.contains("?"))
+
+        if (replayChannel.indexOf('?', 0) > -1)
         {
             replayUriBuilder.append('|');
         }

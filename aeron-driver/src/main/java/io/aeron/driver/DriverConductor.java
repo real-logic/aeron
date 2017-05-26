@@ -188,7 +188,7 @@ public class DriverConductor implements Agent
 
         final UdpChannel udpChannel = channelEndpoint.udpChannel();
         final String channel = udpChannel.originalUriString();
-        final long registrationId = nextImageCorrelationId();
+        final long registrationId = toDriverCommands.nextCorrelationId();
 
         final long joiningPosition = computePosition(
             activeTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferLength), initialTermId);
@@ -1063,11 +1063,6 @@ public class DriverConductor implements Agent
         ipcPublications.add(publication);
 
         return publication;
-    }
-
-    private long nextImageCorrelationId()
-    {
-        return toDriverCommands.nextCorrelationId();
     }
 
     private static AeronClient findClient(final ArrayList<AeronClient> clients, final long clientId)

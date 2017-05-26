@@ -72,8 +72,8 @@ class PublicationParams
         {
             int count = 0;
 
-            final String initTermIdStr = aeronUri.get(INITIAL_TERM_ID_PARAM_NAME);
-            count = initTermIdStr != null ? count + 1 : count;
+            final String initialTermIdStr = aeronUri.get(INITIAL_TERM_ID_PARAM_NAME);
+            count = initialTermIdStr != null ? count + 1 : count;
 
             final String termIdStr = aeronUri.get(TERM_ID_PARAM_NAME);
             count = termIdStr != null ? count + 1 : count;
@@ -89,7 +89,7 @@ class PublicationParams
                         INITIAL_TERM_ID_PARAM_NAME + " " + TERM_ID_PARAM_NAME + " " + TERM_OFFSET_PARAM_NAME);
                 }
 
-                params.initialTermId = Integer.parseInt(initTermIdStr);
+                params.initialTermId = Integer.parseInt(initialTermIdStr);
                 params.termId = Integer.parseInt(termIdStr);
                 params.termOffset = Integer.parseInt(termOffsetStr);
 

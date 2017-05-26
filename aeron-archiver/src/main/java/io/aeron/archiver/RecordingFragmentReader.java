@@ -75,7 +75,7 @@ class RecordingFragmentReader implements AutoCloseable
         joiningPosition = metaDecoder.joiningPosition();
         segmentFileLength = metaDecoder.segmentFileLength();
         fullLength = ArchiveUtil.recordingFileFullLength(metaDecoder);
-        IoUtil.unmap(metaDecoder.buffer().byteBuffer());
+
         fromPosition = joiningPosition;
         replayLength = fullLength;
         initCursorState();

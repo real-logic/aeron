@@ -152,13 +152,15 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
      */
     public boolean isEndOfAllStreams()
     {
-        boolean eosResult = images.length != 0;
         for (final Image image : images)
         {
-            eosResult = eosResult && image.isEndOfStream();
+            if (!image.isEndOfStream())
+            {
+                return false;
+            }
         }
 
-        return eosResult;
+        return true;
     }
 
     /**

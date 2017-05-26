@@ -43,13 +43,14 @@ public class ArchiveReplayLoadTest
     private static final int TIMEOUT = 5000;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
 
-    static final String REPLY_URI = "aeron:ipc?endpoint=127.0.0.1:54327";
+    static final String REPLY_URI = "aeron:udp?endpoint=127.0.0.1:54327";
     static final int REPLY_STREAM_ID = 100;
-    private static final String REPLAY_URI = "aeron:ipc?endpoint=127.0.0.1:54326";
-    private static final String PUBLISH_URI = "aeron:ipc?endpoint=127.0.0.1:54325";
+    private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
+    private static final String PUBLISH_URI = "aeron:udp?endpoint=127.0.0.1:54325";
+//        +"|" + CommonContext.TERM_LENGTH_PARAM_NAME + "=4194304|" + CommonContext.MTU_LENGTH_URI_PARAM_NAME + "=4096";
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
-    public static final int MESSAGE_COUNT = 100000;
+    public static final int MESSAGE_COUNT = 200000;
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
     private Aeron publishingClient;
@@ -57,7 +58,8 @@ public class ArchiveReplayLoadTest
     private MediaDriver driver;
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private File archiveDir;
-    private int recordingId;
+    private long recordingId;
+    private String source;
     private long remaining;
     private int fragmentCount;
     private int[] fragmentLength;
@@ -81,6 +83,7 @@ public class ArchiveReplayLoadTest
     private Subscription reply;
     private long correlationId;
     private long joiningPosition;
+    private FragmentHandler validateFragmentHandler = this::validateFragment;
 
     @Before
     public void setUp() throws Exception
@@ -250,7 +253,7 @@ public class ArchiveReplayLoadTest
 
             while (fragmentCount < messageCount && remaining > 0 && !replay.isClosed() && !replay.hasNoImages())
             {
-                replay.poll(this::validateFragment, 128);
+                replay.poll(validateFragmentHandler, 128);
             }
 
             assertThat(fragmentCount, is(messageCount));

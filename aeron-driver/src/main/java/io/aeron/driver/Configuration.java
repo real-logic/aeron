@@ -499,6 +499,8 @@ public class Configuration
 
     /**
      * Maximum UDP datagram payload size for IPv4. Jumbo datagrams from IPv6 are not supported.
+     *
+     * Max length is 65,507 bytes = 65,535 − 8 byte UDP header − 20 byte IP header.
      */
     public static final int MAX_UDP_PAYLOAD_LENGTH = 65507;
 

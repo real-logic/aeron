@@ -260,13 +260,20 @@ class ReplaySession
 
         if (replayPublication == null)
         {
-            replayPublication = conductor.newReplayPublication(
-                replayChannel,
-                replayStreamId,
-                replayPosition,
-                mtuLength,
-                initialTermId,
-                termBufferLength);
+            try
+            {
+                replayPublication = conductor.newReplayPublication(
+                    replayChannel,
+                    replayStreamId,
+                    cursor.fromPosition(),
+                    mtuLength,
+                    initialTermId,
+                    termBufferLength);
+            }
+            catch (final Exception ex)
+            {
+                return closeOnError(ex, "Failed to create replay publication");
+            }
         }
 
         if (!replayPublication.isConnected())

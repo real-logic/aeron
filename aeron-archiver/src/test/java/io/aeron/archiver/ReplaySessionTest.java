@@ -201,7 +201,7 @@ public class ReplaySessionTest
         final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
 
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID, FRAME_LENGTH, correlationId, replay, control, conductor);
+            RECORDING_ID, RECORDING_POSITION, FRAME_LENGTH, correlationId, replay, control, conductor);
 
         when(control.isClosed()).thenReturn(false);
         when(control.isConnected()).thenReturn(true);
@@ -228,12 +228,13 @@ public class ReplaySessionTest
             INITIAL_TERM_ID,
             TERM_BUFFER_LENGTH);
 
-        final UnsafeBuffer mockTermBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
-        mockTryClaim(replay, mockTermBuffer);
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
+        mockTryClaim(replay, termBuffer);
         assertNotEquals(0, replaySession.doWork());
         assertThat(messageCounter, is(1));
-        final int expectedFrameLength = 1024;
-        assertEquals(expectedFrameLength, mockTermBuffer.getInt(0));
+
+        validateFrame(termBuffer, 0, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_DATA);
+
         assertFalse(replaySession.isDone());
 
         when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
@@ -241,18 +242,64 @@ public class ReplaySessionTest
         assertTrue(replaySession.isDone());
     }
 
-    private void mockTryClaim(final ExclusivePublication replay, final UnsafeBuffer mockTermBuffer)
+    @Test
+    public void shouldReplayPartialUnalignedDataFromFile()
     {
-        when(replay.tryClaim(anyInt(), any(ExclusiveBufferClaim.class))).then(
-            (invocation) ->
-            {
-                final int claimedSize = invocation.getArgument(0);
-                final ExclusiveBufferClaim buffer = invocation.getArgument(1);
-                buffer.wrap(mockTermBuffer, messageCounter * FRAME_LENGTH, claimedSize + HEADER_LENGTH);
-                messageCounter++;
+        final long correlationId = 1L;
+        final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
+        final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
 
-                return (long)claimedSize;
-            });
+        final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
+
+        final ReplaySession replaySession = replaySession(
+            RECORDING_ID, RECORDING_POSITION + 1, FRAME_LENGTH, correlationId, replay, control, conductor);
+
+        when(conductor.newReplayPublication(
+            eq(REPLAY_CHANNEL),
+            eq(REPLAY_STREAM_ID),
+            eq(RECORDING_POSITION + FRAME_LENGTH),
+            eq(MTU_LENGTH),
+            eq(INITIAL_TERM_ID),
+            eq(TERM_BUFFER_LENGTH))).thenReturn(replay);
+
+        when(replay.isClosed()).thenReturn(false);
+        when(control.isClosed()).thenReturn(false);
+
+        when(replay.isConnected()).thenReturn(true);
+        when(control.isConnected()).thenReturn(true);
+
+        replaySession.doWork();
+
+        replaySession.doWork();
+        assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
+
+        verify(proxy, times(1)).sendOkResponse(control, correlationId);
+        verify(conductor).newReplayPublication(
+            REPLAY_CHANNEL,
+            REPLAY_STREAM_ID,
+            RECORDING_POSITION + FRAME_LENGTH,
+            MTU_LENGTH,
+            INITIAL_TERM_ID,
+            TERM_BUFFER_LENGTH);
+
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
+        mockTryClaim(replay, termBuffer);
+        assertNotEquals(0, replaySession.doWork());
+        assertThat(messageCounter, is(1));
+
+        assertEquals(FRAME_LENGTH, termBuffer.getInt(DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET));
+        assertEquals(FrameDescriptor.BEGIN_FRAG_FLAG, termBuffer.getByte(DataHeaderFlyweight.FLAGS_FIELD_OFFSET));
+        assertEquals(1, termBuffer.getLong(DataHeaderFlyweight.RESERVED_VALUE_OFFSET));
+        assertEquals(HDR_TYPE_DATA, termBuffer.getInt(DataHeaderFlyweight.TYPE_FIELD_OFFSET));
+        assertEquals(1, termBuffer.getByte(DataHeaderFlyweight.HEADER_LENGTH));
+
+        final int expectedFrameLength = 1024;
+        assertEquals(expectedFrameLength, termBuffer.getInt(0));
+        assertFalse(replaySession.isDone());
+
+        when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
+        replaySession.doWork();
+        assertTrue(replaySession.isDone());
     }
 
     @Test
@@ -266,7 +313,7 @@ public class ReplaySessionTest
         final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
 
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID, length, correlationId, replay, control, conductor);
+            RECORDING_ID, RECORDING_POSITION, length, correlationId, replay, control, conductor);
 
         when(control.isClosed()).thenReturn(false);
         when(control.isConnected()).thenReturn(true);
@@ -311,20 +358,6 @@ public class ReplaySessionTest
         assertTrue(replaySession.isDone());
     }
 
-    private void validateFrame(
-        final UnsafeBuffer buffer,
-        final int message,
-        final byte flags,
-        final int type)
-    {
-        final int offset = message * FRAME_LENGTH;
-        assertEquals(FRAME_LENGTH, buffer.getInt(offset + DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET));
-        assertEquals(flags, buffer.getByte(offset + DataHeaderFlyweight.FLAGS_FIELD_OFFSET));
-        assertEquals(message, buffer.getLong(offset + DataHeaderFlyweight.RESERVED_VALUE_OFFSET));
-        assertEquals(type, buffer.getInt(offset + DataHeaderFlyweight.TYPE_FIELD_OFFSET));
-        assertEquals(message, buffer.getByte(offset + DataHeaderFlyweight.HEADER_LENGTH));
-    }
-
     @Test
     public void shouldAbortReplay()
     {
@@ -336,7 +369,7 @@ public class ReplaySessionTest
         final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
 
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID, length, correlationId, replay, control, conductor);
+            RECORDING_ID, RECORDING_POSITION, length, correlationId, replay, control, conductor);
 
         when(control.isClosed()).thenReturn(false);
         when(replay.isClosed()).thenReturn(false);
@@ -366,7 +399,7 @@ public class ReplaySessionTest
 
         final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID + 1, length, correlationId, replay, control, conductor);
+            RECORDING_ID + 1, RECORDING_POSITION, length, correlationId, replay, control, conductor);
 
         when(replay.isClosed()).thenReturn(false);
         when(control.isClosed()).thenReturn(false);
@@ -392,7 +425,7 @@ public class ReplaySessionTest
 
         final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID, length, correlationId, replay, control, conductor);
+            RECORDING_ID, RECORDING_POSITION, length, correlationId, replay, control, conductor);
 
         when(replay.isClosed()).thenReturn(false);
         when(control.isClosed()).thenReturn(false);
@@ -408,7 +441,7 @@ public class ReplaySessionTest
 
     private ReplaySession replaySession(
         final long recordingId,
-        final long length,
+        final long recordingPosition, final long length,
         final long correlationId,
         final ExclusivePublication replay,
         final ExclusivePublication control,
@@ -417,14 +450,14 @@ public class ReplaySessionTest
         when(conductor.newReplayPublication(
             eq(REPLAY_CHANNEL),
             eq(REPLAY_STREAM_ID),
-            eq(RECORDING_POSITION),
+            eq(recordingPosition),
             eq(MTU_LENGTH),
             eq(INITIAL_TERM_ID),
             eq(TERM_BUFFER_LENGTH))).thenReturn(replay);
 
         return new ReplaySession(
             recordingId,
-            RECORDING_POSITION,
+            recordingPosition,
             length,
             conductor,
             control,
@@ -435,5 +468,33 @@ public class ReplaySessionTest
             epochClock,
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID);
+    }
+
+    private void validateFrame(
+        final UnsafeBuffer buffer,
+        final int message,
+        final byte flags,
+        final int type)
+    {
+        final int offset = message * FRAME_LENGTH;
+        assertEquals(FRAME_LENGTH, buffer.getInt(offset + DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET));
+        assertEquals(flags, buffer.getByte(offset + DataHeaderFlyweight.FLAGS_FIELD_OFFSET));
+        assertEquals(message, buffer.getLong(offset + DataHeaderFlyweight.RESERVED_VALUE_OFFSET));
+        assertEquals(type, buffer.getInt(offset + DataHeaderFlyweight.TYPE_FIELD_OFFSET));
+        assertEquals(message, buffer.getByte(offset + DataHeaderFlyweight.HEADER_LENGTH));
+    }
+
+    private void mockTryClaim(final ExclusivePublication replay, final UnsafeBuffer mockTermBuffer)
+    {
+        when(replay.tryClaim(anyInt(), any(ExclusiveBufferClaim.class))).then(
+            (invocation) ->
+            {
+                final int claimedSize = invocation.getArgument(0);
+                final ExclusiveBufferClaim buffer = invocation.getArgument(1);
+                buffer.wrap(mockTermBuffer, messageCounter * FRAME_LENGTH, claimedSize + HEADER_LENGTH);
+                messageCounter++;
+
+                return (long)claimedSize;
+            });
     }
 }

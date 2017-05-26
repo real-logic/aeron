@@ -54,12 +54,13 @@ class RecordingFragmentReader implements AutoCloseable
     private final int termBufferLength;
     private final long replayLength;
     private final int segmentFileLength;
+    private final long fromPosition;
 
     private int segmentFileIndex;
     private FileChannel currentDataChannel = null;
     private UnsafeBuffer termBuffer = null;
     private int recordingTermStartOffset;
-    private int fragmentOffset;
+    private int termOffset;
     private long transmitted = 0;
     private final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
     private MappedByteBuffer mappedByteBuffer;
@@ -78,6 +79,11 @@ class RecordingFragmentReader implements AutoCloseable
         this(getDescriptor(recordingId, archiveDir), recordingId, archiveDir, position, length);
     }
 
+    public void close()
+    {
+        closeRecordingFile();
+    }
+
     private RecordingFragmentReader(
         final RecordingDescriptorDecoder metaDecoder,
         final long recordingId,
@@ -88,29 +94,55 @@ class RecordingFragmentReader implements AutoCloseable
         this.recordingId = recordingId;
         this.archiveDir = archiveDir;
         termBufferLength = metaDecoder.termBufferLength();
-        final long joiningPosition = metaDecoder.joiningPosition();
         segmentFileLength = metaDecoder.segmentFileLength();
         final long fullLength = ArchiveUtil.recordingFileFullLength(metaDecoder);
+        final long joiningPosition = metaDecoder.joiningPosition();
 
-        final long fromPosition = position == NULL_POSITION ? joiningPosition : position;
         this.replayLength = length == NULL_LENGTH ? fullLength : length;
 
-        segmentFileIndex = segmentFileIndex(joiningPosition, fromPosition, segmentFileLength);
-        final long recordingOffset = fromPosition & (segmentFileLength - 1);
+        final long tempFromPosition = position == NULL_POSITION ? metaDecoder.joiningPosition() : position;
+        segmentFileIndex = segmentFileIndex(joiningPosition, tempFromPosition, segmentFileLength);
+        final long recordingOffset = tempFromPosition & (segmentFileLength - 1);
         openRecordingFile();
 
         recordingTermStartOffset = (int)(recordingOffset - (recordingOffset & (termBufferLength - 1)));
         termBuffer = new UnsafeBuffer(mappedByteBuffer, recordingTermStartOffset, termBufferLength);
-        // TODO: align first fragment
-        fragmentOffset = (int)(recordingOffset & (termBufferLength - 1));
+        termOffset = (int)(recordingOffset & (termBufferLength - 1));
+
+        int currFrameOffset = 0;
+        while (currFrameOffset < termOffset)
+        {
+            currFrameOffset += termBuffer.getInt(currFrameOffset + DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET);
+        }
+
+        if (currFrameOffset != termOffset)
+        {
+            fromPosition = tempFromPosition + (currFrameOffset - termOffset);
+        }
+        else
+        {
+            fromPosition = tempFromPosition;
+        }
+
+        if (currFrameOffset >= termBufferLength)
+        {
+            termOffset = 0;
+            nextTerm();
+        }
+        else
+        {
+            termOffset = currFrameOffset;
+        }
     }
 
-    private static RecordingDescriptorDecoder getDescriptor(final long recordingId, final File archiveDir)
-        throws IOException
+    boolean isDone()
     {
-        final String recordingMetaFileName = recordingMetaFileName(recordingId);
-        final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
-        return loadRecordingDescriptor(recordingMetaFile);
+        return transmitted >= replayLength;
+    }
+
+    long fromPosition()
+    {
+        return fromPosition;
     }
 
     int controlledPoll(final SimplifiedControlledPoll fragmentHandler, final int fragmentLimit)
@@ -124,10 +156,10 @@ class RecordingFragmentReader implements AutoCloseable
         int polled = 0;
 
         // read to end of term or requested data
-        while (fragmentOffset < termBufferLength && !isDone() && polled < fragmentLimit)
+        while (termOffset < termBufferLength && !isDone() && polled < fragmentLimit)
         {
-            final int fragmentOffset = this.fragmentOffset;
-            headerFlyweight.wrap(termBuffer, this.fragmentOffset, DataHeaderFlyweight.HEADER_LENGTH);
+            final int currTermOffset = this.termOffset;
+            headerFlyweight.wrap(termBuffer, currTermOffset, DataHeaderFlyweight.HEADER_LENGTH);
             final int frameLength = headerFlyweight.frameLength();
             if (frameLength <= 0)
             {
@@ -137,9 +169,9 @@ class RecordingFragmentReader implements AutoCloseable
             final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
             // cursor moves forward, importantly an exception from onFragment will not block progress
             transmitted += alignedLength;
-            this.fragmentOffset += alignedLength;
+            this.termOffset += alignedLength;
 
-            final int fragmentDataOffset = fragmentOffset + DataHeaderFlyweight.DATA_OFFSET;
+            final int fragmentDataOffset = currTermOffset + DataHeaderFlyweight.DATA_OFFSET;
             final int fragmentDataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
 
             if (!fragmentHandler.onFragment(
@@ -150,7 +182,7 @@ class RecordingFragmentReader implements AutoCloseable
             {
                 // rollback the cursor progress
                 transmitted -= alignedLength;
-                this.fragmentOffset -= alignedLength;
+                this.termOffset -= alignedLength;
                 return polled;
             }
 
@@ -161,9 +193,9 @@ class RecordingFragmentReader implements AutoCloseable
             }
         }
 
-        if (!isDone() && fragmentOffset == termBufferLength)
+        if (!isDone() && termOffset == termBufferLength)
         {
-            fragmentOffset = 0;
+            termOffset = 0;
             nextTerm();
         }
 
@@ -206,13 +238,11 @@ class RecordingFragmentReader implements AutoCloseable
         mappedByteBuffer = currentDataChannel.map(READ_ONLY, 0, segmentFileLength);
     }
 
-    boolean isDone()
+    private static RecordingDescriptorDecoder getDescriptor(final long recordingId, final File archiveDir)
+        throws IOException
     {
-        return transmitted >= replayLength;
-    }
-
-    public void close()
-    {
-        closeRecordingFile();
+        final String recordingMetaFileName = recordingMetaFileName(recordingId);
+        final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
+        return loadRecordingDescriptor(recordingMetaFile);
     }
 }

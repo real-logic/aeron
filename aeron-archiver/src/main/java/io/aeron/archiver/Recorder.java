@@ -17,6 +17,7 @@ package io.aeron.archiver;
 
 import io.aeron.archiver.codecs.RecordingDescriptorEncoder;
 import io.aeron.logbuffer.*;
+import io.aeron.protocol.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 
@@ -192,7 +193,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
     }
 
     /**
-     * Convenience moethod for testing purposes.
+     * Convenience method for testing purposes.
      */
     void writeFragment(final DirectBuffer buffer, final Header header)
     {
@@ -218,15 +219,23 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         }
     }
 
-    private void prepareRecording(
-        final int termOffset)
-        throws IOException
+    private void prepareRecording(final int termOffset) throws IOException
     {
         if (segmentPosition == -1)
         {
             newRecordingSegmentFile();
 
             segmentPosition = termOffset;
+            if (termOffset != 0)
+            {
+                final ByteBuffer padBuffer = ByteBuffer.allocate(DataHeaderFlyweight.HEADER_LENGTH);
+                final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
+                headerFlyweight.wrap(padBuffer);
+                headerFlyweight.headerType(HeaderFlyweight.HDR_TYPE_PAD);
+                headerFlyweight.flags(FrameDescriptor.UNFRAGMENTED);
+                headerFlyweight.frameLength(termOffset);
+                recordingFileChannel.write(padBuffer, 0);
+            }
             recordingFileChannel.position(segmentPosition);
             metaDataEncoder.startTime(epochClock.time());
         }

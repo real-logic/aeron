@@ -15,6 +15,7 @@
  */
 package io.aeron.samples;
 
+import io.aeron.EndOfStreamHandler;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.logbuffer.FragmentHandler;
@@ -44,7 +45,7 @@ public class SamplesUtil
     {
         final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
-        return subscriberLoop(fragmentHandler, limit, running, idleStrategy);
+        return subscriberLoop(fragmentHandler, SamplesUtil::printEndOfStreamImage, limit, running, idleStrategy);
     }
 
     /**
@@ -58,6 +59,7 @@ public class SamplesUtil
      */
     public static Consumer<Subscription> subscriberLoop(
         final FragmentHandler fragmentHandler,
+        final EndOfStreamHandler endOfStreamHandler,
         final int limit,
         final AtomicBoolean running,
         final IdleStrategy idleStrategy)
@@ -75,10 +77,9 @@ public class SamplesUtil
 
                         if (0 == fragmentsRead)
                         {
-                            if (!reachedEos && subscription.isEndOfAllStreams())
+                            if (!reachedEos && subscription.pollEndOfStreams(endOfStreamHandler) > 0)
                             {
                                 reachedEos = true;
-                                System.out.println("End of Stream");
                             }
                         }
 
@@ -185,5 +186,18 @@ public class SamplesUtil
         System.out.println(String.format(
             "Unavailable image on %s streamId=%d sessionId=%d",
             subscription.channel(), subscription.streamId(), image.sessionId()));
+    }
+
+    /**
+     * Print the information for an end of stream image to stdout.
+     *
+     * @param image that has reached end of stream
+     */
+    public static void printEndOfStreamImage(final Image image)
+    {
+        final Subscription subscription = image.subscription();
+        System.out.println(String.format(
+            "End Of Stream image on %s streamId=%d sessionId=%d from %s",
+            subscription.channel(), subscription.streamId(), image.sessionId(), image.sourceIdentity()));
     }
 }

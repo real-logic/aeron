@@ -146,21 +146,25 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
-     * Is the current consumed position at the end of the stream for all images?
+     * Poll the {@link Image}s under the subscription for having reached End of Stream.
      *
-     * @return true if at the end of the stream or false if not.
+     * @param endOfStreamHandler callback for handling end of stream indication.
+     * @return number of {@link Image} that have reached End of Stream.
      */
-    public boolean isEndOfAllStreams()
+    public int pollEndOfStreams(final EndOfStreamHandler endOfStreamHandler)
     {
+        int numEndOfStreams = 0;
+
         for (final Image image : images)
         {
-            if (!image.isEndOfStream())
+            if (image.isEndOfStream())
             {
-                return false;
+                numEndOfStreams++;
+                endOfStreamHandler.onEndOfStream(image);
             }
         }
 
-        return true;
+        return numEndOfStreams;
     }
 
     /**

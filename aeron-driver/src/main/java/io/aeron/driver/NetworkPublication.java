@@ -382,7 +382,7 @@ public class NetworkPublication
      *
      * @return 1 if the limit has been updated otherwise 0.
      */
-    int updatePublishersLimit()
+    int updatePublisherLimit()
     {
         int workCount = 0;
 

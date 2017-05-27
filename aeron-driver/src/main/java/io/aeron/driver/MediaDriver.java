@@ -183,52 +183,47 @@ public final class MediaDriver implements AutoCloseable
         switch (ctx.threadingMode)
         {
             case INVOKER:
-                this.sharedInvoker = new AgentInvoker(
+                sharedInvoker = new AgentInvoker(
                     errorHandler, errorCounter, new CompositeAgent(sender, receiver, conductor));
-                this.sharedRunner = null;
-                this.sharedNetworkRunner = null;
-                this.conductorRunner = null;
-                this.receiverRunner = null;
-                this.senderRunner = null;
-                ctx.driverAgentInvoker = this.sharedInvoker;
+                sharedRunner = null;
+                sharedNetworkRunner = null;
+                conductorRunner = null;
+                receiverRunner = null;
+                senderRunner = null;
+                ctx.driverAgentInvoker = sharedInvoker;
                 break;
 
             case SHARED:
-                this.sharedRunner = new AgentRunner(
+                sharedRunner = new AgentRunner(
                     ctx.sharedIdleStrategy,
                     errorHandler,
                     errorCounter,
                     new CompositeAgent(sender, receiver, conductor));
-                this.sharedNetworkRunner = null;
-                this.conductorRunner = null;
-                this.receiverRunner = null;
-                this.senderRunner = null;
-                this.sharedInvoker = null;
+                sharedNetworkRunner = null;
+                conductorRunner = null;
+                receiverRunner = null;
+                senderRunner = null;
+                sharedInvoker = null;
                 break;
 
             case SHARED_NETWORK:
-                this.sharedNetworkRunner = new AgentRunner(
-                    ctx.sharedNetworkIdleStrategy,
-                    errorHandler,
-                    errorCounter,
-                    new CompositeAgent(sender, receiver));
-                this.conductorRunner = new AgentRunner(
-                    ctx.conductorIdleStrategy, errorHandler, errorCounter, conductor);
-                this.sharedRunner = null;
-                this.receiverRunner = null;
-                this.senderRunner = null;
-                this.sharedInvoker = null;
+                sharedNetworkRunner = new AgentRunner(
+                    ctx.sharedNetworkIdleStrategy, errorHandler, errorCounter, new CompositeAgent(sender, receiver));
+                conductorRunner = new AgentRunner(ctx.conductorIdleStrategy, errorHandler, errorCounter, conductor);
+                sharedRunner = null;
+                receiverRunner = null;
+                senderRunner = null;
+                sharedInvoker = null;
                 break;
 
             default:
             case DEDICATED:
-                this.senderRunner = new AgentRunner(ctx.senderIdleStrategy, errorHandler, errorCounter, sender);
-                this.receiverRunner = new AgentRunner(ctx.receiverIdleStrategy, errorHandler, errorCounter, receiver);
-                this.conductorRunner = new AgentRunner(
-                    ctx.conductorIdleStrategy, errorHandler, errorCounter, conductor);
-                this.sharedNetworkRunner = null;
-                this.sharedRunner = null;
-                this.sharedInvoker = null;
+                senderRunner = new AgentRunner(ctx.senderIdleStrategy, errorHandler, errorCounter, sender);
+                receiverRunner = new AgentRunner(ctx.receiverIdleStrategy, errorHandler, errorCounter, receiver);
+                conductorRunner = new AgentRunner(ctx.conductorIdleStrategy, errorHandler, errorCounter, conductor);
+                sharedNetworkRunner = null;
+                sharedRunner = null;
+                sharedInvoker = null;
                 break;
         }
     }

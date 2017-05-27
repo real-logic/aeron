@@ -33,7 +33,7 @@ import java.util.function.Consumer;
 public class SamplesUtil
 {
     /**
-     * Return a reusable, parameterised event loop that calls a default idler when no messages are received
+     * Return a reusable, parametrised event loop that calls a default idler when no messages are received
      *
      * @param fragmentHandler to be called back for each message.
      * @param limit           passed to {@link Subscription#poll(FragmentHandler, int)}
@@ -49,12 +49,13 @@ public class SamplesUtil
     }
 
     /**
-     * Return a reusable, parameterized event loop that calls and idler when no messages are received
+     * Return a reusable, parametrised event loop that calls and idler when no messages are received
      *
-     * @param fragmentHandler to be called back for each message.
-     * @param limit           passed to {@link Subscription#poll(FragmentHandler, int)}
-     * @param running         indication for loop
-     * @param idleStrategy    to use for loop
+     * @param fragmentHandler    to be called back for each message.
+     * @param endOfStreamHandler to be called back when the stream has been completely received.
+     * @param limit              passed to {@link Subscription#poll(FragmentHandler, int)}
+     * @param running            indication for loop
+     * @param idleStrategy       to use for loop
      * @return loop function
      */
     public static Consumer<Subscription> subscriberLoop(
@@ -94,7 +95,7 @@ public class SamplesUtil
     }
 
     /**
-     * Return a reusable, parameterized {@link FragmentHandler} that prints to stdout
+     * Return a reusable, parametrised {@link FragmentHandler} that prints to stdout
      *
      * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents
@@ -113,7 +114,7 @@ public class SamplesUtil
     }
 
     /**
-     * Return a reusable, parameteried {@link FragmentHandler} that calls into a
+     * Return a reusable, parametrised {@link FragmentHandler} that calls into a
      * {@link RateReporter}.
      *
      * @param reporter for the rate

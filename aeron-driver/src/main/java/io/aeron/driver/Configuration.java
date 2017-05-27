@@ -501,8 +501,9 @@ public class Configuration
      * Maximum UDP datagram payload size for IPv4. Jumbo datagrams from IPv6 are not supported.
      *
      * Max length is 65,507 bytes = 65,535 − 8 byte UDP header − 20 byte IP header.
+     * Then round down to nearest multiple of {@link FrameDescriptor#FRAME_ALIGNMENT} to give 65,504.
      */
-    public static final int MAX_UDP_PAYLOAD_LENGTH = 65507;
+    public static final int MAX_UDP_PAYLOAD_LENGTH = 65504;
 
     /**
      * {@link ThreadingMode} to be used by the Aeron {@link MediaDriver}

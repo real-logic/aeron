@@ -918,14 +918,12 @@ public class Configuration
         if (mtuLength < DataHeaderFlyweight.HEADER_LENGTH || mtuLength > MAX_UDP_PAYLOAD_LENGTH)
         {
             throw new ConfigurationException(
-                "mtuLength must be a >= HEADER_LENGTH and <= " + MAX_UDP_PAYLOAD_LENGTH + ": mtuLength=" + mtuLength);
+                "mtuLength must be a >= HEADER_LENGTH and <= MAX_UDP_PAYLOAD_LENGTH: mtuLength=" + mtuLength);
         }
 
         if ((mtuLength % FrameDescriptor.FRAME_ALIGNMENT) != 0)
         {
-            throw new ConfigurationException(String.format(
-                "mtuLength must be a multiple of %d: mtuLength=%d",
-                FrameDescriptor.FRAME_ALIGNMENT, mtuLength));
+            throw new ConfigurationException("mtuLength must be a multiple of FRAME_ALIGNMENT: mtuLength=" + mtuLength);
         }
     }
 }

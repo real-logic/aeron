@@ -556,7 +556,7 @@ public final class MediaDriver implements AutoCloseable
                         ipcPublicationTermBufferLength, maxTermBufferLength));
                 }
 
-                Configuration.validateInitialWindowLength(initialWindowLength(), mtuLength());
+                Configuration.validateInitialWindowLength(initialWindowLength, mtuLength);
 
                 cncByteBuffer = mapNewFile(
                     cncFile(),
@@ -574,9 +574,8 @@ public final class MediaDriver implements AutoCloseable
                     clientLivenessTimeoutNs,
                     ERROR_BUFFER_LENGTH);
 
-                final BroadcastTransmitter transmitter =
-                    new BroadcastTransmitter(createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer));
-                clientProxy(new ClientProxy(transmitter));
+                clientProxy(new ClientProxy(new BroadcastTransmitter(
+                    createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer))));
 
                 toDriverCommands(new ManyToOneRingBuffer(createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer)));
 
@@ -609,10 +608,7 @@ public final class MediaDriver implements AutoCloseable
                     threadingMode, driverCommandQueue, systemCounters.get(CONDUCTOR_PROXY_FAILS)));
 
                 rawLogBuffersFactory(new RawLogFactory(
-                    aeronDirectoryName(),
-                    maxTermBufferLength,
-                    termBufferSparseFile,
-                    errorLog));
+                    aeronDirectoryName(), maxTermBufferLength, termBufferSparseFile, errorLog));
 
                 if (null == lossReport)
                 {
@@ -1308,8 +1304,8 @@ public final class MediaDriver implements AutoCloseable
 
         private void concludeIdleStrategies()
         {
-            final StatusIndicator controllableIdleStrategyStatus =
-                new UnsafeBufferStatusIndicator(countersManager.valuesBuffer(), CONTROLLABLE_IDLE_STRATEGY.id());
+            final StatusIndicator controllableIdleStrategyStatus = new UnsafeBufferStatusIndicator(
+                countersManager.valuesBuffer(), CONTROLLABLE_IDLE_STRATEGY.id());
 
             if (null == conductorIdleStrategy)
             {

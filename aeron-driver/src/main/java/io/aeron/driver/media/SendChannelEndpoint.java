@@ -193,6 +193,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     /*
      * Method used as a hook for logging.
      */
+    @SuppressWarnings("unused")
     protected void presend(final ByteBuffer buffer, final InetSocketAddress address)
     {
     }

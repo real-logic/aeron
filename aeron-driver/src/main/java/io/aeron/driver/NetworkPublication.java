@@ -102,6 +102,7 @@ public class NetworkPublication
     private final boolean isExclusive;
     private volatile boolean isConnected;
     private volatile boolean hasSenderReleased;
+    private volatile boolean isComplete;
     private Status status = Status.ACTIVE;
 
     private final UnsafeBuffer[] termBuffers;
@@ -341,7 +342,8 @@ public class NetworkPublication
                 nanoClock.nanoTime()));
     }
 
-    public void onRttMeasurement(final RttMeasurementFlyweight msg, final InetSocketAddress srcAddress)
+    public void onRttMeasurement(
+        final RttMeasurementFlyweight msg, @SuppressWarnings("unused") final InetSocketAddress srcAddress)
     {
         if (RttMeasurementFlyweight.REPLY_FLAG == (msg.flags() & RttMeasurementFlyweight.REPLY_FLAG))
         {
@@ -511,7 +513,7 @@ public class NetworkPublication
                 .termId(activeTermId)
                 .termOffset(termOffset);
 
-            if (status == Status.LINGER)
+            if (isComplete)
             {
                 heartbeatDataHeader.flags((byte)DataHeaderFlyweight.BEGIN_END_AND_EOS_FLAGS);
             }
@@ -601,7 +603,7 @@ public class NetworkPublication
         switch (status)
         {
             case ACTIVE:
-                checkForBlockedPublisher(timeNs, this.senderPosition.getVolatile());
+                checkForBlockedPublisher(timeNs, senderPosition.getVolatile());
 
                 if (isConnected &&
                     timeMs > (timeOfLastStatusMessage(rawLog.metaData()) + PUBLICATION_CONNECTION_TIMEOUT_MS))
@@ -616,6 +618,7 @@ public class NetworkPublication
                 {
                     if (spiesNotBehindSender(conductor, senderPosition))
                     {
+                        isComplete = true;
                         timeOfLastActivityNs = timeNs;
                         status = Status.LINGER;
                     }

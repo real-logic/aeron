@@ -45,8 +45,6 @@ import static io.aeron.driver.status.SystemCounterDescriptor.CLIENT_KEEP_ALIVES;
 import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
 import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_COMMANDS;
 import static io.aeron.ErrorCode.*;
-import static io.aeron.logbuffer.FrameDescriptor.computeExclusiveMaxMessageLength;
-import static io.aeron.logbuffer.FrameDescriptor.computeMaxMessageLength;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
@@ -309,7 +307,7 @@ public class DriverConductor implements Agent
         }
         else
         {
-            confirmMatch(aeronUri, params, publication);
+            confirmMatch(aeronUri, params, publication.rawLog());
         }
 
         publicationLinks.add(new PublicationLink(registrationId, publication, getOrAddClient(clientId)));
@@ -792,7 +790,6 @@ public class DriverConductor implements Agent
     }
 
     private RawLog newIpcPublicationLog(
-        final boolean isExclusive,
         final int sessionId,
         final int streamId,
         final int initialTermId,
@@ -801,16 +798,12 @@ public class DriverConductor implements Agent
     {
         final int termLength = params.termLength;
         final RawLog rawLog = rawLogFactory.newIpcPublication(sessionId, streamId, registrationId, termLength);
-
         final UnsafeBuffer logMetaData = rawLog.metaData();
+
         storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
         initialiseTailWithTermId(logMetaData, 0, initialTermId);
         initialTermId(logMetaData, initialTermId);
-
-        final int mtuLength = isExclusive ?
-            computeExclusiveMaxMessageLength(termLength) : computeMaxMessageLength(termLength);
-
-        mtuLength(logMetaData, mtuLength);
+        mtuLength(logMetaData, params.mtuLength);
         correlationId(logMetaData, registrationId);
         timeOfLastStatusMessage(logMetaData, 0);
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
@@ -1035,11 +1028,12 @@ public class DriverConductor implements Agent
 
         if (null == publication)
         {
+            validateMtuForMaxMessage(params, isExclusive);
             publication = addIpcPublication(registrationId, streamId, channel, isExclusive, params);
         }
         else
         {
-            confirmMatch(aeronUri, params, publication);
+            confirmMatch(aeronUri, params, publication.rawLog());
         }
 
         return publication;
@@ -1054,9 +1048,7 @@ public class DriverConductor implements Agent
     {
         final int sessionId = nextSessionId++;
         final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
-
-        final RawLog rawLog = newIpcPublicationLog(
-            isExclusive, sessionId, streamId, initialTermId, registrationId, params);
+        final RawLog rawLog = newIpcPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
 
         if (params.isReplay)
         {

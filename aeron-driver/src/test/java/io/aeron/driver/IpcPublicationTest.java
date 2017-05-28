@@ -70,6 +70,7 @@ public class IpcPublicationTest
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
+            .ipcTermBufferLength(TERM_BUFFER_LENGTH)
             .toDriverCommands(fromClientCommands)
             .rawLogBuffersFactory(mockRawLogFactory)
             .clientProxy(mock(ClientProxy.class))

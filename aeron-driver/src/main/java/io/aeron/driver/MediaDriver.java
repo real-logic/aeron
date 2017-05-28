@@ -492,6 +492,7 @@ public final class MediaDriver implements AutoCloseable
         private int initialWindowLength;
         private long statusMessageTimeout;
         private int mtuLength;
+        private int ipcMtuLength;
 
         private boolean warnIfDirectoriesExist = true;
         private boolean dirsDeleteOnStart;
@@ -519,6 +520,7 @@ public final class MediaDriver implements AutoCloseable
             initialWindowLength(Configuration.initialWindowLength());
             statusMessageTimeout(Configuration.statusMessageTimeout());
             mtuLength(Configuration.MTU_LENGTH);
+            ipcMtuLength(Configuration.IPC_MTU_LENGTH);
 
             dirsDeleteOnStart(getBoolean(DIRS_DELETE_ON_START_PROP_NAME));
         }
@@ -1220,6 +1222,18 @@ public final class MediaDriver implements AutoCloseable
         {
             Configuration.validateMtuLength(mtuLength);
             this.mtuLength = mtuLength;
+            return this;
+        }
+
+        public int ipcMtuLength()
+        {
+            return ipcMtuLength;
+        }
+
+        public CommonContext ipcMtuLength(final int ipcMtuLength)
+        {
+            Configuration.validateMtuLength(ipcMtuLength);
+            this.ipcMtuLength = ipcMtuLength;
             return this;
         }
 

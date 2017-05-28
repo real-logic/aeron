@@ -483,6 +483,14 @@ public class Configuration
         MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultMulticastFlowControlSupplier");
 
     /**
+     * Maximum UDP datagram payload size for IPv4. Jumbo datagrams from IPv6 are not supported.
+     *
+     * Max length is 65,507 bytes = 65,535 − 8 byte UDP header − 20 byte IP header.
+     * Then round down to nearest multiple of {@link FrameDescriptor#FRAME_ALIGNMENT} to give 65,504.
+     */
+    public static final int MAX_UDP_PAYLOAD_LENGTH = 65504;
+
+    /**
      * Length of the maximum transmission unit of the media driver's protocol
      */
     public static final String MTU_LENGTH_PROP_NAME = "aeron.mtu.length";
@@ -498,12 +506,14 @@ public class Configuration
     public static final int MTU_LENGTH = getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
 
     /**
-     * Maximum UDP datagram payload size for IPv4. Jumbo datagrams from IPv6 are not supported.
-     *
-     * Max length is 65,507 bytes = 65,535 − 8 byte UDP header − 20 byte IP header.
-     * Then round down to nearest multiple of {@link FrameDescriptor#FRAME_ALIGNMENT} to give 65,504.
+     * Length of the maximum transmission unit of the media driver's protocol for IPC
      */
-    public static final int MAX_UDP_PAYLOAD_LENGTH = 65504;
+    public static final String IPC_MTU_LENGTH_PROP_NAME = "aeron.ipc.mtu.length";
+
+    /**
+     * Length of the MTU to use for sending messages via IPC
+     */
+    public static final int IPC_MTU_LENGTH = getInteger(IPC_MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
 
     /**
      * {@link ThreadingMode} to be used by the Aeron {@link MediaDriver}

@@ -122,6 +122,8 @@ public class DriverConductorTest
             new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH * 2)), counterBuffer);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
+            .publicationTermBufferLength(TERM_BUFFER_LENGTH)
+            .ipcTermBufferLength(TERM_BUFFER_LENGTH)
             .unicastFlowControlSupplier(Configuration.unicastFlowControlSupplier())
             .multicastFlowControlSupplier(Configuration.multicastFlowControlSupplier())
                 // TODO: remove

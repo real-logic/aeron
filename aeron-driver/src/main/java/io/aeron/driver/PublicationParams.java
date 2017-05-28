@@ -16,8 +16,10 @@
 package io.aeron.driver;
 
 import io.aeron.CommonContext;
+import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.uri.AeronUri;
 import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.LogBufferDescriptor;
 
 import static io.aeron.CommonContext.*;
 
@@ -71,28 +73,19 @@ class PublicationParams
     }
 
     static void confirmMatch(
-        final AeronUri uri, final PublicationParams params, final NetworkPublication publication)
+        final AeronUri uri, final PublicationParams params, final RawLog rawLog)
     {
-        if (uri.containsKey(MTU_LENGTH_PARAM_NAME) && publication.mtuLength() != params.mtuLength)
+        final int mtuLength = LogBufferDescriptor.mtuLength(rawLog.metaData());
+        if (uri.containsKey(MTU_LENGTH_PARAM_NAME) && mtuLength != params.mtuLength)
         {
             throw new IllegalStateException("Existing publication has different MTU length: existing=" +
-                publication.mtuLength() + " requested=" + params.mtuLength);
+                mtuLength + " requested=" + params.mtuLength);
         }
 
-        if (uri.containsKey(TERM_LENGTH_PARAM_NAME) && publication.rawLog().termLength() != params.termLength)
+        if (uri.containsKey(TERM_LENGTH_PARAM_NAME) && rawLog.termLength() != params.termLength)
         {
             throw new IllegalStateException("Existing publication has different term length: existing=" +
-                publication.rawLog().termLength() + " requested=" + params.termLength);
-        }
-    }
-
-    static void confirmMatch(
-        final AeronUri uri, final PublicationParams params, final IpcPublication publication)
-    {
-        if (uri.containsKey(TERM_LENGTH_PARAM_NAME) && publication.rawLog().termLength() != params.termLength)
-        {
-            throw new IllegalStateException("Existing publication has different term length: existing=" +
-                publication.rawLog().termLength() + " requested=" + params.termLength);
+                rawLog.termLength() + " requested=" + params.termLength);
         }
     }
 
@@ -108,7 +101,7 @@ class PublicationParams
         params.termLength = getTermBufferLength(
             aeronUri, isIpc ? context.ipcTermBufferLength() : context.publicationTermBufferLength());
 
-        params.mtuLength = getMtuLength(aeronUri, context.mtuLength());
+        params.mtuLength = getMtuLength(aeronUri, isIpc ? context.ipcMtuLength() : context.mtuLength());
 
         if (isExclusive)
         {

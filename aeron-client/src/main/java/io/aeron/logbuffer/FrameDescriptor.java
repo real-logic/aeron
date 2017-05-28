@@ -48,7 +48,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * </pre>
  *
  * The (B)egin and (E)nd flags are used for message fragmentation. R is for reserved bit.
- * Both are set for a message that does not span frames.
+ * Both (B)egin and (E)nd flags are set for a message that does not span frames.
  */
 public class FrameDescriptor
 {

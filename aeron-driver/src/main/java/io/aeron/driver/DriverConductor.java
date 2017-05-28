@@ -309,7 +309,7 @@ public class DriverConductor implements Agent
         }
         else
         {
-            validateParams(aeronUri, params, publication);
+            confirmMatch(aeronUri, params, publication);
         }
 
         publicationLinks.add(new PublicationLink(registrationId, publication, getOrAddClient(clientId)));

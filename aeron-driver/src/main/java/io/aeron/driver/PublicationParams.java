@@ -70,7 +70,7 @@ class PublicationParams
         }
     }
 
-    static void validateParams(
+    static void confirmMatch(
         final AeronUri uri, final PublicationParams params, final NetworkPublication publication)
     {
         if (uri.containsKey(MTU_LENGTH_PARAM_NAME) && publication.mtuLength() != params.mtuLength)

@@ -493,7 +493,7 @@ public final class MediaDriver implements AutoCloseable
         private long statusMessageTimeout;
         private int mtuLength;
 
-        private boolean warnIfDirectoriesExist;
+        private boolean warnIfDirectoriesExist = true;
         private boolean dirsDeleteOnStart;
         private ThreadingMode threadingMode;
         private ThreadFactory conductorThreadFactory;
@@ -519,8 +519,6 @@ public final class MediaDriver implements AutoCloseable
             initialWindowLength(Configuration.initialWindowLength());
             statusMessageTimeout(Configuration.statusMessageTimeout());
             mtuLength(Configuration.MTU_LENGTH);
-
-            warnIfDirectoriesExist = true;
 
             dirsDeleteOnStart(getBoolean(DIRS_DELETE_ON_START_PROP_NAME));
         }

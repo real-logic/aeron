@@ -103,25 +103,25 @@ public class FrameDescriptor
     public static final int PADDING_FRAME_TYPE = HeaderFlyweight.HDR_TYPE_PAD;
 
     /**
-     * Compute the maximum supported message length for a buffer of given capacity.
+     * Compute the maximum supported message length for a buffer of given termLength.
      *
-     * @param capacity of the log buffer.
+     * @param termLength of the log buffer.
      * @return the maximum supported length for a message.
      */
-    public static int computeMaxMessageLength(final int capacity)
+    public static int computeMaxMessageLength(final int termLength)
     {
-        return capacity / 8;
+        return termLength / 8;
     }
 
     /**
-     * Compute the maximum supported message length for a buffer of given capacity when the publication is exclusive.
+     * Compute the maximum supported message length for a buffer of given termLength when the publication is exclusive.
      *
-     * @param capacity of the log buffer.
+     * @param termLength of the log buffer.
      * @return the maximum supported length for a message.
      */
-    public static int computeExclusiveMaxMessageLength(final int capacity)
+    public static int computeExclusiveMaxMessageLength(final int termLength)
     {
-        return capacity / 4;
+        return termLength / 4;
     }
 
     /**

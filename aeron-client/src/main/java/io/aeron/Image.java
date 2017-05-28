@@ -51,6 +51,7 @@ public class Image
     private final int initialTermId;
     private final int termLengthMask;
     private final int positionBitsToShift;
+    private volatile boolean isEos;
     private volatile boolean isClosed;
 
     private final Position subscriberPosition;
@@ -230,12 +231,10 @@ public class Image
     {
         if (isClosed)
         {
-            return false;
+            return isEos;
         }
 
-        final long eosPosition = LogBufferDescriptor.endOfStreamPosition(logBuffers.metaDataBuffer());
-
-        return (subscriberPosition.get() >= eosPosition);
+        return subscriberPosition.get() >= LogBufferDescriptor.endOfStreamPosition(logBuffers.metaDataBuffer());
     }
 
     /**
@@ -575,7 +574,9 @@ public class Image
 
     ManagedResource managedResource()
     {
+        isEos = subscriberPosition.get() >= LogBufferDescriptor.endOfStreamPosition(logBuffers.metaDataBuffer());
         isClosed = true;
+
         return new ImageManagedResource();
     }
 

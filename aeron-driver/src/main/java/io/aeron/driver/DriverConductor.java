@@ -1030,18 +1030,28 @@ public class DriverConductor implements Agent
             publication = findSharedIpcPublication(ipcPublications, streamId);
         }
 
+        final AeronUri aeronUri = AeronUri.parse(channel);
+        final PublicationParams params = getPublicationParams(context, aeronUri, isExclusive, true);
+
         if (null == publication)
         {
-            publication = addIpcPublication(registrationId, streamId, channel, isExclusive);
+            publication = addIpcPublication(registrationId, streamId, channel, isExclusive, params);
+        }
+        else
+        {
+            confirmMatch(aeronUri, params, publication);
         }
 
         return publication;
     }
 
     private IpcPublication addIpcPublication(
-        final long registrationId, final int streamId, final String channel, final boolean isExclusive)
+        final long registrationId,
+        final int streamId,
+        final String channel,
+        final boolean isExclusive,
+        final PublicationParams params)
     {
-        final PublicationParams params = getPublicationParams(context, AeronUri.parse(channel), isExclusive, true);
         final int sessionId = nextSessionId++;
         final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
 

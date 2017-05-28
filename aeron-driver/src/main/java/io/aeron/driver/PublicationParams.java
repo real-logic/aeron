@@ -86,6 +86,16 @@ class PublicationParams
         }
     }
 
+    static void confirmMatch(
+        final AeronUri uri, final PublicationParams params, final IpcPublication publication)
+    {
+        if (uri.containsKey(TERM_LENGTH_PARAM_NAME) && publication.rawLog().termLength() != params.termLength)
+        {
+            throw new IllegalStateException("Existing publication has different term length: existing=" +
+                publication.rawLog().termLength() + " requested=" + params.termLength);
+        }
+    }
+
     @SuppressWarnings("ConstantConditions")
     static PublicationParams getPublicationParams(
         final MediaDriver.Context context,

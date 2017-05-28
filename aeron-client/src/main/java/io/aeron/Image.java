@@ -25,6 +25,7 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.logbuffer.ControlledFragmentHandler.Action.*;
 import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.logbuffer.LogBufferDescriptor.endOfStreamPosition;
 import static io.aeron.logbuffer.LogBufferDescriptor.indexByPosition;
 import static io.aeron.logbuffer.TermReader.read;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -234,7 +235,7 @@ public class Image
             return isEos;
         }
 
-        return subscriberPosition.get() >= LogBufferDescriptor.endOfStreamPosition(logBuffers.metaDataBuffer());
+        return subscriberPosition.get() >= endOfStreamPosition(logBuffers.metaDataBuffer());
     }
 
     /**
@@ -574,7 +575,7 @@ public class Image
 
     ManagedResource managedResource()
     {
-        isEos = subscriberPosition.get() >= LogBufferDescriptor.endOfStreamPosition(logBuffers.metaDataBuffer());
+        isEos = subscriberPosition.getVolatile() >= endOfStreamPosition(logBuffers.metaDataBuffer());
         isClosed = true;
 
         return new ImageManagedResource();

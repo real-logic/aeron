@@ -94,7 +94,7 @@ public class CommonContext implements AutoCloseable
     /**
      * MTU length parameter name for using as a channel URI param.
      */
-    public static final String MTU_LENGTH_URI_PARAM_NAME = "mtu";
+    public static final String MTU_LENGTH_PARAM_NAME = "mtu";
 
     /**
      * Key for the mode of control that such be used for multi-destination-cast semantics.

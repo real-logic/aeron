@@ -47,7 +47,7 @@ public class ArchiveReplayLoadTest
     static final int REPLY_STREAM_ID = 100;
     private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
     private static final String PUBLISH_URI = "aeron:udp?endpoint=127.0.0.1:54325";
-//        +"|" + CommonContext.TERM_LENGTH_PARAM_NAME + "=4194304|" + CommonContext.MTU_LENGTH_URI_PARAM_NAME + "=4096";
+//        +"|" + CommonContext.TERM_LENGTH_PARAM_NAME + "=4194304|" + CommonContext.MTU_LENGTH_PARAM_NAME + "=4096";
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
     public static final int MESSAGE_COUNT = 200000;

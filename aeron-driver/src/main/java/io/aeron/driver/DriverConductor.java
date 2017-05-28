@@ -40,7 +40,7 @@ import java.util.function.Consumer;
 
 import static io.aeron.CommonContext.*;
 import static io.aeron.driver.Configuration.*;
-import static io.aeron.driver.PublicationParams.getPublicationParams;
+import static io.aeron.driver.PublicationParams.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.CLIENT_KEEP_ALIVES;
 import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
 import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_COMMANDS;
@@ -290,7 +290,10 @@ public class DriverConductor implements Agent
         final boolean isExclusive)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
-        final PublicationParams params = getPublicationParams(context, udpChannel.aeronUri(), isExclusive, false);
+        final AeronUri aeronUri = udpChannel.aeronUri();
+        final PublicationParams params = getPublicationParams(context, aeronUri, isExclusive, false);
+        validateMtuForMaxMessage(params, isExclusive);
+
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel);
 
         NetworkPublication publication = null;
@@ -304,10 +307,9 @@ public class DriverConductor implements Agent
             publication = newNetworkPublication(
                 registrationId, streamId, channel, udpChannel, channelEndpoint, params, isExclusive);
         }
-        else if (publication.mtuLength() != params.mtuLength)
+        else
         {
-            throw new IllegalStateException("Existing publication has different MTU length: existing=" +
-                publication.mtuLength() + " requested=" + params.mtuLength);
+            validateParams(aeronUri, params, publication);
         }
 
         publicationLinks.add(new PublicationLink(registrationId, publication, getOrAddClient(clientId)));
@@ -319,78 +321,6 @@ public class DriverConductor implements Agent
             publication.rawLog().fileName(),
             publication.publisherLimitId(),
             isExclusive);
-    }
-
-    private NetworkPublication newNetworkPublication(
-        final long registrationId,
-        final int streamId,
-        final String channel,
-        final UdpChannel udpChannel,
-        final SendChannelEndpoint channelEndpoint,
-        final PublicationParams params,
-        final boolean isExclusive)
-    {
-        final int sessionId = nextSessionId++;
-        final UnsafeBufferPosition senderPosition = SenderPos.allocate(
-            countersManager, registrationId, sessionId, streamId, channel);
-        final UnsafeBufferPosition senderLimit = SenderLimit.allocate(
-            countersManager, registrationId, sessionId, streamId, channel);
-
-        int initialTermId = BitUtil.generateRandomisedId();
-        if (params.isReplay)
-        {
-            initialTermId = params.initialTermId;
-            final int bits = Integer.numberOfTrailingZeros(params.termLength);
-            final long position = computePosition(params.termId, params.termOffset, bits, initialTermId);
-            senderLimit.setOrdered(position);
-            senderPosition.setOrdered(position);
-        }
-
-        final RetransmitHandler retransmitHandler = new RetransmitHandler(
-            nanoClock,
-            context.systemCounters(),
-            RETRANSMIT_UNICAST_DELAY_GENERATOR,
-            RETRANSMIT_UNICAST_LINGER_GENERATOR);
-
-        final FlowControl flowControl =
-            udpChannel.isMulticast() || udpChannel.hasExplicitControl() ?
-                context.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
-                context.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
-
-        final NetworkPublication publication = new NetworkPublication(
-            registrationId,
-            channelEndpoint,
-            nanoClock,
-            cachedEpochClock,
-            newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId, params.termLength),
-            PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, channel),
-            senderPosition,
-            senderLimit,
-            sessionId,
-            streamId,
-            initialTermId,
-            params.mtuLength,
-            context.systemCounters(),
-            flowControl,
-            retransmitHandler,
-            networkPublicationThreadLocals,
-            publicationUnblockTimeoutNs,
-            isExclusive);
-
-        if (params.isReplay)
-        {
-            final int activeIndex = indexByTerm(params.initialTermId, params.termId);
-            final UnsafeBuffer logMetaDataBuffer = publication.rawLog().metaData();
-            rawTail(logMetaDataBuffer, activeIndex, packTail(params.termId, params.termOffset));
-            activePartitionIndex(logMetaDataBuffer, activeIndex);
-        }
-
-        channelEndpoint.incRef();
-        networkPublications.add(publication);
-        senderProxy.newNetworkPublication(publication);
-        linkSpies(subscriptionLinks, publication);
-
-        return publication;
     }
 
     void cleanupSpies(final NetworkPublication publication)
@@ -466,35 +396,6 @@ public class DriverConductor implements Agent
         {
             subscriptionLinks.get(i).unlink(publication);
         }
-    }
-
-    private List<SubscriberPosition> createSubscriberPositions(
-        final int sessionId,
-        final int streamId,
-        final ReceiveChannelEndpoint channelEndpoint,
-        final long joiningPosition)
-    {
-        final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
-
-        for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
-        {
-            final SubscriptionLink subscription = subscriptionLinks.get(i);
-            if (subscription.matches(channelEndpoint, streamId))
-            {
-                final Position position = SubscriberPos.allocate(
-                    countersManager,
-                    subscription.registrationId(),
-                    sessionId,
-                    streamId,
-                    subscription.uri(),
-                    joiningPosition);
-
-                position.setOrdered(joiningPosition);
-                subscriberPositions.add(new SubscriberPosition(subscription, position));
-            }
-        }
-
-        return subscriberPositions;
     }
 
     void onAddIpcPublication(
@@ -745,6 +646,35 @@ public class DriverConductor implements Agent
         }
     }
 
+    private List<SubscriberPosition> createSubscriberPositions(
+        final int sessionId,
+        final int streamId,
+        final ReceiveChannelEndpoint channelEndpoint,
+        final long joiningPosition)
+    {
+        final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
+
+        for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
+        {
+            final SubscriptionLink subscription = subscriptionLinks.get(i);
+            if (subscription.matches(channelEndpoint, streamId))
+            {
+                final Position position = SubscriberPos.allocate(
+                    countersManager,
+                    subscription.registrationId(),
+                    sessionId,
+                    streamId,
+                    subscription.uri(),
+                    joiningPosition);
+
+                position.setOrdered(joiningPosition);
+                subscriberPositions.add(new SubscriberPosition(subscription, position));
+            }
+        }
+
+        return subscriberPositions;
+    }
+
     private static NetworkPublication findPublication(
         final ArrayList<NetworkPublication> publications,
         final int streamId,
@@ -766,23 +696,95 @@ public class DriverConductor implements Agent
         return null;
     }
 
+    private NetworkPublication newNetworkPublication(
+        final long registrationId,
+        final int streamId,
+        final String channel,
+        final UdpChannel udpChannel,
+        final SendChannelEndpoint channelEndpoint,
+        final PublicationParams params,
+        final boolean isExclusive)
+    {
+        final int sessionId = nextSessionId++;
+        final UnsafeBufferPosition senderPosition = SenderPos.allocate(
+            countersManager, registrationId, sessionId, streamId, channel);
+        final UnsafeBufferPosition senderLimit = SenderLimit.allocate(
+            countersManager, registrationId, sessionId, streamId, channel);
+
+        int initialTermId = BitUtil.generateRandomisedId();
+        if (params.isReplay)
+        {
+            initialTermId = params.initialTermId;
+            final int bits = Integer.numberOfTrailingZeros(params.termLength);
+            final long position = computePosition(params.termId, params.termOffset, bits, initialTermId);
+            senderLimit.setOrdered(position);
+            senderPosition.setOrdered(position);
+        }
+
+        final RetransmitHandler retransmitHandler = new RetransmitHandler(
+            nanoClock,
+            context.systemCounters(),
+            RETRANSMIT_UNICAST_DELAY_GENERATOR,
+            RETRANSMIT_UNICAST_LINGER_GENERATOR);
+
+        final FlowControl flowControl =
+            udpChannel.isMulticast() || udpChannel.hasExplicitControl() ?
+                context.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
+                context.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
+
+        final NetworkPublication publication = new NetworkPublication(
+            registrationId,
+            channelEndpoint,
+            nanoClock,
+            cachedEpochClock,
+            newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId, params),
+            PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, channel),
+            senderPosition,
+            senderLimit,
+            sessionId,
+            streamId,
+            initialTermId,
+            params.mtuLength,
+            context.systemCounters(),
+            flowControl,
+            retransmitHandler,
+            networkPublicationThreadLocals,
+            publicationUnblockTimeoutNs,
+            isExclusive);
+
+        if (params.isReplay)
+        {
+            final int activeIndex = indexByTerm(params.initialTermId, params.termId);
+            final UnsafeBuffer logMetaDataBuffer = publication.rawLog().metaData();
+            rawTail(logMetaDataBuffer, activeIndex, packTail(params.termId, params.termOffset));
+            activePartitionIndex(logMetaDataBuffer, activeIndex);
+        }
+
+        channelEndpoint.incRef();
+        networkPublications.add(publication);
+        senderProxy.newNetworkPublication(publication);
+        linkSpies(subscriptionLinks, publication);
+
+        return publication;
+    }
+
     private RawLog newNetworkPublicationLog(
         final int sessionId,
         final int streamId,
         final int initialTermId,
         final UdpChannel udpChannel,
         final long registrationId,
-        final int termBufferLength)
+        final PublicationParams params)
     {
         final RawLog rawLog = rawLogFactory.newNetworkPublication(
-            udpChannel.canonicalForm(), sessionId, streamId, registrationId, termBufferLength);
+            udpChannel.canonicalForm(), sessionId, streamId, registrationId, params.termLength);
 
         final UnsafeBuffer logMetaData = rawLog.metaData();
         storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
         initialiseTailWithTermId(logMetaData, 0, initialTermId);
 
         initialTermId(logMetaData, initialTermId);
-        mtuLength(logMetaData, context.mtuLength());
+        mtuLength(logMetaData, params.mtuLength);
         correlationId(logMetaData, registrationId);
         timeOfLastStatusMessage(logMetaData, 0);
 
@@ -791,12 +793,13 @@ public class DriverConductor implements Agent
 
     private RawLog newIpcPublicationLog(
         final boolean isExclusive,
-        final int termLength,
         final int sessionId,
         final int streamId,
         final int initialTermId,
-        final long registrationId)
+        final long registrationId,
+        final PublicationParams params)
     {
+        final int termLength = params.termLength;
         final RawLog rawLog = rawLogFactory.newIpcPublication(sessionId, streamId, registrationId, termLength);
 
         final UnsafeBuffer logMetaData = rawLog.metaData();
@@ -804,8 +807,10 @@ public class DriverConductor implements Agent
         initialiseTailWithTermId(logMetaData, 0, initialTermId);
         initialTermId(logMetaData, initialTermId);
 
-        mtuLength(logMetaData,
-            isExclusive ? computeExclusiveMaxMessageLength(termLength) : computeMaxMessageLength(termLength));
+        final int mtuLength = isExclusive ?
+            computeExclusiveMaxMessageLength(termLength) : computeMaxMessageLength(termLength);
+
+        mtuLength(logMetaData, mtuLength);
         correlationId(logMetaData, registrationId);
         timeOfLastStatusMessage(logMetaData, 0);
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
@@ -1041,7 +1046,7 @@ public class DriverConductor implements Agent
         final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
 
         final RawLog rawLog = newIpcPublicationLog(
-            isExclusive, params.termLength, sessionId, streamId, initialTermId, registrationId);
+            isExclusive, sessionId, streamId, initialTermId, registrationId, params);
 
         if (params.isReplay)
         {

@@ -17,13 +17,14 @@ package io.aeron.driver;
 
 import io.aeron.CommonContext;
 import io.aeron.driver.uri.AeronUri;
+import io.aeron.logbuffer.FrameDescriptor;
 
 import static io.aeron.CommonContext.*;
 
 class PublicationParams
 {
-    int mtuLength = 0;
     int termLength = 0;
+    int mtuLength = 0;
     int initialTermId = 0;
     int termId = 0;
     int termOffset = 0;
@@ -45,7 +46,7 @@ class PublicationParams
     static int getMtuLength(final AeronUri aeronUri, final int defaultMtuLength)
     {
         int mtuLength = defaultMtuLength;
-        final String mtu = aeronUri.get(CommonContext.MTU_LENGTH_URI_PARAM_NAME);
+        final String mtu = aeronUri.get(CommonContext.MTU_LENGTH_PARAM_NAME);
         if (null != mtu)
         {
             mtuLength = Integer.parseInt(mtu);
@@ -53,6 +54,36 @@ class PublicationParams
         }
 
         return mtuLength;
+    }
+
+    static void validateMtuForMaxMessage(final PublicationParams params, final boolean isExclusive)
+    {
+        final int termLength = params.termLength;
+        final int maxMessageLength = isExclusive ?
+            FrameDescriptor.computeExclusiveMaxMessageLength(termLength) :
+            FrameDescriptor.computeMaxMessageLength(termLength);
+
+        if (params.mtuLength > maxMessageLength)
+        {
+            throw new IllegalStateException("MTU greater than max message length for term length: mtu=" +
+                params.mtuLength + " maxMessageLength=" + maxMessageLength);
+        }
+    }
+
+    static void validateParams(
+        final AeronUri uri, final PublicationParams params, final NetworkPublication publication)
+    {
+        if (uri.containsKey(MTU_LENGTH_PARAM_NAME) && publication.mtuLength() != params.mtuLength)
+        {
+            throw new IllegalStateException("Existing publication has different MTU length: existing=" +
+                publication.mtuLength() + " requested=" + params.mtuLength);
+        }
+
+        if (uri.containsKey(TERM_LENGTH_PARAM_NAME) && publication.rawLog().termLength() != params.termLength)
+        {
+            throw new IllegalStateException("Existing publication has different term length: existing=" +
+                publication.rawLog().termLength() + " requested=" + params.termLength);
+        }
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -64,9 +95,10 @@ class PublicationParams
     {
         final PublicationParams params = new PublicationParams();
 
-        params.mtuLength = getMtuLength(aeronUri, context.mtuLength());
         params.termLength = getTermBufferLength(
             aeronUri, isIpc ? context.ipcTermBufferLength() : context.publicationTermBufferLength());
+
+        params.mtuLength = getMtuLength(aeronUri, context.mtuLength());
 
         if (isExclusive)
         {

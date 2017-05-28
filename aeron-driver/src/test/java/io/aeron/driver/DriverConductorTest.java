@@ -401,7 +401,7 @@ public class DriverConductorTest
     public void shouldAddPublicationWithMtu() throws Exception
     {
         final int mtuLength = 4096;
-        final String mtuParam = "|" + CommonContext.MTU_LENGTH_URI_PARAM_NAME + "=" + mtuLength;
+        final String mtuParam = "|" + CommonContext.MTU_LENGTH_PARAM_NAME + "=" + mtuLength;
         driverProxy.addPublication(CHANNEL_4000 + mtuParam, STREAM_ID_1);
 
         driverConductor.doWork();
@@ -1153,17 +1153,13 @@ public class DriverConductorTest
         verify(mockClientProxy).onError(any(ErrorCode.class), anyString(), eq(id2));
     }
 
-    private long doWorkUntil(final BooleanSupplier condition) throws Exception
+    private void doWorkUntil(final BooleanSupplier condition) throws Exception
     {
-        final long startTime = currentTimeNs;
-
         while (!condition.getAsBoolean())
         {
             currentTimeNs += TimeUnit.MILLISECONDS.toNanos(10);
             driverConductor.doWork();
         }
-
-        return currentTimeNs - startTime;
     }
 
     private static String spyForChannel(final String channel)

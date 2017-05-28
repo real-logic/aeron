@@ -295,7 +295,7 @@ class ArchiveConductor implements Agent
         replayUriBuilder
             .append(CommonContext.INITIAL_TERM_ID_PARAM_NAME).append('=').append(initialTermId)
             .append('|')
-            .append(CommonContext.MTU_LENGTH_URI_PARAM_NAME).append('=').append(mtuLength)
+            .append(CommonContext.MTU_LENGTH_PARAM_NAME).append('=').append(mtuLength)
             .append('|')
             .append(CommonContext.TERM_LENGTH_PARAM_NAME).append('=').append(termBufferLength)
             .append('|')

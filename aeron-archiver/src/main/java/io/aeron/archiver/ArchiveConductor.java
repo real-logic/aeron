@@ -31,6 +31,11 @@ class ArchiveConductor implements Agent
      */
     private static final int QUEUE_DRAIN_LIMIT = 10;
 
+    /**
+     * Low term length for control channel reflect expected low bandwidth usage.
+     */
+    private static final int DEFAULT_CONTROL_CHANNEL_TERM_LENGTH = 64 * 1024;
+
     interface Session
     {
         void abort();
@@ -41,6 +46,7 @@ class ArchiveConductor implements Agent
 
         int doWork();
     }
+
 
     private final Aeron aeron;
     private final AgentInvoker aeronClientAgentInvoker;
@@ -61,7 +67,7 @@ class ArchiveConductor implements Agent
     private final EpochClock epochClock;
     private volatile boolean isClosed = false;
     private final Recorder.Builder imageRecorderBuilder = new Recorder.Builder();
-    private final StringBuilder replayUriBuilder = new StringBuilder(1024);
+    private final StringBuilder uriBuilder = new StringBuilder(1024);
     private int replaySessionId;
 
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
@@ -267,7 +273,19 @@ class ArchiveConductor implements Agent
 
     ExclusivePublication clientConnect(final String channel, final int streamId)
     {
-        return aeron.addExclusivePublication(channel, streamId);
+        final String controlChannel;
+        if (!channel.contains(CommonContext.TERM_LENGTH_PARAM_NAME))
+        {
+            initUriBuilder(channel);
+            uriBuilder
+                .append(CommonContext.TERM_LENGTH_PARAM_NAME).append('=').append(DEFAULT_CONTROL_CHANNEL_TERM_LENGTH);
+            controlChannel = uriBuilder.toString();
+        }
+        else
+        {
+            controlChannel = channel;
+        }
+        return aeron.addExclusivePublication(controlChannel, streamId);
     }
 
     ExclusivePublication newReplayPublication(
@@ -280,19 +298,9 @@ class ArchiveConductor implements Agent
     {
         final int termId = (int)((fromPosition / termBufferLength) + initialTermId);
         final int termOffset = (int)(fromPosition % termBufferLength);
-        replayUriBuilder.setLength(0);
-        replayUriBuilder.append(replayChannel);
+        initUriBuilder(replayChannel);
 
-        if (replayChannel.indexOf('?', 0) > -1)
-        {
-            replayUriBuilder.append('|');
-        }
-        else
-        {
-            replayUriBuilder.append('?');
-        }
-
-        replayUriBuilder
+        uriBuilder
             .append(CommonContext.INITIAL_TERM_ID_PARAM_NAME).append('=').append(initialTermId)
             .append('|')
             .append(CommonContext.MTU_LENGTH_PARAM_NAME).append('=').append(mtuLength)
@@ -303,6 +311,21 @@ class ArchiveConductor implements Agent
             .append('|')
             .append(CommonContext.TERM_OFFSET_PARAM_NAME).append('=').append(termOffset);
 
-        return aeron.addExclusivePublication(replayUriBuilder.toString(), replayStreamId);
+        return aeron.addExclusivePublication(uriBuilder.toString(), replayStreamId);
+    }
+
+    private void initUriBuilder(final String channel)
+    {
+        uriBuilder.setLength(0);
+        uriBuilder.append(channel);
+
+        if (channel.indexOf('?', 0) > -1)
+        {
+            uriBuilder.append('|');
+        }
+        else
+        {
+            uriBuilder.append('?');
+        }
     }
 }

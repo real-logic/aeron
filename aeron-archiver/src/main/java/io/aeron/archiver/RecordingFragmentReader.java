@@ -57,7 +57,6 @@ class RecordingFragmentReader implements AutoCloseable
     private final long fromPosition;
 
     private int segmentFileIndex;
-    private FileChannel currentDataChannel = null;
     private UnsafeBuffer termBuffer = null;
     private int recordingTermStartOffset;
     private int termOffset;
@@ -98,7 +97,7 @@ class RecordingFragmentReader implements AutoCloseable
         final long fullLength = ArchiveUtil.recordingFileFullLength(metaDecoder);
         final long joiningPosition = metaDecoder.joiningPosition();
 
-        this.replayLength = length == NULL_LENGTH ? fullLength : length;
+        replayLength = length == NULL_LENGTH ? fullLength : length;
 
         final long tempFromPosition = position == NULL_POSITION ? metaDecoder.joiningPosition() : position;
         segmentFileIndex = segmentFileIndex(joiningPosition, tempFromPosition, segmentFileLength);
@@ -161,12 +160,8 @@ class RecordingFragmentReader implements AutoCloseable
             final int currTermOffset = this.termOffset;
             headerFlyweight.wrap(termBuffer, currTermOffset, DataHeaderFlyweight.HEADER_LENGTH);
             final int frameLength = headerFlyweight.frameLength();
-            if (frameLength <= 0)
-            {
-                throw new IllegalStateException("Broken frame with length <= 0: " + headerFlyweight);
-            }
-
             final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
+
             // cursor moves forward, importantly an exception from onFragment will not block progress
             transmitted += alignedLength;
             this.termOffset += alignedLength;
@@ -206,21 +201,19 @@ class RecordingFragmentReader implements AutoCloseable
     {
         recordingTermStartOffset += termBufferLength;
 
-        // rotate file
         if (recordingTermStartOffset == segmentFileLength)
         {
             closeRecordingFile();
             segmentFileIndex++;
             openRecordingFile();
         }
-        // rotate term
+
         termBuffer.wrap(mappedByteBuffer, recordingTermStartOffset, termBufferLength);
     }
 
     private void closeRecordingFile()
     {
         IoUtil.unmap(mappedByteBuffer);
-        CloseHelper.close(currentDataChannel);
     }
 
     private void openRecordingFile() throws IOException
@@ -229,13 +222,10 @@ class RecordingFragmentReader implements AutoCloseable
         final String recordingDataFileName = recordingDataFileName(recordingId, segmentFileIndex);
         final File recordingDataFile = new File(archiveDir, recordingDataFileName);
 
-        if (!recordingDataFile.exists())
+        try (FileChannel fileChannel = FileChannel.open(recordingDataFile.toPath(), READ))
         {
-            throw new IOException(recordingDataFile.getAbsolutePath() + " not found");
+            mappedByteBuffer = fileChannel.map(READ_ONLY, 0, segmentFileLength);
         }
-
-        currentDataChannel = FileChannel.open(recordingDataFile.toPath(), READ);
-        mappedByteBuffer = currentDataChannel.map(READ_ONLY, 0, segmentFileLength);
     }
 
     private static RecordingDescriptorDecoder getDescriptor(final long recordingId, final File archiveDir)

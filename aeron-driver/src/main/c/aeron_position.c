@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
+#include <stdlib.h>
 #include "aeron_position.h"
 #include "aeron_driver_context.h"
 
@@ -85,4 +86,27 @@ int32_t aeron_counter_publisher_limit_allocate(
         stream_id,
         channel,
         "");
+}
+
+int32_t aeron_counter_subscription_position_allocate(
+    aeron_counters_manager_t *counters_manager,
+    int64_t registration_id,
+    int32_t session_id,
+    int32_t stream_id,
+    const char *channel,
+    int64_t joining_position)
+{
+    char buffer[64];
+
+    snprintf(buffer, sizeof(buffer) - 1, "@%" PRId64, joining_position);
+
+    return aeron_stream_position_counter_allocate(
+        counters_manager,
+        AERON_COUNTER_SUBSCRIPTION_POSITION_NAME,
+        AERON_COUNTER_SUBSCRIPTION_POSITION_TYPE_ID,
+        registration_id,
+        session_id,
+        stream_id,
+        channel,
+        buffer);
 }

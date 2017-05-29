@@ -558,10 +558,10 @@ do \
     c->stack_error_desc = desc; \
 } while (0)
 
-int aeron_driver_conductor_link_subscribeable(
+int aeron_driver_conductor_link_ipc_subscribeable(
     aeron_driver_conductor_t *conductor,
     aeron_subscription_link_t *link,
-    aeron_subscribeable_t *subscribeable)
+    aeron_ipc_publication_t *ipc_publication)
 {
     int ensure_capacity_result = 0, result = -1;
 
@@ -569,14 +569,43 @@ int aeron_driver_conductor_link_subscribeable(
 
     if (ensure_capacity_result >= 0)
     {
-        int64_t counter_id = -1;
+        aeron_image_buffers_ready_subscriber_position_t position;
+        int64_t joining_position = 0; /* TODO: get joining position from publication */
+        int32_t counter_id = aeron_counter_subscription_position_allocate(
+            &conductor->counters_manager,
+            link->registration_id,
+            ipc_publication->session_id,
+            ipc_publication->stream_id,
+            AERON_IPC_CHANNEL,
+            joining_position);
 
-        /* TODO: allocate counter and get counter_id */
+        if (counter_id >= 0)
+        {
+            int64_t *position_addr = aeron_counter_addr(&conductor->counters_manager, counter_id);
+            aeron_subscribeable_list_entry_t
+                *entry = &link->subscribeable_list.array[link->subscribeable_list.length++];
 
-        aeron_subscribeable_list_entry_t *entry = &link->subscribeable_list.array[link->subscribeable_list.length++];
-        entry->subscribeable = subscribeable;
-        entry->counter_id = counter_id;
-        result = 0;
+            aeron_counter_set_value(position_addr, joining_position);
+            position.indicator_id = counter_id;
+            position.registration_id = link->registration_id;
+
+            entry->subscribeable = &ipc_publication->conductor_fields.subscribeable;
+            entry->counter_id = counter_id;
+
+            aeron_driver_conductor_on_available_image(
+                conductor,
+                ipc_publication->conductor_fields.managed_resource.registration_id,
+                ipc_publication->stream_id,
+                ipc_publication->session_id,
+                ipc_publication->log_file_name,
+                ipc_publication->log_file_name_length,
+                &position,
+                1,
+                AERON_IPC_CHANNEL,
+                strlen(AERON_IPC_CHANNEL));
+
+            result = 0;
+        }
     }
 
     return result;
@@ -610,7 +639,8 @@ int aeron_driver_conductor_on_add_ipc_publication(
     aeron_ipc_publication_t *publication = NULL;
 
     if ((client = aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id)) == NULL ||
-        (publication = aeron_driver_conductor_get_or_add_ipc_publication(conductor, client, command->correlated.correlation_id, command->stream_id, is_exclusive)) == NULL)
+        (publication = aeron_driver_conductor_get_or_add_ipc_publication(
+            conductor, client, command->correlated.correlation_id, command->stream_id, is_exclusive)) == NULL)
     {
         return -1;
     }
@@ -638,33 +668,14 @@ int aeron_driver_conductor_on_add_ipc_publication(
         if (command->stream_id == subscription_link->stream_id &&
             !aeron_driver_conductor_is_subscribeable_linked(subscription_link, subscribeable))
         {
-            aeron_image_buffers_ready_subscriber_position_t position;
-
-            if (aeron_driver_conductor_link_subscribeable(conductor, subscription_link, subscribeable) < 0)
+            if (aeron_driver_conductor_link_ipc_subscribeable(conductor, subscription_link, publication) < 0)
             {
-                break;
+                return -1;
             }
-
-            position.registration_id = subscription_link->registration_id;
-            /* TODO: allocate sub-pos */
-            position.indicator_id = 0;
-
-            aeron_driver_conductor_on_available_image(
-                conductor,
-                publication->conductor_fields.managed_resource.registration_id,
-                publication->stream_id,
-                publication->session_id,
-                publication->log_file_name,
-                publication->log_file_name_length,
-                &position,
-                1,
-                AERON_IPC_CHANNEL,
-                strlen(AERON_IPC_CHANNEL));
         }
     }
 
-    AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "IPC publications not currently supported");
-    return -1;
+    return 0;
 }
 
 int aeron_driver_conductor_on_add_network_publication(
@@ -746,34 +757,17 @@ int aeron_driver_conductor_on_add_ipc_subscription(
             if (command->stream_id == publication_entry->publication->stream_id)
             {
                 aeron_ipc_publication_t *publication = publication_entry->publication;
-                aeron_image_buffers_ready_subscriber_position_t position;
 
-                if (aeron_driver_conductor_link_subscribeable(
-                    conductor, link, &publication_entry->publication->conductor_fields.subscribeable) < 0)
+                if (aeron_driver_conductor_link_ipc_subscribeable(conductor, link, publication) < 0)
                 {
-                    break;
+                    return -1;
                 }
-
-                position.registration_id = link->registration_id;
-                /* TODO: allocate sub-pos */
-                position.indicator_id = 0;
-
-                aeron_driver_conductor_on_available_image(
-                    conductor,
-                    publication->conductor_fields.managed_resource.registration_id,
-                    publication->stream_id,
-                    publication->session_id,
-                    publication->log_file_name,
-                    publication->log_file_name_length,
-                    &position,
-                    1,
-                    AERON_IPC_CHANNEL,
-                    strlen(AERON_IPC_CHANNEL));
             }
         }
+
+        return 0;
     }
 
-    AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "IPC subscriptions not currently supported");
     return -1;
 }
 

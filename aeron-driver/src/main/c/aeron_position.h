@@ -39,4 +39,15 @@ int32_t aeron_counter_publisher_limit_allocate(
     int32_t stream_id,
     const char *channel);
 
+#define AERON_COUNTER_SUBSCRIPTION_POSITION_NAME "sub-pos"
+#define AERON_COUNTER_SUBSCRIPTION_POSITION_TYPE_ID (4)
+
+int32_t aeron_counter_subscription_position_allocate(
+    aeron_counters_manager_t *counters_manager,
+    int64_t registration_id,
+    int32_t session_id,
+    int32_t stream_id,
+    const char *channel,
+    int64_t joining_position);
+
 #endif //AERON_AERON_POSITION_H

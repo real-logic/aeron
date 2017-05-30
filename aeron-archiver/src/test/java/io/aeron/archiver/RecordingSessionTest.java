@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
 public class RecordingSessionTest
 {
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
-    public static final int RECORDED_BLOCK_LENGTH = 100;
+    private static final int RECORDED_BLOCK_LENGTH = 100;
     private final long recordingId = 12345;
 
     private final String channel = "channel";

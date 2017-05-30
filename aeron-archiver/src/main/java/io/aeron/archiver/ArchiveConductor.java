@@ -66,7 +66,7 @@ class ArchiveConductor implements Agent
     private final ControlSessionProxy clientProxy;
     private final EpochClock epochClock;
     private volatile boolean isClosed = false;
-    private final Recorder.Builder imageRecorderBuilder = new Recorder.Builder();
+    private final Recorder.RecordingContext recordingContext = new Recorder.RecordingContext();
     private final StringBuilder uriBuilder = new StringBuilder(1024);
     private int replaySessionId;
 
@@ -79,7 +79,7 @@ class ArchiveConductor implements Agent
         archiveDir = ctx.archiveDir();
         catalog = new Catalog(archiveDir);
 
-        imageRecorderBuilder
+        recordingContext
             .recordingFileLength(ctx.segmentFileLength())
             .archiveDir(ctx.archiveDir())
             .epochClock(ctx.epochClock())
@@ -184,7 +184,7 @@ class ArchiveConductor implements Agent
         else
         {
             // TODO: simplify builder responsibility split to avoid confusion
-            session = new RecordingSession(notificationsProxy, catalog, image, imageRecorderBuilder);
+            session = new RecordingSession(notificationsProxy, catalog, image, recordingContext);
         }
 
         sessions.add(session);

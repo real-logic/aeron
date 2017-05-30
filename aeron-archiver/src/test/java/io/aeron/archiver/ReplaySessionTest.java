@@ -61,21 +61,20 @@ public class ReplaySessionTest
         archiveDir = makeTempDir();
         proxy = Mockito.mock(ControlSessionProxy.class);
         epochClock = mock(EpochClock.class);
-        try (Recorder recorder = new Recorder.Builder()
+        try (Recorder recorder = new Recorder(new Recorder.RecordingContext()
             .archiveDir(archiveDir)
             .epochClock(epochClock)
-            .recordingId(RECORDING_ID)
-            .termBufferLength(TERM_BUFFER_LENGTH)
-            .initialTermId(INITIAL_TERM_ID)
-            .joiningPosition(JOINING_POSITION)
-            .mtuLength(MTU_LENGTH)
-            .sessionId(1)
-            .streamId(1)
-            .channel("channel")
-            .sourceIdentity("sourceIdentity")
             .forceWrites(true)
-            .forceMetadataUpdates(true)
-            .build())
+            .forceMetadataUpdates(true),
+            RECORDING_ID,
+            TERM_BUFFER_LENGTH,
+            MTU_LENGTH,
+            INITIAL_TERM_ID,
+            JOINING_POSITION,
+            1,
+            1,
+            "channel",
+            "sourceIdentity"))
         {
             when(epochClock.time()).thenReturn(TIME);
 

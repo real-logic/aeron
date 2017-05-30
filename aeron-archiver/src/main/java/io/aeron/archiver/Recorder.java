@@ -77,20 +77,30 @@ final class Recorder implements AutoCloseable, RawBlockHandler
     private long joiningPosition;
     private long lastPosition;
 
-    private Recorder(final Builder builder)
+    Recorder(
+        final RecordingContext recordingContext,
+        final long recordingId,
+        final int termBufferLength,
+        final int mtuLength,
+        final int initialTermId,
+        final long joiningPosition,
+        final int sessionId,
+        final int streamId,
+        final String channel,
+        final String sourceIdentity)
     {
-        this.recordingId = builder.recordingId;
-        this.epochClock = builder.epochClock;
-        this.archiveDir = builder.archiveDir;
-        this.segmentFileLength = builder.segmentFileLength;
+        this.epochClock = recordingContext.epochClock;
+        this.archiveDir = recordingContext.archiveDir;
+        this.segmentFileLength = recordingContext.segmentFileLength;
+        this.forceWrites = recordingContext.forceWrites;
+        this.forceMetadataUpdates = recordingContext.forceMetadataUpdates;
 
-        this.termBufferLength = builder.termBufferLength;
-        this.initialTermId = builder.initialTermId;
-        this.forceWrites = builder.forceWrites;
-        this.forceMetadataUpdates = builder.forceMetadataUpdates;
-        this.joiningPosition = builder.joiningPosition;
+        this.recordingId = recordingId;
+        this.termBufferLength = termBufferLength;
+        this.initialTermId = initialTermId;
+        this.joiningPosition = joiningPosition;
 
-        this.termsMask = (builder.segmentFileLength / termBufferLength) - 1;
+        this.termsMask = (segmentFileLength / termBufferLength) - 1;
         if (((termsMask + 1) & termsMask) != 0)
         {
             throw new IllegalArgumentException(
@@ -112,14 +122,13 @@ final class Recorder implements AutoCloseable, RawBlockHandler
                 recordingId,
                 termBufferLength,
                 segmentFileLength,
-                builder.mtuLength,
-                builder.initialTermId,
-                builder.joiningPosition,
-                builder.sessionId,
-                builder.streamId,
-                builder.channel,
-                builder.sourceIdentity
-            );
+                mtuLength,
+                initialTermId,
+                joiningPosition,
+                sessionId,
+                streamId,
+                channel,
+                sourceIdentity);
 
             unsafeBuffer.putInt(0, metaDataEncoder.encodedLength());
             metaDataBuffer.force();
@@ -338,115 +347,48 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         return lastPosition;
     }
 
-    static class Builder
+    static class RecordingContext
     {
         private File archiveDir;
         private EpochClock epochClock;
-        private long recordingId;
-        private int termBufferLength;
         private boolean forceWrites = true;
         private boolean forceMetadataUpdates = true;
-        private int sessionId;
-        private int streamId;
-        private String channel;
-        private String sourceIdentity;
         private int segmentFileLength = 128 * 1024 * 1024;
-        private int initialTermId;
-        private int mtuLength;
-        private long joiningPosition;
 
-        Builder archiveDir(final File archiveDir)
+
+        RecordingContext archiveDir(final File archiveDir)
         {
             this.archiveDir = archiveDir;
             return this;
         }
 
-        Builder epochClock(final EpochClock epochClock)
+        RecordingContext epochClock(final EpochClock epochClock)
         {
             this.epochClock = epochClock;
             return this;
         }
 
-        Builder recordingId(final long recordingId)
-        {
-            this.recordingId = recordingId;
-            return this;
-        }
-
-        Builder termBufferLength(final int termBufferLength)
-        {
-            this.termBufferLength = termBufferLength;
-            return this;
-        }
-
-        Builder forceWrites(final boolean forceWrites)
+        RecordingContext forceWrites(final boolean forceWrites)
         {
             this.forceWrites = forceWrites;
             return this;
         }
 
-        Builder forceMetadataUpdates(final boolean forceMetadataUpdates)
+        RecordingContext forceMetadataUpdates(final boolean forceMetadataUpdates)
         {
             this.forceMetadataUpdates = forceMetadataUpdates;
             return this;
         }
 
-        Builder sessionId(final int sessionId)
-        {
-            this.sessionId = sessionId;
-            return this;
-        }
-
-        Builder streamId(final int streamId)
-        {
-            this.streamId = streamId;
-            return this;
-        }
-
-        Builder channel(final String channel)
-        {
-            this.channel = channel;
-            return this;
-        }
-
-        Builder sourceIdentity(final String sourceIdentity)
-        {
-            this.sourceIdentity = sourceIdentity;
-            return this;
-        }
-
-        Builder recordingFileLength(final int recordingFileSize)
+        RecordingContext recordingFileLength(final int recordingFileSize)
         {
             this.segmentFileLength = recordingFileSize;
-            return this;
-        }
-
-        Builder initialTermId(final int initialTermId)
-        {
-            this.initialTermId = initialTermId;
             return this;
         }
 
         int recordingFileLength()
         {
             return segmentFileLength;
-        }
-
-        Builder mtuLength(final int mtuLength)
-        {
-            this.mtuLength = mtuLength;
-            return this;
-        }
-
-        Builder joiningPosition(final long joiningPosition)
-        {
-            this.joiningPosition = joiningPosition;
-            return this;
-        }
-
-        Recorder build()
-        {
-            return new Recorder(this);
         }
     }
 }

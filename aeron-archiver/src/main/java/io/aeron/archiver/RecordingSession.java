@@ -35,7 +35,7 @@ class RecordingSession implements ArchiveConductor.Session
     private final NotificationsProxy notificationsProxy;
     private final Image image;
     private final Catalog catalog;
-    private final Recorder.Builder builder;
+    private final Recorder.RecordingContext recordingContext;
 
     private Recorder recorder;
     private State state = State.INIT;
@@ -44,12 +44,12 @@ class RecordingSession implements ArchiveConductor.Session
         final NotificationsProxy notificationsProxy,
         final Catalog catalog,
         final Image image,
-        final Recorder.Builder builder)
+        final Recorder.RecordingContext recordingContext)
     {
         this.notificationsProxy = notificationsProxy;
         this.image = image;
         this.catalog = catalog;
-        this.builder = builder;
+        this.recordingContext = recordingContext;
     }
 
     public boolean isDone()
@@ -124,7 +124,7 @@ class RecordingSession implements ArchiveConductor.Session
                 initialTermId,
                 joiningPosition,
                 this,
-                builder.recordingFileLength());
+                recordingContext.recordingFileLength());
 
             notificationsProxy.recordingStarted(
                 recordingId,
@@ -134,17 +134,17 @@ class RecordingSession implements ArchiveConductor.Session
                 sourceIdentity
             );
 
-            recorder = builder
-                .recordingId(recordingId)
-                .termBufferLength(termBufferLength)
-                .sessionId(sessionId)
-                .streamId(streamId)
-                .channel(channel)
-                .sourceIdentity(sourceIdentity)
-                .initialTermId(initialTermId)
-                .mtuLength(mtuLength)
-                .joiningPosition(joiningPosition)
-                .build();
+            recorder = new Recorder(
+                recordingContext,
+                recordingId,
+                termBufferLength,
+                mtuLength,
+                initialTermId,
+                joiningPosition,
+                sessionId,
+                streamId,
+                channel,
+                sourceIdentity);
         }
         catch (final Exception ex)
         {

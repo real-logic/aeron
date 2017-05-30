@@ -117,11 +117,11 @@ public class RecordingSessionTest
         final EpochClock epochClock = Mockito.mock(EpochClock.class);
         when(epochClock.time()).thenReturn(42L);
 
-        final Recorder.Builder builder = new Recorder.Builder()
+        final Recorder.RecordingContext recordingContext = new Recorder.RecordingContext()
             .recordingFileLength(SEGMENT_FILE_SIZE)
             .archiveDir(tempDirForTest)
             .epochClock(epochClock);
-        final RecordingSession session = new RecordingSession(proxy, catalog, image, builder);
+        final RecordingSession session = new RecordingSession(proxy, catalog, image, recordingContext);
 
         assertEquals(Catalog.NULL_RECORD_ID, session.recordingId());
 

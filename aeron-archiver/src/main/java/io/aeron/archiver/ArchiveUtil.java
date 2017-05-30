@@ -84,7 +84,7 @@ public class ArchiveUtil
         return ((termId - initialTermId) & termsMask) * termBufferLength + termOffset;
     }
 
-    static long recordingFileFullLength(final RecordingDescriptorDecoder metaDecoder)
+    static long recordingLength(final RecordingDescriptorDecoder metaDecoder)
     {
         return metaDecoder.lastPosition() - metaDecoder.joiningPosition();
     }

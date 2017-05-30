@@ -94,14 +94,14 @@ class RecordingFragmentReader implements AutoCloseable
         this.archiveDir = archiveDir;
         termBufferLength = metaDecoder.termBufferLength();
         segmentFileLength = metaDecoder.segmentFileLength();
-        final long fullLength = ArchiveUtil.recordingFileFullLength(metaDecoder);
+        final long recordingLength = ArchiveUtil.recordingLength(metaDecoder);
         final long joiningPosition = metaDecoder.joiningPosition();
 
-        replayLength = length == NULL_LENGTH ? fullLength : length;
+        replayLength = length == NULL_LENGTH ? recordingLength : length;
 
-        final long tempFromPosition = position == NULL_POSITION ? joiningPosition : position;
-        segmentFileIndex = segmentFileIndex(joiningPosition, tempFromPosition, segmentFileLength);
-        final long recordingOffset = tempFromPosition & (segmentFileLength - 1);
+        final long fromPosition = position == NULL_POSITION ? joiningPosition : position;
+        segmentFileIndex = segmentFileIndex(joiningPosition, fromPosition, segmentFileLength);
+        final long recordingOffset = fromPosition & (segmentFileLength - 1);
         openRecordingFile();
 
         recordingTermStartOffset = (int)(recordingOffset - (recordingOffset & (termBufferLength - 1)));
@@ -110,29 +110,29 @@ class RecordingFragmentReader implements AutoCloseable
 
         // TODO: Test for starting position being correct with termId and termOffset of first frame.
 
-        int currFrameOffset = 0;
-        while (currFrameOffset < termOffset)
+        int frameOffset = 0;
+        while (frameOffset < termOffset)
         {
-            currFrameOffset += termBuffer.getInt(currFrameOffset + DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET);
+            frameOffset += termBuffer.getInt(frameOffset + DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET);
         }
 
-        if (currFrameOffset != termOffset)
+        if (frameOffset != termOffset)
         {
-            fromPosition = tempFromPosition + (currFrameOffset - termOffset);
+            this.fromPosition = fromPosition + (frameOffset - termOffset);
         }
         else
         {
-            fromPosition = tempFromPosition;
+            this.fromPosition = fromPosition;
         }
 
-        if (currFrameOffset >= termBufferLength)
+        if (frameOffset >= termBufferLength)
         {
             termOffset = 0;
             nextTerm();
         }
         else
         {
-            termOffset = currFrameOffset;
+            termOffset = frameOffset;
         }
     }
 
@@ -159,16 +159,16 @@ class RecordingFragmentReader implements AutoCloseable
         // read to end of term or requested data
         while (termOffset < termBufferLength && !isDone() && polled < fragmentLimit)
         {
-            final int currTermOffset = this.termOffset;
-            headerFlyweight.wrap(termBuffer, currTermOffset, DataHeaderFlyweight.HEADER_LENGTH);
+            final int frameOffset = termOffset;
+            headerFlyweight.wrap(termBuffer, frameOffset, DataHeaderFlyweight.HEADER_LENGTH);
             final int frameLength = headerFlyweight.frameLength();
             final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
 
             // cursor moves forward, importantly an exception from onFragment will not block progress
             transmitted += alignedLength;
-            this.termOffset += alignedLength;
+            termOffset += alignedLength;
 
-            final int fragmentDataOffset = currTermOffset + DataHeaderFlyweight.DATA_OFFSET;
+            final int fragmentDataOffset = frameOffset + DataHeaderFlyweight.DATA_OFFSET;
             final int fragmentDataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
 
             if (!fragmentHandler.onFragment(
@@ -179,7 +179,7 @@ class RecordingFragmentReader implements AutoCloseable
             {
                 // rollback the cursor progress
                 transmitted -= alignedLength;
-                this.termOffset -= alignedLength;
+                termOffset -= alignedLength;
                 return polled;
             }
 

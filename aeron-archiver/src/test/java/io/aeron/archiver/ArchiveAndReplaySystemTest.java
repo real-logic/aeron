@@ -334,7 +334,7 @@ public class ArchiveAndReplaySystemTest
         assertThat(decoder.streamId(), is(publication.streamId()));
         assertThat(decoder.termBufferLength(), is(publication.termBufferLength()));
 
-        assertThat(ArchiveUtil.recordingFileFullLength(decoder), is(totalRecordingLength));
+        assertThat(ArchiveUtil.recordingLength(decoder), is(totalRecordingLength));
         // length might exceed data sent due to padding
         assertThat(totalDataLength, lessThanOrEqualTo(totalRecordingLength));
     }

@@ -15,14 +15,11 @@
  */
 package io.aeron.driver.uri;
 
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.Map;
+import java.net.*;
+import java.util.*;
 
 /**
  * Parser for Aeron URI used for configuring channels. The format is:
- * <p>
  * <pre>
  * aeron-uri = "aeron:" media [ "?" param *( "|" param ) ]
  * media     = *( "[^?:]" )

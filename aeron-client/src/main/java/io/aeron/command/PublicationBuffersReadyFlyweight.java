@@ -24,7 +24,6 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * Message to denote that new buffers have been setup for a publication.
  *
  * @see ControlProtocolEvents
- * <p>
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1

@@ -16,12 +16,10 @@
 package io.aeron.command;
 
 import io.aeron.ErrorCode;
-import org.agrona.BitUtil;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.*;
 
 /**
  * Control message flyweight for any errors sent from driver to clients
- * <p>
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1

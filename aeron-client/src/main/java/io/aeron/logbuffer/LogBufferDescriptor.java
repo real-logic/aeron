@@ -20,14 +20,11 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.*;
 
 /**
  * Layout description for log buffers which contains partitions of terms with associated term meta data,
  * plus ending with overall log meta data.
- * <p>
  * <pre>
  *  +----------------------------+
  *  |           Term 0           |
@@ -137,7 +134,6 @@ public class LogBufferDescriptor
 
     /**
      * Total length of the log meta data buffer in bytes.
-     * <p>
      * <pre>
      *   0                   1                   2                   3
      *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1

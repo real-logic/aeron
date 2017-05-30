@@ -47,7 +47,6 @@ public class TermUnblocker
 
     /**
      * Attempt to unblock the current term at the current offset.
-     * <p>
      * <ol>
      * <li>Current position length is &gt; 0, then return</li>
      * <li>Current position length is 0, scan forward by frame alignment until, one of the following:

@@ -15,8 +15,7 @@
  */
 package io.aeron.logbuffer;
 
-import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.protocol.HeaderFlyweight;
+import io.aeron.protocol.*;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
@@ -28,7 +27,6 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * <p>
  * All messages are logged in frames that have a minimum header layout as follows plus a reserve then
  * the encoded message follows:
- * <p>
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1

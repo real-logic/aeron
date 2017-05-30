@@ -16,8 +16,7 @@
 package io.aeron;
 
 import io.aeron.logbuffer.*;
-import org.agrona.DirectBuffer;
-import org.agrona.ManagedResource;
+import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
 
@@ -389,7 +388,6 @@ public class ExclusivePublication implements AutoCloseable
      * available.
      * <p>
      * <b>Note:</b> This method can only be used for message lengths less than MTU length minus header.
-     * <p>
      * <pre>{@code
      *     final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
      *

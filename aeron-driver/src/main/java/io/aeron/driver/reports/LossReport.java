@@ -18,9 +18,7 @@ package io.aeron.driver.reports;
 import org.agrona.BitUtil;
 import org.agrona.concurrent.AtomicBuffer;
 
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.*;
 
 /**
  * A report of loss events on a message stream.
@@ -31,7 +29,6 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * <b>Note:</b>This class is NOT threadsafe to be used from multiple logging threads.
  * <p>
  * The error records are recorded to the memory mapped buffer in the following format.
- * <p>
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1

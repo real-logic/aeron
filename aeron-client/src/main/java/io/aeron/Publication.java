@@ -16,8 +16,7 @@
 package io.aeron;
 
 import io.aeron.logbuffer.*;
-import org.agrona.DirectBuffer;
-import org.agrona.ManagedResource;
+import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
 
@@ -373,7 +372,6 @@ public class Publication implements AutoCloseable
      * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
      * <p>
      * <b>Note:</b> This method can only be used for message lengths less than MTU length minus header.
-     * <p>
      * <pre>{@code
      *     final BufferClaim bufferClaim = new BufferClaim(); // Can be stored and reused to avoid allocation
      *

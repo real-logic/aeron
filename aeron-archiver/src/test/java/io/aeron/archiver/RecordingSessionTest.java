@@ -17,8 +17,7 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
-import io.aeron.logbuffer.FrameDescriptor;
-import io.aeron.logbuffer.RawBlockHandler;
+import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -39,6 +38,7 @@ import static org.mockito.Mockito.when;
 public class RecordingSessionTest
 {
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
+    private static final int RECORDED_BLOCK_LENGTH = 100;
     private final long recordingId = 12345;
 
     private final String channel = "channel";
@@ -91,7 +91,7 @@ public class RecordingSessionTest
         mockLogBufferChannel.position(termBufferLength - 1);
         mockLogBufferChannel.write(ByteBuffer.wrap(new byte[1]));
 
-        final ByteBuffer bb = ByteBuffer.allocate(100);
+        final ByteBuffer bb = ByteBuffer.allocate(RECORDED_BLOCK_LENGTH);
         mockLogBufferChannel.position(termOffset);
         mockLogBufferChannel.write(bb);
         mockLogBufferMapped = new UnsafeBuffer(
@@ -99,7 +99,7 @@ public class RecordingSessionTest
 
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
         headerFlyweight.wrap(mockLogBufferMapped);
-        headerFlyweight.headerType(DataHeaderFlyweight.HDR_TYPE_DATA).frameLength(100);
+        headerFlyweight.headerType(DataHeaderFlyweight.HDR_TYPE_DATA).frameLength(RECORDED_BLOCK_LENGTH);
     }
 
     @After
@@ -129,6 +129,22 @@ public class RecordingSessionTest
 
         assertEquals(recordingId, session.recordingId());
 
+        final File recordingMetaFile = new File(tempDirForTest, recordingMetaFileName(session.recordingId()));
+        assertTrue(recordingMetaFile.exists());
+
+        RecordingDescriptorDecoder metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
+
+        assertEquals(recordingId, metaData.recordingId());
+        assertEquals(termBufferLength, metaData.termBufferLength());
+        assertEquals(streamId, metaData.streamId());
+        assertEquals(mtuLength, metaData.mtuLength());
+        assertEquals(Recorder.NULL_TIME, metaData.startTime());
+        assertEquals(joiningPosition, metaData.joiningPosition());
+        assertEquals(Recorder.NULL_TIME, metaData.endTime());
+        assertEquals(Recorder.NULL_POSITION, metaData.lastPosition());
+        assertEquals(channel, metaData.channel());
+        assertEquals(sourceIdentity, metaData.sourceIdentity());
+
         when(image.rawPoll(any(), anyInt())).thenAnswer(
             (invocation) ->
             {
@@ -143,29 +159,26 @@ public class RecordingSessionTest
                     0,
                     mockLogBufferMapped,
                     termOffset,
-                    100,
+                    RECORDED_BLOCK_LENGTH,
                     sessionId,
                     0);
 
-                return 100;
+                return RECORDED_BLOCK_LENGTH;
             });
 
         assertNotEquals("Expect some work", 0, session.doWork());
 
-        final File recordingMetaFile = new File(tempDirForTest, recordingMetaFileName(session.recordingId()));
-        assertTrue(recordingMetaFile.exists());
 
-        RecordingDescriptorDecoder metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
 
-        assertEquals(recordingId, metaData.recordingId());
-        assertEquals(termBufferLength, metaData.termBufferLength());
-        assertEquals(streamId, metaData.streamId());
+        metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
+
         assertEquals(42L, metaData.startTime());
-        assertEquals(-1L, metaData.endTime());
-        assertEquals(channel, metaData.channel());
-        assertEquals(sourceIdentity, metaData.sourceIdentity());
 
-        final File segmentFile = new File(tempDirForTest, ArchiveUtil.recordingDataFileName(recordingId, 0));
+        assertEquals(Recorder.NULL_TIME, metaData.endTime());
+        assertEquals(joiningPosition + RECORDED_BLOCK_LENGTH, metaData.lastPosition());
+
+        final File segmentFile =
+            new File(tempDirForTest, ArchiveUtil.recordingDataFileName(recordingId, 0));
         assertTrue(segmentFile.exists());
 
         try (RecordingFragmentReader reader = new RecordingFragmentReader(session.recordingId(), tempDirForTest))
@@ -175,8 +188,8 @@ public class RecordingSessionTest
                 {
                     final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
                     assertEquals(termOffset, frameOffset);
-                    assertEquals(100, FrameDescriptor.frameLength(buffer, frameOffset));
-                    assertEquals(100 - DataHeaderFlyweight.HEADER_LENGTH, length);
+                    assertEquals(RECORDED_BLOCK_LENGTH, FrameDescriptor.frameLength(buffer, frameOffset));
+                    assertEquals(RECORDED_BLOCK_LENGTH - DataHeaderFlyweight.HEADER_LENGTH, length);
                     return true;
                 },
                 1);

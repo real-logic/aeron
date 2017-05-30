@@ -31,6 +31,7 @@ import static java.nio.file.StandardOpenOption.*;
 /**
  * Responsible for writing out a recording into the file system. A recording has metdata file and a set of data files
  * written into the archive folder.
+ * <p>
  * Design note: While this class is notionally closely related to the {@link RecordingSession} it is separated from it
  * for the following reasons:
  * <ul>

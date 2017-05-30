@@ -28,9 +28,24 @@ import java.nio.channels.FileChannel;
 import static io.aeron.archiver.ArchiveUtil.recordingOffset;
 import static java.nio.file.StandardOpenOption.*;
 
-// TODO: Should this class not be folded into RecordingSession? Why the separation and indirection?
+/**
+ * Responsible for writing out a recording into the file system. A recording has metdata file and a set of data files
+ * written into the archive folder.
+ * Design note: While this class is notionally closely related to the {@link RecordingSession} it is separated from it
+ * for the following reasons:
+ * <ul>
+ * <li> Easier testing and in particular simplified re-use in testing. </li>
+ * <li> Isolation of an external relationship, namely the FS</li>
+ * <li> While a {@link Recorder} is part of a {@link RecordingSession}, a session may transition without actually
+ * creating a {@link Recorder}.</li>
+ * </ul>
+ */
 final class Recorder implements AutoCloseable, RawBlockHandler
 {
+    static final long NULL_TIME = -1L;
+    static final long NULL_POSITION = -1;
+    private static final int NULL_SEGMENT_POSITION = -1;
+
     private final boolean forceWrites;
     private final boolean forceMetadataUpdates;
 
@@ -51,7 +66,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
      * Index is in the range 0:segmentFileLength, except before the first block for this image is received indicated
      * by -1
      */
-    private int segmentPosition = -1;
+    private int segmentPosition = NULL_SEGMENT_POSITION;
     private int segmentIndex = 0;
     private RandomAccessFile recordingFile;
     private FileChannel recordingFileChannel;
@@ -64,16 +79,17 @@ final class Recorder implements AutoCloseable, RawBlockHandler
     private Recorder(final Builder builder)
     {
         this.recordingId = builder.recordingId;
-        this.archiveDir = builder.archiveDir;
-        this.termBufferLength = builder.termBufferLength;
         this.epochClock = builder.epochClock;
+        this.archiveDir = builder.archiveDir;
         this.segmentFileLength = builder.segmentFileLength;
+
+        this.termBufferLength = builder.termBufferLength;
         this.initialTermId = builder.initialTermId;
-        this.termsMask = (builder.segmentFileLength / termBufferLength) - 1;
         this.forceWrites = builder.forceWrites;
         this.forceMetadataUpdates = builder.forceMetadataUpdates;
         this.joiningPosition = builder.joiningPosition;
 
+        this.termsMask = (builder.segmentFileLength / termBufferLength) - 1;
         if (((termsMask + 1) & termsMask) != 0)
         {
             throw new IllegalArgumentException(
@@ -132,10 +148,10 @@ final class Recorder implements AutoCloseable, RawBlockHandler
         recordingDescriptorEncoder
             .recordingId(recordingId)
             .termBufferLength(termBufferLength)
-            .startTime(-1)
+            .startTime(NULL_TIME)
             .joiningPosition(joiningPosition)
-            .lastPosition(-1)
-            .endTime(-1)
+            .lastPosition(NULL_POSITION)
+            .endTime(NULL_TIME)
             .mtuLength(mtuLength)
             .initialTermId(initialTermId)
             .sessionId(sessionId)

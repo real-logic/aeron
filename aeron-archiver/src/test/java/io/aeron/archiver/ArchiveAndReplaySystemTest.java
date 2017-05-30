@@ -107,7 +107,7 @@ public class ArchiveAndReplaySystemTest
 
     private static final String REPLY_URI = "aeron:udp?endpoint=127.0.0.1:54327";
     private static final int REPLY_STREAM_ID = 100;
-    private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
+    private static final String REPLAY_URI = "aeron:ipc?endpoint=127.0.0.1:54326";
     private static final String PUBLISH_URI = "aeron:udp?endpoint=127.0.0.1:54325";
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;

@@ -44,24 +44,24 @@ public class NetworkUtilTest
     @Test
     public void shouldMatchIfAllBytesMatch() throws Exception
     {
-        final byte[] a = {'a', 'b', 'c', 'd'};
-        final byte[] b = {'a', 'b', 'c', 'd'};
+        final byte[] a = { 'a', 'b', 'c', 'd' };
+        final byte[] b = { 'a', 'b', 'c', 'd' };
         assertTrue(isMatchWithPrefix(a, b, 32));
     }
 
     @Test
     public void shouldMatchIfAllBytesWithPrefixMatch() throws Exception
     {
-        final byte[] a = {'a', 'b', 'c', 'd'};
-        final byte[] b = {'a', 'b', 'c', 'e'};
+        final byte[] a = { 'a', 'b', 'c', 'd' };
+        final byte[] b = { 'a', 'b', 'c', 'e' };
         assertTrue(isMatchWithPrefix(a, b, 24));
     }
 
     @Test
     public void shouldNotMatchIfNotAllBytesWithPrefixMatch() throws Exception
     {
-        final byte[] a = {'a', 'b', 'c', 'd'};
-        final byte[] b = {'a', 'b', 'd', 'd'};
+        final byte[] a = { 'a', 'b', 'c', 'd' };
+        final byte[] b = { 'a', 'b', 'd', 'd' };
         assertFalse(isMatchWithPrefix(a, b, 24));
     }
 

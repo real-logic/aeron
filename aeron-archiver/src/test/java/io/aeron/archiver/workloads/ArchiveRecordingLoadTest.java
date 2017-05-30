@@ -187,27 +187,27 @@ public class ArchiveRecordingLoadTest
 
     private void initRecordingEndIndicator(final ArchiveClient client)
     {
-        recordingEndIndicator = () -> client.pollEvents(new ArchiveAndReplaySystemTest.FailRecordingEventsListener()
-        {
-            public void onProgress(
-                final long recordingId0,
-                final long joiningPosition,
-                final long currentPosition)
+        recordingEndIndicator =
+            () -> client.pollEvents(new ArchiveAndReplaySystemTest.FailRecordingEventsListener()
             {
-                assertThat(recordingId0, is(recordingId));
-                recorded = currentPosition - joiningPosition;
-            }
+                public void onProgress(
+                    final long recordingId0,
+                    final long joiningPosition,
+                    final long currentPosition)
+                {
+                    assertThat(recordingId0, is(recordingId));
+                    recorded = currentPosition - joiningPosition;
+                }
 
-            public void onStop(final long recordingId0)
-            {
-                doneRecording = true;
-                assertThat(recordingId0, is(recordingId));
-            }
-        }, 1) != 0;
+                public void onStop(final long recordingId0)
+                {
+                    doneRecording = true;
+                    assertThat(recordingId0, is(recordingId));
+                }
+            }, 1) != 0;
     }
 
-    private void prepAndSendMessages(
-        final Publication publication)
+    private void prepAndSendMessages(final Publication publication)
     {
         fragmentLength = new int[ArchiveRecordingLoadTest.MESSAGE_COUNT];
         for (int i = 0; i < ArchiveRecordingLoadTest.MESSAGE_COUNT; i++)
@@ -226,17 +226,14 @@ public class ArchiveRecordingLoadTest
     {
         final int positionBitsToShift = Integer.numberOfTrailingZeros(publication.termBufferLength());
 
-        // clear out the buffer we write
-        for (int i = 0; i < 1024; i++)
-        {
-            buffer.putByte(i, (byte)'z');
-        }
+        buffer.setMemory(0, 1024, (byte)'z');
         buffer.putStringAscii(32, "TEST");
         final long joiningPosition = publication.position();
         final int startTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(
             joiningPosition, positionBitsToShift);
         final int startTermIdFromPosition = LogBufferDescriptor.computeTermIdFromPosition(
             joiningPosition, positionBitsToShift, publication.initialTermId());
+
         for (int i = 0; i < messageCount; i++)
         {
             final int dataLength = fragmentLength[i] - DataHeaderFlyweight.HEADER_LENGTH;

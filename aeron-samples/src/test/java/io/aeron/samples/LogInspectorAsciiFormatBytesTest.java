@@ -44,22 +44,21 @@ public class LogInspectorAsciiFormatBytesTest
     @Parameters(name = "{index}: ascii format[{0}]={1}")
     public static Iterable<Object[]> data()
     {
-        return Arrays.asList(
-            new Object[][]
-                {
-                    {0x17, 0x17},
-                    {0, 0},
-                    {-1, 0},
-                    {Byte.MAX_VALUE, Byte.MAX_VALUE},
-                    {Byte.MIN_VALUE, 0},
-                });
+        return Arrays.asList(new Object[][]
+            {
+                { 0x17, 0x17 },
+                { 0, 0 },
+                { -1, 0 },
+                { Byte.MAX_VALUE, Byte.MAX_VALUE },
+                { Byte.MIN_VALUE, 0 },
+            });
     }
 
     @Test
     public void shouldFormatBytesToAscii()
     {
         System.setProperty(FORMAT_KEY, "ascii");
-        final char[] formattedBytes = LogInspector.formatBytes(new UnsafeBuffer(new byte[]{buffer}), 0, 1);
+        final char[] formattedBytes = LogInspector.formatBytes(new UnsafeBuffer(new byte[]{ buffer }), 0, 1);
 
         Assert.assertEquals(expected, formattedBytes[0]);
     }

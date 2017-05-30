@@ -99,7 +99,7 @@ class RecordingFragmentReader implements AutoCloseable
 
         replayLength = length == NULL_LENGTH ? fullLength : length;
 
-        final long tempFromPosition = position == NULL_POSITION ? metaDecoder.joiningPosition() : position;
+        final long tempFromPosition = position == NULL_POSITION ? joiningPosition : position;
         segmentFileIndex = segmentFileIndex(joiningPosition, tempFromPosition, segmentFileLength);
         final long recordingOffset = tempFromPosition & (segmentFileLength - 1);
         openRecordingFile();

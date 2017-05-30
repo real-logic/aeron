@@ -137,12 +137,13 @@ public class ReplaySessionTest
         try (RecordingFragmentReader reader = new RecordingFragmentReader(RECORDING_ID, archiveDir))
         {
             int polled = reader.controlledPoll(
-                (buffer, offset, length, header) ->
+                (buffer, offset, length) ->
                 {
+                    final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
                     assertEquals(offset, INITIAL_TERM_OFFSET + HEADER_LENGTH);
                     assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
-                    assertEquals(header.headerType(), HDR_TYPE_DATA);
-                    assertEquals((byte)header.flags(), FrameDescriptor.UNFRAGMENTED);
+                    assertEquals(FrameDescriptor.frameType(buffer, frameOffset), HDR_TYPE_DATA);
+                    assertEquals(FrameDescriptor.frameFlags(buffer, frameOffset), FrameDescriptor.UNFRAGMENTED);
 
                     return true;
                 },
@@ -150,12 +151,13 @@ public class ReplaySessionTest
 
             assertEquals(1, polled);
             polled = reader.controlledPoll(
-                (buffer, offset, length, header) ->
+                (buffer, offset, length) ->
                 {
+                    final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
                     assertEquals(offset, INITIAL_TERM_OFFSET + FRAME_LENGTH + HEADER_LENGTH);
                     assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
-                    assertEquals(header.headerType(), HDR_TYPE_DATA);
-                    assertEquals((byte)header.flags(), FrameDescriptor.BEGIN_FRAG_FLAG);
+                    assertEquals(FrameDescriptor.frameType(buffer, frameOffset), HDR_TYPE_DATA);
+                    assertEquals(FrameDescriptor.frameFlags(buffer, frameOffset), FrameDescriptor.BEGIN_FRAG_FLAG);
 
                     return true;
                 },
@@ -163,12 +165,13 @@ public class ReplaySessionTest
 
             assertEquals(1, polled);
             polled = reader.controlledPoll(
-                (buffer, offset, length, header) ->
+                (buffer, offset, length) ->
                 {
+                    final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
                     assertEquals(offset, INITIAL_TERM_OFFSET + 2 * FRAME_LENGTH + HEADER_LENGTH);
                     assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
-                    assertEquals(header.headerType(), HDR_TYPE_DATA);
-                    assertEquals((byte)header.flags(), FrameDescriptor.END_FRAG_FLAG);
+                    assertEquals(FrameDescriptor.frameType(buffer, frameOffset), HDR_TYPE_DATA);
+                    assertEquals(FrameDescriptor.frameFlags(buffer, frameOffset), FrameDescriptor.END_FRAG_FLAG);
 
                     return true;
                 },
@@ -176,12 +179,13 @@ public class ReplaySessionTest
 
             assertEquals(1, polled);
             polled = reader.controlledPoll(
-                (buffer, offset, length, header) ->
+                (buffer, offset, length) ->
                 {
+                    final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
                     assertEquals(offset, INITIAL_TERM_OFFSET + 3 * FRAME_LENGTH + HEADER_LENGTH);
                     assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
-                    assertEquals(header.headerType(), HDR_TYPE_PAD);
-                    assertEquals((byte)header.flags(), FrameDescriptor.UNFRAGMENTED);
+                    assertEquals(FrameDescriptor.frameType(buffer, frameOffset), HDR_TYPE_PAD);
+                    assertEquals(FrameDescriptor.frameFlags(buffer, frameOffset), FrameDescriptor.UNFRAGMENTED);
 
                     return true;
                 },
@@ -484,14 +488,14 @@ public class ReplaySessionTest
         assertEquals(message, buffer.getByte(offset + DataHeaderFlyweight.HEADER_LENGTH));
     }
 
-    private void mockTryClaim(final ExclusivePublication replay, final UnsafeBuffer mockTermBuffer)
+    private void mockTryClaim(final ExclusivePublication replay, final UnsafeBuffer termBuffer)
     {
         when(replay.tryClaim(anyInt(), any(ExclusiveBufferClaim.class))).then(
             (invocation) ->
             {
                 final int claimedSize = invocation.getArgument(0);
                 final ExclusiveBufferClaim buffer = invocation.getArgument(1);
-                buffer.wrap(mockTermBuffer, messageCounter * FRAME_LENGTH, claimedSize + HEADER_LENGTH);
+                buffer.wrap(termBuffer, messageCounter * FRAME_LENGTH, claimedSize + HEADER_LENGTH);
                 messageCounter++;
 
                 return (long)claimedSize;

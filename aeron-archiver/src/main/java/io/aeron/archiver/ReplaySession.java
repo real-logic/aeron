@@ -21,8 +21,14 @@ import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.*;
+
+import static io.aeron.logbuffer.FrameDescriptor.frameFlags;
+import static io.aeron.logbuffer.FrameDescriptor.frameType;
+import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * A replay session with a client which works through the required request response flow and streaming of recorded data.
@@ -150,29 +156,26 @@ class ReplaySession
         conductor.removeReplaySession(replaySessionId);
     }
 
-    public boolean onFragment(
-        final DirectBuffer fragmentBuffer,
-        final int fragmentOffset,
-        final int fragmentLength,
-        final DataHeaderFlyweight header)
+    public boolean onFragment(final UnsafeBuffer termBuffer, final int offset, final int length)
     {
         if (isDone())
         {
             return false;
         }
 
-        final long result = replayPublication.tryClaim(fragmentLength, bufferClaim);
+        final long result = replayPublication.tryClaim(length, bufferClaim);
         if (result > 0)
         {
             try
             {
-                final MutableDirectBuffer publicationBuffer = bufferClaim.buffer();
-                bufferClaim.flags((byte)header.flags());
-                bufferClaim.reservedValue(header.reservedValue());
-                bufferClaim.headerType(header.headerType());
+                final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
+                final UnsafeBuffer publicationBuffer = (UnsafeBuffer)bufferClaim.buffer();
 
-                final int offset = bufferClaim.offset();
-                publicationBuffer.putBytes(offset, fragmentBuffer, fragmentOffset, fragmentLength);
+                bufferClaim.flags(frameFlags(termBuffer, frameOffset));
+                bufferClaim.headerType(frameType(termBuffer, frameOffset));
+                bufferClaim.reservedValue(termBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN));
+
+                publicationBuffer.putBytes(bufferClaim.offset(), termBuffer, offset, length);
             }
             finally
             {

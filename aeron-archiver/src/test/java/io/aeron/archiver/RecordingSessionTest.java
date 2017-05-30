@@ -17,6 +17,7 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
+import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
@@ -45,7 +46,6 @@ public class RecordingSessionTest
     private final int streamId = 54321;
     private final int sessionId = 12345;
 
-    private final int initialTermId = 0;
     private final int termBufferLength = 4096;
     private final int termOffset = 1024;
     private final int mtuLength = 1024;
@@ -65,6 +65,7 @@ public class RecordingSessionTest
     {
         proxy = mock(NotificationsProxy.class);
         catalog = mock(Catalog.class);
+        final int initialTermId = 0;
         when(catalog.addNewRecording(
             eq(sessionId),
             eq(streamId),
@@ -170,10 +171,11 @@ public class RecordingSessionTest
         try (RecordingFragmentReader reader = new RecordingFragmentReader(session.recordingId(), tempDirForTest))
         {
             final int polled = reader.controlledPoll(
-                (buffer, offset, length, header) ->
+                (buffer, offset, length) ->
                 {
-                    assertEquals(100, header.frameLength());
-                    assertEquals(termOffset + DataHeaderFlyweight.HEADER_LENGTH, offset);
+                    final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
+                    assertEquals(termOffset, frameOffset);
+                    assertEquals(100, FrameDescriptor.frameLength(buffer, frameOffset));
                     assertEquals(100 - DataHeaderFlyweight.HEADER_LENGTH, length);
                     return true;
                 },

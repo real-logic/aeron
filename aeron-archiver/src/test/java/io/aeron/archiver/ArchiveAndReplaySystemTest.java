@@ -413,10 +413,7 @@ public class ArchiveAndReplaySystemTest
     }
 
     @SuppressWarnings("SameReturnValue")
-    private boolean validateFragment1(
-        final DirectBuffer buffer,
-        final int offset, final int length,
-        @SuppressWarnings("unused") final DataHeaderFlyweight header)
+    private boolean validateFragment1(final UnsafeBuffer buffer, final int offset, final int length)
     {
         assertThat(length, is(fragmentLength[fragmentCount] - DataHeaderFlyweight.HEADER_LENGTH));
         assertThat(buffer.getInt(offset), is(fragmentCount));
@@ -430,7 +427,8 @@ public class ArchiveAndReplaySystemTest
 
     private void validateFragment2(
         final DirectBuffer buffer,
-        final int offset, final int length,
+        final int offset,
+        final int length,
         @SuppressWarnings("unused") final Header header)
     {
         assertThat(length, is(fragmentLength[fragmentCount] - DataHeaderFlyweight.HEADER_LENGTH));

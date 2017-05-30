@@ -16,6 +16,7 @@
 package io.aeron.archiver;
 
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
+import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -26,7 +27,6 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.archiver.ArchiveUtil.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardOpenOption.READ;
 
@@ -39,11 +39,7 @@ class RecordingFragmentReader implements AutoCloseable
          *
          * @return true if fragment processed, false to abort.
          */
-        boolean onFragment(
-            DirectBuffer fragmentBuffer,
-            int fragmentOffset,
-            int fragmentLength,
-            DataHeaderFlyweight header);
+        boolean onFragment(UnsafeBuffer fragmentBuffer, int fragmentOffset, int fragmentLength);
     }
 
     private static final long NULL_POSITION = -1;
@@ -61,7 +57,6 @@ class RecordingFragmentReader implements AutoCloseable
     private int recordingTermStartOffset;
     private int termOffset;
     private long transmitted = 0;
-    private final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
     private MappedByteBuffer mappedByteBuffer;
 
     RecordingFragmentReader(final long recordingId, final File archiveDir) throws IOException
@@ -160,31 +155,23 @@ class RecordingFragmentReader implements AutoCloseable
         while (termOffset < termBufferLength && !isDone() && polled < fragmentLimit)
         {
             final int frameOffset = termOffset;
-            headerFlyweight.wrap(termBuffer, frameOffset, DataHeaderFlyweight.HEADER_LENGTH);
-            final int frameLength = headerFlyweight.frameLength();
+            final int frameLength = FrameDescriptor.frameLength(termBuffer, frameOffset);
             final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
 
-            // cursor moves forward, importantly an exception from onFragment will not block progress
             transmitted += alignedLength;
             termOffset += alignedLength;
 
-            final int fragmentDataOffset = frameOffset + DataHeaderFlyweight.DATA_OFFSET;
-            final int fragmentDataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
+            final int dataOffset = frameOffset + DataHeaderFlyweight.DATA_OFFSET;
+            final int dataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
 
-            if (!fragmentHandler.onFragment(
-                termBuffer,
-                fragmentDataOffset,
-                fragmentDataLength,
-                headerFlyweight))
+            if (!fragmentHandler.onFragment(termBuffer, dataOffset, dataLength))
             {
-                // rollback the cursor progress
                 transmitted -= alignedLength;
                 termOffset -= alignedLength;
                 return polled;
             }
 
-            // only count data fragments, consistent with sent fragment count
-            if (headerFlyweight.headerType() != PADDING_FRAME_TYPE)
+            if (!FrameDescriptor.isPaddingFrame(termBuffer, frameOffset))
             {
                 polled++;
             }
@@ -235,6 +222,7 @@ class RecordingFragmentReader implements AutoCloseable
     {
         final String recordingMetaFileName = recordingMetaFileName(recordingId);
         final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
+
         return loadRecordingDescriptor(recordingMetaFile);
     }
 }

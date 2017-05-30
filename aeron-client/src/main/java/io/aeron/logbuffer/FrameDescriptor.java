@@ -203,6 +203,18 @@ public class FrameDescriptor
     }
 
     /**
+     * Get the flags field for a frame.
+     *
+     * @param buffer     containing the frame.
+     * @param termOffset at which a frame begins.
+     * @return the value of the flags.
+     */
+    public static byte frameFlags(final UnsafeBuffer buffer, final int termOffset)
+    {
+        return buffer.getByte(flagsOffset(termOffset));
+    }
+
+    /**
      * Read the type of of the frame from header.
      *
      * @param buffer     containing the frame.

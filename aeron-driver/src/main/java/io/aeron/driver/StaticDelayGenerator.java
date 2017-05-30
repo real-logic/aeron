@@ -26,7 +26,7 @@ public class StaticDelayGenerator implements FeedbackDelayGenerator
     /**
      * Create a delayInNs generator that uses the specified delayInNs.
      *
-     * @param delayInNs to return
+     * @param delayInNs         to return
      * @param immediateFeedback or not
      */
     public StaticDelayGenerator(final long delayInNs, final boolean immediateFeedback)
@@ -35,13 +35,17 @@ public class StaticDelayGenerator implements FeedbackDelayGenerator
         this.immediateFeedback = immediateFeedback;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     public long generateDelay()
     {
         return delayInNs;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     public boolean shouldFeedbackImmediately()
     {
         return immediateFeedback;

@@ -44,24 +44,24 @@ public class NetworkUtilTest
     @Test
     public void shouldMatchIfAllBytesMatch() throws Exception
     {
-        final byte[] a = { 'a', 'b', 'c', 'd' };
-        final byte[] b = { 'a', 'b', 'c', 'd' };
+        final byte[] a = {'a', 'b', 'c', 'd'};
+        final byte[] b = {'a', 'b', 'c', 'd'};
         assertTrue(isMatchWithPrefix(a, b, 32));
     }
 
     @Test
     public void shouldMatchIfAllBytesWithPrefixMatch() throws Exception
     {
-        final byte[] a = { 'a', 'b', 'c', 'd' };
-        final byte[] b = { 'a', 'b', 'c', 'e' };
+        final byte[] a = {'a', 'b', 'c', 'd'};
+        final byte[] b = {'a', 'b', 'c', 'e'};
         assertTrue(isMatchWithPrefix(a, b, 24));
     }
 
     @Test
     public void shouldNotMatchIfNotAllBytesWithPrefixMatch() throws Exception
     {
-        final byte[] a = { 'a', 'b', 'c', 'd' };
-        final byte[] b = { 'a', 'b', 'd', 'd' };
+        final byte[] a = {'a', 'b', 'c', 'd'};
+        final byte[] b = {'a', 'b', 'd', 'd'};
         assertFalse(isMatchWithPrefix(a, b, 24));
     }
 
@@ -205,7 +205,7 @@ public class NetworkUtilTest
             return false;
         }
 
-        public NetworkInterface add(final String...ips) throws UnknownHostException
+        public NetworkInterface add(final String... ips) throws UnknownHostException
         {
             final List<InterfaceAddress> ias = new ArrayList<>();
             for (final String ip : ips)
@@ -270,10 +270,10 @@ public class NetworkUtilTest
     private static byte[] asBytes(final int i)
     {
         final byte[] bs = new byte[4];
-        bs[0] = (byte) ((i >> 24) & 0xFF);
-        bs[1] = (byte) ((i >> 16) & 0xFF);
-        bs[2] = (byte) ((i >> 8) & 0xFF);
-        bs[3] = (byte) (i & 0xFF);
+        bs[0] = (byte)((i >> 24) & 0xFF);
+        bs[1] = (byte)((i >> 16) & 0xFF);
+        bs[2] = (byte)((i >> 8) & 0xFF);
+        bs[3] = (byte)(i & 0xFF);
 
         return bs;
     }

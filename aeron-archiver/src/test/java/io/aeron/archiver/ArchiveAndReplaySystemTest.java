@@ -295,9 +295,7 @@ public class ArchiveAndReplaySystemTest
         }, 1) != 0);
     }
 
-    private int prepAndSendMessages(
-        final ArchiveClient client,
-        final Publication publication)
+    private int prepAndSendMessages(final ArchiveClient client, final Publication publication)
         throws InterruptedException
     {
         final int messageCount = 5000 + rnd.nextInt(10000);

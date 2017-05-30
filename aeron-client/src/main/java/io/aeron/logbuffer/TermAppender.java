@@ -35,14 +35,14 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * Term buffer appender which supports many producers concurrently writing an append-only log.
- *
+ * <p>
  * <b>Note:</b> This class is threadsafe.
- *
+ * <p>
  * Messages are appended to a term using a framing protocol as described in {@link FrameDescriptor}.
- *
+ * <p>
  * A default message header is applied to each message with the fields filled in for fragment flags, type, term number,
  * as appropriate.
- *
+ * <p>
  * A message of type {@link FrameDescriptor#PADDING_FRAME_TYPE} is appended at the end of the buffer if claimed
  * space is not sufficiently large to accommodate the message about to be written.
  */

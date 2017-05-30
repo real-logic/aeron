@@ -22,7 +22,7 @@ public enum ThreadingMode
 {
     /**
      * No threads are started in the {@link MediaDriver}.
-     *
+     * <p>
      * All 3 {@link org.agrona.concurrent.Agent}s will be composed a {@link org.agrona.concurrent.CompositeAgent} and
      * made runnable via an {@link org.agrona.concurrent.AgentInvoker} in the {@link MediaDriver.Context}.
      */

@@ -17,37 +17,37 @@ package io.aeron.driver;
 
 /**
  * Feedback delay used for NAKs as well as for some retransmission use cases.
- *
+ * <p>
  * Generates delay based on Optimal Multicast Feedback
  * http://tools.ietf.org/html/rfc5401#page-13
- *
+ * <p>
  * {@code
  * maxBackoffT is max interval for delay
- *
+ * <p>
  * C version:
- *
+ * <p>
  * <code>
  * double RandomBackoff(double maxBackoffT, double groupSize)
  * {
- *     double lambda = log(groupSize) + 1;
- *     double x = UniformRand(lambda / maxBackoffT) + lambda / (maxBackoffT * (exp(lambda) - 1));
- *     return ((maxBackoffT / lambda) * log( x * (exp(lambda) - 1) * (maxBackoffT / lambda)));
+ * double lambda = log(groupSize) + 1;
+ * double x = UniformRand(lambda / maxBackoffT) + lambda / (maxBackoffT * (exp(lambda) - 1));
+ * return ((maxBackoffT / lambda) * log( x * (exp(lambda) - 1) * (maxBackoffT / lambda)));
  * }
  * </code>
- *
+ * <p>
  * where UniformRand(x) is uniform distribution from 0..max
- *
+ * <p>
  * In this implementations calculation:
  * - the groupSize is a constant (could be configurable as system property)
  * - maxBackoffT is a constant (could be configurable as system property)
  * - GRTT is a constant (could be configurable as a system property)
- *
+ * <p>
  * N (the expected number of feedback messages per RTT) is
- *   N = exp(1.2 * L / (2 * maxBackoffT/GRTT))
- *
+ * N = exp(1.2 * L / (2 * maxBackoffT/GRTT))
+ * <p>
  * Assumptions:
  * maxBackoffT = K * GRTT (K >= 1)
- *
+ * <p>
  * Recommended K:
  * - K = 4 for situations where responses come from multiple places (i.e. for NAKs, multiple retransmitters)
  * - K = 6 for situations where responses come from single places (i.e. for NAKs, source only retransmit)
@@ -63,12 +63,12 @@ public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
 
     /**
      * Create new feedback delay generator based on estimates. Pre-calculating some parameters upfront.
-     *
+     * <p>
      * {@code maxBackoffT} and {@code gRtt} must be expressed in the same units.
      *
      * @param maxBackoffT of the delay interval
-     * @param groupSize estimate
-     * @param gRtt estimate
+     * @param groupSize   estimate
+     * @param gRtt        estimate
      */
     public OptimalMulticastDelayGenerator(final double maxBackoffT, final double groupSize, final double gRtt)
     {

@@ -262,7 +262,7 @@ public class ArchiveRecordingLoadTest
         final UnsafeBuffer buffer,
         final int length)
     {
-        final long limit = System.currentTimeMillis() + (long) TestUtil.TIMEOUT;
+        final long limit = System.currentTimeMillis() + (long)TestUtil.TIMEOUT;
         if (publication.offer(buffer, 0, length) < 0)
         {
             slowOffer(publication, buffer, length, limit);

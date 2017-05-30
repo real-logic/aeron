@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Ping component of Ping-Pong latency test.
- *
+ * <p>
  * Initiates and records times.
  */
 public class Ping

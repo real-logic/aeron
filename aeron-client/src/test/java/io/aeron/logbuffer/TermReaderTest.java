@@ -40,6 +40,7 @@ public class TermReaderTest
     private final ErrorHandler errorHandler = mock(ErrorHandler.class);
     private final FragmentHandler handler = mock(FragmentHandler.class);
     private final Position subscriberPosition = mock(Position.class);
+
     @Before
     public void setUp()
     {

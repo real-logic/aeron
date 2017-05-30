@@ -32,7 +32,7 @@ import static io.aeron.driver.DataPacketDispatcher.SessionStatus.PENDING_SETUP_F
 
 /**
  * Handling of dispatching data packets to {@link PublicationImage}s streams.
- *
+ * <p>
  * All methods should be called via {@link Receiver} thread
  */
 public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHandler

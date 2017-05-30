@@ -25,14 +25,16 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
 
 /**
  * Separates the concern of communicating with the client conductor away from the rest of the client.
- *
+ * <p>
  * Writes commands into the client conductor buffer.
- *
+ * <p>
  * Note: this class is not thread safe and is expecting to be called under the {@link ClientConductor} main lock.
  */
 public class DriverProxy
 {
-    /** Maximum capacity of the write buffer */
+    /**
+     * Maximum capacity of the write buffer
+     */
     public static final int MSG_BUFFER_CAPACITY = 1024;
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(

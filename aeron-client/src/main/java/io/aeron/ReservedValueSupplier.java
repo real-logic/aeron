@@ -20,7 +20,7 @@ import org.agrona.DirectBuffer;
 /**
  * Supplies the reserved value field for a data frame header. The returned value will be set in the header as
  * {@link java.nio.ByteOrder#LITTLE_ENDIAN} format.
- *
+ * <p>
  * This will be called as the last action of encoding a data frame right before the length is set. All other fields
  * in the header plus the body of the frame will have been written at the point of supply.
  */

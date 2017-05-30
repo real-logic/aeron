@@ -126,7 +126,7 @@ public class DriverConductorTest
             .ipcTermBufferLength(TERM_BUFFER_LENGTH)
             .unicastFlowControlSupplier(Configuration.unicastFlowControlSupplier())
             .multicastFlowControlSupplier(Configuration.multicastFlowControlSupplier())
-                // TODO: remove
+            // TODO: remove
             .driverCommandQueue(new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
             .errorLog(mockErrorLog)
             .rawLogBuffersFactory(mockRawLogFactory)
@@ -190,10 +190,10 @@ public class DriverConductorTest
         final int termOffset = 64;
         final String params =
             "|mtu=" + mtu +
-            "|term-length=" + termLength +
-            "|init-term-id=" + initialTermId +
-            "|term-id=" + termId +
-            "|term-offset=" + termOffset;
+                "|term-length=" + termLength +
+                "|init-term-id=" + initialTermId +
+                "|term-id=" + termId +
+                "|term-offset=" + termOffset;
 
         when(mockRawLogFactory.newNetworkPublication(anyString(), anyInt(), anyInt(), anyLong(), eq(termLength)))
             .thenReturn(LogBufferHelper.newTestLogBuffers(termLength));
@@ -226,9 +226,9 @@ public class DriverConductorTest
         final int termOffset = 64;
         final String params =
             "?term-length=" + termLength +
-            "|init-term-id=" + initialTermId +
-            "|term-id=" + termId +
-            "|term-offset=" + termOffset;
+                "|init-term-id=" + initialTermId +
+                "|term-id=" + termId +
+                "|term-offset=" + termOffset;
 
         when(mockRawLogFactory.newIpcPublication(anyInt(), anyInt(), anyLong(), eq(termLength)))
             .thenReturn(LogBufferHelper.newTestLogBuffers(termLength));

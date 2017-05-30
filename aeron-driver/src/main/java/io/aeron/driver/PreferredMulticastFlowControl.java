@@ -28,9 +28,9 @@ import static java.lang.System.getProperty;
 
 /**
  * Minimum multicast sender flow control strategy only for preferred members.
- *
+ * <p>
  * Flow control is set to minimum of tracked preferred receivers.
- *
+ * <p>
  * Tracking of preferred receivers is done as long as they continue to send Status Messages. Once SMs stop, the receiver
  * tracking for that receiver will timeout after a given number of nanoseconds.
  */

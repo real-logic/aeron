@@ -24,39 +24,64 @@ import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
 /**
  * Flyweight for general Aeron network protocol header
- *
- * 0                   1                   2                   3
- * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |                        Frame Length                           |
- * +---------------------------------------------------------------+
- * |  Version    |     Flags     |               Type              |
- * +-------------+---------------+---------------------------------+
- * |                       Depends on Type                        ...
- *
+ * <p>
+ * <pre>
+ *   0                   1                   2                   3
+ *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                        Frame Length                           |
+ *  +---------------------------------------------------------------+
+ *  |  Version    |     Flags     |               Type              |
+ *  +-------------+---------------+---------------------------------+
+ *  |                       Depends on Type                        ...
+ * </pre>
  */
 public class HeaderFlyweight extends UnsafeBuffer
 {
     public static final byte[] EMPTY_BUFFER = new byte[0];
 
-    /** header type PAD */
+    /**
+     * header type PAD
+     */
     public static final int HDR_TYPE_PAD = 0x00;
-    /** header type DATA */
+
+    /**
+     * header type DATA
+     */
     public static final int HDR_TYPE_DATA = 0x01;
-    /** header type NAK */
+
+    /**
+     * header type NAK
+     */
     public static final int HDR_TYPE_NAK = 0x02;
-    /** header type SM */
+
+    /**
+     * header type SM
+     */
     public static final int HDR_TYPE_SM = 0x03;
-    /** header type ERR */
+
+    /**
+     * header type ERR
+     */
     public static final int HDR_TYPE_ERR = 0x04;
-    /** header type SETUP */
+
+    /**
+     * header type SETUP
+     */
     public static final int HDR_TYPE_SETUP = 0x05;
-    /** header type RTT Measurement */
+    /**
+     * header type RTT Measurement
+     */
     public static final int HDR_TYPE_RTTM = 0x06;
-    /** header type EXT */
+
+    /**
+     * header type EXT
+     */
     public static final int HDR_TYPE_EXT = 0xFFFF;
 
-    /** default version */
+    /**
+     * default version
+     */
     public static final byte CURRENT_VERSION = 0x0;
 
     public static final int FRAME_LENGTH_FIELD_OFFSET = 0;

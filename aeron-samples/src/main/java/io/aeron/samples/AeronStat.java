@@ -44,11 +44,11 @@ import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE
  * Tool for printing out Aeron counters. A command-and-control (CnC) file is maintained by media driver
  * in shared memory. This application reads the the cnc file and prints the counters. Layout of the cnc file is
  * described in {@link CncFileDescriptor}.
- *
+ * <p>
  * This tool accepts filters on the command line, e.g. for connections only see example below:
- *
+ * <p>
  * <code>
- *     java -cp aeron-samples/build/libs/samples.jar io.aeron.samples.AeronStat type=[1-9] identity=12345
+ * java -cp aeron-samples/build/libs/samples.jar io.aeron.samples.AeronStat type=[1-9] identity=12345
  * </code>
  */
 public class AeronStat
@@ -56,9 +56,9 @@ public class AeronStat
     /**
      * Types of the counters.
      * <ul>
-     *     <li>0: System Counters</li>
-     *     <li>1 - 5, 9: Stream Positions</li>
-     *     <li>6 - 7: Channel Endpoint Status</li>
+     * <li>0: System Counters</li>
+     * <li>1 - 5, 9: Stream Positions</li>
+     * <li>6 - 7: Channel Endpoint Status</li>
      * </ul>
      */
     private static final String COUNTER_TYPE_ID = "type";

@@ -23,7 +23,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
 /**
  * Default unicast sender flow control strategy.
- *
+ * <p>
  * Max of right edges.
  * No tracking of receivers.
  */
@@ -40,12 +40,11 @@ public class UnicastFlowControl implements FlowControl
         final int positionBitsToShift,
         final long nowNs)
     {
-        final long position =
-            computePosition(
-                flyweight.consumptionTermId(),
-                flyweight.consumptionTermOffset(),
-                positionBitsToShift,
-                initialTermId);
+        final long position = computePosition(
+            flyweight.consumptionTermId(),
+            flyweight.consumptionTermOffset(),
+            positionBitsToShift,
+            initialTermId);
 
         return Math.max(senderLimit, position + flyweight.receiverWindowLength());
     }

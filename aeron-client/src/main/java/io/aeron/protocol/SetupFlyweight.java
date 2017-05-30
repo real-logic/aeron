@@ -23,12 +23,14 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * HeaderFlyweight for Setup Frames
- *
+ * <p>
  * <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#stream-setup">Stream Setup</a>
  */
 public class SetupFlyweight extends HeaderFlyweight
 {
-    /** Size of the Setup Header */
+    /**
+     * Length of the Setup Message Header
+     */
     public static final int HEADER_LENGTH = 40;
 
     private static final int TERM_OFFSET_FIELD_OFFSET = 8;
@@ -79,6 +81,7 @@ public class SetupFlyweight extends HeaderFlyweight
 
     /**
      * return session id field
+     *
      * @return session id field
      */
     public int sessionId()
@@ -88,6 +91,7 @@ public class SetupFlyweight extends HeaderFlyweight
 
     /**
      * set session id field
+     *
      * @param sessionId field value
      * @return flyweight
      */

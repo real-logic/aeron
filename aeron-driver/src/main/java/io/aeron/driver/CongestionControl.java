@@ -42,7 +42,7 @@ public interface CongestionControl extends AutoCloseable
     /**
      * Called by {@link DriverConductor} upon execution of {@link PublicationImage#trackRebuild(long, long)} to
      * pass on current status.
-     *
+     * <p>
      * The return value must be packed using {@link CongestionControlUtil#packOutcome(int, boolean)}.
      *
      * @param nowNs                   in nanoseconds

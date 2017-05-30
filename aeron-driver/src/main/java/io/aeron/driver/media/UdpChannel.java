@@ -34,7 +34,7 @@ import static org.agrona.BitUtil.toHex;
 
 /**
  * Encapsulation of UDP Channels.
- *
+ * <p>
  * Format of URI as in {@link AeronUri}.
  */
 public final class UdpChannel
@@ -202,13 +202,13 @@ public final class UdpChannel
     /**
      * Return a string which is a canonical form of the channel suitable for use as a file or directory
      * name and also as a method of hashing, etc.
-     *
+     * <p>
      * A canonical form:
      * - begins with the string "UDP-"
      * - has all hostnames converted to hexadecimal
      * - has all fields expanded out
      * - uses "-" as all field separators
-     *
+     * <p>
      * The general format is:
      * UDP-interface-localPort-remoteAddress-remotePort
      *
@@ -218,15 +218,14 @@ public final class UdpChannel
      */
     public static String canonicalise(final InetSocketAddress localData, final InetSocketAddress remoteData)
     {
-        return
-            "UDP-" +
-                toHex(localData.getAddress().getAddress()) +
-                '-' +
-                localData.getPort() +
-                '-' +
-                toHex(remoteData.getAddress().getAddress()) +
-                '-' +
-                remoteData.getPort();
+        return "UDP-" +
+            toHex(localData.getAddress().getAddress()) +
+            '-' +
+            localData.getPort() +
+            '-' +
+            toHex(remoteData.getAddress().getAddress()) +
+            '-' +
+            remoteData.getPort();
     }
 
     /**
@@ -291,7 +290,7 @@ public final class UdpChannel
 
     /**
      * The canonical form for the channel
-     *
+     * <p>
      * {@link UdpChannel#canonicalise(java.net.InetSocketAddress, java.net.InetSocketAddress)}
      *
      * @return canonical form for channel

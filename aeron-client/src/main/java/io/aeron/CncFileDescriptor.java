@@ -24,7 +24,7 @@ import static org.agrona.BitUtil.*;
 
 /**
  * Description of the command and control file used between driver and clients
- *
+ * <p>
  * File Layout
  * <pre>
  *  +----------------------------+
@@ -43,7 +43,7 @@ import static org.agrona.BitUtil.*;
  *  |          Error Log         |
  *  +----------------------------+
  * </pre>
- *
+ * <p>
  * Meta Data Layout (CnC Version 6)
  * <pre>
  *  +----------------------------+

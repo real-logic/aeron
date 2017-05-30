@@ -29,7 +29,7 @@ public class UriUtil
      *
      * @param uri         with query string.
      * @param queryParams to be populated.
-     * @param <M> container for the params
+     * @param <M>         container for the params
      * @return the queryParams that has been populated.
      * @throws URISyntaxException if a parsing exception occurs on the query string.
      */

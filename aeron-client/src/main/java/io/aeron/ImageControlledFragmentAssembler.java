@@ -25,10 +25,10 @@ import static io.aeron.logbuffer.FrameDescriptor.*;
  * A {@link ControlledFragmentHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented
  * messages so that the next handler in the chain only sees whole messages. This is for a single session on an
  * {@link Image} and not for multiple session {@link Image}s in a {@link Subscription}.
- *
+ * <p>
  * Unfragmented messages are delegated without copy. Fragmented messages are copied to a temporary
  * buffer for reassembly before delegation.
- *
+ * <p>
  * The {@link Header} passed to the delegate on assembling a message will be that of the last fragment.
  *
  * @see Image#controlledPoll(ControlledFragmentHandler, int)

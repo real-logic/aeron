@@ -29,9 +29,9 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
  * are created via the {@link Aeron#addPublication(String, int)} method, and messages are sent via one of the
  * {@link #offer(DirectBuffer)} methods, or a {@link #tryClaim(int, BufferClaim)} and {@link BufferClaim#commit()}
  * method combination.
- *
+ * <p>
  * The APIs used try claim and offer are non-blocking.
- *
+ * <p>
  * <b>Note:</b> Publication instances are threadsafe and can be shared between publishing threads.
  *
  * @see Aeron#addPublication(String, int)
@@ -174,7 +174,7 @@ public class Publication implements AutoCloseable
 
     /**
      * Maximum length of a message payload that fits within a message fragment.
-     *
+     * <p>
      * This is he MTU length minus the message fragment header length.
      *
      * @return maximum message fragment payload length.
@@ -206,7 +206,7 @@ public class Publication implements AutoCloseable
 
     /**
      * Release resources used by this Publication when there are no more references.
-     *
+     * <p>
      * Publications are reference counted and are only truly closed when the ref count reaches zero.
      */
     public void close()
@@ -270,7 +270,7 @@ public class Publication implements AutoCloseable
 
     /**
      * Get the position limit beyond which this {@link Publication} will be back pressured.
-     *
+     * <p>
      * This should only be used as a guide to determine when back pressure is likely to be applied.
      *
      * @return the position limit beyond which this {@link Publication} will be back pressured.
@@ -371,9 +371,9 @@ public class Publication implements AutoCloseable
     /**
      * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
      * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
-     *
+     * <p>
      * <b>Note:</b> This method can only be used for message lengths less than MTU length minus header.
-     *
+     * <p>
      * <pre>{@code
      *     final BufferClaim bufferClaim = new BufferClaim(); // Can be stored and reused to avoid allocation
      *

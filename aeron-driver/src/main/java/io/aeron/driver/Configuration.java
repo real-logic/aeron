@@ -53,7 +53,7 @@ public class Configuration
 
     /**
      * Should term buffers be created as sparse files. Defaults to false.
-     *
+     * <p>
      * If a platform supports sparse files then log buffer creation is faster with pages being allocated as
      * needed. This can help for large numbers of channels/streams but can result in latency pauses.
      */
@@ -200,12 +200,12 @@ public class Configuration
 
     /**
      * Default initial window length for flow control sender to receiver purposes
-     *
+     * <p>
      * Length of Initial Window
-     *
+     * <p>
      * RTT (LAN) = 100 usec
      * Throughput = 10 Gbps
-     *
+     * <p>
      * Buffer = Throughput * RTT
      * Buffer = (10 * 1000 * 1000 * 1000 / 8) * 0.0001 = 125000
      * Round to 128KB
@@ -484,7 +484,7 @@ public class Configuration
 
     /**
      * Maximum UDP datagram payload size for IPv4. Jumbo datagrams from IPv6 are not supported.
-     *
+     * <p>
      * Max length is 65,507 bytes = 65,535 − 8 byte UDP header − 20 byte IP header.
      * Then round down to nearest multiple of {@link FrameDescriptor#FRAME_ALIGNMENT} to give 65,504.
      */
@@ -533,7 +533,7 @@ public class Configuration
     public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME = "aeron.SendChannelEndpoint.supplier";
 
     /**
-     *{@link SendChannelEndpointSupplier} to provide endpoint extension behaviour.
+     * {@link SendChannelEndpointSupplier} to provide endpoint extension behaviour.
      */
     public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER = getProperty(
         SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultSendChannelEndpointSupplier");

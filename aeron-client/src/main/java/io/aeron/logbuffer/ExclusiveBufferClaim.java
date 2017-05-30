@@ -29,16 +29,16 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * Represents a claimed range in a buffer to be used for recording a message without copy semantics for later commit.
- *
+ * <p>
  * {@link ExclusiveBufferClaim}s offer additional functionality over standard {@link BufferClaim}s in that the header
  * can be manipulated for setting flags and type. This allows the user to implement things such as their own
  * fragmentation policy.
- *
+ * <p>
  * The claimed space is in {@link #buffer()} between {@link #offset()} and {@link #offset()} + {@link #length()}.
  * When the buffer is filled with message data, use {@link #commit()} to make it available to subscribers.
- *
+ * <p>
  * If the claimed space is no longer required it can be aborted by calling {@link #abort()}.
- *
+ * <p>
  * <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#data-frame">Data Frame</a>
  *
  * @see io.aeron.ExclusivePublication#tryClaim(int, ExclusiveBufferClaim)
@@ -141,7 +141,7 @@ public class ExclusiveBufferClaim
 
     /**
      * Get the value stored in the reserve space at the end of a data frame header.
-     *
+     * <p>
      * Note: The value is in {@link ByteOrder#LITTLE_ENDIAN} format.
      *
      * @return the value stored in the reserve space at the end of a data frame header.
@@ -154,7 +154,7 @@ public class ExclusiveBufferClaim
 
     /**
      * Write the provided value into the reserved space at the end of the data frame header.
-     *
+     * <p>
      * Note: The value will be written in {@link ByteOrder#LITTLE_ENDIAN} format.
      *
      * @param value to be stored in the reserve space at the end of a data frame header.

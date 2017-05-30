@@ -230,7 +230,7 @@ public class UdpChannelTest
         assertThat(map.get(udpChannel2), is(1));
     }
 
-    @Test(expected =  InvalidChannelException.class)
+    @Test(expected = InvalidChannelException.class)
     public void shouldThrowExceptionWhenNoPortSpecified() throws Exception
     {
         UdpChannel.parse("aeron:udp?endpoint=localhost");
@@ -292,28 +292,28 @@ public class UdpChannelTest
     public void shouldGetProtocolFamilyForIpV4() throws Exception
     {
         final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?endpoint=127.0.0.1:12345|interface=127.0.0.1");
-        assertThat(udpChannel.protocolFamily(), is((ProtocolFamily) StandardProtocolFamily.INET));
+        assertThat(udpChannel.protocolFamily(), is((ProtocolFamily)StandardProtocolFamily.INET));
     }
 
     @Test
     public void shouldGetProtocolFamilyForIpV6() throws Exception
     {
         final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?endpoint=[::1]:12345|interface=[::1]");
-        assertThat(udpChannel.protocolFamily(), is((ProtocolFamily) StandardProtocolFamily.INET6));
+        assertThat(udpChannel.protocolFamily(), is((ProtocolFamily)StandardProtocolFamily.INET6));
     }
 
     @Test
     public void shouldGetProtocolFamilyForIpV4WithoutLocalSpecified() throws Exception
     {
         final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?endpoint=127.0.0.1:12345");
-        assertThat(udpChannel.protocolFamily(), is((ProtocolFamily) StandardProtocolFamily.INET));
+        assertThat(udpChannel.protocolFamily(), is((ProtocolFamily)StandardProtocolFamily.INET));
     }
 
     @Test
     public void shouldGetProtocolFamilyForIpV6WithoutLocalSpecified() throws Exception
     {
         final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?endpoint=[::1]:12345");
-        assertThat(udpChannel.protocolFamily(), is((ProtocolFamily) StandardProtocolFamily.INET6));
+        assertThat(udpChannel.protocolFamily(), is((ProtocolFamily)StandardProtocolFamily.INET6));
     }
 
     @Test

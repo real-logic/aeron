@@ -168,8 +168,6 @@ public class RecordingSessionTest
 
         assertNotEquals("Expect some work", 0, session.doWork());
 
-
-
         metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
 
         assertEquals(42L, metaData.startTime());

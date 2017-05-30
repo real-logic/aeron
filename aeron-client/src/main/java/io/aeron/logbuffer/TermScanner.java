@@ -25,7 +25,7 @@ import static org.agrona.BitUtil.align;
 
 /**
  * Scans a term buffer for an availability range of messages.
- *
+ * <p>
  * This can be used to concurrently read a term buffer which is being appended to.
  */
 public final class TermScanner

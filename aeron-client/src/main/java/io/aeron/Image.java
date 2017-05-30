@@ -35,13 +35,13 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 /**
  * Represents a replicated publication {@link Image} from a publisher to a {@link Subscription}.
  * Each {@link Image} identifies a source publisher by session id.
- *
+ * <p>
  * By default fragmented messages are not reassembled before delivery. If an application must
  * receive whole messages, whether or not they were fragmented, then the Subscriber
  * should be created with a {@link FragmentAssembler} or a custom implementation.
- *
+ * <p>
  * It is an application's responsibility to {@link #poll} the {@link Image} for new messages.
- *
+ * <p>
  * <b>Note:</b>Images are not threadsafe and should not be shared between subscribers.
  */
 public class Image
@@ -251,7 +251,7 @@ public class Image
     /**
      * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
      * will be delivered to the {@link FragmentHandler} up to a limited number of fragments as specified.
-     *
+     * <p>
      * Use a {@link FragmentAssembler} to assemble messages which span multiple fragments.
      *
      * @param fragmentHandler to which message fragments are delivered.
@@ -283,7 +283,7 @@ public class Image
     /**
      * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
      * will be delivered to the {@link ControlledFragmentHandler} up to a limited number of fragments as specified.
-     *
+     * <p>
      * Use a {@link ControlledFragmentAssembler} to assemble messages which span multiple fragments.
      *
      * @param fragmentHandler to which message fragments are delivered.
@@ -374,7 +374,7 @@ public class Image
     /**
      * Peek for new messages in a stream by scanning forward from an initial position. If new messages are found then
      * they will be delivered to the {@link ControlledFragmentHandler} up to a limited position.
-     *
+     * <p>
      * Use a {@link ControlledFragmentAssembler} to assemble messages which span multiple fragments. Scans must also
      * start at the beginning of a message so that the assembler is reset.
      *
@@ -505,7 +505,7 @@ public class Image
     /**
      * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
      * will be delivered to the {@link RawBlockHandler} up to a limited number of bytes.
-     *
+     * <p>
      * This method is useful for operations like bulk archiving a stream to file.
      *
      * @param rawBlockHandler  to which block is delivered.

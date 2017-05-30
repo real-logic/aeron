@@ -31,10 +31,10 @@ import static io.aeron.protocol.HeaderFlyweight.TYPE_FIELD_OFFSET;
 
 /**
  * Represents a claimed range in a buffer to be used for recording a message without copy semantics for later commit.
- *
+ * <p>
  * The claimed space is in {@link #buffer()} between {@link #offset()} and {@link #offset()} + {@link #length()}.
  * When the buffer is filled with message data, use {@link #commit()} to make it available to subscribers.
- *
+ * <p>
  * If the claimed space is no longer required it can be aborted by calling {@link #abort()}.
  *
  * @see io.aeron.Publication#tryClaim(int, BufferClaim)
@@ -87,7 +87,7 @@ public class BufferClaim
 
     /**
      * Get the value stored in the reserve space at the end of a data frame header.
-     *
+     * <p>
      * Note: The value is in {@link ByteOrder#LITTLE_ENDIAN} format.
      *
      * @return the value stored in the reserve space at the end of a data frame header.
@@ -100,7 +100,7 @@ public class BufferClaim
 
     /**
      * Write the provided value into the reserved space at the end of the data frame header.
-     *
+     * <p>
      * Note: The value will be written in {@link ByteOrder#LITTLE_ENDIAN} format.
      *
      * @param value to be stored in the reserve space at the end of a data frame header.

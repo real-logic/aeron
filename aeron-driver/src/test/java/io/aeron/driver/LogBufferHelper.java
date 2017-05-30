@@ -30,11 +30,11 @@ public class LogBufferHelper
         return new RawLog()
         {
             private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[]
-            {
-                newTestLogBuffer(termLength),
-                newTestLogBuffer(termLength),
-                newTestLogBuffer(termLength),
-            };
+                {
+                    newTestLogBuffer(termLength),
+                    newTestLogBuffer(termLength),
+                    newTestLogBuffer(termLength),
+                };
 
             private final UnsafeBuffer logMetaData = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_META_DATA_LENGTH));
 

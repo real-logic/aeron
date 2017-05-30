@@ -55,13 +55,13 @@ import static io.aeron.driver.status.SystemCounterDescriptor.*;
 
 /**
  * Main class for JVM-based media driver
- *
+ * <p>
  * Usage:
  * <code>
  * $ java -jar aeron-driver.jar
  * $ java -Doption=value -jar aeron-driver.jar
  * </code>
- *
+ * <p>
  * {@link Configuration}
  */
 public final class MediaDriver implements AutoCloseable
@@ -81,7 +81,7 @@ public final class MediaDriver implements AutoCloseable
 
     /**
      * Load system properties from a given filename or url.
-     *
+     * <p>
      * File is first searched for in resources, then file system, then URL. All are loaded if multiples found.
      *
      * @param filenameOrUrl that holds properties
@@ -243,7 +243,7 @@ public final class MediaDriver implements AutoCloseable
      * Launch an isolated MediaDriver embedded in the current process with a provided configuration ctx and a generated
      * aeronDirectoryName (overwrites configured {@link Context#aeronDirectoryName()}) that can be retrieved by calling
      * aeronDirectoryName.
-     *
+     * <p>
      * If the aeronDirectoryName is configured then it will be used.
      *
      * @param ctx containing the configuration options.

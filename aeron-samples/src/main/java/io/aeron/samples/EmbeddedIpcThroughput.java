@@ -152,6 +152,7 @@ public class EmbeddedIpcThroughput
     public static final class Subscriber implements Runnable, FragmentHandler
     {
         private static final long TOTAL_BYTES_OFFSET;
+
         static
         {
             try

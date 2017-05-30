@@ -74,7 +74,7 @@ public class AeronUriTest
         assertThat(uri.get("interface", "192.168.0.0"), is("192.168.0.0"));
     }
 
-    private void assertParseWithParams(final String uriStr, final String...params)
+    private void assertParseWithParams(final String uriStr, final String... params)
     {
         if (params.length % 2 != 0)
         {

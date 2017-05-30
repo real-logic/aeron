@@ -19,7 +19,7 @@ import java.util.concurrent.locks.LockSupport;
 
 /**
  * Tracker and reporter of rates.
- *
+ * <p>
  * Uses volatile semantics for counters.
  */
 public class RateReporter implements Runnable
@@ -34,9 +34,9 @@ public class RateReporter implements Runnable
          * Called for a rate report.
          *
          * @param messagesPerSec since last report
-         * @param bytesPerSec since last report
-         * @param totalMessages since beginning of reporting
-         * @param totalBytes since beginning of reporting
+         * @param bytesPerSec    since last report
+         * @param totalMessages  since beginning of reporting
+         * @param totalBytes     since beginning of reporting
          */
         void onReport(double messagesPerSec, double bytesPerSec, long totalMessages, long totalBytes);
     }
@@ -55,7 +55,7 @@ public class RateReporter implements Runnable
      * Create a rate reporter with the given report interval in nanoseconds and the reporting function.
      *
      * @param reportInterval in nanoseconds
-     * @param reportingFunc to call for reporting rates
+     * @param reportingFunc  to call for reporting rates
      */
     public RateReporter(final long reportInterval, final Reporter reportingFunc)
     {
@@ -104,7 +104,7 @@ public class RateReporter implements Runnable
      * Tell rate reporter of number of messages and bytes received, sent, etc.
      *
      * @param messages received, sent, etc.
-     * @param bytes received, sent, etc.
+     * @param bytes    received, sent, etc.
      */
     public void onMessage(final long messages, final long bytes)
     {

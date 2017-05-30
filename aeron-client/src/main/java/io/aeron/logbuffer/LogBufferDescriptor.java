@@ -27,7 +27,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 /**
  * Layout description for log buffers which contains partitions of terms with associated term meta data,
  * plus ending with overall log meta data.
- *
+ * <p>
  * <pre>
  *  +----------------------------+
  *  |           Term 0           |
@@ -137,7 +137,7 @@ public class LogBufferDescriptor
 
     /**
      * Total length of the log meta data buffer in bytes.
-     *
+     * <p>
      * <pre>
      *   0                   1                   2                   3
      *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1

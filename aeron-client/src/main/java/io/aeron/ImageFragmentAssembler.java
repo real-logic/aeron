@@ -25,10 +25,10 @@ import static io.aeron.logbuffer.FrameDescriptor.*;
  * A {@link FragmentHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented messages
  * so that the next handler in the chain only sees whole messages. This is for a single session on an {@link Image}
  * and not for multiple session {@link Image}s in a {@link Subscription}.
- *
+ * <p>
  * Unfragmented messages are delegated without copy. Fragmented messages are copied to a temporary
  * buffer for reassembly before delegation.
- *
+ * <p>
  * The {@link Header} passed to the delegate on assembling a message will be that of the last fragment.
  */
 public class ImageFragmentAssembler implements FragmentHandler
@@ -75,7 +75,7 @@ public class ImageFragmentAssembler implements FragmentHandler
     /**
      * Get the delegate unto which assembled messages are delegated.
      *
-     * @return  the delegate unto which assembled messages are delegated.
+     * @return the delegate unto which assembled messages are delegated.
      */
     public FragmentHandler delegate()
     {

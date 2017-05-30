@@ -56,7 +56,7 @@ public class LogBuffers implements AutoCloseable
             if (logLength < Integer.MAX_VALUE)
             {
                 final MappedByteBuffer mappedBuffer = fileChannel.map(mapMode, 0, logLength);
-                mappedByteBuffers = new MappedByteBuffer[]{ mappedBuffer };
+                mappedByteBuffers = new MappedByteBuffer[]{mappedBuffer};
 
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {

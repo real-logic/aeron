@@ -20,20 +20,22 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Control message for adding or removing a publication
- *
- * 0                   1                   2                   3
- * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |                       Correlation ID                          |
- * |                                                               |
- * +---------------------------------------------------------------+
- * |                          Stream ID                            |
- * +---------------------------------------------------------------+
- * |                       Channel Length                          |
- * +---------------------------------------------------------------+
- * |                       Channel (ASCII)                        ...
- *...                                                              |
- * +---------------------------------------------------------------+
+ * <p>
+ * <pre>
+ *   0                   1                   2                   3
+ *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                       Correlation ID                          |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                          Stream ID                            |
+ *  +---------------------------------------------------------------+
+ *  |                       Channel Length                          |
+ *  +---------------------------------------------------------------+
+ *  |                       Channel (ASCII)                        ...
+ * ...                                                              |
+ *  +---------------------------------------------------------------+
+ * </pre>
  */
 public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
 {
@@ -90,7 +92,7 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
 
     /**
      * Get the length of the current message
-     *
+     * <p>
      * NB: must be called after the data is written in order to be accurate.
      *
      * @return the length of the current message

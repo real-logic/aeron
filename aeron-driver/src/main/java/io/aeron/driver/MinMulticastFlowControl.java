@@ -26,9 +26,9 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
 /**
  * Minimum multicast sender flow control strategy.
- *
+ * <p>
  * Flow control is set to minimum of tracked receivers.
- *
+ * <p>
  * Tracking of receivers is done as long as they continue to send Status Messages. Once SMs stop, the receiver tracking
  * for that receiver will timeout after a given number of nanoseconds.
  */

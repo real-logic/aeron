@@ -23,7 +23,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
 /**
  * Default multicast sender flow control strategy.
- *
+ * <p>
  * Max of right edges.
  * No tracking of receivers.
  */

@@ -58,7 +58,7 @@ public class ReceiverTest
     private static final InetSocketAddress SOURCE_ADDRESS = new InetSocketAddress("localhost", 45679);
 
     private static final ReadablePosition POSITION = mock(ReadablePosition.class);
-    private static final ReadablePosition[] POSITIONS = new ReadablePosition[]{ POSITION };
+    private static final ReadablePosition[] POSITIONS = new ReadablePosition[]{POSITION};
 
     private final FeedbackDelayGenerator mockFeedbackDelayGenerator = mock(FeedbackDelayGenerator.class);
     private final DataTransportPoller mockDataTransportPoller = mock(DataTransportPoller.class);

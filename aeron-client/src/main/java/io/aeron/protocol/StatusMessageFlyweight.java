@@ -28,10 +28,14 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  */
 public class StatusMessageFlyweight extends HeaderFlyweight
 {
-    /** Length of the Status Message Packet */
+    /**
+     * Length of the Status Message Packet
+     */
     public static final int HEADER_LENGTH = 36;
 
-    /** Publisher should send SETUP frame */
+    /**
+     * Publisher should send SETUP frame
+     */
     public static final short SEND_SETUP_FLAG = 0x80;
 
     private static final int SESSION_ID_FIELD_OFFSET = 8;
@@ -58,6 +62,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
 
     /**
      * return session id field
+     *
      * @return session id field
      */
     public int sessionId()
@@ -67,6 +72,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
 
     /**
      * set session id field
+     *
      * @param sessionId field value
      * @return flyweight
      */

@@ -26,7 +26,7 @@ import static org.agrona.BitUtil.align;
 /**
  * Scans for gaps in the sequence of bytes in a replicated term buffer between the completed rebuild and the
  * high-water-mark. This can be used for detecting loss and generating a NAK message to the source.
- *
+ * <p>
  * <b>Note:</b> This class is threadsafe to be used across multiple threads.
  */
 public class TermGapScanner

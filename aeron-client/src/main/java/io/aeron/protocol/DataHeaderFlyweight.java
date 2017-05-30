@@ -23,7 +23,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * HeaderFlyweight for Data Header
- *
+ * <p>
  * <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#data-frame">Data Frame</a>
  */
 public class DataHeaderFlyweight extends HeaderFlyweight

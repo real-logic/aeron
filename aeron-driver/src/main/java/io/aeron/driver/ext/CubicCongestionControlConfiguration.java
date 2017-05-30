@@ -42,7 +42,7 @@ public class CubicCongestionControlConfiguration
 
     /**
      * Property name for accounting for TCP behavior in low RTT values after a loss.
-     *
+     * <p>
      * WARNING: Be aware that throughput utilization becomes important. Turning this on may drastically be off the
      * necessary throughput if utilization is low.
      */

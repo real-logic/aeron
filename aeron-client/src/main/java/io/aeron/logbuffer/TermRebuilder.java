@@ -27,7 +27,7 @@ public class TermRebuilder
 {
     /**
      * Insert a packet of frames into the log at the appropriate termOffset as indicated by the term termOffset header.
-     *
+     * <p>
      * If the packet has already been inserted then this is a noop.
      *
      * @param termBuffer into which the packet should be inserted.

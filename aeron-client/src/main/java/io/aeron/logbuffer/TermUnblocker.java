@@ -29,30 +29,36 @@ public class TermUnblocker
 {
     public enum Status
     {
-        /** No action has been taken during operation. */
+        /**
+         * No action has been taken during operation.
+         */
         NO_ACTION,
 
-        /** The term has been unblocked so that the log can progress. */
+        /**
+         * The term has been unblocked so that the log can progress.
+         */
         UNBLOCKED,
 
-        /** The term has been unblocked from the offset until the end of the term. */
+        /**
+         * The term has been unblocked from the offset until the end of the term.
+         */
         UNBLOCKED_TO_END,
     }
 
     /**
      * Attempt to unblock the current term at the current offset.
-     *
+     * <p>
      * <ol>
-     *     <li>Current position length is &gt; 0, then return</li>
-     *     <li>Current position length is 0, scan forward by frame alignment until, one of the following:
-     *     <ol>
-     *         <li>reach a non-0 length, unblock up to indicated position (check original frame length for non-0)</li>
-     *         <li>reach end of term and tail position &gt;= end of term, unblock up to end of term (check original
-     *             frame length for non-0)
-     *         </li>
-     *         <li>reach tail position &lt; end of term, do NOT unblock</li>
-     *     </ol>
-     *     </li>
+     * <li>Current position length is &gt; 0, then return</li>
+     * <li>Current position length is 0, scan forward by frame alignment until, one of the following:
+     * <ol>
+     * <li>reach a non-0 length, unblock up to indicated position (check original frame length for non-0)</li>
+     * <li>reach end of term and tail position &gt;= end of term, unblock up to end of term (check original
+     * frame length for non-0)
+     * </li>
+     * <li>reach tail position &lt; end of term, do NOT unblock</li>
+     * </ol>
+     * </li>
      * </ol>
      *
      * @param logMetaDataBuffer containing the default headers

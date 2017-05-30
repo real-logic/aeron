@@ -369,9 +369,9 @@ public class PublicationImage
 
     /**
      * Set status of the image.
-     *
+     * <p>
      * Set by {@link Receiver} for INIT to ACTIVE to INACTIVE
-     *
+     * <p>
      * Set by {@link DriverConductor} for INACTIVE to LINGER
      *
      * @param status of the image

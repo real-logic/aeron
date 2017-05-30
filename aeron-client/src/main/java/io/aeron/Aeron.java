@@ -39,7 +39,7 @@ import static org.agrona.IoUtil.mapExistingFile;
 /**
  * Aeron entry point for communicating to the Media Driver for creating {@link Publication}s and {@link Subscription}s.
  * Use an {@link Aeron.Context} to configure the Aeron object.
- *
+ * <p>
  * A client application requires only one Aeron object per Media Driver.
  */
 public final class Aeron implements AutoCloseable
@@ -48,7 +48,7 @@ public final class Aeron implements AutoCloseable
      * The Default handler for Aeron runtime exceptions.
      * When a {@link io.aeron.exceptions.DriverTimeoutException} is encountered, this handler will
      * exit the program.
-     *
+     * <p>
      * The error handler can be overridden by supplying an {@link Aeron.Context} with a custom handler.
      *
      * @see Aeron.Context#errorHandler(ErrorHandler)
@@ -119,7 +119,7 @@ public final class Aeron implements AutoCloseable
 
     /**
      * Create an Aeron instance and connect to the media driver with a default {@link Context}.
-     *
+     * <p>
      * Threads required for interacting with the media driver are created and managed within the Aeron instance.
      *
      * @return the new {@link Aeron} instance connected to the Media Driver.
@@ -131,9 +131,9 @@ public final class Aeron implements AutoCloseable
 
     /**
      * Create an Aeron instance and connect to the media driver.
-     *
+     * <p>
      * Threads required for interacting with the media driver are created and managed within the Aeron instance.
-     *
+     * <p>
      * If an exception occurs while trying to establish a connection then the {@link Context#close()} method
      * will be called on the passed context.
      *
@@ -224,7 +224,7 @@ public final class Aeron implements AutoCloseable
 
     /**
      * Add a new {@link Subscription} for subscribing to messages from publishers.
-     *
+     * <p>
      * The method will set up the {@link Subscription} to use the
      * {@link Aeron.Context#availableImageHandler(AvailableImageHandler)} and
      * {@link Aeron.Context#unavailableImageHandler(UnavailableImageHandler)} from the {@link Aeron.Context}.
@@ -248,7 +248,7 @@ public final class Aeron implements AutoCloseable
 
     /**
      * Add a new {@link Subscription} for subscribing to messages from publishers.
-     *
+     * <p>
      * This method will override the default handlers from the {@link Aeron.Context}, i.e.
      * {@link Aeron.Context#availableImageHandler(AvailableImageHandler)} and
      * {@link Aeron.Context#unavailableImageHandler(UnavailableImageHandler)}. Null values are valid and will
@@ -281,10 +281,10 @@ public final class Aeron implements AutoCloseable
 
     /**
      * Generate the next correlation id that is unique for the connected Media Driver.
-     *
+     * <p>
      * This is useful generating correlation identifiers for pairing requests with responses in a clients own
      * application protocol.
-     *
+     * <p>
      * This method is thread safe and will work across processes that all use the same media driver.
      *
      * @return next correlation id that is unique for the Media Driver.
@@ -328,7 +328,7 @@ public final class Aeron implements AutoCloseable
      * method and its overloads. It gives applications some control over the interactions with the Aeron Media Driver.
      * It can also set up error handling as well as application callbacks for image information from the
      * Media Driver.
-     *
+     * <p>
      * A number of the properties are for testing and should not be set by end users.
      */
     public static class Context extends CommonContext
@@ -488,7 +488,7 @@ public final class Aeron implements AutoCloseable
 
         /**
          * Set the {@link AgentInvoker} for the Media Driver to be used while awaiting a synchronous response.
-         *
+         * <p>
          * Useful for when running on a low thread count scenario.
          *
          * @param driverAgentInvoker to be invoked while awaiting a response in the client.
@@ -512,7 +512,7 @@ public final class Aeron implements AutoCloseable
 
         /**
          * The {@link Lock} that is used to provide mutual exclusion in the Aeron client.
-         *
+         * <p>
          * If the {@link #conductorAgentInvoker(AgentInvoker)} is set and only one thread accesses the client
          * then the lock can be set to {@link NoOpLock} to elide the lock overhead.
          *
@@ -664,7 +664,7 @@ public final class Aeron implements AutoCloseable
          */
         public DriverProxy driverProxy()
         {
-            return  driverProxy;
+            return driverProxy;
         }
 
         /**
@@ -809,10 +809,10 @@ public final class Aeron implements AutoCloseable
 
         /**
          * Return the timeout between service calls to the duty cycle for the client.
-         *
+         * <p>
          * When exceeded, {@link #errorHandler} will be called and the active {@link Publication}s and {@link Image}s
          * closed.
-         *
+         * <p>
          * This value is controlled by the driver and included in the CnC file.
          *
          * @return the timeout between service calls in nanoseconds.

@@ -22,7 +22,7 @@ import static io.aeron.logbuffer.TermGapScanner.scanForGap;
 
 /**
  * Detecting and handling of gaps in a message stream.
- *
+ * <p>
  * Each detector only notifies a single run of a gap in a message stream.
  */
 public class LossDetector implements TermGapScanner.GapHandler
@@ -50,7 +50,7 @@ public class LossDetector implements TermGapScanner.GapHandler
 
     /**
      * Scan for gaps and handle received data.
-     *
+     * <p>
      * The handler keeps track from scan to scan what is a gap and what must have been repaired.
      *
      * @param termBuffer          to scan

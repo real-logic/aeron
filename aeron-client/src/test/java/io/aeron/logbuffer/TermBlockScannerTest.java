@@ -120,7 +120,7 @@ public class TermBlockScannerTest
         final int offset = 0;
         final int messageLength = 50;
         final int alignedMessageLength = BitUtil.align(messageLength, FRAME_ALIGNMENT);
-        final int limit = alignedMessageLength  - 1;
+        final int limit = alignedMessageLength - 1;
 
         when(termBuffer.getIntVolatile(lengthOffset(offset))).thenReturn(messageLength);
 

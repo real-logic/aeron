@@ -21,20 +21,22 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
  * Control message flyweight for any message that needs to represent a connection
- *
- * 0                   1                   2                   3
- * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |                        Correlation ID                         |
- * |                                                               |
- * +---------------------------------------------------------------+
- * |                          Stream ID                            |
- * +---------------------------------------------------------------+
- * |                       Channel Length                          |
- * +---------------------------------------------------------------+
- * |                       Channel (ASCII)                        ...
- *...                                                              |
- * +---------------------------------------------------------------+
+ * <p>
+ * <pre>
+ *   0                   1                   2                   3
+ *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                        Correlation ID                         |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                          Stream ID                            |
+ *  +---------------------------------------------------------------+
+ *  |                       Channel Length                          |
+ *  +---------------------------------------------------------------+
+ *  |                       Channel (ASCII)                        ...
+ * ...                                                              |
+ *  +---------------------------------------------------------------+
+ * </pre>
  */
 public class ImageMessageFlyweight
 {
@@ -63,6 +65,7 @@ public class ImageMessageFlyweight
 
     /**
      * return correlation id field
+     *
      * @return correlation id field
      */
     public long correlationId()
@@ -72,6 +75,7 @@ public class ImageMessageFlyweight
 
     /**
      * set correlation id field
+     *
      * @param correlationId field value
      * @return flyweight
      */
@@ -133,7 +137,7 @@ public class ImageMessageFlyweight
 
     /**
      * Get the length of the current message
-     *
+     * <p>
      * NB: must be called after the data is written in order to be accurate.
      *
      * @return the length of the current message

@@ -24,10 +24,10 @@ import java.util.Arrays;
 
 /**
  * Reusable Builder for appending a sequence of buffer fragments which grows internal capacity as needed.
- *
+ * <p>
  * The underlying buffer can be byte[] backed or a direct {@link ByteBuffer} if the isDirect param to the constructor
  * is true.
- *
+ * <p>
  * Similar in concept to {@link StringBuilder}.
  */
 public class BufferBuilder
@@ -157,7 +157,7 @@ public class BufferBuilder
      *
      * @param srcBuffer from which to copy.
      * @param srcOffset in the source buffer from which to copy.
-     * @param length in bytes to copy from the source buffer.
+     * @param length    in bytes to copy from the source buffer.
      * @return the builder for fluent API usage.
      */
     public BufferBuilder append(final DirectBuffer srcBuffer, final int srcOffset, final int length)

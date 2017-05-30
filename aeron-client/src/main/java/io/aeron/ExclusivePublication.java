@@ -27,15 +27,15 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 /**
  * Aeron Publisher API for sending messages to subscribers of a given channel and streamId pair. ExclusivePublications
  * each get their own session id so multiple can be concurrently active on the same media driver as independent streams.
- *
+ * <p>
  * {@link ExclusivePublication}s are created via the {@link Aeron#addExclusivePublication(String, int)} method,
  * and messages are sent via one of the {@link #offer(DirectBuffer)} methods, or a
  * {@link #tryClaim(int, ExclusiveBufferClaim)} and {@link ExclusiveBufferClaim#commit()} method combination.
- *
+ * <p>
  * {@link ExclusivePublication}s have the potential to provide greater throughput than {@link Publication}s.
- *
+ * <p>
  * The APIs used try claim and offer are non-blocking.
- *
+ * <p>
  * <b>Note:</b> ExclusivePublication instances are NOT threadsafe for offer and try claim method but are for position.
  *
  * @see Aeron#addExclusivePublication(String, int)
@@ -188,7 +188,7 @@ public class ExclusivePublication implements AutoCloseable
 
     /**
      * Maximum length of a message payload that fits within a message fragment.
-     *
+     * <p>
      * This is he MTU length minus the message fragment header length.
      *
      * @return maximum message fragment payload length.
@@ -282,7 +282,7 @@ public class ExclusivePublication implements AutoCloseable
 
     /**
      * Get the position limit beyond which this {@link ExclusivePublication} will be back pressured.
-     *
+     * <p>
      * This should only be used as a guide to determine when back pressure is likely to be applied.
      *
      * @return the position limit beyond which this {@link ExclusivePublication} will be back pressured.
@@ -387,9 +387,9 @@ public class ExclusivePublication implements AutoCloseable
      * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
      * Once the message has been written then {@link ExclusiveBufferClaim#commit()} should be called thus making it
      * available.
-     *
+     * <p>
      * <b>Note:</b> This method can only be used for message lengths less than MTU length minus header.
-     *
+     * <p>
      * <pre>{@code
      *     final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
      *

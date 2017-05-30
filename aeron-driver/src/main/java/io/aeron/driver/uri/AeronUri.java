@@ -22,7 +22,7 @@ import java.util.Map;
 
 /**
  * Parser for Aeron URI used for configuring channels. The format is:
- *
+ * <p>
  * <pre>
  * aeron-uri = "aeron:" media [ "?" param *( "|" param ) ]
  * media     = *( "[^?:]" )
@@ -30,7 +30,7 @@ import java.util.Map;
  * key       = *( "[^=]" )
  * value     = *( "[^|]" )
  * </pre>
- *
+ * <p>
  * Multiple params with the same key are allowed, the last value specified takes precedence.
  */
 public class AeronUri

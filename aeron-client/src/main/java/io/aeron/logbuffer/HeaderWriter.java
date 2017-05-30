@@ -30,7 +30,7 @@ import static io.aeron.protocol.HeaderFlyweight.VERSION_FIELD_OFFSET;
 
 /**
  * Utility for applying a header to a message in a term buffer.
- *
+ * <p>
  * This class is designed to be thread safe to be used across multiple producers and makes the header
  * visible in the correct order for consumers.
  */

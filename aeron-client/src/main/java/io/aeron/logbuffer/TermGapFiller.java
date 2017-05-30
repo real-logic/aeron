@@ -28,7 +28,7 @@ public class TermGapFiller
 {
     /**
      * Try to gap fill the current term at a given offset if the gap contains no data.
-     *
+     * <p>
      * Note: the gap offset plus gap length must end on a {@link FrameDescriptor#FRAME_ALIGNMENT} boundary.
      *
      * @param logMetaDataBuffer containing the default headers

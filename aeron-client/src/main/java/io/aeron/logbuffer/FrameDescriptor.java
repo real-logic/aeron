@@ -25,10 +25,10 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * Description of the structure for message framing in a log buffer.
- *
+ * <p>
  * All messages are logged in frames that have a minimum header layout as follows plus a reserve then
  * the encoded message follows:
- *
+ * <p>
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -46,7 +46,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * ...                                                              |
  *  +---------------------------------------------------------------+
  * </pre>
- *
+ * <p>
  * The (B)egin and (E)nd flags are used for message fragmentation. R is for reserved bit.
  * Both (B)egin and (E)nd flags are set for a message that does not span frames.
  */

@@ -34,10 +34,10 @@ import static java.lang.System.getProperty;
 
 /**
  * This class provides the Media Driver and client with common configuration for the Aeron directory.
- *
+ * <p>
  * This class should have {@link #conclude()} called before the methods are used or at least
  * {@link #concludeAeronDirectory()} to avoid NPEs.
- *
+ * <p>
  * Properties
  * <ul>
  * <li><code>aeron.dir</code>: Use value as directory name for Aeron buffers and status.</li>
@@ -200,7 +200,7 @@ public class CommonContext implements AutoCloseable
 
     /**
      * Get the directory in which the aeron config files are stored.
-     *
+     * <p>
      * This is valid after a call to {@link #conclude()}.
      *
      * @return the directory in which the aeron config files are stored.
@@ -344,9 +344,9 @@ public class CommonContext implements AutoCloseable
     /**
      * Is a media driver active in the given directory?
      *
-     * @param directory to check
+     * @param directory       to check
      * @param driverTimeoutMs for the driver liveness check.
-     * @param logProgress for feedback as liveness checked.
+     * @param logProgress     for feedback as liveness checked.
      * @return true if a driver is active or false if not.
      */
     public static boolean isDriverActive(
@@ -396,7 +396,7 @@ public class CommonContext implements AutoCloseable
      * Is a media driver active in the current mapped CnC buffer?
      *
      * @param driverTimeoutMs for the driver liveness check.
-     * @param logProgress      for feedback as liveness checked.
+     * @param logProgress     for feedback as liveness checked.
      * @param cncByteBuffer   for the existing CnC file.
      * @return true if a driver is active or false if not.
      */

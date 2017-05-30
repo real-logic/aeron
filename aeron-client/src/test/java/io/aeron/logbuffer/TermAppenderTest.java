@@ -163,7 +163,7 @@ public class TermAppenderTest
         final int frameLength = headerLength + 1;
         final int requiredCapacity = align(headerLength + 1, FRAME_ALIGNMENT) + MAX_FRAME_LENGTH;
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[msgLength]);
-        int tail  = 0;
+        int tail = 0;
 
         logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, pack(TERM_ID, tail));
 

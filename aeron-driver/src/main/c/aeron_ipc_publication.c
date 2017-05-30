@@ -34,7 +34,7 @@ int aeron_ipc_publication_create(
         aeron_ipc_publication_location(path, sizeof(path), context->aeron_dir, session_id, stream_id, registration_id);
     aeron_ipc_publication_t *_pub = NULL;
     const uint64_t usable_fs_space = aeron_usable_fs_space(context->aeron_dir);
-    const uint64_t log_length = AERON_LOG_COMPUTE_LOG_LENGTH(term_buffer_length);
+    const uint64_t log_length = AERON_LOGBUFFER_COMPUTE_LOG_LENGTH(term_buffer_length);
 
     *publication = NULL;
 

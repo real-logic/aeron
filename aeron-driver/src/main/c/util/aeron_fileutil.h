@@ -20,6 +20,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include "concurrent/aeron_logbuffer_descriptor.h"
 
 typedef struct aeron_mapped_file_stct
 {
@@ -41,18 +42,13 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file);
 
 uint64_t aeron_usable_fs_space(const char *path);
 
-#define AERON_PARTITION_COUNT (3)
-
-/* TODO: replace with actual value */
-#define AERON_LOG_META_DATA_LENGTH (1024)
-#define AERON_LOG_META_DATA_SECTION_INDEX (AERON_PARTITION_COUNT)
-#define AERON_LOG_COMPUTE_LOG_LENGTH(term_length) (AERON_PARTITION_COUNT * term_length + AERON_LOG_META_DATA_LENGTH)
+#define AERON_LOG_META_DATA_SECTION_INDEX (AERON_LOGBUFFER_PARTITION_COUNT)
 
 typedef struct aeron_mapped_raw_log_stct
 {
-    aeron_mapped_buffer_t term_buffers[AERON_PARTITION_COUNT];
+    aeron_mapped_buffer_t term_buffers[AERON_LOGBUFFER_PARTITION_COUNT];
     aeron_mapped_buffer_t log_meta_data;
-    aeron_mapped_file_t mapped_files[AERON_PARTITION_COUNT + 1];
+    aeron_mapped_file_t mapped_files[AERON_LOGBUFFER_PARTITION_COUNT + 1];
     size_t num_mapped_files;
 }
 aeron_mapped_raw_log_t;

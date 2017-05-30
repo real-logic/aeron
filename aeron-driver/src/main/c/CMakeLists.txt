@@ -49,6 +49,7 @@ SET(HEADERS
     concurrent/aeron_distinct_error_log.h
     concurrent/aeron_broadcast_transmitter.h
     concurrent/aeron_counters_manager.h
+    concurrent/aeron_logbuffer_descriptor.h
     command/aeron_control_protocol.h
     aeronmd.h
     aeron_driver.h

@@ -134,7 +134,7 @@ class ReplaySession
 
     public void abort()
     {
-        if (!controlPublication.isClosed() && controlPublication.isConnected())
+        if (controlPublication.isConnected())
         {
             controlSessionProxy.sendReplayAborted(
                 controlPublication,

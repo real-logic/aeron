@@ -16,8 +16,7 @@
 package io.aeron.driver.status;
 
 import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.*;
 
 /**
  * System wide counters for monitoring. These are separate from counters used for position tracking on streams.
@@ -49,7 +48,7 @@ public enum SystemCounterDescriptor
     CONTROLLABLE_IDLE_STRATEGY(22, "ControllableIdleStrategy status"),
     LOSS_GAP_FILLS(23, "Loss gap fills");
     /**
-     * All system counters have the same type id, i.e. system counters are the same type. Others types can exist.
+     * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.
      */
     public static final int SYSTEM_COUNTER_TYPE_ID = 0;
 

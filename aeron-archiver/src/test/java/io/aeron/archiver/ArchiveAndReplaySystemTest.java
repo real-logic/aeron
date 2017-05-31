@@ -158,9 +158,11 @@ public class ArchiveAndReplaySystemTest
             .dirsDeleteOnStart(true);
 
         driver = MediaDriver.launch(driverCtx);
+
         archiveDir = TestUtil.makeTempDir();
         archiverCtx.archiveDir(archiveDir);
         archiver = Archiver.launch(archiverCtx);
+
         println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
         publishingClient = Aeron.connect();
     }

@@ -21,6 +21,7 @@ SET(SOURCE
     concurrent/aeron_distinct_error_log.c
     concurrent/aeron_broadcast_transmitter.c
     concurrent/aeron_counters_manager.c
+    concurrent/aeron_logbuffer_descriptor.c
     util/aeron_strutil.c
     util/aeron_fileutil.c
     util/aeron_arrayutil.c

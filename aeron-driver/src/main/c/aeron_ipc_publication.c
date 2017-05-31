@@ -95,3 +95,5 @@ void aeron_ipc_publication_close(aeron_ipc_publication_t *publication)
 
     aeron_free(publication);
 }
+
+extern int64_t aeron_ipc_publication_producer_position(aeron_ipc_publication_t *publication);

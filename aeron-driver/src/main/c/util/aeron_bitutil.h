@@ -17,6 +17,8 @@
 #ifndef AERON_BITUTIL_H
 #define AERON_BITUTIL_H
 
+#include <stdint.h>
+#include <stddef.h>
 #include "util/aeron_platform.h"
 
 #define AERON_CACHE_LINE_LENGTH (64)

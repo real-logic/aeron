@@ -123,13 +123,13 @@ public class RecordingSessionTest
             .epochClock(epochClock);
         final RecordingSession session = new RecordingSession(proxy, catalog, image, recordingContext);
 
-        assertEquals(Catalog.NULL_RECORD_ID, session.recordingId());
+        assertEquals(Catalog.NULL_RECORD_ID, session.sessionId());
 
         session.doWork();
 
-        assertEquals(recordingId, session.recordingId());
+        assertEquals(recordingId, session.sessionId());
 
-        final File recordingMetaFile = new File(tempDirForTest, recordingMetaFileName(session.recordingId()));
+        final File recordingMetaFile = new File(tempDirForTest, recordingMetaFileName(session.sessionId()));
         assertTrue(recordingMetaFile.exists());
 
         RecordingDescriptorDecoder metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
@@ -179,7 +179,7 @@ public class RecordingSessionTest
             new File(tempDirForTest, ArchiveUtil.recordingDataFileName(recordingId, 0));
         assertTrue(segmentFile.exists());
 
-        try (RecordingFragmentReader reader = new RecordingFragmentReader(session.recordingId(), tempDirForTest))
+        try (RecordingFragmentReader reader = new RecordingFragmentReader(session.sessionId(), tempDirForTest))
         {
             final int polled = reader.controlledPoll(
                 (buffer, offset, length) ->

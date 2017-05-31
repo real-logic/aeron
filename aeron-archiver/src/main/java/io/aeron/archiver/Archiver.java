@@ -21,32 +21,13 @@ import org.agrona.concurrent.*;
 
 import java.io.File;
 
-import static io.aeron.driver.MediaDriver.loadPropertiesFiles;
-
-public class Archiver implements AutoCloseable
+public final class Archiver implements AutoCloseable
 {
     private final Context ctx;
     private AgentRunner runner;
     private Aeron aeron;
 
-    /**
-     * Start an ArchiverConductor as a stand-alone process.
-     *
-     * @param args command line arguments
-     * @throws Exception if an error occurs
-     */
-    public static void main(final String[] args) throws Exception
-    {
-        loadPropertiesFiles(args);
-
-        try (Archiver ignore = Archiver.launch())
-        {
-            new ShutdownSignalBarrier().await();
-            System.out.println("Shutdown Archiver...");
-        }
-    }
-
-    public Archiver(final Context ctx)
+    private Archiver(final Context ctx)
     {
         this.ctx = ctx;
     }
@@ -57,7 +38,7 @@ public class Archiver implements AutoCloseable
         CloseHelper.close(aeron);
     }
 
-    public Archiver start()
+    private Archiver start()
     {
         ctx.clientContext.driverAgentInvoker(ctx.driverAgentInvoker());
         aeron = Aeron.connect(ctx.clientContext);

@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 /**
  * Consumes an {@link Image} and records data to file using an {@link Recorder}.
  */
-class RecordingSession implements ArchiveConductor.Session
+class RecordingSession implements Session
 {
     private enum State
     {
@@ -55,11 +55,6 @@ class RecordingSession implements ArchiveConductor.Session
     public boolean isDone()
     {
         return state == State.CLOSED;
-    }
-
-    public void remove(final ArchiveConductor conductor)
-    {
-        catalog.removeRecordingSession(recordingId);
     }
 
     public void abort()
@@ -94,7 +89,7 @@ class RecordingSession implements ArchiveConductor.Session
         return recorder.metaDataBuffer();
     }
 
-    long recordingId()
+    public long sessionId()
     {
         return recordingId;
     }

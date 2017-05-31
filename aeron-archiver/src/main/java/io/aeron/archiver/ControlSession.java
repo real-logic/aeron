@@ -19,7 +19,7 @@ import io.aeron.*;
 import io.aeron.archiver.codecs.ControlResponseCode;
 import org.agrona.*;
 
-class ControlSession implements ArchiveConductor.Session, ControlRequestListener
+class ControlSession implements Session, ControlRequestListener
 {
     enum State
     {
@@ -33,11 +33,19 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
     private ExclusivePublication reply;
     private State state = State.INIT;
 
-    ControlSession(final Image image, final ControlSessionProxy clientProxy, final ArchiveConductor conductor)
+    ControlSession(
+        final Image image,
+        final ControlSessionProxy clientProxy,
+        final ArchiveConductor conductor)
     {
         this.image = image;
         this.proxy = clientProxy;
         this.conductor = conductor;
+    }
+
+    public long sessionId()
+    {
+        return image.correlationId();
     }
 
     public void abort()
@@ -48,10 +56,6 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
     public boolean isDone()
     {
         return state == State.CLOSED;
-    }
-
-    public void remove(final ArchiveConductor conductor)
-    {
     }
 
     public int doWork()
@@ -117,9 +121,10 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
             throw new IllegalStateException();
         }
 
-        reply = conductor.clientConnect(channel, streamId);
+        reply = conductor.newControlPublication(channel, streamId);
     }
 
+    // TODO: remove external access to record start/stop
     public void onStopRecording(final long correlationId, final long recordingId)
     {
         validateActive();
@@ -134,6 +139,7 @@ class ControlSession implements ArchiveConductor.Session, ControlRequestListener
         }
     }
 
+    // TODO: remove external access to record start/stop
     public void onStartRecording(final long correlationId, final String channel, final int streamId)
     {
         validateActive();

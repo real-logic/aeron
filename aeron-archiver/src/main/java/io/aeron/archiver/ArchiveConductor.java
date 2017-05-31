@@ -21,7 +21,7 @@ import org.agrona.collections.*;
 import org.agrona.concurrent.*;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.function.Consumer;
 
 class ArchiveConductor implements Agent
@@ -37,22 +37,13 @@ class ArchiveConductor implements Agent
     private static final String DEFAULT_CONTROL_CHANNEL_TERM_LENGTH_PARAM =
         CommonContext.TERM_LENGTH_PARAM_NAME + "=" + Integer.toString(64 * 1024);
 
-    interface Session
-    {
-        void abort();
-
-        boolean isDone();
-
-        void remove(ArchiveConductor conductor);
-
-        int doWork();
-    }
-
     private final Aeron aeron;
     private final AgentInvoker aeronClientAgentInvoker;
     private final AgentInvoker driverAgentInvoker;
     private final Subscription controlSubscription;
     private final ArrayList<Session> sessions = new ArrayList<>();
+    private final ArrayList<ReplaySession> replaySessions = new ArrayList<>();
+    private final ArrayList<RecordingSession> recordingSessions = new ArrayList<>();
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
 
     private final Catalog catalog;
@@ -74,6 +65,8 @@ class ArchiveConductor implements Agent
     {
         this.aeron = aeron;
         this.aeronClientAgentInvoker = ctx.clientContext().conductorAgentInvoker();
+        Objects.requireNonNull(aeronClientAgentInvoker, "In the archiver context an invoker should be present");
+
         this.driverAgentInvoker = ctx.driverAgentInvoker();
 
         archiveDir = ctx.archiveDir();
@@ -117,6 +110,8 @@ class ArchiveConductor implements Agent
         workDone += aeronClientAgentInvoker.invoke();
         workDone += availableImageQueue.drain(newImageConsumer, QUEUE_DRAIN_LIMIT);
         workDone += doSessionsWork();
+        workDone += doRecordingSessionsWork();
+        workDone += doReplaySessionsWork();
 
         return workDone;
     }
@@ -130,16 +125,14 @@ class ArchiveConductor implements Agent
 
         isClosed = true;
 
-        for (final Session session : sessions)
-        {
-            session.abort();
-            while (!session.isDone())
-            {
-                session.doWork();
-            }
-            session.remove(this);
-        }
+        sessions.forEach(this::abortSession);
         sessions.clear();
+
+        replaySessions.forEach(this::abortReplaySession);
+        replaySessions.clear();
+
+        recordingSessions.forEach(this::abortRecordingSession);
+        recordingSessions.clear();
 
         if (!replaySessionByIdMap.isEmpty())
         {
@@ -150,9 +143,26 @@ class ArchiveConductor implements Agent
         CloseHelper.close(catalog);
     }
 
-    void removeReplaySession(final long sessionId)
+    private void abortSession(final Session session)
     {
-        replaySessionByIdMap.remove(sessionId);
+        session.abort();
+        while (!session.isDone())
+        {
+            session.doWork();
+        }
+    }
+
+    private void abortReplaySession(final ReplaySession replaySession)
+    {
+        abortSession(replaySession);
+        replaySessionByIdMap.remove(replaySession.sessionId());
+    }
+
+
+    private void abortRecordingSession(final RecordingSession recordingSession)
+    {
+        abortSession(recordingSession);
+        catalog.removeRecordingSession(recordingSession.sessionId());
     }
 
     private int doSessionsWork()
@@ -165,7 +175,44 @@ class ArchiveConductor implements Agent
             workDone += session.doWork();
             if (session.isDone())
             {
-                session.remove(this);
+                ArrayListUtil.fastUnorderedRemove(sessions, i, lastIndex);
+                lastIndex--;
+            }
+        }
+
+        return workDone;
+    }
+
+    private int doReplaySessionsWork()
+    {
+        int workDone = 0;
+        final ArrayList<ReplaySession> sessions = this.replaySessions;
+        for (int lastIndex = sessions.size() - 1, i = lastIndex; i >= 0; i--)
+        {
+            final ReplaySession session = sessions.get(i);
+            workDone += session.doWork();
+            if (session.isDone())
+            {
+                replaySessionByIdMap.remove(session.sessionId());
+                ArrayListUtil.fastUnorderedRemove(sessions, i, lastIndex);
+                lastIndex--;
+            }
+        }
+
+        return workDone;
+    }
+
+    private int doRecordingSessionsWork()
+    {
+        int workDone = 0;
+        final ArrayList<RecordingSession> sessions = this.recordingSessions;
+        for (int lastIndex = sessions.size() - 1, i = lastIndex; i >= 0; i--)
+        {
+            final RecordingSession session = sessions.get(i);
+            workDone += session.doWork();
+            if (session.isDone())
+            {
+                catalog.removeRecordingSession(session.sessionId());
                 ArrayListUtil.fastUnorderedRemove(sessions, i, lastIndex);
                 lastIndex--;
             }
@@ -176,18 +223,14 @@ class ArchiveConductor implements Agent
 
     private void availableImageHandler(final Image image)
     {
-        final Session session;
         if (image.subscription() == controlSubscription)
         {
-            session = new ControlSession(image, clientProxy, this);
+            sessions.add(new ControlSession(image, clientProxy, this));
         }
         else
         {
-            // TODO: simplify builder responsibility split to avoid confusion
-            session = new RecordingSession(notificationsProxy, catalog, image, recordingContext);
+            recordingSessions.add(new RecordingSession(notificationsProxy, catalog, image, recordingContext));
         }
-
-        sessions.add(session);
     }
 
     private void onAvailableImage(final Image image)
@@ -268,10 +311,10 @@ class ArchiveConductor implements Agent
             replayStreamId);
 
         replaySessionByIdMap.put(newId, replaySession);
-        sessions.add(replaySession);
+        replaySessions.add(replaySession);
     }
 
-    ExclusivePublication clientConnect(final String channel, final int streamId)
+    ExclusivePublication newControlPublication(final String channel, final int streamId)
     {
         final String controlChannel;
         if (!channel.contains(CommonContext.TERM_LENGTH_PARAM_NAME))

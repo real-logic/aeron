@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
-class ListRecordingsSession implements ArchiveConductor.Session
+class ListRecordingsSession implements Session
 {
     private enum State
     {
@@ -75,8 +75,9 @@ class ListRecordingsSession implements ArchiveConductor.Session
         return state == State.CLOSED;
     }
 
-    public void remove(final ArchiveConductor conductor)
+    public long sessionId()
     {
+        throw new UnsupportedOperationException();
     }
 
     public int doWork()

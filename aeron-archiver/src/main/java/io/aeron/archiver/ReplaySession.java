@@ -20,8 +20,7 @@ import io.aeron.archiver.codecs.*;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
-import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 
 import java.io.*;
 
@@ -35,13 +34,13 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * The {@link ArchiveConductor} will initiate a session on receiving a ReplayRequest
  * (see {@link io.aeron.archiver.codecs.ReplayRequestDecoder}). The session will:
  * <ul>
- * <li>Validate request parameters and respond with error,
- * or OK message(see {@link io.aeron.archiver.codecs.ControlResponseDecoder})</li>
+ * <li>Validate request parameters and respond with error, or OK message
+ * (see {@link io.aeron.archiver.codecs.ControlResponseDecoder})</li>
  * <li>Stream recorded data into the replayPublication {@link Publication}</li>
  * </ul>
  */
 class ReplaySession
-    implements ArchiveConductor.Session, RecordingFragmentReader.SimplifiedControlledPoll
+    implements Session, RecordingFragmentReader.SimplifiedControlledPoll
 {
     enum State
     {
@@ -149,11 +148,6 @@ class ReplaySession
     public boolean isDone()
     {
         return state == State.CLOSED;
-    }
-
-    public void remove(final ArchiveConductor conductor)
-    {
-        conductor.removeReplaySession(replaySessionId);
     }
 
     public boolean onFragment(final UnsafeBuffer termBuffer, final int offset, final int length)
@@ -338,5 +332,10 @@ class ReplaySession
         this.state = State.CLOSED;
 
         return 1;
+    }
+
+    public long sessionId()
+    {
+        return replaySessionId;
     }
 }

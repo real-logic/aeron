@@ -110,39 +110,44 @@ class ListRecordingsSession implements Session
 
     private int sendDescriptors()
     {
-        final RecordingSession session = catalog.getRecordingSession(recordingId);
-        if (session == null)
+        int sentBytes = 0;
+        do
         {
-            byteBuffer.clear();
-            descriptorBuffer.wrap(byteBuffer);
-            try
+            final RecordingSession session = catalog.getRecordingSession(recordingId);
+            if (session == null)
             {
-                if (!catalog.readDescriptor(recordingId, byteBuffer))
+                byteBuffer.clear();
+                descriptorBuffer.wrap(byteBuffer);
+                try
                 {
-                    proxy.sendDescriptorNotFound(reply, recordingId, catalog.nextRecordingId(), correlationId);
+                    if (!catalog.readDescriptor(recordingId, byteBuffer))
+                    {
+                        proxy.sendDescriptorNotFound(reply, recordingId, catalog.nextRecordingId(), correlationId);
+                        state = State.INACTIVE;
+                        return 0;
+                    }
+                }
+                catch (final IOException ex)
+                {
                     state = State.INACTIVE;
-                    return 0;
+                    LangUtil.rethrowUnchecked(ex);
                 }
             }
-            catch (final IOException ex)
+            else
+            {
+                descriptorBuffer.wrap(session.metaDataBuffer());
+            }
+
+            sentBytes += proxy.sendDescriptor(reply, descriptorBuffer, correlationId);
+
+            if (++recordingId >= toId)
             {
                 state = State.INACTIVE;
-                LangUtil.rethrowUnchecked(ex);
+                break;
             }
         }
-        else
-        {
-            descriptorBuffer.wrap(session.metaDataBuffer());
-        }
-
-        proxy.sendDescriptor(reply, descriptorBuffer, correlationId);
-
-        if (++recordingId >= toId)
-        {
-            state = State.INACTIVE;
-        }
-
-        return 1;
+        while (sentBytes < reply.maxPayloadLength());
+        return sentBytes;
     }
 
     private int init()

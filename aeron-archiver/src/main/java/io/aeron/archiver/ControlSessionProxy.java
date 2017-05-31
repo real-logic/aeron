@@ -111,7 +111,7 @@ class ControlSessionProxy
         send(reply, HEADER_LENGTH + recordingNotFoundResponseEncoder.encodedLength());
     }
 
-    void sendDescriptor(
+    int sendDescriptor(
         final ExclusivePublication reply,
         final UnsafeBuffer descriptorBuffer,
         final long correlationId)
@@ -124,6 +124,7 @@ class ControlSessionProxy
             .correlationId(correlationId);
 
         send(reply, descriptorBuffer, offset, length);
+        return length;
     }
 
     void sendReplayAborted(

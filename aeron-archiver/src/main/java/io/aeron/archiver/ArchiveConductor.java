@@ -34,7 +34,8 @@ class ArchiveConductor implements Agent
     /**
      * Low term length for control channel reflect expected low bandwidth usage.
      */
-    private static final int DEFAULT_CONTROL_CHANNEL_TERM_LENGTH = 64 * 1024;
+    private static final String DEFAULT_CONTROL_CHANNEL_TERM_LENGTH_PARAM =
+        CommonContext.TERM_LENGTH_PARAM_NAME + "=" + Integer.toString(64 * 1024);
 
     interface Session
     {
@@ -46,7 +47,6 @@ class ArchiveConductor implements Agent
 
         int doWork();
     }
-
 
     private final Aeron aeron;
     private final AgentInvoker aeronClientAgentInvoker;
@@ -277,14 +277,14 @@ class ArchiveConductor implements Agent
         if (!channel.contains(CommonContext.TERM_LENGTH_PARAM_NAME))
         {
             initUriBuilder(channel);
-            uriBuilder
-                .append(CommonContext.TERM_LENGTH_PARAM_NAME).append('=').append(DEFAULT_CONTROL_CHANNEL_TERM_LENGTH);
+            uriBuilder.append(DEFAULT_CONTROL_CHANNEL_TERM_LENGTH_PARAM);
             controlChannel = uriBuilder.toString();
         }
         else
         {
             controlChannel = channel;
         }
+
         return aeron.addExclusivePublication(controlChannel, streamId);
     }
 

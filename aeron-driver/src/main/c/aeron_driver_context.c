@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <math.h>
 #include <limits.h>
+#include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_fileutil.h"
 #include "aeron_driver_context.h"
 #include "aeron_alloc.h"
@@ -156,6 +157,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->client_liveness_timeout_ns = 5 * 1000 * 1000 * 1000L;
     _context->term_buffer_length = 16 * 1024 * 1024;
     _context->ipc_term_buffer_length = 64 * 1024 * 1024;
+    _context->mtu_length = 4096;
 
     /* set from env */
     char *value = NULL;
@@ -241,6 +243,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             _context->ipc_term_buffer_length,
             1024,
             INT32_MAX);
+
+    _context->mtu_length =
+        aeron_config_parse_uint64(
+            getenv(AERON_MTU_LENGTH_ENV_VAR),
+            _context->mtu_length,
+            AERON_DATA_HEADER_LENGTH,
+            AERON_MAX_UDP_PAYLOAD_LENGTH);
 
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;

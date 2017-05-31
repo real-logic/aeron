@@ -208,6 +208,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
             if (ensure_capacity_result >= 0)
             {
                 int32_t session_id = conductor->next_session_id++;
+                int32_t initial_term_id = aeron_randomised_int32();
                 int32_t pub_lmt_id =
                     aeron_counter_publisher_limit_allocate(
                         &conductor->counters_manager, registration_id, session_id, stream_id, AERON_IPC_CHANNEL);
@@ -220,7 +221,9 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                         stream_id,
                         registration_id,
                         pub_lmt_id,
-                        conductor->context->ipc_term_buffer_length) >= 0)
+                        initial_term_id,
+                        conductor->context->ipc_term_buffer_length,
+                        conductor->context->mtu_length) >= 0)
                 {
                     client->publication_links.array[client->publication_links.length++].resource =
                         &publication->conductor_fields.managed_resource;

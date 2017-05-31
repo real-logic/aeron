@@ -53,7 +53,9 @@ int aeron_ipc_publication_create(
     int32_t stream_id,
     int64_t registration_id,
     int32_t pub_lmt_counter_id,
-    size_t term_buffer_length);
+    int32_t initial_term_id,
+    size_t term_buffer_length,
+    size_t mtu_length);
 
 void aeron_ipc_publication_close(aeron_ipc_publication_t *publication);
 

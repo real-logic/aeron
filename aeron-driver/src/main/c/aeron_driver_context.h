@@ -69,6 +69,7 @@ typedef struct aeron_driver_context_stct
     size_t error_buffer_length;             /* aeron.error.buffer.length = 1MB */
     size_t term_buffer_length;              /* aeron.term.buffer.length = 16 * 1024 * 1024 */
     size_t ipc_term_buffer_length;          /* aeron.ipc.term.buffer.length = 64 * 1024 * 1024 */
+    size_t mtu_length;                      /* aeron.mtu.length = 4096 */
 
     aeron_mapped_file_t cnc_map;
 

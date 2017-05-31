@@ -52,6 +52,7 @@ SET(HEADERS
     concurrent/aeron_counters_manager.h
     concurrent/aeron_logbuffer_descriptor.h
     command/aeron_control_protocol.h
+    protocol/aeron_udp_protocol.h
     aeronmd.h
     aeron_driver.h
     aeron_driver_context.h

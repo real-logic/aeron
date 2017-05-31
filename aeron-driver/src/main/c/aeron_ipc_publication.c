@@ -19,6 +19,7 @@
 #include "aeron_ipc_publication.h"
 #include "util/aeron_fileutil.h"
 #include "aeron_alloc.h"
+#include "protocol/aeron_udp_protocol.h"
 
 int aeron_ipc_publication_create(
     aeron_ipc_publication_t **publication,
@@ -27,7 +28,9 @@ int aeron_ipc_publication_create(
     int32_t stream_id,
     int64_t registration_id,
     int32_t pub_lmt_counter_id,
-    size_t term_buffer_length)
+    int32_t initial_term_id,
+    size_t term_buffer_length,
+    size_t mtu_length)
 {
     char path[AERON_MAX_PATH];
     int path_length =
@@ -66,7 +69,14 @@ int aeron_ipc_publication_create(
     strncpy(_pub->log_file_name, path, path_length);
     _pub->log_meta_data = (aeron_logbuffer_metadata_t *)(_pub->mapped_raw_log.log_meta_data.addr);
 
-    /* TODO: set up log meta data */
+    _pub->log_meta_data->term_tail_counters[0] = (int64_t)initial_term_id << 32;
+    _pub->log_meta_data->initialTerm_id = initial_term_id;
+    _pub->log_meta_data->mtu_length = (int32_t)mtu_length;
+    _pub->log_meta_data->correlation_id = registration_id;
+    _pub->log_meta_data->time_of_last_status_message = 0;
+    _pub->log_meta_data->end_of_stream_position = INT64_MAX;
+    aeron_logbuffer_fill_default_header(
+        _pub->mapped_raw_log.mapped_files[AERON_LOG_META_DATA_SECTION_INDEX].addr, session_id, stream_id, initial_term_id);
 
     _pub->conductor_fields.subscribeable.array = NULL;
     _pub->conductor_fields.subscribeable.length = 0;
@@ -76,7 +86,7 @@ int aeron_ipc_publication_create(
     _pub->session_id = session_id;
     _pub->stream_id = stream_id;
     _pub->pub_lmt_counter_id = pub_lmt_counter_id;
-    /* TODO: _pub->initial_term_id = ; */
+    _pub->initial_term_id = initial_term_id;
     _pub->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)term_buffer_length);
 
     /* TODO: set other values */

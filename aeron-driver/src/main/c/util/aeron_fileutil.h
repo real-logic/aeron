@@ -50,6 +50,7 @@ typedef struct aeron_mapped_raw_log_stct
     aeron_mapped_buffer_t log_meta_data;
     aeron_mapped_file_t mapped_files[AERON_LOGBUFFER_PARTITION_COUNT + 1];
     size_t num_mapped_files;
+    size_t term_length;
 }
 aeron_mapped_raw_log_t;
 

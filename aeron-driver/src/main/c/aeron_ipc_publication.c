@@ -64,6 +64,10 @@ int aeron_ipc_publication_create(
     }
 
     strncpy(_pub->log_file_name, path, path_length);
+    _pub->log_meta_data = (aeron_logbuffer_metadata_t *)(_pub->mapped_raw_log.log_meta_data.addr);
+
+    /* TODO: set up log meta data */
+
     _pub->conductor_fields.subscribeable.array = NULL;
     _pub->conductor_fields.subscribeable.length = 0;
     _pub->conductor_fields.subscribeable.capacity = 0;
@@ -72,6 +76,8 @@ int aeron_ipc_publication_create(
     _pub->session_id = session_id;
     _pub->stream_id = stream_id;
     _pub->pub_lmt_counter_id = pub_lmt_counter_id;
+    /* TODO: _pub->initial_term_id = ; */
+    _pub->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)term_buffer_length);
 
     /* TODO: set other values */
 

@@ -227,6 +227,8 @@ int aeron_map_raw_log(
                 (uint8_t *)mapped_raw_log->mapped_files[0].addr + (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
             mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
 
+            mapped_raw_log->term_length = term_length;
+
             result = 0;
         }
         else
@@ -286,6 +288,8 @@ int aeron_map_raw_log(
             mapped_raw_log->log_meta_data.addr =
                 (uint8_t *)mapped_raw_log->mapped_files[AERON_LOG_META_DATA_SECTION_INDEX].addr;
             mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
+
+            mapped_raw_log->term_length = term_length;
 
             result = 0;
         }

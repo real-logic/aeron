@@ -64,6 +64,8 @@ int64_t aeron_epochclock()
     return (ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
 }
 
+extern int aeron_number_of_trailing_zeroes(int32_t value);
+
 int32_t aeron_randomised_int32()
 {
     uint32_t value = arc4random();

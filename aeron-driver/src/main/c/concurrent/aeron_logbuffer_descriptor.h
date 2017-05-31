@@ -46,6 +46,35 @@ aeron_logbuffer_metadata_t;
 
 #define AERON_LOGBUFFER_COMPUTE_LOG_LENGTH(term_length) ((term_length * AERON_LOGBUFFER_PARTITION_COUNT) + AERON_LOGBUFFER_META_DATA_LENGTH)
 
-#define AERON_LOGBUFFER_GET_ACTIVE_PARTITION_INDEX(d,m) (AERON_GET_VOLATILE(d,(m->active_partition_index)))
+#define AERON_LOGBUFFER_ACTIVE_PARTITION_INDEX_VOLATILE(d,m) (AERON_GET_VOLATILE(d,(m->active_partition_index)))
+
+#define AERON_LOGBUFFER_RAWTAIL_VOLATILE(d,m) \
+do \
+{ \
+    size_t partition; \
+    AERON_GET_VOLATILE(partition,(m->active_partition_index)); \
+    AERON_GET_VOLATILE(d, m->term_tail_counters[partition]); \
+} \
+while(0)
+
+inline int32_t aeron_logbuffer_term_offset(int64_t raw_tail, int32_t term_length)
+{
+    int32_t offset = (int32_t)(raw_tail & 0xFFFFFFFFL);
+
+    return (offset < term_length) ? offset : term_length;
+}
+
+inline int32_t aeron_logbuffer_term_id(int64_t raw_tail)
+{
+    return (int32_t)(raw_tail >> 32);
+}
+
+inline int64_t aeron_logbuffer_compute_position(
+    int32_t active_term_id, int32_t term_offset, size_t position_bits_to_shift, int32_t initial_term_id)
+{
+    int32_t term_count = active_term_id - initial_term_id;
+
+    return (term_count << position_bits_to_shift) + term_offset;
+}
 
 #endif //AERON_AERON_LOGBUFFER_DESCRIPTOR_H

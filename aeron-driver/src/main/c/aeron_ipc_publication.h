@@ -34,12 +34,15 @@ typedef struct aeron_ipc_publication_stct
     /* uint8_t conductor_fields_pad[(2 * AERON_CACHE_LINE_LENGTH) - sizeof(struct conductor_fields_stct)]; */
 
     aeron_mapped_raw_log_t mapped_raw_log;
+    aeron_logbuffer_metadata_t *log_meta_data;
 
     char *log_file_name;
     int32_t session_id;
     int32_t stream_id;
     int32_t pub_lmt_counter_id;
+    int32_t initial_term_id;
     size_t log_file_name_length;
+    size_t position_bits_to_shift;
 }
 aeron_ipc_publication_t;
 
@@ -53,5 +56,18 @@ int aeron_ipc_publication_create(
     size_t term_buffer_length);
 
 void aeron_ipc_publication_close(aeron_ipc_publication_t *publication);
+
+inline int64_t aeron_ipc_publication_producer_position(aeron_ipc_publication_t *publication)
+{
+    int64_t raw_tail;
+
+    AERON_LOGBUFFER_RAWTAIL_VOLATILE(raw_tail, publication->log_meta_data);
+
+    return aeron_logbuffer_compute_position(
+        aeron_logbuffer_term_id(raw_tail),
+        aeron_logbuffer_term_offset(raw_tail, (int32_t)publication->mapped_raw_log.term_length),
+        publication->position_bits_to_shift,
+        publication->initial_term_id);
+}
 
 #endif //AERON_AERON_IPC_PUBLICATION_H

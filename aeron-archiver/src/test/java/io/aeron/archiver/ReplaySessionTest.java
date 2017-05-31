@@ -434,7 +434,6 @@ public class ReplaySessionTest
         when(control.isClosed()).thenReturn(false);
         when(replay.isConnected()).thenReturn(false);
 
-        // does not switch to replay mode until BOTH publications are established
         replaySession.doWork();
 
         when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);

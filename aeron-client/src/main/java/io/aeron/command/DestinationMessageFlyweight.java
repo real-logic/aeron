@@ -17,6 +17,28 @@ package io.aeron.command;
 
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
+/**
+ * Control message for adding or removing a destination for a Publication in multi-destination-cast.
+ * <pre>
+ *   0                   1                   2                   3
+ *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                          Client ID                            |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                    Command Correlation ID                     |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                  Registration Correlation ID                  |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                       Channel Length                          |
+ *  +---------------------------------------------------------------+
+ *  |                       Channel (ASCII)                        ...
+ * ...                                                              |
+ *  +---------------------------------------------------------------+
+ * </pre>
+ */
 public class DestinationMessageFlyweight extends CorrelatedMessageFlyweight
 {
     private static final int REGISTRATION_CORRELATION_ID_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;

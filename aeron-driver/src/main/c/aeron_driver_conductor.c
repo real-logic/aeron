@@ -577,7 +577,7 @@ int aeron_driver_conductor_link_ipc_subscribeable(
     if (ensure_capacity_result >= 0)
     {
         aeron_image_buffers_ready_subscriber_position_t position;
-        int64_t joining_position = 0; /* TODO: get joining position from publication */
+        int64_t joining_position = aeron_ipc_publication_joining_position(ipc_publication);
         int32_t counter_id = aeron_counter_subscription_position_allocate(
             &conductor->counters_manager,
             link->registration_id,

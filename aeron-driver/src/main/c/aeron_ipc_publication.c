@@ -108,3 +108,4 @@ void aeron_ipc_publication_close(aeron_ipc_publication_t *publication)
 }
 
 extern int64_t aeron_ipc_publication_producer_position(aeron_ipc_publication_t *publication);
+extern int64_t aeron_ipc_publication_joining_position(aeron_ipc_publication_t *publication);

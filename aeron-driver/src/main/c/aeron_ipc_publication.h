@@ -73,4 +73,9 @@ inline int64_t aeron_ipc_publication_producer_position(aeron_ipc_publication_t *
         publication->initial_term_id);
 }
 
+inline int64_t aeron_ipc_publication_joining_position(aeron_ipc_publication_t *publication)
+{
+    return aeron_ipc_publication_producer_position(publication);
+}
+
 #endif //AERON_AERON_IPC_PUBLICATION_H

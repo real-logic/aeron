@@ -83,6 +83,7 @@ int aeron_ipc_publication_create(
     _pub->conductor_fields.subscribeable.capacity = 0;
     _pub->conductor_fields.managed_resource.registration_id = registration_id;
     _pub->conductor_fields.managed_resource.refcnt = 0;
+    _pub->conductor_fields.has_reached_end_of_life = false;
     _pub->session_id = session_id;
     _pub->stream_id = stream_id;
     _pub->pub_lmt_position.counter_id = pub_lmt_position->counter_id;
@@ -107,5 +108,17 @@ void aeron_ipc_publication_close(aeron_ipc_publication_t *publication)
     aeron_free(publication);
 }
 
+int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication)
+{
+    /* TODO: finish */
+    return 0;
+}
+
+void aeron_ipc_publication_on_time_event(aeron_ipc_publication_t *publication, int64_t now_ns, int64_t now_ms)
+{
+    /* TODO: finish */
+}
+
 extern int64_t aeron_ipc_publication_producer_position(aeron_ipc_publication_t *publication);
 extern int64_t aeron_ipc_publication_joining_position(aeron_ipc_publication_t *publication);
+extern bool aeron_ipc_publication_has_reached_end_of_life(aeron_ipc_publication_t *publication);

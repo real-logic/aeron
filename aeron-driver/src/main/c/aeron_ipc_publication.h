@@ -28,6 +28,7 @@ typedef struct aeron_ipc_publication_stct
     {
         aeron_driver_managed_resource_t managed_resource;
         aeron_subscribeable_t subscribeable;
+        bool has_reached_end_of_life;
     }
     conductor_fields;
 
@@ -43,7 +44,6 @@ typedef struct aeron_ipc_publication_stct
     int32_t initial_term_id;
     size_t log_file_name_length;
     size_t position_bits_to_shift;
-
 }
 aeron_ipc_publication_t;
 
@@ -59,6 +59,10 @@ int aeron_ipc_publication_create(
     size_t mtu_length);
 
 void aeron_ipc_publication_close(aeron_ipc_publication_t *publication);
+
+int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication);
+
+void aeron_ipc_publication_on_time_event(aeron_ipc_publication_t *publication, int64_t now_ns, int64_t now_ms);
 
 inline int64_t aeron_ipc_publication_producer_position(aeron_ipc_publication_t *publication)
 {
@@ -76,6 +80,11 @@ inline int64_t aeron_ipc_publication_producer_position(aeron_ipc_publication_t *
 inline int64_t aeron_ipc_publication_joining_position(aeron_ipc_publication_t *publication)
 {
     return aeron_ipc_publication_producer_position(publication);
+}
+
+inline bool aeron_ipc_publication_has_reached_end_of_life(aeron_ipc_publication_t *publication)
+{
+    return publication->conductor_fields.has_reached_end_of_life;
 }
 
 #endif //AERON_AERON_IPC_PUBLICATION_H

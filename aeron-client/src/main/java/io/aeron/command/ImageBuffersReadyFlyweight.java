@@ -41,20 +41,20 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  +---------------------------------------------------------------+
  *  |                   Subscriber Position Count                   |
  *  +---------------------------------------------------------------+
- *  |                     Subscriber Position Id 0                  |
+ *  |                    Subscriber Position Id 0                   |
  *  +---------------------------------------------------------------+
- *  |                         Registration Id 0                     |
+ *  |                       Registration Id 0                       |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                     Subscriber Position Id 1                  |
+ *  |                    Subscriber Position Id 1                   |
  *  +---------------------------------------------------------------+
- *  |                         Registration Id 1                     |
+ *  |                       Registration Id 1                       |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                                                              ...
  * ...     Up to "Position Indicators Count" entries of this form   |
  *  +---------------------------------------------------------------+
- *  |                         Log File Length                       |
+ *  |                        Log File Length                        |
  *  +---------------------------------------------------------------+
  *  |                     Log File Name (ASCII)                    ...
  * ...                                                              |

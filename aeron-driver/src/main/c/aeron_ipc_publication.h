@@ -34,15 +34,16 @@ typedef struct aeron_ipc_publication_stct
     /* uint8_t conductor_fields_pad[(2 * AERON_CACHE_LINE_LENGTH) - sizeof(struct conductor_fields_stct)]; */
 
     aeron_mapped_raw_log_t mapped_raw_log;
+    aeron_position_t pub_lmt_position;
     aeron_logbuffer_metadata_t *log_meta_data;
 
     char *log_file_name;
     int32_t session_id;
     int32_t stream_id;
-    int32_t pub_lmt_counter_id;
     int32_t initial_term_id;
     size_t log_file_name_length;
     size_t position_bits_to_shift;
+
 }
 aeron_ipc_publication_t;
 
@@ -52,7 +53,7 @@ int aeron_ipc_publication_create(
     int32_t session_id,
     int32_t stream_id,
     int64_t registration_id,
-    int32_t pub_lmt_counter_id,
+    aeron_position_t *pub_lmt_position,
     int32_t initial_term_id,
     size_t term_buffer_length,
     size_t mtu_length);

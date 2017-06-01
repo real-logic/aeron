@@ -27,7 +27,7 @@ int aeron_ipc_publication_create(
     int32_t session_id,
     int32_t stream_id,
     int64_t registration_id,
-    int32_t pub_lmt_counter_id,
+    aeron_position_t *pub_lmt_position,
     int32_t initial_term_id,
     size_t term_buffer_length,
     size_t mtu_length)
@@ -85,7 +85,8 @@ int aeron_ipc_publication_create(
     _pub->conductor_fields.managed_resource.refcnt = 0;
     _pub->session_id = session_id;
     _pub->stream_id = stream_id;
-    _pub->pub_lmt_counter_id = pub_lmt_counter_id;
+    _pub->pub_lmt_position.counter_id = pub_lmt_position->counter_id;
+    _pub->pub_lmt_position.value_addr = pub_lmt_position->value_addr;
     _pub->initial_term_id = initial_term_id;
     _pub->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)term_buffer_length);
 

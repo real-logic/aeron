@@ -209,18 +209,22 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
             {
                 int32_t session_id = conductor->next_session_id++;
                 int32_t initial_term_id = aeron_randomised_int32();
-                int32_t pub_lmt_id =
+                aeron_position_t pub_lmt_position;
+
+                pub_lmt_position.counter_id =
                     aeron_counter_publisher_limit_allocate(
                         &conductor->counters_manager, registration_id, session_id, stream_id, AERON_IPC_CHANNEL);
+                pub_lmt_position.value_addr =
+                    aeron_counter_addr(&conductor->counters_manager, (int32_t)pub_lmt_position.counter_id);
 
-                if (pub_lmt_id >= 0 &&
+                if (pub_lmt_position.counter_id >= 0 &&
                     aeron_ipc_publication_create(
                         &publication,
                         conductor->context,
                         session_id,
                         stream_id,
                         registration_id,
-                        pub_lmt_id,
+                        &pub_lmt_position,
                         initial_term_id,
                         conductor->context->ipc_term_buffer_length,
                         conductor->context->mtu_length) >= 0)
@@ -657,7 +661,7 @@ int aeron_driver_conductor_on_add_ipc_publication(
         command->correlated.correlation_id,
         publication->stream_id,
         publication->session_id,
-        publication->pub_lmt_counter_id,
+        (int32_t)publication->pub_lmt_position.counter_id,
         is_exclusive,
         publication->log_file_name,
         publication->log_file_name_length);

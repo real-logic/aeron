@@ -158,6 +158,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->term_buffer_length = 16 * 1024 * 1024;
     _context->ipc_term_buffer_length = 64 * 1024 * 1024;
     _context->mtu_length = 4096;
+    _context->ipc_publication_window_length = 0;
 
     /* set from env */
     char *value = NULL;
@@ -250,6 +251,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             _context->mtu_length,
             AERON_DATA_HEADER_LENGTH,
             AERON_MAX_UDP_PAYLOAD_LENGTH);
+
+    _context->ipc_publication_window_length =
+        aeron_config_parse_uint64(
+            getenv(AERON_IPC_PUBLICATION_TERM_WINDOW_LENGTH_ENV_VAR),
+            _context->ipc_publication_window_length,
+            0,
+            INT32_MAX);
 
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;
@@ -393,6 +401,8 @@ extern uint8_t *aeron_cnc_counters_metadata_buffer(aeron_cnc_metadata_t *metadat
 extern uint8_t *aeron_cnc_counters_values_buffer(aeron_cnc_metadata_t *metadata);
 extern uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata);
 extern size_t aeron_cnc_computed_length(size_t total_length_of_buffers);
+
+extern size_t aeron_ipc_publication_term_window_length(aeron_driver_context_t *context, size_t term_length);
 
 int aeron_driver_context_set(aeron_driver_context_t *context, const char *setting, const char *value)
 {

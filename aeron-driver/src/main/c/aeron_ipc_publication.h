@@ -28,6 +28,9 @@ typedef struct aeron_ipc_publication_stct
     {
         aeron_driver_managed_resource_t managed_resource;
         aeron_subscribeable_t subscribeable;
+        int64_t cleaning_position;
+        int64_t trip_limit;
+        int64_t consumer_position;
         bool has_reached_end_of_life;
     }
     conductor_fields;
@@ -39,6 +42,8 @@ typedef struct aeron_ipc_publication_stct
     aeron_logbuffer_metadata_t *log_meta_data;
 
     char *log_file_name;
+    int64_t term_window_length;
+    int64_t trip_gain;
     int32_t session_id;
     int32_t stream_id;
     int32_t initial_term_id;
@@ -61,6 +66,8 @@ int aeron_ipc_publication_create(
 void aeron_ipc_publication_close(aeron_ipc_publication_t *publication);
 
 int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication);
+
+void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, int64_t min_sub_pos);
 
 void aeron_ipc_publication_on_time_event(aeron_ipc_publication_t *publication, int64_t now_ns, int64_t now_ms);
 

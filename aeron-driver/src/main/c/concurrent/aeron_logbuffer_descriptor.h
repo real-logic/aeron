@@ -17,6 +17,7 @@
 #ifndef AERON_AERON_LOGBUFFER_DESCRIPTOR_H
 #define AERON_AERON_LOGBUFFER_DESCRIPTOR_H
 
+#include <assert.h>
 #include <protocol/aeron_udp_protocol.h>
 #include "util/aeron_bitutil.h"
 #include "concurrent/aeron_atomic.h"
@@ -70,6 +71,11 @@ inline int32_t aeron_logbuffer_term_offset(int64_t raw_tail, int32_t term_length
 inline int32_t aeron_logbuffer_term_id(int64_t raw_tail)
 {
     return (int32_t)(raw_tail >> 32);
+}
+
+inline size_t aeron_logbuffer_index_by_position(int64_t position, size_t position_bits_to_shift)
+{
+    return (size_t)((position >> position_bits_to_shift) % AERON_LOGBUFFER_PARTITION_COUNT);
 }
 
 inline int64_t aeron_logbuffer_compute_position(

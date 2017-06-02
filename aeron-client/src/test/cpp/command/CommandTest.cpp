@@ -143,13 +143,13 @@ TEST (commandTests, testImageBuffersReadyFlyweight)
         cmd.logFileName(logFileNameData).sourceIdentity(sourceInfoData);
         for (int n = 0; n < 4; n++)
         {
-            cmd.subscriberPosition(n, ImageBuffersReadyDefn::SubscriberPosition {n, n});
+            cmd.subscriberPosition(n, ImageBuffersReadyDefn::SubscriberPosition {n, 0, n});
         }
 
         ASSERT_EQ(ab.getInt64(BASEOFFSET + 0), -1);
         ASSERT_EQ(ab.getInt32(BASEOFFSET + 8), 0x02020202);
         ASSERT_EQ(ab.getInt32(BASEOFFSET + 12), 0x01010101);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 16), 12);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 16), 16);
         ASSERT_EQ(ab.getInt32(BASEOFFSET + 20), 4);
 
         const index_t startOfSubscriberPositions = BASEOFFSET + 24;
@@ -158,7 +158,7 @@ TEST (commandTests, testImageBuffersReadyFlyweight)
             ASSERT_EQ(
                 ab.getInt32(startOfSubscriberPositions + (n * sizeof(ImageBuffersReadyDefn::SubscriberPosition))), n);
             ASSERT_EQ(
-                ab.getInt32(startOfSubscriberPositions + (n * sizeof(ImageBuffersReadyDefn::SubscriberPosition)) + 4), n);
+                ab.getInt64(startOfSubscriberPositions + (n * sizeof(ImageBuffersReadyDefn::SubscriberPosition)) + 8), n);
         }
 
         const index_t startOfLogFileName = BASEOFFSET + 24 + (4 * sizeof(ImageBuffersReadyDefn::SubscriberPosition));

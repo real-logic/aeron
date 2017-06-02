@@ -45,14 +45,18 @@ namespace aeron { namespace command {
 * +---------------------------------------------------------------+
 * |                   Subscriber Position Count                   |
 * +---------------------------------------------------------------+
-* |                      Subscriber Position Id 0                 |
+* |                     Subscriber Position Id 0                  |
 * +---------------------------------------------------------------+
-* |                         Registration Id 0                     |
+* |                     Padding for alignment                     |
+* +---------------------------------------------------------------+
+* |                       Registration Id 0                       |
 * |                                                               |
 * +---------------------------------------------------------------+
-* |                     Subscriber Position Id 1                  |
+* |                    Subscriber Position Id 1                   |
 * +---------------------------------------------------------------+
-* |                         Registration Id 1                     |
+* |                     Padding for alignment                     |
+* +---------------------------------------------------------------+
+* |                       Registration Id 1                       |
 * |                                                               |
 * +---------------------------------------------------------------+
 * |                                                              ...
@@ -60,7 +64,7 @@ namespace aeron { namespace command {
 * +---------------------------------------------------------------+
 * |                         Log File Length                       |
 * +---------------------------------------------------------------+
-* |                          Log File Name                       ...
+* |                         Log File Name                        ...
 *...                                                              |
 * +---------------------------------------------------------------+
 * |                     Source identity Length                    |
@@ -83,6 +87,7 @@ struct ImageBuffersReadyDefn
     struct SubscriberPosition
     {
         std::int32_t indicatorId;
+        std::int32_t padding;
         std::int64_t registrationId;
     };
 };

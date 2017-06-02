@@ -159,6 +159,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->ipc_term_buffer_length = 64 * 1024 * 1024;
     _context->mtu_length = 4096;
     _context->ipc_publication_window_length = 0;
+    _context->publication_linger_timeout_ns = 5 * 1000 * 1000 * 1000L;
 
     /* set from env */
     char *value = NULL;
@@ -228,6 +229,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         aeron_config_parse_uint64(
             getenv(AERON_CLIENT_LIVENESS_TIMEOUT_ENV_VAR),
             _context->client_liveness_timeout_ns,
+            1000,
+            INT64_MAX);
+
+    _context->publication_linger_timeout_ns =
+        aeron_config_parse_uint64(
+            getenv(AERON_PUBLICATION_LINGER_TIMEOUT_ENV_VAR),
+            _context->publication_linger_timeout_ns,
             1000,
             INT64_MAX);
 

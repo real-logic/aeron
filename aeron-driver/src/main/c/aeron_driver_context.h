@@ -62,6 +62,7 @@ typedef struct aeron_driver_context_stct
     bool term_buffer_sparse_file;           /* aeron.term.buffer.sparse.file = false */
     uint64_t driver_timeout_ms;
     uint64_t client_liveness_timeout_ns;    /* aeron.client.liveness.timeout = 5s */
+    uint64_t publication_linger_timeout_ns; /* aeron.publication.linger.timeout = 5s */
     size_t to_driver_buffer_length;         /* aeron.conductor.buffer.length = 1MB + trailer*/
     size_t to_clients_buffer_length;        /* aeron.clients.buffer.length = 1MB + trailer */
     size_t counters_values_buffer_length;   /* aeron.counters.buffer.length = 1MB */

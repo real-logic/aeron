@@ -25,7 +25,9 @@ typedef struct aeron_driver_managed_resource_stct
 {
     int64_t registration_id;
     int64_t time_of_last_status_change;
-    int32_t refcnt;
+    void *clientd;
+    void (*decref)(void *);
+    void (*incref)(void *);
 }
 aeron_driver_managed_resource_t;
 

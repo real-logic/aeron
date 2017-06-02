@@ -154,7 +154,8 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
     return client;
 }
 
-void aeron_client_on_time_event(aeron_client_t *client, int64_t now_ns, int64_t now_ms)
+void aeron_client_on_time_event(
+    aeron_driver_conductor_t *conductor, aeron_client_t *client, int64_t now_ns, int64_t now_ms)
 {
     if (now_ns > (client->time_of_last_keepalive + client->client_liveness_timeout_ns))
     {
@@ -162,18 +163,18 @@ void aeron_client_on_time_event(aeron_client_t *client, int64_t now_ns, int64_t 
     }
 }
 
-bool aeron_client_has_reached_end_of_life(aeron_client_t *client)
+bool aeron_client_has_reached_end_of_life(aeron_driver_conductor_t *conductor, aeron_client_t *client)
 {
     return client->reached_end_of_life;
 }
 
-void aeron_client_delete(aeron_client_t *client)
+void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *client)
 {
     for (size_t i = 0; i < client->publication_links.length; i++)
     {
         aeron_driver_managed_resource_t *resource = client->publication_links.array[i].resource;
 
-        resource->refcnt--;
+        resource->decref(resource->clientd);
     }
 
     client->publication_links.length = 0; /* reuse array if it exists. */
@@ -181,29 +182,31 @@ void aeron_client_delete(aeron_client_t *client)
 }
 
 void aeron_ipc_publication_entry_on_time_event(
-    aeron_ipc_publication_entry_t *ipc_publication_entry, int64_t now_ns, int64_t now_ms)
+    aeron_driver_conductor_t *conductor, aeron_ipc_publication_entry_t *entry, int64_t now_ns, int64_t now_ms)
 {
-    aeron_ipc_publication_on_time_event(ipc_publication_entry->publication, now_ns, now_ms);
+    aeron_ipc_publication_on_time_event(entry->publication, now_ns, now_ms);
 }
 
-bool aeron_ipc_publication_entry_has_reached_end_of_life(aeron_ipc_publication_entry_t *ipc_publication_entry)
+bool aeron_ipc_publication_entry_has_reached_end_of_life(
+    aeron_driver_conductor_t *conductor, aeron_ipc_publication_entry_t *entry)
 {
-    return aeron_ipc_publication_has_reached_end_of_life(ipc_publication_entry->publication);
+    return aeron_ipc_publication_has_reached_end_of_life(entry->publication);
 }
 
-void aeron_ipc_publication_entry_delete(aeron_ipc_publication_entry_t *ipc_publication_entry)
+void aeron_ipc_publication_entry_delete(
+    aeron_driver_conductor_t *conductor, aeron_ipc_publication_entry_t *entry)
 {
-    aeron_ipc_publication_close(ipc_publication_entry->publication);
+    aeron_ipc_publication_close(entry->publication);
 }
 
-#define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(l,t,now_ns,now_ms) \
+#define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(c, l,t,now_ns,now_ms) \
 for (int last_index = (int)l.length - 1, i = last_index; i >= 0; i--) \
 { \
     t *elem = &l.array[i]; \
-    l.on_time_event(elem, now_ns, now_ms); \
-    if (l.has_reached_end_of_life(elem)) \
+    l.on_time_event(c, elem, now_ns, now_ms); \
+    if (l.has_reached_end_of_life(c, elem)) \
     { \
-        l.delete(elem); \
+        l.delete(c, elem); \
         aeron_array_fast_unordered_remove((uint8_t *)l.array, sizeof(t), i, last_index); \
         last_index--; \
     } \
@@ -212,8 +215,10 @@ for (int last_index = (int)l.length - 1, i = last_index; i >= 0; i--) \
 void aeron_driver_conductor_on_check_managed_resources(
     aeron_driver_conductor_t *conductor, int64_t now_ns, int64_t now_ms)
 {
-    AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(conductor->clients, aeron_client_t, now_ns, now_ms);
-    AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(conductor->ipc_publications, aeron_ipc_publication_entry_t, now_ns, now_ms);
+    AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(
+        conductor, conductor->clients, aeron_client_t, now_ns, now_ms);
+    AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(
+        conductor, conductor->ipc_publications, aeron_ipc_publication_entry_t, now_ns, now_ms);
 }
 
 aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
@@ -230,11 +235,13 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
     {
         for (size_t i = 0; i < conductor->ipc_publications.length; i++)
         {
-            aeron_ipc_publication_entry_t *entry = &conductor->ipc_publications.array[i];
+            aeron_ipc_publication_t *pub_entry = conductor->ipc_publications.array[i].publication;
 
-            if (stream_id == entry->publication->stream_id)
+            if (stream_id == pub_entry->stream_id &&
+                !pub_entry->is_exclusive &&
+                pub_entry->conductor_fields.status == AERON_IPC_PUBLICATION_STATUS_ACTIVE)
             {
-                publication = entry->publication;
+                publication = pub_entry;
                 break;
             }
         }
@@ -270,13 +277,13 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                         &pub_lmt_position,
                         initial_term_id,
                         conductor->context->ipc_term_buffer_length,
-                        conductor->context->mtu_length) >= 0)
+                        conductor->context->mtu_length,
+                        is_exclusive) >= 0)
                 {
                     client->publication_links.array[client->publication_links.length++].resource =
                         &publication->conductor_fields.managed_resource;
 
                     publication->conductor_fields.managed_resource.time_of_last_status_change = conductor->context->nano_clock();
-                    publication->conductor_fields.managed_resource.refcnt = 1;
                 }
             }
         }
@@ -285,7 +292,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
             client->publication_links.array[client->publication_links.length++].resource =
                 &publication->conductor_fields.managed_resource;
 
-            publication->conductor_fields.managed_resource.refcnt++;
+            publication->conductor_fields.managed_resource.incref(publication->conductor_fields.managed_resource.clientd);
         }
     }
 
@@ -739,7 +746,7 @@ int aeron_driver_conductor_on_remove_publication(
 
             if (command->registration_id == resource->registration_id)
             {
-                resource->refcnt--;
+                resource->decref(resource->clientd);
 
                 aeron_array_fast_unordered_remove(
                     (uint8_t *)client->publication_links.array, sizeof(aeron_publication_link_t), i, last_index);

@@ -18,6 +18,7 @@ package io.aeron.protocol;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
@@ -175,14 +176,76 @@ public class StatusMessageFlyweight extends HeaderFlyweight
         return this;
     }
 
+    /**
+     * Identifier for the receiver to distinguish them for FlowControl strategies.
+     *
+     * @return identifier for the receiver to distinguish them for FlowControl strategies.
+     */
     public long receiverId()
     {
-        return getLong(RECEIVER_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        final long value;
+        if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
+        {
+            value =
+                (
+                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 7)) << 56) |
+                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 6) & 0xFF) << 48) |
+                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 5) & 0xFF) << 40) |
+                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 4) & 0xFF) << 32) |
+                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 3) & 0xFF) << 24) |
+                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 2) & 0xFF) << 16) |
+                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 1) & 0xFF) << 8) |
+                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 0) & 0xFF))
+                );
+        }
+        else
+        {
+            value =
+                (
+                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 0)) << 56) |
+                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 1) & 0xFF) << 48) |
+                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 2) & 0xFF) << 40) |
+                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 3) & 0xFF) << 32) |
+                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 4) & 0xFF) << 24) |
+                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 5) & 0xFF) << 16) |
+                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 6) & 0xFF) << 8) |
+                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 7) & 0xFF))
+                );
+        }
+
+        return value;
     }
 
+    /**
+     * Identifier for the receiver to distinguish them for FlowControl strategies.
+     *
+     * @param id for the receiver to distinguish them for FlowControl strategies.
+     * @return flyweight
+     */
     public StatusMessageFlyweight receiverId(final long id)
     {
-        putLong(RECEIVER_ID_FIELD_OFFSET, id, LITTLE_ENDIAN);
+        if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
+        {
+            putByte(RECEIVER_ID_FIELD_OFFSET + 7, (byte)(id >> 56));
+            putByte(RECEIVER_ID_FIELD_OFFSET + 6, (byte)(id >> 48));
+            putByte(RECEIVER_ID_FIELD_OFFSET + 5, (byte)(id >> 40));
+            putByte(RECEIVER_ID_FIELD_OFFSET + 4, (byte)(id >> 32));
+            putByte(RECEIVER_ID_FIELD_OFFSET + 3, (byte)(id >> 24));
+            putByte(RECEIVER_ID_FIELD_OFFSET + 2, (byte)(id >> 16));
+            putByte(RECEIVER_ID_FIELD_OFFSET + 1, (byte)(id >> 8));
+            putByte(RECEIVER_ID_FIELD_OFFSET + 0, (byte)(id));
+        }
+        else
+        {
+            putByte(RECEIVER_ID_FIELD_OFFSET + 0, (byte)(id >> 56));
+            putByte(RECEIVER_ID_FIELD_OFFSET + 1, (byte)(id >> 48));
+            putByte(RECEIVER_ID_FIELD_OFFSET + 2, (byte)(id >> 40));
+            putByte(RECEIVER_ID_FIELD_OFFSET + 3, (byte)(id >> 32));
+            putByte(RECEIVER_ID_FIELD_OFFSET + 4, (byte)(id >> 24));
+            putByte(RECEIVER_ID_FIELD_OFFSET + 5, (byte)(id >> 16));
+            putByte(RECEIVER_ID_FIELD_OFFSET + 6, (byte)(id >> 8));
+            putByte(RECEIVER_ID_FIELD_OFFSET + 7, (byte)(id));
+        }
 
         return this;
     }

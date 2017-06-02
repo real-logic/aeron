@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.LangUtil;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.concurrent.NanoClock;
@@ -97,13 +98,14 @@ public class UdpDestinationTracker
         return minByteSent;
     }
 
-    public void destinationActivity(final long receiverId, final InetSocketAddress destAddress)
+    public void destinationActivity(final StatusMessageFlyweight msg, final InetSocketAddress destAddress)
     {
         if (destinationTimeoutNs > 0)
         {
             final ArrayList<Destination> destinationList = this.destinationList;
             final long nowNs = nanoClock.nanoTime();
             boolean isExisting = false;
+            final long receiverId = msg.receiverId();
 
             for (int i = 0, size = destinationList.size(); i < size; i++)
             {

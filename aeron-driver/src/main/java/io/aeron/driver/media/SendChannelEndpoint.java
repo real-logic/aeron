@@ -208,7 +208,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
         if (null != multiDestinationTracker)
         {
-            multiDestinationTracker.destinationActivity(msg.receiverId(), srcAddress);
+            multiDestinationTracker.destinationActivity(msg, srcAddress);
 
             if (0 == msg.sessionId() && 0 == msg.streamId() && SEND_SETUP_FLAG == (msg.flags() & SEND_SETUP_FLAG))
             {

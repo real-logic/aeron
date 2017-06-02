@@ -62,6 +62,7 @@ typedef struct aeron_driver_context_stct
     bool term_buffer_sparse_file;           /* aeron.term.buffer.sparse.file = false */
     uint64_t driver_timeout_ms;
     uint64_t client_liveness_timeout_ns;    /* aeron.client.liveness.timeout = 5s */
+    uint64_t publication_linger_timeout_ns; /* aeron.publication.linger.timeout = 5s */
     size_t to_driver_buffer_length;         /* aeron.conductor.buffer.length = 1MB + trailer*/
     size_t to_clients_buffer_length;        /* aeron.clients.buffer.length = 1MB + trailer */
     size_t counters_values_buffer_length;   /* aeron.counters.buffer.length = 1MB */
@@ -69,6 +70,8 @@ typedef struct aeron_driver_context_stct
     size_t error_buffer_length;             /* aeron.error.buffer.length = 1MB */
     size_t term_buffer_length;              /* aeron.term.buffer.length = 16 * 1024 * 1024 */
     size_t ipc_term_buffer_length;          /* aeron.ipc.term.buffer.length = 64 * 1024 * 1024 */
+    size_t mtu_length;                      /* aeron.mtu.length = 4096 */
+    size_t ipc_publication_window_length;   /* aeron.ipc.publication.term.window.length = 0 */
 
     aeron_mapped_file_t cnc_map;
 
@@ -132,6 +135,20 @@ inline uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata)
 inline size_t aeron_cnc_computed_length(size_t total_length_of_buffers)
 {
     return AERON_CNC_VERSION_AND_META_DATA_LENGTH + total_length_of_buffers;
+}
+
+inline size_t aeron_ipc_publication_term_window_length(aeron_driver_context_t *context, size_t term_length)
+{
+    size_t publication_term_window_length = term_length;
+
+    if (0 == context->ipc_publication_window_length)
+    {
+        publication_term_window_length = (publication_term_window_length < context->ipc_publication_window_length) ?
+            publication_term_window_length :
+            context->ipc_publication_window_length;
+    }
+
+    return publication_term_window_length;
 }
 
 #endif //AERON_AERON_DRIVER_CONTEXT_H

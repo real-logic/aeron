@@ -65,6 +65,7 @@ int64_t aeron_epochclock()
 }
 
 extern int aeron_number_of_trailing_zeroes(int32_t value);
+extern int aeron_fast_mod3(int32_t value);
 
 int32_t aeron_randomised_int32()
 {

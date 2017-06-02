@@ -82,7 +82,6 @@ class ArchiveConductor extends SessionWorker
         replayer = new Replayer(aeron, ctx.epochClock(), ctx.archiveDir(), ctx.idleStrategy());
         replayerAgentInvoker = new AgentInvoker(errorHandler, errorCounter, replayer);
 
-
         recorder = new Recorder(
             aeron,
             ctx.archiveDir(),
@@ -128,9 +127,9 @@ class ArchiveConductor extends SessionWorker
         {
             return invoker.invoke();
         }
+
         return 0;
     }
-
 
     private void availableImageHandler(final Image image)
     {

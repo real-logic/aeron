@@ -183,7 +183,7 @@ public class ArchiveAndReplaySystemTest
     }
 
     @Ignore
-    @Test(timeout = 60000)
+    @Test(timeout = 10000)
     public void recordAndReplay() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(

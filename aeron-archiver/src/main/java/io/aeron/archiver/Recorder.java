@@ -97,8 +97,7 @@ class Recorder extends SessionWorker
         final long fromId,
         final int count)
     {
-        addSession(new ListRecordingsSession(correlationId, controlPublication, fromId, count, catalog,
-            controlSessionProxy));
+        addSession(new ListRecordingsSession(
+            correlationId, controlPublication, fromId, count, catalog, controlSessionProxy));
     }
-
 }

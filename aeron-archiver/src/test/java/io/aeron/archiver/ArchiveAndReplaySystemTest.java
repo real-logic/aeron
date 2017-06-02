@@ -182,6 +182,7 @@ public class ArchiveAndReplaySystemTest
         driverCtx.deleteAeronDirectory();
     }
 
+    @Ignore
     @Test(timeout = 60000)
     public void recordAndReplay() throws IOException, InterruptedException
     {

@@ -103,8 +103,6 @@ class RecordingFragmentReader implements AutoCloseable
         termBuffer = new UnsafeBuffer(mappedByteBuffer, recordingTermStartOffset, termBufferLength);
         termOffset = (int)(recordingOffset & (termBufferLength - 1));
 
-        // TODO: Test for starting position being correct with termId and termOffset of first frame.
-
         int frameOffset = 0;
         while (frameOffset < termOffset)
         {

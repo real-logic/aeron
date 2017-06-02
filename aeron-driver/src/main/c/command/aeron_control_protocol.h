@@ -97,6 +97,7 @@ aeron_image_buffers_ready_t;
 typedef struct aeron_image_buffers_ready_subscriber_position_stct
 {
     int32_t indicator_id;
+    uint8_t padding[4];
     int64_t registration_id;
 }
 aeron_image_buffers_ready_subscriber_position_t;

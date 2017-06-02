@@ -57,7 +57,7 @@ class ArchiveConductor implements Agent
     private final ControlSessionProxy clientProxy;
     private final EpochClock epochClock;
     private volatile boolean isClosed = false;
-    private final Recorder.RecordingContext recordingContext = new Recorder.RecordingContext();
+    private final RecordingWriter.RecordingContext recordingContext = new RecordingWriter.RecordingContext();
     private final StringBuilder uriBuilder = new StringBuilder(1024);
     private int replaySessionId;
 
@@ -65,7 +65,7 @@ class ArchiveConductor implements Agent
     {
         this.aeron = aeron;
         this.aeronClientAgentInvoker = ctx.clientContext().conductorAgentInvoker();
-        Objects.requireNonNull(aeronClientAgentInvoker, "In the archiver context an invoker should be present");
+        Objects.requireNonNull(aeronClientAgentInvoker, "In the archiver context an aeron invoker should be present");
 
         this.driverAgentInvoker = ctx.driverAgentInvoker();
 

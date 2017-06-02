@@ -25,7 +25,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.Recorder.initDescriptor;
+import static io.aeron.archiver.RecordingWriter.initDescriptor;
 import static java.nio.file.StandardOpenOption.*;
 
 /**
@@ -35,7 +35,7 @@ import static java.nio.file.StandardOpenOption.*;
  */
 class Catalog implements AutoCloseable
 {
-    static final String CATALOG_FILE_NAME = "archive.cat";
+    private static final String CATALOG_FILE_NAME = "archive.cat";
     static final int RECORD_LENGTH = 4096;
     static final int CATALOG_FRAME_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     static final int NULL_RECORD_ID = -1;

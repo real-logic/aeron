@@ -37,11 +37,11 @@ import static java.nio.file.StandardOpenOption.*;
  * <ul>
  * <li> Easier testing and in particular simplified re-use in testing. </li>
  * <li> Isolation of an external relationship, namely the FS</li>
- * <li> While a {@link Recorder} is part of a {@link RecordingSession}, a session may transition without actually
- * creating a {@link Recorder}.</li>
+ * <li> While a {@link RecordingWriter} is part of a {@link RecordingSession}, a session may transition without actually
+ * creating a {@link RecordingWriter}.</li>
  * </ul>
  */
-final class Recorder implements AutoCloseable, RawBlockHandler
+final class RecordingWriter implements AutoCloseable, RawBlockHandler
 {
     static final long NULL_TIME = -1L;
     static final long NULL_POSITION = -1;
@@ -77,7 +77,7 @@ final class Recorder implements AutoCloseable, RawBlockHandler
     private long joiningPosition;
     private long lastPosition;
 
-    Recorder(
+    RecordingWriter(
         final RecordingContext recordingContext,
         final long recordingId,
         final int termBufferLength,

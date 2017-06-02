@@ -117,7 +117,7 @@ public class RecordingSessionTest
         final EpochClock epochClock = Mockito.mock(EpochClock.class);
         when(epochClock.time()).thenReturn(42L);
 
-        final Recorder.RecordingContext recordingContext = new Recorder.RecordingContext()
+        final RecordingWriter.RecordingContext recordingContext = new RecordingWriter.RecordingContext()
             .recordingFileLength(SEGMENT_FILE_SIZE)
             .archiveDir(tempDirForTest)
             .epochClock(epochClock);
@@ -138,10 +138,10 @@ public class RecordingSessionTest
         assertEquals(termBufferLength, metaData.termBufferLength());
         assertEquals(streamId, metaData.streamId());
         assertEquals(mtuLength, metaData.mtuLength());
-        assertEquals(Recorder.NULL_TIME, metaData.startTime());
+        assertEquals(RecordingWriter.NULL_TIME, metaData.startTime());
         assertEquals(joiningPosition, metaData.joiningPosition());
-        assertEquals(Recorder.NULL_TIME, metaData.endTime());
-        assertEquals(Recorder.NULL_POSITION, metaData.lastPosition());
+        assertEquals(RecordingWriter.NULL_TIME, metaData.endTime());
+        assertEquals(RecordingWriter.NULL_POSITION, metaData.lastPosition());
         assertEquals(channel, metaData.channel());
         assertEquals(sourceIdentity, metaData.sourceIdentity());
 
@@ -172,7 +172,7 @@ public class RecordingSessionTest
 
         assertEquals(42L, metaData.startTime());
 
-        assertEquals(Recorder.NULL_TIME, metaData.endTime());
+        assertEquals(RecordingWriter.NULL_TIME, metaData.endTime());
         assertEquals(joiningPosition + RECORDED_BLOCK_LENGTH, metaData.lastPosition());
 
         final File segmentFile =

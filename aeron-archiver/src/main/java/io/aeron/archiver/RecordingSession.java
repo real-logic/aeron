@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * Consumes an {@link Image} and records data to file using an {@link Recorder}.
+ * Consumes an {@link Image} and records data to file using an {@link RecordingWriter}.
  */
 class RecordingSession implements Session
 {
@@ -35,16 +35,16 @@ class RecordingSession implements Session
     private final NotificationsProxy notificationsProxy;
     private final Image image;
     private final Catalog catalog;
-    private final Recorder.RecordingContext recordingContext;
+    private final RecordingWriter.RecordingContext recordingContext;
 
-    private Recorder recorder;
+    private RecordingWriter recordingWriter;
     private State state = State.INIT;
 
     RecordingSession(
         final NotificationsProxy notificationsProxy,
         final Catalog catalog,
         final Image image,
-        final Recorder.RecordingContext recordingContext)
+        final RecordingWriter.RecordingContext recordingContext)
     {
         this.notificationsProxy = notificationsProxy;
         this.image = image;
@@ -86,7 +86,7 @@ class RecordingSession implements Session
 
     ByteBuffer metaDataBuffer()
     {
-        return recorder.metaDataBuffer();
+        return recordingWriter.metaDataBuffer();
     }
 
     public long sessionId()
@@ -106,7 +106,7 @@ class RecordingSession implements Session
         final int initialTermId = image.initialTermId();
         final long joiningPosition = image.joiningPosition();
 
-        Recorder recorder = null;
+        RecordingWriter recordingWriter = null;
         try
         {
             recordingId = catalog.addNewRecording(
@@ -129,7 +129,7 @@ class RecordingSession implements Session
                 sourceIdentity
             );
 
-            recorder = new Recorder(
+            recordingWriter = new RecordingWriter(
                 recordingContext,
                 recordingId,
                 termBufferLength,
@@ -147,7 +147,7 @@ class RecordingSession implements Session
             LangUtil.rethrowUnchecked(ex);
         }
 
-        this.recorder = recorder;
+        this.recordingWriter = recordingWriter;
         this.state = State.RECORDING;
 
         return 1;
@@ -157,10 +157,10 @@ class RecordingSession implements Session
     {
         try
         {
-            if (recorder != null)
+            if (recordingWriter != null)
             {
-                recorder.stop();
-                catalog.updateCatalogFromMeta(recordingId, recorder.metaDataBuffer());
+                recordingWriter.stop();
+                catalog.updateCatalogFromMeta(recordingId, recordingWriter.metaDataBuffer());
             }
         }
         catch (final IOException ex)
@@ -169,7 +169,7 @@ class RecordingSession implements Session
         }
         finally
         {
-            CloseHelper.quietClose(recorder);
+            CloseHelper.quietClose(recordingWriter);
             // this reflects the single local recording assumption
             CloseHelper.quietClose(image.subscription());
             notificationsProxy.recordingStopped(recordingId);
@@ -184,13 +184,13 @@ class RecordingSession implements Session
         int workCount = 1;
         try
         {
-            workCount = image.rawPoll(recorder, recorder.segmentFileLength());
+            workCount = image.rawPoll(recordingWriter, recordingWriter.segmentFileLength());
             if (workCount != 0)
             {
                 notificationsProxy.recordingProgress(
-                    recorder.recordingId(),
-                    recorder.joiningPosition(),
-                    recorder.lastPosition());
+                    recordingWriter.recordingId(),
+                    recordingWriter.joiningPosition(),
+                    recordingWriter.lastPosition());
             }
 
             if (image.isClosed())

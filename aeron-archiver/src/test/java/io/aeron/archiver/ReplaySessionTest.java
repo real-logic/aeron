@@ -61,7 +61,7 @@ public class ReplaySessionTest
         archiveDir = makeTempDir();
         proxy = Mockito.mock(ControlSessionProxy.class);
         epochClock = mock(EpochClock.class);
-        try (Recorder recorder = new Recorder(new Recorder.RecordingContext()
+        try (RecordingWriter writer = new RecordingWriter(new RecordingWriter.RecordingContext()
             .archiveDir(archiveDir)
             .epochClock(epochClock)
             .forceWrites(true)
@@ -85,10 +85,10 @@ public class ReplaySessionTest
             final Header header = new Header(INITIAL_TERM_ID, Integer.numberOfLeadingZeros(TERM_BUFFER_LENGTH));
             header.buffer(buffer);
 
-            recordFragment(recorder, buffer, headerFwt, header, 0, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_DATA);
-            recordFragment(recorder, buffer, headerFwt, header, 1, FrameDescriptor.BEGIN_FRAG_FLAG, HDR_TYPE_DATA);
-            recordFragment(recorder, buffer, headerFwt, header, 2, FrameDescriptor.END_FRAG_FLAG, HDR_TYPE_DATA);
-            recordFragment(recorder, buffer, headerFwt, header, 3, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_PAD);
+            recordFragment(writer, buffer, headerFwt, header, 0, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_DATA);
+            recordFragment(writer, buffer, headerFwt, header, 1, FrameDescriptor.BEGIN_FRAG_FLAG, HDR_TYPE_DATA);
+            recordFragment(writer, buffer, headerFwt, header, 2, FrameDescriptor.END_FRAG_FLAG, HDR_TYPE_DATA);
+            recordFragment(writer, buffer, headerFwt, header, 3, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_PAD);
         }
     }
 
@@ -99,7 +99,7 @@ public class ReplaySessionTest
     }
 
     private void recordFragment(
-        final Recorder recorder,
+        final RecordingWriter recordingWriter,
         final UnsafeBuffer buffer,
         final DataHeaderFlyweight headerFlyweight,
         final Header header,
@@ -124,7 +124,7 @@ public class ReplaySessionTest
 
         header.offset(offset);
 
-        recorder.writeFragment(
+        recordingWriter.writeFragment(
             buffer,
             header);
     }

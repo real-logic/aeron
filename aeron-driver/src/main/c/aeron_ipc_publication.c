@@ -110,9 +110,16 @@ int aeron_ipc_publication_create(
     return 0;
 }
 
-void aeron_ipc_publication_close(aeron_ipc_publication_t *publication)
+void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aeron_ipc_publication_t *publication)
 {
-    /* TODO: close pub_lmt */
+    aeron_subscribeable_t *subscribeable = &publication->conductor_fields.subscribeable;
+
+    aeron_counters_manager_free(counters_manager, (int32_t)publication->pub_lmt_position.counter_id);
+
+    for (size_t i = 0, length = subscribeable->length; i < length; i++)
+    {
+        aeron_counters_manager_free(counters_manager, (int32_t)subscribeable->array[i].counter_id);
+    }
 
     if (NULL != publication)
     {

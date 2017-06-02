@@ -21,6 +21,7 @@
 #include "util/aeron_bitutil.h"
 #include "aeron_driver_context.h"
 #include "util/aeron_fileutil.h"
+#include "concurrent/aeron_counters_manager.h"
 
 typedef enum aeron_ipc_publication_status_enum
 {
@@ -76,7 +77,7 @@ int aeron_ipc_publication_create(
     size_t mtu_length,
     bool is_exclusive);
 
-void aeron_ipc_publication_close(aeron_ipc_publication_t *publication);
+void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aeron_ipc_publication_t *publication);
 
 int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication);
 

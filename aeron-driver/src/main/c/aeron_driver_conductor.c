@@ -196,7 +196,7 @@ bool aeron_ipc_publication_entry_has_reached_end_of_life(
 void aeron_ipc_publication_entry_delete(
     aeron_driver_conductor_t *conductor, aeron_ipc_publication_entry_t *entry)
 {
-    aeron_ipc_publication_close(entry->publication);
+    aeron_ipc_publication_close(&conductor->counters_manager, entry->publication);
 }
 
 #define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(c, l,t,now_ns,now_ms) \

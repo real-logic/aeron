@@ -16,7 +16,6 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
-import io.aeron.archiver.codecs.ControlResponseCode;
 import org.agrona.*;
 
 class ControlSession implements Session, ControlRequestListener
@@ -128,52 +127,26 @@ class ControlSession implements Session, ControlRequestListener
     public void onStopRecording(final long correlationId, final long recordingId)
     {
         validateActive();
-
-        if (conductor.stopRecording(recordingId))
-        {
-            proxy.sendOkResponse(controlPublication, correlationId);
-        }
-        else
-        {
-            proxy.sendError(controlPublication, ControlResponseCode.RECORDING_NOT_FOUND, null, correlationId);
-        }
+        conductor.stopRecording(correlationId, controlPublication, recordingId);
     }
 
     // TODO: remove external access to record start/stop
     public void onStartRecording(final long correlationId, final String channel, final int streamId)
     {
         validateActive();
-
-        try
-        {
-            conductor.startRecording(channel, streamId);
-            proxy.sendOkResponse(controlPublication, correlationId);
-        }
-        catch (final Exception ex)
-        {
-            proxy.sendError(controlPublication, ControlResponseCode.ERROR, ex.getMessage(), correlationId);
-        }
+        conductor.setupRecording(correlationId, controlPublication, channel, streamId);
     }
 
     public void onListRecordings(final long correlationId, final long fromRecordingId, final int recordCount)
     {
         validateActive();
-
         conductor.listRecordings(correlationId, controlPublication, fromRecordingId, recordCount);
     }
 
     public void onAbortReplay(final long correlationId, final long replayId)
     {
         validateActive();
-
-        if (conductor.stopReplay(replayId))
-        {
-            proxy.sendOkResponse(controlPublication, correlationId);
-        }
-        else
-        {
-            proxy.sendError(controlPublication, ControlResponseCode.REPLAY_NOT_FOUND, null, correlationId);
-        }
+        conductor.stopReplay(correlationId, controlPublication, replayId);
     }
 
     public void onStartReplay(

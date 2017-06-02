@@ -201,7 +201,7 @@ public class ReplaySessionTest
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
         final Publication control = Mockito.mock(Publication.class);
 
-        final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
+        final Replayer conductor = Mockito.mock(Replayer.class);
 
         final ReplaySession replaySession = replaySession(
             RECORDING_ID, RECORDING_POSITION, FRAME_LENGTH, correlationId, replay, control, conductor);
@@ -252,7 +252,7 @@ public class ReplaySessionTest
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
         final Publication control = Mockito.mock(Publication.class);
 
-        final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
+        final Replayer conductor = Mockito.mock(Replayer.class);
 
         final ReplaySession replaySession = replaySession(
             RECORDING_ID, RECORDING_POSITION + 1, FRAME_LENGTH, correlationId, replay, control, conductor);
@@ -313,7 +313,7 @@ public class ReplaySessionTest
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
         final Publication control = Mockito.mock(Publication.class);
 
-        final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
+        final Replayer conductor = Mockito.mock(Replayer.class);
 
         final ReplaySession replaySession = replaySession(
             RECORDING_ID, RECORDING_POSITION, length, correlationId, replay, control, conductor);
@@ -369,7 +369,7 @@ public class ReplaySessionTest
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
         final Publication control = Mockito.mock(Publication.class);
 
-        final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
+        final Replayer conductor = Mockito.mock(Replayer.class);
 
         final ReplaySession replaySession = replaySession(
             RECORDING_ID, RECORDING_POSITION, length, correlationId, replay, control, conductor);
@@ -400,7 +400,7 @@ public class ReplaySessionTest
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
         final Publication control = Mockito.mock(Publication.class);
 
-        final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
+        final Replayer conductor = Mockito.mock(Replayer.class);
         final ReplaySession replaySession = replaySession(
             RECORDING_ID + 1, RECORDING_POSITION, length, correlationId, replay, control, conductor);
 
@@ -426,7 +426,7 @@ public class ReplaySessionTest
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
         final Publication control = Mockito.mock(Publication.class);
 
-        final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
+        final Replayer conductor = Mockito.mock(Replayer.class);
         final ReplaySession replaySession = replaySession(
             RECORDING_ID, RECORDING_POSITION, length, correlationId, replay, control, conductor);
 
@@ -447,7 +447,7 @@ public class ReplaySessionTest
         final long correlationId,
         final ExclusivePublication replay,
         final Publication control,
-        final ArchiveConductor conductor)
+        final Replayer conductor)
     {
         when(conductor.newReplayPublication(
             eq(REPLAY_CHANNEL),

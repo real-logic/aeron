@@ -15,30 +15,22 @@
  */
 package io.aeron.driver;
 
-import io.aeron.CncFileDescriptor;
-import io.aeron.CommonContext;
+import io.aeron.*;
 import io.aeron.driver.buffer.RawLogFactory;
-import io.aeron.driver.cmd.DriverConductorCmd;
-import io.aeron.driver.cmd.ReceiverCmd;
-import io.aeron.driver.cmd.SenderCmd;
-import io.aeron.driver.exceptions.ActiveDriverException;
-import io.aeron.driver.exceptions.ConfigurationException;
-import io.aeron.driver.media.ControlTransportPoller;
-import io.aeron.driver.media.DataTransportPoller;
-import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
+import io.aeron.driver.cmd.*;
+import io.aeron.driver.exceptions.*;
+import io.aeron.driver.media.*;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.BroadcastTransmitter;
 import org.agrona.concurrent.errors.DistinctErrorLog;
-import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
-import org.agrona.concurrent.ringbuffer.RingBuffer;
+import org.agrona.concurrent.ringbuffer.*;
 import org.agrona.concurrent.status.*;
 
 import java.io.*;
-import java.net.StandardSocketOptions;
-import java.net.URL;
+import java.net.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.text.SimpleDateFormat;
@@ -46,12 +38,13 @@ import java.util.*;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
 
-import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
-import static java.lang.Boolean.getBoolean;
-import static org.agrona.IoUtil.mapNewFile;
 import static io.aeron.CncFileDescriptor.*;
 import static io.aeron.driver.Configuration.*;
+import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
+import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY;
+import static java.lang.Boolean.getBoolean;
+import static org.agrona.IoUtil.mapNewFile;
 
 /**
  * Main class for JVM-based media driver
@@ -163,6 +156,7 @@ public final class MediaDriver implements AutoCloseable
         ensureDirectoryIsRecreated(ctx);
         validateSufficientSocketBufferLengths(ctx);
 
+        // TODO: eliminate queues if mode is not concurrent
         ctx
             .driverCommandQueue(new ManyToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))

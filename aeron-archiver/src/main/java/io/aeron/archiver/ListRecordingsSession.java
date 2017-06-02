@@ -77,7 +77,7 @@ class ListRecordingsSession implements Session
 
     public long sessionId()
     {
-        throw new UnsupportedOperationException();
+        return Catalog.NULL_RECORD_ID;
     }
 
     public int doWork()

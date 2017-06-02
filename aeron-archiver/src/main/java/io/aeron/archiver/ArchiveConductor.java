@@ -16,15 +16,15 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
-import org.agrona.CloseHelper;
-import org.agrona.collections.*;
+import io.aeron.archiver.codecs.ControlResponseCode;
+import org.agrona.ErrorHandler;
 import org.agrona.concurrent.*;
+import org.agrona.concurrent.status.AtomicCounter;
 
-import java.io.File;
-import java.util.*;
+import java.util.Objects;
 import java.util.function.Consumer;
 
-class ArchiveConductor implements Agent
+class ArchiveConductor extends SessionWorker
 {
     /**
      * Limit on the number of items drained from the available image queue per work cycle.
@@ -40,228 +40,157 @@ class ArchiveConductor implements Agent
     private final Aeron aeron;
     private final AgentInvoker aeronClientAgentInvoker;
     private final AgentInvoker driverAgentInvoker;
-    private final Subscription controlSubscription;
-    private final ArrayList<Session> sessions = new ArrayList<>();
-    private final ArrayList<ReplaySession> replaySessions = new ArrayList<>();
-    private final ArrayList<RecordingSession> recordingSessions = new ArrayList<>();
-    private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
 
-    private final Catalog catalog;
+    private final AgentInvoker replayerAgentInvoker;
+    private final AgentInvoker recorderAgentInvoker;
+
+    private final Replayer replayer;
+    private final Recorder recorder;
+
+    private final Subscription controlSubscription;
+
     private final OneToOneConcurrentArrayQueue<Image> availableImageQueue = new OneToOneConcurrentArrayQueue<>(512);
-    private final File archiveDir;
 
     private final Consumer<Image> newImageConsumer = this::availableImageHandler;
     private final AvailableImageHandler availableImageHandler = this::onAvailableImage;
 
-    private final NotificationsProxy notificationsProxy;
-    private final ControlSessionProxy clientProxy;
-    private final EpochClock epochClock;
-    private volatile boolean isClosed = false;
-    private final RecordingWriter.RecordingContext recordingContext = new RecordingWriter.RecordingContext();
+    private final ControlSessionProxy controlSessionProxy;
     private final StringBuilder uriBuilder = new StringBuilder(1024);
-    private int replaySessionId;
 
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
+        // TODO: need to move relationships construction into Archiver, add proxy classes etc
         this.aeron = aeron;
         this.aeronClientAgentInvoker = ctx.clientContext().conductorAgentInvoker();
         Objects.requireNonNull(aeronClientAgentInvoker, "In the archiver context an aeron invoker should be present");
 
         this.driverAgentInvoker = ctx.driverAgentInvoker();
 
-        archiveDir = ctx.archiveDir();
-        catalog = new Catalog(archiveDir);
-
-        recordingContext
+        final RecordingWriter.RecordingContext recordingContext = new RecordingWriter.RecordingContext()
             .recordingFileLength(ctx.segmentFileLength())
             .archiveDir(ctx.archiveDir())
             .epochClock(ctx.epochClock())
             .forceMetadataUpdates(ctx.forceMetadataUpdates())
             .forceWrites(ctx.forceWrites());
 
+        // TODO: get your own err handler/counters
+        final ErrorHandler errorHandler = ctx.clientContext().errorHandler();
+        final AtomicCounter errorCounter = null;
+
+        controlSessionProxy = new ControlSessionProxy(ctx.idleStrategy());
+
+        replayer = new Replayer(aeron, ctx.epochClock(), ctx.archiveDir(), ctx.idleStrategy());
+        replayerAgentInvoker = new AgentInvoker(errorHandler, errorCounter, replayer);
+
+
+        recorder = new Recorder(
+            aeron,
+            ctx.archiveDir(),
+            ctx.idleStrategy(),
+            ctx.recordingEventsChannel(),
+            ctx.recordingEventsStreamId(),
+            recordingContext);
+        recorderAgentInvoker = new AgentInvoker(Throwable::printStackTrace, errorCounter, recorder);
+
         controlSubscription = aeron.addSubscription(
             ctx.controlRequestChannel(),
             ctx.controlRequestStreamId(),
             availableImageHandler,
             null);
-
-        final Publication archiverNotificationPublication = aeron.addPublication(
-            ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
-
-        notificationsProxy = new NotificationsProxy(ctx.idleStrategy(), archiverNotificationPublication);
-        clientProxy = new ControlSessionProxy(ctx.idleStrategy());
-        epochClock = ctx.epochClock();
     }
 
     public String roleName()
     {
-        return "archiver";
+        return "archiver-conductor";
     }
 
-    public int doWork() throws Exception
+    public int doWork()
     {
-        int workDone = 0;
-
-        if (null != driverAgentInvoker)
-        {
-            workDone += driverAgentInvoker.invoke();
-        }
-
+        int workDone = safeInvoke(driverAgentInvoker);
         workDone += aeronClientAgentInvoker.invoke();
+
+        // TODO: given that client is always run as invoker I think the interaction via queue is redundant
         workDone += availableImageQueue.drain(newImageConsumer, QUEUE_DRAIN_LIMIT);
-        workDone += doSessionsWork();
-        workDone += doRecordingSessionsWork();
-        workDone += doReplaySessionsWork();
+        workDone += super.doWork();
+        workDone += safeInvoke(replayerAgentInvoker);
+        workDone += safeInvoke(recorderAgentInvoker);
 
         return workDone;
     }
 
-    public void onClose()
+    protected void sessionCleanup(final long sessionId)
     {
-        if (isClosed)
+    }
+
+    private static int safeInvoke(final AgentInvoker invoker)
+    {
+        if (null != invoker)
         {
-            return;
+            return invoker.invoke();
         }
-
-        isClosed = true;
-
-        sessions.forEach(this::abortSession);
-        sessions.clear();
-
-        replaySessions.forEach(this::abortReplaySession);
-        replaySessions.clear();
-
-        recordingSessions.forEach(this::abortRecordingSession);
-        recordingSessions.clear();
-
-        if (!replaySessionByIdMap.isEmpty())
-        {
-            // TODO: Use an error log.
-            System.err.println("ERROR: expected empty replaySessionByIdMap");
-        }
-
-        CloseHelper.close(catalog);
+        return 0;
     }
 
-    private void abortSession(final Session session)
-    {
-        session.abort();
-        while (!session.isDone())
-        {
-            session.doWork();
-        }
-    }
-
-    private void abortReplaySession(final ReplaySession replaySession)
-    {
-        abortSession(replaySession);
-        replaySessionByIdMap.remove(replaySession.sessionId());
-    }
-
-
-    private void abortRecordingSession(final RecordingSession recordingSession)
-    {
-        abortSession(recordingSession);
-        catalog.removeRecordingSession(recordingSession.sessionId());
-    }
-
-    private int doSessionsWork()
-    {
-        int workDone = 0;
-        final ArrayList<Session> sessions = this.sessions;
-        for (int lastIndex = sessions.size() - 1, i = lastIndex; i >= 0; i--)
-        {
-            final Session session = sessions.get(i);
-            workDone += session.doWork();
-            if (session.isDone())
-            {
-                ArrayListUtil.fastUnorderedRemove(sessions, i, lastIndex);
-                lastIndex--;
-            }
-        }
-
-        return workDone;
-    }
-
-    private int doReplaySessionsWork()
-    {
-        int workDone = 0;
-        final ArrayList<ReplaySession> sessions = this.replaySessions;
-        for (int lastIndex = sessions.size() - 1, i = lastIndex; i >= 0; i--)
-        {
-            final ReplaySession session = sessions.get(i);
-            workDone += session.doWork();
-            if (session.isDone())
-            {
-                replaySessionByIdMap.remove(session.sessionId());
-                ArrayListUtil.fastUnorderedRemove(sessions, i, lastIndex);
-                lastIndex--;
-            }
-        }
-
-        return workDone;
-    }
-
-    private int doRecordingSessionsWork()
-    {
-        int workDone = 0;
-        final ArrayList<RecordingSession> sessions = this.recordingSessions;
-        for (int lastIndex = sessions.size() - 1, i = lastIndex; i >= 0; i--)
-        {
-            final RecordingSession session = sessions.get(i);
-            workDone += session.doWork();
-            if (session.isDone())
-            {
-                catalog.removeRecordingSession(session.sessionId());
-                ArrayListUtil.fastUnorderedRemove(sessions, i, lastIndex);
-                lastIndex--;
-            }
-        }
-
-        return workDone;
-    }
 
     private void availableImageHandler(final Image image)
     {
         if (image.subscription() == controlSubscription)
         {
-            sessions.add(new ControlSession(image, clientProxy, this));
+            addSession(new ControlSession(image, controlSessionProxy, this));
         }
         else
         {
-            recordingSessions.add(new RecordingSession(notificationsProxy, catalog, image, recordingContext));
+            startRecording(image);
         }
     }
 
     private void onAvailableImage(final Image image)
     {
-        if (!isClosed && availableImageQueue.offer(image))
+        if (!isClosed() && availableImageQueue.offer(image))
         {
             return;
         }
         // This is required since image available handler is called from the client conductor thread
         // we can either bridge via a queue or protect access to the sessions list, which seems clumsy.
-        while (!isClosed && !availableImageQueue.offer(image))
+        while (!isClosed() && !availableImageQueue.offer(image))
         {
             Thread.yield();
         }
     }
 
-    boolean stopRecording(final long recordingId)
+    void stopRecording(
+        final long correlationId,
+        final Publication controlPublication,
+        final long recordingId)
     {
-        final RecordingSession recordingSession = catalog.getRecordingSession(recordingId);
-        if (recordingSession == null)
-        {
-            return false;
-        }
-        recordingSession.abort();
-        return true;
+        recorder.stopRecording(correlationId, controlPublication, recordingId);
     }
 
-    void startRecording(final String channel, final int streamId)
+    void setupRecording(
+        final long correlationId,
+        final Publication controlPublication,
+        final String channel,
+        final int streamId)
     {
-        // Subscription is closed on RecordingSession close(this is consistent with local archiver usage)
-        aeron.addSubscription(channel, streamId, availableImageHandler, null);
+        try
+        {
+            // Subscription is closed on RecordingSession close(this is consistent with local archiver usage)
+            aeron.addSubscription(channel, streamId, availableImageHandler, null);
+            controlSessionProxy.sendOkResponse(controlPublication, correlationId);
+        }
+        catch (final Exception ex)
+        {
+            controlSessionProxy.sendError(
+                controlPublication,
+                ControlResponseCode.ERROR,
+                ex.getMessage(),
+                correlationId);
+        }
+    }
+
+    private void startRecording(final Image image)
+    {
+        recorder.startRecording(image);
     }
 
     void listRecordings(
@@ -270,19 +199,12 @@ class ArchiveConductor implements Agent
         final long fromId,
         final int count)
     {
-        sessions.add(new ListRecordingsSession(correlationId, controlPublication, fromId, count, catalog, clientProxy));
+        recorder.listRecordings(correlationId, controlPublication, fromId, count);
     }
 
-    boolean stopReplay(final long replayId)
+    void stopReplay(final long correlationId, final Publication controlPublication, final long replayId)
     {
-        final ReplaySession session = replaySessionByIdMap.get(replayId);
-        if (session == null)
-        {
-            return false;
-        }
-
-        session.abort();
-        return true;
+        replayer.stopReplay(correlationId, controlPublication, replayId);
     }
 
     void startReplay(
@@ -294,23 +216,14 @@ class ArchiveConductor implements Agent
         final long position,
         final long length)
     {
-        final int newId = replaySessionId++;
-        final ReplaySession replaySession = new ReplaySession(
+        replayer.startReplay(
+            correlationId,
+            controlPublication,
+            replayStreamId,
+            replayChannel,
             recordingId,
             position,
-            length,
-            this,
-            controlPublication,
-            archiveDir,
-            clientProxy,
-            newId,
-            correlationId,
-            this.epochClock,
-            replayChannel,
-            replayStreamId);
-
-        replaySessionByIdMap.put(newId, replaySession);
-        replaySessions.add(replaySession);
+            length);
     }
 
     Publication newControlPublication(final String channel, final int streamId)
@@ -328,32 +241,6 @@ class ArchiveConductor implements Agent
         }
 
         return aeron.addPublication(controlChannel, streamId);
-    }
-
-    ExclusivePublication newReplayPublication(
-        final String replayChannel,
-        final int replayStreamId,
-        final long fromPosition,
-        final int mtuLength,
-        final int initialTermId,
-        final int termBufferLength)
-    {
-        final int termId = (int)((fromPosition / termBufferLength) + initialTermId);
-        final int termOffset = (int)(fromPosition % termBufferLength);
-        initUriBuilder(replayChannel);
-
-        uriBuilder
-            .append(CommonContext.INITIAL_TERM_ID_PARAM_NAME).append('=').append(initialTermId)
-            .append('|')
-            .append(CommonContext.MTU_LENGTH_PARAM_NAME).append('=').append(mtuLength)
-            .append('|')
-            .append(CommonContext.TERM_LENGTH_PARAM_NAME).append('=').append(termBufferLength)
-            .append('|')
-            .append(CommonContext.TERM_ID_PARAM_NAME).append('=').append(termId)
-            .append('|')
-            .append(CommonContext.TERM_OFFSET_PARAM_NAME).append('=').append(termOffset);
-
-        return aeron.addExclusivePublication(uriBuilder.toString(), replayStreamId);
     }
 
     private void initUriBuilder(final String channel)

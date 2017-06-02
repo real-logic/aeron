@@ -54,7 +54,7 @@ class ReplaySession
     private final long replayPosition;
     private final long replayLength;
 
-    private final ArchiveConductor conductor;
+    private final Replayer conductor;
     private final Publication controlPublication;
     private final ControlSessionProxy controlSessionProxy;
 
@@ -79,7 +79,7 @@ class ReplaySession
         final long recordingId,
         final long replayPosition,
         final long replayLength,
-        final ArchiveConductor conductor,
+        final Replayer conductor,
         final Publication controlPublication,
         final File archiveDir,
         final ControlSessionProxy controlSessionProxy,

@@ -15,7 +15,7 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.ExclusivePublication;
+import io.aeron.Publication;
 import io.aeron.archiver.codecs.ControlResponseCode;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -38,7 +38,7 @@ class ListRecordingsSession implements Session
     private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, CACHE_LINE_LENGTH);
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer(byteBuffer);
 
-    private final ExclusivePublication reply;
+    private final Publication controlPublication;
     private final long fromId;
     private final long toId;
     private final Catalog catalog;
@@ -50,13 +50,13 @@ class ListRecordingsSession implements Session
 
     ListRecordingsSession(
         final long correlationId,
-        final ExclusivePublication reply,
+        final Publication controlPublication,
         final long fromId,
         final int count,
         final Catalog catalog,
         final ControlSessionProxy proxy)
     {
-        this.reply = reply;
+        this.controlPublication = controlPublication;
         recordingId = fromId;
         this.fromId = fromId;
         this.toId = fromId + count;
@@ -122,7 +122,11 @@ class ListRecordingsSession implements Session
                 {
                     if (!catalog.readDescriptor(recordingId, byteBuffer))
                     {
-                        proxy.sendDescriptorNotFound(reply, recordingId, catalog.nextRecordingId(), correlationId);
+                        proxy.sendDescriptorNotFound(
+                            controlPublication,
+                            recordingId,
+                            catalog.nextRecordingId(),
+                            correlationId);
                         state = State.INACTIVE;
                         return 0;
                     }
@@ -138,7 +142,7 @@ class ListRecordingsSession implements Session
                 descriptorBuffer.wrap(session.metaDataBuffer());
             }
 
-            sentBytes += proxy.sendDescriptor(reply, descriptorBuffer, correlationId);
+            sentBytes += proxy.sendDescriptor(controlPublication, descriptorBuffer, correlationId);
 
             if (++recordingId >= toId)
             {
@@ -146,7 +150,7 @@ class ListRecordingsSession implements Session
                 break;
             }
         }
-        while (sentBytes < reply.maxPayloadLength());
+        while (sentBytes < controlPublication.maxPayloadLength());
         return sentBytes;
     }
 
@@ -155,7 +159,7 @@ class ListRecordingsSession implements Session
         if (fromId >= catalog.nextRecordingId())
         {
             proxy.sendError(
-                reply,
+                controlPublication,
                 ControlResponseCode.RECORDING_NOT_FOUND,
                 "Requested start id exceeds max known id",
                 correlationId);

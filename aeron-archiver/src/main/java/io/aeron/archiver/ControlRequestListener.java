@@ -25,7 +25,7 @@ interface ControlRequestListener
 
     void onListRecordings(long correlationId, long fromRecordingId, int recordCount);
 
-    void onAbortReplay(long correlationId, long replyId);
+    void onAbortReplay(long correlationId, long replayId);
 
     void onStartReplay(
         long correlationId,

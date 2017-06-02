@@ -266,12 +266,11 @@ class ArchiveConductor implements Agent
 
     void listRecordings(
         final long correlationId,
-        final ExclusivePublication replyPublication,
+        final Publication controlPublication,
         final long fromId,
         final int count)
     {
-        sessions.add(new ListRecordingsSession(
-            correlationId, replyPublication, fromId, count, catalog, clientProxy));
+        sessions.add(new ListRecordingsSession(correlationId, controlPublication, fromId, count, catalog, clientProxy));
     }
 
     boolean stopReplay(final long replayId)
@@ -288,7 +287,7 @@ class ArchiveConductor implements Agent
 
     void startReplay(
         final long correlationId,
-        final ExclusivePublication reply,
+        final Publication controlPublication,
         final int replayStreamId,
         final String replayChannel,
         final long recordingId,
@@ -301,7 +300,7 @@ class ArchiveConductor implements Agent
             position,
             length,
             this,
-            reply,
+            controlPublication,
             archiveDir,
             clientProxy,
             newId,
@@ -314,7 +313,7 @@ class ArchiveConductor implements Agent
         replaySessions.add(replaySession);
     }
 
-    ExclusivePublication newControlPublication(final String channel, final int streamId)
+    Publication newControlPublication(final String channel, final int streamId)
     {
         final String controlChannel;
         if (!channel.contains(CommonContext.TERM_LENGTH_PARAM_NAME))
@@ -328,7 +327,7 @@ class ArchiveConductor implements Agent
             controlChannel = channel;
         }
 
-        return aeron.addExclusivePublication(controlChannel, streamId);
+        return aeron.addPublication(controlChannel, streamId);
     }
 
     ExclusivePublication newReplayPublication(

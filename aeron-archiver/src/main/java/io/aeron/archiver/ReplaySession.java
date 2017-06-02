@@ -55,10 +55,10 @@ class ReplaySession
     private final long replayLength;
 
     private final ArchiveConductor conductor;
-    private final ExclusivePublication controlPublication;
+    private final Publication controlPublication;
+    private final ControlSessionProxy controlSessionProxy;
 
     private final File archiveDir;
-    private final ControlSessionProxy controlSessionProxy;
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
 
     private State state = State.INIT;
@@ -80,7 +80,7 @@ class ReplaySession
         final long replayPosition,
         final long replayLength,
         final ArchiveConductor conductor,
-        final ExclusivePublication controlPublication,
+        final Publication controlPublication,
         final File archiveDir,
         final ControlSessionProxy controlSessionProxy,
         final long replaySessionId,
@@ -180,7 +180,7 @@ class ReplaySession
         }
         else if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
         {
-            closeOnError(null, "Reply stream has been shutdown mid-replay");
+            closeOnError(null, "Replay stream has been shutdown mid-replay");
         }
 
         return false;

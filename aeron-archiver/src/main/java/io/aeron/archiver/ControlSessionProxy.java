@@ -15,7 +15,7 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.*;
+import io.aeron.Publication;
 import io.aeron.archiver.codecs.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -39,13 +39,13 @@ class ControlSessionProxy
         this.idleStrategy = idleStrategy;
     }
 
-    void sendOkResponse(final ExclusivePublication reply, final long correlationId)
+    void sendOkResponse(final Publication controlPublication, final long correlationId)
     {
-        sendError(reply, ControlResponseCode.OK, null, correlationId);
+        sendError(controlPublication, ControlResponseCode.OK, null, correlationId);
     }
 
     void sendError(
-        final ExclusivePublication reply,
+        final Publication controlPublication,
         final ControlResponseCode code,
         final String errorMessage,
         final long correlationId)
@@ -64,16 +64,16 @@ class ControlSessionProxy
             responseEncoder.putErrorMessage(EMPTY_BYTE_ARRAY, 0, 0);
         }
 
-        send(reply, HEADER_LENGTH + responseEncoder.encodedLength());
+        send(controlPublication, HEADER_LENGTH + responseEncoder.encodedLength());
     }
 
-    private void send(final ExclusivePublication reply, final int length)
+    private void send(final Publication controlPublication, final int length)
     {
-        send(reply, buffer, 0, length);
+        send(controlPublication, buffer, 0, length);
     }
 
     private void send(
-        final ExclusivePublication reply,
+        final Publication controlPublication,
         final DirectBuffer buffer,
         final int offset,
         final int length)
@@ -81,7 +81,7 @@ class ControlSessionProxy
         // TODO: handle dead/slow subscriber, this is not an acceptable place to get stuck
         while (true)
         {
-            final long result = reply.offer(buffer, offset, length);
+            final long result = controlPublication.offer(buffer, offset, length);
             if (result > 0)
             {
                 idleStrategy.reset();
@@ -90,7 +90,7 @@ class ControlSessionProxy
 
             if (result == Publication.NOT_CONNECTED || result == Publication.CLOSED)
             {
-                throw new IllegalStateException("Response channel is down: " + reply);
+                throw new IllegalStateException("Response channel is down: " + controlPublication);
             }
 
             idleStrategy.idle();
@@ -98,7 +98,7 @@ class ControlSessionProxy
     }
 
     void sendDescriptorNotFound(
-        final ExclusivePublication reply,
+        final Publication controlPublication,
         final long recordingId,
         final long maxRecordingId,
         final long correlationId)
@@ -108,11 +108,11 @@ class ControlSessionProxy
             .recordingId(recordingId)
             .maxRecordingId(maxRecordingId);
 
-        send(reply, HEADER_LENGTH + recordingNotFoundResponseEncoder.encodedLength());
+        send(controlPublication, HEADER_LENGTH + recordingNotFoundResponseEncoder.encodedLength());
     }
 
     int sendDescriptor(
-        final ExclusivePublication reply,
+        final Publication controlPublication,
         final UnsafeBuffer descriptorBuffer,
         final long correlationId)
     {
@@ -123,12 +123,12 @@ class ControlSessionProxy
             .wrapAndApplyHeader(descriptorBuffer, offset, messageHeaderEncoder)
             .correlationId(correlationId);
 
-        send(reply, descriptorBuffer, offset, length);
+        send(controlPublication, descriptorBuffer, offset, length);
         return length;
     }
 
     void sendReplayAborted(
-        final ExclusivePublication reply,
+        final Publication controlPublication,
         final long correlationId,
         final long replaySessionId,
         final long position)
@@ -139,6 +139,6 @@ class ControlSessionProxy
             .replayId(replaySessionId)
             .lastPosition(position);
 
-        send(reply, HEADER_LENGTH + replayAbortedEncoder.encodedLength());
+        send(controlPublication, HEADER_LENGTH + replayAbortedEncoder.encodedLength());
     }
 }

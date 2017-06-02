@@ -30,7 +30,7 @@ class ControlSession implements Session, ControlRequestListener
     private final ControlSessionProxy proxy;
     private final ArchiveConductor conductor;
     private final ControlRequestAdapter adapter = new ControlRequestAdapter(this);
-    private ExclusivePublication reply;
+    private Publication controlPublication;
     private State state = State.INIT;
 
     ControlSession(
@@ -66,7 +66,7 @@ class ControlSession implements Session, ControlRequestListener
                 return waitForConnection();
 
             case ACTIVE:
-                if (image.isClosed() || !reply.isConnected())
+                if (image.isClosed() || !controlPublication.isConnected())
                 {
                     state = State.INACTIVE;
                 }
@@ -77,7 +77,7 @@ class ControlSession implements Session, ControlRequestListener
                 break;
 
             case INACTIVE:
-                CloseHelper.quietClose(reply);
+                CloseHelper.quietClose(controlPublication);
                 state = State.CLOSED;
                 break;
 
@@ -93,7 +93,7 @@ class ControlSession implements Session, ControlRequestListener
 
     private int waitForConnection()
     {
-        if (reply == null)
+        if (controlPublication == null)
         {
             try
             {
@@ -105,7 +105,7 @@ class ControlSession implements Session, ControlRequestListener
                 LangUtil.rethrowUnchecked(ex);
             }
         }
-        else if (reply.isConnected())
+        else if (controlPublication.isConnected())
         {
             state = State.ACTIVE;
         }
@@ -121,7 +121,7 @@ class ControlSession implements Session, ControlRequestListener
             throw new IllegalStateException();
         }
 
-        reply = conductor.newControlPublication(channel, streamId);
+        controlPublication = conductor.newControlPublication(channel, streamId);
     }
 
     // TODO: remove external access to record start/stop
@@ -131,11 +131,11 @@ class ControlSession implements Session, ControlRequestListener
 
         if (conductor.stopRecording(recordingId))
         {
-            proxy.sendOkResponse(reply, correlationId);
+            proxy.sendOkResponse(controlPublication, correlationId);
         }
         else
         {
-            proxy.sendError(reply, ControlResponseCode.RECORDING_NOT_FOUND, null, correlationId);
+            proxy.sendError(controlPublication, ControlResponseCode.RECORDING_NOT_FOUND, null, correlationId);
         }
     }
 
@@ -147,11 +147,11 @@ class ControlSession implements Session, ControlRequestListener
         try
         {
             conductor.startRecording(channel, streamId);
-            proxy.sendOkResponse(reply, correlationId);
+            proxy.sendOkResponse(controlPublication, correlationId);
         }
         catch (final Exception ex)
         {
-            proxy.sendError(reply, ControlResponseCode.ERROR, ex.getMessage(), correlationId);
+            proxy.sendError(controlPublication, ControlResponseCode.ERROR, ex.getMessage(), correlationId);
         }
     }
 
@@ -159,20 +159,20 @@ class ControlSession implements Session, ControlRequestListener
     {
         validateActive();
 
-        conductor.listRecordings(correlationId, reply, fromRecordingId, recordCount);
+        conductor.listRecordings(correlationId, controlPublication, fromRecordingId, recordCount);
     }
 
-    public void onAbortReplay(final long correlationId, final long replyId)
+    public void onAbortReplay(final long correlationId, final long replayId)
     {
         validateActive();
 
-        if (conductor.stopReplay(replyId))
+        if (conductor.stopReplay(replayId))
         {
-            proxy.sendOkResponse(reply, correlationId);
+            proxy.sendOkResponse(controlPublication, correlationId);
         }
         else
         {
-            proxy.sendError(reply, ControlResponseCode.REPLAY_NOT_FOUND, null, correlationId);
+            proxy.sendError(controlPublication, ControlResponseCode.REPLAY_NOT_FOUND, null, correlationId);
         }
     }
 
@@ -188,7 +188,7 @@ class ControlSession implements Session, ControlRequestListener
 
         conductor.startReplay(
             correlationId,
-            reply,
+            controlPublication,
             replayStreamId,
             replayChannel,
             recordingId,

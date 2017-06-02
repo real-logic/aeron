@@ -136,11 +136,11 @@ public class ArchiveClient
     }
 
     public int pollResponses(
-        final Subscription reply,
+        final Subscription controlSubscription,
         final ResponseListener responseListener,
         final int count)
     {
-        return reply.poll(
+        return controlSubscription.poll(
             (buffer, offset, length, header) ->
             {
                 messageHeaderDecoder.wrap(buffer, offset);

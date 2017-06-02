@@ -15,7 +15,7 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.ExclusivePublication;
+import io.aeron.*;
 import io.aeron.archiver.codecs.ControlResponseCode;
 import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -199,7 +199,7 @@ public class ReplaySessionTest
     {
         final long correlationId = 1L;
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
-        final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
+        final Publication control = Mockito.mock(Publication.class);
 
         final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
 
@@ -250,7 +250,7 @@ public class ReplaySessionTest
     {
         final long correlationId = 1L;
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
-        final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
+        final Publication control = Mockito.mock(Publication.class);
 
         final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
 
@@ -311,7 +311,7 @@ public class ReplaySessionTest
         final long length = 4 * FRAME_LENGTH;
         final long correlationId = 1L;
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
-        final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
+        final Publication control = Mockito.mock(Publication.class);
 
         final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
 
@@ -367,7 +367,7 @@ public class ReplaySessionTest
         final long length = 1024L;
         final long correlationId = 1L;
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
-        final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
+        final Publication control = Mockito.mock(Publication.class);
 
         final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
 
@@ -398,7 +398,7 @@ public class ReplaySessionTest
         final long length = 1024L;
         final long correlationId = 1L;
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
-        final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
+        final Publication control = Mockito.mock(Publication.class);
 
         final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
         final ReplaySession replaySession = replaySession(
@@ -424,7 +424,7 @@ public class ReplaySessionTest
         final long length = 1024L;
         final long correlationId = 1L;
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
-        final ExclusivePublication control = Mockito.mock(ExclusivePublication.class);
+        final Publication control = Mockito.mock(Publication.class);
 
         final ArchiveConductor conductor = Mockito.mock(ArchiveConductor.class);
         final ReplaySession replaySession = replaySession(
@@ -446,7 +446,7 @@ public class ReplaySessionTest
         final long recordingPosition, final long length,
         final long correlationId,
         final ExclusivePublication replay,
-        final ExclusivePublication control,
+        final Publication control,
         final ArchiveConductor conductor)
     {
         when(conductor.newReplayPublication(

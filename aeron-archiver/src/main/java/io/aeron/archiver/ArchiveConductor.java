@@ -17,7 +17,7 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.codecs.ControlResponseCode;
-import org.agrona.ErrorHandler;
+import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -101,6 +101,14 @@ class ArchiveConductor extends SessionWorker
     public String roleName()
     {
         return "archiver-conductor";
+    }
+
+    protected void postSessionsClose()
+    {
+        CloseHelper.close(recorderAgentInvoker);
+        CloseHelper.close(replayerAgentInvoker);
+        CloseHelper.close(aeronClientAgentInvoker);
+        CloseHelper.close(driverAgentInvoker);
     }
 
     public int doWork()

@@ -18,19 +18,13 @@ package io.aeron.archiver;
 import io.aeron.*;
 import io.aeron.archiver.codecs.ControlResponseCode;
 import org.agrona.*;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.util.Objects;
-import java.util.function.Consumer;
 
 class ArchiveConductor extends SessionWorker
 {
-    /**
-     * Limit on the number of items drained from the available image queue per work cycle.
-     */
-    private static final int QUEUE_DRAIN_LIMIT = 10;
-
     /**
      * Low term length for control channel reflect expected low bandwidth usage.
      */
@@ -49,9 +43,6 @@ class ArchiveConductor extends SessionWorker
 
     private final Subscription controlSubscription;
 
-    private final OneToOneConcurrentArrayQueue<Image> availableImageQueue = new OneToOneConcurrentArrayQueue<>(512);
-
-    private final Consumer<Image> newImageConsumer = this::availableImageHandler;
     private final AvailableImageHandler availableImageHandler = this::onAvailableImage;
 
     private final ControlSessionProxy controlSessionProxy;
@@ -116,8 +107,6 @@ class ArchiveConductor extends SessionWorker
         int workDone = safeInvoke(driverAgentInvoker);
         workDone += aeronClientAgentInvoker.invoke();
 
-        // TODO: given that client is always run as invoker I think the interaction via queue is redundant
-        workDone += availableImageQueue.drain(newImageConsumer, QUEUE_DRAIN_LIMIT);
         workDone += super.doWork();
         workDone += safeInvoke(replayerAgentInvoker);
         workDone += safeInvoke(recorderAgentInvoker);
@@ -139,7 +128,11 @@ class ArchiveConductor extends SessionWorker
         return 0;
     }
 
-    private void availableImageHandler(final Image image)
+    /**
+     * Note: this is only a thread safe interaction because we are running the aeron client as an invoked agent so the
+     * available image notifications are run from this agent thread.
+     */
+    private void onAvailableImage(final Image image)
     {
         if (image.subscription() == controlSubscription)
         {
@@ -148,20 +141,6 @@ class ArchiveConductor extends SessionWorker
         else
         {
             startRecording(image);
-        }
-    }
-
-    private void onAvailableImage(final Image image)
-    {
-        if (!isClosed() && availableImageQueue.offer(image))
-        {
-            return;
-        }
-        // This is required since image available handler is called from the client conductor thread
-        // we can either bridge via a queue or protect access to the sessions list, which seems clumsy.
-        while (!isClosed() && !availableImageQueue.offer(image))
-        {
-            Thread.yield();
         }
     }
 

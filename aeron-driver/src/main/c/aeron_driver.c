@@ -16,6 +16,7 @@
 
 #if defined(__linux__)
 #define _GNU_SOURCE
+#include <bsd/stdlib.h>
 #endif
 
 #include <stddef.h>

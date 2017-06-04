@@ -19,7 +19,6 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <stdatomic.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include "aeronmd.h"
@@ -57,7 +56,6 @@ typedef struct aeron_distinct_error_log_stct
     uint8_t *buffer;
     aeron_distinct_error_log_observations_pimpl_t *observations_pimpl;
     size_t buffer_capacity;
-    atomic_size_t num_observations;
     size_t next_offset;
     aeron_clock_func_t clock;
     aeron_resource_linger_func_t linger_resource;
@@ -91,5 +89,7 @@ size_t aeron_error_log_read(
     aeron_error_log_reader_func_t reader,
     void *clientd,
     int64_t since_timestamp);
+
+size_t aeron_distinct_error_log_num_observations(aeron_distinct_error_log_t *log);
 
 #endif //AERON_AERON_DISTINCT_ERROR_LOG_H

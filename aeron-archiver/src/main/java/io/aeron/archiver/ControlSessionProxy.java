@@ -25,7 +25,7 @@ class ControlSessionProxy
     private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
     private final IdleStrategy idleStrategy;
-    private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+    private final ExpandableDirectByteBuffer buffer = new ExpandableDirectByteBuffer(2048);
 
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ControlResponseEncoder responseEncoder = new ControlResponseEncoder();

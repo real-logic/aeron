@@ -17,14 +17,14 @@ package io.aeron.archiver;
 
 import io.aeron.Publication;
 import io.aeron.archiver.codecs.*;
-import org.agrona.ExpandableArrayBuffer;
+import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.concurrent.IdleStrategy;
 
 class NotificationsProxy
 {
     private final IdleStrategy idleStrategy;
     private final Publication recordingNotifications;
-    private final ExpandableArrayBuffer outboundBuffer = new ExpandableArrayBuffer();
+    private final ExpandableDirectByteBuffer outboundBuffer = new ExpandableDirectByteBuffer(2048);
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final RecordingStartedEncoder recordingStartedEncoder = new RecordingStartedEncoder();
     private final RecordingProgressEncoder recordingProgressEncoder = new RecordingProgressEncoder();

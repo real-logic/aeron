@@ -50,10 +50,12 @@ typedef struct aeron_distinct_observation_stct
 }
 aeron_distinct_observation_t;
 
+typedef struct aeron_distinct_error_log_observations_pimpl_stct aeron_distinct_error_log_observations_pimpl_t;
+
 typedef struct aeron_distinct_error_log_stct
 {
     uint8_t *buffer;
-    _Atomic(aeron_distinct_observation_t *) observations;
+    aeron_distinct_error_log_observations_pimpl_t *observations_pimpl;
     size_t buffer_capacity;
     atomic_size_t num_observations;
     size_t next_offset;

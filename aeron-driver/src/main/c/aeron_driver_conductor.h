@@ -98,7 +98,7 @@ typedef struct aeron_driver_conductor_stct
         size_t capacity;
         void (*on_time_event)(aeron_driver_conductor_t *, aeron_client_t *, int64_t, int64_t);
         bool (*has_reached_end_of_life)(aeron_driver_conductor_t *, aeron_client_t *);
-        void (*delete)(aeron_driver_conductor_t *, aeron_client_t *);
+        void (*delete_func)(aeron_driver_conductor_t *, aeron_client_t *);
     }
     clients;
 
@@ -117,7 +117,7 @@ typedef struct aeron_driver_conductor_stct
         size_t capacity;
         void (*on_time_event)(aeron_driver_conductor_t *, aeron_ipc_publication_entry_t *, int64_t, int64_t);
         bool (*has_reached_end_of_life)(aeron_driver_conductor_t *, aeron_ipc_publication_entry_t *);
-        void (*delete)(aeron_driver_conductor_t *, aeron_ipc_publication_entry_t *);
+        void (*delete_func)(aeron_driver_conductor_t *, aeron_ipc_publication_entry_t *);
     }
     ipc_publications;
 

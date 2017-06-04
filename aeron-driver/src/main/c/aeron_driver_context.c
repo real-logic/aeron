@@ -132,6 +132,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         return -1;
     }
 
+    _context->cnc_map.addr = NULL;
+
     if (aeron_alloc((void **)&_context->aeron_dir, AERON_MAX_PATH) < 0)
     {
         return -1;

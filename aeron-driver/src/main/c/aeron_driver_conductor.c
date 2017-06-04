@@ -74,14 +74,14 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->clients.length = 0;
     conductor->clients.on_time_event = aeron_client_on_time_event;
     conductor->clients.has_reached_end_of_life = aeron_client_has_reached_end_of_life;
-    conductor->clients.delete = aeron_client_delete;
+    conductor->clients.delete_func = aeron_client_delete;
 
     conductor->ipc_publications.array = NULL;
     conductor->ipc_publications.length = 0;
     conductor->ipc_publications.capacity = 0;
     conductor->ipc_publications.on_time_event = aeron_ipc_publication_entry_on_time_event;
     conductor->ipc_publications.has_reached_end_of_life = aeron_ipc_publication_entry_has_reached_end_of_life;
-    conductor->ipc_publications.delete = aeron_ipc_publication_entry_delete;
+    conductor->ipc_publications.delete_func = aeron_ipc_publication_entry_delete;
 
     conductor->errors_counter = aeron_counter_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_ERRORS);
     conductor->client_keep_alives_counter =
@@ -206,7 +206,7 @@ for (int last_index = (int)l.length - 1, i = last_index; i >= 0; i--) \
     l.on_time_event(c, elem, now_ns, now_ms); \
     if (l.has_reached_end_of_life(c, elem)) \
     { \
-        l.delete(c, elem); \
+        l.delete_func(c, elem); \
         aeron_array_fast_unordered_remove((uint8_t *)l.array, sizeof(t), i, last_index); \
         last_index--; \
     } \

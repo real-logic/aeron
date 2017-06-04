@@ -78,7 +78,7 @@ int aeron_ipc_publication_create(
     _pub->log_meta_data->time_of_last_status_message = 0;
     _pub->log_meta_data->end_of_stream_position = INT64_MAX;
     aeron_logbuffer_fill_default_header(
-        _pub->mapped_raw_log.mapped_files[AERON_LOG_META_DATA_SECTION_INDEX].addr, session_id, stream_id, initial_term_id);
+        _pub->mapped_raw_log.log_meta_data.addr, session_id, stream_id, initial_term_id);
 
     _pub->conductor_fields.subscribeable.array = NULL;
     _pub->conductor_fields.subscribeable.length = 0;

@@ -15,6 +15,7 @@
 
 if(BUILD_TESTING)
     include_directories(${AERON_DRIVER_SOURCE_PATH})
+    include_directories(${AERON_CLIENT_SOURCE_PATH})
 
     function(aeron_driver_test name file)
         add_executable(${name} ${file})

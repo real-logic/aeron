@@ -97,6 +97,8 @@ typedef struct aeron_driver_context_stct
 }
 aeron_driver_context_t;
 
+void aeron_driver_fill_cnc_metadata(aeron_driver_context_t *context);
+
 inline uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata)
 {
     return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH;
@@ -135,6 +137,16 @@ inline uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata)
 inline size_t aeron_cnc_computed_length(size_t total_length_of_buffers)
 {
     return AERON_CNC_VERSION_AND_META_DATA_LENGTH + total_length_of_buffers;
+}
+
+inline size_t aeron_cnc_length(aeron_driver_context_t *context)
+{
+    return aeron_cnc_computed_length(
+        context->to_driver_buffer_length +
+        context->to_clients_buffer_length +
+        context->counters_metadata_buffer_length +
+        context->counters_values_buffer_length +
+        context->error_buffer_length);
 }
 
 inline size_t aeron_ipc_publication_term_window_length(aeron_driver_context_t *context, size_t term_length)

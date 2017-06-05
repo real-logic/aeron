@@ -26,6 +26,11 @@ extern "C"
 #include "aeron_driver_conductor.h"
 }
 
+#include "concurrent/broadcast/CopyBroadcastReceiver.h"
+
+using namespace aeron::concurrent::broadcast;
+using namespace aeron::concurrent;
+
 class DriverConductorTest : public testing::Test
 {
 public:
@@ -36,32 +41,15 @@ public:
             throw std::runtime_error("could not init context");
         }
 
-        size_t cnc_file_length = aeron_cnc_computed_length(
-            m_context->to_driver_buffer_length +
-            m_context->to_clients_buffer_length +
-            m_context->counters_metadata_buffer_length +
-            m_context->counters_values_buffer_length +
-            m_context->error_buffer_length);
+        size_t cnc_file_length = aeron_cnc_length(m_context);
 
-        m_cnc = new uint8_t[cnc_file_length];
-        m_context->cnc_map.addr = m_cnc;
+        m_cnc = std::unique_ptr<uint8_t[]>(new uint8_t[cnc_file_length]);
+        m_context->cnc_map.addr = m_cnc.get();
         m_context->cnc_map.length = cnc_file_length;
 
-        aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)m_context->cnc_map.addr;
-        metadata->to_driver_buffer_length = (int32_t)m_context->to_driver_buffer_length;
-        metadata->to_clients_buffer_length = (int32_t)m_context->to_clients_buffer_length;
-        metadata->counter_metadata_buffer_length = (int32_t)m_context->counters_metadata_buffer_length;
-        metadata->counter_values_buffer_length = (int32_t)m_context->counters_values_buffer_length;
-        metadata->error_log_buffer_length = (int32_t)m_context->error_buffer_length;
-        metadata->client_liveness_timeout = (int64_t)m_context->client_liveness_timeout_ns;
+        memset(m_context->cnc_map.addr, 0, cnc_file_length);
 
-        AERON_PUT_ORDERED(metadata->cnc_version, AERON_CNC_VERSION);
-
-        m_context->to_driver_buffer = aeron_cnc_to_driver_buffer(metadata);
-        m_context->to_clients_buffer = aeron_cnc_to_clients_buffer(metadata);
-        m_context->counters_values_buffer = aeron_cnc_counters_values_buffer(metadata);
-        m_context->counters_metadata_buffer = aeron_cnc_counters_metadata_buffer(metadata);
-        m_context->error_buffer = aeron_cnc_error_log_buffer(metadata);
+        aeron_driver_fill_cnc_metadata(m_context);
 
         if (aeron_driver_conductor_init(&m_conductor, m_context) < 0)
         {
@@ -71,17 +59,19 @@ public:
 
     virtual ~DriverConductorTest()
     {
-        delete [] m_cnc;
         m_context->cnc_map.addr = NULL;
         aeron_driver_context_close(m_context);
     }
 
-    void read_all_broadcasts_from_conductor()
+    template <typename func_t>
+    size_t readAllBroadcastsFromConductor(const func_t&& func)
     {
-        aeron_broadcast_record_descriptor_t *record =
-            (aeron_broadcast_record_descriptor_t *)m_context->to_clients_buffer;
+        AtomicBuffer toClientsBuffer(
+            m_context->to_clients_buffer, static_cast<aeron::util::index_t>(m_context->to_clients_buffer_length));
+        BroadcastReceiver toClientsReceiver(toClientsBuffer);
+        CopyBroadcastReceiver receiver(toClientsReceiver);
 
-
+        return (size_t)receiver.receive(func);
     }
 
     int64_t nextCorrelationId()
@@ -103,7 +93,7 @@ public:
 
 protected:
     uint8_t m_command_buffer[AERON_MAX_PATH];
-    uint8_t *m_cnc = nullptr;
+    std::unique_ptr<uint8_t[]> m_cnc;
     aeron_driver_context_t *m_context = NULL;
     aeron_driver_conductor_t m_conductor;
 };

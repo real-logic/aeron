@@ -25,8 +25,7 @@ SET(SOURCE
     LogBuffers.cpp
     util/MemoryMappedFile.cpp
     util/CommandOption.cpp
-    util/CommandOptionParser.cpp
-    util/StringUtil.cpp)
+    util/CommandOptionParser.cpp)
 
 SET(HEADERS
     ClientConductor.h

@@ -23,6 +23,7 @@
 #include <sys/statvfs.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <errno.h>
 #include "util/aeron_fileutil.h"
 
 #define BLOCK_SIZE (4 * 1024)

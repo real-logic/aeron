@@ -66,11 +66,8 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
 
     /* TODO: create and init all command queues */
 
-    if (aeron_array_ensure_capacity((uint8_t **)&conductor->clients.array, sizeof(aeron_client_t), 0, 2) < 0)
-    {
-        return -1;
-    }
-    conductor->clients.capacity = 2;
+    conductor->clients.array = NULL;
+    conductor->clients.capacity = 0;
     conductor->clients.length = 0;
     conductor->clients.on_time_event = aeron_client_on_time_event;
     conductor->clients.has_reached_end_of_life = aeron_client_has_reached_end_of_life;
@@ -98,7 +95,7 @@ if (a.length >= a.capacity) \
 { \
     size_t new_capacity = (0 == a.capacity) ? 2 : (a.capacity + (a.capacity >> 1)); \
     r = aeron_array_ensure_capacity((uint8_t **)&a.array, sizeof(t), a.capacity, new_capacity); \
-    if (r > 0) \
+    if (r >= 0) \
     { \
        a.capacity = new_capacity; \
     } \
@@ -283,7 +280,10 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                     client->publication_links.array[client->publication_links.length++].resource =
                         &publication->conductor_fields.managed_resource;
 
-                    publication->conductor_fields.managed_resource.time_of_last_status_change = conductor->context->nano_clock();
+                    conductor->ipc_publications.array[conductor->ipc_publications.length++].publication = publication;
+
+                    publication->conductor_fields.managed_resource.time_of_last_status_change =
+                        conductor->context->nano_clock();
                 }
             }
         }
@@ -462,7 +462,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             aeron_publication_command_t *command = (aeron_publication_command_t *)message;
 
             if (length < sizeof(aeron_publication_command_t) ||
-                length < (sizeof(aeron_publication_command_t) + command->channel_length))
+                length < (sizeof(aeron_publication_command_t) + command->channel_length) - 1)
             {
                 goto malformed_command;
             }
@@ -500,7 +500,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             aeron_subscription_command_t *command = (aeron_subscription_command_t *)message;
 
             if (length < sizeof(aeron_subscription_command_t) ||
-                length < (sizeof(aeron_subscription_command_t) + command->channel_length))
+                length < (sizeof(aeron_subscription_command_t) + command->channel_length) - 1)
             {
                 goto malformed_command;
             }

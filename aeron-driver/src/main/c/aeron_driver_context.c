@@ -289,6 +289,10 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->receiver_idle_strategy_func =
         aeron_idle_strategy_load("noop", &_context->receiver_idle_strategy_state);
 
+    _context->usable_fs_space_func = aeron_usable_fs_space;
+    _context->map_raw_log_func = aeron_map_raw_log;
+    _context->map_raw_log_close_func = aeron_map_raw_log_close;
+
     *context = _context;
     return 0;
 }

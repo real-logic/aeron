@@ -38,7 +38,7 @@ int aeron_ipc_publication_create(
     int path_length =
         aeron_ipc_publication_location(path, sizeof(path), context->aeron_dir, session_id, stream_id, registration_id);
     aeron_ipc_publication_t *_pub = NULL;
-    const uint64_t usable_fs_space = aeron_usable_fs_space(context->aeron_dir);
+    const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
     const uint64_t log_length = AERON_LOGBUFFER_COMPUTE_LOG_LENGTH(term_buffer_length);
 
     *publication = NULL;
@@ -49,24 +49,25 @@ int aeron_ipc_publication_create(
         return -1;
     }
 
-    if (aeron_alloc((void **)_pub, sizeof(aeron_ipc_publication_t)) < 0)
+    if (aeron_alloc((void **)&_pub, sizeof(aeron_ipc_publication_t)) < 0)
     {
         return -1;
     }
 
     _pub->log_file_name = NULL;
-    if (aeron_alloc((void **)(_pub->log_file_name), (size_t)path_length) < 0)
+    if (aeron_alloc((void **)(&_pub->log_file_name), (size_t)path_length) < 0)
     {
         aeron_free(_pub);
         return -1;
     }
 
-    if (aeron_map_raw_log(&_pub->mapped_raw_log, path, context->term_buffer_sparse_file, term_buffer_length) < 0)
+    if (context->map_raw_log_func(&_pub->mapped_raw_log, path, context->term_buffer_sparse_file, term_buffer_length) < 0)
     {
         aeron_free(_pub->log_file_name);
         aeron_free(_pub);
         return -1;
     }
+    _pub->map_raw_log_close_func = context->map_raw_log_close_func;
 
     strncpy(_pub->log_file_name, path, path_length);
     _pub->log_meta_data = (aeron_logbuffer_metadata_t *)(_pub->mapped_raw_log.log_meta_data.addr);
@@ -123,7 +124,7 @@ void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aer
 
     if (NULL != publication)
     {
-        aeron_map_raw_log_close(&publication->mapped_raw_log);
+        publication->map_raw_log_close_func(&publication->mapped_raw_log);
         aeron_free(publication->log_file_name);
     }
 

@@ -94,6 +94,10 @@ typedef struct aeron_driver_context_stct
     void *sender_idle_strategy_state;
     aeron_idle_strategy_func_t receiver_idle_strategy_func;
     void *receiver_idle_strategy_state;
+
+    aeron_usable_fs_space_func_t usable_fs_space_func;
+    aeron_map_raw_log_func_t map_raw_log_func;
+    aeron_map_raw_log_close_func_t map_raw_log_close_func;
 }
 aeron_driver_context_t;
 

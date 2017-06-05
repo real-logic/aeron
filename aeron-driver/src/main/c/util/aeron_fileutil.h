@@ -40,6 +40,8 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
 int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path);
 int aeron_unmap(aeron_mapped_file_t *mapped_file);
 
+typedef uint64_t (*aeron_usable_fs_space_func_t)(const char *path);
+
 uint64_t aeron_usable_fs_space(const char *path);
 
 #define AERON_LOG_META_DATA_SECTION_INDEX (AERON_LOGBUFFER_PARTITION_COUNT)
@@ -64,6 +66,9 @@ int aeron_ipc_publication_location(
     int32_t session_id,
     int32_t stream_id,
     int64_t correlation_id);
+
+typedef int (*aeron_map_raw_log_func_t)(aeron_mapped_raw_log_t *, const char *, bool, uint64_t);
+typedef int (*aeron_map_raw_log_close_func_t)(aeron_mapped_raw_log_t *);
 
 int aeron_map_raw_log(
     aeron_mapped_raw_log_t *mapped_raw_log, const char *path, bool use_sparse_files, uint64_t term_length);

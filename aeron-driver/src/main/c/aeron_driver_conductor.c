@@ -80,6 +80,10 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->ipc_publications.has_reached_end_of_life = aeron_ipc_publication_entry_has_reached_end_of_life;
     conductor->ipc_publications.delete_func = aeron_ipc_publication_entry_delete;
 
+    conductor->ipc_subscriptions.array = NULL;
+    conductor->ipc_subscriptions.length = 0;
+    conductor->ipc_subscriptions.capacity = 0;
+
     conductor->errors_counter = aeron_counter_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_ERRORS);
     conductor->client_keep_alives_counter =
         aeron_counter_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_CLIENT_KEEP_ALIVES);

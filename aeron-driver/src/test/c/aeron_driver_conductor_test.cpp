@@ -57,6 +57,8 @@ static int test_malloc_map_raw_log(
     log->mapped_files[0].length = 0;
     log->mapped_files[0].addr = malloc(log_length);
 
+    memset(log->mapped_files[0].addr, 0, log_length);
+
     for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
     {
         log->term_buffers[i].addr =

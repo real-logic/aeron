@@ -45,6 +45,11 @@ int aeron_counters_manager_init(
 
 }
 
+void aeron_counters_manager_close(aeron_counters_manager_t *manager)
+{
+    aeron_free(manager->free_list);
+}
+
 int32_t aeron_counters_manager_allocate(
     volatile aeron_counters_manager_t *manager,
     const char *label,

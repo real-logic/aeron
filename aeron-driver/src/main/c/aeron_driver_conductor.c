@@ -612,6 +612,10 @@ void aeron_driver_conductor_on_close(void *clientd)
         aeron_free(conductor->ipc_subscriptions.array[i].subscribeable_list.array);
     }
     aeron_free(conductor->ipc_subscriptions.array);
+
+    aeron_system_counters_close(&conductor->system_counters);
+    aeron_counters_manager_close(&conductor->counters_manager);
+    aeron_distinct_error_log_close(&conductor->error_log);
 }
 
 #define AERON_ERROR(c, code, desc, format, ...) \

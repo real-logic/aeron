@@ -86,3 +86,13 @@ int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters
 
     return 0;
 }
+
+void aeron_system_counters_close(aeron_system_counters_t *counters)
+{
+    for (int32_t i = 0; i < (int32_t)num_system_counters; i++)
+    {
+        aeron_counters_manager_free(counters->manager, counters->counter_ids[i]);
+    }
+
+    aeron_free(counters->counter_ids);
+}

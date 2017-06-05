@@ -72,6 +72,8 @@ int aeron_counters_manager_init(
     uint8_t *values_buffer,
     size_t values_length);
 
+void aeron_counters_manager_close(aeron_counters_manager_t *manager);
+
 typedef void (*aeron_counters_manager_key_func_t)(uint8_t *, size_t, void *);
 
 int32_t aeron_counters_manager_allocate(

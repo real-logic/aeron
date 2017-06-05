@@ -43,6 +43,7 @@ public final class Archiver implements AutoCloseable
         }
         aeron = Aeron.connect(ctx.clientContext);
         ctx.conclude();
+
         final ErrorHandler errorHandler = ctx.errorHandler();
         final AtomicCounter errorCounter = ctx.errorCounter();
 
@@ -68,15 +69,13 @@ public final class Archiver implements AutoCloseable
         switch (ctx.threadingMode())
         {
             case INVOKER:
-            {
                 invoker = new AgentInvoker(errorHandler, errorCounter, archiveConductor);
                 conductorRunner = null;
                 replayRunner = null;
                 recorderRunner = null;
                 break;
-            }
+
             case SHARED:
-            {
                 invoker = null;
                 conductorRunner = new AgentRunner(
                     ctx.idleStrategy(),
@@ -86,10 +85,9 @@ public final class Archiver implements AutoCloseable
                 replayRunner = null;
                 recorderRunner = null;
                 break;
-            }
+
             default:
             case DEDICATED:
-            {
                 invoker = null;
                 conductorRunner = new AgentRunner(
                     ctx.idleStrategy(),
@@ -106,7 +104,6 @@ public final class Archiver implements AutoCloseable
                     errorHandler,
                     errorCounter,
                     recorder);
-            }
         }
     }
 
@@ -116,7 +113,6 @@ public final class Archiver implements AutoCloseable
         CloseHelper.close(replayRunner);
         CloseHelper.close(recorderRunner);
         CloseHelper.close(aeron);
-
     }
 
     private Archiver start()
@@ -174,7 +170,6 @@ public final class Archiver implements AutoCloseable
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
 
-
         public Context()
         {
             this(new Aeron.Context(), new File("archive"));
@@ -216,7 +211,7 @@ public final class Archiver implements AutoCloseable
 
             if (errorCounter == null)
             {
-
+                // TODO: Need something here
             }
         }
 

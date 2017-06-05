@@ -27,19 +27,19 @@ import static org.agrona.BitUtil.*;
  * <p>
  * File Layout
  * <pre>
- *  +----------------------------+
- *  |          Meta Data         |
- *  +----------------------------+
- *  |      to-driver Buffer      |
- *  +----------------------------+
- *  |      to-clients Buffer     |
- *  +----------------------------+
- *  |   Counter Metadata Buffer  |
- *  +----------------------------+
- *  |    Counter Values Buffer   |
- *  +----------------------------+
- *  |          Error Log         |
- *  +----------------------------+
+ *  +-----------------------------+
+ *  |          Meta Data          |
+ *  +-----------------------------+
+ *  |      to-driver Buffer       |
+ *  +-----------------------------+
+ *  |      to-clients Buffer      |
+ *  +-----------------------------+
+ *  |   Counters Metadata Buffer  |
+ *  +-----------------------------+
+ *  |    Counters Values Buffer   |
+ *  +-----------------------------+
+ *  |          Error Log          |
+ *  +-----------------------------+
  * </pre>
  * <p>
  * Meta Data Layout (CnC Version 7)

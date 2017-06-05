@@ -31,39 +31,41 @@ using namespace aeron::concurrent;
 *
 * File Layout
 * <pre>
-*  +----------------------------+
-*  |      Aeron CnC Version     |
-*  +----------------------------+
-*  |          Meta Data         |
-*  +----------------------------+
-*  |      to-driver Buffer      |
-*  +----------------------------+
-*  |      to-clients Buffer     |
-*  +----------------------------+
-*  |   Counter Metadata Buffer  |
-*  +----------------------------+
-*  |    Counter Values Buffer   |
-*  +----------------------------+
-*  |          Error Log         |
-*  +----------------------------+
+*  +-----------------------------+
+*  |          Meta Data          |
+*  +-----------------------------+
+*  |      to-driver Buffer       |
+*  +-----------------------------+
+*  |      to-clients Buffer      |
+*  +-----------------------------+
+*  |   Counters Metadata Buffer  |
+*  +-----------------------------+
+*  |    Counters Values Buffer   |
+*  +-----------------------------+
+*  |          Error Log          |
+*  +-----------------------------+
 * </pre>
-*
-* Meta Data Layout (CnC Version 4)
+* <p>
+* Meta Data Layout (CnC Version 7)
 * <pre>
-*  +----------------------------+
-*  |   to-driver buffer length  |
-*  +----------------------------+
-*  |  to-clients buffer length  |
-*  +----------------------------+
-*  |   metadata buffer length   |
-*  +----------------------------+
-*  |    values buffer length    |
-*  +----------------------------+
-*  |   Client Liveness Timeout  |
-*  |                            |
-*  +----------------------------+
-*  |      Error Log length      |
-*  +----------------------------+
+*   0                   1                   2                   3
+*   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+*  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+*  |                      Aeron CnC Version                        |
+*  +---------------------------------------------------------------+
+*  |                   to-driver buffer length                     |
+*  +---------------------------------------------------------------+
+*  |                  to-clients buffer length                     |
+*  +---------------------------------------------------------------+
+*  |               Counters Metadata buffer length                 |
+*  +---------------------------------------------------------------+
+*  |                Counters Values buffer length                  |
+*  +---------------------------------------------------------------+
+*  |                   Error Log buffer length                     |
+*  +---------------------------------------------------------------+
+*  |                   Client Liveness Timeout                     |
+*  |                                                               |
+*  +---------------------------------------------------------------+
 * </pre>
 */
 namespace CncFileDescriptor {
@@ -81,12 +83,12 @@ struct MetaDataDefn
     std::int32_t toClientsBufferLength;
     std::int32_t counterMetadataBufferLength;
     std::int32_t counterValuesBufferLength;
-    std::int64_t clientLivenessTimeout;
     std::int32_t errorLogBufferLength;
+    std::int64_t clientLivenessTimeout;
 };
 #pragma pack(pop)
 
-static const size_t VERSION_AND_META_DATA_LENGTH = BitUtil::align(sizeof(MetaDataDefn), BitUtil::CACHE_LINE_LENGTH * 2);
+static const size_t META_DATA_LENGTH = BitUtil::align(sizeof(MetaDataDefn), BitUtil::CACHE_LINE_LENGTH * 2);
 
 inline static std::int32_t cncVersion(MemoryMappedFile::ptr_t cncFile)
 {
@@ -103,7 +105,7 @@ inline static AtomicBuffer createToDriverBuffer(MemoryMappedFile::ptr_t cncFile)
 
     const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
 
-    return AtomicBuffer(cncFile->getMemoryPtr() + VERSION_AND_META_DATA_LENGTH, metaData.toDriverBufferLength);
+    return AtomicBuffer(cncFile->getMemoryPtr() + META_DATA_LENGTH, metaData.toDriverBufferLength);
 }
 
 inline static AtomicBuffer createToClientsBuffer(MemoryMappedFile::ptr_t cncFile)
@@ -111,7 +113,7 @@ inline static AtomicBuffer createToClientsBuffer(MemoryMappedFile::ptr_t cncFile
     AtomicBuffer metaDataBuffer(cncFile->getMemoryPtr(), convertSizeToIndex(cncFile->getMemorySize()));
 
     const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
-    std::uint8_t* basePtr = cncFile->getMemoryPtr() + VERSION_AND_META_DATA_LENGTH + metaData.toDriverBufferLength;
+    std::uint8_t* basePtr = cncFile->getMemoryPtr() + META_DATA_LENGTH + metaData.toDriverBufferLength;
 
     return AtomicBuffer(basePtr, metaData.toClientsBufferLength);
 }
@@ -123,7 +125,7 @@ inline static AtomicBuffer createCounterMetadataBuffer(MemoryMappedFile::ptr_t c
     const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
     std::uint8_t* basePtr =
         cncFile->getMemoryPtr() +
-        VERSION_AND_META_DATA_LENGTH +
+        META_DATA_LENGTH +
         metaData.toDriverBufferLength +
         metaData.toClientsBufferLength;
 
@@ -137,7 +139,7 @@ inline static AtomicBuffer createCounterValuesBuffer(MemoryMappedFile::ptr_t cnc
     const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
     std::uint8_t* basePtr =
         cncFile->getMemoryPtr() +
-        VERSION_AND_META_DATA_LENGTH +
+        META_DATA_LENGTH +
         metaData.toDriverBufferLength +
         metaData.toClientsBufferLength +
         metaData.counterMetadataBufferLength;
@@ -152,7 +154,7 @@ inline static AtomicBuffer createErrorLogBuffer(MemoryMappedFile::ptr_t cncFile)
     const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
     std::uint8_t* basePtr =
         cncFile->getMemoryPtr() +
-            VERSION_AND_META_DATA_LENGTH +
+            META_DATA_LENGTH +
             metaData.toDriverBufferLength +
             metaData.toClientsBufferLength +
             metaData.counterMetadataBufferLength +

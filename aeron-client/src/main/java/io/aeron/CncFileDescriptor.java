@@ -23,12 +23,10 @@ import java.nio.ByteBuffer;
 import static org.agrona.BitUtil.*;
 
 /**
- * Description of the command and control file used between driver and clients
+ * Description of the command and control file used between driver and clients.
  * <p>
  * File Layout
  * <pre>
- *  +----------------------------+
- *  |      Aeron CnC Version     |
  *  +----------------------------+
  *  |          Meta Data         |
  *  +----------------------------+
@@ -44,22 +42,26 @@ import static org.agrona.BitUtil.*;
  *  +----------------------------+
  * </pre>
  * <p>
- * Meta Data Layout (CnC Version 6)
+ * Meta Data Layout (CnC Version 7)
  * <pre>
- *  +----------------------------+
- *  |   to-driver buffer length  |
- *  +----------------------------+
- *  |  to-clients buffer length  |
- *  +----------------------------+
- *  |   metadata buffer length   |
- *  +----------------------------+
- *  |    values buffer length    |
- *  +----------------------------+
- *  |   Client Liveness Timeout  |
- *  |                            |
- *  +----------------------------+
- *  |      Error Log length      |
- *  +----------------------------+
+ *   0                   1                   2                   3
+ *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                      Aeron CnC Version                        |
+ *  +---------------------------------------------------------------+
+ *  |                   to-driver buffer length                     |
+ *  +---------------------------------------------------------------+
+ *  |                  to-clients buffer length                     |
+ *  +---------------------------------------------------------------+
+ *  |               Counters Metadata buffer length                 |
+ *  +---------------------------------------------------------------+
+ *  |                Counters Values buffer length                  |
+ *  +---------------------------------------------------------------+
+ *  |                   Error Log buffer length                     |
+ *  +---------------------------------------------------------------+
+ *  |                   Client Liveness Timeout                     |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
  * </pre>
  */
 public class CncFileDescriptor
@@ -69,10 +71,6 @@ public class CncFileDescriptor
     public static final int CNC_VERSION = 7;
 
     public static final int CNC_VERSION_FIELD_OFFSET;
-    public static final int CNC_METADATA_OFFSET;
-
-    /* Meta Data Offsets (offsets within the meta data section) */
-
     public static final int TO_DRIVER_BUFFER_LENGTH_FIELD_OFFSET;
     public static final int TO_CLIENTS_BUFFER_LENGTH_FIELD_OFFSET;
     public static final int COUNTERS_METADATA_BUFFER_LENGTH_FIELD_OFFSET;
@@ -83,19 +81,16 @@ public class CncFileDescriptor
     static
     {
         CNC_VERSION_FIELD_OFFSET = 0;
-        CNC_METADATA_OFFSET = CNC_VERSION_FIELD_OFFSET + SIZE_OF_INT;
-
-        TO_DRIVER_BUFFER_LENGTH_FIELD_OFFSET = 0;
+        TO_DRIVER_BUFFER_LENGTH_FIELD_OFFSET = CNC_VERSION_FIELD_OFFSET + SIZE_OF_INT;
         TO_CLIENTS_BUFFER_LENGTH_FIELD_OFFSET = TO_DRIVER_BUFFER_LENGTH_FIELD_OFFSET + SIZE_OF_INT;
         COUNTERS_METADATA_BUFFER_LENGTH_FIELD_OFFSET = TO_CLIENTS_BUFFER_LENGTH_FIELD_OFFSET + SIZE_OF_INT;
         COUNTERS_VALUES_BUFFER_LENGTH_FIELD_OFFSET = COUNTERS_METADATA_BUFFER_LENGTH_FIELD_OFFSET + SIZE_OF_INT;
-        CLIENT_LIVENESS_TIMEOUT_FIELD_OFFSET = COUNTERS_VALUES_BUFFER_LENGTH_FIELD_OFFSET + SIZE_OF_INT;
-        ERROR_LOG_BUFFER_LENGTH_FIELD_OFFSET = CLIENT_LIVENESS_TIMEOUT_FIELD_OFFSET + SIZE_OF_LONG;
+        ERROR_LOG_BUFFER_LENGTH_FIELD_OFFSET = COUNTERS_VALUES_BUFFER_LENGTH_FIELD_OFFSET + SIZE_OF_INT;
+        CLIENT_LIVENESS_TIMEOUT_FIELD_OFFSET = ERROR_LOG_BUFFER_LENGTH_FIELD_OFFSET + SIZE_OF_INT;
     }
 
-    public static final int META_DATA_LENGTH = ERROR_LOG_BUFFER_LENGTH_FIELD_OFFSET + SIZE_OF_INT;
-
-    public static final int END_OF_METADATA_OFFSET = align(SIZE_OF_INT + META_DATA_LENGTH, (CACHE_LINE_LENGTH * 2));
+    public static final int META_DATA_LENGTH = CLIENT_LIVENESS_TIMEOUT_FIELD_OFFSET + SIZE_OF_LONG;
+    public static final int END_OF_METADATA_OFFSET = align(META_DATA_LENGTH, (CACHE_LINE_LENGTH * 2));
 
     /**
      * Compute the length of the cnc file and return it.
@@ -115,32 +110,32 @@ public class CncFileDescriptor
 
     public static int toDriverBufferLengthOffset(final int baseOffset)
     {
-        return baseOffset + CNC_METADATA_OFFSET + TO_DRIVER_BUFFER_LENGTH_FIELD_OFFSET;
+        return baseOffset + TO_DRIVER_BUFFER_LENGTH_FIELD_OFFSET;
     }
 
     public static int toClientsBufferLengthOffset(final int baseOffset)
     {
-        return baseOffset + CNC_METADATA_OFFSET + TO_CLIENTS_BUFFER_LENGTH_FIELD_OFFSET;
+        return baseOffset + TO_CLIENTS_BUFFER_LENGTH_FIELD_OFFSET;
     }
 
     public static int countersMetaDataBufferLengthOffset(final int baseOffset)
     {
-        return baseOffset + CNC_METADATA_OFFSET + COUNTERS_METADATA_BUFFER_LENGTH_FIELD_OFFSET;
+        return baseOffset + COUNTERS_METADATA_BUFFER_LENGTH_FIELD_OFFSET;
     }
 
     public static int countersValuesBufferLengthOffset(final int baseOffset)
     {
-        return baseOffset + CNC_METADATA_OFFSET + COUNTERS_VALUES_BUFFER_LENGTH_FIELD_OFFSET;
+        return baseOffset + COUNTERS_VALUES_BUFFER_LENGTH_FIELD_OFFSET;
     }
 
     public static int clientLivenessTimeoutOffset(final int baseOffset)
     {
-        return baseOffset + CNC_METADATA_OFFSET + CLIENT_LIVENESS_TIMEOUT_FIELD_OFFSET;
+        return baseOffset + CLIENT_LIVENESS_TIMEOUT_FIELD_OFFSET;
     }
 
     public static int errorLogBufferLengthOffset(final int baseOffset)
     {
-        return baseOffset + CNC_METADATA_OFFSET + ERROR_LOG_BUFFER_LENGTH_FIELD_OFFSET;
+        return baseOffset + ERROR_LOG_BUFFER_LENGTH_FIELD_OFFSET;
     }
 
     public static void fillMetaData(
@@ -156,14 +151,14 @@ public class CncFileDescriptor
         cncMetaDataBuffer.putInt(toClientsBufferLengthOffset(0), toClientsBufferLength);
         cncMetaDataBuffer.putInt(countersMetaDataBufferLengthOffset(0), counterMetaDataBufferLength);
         cncMetaDataBuffer.putInt(countersValuesBufferLengthOffset(0), counterValuesBufferLength);
-        cncMetaDataBuffer.putLong(clientLivenessTimeoutOffset(0), clientLivenessTimeout);
         cncMetaDataBuffer.putInt(errorLogBufferLengthOffset(0), errorLogBufferLength);
+        cncMetaDataBuffer.putLong(clientLivenessTimeoutOffset(0), clientLivenessTimeout);
         cncMetaDataBuffer.putIntVolatile(cncVersionOffset(0), CNC_VERSION);
     }
 
     public static UnsafeBuffer createMetaDataBuffer(final ByteBuffer buffer)
     {
-        return new UnsafeBuffer(buffer, 0, SIZE_OF_INT + META_DATA_LENGTH);
+        return new UnsafeBuffer(buffer, 0, META_DATA_LENGTH);
     }
 
     public static UnsafeBuffer createToDriverBuffer(final ByteBuffer buffer, final DirectBuffer metaDataBuffer)

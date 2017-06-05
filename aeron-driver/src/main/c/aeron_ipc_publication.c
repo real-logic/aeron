@@ -78,7 +78,7 @@ int aeron_ipc_publication_create(
     _pub->log_meta_data->time_of_last_status_message = 0;
     _pub->log_meta_data->end_of_stream_position = INT64_MAX;
     aeron_logbuffer_fill_default_header(
-        _pub->mapped_raw_log.mapped_files[AERON_LOG_META_DATA_SECTION_INDEX].addr, session_id, stream_id, initial_term_id);
+        _pub->mapped_raw_log.log_meta_data.addr, session_id, stream_id, initial_term_id);
 
     _pub->conductor_fields.subscribeable.array = NULL;
     _pub->conductor_fields.subscribeable.length = 0;
@@ -179,7 +179,7 @@ void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, in
 
     if (0 < length)
     {
-        memset((uint8_t *)publication->mapped_raw_log.mapped_files[dirty_index].addr + term_offset, 0, length);
+        memset((uint8_t *)publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset, 0, length);
         publication->conductor_fields.cleaning_position = min_sub_pos;
     }
 }

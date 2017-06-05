@@ -18,10 +18,18 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdatomic.h>
 #include "aeron_alloc.h"
 #include "aeron_distinct_error_log.h"
 #include "aeron_atomic.h"
 #include "aeron_driver_context.h"
+
+typedef struct aeron_distinct_error_log_observations_pimpl_stct
+{
+    _Atomic(aeron_distinct_observation_t *) observations;
+    atomic_size_t num_observations;
+}
+aeron_distinct_error_log_observations_pimpl_t;
 
 int aeron_distinct_error_log_init(
     aeron_distinct_error_log_t *log,
@@ -36,13 +44,18 @@ int aeron_distinct_error_log_init(
         return -1;
     }
 
+    if (aeron_alloc((void **)&log->observations_pimpl, sizeof(aeron_distinct_error_log_observations_pimpl_t)) < 0)
+    {
+        return -1;
+    }
+
     log->buffer = buffer;
     log->buffer_capacity = buffer_size;
     log->clock = clock;
     log->linger_resource = linger;
     log->next_offset = 0;
-    atomic_store(&log->num_observations, 0);
-    atomic_store(&log->observations, NULL);
+    atomic_store(&log->observations_pimpl->num_observations, 0);
+    atomic_store(&log->observations_pimpl->observations, NULL);
     pthread_mutex_init(&log->mutex, NULL);
 
     return 0;
@@ -74,8 +87,8 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
     const char *description,
     const char *message)
 {
-    size_t num_observations = atomic_load(&log->num_observations);
-    aeron_distinct_observation_t *observations = atomic_load(&log->observations);
+    size_t num_observations = atomic_load(&log->observations_pimpl->num_observations);
+    aeron_distinct_observation_t *observations = atomic_load(&log->observations_pimpl->observations);
     aeron_distinct_observation_t *observation = NULL;
 
     if ((observation = aeron_distinct_error_log_find_observation(
@@ -108,8 +121,8 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
         new_array[0].offset = offset;
         memcpy(&new_array[1], observations, sizeof(aeron_distinct_observation_t) * num_observations);
 
-        atomic_store(&log->observations, new_array);
-        atomic_store(&log->num_observations, num_observations + 1);
+        atomic_store(&log->observations_pimpl->observations, new_array);
+        atomic_store(&log->observations_pimpl->num_observations, num_observations + 1);
 
         AERON_PUT_ORDERED(entry->length, length);
 
@@ -137,8 +150,8 @@ int aeron_distinct_error_log_record(
     }
 
     timestamp = log->clock();
-    size_t num_observations = atomic_load(&log->num_observations);
-    aeron_distinct_observation_t *observations = atomic_load(&log->observations);
+    size_t num_observations = atomic_load(&log->observations_pimpl->num_observations);
+    aeron_distinct_observation_t *observations = atomic_load(&log->observations_pimpl->observations);
     if ((observation = aeron_distinct_error_log_find_observation(
         observations, num_observations, error_code, description)) == NULL)
     {
@@ -217,4 +230,9 @@ size_t aeron_error_log_read(
     }
 
     return entries;
+}
+
+size_t aeron_distinct_error_log_num_observations(aeron_distinct_error_log_t *log)
+{
+    return atomic_load(&log->observations_pimpl->num_observations);
 }

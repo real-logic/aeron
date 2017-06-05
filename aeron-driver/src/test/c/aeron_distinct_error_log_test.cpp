@@ -82,7 +82,7 @@ TEST_F(DistinctErrorLogTest, shouldRecordFirstObservation)
     EXPECT_GT(entry->length, (int32_t)AERON_ERROR_LOG_HEADER_LENGTH);
     EXPECT_EQ(entry->observation_count, 1);
     EXPECT_EQ(entry->last_observation_timestamp, 7);
-    EXPECT_EQ(atomic_load(&m_log.num_observations), (size_t)1);
+    EXPECT_EQ(aeron_distinct_error_log_num_observations(&m_log), (size_t)1);
 }
 
 TEST_F(DistinctErrorLogTest, shouldSummariseObservations)
@@ -99,7 +99,7 @@ TEST_F(DistinctErrorLogTest, shouldSummariseObservations)
     EXPECT_GT(entry->length, (int32_t)AERON_ERROR_LOG_HEADER_LENGTH);
     EXPECT_EQ(entry->observation_count, 2);
     EXPECT_EQ(entry->last_observation_timestamp, 8);
-    EXPECT_EQ(atomic_load(&m_log.num_observations), (size_t)1);
+    EXPECT_EQ(aeron_distinct_error_log_num_observations(&m_log), (size_t)1);
 }
 
 TEST_F(DistinctErrorLogTest, shouldRecordTwoDistinctObservations)
@@ -125,7 +125,7 @@ TEST_F(DistinctErrorLogTest, shouldRecordTwoDistinctObservations)
     EXPECT_EQ(entry->observation_count, 1);
     EXPECT_EQ(entry->last_observation_timestamp, 8);
 
-    EXPECT_EQ(atomic_load(&m_log.num_observations), (size_t)2);
+    EXPECT_EQ(aeron_distinct_error_log_num_observations(&m_log), (size_t)2);
 }
 
 static void error_log_reader_no_entries(

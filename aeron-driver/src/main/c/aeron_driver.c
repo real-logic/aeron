@@ -16,6 +16,7 @@
 
 #if defined(__linux__)
 #define _GNU_SOURCE
+#include <bsd/stdlib.h>
 #endif
 
 #include <stddef.h>
@@ -205,15 +206,29 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
     return 0;
 }
 
+void aeron_driver_fill_cnc_metadata(aeron_driver_context_t *context)
+{
+    aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)context->cnc_map.addr;
+    metadata->to_driver_buffer_length = (int32_t)context->to_driver_buffer_length;
+    metadata->to_clients_buffer_length = (int32_t)context->to_clients_buffer_length;
+    metadata->counter_metadata_buffer_length = (int32_t)context->counters_metadata_buffer_length;
+    metadata->counter_values_buffer_length = (int32_t)context->counters_values_buffer_length;
+    metadata->error_log_buffer_length = (int32_t)context->error_buffer_length;
+    metadata->client_liveness_timeout = (int64_t)context->client_liveness_timeout_ns;
+
+    AERON_PUT_ORDERED(metadata->cnc_version, AERON_CNC_VERSION);
+
+    context->to_driver_buffer = aeron_cnc_to_driver_buffer(metadata);
+    context->to_clients_buffer = aeron_cnc_to_clients_buffer(metadata);
+    context->counters_values_buffer = aeron_cnc_counters_values_buffer(metadata);
+    context->counters_metadata_buffer = aeron_cnc_counters_metadata_buffer(metadata);
+    context->error_buffer = aeron_cnc_error_log_buffer(metadata);
+}
+
 int aeron_driver_create_cnc_file(aeron_driver_t *driver)
 {
     char buffer[AERON_MAX_PATH];
-    size_t cnc_file_length = aeron_cnc_computed_length(
-        driver->context->to_driver_buffer_length +
-        driver->context->to_clients_buffer_length +
-        driver->context->counters_metadata_buffer_length +
-        driver->context->counters_values_buffer_length +
-        driver->context->error_buffer_length);
+    size_t cnc_file_length = aeron_cnc_length(driver->context);
 
     driver->context->cnc_map.addr = NULL;
     driver->context->cnc_map.length = cnc_file_length;
@@ -225,21 +240,7 @@ int aeron_driver_create_cnc_file(aeron_driver_t *driver)
         return -1;
     }
 
-    aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)driver->context->cnc_map.addr;
-    metadata->to_driver_buffer_length = (int32_t)driver->context->to_driver_buffer_length;
-    metadata->to_clients_buffer_length = (int32_t)driver->context->to_clients_buffer_length;
-    metadata->counter_metadata_buffer_length = (int32_t)driver->context->counters_metadata_buffer_length;
-    metadata->counter_values_buffer_length = (int32_t)driver->context->counters_values_buffer_length;
-    metadata->error_log_buffer_length = (int32_t)driver->context->error_buffer_length;
-    metadata->client_liveness_timeout = (int64_t)driver->context->client_liveness_timeout_ns;
-
-    AERON_PUT_ORDERED(metadata->cnc_version, AERON_CNC_VERSION);
-
-    driver->context->to_driver_buffer = aeron_cnc_to_driver_buffer(metadata);
-    driver->context->to_clients_buffer = aeron_cnc_to_clients_buffer(metadata);
-    driver->context->counters_values_buffer = aeron_cnc_counters_values_buffer(metadata);
-    driver->context->counters_metadata_buffer = aeron_cnc_counters_metadata_buffer(metadata);
-    driver->context->error_buffer = aeron_cnc_error_log_buffer(metadata);
+    aeron_driver_fill_cnc_metadata(driver->context);
     return 0;
 }
 

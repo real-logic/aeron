@@ -23,7 +23,7 @@ public class ArchiveClient
 {
     private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
 
-    private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+    private final ExpandableDirectByteBuffer buffer = new ExpandableDirectByteBuffer(2048);
     private final Publication controlRequest;
     private final Subscription recordingEvents;
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();

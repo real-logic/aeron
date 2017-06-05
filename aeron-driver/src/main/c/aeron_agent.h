@@ -29,11 +29,10 @@ typedef pthread_t aeron_thread_t;
 typedef HANDLE aeron_thread_t;
 #endif
 
+#include "aeron_driver_common.h"
+
 typedef int (*aeron_agent_do_work_func_t)(void *);
 typedef void (*aeron_agent_on_close_func_t)(void *);
-
-typedef void (*aeron_idle_strategy_func_t)(void *, int);
-typedef int (*aeron_idle_strategy_init_func_t)(void **);
 
 #define AERON_AGENT_STATE_UNUSED 0
 #define AERON_AGENT_STATE_INITED 1

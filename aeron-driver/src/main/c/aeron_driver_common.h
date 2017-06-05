@@ -21,6 +21,9 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+typedef void (*aeron_idle_strategy_func_t)(void *, int);
+typedef int (*aeron_idle_strategy_init_func_t)(void **);
+
 typedef struct aeron_driver_managed_resource_stct
 {
     int64_t registration_id;

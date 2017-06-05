@@ -21,7 +21,6 @@
 #include "aeronmd.h"
 #include "util/aeron_bitutil.h"
 #include "util/aeron_fileutil.h"
-#include "aeron_agent.h"
 
 #define AERON_MAX_PATH (256)
 #define AERON_CNC_FILE "cnc.dat"

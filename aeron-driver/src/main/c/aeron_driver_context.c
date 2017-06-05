@@ -33,6 +33,7 @@
 #include "aeron_alloc.h"
 #include "concurrent/aeron_mpsc_rb.h"
 #include "concurrent/aeron_broadcast_transmitter.h"
+#include "aeron_agent.h"
 
 inline static const char *tmp_dir()
 {

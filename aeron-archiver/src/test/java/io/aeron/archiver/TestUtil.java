@@ -66,7 +66,7 @@ public class TestUtil
 
     public static void waitForOk(final ArchiveClient client, final Subscription reply, final long correlationId)
     {
-        waitFor(() -> client.pollResponses(reply, new ArchiveAndReplaySystemTest.FailResponseListener()
+        waitFor(() -> client.pollResponses(reply, new FailResponseListener()
         {
             public void onResponse(final ControlResponseCode code, final String errorMessage, final long correlationId)
             {
@@ -79,7 +79,7 @@ public class TestUtil
 
     public static void waitForFail(final ArchiveClient client, final Subscription reply, final long correlationId)
     {
-        waitFor(() -> client.pollResponses(reply, new ArchiveAndReplaySystemTest.FailResponseListener()
+        waitFor(() -> client.pollResponses(reply, new FailResponseListener()
         {
             public void onResponse(final ControlResponseCode code, final String errorMessage, final long correlationId)
             {

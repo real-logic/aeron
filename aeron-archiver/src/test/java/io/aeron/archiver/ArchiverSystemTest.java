@@ -38,71 +38,8 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
-public class ArchiveAndReplaySystemTest
+public class ArchiverSystemTest
 {
-    public static class FailRecordingEventsListener implements RecordingEventsListener
-    {
-        public void onProgress(final long recordingId, final long joiningPosition, final long currentPosition)
-        {
-            fail();
-        }
-
-        public void onStart(
-            final long recordingId,
-            final int sessionId,
-            final int streamId,
-            final String channel,
-            final String sourceIdentity)
-        {
-            fail();
-        }
-
-        public void onStop(final long recordingId)
-        {
-            fail();
-        }
-    }
-
-    public static class FailResponseListener implements ResponseListener
-    {
-        public void onResponse(final ControlResponseCode code, final String errorMessage, final long correlationId)
-        {
-            fail();
-        }
-
-        public void onReplayStarted(final long replayId, final long correlationId)
-        {
-            fail();
-        }
-
-        public void onReplayAborted(final long lastPosition, final long correlationId)
-        {
-            fail();
-        }
-
-        public void onRecordingDescriptor(
-            final long correlationId,
-            final long recordingId,
-            final int segmentFileLength,
-            final int termBufferLength,
-            final long startTime,
-            final long joiningPosition,
-            final long endTime,
-            final long lastPosition,
-            final int sessionId,
-            final int streamId,
-            final String channel,
-            final String sourceIdentity)
-        {
-            fail();
-        }
-
-        public void onRecordingNotFound(final long recordingId, final long maxRecordingId, final long correlationId)
-        {
-            fail();
-        }
-    }
-
     private static final double MEGABYTE = 1024.0d * 1024.0d;
 
     private static final String REPLY_URI = "aeron:udp?endpoint=127.0.0.1:54327";
@@ -138,7 +75,7 @@ public class ArchiveAndReplaySystemTest
         protected void failed(final Throwable t, final Description description)
         {
             System.err.println(
-                "ArchiveAndReplaySystemTest failed with random seed: " + ArchiveAndReplaySystemTest.this.seed);
+                "ArchiveAndReplaySystemTest failed with random seed: " + ArchiverSystemTest.this.seed);
         }
     };
     private Subscription reply;
@@ -293,7 +230,7 @@ public class ArchiveAndReplaySystemTest
                 final String channel,
                 final String sourceIdentity)
             {
-                assertThat(recordingId, is(ArchiveAndReplaySystemTest.this.recordingId));
+                assertThat(recordingId, is(ArchiverSystemTest.this.recordingId));
                 assertThat(termBufferLength, is(publication.termBufferLength()));
 
                 assertThat(streamId, is(PUBLISH_STREAM_ID));

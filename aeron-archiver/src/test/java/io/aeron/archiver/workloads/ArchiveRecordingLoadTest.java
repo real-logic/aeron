@@ -170,7 +170,7 @@ public class ArchiveRecordingLoadTest
 
     private void initRecordingStartIndicator(final ArchiveClient client)
     {
-        recordingStartedIndicator = () -> client.pollEvents(new ArchiveAndReplaySystemTest.FailRecordingEventsListener()
+        recordingStartedIndicator = () -> client.pollEvents(new FailRecordingEventsListener()
         {
             public void onStart(
                 final long recordingId0,
@@ -189,7 +189,7 @@ public class ArchiveRecordingLoadTest
     private void initRecordingEndIndicator(final ArchiveClient client)
     {
         recordingEndIndicator =
-            () -> client.pollEvents(new ArchiveAndReplaySystemTest.FailRecordingEventsListener()
+            () -> client.pollEvents(new FailRecordingEventsListener()
             {
                 public void onProgress(
                     final long recordingId0,

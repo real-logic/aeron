@@ -70,6 +70,7 @@ int aeron_ipc_publication_create(
     _pub->map_raw_log_close_func = context->map_raw_log_close_func;
 
     strncpy(_pub->log_file_name, path, path_length);
+    _pub->log_file_name_length = (size_t)path_length;
     _pub->log_meta_data = (aeron_logbuffer_metadata_t *)(_pub->mapped_raw_log.log_meta_data.addr);
 
     _pub->log_meta_data->term_tail_counters[0] = (int64_t)initial_term_id << 32;

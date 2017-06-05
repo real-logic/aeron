@@ -277,8 +277,9 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublication)
 
             EXPECT_EQ(response.stream_id, STREAM_ID_1);
             EXPECT_EQ(response.correlation_id, pub_id);
+            EXPECT_GT(response.log_file_length, 0);
+            EXPECT_EQ((size_t)length, sizeof(aeron_publication_command_t) + response.log_file_length - 1);
         };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
-

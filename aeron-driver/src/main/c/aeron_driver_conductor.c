@@ -351,7 +351,7 @@ void aeron_driver_conductor_on_publication_ready(
         conductor,
         is_exclusive ? AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY : AERON_RESPONSE_ON_PUBLICATION_READY,
         response,
-        sizeof(aeron_publication_buffers_ready_t) + log_file_name_length);
+        sizeof(aeron_publication_buffers_ready_t) + log_file_name_length - 1);
 }
 
 void aeron_driver_conductor_on_operation_succeeded(

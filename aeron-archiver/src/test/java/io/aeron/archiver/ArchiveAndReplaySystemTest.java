@@ -163,7 +163,7 @@ public class ArchiveAndReplaySystemTest
         archiverCtx
             .driverAgentInvoker(driverCtx.driverAgentInvoker())
             .archiveDir(archiveDir)
-            .threadingMode(ThreadingMode.SHARED);
+            .threadingMode(ArchiverThreadingMode.SHARED);
 
         archiver = Archiver.launch(archiverCtx);
 

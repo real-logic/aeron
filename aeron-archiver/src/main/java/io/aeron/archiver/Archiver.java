@@ -16,7 +16,6 @@
 package io.aeron.archiver;
 
 import io.aeron.Aeron;
-import io.aeron.driver.ThreadingMode;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -38,7 +37,7 @@ public final class Archiver implements AutoCloseable
     {
         this.ctx = ctx;
         ctx.clientContext.driverAgentInvoker(ctx.driverAgentInvoker());
-        if (ctx.threadingMode() != ThreadingMode.DEDICATED)
+        if (ctx.threadingMode() != ArchiverThreadingMode.DEDICATED)
         {
             ctx.clientContext.clientLock(new NoOpLock());
         }
@@ -49,7 +48,7 @@ public final class Archiver implements AutoCloseable
 
         final Replayer replayer;
         final Recorder recorder;
-        if (ctx.threadingMode() == ThreadingMode.DEDICATED)
+        if (ctx.threadingMode() == ArchiverThreadingMode.DEDICATED)
         {
             replayer = new ReplayerProxy(aeron, ctx);
             recorder = new RecorderProxy(aeron, ctx);
@@ -76,7 +75,6 @@ public final class Archiver implements AutoCloseable
                 recorderRunner = null;
                 break;
             }
-            case SHARED_NETWORK:
             case SHARED:
             {
                 invoker = null;
@@ -123,11 +121,11 @@ public final class Archiver implements AutoCloseable
 
     private Archiver start()
     {
-        if (ctx.threadingMode() == ThreadingMode.SHARED || ctx.threadingMode() == ThreadingMode.SHARED_NETWORK)
+        if (ctx.threadingMode() == ArchiverThreadingMode.SHARED)
         {
             AgentRunner.startOnThread(conductorRunner, ctx.threadFactory());
         }
-        else if (ctx.threadingMode() == ThreadingMode.DEDICATED)
+        else if (ctx.threadingMode() == ArchiverThreadingMode.DEDICATED)
         {
             AgentRunner.startOnThread(conductorRunner, ctx.threadFactory());
             AgentRunner.startOnThread(replayRunner, ctx.threadFactory());
@@ -165,7 +163,7 @@ public final class Archiver implements AutoCloseable
         private int segmentFileLength = 128 * 1024 * 1024;
         private boolean forceMetadataUpdates = true;
         private boolean forceWrites = true;
-        private ThreadingMode threadingMode = ThreadingMode.SHARED;
+        private ArchiverThreadingMode threadingMode = ArchiverThreadingMode.SHARED;
         private ThreadFactory threadFactory = Thread::new;
 
         private AgentInvoker driverAgentInvoker;
@@ -415,12 +413,12 @@ public final class Archiver implements AutoCloseable
             return this;
         }
 
-        public ThreadingMode threadingMode()
+        public ArchiverThreadingMode threadingMode()
         {
             return threadingMode;
         }
 
-        public Context threadingMode(final ThreadingMode threadingMode)
+        public Context threadingMode(final ArchiverThreadingMode threadingMode)
         {
             this.threadingMode = threadingMode;
             return this;

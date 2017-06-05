@@ -100,7 +100,7 @@ public class ArchiveReplayLoadTest
         driver = MediaDriver.launch(driverCtx);
         archiveDir = TestUtil.makeTempDir();
         archiverCtx.archiveDir(archiveDir);
-        archiverCtx.threadingMode(ThreadingMode.DEDICATED);
+        archiverCtx.threadingMode(ArchiverThreadingMode.DEDICATED);
         archiver = Archiver.launch(archiverCtx);
         println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
         publishingClient = Aeron.connect();

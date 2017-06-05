@@ -63,6 +63,13 @@ public:
         aeron_driver_context_close(m_context);
     }
 
+    void SetUp() override
+    {
+        memset(m_context->cnc_map.addr, 0, m_context->cnc_map.length);
+
+        aeron_driver_fill_cnc_metadata(m_context);
+    }
+
     template <typename func_t>
     size_t readAllBroadcastsFromConductor(const func_t&& func)
     {
@@ -89,6 +96,39 @@ public:
         memcpy(command->channel_data, AERON_IPC_CHANNEL, sizeof(AERON_IPC_CHANNEL));
 
         return aeron_driver_conductor_on_add_ipc_publication(&m_conductor, command, is_exclusive);
+    }
+
+    int removePublication(int64_t client_id, int64_t correlation_id, int64_t registration_id)
+    {
+        aeron_remove_command_t *command = (aeron_remove_command_t *)&m_command_buffer;
+        command->correlated.client_id = client_id;
+        command->correlated.correlation_id = correlation_id;
+        command->registration_id = registration_id;
+
+        return aeron_driver_conductor_on_remove_publication(&m_conductor, command);
+    }
+
+    int addIpcSubscription(int64_t client_id, int64_t correlation_id, int32_t stream_id, int64_t registration_id)
+    {
+        aeron_subscription_command_t *command = (aeron_subscription_command_t *)&m_command_buffer;
+        command->correlated.client_id = client_id;
+        command->correlated.correlation_id = correlation_id;
+        command->stream_id = stream_id;
+        command->registration_correlation_id = registration_id;
+        command->channel_length = sizeof(AERON_IPC_CHANNEL);
+        memcpy(command->channel_data, AERON_IPC_CHANNEL, sizeof(AERON_IPC_CHANNEL));
+
+        return aeron_driver_conductor_on_add_ipc_subscription(&m_conductor, command);
+    }
+
+    int removeSubscription(int64_t client_id, int64_t correlation_id, int64_t registration_id)
+    {
+        aeron_remove_command_t *command = (aeron_remove_command_t *)&m_command_buffer;
+        command->correlated.client_id = client_id;
+        command->correlated.correlation_id = correlation_id;
+        command->registration_id = registration_id;
+
+        return aeron_driver_conductor_on_remove_subscription(&m_conductor, command);
     }
 
 protected:

@@ -68,21 +68,22 @@ class NotificationsProxy
         send(recordingProgressEncoder.encodedLength());
     }
 
-    void recordingStopped(final long recordingId)
+    void recordingStopped(final long recordingId, final long lastPosition)
     {
         recordingStoppedEncoder
             .wrapAndApplyHeader(outboundBuffer, 0, messageHeaderEncoder)
-            .recordingId(recordingId);
+            .recordingId(recordingId)
+            .lastPosition(lastPosition);
 
         send(recordingStoppedEncoder.encodedLength());
     }
 
     private void send(final int length)
     {
+        final int fullLength = MessageHeaderEncoder.ENCODED_LENGTH + length;
         while (true)
         {
-            final long result = recordingNotifications.offer(
-                outboundBuffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length);
+            final long result = recordingNotifications.offer(outboundBuffer, 0, fullLength);
             if (result > 0 || result == Publication.NOT_CONNECTED)
             {
                 idleStrategy.reset();

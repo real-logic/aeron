@@ -161,6 +161,8 @@ public class ArchiveAndReplaySystemTest
 
         archiveDir = TestUtil.makeTempDir();
         archiverCtx
+            .forceWrites(false)
+            .forceMetadataUpdates(false)
             .driverAgentInvoker(driverCtx.driverAgentInvoker())
             .archiveDir(archiveDir)
             .threadingMode(ArchiverThreadingMode.SHARED);
@@ -186,7 +188,6 @@ public class ArchiveAndReplaySystemTest
         driverCtx.deleteAeronDirectory();
     }
 
-    @Ignore
     @Test(timeout = 10000)
     public void recordAndReplay() throws IOException, InterruptedException
     {

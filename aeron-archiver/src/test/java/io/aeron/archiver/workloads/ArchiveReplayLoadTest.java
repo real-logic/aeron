@@ -50,7 +50,7 @@ public class ArchiveReplayLoadTest
     //        +"|" + CommonContext.TERM_LENGTH_PARAM_NAME + "=4194304|" + CommonContext.MTU_LENGTH_PARAM_NAME + "=4096";
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
-    public static final int MESSAGE_COUNT = 200000;
+    private static final int MESSAGE_COUNT = 200000;
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
     private Aeron publishingClient;
@@ -100,6 +100,7 @@ public class ArchiveReplayLoadTest
         driver = MediaDriver.launch(driverCtx);
         archiveDir = TestUtil.makeTempDir();
         archiverCtx.archiveDir(archiveDir);
+        archiverCtx.threadingMode(ThreadingMode.SHARED);
         archiver = Archiver.launch(archiverCtx);
         println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
         publishingClient = Aeron.connect();

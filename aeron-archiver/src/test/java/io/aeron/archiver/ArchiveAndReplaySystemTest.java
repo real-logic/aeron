@@ -153,14 +153,18 @@ public class ArchiveAndReplaySystemTest
 
         driverCtx
             .termBufferSparseFile(true)
-            .threadingMode(ThreadingMode.SHARED)
+            .threadingMode(ThreadingMode.INVOKER)
             .errorHandler(LangUtil::rethrowUnchecked)
             .dirsDeleteOnStart(true);
 
         driver = MediaDriver.launch(driverCtx);
 
         archiveDir = TestUtil.makeTempDir();
-        archiverCtx.archiveDir(archiveDir);
+        archiverCtx
+            .driverAgentInvoker(driverCtx.driverAgentInvoker())
+            .archiveDir(archiveDir)
+            .threadingMode(ThreadingMode.SHARED);
+
         archiver = Archiver.launch(archiverCtx);
 
         println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());

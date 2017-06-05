@@ -16,44 +16,126 @@
 package io.aeron.archiver;
 
 import io.aeron.Aeron;
-import org.agrona.CloseHelper;
+import io.aeron.driver.ThreadingMode;
+import org.agrona.*;
 import org.agrona.concurrent.*;
+import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
+import java.util.concurrent.ThreadFactory;
+import java.util.function.Supplier;
 
 public final class Archiver implements AutoCloseable
 {
     private final Context ctx;
-    private AgentRunner runner;
-    private Aeron aeron;
+    private final AgentRunner conductorRunner;
+    private final AgentRunner replayRunner;
+    private final AgentRunner recorderRunner;
+    private final AgentInvoker invoker;
+    private final Aeron aeron;
 
     private Archiver(final Context ctx)
     {
         this.ctx = ctx;
+        ctx.clientContext.driverAgentInvoker(ctx.driverAgentInvoker());
+        aeron = Aeron.connect(ctx.clientContext);
+        ctx.conclude();
+        final ErrorHandler errorHandler = ctx.errorHandler();
+        final AtomicCounter errorCounter = ctx.errorCounter();
+
+        final Replayer replayer;
+        final Recorder recorder;
+        if (ctx.threadingMode() == ThreadingMode.DEDICATED)
+        {
+            replayer = new ReplayerProxy(aeron, ctx);
+            recorder = new RecorderProxy(aeron, ctx);
+        }
+        else
+        {
+            replayer = new Replayer(aeron, ctx);
+            recorder = new Recorder(aeron, ctx);
+            ctx.replayerInvoker(new AgentInvoker(errorHandler, errorCounter, replayer));
+            ctx.recorderInvoker(new AgentInvoker(errorHandler, errorCounter, recorder));
+        }
+        ctx
+            .replayer(replayer)
+            .recorder(recorder);
+
+        final ArchiveConductor archiveConductor = new ArchiveConductor(aeron, ctx);
+        switch (ctx.threadingMode())
+        {
+            case INVOKER:
+            {
+                invoker = new AgentInvoker(errorHandler, errorCounter, archiveConductor);
+                conductorRunner = null;
+                replayRunner = null;
+                recorderRunner = null;
+                break;
+            }
+            case SHARED_NETWORK:
+            case SHARED:
+            {
+                invoker = null;
+                conductorRunner = new AgentRunner(
+                    ctx.idleStrategy(),
+                    errorHandler,
+                    errorCounter,
+                    archiveConductor);
+                replayRunner = null;
+                recorderRunner = null;
+                break;
+            }
+            default:
+            case DEDICATED:
+            {
+                invoker = null;
+                conductorRunner = new AgentRunner(
+                    ctx.idleStrategy(),
+                    errorHandler,
+                    errorCounter,
+                    archiveConductor);
+                replayRunner = new AgentRunner(
+                    ctx.idleStrategy(),
+                    errorHandler,
+                    errorCounter,
+                    replayer);
+                recorderRunner = new AgentRunner(
+                    ctx.idleStrategy(),
+                    errorHandler,
+                    errorCounter,
+                    recorder);
+            }
+        }
     }
 
     public void close() throws Exception
     {
-        CloseHelper.close(runner);
+        CloseHelper.close(conductorRunner);
+        CloseHelper.close(replayRunner);
+        CloseHelper.close(recorderRunner);
         CloseHelper.close(aeron);
+
     }
 
     private Archiver start()
     {
-        ctx.clientContext.driverAgentInvoker(ctx.driverAgentInvoker());
-        aeron = Aeron.connect(ctx.clientContext);
-        ctx.conclude();
-
-        final ArchiveConductor archiveConductor = new ArchiveConductor(aeron, ctx);
-
-        runner = new AgentRunner(
-            ctx.clientContext.idleStrategy(),
-            ctx.clientContext.errorHandler(),
-            null,
-            archiveConductor);
-        AgentRunner.startOnThread(runner, ctx.clientContext.threadFactory());
+        if (ctx.threadingMode() == ThreadingMode.SHARED || ctx.threadingMode() == ThreadingMode.SHARED_NETWORK)
+        {
+            AgentRunner.startOnThread(conductorRunner, ctx.threadFactory());
+        }
+        else if (ctx.threadingMode() == ThreadingMode.DEDICATED)
+        {
+            AgentRunner.startOnThread(conductorRunner, ctx.threadFactory());
+            AgentRunner.startOnThread(replayRunner, ctx.threadFactory());
+            AgentRunner.startOnThread(recorderRunner, ctx.threadFactory());
+        }
 
         return this;
+    }
+
+    public AgentInvoker invoker()
+    {
+        return invoker;
     }
 
     public static Archiver launch()
@@ -74,12 +156,22 @@ public final class Archiver implements AutoCloseable
         private int controlRequestStreamId;
         private String recordingEventsChannel;
         private int recordingEventsStreamId;
-        private IdleStrategy idleStrategy;
+        private Supplier<IdleStrategy> idleStrategySupplier;
         private EpochClock epochClock;
         private int segmentFileLength = 128 * 1024 * 1024;
         private boolean forceMetadataUpdates = true;
         private boolean forceWrites = true;
+        private ThreadingMode threadingMode = ThreadingMode.SHARED;
+        private ThreadFactory threadFactory = Thread::new;
+
         private AgentInvoker driverAgentInvoker;
+        private AgentInvoker replayerInvoker;
+        private AgentInvoker recorderInvoker;
+        private Replayer replayer;
+        private Recorder recorder;
+        private ErrorHandler errorHandler;
+        private AtomicCounter errorCounter;
+
 
         public Context()
         {
@@ -106,14 +198,24 @@ public final class Archiver implements AutoCloseable
                     "Failed to create archive dir: " + archiveDir.getAbsolutePath());
             }
 
-            if (idleStrategy == null)
+            if (idleStrategySupplier == null)
             {
-                idleStrategy = new SleepingMillisIdleStrategy(Aeron.IDLE_SLEEP_MS);
+                idleStrategySupplier = () -> new SleepingMillisIdleStrategy(Aeron.IDLE_SLEEP_MS);
             }
 
             if (epochClock == null)
             {
                 epochClock = clientContext.epochClock();
+            }
+
+            if (errorHandler == null)
+            {
+                errorHandler = Throwable::printStackTrace;
+            }
+
+            if (errorCounter == null)
+            {
+
             }
         }
 
@@ -184,20 +286,20 @@ public final class Archiver implements AutoCloseable
         }
 
         /**
-         * Provides an IdleStrategy for the thread responsible for publication/subscription backoff.
+         * Provides an IdleStrategy supplier for the thread responsible for publication/subscription backoff.
          *
-         * @param idleStrategy Thread idle strategy for publication/subscription backoff.
+         * @param idleStrategySupplier supplier of thread idle strategy for publication/subscription backoff.
          * @return this Context for method chaining.
          */
-        public Context idleStrategy(final IdleStrategy idleStrategy)
+        public Context idleStrategySupplier(final Supplier<IdleStrategy> idleStrategySupplier)
         {
-            this.idleStrategy = idleStrategy;
+            this.idleStrategySupplier = idleStrategySupplier;
             return this;
         }
 
         public IdleStrategy idleStrategy()
         {
-            return idleStrategy;
+            return idleStrategySupplier.get();
         }
 
         /**
@@ -270,6 +372,88 @@ public final class Archiver implements AutoCloseable
         {
             this.driverAgentInvoker = driverAgentInvoker;
             return this;
+        }
+
+        public AgentInvoker replayerInvoker()
+        {
+            return replayerInvoker;
+        }
+
+        public Context replayerInvoker(final AgentInvoker replayerInvoker)
+        {
+            this.replayerInvoker = replayerInvoker;
+            return this;
+        }
+
+        public AgentInvoker recorderInvoker()
+        {
+            return recorderInvoker;
+        }
+
+        public Context recorderInvoker(final AgentInvoker recorderInvoker)
+        {
+            this.recorderInvoker = recorderInvoker;
+            return this;
+        }
+
+        public ErrorHandler errorHandler()
+        {
+            return errorHandler;
+        }
+
+        public AtomicCounter errorCounter()
+        {
+            return errorCounter;
+        }
+
+        public Context errorCounter(final AtomicCounter errorCounter)
+        {
+            this.errorCounter = errorCounter;
+            return this;
+        }
+
+        public ThreadingMode threadingMode()
+        {
+            return threadingMode;
+        }
+
+        public Context threadingMode(final ThreadingMode threadingMode)
+        {
+            this.threadingMode = threadingMode;
+            return this;
+        }
+
+        public ThreadFactory threadFactory()
+        {
+            return threadFactory;
+        }
+
+        public Context threadFactory(final ThreadFactory threadFactory)
+        {
+            this.threadFactory = threadFactory;
+            return this;
+        }
+
+        public Context replayer(final Replayer replayer)
+        {
+            this.replayer = replayer;
+            return this;
+        }
+
+        public Context recorder(final Recorder recorder)
+        {
+            this.recorder = recorder;
+            return this;
+        }
+
+        Replayer replayer()
+        {
+            return replayer;
+        }
+
+        Recorder recorder()
+        {
+            return recorder;
         }
     }
 }

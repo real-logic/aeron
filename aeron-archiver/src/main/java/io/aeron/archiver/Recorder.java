@@ -19,9 +19,6 @@ package io.aeron.archiver;
 import io.aeron.*;
 import io.aeron.archiver.codecs.ControlResponseCode;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.IdleStrategy;
-
-import java.io.File;
 
 /**
  * Runs recording sessions and descriptor queries sessions. Joining these activities allows the catalog to be single
@@ -34,18 +31,21 @@ class Recorder extends SessionWorker
     private final NotificationsProxy notificationsProxy;
     private final RecordingWriter.RecordingContext recordingContext;
 
-    Recorder(
-        final Aeron aeron,
-        final File archiveDir,
-        final IdleStrategy idleStrategy,
-        final String eventsChannel,
-        final int eventsStreamId,
-        final RecordingWriter.RecordingContext recordingContext)
+    Recorder(final Aeron aeron, final Archiver.Context ctx)
     {
-        catalog = new Catalog(archiveDir);
-        this.controlSessionProxy = new ControlSessionProxy(idleStrategy);
-        final Publication notificationPublication = aeron.addPublication(eventsChannel, eventsStreamId);
-        this.notificationsProxy = new NotificationsProxy(idleStrategy, notificationPublication);
+        catalog = new Catalog(ctx.archiveDir());
+        controlSessionProxy = new ControlSessionProxy(ctx.idleStrategy());
+        final Publication notificationPublication =
+            aeron.addPublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
+        notificationsProxy = new NotificationsProxy(ctx.idleStrategy(), notificationPublication);
+
+        final RecordingWriter.RecordingContext recordingContext = new RecordingWriter.RecordingContext()
+            .recordingFileLength(ctx.segmentFileLength())
+            .archiveDir(ctx.archiveDir())
+            .epochClock(ctx.epochClock())
+            .forceMetadataUpdates(ctx.forceMetadataUpdates())
+            .forceWrites(ctx.forceWrites());
+
         this.recordingContext = recordingContext;
     }
 

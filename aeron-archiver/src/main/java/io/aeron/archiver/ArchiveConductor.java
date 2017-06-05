@@ -17,9 +17,8 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.codecs.ControlResponseCode;
-import org.agrona.*;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.AgentInvoker;
-import org.agrona.concurrent.status.AtomicCounter;
 
 import java.util.Objects;
 
@@ -57,36 +56,19 @@ class ArchiveConductor extends SessionWorker
 
         this.driverAgentInvoker = ctx.driverAgentInvoker();
 
-        final RecordingWriter.RecordingContext recordingContext = new RecordingWriter.RecordingContext()
-            .recordingFileLength(ctx.segmentFileLength())
-            .archiveDir(ctx.archiveDir())
-            .epochClock(ctx.epochClock())
-            .forceMetadataUpdates(ctx.forceMetadataUpdates())
-            .forceWrites(ctx.forceWrites());
-
-        // TODO: get your own err handler/counters
-        final ErrorHandler errorHandler = ctx.clientContext().errorHandler();
-        final AtomicCounter errorCounter = null;
-
         controlSessionProxy = new ControlSessionProxy(ctx.idleStrategy());
-
-        replayer = new Replayer(aeron, ctx.epochClock(), ctx.archiveDir(), ctx.idleStrategy());
-        replayerAgentInvoker = new AgentInvoker(errorHandler, errorCounter, replayer);
-
-        recorder = new Recorder(
-            aeron,
-            ctx.archiveDir(),
-            ctx.idleStrategy(),
-            ctx.recordingEventsChannel(),
-            ctx.recordingEventsStreamId(),
-            recordingContext);
-        recorderAgentInvoker = new AgentInvoker(Throwable::printStackTrace, errorCounter, recorder);
 
         controlSubscription = aeron.addSubscription(
             ctx.controlRequestChannel(),
             ctx.controlRequestStreamId(),
             availableImageHandler,
             null);
+
+        replayer = ctx.replayer();
+        replayerAgentInvoker = ctx.replayerInvoker();
+
+        recorder = ctx.recorder();
+        recorderAgentInvoker = ctx.recorderInvoker();
     }
 
     public String roleName()

@@ -19,14 +19,10 @@ package io.aeron.archiver;
 import io.aeron.*;
 import io.aeron.archiver.codecs.ControlResponseCode;
 import org.agrona.collections.Long2ObjectHashMap;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.EpochClock;
 
 import java.io.File;
 
-/**
- * Runs recording sessions and descriptor queries sessions. Joining these activities allows the catalog to be single
- * threaded access.
- */
 class Replayer extends SessionWorker
 {
     private final Aeron aeron;
@@ -39,16 +35,12 @@ class Replayer extends SessionWorker
 
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
 
-    Replayer(
-        final Aeron aeron,
-        final EpochClock epochClock,
-        final File archiveDir,
-        final IdleStrategy idleStrategy)
+    Replayer(final Aeron aeron, final Archiver.Context ctx)
     {
         this.aeron = aeron;
-        this.epochClock = epochClock;
-        this.archiveDir = archiveDir;
-        controlSessionProxy = new ControlSessionProxy(idleStrategy);
+        this.epochClock = ctx.epochClock();
+        this.archiveDir = ctx.archiveDir();
+        controlSessionProxy = new ControlSessionProxy(ctx.idleStrategy());
     }
 
     public String roleName()

@@ -38,6 +38,10 @@ public final class Archiver implements AutoCloseable
     {
         this.ctx = ctx;
         ctx.clientContext.driverAgentInvoker(ctx.driverAgentInvoker());
+        if (ctx.threadingMode() != ThreadingMode.DEDICATED)
+        {
+            ctx.clientContext.clientLock(new NoOpLock());
+        }
         aeron = Aeron.connect(ctx.clientContext);
         ctx.conclude();
         final ErrorHandler errorHandler = ctx.errorHandler();
@@ -181,7 +185,6 @@ public final class Archiver implements AutoCloseable
         public Context(final Aeron.Context clientContext, final File archiveDir)
         {
             clientContext.useConductorAgentInvoker(true);
-            clientContext.clientLock(new NoOpLock());
             this.clientContext = clientContext;
             this.archiveDir = archiveDir;
             controlRequestChannel = "aeron:udp?endpoint=localhost:8010";

@@ -589,8 +589,25 @@ int aeron_driver_conductor_do_work(void *clientd)
 
 void aeron_driver_conductor_on_close(void *clientd)
 {
+    aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
 
+    for (size_t i = 0, length = conductor->clients.length; i < length; i++)
+    {
+        aeron_free(conductor->clients.array[i].publication_links.array);
+    }
+    aeron_free(conductor->clients.array);
 
+    for (size_t i = 0, length = conductor->ipc_publications.length; i < length; i++)
+    {
+        aeron_ipc_publication_close(&conductor->counters_manager, conductor->ipc_publications.array[i].publication);
+    }
+    aeron_free(conductor->ipc_publications.array);
+
+    for (size_t i = 0, length = conductor->ipc_subscriptions.length; i < length; i++)
+    {
+        aeron_free(conductor->ipc_subscriptions.array[i].subscribeable_list.array);
+    }
+    aeron_free(conductor->ipc_subscriptions.array);
 }
 
 #define AERON_ERROR(c, code, desc, format, ...) \

@@ -192,4 +192,20 @@ int aeron_driver_conductor_on_client_keepalive(
     aeron_driver_conductor_t *conductor,
     int64_t client_id);
 
+inline aeron_ipc_publication_t *aeron_driver_conductor_find_ipc_publication(
+    aeron_driver_conductor_t *conductor, int64_t id)
+{
+    for (size_t i = 0, length = conductor->ipc_publications.length; i < length; i++)
+    {
+        aeron_ipc_publication_t *publication = conductor->ipc_publications.array[i].publication;
+
+        if (id == publication->conductor_fields.managed_resource.registration_id)
+        {
+            return publication;
+        }
+    }
+
+    return NULL;
+}
+
 #endif //AERON_AERON_DRIVER_CONDUCTOR_H

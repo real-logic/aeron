@@ -906,3 +906,6 @@ int aeron_driver_conductor_on_client_keepalive(
     }
     return 0;
 }
+
+extern aeron_ipc_publication_t *aeron_driver_conductor_find_ipc_publication(
+    aeron_driver_conductor_t *conductor, int64_t id);

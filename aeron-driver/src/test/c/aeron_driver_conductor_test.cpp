@@ -35,6 +35,9 @@ using namespace aeron::concurrent;
 using namespace aeron;
 
 #define STREAM_ID_1 (101)
+#define STREAM_ID_2 (102)
+#define STREAM_ID_3 (103)
+#define STREAM_ID_4 (104)
 
 static int64_t ms_timestamp = 0;
 
@@ -163,7 +166,14 @@ public:
 
     size_t readAllBroadcastsFromConductor(const handler_t& func)
     {
-        return (size_t)m_to_clients_copy_receiver.receive(func);
+        size_t num_received = 0;
+
+        while (m_to_clients_copy_receiver.receive(func) > 0)
+        {
+            num_received++;
+        }
+
+        return num_received;
     }
 
     int64_t nextCorrelationId()
@@ -223,23 +233,6 @@ public:
         return writeCommand(AERON_COMMAND_REMOVE_SUBSCRIPTION, sizeof(aeron_remove_command_t));
     }
 
-    aeron_ipc_publication_t *findIpcPublication(int64_t registration_id)
-    {
-        aeron_driver_conductor_t *conductor = &m_conductor.m_conductor;
-
-        for (size_t i = 0, length = conductor->ipc_publications.length; i < length; i++)
-        {
-            aeron_ipc_publication_t *publication = conductor->ipc_publications.array[i].publication;
-
-            if (registration_id == publication->conductor_fields.managed_resource.registration_id)
-            {
-                return publication;
-            }
-        }
-
-        return nullptr;
-    }
-
     int doWork()
     {
         return aeron_driver_conductor_do_work(&m_conductor.m_conductor);
@@ -268,7 +261,10 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublication)
 
     doWork();
 
-    ASSERT_NE(findIpcPublication(pub_id), nullptr);
+    aeron_ipc_publication_t *publication =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id);
+
+    ASSERT_NE(publication, (aeron_ipc_publication_t *)NULL);
 
     auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
         {
@@ -284,4 +280,61 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublication)
         };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscription)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, -1), 0);
+
+    doWork();
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+        aeron_correlated_command_t &response =
+            buffer.overlayStruct<aeron_correlated_command_stct>(offset);
+
+        EXPECT_EQ(response.correlation_id, sub_id);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+static auto null_handler = [](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+{
+};
+
+TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleIpcPublications)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id_1 = nextCorrelationId();
+    int64_t pub_id_2 = nextCorrelationId();
+    int64_t pub_id_3 = nextCorrelationId();
+    int64_t pub_id_4 = nextCorrelationId();
+
+    ASSERT_EQ(addIpcPublication(client_id, pub_id_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addIpcPublication(client_id, pub_id_2, STREAM_ID_2, false), 0);
+    ASSERT_EQ(addIpcPublication(client_id, pub_id_3, STREAM_ID_3, false), 0);
+    ASSERT_EQ(addIpcPublication(client_id, pub_id_4, STREAM_ID_4, false), 0);
+    doWork();
+
+    aeron_ipc_publication_t *publication_1 =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_1);
+    aeron_ipc_publication_t *publication_2 =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_2);
+    aeron_ipc_publication_t *publication_3 =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_3);
+    aeron_ipc_publication_t *publication_4 =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_4);
+
+    ASSERT_NE(publication_1, (aeron_ipc_publication_t *)NULL);
+    ASSERT_NE(publication_2, (aeron_ipc_publication_t *)NULL);
+    ASSERT_NE(publication_3, (aeron_ipc_publication_t *)NULL);
+    ASSERT_NE(publication_4, (aeron_ipc_publication_t *)NULL);
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
 }

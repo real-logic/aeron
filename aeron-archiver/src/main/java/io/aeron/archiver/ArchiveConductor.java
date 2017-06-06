@@ -49,7 +49,6 @@ class ArchiveConductor extends SessionWorker
 
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
-        // TODO: need to move relationships construction into Archiver, add proxy classes etc
         this.aeron = aeron;
         this.aeronClientAgentInvoker = ctx.clientContext().conductorAgentInvoker();
         Objects.requireNonNull(aeronClientAgentInvoker, "In the archiver context an aeron invoker should be present");

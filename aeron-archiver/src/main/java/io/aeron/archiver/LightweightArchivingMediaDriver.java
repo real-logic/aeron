@@ -15,8 +15,7 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.driver.MediaDriver;
-import io.aeron.driver.ThreadingMode;
+import io.aeron.driver.*;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
 import static io.aeron.driver.MediaDriver.loadPropertiesFiles;
@@ -41,7 +40,8 @@ public class LightweightArchivingMediaDriver
         final MediaDriver mediaDriver = MediaDriver.launch(driverCtx);
 
         final Archiver.Context archiverCtx = new Archiver.Context()
-            .driverAgentInvoker(driverCtx.driverAgentInvoker());
+            .driverAgentInvoker(driverCtx.driverAgentInvoker())
+            .threadingMode(ArchiverThreadingMode.SHARED);
         final Archiver archiver = Archiver.launch(archiverCtx);
 
         new ShutdownSignalBarrier().await();

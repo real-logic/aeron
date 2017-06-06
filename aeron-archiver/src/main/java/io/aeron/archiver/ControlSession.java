@@ -17,6 +17,7 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import org.agrona.*;
+import org.agrona.concurrent.EpochClock;
 
 class ControlSession implements Session, ControlRequestListener
 {
@@ -25,21 +26,26 @@ class ControlSession implements Session, ControlRequestListener
         INIT, ACTIVE, INACTIVE, CLOSED
     }
 
+    private static final long CONTROL_TIMEOUT_MS = 1000L;
+
     private final Image image;
     private final ControlSessionProxy proxy;
     private final ArchiveConductor conductor;
+    private final EpochClock epochClock;
     private final ControlRequestAdapter adapter = new ControlRequestAdapter(this);
     private Publication controlPublication;
     private State state = State.INIT;
+    private long timeConnectedMs;
 
     ControlSession(
         final Image image,
         final ControlSessionProxy clientProxy,
-        final ArchiveConductor conductor)
+        final ArchiveConductor conductor, final EpochClock epochClock)
     {
         this.image = image;
         this.proxy = clientProxy;
         this.conductor = conductor;
+        this.epochClock = epochClock;
     }
 
     public long sessionId()
@@ -108,7 +114,10 @@ class ControlSession implements Session, ControlRequestListener
         {
             state = State.ACTIVE;
         }
-        // TODO: timeout
+        else if (timeConnectedMs + CONTROL_TIMEOUT_MS < epochClock.time())
+        {
+            state = State.INACTIVE;
+        }
 
         return 0;
     }
@@ -121,6 +130,7 @@ class ControlSession implements Session, ControlRequestListener
         }
 
         controlPublication = conductor.newControlPublication(channel, streamId);
+        timeConnectedMs = epochClock.time();
     }
 
     // TODO: remove external access to record start/stop

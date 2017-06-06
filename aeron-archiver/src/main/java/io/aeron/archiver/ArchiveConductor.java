@@ -18,7 +18,7 @@ package io.aeron.archiver;
 import io.aeron.*;
 import io.aeron.archiver.codecs.ControlResponseCode;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.*;
 
 import java.util.Objects;
 
@@ -46,6 +46,7 @@ class ArchiveConductor extends SessionWorker
 
     private final ControlSessionProxy controlSessionProxy;
     private final StringBuilder uriBuilder = new StringBuilder(1024);
+    private final EpochClock epochClock;
 
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
@@ -53,6 +54,7 @@ class ArchiveConductor extends SessionWorker
         this.aeronClientAgentInvoker = ctx.clientContext().conductorAgentInvoker();
         Objects.requireNonNull(aeronClientAgentInvoker, "In the archiver context an aeron invoker should be present");
 
+        epochClock = ctx.epochClock();
         this.driverAgentInvoker = ctx.driverAgentInvoker();
 
         controlSessionProxy = new ControlSessionProxy(ctx.idleStrategy());
@@ -117,7 +119,7 @@ class ArchiveConductor extends SessionWorker
     {
         if (image.subscription() == controlSubscription)
         {
-            addSession(new ControlSession(image, controlSessionProxy, this));
+            addSession(new ControlSession(image, controlSessionProxy, this, epochClock));
         }
         else
         {

@@ -59,7 +59,6 @@ typedef struct aeron_publication_command_stct
     aeron_correlated_command_t correlated;
     int32_t stream_id;
     int32_t channel_length;
-    int8_t  channel_data[1];
 }
 aeron_publication_command_t;
 
@@ -70,7 +69,6 @@ typedef struct aeron_publication_buffers_ready_stct
     int32_t stream_id;
     int32_t position_limit_counter_id;
     int32_t log_file_length;
-    int8_t  log_file_data[1];
 }
 aeron_publication_buffers_ready_t;
 
@@ -80,7 +78,6 @@ typedef struct aeron_subscription_command_stct
     int64_t registration_correlation_id;
     int32_t stream_id;
     int32_t channel_length;
-    int8_t  channel_data[1];
 }
 aeron_subscription_command_t;
 
@@ -107,7 +104,6 @@ typedef struct aeron_error_response_stct
     int64_t offending_command_correlation_id;
     int32_t error_code;
     int32_t error_message_length;
-    int8_t  error_message_data[1];
 }
 aeron_error_response_t;
 

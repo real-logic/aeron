@@ -325,7 +325,7 @@ void aeron_driver_conductor_on_error(
     response->offending_command_correlation_id = correlation_id;
     response->error_code = error_code;
     response->error_message_length = (int32_t)length;
-    memcpy(response->error_message_data, message, length);
+    memcpy(response_buffer + sizeof(aeron_error_response_t), message, length);
 
     aeron_driver_conductor_client_transmit(
         conductor, AERON_RESPONSE_ON_ERROR, response, sizeof(aeron_error_response_t) + length);
@@ -349,13 +349,13 @@ void aeron_driver_conductor_on_publication_ready(
     response->session_id = session_id;
     response->position_limit_counter_id = position_limit_counter_id;
     response->log_file_length = (int32_t)log_file_name_length;
-    memcpy(&response->log_file_data[0], log_file_name, log_file_name_length);
+    memcpy(response_buffer + sizeof(aeron_publication_buffers_ready_t), log_file_name, log_file_name_length);
 
     aeron_driver_conductor_client_transmit(
         conductor,
         is_exclusive ? AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY : AERON_RESPONSE_ON_PUBLICATION_READY,
         response,
-        sizeof(aeron_publication_buffers_ready_t) + log_file_name_length - 1);
+        sizeof(aeron_publication_buffers_ready_t) + log_file_name_length);
 }
 
 void aeron_driver_conductor_on_operation_succeeded(
@@ -466,14 +466,14 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             aeron_publication_command_t *command = (aeron_publication_command_t *)message;
 
             if (length < sizeof(aeron_publication_command_t) ||
-                length < (sizeof(aeron_publication_command_t) + command->channel_length) - 1)
+                length < (sizeof(aeron_publication_command_t) + command->channel_length))
             {
                 goto malformed_command;
             }
 
             correlation_id = command->correlated.correlation_id;
 
-            if (strncmp((const char *)command->channel_data, AERON_IPC_CHANNEL, strlen(AERON_IPC_CHANNEL)) == 0)
+            if (strncmp((const char *)message + sizeof(aeron_publication_command_t), AERON_IPC_CHANNEL, strlen(AERON_IPC_CHANNEL)) == 0)
             {
                 result = aeron_driver_conductor_on_add_ipc_publication(conductor, command, false);
             }
@@ -489,14 +489,14 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             aeron_publication_command_t *command = (aeron_publication_command_t *)message;
 
             if (length < sizeof(aeron_publication_command_t) ||
-                length < (sizeof(aeron_publication_command_t) + command->channel_length) - 1)
+                length < (sizeof(aeron_publication_command_t) + command->channel_length))
             {
                 goto malformed_command;
             }
 
             correlation_id = command->correlated.correlation_id;
 
-            if (strncmp((const char *)command->channel_data, AERON_IPC_CHANNEL, strlen(AERON_IPC_CHANNEL)) == 0)
+            if (strncmp((const char *)message + sizeof(aeron_publication_command_t), AERON_IPC_CHANNEL, strlen(AERON_IPC_CHANNEL)) == 0)
             {
                 result = aeron_driver_conductor_on_add_ipc_publication(conductor, command, true);
             }
@@ -527,18 +527,18 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             aeron_subscription_command_t *command = (aeron_subscription_command_t *)message;
 
             if (length < sizeof(aeron_subscription_command_t) ||
-                length < (sizeof(aeron_subscription_command_t) + command->channel_length) - 1)
+                length < (sizeof(aeron_subscription_command_t) + command->channel_length))
             {
                 goto malformed_command;
             }
 
             correlation_id = command->correlated.correlation_id;
 
-            if (strncmp((const char *)command->channel_data, AERON_IPC_CHANNEL, strlen(AERON_IPC_CHANNEL)) == 0)
+            if (strncmp((const char *)message + sizeof(aeron_subscription_command_t), AERON_IPC_CHANNEL, strlen(AERON_IPC_CHANNEL)) == 0)
             {
                 result = aeron_driver_conductor_on_add_ipc_subscription(conductor, command);
             }
-            else if (strncmp((const char *)command->channel_data, AERON_SPY_PREFIX, strlen(AERON_SPY_PREFIX)) == 0)
+            else if (strncmp((const char *)message + sizeof(aeron_subscription_command_t), AERON_SPY_PREFIX, strlen(AERON_SPY_PREFIX)) == 0)
             {
                 result = aeron_driver_conductor_on_add_spy_subscription(conductor, command);
             }

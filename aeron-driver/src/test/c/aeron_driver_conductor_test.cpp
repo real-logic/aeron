@@ -277,7 +277,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublication)
         {
             ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
 
-            command::PublicationBuffersReadyFlyweight response(buffer, offset);
+            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
             EXPECT_EQ(response.streamId(), STREAM_ID_1);
             EXPECT_EQ(response.correlationId(), pub_id);
@@ -300,7 +300,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscription)
     {
         ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
-        command::CorrelatedMessageFlyweight response(buffer, offset);
+        const command::CorrelatedMessageFlyweight response(buffer, offset);
 
         EXPECT_EQ(response.correlationId(), sub_id);
     };
@@ -411,7 +411,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSingleI
         {
             ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
-            command::CorrelatedMessageFlyweight response(buffer, offset);
+            const command::CorrelatedMessageFlyweight response(buffer, offset);
 
             EXPECT_EQ(response.correlationId(), sub_id);
         }
@@ -419,7 +419,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSingleI
         {
             ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
 
-            command::PublicationBuffersReadyFlyweight response(buffer, offset);
+            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
             EXPECT_EQ(response.correlationId(), pub_id);
             session_id = response.sessionId();
@@ -430,7 +430,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSingleI
         {
             ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
 
-            command::ImageBuffersReadyFlyweight response(buffer, offset);
+            const command::ImageBuffersReadyFlyweight response(buffer, offset);
 
             EXPECT_EQ(response.streamId(), STREAM_ID_1);
             EXPECT_EQ(response.sessionId(), session_id);
@@ -468,7 +468,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingleIp
         {
             ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
 
-            command::PublicationBuffersReadyFlyweight response(buffer, offset);
+            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
             EXPECT_EQ(response.correlationId(), pub_id);
             session_id = response.sessionId();
@@ -479,7 +479,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingleIp
         {
             ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
-            command::CorrelatedMessageFlyweight response(buffer, offset);
+            const command::CorrelatedMessageFlyweight response(buffer, offset);
 
             EXPECT_EQ(response.correlationId(), sub_id);
         }

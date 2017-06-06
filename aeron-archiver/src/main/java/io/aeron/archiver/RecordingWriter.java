@@ -113,6 +113,8 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         try
         {
             metadataFileChannel = FileChannel.open(file.toPath(), CREATE_NEW, READ, WRITE);
+
+            // TODO: Do not create too many files and mappings. Meta data should only be in the catalog.
             metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
             final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(metaDataBuffer);
             metaDataEncoder = new RecordingDescriptorEncoder().wrap(unsafeBuffer, Catalog.CATALOG_FRAME_LENGTH);
@@ -131,7 +133,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
                 sourceIdentity);
 
             unsafeBuffer.putInt(0, metaDataEncoder.encodedLength());
-            metaDataBuffer.force();
         }
         catch (final IOException ex)
         {

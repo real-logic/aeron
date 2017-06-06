@@ -162,7 +162,7 @@ public class ArchiveReplayLoadTest
             final long requestStopCorrelationId = this.correlationId++;
             waitFor(() -> client.stopRecording(recordingId, requestStopCorrelationId));
             waitForOk(client, reply, requestStopCorrelationId);
-            final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);;
+            final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
             int i = 0;
             while (System.currentTimeMillis() < duration)
             {

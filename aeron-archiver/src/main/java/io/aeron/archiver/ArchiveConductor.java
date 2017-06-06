@@ -60,8 +60,8 @@ class ArchiveConductor extends SessionWorker
         controlSessionProxy = new ControlSessionProxy(ctx.idleStrategy());
 
         controlSubscription = aeron.addSubscription(
-            ctx.controlRequestChannel(),
-            ctx.controlRequestStreamId(),
+            ctx.controlChannel(),
+            ctx.controlStreamId(),
             availableImageHandler,
             null);
 

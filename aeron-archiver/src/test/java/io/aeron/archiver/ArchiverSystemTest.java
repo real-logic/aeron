@@ -16,8 +16,8 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
-import io.aeron.archiver.client.*;
-import io.aeron.archiver.codecs.*;
+import io.aeron.archiver.client.ArchiveClient;
+import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.driver.*;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -129,7 +129,7 @@ public class ArchiverSystemTest
     public void recordAndReplay() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
-                archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
+                archiverCtx.controlChannel(), archiverCtx.controlStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {

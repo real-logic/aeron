@@ -125,7 +125,7 @@ public class ArchiveReplayLoadTest
     public void replay() throws IOException, InterruptedException
     {
         try (Publication archiverServiceRequest = publishingClient.addPublication(
-            archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
+            archiverCtx.controlChannel(), archiverCtx.controlStreamId());
              Subscription archiverNotifications = publishingClient.addSubscription(
                  archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {

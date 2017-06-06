@@ -118,7 +118,7 @@ public class ArchiveRecordingLoadTest
     public void archive() throws IOException, InterruptedException
     {
         try (Publication control = publishingClient.addPublication(
-            archiverCtx.controlRequestChannel(), archiverCtx.controlRequestStreamId());
+            archiverCtx.controlChannel(), archiverCtx.controlStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
                  archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {

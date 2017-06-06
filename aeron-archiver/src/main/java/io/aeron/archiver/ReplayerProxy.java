@@ -45,6 +45,7 @@ class ReplayerProxy extends Replayer
                 recordingId,
                 position,
                 length);
+
         while (!commandQueue.offer(cmd))
         {
             Thread.yield();

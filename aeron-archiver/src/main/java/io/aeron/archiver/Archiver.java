@@ -148,48 +148,97 @@ public final class Archiver implements AutoCloseable
         return new Archiver(ctx).start();
     }
 
+    public static class Configuration
+    {
+        public static final String ARCHIVE_DIR_PROP_NAME = "aeron.archiver.dir";
+        public static final String ARCHIVE_DIR_DEFAULT = "archive";
+
+        public static final String CONTROL_CHANNEL_PROP_NAME = "aeron.archiver.control.channel";
+        public static final String CONTROL_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8010";
+        public static final String CONTROL_STREAM_ID_PROP_NAME = "aeron.archiver.control.stream.id";
+        public static final int CONTROL_STREAM_ID_DEFAULT = 0;
+
+        public static final String RECORDING_EVENTS_CHANNEL_PROP_NAME = "aeron.archiver.recording.events.channel";
+        public static final String RECORDING_EVENTS_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8011";
+        public static final String RECORDING_EVENTS_STREAM_ID_PROP_NAME = "aeron.archiver.recording.events.stream.id";
+        public static final int RECORDING_EVENTS_STREAM_ID_DEFAULT = 0;
+
+        public static String archiveDirName()
+        {
+            return System.getProperty(ARCHIVE_DIR_PROP_NAME, ARCHIVE_DIR_DEFAULT);
+        }
+
+        public static String controlChannel()
+        {
+            return System.getProperty(CONTROL_CHANNEL_PROP_NAME, CONTROL_CHANNEL_DEFAULT);
+        }
+
+        public static int controlStreamId()
+        {
+            return Integer.getInteger(CONTROL_STREAM_ID_PROP_NAME, CONTROL_STREAM_ID_DEFAULT);
+        }
+
+        public static String recordingEventsChannel()
+        {
+            return System.getProperty(RECORDING_EVENTS_CHANNEL_PROP_NAME, RECORDING_EVENTS_CHANNEL_DEFAULT);
+        }
+
+        public static int recordingEventsStreamId()
+        {
+            return Integer.getInteger(RECORDING_EVENTS_STREAM_ID_PROP_NAME, RECORDING_EVENTS_STREAM_ID_DEFAULT);
+        }
+    }
+
     public static class Context
     {
-        private Aeron.Context clientContext;
+        private final Aeron.Context clientContext;
         private File archiveDir;
-        private String controlRequestChannel;
-        private int controlRequestStreamId;
+
+        private String controlChannel;
+        private int controlStreamId;
+
         private String recordingEventsChannel;
         private int recordingEventsStreamId;
-        private Supplier<IdleStrategy> idleStrategySupplier;
-        private EpochClock epochClock;
+
         private int segmentFileLength = 128 * 1024 * 1024;
         private boolean forceMetadataUpdates = true;
         private boolean forceWrites = true;
         private ArchiverThreadingMode threadingMode = ArchiverThreadingMode.SHARED;
         private ThreadFactory threadFactory = Thread::new;
 
+        private Supplier<IdleStrategy> idleStrategySupplier;
+        private EpochClock epochClock;
+        private ErrorHandler errorHandler;
+        private AtomicCounter errorCounter;
+
         private AgentInvoker driverAgentInvoker;
         private AgentInvoker replayerInvoker;
         private AgentInvoker recorderInvoker;
         private Replayer replayer;
         private Recorder recorder;
-        private ErrorHandler errorHandler;
-        private AtomicCounter errorCounter;
 
         public Context()
         {
-            this(new Aeron.Context(), new File("archive"));
+            this(new Aeron.Context());
         }
 
-        public Context(final Aeron.Context clientContext, final File archiveDir)
+        public Context(final Aeron.Context clientContext)
         {
             clientContext.useConductorAgentInvoker(true);
             this.clientContext = clientContext;
-            this.archiveDir = archiveDir;
-            controlRequestChannel = "aeron:udp?endpoint=localhost:8010";
-            controlRequestStreamId = 0;
-            recordingEventsChannel = "aeron:udp?endpoint=localhost:8011";
-            recordingEventsStreamId = 0;
+            controlChannel(Configuration.controlChannel());
+            controlStreamId(Configuration.controlStreamId());
+            recordingEventsChannel(Configuration.recordingEventsChannel());
+            recordingEventsStreamId(Configuration.recordingEventsStreamId());
         }
 
         void conclude()
         {
+            if (archiveDir == null)
+            {
+                archiveDir = new File(Configuration.archiveDirName());
+            }
+
             if (!archiveDir.exists() && !archiveDir.mkdirs())
             {
                 throw new IllegalArgumentException(
@@ -236,31 +285,25 @@ public final class Archiver implements AutoCloseable
             return clientContext;
         }
 
-        public Context clientContext(final Aeron.Context ctx)
+        public String controlChannel()
         {
-            this.clientContext = ctx;
+            return controlChannel;
+        }
+
+        public Context controlChannel(final String controlChannel)
+        {
+            this.controlChannel = controlChannel;
             return this;
         }
 
-        public String controlRequestChannel()
+        public int controlStreamId()
         {
-            return controlRequestChannel;
+            return controlStreamId;
         }
 
-        public Context controlRequestChannel(final String controlRequestChannel)
+        public Context controlStreamId(final int controlStreamId)
         {
-            this.controlRequestChannel = controlRequestChannel;
-            return this;
-        }
-
-        public int controlRequestStreamId()
-        {
-            return controlRequestStreamId;
-        }
-
-        public Context controlRequestStreamId(final int controlRequestStreamId)
-        {
-            this.controlRequestStreamId = controlRequestStreamId;
+            this.controlStreamId = controlStreamId;
             return this;
         }
 
@@ -369,29 +412,29 @@ public final class Archiver implements AutoCloseable
          * @param driverAgentInvoker that should be used for the Media Driver if running in a lightweight mode.
          * @return this for a fluent API.
          */
-        public Context driverAgentInvoker(final AgentInvoker driverAgentInvoker)
+        Context driverAgentInvoker(final AgentInvoker driverAgentInvoker)
         {
             this.driverAgentInvoker = driverAgentInvoker;
             return this;
         }
 
-        public AgentInvoker replayerInvoker()
+        AgentInvoker replayerInvoker()
         {
             return replayerInvoker;
         }
 
-        public Context replayerInvoker(final AgentInvoker replayerInvoker)
+        Context replayerInvoker(final AgentInvoker replayerInvoker)
         {
             this.replayerInvoker = replayerInvoker;
             return this;
         }
 
-        public AgentInvoker recorderInvoker()
+        AgentInvoker recorderInvoker()
         {
             return recorderInvoker;
         }
 
-        public Context recorderInvoker(final AgentInvoker recorderInvoker)
+        Context recorderInvoker(final AgentInvoker recorderInvoker)
         {
             this.recorderInvoker = recorderInvoker;
             return this;
@@ -435,13 +478,13 @@ public final class Archiver implements AutoCloseable
             return this;
         }
 
-        public Context replayer(final Replayer replayer)
+        Context replayer(final Replayer replayer)
         {
             this.replayer = replayer;
             return this;
         }
 
-        public Context recorder(final Recorder recorder)
+        Context recorder(final Recorder recorder)
         {
             this.recorder = recorder;
             return this;

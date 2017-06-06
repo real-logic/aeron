@@ -171,6 +171,7 @@ class RecordingSession implements Session
         {
             CloseHelper.quietClose(recordingWriter);
             // this reflects the single local recording assumption
+            // TODO: if we want a NoOp client lock in the DEDICATED mode this needs to be done on the conductor
             CloseHelper.quietClose(image.subscription());
             notificationsProxy.recordingStopped(recordingId, recordingWriter.lastPosition());
             this.state = State.CLOSED;

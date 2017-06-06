@@ -54,7 +54,7 @@ class ReplaySession
     private final long replayPosition;
     private final long replayLength;
 
-    private final Replayer conductor;
+    private final Replayer replayer;
     private final Publication controlPublication;
     private final ControlSessionProxy controlSessionProxy;
 
@@ -79,7 +79,7 @@ class ReplaySession
         final long recordingId,
         final long replayPosition,
         final long replayLength,
-        final Replayer conductor,
+        final Replayer replayer,
         final Publication controlPublication,
         final File archiveDir,
         final ControlSessionProxy controlSessionProxy,
@@ -93,7 +93,7 @@ class ReplaySession
 
         this.replayPosition = replayPosition;
         this.replayLength = replayLength;
-        this.conductor = conductor;
+        this.replayer = replayer;
 
         this.controlPublication = controlPublication;
         this.archiveDir = archiveDir;
@@ -259,7 +259,8 @@ class ReplaySession
         {
             try
             {
-                replayPublication = conductor.newReplayPublication(
+                // TODO: if we want a NoOp client lock in the DEDICATED mode this needs to be done on the replayer
+                replayPublication = replayer.newReplayPublication(
                     replayChannel,
                     replayStreamId,
                     cursor.fromPosition(),
@@ -277,8 +278,7 @@ class ReplaySession
         {
             if (isLingerDone())
             {
-                // TODO: add counter
-                this.state = State.INACTIVE;
+                return closeOnError(null, "No subscription to replay publication has been made");
             }
 
             return 0;
@@ -327,6 +327,7 @@ class ReplaySession
 
     private int close()
     {
+        // TODO: if we want a NoOp client lock in the DEDICATED mode this needs to be done on the replayer
         CloseHelper.close(replayPublication);
         CloseHelper.close(cursor);
         this.state = State.CLOSED;

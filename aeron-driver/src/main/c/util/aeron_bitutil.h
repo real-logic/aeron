@@ -54,6 +54,37 @@ inline int aeron_number_of_trailing_zeroes(int32_t value)
 #endif
 }
 
+inline int aeron_number_of_leading_zeroes(int32_t value)
+{
+#if defined(__GNUC__)
+    return __builtin_clz(value);
+#elif defined(_MSC_VER)
+    return __lzcnt(value);
+#else
+#error "do not understand how to clz"
+#endif
+}
+
+inline int32_t aeron_find_next_power_of_two(int32_t value)
+{
+#if defined(__GNUC__)
+    return 1 << (32 - aeron_number_of_leading_zeroes(value - 1));
+#else
+    value--;
+
+    /*
+     * Set all bits below the leading one using binary expansion
+     * http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+     */
+    for (size_t i = 1; i < sizeof(value) * 8; i = i * 2)
+    {
+        value |= (value >> i);
+    }
+
+    return value + 1;
+#endif
+}
+
 int32_t aeron_randomised_int32();
 
 #endif //AERON_BITUTIL_H

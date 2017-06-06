@@ -35,7 +35,7 @@ import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
-import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 import static java.lang.Boolean.TRUE;
 import static java.nio.ByteBuffer.allocateDirect;
@@ -548,12 +548,12 @@ public class ClientConductorTest
     }
 
     private void whenReceiveBroadcastOnMessage(
-        final int msgTypeId, final MutableDirectBuffer buffer, final Function<MutableDirectBuffer, Integer> filler)
+        final int msgTypeId, final MutableDirectBuffer buffer, final ToIntFunction<MutableDirectBuffer> filler)
     {
         doAnswer(
             (invocation) ->
             {
-                final int length = filler.apply(buffer);
+                final int length = filler.applyAsInt(buffer);
                 conductor.driverListenerAdapter().onMessage(msgTypeId, buffer, 0, length);
 
                 return 1;

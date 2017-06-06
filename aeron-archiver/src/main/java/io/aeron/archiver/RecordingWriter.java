@@ -275,10 +275,14 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         throws IOException
     {
         segmentPosition = recordingOffset + blockLength;
-        final int endTermOffset = termOffset + blockLength;
-        final long position = ((long)(termId - initialTermId)) * termBufferLength + endTermOffset;
+        final int resultingOffset = termOffset + blockLength;
+        final long position = ((long)(termId - initialTermId)) * termBufferLength + resultingOffset;
         metaDataEncoder.lastPosition(position);
         lastPosition = position;
+
+        // TODO: Do not force meta data update. On restart updates meta data based on recordings.
+        // TODO: This is a not an effective strategy because one needs to deal with recording succeeding an a crash
+        // TODO: happening before this completes.
         if (forceMetadataUpdates)
         {
             metaDataBuffer.force();
@@ -354,7 +358,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         private boolean forceWrites = true;
         private boolean forceMetadataUpdates = true;
         private int segmentFileLength = 128 * 1024 * 1024;
-
 
         RecordingContext archiveDir(final File archiveDir)
         {

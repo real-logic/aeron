@@ -91,6 +91,7 @@ class Recorder extends SessionWorker
         }
     }
 
+    // TODO: Why have this on the recorder and not on the conductor for the control session?
     void listRecordings(
         final long correlationId,
         final Publication controlPublication,

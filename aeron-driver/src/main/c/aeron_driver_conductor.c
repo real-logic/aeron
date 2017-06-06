@@ -349,7 +349,7 @@ void aeron_driver_conductor_on_publication_ready(
     response->session_id = session_id;
     response->position_limit_counter_id = position_limit_counter_id;
     response->log_file_length = (int32_t)log_file_name_length;
-    memcpy(response->log_file_data, log_file_name, log_file_name_length);
+    memcpy(&response->log_file_data[0], log_file_name, log_file_name_length);
 
     aeron_driver_conductor_client_transmit(
         conductor,
@@ -480,6 +480,29 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             else
             {
                 result = aeron_driver_conductor_on_add_network_publication(conductor, command, false);
+            }
+            break;
+        }
+
+        case AERON_COMMAND_ADD_EXCLUSIVE_PUBLICATION:
+        {
+            aeron_publication_command_t *command = (aeron_publication_command_t *)message;
+
+            if (length < sizeof(aeron_publication_command_t) ||
+                length < (sizeof(aeron_publication_command_t) + command->channel_length) - 1)
+            {
+                goto malformed_command;
+            }
+
+            correlation_id = command->correlated.correlation_id;
+
+            if (strncmp((const char *)command->channel_data, AERON_IPC_CHANNEL, strlen(AERON_IPC_CHANNEL)) == 0)
+            {
+                result = aeron_driver_conductor_on_add_ipc_publication(conductor, command, true);
+            }
+            else
+            {
+                result = aeron_driver_conductor_on_add_network_publication(conductor, command, true);
             }
             break;
         }

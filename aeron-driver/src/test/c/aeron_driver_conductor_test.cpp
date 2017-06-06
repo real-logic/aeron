@@ -28,6 +28,9 @@ extern "C"
 
 #include "concurrent/ringbuffer/ManyToOneRingBuffer.h"
 #include "concurrent/broadcast/CopyBroadcastReceiver.h"
+#include "command/PublicationBuffersReadyFlyweight.h"
+#include "command/ImageBuffersReadyFlyweight.h"
+#include "command/CorrelatedMessageFlyweight.h"
 
 using namespace aeron::concurrent::broadcast;
 using namespace aeron::concurrent::ringbuffer;
@@ -270,13 +273,11 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublication)
         {
             ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
 
-            aeron_publication_buffers_ready_t &response =
-                buffer.overlayStruct<aeron_publication_buffers_ready_t>(offset);
+            command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
-            EXPECT_EQ(response.stream_id, STREAM_ID_1);
-            EXPECT_EQ(response.correlation_id, pub_id);
-            EXPECT_GT(response.log_file_length, 0);
-            EXPECT_EQ((size_t)length, sizeof(aeron_publication_command_t) + response.log_file_length - 1);
+            EXPECT_EQ(response.streamId(), STREAM_ID_1);
+            EXPECT_EQ(response.correlationId(), pub_id);
+            EXPECT_GT(response.logFileName().length(), 0u);
         };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
@@ -295,10 +296,9 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscription)
     {
         ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
-        aeron_correlated_command_t &response =
-            buffer.overlayStruct<aeron_correlated_command_stct>(offset);
+        command::CorrelatedMessageFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.correlation_id, sub_id);
+        EXPECT_EQ(response.correlationId(), sub_id);
     };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
@@ -338,3 +338,172 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleIpcPublications)
 
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
 }
+
+TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleExclusiveIpcPublicationsWithSameStreamId)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id_1 = nextCorrelationId();
+    int64_t pub_id_2 = nextCorrelationId();
+    int64_t pub_id_3 = nextCorrelationId();
+    int64_t pub_id_4 = nextCorrelationId();
+
+    ASSERT_EQ(addIpcPublication(client_id, pub_id_1, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addIpcPublication(client_id, pub_id_2, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addIpcPublication(client_id, pub_id_3, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addIpcPublication(client_id, pub_id_4, STREAM_ID_1, true), 0);
+    doWork();
+
+    aeron_ipc_publication_t *publication_1 =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_1);
+    aeron_ipc_publication_t *publication_2 =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_2);
+    aeron_ipc_publication_t *publication_3 =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_3);
+    aeron_ipc_publication_t *publication_4 =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_4);
+
+    ASSERT_NE(publication_1, (aeron_ipc_publication_t *)NULL);
+    ASSERT_NE(publication_2, (aeron_ipc_publication_t *)NULL);
+    ASSERT_NE(publication_3, (aeron_ipc_publication_t *)NULL);
+    ASSERT_NE(publication_4, (aeron_ipc_publication_t *)NULL);
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleIpcSubscriptionsWithSameStreamId)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id_1 = nextCorrelationId();
+    int64_t sub_id_2 = nextCorrelationId();
+    int64_t sub_id_3 = nextCorrelationId();
+    int64_t sub_id_4 = nextCorrelationId();
+
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id_2, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id_3, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id_4, STREAM_ID_1, -1), 0);
+
+    doWork();
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSingleIpcPublication)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+    int64_t pub_id = nextCorrelationId();
+
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
+    doWork();
+
+    size_t response_number = 0;
+    int32_t session_id = 0;
+    std::string log_file_name;
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        if (0 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+            command::CorrelatedMessageFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), sub_id);
+        }
+        else if (1 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+
+            command::PublicationBuffersReadyFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), pub_id);
+            session_id = response.sessionId();
+
+            log_file_name = response.logFileName();
+        }
+        else if (2 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+
+            command::ImageBuffersReadyFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.streamId(), STREAM_ID_1);
+            EXPECT_EQ(response.sessionId(), session_id);
+            EXPECT_EQ(response.subscriberPositionCount(), 1);
+
+            const command::ImageBuffersReadyDefn::SubscriberPosition position = response.subscriberPosition(0);
+
+            EXPECT_EQ(position.registrationId, sub_id);
+
+            EXPECT_EQ(log_file_name, response.logFileName());
+        }
+
+        response_number++;
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 3u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingleIpcSubscription)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+    int64_t pub_id = nextCorrelationId();
+
+    ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, -1), 0);
+    doWork();
+
+    size_t response_number = 0;
+    int32_t session_id = 0;
+    std::string log_file_name;
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        if (0 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+
+            command::PublicationBuffersReadyFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), pub_id);
+            session_id = response.sessionId();
+
+            log_file_name = response.logFileName();
+        }
+        else if (1 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+            command::CorrelatedMessageFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), sub_id);
+        }
+        else if (2 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+
+            command::ImageBuffersReadyFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.streamId(), STREAM_ID_1);
+            EXPECT_EQ(response.sessionId(), session_id);
+            EXPECT_EQ(response.subscriberPositionCount(), 1);
+
+            const command::ImageBuffersReadyDefn::SubscriberPosition position = response.subscriberPosition(0);
+
+            EXPECT_EQ(position.registrationId, sub_id);
+
+            EXPECT_EQ(log_file_name, response.logFileName());
+        }
+
+        response_number++;
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 3u);
+}
+
+/*
+ * TODO:
+ * addMultipleSubscriptionsWithSameStreamIdThenPublication
+ * addSubscriptionThenMultipleExclusivePublicationsWithSameStreamId
+ */

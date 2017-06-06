@@ -48,7 +48,7 @@ public class ArchiveRecordingLoadTest
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
-    private static final int MESSAGE_COUNT = 3000000;
+    private static final int MESSAGE_COUNT = 2000000;
     private static final int TEST_DURATION_SEC = 30;
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
@@ -93,8 +93,12 @@ public class ArchiveRecordingLoadTest
 
         driver = MediaDriver.launch(driverCtx);
         archiveDir = TestUtil.makeTempDir();
-        archiverCtx.archiveDir(archiveDir);
-        archiverCtx.threadingMode(ArchiverThreadingMode.DEDICATED);
+        archiverCtx
+            .forceMetadataUpdates(false)
+            .forceWrites(true)
+            .archiveDir(archiveDir)
+            .threadingMode(ArchiverThreadingMode.DEDICATED);
+
         archiver = Archiver.launch(archiverCtx);
         println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
         publishingClient = Aeron.connect();

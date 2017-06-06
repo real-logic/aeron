@@ -18,6 +18,7 @@ package io.aeron.archiver;
 import io.aeron.*;
 import io.aeron.archiver.codecs.*;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
+import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -157,25 +158,15 @@ class ReplaySession
             return false;
         }
 
-        final long result = replayPublication.tryClaim(length, bufferClaim);
+        final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
+        final int frameType = frameType(termBuffer, frameOffset);
+
+        final long result = frameType == FrameDescriptor.PADDING_FRAME_TYPE ?
+            replayPublication.appendPadding(length) :
+            replayFrame(termBuffer, offset, length, frameOffset);
+
         if (result > 0)
         {
-            try
-            {
-                final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
-                final UnsafeBuffer publicationBuffer = (UnsafeBuffer)bufferClaim.buffer();
-
-                bufferClaim.flags(frameFlags(termBuffer, frameOffset));
-                bufferClaim.headerType(frameType(termBuffer, frameOffset));
-                bufferClaim.reservedValue(termBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN));
-
-                publicationBuffer.putBytes(bufferClaim.offset(), termBuffer, offset, length);
-            }
-            finally
-            {
-                bufferClaim.commit();
-            }
-
             return true;
         }
         else if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
@@ -189,6 +180,29 @@ class ReplaySession
     State state()
     {
         return state;
+    }
+
+    private long replayFrame(final UnsafeBuffer termBuffer, final int offset, final int length, final int frameOffset)
+    {
+        final long result = replayPublication.tryClaim(length, bufferClaim);
+        if (result > 0)
+        {
+            try
+            {
+                final UnsafeBuffer publicationBuffer = (UnsafeBuffer)bufferClaim.buffer();
+
+                bufferClaim.flags(frameFlags(termBuffer, frameOffset));
+                bufferClaim.reservedValue(termBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN));
+
+                publicationBuffer.putBytes(bufferClaim.offset(), termBuffer, offset, length);
+            }
+            finally
+            {
+                bufferClaim.commit();
+            }
+        }
+
+        return result;
     }
 
     private int linger()

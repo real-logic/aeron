@@ -169,10 +169,7 @@ class RecordingFragmentReader implements AutoCloseable
                 return polled;
             }
 
-            if (!FrameDescriptor.isPaddingFrame(termBuffer, frameOffset))
-            {
-                polled++;
-            }
+            polled++;
         }
 
         if (!isDone() && termOffset == termBufferLength)

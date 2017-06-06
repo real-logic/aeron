@@ -104,7 +104,7 @@ int aeron_counters_manager_free(volatile aeron_counters_manager_t *manager, int3
 
     AERON_PUT_ORDERED(metadata->state, AERON_COUNTER_RECORD_RECLAIMED);
 
-    if (manager->free_list_index >= (int32_t)manager->free_list_length)
+    if ((manager->free_list_index + 1) >= (int32_t)manager->free_list_length)
     {
         size_t new_length = manager->free_list_length + (manager->free_list_length >> 1);
         int32_t *new_array = NULL;

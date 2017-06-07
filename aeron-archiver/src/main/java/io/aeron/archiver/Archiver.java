@@ -166,6 +166,8 @@ public final class Archiver implements AutoCloseable
         public static final String SEGMENT_FILE_LENGTH_PROP_NAME = "aeron.archiver.segment.file.length";
         public static final int SEGMENT_FILE_LENGTH_DEFAULT = 128 * 1024 * 1024;
 
+        public static final String FORCE_WRITES_PROP_NAME = "aeron.archiver.force.writes";
+
         public static String archiveDirName()
         {
             return System.getProperty(ARCHIVE_DIR_PROP_NAME, ARCHIVE_DIR_DEFAULT);
@@ -195,6 +197,11 @@ public final class Archiver implements AutoCloseable
         {
             return Integer.getInteger(SEGMENT_FILE_LENGTH_PROP_NAME, SEGMENT_FILE_LENGTH_DEFAULT);
         }
+
+        private static boolean forceWrites()
+        {
+            return Boolean.valueOf(System.getProperty(FORCE_WRITES_PROP_NAME, "true"));
+        }
     }
 
     public static class Context
@@ -208,8 +215,9 @@ public final class Archiver implements AutoCloseable
         private String recordingEventsChannel;
         private int recordingEventsStreamId;
 
-        private int segmentFileLength = Configuration.segmentFileLength();
-        private boolean forceWrites = true;
+        private int segmentFileLength;
+        private boolean forceWrites;
+
         private ArchiverThreadingMode threadingMode = ArchiverThreadingMode.SHARED;
         private ThreadFactory threadFactory = Thread::new;
 
@@ -237,11 +245,13 @@ public final class Archiver implements AutoCloseable
             controlStreamId(Configuration.controlStreamId());
             recordingEventsChannel(Configuration.recordingEventsChannel());
             recordingEventsStreamId(Configuration.recordingEventsStreamId());
+            segmentFileLength(Configuration.segmentFileLength());
+            forceWrites(Configuration.forceWrites());
         }
 
         void conclude()
         {
-            if (archiveDir == null)
+            if (null == archiveDir)
             {
                 archiveDir = new File(Configuration.archiveDirName());
             }
@@ -252,22 +262,22 @@ public final class Archiver implements AutoCloseable
                     "Failed to create archive dir: " + archiveDir.getAbsolutePath());
             }
 
-            if (idleStrategySupplier == null)
+            if (null == idleStrategySupplier)
             {
                 idleStrategySupplier = () -> new SleepingMillisIdleStrategy(Aeron.IDLE_SLEEP_MS);
             }
 
-            if (epochClock == null)
+            if (null == epochClock)
             {
-                epochClock = clientContext.epochClock();
+                epochClock = new SystemEpochClock();
             }
 
-            if (errorHandler == null)
+            if (null == errorHandler)
             {
                 errorHandler = Throwable::printStackTrace;
             }
 
-            if (errorCounter == null)
+            if (null == errorCounter)
             {
                 final CountersManager counters = new CountersManager(
                     clientContext.countersMetaDataBuffer(),

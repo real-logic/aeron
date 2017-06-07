@@ -15,10 +15,10 @@
  */
 
 #include "aeron_alloc.h"
-#include "concurrent/aeron_many_to_one_concurrent_array_queue.h"
+#include "concurrent/aeron_mpsc_concurrent_array_queue.h"
 
-int aeron_many_to_one_concurrent_array_queue_init(
-    volatile aeron_many_to_one_concurrent_array_queue_t *queue, uint64_t length)
+int aeron_mpsc_concurrent_array_queue_init(
+    volatile aeron_mpsc_concurrent_array_queue_t *queue, uint64_t length)
 {
     length = (uint64_t)aeron_find_next_power_of_two((int32_t)length);
 
@@ -41,12 +41,12 @@ int aeron_many_to_one_concurrent_array_queue_init(
     return 0;
 }
 
-extern aeron_queue_offer_result_t aeron_many_to_one_concurrent_array_queue_offer(
-    volatile aeron_many_to_one_concurrent_array_queue_t *queue,
+extern aeron_queue_offer_result_t aeron_mpsc_concurrent_array_queue_offer(
+    volatile aeron_mpsc_concurrent_array_queue_t *queue,
     void *element);
 
-extern uint64_t aeron_many_to_one_concurrent_array_queue_drain(
-    volatile aeron_many_to_one_concurrent_array_queue_t *queue,
+extern uint64_t aeron_mpsc_concurrent_array_queue_drain(
+    volatile aeron_mpsc_concurrent_array_queue_t *queue,
     aeron_queue_drain_func_t func,
     void *clientd,
     uint64_t limit);

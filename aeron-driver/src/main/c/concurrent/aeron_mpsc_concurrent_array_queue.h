@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_MANY_TO_ONE_CONCURRENT_ARRAY_QUEUE_H
-#define AERON_AERON_MANY_TO_ONE_CONCURRENT_ARRAY_QUEUE_H
+#ifndef AERON_AERON_MPSC_CONCURRENT_ARRAY_QUEUE_H
+#define AERON_AERON_MPSC_CONCURRENT_ARRAY_QUEUE_H
 
 #include <stdint.h>
 #include "util/aeron_bitutil.h"
 #include "aeron_atomic.h"
 #include "aeron_concurrent_array_queue.h"
 
-typedef struct aeron_many_to_one_concurrent_array_queue_stct
+typedef struct aeron_mpsc_concurrent_array_queue_stct
 {
     int8_t padding[(2 * AERON_CACHE_LINE_LENGTH)];
     struct
@@ -43,13 +43,13 @@ typedef struct aeron_many_to_one_concurrent_array_queue_stct
     uint64_t mask;
     volatile void **buffer;
 }
-aeron_many_to_one_concurrent_array_queue_t;
+aeron_mpsc_concurrent_array_queue_t;
 
-int aeron_many_to_one_concurrent_array_queue_init(
-    volatile aeron_many_to_one_concurrent_array_queue_t *queue, uint64_t length);
+int aeron_mpsc_concurrent_array_queue_init(
+    volatile aeron_mpsc_concurrent_array_queue_t *queue, uint64_t length);
 
-inline aeron_queue_offer_result_t aeron_many_to_one_concurrent_array_queue_offer(
-    volatile aeron_many_to_one_concurrent_array_queue_t *queue, void *element)
+inline aeron_queue_offer_result_t aeron_mpsc_concurrent_array_queue_offer(
+    volatile aeron_mpsc_concurrent_array_queue_t *queue, void *element)
 {
     if (NULL == element)
     {
@@ -86,8 +86,8 @@ inline aeron_queue_offer_result_t aeron_many_to_one_concurrent_array_queue_offer
     return AERON_OFFER_SUCCESS;
 }
 
-inline uint64_t aeron_many_to_one_concurrent_array_queue_drain(
-    volatile aeron_many_to_one_concurrent_array_queue_t *queue,
+inline uint64_t aeron_mpsc_concurrent_array_queue_drain(
+    volatile aeron_mpsc_concurrent_array_queue_t *queue,
     aeron_queue_drain_func_t func,
     void *clientd,
     uint64_t limit)
@@ -118,4 +118,4 @@ inline uint64_t aeron_many_to_one_concurrent_array_queue_drain(
     return next_sequence - current_head;
 }
 
-#endif //AERON_AERON_MANY_TO_ONE_CONCURRENT_ARRAY_QUEUE_H
+#endif //AERON_AERON_MPSC_CONCURRENT_ARRAY_QUEUE_H

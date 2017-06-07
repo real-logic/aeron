@@ -339,6 +339,8 @@ public final class Aeron implements AutoCloseable
      * Media Driver.
      * <p>
      * A number of the properties are for testing and should not be set by end users.
+     * <p>
+     * <b>Note:</b> Do not reuse instances of the context across different {@link Aeron} clients.
      */
     public static class Context extends CommonContext
     {

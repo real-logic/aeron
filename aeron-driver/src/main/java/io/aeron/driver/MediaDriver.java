@@ -450,6 +450,11 @@ public final class MediaDriver implements AutoCloseable
         }
     }
 
+    /**
+     * Configuration for the {@link MediaDriver} that can be used to override {@link Configuration}.
+     * <p>
+     * <b>Note:</b> Do not reuse instances of the context across different {@link MediaDriver}s.
+     */
     public static class Context extends CommonContext
     {
         private RawLogFactory rawLogFactory;

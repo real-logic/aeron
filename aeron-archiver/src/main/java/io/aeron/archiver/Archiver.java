@@ -213,6 +213,7 @@ public final class Archiver implements AutoCloseable
 
             if (errorCounter == null)
             {
+                // TODO: This is NOT safe!!! Archiver needs its own counters.
                 final CountersManager counters = new CountersManager(
                     clientContext.countersMetaDataBuffer(),
                     clientContext.countersValuesBuffer());

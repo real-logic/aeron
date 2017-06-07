@@ -163,6 +163,9 @@ public final class Archiver implements AutoCloseable
         public static final String RECORDING_EVENTS_STREAM_ID_PROP_NAME = "aeron.archiver.recording.events.stream.id";
         public static final int RECORDING_EVENTS_STREAM_ID_DEFAULT = 0;
 
+        public static final String SEGMENT_FILE_LENGTH_PROP_NAME = "aeron.archiver.segment.file.length";
+        public static final int SEGMENT_FILE_LENGTH_DEFAULT = 128 * 1024 * 1024;
+
         public static String archiveDirName()
         {
             return System.getProperty(ARCHIVE_DIR_PROP_NAME, ARCHIVE_DIR_DEFAULT);
@@ -187,6 +190,11 @@ public final class Archiver implements AutoCloseable
         {
             return Integer.getInteger(RECORDING_EVENTS_STREAM_ID_PROP_NAME, RECORDING_EVENTS_STREAM_ID_DEFAULT);
         }
+
+        private static int segmentFileLength()
+        {
+            return Integer.getInteger(SEGMENT_FILE_LENGTH_PROP_NAME, SEGMENT_FILE_LENGTH_DEFAULT);
+        }
     }
 
     public static class Context
@@ -200,8 +208,7 @@ public final class Archiver implements AutoCloseable
         private String recordingEventsChannel;
         private int recordingEventsStreamId;
 
-        private int segmentFileLength = 128 * 1024 * 1024;
-        private boolean forceMetadataUpdates = true;
+        private int segmentFileLength = Configuration.segmentFileLength();
         private boolean forceWrites = true;
         private ArchiverThreadingMode threadingMode = ArchiverThreadingMode.SHARED;
         private ThreadFactory threadFactory = Thread::new;
@@ -371,17 +378,6 @@ public final class Archiver implements AutoCloseable
         public Context segmentFileLength(final int segmentFileLength)
         {
             this.segmentFileLength = segmentFileLength;
-            return this;
-        }
-
-        boolean forceMetadataUpdates()
-        {
-            return forceMetadataUpdates;
-        }
-
-        public Context forceMetadataUpdates(final boolean forceMetadataUpdates)
-        {
-            this.forceMetadataUpdates = forceMetadataUpdates;
             return this;
         }
 

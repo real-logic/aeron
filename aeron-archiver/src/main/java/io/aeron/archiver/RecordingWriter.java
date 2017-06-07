@@ -48,7 +48,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
     private static final int NULL_SEGMENT_POSITION = -1;
 
     private final boolean forceWrites;
-    private final boolean forceMetadataUpdates;
 
     private final int initialTermId;
     private final int termBufferLength;
@@ -92,7 +91,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         this.archiveDir = recordingContext.archiveDir;
         this.segmentFileLength = recordingContext.segmentFileLength;
         this.forceWrites = recordingContext.forceWrites;
-        this.forceMetadataUpdates = recordingContext.forceMetadataUpdates;
 
         this.recordingId = recordingId;
         this.termBufferLength = termBufferLength;
@@ -278,14 +276,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         metaDataEncoder.lastPosition(position);
         lastPosition = position;
 
-        // TODO: Do not force meta data update. On restart updates meta data based on recordings.
-        // TODO: This is a not an effective strategy because one needs to deal with recording succeeding an a crash
-        // TODO: happening before this completes.
-        if (forceMetadataUpdates)
-        {
-            metaDataBuffer.force();
-        }
-
         if (segmentPosition == segmentFileLength)
         {
             CloseHelper.close(recordingFileChannel);
@@ -353,7 +343,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         private File archiveDir;
         private EpochClock epochClock;
         private boolean forceWrites = true;
-        private boolean forceMetadataUpdates = true;
         private int segmentFileLength = 128 * 1024 * 1024;
 
         RecordingContext archiveDir(final File archiveDir)
@@ -371,12 +360,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         RecordingContext forceWrites(final boolean forceWrites)
         {
             this.forceWrites = forceWrites;
-            return this;
-        }
-
-        RecordingContext forceMetadataUpdates(final boolean forceMetadataUpdates)
-        {
-            this.forceMetadataUpdates = forceMetadataUpdates;
             return this;
         }
 

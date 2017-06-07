@@ -30,8 +30,7 @@ import org.junit.runner.Description;
 
 import java.io.*;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static io.aeron.archiver.TestUtil.*;
 import static org.hamcrest.core.Is.is;
@@ -47,11 +46,11 @@ public class ArchiveReplayLoadTest
     static final String REPLY_URI = "aeron:udp?endpoint=127.0.0.1:54327";
     static final int REPLY_STREAM_ID = 100;
     private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
-    private static final String PUBLISH_URI = "aeron:udp?endpoint=127.0.0.1:54325";
+    private static final String PUBLISH_URI = "aeron:ipc?endpoint=127.0.0.1:54325";
     //        +"|" + CommonContext.TERM_LENGTH_PARAM_NAME + "=4194304|" + CommonContext.MTU_LENGTH_PARAM_NAME + "=4096";
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
-    private static final int MESSAGE_COUNT = 300000;
+    private static final int MESSAGE_COUNT = 2000000;
     private static final int TEST_DURATION_SEC = 30;
 
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
@@ -103,7 +102,6 @@ public class ArchiveReplayLoadTest
         driver = MediaDriver.launch(driverCtx);
         archiveDir = TestUtil.makeTempDir();
         archiverCtx.archiveDir(archiveDir)
-            .forceMetadataUpdates(false)
             .forceWrites(false)
             .threadingMode(ArchiverThreadingMode.DEDICATED);
 
@@ -162,7 +160,7 @@ public class ArchiveReplayLoadTest
             final long requestStopCorrelationId = this.correlationId++;
             waitFor(() -> client.stopRecording(recordingId, requestStopCorrelationId));
             waitForOk(client, reply, requestStopCorrelationId);
-            final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);;
+            final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
             int i = 0;
             while (System.currentTimeMillis() < duration)
             {

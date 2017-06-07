@@ -64,8 +64,7 @@ public class ReplaySessionTest
         try (RecordingWriter writer = new RecordingWriter(new RecordingWriter.RecordingContext()
             .archiveDir(archiveDir)
             .epochClock(epochClock)
-            .forceWrites(true)
-            .forceMetadataUpdates(true),
+            .forceWrites(true),
             RECORDING_ID,
             TERM_BUFFER_LENGTH,
             MTU_LENGTH,

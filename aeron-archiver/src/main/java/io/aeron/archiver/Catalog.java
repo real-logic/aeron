@@ -110,6 +110,8 @@ class Catalog implements AutoCloseable
 
         final long recordingId = decoder.recordingId();
 
+        // TODO: verify catalog reflects last position from metadata file, and equally that the files are aligned
+        // TODO: with last writes.
         nextRecordingId = Math.max(recordingId + 1, nextRecordingId);
 
         return length + CATALOG_FRAME_LENGTH;

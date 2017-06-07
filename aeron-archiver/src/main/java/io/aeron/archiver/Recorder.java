@@ -43,7 +43,6 @@ class Recorder extends SessionWorker
             .recordingFileLength(ctx.segmentFileLength())
             .archiveDir(ctx.archiveDir())
             .epochClock(ctx.epochClock())
-            .forceMetadataUpdates(ctx.forceMetadataUpdates())
             .forceWrites(ctx.forceWrites());
 
         this.recordingContext = recordingContext;

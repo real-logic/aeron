@@ -184,7 +184,6 @@ public final class MediaDriver implements AutoCloseable
                 conductorRunner = null;
                 receiverRunner = null;
                 senderRunner = null;
-                ctx.driverAgentInvoker = sharedInvoker;
                 break;
 
             case SHARED:
@@ -272,6 +271,16 @@ public final class MediaDriver implements AutoCloseable
     public static MediaDriver launch(final Context ctx)
     {
         return new MediaDriver(ctx).start();
+    }
+
+    /**
+     * Get the {@link AgentInvoker} for the shared agents when running without threads.
+     *
+     * @return the {@link AgentInvoker} for the shared agents when running without threads.
+     */
+    public AgentInvoker sharedAgentInvoker()
+    {
+        return sharedInvoker;
     }
 
     /**
@@ -504,8 +513,6 @@ public final class MediaDriver implements AutoCloseable
         private byte[] applicationSpecificFeedback = Configuration.SM_APPLICATION_SPECIFIC_FEEDBACK;
 
         private CongestionControlSupplier congestionControlSupplier;
-
-        private AgentInvoker driverAgentInvoker;
 
         public Context()
         {
@@ -1004,11 +1011,6 @@ public final class MediaDriver implements AutoCloseable
         {
             this.congestionControlSupplier = supplier;
             return this;
-        }
-
-        public AgentInvoker driverAgentInvoker()
-        {
-            return driverAgentInvoker;
         }
 
         public EpochClock epochClock()

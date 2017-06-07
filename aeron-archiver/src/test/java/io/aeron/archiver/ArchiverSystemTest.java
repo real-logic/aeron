@@ -100,7 +100,7 @@ public class ArchiverSystemTest
         archiverCtx
             .forceWrites(false)
             .forceMetadataUpdates(false)
-            .driverAgentInvoker(driverCtx.driverAgentInvoker())
+            .driverAgentInvoker(driver.sharedAgentInvoker())
             .archiveDir(archiveDir)
             .threadingMode(ArchiverThreadingMode.SHARED);
 

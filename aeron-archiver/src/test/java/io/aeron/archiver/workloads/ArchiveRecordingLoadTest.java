@@ -48,7 +48,8 @@ public class ArchiveRecordingLoadTest
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
-    private static final int MESSAGE_COUNT = 300000;
+    private static final int MESSAGE_COUNT = 2000000;
+    private static final int TEST_DURATION_SEC = 30;
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
     private Aeron publishingClient;
@@ -92,8 +93,12 @@ public class ArchiveRecordingLoadTest
 
         driver = MediaDriver.launch(driverCtx);
         archiveDir = TestUtil.makeTempDir();
-        archiverCtx.archiveDir(archiveDir);
-        archiverCtx.threadingMode(ArchiverThreadingMode.DEDICATED);
+        archiverCtx
+            .forceMetadataUpdates(false)
+            .forceWrites(true)
+            .archiveDir(archiveDir)
+            .threadingMode(ArchiverThreadingMode.DEDICATED);
+
         archiver = Archiver.launch(archiverCtx);
         println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
         publishingClient = Aeron.connect();
@@ -120,7 +125,7 @@ public class ArchiveRecordingLoadTest
         try (Publication control = publishingClient.addPublication(
             archiverCtx.controlChannel(), archiverCtx.controlStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
-                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
+                archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
             final ArchiveClient client = new ArchiveClient(control, recordingEvents);
             initRecordingStartIndicator(client);
@@ -135,8 +140,8 @@ public class ArchiveRecordingLoadTest
             println("Client connected");
 
             long start;
-            final long testLimit = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(180);
-            while (System.currentTimeMillis() < testLimit)
+            final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
+            while (System.currentTimeMillis() < duration)
             {
                 final long startRecordingCorrelationId = this.correlationId++;
                 waitFor(() -> client.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
@@ -156,12 +161,13 @@ public class ArchiveRecordingLoadTest
                 {
                     waitFor(recordingEndIndicator);
                 }
+
                 doneRecording = false;
                 assertThat(totalRecordingLength, is(recorded));
                 final long time = System.currentTimeMillis() - start;
                 final double recordedMbps = (totalRecordingLength * 1000.0 / time) / MEGABYTE;
                 final double recordedMb = totalRecordingLength / MEGABYTE;
-                System.out.printf("%d : sent=%f Mb speed=%f Mbps %n", recordingId, recordedMb, recordedMbps);
+                System.out.printf("%d : sent=%f MB recorded=%f MBps %n", recordingId, recordedMb, recordedMbps);
             }
 
             println("All data arrived");

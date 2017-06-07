@@ -58,7 +58,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
     private final File archiveDir;
     private final EpochClock epochClock;
 
-    private final FileChannel metadataFileChannel;
     private final MappedByteBuffer metaDataBuffer;
     private final RecordingDescriptorEncoder metaDataEncoder;
     private final int segmentFileLength;
@@ -110,9 +109,9 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
 
         final String recordingMetaFileName = ArchiveUtil.recordingMetaFileName(recordingId);
         final File file = new File(archiveDir, recordingMetaFileName);
-        try
+        try (FileChannel metadataFileChannel = FileChannel.open(file.toPath(), CREATE_NEW, READ, WRITE))
         {
-            metadataFileChannel = FileChannel.open(file.toPath(), CREATE_NEW, READ, WRITE);
+            // TODO: Do not create too many files and mappings. Meta data should only be in the catalog.
             metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
             final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(metaDataBuffer);
             metaDataEncoder = new RecordingDescriptorEncoder().wrap(unsafeBuffer, Catalog.CATALOG_FRAME_LENGTH);
@@ -131,7 +130,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
                 sourceIdentity);
 
             unsafeBuffer.putInt(0, metaDataEncoder.encodedLength());
-            metaDataBuffer.force();
         }
         catch (final IOException ex)
         {
@@ -275,10 +273,14 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         throws IOException
     {
         segmentPosition = recordingOffset + blockLength;
-        final int endTermOffset = termOffset + blockLength;
-        final long position = ((long)(termId - initialTermId)) * termBufferLength + endTermOffset;
+        final int resultingOffset = termOffset + blockLength;
+        final long position = ((long)(termId - initialTermId)) * termBufferLength + resultingOffset;
         metaDataEncoder.lastPosition(position);
         lastPosition = position;
+
+        // TODO: Do not force meta data update. On restart updates meta data based on recordings.
+        // TODO: This is a not an effective strategy because one needs to deal with recording succeeding an a crash
+        // TODO: happening before this completes.
         if (forceMetadataUpdates)
         {
             metaDataBuffer.force();
@@ -317,7 +319,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         }
 
         IoUtil.unmap(metaDataBuffer);
-        CloseHelper.close(metadataFileChannel);
 
         closed = true;
     }
@@ -354,7 +355,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         private boolean forceWrites = true;
         private boolean forceMetadataUpdates = true;
         private int segmentFileLength = 128 * 1024 * 1024;
-
 
         RecordingContext archiveDir(final File archiveDir)
         {

@@ -31,6 +31,7 @@ import org.junit.runner.Description;
 import java.io.*;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archiver.TestUtil.*;
 import static org.hamcrest.core.Is.is;
@@ -50,7 +51,9 @@ public class ArchiveReplayLoadTest
     //        +"|" + CommonContext.TERM_LENGTH_PARAM_NAME + "=4194304|" + CommonContext.MTU_LENGTH_PARAM_NAME + "=4096";
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
-    private static final int MESSAGE_COUNT = 200000;
+    private static final int MESSAGE_COUNT = 300000;
+    private static final int TEST_DURATION_SEC = 30;
+
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
     private Aeron publishingClient;
@@ -99,8 +102,11 @@ public class ArchiveReplayLoadTest
 
         driver = MediaDriver.launch(driverCtx);
         archiveDir = TestUtil.makeTempDir();
-        archiverCtx.archiveDir(archiveDir);
-        archiverCtx.threadingMode(ArchiverThreadingMode.DEDICATED);
+        archiverCtx.archiveDir(archiveDir)
+            .forceMetadataUpdates(false)
+            .forceWrites(false)
+            .threadingMode(ArchiverThreadingMode.DEDICATED);
+
         archiver = Archiver.launch(archiverCtx);
         println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
         publishingClient = Aeron.connect();
@@ -127,7 +133,7 @@ public class ArchiveReplayLoadTest
         try (Publication archiverServiceRequest = publishingClient.addPublication(
             archiverCtx.controlChannel(), archiverCtx.controlStreamId());
              Subscription archiverNotifications = publishingClient.addSubscription(
-                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
+                archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
             final ArchiveClient client = new ArchiveClient(archiverServiceRequest, archiverNotifications);
 
@@ -156,9 +162,9 @@ public class ArchiveReplayLoadTest
             final long requestStopCorrelationId = this.correlationId++;
             waitFor(() -> client.stopRecording(recordingId, requestStopCorrelationId));
             waitForOk(client, reply, requestStopCorrelationId);
-            final long limit = System.currentTimeMillis() + 120000;
+            final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);;
             int i = 0;
-            while (System.currentTimeMillis() < limit)
+            while (System.currentTimeMillis() < duration)
             {
                 final long start = System.currentTimeMillis();
                 validateReplay(client, publication, messageCount);

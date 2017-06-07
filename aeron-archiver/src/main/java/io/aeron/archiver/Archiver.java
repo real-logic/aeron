@@ -159,8 +159,8 @@ public final class Archiver implements AutoCloseable
         private Supplier<IdleStrategy> idleStrategySupplier;
         private EpochClock epochClock;
         private int segmentFileLength = 128 * 1024 * 1024;
-        private boolean forceMetadataUpdates = true;
-        private boolean forceWrites = true;
+        private boolean forceMetadataUpdates = false;
+        private boolean forceWrites = false;
         private ArchiverThreadingMode threadingMode = ArchiverThreadingMode.SHARED;
         private ThreadFactory threadFactory = Thread::new;
 

@@ -108,7 +108,6 @@ public final class Aeron implements AutoCloseable
         {
             conductorInvoker = new AgentInvoker(ctx.errorHandler, null, conductor);
             conductorRunner = null;
-            ctx.conductorAgentInvoker(conductorInvoker);
         }
         else
         {
@@ -157,6 +156,16 @@ public final class Aeron implements AutoCloseable
             ctx.close();
             throw ex;
         }
+    }
+
+    /**
+     * Get the {@link AgentInvoker} for the client conductor.
+     *
+     * @return the {@link AgentInvoker} for the client conductor.
+     */
+    public AgentInvoker conductorAgentInvoker()
+    {
+        return conductorInvoker;
     }
 
     /**
@@ -330,11 +339,12 @@ public final class Aeron implements AutoCloseable
      * Media Driver.
      * <p>
      * A number of the properties are for testing and should not be set by end users.
+     * <p>
+     * <b>Note:</b> Do not reuse instances of the context across different {@link Aeron} clients.
      */
     public static class Context extends CommonContext
     {
         private boolean useConductorAgentInvoker = false;
-        private AgentInvoker conductorAgentInvoker;
         private AgentInvoker driverAgentInvoker;
         private Lock clientLock;
         private EpochClock epochClock;
@@ -470,22 +480,6 @@ public final class Aeron implements AutoCloseable
             return useConductorAgentInvoker;
         }
 
-        Context conductorAgentInvoker(final AgentInvoker conductorAgentInvoker)
-        {
-            this.conductorAgentInvoker = conductorAgentInvoker;
-            return this;
-        }
-
-        /**
-         * Get the {@link AgentInvoker} that is used to run the {@link ClientConductor}.
-         *
-         * @return the {@link AgentInvoker} that is used to run the {@link ClientConductor}.
-         */
-        public AgentInvoker conductorAgentInvoker()
-        {
-            return conductorAgentInvoker;
-        }
-
         /**
          * Set the {@link AgentInvoker} for the Media Driver to be used while awaiting a synchronous response.
          * <p>
@@ -513,7 +507,7 @@ public final class Aeron implements AutoCloseable
         /**
          * The {@link Lock} that is used to provide mutual exclusion in the Aeron client.
          * <p>
-         * If the {@link #conductorAgentInvoker(AgentInvoker)} is set and only one thread accesses the client
+         * If the {@link #useConductorAgentInvoker()} is set and only one thread accesses the client
          * then the lock can be set to {@link NoOpLock} to elide the lock overhead.
          *
          * @param lock that is used to provide mutual exclusion in the Aeron client.

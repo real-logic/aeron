@@ -107,6 +107,8 @@ find_package(Threads)
 
 find_package(Doxygen)
 
+set(CMAKE_CXX_STANDARD 11)
+
 # all UNIX-based platform compiler flags
 if(UNIX)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)

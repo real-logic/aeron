@@ -99,7 +99,7 @@ public class ArchiverSystemTest
         archiveDir = TestUtil.makeTempDir();
         archiverCtx
             .forceWrites(false)
-            .driverAgentInvoker(driverCtx.driverAgentInvoker())
+            .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
             .archiveDir(archiveDir)
             .threadingMode(ArchiverThreadingMode.SHARED);
 

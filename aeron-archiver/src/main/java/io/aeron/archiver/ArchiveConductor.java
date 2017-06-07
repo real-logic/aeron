@@ -51,11 +51,11 @@ class ArchiveConductor extends SessionWorker
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
         this.aeron = aeron;
-        this.aeronClientAgentInvoker = ctx.clientContext().conductorAgentInvoker();
+        aeronClientAgentInvoker = aeron.conductorAgentInvoker();
         Objects.requireNonNull(aeronClientAgentInvoker, "In the archiver context an aeron invoker should be present");
 
         epochClock = ctx.epochClock();
-        this.driverAgentInvoker = ctx.driverAgentInvoker();
+        this.driverAgentInvoker = ctx.mediaDriverAgentInvoker();
 
         controlSessionProxy = new ControlSessionProxy(ctx.idleStrategy());
 

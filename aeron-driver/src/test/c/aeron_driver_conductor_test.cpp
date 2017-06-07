@@ -31,6 +31,9 @@ extern "C"
 #include "command/PublicationBuffersReadyFlyweight.h"
 #include "command/ImageBuffersReadyFlyweight.h"
 #include "command/CorrelatedMessageFlyweight.h"
+#include "command/PublicationMessageFlyweight.h"
+#include "command/SubscriptionMessageFlyweight.h"
+#include "command/RemoveMessageFlyweight.h"
 
 using namespace aeron::concurrent::broadcast;
 using namespace aeron::concurrent::ringbuffer;
@@ -192,48 +195,49 @@ public:
     int addIpcPublication(int64_t client_id, int64_t correlation_id, int32_t stream_id, bool is_exclusive)
     {
         int32_t msg_type_id = is_exclusive ? AERON_COMMAND_ADD_EXCLUSIVE_PUBLICATION : AERON_COMMAND_ADD_PUBLICATION;
-        aeron_publication_command_t &command = m_command.overlayStruct<aeron_publication_command_t>(0);
-        command.correlated.client_id = client_id;
-        command.correlated.correlation_id = correlation_id;
-        command.stream_id = stream_id;
-        command.channel_length = sizeof(AERON_IPC_CHANNEL);
-        memcpy(command.channel_data, AERON_IPC_CHANNEL, sizeof(AERON_IPC_CHANNEL));
+        command::PublicationMessageFlyweight command(m_command, 0);
 
-        return writeCommand(msg_type_id, sizeof(aeron_publication_command_t) + sizeof(AERON_IPC_CHANNEL) - 1);
+        command.clientId(client_id);
+        command.correlationId(correlation_id);
+        command.streamId(stream_id);
+        command.channel(AERON_IPC_CHANNEL);
+
+        return writeCommand(msg_type_id, command.length());
     }
 
     int removePublication(int64_t client_id, int64_t correlation_id, int64_t registration_id)
     {
-        aeron_remove_command_t &command = m_command.overlayStruct<aeron_remove_command_t>(0);
-        command.correlated.client_id = client_id;
-        command.correlated.correlation_id = correlation_id;
-        command.registration_id = registration_id;
+        command::RemoveMessageFlyweight command(m_command, 0);
 
-        return writeCommand(AERON_COMMAND_REMOVE_PUBLICATION, sizeof(aeron_remove_command_t));
+        command.clientId(client_id);
+        command.correlationId(correlation_id);
+        command.registrationId(registration_id);
+
+        return writeCommand(AERON_COMMAND_REMOVE_PUBLICATION, command.length());
     }
 
     int addIpcSubscription(int64_t client_id, int64_t correlation_id, int32_t stream_id, int64_t registration_id)
     {
-        aeron_subscription_command_t &command = m_command.overlayStruct<aeron_subscription_command_t>(0);
-        command.correlated.client_id = client_id;
-        command.correlated.correlation_id = correlation_id;
-        command.stream_id = stream_id;
-        command.registration_correlation_id = registration_id;
-        command.channel_length = sizeof(AERON_IPC_CHANNEL);
-        memcpy(command.channel_data, AERON_IPC_CHANNEL, sizeof(AERON_IPC_CHANNEL));
+        command::SubscriptionMessageFlyweight command(m_command, 0);
 
-        return writeCommand(
-            AERON_COMMAND_ADD_SUBSCRIPTION, sizeof(aeron_subscription_command_t) + sizeof(AERON_IPC_CHANNEL) - 1);
+        command.clientId(client_id);
+        command.correlationId(correlation_id);
+        command.streamId(stream_id);
+        command.registrationCorrelationId(registration_id);
+        command.channel(AERON_IPC_CHANNEL);
+
+        return writeCommand(AERON_COMMAND_ADD_SUBSCRIPTION, command.length());
     }
 
     int removeSubscription(int64_t client_id, int64_t correlation_id, int64_t registration_id)
     {
-        aeron_remove_command_t &command = m_command.overlayStruct<aeron_remove_command_t>(0);
-        command.correlated.client_id = client_id;
-        command.correlated.correlation_id = correlation_id;
-        command.registration_id = registration_id;
+        command::RemoveMessageFlyweight command(m_command, 0);
 
-        return writeCommand(AERON_COMMAND_REMOVE_SUBSCRIPTION, sizeof(aeron_remove_command_t));
+        command.clientId(client_id);
+        command.correlationId(correlation_id);
+        command.registrationId(registration_id);
+
+        return writeCommand(AERON_COMMAND_REMOVE_SUBSCRIPTION, command.length());
     }
 
     int doWork()
@@ -273,7 +277,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublication)
         {
             ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
 
-            command::PublicationBuffersReadyFlyweight response(buffer, offset);
+            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
             EXPECT_EQ(response.streamId(), STREAM_ID_1);
             EXPECT_EQ(response.correlationId(), pub_id);
@@ -296,7 +300,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscription)
     {
         ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
-        command::CorrelatedMessageFlyweight response(buffer, offset);
+        const command::CorrelatedMessageFlyweight response(buffer, offset);
 
         EXPECT_EQ(response.correlationId(), sub_id);
     };
@@ -407,7 +411,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSingleI
         {
             ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
-            command::CorrelatedMessageFlyweight response(buffer, offset);
+            const command::CorrelatedMessageFlyweight response(buffer, offset);
 
             EXPECT_EQ(response.correlationId(), sub_id);
         }
@@ -415,7 +419,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSingleI
         {
             ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
 
-            command::PublicationBuffersReadyFlyweight response(buffer, offset);
+            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
             EXPECT_EQ(response.correlationId(), pub_id);
             session_id = response.sessionId();
@@ -426,7 +430,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSingleI
         {
             ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
 
-            command::ImageBuffersReadyFlyweight response(buffer, offset);
+            const command::ImageBuffersReadyFlyweight response(buffer, offset);
 
             EXPECT_EQ(response.streamId(), STREAM_ID_1);
             EXPECT_EQ(response.sessionId(), session_id);
@@ -464,7 +468,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingleIp
         {
             ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
 
-            command::PublicationBuffersReadyFlyweight response(buffer, offset);
+            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
             EXPECT_EQ(response.correlationId(), pub_id);
             session_id = response.sessionId();
@@ -475,7 +479,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingleIp
         {
             ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
-            command::CorrelatedMessageFlyweight response(buffer, offset);
+            const command::CorrelatedMessageFlyweight response(buffer, offset);
 
             EXPECT_EQ(response.correlationId(), sub_id);
         }

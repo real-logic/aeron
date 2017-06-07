@@ -70,6 +70,15 @@ inline bool aeron_cmpxchg64(volatile int64_t* destination,  int64_t expected, in
     return (original == expected);
 }
 
+inline bool aeron_cmpxchgu64(volatile uint64_t* destination,  uint64_t expected, uint64_t desired)
+{
+    uint64_t original;
+    __asm__ volatile(
+    "lock; cmpxchgq %2, %1"
+    : "=a"(original), "+m"(*destination)
+    : "q"(desired), "0"(expected));
+    return (original == expected);
+}
 
 #define AERON_CMPXCHG32(original,dst,expected,desired) \
 do \

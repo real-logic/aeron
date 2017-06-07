@@ -37,7 +37,7 @@ public final class Archiver implements AutoCloseable
     {
         this.ctx = ctx;
 
-        ctx.clientContext.driverAgentInvoker(ctx.driverAgentInvoker());
+        ctx.clientContext.driverAgentInvoker(ctx.mediaDriverAgentInvoker());
         if (ctx.threadingMode() != ArchiverThreadingMode.DEDICATED)
         {
             ctx.clientContext.clientLock(new NoOpLock());
@@ -226,7 +226,7 @@ public final class Archiver implements AutoCloseable
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
 
-        private AgentInvoker driverAgentInvoker;
+        private AgentInvoker mediaDriverAgentInvoker;
         private AgentInvoker replayerInvoker;
         private AgentInvoker recorderInvoker;
         private Replayer replayer;
@@ -279,6 +279,7 @@ public final class Archiver implements AutoCloseable
 
             if (null == errorCounter)
             {
+                // TODO: This is NOT safe!!! Archiver needs its own counters.
                 final CountersManager counters = new CountersManager(
                     clientContext.countersMetaDataBuffer(),
                     clientContext.countersValuesBuffer());
@@ -407,20 +408,20 @@ public final class Archiver implements AutoCloseable
          *
          * @return the {@link AgentInvoker} that should be used for the Media Driver if running in a lightweight mode.
          */
-        AgentInvoker driverAgentInvoker()
+        AgentInvoker mediaDriverAgentInvoker()
         {
-            return driverAgentInvoker;
+            return mediaDriverAgentInvoker;
         }
 
         /**
          * Set the {@link AgentInvoker} that should be used for the Media Driver if running in a lightweight mode.
          *
-         * @param driverAgentInvoker that should be used for the Media Driver if running in a lightweight mode.
+         * @param mediaDriverAgentInvoker that should be used for the Media Driver if running in a lightweight mode.
          * @return this for a fluent API.
          */
-        Context driverAgentInvoker(final AgentInvoker driverAgentInvoker)
+        public Context mediaDriverAgentInvoker(final AgentInvoker mediaDriverAgentInvoker)
         {
-            this.driverAgentInvoker = driverAgentInvoker;
+            this.mediaDriverAgentInvoker = mediaDriverAgentInvoker;
             return this;
         }
 

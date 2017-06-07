@@ -49,11 +49,6 @@ public class ExclusiveTermAppender
      */
     public static final int TRIPPED = -1;
 
-    /**
-     * The append operation went past the end of the buffer and failed.
-     */
-    public static final int FAILED = -2;
-
     private final long tailAddressOffset;
     private final byte[] tailBuffer;
     private final UnsafeBuffer termBuffer;
@@ -104,8 +99,7 @@ public class ExclusiveTermAppender
      * @param header      for writing the default header.
      * @param length      of the message to be written.
      * @param bufferClaim to be updated with the claimed region.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or
-     * {@link #FAILED}.
+     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED}.
      */
     public int claim(
         final int termId,
@@ -136,6 +130,43 @@ public class ExclusiveTermAppender
     }
 
     /**
+     * Pad a length of the term buffer with a padding record.
+     *
+     * @param termId     for the current term.
+     * @param termOffset in the term at which to append.
+     * @param header     for writing the default header.
+     * @param length     of the padding to be written.
+     * @return the resulting offset of the term after success otherwise {@link #TRIPPED}.
+     */
+    public int appendPadding(
+        final int termId,
+        final int termOffset,
+        final HeaderWriter header,
+        final int length)
+    {
+        final int frameLength = length + HEADER_LENGTH;
+        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final UnsafeBuffer termBuffer = this.termBuffer;
+        final int termLength = termBuffer.capacity();
+
+        putRawTailOrdered(termId, termOffset + alignedLength);
+
+        int resultingOffset = termOffset + alignedLength;
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
+        }
+        else
+        {
+            header.write(termBuffer, termOffset, frameLength, termId);
+            frameType(termBuffer, termOffset, PADDING_FRAME_TYPE);
+            frameLengthOrdered(termBuffer, termOffset, frameLength);
+        }
+
+        return resultingOffset;
+    }
+
+    /**
      * Append an unfragmented message to the the term buffer.
      *
      * @param termId                for the current term.
@@ -145,8 +176,7 @@ public class ExclusiveTermAppender
      * @param srcOffset             at which the message begins.
      * @param length                of the message in the source buffer.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or
-     * {@link #FAILED}.
+     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED}.
      */
     public int appendUnfragmentedMessage(
         final int termId,
@@ -198,8 +228,7 @@ public class ExclusiveTermAppender
      * @param length                of the message in the source buffer.
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or
-     * {@link #FAILED}.
+     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED}.
      */
     public int appendFragmentedMessage(
         final int termId,

@@ -40,7 +40,7 @@ public class LightweightArchivingMediaDriver
         final MediaDriver mediaDriver = MediaDriver.launch(driverCtx);
 
         final Archiver.Context archiverCtx = new Archiver.Context()
-            .driverAgentInvoker(driverCtx.driverAgentInvoker())
+            .mediaDriverAgentInvoker(mediaDriver.sharedAgentInvoker())
             .threadingMode(ArchiverThreadingMode.SHARED);
         final Archiver archiver = Archiver.launch(archiverCtx);
 

@@ -445,6 +445,43 @@ public class ExclusivePublication implements AutoCloseable
     }
 
     /**
+     * Append a padding record log of a given length to make up the log to a position.
+     *
+     * @param length of the range to claim, in bytes..
+     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
+     * {@link #ADMIN_ACTION}, or {@link #CLOSED}.
+     * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength()}.
+     */
+    public long appendPadding(final int length)
+    {
+        checkForMaxMessageLength(length);
+        long newPosition = CLOSED;
+
+        if (!isClosed)
+        {
+            final long limit = positionLimit.getVolatile();
+            final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
+            final long position = termBeginPosition + termOffset;
+
+            if (position < limit)
+            {
+                final int result = termAppender.appendPadding(termId, termOffset, headerWriter, length);
+                newPosition = newPosition(result);
+            }
+            else if (conductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
+            {
+                newPosition = BACK_PRESSURED;
+            }
+            else
+            {
+                newPosition = NOT_CONNECTED;
+            }
+        }
+
+        return newPosition;
+    }
+
+    /**
      * Add a destination manually to a multi-destination-cast Publication.
      *
      * @param endpointChannel for the destination to add

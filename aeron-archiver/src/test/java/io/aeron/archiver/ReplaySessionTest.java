@@ -78,7 +78,6 @@ public class ReplaySessionTest
             when(epochClock.time()).thenReturn(TIME);
 
             final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
-            buffer.setMemory(0, TERM_BUFFER_LENGTH, (byte)0);
 
             final DataHeaderFlyweight headerFwt = new DataHeaderFlyweight();
             final Header header = new Header(INITIAL_TERM_ID, Integer.numberOfLeadingZeros(TERM_BUFFER_LENGTH));
@@ -123,9 +122,7 @@ public class ReplaySessionTest
 
         header.offset(offset);
 
-        recordingWriter.writeFragment(
-            buffer,
-            header);
+        recordingWriter.writeFragment(buffer, header);
     }
 
     @Test
@@ -148,6 +145,7 @@ public class ReplaySessionTest
                 1);
 
             assertEquals(1, polled);
+
             polled = reader.controlledPoll(
                 (buffer, offset, length) ->
                 {
@@ -162,6 +160,7 @@ public class ReplaySessionTest
                 1);
 
             assertEquals(1, polled);
+
             polled = reader.controlledPoll(
                 (buffer, offset, length) ->
                 {
@@ -176,6 +175,7 @@ public class ReplaySessionTest
                 1);
 
             assertEquals(1, polled);
+
             polled = reader.controlledPoll(
                 (buffer, offset, length) ->
                 {
@@ -189,7 +189,7 @@ public class ReplaySessionTest
                 },
                 1);
 
-            assertEquals(0, polled);
+            assertEquals(1, polled);
         }
     }
 
@@ -199,7 +199,6 @@ public class ReplaySessionTest
         final long correlationId = 1L;
         final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
         final Publication control = Mockito.mock(Publication.class);
-
         final Replayer conductor = Mockito.mock(Replayer.class);
 
         final ReplaySession replaySession = replaySession(
@@ -231,11 +230,11 @@ public class ReplaySessionTest
             TERM_BUFFER_LENGTH);
 
         final UnsafeBuffer termBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
-        mockTryClaim(replay, termBuffer);
+        mockPublication(replay, termBuffer);
         assertNotEquals(0, replaySession.doWork());
         assertThat(messageCounter, is(1));
 
-        validateFrame(termBuffer, 0, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_DATA);
+        validateFrame(termBuffer, 0, FrameDescriptor.UNFRAGMENTED);
 
         assertFalse(replaySession.isDone());
 
@@ -248,13 +247,13 @@ public class ReplaySessionTest
     public void shouldReplayPartialUnalignedDataFromFile()
     {
         final long correlationId = 1L;
-        final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
+        final ExclusivePublication replayPublication = Mockito.mock(ExclusivePublication.class);
         final Publication control = Mockito.mock(Publication.class);
 
         final Replayer conductor = Mockito.mock(Replayer.class);
 
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID, RECORDING_POSITION + 1, FRAME_LENGTH, correlationId, replay, control, conductor);
+            RECORDING_ID, RECORDING_POSITION + 1, FRAME_LENGTH, correlationId, replayPublication, control, conductor);
 
         when(conductor.newReplayPublication(
             eq(REPLAY_CHANNEL),
@@ -262,12 +261,12 @@ public class ReplaySessionTest
             eq(RECORDING_POSITION + FRAME_LENGTH),
             eq(MTU_LENGTH),
             eq(INITIAL_TERM_ID),
-            eq(TERM_BUFFER_LENGTH))).thenReturn(replay);
+            eq(TERM_BUFFER_LENGTH))).thenReturn(replayPublication);
 
-        when(replay.isClosed()).thenReturn(false);
+        when(replayPublication.isClosed()).thenReturn(false);
         when(control.isClosed()).thenReturn(false);
 
-        when(replay.isConnected()).thenReturn(true);
+        when(replayPublication.isConnected()).thenReturn(true);
         when(control.isConnected()).thenReturn(true);
 
         replaySession.doWork();
@@ -285,14 +284,14 @@ public class ReplaySessionTest
             TERM_BUFFER_LENGTH);
 
         final UnsafeBuffer termBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
-        mockTryClaim(replay, termBuffer);
+        mockPublication(replayPublication, termBuffer);
+
         assertNotEquals(0, replaySession.doWork());
         assertThat(messageCounter, is(1));
 
         assertEquals(FRAME_LENGTH, termBuffer.getInt(DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET));
         assertEquals(FrameDescriptor.BEGIN_FRAG_FLAG, termBuffer.getByte(DataHeaderFlyweight.FLAGS_FIELD_OFFSET));
         assertEquals(1, termBuffer.getLong(DataHeaderFlyweight.RESERVED_VALUE_OFFSET));
-        assertEquals(HDR_TYPE_DATA, termBuffer.getInt(DataHeaderFlyweight.TYPE_FIELD_OFFSET));
         assertEquals(1, termBuffer.getByte(DataHeaderFlyweight.HEADER_LENGTH));
 
         final int expectedFrameLength = 1024;
@@ -309,25 +308,25 @@ public class ReplaySessionTest
     {
         final long length = 4 * FRAME_LENGTH;
         final long correlationId = 1L;
-        final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
+        final ExclusivePublication replayPublication = Mockito.mock(ExclusivePublication.class);
         final Publication control = Mockito.mock(Publication.class);
 
         final Replayer conductor = Mockito.mock(Replayer.class);
 
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID, RECORDING_POSITION, length, correlationId, replay, control, conductor);
+            RECORDING_ID, RECORDING_POSITION, length, correlationId, replayPublication, control, conductor);
 
         when(control.isClosed()).thenReturn(false);
         when(control.isConnected()).thenReturn(true);
 
-        when(replay.isClosed()).thenReturn(false);
-        when(replay.isConnected()).thenReturn(false);
+        when(replayPublication.isClosed()).thenReturn(false);
+        when(replayPublication.isConnected()).thenReturn(false);
 
         replaySession.doWork();
 
         assertEquals(replaySession.state(), ReplaySession.State.INIT);
 
-        when(replay.isConnected()).thenReturn(true);
+        when(replayPublication.isConnected()).thenReturn(true);
         when(control.isConnected()).thenReturn(true);
 
         replaySession.doWork();
@@ -343,16 +342,16 @@ public class ReplaySessionTest
             TERM_BUFFER_LENGTH);
 
         final UnsafeBuffer termBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
-        mockTryClaim(replay, termBuffer);
+        mockPublication(replayPublication, termBuffer);
 
         assertNotEquals(0, replaySession.doWork());
         assertThat(messageCounter, is(4));
 
-        validateFrame(termBuffer, 0, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_DATA);
-        validateFrame(termBuffer, 1, FrameDescriptor.BEGIN_FRAG_FLAG, HDR_TYPE_DATA);
-        validateFrame(termBuffer, 2, FrameDescriptor.END_FRAG_FLAG, HDR_TYPE_DATA);
-        validateFrame(termBuffer, 3, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_PAD);
+        validateFrame(termBuffer, 0, FrameDescriptor.UNFRAGMENTED);
+        validateFrame(termBuffer, 1, FrameDescriptor.BEGIN_FRAG_FLAG);
+        validateFrame(termBuffer, 2, FrameDescriptor.END_FRAG_FLAG);
 
+        verify(replayPublication).appendPadding(FRAME_LENGTH - HEADER_LENGTH);
         assertFalse(replaySession.isDone());
 
         when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
@@ -365,17 +364,17 @@ public class ReplaySessionTest
     {
         final long length = 1024L;
         final long correlationId = 1L;
-        final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
+        final ExclusivePublication replayPublication = Mockito.mock(ExclusivePublication.class);
         final Publication control = Mockito.mock(Publication.class);
 
         final Replayer conductor = Mockito.mock(Replayer.class);
 
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID, RECORDING_POSITION, length, correlationId, replay, control, conductor);
+            RECORDING_ID, RECORDING_POSITION, length, correlationId, replayPublication, control, conductor);
 
         when(control.isClosed()).thenReturn(false);
-        when(replay.isClosed()).thenReturn(false);
-        when(replay.isConnected()).thenReturn(true);
+        when(replayPublication.isClosed()).thenReturn(false);
+        when(replayPublication.isConnected()).thenReturn(true);
         when(control.isConnected()).thenReturn(true);
 
         replaySession.doWork();
@@ -385,7 +384,8 @@ public class ReplaySessionTest
 
         replaySession.abort();
         assertEquals(replaySession.state(), ReplaySession.State.INACTIVE);
-        verify(proxy, times(1)).sendReplayAborted(control, correlationId, REPLAY_SESSION_ID, replay.position());
+        verify(proxy, times(1))
+            .sendReplayAborted(control, correlationId, REPLAY_SESSION_ID, replayPublication.position());
 
         replaySession.doWork();
         assertTrue(replaySession.isDone());
@@ -396,17 +396,17 @@ public class ReplaySessionTest
     {
         final long length = 1024L;
         final long correlationId = 1L;
-        final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
+        final ExclusivePublication replayPublication = Mockito.mock(ExclusivePublication.class);
         final Publication control = Mockito.mock(Publication.class);
 
         final Replayer conductor = Mockito.mock(Replayer.class);
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID + 1, RECORDING_POSITION, length, correlationId, replay, control, conductor);
+            RECORDING_ID + 1, RECORDING_POSITION, length, correlationId, replayPublication, control, conductor);
 
-        when(replay.isClosed()).thenReturn(false);
+        when(replayPublication.isClosed()).thenReturn(false);
         when(control.isClosed()).thenReturn(false);
 
-        when(replay.isConnected()).thenReturn(true);
+        when(replayPublication.isConnected()).thenReturn(true);
         when(control.isConnected()).thenReturn(true);
 
         assertEquals(1, replaySession.doWork());
@@ -474,18 +474,17 @@ public class ReplaySessionTest
     private void validateFrame(
         final UnsafeBuffer buffer,
         final int message,
-        final byte flags,
-        final int type)
+        final byte flags)
     {
         final int offset = message * FRAME_LENGTH;
-        assertEquals(FRAME_LENGTH, buffer.getInt(offset + DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET));
-        assertEquals(flags, buffer.getByte(offset + DataHeaderFlyweight.FLAGS_FIELD_OFFSET));
+
+        assertEquals(FRAME_LENGTH, FrameDescriptor.frameLength(buffer, offset));
+        assertEquals(flags, FrameDescriptor.frameFlags(buffer, offset));
         assertEquals(message, buffer.getLong(offset + DataHeaderFlyweight.RESERVED_VALUE_OFFSET));
-        assertEquals(type, buffer.getInt(offset + DataHeaderFlyweight.TYPE_FIELD_OFFSET));
         assertEquals(message, buffer.getByte(offset + DataHeaderFlyweight.HEADER_LENGTH));
     }
 
-    private void mockTryClaim(final ExclusivePublication replay, final UnsafeBuffer termBuffer)
+    private void mockPublication(final ExclusivePublication replay, final UnsafeBuffer termBuffer)
     {
         when(replay.tryClaim(anyInt(), any(ExclusiveBufferClaim.class))).then(
             (invocation) ->
@@ -493,6 +492,15 @@ public class ReplaySessionTest
                 final int claimedSize = invocation.getArgument(0);
                 final ExclusiveBufferClaim buffer = invocation.getArgument(1);
                 buffer.wrap(termBuffer, messageCounter * FRAME_LENGTH, claimedSize + HEADER_LENGTH);
+                messageCounter++;
+
+                return (long)claimedSize;
+            });
+
+        when(replay.appendPadding(anyInt())).then(
+            (invocation) ->
+            {
+                final int claimedSize = invocation.getArgument(0);
                 messageCounter++;
 
                 return (long)claimedSize;

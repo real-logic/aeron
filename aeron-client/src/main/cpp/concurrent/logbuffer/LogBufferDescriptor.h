@@ -176,14 +176,12 @@ inline static void activePartitionIndex(AtomicBuffer& logMetaDataBuffer, std::in
 
 inline static int nextPartitionIndex(int currentIndex) AERON_NOEXCEPT
 {
-    static_assert(PARTITION_COUNT==3, "PARTITION_COUNT must be 3");
-    return util::BitUtil::fastMod3(currentIndex + 1);
+    return (currentIndex + 1) % PARTITION_COUNT;
 }
 
 inline static int previousPartitionIndex(int currentIndex) AERON_NOEXCEPT
 {
-    static_assert(PARTITION_COUNT==3, "PARTITION_COUNT must be 3");
-    return util::BitUtil::fastMod3(currentIndex + (PARTITION_COUNT - 1));
+    return (currentIndex + (PARTITION_COUNT - 1)) % PARTITION_COUNT;
 }
 
 inline static std::int64_t timeOfLastStatusMessage(AtomicBuffer &logMetaDataBuffer) AERON_NOEXCEPT
@@ -208,14 +206,12 @@ inline static void endOfStreamPosition(AtomicBuffer &logMetaDataBuffer, std::int
 
 inline static int indexByTerm(std::int32_t initialTermId, std::int32_t activeTermId) AERON_NOEXCEPT
 {
-    static_assert(PARTITION_COUNT==3, "PARTITION_COUNT must be 3");
-    return util::BitUtil::fastMod3(activeTermId - initialTermId);
+    return (activeTermId - initialTermId) % PARTITION_COUNT;
 }
 
 inline static int indexByPosition(std::int64_t position, std::int32_t positionBitsToShift) AERON_NOEXCEPT
 {
-    static_assert(PARTITION_COUNT==3, "PARTITION_COUNT must be 3");
-    return (int)(util::BitUtil::fastMod3((std::uint64_t)position >> positionBitsToShift));
+    return (int)((std::uint64_t)position >> positionBitsToShift) % PARTITION_COUNT;
 }
 
 inline static std::int64_t computePosition(

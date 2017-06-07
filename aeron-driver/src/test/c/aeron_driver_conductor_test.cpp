@@ -506,8 +506,155 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingleIp
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 3u);
 }
 
-/*
- * TODO:
- * addMultipleSubscriptionsWithSameStreamIdThenPublication
- * addSubscriptionThenMultipleExclusivePublicationsWithSameStreamId
- */
+TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleIpcSubscriptionWithSameStreamIdThenAddSingleIpcPublication)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id_1 = nextCorrelationId();
+    int64_t sub_id_2 = nextCorrelationId();
+    int64_t pub_id = nextCorrelationId();
+
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id_2, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
+    doWork();
+
+    size_t response_number = 0;
+    int32_t session_id = 0;
+    std::string log_file_name;
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        if (0 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+            const command::CorrelatedMessageFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), sub_id_1);
+        }
+        else if (1 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+            const command::CorrelatedMessageFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), sub_id_2);
+        }
+        else if (2 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+
+            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), pub_id);
+            session_id = response.sessionId();
+
+            log_file_name = response.logFileName();
+        }
+        else if (3 == response_number || 4 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+
+            const command::ImageBuffersReadyFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.streamId(), STREAM_ID_1);
+            EXPECT_EQ(response.sessionId(), session_id);
+            EXPECT_EQ(response.subscriberPositionCount(), 1);
+
+            const command::ImageBuffersReadyDefn::SubscriberPosition position = response.subscriberPosition(0);
+
+            EXPECT_TRUE(position.registrationId == sub_id_1 || position.registrationId == sub_id_2);
+
+            EXPECT_EQ(log_file_name, response.logFileName());
+        }
+
+        response_number++;
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 5u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddMultipleExclusiveIpcPublicationsWithSameStreamId)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+    int64_t pub_id_1 = nextCorrelationId();
+    int64_t pub_id_2 = nextCorrelationId();
+
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addIpcPublication(client_id, pub_id_1, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addIpcPublication(client_id, pub_id_2, STREAM_ID_1, true), 0);
+    doWork();
+
+    size_t response_number = 0;
+    int32_t session_id_1 = 0;
+    int32_t session_id_2 = 0;
+    std::string log_file_name_1;
+    std::string log_file_name_2;
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        if (0 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+            const command::CorrelatedMessageFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), sub_id);
+        }
+        else if (1 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
+
+            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), pub_id_1);
+            session_id_1 = response.sessionId();
+
+            log_file_name_1 = response.logFileName();
+        }
+        else if (2 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+
+            const command::ImageBuffersReadyFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.streamId(), STREAM_ID_1);
+            EXPECT_EQ(response.subscriberPositionCount(), 1);
+
+            const command::ImageBuffersReadyDefn::SubscriberPosition position = response.subscriberPosition(0);
+            EXPECT_EQ(position.registrationId, sub_id);
+            EXPECT_EQ(response.sessionId(), session_id_1);
+            EXPECT_EQ(response.correlationId(), pub_id_1);
+            EXPECT_EQ(log_file_name_1, response.logFileName());
+        }
+        else if (3 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
+
+            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), pub_id_2);
+            session_id_2 = response.sessionId();
+
+            log_file_name_2 = response.logFileName();
+        }
+        else if (4 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+
+            const command::ImageBuffersReadyFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.streamId(), STREAM_ID_1);
+            EXPECT_EQ(response.subscriberPositionCount(), 1);
+
+            const command::ImageBuffersReadyDefn::SubscriberPosition position = response.subscriberPosition(0);
+            EXPECT_EQ(position.registrationId, sub_id);
+            EXPECT_EQ(response.sessionId(), session_id_2);
+            EXPECT_EQ(response.correlationId(), pub_id_2);
+            EXPECT_EQ(log_file_name_2, response.logFileName());
+        }
+
+        response_number++;
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 5u);
+}

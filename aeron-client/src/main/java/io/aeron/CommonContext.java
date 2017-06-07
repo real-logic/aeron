@@ -67,6 +67,17 @@ public class CommonContext implements AutoCloseable
     public static final String SPY_PREFIX = "aeron-spy:";
 
     /**
+     * The address and port used for a UDP channel. For the publisher it is the socket to send to,
+     * for the subscriber it is the socket to receive from.
+     */
+    public static final String ENDPOINT_PARAM_NAME = "endpoint";
+
+    /**
+     * The network interface via which the socket will be routed.
+     */
+    public static final String INTERFACE_PARAM_NAME = "interface";
+
+    /**
      * Timeout in which the driver is expected to respond.
      */
     public static final long DEFAULT_DRIVER_TIMEOUT_MS = 10_000;
@@ -97,12 +108,22 @@ public class CommonContext implements AutoCloseable
     public static final String MTU_LENGTH_PARAM_NAME = "mtu";
 
     /**
-     * Key for the mode of control that such be used for multi-destination-cast semantics.
+     * Time To Live param for a multicast datagram.
      */
-    public static final String MDC_CONTROL_MODE = "control-mode";
+    public static final String TTL_PARAM_NAME = "ttl";
 
     /**
-     * Valid value for {@link #MDC_CONTROL_MODE} when manual control is desired.
+     * The param for the control channel IP address and port for multi-destination-cast semantics.
+     */
+    public static final String MDC_CONTROL_PARAM_NAME = "control";
+
+    /**
+     * Key for the mode of control that such be used for multi-destination-cast semantics.
+     */
+    public static final String MDC_CONTROL_MODE_PARAM_NAME = "control-mode";
+
+    /**
+     * Valid value for {@link #MDC_CONTROL_MODE_PARAM_NAME} when manual control is desired.
      */
     public static final String MDC_CONTROL_MODE_MANUAL = "manual";
 

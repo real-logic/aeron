@@ -97,6 +97,28 @@ public class AeronUri
         return params.containsKey(key);
     }
 
+    public String toString()
+    {
+        final StringBuilder sb = new StringBuilder()
+            .append(scheme)
+            .append(':')
+            .append(media);
+
+        if (params.size() > 0)
+        {
+            sb.append('?');
+
+            for (final Map.Entry<String, String> entry : params.entrySet())
+            {
+                sb.append(entry.getKey()).append('=').append(entry.getValue()).append('|');
+            }
+
+            sb.setLength(sb.length() - 1);
+        }
+
+        return sb.toString();
+    }
+
     public static AeronUri parse(final CharSequence cs)
     {
         if (!startsWith(cs, AERON_PREFIX))

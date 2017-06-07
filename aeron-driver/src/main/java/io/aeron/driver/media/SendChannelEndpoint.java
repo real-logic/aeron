@@ -71,7 +71,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         UdpDestinationTracker destinationTracker = null;
         if (udpChannel.hasExplicitControl())
         {
-            final String mode = udpChannel.aeronUri().get(CommonContext.MDC_CONTROL_MODE);
+            final String mode = udpChannel.aeronUri().get(CommonContext.MDC_CONTROL_MODE_PARAM_NAME);
             if (CommonContext.MDC_CONTROL_MODE_MANUAL.equals(mode))
             {
                 destinationTracker = new UdpDestinationTracker(this::presend);

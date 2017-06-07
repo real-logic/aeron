@@ -50,17 +50,17 @@ public class AeronUriTest
     @Test
     public void shouldParseWithSingleParameter() throws Exception
     {
-        assertParseWithParams("aeron:udp?address=224.10.9.8", "address", "224.10.9.8");
+        assertParseWithParams("aeron:udp?endpoint=224.10.9.8", "endpoint", "224.10.9.8");
         assertParseWithParams("aeron:udp?add|ress=224.10.9.8", "add|ress", "224.10.9.8");
-        assertParseWithParams("aeron:udp?address=224.1=0.9.8", "address", "224.1=0.9.8");
+        assertParseWithParams("aeron:udp?endpoint=224.1=0.9.8", "endpoint", "224.1=0.9.8");
     }
 
     @Test
     public void shouldParseWithMultipleParameters() throws Exception
     {
         assertParseWithParams(
-            "aeron:udp?address=224.10.9.8|port=4567|interface=192.168.0.3|ttl=16",
-            "address", "224.10.9.8",
+            "aeron:udp?endpoint=224.10.9.8|port=4567|interface=192.168.0.3|ttl=16",
+            "endpoint", "224.10.9.8",
             "port", "4567",
             "interface", "192.168.0.3",
             "ttl", "16");
@@ -69,9 +69,19 @@ public class AeronUriTest
     @Test
     public void shouldAllowReturnDefaultIfParamNotSpecified() throws Exception
     {
-        final AeronUri uri = AeronUri.parse("aeron:udp?address=224.10.9.8");
+        final AeronUri uri = AeronUri.parse("aeron:udp?endpoint=224.10.9.8");
         assertThat(uri.get("interface"), is(nullValue()));
         assertThat(uri.get("interface", "192.168.0.0"), is("192.168.0.0"));
+    }
+
+    @Test
+    public void shouldRoundTripToString()
+    {
+        final String uriString = "aeron:udp?endpoint=224.10.9.8:777";
+        final AeronUri uri = AeronUri.parse(uriString);
+
+        final String result = uri.toString();
+        assertThat(result, is(uriString));
     }
 
     private void assertParseWithParams(final String uriStr, final String... params)

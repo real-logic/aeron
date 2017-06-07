@@ -23,6 +23,7 @@ SET(SOURCE
     concurrent/aeron_counters_manager.c
     concurrent/aeron_logbuffer_descriptor.c
     concurrent/aeron_one_to_one_concurrent_array_queue.c
+    concurrent/aeron_many_to_one_concurrent_array_queue.c
     util/aeron_strutil.c
     util/aeron_fileutil.c
     util/aeron_arrayutil.c
@@ -52,7 +53,9 @@ SET(HEADERS
     concurrent/aeron_broadcast_transmitter.h
     concurrent/aeron_counters_manager.h
     concurrent/aeron_logbuffer_descriptor.h
+    concurrent/aeron_concurrent_array_queue.h
     concurrent/aeron_one_to_one_concurrent_array_queue.h
+    concurrent/aeron_many_to_one_concurrent_array_queue.h
     command/aeron_control_protocol.h
     protocol/aeron_udp_protocol.h
     aeronmd.h

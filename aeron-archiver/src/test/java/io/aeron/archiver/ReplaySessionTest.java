@@ -35,7 +35,6 @@ import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@Ignore
 public class ReplaySessionTest
 {
     private static final String REPLAY_CHANNEL = "aeron:ipc";
@@ -351,7 +350,7 @@ public class ReplaySessionTest
         validateFrame(termBuffer, 1, FrameDescriptor.BEGIN_FRAG_FLAG);
         validateFrame(termBuffer, 2, FrameDescriptor.END_FRAG_FLAG);
 
-        verify(replayPublication).appendPadding(FRAME_LENGTH);
+        verify(replayPublication).appendPadding(FRAME_LENGTH - HEADER_LENGTH);
         assertFalse(replaySession.isDone());
 
         when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);

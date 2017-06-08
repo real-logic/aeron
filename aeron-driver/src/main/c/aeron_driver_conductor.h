@@ -27,6 +27,8 @@
 #include "aeron_system_counters.h"
 #include "aeron_ipc_publication.h"
 
+#define AERON_DRIVER_CONDUCTOR_TIMEOUT_CHECK_NS (1 * 1000 * 1000 * 1000)
+
 typedef struct aeron_publication_link_stct
 {
     aeron_driver_managed_resource_t *resource;
@@ -128,6 +130,10 @@ typedef struct aeron_driver_conductor_stct
     int64_t *errors_counter;
     int64_t *client_keep_alives_counter;
 
+    aeron_clock_func_t nano_clock;
+    aeron_clock_func_t epoch_clock;
+
+    int64_t time_of_last_timeout_check_ns;
     int32_t next_session_id;
 }
 aeron_driver_conductor_t;
@@ -191,6 +197,21 @@ int aeron_driver_conductor_on_remove_subscription(
 int aeron_driver_conductor_on_client_keepalive(
     aeron_driver_conductor_t *conductor,
     int64_t client_id);
+
+inline size_t aeron_driver_conductor_num_clients(aeron_driver_conductor_t *conductor)
+{
+    return conductor->clients.length;
+}
+
+inline size_t aeron_driver_conductor_num_ipc_publications(aeron_driver_conductor_t *conductor)
+{
+    return conductor->ipc_publications.length;
+}
+
+inline size_t aeron_driver_conductor_num_ipc_subscriptions(aeron_driver_conductor_t *conductor)
+{
+    return conductor->ipc_subscriptions.length;
+}
 
 inline aeron_ipc_publication_t *aeron_driver_conductor_find_ipc_publication(
     aeron_driver_conductor_t *conductor, int64_t id)

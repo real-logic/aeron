@@ -113,6 +113,10 @@ struct TestDriverContext
 
         aeron_driver_fill_cnc_metadata(m_context);
 
+        m_context->ipc_term_buffer_length = 64 * 1024;
+        m_context->term_buffer_sparse_file = 1;
+        m_context->term_buffer_length = 64 * 1024;
+
         /* control time */
         m_context->nano_clock = test_nano_clock;
         m_context->epoch_clock = test_epoch_clock;

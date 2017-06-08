@@ -88,7 +88,10 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->client_keep_alives_counter =
         aeron_counter_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_CLIENT_KEEP_ALIVES);
 
+    conductor->nano_clock = context->nano_clock;
+    conductor->epoch_clock = context->epoch_clock;
     conductor->next_session_id = aeron_randomised_int32();
+    conductor->time_of_last_timeout_check_ns = context->nano_clock();
 
     conductor->context = context;
     return 0;
@@ -178,6 +181,18 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
         resource->decref(resource->clientd);
     }
 
+    for (size_t i = 0; i < conductor->ipc_subscriptions.length; i++)
+    {
+        aeron_subscription_link_t *link = &conductor->ipc_subscriptions.array[i];
+
+        if (client->client_id == link->client_id)
+        {
+            /* TODO: handle subscriptions link removal by iterating through subscribeable_list */
+        }
+    }
+
+    /* TODO: clean out other subscriptions connected to client_id */
+
     client->publication_links.length = 0; /* reuse array if it exists. */
     client->client_id = -1;
 }
@@ -198,6 +213,7 @@ void aeron_ipc_publication_entry_delete(
     aeron_driver_conductor_t *conductor, aeron_ipc_publication_entry_t *entry)
 {
     aeron_ipc_publication_close(&conductor->counters_manager, entry->publication);
+    entry->publication = NULL;
 }
 
 #define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(c, l,t,now_ns,now_ms) \
@@ -287,7 +303,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                     conductor->ipc_publications.array[conductor->ipc_publications.length++].publication = publication;
 
                     publication->conductor_fields.managed_resource.time_of_last_status_change =
-                        conductor->context->nano_clock();
+                        conductor->nano_clock();
                 }
             }
         }
@@ -602,9 +618,21 @@ int aeron_driver_conductor_do_work(void *clientd)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
     int work_count = 0;
+    int64_t now_ns = conductor->nano_clock();
 
     work_count +=
         (int)aeron_mpsc_rb_read(&conductor->to_driver_commands, aeron_driver_conductor_on_command, conductor, 10);
+
+    if (now_ns > (conductor->time_of_last_timeout_check_ns + AERON_DRIVER_CONDUCTOR_TIMEOUT_CHECK_NS))
+    {
+        int64_t now_ms = conductor->epoch_clock();
+
+        aeron_mpsc_rb_consumer_heartbeat_time(&conductor->to_driver_commands, now_ms);
+        aeron_driver_conductor_on_check_managed_resources(conductor, now_ns, now_ms);
+        /* TODO: checkUnblock */
+        conductor->time_of_last_timeout_check_ns = now_ns;
+        work_count++;
+    }
 
     for (size_t i = 0, length = conductor->ipc_publications.length; i < length; i++)
     {
@@ -925,10 +953,13 @@ int aeron_driver_conductor_on_client_keepalive(
     {
         aeron_client_t *client = &conductor->clients.array[index];
 
-        client->time_of_last_keepalive = conductor->context->nano_clock();
+        client->time_of_last_keepalive = conductor->nano_clock();
     }
     return 0;
 }
 
+extern size_t aeron_driver_conductor_num_clients(aeron_driver_conductor_t *conductor);
+extern size_t aeron_driver_conductor_num_ipc_publications(aeron_driver_conductor_t *conductor);
+extern size_t aeron_driver_conductor_num_ipc_subscriptions(aeron_driver_conductor_t *conductor);
 extern aeron_ipc_publication_t *aeron_driver_conductor_find_ipc_publication(
     aeron_driver_conductor_t *conductor, int64_t id);

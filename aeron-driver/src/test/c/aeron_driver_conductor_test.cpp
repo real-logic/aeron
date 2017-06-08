@@ -45,6 +45,8 @@ using namespace aeron;
 #define STREAM_ID_3 (103)
 #define STREAM_ID_4 (104)
 
+#define TERM_LENGTH (64 * 1024)
+
 static int64_t ms_timestamp = 0;
 
 static int64_t test_nano_clock()
@@ -113,9 +115,9 @@ struct TestDriverContext
 
         aeron_driver_fill_cnc_metadata(m_context);
 
-        m_context->ipc_term_buffer_length = 64 * 1024;
+        m_context->term_buffer_length = TERM_LENGTH;
+        m_context->ipc_term_buffer_length = TERM_LENGTH;
         m_context->term_buffer_sparse_file = 1;
-        m_context->term_buffer_length = 64 * 1024;
 
         /* control time */
         m_context->nano_clock = test_nano_clock;

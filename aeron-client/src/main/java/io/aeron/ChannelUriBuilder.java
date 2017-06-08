@@ -54,6 +54,27 @@ public class ChannelUriBuilder
      */
     public ChannelUriBuilder validate()
     {
+        if (null == media)
+        {
+            throw new IllegalStateException("media type is mandatory");
+        }
+
+        if ("udp".equals(media) && (null == endpoint && null == controlEndpoint))
+        {
+            throw new IllegalStateException("Either 'endpoint' or 'control' must be specified for UDP.");
+        }
+
+        int count = 0;
+        count += null == initialTermId ? 0 : 1;
+        count += null == termId ? 0 : 1;
+        count += null == termOffset ? 0 : 1;
+
+        if (count > 0 && count < 3)
+        {
+            throw new IllegalStateException(
+                "If any of then a complete set of 'initialTermId', 'termId', and 'termOffset' must be provided");
+        }
+
         return this;
     }
 

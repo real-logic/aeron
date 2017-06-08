@@ -22,6 +22,31 @@ import static org.junit.Assert.*;
 
 public class ChannelUriBuilderTest
 {
+    @Test(expected = IllegalStateException.class)
+    public void shouldValidateMedia()
+    {
+        new ChannelUriBuilder()
+            .validate();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldValidateEndpointOrControl()
+    {
+        new ChannelUriBuilder()
+            .media("udp")
+            .validate();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldValidateInitialPosition()
+    {
+        new ChannelUriBuilder()
+            .media("udp")
+            .endpoint("address:port")
+            .termId(999)
+            .validate();
+    }
+
     @Test
     public void shouldGenerateBasicIpcChannel()
     {

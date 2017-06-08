@@ -30,9 +30,10 @@ public class ChannelUriBuilder
      */
     public static final String SCHEME = "aeron";
 
-    private String prefix;
-    private String media = "udp";
+    private StringBuilder sb = new StringBuilder(64);
 
+    private String prefix;
+    private String media;
     private String endpoint;
     private String networkInterface;
     private String controlEndpoint;
@@ -341,7 +342,7 @@ public class ChannelUriBuilder
 
     public String buildUri()
     {
-        final StringBuilder sb = new StringBuilder(128);
+        sb.setLength(0);
 
         if (null != prefix)
         {

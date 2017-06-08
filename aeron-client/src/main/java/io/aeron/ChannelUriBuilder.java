@@ -17,6 +17,8 @@ package io.aeron;
 
 import org.agrona.BitUtil;
 
+import static io.aeron.CommonContext.*;
+
 /**
  * Type safe means of building a channel URI associated with a publication or subscription.
  *
@@ -95,6 +97,11 @@ public class ChannelUriBuilder
         return this;
     }
 
+    /**
+     * Get the prefix for the additional action to be taken on the request.
+     *
+     * @return the prefix for the additional action to be taken on the request.
+     */
     public String prefix()
     {
         return prefix;
@@ -122,14 +129,19 @@ public class ChannelUriBuilder
         return this;
     }
 
+    /**
+     * The media over which the channel transmits.
+     *
+     * @return the media over which the channel transmits.
+     */
     public String media()
     {
         return media;
     }
 
     /**
-     * Set the endpoint address:port for the channel. This is the address the publication sends to and the address
-     * the subscription receives from.
+     * Set the endpoint address:port pairing for the channel. This is the address the publication sends to and the
+     * address the subscription receives from.
      *
      * @param endpoint address and port for the channel.
      * @return this for a fluent API.
@@ -140,6 +152,11 @@ public class ChannelUriBuilder
         return this;
     }
 
+    /**
+     * Get the endpoint address:port pairing for the channel.
+     *
+     * @return the endpoint address:port pairing for the channel.
+     */
     public String endpoint()
     {
         return endpoint;
@@ -157,6 +174,11 @@ public class ChannelUriBuilder
         return this;
     }
 
+    /**
+     * Get the address of the local interface in the form host:[port]/[subnet mask] for routing traffic.
+     *
+     * @return the address of the local interface in the form host:[port]/[subnet mask] for routing traffic.
+     */
     public String networkInterface()
     {
         return networkInterface;
@@ -174,6 +196,11 @@ public class ChannelUriBuilder
         return this;
     }
 
+    /**
+     * Get the control address:port pair for dynamically joining a multi-destination-cast publication.
+     *
+     * @return the control address:port pair for dynamically joining a multi-destination-cast publication.
+     */
     public String controlEndpoint()
     {
         return controlEndpoint;
@@ -198,13 +225,18 @@ public class ChannelUriBuilder
         return this;
     }
 
+    /**
+     * Get the control mode for multi-destination-cast.
+     *
+     * @return the control mode for multi-destination-cast.
+     */
     public String controlMode()
     {
         return controlMode;
     }
 
     /**
-     * Set the subscription semantics for if loss is acceptable or not for a reliable delivery.
+     * Set the subscription semantics for if loss is acceptable, or not, for a reliable message delivery.
      *
      * @param isReliable false if loss can be be gap filled.
      * @return this for a fluent API.
@@ -215,6 +247,11 @@ public class ChannelUriBuilder
         return this;
     }
 
+    /**
+     * Get the subscription semantics for if loss is acceptable, or not, for a reliable message delivery.
+     *
+     * @return the subscription semantics for if loss is acceptable, or not, for a reliable message delivery.
+     */
     public Boolean reliable()
     {
         return reliable;
@@ -238,13 +275,18 @@ public class ChannelUriBuilder
         return this;
     }
 
+    /**
+     * Get the Time To Live (TTL) for a multicast datagram.
+     *
+     * @return the Time To Live (TTL) for a multicast datagram.
+     */
     public Integer ttl()
     {
         return ttl;
     }
 
     /**
-     * Set the maximum transmission unit including Aeron header for a datagram payload.
+     * Set the maximum transmission unit (MTU) including Aeron header for a datagram payload.
      *
      * @param mtu the maximum transmission unit including Aeron header for a datagram payload.
      * @return this for a fluent API.
@@ -260,6 +302,11 @@ public class ChannelUriBuilder
         return this;
     }
 
+    /**
+     * Get the maximum transmission unit (MTU) including Aeron header for a datagram payload.
+     *
+     * @return the maximum transmission unit (MTU) including Aeron header for a datagram payload.
+     */
     public Integer mtu()
     {
         return mtu;
@@ -290,6 +337,11 @@ public class ChannelUriBuilder
         return this;
     }
 
+    /**
+     * Get the length of buffer used for each term of the log.
+     *
+     * @return the length of buffer used for each term of the log.
+     */
     public Integer termLength()
     {
         return termLength;
@@ -307,6 +359,11 @@ public class ChannelUriBuilder
         return this;
     }
 
+    /**
+     * the initial term id at which a publication will start.
+     *
+     * @return the initial term id at which a publication will start.
+     */
     public Integer initialTermId()
     {
         return initialTermId;
@@ -325,6 +382,11 @@ public class ChannelUriBuilder
         return this;
     }
 
+    /**
+     * Get the current term id at which a publication will start.
+     *
+     * @return the current term id at which a publication will start.
+     */
     public Integer termId()
     {
         return termId;
@@ -356,11 +418,21 @@ public class ChannelUriBuilder
         return this;
     }
 
+    /**
+     * Get the offset within a term at which a publication will start.
+     *
+     * @return the offset within a term at which a publication will start.
+     */
     public Integer termOffset()
     {
         return termOffset;
     }
 
+    /**
+     * Build a channel URI String for the given parameters.
+     *
+     * @return a channel URI String for the given parameters.
+     */
     public String buildUri()
     {
         sb.setLength(0);
@@ -374,58 +446,57 @@ public class ChannelUriBuilder
 
         if (null != endpoint)
         {
-            sb.append(CommonContext.ENDPOINT_PARAM_NAME).append('=').append(endpoint).append('|');
+            sb.append(ENDPOINT_PARAM_NAME).append('=').append(endpoint).append('|');
         }
 
         if (null != networkInterface)
         {
-            sb.append(CommonContext.INTERFACE_PARAM_NAME).append('=').append(networkInterface).append('|');
+            sb.append(INTERFACE_PARAM_NAME).append('=').append(networkInterface).append('|');
         }
 
         if (null != controlEndpoint)
         {
-            sb.append(CommonContext.MDC_CONTROL_PARAM_NAME).append('=').append(controlEndpoint).append('|');
+            sb.append(MDC_CONTROL_PARAM_NAME).append('=').append(controlEndpoint).append('|');
         }
 
         if (null != controlMode)
         {
-            sb.append(CommonContext.MDC_CONTROL_MODE_PARAM_NAME).append('=').append(controlMode).append('|');
+            sb.append(MDC_CONTROL_MODE_PARAM_NAME).append('=').append(controlMode).append('|');
         }
 
         if (null != reliable)
         {
-            sb.append(CommonContext.RELIABLE_STREAM_PARAM_NAME).append('=').append(reliable).append('|');
+            sb.append(RELIABLE_STREAM_PARAM_NAME).append('=').append(reliable).append('|');
         }
 
         if (null != ttl)
         {
-            sb.append(CommonContext.TTL_PARAM_NAME).append('=').append(ttl.intValue()).append('|');
+            sb.append(TTL_PARAM_NAME).append('=').append(ttl.intValue()).append('|');
         }
 
         if (null != mtu)
         {
-            sb.append(CommonContext.MTU_LENGTH_PARAM_NAME).append('=').append(mtu.intValue()).append('|');
+            sb.append(MTU_LENGTH_PARAM_NAME).append('=').append(mtu.intValue()).append('|');
         }
 
         if (null != termLength)
         {
-            sb.append(CommonContext.TERM_LENGTH_PARAM_NAME).append('=').append(termLength.intValue()).append('|');
+            sb.append(TERM_LENGTH_PARAM_NAME).append('=').append(termLength.intValue()).append('|');
         }
 
         if (null != initialTermId)
         {
-            sb.append(CommonContext.INITIAL_TERM_ID_PARAM_NAME)
-                .append('=').append(initialTermId.intValue()).append('|');
+            sb.append(INITIAL_TERM_ID_PARAM_NAME).append('=').append(initialTermId.intValue()).append('|');
         }
 
         if (null != termId)
         {
-            sb.append(CommonContext.TERM_ID_PARAM_NAME).append('=').append(termId.intValue()).append('|');
+            sb.append(TERM_ID_PARAM_NAME).append('=').append(termId.intValue()).append('|');
         }
 
         if (null != termOffset)
         {
-            sb.append(CommonContext.TERM_OFFSET_PARAM_NAME).append('=').append(termOffset.intValue()).append('|');
+            sb.append(TERM_OFFSET_PARAM_NAME).append('=').append(termOffset.intValue()).append('|');
         }
 
         final char lastChar = sb.charAt(sb.length() - 1);

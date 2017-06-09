@@ -226,6 +226,7 @@ for (int last_index = (int)l.length - 1, i = last_index; i >= 0; i--) \
         l.delete_func(c, elem); \
         aeron_array_fast_unordered_remove((uint8_t *)l.array, sizeof(t), i, last_index); \
         last_index--; \
+        l.length--; \
     } \
 }
 
@@ -921,6 +922,7 @@ int aeron_driver_conductor_on_remove_subscription(
 
             aeron_array_fast_unordered_remove(
                 (uint8_t *)conductor->ipc_subscriptions.array, sizeof(aeron_subscription_link_t), i, last_index);
+            conductor->ipc_subscriptions.length--;
 
             aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
             return 0;

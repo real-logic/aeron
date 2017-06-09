@@ -49,6 +49,30 @@ public class ChannelUriBuilder
     private Integer termOffset;
 
     /**
+     * Clear out all the values thus setting back to the initial state.
+     *
+     * @return this for a fluent API.
+     */
+    public ChannelUriBuilder clear()
+    {
+        prefix = null;
+        media = null;
+        endpoint = null;
+        networkInterface = null;
+        controlEndpoint = null;
+        controlMode = null;
+        reliable = null;
+        ttl  = null;
+        mtu = null;
+        termLength = null;
+        initialTermId = null;
+        termId = null;
+        termOffset = null;
+
+        return this;
+    }
+
+    /**
      * Validates that the collection of set parameters are valid together.
      *
      * @return this for a fluent API.

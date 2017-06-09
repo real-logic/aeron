@@ -15,23 +15,16 @@
  */
 package io.aeron.driver;
 
-import io.aeron.Aeron;
-import io.aeron.Image;
-import io.aeron.Publication;
+import io.aeron.*;
 import io.aeron.driver.exceptions.ConfigurationException;
-import io.aeron.driver.media.ReceiveChannelEndpoint;
-import io.aeron.driver.media.SendChannelEndpoint;
+import io.aeron.driver.media.*;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.BitUtil;
-import org.agrona.LangUtil;
-import org.agrona.concurrent.BackoffIdleStrategy;
-import org.agrona.concurrent.ControllableIdleStrategy;
-import org.agrona.concurrent.IdleStrategy;
+import org.agrona.*;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
-import org.agrona.concurrent.status.CountersReader;
-import org.agrona.concurrent.status.StatusIndicator;
+import org.agrona.concurrent.status.*;
 
 import java.util.concurrent.TimeUnit;
 
@@ -371,7 +364,7 @@ public class Configuration
 
     static final long AGENT_IDLE_MAX_SPINS = 100;
     static final long AGENT_IDLE_MAX_YIELDS = 100;
-    static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
+    static final long AGENT_IDLE_MIN_PARK_NS = 1;
     static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
 
     private static final String CONTROLLABLE_IDLE_STRATEGY = "org.agrona.concurrent.ControllableIdleStrategy";

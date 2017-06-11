@@ -246,12 +246,21 @@ public:
         return writeCommand(AERON_COMMAND_REMOVE_SUBSCRIPTION, command.length());
     }
 
+    int clientKeepalive(int64_t client_id)
+    {
+        command::CorrelatedMessageFlyweight command(m_command, 0);
+
+        command.clientId(client_id);
+
+        return writeCommand(AERON_COMMAND_CLIENT_KEEPALIVE, command::CORRELATED_MESSAGE_LENGTH);
+    }
+
     int doWork()
     {
         return aeron_driver_conductor_do_work(&m_conductor.m_conductor);
     }
 
-    void doWorkUntilTimeNs(int64_t end_ns, int64_t num_increments = 100)
+    void doWorkUntilTimeNs(int64_t end_ns, int64_t num_increments = 100, std::function<void()> func = [](){})
     {
         int64_t increment = (end_ns - ms_timestamp) / num_increments;
 
@@ -263,6 +272,7 @@ public:
         do
         {
             ms_timestamp += increment;
+            func();
             doWork();
         }
         while (ms_timestamp <= end_ns);
@@ -748,4 +758,73 @@ TEST_F(DriverConductorTest, shouldBeAbleToTimeoutIpcPublication)
         (m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_ipc_publications(&m_conductor.m_conductor), 0u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToNotTimeoutIpcPublicationOnKeepalive)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id = nextCorrelationId();
+
+    ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
+    doWork();
+    EXPECT_EQ(aeron_driver_conductor_num_ipc_publications(&m_conductor.m_conductor), 1u);
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    int64_t timeout =
+        m_context.m_context->publication_linger_timeout_ns +
+        (m_context.m_context->client_liveness_timeout_ns * 2);
+
+    doWorkUntilTimeNs(
+        timeout,
+        100,
+        [&]()
+        {
+            clientKeepalive(client_id);
+        });
+
+    EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 1u);
+    EXPECT_EQ(aeron_driver_conductor_num_ipc_publications(&m_conductor.m_conductor), 1u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToTimeoutIpcSubscription)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, false), 0);
+    doWork();
+    EXPECT_EQ(aeron_driver_conductor_num_ipc_subscriptions(&m_conductor.m_conductor), 1u);
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    doWorkUntilTimeNs(
+        m_context.m_context->publication_linger_timeout_ns +
+            (m_context.m_context->client_liveness_timeout_ns * 2));
+    EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
+    EXPECT_EQ(aeron_driver_conductor_num_ipc_subscriptions(&m_conductor.m_conductor), 0u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToNotTimeoutIpcSubscriptionOnKeepalive)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, false), 0);
+    doWork();
+    EXPECT_EQ(aeron_driver_conductor_num_ipc_subscriptions(&m_conductor.m_conductor), 1u);
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    int64_t timeout =
+        m_context.m_context->publication_linger_timeout_ns +
+            (m_context.m_context->client_liveness_timeout_ns * 2);
+
+    doWorkUntilTimeNs(
+        timeout,
+        100,
+        [&]()
+        {
+            clientKeepalive(client_id);
+        });
+
+    EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 1u);
+    EXPECT_EQ(aeron_driver_conductor_num_ipc_subscriptions(&m_conductor.m_conductor), 1u);
 }

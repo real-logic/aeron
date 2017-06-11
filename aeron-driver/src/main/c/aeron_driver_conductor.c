@@ -22,7 +22,7 @@
 
 static void aeron_error_log_resource_linger(uint8_t *resource)
 {
-    /* TODO: must be MPSC queue to delete after linger */
+    /* TODO: use driver conductor MPSC command queue. Then linger. */
 }
 
 int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *context)
@@ -64,7 +64,9 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
         return -1;
     }
 
-    /* TODO: create and init all command queues */
+    /* TODO: SPSC command queue to Sender */
+    /* TODO: SPSC command queue to Receiver */
+    /* TODO: MPSC command queue to Conductor (used for commands and for returning event mallocs) */
 
     conductor->clients.array = NULL;
     conductor->clients.capacity = 0;
@@ -181,17 +183,21 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
         resource->decref(resource->clientd);
     }
 
-    for (size_t i = 0; i < conductor->ipc_subscriptions.length; i++)
+    for (size_t i = 0, size = conductor->ipc_subscriptions.length, last_index = size - 1; i < size; i++)
     {
         aeron_subscription_link_t *link = &conductor->ipc_subscriptions.array[i];
 
         if (client->client_id == link->client_id)
         {
             /* TODO: handle subscriptions link removal by iterating through subscribeable_list */
+
+            aeron_array_fast_unordered_remove(
+                (uint8_t *)conductor->ipc_subscriptions.array, sizeof(aeron_subscription_link_t), i, last_index);
+            conductor->ipc_subscriptions.length--;
         }
     }
 
-    /* TODO: clean out other subscriptions connected to client_id */
+    /* TODO: clean out spy and network subscriptions connected to client_id */
 
     client->publication_links.length = 0; /* reuse array if it exists. */
     client->client_id = -1;

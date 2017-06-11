@@ -200,10 +200,9 @@ public class RecordingSessionTest
 
         when(image.isClosed()).thenReturn(true);
         when(epochClock.time()).thenReturn(128L);
-
-        assertNotEquals("Expect some work", 0, session.doWork());
+        session.doWork();
         assertTrue(session.isDone());
-
+        session.close();
         metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
         assertEquals(128L, metaData.endTime());
     }

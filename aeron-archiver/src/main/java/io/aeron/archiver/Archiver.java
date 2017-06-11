@@ -21,7 +21,7 @@ import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.*;
 
 import java.io.File;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 public final class Archiver implements AutoCloseable
@@ -38,6 +38,7 @@ public final class Archiver implements AutoCloseable
         this.ctx = ctx;
 
         ctx.clientContext.driverAgentInvoker(ctx.mediaDriverAgentInvoker());
+        // TODO: remove, all interaction to go via conductors
         if (ctx.threadingMode() != ArchiverThreadingMode.DEDICATED)
         {
             ctx.clientContext.clientLock(new NoOpLock());
@@ -168,6 +169,17 @@ public final class Archiver implements AutoCloseable
 
         public static final String FORCE_WRITES_PROP_NAME = "aeron.archiver.force.writes";
 
+        public static final String THREADING_MODE_PROP_NAME = "aeron.archiver.threading.mode";
+        public static final String ARCHIVER_IDLE_STRATEGY_PROP_NAME = "aeron.archiver.idle.strategy";
+        private static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
+        private static final String CONTROLLABLE_IDLE_STRATEGY = "org.agrona.concurrent.ControllableIdleStrategy";
+
+        private static final long AGENT_IDLE_MAX_SPINS = 100;
+        private static final long AGENT_IDLE_MAX_YIELDS = 100;
+        private static final long AGENT_IDLE_MIN_PARK_NS = 1;
+        private static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
+
+
         public static String archiveDirName()
         {
             return System.getProperty(ARCHIVE_DIR_PROP_NAME, ARCHIVE_DIR_DEFAULT);
@@ -202,6 +214,49 @@ public final class Archiver implements AutoCloseable
         {
             return Boolean.valueOf(System.getProperty(FORCE_WRITES_PROP_NAME, "true"));
         }
+
+        private static ArchiverThreadingMode threadingMode()
+        {
+            return ArchiverThreadingMode.valueOf(System.getProperty(
+                THREADING_MODE_PROP_NAME, ArchiverThreadingMode.DEDICATED.name()));
+        }
+
+        private static Supplier<IdleStrategy> idleStrategySupplier(final StatusIndicator controllableStatus)
+        {
+            final String strategyName = System.getProperty(ARCHIVER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
+            return () ->
+            {
+                IdleStrategy idleStrategy = null;
+                switch (strategyName)
+                {
+                    case DEFAULT_IDLE_STRATEGY:
+                        idleStrategy = new BackoffIdleStrategy(
+                            AGENT_IDLE_MAX_SPINS,
+                            AGENT_IDLE_MAX_YIELDS,
+                            AGENT_IDLE_MIN_PARK_NS,
+                            AGENT_IDLE_MAX_PARK_NS);
+                        break;
+
+                    case CONTROLLABLE_IDLE_STRATEGY:
+                        idleStrategy = new ControllableIdleStrategy(controllableStatus);
+                        controllableStatus.setOrdered(ControllableIdleStrategy.PARK);
+                        break;
+
+                    default:
+                        try
+                        {
+                            idleStrategy = (IdleStrategy)Class.forName(strategyName).newInstance();
+                        }
+                        catch (final Exception ex)
+                        {
+                            LangUtil.rethrowUnchecked(ex);
+                        }
+                        break;
+                }
+
+                return idleStrategy;
+            };
+        }
     }
 
     public static class Context
@@ -218,7 +273,7 @@ public final class Archiver implements AutoCloseable
         private int segmentFileLength;
         private boolean forceWrites;
 
-        private ArchiverThreadingMode threadingMode = ArchiverThreadingMode.SHARED;
+        private ArchiverThreadingMode threadingMode;
         private ThreadFactory threadFactory = Thread::new;
 
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -247,6 +302,7 @@ public final class Archiver implements AutoCloseable
             recordingEventsStreamId(Configuration.recordingEventsStreamId());
             segmentFileLength(Configuration.segmentFileLength());
             forceWrites(Configuration.forceWrites());
+            threadingMode(Configuration.threadingMode());
         }
 
         void conclude()
@@ -264,7 +320,7 @@ public final class Archiver implements AutoCloseable
 
             if (null == idleStrategySupplier)
             {
-                idleStrategySupplier = () -> new SleepingMillisIdleStrategy(Aeron.IDLE_SLEEP_MS);
+                idleStrategySupplier = Configuration.idleStrategySupplier(null);
             }
 
             if (null == epochClock)

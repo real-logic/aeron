@@ -19,7 +19,7 @@ package io.aeron.archiver;
 /**
  * Seaaions are created by the conductor but perform their work on a different {@link SessionWorker} potentially. After
  * construction sessions are safely published to the {@link SessionWorker} and thereafter interacted with only from
- * that thread.
+ * that thread until they are done. Once done they are closed from the conductor.
  */
 interface Session
 {
@@ -30,4 +30,6 @@ interface Session
     int doWork();
 
     long sessionId();
+
+    void close();
 }

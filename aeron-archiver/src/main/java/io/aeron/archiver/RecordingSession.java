@@ -54,7 +54,7 @@ class RecordingSession implements Session
 
     public boolean isDone()
     {
-        return state == State.CLOSED;
+        return state == State.INACTIVE;
     }
 
     public void abort()
@@ -74,11 +74,6 @@ class RecordingSession implements Session
         if (state == State.RECORDING)
         {
             workDone += record();
-        }
-
-        if (state == State.INACTIVE)
-        {
-            workDone += close();
         }
 
         return workDone;
@@ -121,14 +116,6 @@ class RecordingSession implements Session
                 this,
                 recordingContext.recordingFileLength());
 
-            notificationsProxy.recordingStarted(
-                recordingId,
-                sessionId,
-                streamId,
-                channel,
-                sourceIdentity
-            );
-
             recordingWriter = new RecordingWriter(
                 recordingContext,
                 recordingId,
@@ -143,9 +130,18 @@ class RecordingSession implements Session
         }
         catch (final Exception ex)
         {
+            state = State.INACTIVE;
             close();
             LangUtil.rethrowUnchecked(ex);
         }
+
+        notificationsProxy.recordingStarted(
+            recordingId,
+            sessionId,
+            streamId,
+            channel,
+            sourceIdentity
+        );
 
         this.recordingWriter = recordingWriter;
         this.state = State.RECORDING;
@@ -153,7 +149,7 @@ class RecordingSession implements Session
         return 1;
     }
 
-    private int close()
+    public void close()
     {
         try
         {
@@ -176,8 +172,6 @@ class RecordingSession implements Session
             notificationsProxy.recordingStopped(recordingId, recordingWriter.lastPosition());
             this.state = State.CLOSED;
         }
-
-        return 1;
     }
 
     private int record()

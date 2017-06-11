@@ -60,40 +60,33 @@ class ControlSession implements Session, ControlRequestListener
 
     public boolean isDone()
     {
-        return state == State.CLOSED;
+        return state == State.INACTIVE;
     }
 
     public int doWork()
     {
-        switch (state)
+        if (state == State.INIT)
         {
-            case INIT:
-                return waitForConnection();
-
-            case ACTIVE:
-                if (image.isClosed() || !controlPublication.isConnected())
-                {
-                    state = State.INACTIVE;
-                }
-                else
-                {
-                    return image.poll(adapter, 16);
-                }
-                break;
-
-            case INACTIVE:
-                CloseHelper.quietClose(controlPublication);
-                state = State.CLOSED;
-                break;
-
-            case CLOSED:
-                break;
-
-            default:
-                throw new IllegalStateException();
+            return waitForConnection();
         }
-
+        else if (state == State.ACTIVE)
+        {
+            if (image.isClosed() || !controlPublication.isConnected())
+            {
+                state = State.INACTIVE;
+            }
+            else
+            {
+                return image.poll(adapter, 16);
+            }
+        }
         return 0;
+    }
+
+    public void close()
+    {
+        CloseHelper.quietClose(controlPublication);
+        state = State.CLOSED;
     }
 
     private int waitForConnection()

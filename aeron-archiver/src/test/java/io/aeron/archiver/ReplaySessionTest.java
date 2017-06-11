@@ -16,7 +16,6 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
-import io.aeron.archiver.codecs.ControlResponseCode;
 import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
@@ -33,6 +32,7 @@ import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 public class ReplaySessionTest
@@ -241,6 +241,7 @@ public class ReplaySessionTest
         when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
         replaySession.doWork();
         assertTrue(replaySession.isDone());
+        replaySession.close();
     }
 
     @Test
@@ -252,8 +253,6 @@ public class ReplaySessionTest
 
         final Replayer conductor = Mockito.mock(Replayer.class);
 
-        final ReplaySession replaySession = replaySession(
-            RECORDING_ID, RECORDING_POSITION + 1, FRAME_LENGTH, correlationId, replayPublication, control, conductor);
 
         when(conductor.newReplayPublication(
             eq(REPLAY_CHANNEL),
@@ -262,6 +261,21 @@ public class ReplaySessionTest
             eq(MTU_LENGTH),
             eq(INITIAL_TERM_ID),
             eq(TERM_BUFFER_LENGTH))).thenReturn(replayPublication);
+
+        final ReplaySession replaySession = new ReplaySession(
+            (long) RECORDING_ID,
+            RECORDING_POSITION + 1,
+            (long) FRAME_LENGTH,
+            conductor,
+            control,
+            archiveDir,
+            proxy,
+            REPLAY_SESSION_ID,
+            correlationId,
+            epochClock,
+            REPLAY_CHANNEL,
+            REPLAY_STREAM_ID);
+
 
         when(replayPublication.isClosed()).thenReturn(false);
         when(control.isClosed()).thenReturn(false);
@@ -301,6 +315,7 @@ public class ReplaySessionTest
         when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
         replaySession.doWork();
         assertTrue(replaySession.isDone());
+        replaySession.close();
     }
 
     @Test
@@ -357,6 +372,7 @@ public class ReplaySessionTest
         when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
         replaySession.doWork();
         assertTrue(replaySession.isDone());
+        replaySession.close();
     }
 
     @Test
@@ -389,9 +405,10 @@ public class ReplaySessionTest
 
         replaySession.doWork();
         assertTrue(replaySession.isDone());
+        replaySession.close();
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void shouldFailToReplayDataForNonExistentStream()
     {
         final long length = 1024L;
@@ -400,21 +417,14 @@ public class ReplaySessionTest
         final Publication control = Mockito.mock(Publication.class);
 
         final Replayer conductor = Mockito.mock(Replayer.class);
-        final ReplaySession replaySession = replaySession(
-            RECORDING_ID + 1, RECORDING_POSITION, length, correlationId, replayPublication, control, conductor);
-
-        when(replayPublication.isClosed()).thenReturn(false);
-        when(control.isClosed()).thenReturn(false);
-
-        when(replayPublication.isConnected()).thenReturn(true);
-        when(control.isConnected()).thenReturn(true);
-
-        assertEquals(1, replaySession.doWork());
-
-        verify(proxy, times(1))
-            .sendError(eq(control), eq(ControlResponseCode.ERROR), notNull(), eq(correlationId));
-
-        assertTrue(replaySession.isDone());
+        replaySession(
+            RECORDING_ID + 1,
+            RECORDING_POSITION,
+            length,
+            correlationId,
+            replayPublication,
+            control,
+            conductor);
     }
 
     @Test
@@ -438,6 +448,7 @@ public class ReplaySessionTest
         when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
         replaySession.doWork();
         assertTrue(replaySession.isDone());
+        replaySession.close();
     }
 
     private ReplaySession replaySession(

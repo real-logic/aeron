@@ -17,8 +17,7 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.codecs.*;
-import io.aeron.logbuffer.ExclusiveBufferClaim;
-import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -51,29 +50,17 @@ class ReplaySession
     private static final int REPLAY_SEND_BATCH_SIZE = 8;
     static final long LINGER_LENGTH_MS = 1000;
 
-    private final long recordingId;
-    private final long replayPosition;
-    private final long replayLength;
-
-    private final Replayer replayer;
-    private final Publication controlPublication;
-    private final ControlSessionProxy controlSessionProxy;
-
-    private final File archiveDir;
-    private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
-
-    private State state = State.INIT;
-    private RecordingFragmentReader cursor;
     private final long replaySessionId;
     private final long correlationId;
+    private final Publication controlPublication;
+    private final ControlSessionProxy controlSessionProxy;
     private final EpochClock epochClock;
-    private final String replayChannel;
-    private final int replayStreamId;
 
-    private ExclusivePublication replayPublication;
-    private int mtuLength;
-    private int termBufferLength;
-    private int initialTermId;
+    private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
+    private final ExclusivePublication replayPublication;
+    private final RecordingFragmentReader cursor;
+
+    private State state = State.INIT;
     private long lingerSinceMs;
 
     ReplaySession(
@@ -90,22 +77,82 @@ class ReplaySession
         final String replayChannel,
         final int replayStreamId)
     {
-        this.recordingId = recordingId;
-
-        this.replayPosition = replayPosition;
-        this.replayLength = replayLength;
-        this.replayer = replayer;
 
         this.controlPublication = controlPublication;
-        this.archiveDir = archiveDir;
         this.controlSessionProxy = controlSessionProxy;
         this.replaySessionId = replaySessionId;
         this.correlationId = correlationId;
         this.epochClock = epochClock;
         this.lingerSinceMs = epochClock.time();
 
-        this.replayChannel = replayChannel;
-        this.replayStreamId = replayStreamId;
+        final String recordingMetaFileName = ArchiveUtil.recordingMetaFileName(recordingId);
+        final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
+        if (!recordingMetaFile.exists())
+        {
+            final String errorMessage = recordingMetaFile.getAbsolutePath() + " not found";
+            closeOnError(new IllegalArgumentException(errorMessage), errorMessage);
+        }
+
+        RecordingDescriptorDecoder metaData = null;
+        try
+        {
+            metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
+        }
+        catch (final IOException ex)
+        {
+            closeOnError(ex, recordingMetaFile.getAbsolutePath() + " : failed to load");
+        }
+
+        final long joiningPosition = metaData.joiningPosition();
+        final long lastPosition = metaData.lastPosition();
+        final int mtuLength = metaData.mtuLength();
+        final int termBufferLength = metaData.termBufferLength();
+        final int initialTermId = metaData.initialTermId();
+
+        if (replayPosition < joiningPosition)
+        {
+            closeOnError(null, "Requested replay start position(=" + replayPosition +
+                ") is less than recording joining position(=" + joiningPosition + ")");
+        }
+        final long toPosition = replayLength + replayPosition;
+        if (toPosition > lastPosition)
+        {
+            final String errorMessage = "Requested replay end position(=" + toPosition +
+                ") is more than recording end position(=" + lastPosition + ")";
+            closeOnError(new IllegalArgumentException(errorMessage), errorMessage);
+        }
+
+        RecordingFragmentReader cursor = null;
+        try
+        {
+            cursor = new RecordingFragmentReader(recordingId, archiveDir, replayPosition, replayLength);
+        }
+        catch (final IOException ex)
+        {
+            closeOnError(ex, "Failed to open cursor for a recording");
+        }
+        this.cursor = cursor;
+
+        ExclusivePublication replayPublication = null;
+
+        try
+        {
+            replayPublication = replayer.newReplayPublication(
+                replayChannel,
+                replayStreamId,
+                cursor.fromPosition(), // may differ from replayPosition due to first fragement alignment
+                mtuLength,
+                initialTermId,
+                termBufferLength);
+        }
+        catch (final Exception ex)
+        {
+            CloseHelper.close(cursor);
+            closeOnError(ex, "Failed to create replay publication");
+        }
+
+        this.replayPublication = replayPublication;
+
     }
 
     public int doWork()
@@ -122,11 +169,6 @@ class ReplaySession
         else if (state == State.LINGER)
         {
             workDone += linger();
-        }
-
-        if (state == State.INACTIVE)
-        {
-            workDone += close();
         }
 
         return workDone;
@@ -148,7 +190,7 @@ class ReplaySession
 
     public boolean isDone()
     {
-        return state == State.CLOSED;
+        return state == State.INACTIVE;
     }
 
     public boolean onFragment(final UnsafeBuffer termBuffer, final int offset, final int length)
@@ -222,72 +264,6 @@ class ReplaySession
 
     private int init()
     {
-        if (cursor == null)
-        {
-            final String recordingMetaFileName = ArchiveUtil.recordingMetaFileName(recordingId);
-            final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
-            if (!recordingMetaFile.exists())
-            {
-                return closeOnError(null, recordingMetaFile.getAbsolutePath() + " not found");
-            }
-
-            final RecordingDescriptorDecoder metaData;
-            try
-            {
-                metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
-            }
-            catch (final IOException ex)
-            {
-                return closeOnError(ex, recordingMetaFile.getAbsolutePath() + " : failed to map");
-            }
-
-            final long joiningPosition = metaData.joiningPosition();
-            final long lastPosition = metaData.lastPosition();
-            mtuLength = metaData.mtuLength();
-            termBufferLength = metaData.termBufferLength();
-            initialTermId = metaData.initialTermId();
-
-            if (this.replayPosition < joiningPosition)
-            {
-                return closeOnError(null, "Requested replay start position(=" + replayPosition +
-                    ") is less than recording joining position(=" + joiningPosition + ")");
-            }
-            final long toPosition = this.replayLength + replayPosition;
-            if (toPosition > lastPosition)
-            {
-                return closeOnError(null, "Requested replay end position(=" + toPosition +
-                    ") is more than recording end position(=" + lastPosition + ")");
-            }
-
-            try
-            {
-                cursor = new RecordingFragmentReader(recordingId, archiveDir, replayPosition, replayLength);
-            }
-            catch (final IOException ex)
-            {
-                return closeOnError(ex, "Failed to open cursor for a recording");
-            }
-        }
-
-        if (replayPublication == null)
-        {
-            try
-            {
-                // TODO: if we want a NoOp client lock in the DEDICATED mode this needs to be done on the replayer
-                replayPublication = replayer.newReplayPublication(
-                    replayChannel,
-                    replayStreamId,
-                    cursor.fromPosition(),
-                    mtuLength,
-                    initialTermId,
-                    termBufferLength);
-            }
-            catch (final Exception ex)
-            {
-                return closeOnError(ex, "Failed to create replay publication");
-            }
-        }
-
         if (!replayPublication.isConnected())
         {
             if (isLingerDone())
@@ -339,14 +315,12 @@ class ReplaySession
         }
     }
 
-    private int close()
+    public void close()
     {
         // TODO: if we want a NoOp client lock in the DEDICATED mode this needs to be done on the replayer
         CloseHelper.close(replayPublication);
         CloseHelper.close(cursor);
         this.state = State.CLOSED;
-
-        return 1;
     }
 
     public long sessionId()

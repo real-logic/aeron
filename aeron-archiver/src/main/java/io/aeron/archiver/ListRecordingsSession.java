@@ -72,7 +72,7 @@ class ListRecordingsSession implements Session
 
     public boolean isDone()
     {
-        return state == State.CLOSED;
+        return state == State.INACTIVE;
     }
 
     public long sessionId()
@@ -93,19 +93,14 @@ class ListRecordingsSession implements Session
             case ACTIVE:
                 workDone += sendDescriptors();
                 break;
-
-            case INACTIVE:
-                workDone += close();
-                break;
         }
 
         return workDone;
     }
 
-    private int close()
+    public void close()
     {
         state = State.CLOSED;
-        return 1;
     }
 
     private int sendDescriptors()

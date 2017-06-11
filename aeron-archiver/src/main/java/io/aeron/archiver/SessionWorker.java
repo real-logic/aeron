@@ -36,7 +36,7 @@ abstract class SessionWorker implements Agent
             workDone += session.doWork();
             if (session.isDone())
             {
-                sessionCleanup(session.sessionId());
+                closeSession(session);
                 ArrayListUtil.fastUnorderedRemove(sessions, i, lastIndex);
                 lastIndex--;
             }
@@ -52,13 +52,10 @@ abstract class SessionWorker implements Agent
         sessions.add(session);
     }
 
-    private void closeSession(final Session session)
+    protected void closeSession(final Session session)
     {
         session.abort();
-        while (!session.isDone())
-        {
-            session.doWork();
-        }
+        session.close();
         sessionCleanup(session.sessionId());
     }
 

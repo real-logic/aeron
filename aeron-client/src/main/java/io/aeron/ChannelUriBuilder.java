@@ -15,7 +15,8 @@
  */
 package io.aeron;
 
-import org.agrona.BitUtil;
+import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.LogBufferDescriptor;
 
 import static io.aeron.CommonContext.*;
 
@@ -346,15 +347,7 @@ public class ChannelUriBuilder
     {
         if (null != termLength)
         {
-            if ((termLength < (1024 * 64) || termLength > (1024 * 1024 * 1024)))
-            {
-                throw new IllegalArgumentException("Term length not in range 64K-1G: " + termLength);
-            }
-
-            if (!BitUtil.isPowerOfTwo(termLength))
-            {
-                throw new IllegalArgumentException("Term length not power of 2: " + termLength);
-            }
+            LogBufferDescriptor.checkTermLength(termLength);
         }
 
         this.termLength = termLength;
@@ -427,14 +420,14 @@ public class ChannelUriBuilder
     {
         if (null != termOffset)
         {
-            if ((termOffset < 0 || termOffset > (1024 * 1024 * 1024)))
+            if ((termOffset < 0 || termOffset > LogBufferDescriptor.TERM_MAX_LENGTH))
             {
                 throw new IllegalArgumentException("Term offset not in range 0-1g: " + termOffset);
             }
 
-            if (0 != (termOffset & (32 - 1)))
+            if (0 != (termOffset & (FrameDescriptor.FRAME_ALIGNMENT - 1)))
             {
-                throw new IllegalArgumentException("Term offset not divisible by 32: " + termOffset);
+                throw new IllegalArgumentException("Term offset not multiple of FRAME_ALIGNMENT: " + termOffset);
             }
         }
 

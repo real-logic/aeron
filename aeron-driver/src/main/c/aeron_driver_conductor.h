@@ -164,7 +164,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 int aeron_driver_conductor_do_work(void *clientd);
 void aeron_driver_conductor_on_close(void *clientd);
 
-void aeron_driver_conductor_unlink_subscribeable(aeron_subscription_link_t *link);
+void aeron_driver_conductor_unlink_subscribeable(aeron_driver_conductor_t *conductor, aeron_subscription_link_t *link);
 
 int aeron_driver_conductor_on_add_ipc_publication(
     aeron_driver_conductor_t *conductor,

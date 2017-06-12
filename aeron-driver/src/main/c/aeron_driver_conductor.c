@@ -189,7 +189,7 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
 
         if (client->client_id == link->client_id)
         {
-            aeron_driver_conductor_unlink_subscribeable(link);
+            aeron_driver_conductor_unlink_subscribeable(conductor, link);
 
             aeron_array_fast_unordered_remove(
                 (uint8_t *)conductor->ipc_subscriptions.array, sizeof(aeron_subscription_link_t), i, last_index);
@@ -773,13 +773,14 @@ int aeron_driver_conductor_link_ipc_subscribeable(
     return result;
 }
 
-void aeron_driver_conductor_unlink_subscribeable(aeron_subscription_link_t *link)
+void aeron_driver_conductor_unlink_subscribeable(aeron_driver_conductor_t *conductor, aeron_subscription_link_t *link)
 {
     for (size_t i = 0; i < link->subscribeable_list.length; i++)
     {
         aeron_subscribeable_list_entry_t *entry = &link->subscribeable_list.array[i];
 
         aeron_driver_subscribeable_remove_position(entry->subscribeable, entry->counter_id);
+        aeron_counters_manager_free(&conductor->counters_manager, (int32_t)entry->counter_id);
     }
 }
 
@@ -970,7 +971,7 @@ int aeron_driver_conductor_on_remove_subscription(
 
         if (command->registration_id == link->registration_id)
         {
-            aeron_driver_conductor_unlink_subscribeable(link);
+            aeron_driver_conductor_unlink_subscribeable(conductor, link);
 
             aeron_array_fast_unordered_remove(
                 (uint8_t *)conductor->ipc_subscriptions.array, sizeof(aeron_subscription_link_t), i, last_index);

@@ -1289,7 +1289,7 @@ public final class MediaDriver implements AutoCloseable
 
         private void concludeCounters()
         {
-            if (countersManager() == null)
+            if (null == countersManager)
             {
                 if (countersMetaDataBuffer() == null)
                 {

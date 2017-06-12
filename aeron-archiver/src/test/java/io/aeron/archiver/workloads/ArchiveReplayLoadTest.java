@@ -296,6 +296,15 @@ public class ArchiveReplayLoadTest
                     {
                         TestUtil.waitFor(() -> (client.pollEvents(new RecordingEventsListener()
                         {
+                            public void onStart(
+                                final long recordingId,
+                                final int sessionId,
+                                final int streamId,
+                                final String channel,
+                                final String sourceIdentity)
+                            {
+                            }
+
                             public void onProgress(
                                 final long recordingId0,
                                 final long joiningPosition,
@@ -306,16 +315,7 @@ public class ArchiveReplayLoadTest
                                 printf("a=%d total=%d %n", recorded, totalRecordingLength);
                             }
 
-                            public void onStart(
-                                final long recordingId,
-                                final int sessionId,
-                                final int streamId,
-                                final String channel,
-                                final String sourceIdentity)
-                            {
-                            }
-
-                            public void onStop(final long recordingId0)
+                            public void onStop(final long recordingId0, final long lastPostion)
                             {
                             }
                         }, 1)) != 0);

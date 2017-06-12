@@ -143,8 +143,7 @@ class Catalog implements AutoCloseable
             sessionId,
             streamId,
             channel,
-            sourceIdentity
-        );
+            sourceIdentity);
 
         final int encodedLength = recordingDescriptorEncoder.encodedLength();
         unsafeBuffer.putInt(0, encodedLength);

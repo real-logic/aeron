@@ -145,15 +145,12 @@ class ArchiveConductor extends SessionWorker
         {
             // Subscription is closed on RecordingSession close(this is consistent with local archiver usage)
             aeron.addSubscription(channel, streamId, availableImageHandler, null);
-            controlSessionProxy.sendOkResponse(controlPublication, correlationId);
+            controlSessionProxy.sendOkResponse(correlationId, controlPublication);
         }
         catch (final Exception ex)
         {
             controlSessionProxy.sendError(
-                controlPublication,
-                ControlResponseCode.ERROR,
-                ex.getMessage(),
-                correlationId);
+                correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlPublication);
         }
     }
 

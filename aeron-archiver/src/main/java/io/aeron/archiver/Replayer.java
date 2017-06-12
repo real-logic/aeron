@@ -87,15 +87,12 @@ class Replayer extends SessionWorker
         if (session != null)
         {
             session.abort();
-            controlSessionProxy.sendOkResponse(controlPublication, correlationId);
+            controlSessionProxy.sendOkResponse(correlationId, controlPublication);
         }
         else
         {
             controlSessionProxy.sendError(
-                controlPublication,
-                ControlResponseCode.REPLAY_NOT_FOUND,
-                null,
-                correlationId);
+                correlationId, ControlResponseCode.REPLAY_NOT_FOUND, null, controlPublication);
         }
     }
 

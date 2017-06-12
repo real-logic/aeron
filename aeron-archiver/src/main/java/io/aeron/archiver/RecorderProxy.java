@@ -28,7 +28,6 @@ class RecorderProxy extends Recorder
         super(aeron, ctx);
     }
 
-
     void startRecording(final Image image)
     {
         final Runnable cmd = () -> super.startRecording(image);
@@ -51,7 +50,7 @@ class RecorderProxy extends Recorder
 
     public int doWork()
     {
-        final int work = commandQueue.drain(r -> r.run());
+        final int work = commandQueue.drain(Runnable::run);
         return work + super.doWork();
     }
 }

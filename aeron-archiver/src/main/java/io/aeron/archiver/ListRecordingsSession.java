@@ -118,10 +118,7 @@ class ListRecordingsSession implements Session
                     if (!catalog.readDescriptor(recordingId, byteBuffer))
                     {
                         proxy.sendDescriptorNotFound(
-                            controlPublication,
-                            recordingId,
-                            catalog.nextRecordingId(),
-                            correlationId);
+                            correlationId, recordingId, catalog.nextRecordingId(), controlPublication);
                         state = State.INACTIVE;
                         return 0;
                     }
@@ -137,7 +134,7 @@ class ListRecordingsSession implements Session
                 descriptorBuffer.wrap(session.metaDataBuffer());
             }
 
-            sentBytes += proxy.sendDescriptor(controlPublication, descriptorBuffer, correlationId);
+            sentBytes += proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
 
             if (++recordingId >= toId)
             {
@@ -146,6 +143,7 @@ class ListRecordingsSession implements Session
             }
         }
         while (sentBytes < controlPublication.maxPayloadLength());
+
         return sentBytes;
     }
 
@@ -154,10 +152,11 @@ class ListRecordingsSession implements Session
         if (fromId >= catalog.nextRecordingId())
         {
             proxy.sendError(
-                controlPublication,
+                correlationId,
                 ControlResponseCode.RECORDING_NOT_FOUND,
                 "Requested start id exceeds max known id",
-                correlationId);
+                controlPublication);
+
             state = State.INACTIVE;
         }
         else

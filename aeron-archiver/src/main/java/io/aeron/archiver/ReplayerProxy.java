@@ -22,6 +22,7 @@ import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 class ReplayerProxy extends Replayer
 {
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue = new OneToOneConcurrentArrayQueue<>(256);
+
     ReplayerProxy(final Aeron aeron, final Archiver.Context ctx)
     {
         super(aeron, ctx);
@@ -36,15 +37,14 @@ class ReplayerProxy extends Replayer
         final long position,
         final long length)
     {
-        final Runnable cmd = () ->
-            super.startReplay(
-                correlationId,
-                controlPublication,
-                replayStreamId,
-                replayChannel,
-                recordingId,
-                position,
-                length);
+        final Runnable cmd = () -> super.startReplay(
+            correlationId,
+            controlPublication,
+            replayStreamId,
+            replayChannel,
+            recordingId,
+            position,
+            length);
 
         while (!commandQueue.offer(cmd))
         {
@@ -64,7 +64,7 @@ class ReplayerProxy extends Replayer
 
     public int doWork()
     {
-        final int work = commandQueue.drain(r -> r.run());
+        final int work = commandQueue.drain(Runnable::run);
         return work + super.doWork();
     }
 }

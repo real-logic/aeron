@@ -35,17 +35,15 @@ class Recorder extends SessionWorker
     {
         catalog = new Catalog(ctx.archiveDir());
         controlSessionProxy = new ControlSessionProxy(ctx.idleStrategy());
-        final Publication notificationPublication =
-            aeron.addPublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
+        final Publication notificationPublication = aeron.addPublication(
+            ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
         notificationsProxy = new NotificationsProxy(ctx.idleStrategy(), notificationPublication);
 
-        final RecordingWriter.RecordingContext recordingContext = new RecordingWriter.RecordingContext()
+        this.recordingContext = new RecordingWriter.RecordingContext()
             .recordingFileLength(ctx.segmentFileLength())
             .archiveDir(ctx.archiveDir())
             .epochClock(ctx.epochClock())
             .forceWrites(ctx.forceWrites());
-
-        this.recordingContext = recordingContext;
     }
 
     public String roleName()
@@ -78,15 +76,12 @@ class Recorder extends SessionWorker
         if (recordingSession != null)
         {
             recordingSession.abort();
-            controlSessionProxy.sendOkResponse(controlPublication, correlationId);
+            controlSessionProxy.sendOkResponse(correlationId, controlPublication);
         }
         else
         {
             controlSessionProxy.sendError(
-                controlPublication,
-                ControlResponseCode.RECORDING_NOT_FOUND,
-                null,
-                correlationId);
+                correlationId, ControlResponseCode.RECORDING_NOT_FOUND, null, controlPublication);
         }
     }
 

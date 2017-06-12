@@ -63,7 +63,7 @@ public class ArchiveUtil
     {
         try (FileChannel metadataFileChannel = FileChannel.open(metaFile.toPath(), READ, WRITE))
         {
-            final ByteBuffer metaDataBuffer = ByteBuffer.allocate(Catalog.RECORD_LENGTH);
+            final ByteBuffer metaDataBuffer = ByteBuffer.allocateDirect(Catalog.RECORD_LENGTH);
             metadataFileChannel.read(metaDataBuffer);
 
             return new RecordingDescriptorDecoder().wrap(

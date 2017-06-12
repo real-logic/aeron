@@ -77,7 +77,6 @@ class ReplaySession
         final String replayChannel,
         final int replayStreamId)
     {
-
         this.controlPublication = controlPublication;
         this.controlSessionProxy = controlSessionProxy;
         this.replaySessionId = replaySessionId;
@@ -179,10 +178,8 @@ class ReplaySession
         if (controlPublication.isConnected())
         {
             controlSessionProxy.sendReplayAborted(
-                controlPublication,
-                correlationId,
-                replaySessionId,
-                replayPublication.position());
+                correlationId, replaySessionId, replayPublication.position(), controlPublication
+            );
         }
 
         this.state = State.INACTIVE;
@@ -274,7 +271,7 @@ class ReplaySession
             return 0;
         }
 
-        controlSessionProxy.sendOkResponse(controlPublication, correlationId);
+        controlSessionProxy.sendOkResponse(correlationId, controlPublication);
         this.state = State.REPLAY;
 
         return 1;
@@ -285,7 +282,7 @@ class ReplaySession
         this.state = State.INACTIVE;
         if (controlPublication.isConnected())
         {
-            controlSessionProxy.sendError(controlPublication, ControlResponseCode.ERROR, errorMessage, correlationId);
+            controlSessionProxy.sendError(correlationId, ControlResponseCode.ERROR, errorMessage, controlPublication);
         }
 
         if (e != null)

@@ -220,7 +220,7 @@ public class ReplaySessionTest
         replaySession.doWork();
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        verify(proxy, times(1)).sendOkResponse(control, correlationId);
+        verify(proxy, times(1)).sendOkResponse(correlationId, control);
         verify(conductor).newReplayPublication(
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
@@ -288,7 +288,7 @@ public class ReplaySessionTest
         replaySession.doWork();
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        verify(proxy, times(1)).sendOkResponse(control, correlationId);
+        verify(proxy, times(1)).sendOkResponse(correlationId, control);
         verify(conductor).newReplayPublication(
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
@@ -347,7 +347,7 @@ public class ReplaySessionTest
         replaySession.doWork();
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        verify(proxy, times(1)).sendOkResponse(control, correlationId);
+        verify(proxy, times(1)).sendOkResponse(correlationId, control);
         verify(conductor).newReplayPublication(
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
@@ -395,13 +395,13 @@ public class ReplaySessionTest
 
         replaySession.doWork();
 
-        verify(proxy, times(1)).sendOkResponse(control, correlationId);
+        verify(proxy, times(1)).sendOkResponse(correlationId, control);
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
         replaySession.abort();
         assertEquals(replaySession.state(), ReplaySession.State.INACTIVE);
         verify(proxy, times(1))
-            .sendReplayAborted(control, correlationId, REPLAY_SESSION_ID, replayPublication.position());
+            .sendReplayAborted(correlationId, REPLAY_SESSION_ID, replayPublication.position(), control);
 
         replaySession.doWork();
         assertTrue(replaySession.isDone());

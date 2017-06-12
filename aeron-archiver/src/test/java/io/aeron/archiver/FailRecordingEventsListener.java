@@ -21,11 +21,6 @@ import static org.junit.Assert.fail;
 
 public class FailRecordingEventsListener implements RecordingEventsListener
 {
-    public void onProgress(final long recordingId, final long joiningPosition, final long currentPosition)
-    {
-        fail();
-    }
-
     public void onStart(
         final long recordingId,
         final int sessionId,
@@ -36,7 +31,12 @@ public class FailRecordingEventsListener implements RecordingEventsListener
         fail();
     }
 
-    public void onStop(final long recordingId)
+    public void onProgress(final long recordingId, final long joiningPosition, final long currentPosition)
+    {
+        fail();
+    }
+
+    public void onStop(final long recordingId, final long lastPosition)
     {
         fail();
     }

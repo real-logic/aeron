@@ -195,104 +195,123 @@ int aeron_map_raw_log(
 {
     int fd, result = -1;
     uint64_t log_length = AERON_LOGBUFFER_COMPUTE_LOG_LENGTH(term_length);
+    uint8_t null_buffer[] = { 0, 0 };
 
     if ((fd = open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR)) >= 0)
     {
-        if (log_length <= INT32_MAX)
+        if (lseek(fd, (off_t)(log_length - 1), SEEK_SET) >= 0)
         {
-            mapped_raw_log->num_mapped_files = 1;
-            mapped_raw_log->mapped_files[0].length = log_length;
-            mapped_raw_log->mapped_files[0].addr = NULL;
-
-            int mmap_result = aeron_mmap(&mapped_raw_log->mapped_files[0], fd, 0);
-            close(fd);
-
-            if (mmap_result < 0)
+            if (write(fd, null_buffer, 1) > 0)
             {
-                return -1;
-            }
+                if (log_length <= INT32_MAX)
+                {
+                    mapped_raw_log->num_mapped_files = 1;
+                    mapped_raw_log->mapped_files[0].length = log_length;
+                    mapped_raw_log->mapped_files[0].addr = NULL;
 
-            if (!use_sparse_files)
+                    int mmap_result = aeron_mmap(&mapped_raw_log->mapped_files[0], fd, 0);
+                    close(fd);
+
+                    if (mmap_result < 0)
+                    {
+                        return -1;
+                    }
+
+                    if (!use_sparse_files)
+                    {
+                        aeron_allocate_pages(mapped_raw_log->mapped_files[0].addr, log_length);
+                    }
+
+                    for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
+                    {
+                        mapped_raw_log->term_buffers[i].addr =
+                            (uint8_t *) mapped_raw_log->mapped_files[0].addr + (i * term_length);
+                        mapped_raw_log->term_buffers[i].length = term_length;
+                    }
+
+                    mapped_raw_log->log_meta_data.addr =
+                        (uint8_t *) mapped_raw_log->mapped_files[0].addr +
+                            (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
+                    mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
+
+                    mapped_raw_log->term_length = term_length;
+
+                    result = 0;
+                }
+                else
+                {
+                    mapped_raw_log->num_mapped_files = 0;
+                    int mmap_result = -1;
+
+                    for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
+                    {
+                        mapped_raw_log->mapped_files[i].length = term_length;
+                        mapped_raw_log->mapped_files[i].addr = NULL;
+                        mmap_result = aeron_mmap(&mapped_raw_log->mapped_files[i], fd, (off_t) (i * term_length));
+
+                        if (mmap_result < 0)
+                        {
+                            break;
+                        }
+
+                        mapped_raw_log->num_mapped_files++;
+
+                        if (!use_sparse_files)
+                        {
+                            aeron_allocate_pages(mapped_raw_log->mapped_files[i].addr, log_length);
+                        }
+
+                        mapped_raw_log->term_buffers[i].addr = (uint8_t *) mapped_raw_log->mapped_files[1].addr;
+                        mapped_raw_log->term_buffers[i].length = term_length;
+                    }
+
+                    mapped_raw_log->mapped_files[AERON_LOG_META_DATA_SECTION_INDEX].length =
+                        AERON_LOGBUFFER_META_DATA_LENGTH;
+                    mapped_raw_log->mapped_files[AERON_LOG_META_DATA_SECTION_INDEX].addr = NULL;
+
+                    mmap_result = (mmap_result < 0) ? -1 :
+                        aeron_mmap(
+                            &mapped_raw_log->mapped_files[AERON_LOG_META_DATA_SECTION_INDEX],
+                            fd,
+                            AERON_LOGBUFFER_PARTITION_COUNT * term_length);
+
+                    close(fd);
+
+                    if (mmap_result < 0)
+                    {
+                        for (size_t i = 0; i < mapped_raw_log->num_mapped_files; i++)
+                        {
+                            if (NULL != mapped_raw_log->mapped_files[i].addr)
+                            {
+                                munmap(mapped_raw_log->mapped_files[i].addr, mapped_raw_log->mapped_files[i].length);
+                                mapped_raw_log->mapped_files[i].addr = NULL;
+                            }
+                        }
+
+                        return -1;
+                    }
+
+                    mapped_raw_log->num_mapped_files++;
+
+                    mapped_raw_log->log_meta_data.addr =
+                        (uint8_t *) mapped_raw_log->mapped_files[AERON_LOG_META_DATA_SECTION_INDEX].addr;
+                    mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
+
+                    mapped_raw_log->term_length = term_length;
+
+                    result = 0;
+                }
+            }
+            else
             {
-                aeron_allocate_pages(mapped_raw_log->mapped_files[0].addr, log_length);
+                /* TODO: grab error */
+                close(fd);
             }
-
-            for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
-            {
-                mapped_raw_log->term_buffers[i].addr =
-                    (uint8_t *)mapped_raw_log->mapped_files[0].addr + (i * term_length);
-                mapped_raw_log->term_buffers[i].length = term_length;
-            }
-
-            mapped_raw_log->log_meta_data.addr =
-                (uint8_t *)mapped_raw_log->mapped_files[0].addr + (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
-            mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
-
-            mapped_raw_log->term_length = term_length;
-
-            result = 0;
         }
         else
         {
-            mapped_raw_log->num_mapped_files = 0;
-            int mmap_result = -1;
-
-            for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
-            {
-                mapped_raw_log->mapped_files[i].length = term_length;
-                mapped_raw_log->mapped_files[i].addr = NULL;
-                mmap_result = aeron_mmap(&mapped_raw_log->mapped_files[i], fd, (off_t)(i * term_length));
-
-                if (mmap_result < 0)
-                {
-                    break;
-                }
-
-                mapped_raw_log->num_mapped_files++;
-
-                if (!use_sparse_files)
-                {
-                    aeron_allocate_pages(mapped_raw_log->mapped_files[i].addr, log_length);
-                }
-
-                mapped_raw_log->term_buffers[i].addr = (uint8_t *)mapped_raw_log->mapped_files[1].addr;
-                mapped_raw_log->term_buffers[i].length = term_length;
-            }
-
-            mapped_raw_log->mapped_files[AERON_LOG_META_DATA_SECTION_INDEX].length = AERON_LOGBUFFER_META_DATA_LENGTH;
-            mapped_raw_log->mapped_files[AERON_LOG_META_DATA_SECTION_INDEX].addr = NULL;
-
-            mmap_result = (mmap_result < 0) ? -1 :
-                aeron_mmap(
-                    &mapped_raw_log->mapped_files[AERON_LOG_META_DATA_SECTION_INDEX],
-                    fd,
-                    AERON_LOGBUFFER_PARTITION_COUNT * term_length);
-
+            /* TODO: grab error */
             close(fd);
-
-            if (mmap_result < 0)
-            {
-                for (size_t i = 0; i < mapped_raw_log->num_mapped_files; i++)
-                {
-                    if (NULL != mapped_raw_log->mapped_files[i].addr)
-                    {
-                        munmap(mapped_raw_log->mapped_files[i].addr, mapped_raw_log->mapped_files[i].length);
-                        mapped_raw_log->mapped_files[i].addr = NULL;
-                    }
-                }
-
-                return -1;
-            }
-
-            mapped_raw_log->num_mapped_files++;
-
-            mapped_raw_log->log_meta_data.addr =
-                (uint8_t *)mapped_raw_log->mapped_files[AERON_LOG_META_DATA_SECTION_INDEX].addr;
-            mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
-
-            mapped_raw_log->term_length = term_length;
-
-            result = 0;
         }
     }
     else

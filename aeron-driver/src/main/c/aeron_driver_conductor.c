@@ -452,7 +452,7 @@ void aeron_driver_conductor_on_available_image(
     memcpy(ptr, log_file_name, log_file_name_length);
     ptr += log_file_name_length;
 
-    *((int32_t *)ptr) = (int32_t)source_identity;
+    *((int32_t *)ptr) = (int32_t)source_identity_length;
     ptr += sizeof(int32_t);
     memcpy(ptr, source_identity, source_identity_length);
     /* ptr += source_identity_length; */
@@ -468,7 +468,7 @@ void aeron_driver_conductor_on_available_image(
 
 void aeron_driver_conductor_error(aeron_driver_conductor_t *conductor, int error_code, const char *description)
 {
-    aeron_distinct_error_log_record(&conductor->error_log, error_code, description, conductor->stack_buffer);
+    aeron_distinct_error_log_record(&conductor->error_log, error_code, description, conductor->stack_error.buffer);
     aeron_counter_increment(conductor->errors_counter, 1);
 }
 
@@ -478,9 +478,10 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
     int64_t correlation_id = 0;
     int result = 0;
 
-    conductor->stack_buffer[0] = '\0';
-    conductor->stack_error_code = AERON_ERROR_CODE_GENERIC_ERROR;
-    conductor->stack_error_desc = "generic error";
+    conductor->stack_error.buffer[0] = '\0';
+    conductor->stack_error.code = AERON_ERROR_CODE_GENERIC_ERROR;
+    conductor->stack_error.os_errno = 0;
+    conductor->stack_error.description = "generic error";
 
     switch (msg_type_id)
     {
@@ -601,7 +602,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
         }
 
         default:
-            AERON_FORMAT_BUFFER(conductor->stack_buffer, "command=%d unknown", msg_type_id);
+            AERON_FORMAT_BUFFER(conductor->stack_error.buffer, "command=%d unknown", msg_type_id);
             aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID, "unknown command type id");
             break;
     }
@@ -609,14 +610,14 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
     if (result < 0)
     {
         aeron_driver_conductor_on_error(
-            conductor, conductor->stack_error_code, conductor->stack_buffer, strlen(conductor->stack_buffer), correlation_id);
-        aeron_driver_conductor_error(conductor, conductor->stack_error_code, conductor->stack_error_desc);
+            conductor, conductor->stack_error.code, conductor->stack_error.buffer, strlen(conductor->stack_error.buffer), correlation_id);
+        aeron_driver_conductor_error(conductor, conductor->stack_error.code, conductor->stack_error.description);
     }
 
     return;
 
     malformed_command:
-        AERON_FORMAT_BUFFER(conductor->stack_buffer, "command=%d too short: length=%lu", msg_type_id, length);
+        AERON_FORMAT_BUFFER(conductor->stack_error.buffer, "command=%d too short: length=%lu", msg_type_id, length);
         aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_MALFORMED_COMMAND, "command too short");
         return;
 }
@@ -676,12 +677,12 @@ void aeron_driver_conductor_on_close(void *clientd)
     aeron_distinct_error_log_close(&conductor->error_log);
 }
 
-#define AERON_ERROR(c, code, desc, format, ...) \
+#define AERON_ERROR(c, ecode, desc, format, ...) \
 do \
 { \
-    snprintf(c->stack_buffer, sizeof(c->stack_buffer) - 1, format, __VA_ARGS__); \
-    c->stack_error_code = code; \
-    c->stack_error_desc = desc; \
+    snprintf(c->stack_error.buffer, sizeof(c->stack_error.buffer) - 1, format, __VA_ARGS__); \
+    c->stack_error.code = ecode; \
+    c->stack_error.description = desc; \
 } while (0)
 
 int aeron_driver_subscribeable_add_position(

@@ -123,9 +123,7 @@ typedef struct aeron_driver_conductor_stct
     }
     ipc_publications;
 
-    char stack_buffer[AERON_MAX_PATH];
-    int stack_error_code;
-    char *stack_error_desc;
+    aeron_error_t stack_error;
 
     int64_t *errors_counter;
     int64_t *client_keep_alives_counter;

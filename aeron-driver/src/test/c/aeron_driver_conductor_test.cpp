@@ -529,6 +529,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSingleI
             EXPECT_EQ(position.registrationId, sub_id);
 
             EXPECT_EQ(log_file_name, response.logFileName());
+            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
         }
 
         response_number++;
@@ -590,6 +591,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingleIp
             EXPECT_EQ(position.registrationId, sub_id);
 
             EXPECT_EQ(log_file_name, response.logFileName());
+            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
         }
 
         response_number++;
@@ -661,6 +663,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleIpcSubscriptionWithSameStre
             EXPECT_TRUE(position.registrationId == sub_id_1 || position.registrationId == sub_id_2);
 
             EXPECT_EQ(log_file_name, response.logFileName());
+            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
         }
 
         response_number++;
@@ -728,6 +731,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddMultipl
             EXPECT_EQ(response.sessionId(), session_id_1);
             EXPECT_EQ(response.correlationId(), pub_id_1);
             EXPECT_EQ(log_file_name_1, response.logFileName());
+            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
         }
         else if (3 == response_number)
         {
@@ -754,6 +758,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddMultipl
             EXPECT_EQ(response.sessionId(), session_id_2);
             EXPECT_EQ(response.correlationId(), pub_id_2);
             EXPECT_EQ(log_file_name_2, response.logFileName());
+            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
         }
 
         response_number++;

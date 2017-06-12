@@ -52,12 +52,14 @@ public interface ResponseListener
      *
      * @param correlationId     of the associated request to list recordings.
      * @param recordingId       of this recording descriptor.
-     * @param segmentFileLength for the recording.
-     * @param termBufferLength  for the recording.
      * @param startTime         for the recording.
-     * @param joiningPosition   for the recording.
      * @param endTime           for the recording.
+     * @param joiningPosition   for the recording against the recorded publication.
      * @param lastPosition      reached for the recording.
+     * @param initialTermId     for the recorded publication.
+     * @param termBufferLength  for the recorded publication.
+     * @param mtuLength         for the recorded publication.
+     * @param segmentFileLength for the recording.
      * @param sessionId         for the recorded publication.
      * @param streamId          for the recorded publication.
      * @param channel           for the recorded publication.
@@ -66,12 +68,14 @@ public interface ResponseListener
     void onRecordingDescriptor(
         long correlationId,
         long recordingId,
-        int segmentFileLength,
-        int termBufferLength,
         long startTime,
-        long joiningPosition,
         long endTime,
+        long joiningPosition,
         long lastPosition,
+        int initialTermId,
+        int termBufferLength,
+        int mtuLength,
+        int segmentFileLength,
         int sessionId,
         int streamId,
         String channel,

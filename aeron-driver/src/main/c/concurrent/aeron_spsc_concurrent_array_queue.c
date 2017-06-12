@@ -49,3 +49,10 @@ extern uint64_t aeron_spsc_concurrent_array_queue_drain(
     aeron_queue_drain_func_t func,
     void *clientd,
     uint64_t limit);
+
+extern uint64_t aeron_spsc_concurrent_array_queue_drain_all(
+    volatile aeron_spsc_concurrent_array_queue_t *queue,
+    aeron_queue_drain_func_t func,
+    void *clientd);
+
+extern uint64_t aeron_spsc_concurrent_array_queue_size(volatile aeron_spsc_concurrent_array_queue_t *queue);

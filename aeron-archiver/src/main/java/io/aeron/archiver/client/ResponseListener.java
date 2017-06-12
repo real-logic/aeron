@@ -59,7 +59,7 @@ public interface ResponseListener
      * @param initialTermId     for the recorded publication.
      * @param termBufferLength  for the recorded publication.
      * @param mtuLength         for the recorded publication.
-     * @param segmentFileLength for the recording.
+     * @param segmentFileLength for the recording which is a multiple of termBufferLength.
      * @param sessionId         for the recorded publication.
      * @param streamId          for the recorded publication.
      * @param channel           for the recorded publication.

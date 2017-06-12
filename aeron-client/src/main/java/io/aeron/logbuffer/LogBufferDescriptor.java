@@ -15,10 +15,10 @@
  */
 package io.aeron.logbuffer;
 
+import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static org.agrona.BitUtil.*;
 
@@ -205,9 +205,9 @@ public class LogBufferDescriptor
                 "Term length more than max length of " + TERM_MAX_LENGTH + ": length=" + termLength);
         }
 
-        if ((termLength & (FRAME_ALIGNMENT - 1)) != 0)
+        if (!BitUtil.isPowerOfTwo(termLength))
         {
-            throw new IllegalStateException("Term length not a multiple of FRAME_ALIGNMENT: length=" + termLength);
+            throw new IllegalStateException("Term length not a power of 2: length=" + termLength);
         }
     }
 

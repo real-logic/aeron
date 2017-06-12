@@ -39,7 +39,7 @@ class PublicationParams
         if (null != termLengthParam)
         {
             termLength = Integer.parseInt(termLengthParam);
-            Configuration.validateTermBufferLength(termLength);
+            LogBufferDescriptor.checkTermLength(termLength);
         }
 
         return termLength;

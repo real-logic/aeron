@@ -54,6 +54,11 @@ public class LogBufferDescriptor
      */
     public static final int TERM_MIN_LENGTH = 64 * 1024;
 
+    /**
+     * Maximum buffer length for a log term
+     */
+    public static final int TERM_MAX_LENGTH = 1024 * 1024 * 1024;
+
     // *******************************
     // *** Log Meta Data Constants ***
     // *******************************
@@ -190,18 +195,19 @@ public class LogBufferDescriptor
     {
         if (termLength < TERM_MIN_LENGTH)
         {
-            final String s = String.format(
-                "Term length less than min length of %d, length=%d",
-                TERM_MIN_LENGTH, termLength);
-            throw new IllegalStateException(s);
+            throw new IllegalStateException(
+                "Term length less than min length of " + TERM_MIN_LENGTH + ": length=" + termLength);
+        }
+
+        if (termLength > TERM_MAX_LENGTH)
+        {
+            throw new IllegalStateException(
+                "Term length more than max length of " + TERM_MAX_LENGTH + ": length=" + termLength);
         }
 
         if ((termLength & (FRAME_ALIGNMENT - 1)) != 0)
         {
-            final String s = String.format(
-                "Term length not a multiple of %d, length=%d",
-                FRAME_ALIGNMENT, termLength);
-            throw new IllegalStateException(s);
+            throw new IllegalStateException("Term length not a multiple of FRAME_ALIGNMENT: length=" + termLength);
         }
     }
 
@@ -490,8 +496,8 @@ public class LogBufferDescriptor
     {
         if (defaultHeader.capacity() != HEADER_LENGTH)
         {
-            throw new IllegalArgumentException(String.format(
-                "Default header of %d not equal to %d", defaultHeader.capacity(), HEADER_LENGTH));
+            throw new IllegalArgumentException(
+                "Default header of not equals to HEADER_LENGTH: length=" + defaultHeader.capacity());
         }
 
         logMetaDataBuffer.putInt(LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET, HEADER_LENGTH);

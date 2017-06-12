@@ -226,8 +226,11 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         sendStatusMessage(controlAddress, sessionId, streamId, 0, 0, 0, SEND_SETUP_FLAG);
     }
 
-    public void validateWindowMaxLength(final int windowMaxLength)
+    public void validateSenderMtuLength(final int senderMtuLength, final int windowMaxLength)
     {
+        Configuration.validateMtuLength(senderMtuLength);
+        Configuration.validateInitialWindowLength(windowMaxLength, senderMtuLength);
+
         if (windowMaxLength > soRcvBufLength)
         {
             throw new ConfigurationException("Max Window length greater than socket SO_RCVBUF, increase '" +
@@ -235,11 +238,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
                 "' to match window: windowMaxLength=" + windowMaxLength +
                 ", SO_RCVBUF=" + soRcvBufLength);
         }
-    }
-
-    public void validateSenderMtuLength(final int senderMtuLength)
-    {
-        Configuration.validateMtuLength(senderMtuLength);
 
         if (senderMtuLength > soRcvBufLength)
         {

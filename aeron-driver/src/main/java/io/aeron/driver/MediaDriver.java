@@ -22,6 +22,7 @@ import io.aeron.driver.exceptions.*;
 import io.aeron.driver.media.*;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.BroadcastTransmitter;
@@ -539,9 +540,9 @@ public final class MediaDriver implements AutoCloseable
             {
                 concludeNullProperties();
 
-                Configuration.validateTermBufferLength(maxTermBufferLength);
-                Configuration.validateTermBufferLength(publicationTermBufferLength);
-                Configuration.validateTermBufferLength(ipcPublicationTermBufferLength);
+                LogBufferDescriptor.checkTermLength(maxTermBufferLength);
+                LogBufferDescriptor.checkTermLength(publicationTermBufferLength);
+                LogBufferDescriptor.checkTermLength(ipcPublicationTermBufferLength);
 
                 if (publicationTermBufferLength > maxTermBufferLength)
                 {

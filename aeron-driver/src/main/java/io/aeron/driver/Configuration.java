@@ -19,9 +19,12 @@ import io.aeron.*;
 import io.aeron.driver.exceptions.ConfigurationException;
 import io.aeron.driver.media.*;
 import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.*;
-import org.agrona.concurrent.*;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.ControllableIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.agrona.concurrent.status.*;
@@ -60,7 +63,7 @@ public class Configuration
     /**
      * Default term max buffer length. The maximum possible term length is 1GB.
      */
-    public static final int TERM_BUFFER_LENGTH_MAX_DEFAULT = 1024 * 1024 * 1024;
+    public static final int TERM_BUFFER_LENGTH_MAX_DEFAULT = LogBufferDescriptor.TERM_MAX_LENGTH;
 
     /**
      * Length (in bytes) of the log buffers for publication terms.
@@ -645,19 +648,6 @@ public class Configuration
     public static final int MAX_RETRANSMITS_DEFAULT = 16;
 
     /**
-     * Validate the the term buffer length is a power of two.
-     *
-     * @param length of the term buffer
-     */
-    public static void validateTermBufferLength(final int length)
-    {
-        if (!BitUtil.isPowerOfTwo(length))
-        {
-            throw new IllegalStateException("Term buffer length must be a positive power of 2: " + length);
-        }
-    }
-
-    /**
      * How far ahead the publisher can get from the sender position.
      *
      * @param termBufferLength to be used when {@link #PUBLICATION_TERM_WINDOW_LENGTH} is not set.
@@ -925,7 +915,7 @@ public class Configuration
                 "mtuLength must be a >= HEADER_LENGTH and <= MAX_UDP_PAYLOAD_LENGTH: mtuLength=" + mtuLength);
         }
 
-        if ((mtuLength % FrameDescriptor.FRAME_ALIGNMENT) != 0)
+        if ((mtuLength & (FrameDescriptor.FRAME_ALIGNMENT - 1)) != 0)
         {
             throw new ConfigurationException("mtuLength must be a multiple of FRAME_ALIGNMENT: mtuLength=" + mtuLength);
         }

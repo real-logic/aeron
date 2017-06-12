@@ -60,7 +60,10 @@ public class LogBuffers implements AutoCloseable
 
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {
-                    termBuffers[i] = new UnsafeBuffer(mappedBuffer, i * termLength, termLength);
+                    final int offset = i * termLength;
+                    mappedBuffer.limit(offset + termLength).position(offset);
+
+                    termBuffers[i] = new UnsafeBuffer(mappedBuffer.slice());
                 }
 
                 logMetaDataBuffer = new UnsafeBuffer(

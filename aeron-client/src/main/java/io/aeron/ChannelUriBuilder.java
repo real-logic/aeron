@@ -19,6 +19,7 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 
 import static io.aeron.CommonContext.*;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
 /**
  * Type safe means of building a channel URI associated with a publication or subscription.
@@ -318,9 +319,17 @@ public class ChannelUriBuilder
      */
     public ChannelUriBuilder mtu(final Integer mtu)
     {
-        if (null != mtu && (mtu < 32 || mtu > 65504))
+        if (null != mtu)
         {
-            throw new IllegalArgumentException("MTU not in range 32-65504: " + mtu);
+            if (mtu < 32 || mtu > 65504)
+            {
+                throw new IllegalArgumentException("MTU not in range 32-65504: " + mtu);
+            }
+
+            if ((mtu & (FRAME_ALIGNMENT - 1)) != 0)
+            {
+                throw new IllegalArgumentException("MTU not a multiple of FRAME_ALIGNMENT: mtu=" + mtu);
+            }
         }
 
         this.mtu = mtu;

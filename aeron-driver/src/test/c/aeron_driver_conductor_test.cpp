@@ -486,6 +486,10 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSingleI
     ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
     doWork();
 
+    aeron_ipc_publication_t *publication =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id);
+    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 1u);
+
     size_t response_number = 0;
     int32_t session_id = 0;
     std::string log_file_name;
@@ -542,6 +546,10 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingleIp
     ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
     ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, -1), 0);
     doWork();
+
+    aeron_ipc_publication_t *publication =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id);
+    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 1u);
 
     size_t response_number = 0;
     int32_t session_id = 0;
@@ -601,6 +609,10 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleIpcSubscriptionWithSameStre
     ASSERT_EQ(addIpcSubscription(client_id, sub_id_2, STREAM_ID_1, -1), 0);
     ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
     doWork();
+
+    aeron_ipc_publication_t *publication =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id);
+    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 2u);
 
     size_t response_number = 0;
     int32_t session_id = 0;
@@ -668,6 +680,13 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddMultipl
     ASSERT_EQ(addIpcPublication(client_id, pub_id_1, STREAM_ID_1, true), 0);
     ASSERT_EQ(addIpcPublication(client_id, pub_id_2, STREAM_ID_1, true), 0);
     doWork();
+
+    aeron_ipc_publication_t *publication_1 =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_1);
+    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication_1), 1u);
+    aeron_ipc_publication_t *publication_2 =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_2);
+    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication_2), 1u);
 
     size_t response_number = 0;
     int32_t session_id_1 = 0;

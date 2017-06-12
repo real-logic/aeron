@@ -131,4 +131,9 @@ inline bool aeron_ipc_publication_is_drained(aeron_ipc_publication_t *publicatio
     return true;
 }
 
+inline size_t aeron_ipc_publication_num_subscribers(aeron_ipc_publication_t *publication)
+{
+    return publication->conductor_fields.subscribeable.length;
+}
+
 #endif //AERON_AERON_IPC_PUBLICATION_H

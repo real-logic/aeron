@@ -19,7 +19,8 @@ package io.aeron.archiver.workloads;
 import io.aeron.*;
 import io.aeron.archiver.*;
 import io.aeron.archiver.client.ArchiveClient;
-import io.aeron.driver.*;
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
@@ -28,7 +29,8 @@ import org.junit.*;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
@@ -205,7 +207,7 @@ public class ArchiveRecordingLoadTest
                     recorded = currentPosition - joiningPosition;
                 }
 
-                public void onStop(final long recordingId0)
+                public void onStop(final long recordingId0, final long lastPosition)
                 {
                     doneRecording = true;
                     assertThat(recordingId0, is(recordingId));

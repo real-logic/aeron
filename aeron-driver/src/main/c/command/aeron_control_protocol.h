@@ -113,6 +113,14 @@ typedef struct aeron_remove_command_stct
     int64_t registration_id;
 }
 aeron_remove_command_t;
+
+typedef struct aeron_image_message_stct
+{
+    int64_t correlation_id;
+    int32_t stream_id;
+    int32_t channel_length;
+}
+aeron_image_message_t;
 #pragma pack(pop)
 
 

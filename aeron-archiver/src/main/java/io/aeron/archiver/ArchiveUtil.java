@@ -18,7 +18,8 @@ package io.aeron.archiver;
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Date;
@@ -26,7 +27,7 @@ import java.util.Date;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 
-public class ArchiveUtil
+class ArchiveUtil
 {
     static String recordingMetaFileName(final long recordingId)
     {

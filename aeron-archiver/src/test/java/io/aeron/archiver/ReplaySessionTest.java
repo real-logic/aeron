@@ -15,15 +15,19 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.*;
+import io.aeron.ExclusivePublication;
+import io.aeron.Publication;
 import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.*;
-import org.agrona.concurrent.*;
+import org.agrona.BufferUtil;
+import org.agrona.IoUtil;
+import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 import org.mockito.Mockito;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 
 import static io.aeron.archiver.TestUtil.makeTempDir;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -50,6 +54,10 @@ public class ReplaySessionTest
     private static final int REPLAY_SESSION_ID = 0;
     private static final int FRAME_LENGTH = 1024;
     private File archiveDir;
+    private final ExclusivePublication mockReplayPub = Mockito.mock(ExclusivePublication.class);
+    private final Publication mockControlPub = Mockito.mock(Publication.class);
+    private final ArchiveConductor.ReplayPublicationSupplier mockReplyPubSupplier =
+        Mockito.mock(ArchiveConductor.ReplayPublicationSupplier.class);
 
     private int messageCounter = 0;
     private ControlSessionProxy proxy;
@@ -197,31 +205,29 @@ public class ReplaySessionTest
     public void shouldReplayPartialDataFromFile()
     {
         final long correlationId = 1L;
-        final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
-        final Publication control = Mockito.mock(Publication.class);
-        final Replayer conductor = Mockito.mock(Replayer.class);
 
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID, RECORDING_POSITION, FRAME_LENGTH, correlationId, replay, control, conductor);
+            RECORDING_ID, RECORDING_POSITION, FRAME_LENGTH, correlationId, mockReplayPub, mockControlPub,
+            mockReplyPubSupplier);
 
-        when(control.isClosed()).thenReturn(false);
-        when(control.isConnected()).thenReturn(true);
+        when(mockControlPub.isClosed()).thenReturn(false);
+        when(mockControlPub.isConnected()).thenReturn(true);
 
-        when(replay.isClosed()).thenReturn(false);
-        when(replay.isConnected()).thenReturn(false);
+        when(mockReplayPub.isClosed()).thenReturn(false);
+        when(mockReplayPub.isConnected()).thenReturn(false);
 
         replaySession.doWork();
 
         assertEquals(replaySession.state(), ReplaySession.State.INIT);
 
-        when(replay.isConnected()).thenReturn(true);
-        when(control.isConnected()).thenReturn(true);
+        when(mockReplayPub.isConnected()).thenReturn(true);
+        when(mockControlPub.isConnected()).thenReturn(true);
 
         replaySession.doWork();
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        verify(proxy, times(1)).sendOkResponse(control, correlationId);
-        verify(conductor).newReplayPublication(
+        verify(proxy, times(1)).sendOkResponse(mockControlPub, correlationId);
+        verify(mockReplyPubSupplier).newReplayPublication(
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
             RECORDING_POSITION,
@@ -230,7 +236,7 @@ public class ReplaySessionTest
             TERM_BUFFER_LENGTH);
 
         final UnsafeBuffer termBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
-        mockPublication(replay, termBuffer);
+        mockPublication(mockReplayPub, termBuffer);
         assertNotEquals(0, replaySession.doWork());
         assertThat(messageCounter, is(1));
 
@@ -248,26 +254,21 @@ public class ReplaySessionTest
     public void shouldReplayPartialUnalignedDataFromFile()
     {
         final long correlationId = 1L;
-        final ExclusivePublication replayPublication = Mockito.mock(ExclusivePublication.class);
-        final Publication control = Mockito.mock(Publication.class);
 
-        final Replayer conductor = Mockito.mock(Replayer.class);
-
-
-        when(conductor.newReplayPublication(
+        when(mockReplyPubSupplier.newReplayPublication(
             eq(REPLAY_CHANNEL),
             eq(REPLAY_STREAM_ID),
             eq(RECORDING_POSITION + FRAME_LENGTH),
             eq(MTU_LENGTH),
             eq(INITIAL_TERM_ID),
-            eq(TERM_BUFFER_LENGTH))).thenReturn(replayPublication);
+            eq(TERM_BUFFER_LENGTH))).thenReturn(mockReplayPub);
 
         final ReplaySession replaySession = new ReplaySession(
             (long) RECORDING_ID,
             RECORDING_POSITION + 1,
             (long) FRAME_LENGTH,
-            conductor,
-            control,
+            mockReplyPubSupplier,
+            mockControlPub,
             archiveDir,
             proxy,
             REPLAY_SESSION_ID,
@@ -277,19 +278,19 @@ public class ReplaySessionTest
             REPLAY_STREAM_ID);
 
 
-        when(replayPublication.isClosed()).thenReturn(false);
-        when(control.isClosed()).thenReturn(false);
+        when(mockReplayPub.isClosed()).thenReturn(false);
+        when(mockControlPub.isClosed()).thenReturn(false);
 
-        when(replayPublication.isConnected()).thenReturn(true);
-        when(control.isConnected()).thenReturn(true);
+        when(mockReplayPub.isConnected()).thenReturn(true);
+        when(mockControlPub.isConnected()).thenReturn(true);
 
         replaySession.doWork();
 
         replaySession.doWork();
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        verify(proxy, times(1)).sendOkResponse(control, correlationId);
-        verify(conductor).newReplayPublication(
+        verify(proxy, times(1)).sendOkResponse(mockControlPub, correlationId);
+        verify(mockReplyPubSupplier).newReplayPublication(
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
             RECORDING_POSITION + FRAME_LENGTH,
@@ -298,7 +299,7 @@ public class ReplaySessionTest
             TERM_BUFFER_LENGTH);
 
         final UnsafeBuffer termBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
-        mockPublication(replayPublication, termBuffer);
+        mockPublication(mockReplayPub, termBuffer);
 
         assertNotEquals(0, replaySession.doWork());
         assertThat(messageCounter, is(1));
@@ -323,32 +324,29 @@ public class ReplaySessionTest
     {
         final long length = 4 * FRAME_LENGTH;
         final long correlationId = 1L;
-        final ExclusivePublication replayPublication = Mockito.mock(ExclusivePublication.class);
-        final Publication control = Mockito.mock(Publication.class);
-
-        final Replayer conductor = Mockito.mock(Replayer.class);
 
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID, RECORDING_POSITION, length, correlationId, replayPublication, control, conductor);
+            RECORDING_ID, RECORDING_POSITION, length, correlationId, mockReplayPub, mockControlPub,
+            mockReplyPubSupplier);
 
-        when(control.isClosed()).thenReturn(false);
-        when(control.isConnected()).thenReturn(true);
+        when(mockControlPub.isClosed()).thenReturn(false);
+        when(mockControlPub.isConnected()).thenReturn(true);
 
-        when(replayPublication.isClosed()).thenReturn(false);
-        when(replayPublication.isConnected()).thenReturn(false);
+        when(mockReplayPub.isClosed()).thenReturn(false);
+        when(mockReplayPub.isConnected()).thenReturn(false);
 
         replaySession.doWork();
 
         assertEquals(replaySession.state(), ReplaySession.State.INIT);
 
-        when(replayPublication.isConnected()).thenReturn(true);
-        when(control.isConnected()).thenReturn(true);
+        when(mockReplayPub.isConnected()).thenReturn(true);
+        when(mockControlPub.isConnected()).thenReturn(true);
 
         replaySession.doWork();
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        verify(proxy, times(1)).sendOkResponse(control, correlationId);
-        verify(conductor).newReplayPublication(
+        verify(proxy, times(1)).sendOkResponse(mockControlPub, correlationId);
+        verify(mockReplyPubSupplier).newReplayPublication(
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
             RECORDING_POSITION,
@@ -357,7 +355,7 @@ public class ReplaySessionTest
             TERM_BUFFER_LENGTH);
 
         final UnsafeBuffer termBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
-        mockPublication(replayPublication, termBuffer);
+        mockPublication(mockReplayPub, termBuffer);
 
         assertNotEquals(0, replaySession.doWork());
         assertThat(messageCounter, is(4));
@@ -366,7 +364,7 @@ public class ReplaySessionTest
         validateFrame(termBuffer, 1, FrameDescriptor.BEGIN_FRAG_FLAG);
         validateFrame(termBuffer, 2, FrameDescriptor.END_FRAG_FLAG);
 
-        verify(replayPublication).appendPadding(FRAME_LENGTH - HEADER_LENGTH);
+        verify(mockReplayPub).appendPadding(FRAME_LENGTH - HEADER_LENGTH);
         assertFalse(replaySession.isDone());
 
         when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
@@ -380,32 +378,30 @@ public class ReplaySessionTest
     {
         final long length = 1024L;
         final long correlationId = 1L;
-        final ExclusivePublication replayPublication = Mockito.mock(ExclusivePublication.class);
-        final Publication control = Mockito.mock(Publication.class);
-
-        final Replayer conductor = Mockito.mock(Replayer.class);
 
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID, RECORDING_POSITION, length, correlationId, replayPublication, control, conductor);
+            RECORDING_ID, RECORDING_POSITION, length, correlationId, mockReplayPub, mockControlPub,
+            mockReplyPubSupplier);
 
-        when(control.isClosed()).thenReturn(false);
-        when(replayPublication.isClosed()).thenReturn(false);
-        when(replayPublication.isConnected()).thenReturn(true);
-        when(control.isConnected()).thenReturn(true);
+        when(mockControlPub.isClosed()).thenReturn(false);
+        when(mockReplayPub.isClosed()).thenReturn(false);
+        when(mockReplayPub.isConnected()).thenReturn(true);
+        when(mockControlPub.isConnected()).thenReturn(true);
 
         replaySession.doWork();
 
-        verify(proxy, times(1)).sendOkResponse(control, correlationId);
+        verify(proxy, times(1)).sendOkResponse(mockControlPub, correlationId);
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
         replaySession.abort();
         assertEquals(replaySession.state(), ReplaySession.State.INACTIVE);
-        verify(proxy, times(1))
-            .sendReplayAborted(control, correlationId, REPLAY_SESSION_ID, replayPublication.position());
 
         replaySession.doWork();
         assertTrue(replaySession.isDone());
         replaySession.close();
+
+        verify(proxy, times(1))
+            .sendReplayAborted(mockControlPub, correlationId, REPLAY_SESSION_ID, mockReplayPub.position());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -416,7 +412,8 @@ public class ReplaySessionTest
         final ExclusivePublication replayPublication = Mockito.mock(ExclusivePublication.class);
         final Publication control = Mockito.mock(Publication.class);
 
-        final Replayer conductor = Mockito.mock(Replayer.class);
+        final ArchiveConductor.ReplayPublicationSupplier conductor =
+            Mockito.mock(ArchiveConductor.ReplayPublicationSupplier.class);
         replaySession(
             RECORDING_ID + 1,
             RECORDING_POSITION,
@@ -432,16 +429,13 @@ public class ReplaySessionTest
     {
         final long length = 1024L;
         final long correlationId = 1L;
-        final ExclusivePublication replay = Mockito.mock(ExclusivePublication.class);
-        final Publication control = Mockito.mock(Publication.class);
-
-        final Replayer conductor = Mockito.mock(Replayer.class);
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID, RECORDING_POSITION, length, correlationId, replay, control, conductor);
+            RECORDING_ID, RECORDING_POSITION, length, correlationId, mockReplayPub, mockControlPub,
+            mockReplyPubSupplier);
 
-        when(replay.isClosed()).thenReturn(false);
-        when(control.isClosed()).thenReturn(false);
-        when(replay.isConnected()).thenReturn(false);
+        when(mockReplayPub.isClosed()).thenReturn(false);
+        when(mockControlPub.isClosed()).thenReturn(false);
+        when(mockReplayPub.isConnected()).thenReturn(false);
 
         replaySession.doWork();
 
@@ -457,7 +451,7 @@ public class ReplaySessionTest
         final long correlationId,
         final ExclusivePublication replay,
         final Publication control,
-        final Replayer conductor)
+        final ArchiveConductor.ReplayPublicationSupplier conductor)
     {
         when(conductor.newReplayPublication(
             eq(REPLAY_CHANNEL),

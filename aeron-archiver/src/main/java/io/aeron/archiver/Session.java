@@ -17,7 +17,7 @@
 package io.aeron.archiver;
 
 /**
- * Seaaions are created by the conductor but perform their work on a different {@link SessionWorker} potentially. After
+ * Sessions are created by the conductor but perform their work on a different {@link SessionWorker} potentially. After
  * construction sessions are safely published to the {@link SessionWorker} and thereafter interacted with only from
  * that thread until they are done. Once done they are closed from the conductor.
  */

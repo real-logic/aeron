@@ -16,42 +16,38 @@
 
 package io.aeron.archiver;
 
-import io.aeron.*;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
-class RecorderProxy extends Recorder
+class SessionWorkerDedicated<T extends Session> extends SessionWorker<T>
 {
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue = new OneToOneConcurrentArrayQueue<>(256);
 
-    RecorderProxy(final Aeron aeron, final Archiver.Context ctx)
+    protected SessionWorkerDedicated(final String roleName)
     {
-        super(aeron, ctx);
-    }
-
-
-    void startRecording(final Image image)
-    {
-        final Runnable cmd = () -> super.startRecording(image);
-
-        while (!commandQueue.offer(cmd))
-        {
-            Thread.yield();
-        }
-    }
-
-    void stopRecording(final long correlationId, final Publication controlPublication, final long recordingId)
-    {
-        final Runnable cmd = () -> super.stopRecording(correlationId, controlPublication, recordingId);
-
-        while (!commandQueue.offer(cmd))
-        {
-            Thread.yield();
-        }
+        super(roleName);
     }
 
     public int doWork()
     {
         final int work = commandQueue.drain(r -> r.run());
         return work + super.doWork();
+    }
+
+    protected void addSession(final T session)
+    {
+        send(() -> super.addSession(session));
+    }
+
+    protected void abortSession(final T session)
+    {
+        send(() -> super.abortSession(session));
+    }
+
+    private void send(final Runnable r)
+    {
+        while (!commandQueue.offer(r))
+        {
+            Thread.yield();
+        }
     }
 }

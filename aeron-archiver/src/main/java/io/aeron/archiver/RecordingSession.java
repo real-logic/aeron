@@ -15,8 +15,10 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.*;
-import org.agrona.*;
+import io.aeron.Image;
+import io.aeron.Subscription;
+import org.agrona.CloseHelper;
+import org.agrona.LangUtil;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -165,9 +167,9 @@ class RecordingSession implements Session
         }
         finally
         {
+            catalog.removeRecordingSession(recordingId);
             CloseHelper.quietClose(recordingWriter);
             // this reflects the single local recording assumption
-            // TODO: if we want a NoOp client lock in the DEDICATED mode this needs to be done on the conductor
             CloseHelper.quietClose(image.subscription());
             notificationsProxy.recordingStopped(recordingId, recordingWriter.lastPosition());
             this.state = State.CLOSED;

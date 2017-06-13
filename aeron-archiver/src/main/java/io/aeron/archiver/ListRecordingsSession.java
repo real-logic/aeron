@@ -17,7 +17,8 @@ package io.aeron.archiver;
 
 import io.aeron.Publication;
 import io.aeron.archiver.codecs.ControlResponseCode;
-import org.agrona.*;
+import org.agrona.BufferUtil;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
@@ -108,33 +109,25 @@ class ListRecordingsSession implements Session
         int sentBytes = 0;
         do
         {
-            final RecordingSession session = catalog.getRecordingSession(recordingId);
-            if (session == null)
+            byteBuffer.clear();
+            descriptorBuffer.wrap(byteBuffer);
+            try
             {
-                byteBuffer.clear();
-                descriptorBuffer.wrap(byteBuffer);
-                try
+                if (!catalog.readDescriptor(recordingId, byteBuffer))
                 {
-                    if (!catalog.readDescriptor(recordingId, byteBuffer))
-                    {
-                        proxy.sendDescriptorNotFound(
-                            controlPublication,
-                            recordingId,
-                            catalog.nextRecordingId(),
-                            correlationId);
-                        state = State.INACTIVE;
-                        return 0;
-                    }
-                }
-                catch (final IOException ex)
-                {
+                    proxy.sendDescriptorNotFound(
+                        controlPublication,
+                        recordingId,
+                        catalog.nextRecordingId(),
+                        correlationId);
                     state = State.INACTIVE;
-                    LangUtil.rethrowUnchecked(ex);
+                    return 0;
                 }
             }
-            else
+            catch (final IOException ex)
             {
-                descriptorBuffer.wrap(session.metaDataBuffer());
+                state = State.INACTIVE;
+                LangUtil.rethrowUnchecked(ex);
             }
 
             sentBytes += proxy.sendDescriptor(controlPublication, descriptorBuffer, correlationId);

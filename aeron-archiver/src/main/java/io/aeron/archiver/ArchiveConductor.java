@@ -18,11 +18,14 @@ package io.aeron.archiver;
 import io.aeron.*;
 import io.aeron.archiver.codecs.ControlResponseCode;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.*;
+import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.EpochClock;
 
+import java.io.File;
 import java.util.Objects;
 
-class ArchiveConductor extends SessionWorker
+abstract class ArchiveConductor extends SessionWorker<Session>
 {
     /**
      * Low term length for control channel reflect expected low bandwidth usage.
@@ -34,22 +37,30 @@ class ArchiveConductor extends SessionWorker
     private final AgentInvoker aeronClientAgentInvoker;
     private final AgentInvoker driverAgentInvoker;
 
-    private final AgentInvoker replayerAgentInvoker;
-    private final AgentInvoker recorderAgentInvoker;
-
-    private final Replayer replayer;
-    private final Recorder recorder;
+    protected final SessionWorker<ReplaySession> replayer;
+    protected final SessionWorker<RecordingSession> recorder;
 
     private final Subscription controlSubscription;
-
-    private final AvailableImageHandler availableImageHandler = this::onAvailableImage;
 
     private final ControlSessionProxy controlSessionProxy;
     private final StringBuilder uriBuilder = new StringBuilder(1024);
     private final EpochClock epochClock;
+    private final Catalog catalog;
+    private final NotificationsProxy notificationsProxy;
+    private final RecordingWriter.RecordingContext recordingContext;
+    private final File archiveDir;
+
+    private int replaySessionId;
+    private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
+
+    private final ReplayPublicationSupplier newReplayPublication = this::newReplayPublication;
+    private final AvailableImageHandler availableImageHandler = this::onAvailableImage;
+
+    private boolean started = false;
 
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
+        super("archiver-conductor");
         this.aeron = aeron;
         aeronClientAgentInvoker = aeron.conductorAgentInvoker();
         Objects.requireNonNull(aeronClientAgentInvoker, "In the archiver context an aeron invoker should be present");
@@ -65,41 +76,60 @@ class ArchiveConductor extends SessionWorker
             availableImageHandler,
             null);
 
-        replayer = ctx.replayer();
-        replayerAgentInvoker = ctx.replayerInvoker();
+        catalog = new Catalog(ctx.archiveDir());
 
-        recorder = ctx.recorder();
-        recorderAgentInvoker = ctx.recorderInvoker();
+        final Publication notificationPublication =
+            aeron.addPublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
+        notificationsProxy = new NotificationsProxy(ctx.idleStrategy(), notificationPublication);
+
+        this.recordingContext = new RecordingWriter.RecordingContext()
+            .recordingFileLength(ctx.segmentFileLength())
+            .archiveDir(ctx.archiveDir())
+            .epochClock(ctx.epochClock())
+            .forceWrites(ctx.forceWrites());
+
+        this.archiveDir = ctx.archiveDir();
+
+        replayer = constructReplayer(ctx);
+        recorder = constructRecorder(ctx);
     }
 
-    public String roleName()
+    protected abstract SessionWorker<RecordingSession> constructRecorder(Archiver.Context ctx);
+
+    protected abstract SessionWorker<ReplaySession> constructReplayer(Archiver.Context ctx);
+
+    protected final void preSessionsClose()
     {
-        return "archiver-conductor";
+        closeSessionWorkers();
     }
+
+    protected abstract void closeSessionWorkers();
 
     protected void postSessionsClose()
     {
-        CloseHelper.close(recorderAgentInvoker);
-        CloseHelper.close(replayerAgentInvoker);
-        CloseHelper.close(aeronClientAgentInvoker);
-        CloseHelper.close(driverAgentInvoker);
+        CloseHelper.quietClose(aeronClientAgentInvoker);
+        CloseHelper.quietClose(driverAgentInvoker);
+        CloseHelper.quietClose(catalog);
     }
 
     public int doWork()
     {
+        if (!started)
+        {
+            started = true;
+            onStart();
+        }
         int workDone = safeInvoke(driverAgentInvoker);
         workDone += aeronClientAgentInvoker.invoke();
-
+        workDone += preSessionWork();
         workDone += super.doWork();
-        workDone += safeInvoke(replayerAgentInvoker);
-        workDone += safeInvoke(recorderAgentInvoker);
 
         return workDone;
     }
 
-    protected void sessionCleanup(final long sessionId)
-    {
-    }
+    protected abstract void onStart();
+
+    protected abstract int preSessionWork();
 
     private static int safeInvoke(final AgentInvoker invoker)
     {
@@ -132,7 +162,21 @@ class ArchiveConductor extends SessionWorker
         final Publication controlPublication,
         final long recordingId)
     {
-        recorder.stopRecording(correlationId, controlPublication, recordingId);
+        final RecordingSession recordingSession = catalog.getRecordingSession(recordingId);
+
+        if (recordingSession != null)
+        {
+            recorder.abortSession(recordingSession);
+            controlSessionProxy.sendOkResponse(controlPublication, correlationId);
+        }
+        else
+        {
+            controlSessionProxy.sendError(
+                controlPublication,
+                ControlResponseCode.RECORDING_NOT_FOUND,
+                null,
+                correlationId);
+        }
     }
 
     void setupRecording(
@@ -159,7 +203,8 @@ class ArchiveConductor extends SessionWorker
 
     private void startRecording(final Image image)
     {
-        recorder.startRecording(image);
+        recorder.addSession(new RecordingSession(notificationsProxy, catalog, image, recordingContext));
+
     }
 
     void listRecordings(
@@ -168,12 +213,26 @@ class ArchiveConductor extends SessionWorker
         final long fromId,
         final int count)
     {
-        recorder.listRecordings(correlationId, controlPublication, fromId, count);
+        addSession(new ListRecordingsSession(
+            correlationId, controlPublication, fromId, count, catalog, controlSessionProxy));
     }
 
     void stopReplay(final long correlationId, final Publication controlPublication, final long replayId)
     {
-        replayer.stopReplay(correlationId, controlPublication, replayId);
+        final ReplaySession session = replaySessionByIdMap.remove(replayId);
+        if (session != null)
+        {
+            replayer.abortSession(session);
+            controlSessionProxy.sendOkResponse(controlPublication, correlationId);
+        }
+        else
+        {
+            controlSessionProxy.sendError(
+                controlPublication,
+                ControlResponseCode.REPLAY_NOT_FOUND,
+                null,
+                correlationId);
+        }
     }
 
     void startReplay(
@@ -185,14 +244,23 @@ class ArchiveConductor extends SessionWorker
         final long position,
         final long length)
     {
-        replayer.startReplay(
-            correlationId,
-            controlPublication,
-            replayStreamId,
-            replayChannel,
+        final int newId = replaySessionId++;
+        final ReplaySession replaySession = new ReplaySession(
             recordingId,
             position,
-            length);
+            length,
+            newReplayPublication,
+            controlPublication,
+            archiveDir,
+            controlSessionProxy,
+            newId,
+            correlationId,
+            epochClock,
+            replayChannel,
+            replayStreamId);
+
+        replaySessionByIdMap.put(newId, replaySession);
+        replayer.addSession(replaySession);
     }
 
     Publication newControlPublication(final String channel, final int streamId)
@@ -225,5 +293,53 @@ class ArchiveConductor extends SessionWorker
         {
             uriBuilder.append('?');
         }
+    }
+
+    interface ReplayPublicationSupplier
+    {
+        ExclusivePublication newReplayPublication(
+            String replayChannel,
+            int replayStreamId,
+            long fromPosition,
+            int mtuLength,
+            int initialTermId,
+            int termBufferLength);
+    }
+
+    private ExclusivePublication newReplayPublication(
+        final String replayChannel,
+        final int replayStreamId,
+        final long fromPosition,
+        final int mtuLength,
+        final int initialTermId,
+        final int termBufferLength)
+    {
+        final int termId = (int)((fromPosition / termBufferLength) + initialTermId);
+        final int termOffset = (int)(fromPosition % termBufferLength);
+        initUriBuilder(replayChannel);
+
+        uriBuilder
+            .append(CommonContext.INITIAL_TERM_ID_PARAM_NAME).append('=').append(initialTermId)
+            .append('|')
+            .append(CommonContext.MTU_LENGTH_PARAM_NAME).append('=').append(mtuLength)
+            .append('|')
+            .append(CommonContext.TERM_LENGTH_PARAM_NAME).append('=').append(termBufferLength)
+            .append('|')
+            .append(CommonContext.TERM_ID_PARAM_NAME).append('=').append(termId)
+            .append('|')
+            .append(CommonContext.TERM_OFFSET_PARAM_NAME).append('=').append(termOffset);
+
+        return aeron.addExclusivePublication(uriBuilder.toString(), replayStreamId);
+    }
+
+    void closeRecordingSession(final RecordingSession session)
+    {
+        closeSession(session);
+    }
+
+    void closeReplaySession(final ReplaySession session)
+    {
+        closeSession(session);
+        replaySessionByIdMap.remove(session.sessionId());
     }
 }

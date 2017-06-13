@@ -21,15 +21,14 @@ import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.*;
 
 import java.io.File;
-import java.util.concurrent.*;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 public final class Archiver implements AutoCloseable
 {
     private final Context ctx;
     private final AgentRunner conductorRunner;
-    private final AgentRunner replayRunner;
-    private final AgentRunner recorderRunner;
     private final AgentInvoker invoker;
     private final Aeron aeron;
 
@@ -38,55 +37,34 @@ public final class Archiver implements AutoCloseable
         this.ctx = ctx;
 
         ctx.clientContext.driverAgentInvoker(ctx.mediaDriverAgentInvoker());
-        // TODO: remove, all interaction to go via conductors
-        if (ctx.threadingMode() != ArchiverThreadingMode.DEDICATED)
-        {
-            ctx.clientContext.clientLock(new NoOpLock());
-        }
+        ctx.clientContext.clientLock(new NoOpLock());
         aeron = Aeron.connect(ctx.clientContext);
 
         ctx.conclude();
 
-        final ErrorHandler errorHandler = ctx.errorHandler();
-        final AtomicCounter errorCounter = ctx.errorCounter();
-
-        final Replayer replayer;
-        final Recorder recorder;
+        final ArchiveConductor archiveConductor;
         if (ctx.threadingMode() == ArchiverThreadingMode.DEDICATED)
         {
-            replayer = new ReplayerProxy(aeron, ctx);
-            recorder = new RecorderProxy(aeron, ctx);
+            archiveConductor = new ArchiveConductorDedicated(aeron, ctx);
         }
         else
         {
-            replayer = new Replayer(aeron, ctx);
-            recorder = new Recorder(aeron, ctx);
-            ctx.replayerInvoker(new AgentInvoker(errorHandler, errorCounter, replayer));
-            ctx.recorderInvoker(new AgentInvoker(errorHandler, errorCounter, recorder));
+            archiveConductor = new ArchiveConductorShared(aeron, ctx);
         }
-        ctx
-            .replayer(replayer)
-            .recorder(recorder);
-
-        final ArchiveConductor archiveConductor = new ArchiveConductor(aeron, ctx);
         switch (ctx.threadingMode())
         {
             case INVOKER:
-                invoker = new AgentInvoker(errorHandler, errorCounter, archiveConductor);
+                invoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), archiveConductor);
                 conductorRunner = null;
-                replayRunner = null;
-                recorderRunner = null;
                 break;
 
             case SHARED:
                 invoker = null;
                 conductorRunner = new AgentRunner(
                     ctx.idleStrategy(),
-                    errorHandler,
-                    errorCounter,
+                    ctx.errorHandler(),
+                    ctx.errorCounter(),
                     archiveConductor);
-                replayRunner = null;
-                recorderRunner = null;
                 break;
 
             default:
@@ -94,27 +72,15 @@ public final class Archiver implements AutoCloseable
                 invoker = null;
                 conductorRunner = new AgentRunner(
                     ctx.idleStrategy(),
-                    errorHandler,
-                    errorCounter,
+                    ctx.errorHandler(),
+                    ctx.errorCounter(),
                     archiveConductor);
-                replayRunner = new AgentRunner(
-                    ctx.idleStrategy(),
-                    errorHandler,
-                    errorCounter,
-                    replayer);
-                recorderRunner = new AgentRunner(
-                    ctx.idleStrategy(),
-                    errorHandler,
-                    errorCounter,
-                    recorder);
         }
     }
 
     public void close() throws Exception
     {
         CloseHelper.close(conductorRunner);
-        CloseHelper.close(replayRunner);
-        CloseHelper.close(recorderRunner);
         CloseHelper.close(aeron);
     }
 
@@ -127,8 +93,6 @@ public final class Archiver implements AutoCloseable
         else if (ctx.threadingMode() == ArchiverThreadingMode.DEDICATED)
         {
             AgentRunner.startOnThread(conductorRunner, ctx.threadFactory());
-            AgentRunner.startOnThread(replayRunner, ctx.threadFactory());
-            AgentRunner.startOnThread(recorderRunner, ctx.threadFactory());
         }
 
         return this;
@@ -282,10 +246,6 @@ public final class Archiver implements AutoCloseable
         private AtomicCounter errorCounter;
 
         private AgentInvoker mediaDriverAgentInvoker;
-        private AgentInvoker replayerInvoker;
-        private AgentInvoker recorderInvoker;
-        private Replayer replayer;
-        private Recorder recorder;
 
         public Context()
         {
@@ -481,28 +441,6 @@ public final class Archiver implements AutoCloseable
             return this;
         }
 
-        AgentInvoker replayerInvoker()
-        {
-            return replayerInvoker;
-        }
-
-        Context replayerInvoker(final AgentInvoker replayerInvoker)
-        {
-            this.replayerInvoker = replayerInvoker;
-            return this;
-        }
-
-        AgentInvoker recorderInvoker()
-        {
-            return recorderInvoker;
-        }
-
-        Context recorderInvoker(final AgentInvoker recorderInvoker)
-        {
-            this.recorderInvoker = recorderInvoker;
-            return this;
-        }
-
         public ErrorHandler errorHandler()
         {
             return errorHandler;
@@ -539,28 +477,6 @@ public final class Archiver implements AutoCloseable
         {
             this.threadFactory = threadFactory;
             return this;
-        }
-
-        Context replayer(final Replayer replayer)
-        {
-            this.replayer = replayer;
-            return this;
-        }
-
-        Context recorder(final Recorder recorder)
-        {
-            this.recorder = recorder;
-            return this;
-        }
-
-        Replayer replayer()
-        {
-            return replayer;
-        }
-
-        Recorder recorder()
-        {
-            return recorder;
         }
     }
 }

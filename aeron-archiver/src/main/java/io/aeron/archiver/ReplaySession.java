@@ -15,14 +15,20 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.*;
-import io.aeron.archiver.codecs.*;
-import io.aeron.logbuffer.*;
+import io.aeron.ExclusivePublication;
+import io.aeron.Publication;
+import io.aeron.archiver.codecs.ControlResponseCode;
+import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
+import io.aeron.logbuffer.ExclusiveBufferClaim;
+import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.*;
-import org.agrona.concurrent.*;
+import org.agrona.CloseHelper;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.UnsafeBuffer;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 
 import static io.aeron.logbuffer.FrameDescriptor.frameFlags;
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
@@ -36,7 +42,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * <ul>
  * <li>Validate request parameters and respond with error, or OK message
  * (see {@link io.aeron.archiver.codecs.ControlResponseDecoder})</li>
- * <li>Stream recorded data into the replayPublication {@link Publication}</li>
+ * <li>Stream recorded data into the replayPublication {@link ExclusivePublication}</li>
  * </ul>
  */
 class ReplaySession
@@ -62,12 +68,13 @@ class ReplaySession
 
     private State state = State.INIT;
     private long lingerSinceMs;
+    private boolean aborted = false;
 
     ReplaySession(
         final long recordingId,
         final long replayPosition,
         final long replayLength,
-        final Replayer replayer,
+        final ArchiveConductor.ReplayPublicationSupplier supplier,
         final Publication controlPublication,
         final File archiveDir,
         final ControlSessionProxy controlSessionProxy,
@@ -137,7 +144,7 @@ class ReplaySession
 
         try
         {
-            replayPublication = replayer.newReplayPublication(
+            replayPublication = supplier.newReplayPublication(
                 replayChannel,
                 replayStreamId,
                 cursor.fromPosition(), // may differ from replayPosition due to first fragement alignment
@@ -176,15 +183,7 @@ class ReplaySession
 
     public void abort()
     {
-        if (controlPublication.isConnected())
-        {
-            controlSessionProxy.sendReplayAborted(
-                controlPublication,
-                correlationId,
-                replaySessionId,
-                replayPublication.position());
-        }
-
+        aborted = true;
         this.state = State.INACTIVE;
     }
 
@@ -317,6 +316,15 @@ class ReplaySession
 
     public void close()
     {
+        if (aborted && controlPublication.isConnected())
+        {
+            controlSessionProxy.sendReplayAborted(
+                controlPublication,
+                correlationId,
+                replaySessionId,
+                replayPublication.position());
+        }
+
         // TODO: if we want a NoOp client lock in the DEDICATED mode this needs to be done on the replayer
         CloseHelper.close(replayPublication);
         CloseHelper.close(cursor);

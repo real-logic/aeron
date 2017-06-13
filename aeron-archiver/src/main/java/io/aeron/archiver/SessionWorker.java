@@ -21,18 +21,29 @@ import org.agrona.concurrent.Agent;
 
 import java.util.ArrayList;
 
-abstract class SessionWorker implements Agent
+class SessionWorker<T extends Session> implements Agent
 {
-    private final ArrayList<Session> sessions = new ArrayList<>();
-    private volatile boolean isClosed = false;
+    private final ArrayList<T> sessions = new ArrayList<>();
+    private final String roleName;
+    private boolean isClosed = false;
+
+    SessionWorker(final String roleName)
+    {
+        this.roleName = roleName;
+    }
+
+    public String roleName()
+    {
+        return roleName;
+    }
 
     public int doWork()
     {
         int workDone = 0;
-        final ArrayList<Session> sessions = this.sessions;
+        final ArrayList<T> sessions = this.sessions;
         for (int lastIndex = sessions.size() - 1, i = lastIndex; i >= 0; i--)
         {
-            final Session session = sessions.get(i);
+            final T session = sessions.get(i);
             workDone += session.doWork();
             if (session.isDone())
             {
@@ -45,21 +56,23 @@ abstract class SessionWorker implements Agent
         return workDone;
     }
 
-    protected abstract void sessionCleanup(long sessionId);
+    protected void abortSession(final T session)
+    {
+        session.abort();
+    }
 
-    protected void addSession(final Session session)
+    void addSession(final T session)
     {
         sessions.add(session);
     }
 
-    protected void closeSession(final Session session)
+    void closeSession(final T session)
     {
         session.abort();
         session.close();
-        sessionCleanup(session.sessionId());
     }
 
-    boolean isClosed()
+    protected boolean isClosed()
     {
         return isClosed;
     }
@@ -76,6 +89,7 @@ abstract class SessionWorker implements Agent
         sessions.forEach(this::closeSession);
         sessions.clear();
         postSessionsClose();
+
     }
 
     protected void postSessionsClose()

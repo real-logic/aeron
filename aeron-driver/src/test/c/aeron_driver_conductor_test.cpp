@@ -20,6 +20,7 @@
 #include <exception>
 
 #include <gtest/gtest.h>
+#include <command/ImageMessageFlyweight.h>
 
 extern "C"
 {
@@ -851,4 +852,46 @@ TEST_F(DriverConductorTest, shouldBeAbleToNotTimeoutIpcSubscriptionOnKeepalive)
 
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_ipc_subscriptions(&m_conductor.m_conductor), 1u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToTimeoutIpcPublicationWithActiveIpcSubscription)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+    int64_t remove_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, false), 0);
+    doWork();
+    ASSERT_EQ(removePublication(client_id, remove_correlation_id, pub_id), 0);
+    doWork();
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
+
+    int64_t timeout = m_context.m_context->publication_linger_timeout_ns * 2;
+
+    doWorkUntilTimeNs(
+        timeout,
+        100,
+        [&]()
+        {
+            clientKeepalive(client_id);
+        });
+
+    EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 1u);
+    EXPECT_EQ(aeron_driver_conductor_num_ipc_publications(&m_conductor.m_conductor), 0u);
+    EXPECT_EQ(aeron_driver_conductor_num_active_ipc_subscriptions(&m_conductor.m_conductor, STREAM_ID_1), 0u);
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_UNAVAILABLE_IMAGE);
+
+            const command::ImageMessageFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), pub_id);
+            EXPECT_EQ(response.streamId(), STREAM_ID_1);
+            EXPECT_EQ(response.channel(), AERON_IPC_CHANNEL);
+        };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }

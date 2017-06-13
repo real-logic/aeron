@@ -172,7 +172,6 @@ TEST(SpscQueueConcurrentTest, shouldExchangeMessages)
 
     threads.push_back(std::thread([&]()
     {
-
         countDown--;
         while (countDown > 0)
         {

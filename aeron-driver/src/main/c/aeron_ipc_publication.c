@@ -21,6 +21,7 @@
 #include "util/aeron_fileutil.h"
 #include "aeron_alloc.h"
 #include "protocol/aeron_udp_protocol.h"
+#include "aeron_driver_conductor.h"
 
 int aeron_ipc_publication_create(
     aeron_ipc_publication_t **publication,
@@ -193,30 +194,6 @@ void aeron_ipc_publication_on_time_event(aeron_ipc_publication_t *publication, i
     if (0 < publication->conductor_fields.subscribeable.length)
     {
         AERON_PUT_ORDERED(publication->log_meta_data->time_of_last_status_message, now_ms);
-    }
-
-    switch (publication->conductor_fields.status)
-    {
-        case AERON_IPC_PUBLICATION_STATUS_INACTIVE:
-            if (aeron_ipc_publication_is_drained(publication))
-            {
-                publication->conductor_fields.status = AERON_IPC_PUBLICATION_STATUS_LINGER;
-                publication->conductor_fields.managed_resource.time_of_last_status_change = now_ns;
-                /* TODO: transition to linger - send unavailable_image */
-            }
-            break;
-
-        case AERON_IPC_PUBLICATION_STATUS_LINGER:
-            if (now_ns >
-                (publication->conductor_fields.managed_resource.time_of_last_status_change + publication->linger_timeout_ns))
-            {
-                publication->conductor_fields.has_reached_end_of_life = true;
-                /* TODO: conductor cleanup */
-            }
-            break;
-
-        default:
-            break;
     }
 }
 

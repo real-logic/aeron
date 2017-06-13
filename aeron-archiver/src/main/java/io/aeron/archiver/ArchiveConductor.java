@@ -149,7 +149,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         if (image.subscription() == controlSubscription)
         {
-            addSession(new ControlSession(image, controlSessionProxy, this, epochClock));
+            addSession(new ControlSession(image, this, epochClock));
         }
         else
         {

@@ -15,8 +15,10 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.*;
-import org.agrona.*;
+import io.aeron.Image;
+import io.aeron.Publication;
+import org.agrona.CloseHelper;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.EpochClock;
 
 class ControlSession implements Session, ControlRequestListener
@@ -29,7 +31,6 @@ class ControlSession implements Session, ControlRequestListener
     private static final long CONTROL_TIMEOUT_MS = 1000L;
 
     private final Image image;
-    private final ControlSessionProxy proxy;
     private final ArchiveConductor conductor;
     private final EpochClock epochClock;
     private final ControlRequestAdapter adapter = new ControlRequestAdapter(this);
@@ -39,12 +40,10 @@ class ControlSession implements Session, ControlRequestListener
 
     ControlSession(
         final Image image,
-        final ControlSessionProxy clientProxy,
         final ArchiveConductor conductor,
         final EpochClock epochClock)
     {
         this.image = image;
-        this.proxy = clientProxy;
         this.conductor = conductor;
         this.epochClock = epochClock;
     }

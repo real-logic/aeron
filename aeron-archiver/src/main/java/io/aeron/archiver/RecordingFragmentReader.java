@@ -18,10 +18,12 @@ package io.aeron.archiver;
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.*;
+import org.agrona.BitUtil;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
@@ -58,6 +60,7 @@ class RecordingFragmentReader implements AutoCloseable
     private int termOffset;
     private long transmitted = 0;
     private MappedByteBuffer mappedByteBuffer;
+    private boolean isDone = false;
 
     RecordingFragmentReader(final long recordingId, final File archiveDir) throws IOException
     {
@@ -106,7 +109,9 @@ class RecordingFragmentReader implements AutoCloseable
         int frameOffset = 0;
         while (frameOffset < termOffset)
         {
-            frameOffset += termBuffer.getInt(frameOffset + DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET);
+            final int frameLength = FrameDescriptor.frameLength(termBuffer, frameOffset);
+            final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
+            frameOffset += alignedLength;
         }
 
         if (frameOffset != termOffset)
@@ -131,7 +136,7 @@ class RecordingFragmentReader implements AutoCloseable
 
     boolean isDone()
     {
-        return transmitted >= replayLength;
+        return isDone;
     }
 
     long fromPosition()
@@ -150,10 +155,21 @@ class RecordingFragmentReader implements AutoCloseable
         int polled = 0;
 
         // read to end of term or requested data
-        while (termOffset < termBufferLength && !isDone() && polled < fragmentLimit)
+        while (termOffset < termBufferLength && transmitted < replayLength && polled < fragmentLimit)
         {
             final int frameOffset = termOffset;
             final int frameLength = FrameDescriptor.frameLength(termBuffer, frameOffset);
+            if (frameLength == RecordingWriter.END_OF_RECORDING_INDICATOR)
+            {
+                isDone = true;
+                return polled;
+            }
+
+            if (frameLength == RecordingWriter.END_OF_DATA_INDICATOR)
+            {
+                return polled;
+            }
+
             final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
 
             transmitted += alignedLength;
@@ -172,7 +188,11 @@ class RecordingFragmentReader implements AutoCloseable
             polled++;
         }
 
-        if (!isDone() && termOffset == termBufferLength)
+        if (transmitted >= replayLength)
+        {
+            isDone = true;
+        }
+        else if (termOffset == termBufferLength)
         {
             termOffset = 0;
             nextTerm();

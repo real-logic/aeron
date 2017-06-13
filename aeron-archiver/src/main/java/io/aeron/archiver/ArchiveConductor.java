@@ -33,30 +33,28 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private static final String DEFAULT_CONTROL_CHANNEL_TERM_LENGTH_PARAM =
         CommonContext.TERM_LENGTH_PARAM_NAME + "=" + Integer.toString(64 * 1024);
 
-    private final Aeron aeron;
-    private final AgentInvoker aeronClientAgentInvoker;
-    private final AgentInvoker driverAgentInvoker;
-
-    protected final SessionWorker<ReplaySession> replayer;
-    protected final SessionWorker<RecordingSession> recorder;
-
-    private final Subscription controlSubscription;
-
-    private final ControlSessionProxy controlSessionProxy;
     private final StringBuilder uriBuilder = new StringBuilder(1024);
-    private final EpochClock epochClock;
-    private final Catalog catalog;
-    private final NotificationsProxy notificationsProxy;
-    private final RecordingWriter.RecordingContext recordingContext;
-    private final File archiveDir;
-
-    private int replaySessionId;
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
-
     private final ReplayPublicationSupplier newReplayPublication = this::newReplayPublication;
     private final AvailableImageHandler availableImageHandler = this::onAvailableImage;
 
+    private final Aeron aeron;
+    private final AgentInvoker aeronClientAgentInvoker;
+    private final AgentInvoker driverAgentInvoker;
+    private final EpochClock epochClock;
+    private final File archiveDir;
+    private final RecordingWriter.RecordingContext recordingContext;
+
+    private final Subscription controlSubscription;
+    private final Catalog catalog;
+    private final ControlSessionProxy controlSessionProxy;
+    private final NotificationsProxy notificationsProxy;
+
+    private int replaySessionId;
     private boolean started = false;
+
+    final SessionWorker<ReplaySession> replayer;
+    final SessionWorker<RecordingSession> recorder;
 
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {

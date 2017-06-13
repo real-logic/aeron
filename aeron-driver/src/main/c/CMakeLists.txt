@@ -36,7 +36,8 @@ SET(SOURCE
     aeron_driver_sender.c
     aeron_driver_receiver.c
     aeron_ipc_publication.c
-    aeron_position.c)
+    aeron_position.c
+    media/aeron_udp_channel_transport.c)
 
 SET(HEADERS
     util/aeron_platform.h
@@ -69,7 +70,8 @@ SET(HEADERS
     aeron_driver_receiver.h
     aeron_driver_common.h
     aeron_ipc_publication.h
-    aeron_position.h)
+    aeron_position.h
+    media/aeron_udp_channel_transport.h)
 
 set(AGENT_SOURCE
     agent/aeron_driver_agent.c)

@@ -29,8 +29,7 @@ class SessionWorkerDedicated<T extends Session> extends SessionWorker<T>
 
     public int doWork()
     {
-        final int work = commandQueue.drain(Runnable::run);
-        return work + super.doWork();
+        return commandQueue.drain(Runnable::run) + super.doWork();
     }
 
     protected void addSession(final T session)

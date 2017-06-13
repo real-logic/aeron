@@ -113,4 +113,36 @@ inline uint64_t aeron_spsc_concurrent_array_queue_drain(
     return next_sequence - current_head;
 }
 
+inline uint64_t aeron_spsc_concurrent_array_queue_drain_all(
+    volatile aeron_spsc_concurrent_array_queue_t *queue,
+    aeron_queue_drain_func_t func,
+    void *clientd)
+{
+    uint64_t current_head;
+    AERON_GET_VOLATILE(current_head, queue->consumer.head);
+    uint64_t current_tail;
+    AERON_GET_VOLATILE(current_tail, queue->producer.tail);
+
+    return aeron_spsc_concurrent_array_queue_drain(queue, func, clientd, current_tail - current_head);
+}
+
+inline uint64_t aeron_spsc_concurrent_array_queue_size(volatile aeron_spsc_concurrent_array_queue_t *queue)
+{
+    uint64_t current_head_before;
+    uint64_t current_tail;
+    uint64_t current_head_after;
+
+    AERON_GET_VOLATILE(current_head_after, queue->consumer.head);
+
+    do
+    {
+        current_head_before = current_head_after;
+        AERON_GET_VOLATILE(current_tail, queue->producer.tail);
+        AERON_GET_VOLATILE(current_head_after, queue->consumer.head);
+    }
+    while (current_head_after != current_head_before);
+
+    return current_tail - current_head_after;
+}
+
 #endif //AERON_AERON_SPSC_CONCURRENT_ARRAY_QUEUE_H

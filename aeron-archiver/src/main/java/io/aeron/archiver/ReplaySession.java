@@ -273,7 +273,7 @@ class ReplaySession
             return 0;
         }
 
-        controlSessionProxy.sendOkResponse(controlPublication, correlationId);
+        controlSessionProxy.sendOkResponse(correlationId, controlPublication);
         this.state = State.REPLAY;
 
         return 1;
@@ -284,7 +284,7 @@ class ReplaySession
         this.state = State.INACTIVE;
         if (controlPublication.isConnected())
         {
-            controlSessionProxy.sendError(controlPublication, ControlResponseCode.ERROR, errorMessage, correlationId);
+            controlSessionProxy.sendError(correlationId, ControlResponseCode.ERROR, errorMessage, controlPublication);
         }
 
         if (e != null)
@@ -319,10 +319,10 @@ class ReplaySession
         if (aborted && controlPublication.isConnected())
         {
             controlSessionProxy.sendReplayAborted(
-                controlPublication,
                 correlationId,
                 replaySessionId,
-                replayPublication.position());
+                replayPublication.position(),
+                controlPublication);
         }
 
         // TODO: if we want a NoOp client lock in the DEDICATED mode this needs to be done on the replayer

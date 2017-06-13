@@ -40,7 +40,8 @@ class ControlSession implements Session, ControlRequestListener
     ControlSession(
         final Image image,
         final ControlSessionProxy clientProxy,
-        final ArchiveConductor conductor, final EpochClock epochClock)
+        final ArchiveConductor conductor,
+        final EpochClock epochClock)
     {
         this.image = image;
         this.proxy = clientProxy;
@@ -80,6 +81,7 @@ class ControlSession implements Session, ControlRequestListener
                 return image.poll(adapter, 16);
             }
         }
+
         return 0;
     }
 

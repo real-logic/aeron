@@ -21,7 +21,7 @@ import org.agrona.concurrent.ShutdownSignalBarrier;
 import static io.aeron.driver.MediaDriver.loadPropertiesFiles;
 
 /**
- * Lightweight archiving media driver which uses only one thread.
+ * Lightweight archiving media driver which uses only one thread in total for the archiver and media driver combined.
  */
 public class LightweightArchivingMediaDriver
 {

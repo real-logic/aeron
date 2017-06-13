@@ -15,13 +15,20 @@
  */
 package io.aeron.archiver.client;
 
+/**
+ * Event listener for observing the status of recordings for an Archive.
+ */
 public interface RecordingEventsListener
 {
-    void onProgress(
-        long recordingId,
-        long joiningPosition,
-        long currentPosition);
-
+    /**
+     * Fired when a recording is started.
+     *
+     * @param recordingId    assigned to the new recording.
+     * @param sessionId      of the publication being recorded.
+     * @param streamId       of the publication being recorded.
+     * @param channel        of the publication being recorded.
+     * @param sourceIdentity of the publication being recorded.
+     */
     void onStart(
         long recordingId,
         int sessionId,
@@ -29,5 +36,20 @@ public interface RecordingEventsListener
         String channel,
         String sourceIdentity);
 
-    void onStop(long recordingId);
+    /**
+     * Progress indication of an active recording.
+     *
+     * @param recordingId     for which progress is being reported.
+     * @param joiningPosition in the publication at which the recording started.
+     * @param currentPosition of the publication being recorded.
+     */
+    void onProgress(long recordingId, long joiningPosition, long currentPosition);
+
+    /**
+     * Fired when a recording is stopped.
+     *
+     * @param recordingId of the publication that has stopped recording.
+     * @param lastPosition at which the recording stopped.
+     */
+    void onStop(long recordingId, long lastPosition);
 }

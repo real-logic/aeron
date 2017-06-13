@@ -39,16 +39,16 @@ class ControlSessionProxy
         this.idleStrategy = idleStrategy;
     }
 
-    void sendOkResponse(final Publication controlPublication, final long correlationId)
+    void sendOkResponse(final long correlationId, final Publication controlPublication)
     {
-        sendError(controlPublication, ControlResponseCode.OK, null, correlationId);
+        sendError(correlationId, ControlResponseCode.OK, null, controlPublication);
     }
 
     void sendError(
-        final Publication controlPublication,
+        final long correlationId,
         final ControlResponseCode code,
         final String errorMessage,
-        final long correlationId)
+        final Publication controlPublication)
     {
         responseEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
@@ -98,10 +98,10 @@ class ControlSessionProxy
     }
 
     void sendDescriptorNotFound(
-        final Publication controlPublication,
+        final long correlationId,
         final long recordingId,
         final long maxRecordingId,
-        final long correlationId)
+        final Publication controlPublication)
     {
         recordingNotFoundResponseEncoder.wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
@@ -112,9 +112,9 @@ class ControlSessionProxy
     }
 
     int sendDescriptor(
-        final Publication controlPublication,
+        final long correlationId,
         final UnsafeBuffer descriptorBuffer,
-        final long correlationId)
+        final Publication controlPublication)
     {
         final int offset = Catalog.CATALOG_FRAME_LENGTH - HEADER_LENGTH;
         final int length = descriptorBuffer.getInt(0) + HEADER_LENGTH;
@@ -124,14 +124,15 @@ class ControlSessionProxy
             .correlationId(correlationId);
 
         send(controlPublication, descriptorBuffer, offset, length);
+
         return length;
     }
 
     void sendReplayAborted(
-        final Publication controlPublication,
         final long correlationId,
         final long replaySessionId,
-        final long position)
+        final long position,
+        final Publication controlPublication)
     {
         replayAbortedEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)

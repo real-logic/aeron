@@ -123,9 +123,7 @@ typedef struct aeron_driver_conductor_stct
     }
     ipc_publications;
 
-    char stack_buffer[AERON_MAX_PATH];
-    int stack_error_code;
-    char *stack_error_desc;
+    aeron_error_t stack_error;
 
     int64_t *errors_counter;
     int64_t *client_keep_alives_counter;
@@ -159,10 +157,20 @@ void aeron_driver_conductor_client_transmit(
     const void *message,
     size_t length);
 
+void aeron_driver_conductor_on_unavailable_image(
+    aeron_driver_conductor_t *conductor,
+    int64_t correlation_id,
+    int32_t stream_id,
+    const char *channel,
+    size_t channel_length);
+
 void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message, size_t length, void *clientd);
 
 int aeron_driver_conductor_do_work(void *clientd);
 void aeron_driver_conductor_on_close(void *clientd);
+
+void aeron_driver_conductor_unlink_subscribeable(aeron_subscription_link_t *link, aeron_subscribeable_t *subscribeable);
+void aeron_driver_conductor_unlink_all_subscribeable(aeron_driver_conductor_t *conductor, aeron_subscription_link_t *link);
 
 int aeron_driver_conductor_on_add_ipc_publication(
     aeron_driver_conductor_t *conductor,
@@ -211,6 +219,23 @@ inline size_t aeron_driver_conductor_num_ipc_publications(aeron_driver_conductor
 inline size_t aeron_driver_conductor_num_ipc_subscriptions(aeron_driver_conductor_t *conductor)
 {
     return conductor->ipc_subscriptions.length;
+}
+
+inline size_t aeron_driver_conductor_num_active_ipc_subscriptions(aeron_driver_conductor_t *conductor, int32_t stream_id)
+{
+    size_t num = 0;
+
+    for (size_t i = 0, length = conductor->ipc_subscriptions.length; i < length; i++)
+    {
+        aeron_subscription_link_t *link = &conductor->ipc_subscriptions.array[i];
+
+        if (stream_id == link->stream_id)
+        {
+            num += link->subscribeable_list.length;
+        }
+    }
+
+    return num;
 }
 
 inline aeron_ipc_publication_t *aeron_driver_conductor_find_ipc_publication(

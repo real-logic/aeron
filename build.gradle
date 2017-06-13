@@ -15,7 +15,7 @@
  */
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow' version '1.2.4'
+    id 'com.github.johnrengelman.shadow' version '1.2.4' apply false
 }
 
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
@@ -92,6 +92,8 @@ configurations {
     shadow
 }
 
+jar.enabled = false
+
 subprojects {
     apply plugin: 'java'
     apply plugin: 'maven'
@@ -107,6 +109,8 @@ subprojects {
         sourceCompatibility = '1.8'
         targetCompatibility = '1.8'
     }
+
+    jar.enabled = true
 
     [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 

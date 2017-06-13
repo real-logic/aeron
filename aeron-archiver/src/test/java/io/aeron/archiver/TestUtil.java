@@ -68,7 +68,7 @@ public class TestUtil
     {
         waitFor(() -> client.pollResponses(reply, new FailResponseListener()
         {
-            public void onResponse(final ControlResponseCode code, final String errorMessage, final long correlationId)
+            public void onResponse(final long correlationId, final ControlResponseCode code, final String errorMessage)
             {
                 assertThat(code, is(ControlResponseCode.OK));
                 assertThat(errorMessage, isEmptyOrNullString());
@@ -81,7 +81,7 @@ public class TestUtil
     {
         waitFor(() -> client.pollResponses(reply, new FailResponseListener()
         {
-            public void onResponse(final ControlResponseCode code, final String errorMessage, final long correlationId)
+            public void onResponse(final long correlationId, final ControlResponseCode code, final String errorMessage)
             {
                 assertThat(code, not(ControlResponseCode.OK));
                 assertThat(correlationId, is(correlationId));

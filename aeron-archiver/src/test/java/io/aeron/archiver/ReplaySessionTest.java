@@ -226,7 +226,7 @@ public class ReplaySessionTest
         replaySession.doWork();
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        verify(proxy, times(1)).sendOkResponse(mockControlPub, correlationId);
+        verify(proxy, times(1)).sendOkResponse(correlationId, mockControlPub);
         verify(mockReplyPubSupplier).newReplayPublication(
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
@@ -289,7 +289,7 @@ public class ReplaySessionTest
         replaySession.doWork();
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        verify(proxy, times(1)).sendOkResponse(mockControlPub, correlationId);
+        verify(proxy, times(1)).sendOkResponse(correlationId, mockControlPub);
         verify(mockReplyPubSupplier).newReplayPublication(
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
@@ -345,7 +345,7 @@ public class ReplaySessionTest
         replaySession.doWork();
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        verify(proxy, times(1)).sendOkResponse(mockControlPub, correlationId);
+        verify(proxy, times(1)).sendOkResponse(correlationId, mockControlPub);
         verify(mockReplyPubSupplier).newReplayPublication(
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
@@ -390,7 +390,7 @@ public class ReplaySessionTest
 
         replaySession.doWork();
 
-        verify(proxy, times(1)).sendOkResponse(mockControlPub, correlationId);
+        verify(proxy, times(1)).sendOkResponse(correlationId, mockControlPub);
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
         replaySession.abort();
@@ -401,7 +401,7 @@ public class ReplaySessionTest
         replaySession.close();
 
         verify(proxy, times(1))
-            .sendReplayAborted(mockControlPub, correlationId, REPLAY_SESSION_ID, mockReplayPub.position());
+            .sendReplayAborted(correlationId, REPLAY_SESSION_ID, mockReplayPub.position(), mockControlPub);
     }
 
     @Test(expected = IllegalArgumentException.class)

@@ -21,6 +21,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#define AERON_MAX_PATH (256)
+
 typedef void (*aeron_idle_strategy_func_t)(void *, int);
 typedef int (*aeron_idle_strategy_init_func_t)(void **);
 
@@ -48,5 +50,18 @@ typedef struct aeron_subscribeable_stct
     size_t capacity;
 }
 aeron_subscribeable_t;
+
+typedef struct aeron_error_stct
+{
+    char buffer[AERON_MAX_PATH];
+    int code;
+    int os_errno;
+    char *description;
+}
+aeron_error_t;
+
+int aeron_driver_subscribeable_add_position(
+    aeron_subscribeable_t *subscribeable, int64_t counter_id, int64_t *value_addr);
+void aeron_driver_subscribeable_remove_position(aeron_subscribeable_t *subscribeable, int64_t counter_id);
 
 #endif //AERON_AERON_DRIVER_COMMON_H

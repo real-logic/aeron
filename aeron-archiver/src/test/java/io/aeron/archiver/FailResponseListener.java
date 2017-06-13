@@ -22,17 +22,17 @@ import static org.junit.Assert.fail;
 
 public class FailResponseListener implements ResponseListener
 {
-    public void onResponse(final ControlResponseCode code, final String errorMessage, final long correlationId)
+    public void onResponse(final long correlationId, final ControlResponseCode code, final String errorMessage)
     {
         fail();
     }
 
-    public void onReplayStarted(final long replayId, final long correlationId)
+    public void onReplayStarted(final long correlationId, final long replayId)
     {
         fail();
     }
 
-    public void onReplayAborted(final long lastPosition, final long correlationId)
+    public void onReplayAborted(final long correlationId, final long lastPosition)
     {
         fail();
     }
@@ -40,12 +40,14 @@ public class FailResponseListener implements ResponseListener
     public void onRecordingDescriptor(
         final long correlationId,
         final long recordingId,
-        final int segmentFileLength,
-        final int termBufferLength,
         final long startTime,
-        final long joiningPosition,
         final long endTime,
+        final long joiningPosition,
         final long lastPosition,
+        final int initialTermId,
+        final int termBufferLength,
+        final int mtuLength,
+        final int segmentFileLength,
         final int sessionId,
         final int streamId,
         final String channel,
@@ -54,7 +56,7 @@ public class FailResponseListener implements ResponseListener
         fail();
     }
 
-    public void onRecordingNotFound(final long recordingId, final long maxRecordingId, final long correlationId)
+    public void onRecordingNotFound(final long correlationId, final long recordingId, final long maxRecordingId)
     {
         fail();
     }

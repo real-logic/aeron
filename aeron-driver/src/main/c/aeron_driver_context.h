@@ -22,7 +22,6 @@
 #include "util/aeron_bitutil.h"
 #include "util/aeron_fileutil.h"
 
-#define AERON_MAX_PATH (256)
 #define AERON_CNC_FILE "cnc.dat"
 #define AERON_CNC_VERSION (7)
 
@@ -156,7 +155,7 @@ inline size_t aeron_ipc_publication_term_window_length(aeron_driver_context_t *c
 {
     size_t publication_term_window_length = term_length;
 
-    if (0 == context->ipc_publication_window_length)
+    if (0 != context->ipc_publication_window_length)
     {
         publication_term_window_length = (publication_term_window_length < context->ipc_publication_window_length) ?
             publication_term_window_length :

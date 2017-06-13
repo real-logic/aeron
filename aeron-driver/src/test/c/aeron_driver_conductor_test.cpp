@@ -20,6 +20,7 @@
 #include <exception>
 
 #include <gtest/gtest.h>
+#include <command/ImageMessageFlyweight.h>
 
 extern "C"
 {
@@ -486,6 +487,10 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSingleI
     ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
     doWork();
 
+    aeron_ipc_publication_t *publication =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id);
+    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 1u);
+
     size_t response_number = 0;
     int32_t session_id = 0;
     std::string log_file_name;
@@ -525,6 +530,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSingleI
             EXPECT_EQ(position.registrationId, sub_id);
 
             EXPECT_EQ(log_file_name, response.logFileName());
+            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
         }
 
         response_number++;
@@ -542,6 +548,10 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingleIp
     ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
     ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, -1), 0);
     doWork();
+
+    aeron_ipc_publication_t *publication =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id);
+    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 1u);
 
     size_t response_number = 0;
     int32_t session_id = 0;
@@ -582,6 +592,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingleIp
             EXPECT_EQ(position.registrationId, sub_id);
 
             EXPECT_EQ(log_file_name, response.logFileName());
+            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
         }
 
         response_number++;
@@ -601,6 +612,10 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleIpcSubscriptionWithSameStre
     ASSERT_EQ(addIpcSubscription(client_id, sub_id_2, STREAM_ID_1, -1), 0);
     ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
     doWork();
+
+    aeron_ipc_publication_t *publication =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id);
+    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 2u);
 
     size_t response_number = 0;
     int32_t session_id = 0;
@@ -649,6 +664,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleIpcSubscriptionWithSameStre
             EXPECT_TRUE(position.registrationId == sub_id_1 || position.registrationId == sub_id_2);
 
             EXPECT_EQ(log_file_name, response.logFileName());
+            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
         }
 
         response_number++;
@@ -668,6 +684,13 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddMultipl
     ASSERT_EQ(addIpcPublication(client_id, pub_id_1, STREAM_ID_1, true), 0);
     ASSERT_EQ(addIpcPublication(client_id, pub_id_2, STREAM_ID_1, true), 0);
     doWork();
+
+    aeron_ipc_publication_t *publication_1 =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_1);
+    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication_1), 1u);
+    aeron_ipc_publication_t *publication_2 =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_2);
+    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication_2), 1u);
 
     size_t response_number = 0;
     int32_t session_id_1 = 0;
@@ -709,6 +732,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddMultipl
             EXPECT_EQ(response.sessionId(), session_id_1);
             EXPECT_EQ(response.correlationId(), pub_id_1);
             EXPECT_EQ(log_file_name_1, response.logFileName());
+            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
         }
         else if (3 == response_number)
         {
@@ -735,6 +759,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddMultipl
             EXPECT_EQ(response.sessionId(), session_id_2);
             EXPECT_EQ(response.correlationId(), pub_id_2);
             EXPECT_EQ(log_file_name_2, response.logFileName());
+            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
         }
 
         response_number++;
@@ -827,4 +852,46 @@ TEST_F(DriverConductorTest, shouldBeAbleToNotTimeoutIpcSubscriptionOnKeepalive)
 
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_ipc_subscriptions(&m_conductor.m_conductor), 1u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToTimeoutIpcPublicationWithActiveIpcSubscription)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+    int64_t remove_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, false), 0);
+    doWork();
+    ASSERT_EQ(removePublication(client_id, remove_correlation_id, pub_id), 0);
+    doWork();
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
+
+    int64_t timeout = m_context.m_context->publication_linger_timeout_ns * 2;
+
+    doWorkUntilTimeNs(
+        timeout,
+        100,
+        [&]()
+        {
+            clientKeepalive(client_id);
+        });
+
+    EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 1u);
+    EXPECT_EQ(aeron_driver_conductor_num_ipc_publications(&m_conductor.m_conductor), 0u);
+    EXPECT_EQ(aeron_driver_conductor_num_active_ipc_subscriptions(&m_conductor.m_conductor, STREAM_ID_1), 0u);
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_UNAVAILABLE_IMAGE);
+
+            const command::ImageMessageFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), pub_id);
+            EXPECT_EQ(response.streamId(), STREAM_ID_1);
+            EXPECT_EQ(response.channel(), AERON_IPC_CHANNEL);
+        };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }

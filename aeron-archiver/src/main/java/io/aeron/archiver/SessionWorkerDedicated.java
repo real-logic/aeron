@@ -22,14 +22,14 @@ class SessionWorkerDedicated<T extends Session> extends SessionWorker<T>
 {
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue = new OneToOneConcurrentArrayQueue<>(256);
 
-    protected SessionWorkerDedicated(final String roleName)
+    SessionWorkerDedicated(final String roleName)
     {
         super(roleName);
     }
 
     public int doWork()
     {
-        final int work = commandQueue.drain(r -> r.run());
+        final int work = commandQueue.drain(Runnable::run);
         return work + super.doWork();
     }
 

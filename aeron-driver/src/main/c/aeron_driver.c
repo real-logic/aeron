@@ -205,6 +205,18 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
         return -1;
     }
 
+    snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_PUBLICATIONS_DIR);
+    if (mkdir(buffer, S_IRWXU) != 0)
+    {
+        return -1;
+    }
+
+    snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_IMAGES_DIR);
+    if (mkdir(buffer, S_IRWXU) != 0)
+    {
+        return -1;
+    }
+
     return 0;
 }
 

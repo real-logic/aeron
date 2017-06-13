@@ -45,17 +45,13 @@ public class ArchiveClient
     private final RecordingNotFoundResponseDecoder recordingNotFoundResponseDecoder =
         new RecordingNotFoundResponseDecoder();
 
-    public ArchiveClient(
-        final Publication controlRequest,
-        final Subscription recordingEvents)
+    public ArchiveClient(final Publication controlRequest, final Subscription recordingEvents)
     {
         this.controlRequest = controlRequest;
         this.recordingEvents = recordingEvents;
     }
 
-    public boolean connect(
-        final String channel,
-        final int streamId)
+    public boolean connect(final String channel, final int streamId)
     {
         connectRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
@@ -65,10 +61,7 @@ public class ArchiveClient
         return offer(connectRequestEncoder.encodedLength());
     }
 
-    public boolean startRecording(
-        final String channel,
-        final int streamId,
-        final long correlationId)
+    public boolean startRecording(final String channel, final int streamId, final long correlationId)
     {
         startRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
@@ -79,9 +72,7 @@ public class ArchiveClient
         return offer(startRecordingRequestEncoder.encodedLength());
     }
 
-    public boolean stopRecording(
-        final long recordingId,
-        final long correlationId)
+    public boolean stopRecording(final long recordingId, final long correlationId)
     {
         stopRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
@@ -121,10 +112,7 @@ public class ArchiveClient
         return offer(abortReplayRequestEncoder.encodedLength());
     }
 
-    public boolean listRecordings(
-        final long fromRecordingId,
-        final int recordCount,
-        final long correlationId)
+    public boolean listRecordings(final long fromRecordingId, final int recordCount, final long correlationId)
     {
         listRecordingsRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
@@ -145,7 +133,8 @@ public class ArchiveClient
             {
                 messageHeaderDecoder.wrap(buffer, offset);
 
-                switch (messageHeaderDecoder.templateId())
+                final int templateId = messageHeaderDecoder.templateId();
+                switch (templateId)
                 {
                     case ControlResponseDecoder.TEMPLATE_ID:
                         handleArchiverResponse(responseListener, buffer, offset);
@@ -168,7 +157,7 @@ public class ArchiveClient
                         break;
 
                     default:
-                        throw new IllegalStateException();
+                        throw new IllegalStateException("Unknown templateId: " + templateId);
                 }
             }, count);
     }
@@ -185,9 +174,9 @@ public class ArchiveClient
             messageHeaderDecoder.version());
 
         responseListener.onRecordingNotFound(
+            recordingNotFoundResponseDecoder.correlationId(),
             recordingNotFoundResponseDecoder.recordingId(),
-            recordingNotFoundResponseDecoder.maxRecordingId(),
-            recordingNotFoundResponseDecoder.correlationId());
+            recordingNotFoundResponseDecoder.maxRecordingId());
     }
 
     private void handleArchiverResponse(
@@ -203,10 +192,7 @@ public class ArchiveClient
 
         final long correlationId = archiverResponseDecoder.correlationId();
         final ControlResponseCode code = archiverResponseDecoder.code();
-        responseListener.onResponse(
-            code,
-            archiverResponseDecoder.errorMessage(),
-            correlationId);
+        responseListener.onResponse(correlationId, code, archiverResponseDecoder.errorMessage());
     }
 
     private void handleReplayAborted(
@@ -220,9 +206,7 @@ public class ArchiveClient
             messageHeaderDecoder.blockLength(),
             messageHeaderDecoder.version());
 
-        responseListener.onReplayAborted(
-            replayAbortedDecoder.lastPosition(),
-            replayAbortedDecoder.correlationId());
+        responseListener.onReplayAborted(replayAbortedDecoder.correlationId(), replayAbortedDecoder.lastPosition());
     }
 
     private void handleReplayStarted(
@@ -236,9 +220,7 @@ public class ArchiveClient
             messageHeaderDecoder.blockLength(),
             messageHeaderDecoder.version());
 
-        responseListener.onReplayStarted(
-            replayStartedDecoder.replayId(),
-            replayStartedDecoder.correlationId());
+        responseListener.onReplayStarted(replayStartedDecoder.correlationId(), replayStartedDecoder.replayId());
     }
 
     private void handleRecordingDescriptor(
@@ -255,17 +237,18 @@ public class ArchiveClient
         responseListener.onRecordingDescriptor(
             recordingDescriptorDecoder.correlationId(),
             recordingDescriptorDecoder.recordingId(),
-            recordingDescriptorDecoder.segmentFileLength(),
-            recordingDescriptorDecoder.termBufferLength(),
             recordingDescriptorDecoder.startTime(),
-            recordingDescriptorDecoder.joiningPosition(),
             recordingDescriptorDecoder.endTime(),
+            recordingDescriptorDecoder.joiningPosition(),
             recordingDescriptorDecoder.lastPosition(),
+            recordingDescriptorDecoder.initialTermId(),
+            recordingDescriptorDecoder.termBufferLength(),
+            recordingDescriptorDecoder.mtuLength(),
+            recordingDescriptorDecoder.segmentFileLength(),
             recordingDescriptorDecoder.sessionId(),
             recordingDescriptorDecoder.streamId(),
             recordingDescriptorDecoder.channel(),
-            recordingDescriptorDecoder.sourceIdentity()
-        );
+            recordingDescriptorDecoder.sourceIdentity());
     }
 
     public int pollEvents(final RecordingEventsListener recordingEventsListener, final int count)
@@ -275,22 +258,9 @@ public class ArchiveClient
             {
                 messageHeaderDecoder.wrap(buffer, offset);
 
-                switch (messageHeaderDecoder.templateId())
+                final int templateId = messageHeaderDecoder.templateId();
+                switch (templateId)
                 {
-                    case RecordingProgressDecoder.TEMPLATE_ID:
-                        recordingProgressDecoder.wrap(
-                            buffer,
-                            offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                            messageHeaderDecoder.blockLength(),
-                            messageHeaderDecoder.version());
-
-                        recordingEventsListener.onProgress(
-                            recordingProgressDecoder.recordingId(),
-                            recordingProgressDecoder.joiningPosition(),
-                            recordingProgressDecoder.currentPosition()
-                        );
-                        break;
-
                     case RecordingStartedDecoder.TEMPLATE_ID:
                         recordingStartedDecoder.wrap(
                             buffer,
@@ -303,8 +273,20 @@ public class ArchiveClient
                             recordingStartedDecoder.sessionId(),
                             recordingStartedDecoder.streamId(),
                             recordingStartedDecoder.channel(),
-                            recordingStartedDecoder.sourceIdentity()
-                        );
+                            recordingStartedDecoder.sourceIdentity());
+                        break;
+
+                    case RecordingProgressDecoder.TEMPLATE_ID:
+                        recordingProgressDecoder.wrap(
+                            buffer,
+                            offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                            messageHeaderDecoder.blockLength(),
+                            messageHeaderDecoder.version());
+
+                        recordingEventsListener.onProgress(
+                            recordingProgressDecoder.recordingId(),
+                            recordingProgressDecoder.joiningPosition(),
+                            recordingProgressDecoder.currentPosition());
                         break;
 
                     case RecordingStoppedDecoder.TEMPLATE_ID:
@@ -314,19 +296,19 @@ public class ArchiveClient
                             messageHeaderDecoder.blockLength(),
                             messageHeaderDecoder.version());
 
-                        recordingEventsListener.onStop(recordingStoppedDecoder.recordingId());
+                        recordingEventsListener.onStop(
+                            recordingStoppedDecoder.recordingId(),
+                            recordingStoppedDecoder.lastPosition());
                         break;
 
                     default:
-                        throw new IllegalStateException();
+                        throw new IllegalStateException("Unknown templateId: " + templateId);
                 }
             }, count);
     }
 
     private boolean offer(final int length)
     {
-        final long newPosition = controlRequest.offer(buffer, 0, HEADER_LENGTH + length);
-
-        return newPosition >= 0;
+        return controlRequest.offer(buffer, 0, HEADER_LENGTH + length) > 0;
     }
 }

@@ -167,15 +167,15 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         if (recordingSession != null)
         {
             recorder.abortSession(recordingSession);
-            controlSessionProxy.sendOkResponse(controlPublication, correlationId);
+            controlSessionProxy.sendOkResponse(correlationId, controlPublication);
         }
         else
         {
             controlSessionProxy.sendError(
-                controlPublication,
+                correlationId,
                 ControlResponseCode.RECORDING_NOT_FOUND,
                 null,
-                correlationId);
+                controlPublication);
         }
     }
 
@@ -189,15 +189,12 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         {
             // Subscription is closed on RecordingSession close(this is consistent with local archiver usage)
             aeron.addSubscription(channel, streamId, availableImageHandler, null);
-            controlSessionProxy.sendOkResponse(controlPublication, correlationId);
+            controlSessionProxy.sendOkResponse(correlationId, controlPublication);
         }
         catch (final Exception ex)
         {
             controlSessionProxy.sendError(
-                controlPublication,
-                ControlResponseCode.ERROR,
-                ex.getMessage(),
-                correlationId);
+                correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlPublication);
         }
     }
 
@@ -223,15 +220,15 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         if (session != null)
         {
             replayer.abortSession(session);
-            controlSessionProxy.sendOkResponse(controlPublication, correlationId);
+            controlSessionProxy.sendOkResponse(correlationId, controlPublication);
         }
         else
         {
             controlSessionProxy.sendError(
-                controlPublication,
+                correlationId,
                 ControlResponseCode.REPLAY_NOT_FOUND,
                 null,
-                correlationId);
+                controlPublication);
         }
     }
 

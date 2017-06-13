@@ -142,8 +142,7 @@ class RecordingSession implements Session
             sessionId,
             streamId,
             channel,
-            sourceIdentity
-        );
+            sourceIdentity);
 
         this.recordingWriter = recordingWriter;
         this.state = State.RECORDING;

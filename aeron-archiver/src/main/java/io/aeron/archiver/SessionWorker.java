@@ -72,7 +72,7 @@ class SessionWorker<T extends Session> implements Agent
         session.close();
     }
 
-    protected boolean isClosed()
+    boolean isClosed()
     {
         return isClosed;
     }

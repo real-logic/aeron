@@ -17,12 +17,15 @@ package io.aeron.archiver;
 
 import io.aeron.archiver.codecs.RecordingDescriptorEncoder;
 import io.aeron.logbuffer.*;
-import io.aeron.protocol.*;
+import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.*;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.*;
-import java.nio.*;
+import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archiver.ArchiveUtil.recordingOffset;
@@ -109,7 +112,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         final File file = new File(archiveDir, recordingMetaFileName);
         try (FileChannel metadataFileChannel = FileChannel.open(file.toPath(), CREATE_NEW, READ, WRITE))
         {
-            // TODO: Do not create too many files and mappings. Meta data should only be in the catalog.
             metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
             final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(metaDataBuffer);
             metaDataEncoder = new RecordingDescriptorEncoder().wrap(unsafeBuffer, Catalog.CATALOG_FRAME_LENGTH);

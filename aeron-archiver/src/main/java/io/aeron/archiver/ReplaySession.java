@@ -29,6 +29,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 
 import static io.aeron.logbuffer.FrameDescriptor.frameFlags;
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
@@ -110,6 +111,7 @@ class ReplaySession
             closeOnError(ex, recordingMetaFile.getAbsolutePath() + " : failed to load");
         }
 
+        Objects.requireNonNull(metaData);
         final long joiningPosition = metaData.joiningPosition();
         final long lastPosition = metaData.lastPosition();
         final int mtuLength = metaData.mtuLength();
@@ -138,6 +140,8 @@ class ReplaySession
         {
             closeOnError(ex, "Failed to open cursor for a recording");
         }
+
+        Objects.requireNonNull(cursor);
         this.cursor = cursor;
 
         ExclusivePublication replayPublication = null;
@@ -325,7 +329,6 @@ class ReplaySession
                 controlPublication);
         }
 
-        // TODO: if we want a NoOp client lock in the DEDICATED mode this needs to be done on the replayer
         CloseHelper.close(replayPublication);
         CloseHelper.close(cursor);
         this.state = State.CLOSED;

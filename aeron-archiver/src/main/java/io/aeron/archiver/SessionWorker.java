@@ -89,7 +89,6 @@ class SessionWorker<T extends Session> implements Agent
         sessions.forEach(this::closeSession);
         sessions.clear();
         postSessionsClose();
-
     }
 
     protected void postSessionsClose()

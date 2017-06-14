@@ -19,6 +19,20 @@
 #include <errno.h>
 #include "aeron_alloc.h"
 
+int aeron_alloc_no_err(void **ptr, size_t size)
+{
+    *ptr = malloc(size);
+
+    if (NULL == *ptr)
+    {
+        return -1;
+    }
+
+    memset(*ptr, 0, size);
+
+    return 0;
+}
+
 int aeron_alloc(void **ptr, size_t size)
 {
     *ptr = malloc(size);

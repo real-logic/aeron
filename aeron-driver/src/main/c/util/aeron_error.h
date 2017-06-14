@@ -14,14 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_ALLOC_H
-#define AERON_AERON_ALLOC_H
+#ifndef AERON_AERON_ERROR_H
+#define AERON_AERON_ERROR_H
 
-#include <stddef.h>
+#include "aeron_driver_common.h"
 
-int aeron_alloc_no_err(void **ptr, size_t size);
-int aeron_alloc(void **ptr, size_t size);
-int aeron_reallocf(void **ptr, size_t size);
-void aeron_free(void *ptr);
+typedef struct aeron_per_thread_error_stct
+{
+    int errcode;
+    char errmsg[AERON_MAX_PATH];
+}
+aeron_per_thread_error_t;
 
-#endif //AERON_AERON_ALLOC_H
+int aeron_errcode();
+const char *aeron_errmsg();
+void aeron_set_err(int errcode, const char *format, ...);
+
+#endif //AERON_AERON_ERROR_H

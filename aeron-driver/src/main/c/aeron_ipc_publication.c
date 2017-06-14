@@ -22,6 +22,7 @@
 #include "aeron_alloc.h"
 #include "protocol/aeron_udp_protocol.h"
 #include "aeron_driver_conductor.h"
+#include "util/aeron_error.h"
 
 int aeron_ipc_publication_create(
     aeron_ipc_publication_t **publication,
@@ -46,12 +47,13 @@ int aeron_ipc_publication_create(
 
     if (usable_fs_space < log_length)
     {
-        errno = ENOSPC;
+        aeron_set_err(ENOSPC, "Insufficient usable storage for new log of length=%d in %s", log_length, context->aeron_dir);
         return -1;
     }
 
     if (aeron_alloc((void **)&_pub, sizeof(aeron_ipc_publication_t)) < 0)
     {
+        aeron_set_err(ENOMEM, "%s", "Could not allocate IPC publication");
         return -1;
     }
 
@@ -59,6 +61,7 @@ int aeron_ipc_publication_create(
     if (aeron_alloc((void **)(&_pub->log_file_name), (size_t)path_length) < 0)
     {
         aeron_free(_pub);
+        aeron_set_err(ENOMEM, "%s", "Could not allocate IPC publication log_file_name");
         return -1;
     }
 
@@ -66,6 +69,7 @@ int aeron_ipc_publication_create(
     {
         aeron_free(_pub->log_file_name);
         aeron_free(_pub);
+        aeron_set_err(aeron_errcode(), "error mapping IPC raw log %s: %s", path, aeron_errmsg());
         return -1;
     }
     _pub->map_raw_log_close_func = context->map_raw_log_close_func;

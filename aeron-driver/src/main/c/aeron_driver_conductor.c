@@ -16,6 +16,8 @@
 
 #include <stdio.h>
 #include <inttypes.h>
+#include <errno.h>
+#include <util/aeron_error.h>
 #include "util/aeron_arrayutil.h"
 #include "aeron_driver_conductor.h"
 #include "aeron_position.h"
@@ -522,9 +524,10 @@ void aeron_driver_conductor_on_unavailable_image(
         conductor, AERON_RESPONSE_ON_UNAVAILABLE_IMAGE, response, sizeof(aeron_image_message_t) + channel_length);
 }
 
-void aeron_driver_conductor_error(aeron_driver_conductor_t *conductor, int error_code, const char *description)
+void aeron_driver_conductor_error(
+    aeron_driver_conductor_t *conductor, int error_code, const char *description, const char *message)
 {
-    aeron_distinct_error_log_record(&conductor->error_log, error_code, description, conductor->stack_error.buffer);
+    aeron_distinct_error_log_record(&conductor->error_log, error_code, description, message);
     aeron_counter_increment(conductor->errors_counter, 1);
 }
 
@@ -534,10 +537,9 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
     int64_t correlation_id = 0;
     int result = 0;
 
-    conductor->stack_error.buffer[0] = '\0';
-    conductor->stack_error.code = AERON_ERROR_CODE_GENERIC_ERROR;
-    conductor->stack_error.os_errno = 0;
-    conductor->stack_error.description = "generic error";
+    char error_message[AERON_MAX_PATH] = "\0";
+    int error_code = AERON_ERROR_CODE_GENERIC_ERROR;
+    char *error_description = "generic error";
 
     switch (msg_type_id)
     {
@@ -658,23 +660,28 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
         }
 
         default:
-            AERON_FORMAT_BUFFER(conductor->stack_error.buffer, "command=%d unknown", msg_type_id);
-            aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID, "unknown command type id");
+            AERON_FORMAT_BUFFER(error_message, "command=%d unknown", msg_type_id);
+            aeron_driver_conductor_error(
+                conductor, AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID, "unknown command type id", error_message);
             break;
     }
 
     if (result < 0)
     {
-        aeron_driver_conductor_on_error(
-            conductor, conductor->stack_error.code, conductor->stack_error.buffer, strlen(conductor->stack_error.buffer), correlation_id);
-        aeron_driver_conductor_error(conductor, conductor->stack_error.code, conductor->stack_error.description);
+        int os_errno = aeron_errcode();
+        int code = os_errno > 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
+
+        error_description = strerror(os_errno);
+        AERON_FORMAT_BUFFER(error_message, "(%d) %s: %s", os_errno, error_description, aeron_errmsg());
+        aeron_driver_conductor_on_error(conductor, code, error_message, strlen(error_message), correlation_id);
+        aeron_driver_conductor_error(conductor, code, error_description, error_message);
     }
 
     return;
 
     malformed_command:
-        AERON_FORMAT_BUFFER(conductor->stack_error.buffer, "command=%d too short: length=%lu", msg_type_id, length);
-        aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_MALFORMED_COMMAND, "command too short");
+        AERON_FORMAT_BUFFER(error_message, "command=%d too short: length=%lu", msg_type_id, length);
+        aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_MALFORMED_COMMAND, "command too short", error_message);
         return;
 }
 
@@ -927,7 +934,7 @@ int aeron_driver_conductor_on_add_network_publication(
     aeron_publication_command_t *command,
     bool is_exclusive)
 {
-    AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "network publications not currently supported");
+    aeron_set_err(ENOTSUP, "%s", "network publications not currently supported");
     return -1;
 }
 
@@ -958,11 +965,9 @@ int aeron_driver_conductor_on_remove_publication(
         }
     }
 
-    AERON_ERROR(
-        conductor,
-        AERON_ERROR_CODE_UNKNOWN_PUBLICAITON,
-        "unknown publication",
-        "client_id=%" PRId64 ", registration_id=%" PRId64,
+    aeron_set_err(
+        EINVAL,
+        "unknown publication client_id=%" PRId64 ", registration_id=%" PRId64,
         command->correlated.client_id,
         command->registration_id);
     return -1;
@@ -1019,7 +1024,7 @@ int aeron_driver_conductor_on_add_spy_subscription(
     aeron_driver_conductor_t *conductor,
     aeron_subscription_command_t *command)
 {
-    AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "spy subscriptions not currently supported");
+    aeron_set_err(ENOTSUP, "%s", "spy subscriptions not currently supported");
     return -1;
 }
 
@@ -1027,7 +1032,7 @@ int aeron_driver_conductor_on_add_network_subscription(
     aeron_driver_conductor_t *conductor,
     aeron_subscription_command_t *command)
 {
-    AERON_ERROR(conductor, AERON_ERROR_CODE_ENOTSUP, "not supported", "%s", "network subscriptions not currently supported");
+    aeron_set_err(ENOTSUP, "%s", "network subscriptions not currently supported");
     return -1;
 }
 
@@ -1057,11 +1062,9 @@ int aeron_driver_conductor_on_remove_subscription(
 
     /* TODO: search spy subscriptions */
 
-    AERON_ERROR(
-        conductor,
-        AERON_ERROR_CODE_UNKNOWN_SUBSCRIPTION,
-        "unknown subscription",
-        "client_id=%" PRId64 ", registration_id=%" PRId64,
+    aeron_set_err(
+        EINVAL,
+        "unknown subscription client_id=%" PRId64 ", registration_id=%" PRId64,
         command->correlated.client_id,
         command->registration_id);
     return -1;

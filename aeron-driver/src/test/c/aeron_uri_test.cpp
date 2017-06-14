@@ -22,6 +22,7 @@ extern "C"
 {
 #include "uri/aeron_uri.h"
 #include "util/aeron_netutil.h"
+#include "util/aeron_error.h"
 }
 
 class UriTest : public testing::Test
@@ -118,7 +119,7 @@ protected:
 
 TEST_F(UriResolverTest, shouldResolveIpv4DottedDecimalAndPort)
 {
-    ASSERT_EQ(aeron_host_and_port_parse_and_resolve("192.168.1.20:55", &m_addr), 0);
+    ASSERT_EQ(aeron_host_and_port_parse_and_resolve("192.168.1.20:55", &m_addr), 0) << aeron_errmsg();
     EXPECT_EQ(m_addr.ss_family, AF_INET);
 
     struct sockaddr_in *addr = (struct sockaddr_in *)&m_addr;

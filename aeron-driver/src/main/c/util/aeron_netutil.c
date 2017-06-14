@@ -63,14 +63,12 @@ int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, 
     {
         memcpy(sockaddr, &info->ai_addr, sizeof(struct sockaddr_in));
         sockaddr->ss_family = AF_INET;
-        sockaddr->ss_len = sizeof(struct sockaddr_in);
         result = 0;
     }
     else if (info->ai_family == AF_INET6)
     {
         memcpy(sockaddr, &info->ai_addr, sizeof(struct sockaddr_in6));
         sockaddr->ss_family = AF_INET6;
-        sockaddr->ss_len = sizeof(struct sockaddr_in6);
         result = 0;
     }
     else
@@ -89,7 +87,6 @@ int aeron_ipv4_addr_resolver(const char *host, struct sockaddr_storage *sockaddr
     if (inet_pton(AF_INET, host, &addr->sin_addr))
     {
         sockaddr->ss_family = AF_INET;
-        sockaddr->ss_len = sizeof(struct sockaddr_in);
         return 0;
     }
 
@@ -103,7 +100,6 @@ int aeron_ipv6_addr_resolver(const char *host, struct sockaddr_storage *sockaddr
     if (inet_pton(AF_INET6, host, &addr->sin6_addr))
     {
         sockaddr->ss_family = AF_INET6;
-        sockaddr->ss_len = sizeof(struct sockaddr_in6);
         return 0;
     }
 

@@ -20,6 +20,8 @@
 #include <netdb.h>
 #include <stdlib.h>
 #include "uri/aeron_uri.h"
+#include "util/aeron_arrayutil.h"
+#include "aeron_uri.h"
 
 typedef enum aeron_uri_parser_state_enum
 {
@@ -27,7 +29,7 @@ typedef enum aeron_uri_parser_state_enum
 }
 aeron_uri_parser_state_t;
 
-int aeron_uri_parse(char *uri, aeron_uri_parse_callback_t param_func, void *clientd)
+int aeron_uri_parse_params(char *uri, aeron_uri_parse_callback_t param_func, void *clientd)
 {
     aeron_uri_parser_state_t state = PARAM_KEY;
     char *param_key = NULL, *param_value = NULL;
@@ -92,6 +94,18 @@ int aeron_uri_parse(char *uri, aeron_uri_parse_callback_t param_func, void *clie
     return 0;
 }
 
+int aeron_uri_params_ensure_capacity(aeron_uri_params_t *params)
+{
+    if (aeron_array_ensure_capacity(
+        (uint8_t **)&params->array, sizeof(aeron_uri_param_t), params->length, params->length + 1) >= 0)
+    {
+        params->length++;
+        return 0;
+    }
+
+    return -1;
+}
+
 static int aeron_udp_uri_params_func(void *clientd, const char *key, const char *value)
 {
     aeron_udp_channel_params_t *params = (aeron_udp_channel_params_t *)clientd;
@@ -138,14 +152,84 @@ int aeron_udp_uri_parse(char *uri, aeron_udp_channel_params_t *params)
     params->ttl_key = NULL;
     params->control_key = NULL;
 
-    return aeron_uri_parse(uri, aeron_udp_uri_params_func, params);
+    return aeron_uri_parse_params(uri, aeron_udp_uri_params_func, params);
+}
+
+static int aeron_ipc_uri_params_func(void *clientd, const char *key, const char *value)
+{
+    aeron_ipc_channel_params_t *params = (aeron_ipc_channel_params_t *)clientd;
+
+    size_t index = params->additional_params.length;
+    if (aeron_uri_params_ensure_capacity(&params->additional_params) < 0)
+    {
+        return -1;
+    }
+
+    aeron_uri_param_t *param = &params->additional_params.array[index];
+
+    param->key = key;
+    param->value = value;
+
+    return 0;
+}
+
+int aeron_ipc_uri_parse(char *uri, aeron_ipc_channel_params_t *params)
+{
+    params->additional_params.length = 0;
+    params->additional_params.array = NULL;
+
+    return aeron_uri_parse_params(uri, aeron_ipc_uri_params_func, params);
+}
+
+#define AERON_URI_SCHEME "aeron:"
+#define AERON_URI_UDP_TRANSPORT "udp"
+#define AERON_URI_IPC_TRANSPORT "ipc"
+
+int aeron_uri_parse(const char *uri, aeron_uri_t *params)
+{
+    char *ptr = params->mutable_uri;
+
+    strncpy(params->mutable_uri, uri, sizeof(params->mutable_uri));
+
+    if (strncmp(ptr, AERON_URI_SCHEME, strlen(AERON_URI_SCHEME)) == 0)
+    {
+        ptr += strlen(AERON_URI_SCHEME);
+
+        if (strncmp(ptr, AERON_URI_UDP_TRANSPORT, strlen(AERON_URI_UDP_TRANSPORT)) == 0)
+        {
+            ptr += strlen(AERON_URI_UDP_TRANSPORT);
+
+            if (*ptr++ == '?')
+            {
+                params->type = AERON_URI_UDP;
+                return aeron_udp_uri_parse(ptr, &params->params.udp);
+            }
+        }
+        else if (strncmp(ptr, AERON_URI_IPC_TRANSPORT, strlen(AERON_URI_IPC_TRANSPORT)) == 0)
+        {
+            ptr += strlen(AERON_URI_IPC_TRANSPORT);
+
+            if (*ptr == '?')
+            {
+                ptr++;
+            }
+
+            params->type = AERON_URI_IPC;
+            return aeron_ipc_uri_parse(ptr, &params->params.ipc);
+        }
+    }
+
+    aeron_set_err(EINVAL, "invalid URI scheme or transport: %s", uri);
+    return -1;
 }
 
 static aeron_uri_hostname_resolver_func_t aeron_uri_hostname_resolver_func = NULL;
+static void *aeron_uri_hostname_resolver_clientd = NULL;
 
-void aeron_uri_hostname_resolver(aeron_uri_hostname_resolver_func_t func)
+void aeron_uri_hostname_resolver(aeron_uri_hostname_resolver_func_t func, void *clientd)
 {
     aeron_uri_hostname_resolver_func = func;
+    aeron_uri_hostname_resolver_clientd = clientd;
 }
 
 int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, int family_hint)
@@ -166,7 +250,7 @@ int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, 
             aeron_set_err(EINVAL, "Unable to resolve host=(%s): (%d) %s", host, error, gai_strerror(error));
             return -1;
         }
-        else if (aeron_uri_hostname_resolver_func(host, &hints, info) != 0)
+        else if (aeron_uri_hostname_resolver_func(aeron_uri_hostname_resolver_clientd, host, &hints, &info) != 0)
         {
             aeron_set_err(EINVAL, "Unable to resolve host=(%s): %s", host, aeron_errmsg());
             return -1;
@@ -338,5 +422,3 @@ int aeron_host_and_port_parse(const char *address_str, struct sockaddr_storage *
     aeron_set_err(EINVAL, "invalid format: %s", address_str);
     return -1;
 }
-
-extern int aeron_uri_params_ensure_capacity(aeron_uri_params_t *params);

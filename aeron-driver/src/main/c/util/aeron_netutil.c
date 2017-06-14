@@ -150,6 +150,12 @@ int aeron_host_and_port_resolver(
     return result;
 }
 
+#if defined(Darwin)
+#define AERON_IPV4_REGCOMP_CFLAGS (REG_EXTENDED | REG_ENHANCED)
+#else
+#define AERON_IPV4_REGCOMP_CFLAGS (REG_EXTENDED)
+#endif
+
 int aeron_host_and_port_parse_and_resolve(const char *address_str, struct sockaddr_storage *sockaddr)
 {
     static bool regexs_compiled = false;
@@ -162,7 +168,7 @@ int aeron_host_and_port_parse_and_resolve(const char *address_str, struct sockad
         const char *ipv6 = "\\[([0-9A-Fa-f:]+)(?:%([a-zA-Z0-9_.~-]+))?\\](?::([0-9]+))?";
 
         int regcomp_result;
-        if ((regcomp_result = regcomp(&ipv4_regex, ipv4, 0)) != 0)
+        if ((regcomp_result = regcomp(&ipv4_regex, ipv4, AERON_IPV4_REGCOMP_CFLAGS)) != 0)
         {
             char message[AERON_MAX_PATH];
 
@@ -171,7 +177,7 @@ int aeron_host_and_port_parse_and_resolve(const char *address_str, struct sockad
             return -1;
         }
 
-        if ((regcomp_result = regcomp(&ipv6_regex, ipv6, 0)) != 0)
+        if ((regcomp_result = regcomp(&ipv6_regex, ipv6, AERON_IPV4_REGCOMP_CFLAGS)) != 0)
         {
             char message[AERON_MAX_PATH];
 

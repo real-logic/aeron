@@ -112,6 +112,16 @@ public:
 
 protected:
     aeron_uri_t m_uri;
+    struct sockaddr_storage m_addr;
     std::function<int(const char *, struct addrinfo *, struct addrinfo **)> m_resolver_func;
 };
 
+TEST_F(UriResolverTest, shouldResolveIpv4DottedDecimalAndPort)
+{
+    ASSERT_EQ(aeron_host_and_port_parse_and_resolve("192.168.1.20:55", &m_addr), 0);
+    EXPECT_EQ(m_addr.ss_family, AF_INET);
+
+    struct sockaddr_in *addr = (struct sockaddr_in *)&m_addr;
+    EXPECT_EQ(addr->sin_family, AF_INET);
+    EXPECT_EQ(addr->sin_port, htons(55));
+}

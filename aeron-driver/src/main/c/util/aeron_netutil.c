@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+#if defined(__linux__)
+#define _GNU_SOURCE
+#endif
+
 #include <netdb.h>
 #include <string.h>
 #include <errno.h>

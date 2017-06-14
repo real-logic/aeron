@@ -18,7 +18,8 @@ package io.aeron.archiver;
 import io.aeron.*;
 import io.aeron.archiver.client.ArchiveClient;
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
-import io.aeron.driver.*;
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
@@ -27,7 +28,8 @@ import org.junit.*;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
@@ -42,8 +44,8 @@ public class ArchiverSystemTest
 {
     private static final double MEGABYTE = 1024.0d * 1024.0d;
 
-    private static final String REPLY_URI = "aeron:udp?endpoint=127.0.0.1:54327";
-    private static final int REPLY_STREAM_ID = 100;
+    private static final String CONTROL_URI = "aeron:udp?endpoint=127.0.0.1:54327";
+    private static final int CONTROL_STREAM_ID = 100;
     private static final String REPLAY_URI = "aeron:ipc?endpoint=127.0.0.1:54326";
     private static final String PUBLISH_URI = "aeron:udp?endpoint=127.0.0.1:54325";
     private static final int PUBLISH_STREAM_ID = 1;
@@ -78,7 +80,7 @@ public class ArchiverSystemTest
                 "ArchiveAndReplaySystemTest failed with random seed: " + ArchiverSystemTest.this.seed);
         }
     };
-    private Subscription reply;
+    private Subscription controlResponses;
     private long correlationId;
     private long joiningPosition;
 
@@ -90,7 +92,7 @@ public class ArchiverSystemTest
 
         driverCtx
             .termBufferSparseFile(true)
-            .threadingMode(ThreadingMode.INVOKER)
+            .threadingMode(driverThreadingMode())
             .errorHandler(LangUtil::rethrowUnchecked)
             .dirsDeleteOnStart(true);
 
@@ -101,12 +103,22 @@ public class ArchiverSystemTest
             .forceWrites(false)
             .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
             .archiveDir(archiveDir)
-            .threadingMode(ArchiverThreadingMode.SHARED);
+            .threadingMode(archiverThreadingMode());
 
         archiver = Archiver.launch(archiverCtx);
 
         println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
         publishingClient = Aeron.connect();
+    }
+
+    ArchiverThreadingMode archiverThreadingMode()
+    {
+        return ArchiverThreadingMode.SHARED;
+    }
+
+    ThreadingMode driverThreadingMode()
+    {
+        return ThreadingMode.INVOKER;
     }
 
     @After
@@ -138,16 +150,16 @@ public class ArchiverSystemTest
             awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 
-            reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
-            client.connect(REPLY_URI, REPLY_STREAM_ID);
-            awaitSubscriptionIsConnected(reply);
+            controlResponses = publishingClient.addSubscription(CONTROL_URI, CONTROL_STREAM_ID);
+            client.connect(CONTROL_URI, CONTROL_STREAM_ID);
+            awaitSubscriptionIsConnected(controlResponses);
             println("Client connected");
 
             verifyEmptyDescriptorList(client);
             final long startRecordingCorrelationId = this.correlationId++;
             waitFor(() -> client.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
             println("Recording requested");
-            waitForOk(client, reply, startRecordingCorrelationId);
+            waitForOk(client, controlResponses, startRecordingCorrelationId);
 
             final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(publication);
@@ -179,7 +191,7 @@ public class ArchiverSystemTest
             println("Request stop recording");
             final long requestStopCorrelationId = this.correlationId++;
             waitFor(() -> client.stopRecording(recordingId, requestStopCorrelationId));
-            waitForOk(client, reply, requestStopCorrelationId);
+            waitForOk(client, controlResponses, requestStopCorrelationId);
 
             waitFor(() -> client.pollEvents(new FailRecordingEventsListener()
             {
@@ -205,7 +217,7 @@ public class ArchiverSystemTest
     {
         final long requestRecordingsCorrelationId = this.correlationId++;
         client.listRecordings(0, 100, requestRecordingsCorrelationId);
-        TestUtil.waitForFail(client, reply, requestRecordingsCorrelationId);
+        TestUtil.waitForFail(client, controlResponses, requestRecordingsCorrelationId);
     }
 
     private void verifyDescriptorListOngoingArchive(final ArchiveClient client, final Publication publication)
@@ -213,7 +225,7 @@ public class ArchiverSystemTest
         final long requestRecordingsCorrelationId = this.correlationId++;
         client.listRecordings(recordingId, 1, requestRecordingsCorrelationId);
         println("Await result");
-        waitFor(() -> client.pollResponses(reply, new FailResponseListener()
+        waitFor(() -> client.pollResponses(controlResponses, new FailResponseListener()
         {
             public void onRecordingDescriptor(
                 final long correlationId,
@@ -320,7 +332,7 @@ public class ArchiverSystemTest
                 REPLAY_STREAM_ID,
                 correlationId++
             ));
-            waitForOk(client, reply, replayCorrelationId);
+            waitForOk(client, controlResponses, replayCorrelationId);
 
             awaitSubscriptionIsConnected(replay);
             final Image image = replay.images().get(0);

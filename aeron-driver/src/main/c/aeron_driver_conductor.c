@@ -538,7 +538,6 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
     int result = 0;
 
     char error_message[AERON_MAX_PATH] = "\0";
-    int error_code = AERON_ERROR_CODE_GENERIC_ERROR;
     char *error_description = "generic error";
 
     switch (msg_type_id)

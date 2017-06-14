@@ -51,7 +51,7 @@ int aeron_udp_channel_transport_init(
     aeron_addr_t *bind_addr,
     aeron_addr_t *multicast_if_addr,
     unsigned int multicast_if_index,
-    u_char ttl,
+    uint8_t ttl,
     size_t socket_rcvbuf,
     size_t socket_sndbuf);
 

@@ -20,13 +20,16 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include <errno.h>
 #include "aeron_alloc.h"
+#include "util/aeron_error.h"
 
 inline int aeron_array_ensure_capacity(
     uint8_t **array, size_t element_size, size_t old_capacity, size_t new_capacity)
 {
     if (aeron_reallocf((void **)array, new_capacity * element_size) < 0)
     {
+        aeron_set_err(ENOMEM, "%s", "could not ensure capacity");
         return -1;
     }
 
@@ -45,6 +48,7 @@ inline int aeron_array_add(
 {
     if (aeron_reallocf((void **)array, element_size * new_length) < 0)
     {
+        aeron_set_err(ENOMEM, "%s", "could not array add");
         return -1;
     }
 
@@ -62,6 +66,7 @@ inline int aeron_array_remove(
 
     if (aeron_reallocf((void **)array, (old_length - 1) * element_size) < 0)
     {
+        aeron_set_err(ENOMEM, "%s", "could not array remove realloc");
         return -1;
     }
 

@@ -17,6 +17,8 @@
 #ifndef AERON_AERON_URI_H
 #define AERON_AERON_URI_H
 
+#include <netinet/in.h>
+#include <netdb.h>
 #include "aeron_driver_common.h"
 #include "util/aeron_arrayutil.h"
 
@@ -56,10 +58,14 @@ typedef struct aeron_ipc_channel_params_stct
 aeron_ipc_channel_params_t;
 
 typedef int (*aeron_uri_parse_callback_t)(void *clientd, const char *key, const char *value);
+typedef int (*aeron_uri_hostname_resolver_func_t)(const char *host, struct addrinfo *hints, struct addrinfo *info);
 
 int aeron_uri_parse(char *uri, aeron_uri_parse_callback_t param_func, void *clientd);
 
 int aeron_udp_uri_parse(char *uri, aeron_udp_channel_params_t *params);
+
+void aeron_uri_hostname_resolver(aeron_uri_hostname_resolver_func_t func);
+int aeron_host_and_port_parse(const char *address_str, struct sockaddr_storage *sockaddr);
 
 inline int aeron_uri_params_ensure_capacity(aeron_uri_params_t *params)
 {

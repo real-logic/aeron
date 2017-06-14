@@ -21,31 +21,13 @@
 extern "C"
 {
 #include "uri/aeron_uri.h"
+#include "util/aeron_netutil.h"
 }
-
-/*
- * WARNING: single threaded only due to global resolver func usage
- */
 
 class UriTest : public testing::Test
 {
-public:
-    UriTest() :
-        m_resolver_func([](const char *, struct addrinfo *, struct addrinfo **){ return -1; })
-    {
-        aeron_uri_hostname_resolver(UriTest::resolver_func, this);
-    }
-
-    static int resolver_func(void *clientd, const char *host, struct addrinfo *hints, struct addrinfo **info)
-    {
-        UriTest *t = (UriTest *)clientd;
-
-        return (*t).m_resolver_func(host, hints, info);
-    }
-
 protected:
     aeron_uri_t m_uri;
-    std::function<int(const char *, struct addrinfo *, struct addrinfo **)> m_resolver_func;
 };
 
 TEST_F(UriTest, shouldNotParseInvalidUriScheme)
@@ -107,4 +89,29 @@ TEST_F(UriTest, shouldParseWithMultipleParams)
     EXPECT_EQ(std::string(m_uri.params.udp.additional_params.array[0].key), "port");
     EXPECT_EQ(std::string(m_uri.params.udp.additional_params.array[0].value), "4567");
 }
+
+/*
+ * WARNING: single threaded only due to global resolver func usage
+ */
+
+class UriResolverTest : public testing::Test
+{
+public:
+    UriResolverTest() :
+        m_resolver_func([](const char *, struct addrinfo *, struct addrinfo **){ return -1; })
+    {
+        aeron_uri_hostname_resolver(UriResolverTest::resolver_func, this);
+    }
+
+    static int resolver_func(void *clientd, const char *host, struct addrinfo *hints, struct addrinfo **info)
+    {
+        UriResolverTest *t = (UriResolverTest *)clientd;
+
+        return (*t).m_resolver_func(host, hints, info);
+    }
+
+protected:
+    aeron_uri_t m_uri;
+    std::function<int(const char *, struct addrinfo *, struct addrinfo **)> m_resolver_func;
+};
 

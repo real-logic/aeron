@@ -37,15 +37,6 @@ typedef struct aeron_udp_channel_transport_stct
 }
 aeron_udp_channel_transport_t;
 
-typedef void (*aeron_ipv4_ifaddr_func_t)
-    (unsigned int index, const char *name, struct sockaddr_in *addr, struct sockaddr_in *netmask, unsigned int flags);
-
-typedef void (*aeron_ipv6_ifaddr_func_t)
-    (unsigned int index, const char *name, struct sockaddr_in6 *addr, struct sockaddr_in6 *netmask, unsigned int flags);
-
-int aeron_lookup_ipv4_interfaces(aeron_ipv4_ifaddr_func_t func);
-int aeron_lookup_ipv6_interfaces(aeron_ipv6_ifaddr_func_t func);
-
 int aeron_udp_channel_transport_init(
     aeron_udp_channel_transport_t *transport,
     aeron_addr_t *bind_addr,

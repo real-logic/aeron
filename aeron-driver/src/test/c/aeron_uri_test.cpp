@@ -102,6 +102,7 @@ public:
     UriResolverTest() :
         addr_in((struct sockaddr_in *)&m_addr),
         addr_in6((struct sockaddr_in6 *)&m_addr),
+        m_prefixlen(0),
         m_resolver_func([](const char *, struct addrinfo *, struct addrinfo **){ return -1; })
     {
         aeron_uri_hostname_resolver(UriResolverTest::resolver_func, this);
@@ -119,6 +120,7 @@ protected:
     struct sockaddr_storage m_addr;
     struct sockaddr_in *addr_in;
     struct sockaddr_in6 *addr_in6;
+    size_t m_prefixlen;
     std::function<int(const char *, struct addrinfo *, struct addrinfo **)> m_resolver_func;
 };
 
@@ -183,4 +185,50 @@ TEST_F(UriResolverTest, shouldNotResolveInvalidPort)
     EXPECT_EQ(aeron_host_and_port_parse_and_resolve("[::1]:aa", &m_addr), -1);
     EXPECT_EQ(aeron_host_and_port_parse_and_resolve("[::1]", &m_addr), -1);
     EXPECT_EQ(aeron_host_and_port_parse_and_resolve("[::1]:", &m_addr), -1);
+}
+
+TEST_F(UriResolverTest, shouldResolveIpv4Interface)
+{
+    char buffer[AERON_MAX_PATH];
+
+    ASSERT_EQ(aeron_interface_parse_and_resolve("192.168.1.20", &m_addr, &m_prefixlen), 0) << aeron_errmsg();
+    EXPECT_EQ(m_prefixlen, 32u);
+    EXPECT_EQ(m_addr.ss_family, AF_INET);
+    EXPECT_EQ(addr_in->sin_family, AF_INET);
+    EXPECT_STREQ(inet_ntop(AF_INET, &addr_in->sin_addr, buffer, sizeof(buffer)), "192.168.1.20");
+
+    ASSERT_EQ(aeron_interface_parse_and_resolve("192.168.1.20/24", &m_addr, &m_prefixlen), 0) << aeron_errmsg();
+    EXPECT_EQ(m_prefixlen, 24u);
+
+    ASSERT_EQ(aeron_interface_parse_and_resolve("192.168.1.20:1234", &m_addr, &m_prefixlen), 0) << aeron_errmsg();
+    EXPECT_EQ(m_prefixlen, 32u);
+
+    ASSERT_EQ(aeron_interface_parse_and_resolve("192.168.1.20:1234/24", &m_addr, &m_prefixlen), 0) << aeron_errmsg();
+    EXPECT_EQ(m_prefixlen, 24u);
+
+    ASSERT_EQ(aeron_interface_parse_and_resolve("0.0.0.0/0", &m_addr, &m_prefixlen), 0) << aeron_errmsg();
+    EXPECT_EQ(m_prefixlen, 0u);
+    EXPECT_EQ(m_addr.ss_family, AF_INET);
+    EXPECT_EQ(addr_in->sin_family, AF_INET);
+    EXPECT_STREQ(inet_ntop(AF_INET, &addr_in->sin_addr, buffer, sizeof(buffer)), "0.0.0.0");
+}
+
+TEST_F(UriResolverTest, shouldResolveIpv6Interface)
+{
+    char buffer[AERON_MAX_PATH];
+
+    ASSERT_EQ(aeron_interface_parse_and_resolve("[::1]", &m_addr, &m_prefixlen), 0) << aeron_errmsg();
+    EXPECT_EQ(m_prefixlen, 128u);
+    EXPECT_EQ(m_addr.ss_family, AF_INET6);
+    EXPECT_EQ(addr_in->sin_family, AF_INET6);
+    EXPECT_STREQ(inet_ntop(AF_INET6, &addr_in6->sin6_addr, buffer, sizeof(buffer)), "::1");
+
+    ASSERT_EQ(aeron_interface_parse_and_resolve("[::1]/48", &m_addr, &m_prefixlen), 0) << aeron_errmsg();
+    EXPECT_EQ(m_prefixlen, 48u);
+
+    ASSERT_EQ(aeron_interface_parse_and_resolve("[::1]:1234", &m_addr, &m_prefixlen), 0) << aeron_errmsg();
+    EXPECT_EQ(m_prefixlen, 128u);
+
+    ASSERT_EQ(aeron_interface_parse_and_resolve("[::1]:1234/48", &m_addr, &m_prefixlen), 0) << aeron_errmsg();
+    EXPECT_EQ(m_prefixlen, 48u);
 }

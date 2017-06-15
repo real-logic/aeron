@@ -33,5 +33,6 @@ int aeron_lookup_ipv6_interfaces(aeron_ipv6_ifaddr_func_t func);
 void aeron_uri_hostname_resolver(aeron_uri_hostname_resolver_func_t func, void *clientd);
 
 int aeron_host_and_port_parse_and_resolve(const char *address_str, struct sockaddr_storage *sockaddr);
+int aeron_interface_parse_and_resolve(const char *interface_str, struct sockaddr_storage *sockaddr, size_t *prefixlen);
 
 #endif //AERON_AERON_NETUTIL_H

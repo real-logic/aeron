@@ -244,6 +244,147 @@ int aeron_host_and_port_parse_and_resolve(const char *address_str, struct sockad
     return -1;
 }
 
+int aeron_prefixlen_resolver(const char *prefixlen, unsigned long max)
+{
+    if ('\0' == *prefixlen)
+    {
+        return (int)max;
+    }
+
+    if ('/' == *prefixlen)
+    {
+        prefixlen++;
+    }
+
+    if (strcmp("0", prefixlen) == 0)
+    {
+        return 0;
+    }
+
+    unsigned long value = strtoul(prefixlen, NULL, 0);
+
+    if (0 == value && EINVAL == errno)
+    {
+        aeron_set_err(EINVAL, "prefixlen invalid: %s", prefixlen);
+        return -1;
+    }
+    else if (value > max)
+    {
+        aeron_set_err(EINVAL, "prefixlen out of range: %s", prefixlen);
+        return -1;
+    }
+
+    return (int)value;
+}
+
+int aeron_host_and_prefixlen_resolver(
+    const char *host_str, const char *prefixlen_str, struct sockaddr_storage *sockaddr, size_t *prefixlen, int family_hint)
+{
+    int host_result = -1, prefixlen_result = -1;
+
+    if (AF_INET == family_hint)
+    {
+        host_result = aeron_ipv4_addr_resolver(host_str, sockaddr);
+    }
+    else if (AF_INET6 == family_hint)
+    {
+        host_result = aeron_ipv6_addr_resolver(host_str, sockaddr);
+    }
+
+    if (host_result >= 0)
+    {
+        if ((prefixlen_result = aeron_prefixlen_resolver(prefixlen_str, (sockaddr->ss_family == AF_INET6) ? 128 : 32)) >= 0)
+        {
+            *prefixlen = (size_t)prefixlen_result;
+        }
+    }
+
+    return prefixlen_result >= 0 ? 0 : prefixlen_result;
+}
+
+int aeron_interface_parse_and_resolve(const char *interface_str, struct sockaddr_storage *sockaddr, size_t *prefixlen)
+{
+    static bool regexs_compiled = false;
+    static regex_t ipv4_regex, ipv6_regex;
+    regmatch_t matches[10];
+
+    if (!regexs_compiled)
+    {
+        const char *ipv4 = "([^:/]+)(:([0-9]+))?(/([0-9]+))?";
+        const char *ipv6 = "\\[([0-9A-Fa-f:]+)(%([a-zA-Z0-9_.~-]+))?\\](:([0-9]+))?(/([0-9]+))?";
+
+        int regcomp_result;
+        if ((regcomp_result = regcomp(&ipv4_regex, ipv4, AERON_IPV4_REGCOMP_CFLAGS)) != 0)
+        {
+            char message[AERON_MAX_PATH];
+
+            regerror(regcomp_result, &ipv4_regex, message, sizeof(message));
+            aeron_set_err(EINVAL, "could not regcomp IPv4 regex: %s", message);
+            return -1;
+        }
+
+        if ((regcomp_result = regcomp(&ipv6_regex, ipv6, AERON_IPV4_REGCOMP_CFLAGS)) != 0)
+        {
+            char message[AERON_MAX_PATH];
+
+            regerror(regcomp_result, &ipv6_regex, message, sizeof(message));
+            aeron_set_err(EINVAL, "could not regcomp IPv6 regex: %s", message);
+            return -1;
+        }
+
+        regexs_compiled = true;
+    }
+
+    int regexec_result = regexec(&ipv6_regex, interface_str, 10, matches, 0);
+    if (0 == regexec_result)
+    {
+        char host_str[AERON_MAX_PATH], prefixlen_str[AERON_MAX_PATH];
+        size_t host_str_len = (size_t)(matches[1].rm_eo - matches[1].rm_so);
+        size_t prefixlen_str_len = (size_t)(matches[6].rm_eo - matches[6].rm_so);
+
+        strncpy(host_str, &interface_str[matches[1].rm_so], host_str_len);
+        host_str[host_str_len] = '\0';
+        strncpy(prefixlen_str, &interface_str[matches[6].rm_so], prefixlen_str_len);
+        prefixlen_str[prefixlen_str_len] = '\0';
+
+        return aeron_host_and_prefixlen_resolver(host_str, prefixlen_str, sockaddr, prefixlen, AF_INET6);
+    }
+    else if (REG_NOMATCH != regexec_result)
+    {
+        char message[AERON_MAX_PATH];
+
+        regerror(regexec_result, &ipv4_regex, message, sizeof(message));
+        aeron_set_err(EINVAL, "could not regexec IPv6 regex: %s", message);
+        return -1;
+    }
+
+    regexec_result = regexec(&ipv4_regex, interface_str, 5, matches, 0);
+    if (0 == regexec_result)
+    {
+        char host_str[AERON_MAX_PATH], prefixlen_str[AERON_MAX_PATH];
+        size_t host_str_len = (size_t)(matches[1].rm_eo - matches[1].rm_so);
+        size_t prefixlen_str_len = (size_t)(matches[4].rm_eo - matches[4].rm_so);
+
+        strncpy(host_str, &interface_str[matches[1].rm_so], host_str_len);
+        host_str[host_str_len] = '\0';
+        strncpy(prefixlen_str, &interface_str[matches[4].rm_so], prefixlen_str_len);
+        prefixlen_str[prefixlen_str_len] = '\0';
+
+        return aeron_host_and_prefixlen_resolver(host_str, prefixlen_str, sockaddr, prefixlen, AF_INET);
+    }
+    else if (REG_NOMATCH != regexec_result)
+    {
+        char message[AERON_MAX_PATH];
+
+        regerror(regexec_result, &ipv4_regex, message, sizeof(message));
+        aeron_set_err(EINVAL, "could not regexec IPv4 regex: %s", message);
+        return -1;
+    }
+
+    aeron_set_err(EINVAL, "invalid format: %s", interface_str);
+    return -1;
+}
+
 int aeron_lookup_ipv4_interfaces(aeron_ipv4_ifaddr_func_t func)
 {
     struct ifaddrs *ifaddrs = NULL;

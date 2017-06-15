@@ -165,7 +165,7 @@ int aeron_host_and_port_parse_and_resolve(const char *address_str, struct sockad
 {
     static bool regexs_compiled = false;
     static regex_t ipv4_regex, ipv6_regex;
-    regmatch_t matches[4];
+    regmatch_t matches[8];
 
     if (!regexs_compiled)
     {
@@ -194,32 +194,17 @@ int aeron_host_and_port_parse_and_resolve(const char *address_str, struct sockad
         regexs_compiled = true;
     }
 
-    int regexec_result = regexec(&ipv4_regex, address_str, 3, matches, 0);
+    int regexec_result = regexec(&ipv6_regex, address_str, 8, matches, 0);
     if (0 == regexec_result)
     {
         char host[AERON_MAX_PATH], port[AERON_MAX_PATH];
+        size_t host_len = (size_t)(matches[1].rm_eo - matches[1].rm_so);
+        size_t port_len = (size_t)(matches[4].rm_eo - matches[4].rm_so);
 
-        strncpy(host, &address_str[matches[1].rm_so], matches[1].rm_eo - matches[1].rm_so);
-        strncpy(port, &address_str[matches[2].rm_so], matches[2].rm_eo - matches[2].rm_so);
-
-        return aeron_host_and_port_resolver(host, port, sockaddr, AF_INET);
-    }
-    else if (REG_NOMATCH != regexec_result)
-    {
-        char message[AERON_MAX_PATH];
-
-        regerror(regexec_result, &ipv4_regex, message, sizeof(message));
-        aeron_set_err(EINVAL, "could not regexec IPv4 regex: %s", message);
-        return -1;
-    }
-
-    regexec_result = regexec(&ipv6_regex, address_str, 4, matches, 0);
-    if (0 == regexec_result)
-    {
-        char host[AERON_MAX_PATH], port[AERON_MAX_PATH];
-
-        strncpy(host, &address_str[matches[1].rm_so], matches[1].rm_eo - matches[1].rm_so);
-        strncpy(port, &address_str[matches[3].rm_so], matches[3].rm_eo - matches[3].rm_so);
+        strncpy(host, &address_str[matches[1].rm_so], host_len);
+        host[host_len] = '\0';
+        strncpy(port, &address_str[matches[4].rm_so], port_len);
+        port[port_len] = '\0';
 
         return aeron_host_and_port_resolver(host, port, sockaddr, AF_INET6);
     }
@@ -229,6 +214,29 @@ int aeron_host_and_port_parse_and_resolve(const char *address_str, struct sockad
 
         regerror(regexec_result, &ipv4_regex, message, sizeof(message));
         aeron_set_err(EINVAL, "could not regexec IPv6 regex: %s", message);
+        return -1;
+    }
+
+    regexec_result = regexec(&ipv4_regex, address_str, 3, matches, 0);
+    if (0 == regexec_result)
+    {
+        char host[AERON_MAX_PATH], port[AERON_MAX_PATH];
+        size_t host_len = (size_t)(matches[1].rm_eo - matches[1].rm_so);
+        size_t port_len = (size_t)(matches[2].rm_eo - matches[2].rm_so);
+
+        strncpy(host, &address_str[matches[1].rm_so], host_len);
+        host[host_len] = '\0';
+        strncpy(port, &address_str[matches[2].rm_so], port_len);
+        port[port_len] = '\0';
+
+        return aeron_host_and_port_resolver(host, port, sockaddr, AF_INET);
+    }
+    else if (REG_NOMATCH != regexec_result)
+    {
+        char message[AERON_MAX_PATH];
+
+        regerror(regexec_result, &ipv4_regex, message, sizeof(message));
+        aeron_set_err(EINVAL, "could not regexec IPv4 regex: %s", message);
         return -1;
     }
 

@@ -112,6 +112,11 @@ int aeron_ipv6_addr_resolver(const char *host, struct sockaddr_storage *sockaddr
 
 int aeron_udp_port_resolver(const char *port_str)
 {
+    if (':' == *port_str)
+    {
+        port_str++;
+    }
+
     unsigned long value = strtoul(port_str, NULL, 0);
 
     if (0 == value && EINVAL == errno)
@@ -151,7 +156,7 @@ int aeron_host_and_port_resolver(
 }
 
 #if defined(Darwin)
-#define AERON_IPV4_REGCOMP_CFLAGS (REG_EXTENDED | REG_ENHANCED)
+#define AERON_IPV4_REGCOMP_CFLAGS (REG_EXTENDED)
 #else
 #define AERON_IPV4_REGCOMP_CFLAGS (REG_EXTENDED)
 #endif
@@ -164,8 +169,8 @@ int aeron_host_and_port_parse_and_resolve(const char *address_str, struct sockad
 
     if (!regexs_compiled)
     {
-        const char *ipv4 = "([^:]+)(?::([0-9]+))?";
-        const char *ipv6 = "\\[([0-9A-Fa-f:]+)(?:%([a-zA-Z0-9_.~-]+))?\\](?::([0-9]+))?";
+        const char *ipv4 = "([^:]+)(:([0-9]+))?";
+        const char *ipv6 = "\\[([0-9A-Fa-f:]+)(%([a-zA-Z0-9_.~-]+))?\\](:([0-9]+))?";
 
         int regcomp_result;
         if ((regcomp_result = regcomp(&ipv4_regex, ipv4, AERON_IPV4_REGCOMP_CFLAGS)) != 0)
@@ -214,7 +219,7 @@ int aeron_host_and_port_parse_and_resolve(const char *address_str, struct sockad
         char host[AERON_MAX_PATH], port[AERON_MAX_PATH];
 
         strncpy(host, &address_str[matches[1].rm_so], matches[1].rm_eo - matches[1].rm_so);
-        strncpy(port, &address_str[matches[2].rm_so], matches[2].rm_eo - matches[2].rm_so);
+        strncpy(port, &address_str[matches[3].rm_so], matches[3].rm_eo - matches[3].rm_so);
 
         return aeron_host_and_port_resolver(host, port, sockaddr, AF_INET6);
     }

@@ -157,6 +157,8 @@ TEST_F(UriResolverTest, shouldResolveIpv6AndPort)
     EXPECT_EQ(addr_in6->sin6_family, AF_INET6);
     EXPECT_STREQ(inet_ntop(AF_INET6, &addr_in6->sin6_addr, buffer, sizeof(buffer)), "::1");
     EXPECT_EQ(addr_in->sin_port, htons(1234));
+
+    ASSERT_EQ(aeron_host_and_port_parse_and_resolve("[::1%12~_.-34]:1234", &m_addr), 0) << aeron_errmsg();
 }
 
 TEST_F(UriResolverTest, shouldResolveIpv6MulticastAndPort)
@@ -171,4 +173,14 @@ TEST_F(UriResolverTest, shouldResolveIpv6MulticastAndPort)
 TEST_F(UriResolverTest, shouldResolveLocalhost)
 {
     ASSERT_EQ(aeron_host_and_port_parse_and_resolve("localhost:1234", &m_addr), 0) << aeron_errmsg();
+}
+
+TEST_F(UriResolverTest, shouldNotResolveInvalidPort)
+{
+    EXPECT_EQ(aeron_host_and_port_parse_and_resolve("192.168.1.20:aa", &m_addr), -1);
+    EXPECT_EQ(aeron_host_and_port_parse_and_resolve("192.168.1.20", &m_addr), -1);
+    EXPECT_EQ(aeron_host_and_port_parse_and_resolve("192.168.1.20:", &m_addr), -1);
+    EXPECT_EQ(aeron_host_and_port_parse_and_resolve("[::1]:aa", &m_addr), -1);
+    EXPECT_EQ(aeron_host_and_port_parse_and_resolve("[::1]", &m_addr), -1);
+    EXPECT_EQ(aeron_host_and_port_parse_and_resolve("[::1]:", &m_addr), -1);
 }

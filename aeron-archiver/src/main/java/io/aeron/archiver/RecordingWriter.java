@@ -87,7 +87,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
      */
     private int segmentPosition = NULL_SEGMENT_POSITION;
     private int segmentIndex = 0;
-    private RandomAccessFile recordingFile;
     private FileChannel recordingFileChannel;
 
     private boolean closed = false;
@@ -193,8 +192,8 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
 
         try
         {
-            recordingFile = new RandomAccessFile(file, "rw");
-            recordingFile.setLength(segmentFileLength);
+            final RandomAccessFile recordingFile = new RandomAccessFile(file, "rw");
+            recordingFile.setLength(segmentFileLength + DataHeaderFlyweight.HEADER_LENGTH);
             recordingFileChannel = recordingFile.getChannel();
         }
         catch (final IOException ex)
@@ -298,7 +297,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         if (segmentPosition == segmentFileLength)
         {
             CloseHelper.close(recordingFileChannel);
-            CloseHelper.close(recordingFile);
             segmentPosition = 0;
             segmentIndex++;
             newRecordingSegmentFile();
@@ -319,7 +317,7 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
             return;
         }
         // write ahead of data to indicate end of recording
-        if (recordingFileChannel != null && segmentPosition != segmentFileLength)
+        if (recordingFileChannel != null)
         {
             final Marker marker = MARKER.get();
 
@@ -335,8 +333,8 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
                 e.printStackTrace();
             }
         }
+
         CloseHelper.close(recordingFileChannel);
-        CloseHelper.close(recordingFile);
 
         if (metaDataBuffer != null && !stopped)
         {

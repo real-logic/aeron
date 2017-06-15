@@ -49,4 +49,9 @@ class SessionWorkerDedicated<T extends Session> extends SessionWorker<T>
             Thread.yield();
         }
     }
+
+    protected void preSessionsClose()
+    {
+        commandQueue.drain(Runnable::run);
+    }
 }

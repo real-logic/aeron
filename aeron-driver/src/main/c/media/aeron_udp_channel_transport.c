@@ -21,71 +21,10 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <string.h>
-#include <ifaddrs.h>
 #include <net/if.h>
 #include <fcntl.h>
 #include <netinet/ip.h>
 #include "aeron_udp_channel_transport.h"
-
-int aeron_lookup_ipv4_interfaces(aeron_ipv4_ifaddr_func_t func)
-{
-    struct ifaddrs *ifaddrs = NULL;
-    int result = -1;
-
-    if (getifaddrs(&ifaddrs) >= 0)
-    {
-        for (struct ifaddrs *ifa = ifaddrs;  ifa != NULL; ifa  = ifa->ifa_next)
-        {
-            if (NULL == ifa->ifa_addr)
-            {
-                continue;
-            }
-
-            if (AF_INET == ifa->ifa_addr->sa_family)
-            {
-                unsigned int interface_index = if_nametoindex(ifa->ifa_name);
-
-                result++;
-                func(interface_index, ifa->ifa_name, (struct sockaddr_in *)ifa->ifa_addr, (struct sockaddr_in *)ifa->ifa_netmask, ifa->ifa_flags);
-            }
-        }
-
-        freeifaddrs(ifaddrs);
-        return result;
-    }
-
-    return result;
-}
-
-int aeron_lookup_ipv6_interfaces(aeron_ipv6_ifaddr_func_t func)
-{
-    struct ifaddrs *ifaddrs = NULL;
-    int result = -1;
-
-    if (getifaddrs(&ifaddrs) >= 0)
-    {
-        for (struct ifaddrs *ifa = ifaddrs;  ifa != NULL; ifa  = ifa->ifa_next)
-        {
-            if (NULL == ifa->ifa_addr)
-            {
-                continue;
-            }
-
-            if (AF_INET6 == ifa->ifa_addr->sa_family)
-            {
-                unsigned int interface_index = if_nametoindex(ifa->ifa_name);
-
-                result++;
-                func(interface_index, ifa->ifa_name, (struct sockaddr_in6 *)ifa->ifa_addr, (struct sockaddr_in6 *)ifa->ifa_netmask, ifa->ifa_flags);
-            }
-        }
-
-        freeifaddrs(ifaddrs);
-        return result;
-    }
-
-    return result;
-}
 
 int aeron_udp_channel_transport_init(
     aeron_udp_channel_transport_t *transport,

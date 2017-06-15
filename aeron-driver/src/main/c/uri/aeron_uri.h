@@ -18,7 +18,6 @@
 #define AERON_AERON_URI_H
 
 #include "aeron_driver_common.h"
-#include "util/aeron_arrayutil.h"
 
 typedef struct aeron_uri_param_stct
 {
@@ -55,22 +54,33 @@ typedef struct aeron_ipc_channel_params_stct
 }
 aeron_ipc_channel_params_t;
 
+typedef enum aeron_uri_type_enum
+{
+    AERON_URI_UDP, AERON_URI_IPC
+}
+aeron_uri_type_t;
+
+typedef struct aeron_uri_stct
+{
+    char mutable_uri[AERON_MAX_PATH];
+    aeron_uri_type_t type;
+
+    union
+    {
+        aeron_udp_channel_params_t udp;
+        aeron_ipc_channel_params_t ipc;
+    }
+    params;
+}
+aeron_uri_t;
+
 typedef int (*aeron_uri_parse_callback_t)(void *clientd, const char *key, const char *value);
 
-int aeron_uri_parse(char *uri, aeron_uri_parse_callback_t param_func, void *clientd);
+int aeron_uri_parse_params(char *uri, aeron_uri_parse_callback_t param_func, void *clientd);
 
 int aeron_udp_uri_parse(char *uri, aeron_udp_channel_params_t *params);
+int aeron_ipc_uri_parse(char *uri, aeron_ipc_channel_params_t *params);
 
-inline int aeron_uri_params_ensure_capacity(aeron_uri_params_t *params)
-{
-    if (aeron_array_ensure_capacity(
-        (uint8_t **)&params->array, sizeof(aeron_uri_param_t), params->length, params->length + 1) >= 0)
-    {
-        params->length++;
-        return 0;
-    }
-
-    return -1;
-}
+int aeron_uri_parse(const char *uri, aeron_uri_t *params);
 
 #endif //AERON_AERON_URI_H

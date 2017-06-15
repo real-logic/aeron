@@ -164,6 +164,11 @@ public class EmbeddedPingPong
         final Subscription pongSubscription,
         final int numMessages)
     {
+        while (pongSubscription.hasNoImages())
+        {
+            Thread.yield();
+        }
+
         final Image image = pongSubscription.getImage(0);
 
         for (int i = 0; i < numMessages; i++)

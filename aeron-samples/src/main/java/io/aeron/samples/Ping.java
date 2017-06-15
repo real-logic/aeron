@@ -113,6 +113,11 @@ public class Ping
         final Subscription subscription,
         final int count)
     {
+        while (subscription.hasNoImages())
+        {
+            Thread.yield();
+        }
+
         final Image image = subscription.getImage(0);
 
         for (int i = 0; i < count; i++)

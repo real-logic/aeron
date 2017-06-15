@@ -445,13 +445,45 @@ int aeron_lookup_ipv6_interfaces(aeron_ipv6_ifaddr_func_t func)
     return result;
 }
 
+uint32_t aeron_ipv4_netmask_from_prefixlen(size_t prefixlen)
+{
+    uint32_t value;
+
+    if (0 == prefixlen)
+    {
+        value = ~(-1);
+    }
+    else
+    {
+        value = ~(((uint32_t)1 << (32 - prefixlen)) - 1);
+    }
+
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    value = __builtin_bswap32(value);
+#endif
+
+    return value;
+}
+
+bool aeron_ipv4_does_prefix_match(struct in_addr *in_addr1, struct in_addr *in_addr2, size_t prefixlen)
+{
+    uint32_t addr1;
+    uint32_t addr2;
+    uint32_t netmask = aeron_ipv4_netmask_from_prefixlen(prefixlen);
+
+    memcpy(&addr1, in_addr1, sizeof(addr1));
+    memcpy(&addr2, in_addr2, sizeof(addr2));
+
+    return (addr1 & netmask) == (addr2 & netmask);
+}
+
 union _aeron_128b_as_64b
 {
     __uint128_t value;
     uint64_t q[2];
 };
 
-void aeron_ipv6_netmask_from_prefixlen(struct in6_addr *addr, size_t prefixlen)
+__uint128_t aeron_ipv6_netmask_from_prefixlen(size_t prefixlen)
 {
     union _aeron_128b_as_64b netmask;
 
@@ -461,26 +493,26 @@ void aeron_ipv6_netmask_from_prefixlen(struct in6_addr *addr, size_t prefixlen)
     }
     else
     {
-        netmask.value = ~(((__uint128_t)1 << (128 - prefixlen)) - 1);
+        netmask.value = ~(((__uint128_t)1 << (128 - prefixlen)) - (__uint128_t)1);
     }
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    uint64_t q1 = netmask.q[1];
     netmask.q[1] = __builtin_bswap64(netmask.q[0]);
-    netmask.q[0] = __builtin_bswap64(netmask.q[1]);
+    netmask.q[0] = __builtin_bswap64(q1);
 #endif
 
-    memcpy(addr, &netmask, sizeof(struct in6_addr));
+    return netmask.value;
 }
 
-bool aeron_ipv6_on_same_network(struct in6_addr *in6_addr1, struct in6_addr *in6_addr2, struct in6_addr *netmask_addr)
+bool aeron_ipv6_does_prefix_match(struct in6_addr *in6_addr1, struct in6_addr *in6_addr2, size_t prefixlen)
 {
     __uint128_t addr1;
     __uint128_t addr2;
-    __uint128_t netmask;
+    __uint128_t netmask = aeron_ipv6_netmask_from_prefixlen(prefixlen);
 
     memcpy(&addr1, in6_addr1, sizeof(addr1));
     memcpy(&addr2, in6_addr2, sizeof(addr2));
-    memcpy(&netmask, netmask_addr, sizeof(netmask));
 
     return (addr1 & netmask) == (addr2 & netmask);
 }

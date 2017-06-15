@@ -115,6 +115,30 @@ public:
         return (*t).m_resolver_func(host, hints, info);
     }
 
+    bool ipv4_match(const char *addr1_str, const char *addr2_str, size_t prefixlen)
+    {
+        struct sockaddr_in addr1, addr2;
+
+        if (inet_pton(AF_INET, addr1_str, &addr1.sin_addr) != 1 || inet_pton(AF_INET, addr2_str, &addr2.sin_addr) != 1)
+        {
+            throw std::runtime_error("could not convert address");
+        }
+
+        return aeron_ipv4_does_prefix_match(&addr1.sin_addr, &addr2.sin_addr, prefixlen);
+    }
+
+    bool ipv6_match(const char *addr1_str, const char *addr2_str, size_t prefixlen)
+    {
+        struct sockaddr_in6 addr1, addr2;
+
+        if (inet_pton(AF_INET6, addr1_str, &addr1.sin6_addr) != 1 || inet_pton(AF_INET6, addr2_str, &addr2.sin6_addr) != 1)
+        {
+            throw std::runtime_error("could not convert address");
+        }
+
+        return aeron_ipv6_does_prefix_match(&addr1.sin6_addr, &addr2.sin6_addr, prefixlen);
+    }
+
 protected:
     aeron_uri_t m_uri;
     struct sockaddr_storage m_addr;
@@ -231,4 +255,34 @@ TEST_F(UriResolverTest, shouldResolveIpv6Interface)
 
     ASSERT_EQ(aeron_interface_parse_and_resolve("[::1]:1234/48", &m_addr, &m_prefixlen), 0) << aeron_errmsg();
     EXPECT_EQ(m_prefixlen, 48u);
+}
+
+TEST_F(UriResolverTest, shouldMatchIpv4)
+{
+    EXPECT_TRUE(ipv4_match("127.0.0.0", "127.0.0.0", 24));
+    EXPECT_TRUE(ipv4_match("127.0.0.0", "127.0.0.1", 24));
+    EXPECT_TRUE(ipv4_match("127.0.0.0", "127.0.0.255", 24));
+}
+
+TEST_F(UriResolverTest, shouldNotMatchIpv4)
+{
+    EXPECT_FALSE(ipv4_match("127.0.1.0", "127.0.0.1", 24));
+    EXPECT_FALSE(ipv4_match("127.0.0.1", "127.0.0.2", 32));
+    EXPECT_FALSE(ipv4_match("127.0.0.1", "126.0.0.2", 8));
+}
+
+TEST_F(UriResolverTest, shouldMatchIpv6)
+{
+    EXPECT_TRUE(ipv6_match("fe80:0001:abcd::", "fe80:0001:abcd::1", 48));
+    EXPECT_TRUE(ipv6_match("fe80:0001:abcd::", "fe80:0001:abcd::ff", 48));
+    EXPECT_TRUE(ipv6_match("fe80:0001:abcd::", "fe80:0001:abcd::", 48));
+    EXPECT_TRUE(ipv6_match("fe80:0001:abcd::1", "fe80:0001:abcd::1", 128));
+}
+
+TEST_F(UriResolverTest, shouldNotMatchIpv6)
+{
+    EXPECT_FALSE(ipv6_match("fe80:0001:abcd::", "fe80:0001:abce::", 48));
+    EXPECT_FALSE(ipv6_match("fe80:0001:abcf::", "fe80:0001:abce::", 48));
+    EXPECT_FALSE(ipv6_match("fe80:0001:abcd::", "fe80:0001:abcd::1", 128));
+    EXPECT_FALSE(ipv6_match("fe80:0001:abcd::", "fe80:0001:abcd::ff", 128));
 }

@@ -256,7 +256,8 @@ public class CommonContext implements AutoCloseable
     }
 
     /**
-     * Get the buffer containing the counter meta data.
+     * Get the buffer containing the counter meta data. These counters are R/W for the driver, read only for all
+     * other users.
      *
      * @return The buffer storing the counter meta data.
      */
@@ -266,7 +267,7 @@ public class CommonContext implements AutoCloseable
     }
 
     /**
-     * Set the buffer containing the counter meta data.
+     * Set the buffer containing the counter meta data. Testing/internal purposes only.
      *
      * @param countersMetaDataBuffer The new counter meta data buffer.
      * @return this Object for method chaining.
@@ -278,7 +279,7 @@ public class CommonContext implements AutoCloseable
     }
 
     /**
-     * Get the buffer containing the counters.
+     * Get the buffer containing the counters. These counters are R/W for the driver, read only for all other users.
      *
      * @return The buffer storing the counters.
      */
@@ -288,7 +289,7 @@ public class CommonContext implements AutoCloseable
     }
 
     /**
-     * Set the buffer containing the counters
+     * Set the buffer containing the counters. Testing/internal purposes only.
      *
      * @param countersValuesBuffer The new counters buffer.
      * @return this Object for method chaining.

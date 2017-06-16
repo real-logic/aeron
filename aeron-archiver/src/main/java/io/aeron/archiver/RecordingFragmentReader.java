@@ -95,7 +95,7 @@ class RecordingFragmentReader implements AutoCloseable
         final long recordingLength = ArchiveUtil.recordingLength(metaDecoder);
         final long joiningPosition = metaDecoder.joiningPosition();
 
-        replayLength = length == NULL_LENGTH ? recordingLength : length;
+        final long replayLength = length == NULL_LENGTH ? recordingLength : length;
 
         final long fromPosition = position == NULL_POSITION ? joiningPosition : position;
         segmentFileIndex = segmentFileIndex(joiningPosition, fromPosition, segmentFileLength);
@@ -116,11 +116,14 @@ class RecordingFragmentReader implements AutoCloseable
 
         if (frameOffset != termOffset)
         {
-            this.fromPosition = fromPosition + (frameOffset - termOffset);
+            final int alignmentOffset = frameOffset - termOffset;
+            this.fromPosition = fromPosition + alignmentOffset;
+            this.replayLength = replayLength - alignmentOffset;
         }
         else
         {
             this.fromPosition = fromPosition;
+            this.replayLength = replayLength;
         }
 
         if (frameOffset >= termBufferLength)

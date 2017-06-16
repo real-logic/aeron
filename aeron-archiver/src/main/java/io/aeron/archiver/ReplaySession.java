@@ -123,13 +123,6 @@ class ReplaySession
             closeOnError(null, "Requested replay start position(=" + replayPosition +
                 ") is less than recording joining position(=" + joiningPosition + ")");
         }
-        final long toPosition = replayLength + replayPosition;
-        if (toPosition > lastPosition)
-        {
-            final String errorMessage = "Requested replay end position(=" + toPosition +
-                ") is more than recording end position(=" + lastPosition + ")";
-            closeOnError(new IllegalArgumentException(errorMessage), errorMessage);
-        }
 
         RecordingFragmentReader cursor = null;
         try

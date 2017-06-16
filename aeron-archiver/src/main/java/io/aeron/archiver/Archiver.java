@@ -18,7 +18,8 @@ package io.aeron.archiver;
 import io.aeron.Aeron;
 import org.agrona.*;
 import org.agrona.concurrent.*;
-import org.agrona.concurrent.status.*;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.StatusIndicator;
 
 import java.io.File;
 import java.util.concurrent.ThreadFactory;
@@ -135,7 +136,7 @@ public final class Archiver implements AutoCloseable
 
         public static final String THREADING_MODE_PROP_NAME = "aeron.archiver.threading.mode";
         public static final String ARCHIVER_IDLE_STRATEGY_PROP_NAME = "aeron.archiver.idle.strategy";
-        private static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
+        public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
         private static final String CONTROLLABLE_IDLE_STRATEGY = "org.agrona.concurrent.ControllableIdleStrategy";
 
         private static final long AGENT_IDLE_MAX_SPINS = 100;
@@ -235,7 +236,7 @@ public final class Archiver implements AutoCloseable
         private int recordingEventsStreamId;
 
         private int segmentFileLength;
-        private boolean forceWrites;
+        private boolean forceDataWrites;
 
         private ArchiverThreadingMode threadingMode;
         private ThreadFactory threadFactory = Thread::new;
@@ -261,7 +262,7 @@ public final class Archiver implements AutoCloseable
             recordingEventsChannel(Configuration.recordingEventsChannel());
             recordingEventsStreamId(Configuration.recordingEventsStreamId());
             segmentFileLength(Configuration.segmentFileLength());
-            forceWrites(Configuration.forceWrites());
+            forceDataWrites(Configuration.forceWrites());
             threadingMode(Configuration.threadingMode());
         }
 
@@ -295,68 +296,124 @@ public final class Archiver implements AutoCloseable
 
             if (null == errorCounter)
             {
-                // TODO: This is NOT safe!!! Archiver needs its own counters.
-                final CountersManager counters = new CountersManager(
-                    clientContext.countersMetaDataBuffer(),
-                    clientContext.countersValuesBuffer());
-                errorCounter = counters.newCounter("archiver-errors");
+                // TODO: create counters file, also expose idleStrategy control via same file if required.
             }
         }
 
+        /**
+         * Get the directory in which the Archiver will store recordings/index/counters etc.
+         *
+         * @return the directory in which the Archiver will store recordings/index/counters etc
+         */
         public File archiveDir()
         {
             return archiveDir;
         }
 
+        /**
+         * Set the directory in which the Archiver will store recordings/index/counters etc.
+         *
+         * @param archiveDir the directory in which the Archiver will store recordings/index/counters etc
+         * @return this for a fluent API.
+         */
         public Context archiveDir(final File archiveDir)
         {
             this.archiveDir = archiveDir;
             return this;
         }
 
+        /**
+         * Get the Aeron client context used by the Archiver.
+         *
+         * @return Aeron client context used by the Archiver
+         */
         public Aeron.Context clientContext()
         {
             return clientContext;
         }
 
+        /**
+         * Get the channel URI on which the control request subscription will listen.
+         *
+         * @return the channel URI on which the control request subscription will listen
+         */
         public String controlChannel()
         {
             return controlChannel;
         }
 
+        /**
+         * Set the channel URI on which the control request subscription will listen.
+         *
+         * @param controlChannel channel URI on which the control request subscription will listen
+         * @return this for a fluent API.
+         */
         public Context controlChannel(final String controlChannel)
         {
             this.controlChannel = controlChannel;
             return this;
         }
 
+        /**
+         * Get the stream id on which the control request subscription will listen.
+         *
+         * @return the stream id on which the control request subscription will listen
+         */
         public int controlStreamId()
         {
             return controlStreamId;
         }
 
+        /**
+         * Set the stream id on which the control request subscription will listen.
+         *
+         * @param controlStreamId stream id on which the control request subscription will listen
+         * @return this for a fluent API.
+         */
         public Context controlStreamId(final int controlStreamId)
         {
             this.controlStreamId = controlStreamId;
             return this;
         }
 
+        /**
+         * Get the channel URI on which the recording events publication will publish.
+         *
+         * @return the channel URI on which the recording events publication will publish
+         */
         public String recordingEventsChannel()
         {
             return recordingEventsChannel;
         }
 
+        /**
+         * Set the channel URI on which the recording events publication will publish.
+         *
+         * @param recordingEventsChannel channel URI on which the recording events publication will publish
+         * @return this for a fluent API.
+         */
         public Context recordingEventsChannel(final String recordingEventsChannel)
         {
             this.recordingEventsChannel = recordingEventsChannel;
             return this;
         }
 
+        /**
+         * Get the stream id on which the recording events publication will publish.
+         *
+         * @return the stream id on which the recording events publication will publish
+         */
         public int recordingEventsStreamId()
         {
             return recordingEventsStreamId;
         }
 
+        /**
+         * Set the stream id on which the recording events publication will publish.
+         *
+         * @param recordingEventsStreamId stream id on which the recording events publication will publish
+         * @return this for a fluent API.
+         */
         public Context recordingEventsStreamId(final int recordingEventsStreamId)
         {
             this.recordingEventsStreamId = recordingEventsStreamId;
@@ -364,10 +421,10 @@ public final class Archiver implements AutoCloseable
         }
 
         /**
-         * Provides an IdleStrategy supplier for the thread responsible for publication/subscription backoff.
+         * Provides an {@link IdleStrategy} supplier for the thread responsible for publication/subscription backoff.
          *
-         * @param idleStrategySupplier supplier of thread idle strategy for publication/subscription backoff.
-         * @return this Context for method chaining.
+         * @param idleStrategySupplier supplier of thread idle strategy for publication/subscription backoff
+         * @return this for a fluent API.
          */
         public Context idleStrategySupplier(final Supplier<IdleStrategy> idleStrategySupplier)
         {
@@ -375,6 +432,11 @@ public final class Archiver implements AutoCloseable
             return this;
         }
 
+        /**
+         * Get a new {@link IdleStrategy} based on configured supplier.
+         *
+         * @return a new {@link IdleStrategy} based on configured supplier
+         */
         public IdleStrategy idleStrategy()
         {
             return idleStrategySupplier.get();
@@ -383,8 +445,8 @@ public final class Archiver implements AutoCloseable
         /**
          * Set the {@link EpochClock} to be used for tracking wall clock time when interacting with the archiver.
          *
-         * @param clock {@link EpochClock} to be used for tracking wall clock time when interacting with the archiver.
-         * @return this Context for method chaining
+         * @param clock {@link EpochClock} to be used for tracking wall clock time when interacting with the archiver
+         * @return this for a fluent API.
          */
         public Context epochClock(final EpochClock clock)
         {
@@ -392,30 +454,60 @@ public final class Archiver implements AutoCloseable
             return this;
         }
 
+        /**
+         * Get the {@link EpochClock} to used for tracking wall clock time within the archiver.
+         *
+         * @return the {@link EpochClock} to used for tracking wall clock time within the archiver.
+         */
         public EpochClock epochClock()
         {
             return epochClock;
         }
 
+        /**
+         * Get the file length used for recording data segment files.
+         * @return the file length used for recording data segment files
+         */
         int segmentFileLength()
         {
             return segmentFileLength;
         }
 
+        /**
+         * Set the file length to be used for recording data segment files.
+         *
+         * @param segmentFileLength the file length to be used for recording data segment files.
+         * @return this for a fluent API.
+         */
         public Context segmentFileLength(final int segmentFileLength)
         {
             this.segmentFileLength = segmentFileLength;
             return this;
         }
 
-        boolean forceWrites()
+        /**
+         * Indicates if the data writes are to be forced via a {@link java.nio.channels.FileChannel#force(boolean)} call
+         * after each write.
+         *
+         * @return true if data writes are to be forced via a {@link java.nio.channels.FileChannel#force(boolean)} call
+         * after each write, false otherwise.
+         */
+        boolean forceDataWrites()
         {
-            return forceWrites;
+            return forceDataWrites;
         }
 
-        public Context forceWrites(final boolean forceWrites)
+        /**
+         * Set the forceDataWrites flag.
+         *
+         * @param forceDataWrites true if data writes are to be forced via a
+         * {@link java.nio.channels.FileChannel#force(boolean)} call after each write, false otherwise.
+         *
+         * @return this for a fluent API.
+         */
+        public Context forceDataWrites(final boolean forceDataWrites)
         {
-            this.forceWrites = forceWrites;
+            this.forceDataWrites = forceDataWrites;
             return this;
         }
 
@@ -441,9 +533,70 @@ public final class Archiver implements AutoCloseable
             return this;
         }
 
+        /**
+         * Get the {@link ErrorHandler} to be used by the Archiver.
+         *
+         * @return the {@link ErrorHandler} to be used by the Archiver
+         */
         public ErrorHandler errorHandler()
         {
             return errorHandler;
+        }
+
+        /**
+         * Set the {@link ErrorHandler} to be used by the Archiver.
+         *
+         * @param errorHandler the error handler to be used by the Archiver
+         * @return this for a fluent API
+         */
+        public Context errorHandler(final ErrorHandler errorHandler)
+        {
+            this.errorHandler = errorHandler;
+            return this;
+        }
+
+        /**
+         * Get the archiver threading mode.
+         *
+         * @return the archiver threading mode
+         */
+        public ArchiverThreadingMode threadingMode()
+        {
+            return threadingMode;
+        }
+
+        /**
+         * Set the archiver threading mode
+         *
+         * @param threadingMode archiver threading mode
+         * @return this for a fluent API
+         */
+        public Context threadingMode(final ArchiverThreadingMode threadingMode)
+        {
+            this.threadingMode = threadingMode;
+            return this;
+        }
+
+        /**
+         * Get the thread factory used for creating threads in SHARED and DEDICATED threading modes.
+         *
+         * @return thread factory used for creating threads in SHARED and DEDICATED threading modes
+         */
+        public ThreadFactory threadFactory()
+        {
+            return threadFactory;
+        }
+
+        /**
+         * Set the thread factory used for creating threads in SHARED and DEDICATED threading modes.
+         *
+         * @param threadFactory used for creating threads in SHARED and DEDICATED threading modes
+         * @return this for a fluent API
+         */
+        public Context threadFactory(final ThreadFactory threadFactory)
+        {
+            this.threadFactory = threadFactory;
+            return this;
         }
 
         public AtomicCounter errorCounter()
@@ -457,26 +610,5 @@ public final class Archiver implements AutoCloseable
             return this;
         }
 
-        public ArchiverThreadingMode threadingMode()
-        {
-            return threadingMode;
-        }
-
-        public Context threadingMode(final ArchiverThreadingMode threadingMode)
-        {
-            this.threadingMode = threadingMode;
-            return this;
-        }
-
-        public ThreadFactory threadFactory()
-        {
-            return threadFactory;
-        }
-
-        public Context threadFactory(final ThreadFactory threadFactory)
-        {
-            this.threadFactory = threadFactory;
-            return this;
-        }
     }
 }

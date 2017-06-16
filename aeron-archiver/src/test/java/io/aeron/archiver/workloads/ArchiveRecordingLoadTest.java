@@ -96,7 +96,7 @@ public class ArchiveRecordingLoadTest
         driver = MediaDriver.launch(driverCtx);
         archiveDir = TestUtil.makeTempDir();
         archiverCtx
-            .forceWrites(true)
+            .forceDataWrites(true)
             .archiveDir(archiveDir)
             .threadingMode(ArchiverThreadingMode.DEDICATED);
 

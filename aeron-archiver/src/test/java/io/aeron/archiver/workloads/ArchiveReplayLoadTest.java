@@ -18,8 +18,10 @@ package io.aeron.archiver.workloads;
 
 import io.aeron.*;
 import io.aeron.archiver.*;
-import io.aeron.archiver.client.*;
-import io.aeron.driver.*;
+import io.aeron.archiver.client.ArchiveClient;
+import io.aeron.archiver.client.RecordingEventsListener;
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
@@ -28,9 +30,11 @@ import org.junit.*;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.Random;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archiver.TestUtil.*;
 import static org.hamcrest.core.Is.is;
@@ -102,7 +106,7 @@ public class ArchiveReplayLoadTest
         driver = MediaDriver.launch(driverCtx);
         archiveDir = TestUtil.makeTempDir();
         archiverCtx.archiveDir(archiveDir)
-            .forceWrites(false)
+            .forceDataWrites(false)
             .threadingMode(ArchiverThreadingMode.DEDICATED);
 
         archiver = Archiver.launch(archiverCtx);

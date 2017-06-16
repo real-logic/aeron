@@ -100,7 +100,7 @@ public class ArchiverSystemTest
 
         archiveDir = TestUtil.makeTempDir();
         archiverCtx
-            .forceWrites(false)
+            .forceDataWrites(false)
             .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
             .archiveDir(archiveDir)
             .threadingMode(archiverThreadingMode());

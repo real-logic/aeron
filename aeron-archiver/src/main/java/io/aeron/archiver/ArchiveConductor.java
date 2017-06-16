@@ -84,7 +84,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             .recordingFileLength(ctx.segmentFileLength())
             .archiveDir(ctx.archiveDir())
             .epochClock(ctx.epochClock())
-            .forceWrites(ctx.forceWrites());
+            .forceWrites(ctx.forceDataWrites());
 
         this.archiveDir = ctx.archiveDir();
 

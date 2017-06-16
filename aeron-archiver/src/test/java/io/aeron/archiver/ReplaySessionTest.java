@@ -417,38 +417,6 @@ public class ReplaySessionTest
     }
 
     @Test
-    public void shouldAllowReplayWhileRecording()
-    {
-        try (RecordingWriter writer = new RecordingWriter(new RecordingWriter.RecordingContext()
-            .archiveDir(archiveDir)
-            .epochClock(epochClock)
-            .forceWrites(true),
-            RECORDING_ID,
-            TERM_BUFFER_LENGTH,
-            MTU_LENGTH,
-            INITIAL_TERM_ID,
-            JOINING_POSITION,
-            1,
-            1,
-            "channel",
-            "sourceIdentity"))
-        {
-            when(epochClock.time()).thenReturn(TIME);
-
-            final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
-
-            final DataHeaderFlyweight headerFwt = new DataHeaderFlyweight();
-            final Header header = new Header(INITIAL_TERM_ID, Integer.numberOfLeadingZeros(TERM_BUFFER_LENGTH));
-            header.buffer(buffer);
-
-            recordFragment(writer, buffer, headerFwt, header, 0, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_DATA);
-            recordFragment(writer, buffer, headerFwt, header, 1, FrameDescriptor.BEGIN_FRAG_FLAG, HDR_TYPE_DATA);
-            recordFragment(writer, buffer, headerFwt, header, 2, FrameDescriptor.END_FRAG_FLAG, HDR_TYPE_DATA);
-            recordFragment(writer, buffer, headerFwt, header, 3, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_PAD);
-        }
-    }
-
-    @Test
     public void shouldReplayDataFromFileWhileBeingWritten()
     {
         final ReplaySession replaySession;

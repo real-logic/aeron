@@ -139,6 +139,30 @@ public:
         return aeron_ipv6_does_prefix_match(&addr1.sin6_addr, &addr2.sin6_addr, prefixlen);
     }
 
+    size_t ipv6_prefixlen(const char *aadr_str)
+    {
+        struct sockaddr_in6 addr;
+
+        if (inet_pton(AF_INET6, aadr_str, &addr.sin6_addr) != 1)
+        {
+            throw std::runtime_error("could not convert address");
+        }
+
+        return aeron_ipv6_netmask_to_prefixlen(&addr.sin6_addr);
+    }
+
+    size_t ipv4_prefixlen(const char *addr_str)
+    {
+        struct sockaddr_in addr;
+
+        if (inet_pton(AF_INET, addr_str, &addr.sin_addr) != 1)
+        {
+            throw std::runtime_error("could not convert address");
+        }
+
+        return aeron_ipv4_netmask_to_prefixlen(&addr.sin_addr);
+    }
+
 protected:
     aeron_uri_t m_uri;
     struct sockaddr_storage m_addr;
@@ -285,4 +309,25 @@ TEST_F(UriResolverTest, shouldNotMatchIpv6)
     EXPECT_FALSE(ipv6_match("fe80:0001:abcf::", "fe80:0001:abce::", 48));
     EXPECT_FALSE(ipv6_match("fe80:0001:abcd::", "fe80:0001:abcd::1", 128));
     EXPECT_FALSE(ipv6_match("fe80:0001:abcd::", "fe80:0001:abcd::ff", 128));
+}
+
+TEST_F(UriResolverTest, shouldCalculateIpv4PrefixlenFromNetmask)
+{
+    EXPECT_EQ(ipv4_prefixlen("255.255.255.0"), 24u);
+    EXPECT_EQ(ipv4_prefixlen("255.255.255.255"), 32u);
+    EXPECT_EQ(ipv4_prefixlen("255.255.128.0"), 17u);
+    EXPECT_EQ(ipv4_prefixlen("255.255.0.0"), 16u);
+    EXPECT_EQ(ipv4_prefixlen("255.0.0.0"), 8u);
+    EXPECT_EQ(ipv4_prefixlen("255.240.0.0"), 12u);
+    EXPECT_EQ(ipv4_prefixlen("0.0.0.0"), 0u);
+}
+
+TEST_F(UriResolverTest, shouldCalculateIpv6PrefixlenFromNetmask)
+{
+    EXPECT_EQ(ipv6_prefixlen("FFFF:FFFF:FFFF:FFFF::"), 64u);
+    EXPECT_EQ(ipv6_prefixlen("FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"), 128u);
+    EXPECT_EQ(ipv6_prefixlen("FFFF:FFFF:FFF0::"), 44u);
+    EXPECT_EQ(ipv6_prefixlen("FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FF00::"), 104u);
+    EXPECT_EQ(ipv6_prefixlen("FFFF:FF80::"), 25u);
+    EXPECT_EQ(ipv6_prefixlen("0000:0000:0000:0000:0000:0000:0000:0000"), 0u);
 }

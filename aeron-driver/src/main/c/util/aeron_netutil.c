@@ -385,13 +385,14 @@ int aeron_interface_parse_and_resolve(const char *interface_str, struct sockaddr
     return -1;
 }
 
-int aeron_lookup_ipv4_interfaces(aeron_ipv4_ifaddr_func_t func)
+int aeron_lookup_ipv4_interfaces(aeron_ipv4_ifaddr_func_t func, void *clientd)
 {
     struct ifaddrs *ifaddrs = NULL;
     int result = -1;
 
     if (getifaddrs(&ifaddrs) >= 0)
     {
+        result = 0;
         for (struct ifaddrs *ifa = ifaddrs;  ifa != NULL; ifa  = ifa->ifa_next)
         {
             if (NULL == ifa->ifa_addr)
@@ -401,10 +402,13 @@ int aeron_lookup_ipv4_interfaces(aeron_ipv4_ifaddr_func_t func)
 
             if (AF_INET == ifa->ifa_addr->sa_family)
             {
-                unsigned int interface_index = if_nametoindex(ifa->ifa_name);
-
-                result++;
-                func(interface_index, ifa->ifa_name, (struct sockaddr_in *)ifa->ifa_addr, (struct sockaddr_in *)ifa->ifa_netmask, ifa->ifa_flags);
+                result += func(
+                    clientd,
+                    if_nametoindex(ifa->ifa_name),
+                    ifa->ifa_name,
+                    (struct sockaddr_in *)ifa->ifa_addr,
+                    (struct sockaddr_in *)ifa->ifa_netmask,
+                    ifa->ifa_flags);
             }
         }
 
@@ -415,13 +419,14 @@ int aeron_lookup_ipv4_interfaces(aeron_ipv4_ifaddr_func_t func)
     return result;
 }
 
-int aeron_lookup_ipv6_interfaces(aeron_ipv6_ifaddr_func_t func)
+int aeron_lookup_ipv6_interfaces(aeron_ipv6_ifaddr_func_t func, void *clientd)
 {
     struct ifaddrs *ifaddrs = NULL;
     int result = -1;
 
     if (getifaddrs(&ifaddrs) >= 0)
     {
+        result = 0;
         for (struct ifaddrs *ifa = ifaddrs;  ifa != NULL; ifa  = ifa->ifa_next)
         {
             if (NULL == ifa->ifa_addr)
@@ -431,10 +436,13 @@ int aeron_lookup_ipv6_interfaces(aeron_ipv6_ifaddr_func_t func)
 
             if (AF_INET6 == ifa->ifa_addr->sa_family)
             {
-                unsigned int interface_index = if_nametoindex(ifa->ifa_name);
-
-                result++;
-                func(interface_index, ifa->ifa_name, (struct sockaddr_in6 *)ifa->ifa_addr, (struct sockaddr_in6 *)ifa->ifa_netmask, ifa->ifa_flags);
+                result += func(
+                    clientd,
+                    if_nametoindex(ifa->ifa_name),
+                    ifa->ifa_name,
+                    (struct sockaddr_in6 *)ifa->ifa_addr,
+                    (struct sockaddr_in6 *)ifa->ifa_netmask,
+                    ifa->ifa_flags);
             }
         }
 
@@ -477,6 +485,27 @@ bool aeron_ipv4_does_prefix_match(struct in_addr *in_addr1, struct in_addr *in_a
     return (addr1 & netmask) == (addr2 & netmask);
 }
 
+size_t aeron_ipv4_netmask_to_prefixlen(struct in_addr *netmask)
+{
+    uint32_t value;
+
+    memcpy(&value, netmask, sizeof(value));
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    value = __builtin_bswap32(value);
+#endif
+
+    value = ~value;
+
+    size_t i = 0;
+    while (value > 0)
+    {
+        value >>= 1;
+        i++;
+    }
+
+    return 32 - i;
+}
+
 union _aeron_128b_as_64b
 {
     __uint128_t value;
@@ -515,4 +544,27 @@ bool aeron_ipv6_does_prefix_match(struct in6_addr *in6_addr1, struct in6_addr *i
     memcpy(&addr2, in6_addr2, sizeof(addr2));
 
     return (addr1 & netmask) == (addr2 & netmask);
+}
+
+size_t aeron_ipv6_netmask_to_prefixlen(struct in6_addr *netmask)
+{
+    union _aeron_128b_as_64b value;
+
+    memcpy(&value, netmask, sizeof(value));
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    uint64_t q1 = value.q[1];
+    value.q[1] = __builtin_bswap64(value.q[0]);
+    value.q[0] = __builtin_bswap64(q1);
+#endif
+
+    value.value = ~value.value;
+
+    size_t i = 0;
+    while (value.value > 0)
+    {
+        value.value >>= 1;
+        i++;
+    }
+
+    return 128 - i;
 }

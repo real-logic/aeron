@@ -26,7 +26,10 @@ import java.util.concurrent.ThreadFactory;
 class ArchiveConductorDedicated extends ArchiveConductor
 {
     // Needs an unbounded queue to prevent a deadlock, JCTools MpscUnboundedArrayQueue is a better choice
+    // TODO: Is Runnable a good choice? How does one easily discover all possible commands?
     private final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue = new ManyToOneConcurrentLinkedQueue<>();
+
+    // TODO: is this level of coupling appropriate? Should this be a concern of the composite service, i.e. the Archiver
     private final AgentRunner replayerAgentRunner;
     private final AgentRunner recorderAgentRunner;
     private final ThreadFactory threadFactory;

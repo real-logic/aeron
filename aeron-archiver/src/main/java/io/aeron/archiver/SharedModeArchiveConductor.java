@@ -60,10 +60,6 @@ class SharedModeArchiveConductor extends ArchiveConductor
         return replayerAgentInvoker.invoke() + recorderAgentInvoker.invoke();
     }
 
-    protected void onStart()
-    {
-    }
-
     protected void closeSessionWorkers()
     {
         CloseHelper.quietClose(recorderAgentInvoker);

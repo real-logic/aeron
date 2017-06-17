@@ -79,10 +79,10 @@ class DedicatedModeArchiveConductor extends ArchiveConductor
 
     protected int preSessionWork()
     {
-        return drainCommandQueue();
+        return processCommandQueue();
     }
 
-    protected void onStart()
+    public void onStart()
     {
         AgentRunner.startOnThread(replayerAgentRunner, threadFactory);
         AgentRunner.startOnThread(recorderAgentRunner, threadFactory);
@@ -92,10 +92,14 @@ class DedicatedModeArchiveConductor extends ArchiveConductor
     {
         CloseHelper.quietClose(recorderAgentRunner);
         CloseHelper.quietClose(replayerAgentRunner);
-        drainCommandQueue();
+
+        while (processCommandQueue() > 0)
+        {
+            // drain the command queue
+        }
     }
 
-    private int drainCommandQueue()
+    private int processCommandQueue()
     {
         int i = 0;
         Runnable r;

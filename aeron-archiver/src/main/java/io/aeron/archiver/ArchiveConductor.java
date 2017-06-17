@@ -51,7 +51,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final NotificationsProxy notificationsProxy;
 
     private int replaySessionId;
-    private boolean started = false;
 
     final SessionWorker<ReplaySession> replayer;
     final SessionWorker<RecordingSession> recorder;
@@ -113,12 +112,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     public int doWork()
     {
-        if (!started)
-        {
-            started = true;
-            onStart();
-        }
-
         int workDone = safeInvoke(driverAgentInvoker);
         workDone += aeronClientAgentInvoker.invoke();
         workDone += preSessionWork();
@@ -126,8 +119,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         return workDone;
     }
-
-    protected abstract void onStart();
 
     protected abstract int preSessionWork();
 

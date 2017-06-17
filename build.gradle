@@ -187,7 +187,7 @@ subprojects {
     }
 }
 
-def agronaVersion = '0.9.6'
+def agronaVersion = '0.9.7-SNAPSHOT'
 
 project(':aeron-client') {
     apply plugin: 'osgi'
@@ -470,7 +470,7 @@ project(':aeron-agent') {
     }
 }
 
-def sbeVersion = '1.7.0'
+def sbeVersion = '1.7.1-SNAPSHOT'
 
 project(':aeron-archiver-codecs') {
     apply plugin: 'com.github.johnrengelman.shadow'

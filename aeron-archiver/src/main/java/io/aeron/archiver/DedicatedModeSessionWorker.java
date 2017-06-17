@@ -18,11 +18,11 @@ package io.aeron.archiver;
 
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
-class SessionWorkerDedicated<T extends Session> extends SessionWorker<T>
+class DedicatedModeSessionWorker<T extends Session> extends SessionWorker<T>
 {
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue = new OneToOneConcurrentArrayQueue<>(256);
 
-    SessionWorkerDedicated(final String roleName)
+    DedicatedModeSessionWorker(final String roleName)
     {
         super(roleName);
     }

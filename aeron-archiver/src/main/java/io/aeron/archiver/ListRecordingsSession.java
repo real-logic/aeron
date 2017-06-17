@@ -30,10 +30,7 @@ class ListRecordingsSession implements Session
 {
     private enum State
     {
-        INIT,
-        ACTIVE,
-        INACTIVE,
-        CLOSED
+        INIT, ACTIVE, INACTIVE, CLOSED
     }
 
     private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, CACHE_LINE_LENGTH);
@@ -139,6 +136,7 @@ class ListRecordingsSession implements Session
             }
         }
         while (sentBytes < controlPublication.maxPayloadLength());
+
         return sentBytes;
     }
 

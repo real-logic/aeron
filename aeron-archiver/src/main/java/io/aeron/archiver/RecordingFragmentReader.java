@@ -157,7 +157,6 @@ class RecordingFragmentReader implements AutoCloseable
 
         int polled = 0;
 
-        // read to end of term or requested data
         while (termOffset < termBufferLength && transmitted < replayLength && polled < fragmentLimit)
         {
             final int frameOffset = termOffset;

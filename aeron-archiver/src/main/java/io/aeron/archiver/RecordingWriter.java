@@ -51,6 +51,7 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         private final ByteBuffer buffer =
             BufferUtil.allocateDirectAligned(DataHeaderFlyweight.HEADER_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
         private final DataHeaderFlyweight header = new DataHeaderFlyweight();
+
         Marker()
         {
             header.wrap(buffer);
@@ -150,9 +151,8 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         catch (final IOException ex)
         {
             close();
-            LangUtil.rethrowUnchecked(ex);
-            // the next line is to keep compiler happy with regards to final fields init
-            throw new RuntimeException();
+
+            throw new RuntimeException(ex);
         }
     }
 

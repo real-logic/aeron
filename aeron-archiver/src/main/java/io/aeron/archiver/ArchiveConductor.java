@@ -59,6 +59,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
         super("archiver-conductor");
+
         this.aeron = aeron;
         aeronClientAgentInvoker = aeron.conductorAgentInvoker();
         Objects.requireNonNull(aeronClientAgentInvoker, "In the archiver context an aeron invoker should be present");
@@ -117,6 +118,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             started = true;
             onStart();
         }
+
         int workDone = safeInvoke(driverAgentInvoker);
         workDone += aeronClientAgentInvoker.invoke();
         workDone += preSessionWork();
@@ -199,7 +201,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private void startRecording(final Image image)
     {
         recorder.addSession(new RecordingSession(notificationsProxy, catalog, image, recordingContext));
-
     }
 
     void listRecordings(

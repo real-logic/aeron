@@ -47,6 +47,7 @@ class ArchiveUtil
     static void printMetaFile(final File metaFile) throws IOException
     {
         final RecordingDescriptorDecoder formatDecoder = loadRecordingDescriptor(metaFile);
+
         System.out.println("recordingId: " + formatDecoder.recordingId());
         System.out.println("termBufferLength: " + formatDecoder.termBufferLength());
         System.out.println("start time: " + new Date(formatDecoder.startTime()));

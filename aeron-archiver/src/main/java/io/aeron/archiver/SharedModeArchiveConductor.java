@@ -20,15 +20,15 @@ import io.aeron.Aeron;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.AgentInvoker;
 
-class ArchiveConductorShared extends ArchiveConductor
+class SharedModeArchiveConductor extends ArchiveConductor
 {
-
     private final AgentInvoker replayerAgentInvoker;
     private final AgentInvoker recorderAgentInvoker;
 
-    ArchiveConductorShared(final Aeron aeron, final Archiver.Context ctx)
+    SharedModeArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
         super(aeron, ctx);
+
         replayerAgentInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), replayer);
         recorderAgentInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), recorder);
     }
@@ -69,5 +69,4 @@ class ArchiveConductorShared extends ArchiveConductor
         CloseHelper.quietClose(recorderAgentInvoker);
         CloseHelper.quietClose(replayerAgentInvoker);
     }
-
 }

@@ -46,12 +46,13 @@ public final class Archiver implements AutoCloseable
         final ArchiveConductor archiveConductor;
         if (ctx.threadingMode() == ArchiverThreadingMode.DEDICATED)
         {
-            archiveConductor = new ArchiveConductorDedicated(aeron, ctx);
+            archiveConductor = new DedicatedModeArchiveConductor(aeron, ctx);
         }
         else
         {
-            archiveConductor = new ArchiveConductorShared(aeron, ctx);
+            archiveConductor = new SharedModeArchiveConductor(aeron, ctx);
         }
+
         switch (ctx.threadingMode())
         {
             case INVOKER:
@@ -609,6 +610,5 @@ public final class Archiver implements AutoCloseable
             this.errorCounter = errorCounter;
             return this;
         }
-
     }
 }

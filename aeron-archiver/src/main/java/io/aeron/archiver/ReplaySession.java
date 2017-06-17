@@ -85,7 +85,6 @@ class ReplaySession
         final String replayChannel,
         final int replayStreamId)
     {
-
         this.controlPublication = controlPublication;
         this.controlSessionProxy = controlSessionProxy;
         this.replaySessionId = replaySessionId;
@@ -113,7 +112,6 @@ class ReplaySession
 
         Objects.requireNonNull(metaData);
         final long joiningPosition = metaData.joiningPosition();
-        final long lastPosition = metaData.lastPosition();
         final int mtuLength = metaData.mtuLength();
         final int termBufferLength = metaData.termBufferLength();
         final int initialTermId = metaData.initialTermId();
@@ -144,7 +142,7 @@ class ReplaySession
             replayPublication = supplier.newReplayPublication(
                 replayChannel,
                 replayStreamId,
-                cursor.fromPosition(), // may differ from replayPosition due to first fragement alignment
+                cursor.fromPosition(), // may differ from replayPosition due to first fragment alignment
                 mtuLength,
                 initialTermId,
                 termBufferLength);

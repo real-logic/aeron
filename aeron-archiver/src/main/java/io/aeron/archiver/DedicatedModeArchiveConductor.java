@@ -25,6 +25,8 @@ import java.util.concurrent.ThreadFactory;
 
 class DedicatedModeArchiveConductor extends ArchiveConductor
 {
+    public static final int COMMAND_LIMIT = 10;
+
     private final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue = new ManyToOneConcurrentLinkedQueue<>();
     private final AgentRunner replayerAgentRunner;
     private final AgentRunner recorderAgentRunner;
@@ -33,6 +35,7 @@ class DedicatedModeArchiveConductor extends ArchiveConductor
     DedicatedModeArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
         super(aeron, ctx);
+
         recorderAgentRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), recorder);
         replayerAgentRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), replayer);
         threadFactory = ctx.threadFactory();
@@ -99,8 +102,13 @@ class DedicatedModeArchiveConductor extends ArchiveConductor
         while ((r = commandQueue.poll()) != null)
         {
             r.run();
-            i++;
+
+            if (++i >= COMMAND_LIMIT)
+            {
+                break;
+            }
         }
+
         return i;
     }
 }

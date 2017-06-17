@@ -385,69 +385,45 @@ int aeron_interface_parse_and_resolve(const char *interface_str, struct sockaddr
     return -1;
 }
 
-int aeron_lookup_ipv4_interfaces(aeron_ipv4_ifaddr_func_t func, void *clientd)
+static aeron_getifaddrs_func_t aeron_getifaddrs_func = getifaddrs;
+static aeron_freeifaddrs_func_t aeron_freeifaddrs_func = freeifaddrs;
+
+void aeron_set_getifaddrs(aeron_getifaddrs_func_t get_func, aeron_freeifaddrs_func_t free_func)
+{
+    aeron_getifaddrs_func = get_func;
+    aeron_freeifaddrs_func = free_func;
+}
+
+int aeron_lookup_interfaces(aeron_ifaddr_func_t func, void *clientd)
 {
     struct ifaddrs *ifaddrs = NULL;
     int result = -1;
 
-    if (getifaddrs(&ifaddrs) >= 0)
+    if (aeron_getifaddrs_func(&ifaddrs) >= 0)
     {
-        result = 0;
-        for (struct ifaddrs *ifa = ifaddrs;  ifa != NULL; ifa  = ifa->ifa_next)
-        {
-            if (NULL == ifa->ifa_addr)
-            {
-                continue;
-            }
-
-            if (AF_INET == ifa->ifa_addr->sa_family)
-            {
-                result += func(
-                    clientd,
-                    if_nametoindex(ifa->ifa_name),
-                    ifa->ifa_name,
-                    (struct sockaddr_in *)ifa->ifa_addr,
-                    (struct sockaddr_in *)ifa->ifa_netmask,
-                    ifa->ifa_flags);
-            }
-        }
-
-        freeifaddrs(ifaddrs);
-        return result;
+        result = aeron_lookup_interfaces_from_ifaddrs(func, clientd, ifaddrs);
+        aeron_freeifaddrs_func(ifaddrs);
     }
 
     return result;
 }
 
-int aeron_lookup_ipv6_interfaces(aeron_ipv6_ifaddr_func_t func, void *clientd)
+int aeron_lookup_interfaces_from_ifaddrs(aeron_ifaddr_func_t func, void *clientd, struct ifaddrs *ifaddrs)
 {
-    struct ifaddrs *ifaddrs = NULL;
-    int result = -1;
-
-    if (getifaddrs(&ifaddrs) >= 0)
+    int result = 0;
+    for (struct ifaddrs *ifa = ifaddrs; ifa != NULL; ifa  = ifa->ifa_next)
     {
-        result = 0;
-        for (struct ifaddrs *ifa = ifaddrs;  ifa != NULL; ifa  = ifa->ifa_next)
+        if (NULL == ifa->ifa_addr)
         {
-            if (NULL == ifa->ifa_addr)
-            {
-                continue;
-            }
-
-            if (AF_INET6 == ifa->ifa_addr->sa_family)
-            {
-                result += func(
-                    clientd,
-                    if_nametoindex(ifa->ifa_name),
-                    ifa->ifa_name,
-                    (struct sockaddr_in6 *)ifa->ifa_addr,
-                    (struct sockaddr_in6 *)ifa->ifa_netmask,
-                    ifa->ifa_flags);
-            }
+            continue;
         }
 
-        freeifaddrs(ifaddrs);
-        return result;
+        result += func(
+            clientd,
+            ifa->ifa_name,
+            ifa->ifa_addr,
+            ifa->ifa_netmask,
+            ifa->ifa_flags);
     }
 
     return result;
@@ -487,23 +463,7 @@ bool aeron_ipv4_does_prefix_match(struct in_addr *in_addr1, struct in_addr *in_a
 
 size_t aeron_ipv4_netmask_to_prefixlen(struct in_addr *netmask)
 {
-    uint32_t value;
-
-    memcpy(&value, netmask, sizeof(value));
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    value = __builtin_bswap32(value);
-#endif
-
-    value = ~value;
-
-    size_t i = 0;
-    while (value > 0)
-    {
-        value >>= 1;
-        i++;
-    }
-
-    return 32 - i;
+    return __builtin_popcount(netmask->s_addr);
 }
 
 union _aeron_128b_as_64b
@@ -551,20 +511,113 @@ size_t aeron_ipv6_netmask_to_prefixlen(struct in6_addr *netmask)
     union _aeron_128b_as_64b value;
 
     memcpy(&value, netmask, sizeof(value));
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    uint64_t q1 = value.q[1];
-    value.q[1] = __builtin_bswap64(value.q[0]);
-    value.q[0] = __builtin_bswap64(q1);
-#endif
 
-    value.value = ~value.value;
+    return __builtin_popcountll(value.q[0]) + __builtin_popcountll(value.q[1]);
+}
 
-    size_t i = 0;
-    while (value.value > 0)
+bool aeron_ip_does_prefix_match(struct sockaddr *addr1, struct sockaddr *addr2, size_t prefixlen)
+{
+    bool result = false;
+
+    if (addr1->sa_family == addr2->sa_family)
     {
-        value.value >>= 1;
-        i++;
+        if (AF_INET6 == addr1->sa_family)
+        {
+            result = aeron_ipv6_does_prefix_match(
+                &((struct sockaddr_in6 *)addr1)->sin6_addr,
+                &((struct sockaddr_in6 *)addr2)->sin6_addr,
+                prefixlen);
+        }
+        else if (AF_INET == addr1->sa_family)
+        {
+            result = aeron_ipv4_does_prefix_match(
+                &((struct sockaddr_in *)addr1)->sin_addr,
+                &((struct sockaddr_in *)addr2)->sin_addr,
+                prefixlen);
+        }
     }
 
-    return 128 - i;
+    return result;
+}
+
+size_t aeron_ip_netmask_to_prefixlen(struct sockaddr *netmask)
+{
+    return (AF_INET6 == netmask->sa_family) ?
+        aeron_ipv6_netmask_to_prefixlen(&((struct sockaddr_in6 *)netmask)->sin6_addr) :
+        aeron_ipv4_netmask_to_prefixlen(&((struct sockaddr_in *)netmask)->sin_addr);
+}
+
+struct lookup_state
+{
+    struct sockaddr_storage lookup_addr;
+    struct sockaddr_storage *if_addr;
+    unsigned int *if_index;
+    unsigned int if_flags;
+    size_t prefixlen;
+    size_t if_prefixlen;
+    bool found;
+};
+
+int aeron_ip_lookup_func(
+    void *clientd, const char *name, struct sockaddr *addr, struct sockaddr *netmask, unsigned int flags)
+{
+    if (flags & IFF_UP)
+    {
+        struct lookup_state *state = (struct lookup_state *) clientd;
+
+        if (aeron_ip_does_prefix_match((struct sockaddr *) &state->lookup_addr, addr, state->prefixlen))
+        {
+            size_t addr_len = (AF_INET6 == addr->sa_family) ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in);
+
+            if ((flags & IFF_LOOPBACK) && !state->found)
+            {
+                memcpy(state->if_addr, addr, addr_len);
+                *state->if_index = if_nametoindex(name);
+                state->found = true;
+                return 1;
+            }
+            else if (flags & IFF_MULTICAST)
+            {
+                size_t current_if_prefixlen = aeron_ip_netmask_to_prefixlen(netmask);
+
+                if (current_if_prefixlen > state->if_prefixlen)
+                {
+                    memcpy(state->if_addr, addr, addr_len);
+                    *state->if_index = if_nametoindex(name);
+                    state->if_prefixlen = current_if_prefixlen;
+                }
+
+                state->found = true;
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_addr, unsigned int *if_index)
+{
+    struct lookup_state state;
+
+    if (aeron_interface_parse_and_resolve(interface_str, &state.lookup_addr, &state.prefixlen) < 0)
+    {
+        return -1;
+    }
+
+    state.if_addr = if_addr;
+    state.if_index = if_index;
+    state.if_prefixlen = 0;
+    state.if_flags = 0;
+    state.found = false;
+
+    int result = aeron_lookup_interfaces(aeron_ip_lookup_func, &state);
+
+    if (0 == result)
+    {
+        aeron_set_err(EINVAL, "could not find matching interface=(%s)", interface_str);
+        return -1;
+    }
+
+    return 0;
 }

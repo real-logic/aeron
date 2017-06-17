@@ -84,6 +84,8 @@ class DedicatedModeArchiveConductor extends ArchiveConductor
 
     public void onStart()
     {
+        super.onStart();
+
         AgentRunner.startOnThread(replayerAgentRunner, threadFactory);
         AgentRunner.startOnThread(recorderAgentRunner, threadFactory);
     }

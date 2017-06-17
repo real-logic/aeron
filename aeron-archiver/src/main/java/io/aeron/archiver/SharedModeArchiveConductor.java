@@ -33,6 +33,14 @@ class SharedModeArchiveConductor extends ArchiveConductor
         recorderAgentInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), recorder);
     }
 
+    public void onStart()
+    {
+        super.onStart();
+
+        replayerAgentInvoker.start();
+        recorderAgentInvoker.start();
+    }
+
     protected SessionWorker<RecordingSession> constructRecorder(final Archiver.Context ctx)
     {
         return new SessionWorker<RecordingSession>("recorder")

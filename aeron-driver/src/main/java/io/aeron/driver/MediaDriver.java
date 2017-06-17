@@ -342,6 +342,11 @@ public final class MediaDriver implements AutoCloseable
             AgentRunner.startOnThread(sharedRunner, ctx.sharedThreadFactory);
         }
 
+        if (null != sharedInvoker)
+        {
+            sharedInvoker.start();
+        }
+
         return this;
     }
 

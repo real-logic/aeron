@@ -30,7 +30,7 @@ public final class Archiver implements AutoCloseable
 {
     private final Context ctx;
     private final AgentRunner conductorRunner;
-    private final AgentInvoker invoker;
+    private final AgentInvoker conductorInvoker;
     private final Aeron aeron;
 
     private Archiver(final Context ctx)
@@ -56,12 +56,12 @@ public final class Archiver implements AutoCloseable
         switch (ctx.threadingMode())
         {
             case INVOKER:
-                invoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), archiveConductor);
+                conductorInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), archiveConductor);
                 conductorRunner = null;
                 break;
 
             case SHARED:
-                invoker = null;
+                conductorInvoker = null;
                 conductorRunner = new AgentRunner(
                     ctx.idleStrategy(),
                     ctx.errorHandler(),
@@ -71,7 +71,7 @@ public final class Archiver implements AutoCloseable
 
             default:
             case DEDICATED:
-                invoker = null;
+                conductorInvoker = null;
                 conductorRunner = new AgentRunner(
                     ctx.idleStrategy(),
                     ctx.errorHandler(),
@@ -82,6 +82,7 @@ public final class Archiver implements AutoCloseable
 
     public void close() throws Exception
     {
+        CloseHelper.close(conductorInvoker);
         CloseHelper.close(conductorRunner);
         CloseHelper.close(aeron);
     }
@@ -97,12 +98,17 @@ public final class Archiver implements AutoCloseable
             AgentRunner.startOnThread(conductorRunner, ctx.threadFactory());
         }
 
+        if (null != conductorInvoker)
+        {
+            conductorInvoker.start();
+        }
+
         return this;
     }
 
     public AgentInvoker invoker()
     {
-        return invoker;
+        return conductorInvoker;
     }
 
     public static Archiver launch()

@@ -149,6 +149,8 @@ public final class Aeron implements AutoCloseable
             final Aeron aeron = new Aeron(ctx);
             if (ctx.useConductorAgentInvoker())
             {
+                aeron.conductorInvoker.start();
+
                 return aeron;
             }
 

@@ -16,10 +16,12 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class StartStopSystemTest
 {
+    @Ignore
     @Test(timeout = 10_000)
     public void shouldStartAndStopInstantly()
     {

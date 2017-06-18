@@ -67,8 +67,8 @@ class ClientConductor implements Agent, DriverListener
     private final Long2ObjectHashMap<ExclusivePublication> activeExclusivePublications = new Long2ObjectHashMap<>();
     private final ActiveSubscriptions activeSubscriptions = new ActiveSubscriptions();
     private final ArrayList<ManagedResource> lingeringResources = new ArrayList<>();
-    private final UnavailableImageHandler unavailableImageHandler;
-    private final AvailableImageHandler availableImageHandler;
+    private final UnavailableImageHandler defaultUnavailableImageHandler;
+    private final AvailableImageHandler defaultAvailableImageHandler;
     private final UnsafeBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
     private final ErrorHandler errorHandler;
@@ -91,8 +91,8 @@ class ClientConductor implements Agent, DriverListener
         driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
         interServiceTimeoutNs = ctx.interServiceTimeout();
         publicationConnectionTimeoutMs = ctx.publicationConnectionTimeout();
-        availableImageHandler = ctx.availableImageHandler();
-        unavailableImageHandler = ctx.unavailableImageHandler();
+        defaultAvailableImageHandler = ctx.availableImageHandler();
+        defaultUnavailableImageHandler = ctx.unavailableImageHandler();
         driverListener = new DriverListenerAdapter(ctx.toClientBuffer(), this);
         driverAgentInvoker = ctx.driverAgentInvoker();
 
@@ -230,7 +230,7 @@ class ClientConductor implements Agent, DriverListener
 
         final long correlationId = driverProxy.addSubscription(channel, streamId);
         final Subscription subscription = new Subscription(
-            this, channel, streamId, correlationId, availableImageHandler, unavailableImageHandler);
+            this, channel, streamId, correlationId, defaultAvailableImageHandler, defaultUnavailableImageHandler);
         activeSubscriptions.add(subscription);
 
         awaitResponse(correlationId, channel);

@@ -58,7 +58,6 @@ class ClientConductor implements Agent, DriverListener
     private volatile Status status = ACTIVE;
 
     private final Lock clientLock;
-    private final Aeron.Context ctx;
     private final EpochClock epochClock;
     private final FileChannel.MapMode imageMapMode;
     private final NanoClock nanoClock;
@@ -68,6 +67,8 @@ class ClientConductor implements Agent, DriverListener
     private final Long2ObjectHashMap<ExclusivePublication> activeExclusivePublications = new Long2ObjectHashMap<>();
     private final ActiveSubscriptions activeSubscriptions = new ActiveSubscriptions();
     private final ArrayList<ManagedResource> lingeringResources = new ArrayList<>();
+    private final UnavailableImageHandler unavailableImageHandler;
+    private final AvailableImageHandler availableImageHandler;
     private final UnsafeBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
     private final ErrorHandler errorHandler;
@@ -77,8 +78,6 @@ class ClientConductor implements Agent, DriverListener
 
     ClientConductor(final Aeron.Context ctx)
     {
-        this.ctx = ctx;
-
         clientLock = ctx.clientLock();
         epochClock = ctx.epochClock();
         nanoClock = ctx.nanoClock();
@@ -92,6 +91,8 @@ class ClientConductor implements Agent, DriverListener
         driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
         interServiceTimeoutNs = ctx.interServiceTimeout();
         publicationConnectionTimeoutMs = ctx.publicationConnectionTimeout();
+        availableImageHandler = ctx.availableImageHandler();
+        unavailableImageHandler = ctx.unavailableImageHandler();
         driverListener = new DriverListenerAdapter(ctx.toClientBuffer(), this);
         driverAgentInvoker = ctx.driverAgentInvoker();
 
@@ -124,8 +125,6 @@ class ClientConductor implements Agent, DriverListener
             }
             lingeringResources.clear();
 
-            ctx.close();
-
             status = CLOSED;
         }
     }
@@ -155,11 +154,6 @@ class ClientConductor implements Agent, DriverListener
     public String roleName()
     {
         return "aeron-client-conductor";
-    }
-
-    Aeron.Context context()
-    {
-        return ctx;
     }
 
     Status status()
@@ -236,7 +230,7 @@ class ClientConductor implements Agent, DriverListener
 
         final long correlationId = driverProxy.addSubscription(channel, streamId);
         final Subscription subscription = new Subscription(
-            this, channel, streamId, correlationId, ctx.availableImageHandler(), ctx.unavailableImageHandler());
+            this, channel, streamId, correlationId, availableImageHandler, unavailableImageHandler);
         activeSubscriptions.add(subscription);
 
         awaitResponse(correlationId, channel);

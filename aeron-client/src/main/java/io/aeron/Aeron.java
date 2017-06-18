@@ -95,6 +95,7 @@ public final class Aeron implements AutoCloseable
     public static final long PUBLICATION_CONNECTION_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
 
     private final Lock clientLock;
+    private final Context ctx;
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;
     private final AgentInvoker conductorInvoker;
@@ -104,6 +105,7 @@ public final class Aeron implements AutoCloseable
     {
         ctx.conclude();
 
+        this.ctx = ctx;
         clientLock = ctx.clientLock();
         commandBuffer = ctx.toDriverBuffer;
         conductor = new ClientConductor(ctx);
@@ -148,14 +150,17 @@ public final class Aeron implements AutoCloseable
         try
         {
             final Aeron aeron = new Aeron(ctx);
+
             if (ctx.useConductorAgentInvoker())
             {
                 aeron.conductorInvoker.start();
-
-                return aeron;
+            }
+            else
+            {
+                aeron.start(ctx.threadFactory);
             }
 
-            return aeron.start(ctx.threadFactory);
+            return aeron;
         }
         catch (final Exception ex)
         {
@@ -193,6 +198,7 @@ public final class Aeron implements AutoCloseable
         }
         finally
         {
+            ctx.close();
             clientLock.unlock();
         }
     }
@@ -325,8 +331,6 @@ public final class Aeron implements AutoCloseable
         {
             throw new IllegalStateException("Client is closed");
         }
-
-        final Context ctx = conductor.context();
 
         return new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer(), StandardCharsets.US_ASCII);
     }

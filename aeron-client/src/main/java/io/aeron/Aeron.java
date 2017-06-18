@@ -195,10 +195,11 @@ public final class Aeron implements AutoCloseable
             {
                 conductorInvoker.close();
             }
+
+            ctx.close();
         }
         finally
         {
-            ctx.close();
             clientLock.unlock();
         }
     }

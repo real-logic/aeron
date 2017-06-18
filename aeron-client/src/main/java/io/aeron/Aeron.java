@@ -28,6 +28,7 @@ import org.agrona.concurrent.status.CountersReader;
 import java.io.File;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -327,7 +328,7 @@ public final class Aeron implements AutoCloseable
 
         final Context ctx = conductor.context();
 
-        return new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer());
+        return new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer(), StandardCharsets.US_ASCII);
     }
 
     private Aeron start(final ThreadFactory threadFactory)

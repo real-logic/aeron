@@ -45,6 +45,7 @@ import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY;
 import static java.lang.Boolean.getBoolean;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.agrona.IoUtil.mapNewFile;
 
 /**
@@ -1307,7 +1308,7 @@ public final class MediaDriver implements AutoCloseable
                     countersValuesBuffer(createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
-                countersManager(new CountersManager(countersMetaDataBuffer(), countersValuesBuffer()));
+                countersManager(new CountersManager(countersMetaDataBuffer(), countersValuesBuffer(), US_ASCII));
             }
 
             if (null == systemCounters)

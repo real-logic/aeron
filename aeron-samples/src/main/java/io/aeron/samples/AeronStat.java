@@ -26,6 +26,7 @@ import org.agrona.concurrent.status.CountersReader;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.MappedByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -135,7 +136,8 @@ public class AeronStat
 
         return new CountersReader(
             createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
-            createCountersValuesBuffer(cncByteBuffer, cncMetaData));
+            createCountersValuesBuffer(cncByteBuffer, cncMetaData),
+            StandardCharsets.US_ASCII);
     }
 
     public static void main(final String[] args) throws Exception

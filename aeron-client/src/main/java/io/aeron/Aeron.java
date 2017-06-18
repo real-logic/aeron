@@ -44,7 +44,7 @@ import static org.agrona.IoUtil.mapExistingFile;
  * A client application requires only one Aeron object per Media Driver.
  * <p>
  * <b>Note:</b> If {@link Aeron.Context#errorHandler(ErrorHandler)} is not set and a {@link DriverTimeoutException}
- * occurs then the process will face the wraith of {@link System#exit(int)}. See {@link #DEFAULT_ERROR_HANDLER}.
+ * occurs then the process will face the wrath of {@link System#exit(int)}. See {@link #DEFAULT_ERROR_HANDLER}.
  */
 public final class Aeron implements AutoCloseable
 {

@@ -39,4 +39,20 @@ void aeron_format_date(char *str, size_t count, int64_t timestamp)
     snprintf(str, count, "%s%s%s", time_buffer, msec_buffer, tz_buffer);
 }
 
+void aeron_format_to_hex(char *str, size_t str_length, uint8_t *data, size_t data_len)
+{
+    static char table[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+
+    size_t j = 0;
+
+    for (size_t i = 0; i < data_len && j < str_length; i++)
+    {
+        char c_high = table[(data[i] >> 4) & 0x0F];
+        char c_low = table[data[i] & 0x0F];
+
+        str[j++] = c_high;
+        str[j++] = c_low;
+    }
+    str[j] = '\0';
+}
 

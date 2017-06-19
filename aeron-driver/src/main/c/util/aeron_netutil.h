@@ -29,6 +29,8 @@ typedef void (*aeron_freeifaddrs_func_t)(struct ifaddrs *);
 typedef int (*aeron_ifaddr_func_t)
     (void *clientd, const char *name, struct sockaddr *addr, struct sockaddr *netmask, unsigned int flags);
 
+#define AERON_ADDR_LEN(a) ((AF_INET6 == (a)->ss_family) ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in))
+
 int aeron_lookup_interfaces(aeron_ifaddr_func_t func, void *clientd);
 int aeron_lookup_interfaces_from_ifaddrs(aeron_ifaddr_func_t func, void *clientd, struct ifaddrs *ifaddrs);
 
@@ -46,11 +48,7 @@ size_t aeron_ipv6_netmask_to_prefixlen(struct in6_addr *netmask);
 
 int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_addr, unsigned int *if_index);
 
-inline bool aeron_is_addr_multicast(struct sockaddr *addr)
-{
-    return (AF_INET6 == addr->sa_family) ?
-        IN6_IS_ADDR_MULTICAST(&((struct sockaddr_in6 *)addr)->sin6_addr) :
-        IN_MULTICAST(((struct sockaddr_in *)addr)->sin_addr.s_addr);
-}
+bool aeron_is_addr_multicast(struct sockaddr_storage *addr);
+bool aeron_is_wildcard_addr(struct sockaddr_storage *addr);
 
 #endif //AERON_AERON_NETUTIL_H

@@ -23,6 +23,7 @@
 typedef struct aeron_udp_channel_stct
 {
     char original_uri[AERON_MAX_PATH];
+    char canonical_form[AERON_MAX_PATH];
     aeron_uri_t uri;
     struct sockaddr_storage remote_data;
     struct sockaddr_storage local_data;

@@ -22,4 +22,7 @@
 
 void aeron_format_date(char *str, size_t count, int64_t timestamp);
 
+#define AERON_FORMAT_HEX_LENGTH(b) ((2 * (b)) + 1)
+void aeron_format_to_hex(char *str, size_t str_length, uint8_t *data, size_t data_len);
+
 #endif //AERON_AERON_STRUTIL_H

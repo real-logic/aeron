@@ -94,27 +94,14 @@ TEST_F(UriTest, shouldParseWithMultipleParams)
     EXPECT_EQ(std::string(m_uri.params.udp.additional_params.array[0].value), "4567");
 }
 
-/*
- * WARNING: single threaded only due to global resolver func usage
- */
-
 class UriResolverTest : public testing::Test
 {
 public:
     UriResolverTest() :
         addr_in((struct sockaddr_in *)&m_addr),
         addr_in6((struct sockaddr_in6 *)&m_addr),
-        m_prefixlen(0),
-        m_resolver_func([](const char *, struct addrinfo *, struct addrinfo **){ return -1; })
+        m_prefixlen(0)
     {
-        aeron_uri_hostname_resolver(UriResolverTest::resolver_func, this);
-    }
-
-    static int resolver_func(void *clientd, const char *host, struct addrinfo *hints, struct addrinfo **info)
-    {
-        UriResolverTest *t = (UriResolverTest *)clientd;
-
-        return (*t).m_resolver_func(host, hints, info);
     }
 
     bool ipv4_match(const char *addr1_str, const char *addr2_str, size_t prefixlen)
@@ -171,7 +158,6 @@ protected:
     struct sockaddr_in *addr_in;
     struct sockaddr_in6 *addr_in6;
     size_t m_prefixlen;
-    std::function<int(const char *, struct addrinfo *, struct addrinfo **)> m_resolver_func;
 };
 
 TEST_F(UriResolverTest, shouldResolveIpv4DottedDecimalAndPort)
@@ -224,7 +210,13 @@ TEST_F(UriResolverTest, shouldResolveIpv6MulticastAndPort)
 
 TEST_F(UriResolverTest, shouldResolveLocalhost)
 {
+    char buffer[AERON_MAX_PATH];
+
     ASSERT_EQ(aeron_host_and_port_parse_and_resolve("localhost:1234", &m_addr), 0) << aeron_errmsg();
+    EXPECT_EQ(m_addr.ss_family, AF_INET);
+    EXPECT_EQ(addr_in->sin_family, AF_INET);
+    EXPECT_STREQ(inet_ntop(AF_INET, &addr_in->sin_addr, buffer, sizeof(buffer)), "127.0.0.1");
+    EXPECT_EQ(addr_in->sin_port, htons(1234));
 }
 
 TEST_F(UriResolverTest, shouldNotResolveInvalidPort)
@@ -252,9 +244,11 @@ TEST_F(UriResolverTest, shouldResolveIpv4Interface)
 
     ASSERT_EQ(aeron_interface_parse_and_resolve("192.168.1.20:1234", &m_addr, &m_prefixlen), 0) << aeron_errmsg();
     EXPECT_EQ(m_prefixlen, 32u);
+    EXPECT_EQ(addr_in->sin_port, htons(1234));
 
     ASSERT_EQ(aeron_interface_parse_and_resolve("192.168.1.20:1234/24", &m_addr, &m_prefixlen), 0) << aeron_errmsg();
     EXPECT_EQ(m_prefixlen, 24u);
+    EXPECT_EQ(addr_in->sin_port, htons(1234));
 
     ASSERT_EQ(aeron_interface_parse_and_resolve("0.0.0.0/0", &m_addr, &m_prefixlen), 0) << aeron_errmsg();
     EXPECT_EQ(m_prefixlen, 0u);
@@ -278,9 +272,11 @@ TEST_F(UriResolverTest, shouldResolveIpv6Interface)
 
     ASSERT_EQ(aeron_interface_parse_and_resolve("[::1]:1234", &m_addr, &m_prefixlen), 0) << aeron_errmsg();
     EXPECT_EQ(m_prefixlen, 128u);
+    EXPECT_EQ(addr_in6->sin6_port, htons(1234));
 
     ASSERT_EQ(aeron_interface_parse_and_resolve("[::1]:1234/48", &m_addr, &m_prefixlen), 0) << aeron_errmsg();
     EXPECT_EQ(m_prefixlen, 48u);
+    EXPECT_EQ(addr_in6->sin6_port, htons(1234));
 }
 
 TEST_F(UriResolverTest, shouldMatchIpv4)
@@ -422,12 +418,25 @@ TEST_F(UriLookupTest, shouldFindIpv4Loopback)
 {
     char buffer[AERON_MAX_PATH];
     struct sockaddr_storage addr;
-    struct sockaddr_in *addr_in = (struct sockaddr_in *)&addr;
+    struct sockaddr_in *addr_in = (struct sockaddr_in *) &addr;
     unsigned int if_index;
 
-    ASSERT_EQ(aeron_find_interface("127.0.0.0/16", (struct sockaddr_storage *)&addr, &if_index), 0);
+    ASSERT_EQ(aeron_find_interface("127.0.0.0/16", (struct sockaddr_storage *) &addr, &if_index), 0);
     EXPECT_EQ(addr_in->sin_family, AF_INET);
     EXPECT_STREQ(inet_ntop(AF_INET, &addr_in->sin_addr, buffer, sizeof(buffer)), "127.0.0.1");
+}
+
+TEST_F(UriLookupTest, shouldFindIpv4LoopbackAsLocalhost)
+{
+    char buffer[AERON_MAX_PATH];
+    struct sockaddr_storage addr;
+    struct sockaddr_in *addr_in = (struct sockaddr_in *) &addr;
+    unsigned int if_index;
+
+    ASSERT_EQ(aeron_find_interface("localhost:40123", (struct sockaddr_storage *)&addr, &if_index), 0);
+    EXPECT_EQ(addr_in->sin_family, AF_INET);
+    EXPECT_STREQ(inet_ntop(AF_INET, &addr_in->sin_addr, buffer, sizeof(buffer)), "127.0.0.1");
+    EXPECT_EQ(addr_in->sin_port, htons(40123));
 }
 
 TEST_F(UriLookupTest, shouldFindIpv6)

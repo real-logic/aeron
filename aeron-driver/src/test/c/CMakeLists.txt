@@ -33,6 +33,7 @@ if(BUILD_TESTING)
     aeron_driver_test(spsc_queue_test aeron_spsc_concurrent_array_queue_test.cpp)
     aeron_driver_test(mpsc_queue_test aeron_mpsc_concurrent_array_queue_test.cpp)
     aeron_driver_test(uri_test aeron_uri_test.cpp)
+    aeron_driver_test(udp_channel_test aeron_udp_channel_test.cpp)
 
     function(aeron_driver_benchmark name file)
         add_executable(${name} ${file})

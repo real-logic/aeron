@@ -376,7 +376,7 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         private File archiveDir;
         private EpochClock epochClock;
         private boolean forceWrites = true;
-        private int segmentFileLength = 128 * 1024 * 1024; // TODO: make this configurable and discoverable.
+        private int segmentFileLength = 128 * 1024 * 1024;
 
         RecordingContext archiveDir(final File archiveDir)
         {

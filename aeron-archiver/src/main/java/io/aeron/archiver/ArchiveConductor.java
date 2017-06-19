@@ -49,6 +49,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final Catalog catalog;
     private final ControlSessionProxy controlSessionProxy;
     private final NotificationsProxy notificationsProxy;
+    private final int maxConcurrentRecordings;
+    private final int maxConcurrentReplays;
 
     private int replaySessionId;
 
@@ -87,7 +89,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             .forceWrites(ctx.forceDataWrites());
 
         this.archiveDir = ctx.archiveDir();
-
+        this.maxConcurrentRecordings = ctx.maxConcurrentRecordings();
+        this.maxConcurrentReplays = ctx.maxConcurrentReplays();
         replayer = constructReplayer(ctx);
         recorder = constructRecorder(ctx);
     }
@@ -176,6 +179,12 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final String channel,
         final int streamId)
     {
+        if (catalog.liveRecordingsCount() >= maxConcurrentRecordings)
+        {
+            controlSessionProxy.sendError(
+                correlationId, ControlResponseCode.ERROR, "Too many recordings", controlPublication);
+            return;
+        }
         try
         {
             // Subscription is closed on RecordingSession close(this is consistent with local archiver usage)
@@ -231,6 +240,13 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final long position,
         final long length)
     {
+        if (replaySessionByIdMap.size() >= maxConcurrentReplays)
+        {
+            controlSessionProxy.sendError(
+                correlationId, ControlResponseCode.ERROR, "Too many replays", controlPublication);
+            return;
+        }
+
         final int newId = replaySessionId++;
         final ReplaySession replaySession = new ReplaySession(
             recordingId,

@@ -19,15 +19,15 @@ package io.aeron.archiver;
 import io.aeron.Aeron;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.AgentRunner;
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 import java.util.concurrent.ThreadFactory;
 
 class DedicatedModeArchiveConductor extends ArchiveConductor
 {
-    public static final int COMMAND_LIMIT = 10;
+    private static final int COMMAND_LIMIT = 10;
 
-    private final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue = new ManyToOneConcurrentLinkedQueue<>();
+    private final ManyToOneConcurrentArrayQueue<Session> closeQueue;
     private final AgentRunner replayerAgentRunner;
     private final AgentRunner recorderAgentRunner;
     private final ThreadFactory threadFactory;
@@ -36,6 +36,7 @@ class DedicatedModeArchiveConductor extends ArchiveConductor
     {
         super(aeron, ctx);
 
+        closeQueue = new ManyToOneConcurrentArrayQueue<>(ctx.maxConcurrentRecordings() + ctx.maxConcurrentReplays());
         recorderAgentRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), recorder);
         replayerAgentRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), replayer);
         threadFactory = ctx.threadFactory();
@@ -47,14 +48,7 @@ class DedicatedModeArchiveConductor extends ArchiveConductor
         {
             void closeSession(final RecordingSession session)
             {
-                if (isClosed())
-                {
-                    closeRecordingSession(session);
-                }
-                else
-                {
-                    commandQueue.offer(() -> closeRecordingSession(session));
-                }
+                closeQueue.offer(session);
             }
         };
     }
@@ -65,14 +59,7 @@ class DedicatedModeArchiveConductor extends ArchiveConductor
         {
             void closeSession(final ReplaySession session)
             {
-                if (isClosed())
-                {
-                    closeReplaySession(session);
-                }
-                else
-                {
-                    commandQueue.offer(() -> closeReplaySession(session));
-                }
+                closeQueue.offer(session);
             }
         };
     }
@@ -103,15 +90,21 @@ class DedicatedModeArchiveConductor extends ArchiveConductor
 
     private int processCommandQueue()
     {
-        int i = 0;
-        Runnable r;
-        while ((r = commandQueue.poll()) != null)
+        int i;
+        Session session;
+        for (i = 0; i < COMMAND_LIMIT && (session = closeQueue.poll()) != null; i++)
         {
-            r.run();
-
-            if (++i >= COMMAND_LIMIT)
+            if (session instanceof RecordingSession)
             {
-                break;
+                closeRecordingSession((RecordingSession) session);
+            }
+            else if (session instanceof ReplaySession)
+            {
+                closeReplaySession((ReplaySession) session);
+            }
+            else
+            {
+                closeSession(session);
             }
         }
 

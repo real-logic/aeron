@@ -151,6 +151,12 @@ public final class Archiver implements AutoCloseable
         private static final long AGENT_IDLE_MIN_PARK_NS = 1;
         private static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
 
+        public static final String MAX_CONC_RECORDINGS_PROP_NAME = "aeron.archiver.max.concurrent.recordings";
+        public static final int MAX_CONC_RECORDINGS_DEFAULT = 4 * 1024;
+
+        public static final String MAX_CONC_REPLAYS_PROP_NAME = "aeron.archiver.max.concurrent.replays";
+        public static final int MAX_CONC_REPLAYS_DEFAULT = 4 * 1024;
+
 
         public static String archiveDirName()
         {
@@ -229,6 +235,16 @@ public final class Archiver implements AutoCloseable
                 return idleStrategy;
             };
         }
+
+        private static int maxConcurrentRecordings()
+        {
+            return Integer.getInteger(MAX_CONC_RECORDINGS_PROP_NAME, MAX_CONC_RECORDINGS_DEFAULT);
+        }
+
+        private static int maxConcurrentReplays()
+        {
+            return Integer.getInteger(MAX_CONC_REPLAYS_PROP_NAME, MAX_CONC_REPLAYS_DEFAULT);
+        }
     }
 
     public static class Context
@@ -254,6 +270,8 @@ public final class Archiver implements AutoCloseable
         private AtomicCounter errorCounter;
 
         private AgentInvoker mediaDriverAgentInvoker;
+        private int maxConcurrentRecordings;
+        private int maxConcurrentReplays;
 
         public Context()
         {
@@ -271,6 +289,8 @@ public final class Archiver implements AutoCloseable
             segmentFileLength(Configuration.segmentFileLength());
             forceDataWrites(Configuration.forceWrites());
             threadingMode(Configuration.threadingMode());
+            maxConcurrentRecordings(Configuration.maxConcurrentRecordings());
+            maxConcurrentRecordings(Configuration.maxConcurrentReplays());
         }
 
         void conclude()
@@ -573,7 +593,7 @@ public final class Archiver implements AutoCloseable
         }
 
         /**
-         * Set the archiver threading mode
+         * Set the archiver threading mode.
          *
          * @param threadingMode archiver threading mode
          * @return this for a fluent API
@@ -614,6 +634,50 @@ public final class Archiver implements AutoCloseable
         public Context errorCounter(final AtomicCounter errorCounter)
         {
             this.errorCounter = errorCounter;
+            return this;
+        }
+
+        /**
+         * Get the max number of concurrent recordings.
+         *
+         * @return the max number of concurrent recordings
+         */
+        public int maxConcurrentRecordings()
+        {
+            return this.maxConcurrentRecordings;
+        }
+
+        /**
+         * Set the max number of concurrent recordings.
+         *
+         * @param maxConcurrentRecordings the max number of concurrent recordings
+         * @return this for a fluent API
+         */
+        public Context maxConcurrentRecordings(final int maxConcurrentRecordings)
+        {
+            this.maxConcurrentRecordings = maxConcurrentRecordings;
+            return this;
+        }
+
+        /**
+         * Get the max number of concurrent replays.
+         *
+         * @return the max number of concurrent replays
+         */
+        public int maxConcurrentReplays()
+        {
+            return this.maxConcurrentReplays;
+        }
+
+        /**
+         * Set the max number of concurrent replays.
+         *
+         * @param maxConcurrentReplays the max number of concurrent replays
+         * @return this for a fluent API
+         */
+        public Context maxConcurrentReplays(final int maxConcurrentReplays)
+        {
+            this.maxConcurrentReplays = maxConcurrentReplays;
             return this;
         }
     }

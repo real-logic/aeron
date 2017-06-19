@@ -218,4 +218,9 @@ class Catalog implements AutoCloseable
     {
         recordingSessionByIdMap.remove(recordingId);
     }
+
+    public int liveRecordingsCount()
+    {
+        return recordingSessionByIdMap.size();
+    }
 }

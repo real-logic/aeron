@@ -621,3 +621,5 @@ int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_
 
     return 0;
 }
+
+extern bool aeron_is_addr_multicast(struct sockaddr *addr);

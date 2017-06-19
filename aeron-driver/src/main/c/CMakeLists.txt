@@ -40,6 +40,7 @@ SET(SOURCE
     aeron_ipc_publication.c
     aeron_position.c
     media/aeron_udp_channel_transport.c
+    media/aeron_udp_channel.c
     uri/aeron_uri.c)
 
 SET(HEADERS
@@ -77,6 +78,7 @@ SET(HEADERS
     aeron_ipc_publication.h
     aeron_position.h
     media/aeron_udp_channel_transport.h
+    media/aeron_udp_channel.h
     uri/aeron_uri.h)
 
 set(AGENT_SOURCE

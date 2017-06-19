@@ -46,4 +46,11 @@ size_t aeron_ipv6_netmask_to_prefixlen(struct in6_addr *netmask);
 
 int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_addr, unsigned int *if_index);
 
+inline bool aeron_is_addr_multicast(struct sockaddr *addr)
+{
+    return (AF_INET6 == addr->sa_family) ?
+        IN6_IS_ADDR_MULTICAST(&((struct sockaddr_in6 *)addr)->sin6_addr) :
+        IN_MULTICAST(((struct sockaddr_in *)addr)->sin_addr.s_addr);
+}
+
 #endif //AERON_AERON_NETUTIL_H

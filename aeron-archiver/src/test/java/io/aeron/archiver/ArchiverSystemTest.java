@@ -330,7 +330,7 @@ public class ArchiverSystemTest
                 totalRecordingLength,
                 REPLAY_URI,
                 REPLAY_STREAM_ID,
-                correlationId++
+                replayCorrelationId
             ));
             waitForOk(client, controlResponses, replayCorrelationId);
 

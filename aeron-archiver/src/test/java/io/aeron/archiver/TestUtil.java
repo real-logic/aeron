@@ -66,27 +66,27 @@ public class TestUtil
         }
     }
 
-    public static void waitForOk(final ArchiveClient client, final Subscription reply, final long correlationId)
+    public static void waitForOk(final ArchiveClient client, final Subscription reply, final long correlationId1)
     {
         waitFor(() -> client.pollResponses(reply, new FailResponseListener()
         {
-            public void onResponse(final long correlationId, final ControlResponseCode code, final String errorMessage)
+            public void onResponse(final long correlationId2, final ControlResponseCode code, final String errorMessage)
             {
                 assertThat("Error message: " + errorMessage, code, is(ControlResponseCode.OK));
                 assertThat(errorMessage, isEmptyOrNullString());
-                assertThat(correlationId, is(correlationId));
+                assertThat(correlationId1, is(correlationId2));
             }
         }, 1) != 0);
     }
 
-    public static void waitForFail(final ArchiveClient client, final Subscription reply, final long correlationId)
+    public static void waitForFail(final ArchiveClient client, final Subscription reply, final long correlationId1)
     {
         waitFor(() -> client.pollResponses(reply, new FailResponseListener()
         {
-            public void onResponse(final long correlationId, final ControlResponseCode code, final String errorMessage)
+            public void onResponse(final long correlationId2, final ControlResponseCode code, final String errorMessage)
             {
                 assertThat(code, not(ControlResponseCode.OK));
-                assertThat(correlationId, is(correlationId));
+                assertThat(correlationId1, is(correlationId2));
             }
         }, 1) != 0);
     }

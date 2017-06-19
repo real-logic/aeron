@@ -182,7 +182,10 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         if (catalog.liveRecordingsCount() >= maxConcurrentRecordings)
         {
             controlSessionProxy.sendError(
-                correlationId, ControlResponseCode.ERROR, "Too many recordings", controlPublication);
+                correlationId,
+                ControlResponseCode.ERROR,
+                "Too many recordings exceeding max: " + maxConcurrentRecordings,
+                controlPublication);
             return;
         }
         try
@@ -243,7 +246,10 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         if (replaySessionByIdMap.size() >= maxConcurrentReplays)
         {
             controlSessionProxy.sendError(
-                correlationId, ControlResponseCode.ERROR, "Too many replays", controlPublication);
+                correlationId,
+                ControlResponseCode.ERROR,
+                "Too many replays, exceeding max: " + maxConcurrentReplays,
+                controlPublication);
             return;
         }
 

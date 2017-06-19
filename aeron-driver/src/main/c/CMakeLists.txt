@@ -41,7 +41,8 @@ SET(SOURCE
     aeron_position.c
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel.c
-    uri/aeron_uri.c)
+    uri/aeron_uri.c
+    collections/aeron_int64_to_ptr_hash_map.c)
 
 SET(HEADERS
     util/aeron_platform.h
@@ -79,7 +80,8 @@ SET(HEADERS
     aeron_position.h
     media/aeron_udp_channel_transport.h
     media/aeron_udp_channel.h
-    uri/aeron_uri.h)
+    uri/aeron_uri.h
+    collections/aeron_int64_to_ptr_hash_map.h)
 
 set(AGENT_SOURCE
     agent/aeron_driver_agent.c)

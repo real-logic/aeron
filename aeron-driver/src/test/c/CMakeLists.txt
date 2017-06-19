@@ -34,6 +34,7 @@ if(BUILD_TESTING)
     aeron_driver_test(mpsc_queue_test aeron_mpsc_concurrent_array_queue_test.cpp)
     aeron_driver_test(uri_test aeron_uri_test.cpp)
     aeron_driver_test(udp_channel_test aeron_udp_channel_test.cpp)
+    aeron_driver_test(int64_to_ptr_hash_map_test collections/aeron_int64_to_ptr_hash_masp_test.cpp)
 
     function(aeron_driver_benchmark name file)
         add_executable(${name} ${file})

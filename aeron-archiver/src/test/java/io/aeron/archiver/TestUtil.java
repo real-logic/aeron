@@ -15,14 +15,16 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.*;
+import io.aeron.Publication;
+import io.aeron.Subscription;
 import io.aeron.archiver.client.ArchiveClient;
 import io.aeron.archiver.codecs.ControlResponseCode;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Assert;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
@@ -70,7 +72,7 @@ public class TestUtil
         {
             public void onResponse(final long correlationId, final ControlResponseCode code, final String errorMessage)
             {
-                assertThat(code, is(ControlResponseCode.OK));
+                assertThat("Error message: " + errorMessage, code, is(ControlResponseCode.OK));
                 assertThat(errorMessage, isEmptyOrNullString());
                 assertThat(correlationId, is(correlationId));
             }

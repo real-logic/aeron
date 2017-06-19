@@ -290,7 +290,7 @@ public final class Archiver implements AutoCloseable
             forceDataWrites(Configuration.forceWrites());
             threadingMode(Configuration.threadingMode());
             maxConcurrentRecordings(Configuration.maxConcurrentRecordings());
-            maxConcurrentRecordings(Configuration.maxConcurrentReplays());
+            maxConcurrentReplays(Configuration.maxConcurrentReplays());
         }
 
         void conclude()

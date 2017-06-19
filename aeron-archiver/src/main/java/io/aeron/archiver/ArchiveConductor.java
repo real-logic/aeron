@@ -188,6 +188,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 controlPublication);
             return;
         }
+
         try
         {
             // Subscription is closed on RecordingSession close(this is consistent with local archiver usage)

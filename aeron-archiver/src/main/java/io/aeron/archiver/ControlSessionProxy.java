@@ -131,14 +131,14 @@ class ControlSessionProxy
     void sendReplayAborted(
         final long correlationId,
         final long replaySessionId,
-        final long position,
+        final long endPosition,
         final Publication controlPublication)
     {
         replayAbortedEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
             .replayId(replaySessionId)
-            .lastPosition(position);
+            .endPosition(endPosition);
 
         send(controlPublication, HEADER_LENGTH + replayAbortedEncoder.encodedLength());
     }

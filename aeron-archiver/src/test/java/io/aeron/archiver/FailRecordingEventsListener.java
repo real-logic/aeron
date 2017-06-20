@@ -36,7 +36,7 @@ public class FailRecordingEventsListener implements RecordingEventsListener
         fail();
     }
 
-    public void onStop(final long recordingId, final long lastPosition)
+    public void onStop(final long recordingId, final long endPosition)
     {
         fail();
     }

@@ -123,10 +123,10 @@ public class RecordingSessionTest
         assertEquals(termBufferLength, metaData.termBufferLength());
         assertEquals(streamId, metaData.streamId());
         assertEquals(mtuLength, metaData.mtuLength());
-        assertEquals(RecordingWriter.NULL_TIME, metaData.startTime());
+        assertEquals(RecordingWriter.NULL_TIME, metaData.joiningTimestamp());
         assertEquals(joiningPosition, metaData.joiningPosition());
-        assertEquals(RecordingWriter.NULL_TIME, metaData.endTime());
-        assertEquals(RecordingWriter.NULL_POSITION, metaData.lastPosition());
+        assertEquals(RecordingWriter.NULL_TIME, metaData.endTimestamp());
+        assertEquals(RecordingWriter.NULL_POSITION, metaData.endPosition());
         assertEquals(channel, metaData.channel());
         assertEquals(sourceIdentity, metaData.sourceIdentity());
 
@@ -155,10 +155,10 @@ public class RecordingSessionTest
 
         metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
 
-        assertEquals(42L, metaData.startTime());
+        assertEquals(42L, metaData.joiningTimestamp());
 
-        assertEquals(RecordingWriter.NULL_TIME, metaData.endTime());
-        assertEquals(joiningPosition + RECORDED_BLOCK_LENGTH, metaData.lastPosition());
+        assertEquals(RecordingWriter.NULL_TIME, metaData.endTimestamp());
+        assertEquals(joiningPosition + RECORDED_BLOCK_LENGTH, metaData.endPosition());
 
         final File segmentFile =
             new File(tempDirForTest, ArchiveUtil.recordingDataFileName(RECORDING_ID, 0));
@@ -189,7 +189,7 @@ public class RecordingSessionTest
         assertTrue(session.isDone());
         session.close();
         metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
-        assertEquals(128L, metaData.endTime());
+        assertEquals(128L, metaData.endTimestamp());
     }
 
     private Subscription mockSubscription(final String channel, final int streamId)

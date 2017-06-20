@@ -139,7 +139,7 @@ class RecordingSession implements Session
         CloseHelper.quietClose(recordingWriter);
         // this reflects the single local recording assumption
         CloseHelper.quietClose(image.subscription());
-        notificationsProxy.recordingStopped(recordingId, recordingWriter.lastPosition());
+        notificationsProxy.recordingStopped(recordingId, recordingWriter.endPosition());
         state = State.CLOSED;
     }
 
@@ -154,7 +154,7 @@ class RecordingSession implements Session
                 notificationsProxy.recordingProgress(
                     recordingWriter.recordingId(),
                     recordingWriter.joiningPosition(),
-                    recordingWriter.lastPosition());
+                    recordingWriter.endPosition());
             }
 
             if (image.isClosed())
@@ -171,18 +171,18 @@ class RecordingSession implements Session
         return workCount;
     }
 
-    long lastPosition()
+    long endPosition()
     {
-        return (recordingWriter != null) ? recordingWriter.lastPosition() : RecordingWriter.NULL_POSITION;
+        return (recordingWriter != null) ? recordingWriter.endPosition() : RecordingWriter.NULL_POSITION;
     }
 
-    long startTime()
+    long joiningTimestamp()
     {
-        return (recordingWriter != null) ? recordingWriter.startTime() : RecordingWriter.NULL_TIME;
+        return (recordingWriter != null) ? recordingWriter.joiningTimestamp() : RecordingWriter.NULL_TIME;
     }
 
-    long endTime()
+    long endTimestamp()
     {
-        return (recordingWriter != null) ? recordingWriter.endTime() : RecordingWriter.NULL_TIME;
+        return (recordingWriter != null) ? recordingWriter.endTimestamp() : RecordingWriter.NULL_TIME;
     }
 }

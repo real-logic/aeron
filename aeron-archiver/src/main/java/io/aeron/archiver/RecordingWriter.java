@@ -94,9 +94,9 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     private boolean closed = false;
     private boolean stopped = false;
-    private long lastPosition = NULL_POSITION;
-    private long startTime = NULL_TIME;
-    private long endTime = NULL_TIME;
+    private long endPosition = NULL_POSITION;
+    private long joiningTimestamp = NULL_TIME;
+    private long endTimestamp = NULL_TIME;
 
     RecordingWriter(
         final RecordingContext recordingContext,
@@ -175,10 +175,10 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         recordingDescriptorEncoder
             .recordingId(recordingId)
             .termBufferLength(termBufferLength)
-            .startTime(NULL_TIME)
+            .joiningTimestamp(NULL_TIME)
             .joiningPosition(joiningPosition)
-            .lastPosition(NULL_POSITION)
-            .endTime(NULL_TIME)
+            .endPosition(NULL_POSITION)
+            .endTimestamp(NULL_TIME)
             .mtuLength(mtuLength)
             .initialTermId(initialTermId)
             .sessionId(sessionId)
@@ -276,8 +276,8 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
             marker.buffer.clear();
             recordingFileChannel.write(marker.buffer, 0);
             recordingFileChannel.position(segmentPosition);
-            startTime = epochClock.time();
-            metaDataEncoder.startTime(startTime);
+            joiningTimestamp = epochClock.time();
+            metaDataEncoder.joiningTimestamp(joiningTimestamp);
         }
         // write ahead of data to indicate end of data in file
         marker.header.frameLength(END_OF_DATA_INDICATOR);
@@ -295,8 +295,8 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         segmentPosition = recordingOffset + blockLength;
         final int resultingOffset = termOffset + blockLength;
         final long position = ((long)(termId - initialTermId)) * termBufferLength + resultingOffset;
-        metaDataEncoder.lastPosition(position);
-        lastPosition = position;
+        metaDataEncoder.endPosition(position);
+        endPosition = position;
 
         if (segmentPosition == segmentFileLength)
         {
@@ -309,8 +309,8 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     void stop()
     {
-        endTime = epochClock.time();
-        metaDataEncoder.endTime(endTime);
+        endTimestamp = epochClock.time();
+        metaDataEncoder.endTimestamp(endTimestamp);
         metaDataBuffer.force();
         stopped = true;
     }
@@ -366,19 +366,19 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         return joiningPosition;
     }
 
-    long lastPosition()
+    long endPosition()
     {
-        return lastPosition;
+        return endPosition;
     }
 
-    long startTime()
+    long joiningTimestamp()
     {
-        return startTime;
+        return joiningTimestamp;
     }
 
-    long endTime()
+    long endTimestamp()
     {
-        return endTime;
+        return endTimestamp;
     }
 
     static class RecordingContext

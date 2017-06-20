@@ -43,19 +43,19 @@ public interface ResponseListener
      * Notifies the successful abort of recording replay.
      *
      * @param correlationId for the associated request to abort the replay.
-     * @param lastPosition  reached for the replay.
+     * @param endPosition   reached for the replay.
      */
-    void onReplayAborted(long correlationId, long lastPosition);
+    void onReplayAborted(long correlationId, long endPosition);
 
     /**
      * A recording descriptor returned as a result of requesting a listing of recordings.
      *
      * @param correlationId     of the associated request to list recordings.
      * @param recordingId       of this recording descriptor.
-     * @param startTime         for the recording.
-     * @param endTime           for the recording.
+     * @param joiningTimestamp  for the recording.
+     * @param endTimestamp      for the recording.
      * @param joiningPosition   for the recording against the recorded publication.
-     * @param lastPosition      reached for the recording.
+     * @param endPosition       reached for the recording.
      * @param initialTermId     for the recorded publication.
      * @param termBufferLength  for the recorded publication.
      * @param mtuLength         for the recorded publication.
@@ -68,10 +68,10 @@ public interface ResponseListener
     void onRecordingDescriptor(
         long correlationId,
         long recordingId,
-        long startTime,
-        long endTime,
+        long joiningTimestamp,
+        long endTimestamp,
         long joiningPosition,
-        long lastPosition,
+        long endPosition,
         int initialTermId,
         int termBufferLength,
         int mtuLength,

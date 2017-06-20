@@ -308,7 +308,7 @@ public class ArchiveReplayLoadTest
                                 printf("a=%d total=%d %n", recorded, totalRecordingLength);
                             }
 
-                            public void onStop(final long recordingId0, final long lastPostion)
+                            public void onStop(final long recordingId0, final long endPosition)
                             {
                             }
                         }, 1)) != 0);

@@ -206,7 +206,7 @@ public class ArchiveClient
             messageHeaderDecoder.blockLength(),
             messageHeaderDecoder.version());
 
-        responseListener.onReplayAborted(replayAbortedDecoder.correlationId(), replayAbortedDecoder.lastPosition());
+        responseListener.onReplayAborted(replayAbortedDecoder.correlationId(), replayAbortedDecoder.endPosition());
     }
 
     private void handleReplayStarted(
@@ -237,10 +237,10 @@ public class ArchiveClient
         responseListener.onRecordingDescriptor(
             recordingDescriptorDecoder.correlationId(),
             recordingDescriptorDecoder.recordingId(),
-            recordingDescriptorDecoder.startTime(),
-            recordingDescriptorDecoder.endTime(),
+            recordingDescriptorDecoder.joiningTimestamp(),
+            recordingDescriptorDecoder.endTimestamp(),
             recordingDescriptorDecoder.joiningPosition(),
-            recordingDescriptorDecoder.lastPosition(),
+            recordingDescriptorDecoder.endTimestamp(),
             recordingDescriptorDecoder.initialTermId(),
             recordingDescriptorDecoder.termBufferLength(),
             recordingDescriptorDecoder.mtuLength(),
@@ -298,7 +298,7 @@ public class ArchiveClient
 
                         recordingEventsListener.onStop(
                             recordingStoppedDecoder.recordingId(),
-                            recordingStoppedDecoder.lastPosition());
+                            recordingStoppedDecoder.endPosition());
                         break;
 
                     default:

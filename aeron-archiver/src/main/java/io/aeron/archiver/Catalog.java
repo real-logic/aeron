@@ -192,9 +192,9 @@ class Catalog implements AutoCloseable
 
     void updateCatalogFromMeta(
         final long recordingId,
-        final long lastPosition,
-        final long startTime,
-        final long endTime) throws IOException
+        final long endPosition,
+        final long joiningTimestamp,
+        final long endTimestamp) throws IOException
     {
         byteBuffer.clear();
         if (!readDescriptor(recordingId, byteBuffer))
@@ -204,9 +204,9 @@ class Catalog implements AutoCloseable
 
         recordingDescriptorEncoder
             .wrap(unsafeBuffer, CATALOG_FRAME_LENGTH)
-            .lastPosition(lastPosition)
-            .startTime(startTime)
-            .endTime(endTime);
+            .endPosition(endPosition)
+            .joiningTimestamp(joiningTimestamp)
+            .endTimestamp(endTimestamp);
 
         catalogFileChannel.write(byteBuffer, recordingId * RECORD_LENGTH);
     }

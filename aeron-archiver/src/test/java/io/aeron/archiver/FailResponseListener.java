@@ -32,7 +32,7 @@ public class FailResponseListener implements ResponseListener
         fail();
     }
 
-    public void onReplayAborted(final long correlationId, final long lastPosition)
+    public void onReplayAborted(final long correlationId, final long endPosition)
     {
         fail();
     }
@@ -40,10 +40,10 @@ public class FailResponseListener implements ResponseListener
     public void onRecordingDescriptor(
         final long correlationId,
         final long recordingId,
-        final long startTime,
-        final long endTime,
+        final long joiningTimestamp,
+        final long endTimestamp,
         final long joiningPosition,
-        final long lastPosition,
+        final long endPosition,
         final int initialTermId,
         final int termBufferLength,
         final int mtuLength,

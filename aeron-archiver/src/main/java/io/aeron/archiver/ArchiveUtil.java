@@ -50,10 +50,10 @@ class ArchiveUtil
 
         System.out.println("recordingId: " + formatDecoder.recordingId());
         System.out.println("termBufferLength: " + formatDecoder.termBufferLength());
-        System.out.println("start time: " + new Date(formatDecoder.startTime()));
-        System.out.println("joining position: " + formatDecoder.joiningPosition());
-        System.out.println("last position: " + formatDecoder.lastPosition());
-        System.out.println("end time: " + new Date(formatDecoder.endTime()));
+        System.out.println("joiningTimestamp: " + new Date(formatDecoder.joiningTimestamp()));
+        System.out.println("joiningPosition: " + formatDecoder.joiningPosition());
+        System.out.println("endPosition: " + formatDecoder.endPosition());
+        System.out.println("endTimestamp: " + new Date(formatDecoder.endTimestamp()));
         System.out.println("sessionId: " + formatDecoder.sessionId());
         System.out.println("streamId: " + formatDecoder.streamId());
         System.out.println("channel: " + formatDecoder.channel());
@@ -89,6 +89,6 @@ class ArchiveUtil
 
     static long recordingLength(final RecordingDescriptorDecoder metaDecoder)
     {
-        return metaDecoder.lastPosition() - metaDecoder.joiningPosition();
+        return metaDecoder.endPosition() - metaDecoder.joiningPosition();
     }
 }

@@ -66,7 +66,7 @@ public class ArchiverSystemTest
     private long totalDataLength;
     private long totalRecordingLength;
     private long recorded;
-    private volatile long lastPosition = -1;
+    private volatile long endPosition = -1;
     private Throwable trackerError;
     private final Random rnd = new Random();
     private long seed;
@@ -195,7 +195,7 @@ public class ArchiverSystemTest
 
             waitFor(() -> client.pollEvents(new FailRecordingEventsListener()
             {
-                public void onStop(final long rId, final long lastPosition)
+                public void onStop(final long rId, final long endPosition)
                 {
                     assertThat(rId, is(recordingId));
                 }
@@ -230,10 +230,10 @@ public class ArchiverSystemTest
             public void onRecordingDescriptor(
                 final long correlationId,
                 final long recordingId,
-                final long startTime,
-                final long endTime,
+                final long joiningTimestamp,
+                final long endTimestamp,
                 final long joiningPosition,
-                final long lastPosition,
+                final long endPosition,
                 final int initialTermId,
                 final int termBufferLength,
                 final int mtuLength,
@@ -312,7 +312,7 @@ public class ArchiverSystemTest
 
         final long position = publication.position();
         totalRecordingLength = position - joiningPosition;
-        lastPosition = position;
+        endPosition = position;
     }
 
     private void validateReplay(
@@ -406,7 +406,7 @@ public class ArchiverSystemTest
                     long start = System.currentTimeMillis();
                     long startBytes = remaining;
                     // each message is fragmentLength[fragmentCount]
-                    while (lastPosition == -1 || recorded < totalRecordingLength)
+                    while (endPosition == -1 || recorded < totalRecordingLength)
                     {
                         waitFor(() -> (client.pollEvents(new FailRecordingEventsListener()
                         {

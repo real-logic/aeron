@@ -225,12 +225,10 @@ class ReplaySession
         {
             try
             {
-                final UnsafeBuffer publicationBuffer = (UnsafeBuffer)bufferClaim.buffer();
-
-                bufferClaim.flags(frameFlags(termBuffer, frameOffset));
-                bufferClaim.reservedValue(termBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN));
-
-                publicationBuffer.putBytes(bufferClaim.offset(), termBuffer, offset, length);
+                bufferClaim
+                    .flags(frameFlags(termBuffer, frameOffset))
+                    .reservedValue(termBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
+                    .buffer().putBytes(bufferClaim.offset(), termBuffer, offset, length);
             }
             finally
             {

@@ -89,11 +89,8 @@ public final class Archiver implements AutoCloseable
 
     private Archiver start()
     {
-        if (ctx.threadingMode() == ArchiverThreadingMode.SHARED)
-        {
-            AgentRunner.startOnThread(conductorRunner, ctx.threadFactory());
-        }
-        else if (ctx.threadingMode() == ArchiverThreadingMode.DEDICATED)
+        if (ctx.threadingMode() == ArchiverThreadingMode.SHARED ||
+            ctx.threadingMode() == ArchiverThreadingMode.DEDICATED)
         {
             AgentRunner.startOnThread(conductorRunner, ctx.threadFactory());
         }
@@ -151,11 +148,11 @@ public final class Archiver implements AutoCloseable
         private static final long AGENT_IDLE_MIN_PARK_NS = 1;
         private static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
 
-        public static final String MAX_CONC_RECORDINGS_PROP_NAME = "aeron.archiver.max.concurrent.recordings";
-        public static final int MAX_CONC_RECORDINGS_DEFAULT = 4 * 1024;
+        public static final String MAX_CONCURRENT_RECORDINGS_PROP_NAME = "aeron.archiver.max.concurrent.recordings";
+        public static final int MAX_CONCURRENT_RECORDINGS_DEFAULT = 128;
 
-        public static final String MAX_CONC_REPLAYS_PROP_NAME = "aeron.archiver.max.concurrent.replays";
-        public static final int MAX_CONC_REPLAYS_DEFAULT = 4 * 1024;
+        public static final String MAX_CONCURRENT_REPLAYS_PROP_NAME = "aeron.archiver.max.concurrent.replays";
+        public static final int MAX_CONCURRENT_REPLAYS_DEFAULT = 128;
 
 
         public static String archiveDirName()
@@ -238,12 +235,12 @@ public final class Archiver implements AutoCloseable
 
         private static int maxConcurrentRecordings()
         {
-            return Integer.getInteger(MAX_CONC_RECORDINGS_PROP_NAME, MAX_CONC_RECORDINGS_DEFAULT);
+            return Integer.getInteger(MAX_CONCURRENT_RECORDINGS_PROP_NAME, MAX_CONCURRENT_RECORDINGS_DEFAULT);
         }
 
         private static int maxConcurrentReplays()
         {
-            return Integer.getInteger(MAX_CONC_REPLAYS_PROP_NAME, MAX_CONC_REPLAYS_DEFAULT);
+            return Integer.getInteger(MAX_CONCURRENT_REPLAYS_PROP_NAME, MAX_CONCURRENT_REPLAYS_DEFAULT);
         }
     }
 
@@ -280,8 +277,8 @@ public final class Archiver implements AutoCloseable
 
         public Context(final Aeron.Context clientContext)
         {
-            clientContext.useConductorAgentInvoker(true);
             this.clientContext = clientContext;
+            clientContext.useConductorAgentInvoker(true);
             controlChannel(Configuration.controlChannel());
             controlStreamId(Configuration.controlStreamId());
             recordingEventsChannel(Configuration.recordingEventsChannel());

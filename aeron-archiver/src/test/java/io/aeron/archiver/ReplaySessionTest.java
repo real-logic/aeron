@@ -178,7 +178,12 @@ public class ReplaySessionTest
         final long correlationId = 1L;
 
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID, RECORDING_POSITION, FRAME_LENGTH, correlationId, mockReplayPub, mockControlPub,
+            RECORDING_ID,
+            RECORDING_POSITION,
+            FRAME_LENGTH,
+            correlationId,
+            mockReplayPub,
+            mockControlPub,
             mockReplyPubSupplier);
 
         when(mockControlPub.isClosed()).thenReturn(false);
@@ -235,9 +240,9 @@ public class ReplaySessionTest
             eq(TERM_BUFFER_LENGTH))).thenReturn(mockReplayPub);
 
         final ReplaySession replaySession = new ReplaySession(
-            (long) RECORDING_ID,
+            (long)RECORDING_ID,
             RECORDING_POSITION + 1,
-            (long) FRAME_LENGTH,
+            (long)FRAME_LENGTH,
             mockReplyPubSupplier,
             mockControlPub,
             archiveDir,
@@ -297,7 +302,12 @@ public class ReplaySessionTest
         final long correlationId = 1L;
 
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID, RECORDING_POSITION, length, correlationId, mockReplayPub, mockControlPub,
+            RECORDING_ID,
+            RECORDING_POSITION,
+            length,
+            correlationId,
+            mockReplayPub,
+            mockControlPub,
             mockReplyPubSupplier);
 
         when(mockControlPub.isClosed()).thenReturn(false);
@@ -351,7 +361,12 @@ public class ReplaySessionTest
         final long correlationId = 1L;
 
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID, RECORDING_POSITION, length, correlationId, mockReplayPub, mockControlPub,
+            RECORDING_ID,
+            RECORDING_POSITION,
+            length,
+            correlationId,
+            mockReplayPub,
+            mockControlPub,
             mockReplyPubSupplier);
 
         when(mockControlPub.isClosed()).thenReturn(false);
@@ -385,6 +400,7 @@ public class ReplaySessionTest
 
         final ArchiveConductor.ReplayPublicationSupplier conductor =
             Mockito.mock(ArchiveConductor.ReplayPublicationSupplier.class);
+
         replaySession(
             RECORDING_ID + 1,
             RECORDING_POSITION,
@@ -401,7 +417,12 @@ public class ReplaySessionTest
         final long length = 1024L;
         final long correlationId = 1L;
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID, RECORDING_POSITION, length, correlationId, mockReplayPub, mockControlPub,
+            RECORDING_ID,
+            RECORDING_POSITION,
+            length,
+            correlationId,
+            mockReplayPub,
+            mockControlPub,
             mockReplyPubSupplier);
 
         when(mockReplayPub.isClosed()).thenReturn(false);
@@ -452,7 +473,12 @@ public class ReplaySessionTest
             final long correlationId = 1L;
 
             replaySession = replaySession(
-                recordingId, RECORDING_POSITION, length, correlationId, mockReplayPub, mockControlPub,
+                recordingId,
+                RECORDING_POSITION,
+                length,
+                correlationId,
+                mockReplayPub,
+                mockControlPub,
                 mockReplyPubSupplier);
 
             when(mockControlPub.isClosed()).thenReturn(false);
@@ -528,7 +554,7 @@ public class ReplaySessionTest
         buffer.setMemory(
             offset + HEADER_LENGTH,
             FRAME_LENGTH - HEADER_LENGTH,
-            (byte) message);
+            (byte)message);
 
         header.offset(offset);
 
@@ -560,7 +586,8 @@ public class ReplaySessionTest
 
     private ReplaySession replaySession(
         final long recordingId,
-        final long recordingPosition, final long length,
+        final long recordingPosition,
+        final long length,
         final long correlationId,
         final ExclusivePublication replay,
         final Publication control,
@@ -589,10 +616,7 @@ public class ReplaySessionTest
             REPLAY_STREAM_ID);
     }
 
-    private void validateFrame(
-        final UnsafeBuffer buffer,
-        final int message,
-        final byte flags)
+    private void validateFrame(final UnsafeBuffer buffer, final int message, final byte flags)
     {
         final int offset = message * FRAME_LENGTH;
 

@@ -262,7 +262,7 @@ class ReplaySession
         {
             if (isLingerDone())
             {
-                return closeOnError(null, "No subscription to replay publication has been made");
+                return closeOnError(null, "No connection established for replay");
             }
 
             return 0;

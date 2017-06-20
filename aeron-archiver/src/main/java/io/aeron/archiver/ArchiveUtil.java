@@ -65,6 +65,7 @@ class ArchiveUtil
     {
         try (FileChannel metadataFileChannel = FileChannel.open(metaFile.toPath(), READ, WRITE))
         {
+            // TODO: Pass in buffer that can be reused.
             final ByteBuffer metaDataBuffer = ByteBuffer.allocateDirect(Catalog.RECORD_LENGTH);
             metadataFileChannel.read(metaDataBuffer);
 

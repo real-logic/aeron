@@ -64,8 +64,7 @@ public class ArchiveReplayLoadTest
     private MediaDriver driver;
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private File archiveDir;
-    private long recordingId;
-    private String source;
+    private final long recordingId = 0;
     private long remaining;
     private int fragmentCount;
     private int[] fragmentLength;
@@ -133,7 +132,7 @@ public class ArchiveReplayLoadTest
     public void replay() throws IOException, InterruptedException
     {
         try (Publication archiverServiceRequest = publishingClient.addPublication(
-            archiverCtx.controlChannel(), archiverCtx.controlStreamId());
+                archiverCtx.controlChannel(), archiverCtx.controlStreamId());
              Subscription archiverNotifications = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
@@ -169,10 +168,10 @@ public class ArchiveReplayLoadTest
             while (System.currentTimeMillis() < duration)
             {
                 final long start = System.currentTimeMillis();
-                validateReplay(client, publication, messageCount);
+                validateReplay(client, messageCount);
                 final long delta = System.currentTimeMillis() - start;
-                final double mbps = (totalDataLength * 1000.0) / (MEGABYTE * delta);
-                System.out.printf("Replay[%d] speed %fMBps %n", ++i, mbps);
+                final double rate = (totalDataLength * 1000.0) / (MEGABYTE * delta);
+                System.out.printf("Replay[%d] rate %.02f MB/s %n", ++i, rate);
             }
         }
     }
@@ -192,9 +191,9 @@ public class ArchiveReplayLoadTest
         }
 
         final CountDownLatch waitForData = new CountDownLatch(1);
-        System.out.printf("Sending %d messages, total length=%d %n", messageCount, totalDataLength);
+        System.out.printf("Sending %,d messages with a total length of %,d bytes %n", messageCount, totalDataLength);
 
-        trackRecordingProgress(client, publication.termBufferLength(), waitForData);
+        trackRecordingProgress(client, waitForData);
         publishDataToRecorded(publication, messageCount);
         waitForData.await();
 
@@ -207,11 +206,8 @@ public class ArchiveReplayLoadTest
         joiningPosition = publication.position();
         final int initialTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(
             joiningPosition, positionBitsToShift);
-        // clear out the buffer we write
-        for (int i = 0; i < 1024; i++)
-        {
-            buffer.putByte(i, (byte)'z');
-        }
+
+        buffer.setMemory(0, 1024, (byte)'z');
         buffer.putStringAscii(32, "TEST");
 
         for (int i = 0; i < messageCount; i++)
@@ -234,10 +230,7 @@ public class ArchiveReplayLoadTest
         lastTermId = termIdFromPosition;
     }
 
-    private void validateReplay(
-        final ArchiveClient client,
-        final Publication publication,
-        final int messageCount)
+    private void validateReplay(final ArchiveClient client, final int messageCount)
     {
         final int replayStreamId = (int)correlationId;
 
@@ -252,8 +245,7 @@ public class ArchiveReplayLoadTest
                 totalRecordingLength,
                 REPLAY_URI,
                 replayStreamId,
-                correlationId
-            ));
+                correlationId));
 
             awaitSubscriptionIsConnected(replay);
 
@@ -282,10 +274,7 @@ public class ArchiveReplayLoadTest
         fragmentCount++;
     }
 
-    private void trackRecordingProgress(
-        final ArchiveClient client,
-        final int termBufferLength,
-        final CountDownLatch waitForData)
+    private void trackRecordingProgress(final ArchiveClient client, final CountDownLatch waitForData)
     {
         final Thread t = new Thread(
             () ->
@@ -332,16 +321,16 @@ public class ArchiveReplayLoadTest
                             start = end;
                             final long deltaBytes = remaining - startBytes;
                             startBytes = remaining;
-                            final double mbps = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
-                            printf("Archive reported speed: %f MB/s %n", mbps);
+                            final double rate = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
+                            printf("Archive reported rate: %.02f MB/s %n", rate);
                         }
                     }
                     final long end = System.currentTimeMillis();
                     final long deltaTime = end - start;
 
                     final long deltaBytes = remaining - startBytes;
-                    final double mbps = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
-                    printf("Archive reported speed: %f MB/s %n", mbps);
+                    final double rate = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
+                    printf("Archive reported rate: %.02f MB/s %n", rate);
                 }
                 catch (final Throwable throwable)
                 {

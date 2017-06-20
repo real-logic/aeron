@@ -184,7 +184,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             controlSessionProxy.sendError(
                 correlationId,
                 ControlResponseCode.ERROR,
-                "Too many recordings exceeding max: " + maxConcurrentRecordings,
+                "Max concurrent recording reached: " + maxConcurrentRecordings,
                 controlPublication);
             return;
         }
@@ -249,7 +249,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             controlSessionProxy.sendError(
                 correlationId,
                 ControlResponseCode.ERROR,
-                "Too many replays, exceeding max: " + maxConcurrentReplays,
+                "Max concurrent replays reached: " + maxConcurrentReplays,
                 controlPublication);
             return;
         }

@@ -96,10 +96,7 @@ public class TestUtil
         waitFor(() -> subscription.poll(handler, 1) > 0);
     }
 
-    public static void offer(
-        final Publication publication,
-        final UnsafeBuffer buffer,
-        final int length)
+    public static void offer(final Publication publication, final UnsafeBuffer buffer, final int length)
     {
         waitFor(() -> publication.offer(buffer, 0, length) > 0);
     }

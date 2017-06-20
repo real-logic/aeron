@@ -56,3 +56,4 @@ void aeron_format_to_hex(char *str, size_t str_length, uint8_t *data, size_t dat
     str[j] = '\0';
 }
 
+extern uint64_t aeron_fnv_64a_buf(uint8_t *buf, size_t len);

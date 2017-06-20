@@ -42,7 +42,8 @@ SET(SOURCE
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel.c
     uri/aeron_uri.c
-    collections/aeron_int64_to_ptr_hash_map.c)
+    collections/aeron_int64_to_ptr_hash_map.c
+    collections/aeron_str_to_ptr_hash_map.c)
 
 SET(HEADERS
     util/aeron_platform.h
@@ -81,7 +82,8 @@ SET(HEADERS
     media/aeron_udp_channel_transport.h
     media/aeron_udp_channel.h
     uri/aeron_uri.h
-    collections/aeron_int64_to_ptr_hash_map.h)
+    collections/aeron_int64_to_ptr_hash_map.h
+    collections/aeron_str_to_ptr_hash_map.h)
 
 set(AGENT_SOURCE
     agent/aeron_driver_agent.c)

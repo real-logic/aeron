@@ -21,7 +21,6 @@ import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  * Consumes an {@link Image} and records data to file using an {@link RecordingWriter}.
@@ -79,11 +78,6 @@ class RecordingSession implements Session
         }
 
         return workDone;
-    }
-
-    ByteBuffer metaDataBuffer()
-    {
-        return recordingWriter.metaDataBuffer();
     }
 
     public long sessionId()

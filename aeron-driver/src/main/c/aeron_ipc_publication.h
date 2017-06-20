@@ -33,7 +33,7 @@ aeron_ipc_publication_status_t;
 
 typedef struct aeron_ipc_publication_stct
 {
-    struct conductor_fields_stct
+    struct aeron_ipc_publication_conductor_fields_stct
     {
         aeron_driver_managed_resource_t managed_resource;
         aeron_subscribeable_t subscribeable;

@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <netdb.h>
 #include <stdio.h>
+#include "aeron_alloc.h"
 #include "util/aeron_strutil.h"
 #include "uri/aeron_uri.h"
 #include "util/aeron_netutil.h"
@@ -176,9 +177,9 @@ int aeron_uri_udp_canonicalize(
         canonical_form, length, "UDP-%s-%d-%s-%d", local_data_str, local_data_port, remote_data_str, remote_data_port);
 }
 
-int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channel_t *channel)
+int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channel_t **channel)
 {
-    int result = -1;
+    aeron_udp_channel_t *_channel = NULL;
     struct sockaddr_storage endpoint_addr, explicit_control_addr, interface_addr;
     unsigned int interface_index = 0;
 
@@ -186,91 +187,116 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
     memset(&explicit_control_addr, 0, sizeof(explicit_control_addr));
     memset(&interface_addr, 0, sizeof(interface_addr));
 
-    if ((result = aeron_uri_parse(uri, &channel->uri)) < 0)
+    if (aeron_alloc((void **)&_channel, sizeof(aeron_udp_channel_t)) < 0)
     {
-        return result;
+        aeron_set_err(ENOMEM, "%s", "could not allocate UDP channel");
+        return -1;
     }
 
-    strncpy(channel->original_uri, uri, sizeof(channel->original_uri));
-    channel->uri_length = uri_length;
+    if (aeron_uri_parse(uri, &_channel->uri) < 0)
+    {
+        goto error_cleanup;
+    }
 
-    if (channel->uri.type != AERON_URI_UDP)
+    strncpy(_channel->original_uri, uri, sizeof(_channel->original_uri));
+    _channel->uri_length = uri_length;
+
+    if (_channel->uri.type != AERON_URI_UDP)
     {
         aeron_set_err(EINVAL, "%s", "UDP channels must use UDP URIs");
-        return -1;
+        goto error_cleanup;
     }
 
-    if (NULL == channel->uri.params.udp.endpoint_key && NULL == channel->uri.params.udp.control_key)
+    if (NULL == _channel->uri.params.udp.endpoint_key && NULL == _channel->uri.params.udp.control_key)
     {
         aeron_set_err(EINVAL, "%s", "Aeron URIs for UDP must specify an endpoint address and/or a control address");
-        return -1;
+        goto error_cleanup;
     }
 
-    if (NULL != channel->uri.params.udp.endpoint_key)
+    if (NULL != _channel->uri.params.udp.endpoint_key)
     {
-        if (aeron_host_and_port_parse_and_resolve(channel->uri.params.udp.endpoint_key, &endpoint_addr) < 0)
+        if (aeron_host_and_port_parse_and_resolve(_channel->uri.params.udp.endpoint_key, &endpoint_addr) < 0)
         {
             aeron_set_err(
-                aeron_errcode(), "could not resolve endpoint address=(%s): %s", channel->uri.params.udp.endpoint_key, aeron_errmsg());
-            return -1;
+                aeron_errcode(), "could not resolve endpoint address=(%s): %s", _channel->uri.params.udp.endpoint_key, aeron_errmsg());
+            goto error_cleanup;
         }
     }
 
-    if (NULL != channel->uri.params.udp.control_key)
+    if (NULL != _channel->uri.params.udp.control_key)
     {
-        if (aeron_host_and_port_parse_and_resolve(channel->uri.params.udp.control_key, &explicit_control_addr) < 0)
+        if (aeron_host_and_port_parse_and_resolve(_channel->uri.params.udp.control_key, &explicit_control_addr) < 0)
         {
             aeron_set_err(
-                aeron_errcode(), "could not resolve control address=(%s): %s", channel->uri.params.udp.control_key, aeron_errmsg());
-            return -1;
+                aeron_errcode(), "could not resolve control address=(%s): %s", _channel->uri.params.udp.control_key, aeron_errmsg());
+            goto error_cleanup;
         }
     }
 
     if (aeron_is_addr_multicast(&endpoint_addr))
     {
-        memcpy(&channel->remote_data, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
-        if (aeron_multicast_control_address(&endpoint_addr, &channel->remote_control) < 0)
+        memcpy(&_channel->remote_data, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
+        if (aeron_multicast_control_address(&endpoint_addr, &_channel->remote_control) < 0)
         {
-            return -1;
+            goto error_cleanup;
         }
 
         if (aeron_find_multicast_interface(
-            endpoint_addr.ss_family, channel->uri.params.udp.interface_key, &interface_addr, &interface_index) < 0)
+            endpoint_addr.ss_family, _channel->uri.params.udp.interface_key, &interface_addr, &interface_index) < 0)
         {
             aeron_set_err(
-                aeron_errcode(), "could not find interface=(%s): %s", channel->uri.params.udp.interface_key, aeron_errmsg());
-            return -1;
+                aeron_errcode(), "could not find interface=(%s): %s", _channel->uri.params.udp.interface_key, aeron_errmsg());
+            goto error_cleanup;
         }
 
-        memcpy(&channel->local_data, &interface_addr, AERON_ADDR_LEN(&interface_addr));
-        memcpy(&channel->local_control, &interface_addr, AERON_ADDR_LEN(&interface_addr));
+        memcpy(&_channel->local_data, &interface_addr, AERON_ADDR_LEN(&interface_addr));
+        memcpy(&_channel->local_control, &interface_addr, AERON_ADDR_LEN(&interface_addr));
         aeron_uri_udp_canonicalize(
-            channel->canonical_form, sizeof(channel->canonical_form), &interface_addr, &endpoint_addr);
+            _channel->canonical_form, sizeof(_channel->canonical_form), &interface_addr, &endpoint_addr);
+        _channel->canonical_length = strlen(_channel->canonical_form);
     }
-    else if (NULL != channel->uri.params.udp.control_key)
+    else if (NULL != _channel->uri.params.udp.control_key)
     {
-        memcpy(&channel->remote_data, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
-        memcpy(&channel->remote_control, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
-        memcpy(&channel->local_data, &explicit_control_addr, AERON_ADDR_LEN(&explicit_control_addr));
-        memcpy(&channel->local_control, &explicit_control_addr, AERON_ADDR_LEN(&explicit_control_addr));
+        memcpy(&_channel->remote_data, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
+        memcpy(&_channel->remote_control, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
+        memcpy(&_channel->local_data, &explicit_control_addr, AERON_ADDR_LEN(&explicit_control_addr));
+        memcpy(&_channel->local_control, &explicit_control_addr, AERON_ADDR_LEN(&explicit_control_addr));
         aeron_uri_udp_canonicalize(
-            channel->canonical_form, sizeof(channel->canonical_form), &explicit_control_addr, &endpoint_addr);
+            _channel->canonical_form, sizeof(_channel->canonical_form), &explicit_control_addr, &endpoint_addr);
+        _channel->canonical_length = strlen(_channel->canonical_form);
     }
     else
     {
         if (aeron_find_unicast_interface(
-            endpoint_addr.ss_family, channel->uri.params.udp.interface_key, &interface_addr, &interface_index) < 0)
+            endpoint_addr.ss_family, _channel->uri.params.udp.interface_key, &interface_addr, &interface_index) < 0)
         {
-            return -1;
+            goto error_cleanup;
         }
 
-        memcpy(&channel->remote_data, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
-        memcpy(&channel->remote_control, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
-        memcpy(&channel->local_data, &interface_addr, AERON_ADDR_LEN(&interface_addr));
-        memcpy(&channel->local_control, &interface_addr, AERON_ADDR_LEN(&interface_addr));
+        memcpy(&_channel->remote_data, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
+        memcpy(&_channel->remote_control, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
+        memcpy(&_channel->local_data, &interface_addr, AERON_ADDR_LEN(&interface_addr));
+        memcpy(&_channel->local_control, &interface_addr, AERON_ADDR_LEN(&interface_addr));
         aeron_uri_udp_canonicalize(
-            channel->canonical_form, sizeof(channel->canonical_form), &interface_addr, &endpoint_addr);
+            _channel->canonical_form, sizeof(_channel->canonical_form), &interface_addr, &endpoint_addr);
+        _channel->canonical_length = strlen(_channel->canonical_form);
     }
 
+    *channel = _channel;
     return 0;
+
+    error_cleanup:
+
+        *channel = NULL;
+        if (NULL != _channel)
+        {
+            aeron_udp_channel_delete(_channel);
+        }
+
+        return -1;
+}
+
+void aeron_udp_channel_delete(aeron_udp_channel_t *channel)
+{
+    aeron_free(channel);
 }

@@ -103,6 +103,7 @@ class ReplaySession
         RecordingDescriptorDecoder metaData = null;
         try
         {
+            // TODO: Reuse an Agent scoped direct ByteBuffer to avoid the allocation.
             metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
         }
         catch (final IOException ex)
@@ -136,7 +137,6 @@ class ReplaySession
         this.cursor = cursor;
 
         ExclusivePublication replayPublication = null;
-
         try
         {
             replayPublication = supplier.newReplayPublication(
@@ -154,7 +154,6 @@ class ReplaySession
         }
 
         this.replayPublication = replayPublication;
-
     }
 
     public int doWork()
@@ -225,12 +224,10 @@ class ReplaySession
         {
             try
             {
-                final UnsafeBuffer publicationBuffer = (UnsafeBuffer)bufferClaim.buffer();
-
-                bufferClaim.flags(frameFlags(termBuffer, frameOffset));
-                bufferClaim.reservedValue(termBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN));
-
-                publicationBuffer.putBytes(bufferClaim.offset(), termBuffer, offset, length);
+                bufferClaim
+                    .flags(frameFlags(termBuffer, frameOffset))
+                    .reservedValue(termBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
+                    .buffer().putBytes(bufferClaim.offset(), termBuffer, offset, length);
             }
             finally
             {
@@ -262,7 +259,7 @@ class ReplaySession
         {
             if (isLingerDone())
             {
-                return closeOnError(null, "No subscription to replay publication has been made");
+                return closeOnError(null, "No connection established for replay");
             }
 
             return 0;

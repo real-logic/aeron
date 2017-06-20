@@ -96,11 +96,11 @@ class DedicatedModeArchiveConductor extends ArchiveConductor
         {
             if (session instanceof RecordingSession)
             {
-                closeRecordingSession((RecordingSession) session);
+                closeRecordingSession((RecordingSession)session);
             }
             else if (session instanceof ReplaySession)
             {
-                closeReplaySession((ReplaySession) session);
+                closeReplaySession((ReplaySession)session);
             }
             else
             {

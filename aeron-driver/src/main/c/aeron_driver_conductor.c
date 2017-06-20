@@ -18,6 +18,7 @@
 #include <inttypes.h>
 #include <errno.h>
 #include <util/aeron_error.h>
+#include <media/aeron_send_channel_endpoint.h>
 #include "util/aeron_arrayutil.h"
 #include "aeron_driver_conductor.h"
 #include "aeron_position.h"
@@ -69,6 +70,18 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     /* TODO: SPSC command queue to Sender */
     /* TODO: SPSC command queue to Receiver */
     /* TODO: MPSC command queue to Conductor (used for commands and for returning event mallocs) */
+
+    if (aeron_str_to_ptr_hash_map_init(
+        &conductor->send_channel_endpoint_by_channel_map, 64, AERON_STR_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+    {
+        return -1;
+    }
+
+    if (aeron_str_to_ptr_hash_map_init(
+        &conductor->receive_channel_endpoint_by_channel_map, 64, AERON_STR_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+    {
+        return -1;
+    }
 
     conductor->clients.array = NULL;
     conductor->clients.capacity = 0;
@@ -363,6 +376,20 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
     }
 
     return ensure_capacity_result >= 0 ? publication : NULL;
+}
+
+aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_endpoint(
+    aeron_driver_conductor_t *conductor, aeron_udp_channel_t *channel)
+{
+    aeron_send_channel_endpoint_t *endpoint =
+        aeron_str_to_ptr_hash_map_get(&conductor->send_channel_endpoint_by_channel_map, channel->canonical_form, channel->canonical_length);
+
+    if (NULL == endpoint)
+    {
+        /* TODO: */
+    }
+
+    return endpoint;
 }
 
 void aeron_driver_conductor_client_transmit(
@@ -737,6 +764,9 @@ void aeron_driver_conductor_on_close(void *clientd)
     aeron_system_counters_close(&conductor->system_counters);
     aeron_counters_manager_close(&conductor->counters_manager);
     aeron_distinct_error_log_close(&conductor->error_log);
+
+    aeron_str_to_ptr_hash_map_delete(&conductor->send_channel_endpoint_by_channel_map);
+    aeron_str_to_ptr_hash_map_delete(&conductor->receive_channel_endpoint_by_channel_map);
 }
 
 #define AERON_ERROR(c, ecode, desc, format, ...) \

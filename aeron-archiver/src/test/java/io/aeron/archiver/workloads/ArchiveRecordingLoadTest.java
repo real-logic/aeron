@@ -124,7 +124,7 @@ public class ArchiveRecordingLoadTest
     public void archive() throws IOException, InterruptedException
     {
         try (Publication control = publishingClient.addPublication(
-            archiverCtx.controlChannel(), archiverCtx.controlStreamId());
+                archiverCtx.controlChannel(), archiverCtx.controlStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
@@ -166,9 +166,9 @@ public class ArchiveRecordingLoadTest
                 doneRecording = false;
                 assertThat(totalRecordingLength, is(recorded));
                 final long time = System.currentTimeMillis() - start;
-                final double recordedMbps = (totalRecordingLength * 1000.0 / time) / MEGABYTE;
+                final double rate = (totalRecordingLength * 1000.0 / time) / MEGABYTE;
                 final double recordedMb = totalRecordingLength / MEGABYTE;
-                System.out.printf("%d : sent=%f MB recorded=%f MBps %n", recordingId, recordedMb, recordedMbps);
+                System.out.printf("%d : sent %.02f MB, recorded %.02f MB/s %n", recordingId, recordedMb, rate);
             }
 
             println("All data arrived");
@@ -262,10 +262,7 @@ public class ArchiveRecordingLoadTest
         assertThat(lastPosition - joiningPosition, is(totalRecordingLength));
     }
 
-    private void offer(
-        final Publication publication,
-        final UnsafeBuffer buffer,
-        final int length)
+    private void offer(final Publication publication, final UnsafeBuffer buffer, final int length)
     {
         final long limit = System.currentTimeMillis() + (long)TestUtil.TIMEOUT;
         if (publication.offer(buffer, 0, length) < 0)
@@ -294,6 +291,7 @@ public class ArchiveRecordingLoadTest
             {
                 return;
             }
+
             Thread.yield();
         }
 

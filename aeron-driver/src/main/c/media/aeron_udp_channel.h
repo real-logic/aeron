@@ -30,9 +30,11 @@ typedef struct aeron_udp_channel_stct
     struct sockaddr_storage remote_control;
     struct sockaddr_storage local_control;
     size_t uri_length;
+    size_t canonical_length;
 }
 aeron_udp_channel_t;
 
-int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channel_t *channel);
+int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channel_t **channel);
+void aeron_udp_channel_delete(aeron_udp_channel_t *channel);
 
 #endif //AERON_AERON_UDP_CHANNEL_H

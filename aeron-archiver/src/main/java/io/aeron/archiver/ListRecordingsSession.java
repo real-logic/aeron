@@ -147,7 +147,7 @@ class ListRecordingsSession implements Session
             proxy.sendError(
                 correlationId,
                 ControlResponseCode.RECORDING_NOT_FOUND,
-                "Requested start id exceeds max known id",
+                "Requested start id exceeds max known recording id",
                 controlPublication);
             state = State.INACTIVE;
         }

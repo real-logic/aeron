@@ -26,6 +26,8 @@
 #include "command/aeron_control_protocol.h"
 #include "aeron_system_counters.h"
 #include "aeron_ipc_publication.h"
+#include "collections/aeron_str_to_ptr_hash_map.h"
+#include "media/aeron_send_channel_endpoint.h"
 
 #define AERON_DRIVER_CONDUCTOR_TIMEOUT_CHECK_NS (1 * 1000 * 1000 * 1000)
 
@@ -92,6 +94,9 @@ typedef struct aeron_driver_conductor_stct
     aeron_distinct_error_log_t error_log;
     aeron_counters_manager_t counters_manager;
     aeron_system_counters_t system_counters;
+
+    aeron_str_to_ptr_hash_map_t send_channel_endpoint_by_channel_map;
+    aeron_str_to_ptr_hash_map_t receive_channel_endpoint_by_channel_map;
 
     struct client_stct
     {

@@ -66,6 +66,7 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
     static final int END_OF_DATA_INDICATOR = 0;
 
     private static final int NULL_SEGMENT_POSITION = -1;
+    // TODO: pull this out to the Agent and pass into the writer so no need for thread local.
     private static final ThreadLocal<Marker> MARKER = ThreadLocal.withInitial(Marker::new);
 
     private final boolean forceWrites;

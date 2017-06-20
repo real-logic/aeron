@@ -103,6 +103,7 @@ class ReplaySession
         RecordingDescriptorDecoder metaData = null;
         try
         {
+            // TODO: Reuse an Agent scoped direct ByteBuffer to avoid the allocation.
             metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
         }
         catch (final IOException ex)
@@ -136,7 +137,6 @@ class ReplaySession
         this.cursor = cursor;
 
         ExclusivePublication replayPublication = null;
-
         try
         {
             replayPublication = supplier.newReplayPublication(
@@ -154,7 +154,6 @@ class ReplaySession
         }
 
         this.replayPublication = replayPublication;
-
     }
 
     public int doWork()

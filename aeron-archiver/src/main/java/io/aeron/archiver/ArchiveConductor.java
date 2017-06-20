@@ -23,6 +23,7 @@ import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Objects;
 
 abstract class ArchiveConductor extends SessionWorker<Session>
@@ -35,6 +36,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     private final StringBuilder uriBuilder = new StringBuilder(1024);
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
     private final ReplayPublicationSupplier newReplayPublication = this::newReplayPublication;
     private final AvailableImageHandler availableImageHandler = this::onAvailableImage;
 
@@ -111,11 +113,19 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         CloseHelper.quietClose(aeronClientAgentInvoker);
         CloseHelper.quietClose(driverAgentInvoker);
         CloseHelper.quietClose(catalog);
+        if (!recordingSessionByIdMap.isEmpty())
+        {
+            System.err.println("ERROR: expected empty recordingSessionByIdMap");
+        }
+        if (!replaySessionByIdMap.isEmpty())
+        {
+            System.err.println("ERROR: expected empty replaySessionByIdMap");
+        }
     }
 
     public int doWork()
     {
-        int workDone = safeInvoke(driverAgentInvoker);
+        int workDone = (null != driverAgentInvoker) ? driverAgentInvoker.invoke() : 0;
         workDone += aeronClientAgentInvoker.invoke();
         workDone += preSessionWork();
         workDone += super.doWork();
@@ -124,16 +134,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     }
 
     protected abstract int preSessionWork();
-
-    private static int safeInvoke(final AgentInvoker invoker)
-    {
-        if (null != invoker)
-        {
-            return invoker.invoke();
-        }
-
-        return 0;
-    }
 
     /**
      * Note: this is only a thread safe interaction because we are running the aeron client as an invoked agent so the
@@ -156,9 +156,9 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final Publication controlPublication,
         final long recordingId)
     {
-        final RecordingSession recordingSession = catalog.getRecordingSession(recordingId);
+        final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
 
-        if (recordingSession != null)
+        if (null != recordingSession)
         {
             recorder.abortSession(recordingSession);
             controlSessionProxy.sendOkResponse(correlationId, controlPublication);
@@ -179,7 +179,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final String channel,
         final int streamId)
     {
-        if (catalog.liveRecordingsCount() >= maxConcurrentRecordings)
+        if (recordingSessionByIdMap.size() >= maxConcurrentRecordings)
         {
             controlSessionProxy.sendError(
                 correlationId,
@@ -204,7 +204,34 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     private void startRecording(final Image image)
     {
-        recorder.addSession(new RecordingSession(notificationsProxy, catalog, image, recordingContext));
+        final Subscription subscription = image.subscription();
+        final int sessionId = image.sessionId();
+        final int streamId = subscription.streamId();
+        final String channel = subscription.channel();
+        final String sourceIdentity = image.sourceIdentity();
+        final int termBufferLength = image.termBufferLength();
+        final int mtuLength = image.mtuLength();
+        final int initialTermId = image.initialTermId();
+        final long joiningPosition = image.joiningPosition();
+
+        final long recordingId = catalog.addNewRecording(
+            sessionId,
+            streamId,
+            channel,
+            sourceIdentity,
+            termBufferLength,
+            mtuLength,
+            initialTermId,
+            joiningPosition,
+            recordingContext.recordingFileLength());
+
+        final RecordingSession session = new RecordingSession(
+            recordingId,
+            notificationsProxy,
+            image,
+            recordingContext);
+        recordingSessionByIdMap.put(recordingId, session);
+        recorder.addSession(session);
     }
 
     void listRecordings(
@@ -345,6 +372,15 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     void closeRecordingSession(final RecordingSession session)
     {
         closeSession(session);
+        final long recordingId = session.sessionId();
+        recordingSessionByIdMap.remove(recordingId);
+        try
+        {
+            catalog.updateCatalogFromMeta(recordingId, session.lastPosition(), session.startTime(), session.endTime());
+        } catch (final IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     void closeReplaySession(final ReplaySession session)

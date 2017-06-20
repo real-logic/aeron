@@ -81,6 +81,7 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
     private final MappedByteBuffer metaDataBuffer;
     private final RecordingDescriptorEncoder metaDataEncoder;
     private final int segmentFileLength;
+    private final long joiningPosition;
 
     /**
      * Index is in the range 0:segmentFileLength, except before the first block for this image is received indicated
@@ -92,8 +93,9 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     private boolean closed = false;
     private boolean stopped = false;
-    private long joiningPosition;
-    private long lastPosition;
+    private long lastPosition = NULL_POSITION;
+    private long startTime = NULL_TIME;
+    private long endTime = NULL_TIME;
 
     RecordingWriter(
         final RecordingContext recordingContext,
@@ -273,7 +275,8 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
             marker.buffer.clear();
             recordingFileChannel.write(marker.buffer, 0);
             recordingFileChannel.position(segmentPosition);
-            metaDataEncoder.startTime(epochClock.time());
+            startTime = epochClock.time();
+            metaDataEncoder.startTime(startTime);
         }
         // write ahead of data to indicate end of data in file
         marker.header.frameLength(END_OF_DATA_INDICATOR);
@@ -305,7 +308,8 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     void stop()
     {
-        metaDataEncoder.endTime(epochClock.time());
+        endTime = epochClock.time();
+        metaDataEncoder.endTime(endTime);
         metaDataBuffer.force();
         stopped = true;
     }
@@ -351,11 +355,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         return recordingId;
     }
 
-    ByteBuffer metaDataBuffer()
-    {
-        return metaDataBuffer;
-    }
-
     int segmentFileLength()
     {
         return segmentFileLength;
@@ -369,6 +368,16 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
     long lastPosition()
     {
         return lastPosition;
+    }
+
+    long startTime()
+    {
+        return startTime;
+    }
+
+    long endTime()
+    {
+        return endTime;
     }
 
     static class RecordingContext

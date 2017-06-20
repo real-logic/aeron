@@ -39,7 +39,7 @@ public class RecordingSessionTest
 {
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
     private static final int RECORDED_BLOCK_LENGTH = 100;
-    private final long recordingId = 12345;
+    private static final long RECORDING_ID = 12345;
 
     private final String channel = "channel";
     private final String sourceIdentity = "sourceIdentity";
@@ -55,7 +55,6 @@ public class RecordingSessionTest
     private final NotificationsProxy proxy;
 
     private final Image image;
-    private final Catalog catalog;
 
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
@@ -64,19 +63,7 @@ public class RecordingSessionTest
     public RecordingSessionTest() throws IOException
     {
         proxy = mock(NotificationsProxy.class);
-        catalog = mock(Catalog.class);
         final int initialTermId = 0;
-        when(catalog.addNewRecording(
-            eq(sessionId),
-            eq(streamId),
-            eq(channel),
-            eq(sourceIdentity),
-            eq(termBufferLength),
-            eq(mtuLength),
-            eq(initialTermId),
-            eq(joiningPosition),
-            any(RecordingSession.class),
-            eq(SEGMENT_FILE_SIZE))).thenReturn(recordingId);
 
         image = mockImage(
             sessionId, initialTermId, sourceIdentity, termBufferLength, mockSubscription(channel, streamId));
@@ -121,20 +108,18 @@ public class RecordingSessionTest
             .recordingFileLength(SEGMENT_FILE_SIZE)
             .archiveDir(tempDirForTest)
             .epochClock(epochClock);
-        final RecordingSession session = new RecordingSession(proxy, catalog, image, recordingContext);
+        final RecordingSession session = new RecordingSession(RECORDING_ID, proxy, image, recordingContext);
 
-        assertEquals(Catalog.NULL_RECORD_ID, session.sessionId());
+        assertEquals(RECORDING_ID, session.sessionId());
 
         session.doWork();
-
-        assertEquals(recordingId, session.sessionId());
 
         final File recordingMetaFile = new File(tempDirForTest, recordingMetaFileName(session.sessionId()));
         assertTrue(recordingMetaFile.exists());
 
         RecordingDescriptorDecoder metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
 
-        assertEquals(recordingId, metaData.recordingId());
+        assertEquals(RECORDING_ID, metaData.recordingId());
         assertEquals(termBufferLength, metaData.termBufferLength());
         assertEquals(streamId, metaData.streamId());
         assertEquals(mtuLength, metaData.mtuLength());
@@ -176,7 +161,7 @@ public class RecordingSessionTest
         assertEquals(joiningPosition + RECORDED_BLOCK_LENGTH, metaData.lastPosition());
 
         final File segmentFile =
-            new File(tempDirForTest, ArchiveUtil.recordingDataFileName(recordingId, 0));
+            new File(tempDirForTest, ArchiveUtil.recordingDataFileName(RECORDING_ID, 0));
         assertTrue(segmentFile.exists());
 
         try (RecordingFragmentReader reader = new RecordingFragmentReader(session.sessionId(), tempDirForTest))

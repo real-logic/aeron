@@ -16,25 +16,28 @@
 package io.aeron.archiver;
 
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
-import org.agrona.*;
+import org.agrona.BufferUtil;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.mockito.Mockito.mock;
 
 public class CatalogTest
 {
-    public static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
-    static final UnsafeBuffer BUFFER = new UnsafeBuffer(BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, 64));
-    static final RecordingDescriptorDecoder DECODER = new RecordingDescriptorDecoder();
-    static long recordingOneId;
-    static long recordingTwoId;
-    static long recordingThreeId;
-    static RecordingSession mockSession = mock(RecordingSession.class);
+    private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
+    private static final UnsafeBuffer BUFFER =
+        new UnsafeBuffer(BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, 64));
+    private static final RecordingDescriptorDecoder DECODER = new RecordingDescriptorDecoder();
+    private static long recordingOneId;
+    private static long recordingTwoId;
+    private static long recordingThreeId;
     private static File archiveDir;
 
     @BeforeClass
@@ -50,14 +53,11 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir))
         {
             recordingOneId = catalog.addNewRecording(
-                6, 1, "channelG", "sourceA", 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
+                6, 1, "channelG", "sourceA", 4096, 1024, 0, 0L, SEGMENT_FILE_SIZE);
             recordingTwoId = catalog.addNewRecording(
-                7, 2, "channelH", "sourceV", 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
+                7, 2, "channelH", "sourceV", 4096, 1024, 0, 0L, SEGMENT_FILE_SIZE);
             recordingThreeId = catalog.addNewRecording(
-                8, 3, "channelK", "sourceB", 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
-            catalog.removeRecordingSession(recordingOneId);
-            catalog.removeRecordingSession(recordingTwoId);
-            catalog.removeRecordingSession(recordingThreeId);
+                8, 3, "channelK", "sourceB", 4096, 1024, 0, 0L, SEGMENT_FILE_SIZE);
         }
     }
 
@@ -104,8 +104,7 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir))
         {
             newRecordingId = catalog.addNewRecording(
-                9, 4, "channelJ", "sourceN", 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
-            catalog.removeRecordingSession(newRecordingId);
+                9, 4, "channelJ", "sourceN", 4096, 1024, 0, 0L, SEGMENT_FILE_SIZE);
         }
 
         try (Catalog catalog = new Catalog(archiveDir))
@@ -121,8 +120,7 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir))
         {
             final long newRecordingId = catalog.addNewRecording(
-                6, 1, "channelG", "sourceA", 4096, 1024, 0, 0L, mockSession, SEGMENT_FILE_SIZE);
-            catalog.removeRecordingSession(newRecordingId);
+                6, 1, "channelG", "sourceA", 4096, 1024, 0, 0L, SEGMENT_FILE_SIZE);
             assertNotEquals(recordingOneId, newRecordingId);
         }
     }

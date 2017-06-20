@@ -15,13 +15,16 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.archiver.codecs.*;
+import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
+import io.aeron.archiver.codecs.RecordingDescriptorEncoder;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.*;
-import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.BufferUtil;
+import org.agrona.CloseHelper;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
@@ -43,7 +46,6 @@ class Catalog implements AutoCloseable
     private static final int PAGE_SIZE = 4096;
 
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
-    private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
 
     private final ByteBuffer byteBuffer;
     private final UnsafeBuffer unsafeBuffer;
@@ -126,7 +128,6 @@ class Catalog implements AutoCloseable
         final int mtuLength,
         final int imageInitialTermId,
         final long joiningPosition,
-        final RecordingSession session,
         final int segmentFileLength)
     {
         final long newRecordingId = nextRecordingId;
@@ -163,18 +164,12 @@ class Catalog implements AutoCloseable
         }
 
         nextRecordingId++;
-        recordingSessionByIdMap.put(newRecordingId, session);
         return newRecordingId;
     }
 
     public void close()
     {
         CloseHelper.close(catalogFileChannel);
-
-        if (!recordingSessionByIdMap.isEmpty())
-        {
-            System.err.println("ERROR: expected empty recordingSessionByIdMap");
-        }
     }
 
     boolean readDescriptor(final long recordingId, final ByteBuffer buffer)
@@ -199,28 +194,28 @@ class Catalog implements AutoCloseable
         return true;
     }
 
-    void updateCatalogFromMeta(final long recordingId, final ByteBuffer metaDataBuffer) throws IOException
+    void updateCatalogFromMeta(
+        final long recordingId,
+        final long lastPosition,
+        final long startTime,
+        final long endTime) throws IOException
     {
-        catalogFileChannel.write(metaDataBuffer, recordingId * RECORD_LENGTH);
+        byteBuffer.clear();
+        if (!readDescriptor(recordingId, byteBuffer))
+        {
+            throw new IllegalArgumentException("Invalid recording id : " + recordingId);
+        }
+        recordingDescriptorEncoder
+            .wrap(unsafeBuffer, CATALOG_FRAME_LENGTH)
+            .lastPosition(lastPosition)
+            .startTime(startTime)
+            .endTime(endTime);
+
+        catalogFileChannel.write(byteBuffer, recordingId * RECORD_LENGTH);
     }
 
     long nextRecordingId()
     {
         return nextRecordingId;
-    }
-
-    RecordingSession getRecordingSession(final long recordingId)
-    {
-        return recordingSessionByIdMap.get(recordingId);
-    }
-
-    void removeRecordingSession(final long recordingId)
-    {
-        recordingSessionByIdMap.remove(recordingId);
-    }
-
-    public int liveRecordingsCount()
-    {
-        return recordingSessionByIdMap.size();
     }
 }

@@ -20,9 +20,6 @@ import io.aeron.Subscription;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
 /**
  * Consumes an {@link Image} and records data to file using an {@link RecordingWriter}.
  */
@@ -33,24 +30,23 @@ class RecordingSession implements Session
         INIT, RECORDING, INACTIVE, CLOSED
     }
 
-    private long recordingId = Catalog.NULL_RECORD_ID;
+    private final long recordingId;
     private final NotificationsProxy notificationsProxy;
     private final Image image;
-    private final Catalog catalog;
     private final RecordingWriter.RecordingContext recordingContext;
 
     private RecordingWriter recordingWriter;
     private State state = State.INIT;
 
     RecordingSession(
+        final long recordingId,
         final NotificationsProxy notificationsProxy,
-        final Catalog catalog,
         final Image image,
         final RecordingWriter.RecordingContext recordingContext)
     {
+        this.recordingId = recordingId;
         this.notificationsProxy = notificationsProxy;
         this.image = image;
-        this.catalog = catalog;
         this.recordingContext = recordingContext;
     }
 
@@ -81,11 +77,6 @@ class RecordingSession implements Session
         return workDone;
     }
 
-    ByteBuffer metaDataBuffer()
-    {
-        return recordingWriter.metaDataBuffer();
-    }
-
     public long sessionId()
     {
         return recordingId;
@@ -106,18 +97,6 @@ class RecordingSession implements Session
         RecordingWriter recordingWriter = null;
         try
         {
-            recordingId = catalog.addNewRecording(
-                sessionId,
-                streamId,
-                channel,
-                sourceIdentity,
-                termBufferLength,
-                mtuLength,
-                initialTermId,
-                joiningPosition,
-                this,
-                recordingContext.recordingFileLength());
-
             recordingWriter = new RecordingWriter(
                 recordingContext,
                 recordingId,
@@ -152,27 +131,17 @@ class RecordingSession implements Session
 
     public void close()
     {
-        try
+        if (recordingWriter != null)
         {
-            if (recordingWriter != null)
-            {
-                recordingWriter.stop();
-                catalog.updateCatalogFromMeta(recordingId, recordingWriter.metaDataBuffer());
-            }
+            recordingWriter.stop();
         }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-        finally
-        {
-            catalog.removeRecordingSession(recordingId);
-            CloseHelper.quietClose(recordingWriter);
-            // this reflects the single local recording assumption
-            CloseHelper.quietClose(image.subscription());
-            notificationsProxy.recordingStopped(recordingId, recordingWriter.lastPosition());
-            this.state = State.CLOSED;
-        }
+
+        CloseHelper.quietClose(recordingWriter);
+        // this reflects the single local recording assumption
+        CloseHelper.quietClose(image.subscription());
+        notificationsProxy.recordingStopped(recordingId, recordingWriter.lastPosition());
+        this.state = State.CLOSED;
+
     }
 
     private int record()
@@ -201,5 +170,20 @@ class RecordingSession implements Session
         }
 
         return workCount;
+    }
+
+    long lastPosition()
+    {
+        return (recordingWriter != null) ? recordingWriter.lastPosition() : RecordingWriter.NULL_POSITION;
+    }
+
+    long startTime()
+    {
+        return (recordingWriter != null) ? recordingWriter.startTime() : RecordingWriter.NULL_TIME;
+    }
+
+    long endTime()
+    {
+        return (recordingWriter != null) ? recordingWriter.endTime() : RecordingWriter.NULL_TIME;
     }
 }

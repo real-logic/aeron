@@ -51,6 +51,12 @@ typedef struct aeron_subscribeable_stct
 }
 aeron_subscribeable_t;
 
+typedef struct aeron_command_base_stct
+{
+    void (*func)(void *clientd);
+}
+aeron_command_base_t;
+
 int aeron_driver_subscribeable_add_position(
     aeron_subscribeable_t *subscribeable, int64_t counter_id, int64_t *value_addr);
 void aeron_driver_subscribeable_remove_position(aeron_subscribeable_t *subscribeable, int64_t counter_id);

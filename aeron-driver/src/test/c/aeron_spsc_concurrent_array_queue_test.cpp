@@ -41,6 +41,11 @@ public:
         }
     }
 
+    virtual ~SpscQueueTest()
+    {
+        aeron_spsc_concurrent_array_queue_close(&m_q);
+    }
+
     static void drain_func(void *clientd, volatile void *element)
     {
         SpscQueueTest *t = (SpscQueueTest *)clientd;
@@ -204,4 +209,6 @@ TEST(SpscQueueConcurrentTest, shouldExchangeMessages)
     {
         thr.join();
     }
+
+    aeron_spsc_concurrent_array_queue_close(&q);
 }

@@ -143,8 +143,24 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     }
 
     _context->cnc_map.addr = NULL;
+    _context->aeron_dir = NULL;
 
     if (aeron_alloc((void **)&_context->aeron_dir, AERON_MAX_PATH) < 0)
+    {
+        return -1;
+    }
+
+    if (aeron_spsc_concurrent_array_queue_init(&_context->sender_command_queue, AERON_COMMAND_QUEUE_CAPACITY) < 0)
+    {
+        return -1;
+    }
+
+    if (aeron_spsc_concurrent_array_queue_init(&_context->receiver_command_queue, AERON_COMMAND_QUEUE_CAPACITY) < 0)
+    {
+        return -1;
+    }
+
+    if (aeron_mpsc_concurrent_array_queue_init(&_context->conductor_command_queue, AERON_COMMAND_QUEUE_CAPACITY) < 0)
     {
         return -1;
     }
@@ -314,6 +330,10 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
         /* TODO: EINVAL */
         return -1;
     }
+
+    aeron_mpsc_concurrent_array_queue_close(&context->conductor_command_queue);
+    aeron_spsc_concurrent_array_queue_close(&context->sender_command_queue);
+    aeron_spsc_concurrent_array_queue_close(&context->receiver_command_queue);
 
     aeron_unmap(&context->cnc_map);
 

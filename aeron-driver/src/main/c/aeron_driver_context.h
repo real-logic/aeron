@@ -21,6 +21,8 @@
 #include "aeronmd.h"
 #include "util/aeron_bitutil.h"
 #include "util/aeron_fileutil.h"
+#include "concurrent/aeron_spsc_concurrent_array_queue.h"
+#include "concurrent/aeron_mpsc_concurrent_array_queue.h"
 
 #define AERON_CNC_FILE "cnc.dat"
 #define AERON_CNC_VERSION (7)
@@ -41,6 +43,8 @@ aeron_cnc_metadata_t;
 #pragma pack(pop)
 
 #define AERON_CNC_VERSION_AND_META_DATA_LENGTH (AERON_ALIGN(sizeof(aeron_cnc_metadata_t), AERON_CACHE_LINE_LENGTH * 2))
+
+#define AERON_COMMAND_QUEUE_CAPACITY (256)
 
 typedef enum aeron_threading_mode_enum
 {
@@ -81,6 +85,10 @@ typedef struct aeron_driver_context_stct
 
     aeron_clock_func_t nano_clock;
     aeron_clock_func_t epoch_clock;
+
+    aeron_spsc_concurrent_array_queue_t sender_command_queue;
+    aeron_spsc_concurrent_array_queue_t receiver_command_queue;
+    aeron_mpsc_concurrent_array_queue_t conductor_command_queue;
 
     aeron_idle_strategy_func_t conductor_idle_strategy_func;
     void *conductor_idle_strategy_state;

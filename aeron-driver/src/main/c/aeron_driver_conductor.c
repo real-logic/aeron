@@ -67,10 +67,6 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
         return -1;
     }
 
-    /* TODO: SPSC command queue to Sender */
-    /* TODO: SPSC command queue to Receiver */
-    /* TODO: MPSC command queue to Conductor (used for commands and for returning event mallocs) */
-
     if (aeron_str_to_ptr_hash_map_init(
         &conductor->send_channel_endpoint_by_channel_map, 64, AERON_STR_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
@@ -82,6 +78,8 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     {
         return -1;
     }
+
+    conductor->command_queue = &context->conductor_command_queue;
 
     conductor->clients.array = NULL;
     conductor->clients.capacity = 0;
@@ -382,7 +380,8 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
     aeron_driver_conductor_t *conductor, aeron_udp_channel_t *channel)
 {
     aeron_send_channel_endpoint_t *endpoint =
-        aeron_str_to_ptr_hash_map_get(&conductor->send_channel_endpoint_by_channel_map, channel->canonical_form, channel->canonical_length);
+        aeron_str_to_ptr_hash_map_get(
+            &conductor->send_channel_endpoint_by_channel_map, channel->canonical_form, channel->canonical_length);
 
     if (NULL == endpoint)
     {
@@ -711,6 +710,12 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
         return;
 }
 
+void aeron_driver_conductor_on_command_queue(void *clientd, volatile void *item)
+{
+    aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
+
+}
+
 int aeron_driver_conductor_do_work(void *clientd)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
@@ -719,6 +724,9 @@ int aeron_driver_conductor_do_work(void *clientd)
 
     work_count +=
         (int)aeron_mpsc_rb_read(&conductor->to_driver_commands, aeron_driver_conductor_on_command, conductor, 10);
+    work_count +=
+        aeron_mpsc_concurrent_array_queue_drain(
+            conductor->command_queue, aeron_driver_conductor_on_command_queue, conductor, 10);
 
     if (now_ns > (conductor->time_of_last_timeout_check_ns + AERON_DRIVER_CONDUCTOR_TIMEOUT_CHECK_NS))
     {

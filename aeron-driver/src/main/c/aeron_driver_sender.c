@@ -19,6 +19,8 @@
 int aeron_driver_sender_init(aeron_driver_sender_t *sender, aeron_driver_context_t *context)
 {
     sender->context = context;
+    sender->command_queue = &context->sender_command_queue;
+    sender->conductor_command_queue = &context->conductor_command_queue;
     return 0;
 }
 

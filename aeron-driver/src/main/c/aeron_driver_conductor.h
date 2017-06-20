@@ -89,6 +89,7 @@ typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
 typedef struct aeron_driver_conductor_stct
 {
     aeron_driver_context_t *context;
+    aeron_mpsc_concurrent_array_queue_t *command_queue;
     aeron_mpsc_rb_t to_driver_commands;
     aeron_broadcast_transmitter_t to_clients;
     aeron_distinct_error_log_t error_log;

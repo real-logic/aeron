@@ -47,6 +47,8 @@ aeron_spsc_concurrent_array_queue_t;
 int aeron_spsc_concurrent_array_queue_init(
     volatile aeron_spsc_concurrent_array_queue_t *queue, uint64_t length);
 
+int aeron_spsc_concurrent_array_queue_close(aeron_spsc_concurrent_array_queue_t *queue);
+
 inline aeron_queue_offer_result_t aeron_spsc_concurrent_array_queue_offer(
     volatile aeron_spsc_concurrent_array_queue_t *queue, void *element)
 {

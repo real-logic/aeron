@@ -41,6 +41,11 @@ public:
         }
     }
 
+    virtual ~MpscQueueTest()
+    {
+        aeron_mpsc_concurrent_array_queue_close(&m_q);
+    }
+
     static void drain_func(void *clientd, volatile void *element)
     {
         MpscQueueTest *t = (MpscQueueTest *)clientd;
@@ -234,4 +239,6 @@ TEST(MpscQueueConcurrentTest, shouldExchangeMessages)
     {
         thr.join();
     }
+
+    aeron_mpsc_concurrent_array_queue_close(&q);
 }

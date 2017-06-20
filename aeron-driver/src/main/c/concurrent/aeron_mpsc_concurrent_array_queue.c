@@ -41,6 +41,12 @@ int aeron_mpsc_concurrent_array_queue_init(
     return 0;
 }
 
+int aeron_mpsc_concurrent_array_queue_close(aeron_mpsc_concurrent_array_queue_t *queue)
+{
+    aeron_free(queue->buffer);
+    return 0;
+}
+
 extern aeron_queue_offer_result_t aeron_mpsc_concurrent_array_queue_offer(
     volatile aeron_mpsc_concurrent_array_queue_t *queue,
     void *element);

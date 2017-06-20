@@ -199,7 +199,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         }
     }
 
-    public long joiningPosition()
+    public long joinPosition()
     {
         return producerPosition();
     }

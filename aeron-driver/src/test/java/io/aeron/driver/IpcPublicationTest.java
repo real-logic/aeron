@@ -110,7 +110,7 @@ public class IpcPublicationTest
     @Test
     public void shouldHaveJoiningPositionZeroWhenNoSubscriptions()
     {
-        assertThat(ipcPublication.joiningPosition(), is(0L));
+        assertThat(ipcPublication.joinPosition(), is(0L));
     }
 
     @Test

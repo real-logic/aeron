@@ -187,11 +187,11 @@ public class DriverConductor implements Agent
         final String channel = udpChannel.originalUriString();
         final long registrationId = toDriverCommands.nextCorrelationId();
 
-        final long joiningPosition = computePosition(
+        final long joinPosition = computePosition(
             activeTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferLength), initialTermId);
 
         final List<SubscriberPosition> subscriberPositions = createSubscriberPositions(
-            sessionId, streamId, channelEndpoint, joiningPosition);
+            sessionId, streamId, channelEndpoint, joinPosition);
 
         if (subscriberPositions.size() > 0)
         {
@@ -647,7 +647,7 @@ public class DriverConductor implements Agent
         final int sessionId,
         final int streamId,
         final ReceiveChannelEndpoint channelEndpoint,
-        final long joiningPosition)
+        final long joinPosition)
     {
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
 
@@ -662,9 +662,9 @@ public class DriverConductor implements Agent
                     sessionId,
                     streamId,
                     subscription.uri(),
-                    joiningPosition);
+                    joinPosition);
 
-                position.setOrdered(joiningPosition);
+                position.setOrdered(joinPosition);
                 subscriberPositions.add(new SubscriberPosition(subscription, position));
             }
         }
@@ -931,16 +931,16 @@ public class DriverConductor implements Agent
 
     private void linkIpcSubscription(final IpcSubscriptionLink subscription, final IpcPublication publication)
     {
-        final long joiningPosition = publication.joiningPosition();
+        final long joinPosition = publication.joinPosition();
         final long registrationId = subscription.registrationId();
         final int sessionId = publication.sessionId();
         final int streamId = subscription.streamId();
         final String channel = subscription.uri();
 
         final Position position = SubscriberPos.allocate(
-            countersManager, registrationId, sessionId, streamId, channel, joiningPosition);
+            countersManager, registrationId, sessionId, streamId, channel, joinPosition);
 
-        position.setOrdered(joiningPosition);
+        position.setOrdered(joinPosition);
         subscription.link(publication, position);
         publication.addSubscriber(position);
 
@@ -955,16 +955,16 @@ public class DriverConductor implements Agent
 
     private void linkSpy(final NetworkPublication publication, final SubscriptionLink subscription)
     {
-        final long joiningPosition = publication.spyJoiningPosition();
+        final long joinPosition = publication.spyJoinPosition();
         final long registrationId = subscription.registrationId();
         final int streamId = publication.streamId();
         final int sessionId = publication.sessionId();
         final String channel = subscription.uri();
 
         final Position position = SubscriberPos.allocate(
-            countersManager, registrationId, sessionId, streamId, channel, joiningPosition);
+            countersManager, registrationId, sessionId, streamId, channel, joinPosition);
 
-        position.setOrdered(joiningPosition);
+        position.setOrdered(joinPosition);
         publication.addSubscriber(position);
         subscription.link(publication, position);
 

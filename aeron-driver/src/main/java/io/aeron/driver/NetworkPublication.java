@@ -418,7 +418,7 @@ public class NetworkPublication
         return spyPositions.length > 0;
     }
 
-    long spyJoiningPosition()
+    long spyJoinPosition()
     {
         long maxSpyPosition = producerPosition();
 

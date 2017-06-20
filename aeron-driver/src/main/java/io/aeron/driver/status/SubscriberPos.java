@@ -40,7 +40,7 @@ public class SubscriberPos
         final int sessionId,
         final int streamId,
         final String channel,
-        final long joiningPosition)
+        final long joinPosition)
     {
         return StreamPositionCounter.allocate(
             NAME,
@@ -50,6 +50,6 @@ public class SubscriberPos
             sessionId,
             streamId,
             channel,
-            joiningPosition == 0 ? "@0" : ("@" + joiningPosition));
+            joinPosition == 0 ? "@0" : ("@" + joinPosition));
     }
 }

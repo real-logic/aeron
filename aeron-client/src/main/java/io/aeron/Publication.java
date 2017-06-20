@@ -50,6 +50,7 @@ public class Publication implements AutoCloseable
 
     /**
      * The offer failed due to an administration action and should be retried.
+     * The action is an operation such as log rotation which is likely to have succeeded by the next retry attempt.
      */
     public static final long ADMIN_ACTION = -3;
 

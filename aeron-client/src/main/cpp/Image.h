@@ -132,7 +132,7 @@ public:
 
         const util::index_t capacity = m_termBuffers[0].capacity();
 
-        m_joiningPosition = subscriberPosition.get();
+        m_joinPosition = subscriberPosition.get();
         m_termLengthMask = capacity - 1;
         m_positionBitsToShift = BitUtil::numberOfTrailingZeroes(capacity);
     }
@@ -247,9 +247,9 @@ public:
      *
      * @return the position at which this stream was joined.
      */
-    inline std::int64_t joiningPosition() const
+    inline std::int64_t joinPosition() const
     {
-        return m_joiningPosition;
+        return m_joinPosition;
     }
 
     /**
@@ -503,7 +503,7 @@ private:
 
     std::int64_t m_correlationId;
     std::int64_t m_subscriptionRegistrationId;
-    std::int64_t m_joiningPosition;
+    std::int64_t m_joinPosition;
     std::int32_t m_sessionId;
     std::int32_t m_termLengthMask;
     std::int32_t m_positionBitsToShift;

@@ -47,7 +47,7 @@ public class ReplaySessionTest
     private static final int TERM_BUFFER_LENGTH = 4096 * 4;
     private static final int INITIAL_TERM_ID = 8231773;
     private static final int INITIAL_TERM_OFFSET = 1024;
-    private static final long JOINING_POSITION = INITIAL_TERM_OFFSET;
+    private static final long JOIN_POSITION = INITIAL_TERM_OFFSET;
     private static final long RECORDING_POSITION = INITIAL_TERM_OFFSET;
     private static final int MTU_LENGTH = 4096;
     private static final long TIME = 0;
@@ -77,7 +77,7 @@ public class ReplaySessionTest
             TERM_BUFFER_LENGTH,
             MTU_LENGTH,
             INITIAL_TERM_ID,
-            JOINING_POSITION,
+            JOIN_POSITION,
             1,
             1,
             "channel",
@@ -452,7 +452,7 @@ public class ReplaySessionTest
             TERM_BUFFER_LENGTH,
             MTU_LENGTH,
             INITIAL_TERM_ID,
-            JOINING_POSITION,
+            JOIN_POSITION,
             1,
             1,
             "channel",

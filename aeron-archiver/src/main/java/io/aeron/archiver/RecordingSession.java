@@ -140,8 +140,7 @@ class RecordingSession implements Session
         // this reflects the single local recording assumption
         CloseHelper.quietClose(image.subscription());
         notificationsProxy.recordingStopped(recordingId, recordingWriter.lastPosition());
-        this.state = State.CLOSED;
-
+        state = State.CLOSED;
     }
 
     private int record()

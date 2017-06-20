@@ -38,10 +38,7 @@ class ControlSession implements Session, ControlRequestListener
     private State state = State.INIT;
     private long timeConnectedMs;
 
-    ControlSession(
-        final Image image,
-        final ArchiveConductor conductor,
-        final EpochClock epochClock)
+    ControlSession(final Image image, final ArchiveConductor conductor, final EpochClock epochClock)
     {
         this.image = image;
         this.conductor = conductor;

@@ -93,16 +93,13 @@ class Catalog implements AutoCloseable
         }
     }
 
-    private int loadIntoCatalog(
+    private void loadIntoCatalog(
         final ByteBuffer dst, final UnsafeBuffer unsafeBuffer, final RecordingDescriptorDecoder decoder)
     {
         if (dst.remaining() == 0)
         {
-            return 0;
+            return;
         }
-
-        // Note: prep for some lookup method construction
-        final int length = unsafeBuffer.getInt(0);
 
         decoder.wrap(
             unsafeBuffer,
@@ -115,8 +112,6 @@ class Catalog implements AutoCloseable
         // TODO: verify catalog reflects last position from metadata file, and equally that the files are aligned
         // TODO: with last writes.
         nextRecordingId = Math.max(recordingId + 1, nextRecordingId);
-
-        return length + CATALOG_FRAME_LENGTH;
     }
 
     long addNewRecording(
@@ -164,6 +159,7 @@ class Catalog implements AutoCloseable
         }
 
         nextRecordingId++;
+
         return newRecordingId;
     }
 
@@ -205,6 +201,7 @@ class Catalog implements AutoCloseable
         {
             throw new IllegalArgumentException("Invalid recording id : " + recordingId);
         }
+
         recordingDescriptorEncoder
             .wrap(unsafeBuffer, CATALOG_FRAME_LENGTH)
             .lastPosition(lastPosition)

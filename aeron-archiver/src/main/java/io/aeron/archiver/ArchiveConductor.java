@@ -113,10 +113,12 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         CloseHelper.quietClose(aeronClientAgentInvoker);
         CloseHelper.quietClose(driverAgentInvoker);
         CloseHelper.quietClose(catalog);
+
         if (!recordingSessionByIdMap.isEmpty())
         {
             System.err.println("ERROR: expected empty recordingSessionByIdMap");
         }
+
         if (!replaySessionByIdMap.isEmpty())
         {
             System.err.println("ERROR: expected empty replaySessionByIdMap");
@@ -278,6 +280,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 ControlResponseCode.ERROR,
                 "Max concurrent replays reached: " + maxConcurrentReplays,
                 controlPublication);
+
             return;
         }
 
@@ -377,9 +380,11 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         try
         {
             catalog.updateCatalogFromMeta(recordingId, session.lastPosition(), session.startTime(), session.endTime());
-        } catch (final IOException e)
+        }
+        catch (final IOException ex)
         {
-            e.printStackTrace();
+            // TODO: Fix this.
+            ex.printStackTrace();
         }
     }
 

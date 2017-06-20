@@ -149,6 +149,7 @@ class ListRecordingsSession implements Session
                 ControlResponseCode.RECORDING_NOT_FOUND,
                 "Requested start id exceeds max known recording id",
                 controlPublication);
+
             state = State.INACTIVE;
         }
         else

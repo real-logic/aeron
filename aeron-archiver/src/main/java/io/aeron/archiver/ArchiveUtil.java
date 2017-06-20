@@ -39,9 +39,9 @@ class ArchiveUtil
         return recordingId + "." + segmentIndex + ".rec";
     }
 
-    static int segmentFileIndex(final long joiningPosition, final long position, final int segmentFileLength)
+    static int segmentFileIndex(final long joinPosition, final long position, final int segmentFileLength)
     {
-        return (int)((position - joiningPosition) / segmentFileLength);
+        return (int)((position - joinPosition) / segmentFileLength);
     }
 
     static void printMetaFile(final File metaFile) throws IOException
@@ -50,8 +50,8 @@ class ArchiveUtil
 
         System.out.println("recordingId: " + formatDecoder.recordingId());
         System.out.println("termBufferLength: " + formatDecoder.termBufferLength());
-        System.out.println("joiningTimestamp: " + new Date(formatDecoder.joiningTimestamp()));
-        System.out.println("joiningPosition: " + formatDecoder.joiningPosition());
+        System.out.println("joinTimestamp: " + new Date(formatDecoder.joinTimestamp()));
+        System.out.println("joinPosition: " + formatDecoder.joinPosition());
         System.out.println("endPosition: " + formatDecoder.endPosition());
         System.out.println("endTimestamp: " + new Date(formatDecoder.endTimestamp()));
         System.out.println("sessionId: " + formatDecoder.sessionId());
@@ -89,6 +89,6 @@ class ArchiveUtil
 
     static long recordingLength(final RecordingDescriptorDecoder metaDecoder)
     {
-        return metaDecoder.endPosition() - metaDecoder.joiningPosition();
+        return metaDecoder.endPosition() - metaDecoder.joinPosition();
     }
 }

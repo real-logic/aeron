@@ -82,7 +82,7 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
     private final MappedByteBuffer metaDataBuffer;
     private final RecordingDescriptorEncoder metaDataEncoder;
     private final int segmentFileLength;
-    private final long joiningPosition;
+    private final long joinPosition;
 
     /**
      * Index is in the range 0:segmentFileLength, except before the first block for this image is received indicated
@@ -95,7 +95,7 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
     private boolean closed = false;
     private boolean stopped = false;
     private long endPosition = NULL_POSITION;
-    private long joiningTimestamp = NULL_TIME;
+    private long joinTimestamp = NULL_TIME;
     private long endTimestamp = NULL_TIME;
 
     RecordingWriter(
@@ -104,7 +104,7 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         final int termBufferLength,
         final int mtuLength,
         final int initialTermId,
-        final long joiningPosition,
+        final long joinPosition,
         final int sessionId,
         final int streamId,
         final String channel,
@@ -118,7 +118,7 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         this.recordingId = recordingId;
         this.termBufferLength = termBufferLength;
         this.initialTermId = initialTermId;
-        this.joiningPosition = joiningPosition;
+        this.joinPosition = joinPosition;
 
         this.termsMask = (segmentFileLength / termBufferLength) - 1;
         if (((termsMask + 1) & termsMask) != 0)
@@ -143,7 +143,7 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
                 segmentFileLength,
                 mtuLength,
                 initialTermId,
-                joiningPosition,
+                joinPosition,
                 sessionId,
                 streamId,
                 channel,
@@ -166,7 +166,7 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         final int segmentFileLength,
         final int mtuLength,
         final int initialTermId,
-        final long joiningPosition,
+        final long joinPosition,
         final int sessionId,
         final int streamId,
         final String channel,
@@ -175,8 +175,8 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         recordingDescriptorEncoder
             .recordingId(recordingId)
             .termBufferLength(termBufferLength)
-            .joiningTimestamp(NULL_TIME)
-            .joiningPosition(joiningPosition)
+            .joinTimestamp(NULL_TIME)
+            .joinPosition(joinPosition)
             .endPosition(NULL_POSITION)
             .endTimestamp(NULL_TIME)
             .mtuLength(mtuLength)
@@ -276,8 +276,8 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
             marker.buffer.clear();
             recordingFileChannel.write(marker.buffer, 0);
             recordingFileChannel.position(segmentPosition);
-            joiningTimestamp = epochClock.time();
-            metaDataEncoder.joiningTimestamp(joiningTimestamp);
+            joinTimestamp = epochClock.time();
+            metaDataEncoder.joinTimestamp(joinTimestamp);
         }
         // write ahead of data to indicate end of data in file
         marker.header.frameLength(END_OF_DATA_INDICATOR);
@@ -361,9 +361,9 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         return segmentFileLength;
     }
 
-    long joiningPosition()
+    long joinPosition()
     {
-        return joiningPosition;
+        return joinPosition;
     }
 
     long endPosition()
@@ -371,9 +371,9 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         return endPosition;
     }
 
-    long joiningTimestamp()
+    long joinTimestamp()
     {
-        return joiningTimestamp;
+        return joinTimestamp;
     }
 
     long endTimestamp()

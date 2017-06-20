@@ -87,7 +87,7 @@ public class ArchiveReplayLoadTest
     };
     private Subscription reply;
     private long correlationId;
-    private long joiningPosition;
+    private long joinPosition;
     private FragmentHandler validateFragmentHandler = this::validateFragment;
 
     @Before
@@ -203,9 +203,9 @@ public class ArchiveReplayLoadTest
     private void publishDataToRecorded(final Publication publication, final int messageCount)
     {
         final int positionBitsToShift = Integer.numberOfTrailingZeros(publication.termBufferLength());
-        joiningPosition = publication.position();
+        joinPosition = publication.position();
         final int initialTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(
-            joiningPosition, positionBitsToShift);
+            joinPosition, positionBitsToShift);
 
         buffer.setMemory(0, 1024, (byte)'z');
         buffer.putStringAscii(32, "TEST");
@@ -226,7 +226,7 @@ public class ArchiveReplayLoadTest
             (termIdFromPosition - publication.initialTermId()) * publication.termBufferLength() +
                 (lastTermOffset - initialTermOffset);
 
-        assertThat(publication.position() - joiningPosition, is(totalRecordingLength));
+        assertThat(publication.position() - joinPosition, is(totalRecordingLength));
         lastTermId = termIdFromPosition;
     }
 
@@ -241,7 +241,7 @@ public class ArchiveReplayLoadTest
 
             TestUtil.waitFor(() -> client.replay(
                 recordingId,
-                joiningPosition,
+                joinPosition,
                 totalRecordingLength,
                 REPLAY_URI,
                 replayStreamId,
@@ -300,11 +300,11 @@ public class ArchiveReplayLoadTest
 
                             public void onProgress(
                                 final long recordingId0,
-                                final long joiningPosition,
+                                final long joinPosition,
                                 final long currentPosition)
                             {
                                 assertThat(recordingId0, is(recordingId));
-                                recorded = currentPosition - joiningPosition;
+                                recorded = currentPosition - joinPosition;
                                 printf("a=%d total=%d %n", recorded, totalRecordingLength);
                             }
 

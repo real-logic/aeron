@@ -40,10 +40,10 @@ public interface RecordingEventsListener
      * Progress indication of an active recording.
      *
      * @param recordingId     for which progress is being reported.
-     * @param joiningPosition in the publication at which the recording started.
+     * @param joinPosition in the publication at which the recording started.
      * @param currentPosition of the publication being recorded.
      */
-    void onProgress(long recordingId, long joiningPosition, long currentPosition);
+    void onProgress(long recordingId, long joinPosition, long currentPosition);
 
     /**
      * Fired when a recording is stopped.

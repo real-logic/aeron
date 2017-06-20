@@ -112,15 +112,15 @@ class ReplaySession
         }
 
         Objects.requireNonNull(metaData);
-        final long joiningPosition = metaData.joiningPosition();
+        final long joinPosition = metaData.joinPosition();
         final int mtuLength = metaData.mtuLength();
         final int termBufferLength = metaData.termBufferLength();
         final int initialTermId = metaData.initialTermId();
 
-        if (replayPosition < joiningPosition)
+        if (replayPosition < joinPosition)
         {
             closeOnError(null, "Requested replay start position(=" + replayPosition +
-                ") is less than recording joining position(=" + joiningPosition + ")");
+                ") is less than recording join position(=" + joinPosition + ")");
         }
 
         RecordingFragmentReader cursor = null;
@@ -178,7 +178,7 @@ class ReplaySession
     public void abort()
     {
         aborted = true;
-        this.state = State.INACTIVE;
+        state = State.INACTIVE;
     }
 
     public boolean isDone()
@@ -242,7 +242,7 @@ class ReplaySession
     {
         if (isLingerDone())
         {
-            this.state = State.INACTIVE;
+            state = State.INACTIVE;
         }
 
         return 0;
@@ -266,7 +266,7 @@ class ReplaySession
         }
 
         controlSessionProxy.sendOkResponse(correlationId, controlPublication);
-        this.state = State.REPLAY;
+        state = State.REPLAY;
 
         return 1;
     }
@@ -295,7 +295,7 @@ class ReplaySession
             if (cursor.isDone())
             {
                 lingerSinceMs = epochClock.time();
-                this.state = State.LINGER;
+                state = State.LINGER;
             }
 
             return polled;
@@ -319,7 +319,7 @@ class ReplaySession
 
         CloseHelper.close(replayPublication);
         CloseHelper.close(cursor);
-        this.state = State.CLOSED;
+        state = State.CLOSED;
     }
 
     public long sessionId()

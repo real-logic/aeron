@@ -47,7 +47,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 public class Image
 {
     private final long correlationId;
-    private final long joiningPosition;
+    private final long joinPosition;
     private final int sessionId;
     private final int initialTermId;
     private final int termLengthMask;
@@ -90,7 +90,7 @@ public class Image
         this.errorHandler = errorHandler;
         this.sourceIdentity = sourceIdentity;
         this.correlationId = correlationId;
-        this.joiningPosition = subscriberPosition.get();
+        this.joinPosition = subscriberPosition.get();
 
         termBuffers = logBuffers.termBuffers();
 
@@ -186,9 +186,9 @@ public class Image
      *
      * @return the position the subscriber joined this stream at.
      */
-    public long joiningPosition()
+    public long joinPosition()
     {
-        return joiningPosition;
+        return joinPosition;
     }
 
     /**

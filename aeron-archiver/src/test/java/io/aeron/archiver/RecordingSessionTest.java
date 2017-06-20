@@ -49,7 +49,7 @@ public class RecordingSessionTest
     private final int termBufferLength = 4096;
     private final int termOffset = 1024;
     private final int mtuLength = 1024;
-    private final long joiningPosition = termOffset;
+    private final long joinPosition = termOffset;
 
     private final File tempDirForTest = TestUtil.makeTempDir();
     private final NotificationsProxy proxy;
@@ -123,8 +123,8 @@ public class RecordingSessionTest
         assertEquals(termBufferLength, metaData.termBufferLength());
         assertEquals(streamId, metaData.streamId());
         assertEquals(mtuLength, metaData.mtuLength());
-        assertEquals(RecordingWriter.NULL_TIME, metaData.joiningTimestamp());
-        assertEquals(joiningPosition, metaData.joiningPosition());
+        assertEquals(RecordingWriter.NULL_TIME, metaData.joinTimestamp());
+        assertEquals(joinPosition, metaData.joinPosition());
         assertEquals(RecordingWriter.NULL_TIME, metaData.endTimestamp());
         assertEquals(RecordingWriter.NULL_POSITION, metaData.endPosition());
         assertEquals(channel, metaData.channel());
@@ -155,10 +155,10 @@ public class RecordingSessionTest
 
         metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
 
-        assertEquals(42L, metaData.joiningTimestamp());
+        assertEquals(42L, metaData.joinTimestamp());
 
         assertEquals(RecordingWriter.NULL_TIME, metaData.endTimestamp());
-        assertEquals(joiningPosition + RECORDED_BLOCK_LENGTH, metaData.endPosition());
+        assertEquals(joinPosition + RECORDED_BLOCK_LENGTH, metaData.endPosition());
 
         final File segmentFile =
             new File(tempDirForTest, ArchiveUtil.recordingDataFileName(RECORDING_ID, 0));
@@ -217,7 +217,7 @@ public class RecordingSessionTest
         when(image.termBufferLength()).thenReturn(termBufferLength);
         when(image.subscription()).thenReturn(subscription);
         when(image.mtuLength()).thenReturn(mtuLength);
-        when(image.joiningPosition()).thenReturn(joiningPosition);
+        when(image.joinPosition()).thenReturn(joinPosition);
 
         return image;
     }

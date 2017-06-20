@@ -237,9 +237,9 @@ public class ArchiveClient
         responseListener.onRecordingDescriptor(
             recordingDescriptorDecoder.correlationId(),
             recordingDescriptorDecoder.recordingId(),
-            recordingDescriptorDecoder.joiningTimestamp(),
+            recordingDescriptorDecoder.joinTimestamp(),
             recordingDescriptorDecoder.endTimestamp(),
-            recordingDescriptorDecoder.joiningPosition(),
+            recordingDescriptorDecoder.joinPosition(),
             recordingDescriptorDecoder.endTimestamp(),
             recordingDescriptorDecoder.initialTermId(),
             recordingDescriptorDecoder.termBufferLength(),
@@ -285,8 +285,8 @@ public class ArchiveClient
 
                         recordingEventsListener.onProgress(
                             recordingProgressDecoder.recordingId(),
-                            recordingProgressDecoder.joiningPosition(),
-                            recordingProgressDecoder.currentPosition());
+                            recordingProgressDecoder.joinPosition(),
+                            recordingProgressDecoder.position());
                         break;
 
                     case RecordingStoppedDecoder.TEMPLATE_ID:

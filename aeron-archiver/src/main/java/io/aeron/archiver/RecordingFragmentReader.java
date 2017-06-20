@@ -93,12 +93,12 @@ class RecordingFragmentReader implements AutoCloseable
         termBufferLength = metaDecoder.termBufferLength();
         segmentFileLength = metaDecoder.segmentFileLength();
         final long recordingLength = ArchiveUtil.recordingLength(metaDecoder);
-        final long joiningPosition = metaDecoder.joiningPosition();
+        final long joinPosition = metaDecoder.joinPosition();
 
         final long replayLength = length == NULL_LENGTH ? recordingLength : length;
 
-        final long fromPosition = position == NULL_POSITION ? joiningPosition : position;
-        segmentFileIndex = segmentFileIndex(joiningPosition, fromPosition, segmentFileLength);
+        final long fromPosition = position == NULL_POSITION ? joinPosition : position;
+        segmentFileIndex = segmentFileIndex(joinPosition, fromPosition, segmentFileLength);
         final long recordingOffset = fromPosition & (segmentFileLength - 1);
         openRecordingFile();
 

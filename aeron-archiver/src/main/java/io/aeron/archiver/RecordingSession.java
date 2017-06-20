@@ -92,7 +92,7 @@ class RecordingSession implements Session
         final int termBufferLength = image.termBufferLength();
         final int mtuLength = image.mtuLength();
         final int initialTermId = image.initialTermId();
-        final long joiningPosition = image.joiningPosition();
+        final long joinPosition = image.joinPosition();
 
         RecordingWriter recordingWriter = null;
         try
@@ -103,7 +103,7 @@ class RecordingSession implements Session
                 termBufferLength,
                 mtuLength,
                 initialTermId,
-                joiningPosition,
+                joinPosition,
                 sessionId,
                 streamId,
                 channel,
@@ -153,7 +153,7 @@ class RecordingSession implements Session
             {
                 notificationsProxy.recordingProgress(
                     recordingWriter.recordingId(),
-                    recordingWriter.joiningPosition(),
+                    recordingWriter.joinPosition(),
                     recordingWriter.endPosition());
             }
 
@@ -176,9 +176,9 @@ class RecordingSession implements Session
         return (recordingWriter != null) ? recordingWriter.endPosition() : RecordingWriter.NULL_POSITION;
     }
 
-    long joiningTimestamp()
+    long joinTimestamp()
     {
-        return (recordingWriter != null) ? recordingWriter.joiningTimestamp() : RecordingWriter.NULL_TIME;
+        return (recordingWriter != null) ? recordingWriter.joinTimestamp() : RecordingWriter.NULL_TIME;
     }
 
     long endTimestamp()

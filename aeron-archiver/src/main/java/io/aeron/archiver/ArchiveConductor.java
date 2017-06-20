@@ -214,7 +214,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final int termBufferLength = image.termBufferLength();
         final int mtuLength = image.mtuLength();
         final int initialTermId = image.initialTermId();
-        final long joiningPosition = image.joiningPosition();
+        final long joinPosition = image.joinPosition();
 
         final long recordingId = catalog.addNewRecording(
             sessionId,
@@ -224,7 +224,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             termBufferLength,
             mtuLength,
             initialTermId,
-            joiningPosition,
+            joinPosition,
             recordingContext.recordingFileLength());
 
         final RecordingSession session = new RecordingSession(
@@ -380,7 +380,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         try
         {
             catalog.updateCatalogFromMeta(
-                recordingId, session.endPosition(), session.joiningTimestamp(), session.endTimestamp());
+                recordingId, session.endPosition(), session.joinTimestamp(), session.endTimestamp());
         }
         catch (final IOException ex)
         {

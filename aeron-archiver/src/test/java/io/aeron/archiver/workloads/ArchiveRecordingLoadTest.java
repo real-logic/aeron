@@ -200,11 +200,11 @@ public class ArchiveRecordingLoadTest
             {
                 public void onProgress(
                     final long recordingId0,
-                    final long joiningPosition,
+                    final long joinPosition,
                     final long currentPosition)
                 {
                     assertThat(recordingId0, is(recordingId));
-                    recorded = currentPosition - joiningPosition;
+                    recorded = currentPosition - joinPosition;
                 }
 
                 public void onStop(final long recordingId0, final long endPosition)
@@ -236,11 +236,11 @@ public class ArchiveRecordingLoadTest
 
         buffer.setMemory(0, 1024, (byte)'z');
         buffer.putStringAscii(32, "TEST");
-        final long joiningPosition = publication.position();
+        final long joinPosition = publication.position();
         final int startTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(
-            joiningPosition, positionBitsToShift);
+            joinPosition, positionBitsToShift);
         final int startTermIdFromPosition = LogBufferDescriptor.computeTermIdFromPosition(
-            joiningPosition, positionBitsToShift, publication.initialTermId());
+            joinPosition, positionBitsToShift, publication.initialTermId());
 
         for (int i = 0; i < messageCount; i++)
         {
@@ -258,7 +258,7 @@ public class ArchiveRecordingLoadTest
             (lastTermIdFromPosition - startTermIdFromPosition) * publication.termBufferLength() +
                 (lastTermOffset - startTermOffset);
 
-        assertThat(position - joiningPosition, is(totalRecordingLength));
+        assertThat(position - joinPosition, is(totalRecordingLength));
     }
 
     private void offer(final Publication publication, final UnsafeBuffer buffer, final int length)

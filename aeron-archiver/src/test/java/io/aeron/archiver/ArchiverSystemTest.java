@@ -82,7 +82,7 @@ public class ArchiverSystemTest
     };
     private Subscription controlResponses;
     private long correlationId;
-    private long joiningPosition;
+    private long joinPosition;
 
     @Before
     public void before() throws Exception
@@ -230,9 +230,9 @@ public class ArchiverSystemTest
             public void onRecordingDescriptor(
                 final long correlationId,
                 final long recordingId,
-                final long joiningTimestamp,
+                final long joinTimestamp,
                 final long endTimestamp,
-                final long joiningPosition,
+                final long joinPosition,
                 final long endPosition,
                 final int initialTermId,
                 final int termBufferLength,
@@ -297,7 +297,7 @@ public class ArchiverSystemTest
 
     private void publishDataToRecorded(final Publication publication, final int messageCount)
     {
-        joiningPosition = publication.position();
+        joinPosition = publication.position();
 
         buffer.setMemory(0, 1024, (byte)'z');
         buffer.putStringAscii(32, "TEST");
@@ -311,7 +311,7 @@ public class ArchiverSystemTest
         }
 
         final long position = publication.position();
-        totalRecordingLength = position - joiningPosition;
+        totalRecordingLength = position - joinPosition;
         endPosition = position;
     }
 
@@ -326,7 +326,7 @@ public class ArchiverSystemTest
 
             waitFor(() -> client.replay(
                 recordingId,
-                joiningPosition,
+                joinPosition,
                 totalRecordingLength,
                 REPLAY_URI,
                 REPLAY_STREAM_ID,
@@ -339,7 +339,7 @@ public class ArchiverSystemTest
             assertThat(image.initialTermId(), is(publication.initialTermId()));
             assertThat(image.mtuLength(), is(publication.maxPayloadLength() + DataHeaderFlyweight.HEADER_LENGTH));
             assertThat(image.termBufferLength(), is(publication.termBufferLength()));
-            assertThat(image.position(), is(joiningPosition));
+            assertThat(image.position(), is(joinPosition));
 
             fragmentCount = 0;
             remaining = totalDataLength;
@@ -412,11 +412,11 @@ public class ArchiverSystemTest
                         {
                             public void onProgress(
                                 final long recordingId0,
-                                final long joiningPosition,
+                                final long joinPosition,
                                 final long currentPosition)
                             {
                                 assertThat(recordingId0, is(recordingId));
-                                recorded = currentPosition - joiningPosition;
+                                recorded = currentPosition - joinPosition;
                                 printf("a=%d total=%d %n", recorded, totalRecordingLength);
                             }
                         }, 1)) != 0);

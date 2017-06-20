@@ -40,9 +40,9 @@ public class FailResponseListener implements ResponseListener
     public void onRecordingDescriptor(
         final long correlationId,
         final long recordingId,
-        final long joiningTimestamp,
+        final long joinTimestamp,
         final long endTimestamp,
-        final long joiningPosition,
+        final long joinPosition,
         final long endPosition,
         final int initialTermId,
         final int termBufferLength,

@@ -122,7 +122,7 @@ class Catalog implements AutoCloseable
         final int termBufferLength,
         final int mtuLength,
         final int imageInitialTermId,
-        final long joiningPosition,
+        final long joinPosition,
         final int segmentFileLength)
     {
         final long newRecordingId = nextRecordingId;
@@ -135,7 +135,7 @@ class Catalog implements AutoCloseable
             segmentFileLength,
             mtuLength,
             imageInitialTermId,
-            joiningPosition,
+            joinPosition,
             sessionId,
             streamId,
             channel,
@@ -193,7 +193,7 @@ class Catalog implements AutoCloseable
     void updateCatalogFromMeta(
         final long recordingId,
         final long endPosition,
-        final long joiningTimestamp,
+        final long joinTimestamp,
         final long endTimestamp) throws IOException
     {
         byteBuffer.clear();
@@ -205,7 +205,7 @@ class Catalog implements AutoCloseable
         recordingDescriptorEncoder
             .wrap(unsafeBuffer, CATALOG_FRAME_LENGTH)
             .endPosition(endPosition)
-            .joiningTimestamp(joiningTimestamp)
+            .joinTimestamp(joinTimestamp)
             .endTimestamp(endTimestamp);
 
         catalogFileChannel.write(byteBuffer, recordingId * RECORD_LENGTH);

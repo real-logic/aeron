@@ -43,8 +43,8 @@
                  id="102"
                  description="Recording progress notification for an image">
         <field name="recordingId"          id="1" type="int64"/>
-        <field name="joiningPosition"      id="2" type="int64"/>
-        <field name="currentPosition"      id="3" type="int64"/>
+        <field name="joinPosition"         id="2" type="int64"/>
+        <field name="position"             id="3" type="int64"/>
     </sbe:message>
 
     <sbe:message name="RecordingStopped"
@@ -131,9 +131,9 @@
                  description="Describes a recording in the metadata file and catalog">
         <field name="correlationId"        id="1" type="int64" />
         <field name="recordingId"          id="2" type="int64"/>
-        <field name="joiningTimestamp"     id="3" type="uint64" epoch="unix" timeUnit="milliseconds"/>
+        <field name="joinTimestamp"        id="3" type="uint64" epoch="unix" timeUnit="milliseconds"/>
         <field name="endTimestamp"         id="4" type="uint64" epoch="unix" timeUnit="milliseconds"/>
-        <field name="joiningPosition"      id="5" type="int64"/>
+        <field name="joinPosition"         id="5" type="int64"/>
         <field name="endPosition"          id="6" type="int64"/>
         <field name="initialTermId"        id="7" type="int32"/>
         <field name="termBufferLength"     id="8" type="int32"/>

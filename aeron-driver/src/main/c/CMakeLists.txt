@@ -41,6 +41,7 @@ SET(SOURCE
     aeron_position.c
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel.c
+    media/aeron_send_channel_endpoint.c
     uri/aeron_uri.c
     collections/aeron_int64_to_ptr_hash_map.c
     collections/aeron_str_to_ptr_hash_map.c)
@@ -81,6 +82,7 @@ SET(HEADERS
     aeron_position.h
     media/aeron_udp_channel_transport.h
     media/aeron_udp_channel.h
+    media/aeron_send_channel_endpoint.h
     uri/aeron_uri.h
     collections/aeron_int64_to_ptr_hash_map.h
     collections/aeron_str_to_ptr_hash_map.h)

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.driver.uri;
+package io.aeron.driver.media;
 
 import java.net.InetSocketAddress;
 import java.util.function.BiFunction;
@@ -21,15 +21,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.lang.Integer.parseInt;
-import static org.agrona.Strings.parseIntOrDefault;
 
-public class SocketAddressUtil
+class SocketAddressUtil
 {
     private static final Pattern IPV4_ADDRESS_PATTERN = Pattern.compile("([^:]+)(?::([0-9]+))?");
     private static final Pattern IPV6_ADDRESS_PATTERN = Pattern.compile(
         "\\[([0-9A-Fa-f:]+)(?:%[a-zA-Z0-9_.~-]+)?\\](?::([0-9]+))?");
 
-    private static InetSocketAddress parse(
+    static InetSocketAddress parse(
         final CharSequence cs, final BiFunction<String, String, InetSocketAddress> consumer)
     {
         if (null == cs)
@@ -67,7 +66,7 @@ public class SocketAddressUtil
      * @param cs Input string
      * @return An InetSocketAddress parsed from the input.
      */
-    public static InetSocketAddress parse(final CharSequence cs)
+    static InetSocketAddress parse(final CharSequence cs)
     {
         return parse(cs, (hostString, portString) ->
         {
@@ -78,16 +77,5 @@ public class SocketAddressUtil
 
             return new InetSocketAddress(hostString, parseInt(portString));
         });
-    }
-
-    public static InetSocketAddress parse(final CharSequence cs, final int defaultPort)
-    {
-        return parse(
-            cs,
-            (hostString, portString) ->
-            {
-                final int port = parseIntOrDefault(portString, defaultPort);
-                return new InetSocketAddress(hostString, port);
-            });
     }
 }

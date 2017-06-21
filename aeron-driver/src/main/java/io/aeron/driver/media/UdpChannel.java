@@ -19,8 +19,6 @@ import io.aeron.ErrorCode;
 import io.aeron.driver.Configuration;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.AeronUri;
-import io.aeron.driver.uri.InterfaceSearchAddress;
-import io.aeron.driver.uri.SocketAddressUtil;
 import org.agrona.BitUtil;
 
 import java.net.*;

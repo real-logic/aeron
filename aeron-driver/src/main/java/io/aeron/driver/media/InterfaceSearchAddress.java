@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.driver.uri;
+package io.aeron.driver.media;
 
 import org.agrona.Strings;
 
@@ -25,43 +25,43 @@ import java.util.regex.Pattern;
 
 import static org.agrona.Strings.parseIntOrDefault;
 
-public class InterfaceSearchAddress
+class InterfaceSearchAddress
 {
-    private static final Pattern IPV4_ADDRESS_PATTERN =
-        Pattern.compile("([^:/]+)(?::(?<port>[0-9]+))?(?:/(?<subnet>[0-9]+))?");
-    private static final Pattern IPV6_ADDRESS_PATTERN =
-        Pattern.compile("\\[([0-9A-Fa-f:]+)\\](?::(?<port>[0-9]+))?(?:/(?<subnet>[0-9]+))?");
+    private static final Pattern IPV4_ADDRESS_PATTERN = Pattern.compile(
+        "([^:/]+)(?::(?<port>[0-9]+))?(?:/(?<subnet>[0-9]+))?");
+    private static final Pattern IPV6_ADDRESS_PATTERN = Pattern.compile(
+        "\\[([0-9A-Fa-f:]+)\\](?::(?<port>[0-9]+))?(?:/(?<subnet>[0-9]+))?");
 
     private final InetSocketAddress address;
     private final int subnetPrefix;
 
-    public InterfaceSearchAddress(final InetSocketAddress address, final int subnetPrefix)
+    InterfaceSearchAddress(final InetSocketAddress address, final int subnetPrefix)
     {
         this.address = address;
         this.subnetPrefix = subnetPrefix;
     }
 
-    public InetSocketAddress getAddress()
+    InetSocketAddress getAddress()
     {
         return address;
     }
 
-    public InetAddress getInetAddress()
+    InetAddress getInetAddress()
     {
         return address.getAddress();
     }
 
-    public int getSubnetPrefix()
+    int getSubnetPrefix()
     {
         return subnetPrefix;
     }
 
-    public int getPort()
+    int getPort()
     {
         return address.getPort();
     }
 
-    public static InterfaceSearchAddress parse(final String s) throws UnknownHostException
+    static InterfaceSearchAddress parse(final String s) throws UnknownHostException
     {
         if (Strings.isEmpty(s))
         {
@@ -76,6 +76,11 @@ public class InterfaceSearchAddress
         final int subnetPrefix = parseIntOrDefault(matcher.group("subnet"), defaultSubnetPrefix);
 
         return new InterfaceSearchAddress(new InetSocketAddress(hostAddress, port), subnetPrefix);
+    }
+
+    static InterfaceSearchAddress wildcard()
+    {
+        return new InterfaceSearchAddress(new InetSocketAddress(0), 0);
     }
 
     private static Matcher getMatcher(final CharSequence cs)
@@ -95,10 +100,5 @@ public class InterfaceSearchAddress
         }
 
         throw new IllegalArgumentException("Invalid search address: " + cs);
-    }
-
-    public static InterfaceSearchAddress wildcard()
-    {
-        return new InterfaceSearchAddress(new InetSocketAddress(0), 0);
     }
 }

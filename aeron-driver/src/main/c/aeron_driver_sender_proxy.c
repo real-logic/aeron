@@ -14,18 +14,40 @@
  * limitations under the License.
  */
 
-#include "aeron_driver_sender_proxy.h"
+#include <sched.h>
 #include "aeron_driver_sender.h"
+#include "aeron_alloc.h"
 
 void aeron_driver_sender_proxy_register_endpoint(
-    aeron_driver_context_t *context, aeron_send_channel_endpoint_t *endpoint)
+    aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint)
 {
-    if (AERON_THREADING_MODE_SHARED == context->threading_mode)
+    if (AERON_THREADING_MODE_SHARED == sender_proxy->threading_mode)
     {
-        aeron_driver_sender_on_register_endpoint(context->sender, endpoint);
+        aeron_command_base_t cmd =
+            {
+                .func = aeron_driver_sender_on_register_endpoint,
+                .item = endpoint
+            };
+
+        aeron_driver_sender_on_register_endpoint(sender_proxy->sender, &cmd);
     }
     else
     {
+        aeron_command_base_t *cmd;
 
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        {
+            aeron_counter_ordered_increment(sender_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->func = aeron_driver_sender_on_register_endpoint;
+        cmd->item = endpoint;
+
+        while (aeron_spsc_concurrent_array_queue_offer(sender_proxy->command_queue, cmd) != AERON_OFFER_SUCCESS)
+        {
+            aeron_counter_ordered_increment(sender_proxy->fail_counter, 1);
+            sched_yield();
+        }
     }
 }

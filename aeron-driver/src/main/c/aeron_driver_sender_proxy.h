@@ -20,7 +20,18 @@
 #include "aeron_driver_context.h"
 #include "media/aeron_send_channel_endpoint.h"
 
+typedef struct aeron_driver_sender_stct aeron_driver_sender_t;
+
+typedef struct aeron_driver_sender_proxy_stct
+{
+    aeron_driver_sender_t *sender;
+    aeron_threading_mode_t threading_mode;
+    aeron_spsc_concurrent_array_queue_t *command_queue;
+    int64_t *fail_counter;
+}
+aeron_driver_sender_proxy_t;
+
 void aeron_driver_sender_proxy_register_endpoint(
-    aeron_driver_context_t *context, aeron_send_channel_endpoint_t *endpoint);
+    aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint);
 
 #endif //AERON_AERON_DRIVER_SENDER_PROXY_H

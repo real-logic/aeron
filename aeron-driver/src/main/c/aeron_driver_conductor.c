@@ -81,7 +81,11 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
         return -1;
     }
 
-    conductor->command_queue = &context->conductor_command_queue;
+    conductor->conductor_proxy.command_queue = &context->conductor_command_queue;
+    conductor->conductor_proxy.fail_counter =
+        aeron_counter_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_CONDUCTOR_PROXY_FAILS);
+    conductor->conductor_proxy.threading_mode = context->threading_mode;
+    conductor->conductor_proxy.conductor = conductor;
 
     conductor->clients.array = NULL;
     conductor->clients.capacity = 0;
@@ -411,7 +415,7 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
             return NULL;
         }
 
-        aeron_driver_sender_proxy_register_endpoint(conductor->context, endpoint);
+        aeron_driver_sender_proxy_register_endpoint(conductor->context->sender_proxy, endpoint);
 
         *status_indicator.value_addr = AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE;
     }
@@ -754,7 +758,7 @@ int aeron_driver_conductor_do_work(void *clientd)
         (int)aeron_mpsc_rb_read(&conductor->to_driver_commands, aeron_driver_conductor_on_command, conductor, 10);
     work_count +=
         aeron_mpsc_concurrent_array_queue_drain(
-            conductor->command_queue, aeron_driver_conductor_on_command_queue, conductor, 10);
+            conductor->conductor_proxy.command_queue, aeron_driver_conductor_on_command_queue, conductor, 10);
 
     if (now_ns > (conductor->time_of_last_timeout_check_ns + AERON_DRIVER_CONDUCTOR_TIMEOUT_CHECK_NS))
     {
@@ -1158,3 +1162,5 @@ extern size_t aeron_driver_conductor_num_ipc_subscriptions(aeron_driver_conducto
 extern size_t aeron_driver_conductor_num_active_ipc_subscriptions(aeron_driver_conductor_t *conductor, int32_t stream_id);
 extern aeron_ipc_publication_t *aeron_driver_conductor_find_ipc_publication(
     aeron_driver_conductor_t *conductor, int64_t id);
+extern int64_t *aeron_driver_conductor_system_counter_addr(
+    aeron_driver_conductor_t *conductor, aeron_system_counter_enum_t type);

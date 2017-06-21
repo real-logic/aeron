@@ -155,4 +155,5 @@ extern int64_t *aeron_counter_addr(aeron_counters_manager_t *manager, int32_t co
 extern void aeron_counter_set_value(volatile int64_t *addr, int64_t value);
 extern int64_t aeron_counter_get_value(volatile int64_t *addr);
 extern int64_t aeron_counter_increment(volatile int64_t *addr, int64_t value);
+extern int64_t aeron_counter_ordered_increment(volatile int64_t *addr, int64_t value);
 extern int64_t aeron_counter_add_ordered(volatile int64_t *addr, int64_t value);

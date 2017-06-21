@@ -18,12 +18,12 @@
 #define AERON_AERON_DRIVER_RECEIVER_H
 
 #include "aeron_driver_context.h"
+#include "aeron_driver_receiver_proxy.h"
 
 typedef struct aeron_driver_receiver_stct
 {
+    aeron_driver_receiver_proxy_t receiver_proxy;
     aeron_driver_context_t *context;
-    aeron_spsc_concurrent_array_queue_t *command_queue;
-    aeron_mpsc_concurrent_array_queue_t *conductor_command_queue;
 }
 aeron_driver_receiver_t;
 

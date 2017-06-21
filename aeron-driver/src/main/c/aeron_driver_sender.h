@@ -17,14 +17,13 @@
 #ifndef AERON_AERON_DRIVER_SENDER_H
 #define AERON_AERON_DRIVER_SENDER_H
 
-#include "media/aeron_send_channel_endpoint.h"
 #include "aeron_driver_context.h"
+#include "aeron_driver_sender_proxy.h"
 
 typedef struct aeron_driver_sender_stct
 {
+    aeron_driver_sender_proxy_t sender_proxy;
     aeron_driver_context_t *context;
-    aeron_spsc_concurrent_array_queue_t *command_queue;
-    aeron_mpsc_concurrent_array_queue_t *conductor_command_queue;
 }
 aeron_driver_sender_t;
 
@@ -33,6 +32,6 @@ int aeron_driver_sender_init(aeron_driver_sender_t *sender, aeron_driver_context
 int aeron_driver_sender_do_work(void *clientd);
 void aeron_driver_sender_on_close(void *clientd);
 
-void aeron_driver_sender_on_register_endpoint(aeron_driver_sender_t *sender, aeron_send_channel_endpoint_t *endpoint);
+void aeron_driver_sender_on_register_endpoint(void *clientd, void *command);
 
 #endif //AERON_AERON_DRIVER_SENDER_H

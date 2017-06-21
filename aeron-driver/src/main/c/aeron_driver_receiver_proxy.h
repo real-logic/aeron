@@ -14,25 +14,20 @@
  * limitations under the License.
  */
 
-#include "aeron_driver_receiver.h"
+#ifndef AERON_AERON_DRIVER_RECEIVER_PROXY_H
+#define AERON_AERON_DRIVER_RECEIVER_PROXY_H
 
-int aeron_driver_receiver_init(aeron_driver_receiver_t *receiver, aeron_driver_context_t *context)
+#include "aeron_driver_context.h"
+
+typedef struct aeron_driver_receiver_stct aeron_driver_receiver_t;
+
+typedef struct aeron_driver_receiver_proxy_stct
 {
-    receiver->context = context;
-    receiver->receiver_proxy.command_queue = &context->receiver_command_queue;
-    receiver->receiver_proxy.fail_counter = NULL;
-    receiver->receiver_proxy.threading_mode = context->threading_mode;
-    receiver->receiver_proxy.receiver = receiver;
-    return 0;
+    aeron_driver_receiver_t *receiver;
+    aeron_threading_mode_t threading_mode;
+    aeron_spsc_concurrent_array_queue_t *command_queue;
+    int64_t *fail_counter;
 }
+aeron_driver_receiver_proxy_t;
 
-int aeron_driver_receiver_do_work(void *clientd)
-{
-    return 0;
-}
-
-void aeron_driver_receiver_on_close(void *clientd)
-{
-
-}
-
+#endif //AERON_AERON_DRIVER_RECEIVER_PROXY_H

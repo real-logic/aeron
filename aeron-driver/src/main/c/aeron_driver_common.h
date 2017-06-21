@@ -55,7 +55,8 @@ aeron_subscribeable_t;
 
 typedef struct aeron_command_base_stct
 {
-    void (*func)(void *clientd);
+    void (*func)(void *clientd, void *command);
+    void *item;
 }
 aeron_command_base_t;
 

@@ -46,9 +46,9 @@ aeron_cnc_metadata_t;
 
 #define AERON_COMMAND_QUEUE_CAPACITY (256)
 
-typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
-typedef struct aeron_driver_sender_stct aeron_driver_sender_t;
-typedef struct aeron_driver_receiver_stct aeron_driver_receiver_t;
+typedef struct aeron_driver_conductor_proxy_stct aeron_driver_conductor_proxy_t;
+typedef struct aeron_driver_sender_proxy_stct aeron_driver_sender_proxy_t;
+typedef struct aeron_driver_receiver_proxy_stct aeron_driver_receiver_proxy_t;
 
 typedef enum aeron_threading_mode_enum
 {
@@ -112,9 +112,9 @@ typedef struct aeron_driver_context_stct
     aeron_map_raw_log_func_t map_raw_log_func;
     aeron_map_raw_log_close_func_t map_raw_log_close_func;
 
-    aeron_driver_conductor_t *conductor;
-    aeron_driver_sender_t *sender;
-    aeron_driver_receiver_t *receiver;
+    aeron_driver_conductor_proxy_t *conductor_proxy;
+    aeron_driver_sender_proxy_t *sender_proxy;
+    aeron_driver_receiver_proxy_t *receiver_proxy;
 }
 aeron_driver_context_t;
 

@@ -28,6 +28,7 @@
 #include "aeron_ipc_publication.h"
 #include "collections/aeron_str_to_ptr_hash_map.h"
 #include "media/aeron_send_channel_endpoint.h"
+#include "aeron_driver_conductor_proxy.h"
 
 #define AERON_DRIVER_CONDUCTOR_TIMEOUT_CHECK_NS (1 * 1000 * 1000 * 1000)
 
@@ -89,12 +90,12 @@ typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
 typedef struct aeron_driver_conductor_stct
 {
     aeron_driver_context_t *context;
-    aeron_mpsc_concurrent_array_queue_t *command_queue;
     aeron_mpsc_rb_t to_driver_commands;
     aeron_broadcast_transmitter_t to_clients;
     aeron_distinct_error_log_t error_log;
     aeron_counters_manager_t counters_manager;
     aeron_system_counters_t system_counters;
+    aeron_driver_conductor_proxy_t conductor_proxy;
 
     aeron_str_to_ptr_hash_map_t send_channel_endpoint_by_channel_map;
     aeron_str_to_ptr_hash_map_t receive_channel_endpoint_by_channel_map;
@@ -256,6 +257,12 @@ inline aeron_ipc_publication_t *aeron_driver_conductor_find_ipc_publication(
     }
 
     return NULL;
+}
+
+inline int64_t *aeron_driver_conductor_system_counter_addr(
+    aeron_driver_conductor_t *conductor, aeron_system_counter_enum_t type)
+{
+    return aeron_system_counter_addr(&conductor->system_counters, type);
 }
 
 #endif //AERON_AERON_DRIVER_CONDUCTOR_H

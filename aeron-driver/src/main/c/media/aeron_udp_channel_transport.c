@@ -150,7 +150,15 @@ int aeron_udp_channel_transport_init(
         }
     }
 
-    if (fcntl(transport->fd, F_SETFL, O_NONBLOCK) < 0)
+    int flags;
+
+    if ((flags = fcntl(transport->fd, F_GETFL, 0)) < 0)
+    {
+        goto error;
+    }
+
+    flags |= O_NONBLOCK;
+    if (fcntl(transport->fd, F_SETFL, flags) < 0)
     {
         goto error;
     }

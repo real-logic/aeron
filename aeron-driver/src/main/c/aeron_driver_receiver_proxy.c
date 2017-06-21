@@ -14,25 +14,5 @@
  * limitations under the License.
  */
 
-#include "aeron_driver_receiver.h"
-
-int aeron_driver_receiver_init(aeron_driver_receiver_t *receiver, aeron_driver_context_t *context)
-{
-    receiver->context = context;
-    receiver->receiver_proxy.command_queue = &context->receiver_command_queue;
-    receiver->receiver_proxy.fail_counter = NULL;
-    receiver->receiver_proxy.threading_mode = context->threading_mode;
-    receiver->receiver_proxy.receiver = receiver;
-    return 0;
-}
-
-int aeron_driver_receiver_do_work(void *clientd)
-{
-    return 0;
-}
-
-void aeron_driver_receiver_on_close(void *clientd)
-{
-
-}
+#include "aeron_driver_receiver_proxy.h"
 

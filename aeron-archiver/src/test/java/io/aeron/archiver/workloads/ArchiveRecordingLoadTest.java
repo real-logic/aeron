@@ -208,7 +208,7 @@ public class ArchiveRecordingLoadTest
                     recorded = position - joinPosition;
                 }
 
-                public void onStop(final long recordingId0, final long endPosition)
+                public void onStop(final long recordingId0, final long joinPosition, final long endPosition)
                 {
                     doneRecording = true;
                     assertThat(recordingId0, is(recordingId));

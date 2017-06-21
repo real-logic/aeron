@@ -49,9 +49,9 @@ public interface RecordingEventsListener
 
     /**
      * Fired when a recording is stopped.
-     *
-     * @param recordingId of the publication that has stopped recording.
-     * @param endPosition at which the recording stopped.
+     * @param recordingId  of the publication that has stopped recording.
+     * @param joinPosition in the stream at which the recording started.
+     * @param endPosition  at which the recording stopped.
      */
-    void onStop(long recordingId, long endPosition);
+    void onStop(long recordingId, long joinPosition, long endPosition);
 }

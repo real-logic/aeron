@@ -299,6 +299,7 @@ public class ArchiveClient
 
                         recordingEventsListener.onStop(
                             recordingStoppedDecoder.recordingId(),
+                            recordingStoppedDecoder.joinPosition(),
                             recordingStoppedDecoder.endPosition());
                         break;
 

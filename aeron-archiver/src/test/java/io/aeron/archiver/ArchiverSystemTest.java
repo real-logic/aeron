@@ -196,7 +196,7 @@ public class ArchiverSystemTest
 
             waitFor(() -> client.pollEvents(new FailRecordingEventsListener()
             {
-                public void onStop(final long rId, final long endPosition)
+                public void onStop(final long rId, final long joinPosition, final long endPosition)
                 {
                     assertThat(rId, is(recordingId));
                 }

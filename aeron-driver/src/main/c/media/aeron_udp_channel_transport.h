@@ -17,6 +17,10 @@
 #ifndef AERON_AERON_UDP_CHANNEL_TRANSPORT_H
 #define AERON_AERON_UDP_CHANNEL_TRANSPORT_H
 
+#if defined(__linux__)
+#define _GNU_SOURCE
+#endif
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 

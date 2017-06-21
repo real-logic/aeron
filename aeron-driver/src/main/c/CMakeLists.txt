@@ -15,7 +15,7 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
-    add_definitions(-D_GNU_SOURCE)
+    set(CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
 endif()
 
 check_symbol_exists(poll "poll.h" POLL_PROTOTYPE_EXISTS)

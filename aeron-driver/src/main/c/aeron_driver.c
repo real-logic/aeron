@@ -337,18 +337,20 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
         return -1;
     }
 
+    _driver->context->conductor_proxy = &_driver->conductor.conductor_proxy;
+
     if (aeron_driver_sender_init(&_driver->sender, context, &_driver->conductor.system_counters) < 0)
     {
         return -1;
     }
+
+    _driver->context->sender_proxy = &_driver->sender.sender_proxy;
 
     if (aeron_driver_receiver_init(&_driver->receiver, context, &_driver->conductor.system_counters) < 0)
     {
         return -1;
     }
 
-    _driver->context->sender_proxy = &_driver->sender.sender_proxy;
-    _driver->context->conductor_proxy = &_driver->conductor.conductor_proxy;
     _driver->context->receiver_proxy = &_driver->receiver.receiver_proxy;
 
     aeron_mpsc_rb_consumer_heartbeat_time(&_driver->conductor.to_driver_commands, aeron_epochclock());

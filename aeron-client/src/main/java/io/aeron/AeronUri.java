@@ -119,6 +119,11 @@ public class AeronUri
         return params.containsKey(key);
     }
 
+    /**
+     * Generate a String representation of the URI that is valid for an Aeron channel.
+     *
+     * @return a String representation of the URI that is valid for an Aeron channel.
+     */
     public String toString()
     {
         final StringBuilder sb = new StringBuilder()

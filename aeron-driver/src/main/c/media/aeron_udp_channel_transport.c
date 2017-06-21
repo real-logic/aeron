@@ -16,6 +16,7 @@
 
 #if defined(__linux__)
 #define _BSD_SOURCE
+#define _GNU_SOURCE
 #endif
 
 #include <unistd.h>
@@ -24,6 +25,8 @@
 #include <net/if.h>
 #include <fcntl.h>
 #include <netinet/ip.h>
+#include <errno.h>
+#include "util/aeron_error.h"
 #include "util/aeron_netutil.h"
 #include "aeron_udp_channel_transport.h"
 
@@ -179,4 +182,73 @@ int aeron_udp_channel_transport_close(aeron_udp_channel_transport_t *transport)
     }
 
     return 0;
+}
+
+int aeron_udp_channel_transport_recvmmsg(
+    aeron_udp_channel_transport_t *transport,
+    struct mmsghdr *msgvec,
+    size_t vlen,
+    aeron_udp_transport_recv_func_t recv_func,
+    void *clientd)
+{
+#if defined(HAVE_RECVMMSG)
+    struct timespec tv = {.tv_nsec = 0, .tv_sec = 0};
+
+    int result = recvmmsg(transport->fd, msgvec, vlen, 0, &tv);
+    if (result < 0)
+    {
+        int err = errno;
+
+        if (EINTR == err || EAGAIN == err)
+        {
+            return 0;
+        }
+
+        aeron_set_err(err, "recvmmsg: %s", strerror(err));
+        return -1;
+    }
+    else if (0 == result)
+    {
+        return 0;
+    }
+    else
+    {
+        for (size_t i = 0, length = result; i < length; i++)
+        {
+            recv_func(clientd, msgvec[i].msg_hdr.msg_iov[0].iov_base, msgvec[i].msg_len, msgvec[i].msg_hdr.msg_name);
+        }
+
+        return result;
+    }
+#else
+    int work_count = 0;
+
+    for (size_t i = 0, length = vlen; i < length; i++)
+    {
+        ssize_t result = recvmsg(transport->fd, &msgvec[i].msg_hdr, 0);
+
+        if (result < 0)
+        {
+            int err = errno;
+
+            if (EINTR == err || EAGAIN == err)
+            {
+                return 0;
+            }
+
+            aeron_set_err(err, "recvmsg: %s", strerror(err));
+            return -1;
+        }
+        if (0 == result)
+        {
+            break;
+        }
+
+        msgvec[i].msg_len = (unsigned int)result;
+        recv_func(clientd, msgvec[i].msg_hdr.msg_iov[0].iov_base, msgvec[i].msg_len, msgvec[i].msg_hdr.msg_name);
+        work_count++;
+    }
+
+    return work_count;
+#endif
 }

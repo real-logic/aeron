@@ -118,17 +118,6 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     return 0;
 }
 
-#define AERON_DRIVER_CONDUCTOR_ENSURE_CAPACITY(r,a,t) \
-if (a.length >= a.capacity) \
-{ \
-    size_t new_capacity = (0 == a.capacity) ? 2 : (a.capacity + (a.capacity >> 1)); \
-    r = aeron_array_ensure_capacity((uint8_t **)&a.array, sizeof(t), a.capacity, new_capacity); \
-    if (r >= 0) \
-    { \
-       a.capacity = new_capacity; \
-    } \
-}
-
 int aeron_driver_conductor_find_client(aeron_driver_conductor_t *conductor, int64_t client_id)
 {
     int index = -1;
@@ -154,7 +143,7 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
     {
         int ensure_capacity_result = 0;
 
-        AERON_DRIVER_CONDUCTOR_ENSURE_CAPACITY(ensure_capacity_result, conductor->clients, aeron_client_t);
+        AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->clients, aeron_client_t);
 
         if (ensure_capacity_result >= 0)
         {
@@ -327,13 +316,13 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
         }
     }
 
-    AERON_DRIVER_CONDUCTOR_ENSURE_CAPACITY(ensure_capacity_result, client->publication_links, aeron_publication_link_t);
+    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, client->publication_links, aeron_publication_link_t);
 
     if (ensure_capacity_result >= 0)
     {
         if (NULL == publication)
         {
-            AERON_DRIVER_CONDUCTOR_ENSURE_CAPACITY(ensure_capacity_result, conductor->ipc_publications, aeron_ipc_publication_entry_t);
+            AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->ipc_publications, aeron_ipc_publication_entry_t);
 
             if (ensure_capacity_result >= 0)
             {
@@ -823,7 +812,7 @@ int aeron_driver_subscribeable_add_position(
 {
     int ensure_capacity_result = 0, result = -1;
 
-    AERON_DRIVER_CONDUCTOR_ENSURE_CAPACITY(ensure_capacity_result, (*subscribeable), aeron_position_t);
+    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, (*subscribeable), aeron_position_t);
 
     if (ensure_capacity_result >= 0)
     {
@@ -856,7 +845,7 @@ int aeron_driver_conductor_link_ipc_subscribeable(
 {
     int ensure_capacity_result = 0, result = -1;
 
-    AERON_DRIVER_CONDUCTOR_ENSURE_CAPACITY(ensure_capacity_result, link->subscribeable_list, aeron_subscribeable_list_entry_t);
+    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, link->subscribeable_list, aeron_subscribeable_list_entry_t);
 
     if (ensure_capacity_result >= 0)
     {
@@ -1055,7 +1044,7 @@ int aeron_driver_conductor_on_add_ipc_subscription(
         return -1;
     }
 
-    AERON_DRIVER_CONDUCTOR_ENSURE_CAPACITY(ensure_capacity_result, conductor->ipc_subscriptions, aeron_subscription_link_t);
+    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->ipc_subscriptions, aeron_subscription_link_t);
     if (ensure_capacity_result >= 0)
     {
         aeron_subscription_link_t *link = &conductor->ipc_subscriptions.array[conductor->ipc_subscriptions.length++];

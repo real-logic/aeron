@@ -24,6 +24,17 @@
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
 
+#define AERON_ARRAY_ENSURE_CAPACITY(r,a,t) \
+if (a.length >= a.capacity) \
+{ \
+    size_t new_capacity = (0 == a.capacity) ? 2 : (a.capacity + (a.capacity >> 1)); \
+    r = aeron_array_ensure_capacity((uint8_t **)&a.array, sizeof(t), a.capacity, new_capacity); \
+    if (r >= 0) \
+    { \
+       a.capacity = new_capacity; \
+    } \
+}
+
 inline int aeron_array_ensure_capacity(
     uint8_t **array, size_t element_size, size_t old_capacity, size_t new_capacity)
 {

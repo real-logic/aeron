@@ -14,6 +14,26 @@
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
+    add_definitions(-D_GNU_SOURCE)
+endif()
+
+check_symbol_exists(poll "poll.h" POLL_PROTOTYPE_EXISTS)
+check_symbol_exists(epoll_create "sys/epoll.h" EPOLL_PROTOTYPE_EXISTS)
+check_symbol_exists(recvmmsg "sys/socket.h" RECVMMSG_PROTOTYPE_EXISTS)
+
+if(POLL_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_POLL)
+endif()
+
+if(EPOLL_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_EPOLL)
+endif()
+
+if(RECVMMSG_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_RECVMMSG)
+endif()
+
 SET(SOURCE
     concurrent/aeron_spsc_rb.c
     concurrent/aeron_mpsc_rb.c
@@ -45,6 +65,7 @@ SET(SOURCE
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel.c
     media/aeron_send_channel_endpoint.c
+    media/aeron_udp_transport_poller.c
     uri/aeron_uri.c
     collections/aeron_int64_to_ptr_hash_map.c
     collections/aeron_str_to_ptr_hash_map.c)
@@ -89,6 +110,7 @@ SET(HEADERS
     media/aeron_udp_channel_transport.h
     media/aeron_udp_channel.h
     media/aeron_send_channel_endpoint.h
+    media/aeron_udp_transport_poller.h
     uri/aeron_uri.h
     collections/aeron_int64_to_ptr_hash_map.h
     collections/aeron_str_to_ptr_hash_map.h)

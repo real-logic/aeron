@@ -332,27 +332,20 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
         return -1;
     }
 
-    if (aeron_driver_sender_init(&_driver->sender, context) < 0)
-    {
-        return -1;
-    }
-
-    if (aeron_driver_receiver_init(&_driver->receiver, context) < 0)
-    {
-        return -1;
-    }
-
     if (aeron_driver_conductor_init(&_driver->conductor, context) < 0)
     {
         return -1;
     }
 
-    _driver->sender.sender_proxy.fail_counter =
-        aeron_driver_conductor_system_counter_addr(&_driver->conductor, AERON_SYSTEM_COUNTER_SENDER_PROXY_FAILS);
-    _driver->conductor.conductor_proxy.fail_counter =
-        aeron_driver_conductor_system_counter_addr(&_driver->conductor, AERON_SYSTEM_COUNTER_CONDUCTOR_PROXY_FAILS);
-    _driver->receiver.receiver_proxy.fail_counter =
-        aeron_driver_conductor_system_counter_addr(&_driver->conductor, AERON_SYSTEM_COUNTER_RECEIVER_PROXY_FAILS);
+    if (aeron_driver_sender_init(&_driver->sender, context, &_driver->conductor.system_counters) < 0)
+    {
+        return -1;
+    }
+
+    if (aeron_driver_receiver_init(&_driver->receiver, context, &_driver->conductor.system_counters) < 0)
+    {
+        return -1;
+    }
 
     _driver->context->sender_proxy = &_driver->sender.sender_proxy;
     _driver->context->conductor_proxy = &_driver->conductor.conductor_proxy;

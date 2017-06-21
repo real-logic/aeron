@@ -16,11 +16,13 @@
 
 #include "aeron_driver_receiver.h"
 
-int aeron_driver_receiver_init(aeron_driver_receiver_t *receiver, aeron_driver_context_t *context)
+int aeron_driver_receiver_init(
+    aeron_driver_receiver_t *receiver, aeron_driver_context_t *context, aeron_system_counters_t *system_counters)
 {
     receiver->context = context;
     receiver->receiver_proxy.command_queue = &context->receiver_command_queue;
-    receiver->receiver_proxy.fail_counter = NULL;
+    receiver->receiver_proxy.fail_counter =
+        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_RECEIVER_PROXY_FAILS);
     receiver->receiver_proxy.threading_mode = context->threading_mode;
     receiver->receiver_proxy.receiver = receiver;
     return 0;

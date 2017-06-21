@@ -19,6 +19,7 @@
 
 #include "aeron_driver_context.h"
 #include "aeron_driver_receiver_proxy.h"
+#include "aeron_system_counters.h"
 
 typedef struct aeron_driver_receiver_stct
 {
@@ -27,7 +28,8 @@ typedef struct aeron_driver_receiver_stct
 }
 aeron_driver_receiver_t;
 
-int aeron_driver_receiver_init(aeron_driver_receiver_t *receiver, aeron_driver_context_t *context);
+int aeron_driver_receiver_init(
+    aeron_driver_receiver_t *receiver, aeron_driver_context_t *context, aeron_system_counters_t *system_counters);
 
 int aeron_driver_receiver_do_work(void *clientd);
 void aeron_driver_receiver_on_close(void *clientd);

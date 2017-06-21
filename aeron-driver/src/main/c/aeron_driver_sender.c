@@ -17,12 +17,14 @@
 #include <media/aeron_send_channel_endpoint.h>
 #include "aeron_driver_sender.h"
 
-int aeron_driver_sender_init(aeron_driver_sender_t *sender, aeron_driver_context_t *context)
+int aeron_driver_sender_init(
+    aeron_driver_sender_t *sender, aeron_driver_context_t *context, aeron_system_counters_t *system_counters)
 {
     sender->context = context;
     sender->sender_proxy.sender = sender;
     sender->sender_proxy.command_queue = &context->sender_command_queue;
-    sender->sender_proxy.fail_counter = NULL;
+    sender->sender_proxy.fail_counter =
+        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_SENDER_PROXY_FAILS);
     sender->sender_proxy.threading_mode = context->threading_mode;
     return 0;
 }

@@ -76,17 +76,17 @@ public final class UdpChannel
 
     private UdpChannel(final Context context)
     {
-        this.remoteData = context.remoteData;
-        this.localData = context.localData;
-        this.remoteControl = context.remoteControl;
-        this.localControl = context.localControl;
-        this.uriStr = context.uriStr;
-        this.canonicalForm = context.canonicalForm;
-        this.localInterface = context.localInterface;
-        this.protocolFamily = context.protocolFamily;
-        this.multicastTtl = context.multicastTtl;
-        this.aeronUri = context.aeronUri;
-        this.hasExplicitControl = context.hasExplicitControl;
+        remoteData = context.remoteData;
+        localData = context.localData;
+        remoteControl = context.remoteControl;
+        localControl = context.localControl;
+        uriStr = context.uriStr;
+        canonicalForm = context.canonicalForm;
+        localInterface = context.localInterface;
+        protocolFamily = context.protocolFamily;
+        multicastTtl = context.multicastTtl;
+        aeronUri = context.aeronUri;
+        hasExplicitControl = context.hasExplicitControl;
     }
 
     /**

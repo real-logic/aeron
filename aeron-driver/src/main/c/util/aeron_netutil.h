@@ -21,6 +21,7 @@
 #include <netinet/in.h>
 
 struct ifaddrs;
+struct addrinfo;
 
 typedef int (*aeron_uri_hostname_resolver_func_t)(void *clientd, const char *host, struct addrinfo *hints, struct addrinfo **info);
 typedef int (*aeron_getifaddrs_func_t)(struct ifaddrs **);

@@ -43,6 +43,8 @@ typedef struct aeron_position_stct
 }
 aeron_position_t;
 
+typedef struct aeron_position_stct aeron_counter_t;
+
 typedef struct aeron_subscribeable_stct
 {
     aeron_position_t *array;

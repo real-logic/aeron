@@ -17,11 +17,13 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <errno.h>
-#include <util/aeron_error.h>
-#include <media/aeron_send_channel_endpoint.h>
+#include "util/aeron_error.h"
+#include "media/aeron_send_channel_endpoint.h"
 #include "util/aeron_arrayutil.h"
 #include "aeron_driver_conductor.h"
 #include "aeron_position.h"
+#include "aeron_driver_sender.h"
+#include "aeron_driver_sender_proxy.h"
 
 static void aeron_error_log_resource_linger(uint8_t *resource)
 {
@@ -385,7 +387,33 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
 
     if (NULL == endpoint)
     {
-        /* TODO: */
+        aeron_counter_t status_indicator;
+
+        status_indicator.counter_id =
+            aeron_counter_send_channel_status_allocate(&conductor->counters_manager, channel->original_uri);
+
+        status_indicator.value_addr =
+            aeron_counter_addr(&conductor->counters_manager, (int32_t)status_indicator.counter_id);
+
+        if (status_indicator.counter_id < 0 ||
+            aeron_send_channel_endpoint_create(&endpoint, channel, &status_indicator, conductor->context) < 0)
+        {
+            return NULL;
+        }
+
+        if (aeron_str_to_ptr_hash_map_put(
+            &conductor->send_channel_endpoint_by_channel_map,
+            channel->canonical_form,
+            channel->canonical_length,
+            endpoint) < 0)
+        {
+            aeron_send_channel_endpoint_delete(&conductor->counters_manager, endpoint);
+            return NULL;
+        }
+
+        aeron_driver_sender_proxy_register_endpoint(conductor->context, endpoint);
+
+        *status_indicator.value_addr = AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE;
     }
 
     return endpoint;
@@ -712,7 +740,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 
 void aeron_driver_conductor_on_command_queue(void *clientd, volatile void *item)
 {
-    aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
+//    aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
 
 }
 

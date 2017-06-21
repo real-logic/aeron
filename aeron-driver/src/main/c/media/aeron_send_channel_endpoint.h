@@ -17,7 +17,10 @@
 #ifndef AERON_AERON_SEND_CHANNEL_ENDPOINT_H
 #define AERON_AERON_SEND_CHANNEL_ENDPOINT_H
 
+#include "aeron_driver_context.h"
 #include "aeron_udp_channel.h"
+#include "aeron_udp_channel_transport.h"
+#include "concurrent/aeron_counters_manager.h"
 
 typedef struct aeron_send_channel_endpoint_stct
 {
@@ -31,7 +34,18 @@ typedef struct aeron_send_channel_endpoint_stct
     conductor_fields;
 
     /* uint8_t conductor_fields_pad[(2 * AERON_CACHE_LINE_LENGTH) - sizeof(struct conductor_fields_stct)]; */
+
+    aeron_udp_channel_transport_t transport;
+    aeron_counter_t channel_status;
 }
 aeron_send_channel_endpoint_t;
+
+int aeron_send_channel_endpoint_create(
+    aeron_send_channel_endpoint_t **endpoint,
+    aeron_udp_channel_t *channel,
+    aeron_counter_t *status_indicator,
+    aeron_driver_context_t *context);
+
+int aeron_send_channel_endpoint_delete(aeron_counters_manager_t *counters_manager, aeron_send_channel_endpoint_t *channel);
 
 #endif //AERON_AERON_SEND_CHANNEL_ENDPOINT_H

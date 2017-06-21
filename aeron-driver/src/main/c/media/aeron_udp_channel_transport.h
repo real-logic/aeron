@@ -23,13 +23,6 @@
 
 typedef int aeron_fd_t;
 
-typedef struct aeron_addr_stct
-{
-    int family;
-    struct sockaddr_storage addr;
-    socklen_t addr_len;
-}
-aeron_addr_t;
 
 typedef struct aeron_udp_channel_transport_stct
 {
@@ -39,11 +32,13 @@ aeron_udp_channel_transport_t;
 
 int aeron_udp_channel_transport_init(
     aeron_udp_channel_transport_t *transport,
-    aeron_addr_t *bind_addr,
-    aeron_addr_t *multicast_if_addr,
+    struct sockaddr_storage *bind_addr,
+    struct sockaddr_storage *multicast_if_addr,
     unsigned int multicast_if_index,
     uint8_t ttl,
     size_t socket_rcvbuf,
     size_t socket_sndbuf);
+
+int aeron_udp_channel_transport_close(aeron_udp_channel_transport_t *transport);
 
 #endif //AERON_AERON_UDP_CHANNEL_TRANSPORT_H

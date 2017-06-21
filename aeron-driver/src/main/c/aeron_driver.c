@@ -347,6 +347,10 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
         return -1;
     }
 
+    _driver->context->conductor = &_driver->conductor;
+    _driver->context->sender = &_driver->sender;
+    _driver->context->receiver = &_driver->receiver;
+
     aeron_mpsc_rb_consumer_heartbeat_time(&_driver->conductor.to_driver_commands, aeron_epochclock());
 
     switch (_driver->context->threading_mode)

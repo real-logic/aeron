@@ -218,3 +218,17 @@ int aeron_uri_parse(const char *uri, aeron_uri_t *params)
     aeron_set_err(EINVAL, "invalid URI scheme or transport: %s", uri);
     return -1;
 }
+
+uint8_t aeron_uri_multicast_ttl(aeron_uri_t *uri)
+{
+    uint8_t result = 0;
+
+    if (AERON_URI_UDP == uri->type && NULL != uri->params.udp.ttl_key)
+    {
+        uint64_t value = strtoull(uri->params.udp.ttl_key, NULL, 0);
+
+        result = (value > 255u) ? (uint8_t)255 : (uint8_t)value;
+    }
+
+    return result;
+}

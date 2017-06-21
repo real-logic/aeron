@@ -249,6 +249,8 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
             goto error_cleanup;
         }
 
+        _channel->interface_index = interface_index;
+        _channel->multicast_ttl = aeron_uri_multicast_ttl(&_channel->uri);
         memcpy(&_channel->local_data, &interface_addr, AERON_ADDR_LEN(&interface_addr));
         memcpy(&_channel->local_control, &interface_addr, AERON_ADDR_LEN(&interface_addr));
         aeron_uri_udp_canonicalize(
@@ -257,6 +259,8 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
     }
     else if (NULL != _channel->uri.params.udp.control_key)
     {
+        _channel->interface_index = 0;
+        _channel->multicast_ttl = 0;
         memcpy(&_channel->remote_data, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
         memcpy(&_channel->remote_control, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
         memcpy(&_channel->local_data, &explicit_control_addr, AERON_ADDR_LEN(&explicit_control_addr));
@@ -273,6 +277,8 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
             goto error_cleanup;
         }
 
+        _channel->interface_index = interface_index;
+        _channel->multicast_ttl = 0;
         memcpy(&_channel->remote_data, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
         memcpy(&_channel->remote_control, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
         memcpy(&_channel->local_data, &interface_addr, AERON_ADDR_LEN(&interface_addr));

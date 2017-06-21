@@ -46,6 +46,10 @@ aeron_cnc_metadata_t;
 
 #define AERON_COMMAND_QUEUE_CAPACITY (256)
 
+typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
+typedef struct aeron_driver_sender_stct aeron_driver_sender_t;
+typedef struct aeron_driver_receiver_stct aeron_driver_receiver_t;
+
 typedef enum aeron_threading_mode_enum
 {
     AERON_THREADING_MODE_DEDICATED,
@@ -74,6 +78,9 @@ typedef struct aeron_driver_context_stct
     size_t ipc_term_buffer_length;          /* aeron.ipc.term.buffer.length = 64 * 1024 * 1024 */
     size_t mtu_length;                      /* aeron.mtu.length = 4096 */
     size_t ipc_publication_window_length;   /* aeron.ipc.publication.term.window.length = 0 */
+    size_t socket_rcvbuf;                   /* aeron.socket.so_rcvbuf = 128 * 1024 */
+    size_t socket_sndbuf;                   /* aeron.socket.so_sndbuf = 0 */
+    uint8_t multicast_ttl;                  /* aeron.socket.multicast.ttl = 0 */
 
     aeron_mapped_file_t cnc_map;
 
@@ -104,6 +111,10 @@ typedef struct aeron_driver_context_stct
     aeron_usable_fs_space_func_t usable_fs_space_func;
     aeron_map_raw_log_func_t map_raw_log_func;
     aeron_map_raw_log_close_func_t map_raw_log_close_func;
+
+    aeron_driver_conductor_t *conductor;
+    aeron_driver_sender_t *sender;
+    aeron_driver_receiver_t *receiver;
 }
 aeron_driver_context_t;
 

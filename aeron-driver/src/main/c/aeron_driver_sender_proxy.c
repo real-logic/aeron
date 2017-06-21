@@ -14,27 +14,18 @@
  * limitations under the License.
  */
 
+#include "aeron_driver_sender_proxy.h"
 #include "aeron_driver_sender.h"
 
-int aeron_driver_sender_init(aeron_driver_sender_t *sender, aeron_driver_context_t *context)
+void aeron_driver_sender_proxy_register_endpoint(
+    aeron_driver_context_t *context, aeron_send_channel_endpoint_t *endpoint)
 {
-    sender->context = context;
-    sender->command_queue = &context->sender_command_queue;
-    sender->conductor_command_queue = &context->conductor_command_queue;
-    return 0;
-}
+    if (AERON_THREADING_MODE_SHARED == context->threading_mode)
+    {
+        aeron_driver_sender_on_register_endpoint(context->sender, endpoint);
+    }
+    else
+    {
 
-int aeron_driver_sender_do_work(void *clientd)
-{
-    return 0;
-}
-
-void aeron_driver_sender_on_close(void *clientd)
-{
-
-}
-
-void aeron_driver_sender_on_register_endpoint(aeron_driver_sender_t *sender, aeron_send_channel_endpoint_t *endpoint)
-{
-
+    }
 }

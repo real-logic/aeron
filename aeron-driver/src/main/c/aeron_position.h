@@ -29,6 +29,12 @@ int32_t aeron_stream_position_counter_allocate(
     const char *channel,
     const char *suffix);
 
+int32_t aeron_channel_endpoint_status_allocate(
+    aeron_counters_manager_t *counters_manager,
+    const char *name,
+    int32_t type_id,
+    const char *channel);
+
 #define AERON_COUNTER_PUBLISHER_LIMIT_NAME "pub-lmt"
 #define AERON_COUNTER_PUBLISHER_LIMIT_TYPE_ID (1)
 
@@ -49,5 +55,17 @@ int32_t aeron_counter_subscription_position_allocate(
     int32_t stream_id,
     const char *channel,
     int64_t joining_position);
+
+#define AERON_COUNTER_SEND_CHANNEL_STATUS_NAME "snd-channel"
+#define AERON_COUNTER_SEND_CHANNEL_STATUS_TYPE_ID (6)
+
+#define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_INITIALIZING (0)
+#define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ERRORED (-1)
+#define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE (1)
+#define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_CLOSING (2)
+
+int32_t aeron_counter_send_channel_status_allocate(
+    aeron_counters_manager_t *counters_manager,
+    const char *channel);
 
 #endif //AERON_AERON_POSITION_H

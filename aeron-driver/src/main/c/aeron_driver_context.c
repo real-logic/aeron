@@ -144,6 +144,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     _context->cnc_map.addr = NULL;
     _context->aeron_dir = NULL;
+    _context->conductor = NULL;
+    _context->sender = NULL;
+    _context->receiver = NULL;
 
     if (aeron_alloc((void **)&_context->aeron_dir, AERON_MAX_PATH) < 0)
     {
@@ -188,6 +191,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->mtu_length = 4096;
     _context->ipc_publication_window_length = 0;
     _context->publication_linger_timeout_ns = 5 * 1000 * 1000 * 1000L;
+    _context->socket_rcvbuf = 128 * 1024;
+    _context->socket_sndbuf = 0;
+    _context->multicast_ttl = 0;
 
     /* set from env */
     char *value = NULL;
@@ -294,6 +300,27 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             _context->ipc_publication_window_length,
             0,
             INT32_MAX);
+
+    _context->socket_rcvbuf =
+        aeron_config_parse_uint64(
+            getenv(AERON_SOCKET_SO_RCVBUF_ENV_VAR),
+            _context->socket_rcvbuf,
+            0,
+            INT32_MAX);
+
+    _context->socket_sndbuf =
+        aeron_config_parse_uint64(
+            getenv(AERON_SOCKET_SO_SNDBUF_ENV_VAR),
+            _context->socket_sndbuf,
+            0,
+            INT32_MAX);
+
+    _context->multicast_ttl =
+        (uint8_t)aeron_config_parse_uint64(
+            getenv(AERON_SOCKET_MULTICAST_TTL_ENV_VAR),
+            _context->multicast_ttl,
+            0,
+            255);
 
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;

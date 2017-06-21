@@ -14,27 +14,13 @@
  * limitations under the License.
  */
 
-#include "aeron_driver_sender.h"
+#ifndef AERON_AERON_DRIVER_SENDER_PROXY_H
+#define AERON_AERON_DRIVER_SENDER_PROXY_H
 
-int aeron_driver_sender_init(aeron_driver_sender_t *sender, aeron_driver_context_t *context)
-{
-    sender->context = context;
-    sender->command_queue = &context->sender_command_queue;
-    sender->conductor_command_queue = &context->conductor_command_queue;
-    return 0;
-}
+#include "aeron_driver_context.h"
+#include "media/aeron_send_channel_endpoint.h"
 
-int aeron_driver_sender_do_work(void *clientd)
-{
-    return 0;
-}
+void aeron_driver_sender_proxy_register_endpoint(
+    aeron_driver_context_t *context, aeron_send_channel_endpoint_t *endpoint);
 
-void aeron_driver_sender_on_close(void *clientd)
-{
-
-}
-
-void aeron_driver_sender_on_register_endpoint(aeron_driver_sender_t *sender, aeron_send_channel_endpoint_t *endpoint)
-{
-
-}
+#endif //AERON_AERON_DRIVER_SENDER_PROXY_H

@@ -71,6 +71,7 @@ public final class UdpChannel
     private final ProtocolFamily protocolFamily;
     private final AeronUri aeronUri;
     private final boolean hasExplicitControl;
+    private final boolean isMulticast;
 
     private UdpChannel(final Context context)
     {
@@ -85,6 +86,7 @@ public final class UdpChannel
         multicastTtl = context.multicastTtl;
         aeronUri = context.aeronUri;
         hasExplicitControl = context.hasExplicitControl;
+        isMulticast = context.isMulticast;
     }
 
     /**
@@ -135,7 +137,7 @@ public final class UdpChannel
                 final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(aeronUri);
 
                 context
-                    .hasExplicitControl(false)
+                    .isMulticast(true)
                     .localControlAddress(resolveToAddressOfInterface(findInterface(searchAddress), searchAddress))
                     .remoteControlAddress(controlAddress)
                     .localDataAddress(resolveToAddressOfInterface(findInterface(searchAddress), searchAddress))
@@ -171,7 +173,6 @@ public final class UdpChannel
                 }
 
                 context
-                    .hasExplicitControl(false)
                     .remoteControlAddress(endpointAddress)
                     .remoteDataAddress(endpointAddress)
                     .localControlAddress(localAddress)
@@ -333,7 +334,7 @@ public final class UdpChannel
      */
     public boolean isMulticast()
     {
-        return remoteData.getAddress().isMulticastAddress();
+        return isMulticast;
     }
 
     /**
@@ -505,7 +506,8 @@ public final class UdpChannel
         private NetworkInterface localInterface;
         private ProtocolFamily protocolFamily;
         private AeronUri aeronUri;
-        private boolean hasExplicitControl;
+        private boolean hasExplicitControl = false;
+        private boolean isMulticast = false;
 
         public Context uriStr(final String uri)
         {
@@ -570,6 +572,12 @@ public final class UdpChannel
         public Context hasExplicitControl(final boolean hasExplicitControl)
         {
             this.hasExplicitControl = hasExplicitControl;
+            return this;
+        }
+
+        public Context isMulticast(final boolean isMulticast)
+        {
+            this.isMulticast = isMulticast;
             return this;
         }
     }

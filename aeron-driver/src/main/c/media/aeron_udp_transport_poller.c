@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <unistd.h>
 #include "util/aeron_arrayutil.h"
 #include "aeron_alloc.h"
 #include "media/aeron_udp_transport_poller.h"

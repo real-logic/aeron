@@ -260,3 +260,55 @@ int aeron_udp_channel_transport_recvmmsg(
     return work_count;
 #endif
 }
+
+int aeron_udp_channel_transport_sendmmsg(
+    aeron_udp_channel_transport_t *transport,
+    struct mmsghdr *msgvec,
+    size_t vlen)
+{
+#if defined(HAVE_RECVMMSG)
+    int sendmmsg_result = sendmmsg(transport->fd, msgvec, vlen, 0);
+    if (sendmmsg_result < 0)
+    {
+        aeron_set_err(errno, "sendmmsg: %s", strerror(errno));
+        return -1;
+    }
+#else
+    int result = 0;
+
+    for (size_t i = 0, length = vlen; i < length; i++)
+    {
+        ssize_t sendmsg_result = sendmsg(transport->fd, &msgvec[i].msg_hdr, 0);
+        if (sendmsg_result < 0)
+        {
+            aeron_set_err(errno, "sendmsg: %s", strerror(errno));
+            return -1;
+        }
+
+        msgvec[i].msg_len = (unsigned int)sendmsg_result;
+
+        if (0 == sendmsg_result)
+        {
+            break;
+        }
+
+        result++;
+    }
+
+    return result;
+#endif
+}
+
+int aeron_udp_channel_transport_sendmsg(
+    aeron_udp_channel_transport_t *transport,
+    struct msghdr *message)
+{
+    ssize_t sendmsg_result = sendmsg(transport->fd, message, 0);
+    if (sendmsg_result < 0)
+    {
+        aeron_set_err(errno, "sendmsg: %s", strerror(errno));
+        return -1;
+    }
+
+    return (int)sendmsg_result;
+}

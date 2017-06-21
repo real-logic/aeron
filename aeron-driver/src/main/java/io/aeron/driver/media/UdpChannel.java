@@ -20,6 +20,7 @@ import io.aeron.driver.Configuration;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.driver.uri.AeronUri;
 import io.aeron.driver.uri.InterfaceSearchAddress;
+import io.aeron.driver.uri.SocketAddressUtil;
 import org.agrona.BitUtil;
 
 import java.net.*;
@@ -399,66 +400,46 @@ public final class UdpChannel
 
     private static InterfaceSearchAddress getInterfaceSearchAddress(final AeronUri uri) throws UnknownHostException
     {
-        final InterfaceSearchAddress interfaceSearchAddress;
-
-        if (uri.containsKey(INTERFACE_KEY))
+        final String interfaceValue = uri.get(INTERFACE_KEY);
+        if (null != interfaceValue)
         {
-            interfaceSearchAddress = uri.getInterfaceSearchAddress(INTERFACE_KEY, InterfaceSearchAddress.wildcard());
-        }
-        else
-        {
-            interfaceSearchAddress = InterfaceSearchAddress.wildcard();
+            return InterfaceSearchAddress.parse(interfaceValue);
         }
 
-        return interfaceSearchAddress;
+        return InterfaceSearchAddress.wildcard();
     }
 
     private static InetSocketAddress getEndpointAddress(final AeronUri uri) throws UnknownHostException
     {
-        final InetSocketAddress endpointAddress;
-
-        if (uri.containsKey(ENDPOINT_KEY))
+        final String endpointValue = uri.get(ENDPOINT_KEY);
+        if (null != endpointValue)
         {
-            endpointAddress = uri.getSocketAddress(ENDPOINT_KEY);
-        }
-        else
-        {
-            endpointAddress = null;
+            return SocketAddressUtil.parse(endpointValue);
         }
 
-        return endpointAddress;
+        return null;
     }
 
     private static int getMulticastTtl(final AeronUri uri)
     {
-        final int ttl;
-
-        if (uri.containsKey(MULTICAST_TTL_KEY))
+        final String ttlValue = uri.get(MULTICAST_TTL_KEY);
+        if (null != ttlValue)
         {
-            ttl = Integer.parseInt(uri.get(MULTICAST_TTL_KEY));
-        }
-        else
-        {
-            ttl = Configuration.SOCKET_MULTICAST_TTL;
+            return Integer.parseInt(ttlValue);
         }
 
-        return ttl;
+        return Configuration.SOCKET_MULTICAST_TTL;
     }
 
     private static InetSocketAddress getExplicitControlAddress(final AeronUri uri) throws UnknownHostException
     {
-        final InetSocketAddress controlAddress;
-
-        if (uri.containsKey(CONTROL_KEY))
+        final String controlValue = uri.get(CONTROL_KEY);
+        if (null != controlValue)
         {
-            controlAddress = uri.getSocketAddress(CONTROL_KEY);
-        }
-        else
-        {
-            controlAddress = null;
+            return SocketAddressUtil.parse(controlValue);
         }
 
-        return controlAddress;
+        return null;
     }
 
     private static void validateDataAddress(final byte[] addressAsBytes)

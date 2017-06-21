@@ -15,11 +15,10 @@
  */
 package io.aeron.driver.uri;
 
-import java.net.*;
 import java.util.*;
 
 /**
- * Parser for Aeron URI used for configuring channels. The format is:
+ * Parser for Aeron channel URIs. The format is:
  * <pre>
  * aeron-uri = "aeron:" media [ "?" param *( "|" param ) ]
  * media     = *( "[^?:]" )
@@ -42,6 +41,13 @@ public class AeronUri
     private final String media;
     private final Map<String, String> params;
 
+    /**
+     * Construct with the components provided to avoid parsing.
+     *
+     * @param scheme which must be "aeron".
+     * @param media  for the channel which is typically "udp" or "ipc".
+     * @param params for the query string as key value pairs.
+     */
     public AeronUri(final String scheme, final String media, final Map<String, String> params)
     {
         this.scheme = scheme;
@@ -49,21 +55,44 @@ public class AeronUri
         this.params = params;
     }
 
+    /**
+     * The media over which the channel operates.
+     *
+     * @return the media over which the channel operates.
+     */
     public String media()
     {
         return media;
     }
 
+    /**
+     * The scheme for the URI. Must be "aeron".
+     *
+     * @return the scheme for the URI. Must be "aeron".
+     */
     public String scheme()
     {
         return scheme;
     }
 
+    /**
+     * Get a value for a given parameter key.
+     *
+     * @param key to lookup.
+     * @return the value if set for the key otherwise null.
+     */
     public String get(final String key)
     {
         return params.get(key);
     }
 
+    /**
+     * Get the value for a given parameter key or the default value provided if the key does not exist.
+     *
+     * @param key          to lookup.
+     * @param defaultValue to be returned if no key match is found.
+     * @return the value if set for the key otherwise the default value provided.
+     */
     public String get(final String key, final String defaultValue)
     {
         final String value = params.get(key);
@@ -76,22 +105,12 @@ public class AeronUri
         return defaultValue;
     }
 
-    public InetSocketAddress getSocketAddress(final String key)
-    {
-        return SocketAddressUtil.parse(get(key));
-    }
-
-    public InterfaceSearchAddress getInterfaceSearchAddress(final String key, final InterfaceSearchAddress defaultValue)
-        throws UnknownHostException
-    {
-        if (!containsKey(key))
-        {
-            return defaultValue;
-        }
-
-        return InterfaceSearchAddress.parse(get(key));
-    }
-
+    /**
+     * Does the URI contain a value for the given key.
+     *
+     * @param key to be lookup.
+     * @return true if the key has a value otherwise false.
+     */
     public boolean containsKey(final String key)
     {
         return params.containsKey(key);
@@ -119,11 +138,17 @@ public class AeronUri
         return sb.toString();
     }
 
+    /**
+     * Parse a {@link CharSequence} which contains an Aeron URI.
+     *
+     * @param cs to be parsed.
+     * @return a new {@link AeronUri} representing the URI string.
+     */
     public static AeronUri parse(final CharSequence cs)
     {
         if (!startsWith(cs, AERON_PREFIX))
         {
-            throw new IllegalArgumentException("AeronUri must start with 'aeron:', found: '" + cs + "'");
+            throw new IllegalArgumentException("Aeron URIs must start with 'aeron:', found: '" + cs + "'");
         }
 
         final StringBuilder builder = new StringBuilder();

@@ -30,6 +30,14 @@
 #include "util/aeron_netutil.h"
 #include "aeron_udp_channel_transport.h"
 
+#if !defined(HAVE_RECVMMSG)
+struct mmsghdr
+{
+    struct msghdr msg_hdr;
+    unsigned int msg_len;
+};
+#endif
+
 int aeron_udp_channel_transport_init(
     aeron_udp_channel_transport_t *transport,
     struct sockaddr_storage *bind_addr,

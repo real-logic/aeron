@@ -17,10 +17,6 @@
 #ifndef AERON_AERON_UDP_CHANNEL_TRANSPORT_H
 #define AERON_AERON_UDP_CHANNEL_TRANSPORT_H
 
-#if defined(__linux__)
-#define _GNU_SOURCE
-#endif
-
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -34,13 +30,7 @@ typedef struct aeron_udp_channel_transport_stct
 }
 aeron_udp_channel_transport_t;
 
-#if !defined(HAVE_RECVMMSG)
-struct mmsghdr
-{
-    struct msghdr msg_hdr;
-    unsigned int msg_len;
-};
-#endif
+struct mmsghdr;
 
 int aeron_udp_channel_transport_init(
     aeron_udp_channel_transport_t *transport,

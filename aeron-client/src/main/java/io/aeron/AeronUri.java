@@ -126,7 +126,7 @@ public class AeronUri
      */
     public String toString()
     {
-        final StringBuilder sb = new StringBuilder()
+        final StringBuilder sb = new StringBuilder((params.size() * 20) + 10)
             .append(AERON_PREFIX)
             .append(media);
 

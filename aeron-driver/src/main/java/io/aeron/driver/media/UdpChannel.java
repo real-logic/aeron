@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.CommonContext;
 import io.aeron.ErrorCode;
 import io.aeron.driver.Configuration;
 import io.aeron.driver.exceptions.InvalidChannelException;
@@ -39,26 +40,6 @@ import static org.agrona.BitUtil.toHex;
 public final class UdpChannel
 {
     public static final String UDP_MEDIA_ID = "udp";
-
-    /**
-     * The key for the interface or NIC to which this channel is bound.
-     */
-    public static final String INTERFACE_KEY = "interface";
-
-    /**
-     * The key for endpoint address that is the destination for the channel.
-     */
-    public static final String ENDPOINT_KEY = "endpoint";
-
-    /**
-     * The key for Time-To-Live (TTL) for the multicast datagrams being sent.
-     */
-    public static final String MULTICAST_TTL_KEY = "ttl";
-
-    /**
-     * The key for the control channel IP address and port for multi-destination-cast semantics.
-     */
-    public static final String CONTROL_KEY = "control";
 
     private final int multicastTtl;
     private final InetSocketAddress remoteData;
@@ -399,7 +380,7 @@ public final class UdpChannel
 
     private static InterfaceSearchAddress getInterfaceSearchAddress(final AeronUri uri) throws UnknownHostException
     {
-        final String interfaceValue = uri.get(INTERFACE_KEY);
+        final String interfaceValue = uri.get(CommonContext.INTERFACE_PARAM_NAME);
         if (null != interfaceValue)
         {
             return InterfaceSearchAddress.parse(interfaceValue);
@@ -410,7 +391,7 @@ public final class UdpChannel
 
     private static InetSocketAddress getEndpointAddress(final AeronUri uri) throws UnknownHostException
     {
-        final String endpointValue = uri.get(ENDPOINT_KEY);
+        final String endpointValue = uri.get(CommonContext.ENDPOINT_PARAM_NAME);
         if (null != endpointValue)
         {
             return SocketAddressUtil.parse(endpointValue);
@@ -421,7 +402,7 @@ public final class UdpChannel
 
     private static int getMulticastTtl(final AeronUri uri)
     {
-        final String ttlValue = uri.get(MULTICAST_TTL_KEY);
+        final String ttlValue = uri.get(CommonContext.TTL_PARAM_NAME);
         if (null != ttlValue)
         {
             return Integer.parseInt(ttlValue);
@@ -432,7 +413,7 @@ public final class UdpChannel
 
     private static InetSocketAddress getExplicitControlAddress(final AeronUri uri) throws UnknownHostException
     {
-        final String controlValue = uri.get(CONTROL_KEY);
+        final String controlValue = uri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
         if (null != controlValue)
         {
             return SocketAddressUtil.parse(controlValue);

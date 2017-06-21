@@ -51,6 +51,5 @@ public class ControlSessionTest
         // second session added to conductor after the first is done
         session.onListRecordingSessionClosed(mockListRecordingSession1);
         verify(mockConductor).addSession(mockListRecordingSession2);
-
     }
 }

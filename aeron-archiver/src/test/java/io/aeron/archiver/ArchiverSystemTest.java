@@ -413,10 +413,10 @@ public class ArchiverSystemTest
                             public void onProgress(
                                 final long recordingId0,
                                 final long joinPosition,
-                                final long currentPosition)
+                                final long position)
                             {
                                 assertThat(recordingId0, is(recordingId));
-                                recorded = currentPosition - joinPosition;
+                                recorded = position - joinPosition;
                                 printf("a=%d total=%d %n", recorded, totalRecordingLength);
                             }
                         }, 1)) != 0);

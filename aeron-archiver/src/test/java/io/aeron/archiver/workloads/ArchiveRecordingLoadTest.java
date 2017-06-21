@@ -201,10 +201,10 @@ public class ArchiveRecordingLoadTest
                 public void onProgress(
                     final long recordingId0,
                     final long joinPosition,
-                    final long currentPosition)
+                    final long position)
                 {
                     assertThat(recordingId0, is(recordingId));
-                    recorded = currentPosition - joinPosition;
+                    recorded = position - joinPosition;
                 }
 
                 public void onStop(final long recordingId0, final long endPosition)

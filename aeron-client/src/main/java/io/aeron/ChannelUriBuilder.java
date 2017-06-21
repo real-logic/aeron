@@ -26,14 +26,10 @@ import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
  *
  * @see Aeron#addPublication(String, int)
  * @see Aeron#addSubscription(String, int)
+ * @see AeronUri
  */
 public class ChannelUriBuilder
 {
-    /**
-     * Scheme for the Aeron URI namespace.
-     */
-    public static final String SCHEME = "aeron";
-
     private StringBuilder sb = new StringBuilder(64);
 
     private String prefix;
@@ -468,7 +464,7 @@ public class ChannelUriBuilder
             sb.append(prefix).append(':');
         }
 
-        sb.append(SCHEME).append(':').append(media).append('?');
+        sb.append(AeronUri.AERON_SCHEME).append(':').append(media).append('?');
 
         if (null != endpoint)
         {

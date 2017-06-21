@@ -28,6 +28,7 @@ import java.util.*;
  * </pre>
  * <p>
  * Multiple params with the same key are allowed, the last value specified takes precedence.
+ * @see ChannelUriBuilder
  */
 public class AeronUri
 {
@@ -36,21 +37,24 @@ public class AeronUri
         MEDIA, PARAMS_KEY, PARAMS_VALUE
     }
 
-    private static final String AERON_PREFIX = "aeron:";
-    private final String scheme;
+    /**
+     * URI Scheme for Aeron channels.
+     */
+    public static final String AERON_SCHEME = "aeron";
+
+    private static final String AERON_PREFIX = AERON_SCHEME + ":";
+
     private final String media;
     private final Map<String, String> params;
 
     /**
      * Construct with the components provided to avoid parsing.
      *
-     * @param scheme which must be "aeron".
      * @param media  for the channel which is typically "udp" or "ipc".
      * @param params for the query string as key value pairs.
      */
-    public AeronUri(final String scheme, final String media, final Map<String, String> params)
+    public AeronUri(final String media, final Map<String, String> params)
     {
-        this.scheme = scheme;
         this.media = media;
         this.params = params;
     }
@@ -68,11 +72,11 @@ public class AeronUri
     /**
      * The scheme for the URI. Must be "aeron".
      *
-     * @return the scheme for the URI. Must be "aeron".
+     * @return the scheme for the URI.
      */
     public String scheme()
     {
-        return scheme;
+        return AERON_SCHEME;
     }
 
     /**
@@ -96,7 +100,6 @@ public class AeronUri
     public String get(final String key, final String defaultValue)
     {
         final String value = params.get(key);
-
         if (null != value)
         {
             return value;
@@ -119,8 +122,7 @@ public class AeronUri
     public String toString()
     {
         final StringBuilder sb = new StringBuilder()
-            .append(scheme)
-            .append(':')
+            .append(AERON_PREFIX)
             .append(media);
 
         if (params.size() > 0)
@@ -152,8 +154,6 @@ public class AeronUri
         }
 
         final StringBuilder builder = new StringBuilder();
-
-        final String scheme = "aeron";
         final Map<String, String> params = new HashMap<>();
         String media = null;
         String key = null;
@@ -229,7 +229,7 @@ public class AeronUri
                 throw new IllegalArgumentException("No more input found, but was in state: " + state);
         }
 
-        return new AeronUri(scheme, media, params);
+        return new AeronUri(media, params);
     }
 
     private static boolean startsWith(final CharSequence input, final CharSequence prefix)

@@ -14,4 +14,37 @@
  * limitations under the License.
  */
 
+#include <sched.h>
+#include "concurrent/aeron_counters_manager.h"
 #include "aeron_driver_conductor_proxy.h"
+#include "aeron_alloc.h"
+
+void aeron_driver_conductor_proxy_offer(aeron_driver_conductor_proxy_t *conductor_proxy, void *cmd)
+{
+    while (aeron_mpsc_concurrent_array_queue_offer(conductor_proxy->command_queue, cmd) != AERON_OFFER_SUCCESS)
+    {
+        aeron_counter_ordered_increment(conductor_proxy->fail_counter, 1);
+        sched_yield();
+    }
+}
+
+void aeron_driver_conductor_proxy_on_delete_cmd(
+    aeron_driver_conductor_proxy_t *conductor_proxy, aeron_command_base_t *cmd)
+{
+    if (AERON_THREADING_MODE_SHARED == conductor_proxy->threading_mode)
+    {
+        /* TODO: should not get here! */
+    }
+    else
+    {
+        cmd->func = aeron_command_on_delete_cmd;
+        cmd->item = NULL;
+
+        aeron_driver_conductor_proxy_offer(conductor_proxy, cmd);
+    }
+}
+
+void aeron_command_on_delete_cmd(void *clientd, void *cmd)
+{
+    aeron_free(cmd);
+}

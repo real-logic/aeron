@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include <media/aeron_send_channel_endpoint.h>
+#include "media/aeron_send_channel_endpoint.h"
 #include "aeron_driver_sender.h"
+#include "aeron_driver_conductor_proxy.h"
 
 int aeron_driver_sender_init(
     aeron_driver_sender_t *sender, aeron_driver_context_t *context, aeron_system_counters_t *system_counters)
@@ -31,9 +32,13 @@ int aeron_driver_sender_init(
 
 void aeron_driver_sender_on_command(void *clientd, volatile void *item)
 {
+    aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
     aeron_command_base_t *cmd = (aeron_command_base_t *)item;
 
     cmd->func(clientd, cmd);
+
+    /* recycle cmd by sending to conductor as on_cmd_free */
+    aeron_driver_conductor_proxy_on_delete_cmd(sender->context->conductor_proxy, cmd);
 }
 
 int aeron_driver_sender_do_work(void *clientd)
@@ -52,11 +57,16 @@ void aeron_driver_sender_on_close(void *clientd)
 
 }
 
-void aeron_driver_sender_on_register_endpoint(void *clientd, void *command)
+void aeron_driver_sender_on_add_endpoint(void *clientd, void *command)
 {
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
     aeron_command_base_t *cmd = (aeron_command_base_t *)command;
     aeron_send_channel_endpoint_t *endpoint = (aeron_send_channel_endpoint_t *)cmd->item;
 
-    /* TODO: recycle cmd by sending to conductor as on_cmd_free */
+    /* TODO: */
+}
+
+void aeron_driver_sender_on_remove_endpoint(void *clientd, void *command)
+{
+
 }

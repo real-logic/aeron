@@ -415,7 +415,7 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
             return NULL;
         }
 
-        aeron_driver_sender_proxy_register_endpoint(conductor->context->sender_proxy, endpoint);
+        aeron_driver_sender_proxy_add_endpoint(conductor->context->sender_proxy, endpoint);
 
         *status_indicator.value_addr = AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE;
     }
@@ -744,8 +744,9 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 
 void aeron_driver_conductor_on_command_queue(void *clientd, volatile void *item)
 {
-//    aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
+    aeron_command_base_t *cmd = (aeron_command_base_t *)item;
 
+    cmd->func(clientd, cmd);
 }
 
 int aeron_driver_conductor_do_work(void *clientd)

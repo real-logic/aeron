@@ -34,6 +34,7 @@ int aeron_driver_sender_init(
 int aeron_driver_sender_do_work(void *clientd);
 void aeron_driver_sender_on_close(void *clientd);
 
-void aeron_driver_sender_on_register_endpoint(void *clientd, void *command);
+void aeron_driver_sender_on_add_endpoint(void *clientd, void *command);
+void aeron_driver_sender_on_remove_endpoint(void *clientd, void *command);
 
 #endif //AERON_AERON_DRIVER_SENDER_H

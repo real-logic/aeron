@@ -30,4 +30,7 @@ typedef struct aeron_driver_conductor_proxy_stct
 }
 aeron_driver_conductor_proxy_t;
 
+void aeron_driver_conductor_proxy_on_delete_cmd(
+    aeron_driver_conductor_proxy_t *conductor_proxy, aeron_command_base_t *cmd);
+
 #endif //AERON_AERON_DRIVER_CONDUCTOR_PROXY_H

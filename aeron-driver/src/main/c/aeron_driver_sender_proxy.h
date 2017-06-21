@@ -31,7 +31,10 @@ typedef struct aeron_driver_sender_proxy_stct
 }
 aeron_driver_sender_proxy_t;
 
-void aeron_driver_sender_proxy_register_endpoint(
+void aeron_driver_sender_proxy_add_endpoint(
+    aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint);
+
+void aeron_driver_sender_proxy_remove_endpoint(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint);
 
 #endif //AERON_AERON_DRIVER_SENDER_PROXY_H

@@ -17,7 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.CommonContext;
 import io.aeron.driver.buffer.RawLog;
-import io.aeron.driver.uri.AeronUri;
+import io.aeron.AeronUri;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 

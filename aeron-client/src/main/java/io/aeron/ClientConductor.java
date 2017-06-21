@@ -199,7 +199,10 @@ class ClientConductor implements Agent, DriverListener
 
     void releasePublication(final Publication publication)
     {
-        verifyActive();
+        if (CLOSED == status)
+        {
+            throw new IllegalStateException("Aeron client is closed");
+        }
 
         if (publication == activePublications.remove(publication.channel(), publication.streamId()))
         {
@@ -210,7 +213,10 @@ class ClientConductor implements Agent, DriverListener
 
     void releasePublication(final ExclusivePublication publication)
     {
-        verifyActive();
+        if (CLOSED == status)
+        {
+            throw new IllegalStateException("Aeron client is closed");
+        }
 
         if (publication == activeExclusivePublications.remove(publication.registrationId()))
         {
@@ -258,7 +264,10 @@ class ClientConductor implements Agent, DriverListener
 
     void releaseSubscription(final Subscription subscription)
     {
-        verifyActive();
+        if (CLOSED == status)
+        {
+            throw new IllegalStateException("Aeron client is closed");
+        }
 
         awaitResponse(driverProxy.removeSubscription(subscription.registrationId()), null);
 

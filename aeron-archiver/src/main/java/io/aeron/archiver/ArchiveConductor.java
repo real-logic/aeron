@@ -236,14 +236,21 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         recorder.addSession(session);
     }
 
-    void listRecordings(
+    ListRecordingsSession newListRecordingsSession(
         final long correlationId,
         final Publication controlPublication,
         final long fromId,
-        final int count)
+        final int count,
+        final ControlSession controlSession)
     {
-        addSession(new ListRecordingsSession(
-            correlationId, controlPublication, fromId, count, catalog, controlSessionProxy));
+        return new ListRecordingsSession(
+            correlationId,
+            controlPublication,
+            fromId,
+            count,
+            catalog,
+            controlSessionProxy,
+            controlSession);
     }
 
     void stopReplay(final long correlationId, final Publication controlPublication, final long replayId)

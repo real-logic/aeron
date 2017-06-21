@@ -38,6 +38,7 @@ class ListRecordingsSession implements Session
 
     private final Publication controlPublication;
     private final long fromId;
+    private final ControlSession controlSession;
     private final long toId;
     private final Catalog catalog;
     private final ControlSessionProxy proxy;
@@ -52,11 +53,13 @@ class ListRecordingsSession implements Session
         final long fromId,
         final int count,
         final Catalog catalog,
-        final ControlSessionProxy proxy)
+        final ControlSessionProxy proxy,
+        final ControlSession controlSession)
     {
         this.controlPublication = controlPublication;
-        recordingId = fromId;
+        this.recordingId = fromId;
         this.fromId = fromId;
+        this.controlSession = controlSession;
         this.toId = fromId + count;
         this.catalog = catalog;
         this.proxy = proxy;
@@ -99,6 +102,7 @@ class ListRecordingsSession implements Session
     public void close()
     {
         state = State.CLOSED;
+        controlSession.onListRecordingSessionClosed(this);
     }
 
     private int sendDescriptors()

@@ -21,8 +21,11 @@ import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.EpochClock;
 
+import java.util.ArrayDeque;
+
 class ControlSession implements Session, ControlRequestListener
 {
+
     enum State
     {
         INIT, ACTIVE, INACTIVE, CLOSED
@@ -37,6 +40,7 @@ class ControlSession implements Session, ControlRequestListener
     private Publication controlPublication;
     private State state = State.INIT;
     private long timeConnectedMs;
+    private ArrayDeque<ListRecordingsSession> listRecordingsSessions = new ArrayDeque<>();
 
     ControlSession(final Image image, final ArchiveConductor conductor, final EpochClock epochClock)
     {
@@ -141,7 +145,31 @@ class ControlSession implements Session, ControlRequestListener
     public void onListRecordings(final long correlationId, final long fromRecordingId, final int recordCount)
     {
         validateActive();
-        conductor.listRecordings(correlationId, controlPublication, fromRecordingId, recordCount);
+        final ListRecordingsSession listRecordingsSession = conductor.newListRecordingsSession(
+            correlationId,
+            controlPublication,
+            fromRecordingId,
+            recordCount,
+            this);
+        this.listRecordingsSessions.add(listRecordingsSession);
+
+        if (listRecordingsSessions.size() == 1)
+        {
+            conductor.addSession(listRecordingsSession);
+        }
+    }
+
+    void onListRecordingSessionClosed(final ListRecordingsSession listRecordingsSession)
+    {
+        if (listRecordingsSession != listRecordingsSessions.poll())
+        {
+            throw new IllegalStateException();
+        }
+
+        if (!isDone() && listRecordingsSessions.size() != 0)
+        {
+            conductor.addSession(listRecordingsSessions.peek());
+        }
     }
 
     public void onAbortReplay(final long correlationId, final long replayId)

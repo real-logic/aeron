@@ -270,6 +270,7 @@ public class ArchiveClient
 
                         recordingEventsListener.onStart(
                             recordingStartedDecoder.recordingId(),
+                            recordingStartedDecoder.joinPosition(),
                             recordingStartedDecoder.sessionId(),
                             recordingStartedDecoder.streamId(),
                             recordingStartedDecoder.channel(),

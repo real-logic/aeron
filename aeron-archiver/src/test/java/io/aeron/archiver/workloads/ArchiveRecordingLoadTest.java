@@ -181,6 +181,7 @@ public class ArchiveRecordingLoadTest
         {
             public void onStart(
                 final long recordingId0,
+                final long joinPosition,
                 final int sessionId,
                 final int streamId,
                 final String channel,

@@ -23,6 +23,7 @@ public class FailRecordingEventsListener implements RecordingEventsListener
 {
     public void onStart(
         final long recordingId,
+        final long joinPosition,
         final int sessionId,
         final int streamId,
         final String channel,

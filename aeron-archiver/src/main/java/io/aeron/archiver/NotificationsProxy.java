@@ -38,6 +38,7 @@ class NotificationsProxy
 
     void recordingStarted(
         final long recordingId,
+        final long joinPosition,
         final int sessionId,
         final int streamId,
         final String channel,
@@ -46,6 +47,7 @@ class NotificationsProxy
         recordingStartedEncoder
             .wrapAndApplyHeader(outboundBuffer, 0, messageHeaderEncoder)
             .recordingId(recordingId)
+            .joinPosition(joinPosition)
             .sessionId(sessionId)
             .streamId(streamId)
             .channel(channel)

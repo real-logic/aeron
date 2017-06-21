@@ -18,8 +18,8 @@
             <type name="numInGroup"  primitiveType="uint16"/>
         </composite>
         <composite name="varAsciiEncoding">
-            <type name="length"  primitiveType="uint32" maxValue="1073741824"/>
-            <type name="varData" primitiveType="uint8" length="0" characterEncoding="US-ASCII"/>
+            <type name="length"      primitiveType="uint32" maxValue="1073741824"/>
+            <type name="varData"     primitiveType="uint8" length="0" characterEncoding="US-ASCII"/>
         </composite>
         <enum name="ControlResponseCode" encodingType="uint8">
             <validValue name="OK">0</validValue>
@@ -32,124 +32,125 @@
     <sbe:message name="RecordingStarted"
                  id="101"
                  description="Describes a new image recording, sent both as notification and reply">
-        <field name="recordingId"          id="1" type="int64"/>
-        <field name="sessionId"            id="2" type="int32"/>
-        <field name="streamId"             id="3" type="int32"/>
-        <data  name="channel"              id="5" type="varAsciiEncoding"/>
-        <data  name="sourceIdentity"       id="4" type="varAsciiEncoding"/>
+        <field name="recordingId"        id="1" type="int64"/>
+        <field name="joinPosition"       id="2" type="int64"/>
+        <field name="sessionId"          id="3" type="int32"/>
+        <field name="streamId"           id="4" type="int32"/>
+        <data  name="channel"            id="5" type="varAsciiEncoding"/>
+        <data  name="sourceIdentity"     id="6" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="RecordingProgress"
                  id="102"
                  description="Recording progress notification for an image">
-        <field name="recordingId"          id="1" type="int64"/>
-        <field name="joinPosition"         id="2" type="int64"/>
-        <field name="position"             id="3" type="int64"/>
+        <field name="recordingId"        id="1" type="int64"/>
+        <field name="joinPosition"       id="2" type="int64"/>
+        <field name="position"           id="3" type="int64"/>
     </sbe:message>
 
     <sbe:message name="RecordingStopped"
                  id="103"
                  description="Recording termination notification">
-        <field name="recordingId"          id="1" type="int64"/>
-        <field name="endPosition"          id="2" type="int64"/>
+        <field name="recordingId"        id="1" type="int64"/>
+        <field name="endPosition"        id="2" type="int64"/>
     </sbe:message>
 
     <sbe:message name="ControlResponse"
                  id="1"
                  description="Generic response to a control request. Empty error message is an OK response">
-        <field name="correlationId"        id="1" type="int64"/>
-        <field name="code"                 id="2" type="ControlResponseCode"/>
-        <data  name="errorMessage"         id="3" type="varAsciiEncoding"/>
+        <field name="correlationId"      id="1" type="int64"/>
+        <field name="code"               id="2" type="ControlResponseCode"/>
+        <data  name="errorMessage"       id="3" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="StartRecordingRequest"
                  id="2"
                  description="Request a channel:stream be recorded">
-        <field name="correlationId"        id="1" type="int64"/>
-        <field name="streamId"             id="2" type="int32"/>
-        <data  name="channel"              id="3" type="varAsciiEncoding"/>
+        <field name="correlationId"      id="1" type="int64"/>
+        <field name="streamId"           id="2" type="int32"/>
+        <data  name="channel"            id="3" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="StopRecordingRequest"
                  id="3"
                  description="Request a channel:stream stop recording">
-        <field name="correlationId"        id="1" type="int64"/>
-        <field name="recordingId"          id="2" type="int64"/>
+        <field name="correlationId"      id="1" type="int64"/>
+        <field name="recordingId"        id="2" type="int64"/>
     </sbe:message>
 
     <sbe:message name="ReplayRequest"
                  id="4"
                  description="Replay recording range request">
-        <field name="correlationId"        id="1" type="int64"/>
-        <field name="recordingId"          id="2" type="int64"/>
-        <field name="position"             id="3" type="int64"/>
-        <field name="length"               id="4" type="int64"/>
-        <field name="replayStreamId"       id="5" type="int32"/>
-        <data  name="replayChannel"        id="6" type="varAsciiEncoding"/>
+        <field name="correlationId"      id="1" type="int64"/>
+        <field name="recordingId"        id="2" type="int64"/>
+        <field name="position"           id="3" type="int64"/>
+        <field name="length"             id="4" type="int64"/>
+        <field name="replayStreamId"     id="5" type="int32"/>
+        <data  name="replayChannel"      id="6" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="ReplayStarted"
                  id="41"
                  description="Replay started response" >
-        <field name="correlationId"        id="1" type="int64"/>
-        <field name="replayId"             id="2" type="int64"/>
+        <field name="correlationId"      id="1" type="int64"/>
+        <field name="replayId"           id="2" type="int64"/>
     </sbe:message>
 
     <sbe:message name="AbortReplayRequest"
                  id="5"
                  description="Abort replay of a requested stream" >
-        <field name="correlationId"        id="1" type="int64"/>
-        <field name="replayId"             id="2" type="int64"/>
+        <field name="correlationId"      id="1" type="int64"/>
+        <field name="replayId"           id="2" type="int64"/>
     </sbe:message>
 
     <sbe:message name="ReplayAborted"
                  id="51"
                  description="Replay abort response" >
-        <field name="correlationId"        id="1" type="int64"/>
-        <field name="replayId"             id="2" type="int64"/>
-        <field name="endPosition"          id="3" type="int64"/>
+        <field name="correlationId"      id="1" type="int64"/>
+        <field name="replayId"           id="2" type="int64"/>
+        <field name="endPosition"        id="3" type="int64"/>
     </sbe:message>
 
     <sbe:message name="ListRecordingsRequest"
                  id="6"
                  description="Request a range of recording descriptors">
-        <field name="correlationId"        id="1" type="int64"/>
-        <field name="fromRecordingId"      id="2" type="int64"/>
-        <field name="recordCount"          id="3" type="int32"/>
+        <field name="correlationId"      id="1" type="int64"/>
+        <field name="fromRecordingId"    id="2" type="int64"/>
+        <field name="recordCount"        id="3" type="int32"/>
     </sbe:message>
 
     <sbe:message name="RecordingNotFoundResponse"
                  id="61"
                  description="Failed to find a recording, also terminates query">
-        <field name="correlationId"        id="1" type="int64"/>
-        <field name="recordingId"          id="2" type="int64"/>
-        <field name="maxRecordingId"       id="3" type="int64"/>
+        <field name="correlationId"      id="1" type="int64"/>
+        <field name="recordingId"        id="2" type="int64"/>
+        <field name="maxRecordingId"     id="3" type="int64"/>
     </sbe:message>
 
     <sbe:message name="RecordingDescriptor"
                  id="7"
                  description="Describes a recording in the metadata file and catalog">
-        <field name="correlationId"        id="1" type="int64" />
-        <field name="recordingId"          id="2" type="int64"/>
-        <field name="joinTimestamp"        id="3" type="uint64" epoch="unix" timeUnit="milliseconds"/>
-        <field name="endTimestamp"         id="4" type="uint64" epoch="unix" timeUnit="milliseconds"/>
-        <field name="joinPosition"         id="5" type="int64"/>
-        <field name="endPosition"          id="6" type="int64"/>
-        <field name="initialTermId"        id="7" type="int32"/>
-        <field name="termBufferLength"     id="8" type="int32"/>
-        <field name="mtuLength"            id="9" type="int32"/>
-        <field name="segmentFileLength"    id="10" type="int32"/>
-        <field name="sessionId"            id="11" type="int32"/>
-        <field name="streamId"             id="12" type="int32"/>
-        <data  name="channel"              id="14" type="varAsciiEncoding"/>
+        <field name="correlationId"      id="1" type="int64" />
+        <field name="recordingId"        id="2" type="int64"/>
+        <field name="joinTimestamp"      id="3" type="uint64" epoch="unix" timeUnit="milliseconds"/>
+        <field name="endTimestamp"       id="4" type="uint64" epoch="unix" timeUnit="milliseconds"/>
+        <field name="joinPosition"       id="5" type="int64"/>
+        <field name="endPosition"        id="6" type="int64"/>
+        <field name="initialTermId"      id="7" type="int32"/>
+        <field name="termBufferLength"   id="8" type="int32"/>
+        <field name="mtuLength"          id="9" type="int32"/>
+        <field name="segmentFileLength"  id="10" type="int32"/>
+        <field name="sessionId"          id="11" type="int32"/>
+        <field name="streamId"           id="12" type="int32"/>
+        <data  name="channel"            id="13" type="varAsciiEncoding"/>
         <!-- TODO: Also store the canonical channel for precise matching as well as the original provided. -->
-        <data  name="sourceIdentity"       id="13" type="varAsciiEncoding"/>
+        <data  name="sourceIdentity"     id="14" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="ConnectRequest"
                  id="8"
                  description="Request a connection to the archive and provide response stream details">
-        <field name="responseStreamId"     id="1" type="int32"/>
-        <data  name="responseChannel"      id="2" type="varAsciiEncoding"/>
+        <field name="responseStreamId"   id="1" type="int32"/>
+        <data  name="responseChannel"    id="2" type="varAsciiEncoding"/>
     </sbe:message>
 </sbe:messageSchema>

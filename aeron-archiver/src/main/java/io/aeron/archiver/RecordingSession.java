@@ -118,6 +118,7 @@ class RecordingSession implements Session
 
         notificationsProxy.recordingStarted(
             recordingId,
+            joinPosition,
             sessionId,
             streamId,
             channel,
@@ -173,16 +174,16 @@ class RecordingSession implements Session
 
     long endPosition()
     {
-        return (recordingWriter != null) ? recordingWriter.endPosition() : RecordingWriter.NULL_POSITION;
+        return recordingWriter != null ? recordingWriter.endPosition() : RecordingWriter.NULL_POSITION;
     }
 
     long joinTimestamp()
     {
-        return (recordingWriter != null) ? recordingWriter.joinTimestamp() : RecordingWriter.NULL_TIME;
+        return recordingWriter != null ? recordingWriter.joinTimestamp() : RecordingWriter.NULL_TIME;
     }
 
     long endTimestamp()
     {
-        return (recordingWriter != null) ? recordingWriter.endTimestamp() : RecordingWriter.NULL_TIME;
+        return recordingWriter != null ? recordingWriter.endTimestamp() : RecordingWriter.NULL_TIME;
     }
 }

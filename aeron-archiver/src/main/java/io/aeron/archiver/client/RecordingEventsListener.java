@@ -24,6 +24,7 @@ public interface RecordingEventsListener
      * Fired when a recording is started.
      *
      * @param recordingId    assigned to the new recording.
+     * @param joinPosition   in the stream at which the recording started.
      * @param sessionId      of the publication being recorded.
      * @param streamId       of the publication being recorded.
      * @param channel        of the publication being recorded.
@@ -31,6 +32,7 @@ public interface RecordingEventsListener
      */
     void onStart(
         long recordingId,
+        long joinPosition,
         int sessionId,
         int streamId,
         String channel,
@@ -40,7 +42,7 @@ public interface RecordingEventsListener
      * Progress indication of an active recording.
      *
      * @param recordingId  for which progress is being reported.
-     * @param joinPosition in the publication at which the recording started.
+     * @param joinPosition in the stream at which the recording started.
      * @param position     reached in recording the publication.
      */
     void onProgress(long recordingId, long joinPosition, long position);

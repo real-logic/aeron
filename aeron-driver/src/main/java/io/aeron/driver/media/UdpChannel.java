@@ -462,11 +462,11 @@ public final class UdpChannel
         final NetworkInterface[] filteredInterfaces = filterBySubnet(
             searchAddress.getInetAddress(), searchAddress.getSubnetPrefix());
 
-        for (final NetworkInterface ifc : filteredInterfaces)
+        for (final NetworkInterface networkInterface : filteredInterfaces)
         {
-            if (ifc.supportsMulticast() || ifc.isLoopback())
+            if (networkInterface.supportsMulticast() || networkInterface.isLoopback())
             {
-                return ifc;
+                return networkInterface;
             }
         }
 

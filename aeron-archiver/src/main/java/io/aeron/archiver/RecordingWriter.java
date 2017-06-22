@@ -16,14 +16,18 @@
 package io.aeron.archiver;
 
 import io.aeron.archiver.codecs.RecordingDescriptorEncoder;
-import io.aeron.logbuffer.*;
+import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.Header;
+import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -44,8 +48,9 @@ import static java.nio.file.StandardOpenOption.*;
  * creating a {@link RecordingWriter}.</li>
  * </ul>
  */
-final class RecordingWriter implements AutoCloseable, RawBlockHandler
+class RecordingWriter implements AutoCloseable, RawBlockHandler
 {
+    private static final boolean VALIDATE_POSITION_ASSUMPTIONS = true;
     static class Marker
     {
         private final ByteBuffer buffer =
@@ -56,14 +61,16 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         {
             header.wrap(buffer);
             header.headerType(HeaderFlyweight.HDR_TYPE_PAD);
-            header.flags(FrameDescriptor.UNFRAGMENTED);
         }
     }
 
     static final long NULL_TIME = -1L;
     static final long NULL_POSITION = -1;
-    static final int END_OF_RECORDING_INDICATOR = -1;
+
+    /* This is implicit in the file as allocated files are zeroed by reasonable OSs*/
     static final int END_OF_DATA_INDICATOR = 0;
+
+    static final int END_OF_RECORDING_INDICATOR = -1;
 
     private static final int NULL_SEGMENT_POSITION = -1;
     // TODO: pull this out to the Agent and pass into the writer so no need for thread local.
@@ -93,7 +100,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
     private FileChannel recordingFileChannel;
 
     private boolean closed = false;
-    private boolean stopped = false;
     private long endPosition = NULL_POSITION;
     private long joinTimestamp = NULL_TIME;
     private long endTimestamp = NULL_TIME;
@@ -119,6 +125,7 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         this.termBufferLength = termBufferLength;
         this.initialTermId = initialTermId;
         this.joinPosition = joinPosition;
+        this.endPosition = joinPosition;
 
         this.termsMask = (segmentFileLength / termBufferLength) - 1;
         if (((termsMask + 1) & termsMask) != 0)
@@ -129,34 +136,35 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         }
 
         final String recordingMetaFileName = ArchiveUtil.recordingMetaFileName(recordingId);
-        final File file = new File(archiveDir, recordingMetaFileName);
-        try (FileChannel metadataFileChannel = FileChannel.open(file.toPath(), CREATE_NEW, READ, WRITE))
+        final File metadataFile = new File(archiveDir, recordingMetaFileName);
+        try
         {
-            metaDataBuffer = metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
-            final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(metaDataBuffer);
-            metaDataEncoder = new RecordingDescriptorEncoder().wrap(unsafeBuffer, Catalog.CATALOG_FRAME_LENGTH);
-
-            initDescriptor(
-                metaDataEncoder,
-                recordingId,
-                termBufferLength,
-                segmentFileLength,
-                mtuLength,
-                initialTermId,
-                joinPosition,
-                sessionId,
-                streamId,
-                channel,
-                sourceIdentity);
-
-            unsafeBuffer.putInt(0, metaDataEncoder.encodedLength());
+            metaDataBuffer = mapMetaData(metadataFile);
         }
         catch (final IOException ex)
         {
             close();
-
             throw new RuntimeException(ex);
         }
+
+        final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(metaDataBuffer);
+        metaDataEncoder = new RecordingDescriptorEncoder().wrap(unsafeBuffer, Catalog.CATALOG_FRAME_LENGTH);
+
+        initDescriptor(
+            metaDataEncoder,
+            recordingId,
+            termBufferLength,
+            segmentFileLength,
+            mtuLength,
+            initialTermId,
+            joinPosition,
+            sessionId,
+            streamId,
+            channel,
+            sourceIdentity);
+
+        unsafeBuffer.putInt(0, metaDataEncoder.encodedLength());
+        metaDataBuffer.force();
     }
 
     static void initDescriptor(
@@ -177,7 +185,7 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
             .termBufferLength(termBufferLength)
             .joinTimestamp(NULL_TIME)
             .joinPosition(joinPosition)
-            .endPosition(NULL_POSITION)
+            .endPosition(joinPosition)
             .endTimestamp(NULL_TIME)
             .mtuLength(mtuLength)
             .initialTermId(initialTermId)
@@ -186,24 +194,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
             .segmentFileLength(segmentFileLength)
             .channel(channel)
             .sourceIdentity(sourceIdentity);
-    }
-
-    private void newRecordingSegmentFile()
-    {
-        final String segmentFileName = ArchiveUtil.recordingDataFileName(recordingId, segmentIndex);
-        final File file = new File(archiveDir, segmentFileName);
-
-        try
-        {
-            final RandomAccessFile recordingFile = new RandomAccessFile(file, "rw");
-            recordingFile.setLength(segmentFileLength + DataHeaderFlyweight.HEADER_LENGTH);
-            recordingFileChannel = recordingFile.getChannel();
-        }
-        catch (final IOException ex)
-        {
-            close();
-            LangUtil.rethrowUnchecked(ex);
-        }
     }
 
     public void onBlock(
@@ -215,18 +205,33 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         final int sessionId,
         final int termId)
     {
-        final int recordingOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
         try
         {
-            prepareRecording(termOffset, blockLength);
-
-            fileChannel.transferTo(fileOffset, blockLength, recordingFileChannel);
-            if (forceWrites)
+            if (NULL_POSITION == segmentPosition)
             {
-                recordingFileChannel.force(false);
+                onFirstWrite(termOffset);
             }
 
-            writePrologue(termOffset, blockLength, termId, recordingOffset);
+            if (segmentFileLength == segmentPosition)
+            {
+                onFileRollOver();
+            }
+
+            validateWritePreConditions(termId, termOffset);
+            // Note: since files are assumed pre-filled with 0 there's no need to write the marker ahead of the data
+            final long written = tranferDataFrom(fileChannel, fileOffset, blockLength);
+            if (written != blockLength)
+            {
+                throw new IllegalStateException();
+            }
+
+            if (forceWrites)
+            {
+                forceData(recordingFileChannel);
+            }
+
+            afterWrite(blockLength);
+            validateWritePostConditions();
         }
         catch (final Exception ex)
         {
@@ -236,25 +241,43 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
     }
 
     /**
-     * Convenience method for testing purposes.
+     * Convenience method for testing purposes only.
      */
     void writeFragment(final DirectBuffer buffer, final Header header)
     {
-        final int termId = header.termId();
         final int termOffset = header.termOffset();
         final int frameLength = header.frameLength();
         final int alignedLength = BitUtil.align(frameLength, FrameDescriptor.FRAME_ALIGNMENT);
 
-        final int recordingOffset = recordingOffset(termOffset, termId, initialTermId, termsMask, termBufferLength);
         try
         {
-            prepareRecording(termOffset, alignedLength);
+            if (NULL_POSITION == segmentPosition)
+            {
+                onFirstWrite(termOffset);
+            }
+            if (segmentFileLength == segmentPosition)
+            {
+                onFileRollOver();
+            }
 
+            validateWritePreConditions(header.termId(), termOffset);
+            // Note: since files are assumed pre-filled with 0 there's no need to write the marker ahead of the data
             final ByteBuffer src = buffer.byteBuffer().duplicate();
             src.position(termOffset).limit(termOffset + frameLength);
-            recordingFileChannel.write(src);
+            final int written = writeData(src, segmentPosition, recordingFileChannel);
+            recordingFileChannel.position(segmentPosition + alignedLength);
 
-            writePrologue(termOffset, alignedLength, termId, recordingOffset);
+            if (written != frameLength)
+            {
+                throw new IllegalStateException();
+            }
+
+            if (forceWrites)
+            {
+                forceData(recordingFileChannel);
+            }
+            afterWrite(alignedLength);
+            validateWritePostConditions();
         }
         catch (final Exception ex)
         {
@@ -263,57 +286,6 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         }
     }
 
-    private void prepareRecording(final int termOffset, final int length) throws IOException
-    {
-        final Marker marker = MARKER.get();
-
-        if (segmentPosition == -1)
-        {
-            newRecordingSegmentFile();
-
-            segmentPosition = termOffset;
-            marker.header.frameLength(termOffset);
-            marker.buffer.clear();
-            recordingFileChannel.write(marker.buffer, 0);
-            recordingFileChannel.position(segmentPosition);
-            joinTimestamp = epochClock.time();
-            metaDataEncoder.joinTimestamp(joinTimestamp);
-        }
-        // write ahead of data to indicate end of data in file
-        marker.header.frameLength(END_OF_DATA_INDICATOR);
-        marker.buffer.clear();
-        recordingFileChannel.write(marker.buffer, segmentPosition + length);
-    }
-
-    private void writePrologue(
-        final int termOffset,
-        final int blockLength,
-        final int termId,
-        final int recordingOffset)
-        throws IOException
-    {
-        segmentPosition = recordingOffset + blockLength;
-        final int resultingOffset = termOffset + blockLength;
-        final long position = ((long)(termId - initialTermId)) * termBufferLength + resultingOffset;
-        metaDataEncoder.endPosition(position);
-        endPosition = position;
-
-        if (segmentPosition == segmentFileLength)
-        {
-            CloseHelper.close(recordingFileChannel);
-            segmentPosition = 0;
-            segmentIndex++;
-            newRecordingSegmentFile();
-        }
-    }
-
-    void stop()
-    {
-        endTimestamp = epochClock.time();
-        metaDataEncoder.endTimestamp(endTimestamp);
-        metaDataBuffer.force();
-        stopped = true;
-    }
 
     public void close()
     {
@@ -321,34 +293,37 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
         {
             return;
         }
-        // write ahead of data to indicate end of recording
+
+        closed = true;
+
+        if (metaDataBuffer != null)
+        {
+            endTimestamp = epochClock.time();
+            metaDataEncoder.endTimestamp(endTimestamp);
+            metaDataBuffer.force();
+            IoUtil.unmap(metaDataBuffer);
+        }
+
         if (recordingFileChannel != null)
         {
+            // write end of recording marker after data
             final Marker marker = MARKER.get();
 
             marker.header.frameLength(END_OF_RECORDING_INDICATOR);
             try
             {
                 marker.buffer.clear();
-                recordingFileChannel.write(marker.buffer, segmentPosition);
+                writeData(marker.buffer, segmentPosition, recordingFileChannel);
             }
             catch (final IOException e)
             {
-                // TODO: ???
-                e.printStackTrace();
+                LangUtil.rethrowUnchecked(e);
+            }
+            finally
+            {
+                CloseHelper.close(recordingFileChannel);
             }
         }
-
-        CloseHelper.close(recordingFileChannel);
-
-        if (metaDataBuffer != null && !stopped)
-        {
-            stop();
-        }
-
-        IoUtil.unmap(metaDataBuffer);
-
-        closed = true;
     }
 
     long recordingId()
@@ -379,6 +354,137 @@ final class RecordingWriter implements AutoCloseable, RawBlockHandler
     long endTimestamp()
     {
         return endTimestamp;
+    }
+
+    // extend for testing
+    MappedByteBuffer mapMetaData(final File file) throws IOException
+    {
+        try (FileChannel metadataFileChannel = FileChannel.open(file.toPath(), CREATE_NEW, READ, WRITE))
+        {
+            return metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
+        }
+    }
+
+    // extend for testing
+    int writeData(final ByteBuffer buffer, final int position, final FileChannel fileChannel) throws IOException
+    {
+        return fileChannel.write(buffer, position);
+    }
+
+    // extend for testing
+    long tranferDataFrom(
+        final FileChannel fromFileChannel,
+        final long fileOffset,
+        final int blockLength) throws IOException
+    {
+        return fromFileChannel.transferTo(fileOffset, blockLength, recordingFileChannel);
+    }
+
+    // extend for testing
+    void newRecordingSegmentFile()
+    {
+        final String segmentFileName = ArchiveUtil.recordingDataFileName(recordingId, segmentIndex);
+        final File file = new File(archiveDir, segmentFileName);
+
+        RandomAccessFile recordingFile = null;
+        try
+        {
+            recordingFile = new RandomAccessFile(file, "rw");
+            // Note: extra room allocated for marker write at end of file. This is required so that we can tell from
+            // the data files when a recording is done.
+            recordingFile.setLength(segmentFileLength + DataHeaderFlyweight.HEADER_LENGTH);
+            recordingFileChannel = recordingFile.getChannel();
+        }
+        catch (final IOException ex)
+        {
+            CloseHelper.quietClose(recordingFile);
+            close();
+            LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
+    // extend for testing
+    void forceData(final FileChannel fileChannel) throws IOException
+    {
+        fileChannel.force(false);
+    }
+
+    private void onFileRollOver()
+    {
+        CloseHelper.close(recordingFileChannel);
+        segmentPosition = 0;
+        segmentIndex++;
+        newRecordingSegmentFile();
+    }
+
+    private void onFirstWrite(final int termOffset) throws IOException
+    {
+        validateStartTermOffset(termOffset);
+
+        segmentPosition = termOffset;
+        newRecordingSegmentFile();
+
+        final Marker marker = MARKER.get();
+        marker.header.frameLength(termOffset);
+        marker.buffer.clear();
+        writeData(marker.buffer, 0, recordingFileChannel);
+
+        // we need to setup starting position for transferTo
+        recordingFileChannel.position(segmentPosition);
+        joinTimestamp = epochClock.time();
+        metaDataEncoder.joinTimestamp(joinTimestamp);
+    }
+
+    private void afterWrite(final int blockLength)
+    {
+        this.segmentPosition += blockLength;
+        this.endPosition += blockLength;
+        metaDataEncoder.endPosition(this.endPosition);
+    }
+
+    private void validateStartTermOffset(final int termOffset)
+    {
+        if (VALIDATE_POSITION_ASSUMPTIONS)
+        {
+            final int expectedStartTermOffset = (int) (joinPosition & (termBufferLength - 1));
+            if (expectedStartTermOffset != termOffset)
+            {
+                throw new IllegalStateException();
+            }
+        }
+    }
+
+    private void validateWritePreConditions(final int termId, final int termOffset) throws IOException
+    {
+        if (VALIDATE_POSITION_ASSUMPTIONS)
+        {
+            if (recordingFileChannel.position() != segmentPosition)
+            {
+                throw new IllegalStateException();
+            }
+            final int recordingOffset = recordingOffset(
+                termOffset,
+                termId,
+                initialTermId,
+                termsMask,
+                termBufferLength);
+
+            if (recordingOffset != segmentPosition)
+            {
+                throw new IllegalStateException();
+            }
+        }
+    }
+
+    private void validateWritePostConditions() throws IOException
+    {
+        if (VALIDATE_POSITION_ASSUMPTIONS)
+        {
+            if (recordingFileChannel.position() != segmentPosition)
+            {
+                throw new IllegalStateException();
+            }
+        }
     }
 
     static class RecordingContext

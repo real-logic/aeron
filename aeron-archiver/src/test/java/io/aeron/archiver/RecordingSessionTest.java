@@ -126,7 +126,7 @@ public class RecordingSessionTest
         assertEquals(RecordingWriter.NULL_TIME, metaData.joinTimestamp());
         assertEquals(joinPosition, metaData.joinPosition());
         assertEquals(RecordingWriter.NULL_TIME, metaData.endTimestamp());
-        assertEquals(RecordingWriter.NULL_POSITION, metaData.endPosition());
+        assertEquals(joinPosition, metaData.endPosition());
         assertEquals(channel, metaData.channel());
         assertEquals(sourceIdentity, metaData.sourceIdentity());
 

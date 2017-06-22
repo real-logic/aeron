@@ -576,6 +576,7 @@ void aeron_driver_conductor_error(
 {
     aeron_distinct_error_log_record(&conductor->error_log, error_code, description, message);
     aeron_counter_increment(conductor->errors_counter, 1);
+    aeron_set_err(0, "%s", "no error"); /* reset error */
 }
 
 void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message, size_t length, void *clientd)

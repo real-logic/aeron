@@ -29,6 +29,8 @@ typedef enum aeron_network_publication_status_enum
 }
 aeron_network_publication_status_t;
 
+typedef struct aeron_send_channel_endpoint_stct aeron_send_channel_endpoint_t;
+
 typedef struct aeron_network_publication_stct
 {
     struct aeron_network_publication_conductor_fields_stct
@@ -50,6 +52,7 @@ typedef struct aeron_network_publication_stct
     aeron_mapped_raw_log_t mapped_raw_log;
     aeron_position_t pub_lmt_position;
     aeron_logbuffer_metadata_t *log_meta_data;
+    aeron_send_channel_endpoint_t *endpoint;
 
     char *log_file_name;
     int64_t term_window_length;

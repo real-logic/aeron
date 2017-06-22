@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import static io.aeron.CncFileDescriptor.CNC_VERSION;
+import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
 
 /**
@@ -45,6 +46,21 @@ import static java.lang.System.getProperty;
  */
 public class CommonContext implements AutoCloseable
 {
+    /**
+     * Property name for driver timeout after which the driver is considered inactive.
+     */
+    public static final String DRIVER_TIMEOUT_PROP_NAME = "aeron.driver.timeout";
+
+    /**
+     * Default timeout in which the driver is expected to respond or heartbeat.
+     */
+    public static final long DEFAULT_DRIVER_TIMEOUT_MS = 10_000;
+
+    /**
+     * Timeout in which the driver is expected to respond or heartbeat.
+     */
+    public static final long DRIVER_TIMEOUT_MS = getLong(DRIVER_TIMEOUT_PROP_NAME, DEFAULT_DRIVER_TIMEOUT_MS);
+
     /**
      * The top level Aeron directory used for communication between a Media Driver and client.
      */
@@ -76,11 +92,6 @@ public class CommonContext implements AutoCloseable
      * The network interface via which the socket will be routed.
      */
     public static final String INTERFACE_PARAM_NAME = "interface";
-
-    /**
-     * Timeout in which the driver is expected to respond.
-     */
-    public static final long DEFAULT_DRIVER_TIMEOUT_MS = 10_000;
 
     /**
      * Initial term id to be used when creating an {@link ExclusivePublication}.
@@ -132,7 +143,7 @@ public class CommonContext implements AutoCloseable
      */
     public static final String RELIABLE_STREAM_PARAM_NAME = "reliable";
 
-    private long driverTimeoutMs = DEFAULT_DRIVER_TIMEOUT_MS;
+    private long driverTimeoutMs = DRIVER_TIMEOUT_MS;
     private String aeronDirectoryName;
     private File aeronDirectory;
     private File cncFile;

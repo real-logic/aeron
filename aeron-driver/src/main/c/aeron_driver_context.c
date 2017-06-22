@@ -194,6 +194,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->socket_rcvbuf = 128 * 1024;
     _context->socket_sndbuf = 0;
     _context->multicast_ttl = 0;
+    _context->send_to_sm_poll_ratio = 4;
+    _context->status_message_timeout_ns = 200 * 1000 * 1000L;
 
     /* set from env */
     char *value = NULL;
@@ -321,6 +323,20 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             _context->multicast_ttl,
             0,
             255);
+
+    _context->send_to_sm_poll_ratio =
+        (uint8_t)aeron_config_parse_uint64(
+            getenv(AERON_SEND_TO_STATUS_POLL_RATIO_ENV_VAR),
+            _context->send_to_sm_poll_ratio,
+            1,
+            INT32_MAX);
+
+    _context->status_message_timeout_ns =
+        aeron_config_parse_uint64(
+            getenv(AERON_RCV_STATUS_MESSAGE_TIMEOUT_ENV_VAR),
+            _context->status_message_timeout_ns,
+            1000,
+            INT64_MAX);
 
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;

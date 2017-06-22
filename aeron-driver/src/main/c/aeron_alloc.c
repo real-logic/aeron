@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include "util/aeron_bitutil.h"
 #include "aeron_alloc.h"
 
 int aeron_alloc_no_err(void **ptr, size_t size)
@@ -44,6 +45,26 @@ int aeron_alloc(void **ptr, size_t size)
     }
 
     memset(*ptr, 0, size);
+
+    return 0;
+}
+
+int aeron_alloc_aligned(void **ptr, size_t *offset, size_t size, size_t alignment)
+{
+    if (!(AERON_IS_POWER_OF_TWO(alignment)))
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    int result = aeron_alloc(ptr, size + alignment);
+    if (result < 0)
+    {
+        return -1;
+    }
+
+    intptr_t addr = (intptr_t)*ptr;
+    *offset = alignment - (addr & (alignment - 1));
 
     return 0;
 }

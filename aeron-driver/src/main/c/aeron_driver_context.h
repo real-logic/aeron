@@ -69,6 +69,7 @@ typedef struct aeron_driver_context_stct
     uint64_t driver_timeout_ms;
     uint64_t client_liveness_timeout_ns;    /* aeron.client.liveness.timeout = 5s */
     uint64_t publication_linger_timeout_ns; /* aeron.publication.linger.timeout = 5s */
+    uint64_t status_message_timeout_ns;     /* aeron.rcv.status.message.timeout = 200ms */
     size_t to_driver_buffer_length;         /* aeron.conductor.buffer.length = 1MB + trailer*/
     size_t to_clients_buffer_length;        /* aeron.clients.buffer.length = 1MB + trailer */
     size_t counters_values_buffer_length;   /* aeron.counters.buffer.length = 1MB */
@@ -80,6 +81,7 @@ typedef struct aeron_driver_context_stct
     size_t ipc_publication_window_length;   /* aeron.ipc.publication.term.window.length = 0 */
     size_t socket_rcvbuf;                   /* aeron.socket.so_rcvbuf = 128 * 1024 */
     size_t socket_sndbuf;                   /* aeron.socket.so_sndbuf = 0 */
+    size_t send_to_sm_poll_ratio;           /* aeron.send.to.status.poll.ratio = 4 */
     uint8_t multicast_ttl;                  /* aeron.socket.multicast.ttl = 0 */
 
     aeron_mapped_file_t cnc_map;

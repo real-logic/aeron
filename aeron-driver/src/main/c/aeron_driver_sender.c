@@ -42,6 +42,22 @@ int aeron_driver_sender_init(
         return -1;
     }
 
+    for (size_t i = 0; i < AERON_DRIVER_SENDER_NUM_RECV_BUFFERS; i++)
+    {
+        size_t offset = 0;
+        if (aeron_alloc_aligned(
+            (void **)&sender->recv_buffers.buffers[i],
+            &offset,
+            context->mtu_length,
+            AERON_CACHE_LINE_LENGTH * 2) < 0)
+        {
+            return -1;
+        }
+
+        sender->recv_buffers.iov[i].iov_base = sender->recv_buffers.buffers[i] + offset;
+        sender->recv_buffers.iov[i].iov_len = context->mtu_length;
+    }
+
     sender->context = context;
     sender->sender_proxy.sender = sender;
     sender->sender_proxy.command_queue = &context->sender_command_queue;
@@ -54,6 +70,10 @@ int aeron_driver_sender_init(
     sender->network_publicaitons.capacity = 0;
 
     sender->round_robin_index = 0;
+    sender->duty_cycle_counter = 0;
+    sender->duty_cycle_ratio = context->send_to_sm_poll_ratio;
+    sender->status_message_read_timeout_ns = context->status_message_timeout_ns / 2;
+    sender->control_poll_timeout_ns = 0;
     sender->total_bytes_sent =
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_BYTES_SENT);
     return 0;
@@ -81,21 +101,53 @@ int aeron_driver_sender_do_work(void *clientd)
 
     int64_t now_ns = sender->context->nano_clock();
     int bytes_sent = aeron_driver_sender_do_send(sender, now_ns);
+    int poll_result;
 
-    /* TODO: add duty cycle logic to reduce polling */
+    if (0 == bytes_sent ||
+        ++sender->duty_cycle_counter == sender->duty_cycle_ratio ||
+        now_ns > sender->control_poll_timeout_ns)
     {
-        /* TODO: add struct mmsghdr and buffers and addrs */
-        struct mmsghdr mmsghdr;
+        struct mmsghdr mmsghdr[AERON_DRIVER_SENDER_NUM_RECV_BUFFERS];
 
-        aeron_udp_transport_poller_poll(&sender->poller, &mmsghdr, 1, aeron_send_channel_endpoint_dispatch, sender);
+        for (size_t i = 0; i < AERON_DRIVER_SENDER_NUM_RECV_BUFFERS; i++)
+        {
+            mmsghdr[i].msg_hdr.msg_name = &sender->recv_buffers.addrs[i];
+            mmsghdr[i].msg_hdr.msg_namelen = sizeof(sender->recv_buffers.addrs[i]);
+            mmsghdr[i].msg_hdr.msg_iov = &sender->recv_buffers.iov[i];
+            mmsghdr[i].msg_hdr.msg_iovlen = 1;
+            mmsghdr[i].msg_hdr.msg_flags = 0;
+            mmsghdr[i].msg_len = 0;
+        }
+
+        poll_result = aeron_udp_transport_poller_poll(
+            &sender->poller,
+            mmsghdr,
+            AERON_DRIVER_SENDER_NUM_RECV_BUFFERS,
+            aeron_send_channel_endpoint_dispatch,
+            sender);
+
+        if (poll_result < 0)
+        {
+            /* TODO: report */
+        }
+
+        work_count += (poll_result < 0) ? 0 : poll_result;
+
+        sender->duty_cycle_counter = 0;
+        sender->control_poll_timeout_ns = now_ns + sender->status_message_read_timeout_ns;
     }
 
-    return work_count;
+    return work_count + bytes_sent;
 }
 
 void aeron_driver_sender_on_close(void *clientd)
 {
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
+
+    for (size_t i = 0; i < AERON_DRIVER_SENDER_NUM_RECV_BUFFERS; i++)
+    {
+        aeron_free(sender->recv_buffers.buffers[i]);
+    }
 
     aeron_udp_transport_poller_close(&sender->poller);
     aeron_free(sender->network_publicaitons.array);

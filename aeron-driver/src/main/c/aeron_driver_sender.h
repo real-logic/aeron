@@ -29,6 +29,8 @@ typedef struct aeron_driver_sender_network_publication_entry_stct
 }
 aeron_driver_sender_network_publication_entry_t;
 
+#define AERON_DRIVER_SENDER_NUM_RECV_BUFFERS (2)
+
 typedef struct aeron_driver_sender_stct
 {
     aeron_driver_sender_proxy_t sender_proxy;
@@ -42,8 +44,20 @@ typedef struct aeron_driver_sender_stct
     }
     network_publicaitons;
 
+    struct aeron_driver_sender_buffers_stct
+    {
+        uint8_t *buffers[AERON_DRIVER_SENDER_NUM_RECV_BUFFERS];
+        struct iovec iov[AERON_DRIVER_SENDER_NUM_RECV_BUFFERS];
+        struct sockaddr_storage addrs[AERON_DRIVER_SENDER_NUM_RECV_BUFFERS];
+    }
+    recv_buffers;
+
     aeron_driver_context_t *context;
+    int64_t status_message_read_timeout_ns;
+    int64_t control_poll_timeout_ns;
     size_t round_robin_index;
+    size_t duty_cycle_counter;
+    size_t duty_cycle_ratio;
 
     int64_t *total_bytes_sent;
 }

@@ -23,8 +23,6 @@ import io.aeron.AeronUri;
 import org.agrona.BitUtil;
 
 import java.net.*;
-import java.util.Collection;
-import java.util.List;
 
 import static io.aeron.driver.media.NetworkUtil.filterBySubnet;
 import static io.aeron.driver.media.NetworkUtil.findAddressOnInterface;
@@ -461,10 +459,9 @@ public final class UdpChannel
     private static NetworkInterface findInterface(final InterfaceSearchAddress searchAddress)
         throws SocketException, UnknownHostException
     {
-        final List<NetworkInterface> filteredInterfaces = filterBySubnet(
+        final NetworkInterface[] filteredInterfaces = filterBySubnet(
             searchAddress.getInetAddress(), searchAddress.getSubnetPrefix());
 
-        // Results are ordered by prefix length, with loopback at the end.
         for (final NetworkInterface ifc : filteredInterfaces)
         {
             if (ifc.supportsMulticast() || ifc.isLoopback())
@@ -565,7 +562,7 @@ public final class UdpChannel
     }
 
     private static String errorNoMatchingInterfaces(
-        final Collection<NetworkInterface> filteredInterfaces,
+        final NetworkInterface[] filteredInterfaces,
         final InterfaceSearchAddress address)
         throws SocketException
     {
@@ -575,7 +572,7 @@ public final class UdpChannel
             .append('/')
             .append(address.getSubnetPrefix());
 
-        if (filteredInterfaces.size() > 0)
+        if (filteredInterfaces.length > 0)
         {
             builder.append(lineSeparator()).append("  Candidates:");
 

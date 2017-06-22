@@ -91,10 +91,10 @@ public class NetworkUtilTest
         final NetworkInterface ifc1 = stub.add("192.168.0.1/24");
         stub.add("10.0.0.2/8");
 
-        final Collection<NetworkInterface> filteredBySubnet = filterBySubnet(stub, getByName("192.168.0.0"), 24);
+        final NetworkInterface[] filteredBySubnet = filterBySubnet(stub, getByName("192.168.0.0"), 24);
 
-        assertThat(filteredBySubnet.size(), is(1));
-        assertThat(first(filteredBySubnet), is(ifc1));
+        assertThat(filteredBySubnet.length, is(1));
+        assertThat(filteredBySubnet[0], is(ifc1));
     }
 
     @Test
@@ -105,9 +105,9 @@ public class NetworkUtilTest
         stub.add("192.168.0.1/24");
         stub.add("10.0.0.2/8");
 
-        final Collection<NetworkInterface> filteredBySubnet = filterBySubnet(stub, getByName("192.169.0.0"), 24);
+        final NetworkInterface[] filteredBySubnet = filterBySubnet(stub, getByName("192.169.0.0"), 24);
 
-        assertThat(filteredBySubnet.size(), is(0));
+        assertThat(filteredBySubnet.length, is(0));
     }
 
     @Test
@@ -120,13 +120,12 @@ public class NetworkUtilTest
         final NetworkInterface ifc2 = stub.add("192.168.1.1/24");
         final NetworkInterface ifc3 = stub.add("192.168.0.0/16");
 
-        final Collection<NetworkInterface> filteredBySubnet = filterBySubnet(stub, getByName("192.0.0.0"), 8);
+        final NetworkInterface[] filteredBySubnet = filterBySubnet(stub, getByName("192.0.0.0"), 8);
 
-        assertThat(filteredBySubnet.size(), is(3));
-        final Iterator<NetworkInterface> it = filteredBySubnet.iterator();
-        assertThat(it.next(), sameInstance(ifc2));
-        assertThat(it.next(), sameInstance(ifc3));
-        assertThat(it.next(), sameInstance(ifc1));
+        assertThat(filteredBySubnet.length, is(3));
+        assertThat(filteredBySubnet[0], sameInstance(ifc2));
+        assertThat(filteredBySubnet[1], sameInstance(ifc3));
+        assertThat(filteredBySubnet[2], sameInstance(ifc1));
     }
 
     @Test
@@ -137,11 +136,10 @@ public class NetworkUtilTest
         final NetworkInterface ifc1 = stub.add("fe80:0:0:0001:0002:0:0:1/80");
         stub.add("fe80:0:0:0002:0003:0:0:1/80");
 
-        final Collection<NetworkInterface> filteredBySubnet =
-            filterBySubnet(stub, getByName("fe80:0:0:0001:0002:0:0:0"), 80);
+        final NetworkInterface[] filteredBySubnet = filterBySubnet(stub, getByName("fe80:0:0:0001:0002:0:0:0"), 80);
 
-        assertThat(filteredBySubnet.size(), is(1));
-        assertThat(first(filteredBySubnet), is(ifc1));
+        assertThat(filteredBySubnet.length, is(1));
+        assertThat(filteredBySubnet[0], is(ifc1));
     }
 
     @Test
@@ -152,10 +150,9 @@ public class NetworkUtilTest
         stub.add("fe80:0:0:0001:0:0:0:1/64");
         stub.add("fe80:0:0:0002:0:0:0:1/64");
 
-        final Collection<NetworkInterface> filteredBySubnet =
-            filterBySubnet(stub, getByName("fe80:0:0:0004:0:0:0:0"), 64);
+        final NetworkInterface[] filteredBySubnet = filterBySubnet(stub, getByName("fe80:0:0:0004:0:0:0:0"), 64);
 
-        assertThat(filteredBySubnet.size(), is(0));
+        assertThat(filteredBySubnet.length, is(0));
     }
 
     @Test
@@ -168,19 +165,12 @@ public class NetworkUtilTest
         final NetworkInterface ifc2 = stub.add("fe80:0001:0:0:0:0:0:1/32");
         final NetworkInterface ifc3 = stub.add("fe80:0001:abcd:0:0:0:0:1/48");
 
-        final Collection<NetworkInterface> filteredBySubnet =
-            filterBySubnet(stub, getByName("fe80:0:0:0:0:0:0:0"), 16);
+        final NetworkInterface[] filteredBySubnet = filterBySubnet(stub, getByName("fe80:0:0:0:0:0:0:0"), 16);
 
-        assertThat(filteredBySubnet.size(), is(3));
-        final Iterator<NetworkInterface> it = filteredBySubnet.iterator();
-        assertThat(it.next(), sameInstance(ifc3));
-        assertThat(it.next(), sameInstance(ifc2));
-        assertThat(it.next(), sameInstance(ifc1));
-    }
-
-    private static <T> T first(final Collection<T> c)
-    {
-        return c.iterator().next();
+        assertThat(filteredBySubnet.length, is(3));
+        assertThat(filteredBySubnet[0], sameInstance(ifc3));
+        assertThat(filteredBySubnet[1], sameInstance(ifc2));
+        assertThat(filteredBySubnet[2], sameInstance(ifc1));
     }
 
     private static class NetworkInterfaceStub implements NetworkInterfaceShim

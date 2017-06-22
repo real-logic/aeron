@@ -21,7 +21,6 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.List;
 
 import static java.lang.Boolean.compare;
 import static java.lang.Integer.compare;
@@ -46,17 +45,17 @@ public class NetworkUtil
      * of the subnet prefix. Empty if none match.
      * @throws SocketException if an error occurs
      */
-    public static List<NetworkInterface> filterBySubnet(final InetAddress address, final int subnetPrefix)
+    public static NetworkInterface[] filterBySubnet(final InetAddress address, final int subnetPrefix)
         throws SocketException
     {
         return filterBySubnet(NetworkInterfaceShim.DEFAULT, address, subnetPrefix);
     }
 
-    static List<NetworkInterface> filterBySubnet(
+    static NetworkInterface[] filterBySubnet(
         final NetworkInterfaceShim shim, final InetAddress address, final int subnetPrefix)
         throws SocketException
     {
-        final List<FilterResult> filterResults = new ArrayList<>();
+        final ArrayList<FilterResult> filterResults = new ArrayList<>();
         final byte[] queryAddress = address.getAddress();
 
         final Enumeration<NetworkInterface> interfaces = shim.getNetworkInterfaces();
@@ -75,8 +74,12 @@ public class NetworkUtil
 
         sort(filterResults);
 
-        final List<NetworkInterface> results = new ArrayList<>();
-        filterResults.forEach((filterResult) -> results.add(filterResult.networkInterface));
+        final int size = filterResults.size();
+        final NetworkInterface[] results = new  NetworkInterface[size];
+        for (int i = 0; i < size; i++)
+        {
+            results[i] = filterResults.get(i).networkInterface;
+        }
 
         return results;
     }

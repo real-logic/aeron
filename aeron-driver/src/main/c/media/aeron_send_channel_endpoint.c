@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-#include <aeron_driver_context.h>
-#include <concurrent/aeron_counters_manager.h>
+#include <string.h>
+#include "aeron_driver_context.h"
+#include "concurrent/aeron_counters_manager.h"
+#include "util/aeron_error.h"
 #include "aeron_alloc.h"
 #include "media/aeron_send_channel_endpoint.h"
 
@@ -48,6 +50,15 @@ int aeron_send_channel_endpoint_create(
         return -1;
     }
 
+    if (aeron_int64_to_ptr_hash_map_init(
+        &_endpoint->publication_dispatch_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+    {
+        aeron_send_channel_endpoint_delete(NULL, _endpoint);
+        return -1;
+    }
+
+    _endpoint->transport.dispatch_clientd = _endpoint;
+
     _endpoint->channel_status.counter_id = status_indicator->counter_id;
     _endpoint->channel_status.value_addr = status_indicator->value_addr;
 
@@ -62,8 +73,131 @@ int aeron_send_channel_endpoint_delete(aeron_counters_manager_t *counters_manage
         aeron_counters_manager_free(counters_manager, (int32_t)channel->channel_status.counter_id);
     }
 
+    aeron_int64_to_ptr_hash_map_delete(&channel->publication_dispatch_map);
     aeron_udp_channel_delete(channel->conductor_fields.udp_channel);
     aeron_udp_channel_transport_close(&channel->transport);
     aeron_free(channel);
     return 0;
+}
+
+int aeron_send_channel_endpoint_add_publication(
+    aeron_send_channel_endpoint_t *endpoint, aeron_network_publication_t *publication)
+{
+    int64_t key_value = aeron_int64_to_ptr_hash_map_compound_key(publication->stream_id, publication->session_id);
+
+    int result = aeron_int64_to_ptr_hash_map_put(&endpoint->publication_dispatch_map, key_value, publication);
+    if (result < 0)
+    {
+        aeron_set_err(errno, "send_channel_endpoint_add(hash_map): %s", strerror(errno));
+    }
+
+    return result;
+}
+
+int aeron_send_channel_endpoint_remove_publication(
+    aeron_send_channel_endpoint_t *endpoint, aeron_network_publication_t *publication)
+{
+    int64_t key_value = aeron_int64_to_ptr_hash_map_compound_key(publication->stream_id, publication->session_id);
+
+    aeron_int64_to_ptr_hash_map_remove(&endpoint->publication_dispatch_map, key_value);
+    return 0;
+}
+
+void aeron_send_channel_endpoint_dispatch(
+    void *sender_clientd, void *endpoint_clientd, uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
+{
+    aeron_frame_header_t *frame_header = (aeron_frame_header_t *)buffer;
+    aeron_send_channel_endpoint_t *endpoint = (aeron_send_channel_endpoint_t *)endpoint_clientd;
+
+    if ((length < sizeof(aeron_frame_header_t)) || (frame_header->version != AERON_FRAME_HEADER_VERSION))
+    {
+        /* TODO: bump invalid counter (in sender_clientd?) */
+        return;
+    }
+
+    switch (frame_header->type)
+    {
+        case AERON_HDR_TYPE_NAK:
+            if (length >= sizeof(aeron_nak_header_t))
+            {
+                aeron_send_channel_endpoint_on_nak(endpoint, buffer, length, addr);
+            }
+            else
+            {
+                /* TODO: bump invalid counter (in sender_clientd?) */
+            }
+            break;
+
+        case AERON_HDR_TYPE_SM:
+            if (length >= sizeof(aeron_status_message_header_t))
+            {
+                aeron_send_channel_endpoint_on_status_message(endpoint, buffer, length, addr);
+            }
+            else
+            {
+                /* TODO: bump invalid counter (in sender_clientd?) */
+            }
+            break;
+
+        case AERON_HDR_TYPE_RTTM:
+            if (length >= sizeof(aeron_rttm_header_t))
+            {
+                aeron_send_channel_endpoint_on_rttm(endpoint, buffer, length, addr);
+            }
+            else
+            {
+                /* TODO: bump invalid counter (in sender_clientd?) */
+            }
+            break;
+
+        default:
+            break;
+    }
+}
+
+void aeron_send_channel_endpoint_on_nak(
+    aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
+{
+    aeron_nak_header_t *nak_header = (aeron_nak_header_t *)buffer;
+    int64_t key_value =
+        aeron_int64_to_ptr_hash_map_compound_key(nak_header->stream_id, nak_header->session_id);
+    aeron_network_publication_t *publication =
+        aeron_int64_to_ptr_hash_map_get(&endpoint->publication_dispatch_map, key_value);
+
+    if (NULL != publication)
+    {
+
+    }
+}
+
+void aeron_send_channel_endpoint_on_status_message(
+    aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
+{
+    aeron_status_message_header_t *sm_header = (aeron_status_message_header_t *)buffer;
+    int64_t key_value =
+        aeron_int64_to_ptr_hash_map_compound_key(sm_header->stream_id, sm_header->session_id);
+    aeron_network_publication_t *publication =
+        aeron_int64_to_ptr_hash_map_get(&endpoint->publication_dispatch_map, key_value);
+
+    /* TODO: handle multi-destination-cast via destination tracker */
+
+    if (NULL != publication)
+    {
+
+    }
+}
+
+void aeron_send_channel_endpoint_on_rttm(
+    aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
+{
+    aeron_rttm_header_t *rttm_header = (aeron_rttm_header_t *)buffer;
+    int64_t key_value =
+        aeron_int64_to_ptr_hash_map_compound_key(rttm_header->stream_id, rttm_header->session_id);
+    aeron_network_publication_t *publication =
+        aeron_int64_to_ptr_hash_map_get(&endpoint->publication_dispatch_map, key_value);
+
+    if (NULL != publication)
+    {
+
+    }
 }

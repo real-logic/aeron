@@ -223,7 +223,12 @@ int aeron_udp_channel_transport_recvmmsg(
     {
         for (size_t i = 0, length = result; i < length; i++)
         {
-            recv_func(clientd, msgvec[i].msg_hdr.msg_iov[0].iov_base, msgvec[i].msg_len, msgvec[i].msg_hdr.msg_name);
+            recv_func(
+                clientd,
+                transport->dispatch_clientd,
+                msgvec[i].msg_hdr.msg_iov[0].iov_base,
+                msgvec[i].msg_len,
+                msgvec[i].msg_hdr.msg_name);
         }
 
         return result;
@@ -253,7 +258,12 @@ int aeron_udp_channel_transport_recvmmsg(
         }
 
         msgvec[i].msg_len = (unsigned int)result;
-        recv_func(clientd, msgvec[i].msg_hdr.msg_iov[0].iov_base, msgvec[i].msg_len, msgvec[i].msg_hdr.msg_name);
+        recv_func(
+            clientd,
+            transport->dispatch_clientd,
+            msgvec[i].msg_hdr.msg_iov[0].iov_base,
+            msgvec[i].msg_len,
+            msgvec[i].msg_hdr.msg_name);
         work_count++;
     }
 

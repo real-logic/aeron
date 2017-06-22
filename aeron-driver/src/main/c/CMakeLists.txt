@@ -58,6 +58,7 @@ SET(SOURCE
     aeron_driver_sender.c
     aeron_driver_receiver.c
     aeron_ipc_publication.c
+    aeron_network_publication.c
     aeron_position.c
     aeron_driver_sender_proxy.c
     aeron_driver_conductor_proxy.c
@@ -103,6 +104,7 @@ SET(HEADERS
     aeron_driver_receiver.h
     aeron_driver_common.h
     aeron_ipc_publication.h
+    aeron_network_publication.h
     aeron_position.h
     aeron_driver_sender_proxy.h
     aeron_driver_conductor_proxy.h

@@ -20,11 +20,32 @@
 #include "aeron_driver_context.h"
 #include "aeron_driver_sender_proxy.h"
 #include "aeron_system_counters.h"
+#include "media/aeron_udp_transport_poller.h"
+#include "aeron_network_publication.h"
+
+typedef struct aeron_driver_sender_network_publication_entry_stct
+{
+    aeron_network_publication_t *publication;
+}
+aeron_driver_sender_network_publication_entry_t;
 
 typedef struct aeron_driver_sender_stct
 {
     aeron_driver_sender_proxy_t sender_proxy;
+    aeron_udp_transport_poller_t poller;
+
+    struct aeron_driver_sender_network_publications_stct
+    {
+        aeron_driver_sender_network_publication_entry_t *array;
+        size_t length;
+        size_t capacity;
+    }
+    network_publicaitons;
+
     aeron_driver_context_t *context;
+    size_t round_robin_index;
+
+    int64_t *total_bytes_sent;
 }
 aeron_driver_sender_t;
 
@@ -36,5 +57,9 @@ void aeron_driver_sender_on_close(void *clientd);
 
 void aeron_driver_sender_on_add_endpoint(void *clientd, void *command);
 void aeron_driver_sender_on_remove_endpoint(void *clientd, void *command);
+void aeron_driver_sender_on_add_publication(void *clientd, void *command);
+void aeron_driver_sender_on_remove_publication(void *clientd, void *command);
+
+int aeron_driver_sender_do_send(aeron_driver_sender_t *sender, int64_t now_ns);
 
 #endif //AERON_AERON_DRIVER_SENDER_H

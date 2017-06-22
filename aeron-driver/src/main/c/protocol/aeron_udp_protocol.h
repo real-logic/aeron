@@ -30,6 +30,20 @@ typedef struct aeron_frame_header_stct
 }
 aeron_frame_header_t;
 
+typedef struct aeron_setup_header_stct
+{
+    aeron_frame_header_t frame_header;
+    int32_t term_offset;
+    int32_t session_id;
+    int32_t stream_id;
+    int32_t initial_term_id;
+    int32_t active_term_id;
+    int32_t term_length;
+    int32_t mtu;
+    int32_t ttl;
+}
+aeron_setup_header_t;
+
 typedef struct aeron_data_header_stct
 {
     aeron_frame_header_t frame_header;
@@ -40,6 +54,40 @@ typedef struct aeron_data_header_stct
     int64_t reserved_value;
 }
 aeron_data_header_t;
+
+typedef struct aeron_nak_header_stct
+{
+    aeron_frame_header_t frame_header;
+    int32_t session_id;
+    int32_t stream_id;
+    int32_t term_id;
+    int32_t term_offset;
+    int32_t length;
+}
+aeron_nak_header_t;
+
+typedef struct aeron_status_message_header_stct
+{
+    aeron_frame_header_t frame_header;
+    int32_t session_id;
+    int32_t stream_id;
+    int32_t consumption_term_id;
+    int32_t consumption_term_offset;
+    int32_t receiver_window;
+    int64_t receiver_id;
+}
+aeron_status_message_header_t;
+
+typedef struct aeron_rttm_header_stct
+{
+    aeron_frame_header_t frame_header;
+    int32_t session_id;
+    int32_t stream_id;
+    int64_t echo_timestamp;
+    int64_t reception_delta;
+    int64_t receiver_id;
+}
+aeron_rttm_header_t;
 #pragma pack(pop)
 
 #define AERON_FRAME_HEADER_VERSION (0)

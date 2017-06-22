@@ -23,18 +23,18 @@ import static org.mockito.Mockito.when;
 public class RecordingWriterTest
 {
 
-    public static final int RECORDING_ID = 1;
-    public static final int TERM_BUFFER_LENGTH = 16 * 1024;
-    public static final int MTU_LENGTH = 4 * 1024;
-    public static final int INITIAL_TERM_ID = 3;
-    public static final int JOIN_POSITION = 32;
-    public static final int SESSION_ID = 1234;
-    public static final int STREAM_ID = 0;
-    public static final String CHANNEL = "channel";
-    public static final String SOURCE = "source";
+    private static final int RECORDING_ID = 1;
+    private static final int TERM_BUFFER_LENGTH = 16 * 1024;
+    private static final int MTU_LENGTH = 4 * 1024;
+    private static final int INITIAL_TERM_ID = 3;
+    private static final int JOIN_POSITION = 32;
+    private static final int SESSION_ID = 1234;
+    private static final int STREAM_ID = 0;
+    private static final String CHANNEL = "channel";
+    private static final String SOURCE = "source";
     private File archiveDir;
     private EpochClock epochClock = Mockito.mock(EpochClock.class);
-    final RecordingWriter.RecordingContext recordingContext = new RecordingWriter.RecordingContext();
+    private final RecordingWriter.RecordingContext recordingContext = new RecordingWriter.RecordingContext();
     private FileChannel mockFileChannel = Mockito.mock(FileChannel.class);
     private UnsafeBuffer mockTermBuffer = Mockito.mock(UnsafeBuffer.class);
 
@@ -60,7 +60,7 @@ public class RecordingWriterTest
     {
 
         when(epochClock.time()).thenReturn(42L);
-        try (RecordingWriter writer = new RecordingWriter(
+        try (RecordingWriter ignored = new RecordingWriter(
             recordingContext,
             RECORDING_ID,
             TERM_BUFFER_LENGTH,
@@ -120,7 +120,7 @@ public class RecordingWriterTest
 
             when(mockFileChannel.transferTo(eq(0L), eq(256L), any(FileChannel.class))).then(invocation ->
             {
-                final FileChannel dataFileChannel = (FileChannel)invocation.getArgument(2);
+                final FileChannel dataFileChannel = invocation.getArgument(2);
                 dataFileChannel.position(JOIN_POSITION + 256);
                 return 256L;
             });

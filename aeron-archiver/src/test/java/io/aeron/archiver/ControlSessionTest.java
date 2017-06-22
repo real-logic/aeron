@@ -17,7 +17,7 @@ public class ControlSessionTest
     private Publication mockControlPublication = mock(Publication.class);
 
     @Before
-    public void setUp() throws Exception
+    public void before() throws Exception
     {
         session = new ControlSession(mockImage, mockConductor, mockEpochClock);
         when(mockControlPublication.isClosed()).thenReturn(false);

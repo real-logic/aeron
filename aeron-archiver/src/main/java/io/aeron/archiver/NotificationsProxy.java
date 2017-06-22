@@ -83,6 +83,7 @@ class NotificationsProxy
         final int fullLength = MessageHeaderEncoder.ENCODED_LENGTH + length;
         while (true)
         {
+            // TODO: should we make this publication unreliable?
             final long result = recordingNotifications.offer(outboundBuffer, 0, fullLength);
             if (result > 0 || result == Publication.NOT_CONNECTED)
             {

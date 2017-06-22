@@ -16,6 +16,7 @@
 package io.aeron;
 
 import org.agrona.IoUtil;
+import org.agrona.SystemUtil;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.errors.ErrorLogReader;
@@ -154,7 +155,7 @@ public class CommonContext implements AutoCloseable
     {
         String baseDirName = null;
 
-        if ("Linux".equalsIgnoreCase(System.getProperty("os.name")))
+        if (SystemUtil.osName().contains("linux"))
         {
             final File devShmDir = new File("/dev/shm");
 

@@ -24,6 +24,7 @@ import org.agrona.BitUtil;
 
 import java.net.*;
 import java.util.Collection;
+import java.util.List;
 
 import static io.aeron.driver.media.NetworkUtil.filterBySubnet;
 import static io.aeron.driver.media.NetworkUtil.findAddressOnInterface;
@@ -460,11 +461,11 @@ public final class UdpChannel
     private static NetworkInterface findInterface(final InterfaceSearchAddress searchAddress)
         throws SocketException, UnknownHostException
     {
-        final Collection<NetworkInterface> filteredIfcs = filterBySubnet(
+        final List<NetworkInterface> filteredInterfaces = filterBySubnet(
             searchAddress.getInetAddress(), searchAddress.getSubnetPrefix());
 
         // Results are ordered by prefix length, with loopback at the end.
-        for (final NetworkInterface ifc : filteredIfcs)
+        for (final NetworkInterface ifc : filteredInterfaces)
         {
             if (ifc.supportsMulticast() || ifc.isLoopback())
             {
@@ -472,7 +473,7 @@ public final class UdpChannel
             }
         }
 
-        throw new IllegalArgumentException(errorNoMatchingInterfaces(filteredIfcs, searchAddress));
+        throw new IllegalArgumentException(errorNoMatchingInterfaces(filteredInterfaces, searchAddress));
     }
 
     static class Context
@@ -526,9 +527,9 @@ public final class UdpChannel
             return this;
         }
 
-        public Context localInterface(final NetworkInterface ifc)
+        public Context localInterface(final NetworkInterface networkInterface)
         {
-            this.localInterface = ifc;
+            this.localInterface = networkInterface;
             return this;
         }
 
@@ -564,7 +565,7 @@ public final class UdpChannel
     }
 
     private static String errorNoMatchingInterfaces(
-        final Collection<NetworkInterface> filteredIfcs,
+        final Collection<NetworkInterface> filteredInterfaces,
         final InterfaceSearchAddress address)
         throws SocketException
     {
@@ -574,11 +575,11 @@ public final class UdpChannel
             .append('/')
             .append(address.getSubnetPrefix());
 
-        if (filteredIfcs.size() > 0)
+        if (filteredInterfaces.size() > 0)
         {
             builder.append(lineSeparator()).append("  Candidates:");
 
-            for (final NetworkInterface ifc : filteredIfcs)
+            for (final NetworkInterface ifc : filteredInterfaces)
             {
                 builder
                     .append(lineSeparator())

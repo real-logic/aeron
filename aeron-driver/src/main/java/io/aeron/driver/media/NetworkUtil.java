@@ -20,7 +20,6 @@ import org.agrona.BufferUtil;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 
@@ -47,44 +46,46 @@ public class NetworkUtil
      * of the subnet prefix. Empty if none match.
      * @throws SocketException if an error occurs
      */
-    public static Collection<NetworkInterface> filterBySubnet(final InetAddress address, final int subnetPrefix)
+    public static List<NetworkInterface> filterBySubnet(final InetAddress address, final int subnetPrefix)
         throws SocketException
     {
         return filterBySubnet(NetworkInterfaceShim.DEFAULT, address, subnetPrefix);
     }
 
-    static Collection<NetworkInterface> filterBySubnet(
+    static List<NetworkInterface> filterBySubnet(
         final NetworkInterfaceShim shim, final InetAddress address, final int subnetPrefix)
         throws SocketException
     {
         final List<FilterResult> filterResults = new ArrayList<>();
         final byte[] queryAddress = address.getAddress();
 
-        final Enumeration<NetworkInterface> ifcs = shim.getNetworkInterfaces();
-        while (ifcs.hasMoreElements())
+        final Enumeration<NetworkInterface> interfaces = shim.getNetworkInterfaces();
+        while (interfaces.hasMoreElements())
         {
-            final NetworkInterface ifc = ifcs.nextElement();
-            final InterfaceAddress interfaceAddress = findAddressOnInterface(shim, ifc, queryAddress, subnetPrefix);
+            final NetworkInterface networkInterface = interfaces.nextElement();
+            final InterfaceAddress interfaceAddress = findAddressOnInterface(
+                shim, networkInterface, queryAddress, subnetPrefix);
 
             if (null != interfaceAddress)
             {
-                filterResults.add(new FilterResult(interfaceAddress, ifc, shim.isLoopback(ifc)));
+                filterResults.add(new FilterResult(
+                    interfaceAddress, networkInterface, shim.isLoopback(networkInterface)));
             }
         }
 
         sort(filterResults);
 
         final List<NetworkInterface> results = new ArrayList<>();
-        filterResults.forEach((filterResult) -> results.add(filterResult.ifc));
+        filterResults.forEach((filterResult) -> results.add(filterResult.networkInterface));
 
         return results;
     }
 
     public static InetAddress findAddressOnInterface(
-        final NetworkInterface ifc, final InetAddress address, final int subnetPrefix)
+        final NetworkInterface networkInterface, final InetAddress address, final int subnetPrefix)
     {
         final InterfaceAddress interfaceAddress =
-            findAddressOnInterface(NetworkInterfaceShim.DEFAULT, ifc, address.getAddress(), subnetPrefix);
+            findAddressOnInterface(NetworkInterfaceShim.DEFAULT, networkInterface, address.getAddress(), subnetPrefix);
 
         if (null == interfaceAddress)
         {
@@ -95,11 +96,14 @@ public class NetworkUtil
     }
 
     static InterfaceAddress findAddressOnInterface(
-        final NetworkInterfaceShim shim, final NetworkInterface ifc, final byte[] queryAddress, final int prefixLength)
+        final NetworkInterfaceShim shim,
+        final NetworkInterface networkInterface,
+        final byte[] queryAddress,
+        final int prefixLength)
     {
         InterfaceAddress foundInterfaceAddress = null;
 
-        for (final InterfaceAddress interfaceAddress : shim.getInterfaceAddresses(ifc))
+        for (final InterfaceAddress interfaceAddress : shim.getInterfaceAddresses(networkInterface))
         {
             final byte[] candidateAddress = interfaceAddress.getAddress().getAddress();
             if (isMatchWithPrefix(candidateAddress, queryAddress, prefixLength))
@@ -111,10 +115,6 @@ public class NetworkUtil
 
         return foundInterfaceAddress;
     }
-
-    //
-    // Byte matching and calculation.
-    //
 
     static boolean isMatchWithPrefix(final byte[] candidate, final byte[] expected, final int prefixLength)
     {
@@ -152,7 +152,6 @@ public class NetworkUtil
         return 0 == subnetPrefix ? 0 : ~((1L << 64 - subnetPrefix) - 1);
     }
 
-    // TODO: Should these be common?
     private static int toInt(final byte[] b)
     {
         return ((b[3] & 0xFF)) + ((b[2] & 0xFF) << 8) + ((b[1] & 0xFF) << 16) + ((b[0]) << 24);
@@ -189,14 +188,17 @@ public class NetworkUtil
     static class FilterResult implements Comparable<FilterResult>
     {
         private final InterfaceAddress interfaceAddress;
-        private final NetworkInterface ifc;
+        private final NetworkInterface networkInterface;
         private final boolean isLoopback;
 
-        FilterResult(final InterfaceAddress interfaceAddress, final NetworkInterface ifc, final boolean isLoopback)
+        FilterResult(
+            final InterfaceAddress interfaceAddress,
+            final NetworkInterface networkInterface,
+            final boolean isLoopback)
             throws SocketException
         {
             this.interfaceAddress = interfaceAddress;
-            this.ifc = ifc;
+            this.networkInterface = networkInterface;
             this.isLoopback = isLoopback;
         }
 
@@ -227,6 +229,7 @@ public class NetworkUtil
         final ByteBuffer buffer = BufferUtil.allocateDirectAligned(capacity + alignment, alignment);
 
         buffer.limit(buffer.limit() - alignment);
+
         return buffer.slice();
     }
 }

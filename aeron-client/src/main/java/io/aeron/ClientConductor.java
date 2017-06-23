@@ -293,18 +293,19 @@ class ClientConductor implements Agent, DriverListener
         awaitResponse(driverProxy.removeDestination(registrationId, endpointChannel), null);
     }
 
-    public void onError(final ErrorCode errorCode, final String message, final long correlationId)
+    public void onError(final long correlationId, final ErrorCode errorCode, final String message)
     {
         driverException = new RegistrationException(errorCode, message);
     }
 
     public void onNewPublication(
-        final String channel,
+        final long correlationId,
+        final long registrationId,
         final int streamId,
         final int sessionId,
         final int publicationLimitId,
-        final String logFileName,
-        final long correlationId)
+        final String channel,
+        final String logFileName)
     {
         final Publication publication = new Publication(
             this,
@@ -313,18 +314,20 @@ class ClientConductor implements Agent, DriverListener
             sessionId,
             new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
             logBuffersFactory.map(logFileName, FileChannel.MapMode.READ_WRITE),
+            registrationId,
             correlationId);
 
         activePublications.put(channel, streamId, publication);
     }
 
     public void onNewExclusivePublication(
-        final String channel,
+        final long correlationId,
+        final long registrationId,
         final int streamId,
         final int sessionId,
         final int publicationLimitId,
-        final String logFileName,
-        final long correlationId)
+        final String channel,
+        final String logFileName)
     {
         final ExclusivePublication publication = new ExclusivePublication(
             this,
@@ -333,18 +336,19 @@ class ClientConductor implements Agent, DriverListener
             sessionId,
             new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
             logBuffersFactory.map(logFileName, FileChannel.MapMode.READ_WRITE),
+            registrationId,
             correlationId);
 
         activeExclusivePublications.put(correlationId, publication);
     }
 
     public void onAvailableImage(
+        final long correlationId,
         final int streamId,
         final int sessionId,
         final Long2LongHashMap subscriberPositionMap,
         final String logFileName,
-        final String sourceIdentity,
-        final long correlationId)
+        final String sourceIdentity)
     {
         activeSubscriptions.forEach(
             streamId,
@@ -384,7 +388,7 @@ class ClientConductor implements Agent, DriverListener
             });
     }
 
-    public void onUnavailableImage(final int streamId, final long correlationId)
+    public void onUnavailableImage(final long correlationId, final int streamId)
     {
         activeSubscriptions.forEach(
             streamId,

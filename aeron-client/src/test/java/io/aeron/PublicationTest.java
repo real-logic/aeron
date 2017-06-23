@@ -83,6 +83,7 @@ public class PublicationTest
             SESSION_ID_1,
             publicationLimit,
             logBuffers,
+            CORRELATION_ID,
             CORRELATION_ID);
 
         publication.incRef();

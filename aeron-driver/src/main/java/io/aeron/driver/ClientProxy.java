@@ -53,7 +53,7 @@ public class ClientProxy
         imageMessage.wrap(buffer, 0);
     }
 
-    public void onError(final ErrorCode errorCode, final String errorMessage, final long correlationId)
+    public void onError(final long correlationId, final ErrorCode errorCode, final String errorMessage)
     {
         final String msg = null == errorMessage ? "" : errorMessage;
 
@@ -96,6 +96,7 @@ public class ClientProxy
     }
 
     public void onPublicationReady(
+        final long correlationId,
         final long registrationId,
         final int streamId,
         final int sessionId,
@@ -104,9 +105,10 @@ public class ClientProxy
         final boolean isExclusive)
     {
         publicationReady
+            .correlationId(correlationId)
+            .registrationId(registrationId)
             .sessionId(sessionId)
             .streamId(streamId)
-            .correlationId(registrationId)
             .publicationLimitCounterId(positionCounterId)
             .logFileName(logFileName);
 

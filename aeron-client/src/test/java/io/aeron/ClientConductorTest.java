@@ -141,6 +141,7 @@ public class ClientConductorTest
         errorResponse.wrap(errorMessageBuffer, 0);
 
         publicationReady.correlationId(CORRELATION_ID);
+        publicationReady.registrationId(CORRELATION_ID);
         publicationReady.sessionId(SESSION_ID_1);
         publicationReady.streamId(STREAM_ID_1);
         publicationReady.logFileName(SESSION_ID_1 + "-log");
@@ -352,6 +353,7 @@ public class ClientConductorTest
                 publicationReady.sessionId(SESSION_ID_2);
                 publicationReady.logFileName(SESSION_ID_2 + "-log");
                 publicationReady.correlationId(CORRELATION_ID_2);
+                publicationReady.registrationId(CORRELATION_ID_2);
                 return publicationReady.length();
             });
 
@@ -377,6 +379,7 @@ public class ClientConductorTest
             (buffer) ->
             {
                 publicationReady.correlationId(UNKNOWN_CORRELATION_ID);
+                publicationReady.registrationId(UNKNOWN_CORRELATION_ID);
                 return publicationReady.length();
             });
 
@@ -483,7 +486,7 @@ public class ClientConductorTest
         conductor.addSubscription(CHANNEL, STREAM_ID_1);
 
         conductor.onAvailableImage(
-            STREAM_ID_1, SESSION_ID_1, subscriberPositionMap, SESSION_ID_1 + "-log", SOURCE_INFO, CORRELATION_ID);
+            CORRELATION_ID, STREAM_ID_1, SESSION_ID_1, subscriberPositionMap, SESSION_ID_1 + "-log", SOURCE_INFO);
 
         verify(logBuffersFactory).map(eq(SESSION_ID_1 + "-log"), any(FileChannel.MapMode.class));
     }
@@ -503,12 +506,12 @@ public class ClientConductorTest
         final Subscription subscription = conductor.addSubscription(CHANNEL, STREAM_ID_1);
 
         conductor.onAvailableImage(
-            STREAM_ID_1, SESSION_ID_1, subscriberPositionMap, SESSION_ID_1 + "-log", SOURCE_INFO, CORRELATION_ID);
+            CORRELATION_ID, STREAM_ID_1, SESSION_ID_1, subscriberPositionMap, SESSION_ID_1 + "-log", SOURCE_INFO);
 
         assertFalse(subscription.hasNoImages());
         verify(mockAvailableImageHandler).onAvailableImage(any(Image.class));
 
-        conductor.onUnavailableImage(STREAM_ID_1, CORRELATION_ID);
+        conductor.onUnavailableImage(CORRELATION_ID, STREAM_ID_1);
 
         verify(mockUnavailableImageHandler).onUnavailableImage(any(Image.class));
         assertTrue(subscription.hasNoImages());
@@ -518,7 +521,7 @@ public class ClientConductorTest
     public void shouldIgnoreUnknownNewImage()
     {
         conductor.onAvailableImage(
-            STREAM_ID_2, SESSION_ID_2, subscriberPositionMap, SESSION_ID_2 + "-log", SOURCE_INFO, CORRELATION_ID_2);
+            CORRELATION_ID_2, STREAM_ID_2, SESSION_ID_2, subscriberPositionMap, SESSION_ID_2 + "-log", SOURCE_INFO);
 
         verify(logBuffersFactory, never()).map(anyString(), any(FileChannel.MapMode.class));
         verify(mockAvailableImageHandler, never()).onAvailableImage(any(Image.class));
@@ -527,7 +530,7 @@ public class ClientConductorTest
     @Test
     public void shouldIgnoreUnknownInactiveImage()
     {
-        conductor.onUnavailableImage(STREAM_ID_2, CORRELATION_ID_2);
+        conductor.onUnavailableImage(CORRELATION_ID_2, STREAM_ID_2);
 
         verify(logBuffersFactory, never()).map(anyString(), any(FileChannel.MapMode.class));
         verify(mockUnavailableImageHandler, never()).onUnavailableImage(any(Image.class));

@@ -33,6 +33,9 @@ namespace aeron { namespace command {
 * |                         Correlation ID                        |
 * |                                                               |
 * +---------------------------------------------------------------+
+* |                        Registration ID                        |
+* |                                                               |
+* +---------------------------------------------------------------+
 * |                          Session ID                           |
 * +---------------------------------------------------------------+
 * |                           Stream ID                           |
@@ -51,6 +54,7 @@ namespace aeron { namespace command {
 struct PublicationBuffersReadyDefn
 {
     std::int64_t correlationId;
+    std::int64_t registrationId;
     std::int32_t sessionId;
     std::int32_t streamId;
     std::int32_t positionLimitCounterId;
@@ -77,6 +81,17 @@ public:
     inline this_t& correlationId(std::int64_t value)
     {
         m_struct.correlationId = value;
+        return *this;
+    }
+
+    inline std::int64_t registrationId() const
+    {
+        return m_struct.registrationId;
+    }
+
+    inline this_t& registrationId(std::int64_t value)
+    {
+        m_struct.registrationId = value;
         return *this;
     }
 

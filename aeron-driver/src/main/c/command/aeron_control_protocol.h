@@ -65,6 +65,7 @@ aeron_publication_command_t;
 typedef struct aeron_publication_buffers_ready_stct
 {
     int64_t correlation_id;
+    int64_t registration_id;
     int32_t session_id;
     int32_t stream_id;
     int32_t position_limit_counter_id;

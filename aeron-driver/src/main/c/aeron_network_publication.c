@@ -130,10 +130,12 @@ int aeron_network_publication_create(
     _pub->is_exclusive = is_exclusive;
     _pub->should_send_setup_frame = true;
     _pub->is_connected = false;
+    _pub->is_complete = false;
 
     //_pub->conductor_fields.consumer_position = aeron_ipc_publication_producer_position(_pub);
 
     _pub->short_sends_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_SHORT_SENDS);
+    _pub->heartbeats_sent_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_HEARTBEATS_SENT);
 
     *publication = _pub;
     return 0;
@@ -231,6 +233,57 @@ int aeron_network_publication_setup_message_check(
     return result;
 }
 
+int aeron_network_publication_heartbeat_message_check(
+    aeron_network_publication_t *publication, int64_t now_ns, int32_t active_term_id, int32_t term_offset)
+{
+    int bytes_sent = 0;
+
+    if (now_ns > (publication->time_of_last_send_or_heartbeat_ns + AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS))
+    {
+        uint8_t heartbeat_buffer[sizeof(aeron_data_header_t)];
+        aeron_data_header_t *data_header = (aeron_data_header_t *)heartbeat_buffer;
+        struct iovec iov;
+        struct msghdr msghdr;
+
+        data_header->frame_header.frame_length = 0;
+        data_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
+        data_header->frame_header.flags = AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG;
+        data_header->frame_header.type = AERON_HDR_TYPE_DATA;
+        data_header->term_offset = term_offset;
+        data_header->session_id = publication->session_id;
+        data_header->stream_id = publication->stream_id;
+        data_header->term_id = active_term_id;
+        data_header->reserved_value = 0l;
+
+        bool is_complete;
+        AERON_GET_VOLATILE(is_complete, publication->is_complete);
+        if (is_complete)
+        {
+            data_header->frame_header.flags =
+                AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG | AERON_DATA_HEADER_EOS_FLAG;
+        }
+
+        iov.iov_base = heartbeat_buffer;
+        iov.iov_len = sizeof(aeron_data_header_t);
+        msghdr.msg_iov = &iov;
+        msghdr.msg_iovlen = 1;
+        msghdr.msg_flags = 0;
+
+        if ((bytes_sent = aeron_send_channel_sendmsg(publication->endpoint, &msghdr)) != (int)iov.iov_len)
+        {
+            if (bytes_sent >= 0)
+            {
+                aeron_counter_increment(publication->short_sends_counter, 1);
+            }
+        }
+
+        aeron_counter_ordered_increment(publication->heartbeats_sent_counter, 1);
+        publication->time_of_last_send_or_heartbeat_ns = now_ns;
+    }
+
+    return bytes_sent;
+}
+
 int aeron_network_publication_send_data(
     aeron_network_publication_t *publication, int64_t now_ns, int64_t snd_pos, int32_t term_offset)
 {
@@ -266,7 +319,21 @@ int aeron_network_publication_send(aeron_network_publication_t *publication, int
         return -1;
     }
 
+    if (0 == bytes_sent)
+    {
+        bytes_sent = aeron_network_publication_heartbeat_message_check(publication, now_ns, active_term_id, term_offset);
+        if (bytes_sent < 0)
+        {
+            return -1;
+        }
+
+        int64_t flow_control_position = 0; /* TODO: get from flow control on_idle */
+        aeron_counter_set_ordered(publication->snd_lmt_position.value_addr, flow_control_position);
+    }
+
     /* TODO: finish */
 
     return 0;
 }
+
+extern int64_t aeron_network_publication_producer_position(aeron_network_publication_t *publication);

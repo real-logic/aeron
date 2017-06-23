@@ -101,7 +101,7 @@ inline void aeron_logbuffer_fill_default_header(
     log_meta_data->default_frame_header_length = AERON_DATA_HEADER_LENGTH;
     data_header->frame_header.frame_length = 0;
     data_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
-    data_header->frame_header.flags = (int8_t)(AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG);
+    data_header->frame_header.flags = AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG;
     data_header->frame_header.type = AERON_HDR_TYPE_DATA;
     data_header->stream_id = stream_id;
     data_header->session_id = session_id;

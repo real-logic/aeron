@@ -25,7 +25,7 @@ typedef struct aeron_frame_header_stct
 {
     int32_t frame_length;
     int8_t version;
-    int8_t flags;
+    uint8_t flags;
     int16_t type;
 }
 aeron_frame_header_t;
@@ -103,9 +103,9 @@ aeron_rttm_header_t;
 
 #define AERON_DATA_HEADER_LENGTH (sizeof(aeron_data_header_t))
 
-#define AERON_DATA_HEADER_BEGIN_FLAG (0x80)
-#define AERON_DATA_HEADER_END_FLAG (0x40)
-#define AERON_DATA_HEADER_EOS_FLAG (0x20)
+#define AERON_DATA_HEADER_BEGIN_FLAG ((uint8_t)(0x80))
+#define AERON_DATA_HEADER_END_FLAG ((uint8_t)(0x40))
+#define AERON_DATA_HEADER_EOS_FLAG ((uint8_t)(0x20))
 
 #define AERON_DATA_HEADER_DEFAULT_RESERVED_VALUE (0L)
 

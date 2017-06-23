@@ -104,7 +104,7 @@ inline int64_t *aeron_counter_addr(aeron_counters_manager_t *manager, int32_t co
     return (int64_t *)(manager->values + AERON_COUNTER_OFFSET(counter_id));
 }
 
-inline void aeron_counter_set_value(volatile int64_t *addr, int64_t value)
+inline void aeron_counter_set_ordered(volatile int64_t *addr, int64_t value)
 {
     AERON_PUT_ORDERED(*addr, value);
 }

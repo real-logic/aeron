@@ -79,9 +79,11 @@ typedef struct aeron_network_publication_stct
     bool is_exclusive;
     bool should_send_setup_frame;
     bool is_connected;
+    bool is_complete;
     aeron_map_raw_log_close_func_t map_raw_log_close_func;
 
     int64_t *short_sends_counter;
+    int64_t *heartbeats_sent_counter;
 }
 aeron_network_publication_t;
 
@@ -110,5 +112,18 @@ int aeron_network_publication_send(aeron_network_publication_t *publication, int
 
 int aeron_network_publication_send_data(
     aeron_network_publication_t *publication, int64_t now_ns, int64_t snd_pos, int32_t term_offset);
+
+inline int64_t aeron_network_publication_producer_position(aeron_network_publication_t *publication)
+{
+    int64_t raw_tail;
+
+    AERON_LOGBUFFER_RAWTAIL_VOLATILE(raw_tail, publication->log_meta_data);
+
+    return aeron_logbuffer_compute_position(
+        aeron_logbuffer_term_id(raw_tail),
+        aeron_logbuffer_term_offset(raw_tail, (int32_t)publication->mapped_raw_log.term_length),
+        publication->position_bits_to_shift,
+        publication->initial_term_id);
+}
 
 #endif //AERON_AERON_NETWORK_PUBLICATION_H

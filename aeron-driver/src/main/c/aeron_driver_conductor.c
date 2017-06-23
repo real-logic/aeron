@@ -870,7 +870,7 @@ int aeron_driver_conductor_link_ipc_subscribeable(
                 aeron_subscribeable_list_entry_t
                     *entry = &link->subscribeable_list.array[link->subscribeable_list.length++];
 
-                aeron_counter_set_value(position_addr, joining_position);
+                aeron_counter_set_ordered(position_addr, joining_position);
                 position.indicator_id = counter_id;
                 position.registration_id = link->registration_id;
 

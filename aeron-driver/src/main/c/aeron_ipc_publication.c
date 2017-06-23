@@ -153,7 +153,7 @@ int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication)
 
     if (0 == publication->conductor_fields.subscribeable.length)
     {
-        aeron_counter_set_value(publication->pub_lmt_position.value_addr, max_sub_pos);
+        aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, max_sub_pos);
         publication->conductor_fields.trip_limit = max_sub_pos;
     }
     else
@@ -161,7 +161,7 @@ int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication)
         int64_t proposed_limit = min_sub_pos + publication->term_window_length;
         if (proposed_limit > publication->conductor_fields.trip_limit)
         {
-            aeron_counter_set_value(publication->pub_lmt_position.value_addr, proposed_limit);
+            aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, proposed_limit);
             publication->conductor_fields.trip_limit = proposed_limit + publication->trip_gain;
 
             aeron_ipc_publication_clean_buffer(publication, min_sub_pos);

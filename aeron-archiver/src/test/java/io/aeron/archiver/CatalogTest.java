@@ -19,32 +19,37 @@ import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import org.agrona.BufferUtil;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 public class CatalogTest
 {
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
-    private static final UnsafeBuffer BUFFER =
-        new UnsafeBuffer(BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, 64));
-    private static final RecordingDescriptorDecoder DECODER = new RecordingDescriptorDecoder();
-    private static long recordingOneId;
-    private static long recordingTwoId;
-    private static long recordingThreeId;
-    private static File archiveDir;
+    private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, 64);
+    private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
+    private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
+    private long recordingOneId;
+    private long recordingTwoId;
+    private long recordingThreeId;
+    private File archiveDir;
 
-    @BeforeClass
-    public static void before() throws Exception
+    @Before
+    public void before() throws Exception
     {
-        DECODER.wrap(
-            BUFFER,
+        recordingDescriptorDecoder.wrap(
+            unsafeBuffer,
             Catalog.CATALOG_FRAME_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
@@ -54,15 +59,35 @@ public class CatalogTest
         {
             recordingOneId = catalog.addNewRecording(
                 6, 1, "channelG", "sourceA", 4096, 1024, 0, 0L, SEGMENT_FILE_SIZE);
+            initRecordingMetaFileFromCatalog(catalog, recordingOneId);
             recordingTwoId = catalog.addNewRecording(
                 7, 2, "channelH", "sourceV", 4096, 1024, 0, 0L, SEGMENT_FILE_SIZE);
+            initRecordingMetaFileFromCatalog(catalog, recordingTwoId);
             recordingThreeId = catalog.addNewRecording(
                 8, 3, "channelK", "sourceB", 4096, 1024, 0, 0L, SEGMENT_FILE_SIZE);
+            initRecordingMetaFileFromCatalog(catalog, recordingThreeId);
         }
     }
 
-    @AfterClass
-    public static void after()
+    private void initRecordingMetaFileFromCatalog(final Catalog catalog, final long recordingId) throws IOException
+    {
+        final File metaFile = new File(archiveDir, ArchiveUtil.recordingMetaFileName(recordingId));
+        try (FileChannel meta = FileChannel.open(metaFile.toPath(), CREATE, WRITE))
+        {
+            byteBuffer.clear();
+            catalog.readDescriptor(recordingId, byteBuffer);
+            recordingDescriptorDecoder.wrap(
+                unsafeBuffer,
+                Catalog.CATALOG_FRAME_LENGTH,
+                RecordingDescriptorDecoder.BLOCK_LENGTH,
+                RecordingDescriptorDecoder.SCHEMA_VERSION);
+            byteBuffer.clear();
+            meta.write(byteBuffer);
+        }
+    }
+
+    @After
+    public void after()
     {
         IoUtil.delete(archiveDir, false);
     }
@@ -87,14 +112,19 @@ public class CatalogTest
         final String sourceIdentity)
         throws IOException
     {
-        BUFFER.byteBuffer().clear();
-        catalog.readDescriptor(id, BUFFER.byteBuffer());
-        DECODER.limit(Catalog.CATALOG_FRAME_LENGTH + RecordingDescriptorDecoder.BLOCK_LENGTH);
-        assertEquals(id, DECODER.recordingId());
-        assertEquals(sessionId, DECODER.sessionId());
-        assertEquals(streamId, DECODER.streamId());
-        assertEquals(channel, DECODER.channel());
-        assertEquals(sourceIdentity, DECODER.sourceIdentity());
+        byteBuffer.clear();
+        assertTrue(catalog.readDescriptor(id, byteBuffer));
+        recordingDescriptorDecoder.wrap(
+            unsafeBuffer,
+            Catalog.CATALOG_FRAME_LENGTH,
+            RecordingDescriptorDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.SCHEMA_VERSION);
+
+        assertEquals(id, recordingDescriptorDecoder.recordingId());
+        assertEquals(sessionId, recordingDescriptorDecoder.sessionId());
+        assertEquals(streamId, recordingDescriptorDecoder.streamId());
+        assertEquals(channel, recordingDescriptorDecoder.channel());
+        assertEquals(sourceIdentity, recordingDescriptorDecoder.sourceIdentity());
     }
 
     @Test
@@ -105,6 +135,8 @@ public class CatalogTest
         {
             newRecordingId = catalog.addNewRecording(
                 9, 4, "channelJ", "sourceN", 4096, 1024, 0, 0L, SEGMENT_FILE_SIZE);
+            initRecordingMetaFileFromCatalog(catalog, newRecordingId);
+
         }
 
         try (Catalog catalog = new Catalog(archiveDir))

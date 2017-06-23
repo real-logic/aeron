@@ -386,7 +386,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         recordingSessionByIdMap.remove(recordingId);
         try
         {
-            catalog.updateCatalogFromMeta(
+            catalog.updateRecordingMetaDataInCatalog(
                 recordingId, session.endPosition(), session.joinTimestamp(), session.endTimestamp());
         }
         catch (final IOException ex)

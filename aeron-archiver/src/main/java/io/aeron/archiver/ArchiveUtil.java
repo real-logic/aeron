@@ -19,6 +19,7 @@ import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -29,6 +30,9 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 class ArchiveUtil
 {
+
+    public static final String RECORDING_SEGMENT_POSTFIX = ".rec";
+
     static String recordingMetaFileName(final long recordingId)
     {
         return recordingId + ".inf";
@@ -36,7 +40,7 @@ class ArchiveUtil
 
     static String recordingDataFileName(final long recordingId, final int segmentIndex)
     {
-        return recordingId + "." + segmentIndex + ".rec";
+        return recordingId + "." + segmentIndex + RECORDING_SEGMENT_POSTFIX;
     }
 
     static int segmentFileIndex(final long joinPosition, final long position, final int segmentFileLength)
@@ -90,5 +94,33 @@ class ArchiveUtil
     static long recordingLength(final RecordingDescriptorDecoder metaDecoder)
     {
         return metaDecoder.endPosition() - metaDecoder.joinPosition();
+    }
+
+    static String[] listRecordingSegments(final File archiveDir, final long recordingId)
+    {
+        return archiveDir.list(new RecordingSegmentsFilter(Long.toString(recordingId)));
+    }
+
+    static int segmentIndexFromFileName(final String segmentName)
+    {
+        final String index = segmentName.split(".")[1];
+        return Integer.valueOf(index);
+    }
+
+    private static class RecordingSegmentsFilter implements FilenameFilter
+    {
+        private final String recordingPrefix;
+
+        RecordingSegmentsFilter(final String recordingPrefix)
+        {
+            this.recordingPrefix = recordingPrefix;
+        }
+
+        @Override
+        public boolean accept(final File dir, final String name)
+        {
+            return name.startsWith(recordingPrefix) && name.endsWith(
+                RECORDING_SEGMENT_POSTFIX);
+        }
     }
 }

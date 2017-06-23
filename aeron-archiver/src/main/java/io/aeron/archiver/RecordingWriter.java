@@ -164,7 +164,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             sourceIdentity);
 
         unsafeBuffer.putInt(0, metaDataEncoder.encodedLength());
-        metaDataBuffer.force();
+        forceMetaData(metaDataBuffer);
     }
 
     static void initDescriptor(
@@ -300,7 +300,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         {
             endTimestamp = epochClock.time();
             metaDataEncoder.endTimestamp(endTimestamp);
-            metaDataBuffer.force();
+            forceMetaData(metaDataBuffer);
             IoUtil.unmap(metaDataBuffer);
         }
 
@@ -409,6 +409,11 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         fileChannel.force(false);
     }
 
+    private void forceMetaData(final MappedByteBuffer metaDataBuffer)
+    {
+        metaDataBuffer.force();
+    }
+
     private void onFileRollOver()
     {
         CloseHelper.close(recordingFileChannel);
@@ -422,17 +427,24 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         validateStartTermOffset(termOffset);
 
         segmentPosition = termOffset;
-        newRecordingSegmentFile();
 
-        final Marker marker = MARKER.get();
-        marker.header.frameLength(termOffset);
-        marker.buffer.clear();
-        writeData(marker.buffer, 0, recordingFileChannel);
-
-        // we need to setup starting position for transferTo
-        recordingFileChannel.position(segmentPosition);
+        // update join TS before creating first file
         joinTimestamp = epochClock.time();
         metaDataEncoder.joinTimestamp(joinTimestamp);
+        forceMetaData(metaDataBuffer);
+
+        newRecordingSegmentFile();
+
+        if (segmentPosition != 0)
+        {
+            // padding frame required
+            final Marker marker = MARKER.get();
+            marker.header.frameLength(termOffset);
+            marker.buffer.clear();
+            writeData(marker.buffer, 0, recordingFileChannel);
+            // we need to setup starting position for transferTo
+            recordingFileChannel.position(segmentPosition);
+        }
     }
 
     private void afterWrite(final int blockLength)

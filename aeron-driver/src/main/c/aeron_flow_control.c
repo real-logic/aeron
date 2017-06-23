@@ -45,7 +45,7 @@ int64_t aeron_max_flow_control_strategy_on_idle(
 
 int64_t aeron_max_flow_control_strategy_on_sm(
     void *state,
-    uint8_t *sm,
+    const uint8_t *sm,
     size_t length,
     struct sockaddr_storage *recv_addr,
     int64_t snd_lmt,

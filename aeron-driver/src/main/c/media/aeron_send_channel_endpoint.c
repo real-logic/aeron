@@ -202,7 +202,7 @@ void aeron_send_channel_endpoint_on_nak(
 
     if (NULL != publication)
     {
-
+        aeron_network_publication_on_nak(publication, nak_header->term_id, nak_header->term_offset, nak_header->length);
     }
 }
 
@@ -219,7 +219,7 @@ void aeron_send_channel_endpoint_on_status_message(
 
     if (NULL != publication)
     {
-
+        aeron_network_publication_on_status_message(publication, buffer, length, addr);
     }
 }
 
@@ -234,6 +234,6 @@ void aeron_send_channel_endpoint_on_rttm(
 
     if (NULL != publication)
     {
-
+        aeron_network_publication_on_rttm(publication, buffer, length, addr);
     }
 }

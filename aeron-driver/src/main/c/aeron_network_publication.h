@@ -36,6 +36,8 @@ aeron_network_publication_status_t;
 #define AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS (100 * 1000 * 1000L)
 #define AERON_NETWORK_PUBLICATION_SETUP_TIMEOUT_NS (100 * 1000 * 1000L)
 
+#define AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND (2)
+
 typedef struct aeron_send_channel_endpoint_stct aeron_send_channel_endpoint_t;
 
 typedef struct aeron_network_publication_stct
@@ -63,6 +65,8 @@ typedef struct aeron_network_publication_stct
     aeron_logbuffer_metadata_t *log_meta_data;
     aeron_send_channel_endpoint_t *endpoint;
     aeron_flow_control_strategy_t *flow_control;
+    aeron_clock_func_t epoch_clock;
+    aeron_clock_func_t nano_clock;
 
     char *log_file_name;
     int64_t term_window_length;
@@ -81,10 +85,12 @@ typedef struct aeron_network_publication_stct
     bool should_send_setup_frame;
     bool is_connected;
     bool is_complete;
+    bool track_sender_limits;
     aeron_map_raw_log_close_func_t map_raw_log_close_func;
 
     int64_t *short_sends_counter;
     int64_t *heartbeats_sent_counter;
+    int64_t *sender_flow_control_limits_counter;
 }
 aeron_network_publication_t;
 
@@ -114,6 +120,15 @@ int aeron_network_publication_send(aeron_network_publication_t *publication, int
 
 int aeron_network_publication_send_data(
     aeron_network_publication_t *publication, int64_t now_ns, int64_t snd_pos, int32_t term_offset);
+
+void aeron_network_publication_on_nak(
+    aeron_network_publication_t *publication, int32_t term_id, int32_t term_offset, int32_t length);
+
+void aeron_network_publication_on_status_message(
+    aeron_network_publication_t *publication, const uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
+
+void aeron_network_publication_on_rttm(
+    aeron_network_publication_t *publication, const uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
 
 inline int64_t aeron_network_publication_producer_position(aeron_network_publication_t *publication)
 {

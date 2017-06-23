@@ -29,7 +29,7 @@ typedef int64_t (*aeron_flow_control_strategy_on_idle_func_t)(
 
 typedef int64_t (*aeron_flow_control_strategy_on_sm_func_t)(
     void *state,
-    uint8_t *sm,
+    const uint8_t *sm,
     size_t length,
     struct sockaddr_storage *recv_addr,
     int64_t snd_lmt,

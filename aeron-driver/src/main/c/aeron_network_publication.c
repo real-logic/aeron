@@ -14,13 +14,28 @@
  * limitations under the License.
  */
 
+#if defined(__linux__)
+#define _BSD_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <errno.h>
 #include <string.h>
+#include <sys/socket.h>
+#include "concurrent/aeron_term_scanner.h"
 #include "util/aeron_netutil.h"
 #include "util/aeron_error.h"
 #include "aeron_network_publication.h"
 #include "aeron_alloc.h"
 #include "media/aeron_send_channel_endpoint.h"
+
+#if !defined(HAVE_RECVMMSG)
+struct mmsghdr
+{
+    struct msghdr msg_hdr;
+    unsigned int msg_len;
+};
+#endif
 
 int aeron_network_publication_create(
     aeron_network_publication_t **publication,
@@ -99,6 +114,8 @@ int aeron_network_publication_create(
 
     _pub->endpoint = endpoint;
     _pub->flow_control = flow_control_strategy;
+    _pub->epoch_clock = context->epoch_clock;
+    _pub->nano_clock = context->nano_clock;
     _pub->conductor_fields.subscribeable.array = NULL;
     _pub->conductor_fields.subscribeable.length = 0;
     _pub->conductor_fields.subscribeable.capacity = 0;
@@ -133,11 +150,14 @@ int aeron_network_publication_create(
     _pub->should_send_setup_frame = true;
     _pub->is_connected = false;
     _pub->is_complete = false;
+    _pub->track_sender_limits = true;
 
     //_pub->conductor_fields.consumer_position = aeron_ipc_publication_producer_position(_pub);
 
     _pub->short_sends_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_SHORT_SENDS);
     _pub->heartbeats_sent_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_HEARTBEATS_SENT);
+    _pub->sender_flow_control_limits_counter =
+        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_SENDER_FLOW_CONTROL_LIMITS);
 
     *publication = _pub;
     return 0;
@@ -290,14 +310,69 @@ int aeron_network_publication_heartbeat_message_check(
 int aeron_network_publication_send_data(
     aeron_network_publication_t *publication, int64_t now_ns, int64_t snd_pos, int32_t term_offset)
 {
-    int bytes_sent = 0;
+    const size_t term_length = (size_t)publication->term_length_mask + 1;
+    int result = 0, vlen = 0, bytes_sent = 0;
     int32_t available_window = (int32_t)(aeron_counter_get(publication->snd_lmt_position.value_addr) - snd_pos);
-    if (available_window > 0)
+    int64_t highest_pos = snd_pos;
+    struct iovec iov[AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND];
+    struct mmsghdr mmsghdr[AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND];
+
+    for (size_t i = 0; i < AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND && available_window > 0; i++)
     {
-        /* TODO: finish */
+        size_t scan_limit =
+            (size_t)available_window < publication->mtu_length ? (size_t)available_window : publication->mtu_length;
+        size_t active_index = aeron_logbuffer_index_by_position(snd_pos, publication->position_bits_to_shift);
+        size_t padding = 0;
+
+        uint8_t *ptr = publication->mapped_raw_log.term_buffers[active_index].addr + term_offset;
+        const size_t term_length_left = term_length - (size_t)term_offset;
+
+        const size_t available = aeron_term_scanner_scan_for_availability(ptr, term_length_left, scan_limit, &padding);
+
+        if (available > 0)
+        {
+            iov[i].iov_base = ptr;
+            iov[i].iov_len = available;
+            mmsghdr[i].msg_hdr.msg_iov = &iov[i];
+            mmsghdr[i].msg_hdr.msg_iovlen = 1;
+            mmsghdr[i].msg_hdr.msg_flags = 0;
+            mmsghdr[i].msg_len = 0;
+            vlen++;
+
+            bytes_sent += available;
+            available_window -= available + padding;
+            term_offset += available + padding;
+            highest_pos += available + padding;
+        }
+
+        if (available == 0 || term_length == (size_t)term_offset)
+        {
+            break;
+        }
     }
 
-    return bytes_sent;
+    if (vlen > 0)
+    {
+        if ((result = aeron_send_channel_sendmmsg(publication->endpoint, mmsghdr, (size_t)vlen)) != vlen)
+        {
+            if (result >= 0)
+            {
+                aeron_counter_increment(publication->short_sends_counter, 1);
+            }
+        }
+
+        publication->time_of_last_send_or_heartbeat_ns = now_ns;
+        publication->track_sender_limits = true;
+        aeron_counter_set_ordered(publication->snd_pos_position.value_addr, highest_pos);
+    }
+
+    if (available_window <= 0)
+    {
+        aeron_counter_ordered_increment(publication->sender_flow_control_limits_counter, 1);
+        publication->track_sender_limits = false;
+    }
+
+    return result < 0 ? result : bytes_sent;
 }
 
 int aeron_network_publication_send(aeron_network_publication_t *publication, int64_t now_ns)
@@ -336,9 +411,44 @@ int aeron_network_publication_send(aeron_network_publication_t *publication, int
         aeron_counter_set_ordered(publication->snd_lmt_position.value_addr, flow_control_position);
     }
 
-    /* TODO: finish */
+    /* TODO: handle retransmit handler timeouts */
 
-    return 0;
+    return bytes_sent;
+}
+
+void aeron_network_publication_on_nak(
+    aeron_network_publication_t *publication, int32_t term_id, int32_t term_offset, int32_t length)
+{
+    /* TODO: retransmit handler */
+}
+
+void aeron_network_publication_on_status_message(
+    aeron_network_publication_t *publication, const uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
+{
+    AERON_PUT_ORDERED(publication->log_meta_data->time_of_last_status_message, publication->epoch_clock());
+
+    if (!publication->is_connected)
+    {
+        publication->is_connected = true;
+    }
+
+    aeron_counter_set_ordered(
+        publication->snd_lmt_position.value_addr,
+        publication->flow_control->on_status_message(
+            publication->flow_control->state,
+            buffer,
+            length,
+            addr,
+            *publication->snd_lmt_position.value_addr,
+            publication->initial_term_id,
+            publication->position_bits_to_shift,
+            publication->nano_clock()));
+}
+
+void aeron_network_publication_on_rttm(
+    aeron_network_publication_t *publication, const uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
+{
+    /* TODO: echo back */
 }
 
 extern int64_t aeron_network_publication_producer_position(aeron_network_publication_t *publication);

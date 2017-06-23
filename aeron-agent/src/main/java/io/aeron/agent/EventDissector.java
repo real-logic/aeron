@@ -355,11 +355,12 @@ public class EventDissector
     private static String dissect(final PublicationBuffersReadyFlyweight msg)
     {
         return String.format(
-            "%d:%d %d [%d]%n    %s",
+            "%d:%d %d [%d %d]%n    %s",
             msg.sessionId(),
             msg.streamId(),
             msg.publicationLimitCounterId(),
             msg.correlationId(),
+            msg.registrationId(),
             msg.logFileName());
     }
 

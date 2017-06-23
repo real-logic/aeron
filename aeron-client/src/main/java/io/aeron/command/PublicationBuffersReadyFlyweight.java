@@ -31,11 +31,14 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  |                         Correlation ID                        |
  *  |                                                               |
  *  +---------------------------------------------------------------+
+ *  |                        Registration ID                        |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
  *  |                          Session ID                           |
  *  +---------------------------------------------------------------+
  *  |                           Stream ID                           |
  *  +---------------------------------------------------------------+
- *  |                    Publication Limit Offset                   |
+ *  |                  Publication Limit Counter Id                 |
  *  +---------------------------------------------------------------+
  *  |                        Log File Length                        |
  *  +---------------------------------------------------------------+
@@ -47,7 +50,8 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 public class PublicationBuffersReadyFlyweight
 {
     private static final int CORRELATION_ID_OFFSET = 0;
-    private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
+    private static final int REGISTRATION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
+    private static final int SESSION_ID_OFFSET = REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
     private static final int PUBLICATION_LIMIT_COUNTER_ID_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int LOGFILE_FIELD_OFFSET = PUBLICATION_LIMIT_COUNTER_ID_OFFSET + SIZE_OF_INT;
@@ -71,7 +75,7 @@ public class PublicationBuffersReadyFlyweight
     }
 
     /**
-     * return correlation id field
+     * Get the correlation id field
      *
      * @return correlation id field
      */
@@ -81,7 +85,7 @@ public class PublicationBuffersReadyFlyweight
     }
 
     /**
-     * set correlation id field
+     * Set the correlation id field
      *
      * @param correlationId field value
      * @return flyweight
@@ -94,7 +98,30 @@ public class PublicationBuffersReadyFlyweight
     }
 
     /**
-     * return session id field
+     * Get the registration id field.
+     *
+     * @return registration id field
+     */
+    public long registrationId()
+    {
+        return buffer.getLong(offset + REGISTRATION_ID_OFFSET);
+    }
+
+    /**
+     * Set the correlation id field
+     *
+     * @param registrationId field value
+     * @return flyweight
+     */
+    public PublicationBuffersReadyFlyweight registrationId(final long registrationId)
+    {
+        buffer.putLong(offset + REGISTRATION_ID_OFFSET, registrationId);
+
+        return this;
+    }
+
+    /**
+     * Get the session id field
      *
      * @return session id field
      */
@@ -104,7 +131,7 @@ public class PublicationBuffersReadyFlyweight
     }
 
     /**
-     * set session id field
+     * Set the session id field
      *
      * @param sessionId field value
      * @return flyweight
@@ -117,7 +144,7 @@ public class PublicationBuffersReadyFlyweight
     }
 
     /**
-     * return stream id field
+     * Get the stream id field
      *
      * @return stream id field
      */
@@ -127,7 +154,7 @@ public class PublicationBuffersReadyFlyweight
     }
 
     /**
-     * set stream id field
+     * Set the stream id field
      *
      * @param streamId field value
      * @return flyweight

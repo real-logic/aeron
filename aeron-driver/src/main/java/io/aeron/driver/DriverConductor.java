@@ -282,7 +282,7 @@ public class DriverConductor implements Agent
     void onAddNetworkPublication(
         final String channel,
         final int streamId,
-        final long registrationId,
+        final long correlationId,
         final long clientId,
         final boolean isExclusive)
     {
@@ -302,17 +302,18 @@ public class DriverConductor implements Agent
         if (null == publication)
         {
             publication = newNetworkPublication(
-                registrationId, streamId, channel, udpChannel, channelEndpoint, params, isExclusive);
+                correlationId, streamId, channel, udpChannel, channelEndpoint, params, isExclusive);
         }
         else
         {
             confirmMatch(aeronUri, params, publication.rawLog());
         }
 
-        publicationLinks.add(new PublicationLink(registrationId, publication, getOrAddClient(clientId)));
+        publicationLinks.add(new PublicationLink(correlationId, publication, getOrAddClient(clientId)));
 
         clientProxy.onPublicationReady(
-            registrationId,
+            correlationId,
+            publication.registrationId(),
             streamId,
             publication.sessionId(),
             publication.rawLog().fileName(),
@@ -398,15 +399,16 @@ public class DriverConductor implements Agent
     void onAddIpcPublication(
         final String channel,
         final int streamId,
-        final long registrationId,
+        final long correlationId,
         final long clientId,
         final boolean isExclusive)
     {
-        final IpcPublication ipcPublication = getOrAddIpcPublication(registrationId, streamId, channel, isExclusive);
-        publicationLinks.add(new PublicationLink(registrationId, ipcPublication, getOrAddClient(clientId)));
+        final IpcPublication ipcPublication = getOrAddIpcPublication(correlationId, streamId, channel, isExclusive);
+        publicationLinks.add(new PublicationLink(correlationId, ipcPublication, getOrAddClient(clientId)));
 
         clientProxy.onPublicationReady(
-            registrationId,
+            correlationId,
+            ipcPublication.registrationId(),
             streamId,
             ipcPublication.sessionId(),
             ipcPublication.rawLog().fileName(),

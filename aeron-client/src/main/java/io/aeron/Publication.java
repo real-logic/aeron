@@ -59,6 +59,7 @@ public class Publication implements AutoCloseable
      */
     public static final long CLOSED = -4;
 
+    private final long correlationId;
     private final long registrationId;
     private int refCount = 0;
     private final int streamId;
@@ -84,6 +85,7 @@ public class Publication implements AutoCloseable
         final int sessionId,
         final ReadablePosition positionLimit,
         final LogBuffers logBuffers,
+        final long correlationId,
         final long registrationId)
     {
         final UnsafeBuffer[] buffers = logBuffers.termBuffers();
@@ -103,6 +105,7 @@ public class Publication implements AutoCloseable
         this.sessionId = sessionId;
         this.initialTermId = LogBufferDescriptor.initialTermId(logMetaDataBuffer);
         this.logMetaDataBuffer = logMetaDataBuffer;
+        this.correlationId = correlationId;
         this.registrationId = registrationId;
         this.positionLimit = positionLimit;
         this.logBuffers = logBuffers;
@@ -185,7 +188,17 @@ public class Publication implements AutoCloseable
     }
 
     /**
-     * Return the registration id used to register this Publication with the media driver.
+     * Get the correlation id used to register this Publication with the media driver.
+     *
+     * @return correlation id
+     */
+    public long correlationId()
+    {
+        return correlationId;
+    }
+
+    /**
+     * Get the registration id used to register this Publication with the media driver.
      *
      * @return registration id
      */

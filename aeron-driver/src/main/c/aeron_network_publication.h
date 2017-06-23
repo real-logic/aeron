@@ -35,10 +35,12 @@ aeron_network_publication_status_t;
 
 #define AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS (100 * 1000 * 1000L)
 #define AERON_NETWORK_PUBLICATION_SETUP_TIMEOUT_NS (100 * 1000 * 1000L)
+#define AERON_NETWORK_PUBLICATION_CONNECTION_TIMEOUT_MS (5 * 1000L)
 
 #define AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND (2)
 
 typedef struct aeron_send_channel_endpoint_stct aeron_send_channel_endpoint_t;
+typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
 
 typedef struct aeron_network_publication_stct
 {
@@ -46,9 +48,9 @@ typedef struct aeron_network_publication_stct
     {
         aeron_driver_managed_resource_t managed_resource;
         aeron_subscribeable_t subscribeable;
-        int64_t cleaning_position;
-        int64_t trip_limit;
-        int64_t consumer_position;
+        int64_t clean_position;
+        int64_t time_of_last_activity_ns;
+        int64_t last_snd_pos;
         int32_t refcnt;
         bool has_reached_end_of_life;
         aeron_network_publication_status_t status;
@@ -115,6 +117,8 @@ void aeron_network_publication_close(aeron_counters_manager_t *counters_manager,
 
 void aeron_network_publication_incref(void *clientd);
 void aeron_network_publication_decref(void *clientd);
+void aeron_network_publication_on_time_event(
+    aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication, int64_t now_ns, int64_t now_ms);
 
 int aeron_network_publication_send(aeron_network_publication_t *publication, int64_t now_ns);
 
@@ -130,6 +134,33 @@ void aeron_network_publication_on_status_message(
 void aeron_network_publication_on_rttm(
     aeron_network_publication_t *publication, const uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
 
+void aeron_network_publication_clean_buffer(aeron_network_publication_t *publication, int64_t pub_lmt);
+
+int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *publication);
+
+void aeron_network_publication_check_for_blocked_publisher(
+    aeron_network_publication_t *publication, int64_t now_ns, int64_t snd_pos);
+
+inline bool aeron_network_publication_spies_not_behind_sender(
+    aeron_network_publication_t *publication, aeron_driver_conductor_t *conductor, int64_t snd_pos)
+{
+    if (publication->conductor_fields.subscribeable.length > 0)
+    {
+        for (size_t i = 0, length = publication->conductor_fields.subscribeable.length; i < length; i++)
+        {
+            if (aeron_counter_get_volatile(publication->conductor_fields.subscribeable.array[i].value_addr) < snd_pos)
+            {
+                return false;
+            }
+        }
+
+        /* TODO: conductor cleanup_spies() */
+        /* TODO: close subscribeables (spies) */
+    }
+
+    return true;
+}
+
 inline int64_t aeron_network_publication_producer_position(aeron_network_publication_t *publication)
 {
     int64_t raw_tail;
@@ -141,6 +172,20 @@ inline int64_t aeron_network_publication_producer_position(aeron_network_publica
         aeron_logbuffer_term_offset(raw_tail, (int32_t)publication->mapped_raw_log.term_length),
         publication->position_bits_to_shift,
         publication->initial_term_id);
+}
+
+inline int64_t aeron_network_publication_spy_join_position(aeron_network_publication_t *publication)
+{
+    int64_t max_spy_position = aeron_network_publication_producer_position(publication);
+
+    for (size_t i = 0, length = publication->conductor_fields.subscribeable.length; i < length; i++)
+    {
+        int64_t position = aeron_counter_get_volatile(publication->conductor_fields.subscribeable.array[i].value_addr);
+
+        max_spy_position = position > max_spy_position ? position : max_spy_position;
+    }
+
+    return max_spy_position;
 }
 
 #endif //AERON_AERON_NETWORK_PUBLICATION_H

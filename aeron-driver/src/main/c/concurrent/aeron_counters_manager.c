@@ -158,3 +158,4 @@ extern int64_t aeron_counter_get_volatile(volatile int64_t *addr);
 extern int64_t aeron_counter_increment(volatile int64_t *addr, int64_t value);
 extern int64_t aeron_counter_ordered_increment(volatile int64_t *addr, int64_t value);
 extern int64_t aeron_counter_add_ordered(volatile int64_t *addr, int64_t value);
+extern bool aeron_counter_propose_max_ordered(volatile int64_t *addr, int64_t proposed_value);

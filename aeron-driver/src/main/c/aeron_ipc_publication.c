@@ -186,7 +186,7 @@ void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, in
 
     if (0 < length)
     {
-        memset((uint8_t *)publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset, 0, length);
+        memset(publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset, 0, length);
         publication->conductor_fields.cleaning_position = min_sub_pos;
     }
 }

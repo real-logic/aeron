@@ -86,6 +86,12 @@ inline int64_t aeron_logbuffer_compute_position(
     return (term_count << position_bits_to_shift) + term_offset;
 }
 
+inline int32_t aeron_logbuffer_compute_term_id_from_position(
+    int64_t position, size_t position_bits_to_shift, int32_t initial_term_id)
+{
+    return (int32_t)(position >> position_bits_to_shift) + initial_term_id;
+}
+
 inline void aeron_logbuffer_fill_default_header(
     uint8_t *log_meta_data_buffer, int32_t session_id, int32_t stream_id, int32_t initial_term_id)
 {

@@ -14,12 +14,27 @@
  * limitations under the License.
  */
 
+#if defined(__linux__)
+#define _BSD_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <string.h>
+#include <sys/socket.h>
+#include "util/aeron_netutil.h"
 #include "aeron_driver_context.h"
 #include "concurrent/aeron_counters_manager.h"
 #include "util/aeron_error.h"
 #include "aeron_alloc.h"
 #include "media/aeron_send_channel_endpoint.h"
+
+#if !defined(HAVE_RECVMMSG)
+struct mmsghdr
+{
+    struct msghdr msg_hdr;
+    unsigned int msg_len;
+};
+#endif
 
 int aeron_send_channel_endpoint_create(
     aeron_send_channel_endpoint_t **endpoint,
@@ -78,6 +93,27 @@ int aeron_send_channel_endpoint_delete(aeron_counters_manager_t *counters_manage
     aeron_udp_channel_transport_close(&channel->transport);
     aeron_free(channel);
     return 0;
+}
+
+int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen)
+{
+    /* TODO: handle MDC */
+    for (size_t i = 0; i < vlen; i++)
+    {
+        mmsghdr[i].msg_hdr.msg_name = &endpoint->conductor_fields.udp_channel->remote_data;
+        mmsghdr[i].msg_hdr.msg_namelen = AERON_ADDR_LEN(&endpoint->conductor_fields.udp_channel->remote_data);
+    }
+
+    return aeron_udp_channel_transport_sendmmsg(&endpoint->transport, mmsghdr, vlen);
+}
+
+int aeron_send_channel_sendmsg(aeron_send_channel_endpoint_t *endpoint, struct msghdr *msghdr)
+{
+    /* TODO: handle MDC */
+    msghdr->msg_name = &endpoint->conductor_fields.udp_channel->remote_data;
+    msghdr->msg_namelen = AERON_ADDR_LEN(&endpoint->conductor_fields.udp_channel->remote_data);
+
+    return aeron_udp_channel_transport_sendmsg(&endpoint->transport, msghdr);
 }
 
 int aeron_send_channel_endpoint_add_publication(

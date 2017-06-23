@@ -120,7 +120,7 @@ inline bool aeron_ipc_publication_is_drained(aeron_ipc_publication_t *publicatio
 
     for (size_t i = 0, length = publication->conductor_fields.subscribeable.length; i < length; i++)
     {
-        int64_t sub_pos = aeron_counter_get_value(publication->conductor_fields.subscribeable.array[i].value_addr);
+        int64_t sub_pos = aeron_counter_get_volatile(publication->conductor_fields.subscribeable.array[i].value_addr);
 
         if (sub_pos < producer_position)
         {

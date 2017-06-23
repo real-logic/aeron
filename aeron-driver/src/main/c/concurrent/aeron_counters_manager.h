@@ -109,7 +109,12 @@ inline void aeron_counter_set_value(volatile int64_t *addr, int64_t value)
     AERON_PUT_ORDERED(*addr, value);
 }
 
-inline int64_t aeron_counter_get_value(volatile int64_t *addr)
+inline int64_t aeron_counter_get(volatile int64_t *addr)
+{
+    return *addr;
+}
+
+inline int64_t aeron_counter_get_volatile(volatile int64_t *addr)
 {
     int64_t value;
 

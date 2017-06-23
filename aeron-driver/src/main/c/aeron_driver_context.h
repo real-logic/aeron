@@ -79,6 +79,7 @@ typedef struct aeron_driver_context_stct
     size_t ipc_term_buffer_length;          /* aeron.ipc.term.buffer.length = 64 * 1024 * 1024 */
     size_t mtu_length;                      /* aeron.mtu.length = 4096 */
     size_t ipc_publication_window_length;   /* aeron.ipc.publication.term.window.length = 0 */
+    size_t publication_window_length;       /* aeron.publication.term.window.length = 0 */
     size_t socket_rcvbuf;                   /* aeron.socket.so_rcvbuf = 128 * 1024 */
     size_t socket_sndbuf;                   /* aeron.socket.so_sndbuf = 0 */
     size_t send_to_sm_poll_ratio;           /* aeron.send.to.status.poll.ratio = 4 */
@@ -181,6 +182,20 @@ inline size_t aeron_ipc_publication_term_window_length(aeron_driver_context_t *c
         publication_term_window_length = (publication_term_window_length < context->ipc_publication_window_length) ?
             publication_term_window_length :
             context->ipc_publication_window_length;
+    }
+
+    return publication_term_window_length;
+}
+
+inline size_t aeron_network_publication_term_window_length(aeron_driver_context_t *context, size_t term_length)
+{
+    size_t publication_term_window_length = term_length / 2;
+
+    if (0 != context->publication_window_length)
+    {
+        publication_term_window_length = (publication_term_window_length < context->publication_window_length) ?
+            publication_term_window_length :
+            context->publication_window_length;
     }
 
     return publication_term_window_length;

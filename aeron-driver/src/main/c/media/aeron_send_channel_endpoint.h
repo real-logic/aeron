@@ -51,6 +51,9 @@ int aeron_send_channel_endpoint_create(
 
 int aeron_send_channel_endpoint_delete(aeron_counters_manager_t *counters_manager, aeron_send_channel_endpoint_t *channel);
 
+int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen);
+int aeron_send_channel_sendmsg(aeron_send_channel_endpoint_t *endpoint, struct msghdr *msghdr);
+
 int aeron_send_channel_endpoint_add_publication(
     aeron_send_channel_endpoint_t *endpoint, aeron_network_publication_t *publication);
 

@@ -190,6 +190,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->ipc_term_buffer_length = 64 * 1024 * 1024;
     _context->mtu_length = 4096;
     _context->ipc_publication_window_length = 0;
+    _context->publication_window_length = 0;
     _context->publication_linger_timeout_ns = 5 * 1000 * 1000 * 1000L;
     _context->socket_rcvbuf = 128 * 1024;
     _context->socket_sndbuf = 0;
@@ -300,6 +301,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         aeron_config_parse_uint64(
             getenv(AERON_IPC_PUBLICATION_TERM_WINDOW_LENGTH_ENV_VAR),
             _context->ipc_publication_window_length,
+            0,
+            INT32_MAX);
+
+    _context->publication_window_length =
+        aeron_config_parse_uint64(
+            getenv(AERON_PUBLICATION_TERM_WINDOW_LENGTH_ENV_VAR),
+            _context->publication_window_length,
             0,
             INT32_MAX);
 
@@ -491,6 +499,7 @@ extern size_t aeron_cnc_computed_length(size_t total_length_of_buffers);
 extern size_t aeron_cnc_length(aeron_driver_context_t *context);
 
 extern size_t aeron_ipc_publication_term_window_length(aeron_driver_context_t *context, size_t term_length);
+extern size_t aeron_network_publication_term_window_length(aeron_driver_context_t *context, size_t term_length);
 
 int aeron_driver_context_set(aeron_driver_context_t *context, const char *setting, const char *value)
 {

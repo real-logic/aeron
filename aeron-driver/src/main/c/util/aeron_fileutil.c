@@ -190,6 +190,21 @@ int aeron_ipc_publication_location(
         aeron_dir, session_id, stream_id, correlation_id);
 }
 
+int aeron_network_publication_location(
+    char *dst,
+    size_t length,
+    const char *aeron_dir,
+    const char *channel_canonical_form,
+    int32_t session_id,
+    int32_t stream_id,
+    int64_t correlation_id)
+{
+    return snprintf(
+        dst, length,
+        "%s/" AERON_PUBLICATIONS_DIR "/%s-%" PRIx32 "-%" PRIx32 "-%" PRIx64 ".logbuffer",
+        aeron_dir, channel_canonical_form, session_id, stream_id, correlation_id);
+}
+
 int aeron_map_raw_log(
     aeron_mapped_raw_log_t *mapped_raw_log, const char *path, bool use_sparse_files, uint64_t term_length)
 {

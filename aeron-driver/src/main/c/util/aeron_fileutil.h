@@ -67,6 +67,15 @@ int aeron_ipc_publication_location(
     int32_t stream_id,
     int64_t correlation_id);
 
+int aeron_network_publication_location(
+    char *dst,
+    size_t length,
+    const char *aeron_dir,
+    const char *channel_canonical_form,
+    int32_t session_id,
+    int32_t stream_id,
+    int64_t correlation_id);
+
 typedef int (*aeron_map_raw_log_func_t)(aeron_mapped_raw_log_t *, const char *, bool, uint64_t);
 typedef int (*aeron_map_raw_log_close_func_t)(aeron_mapped_raw_log_t *);
 

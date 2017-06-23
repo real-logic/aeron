@@ -132,7 +132,7 @@ TEST_F(CountersManagerTest, shouldStoreAndLoadCounterValue)
     int64_t *addr = aeron_counter_addr(&m_manager, id);
 
     aeron_counter_set_value(addr, value);
-    EXPECT_EQ(aeron_counter_get_value(addr), value);
+    EXPECT_EQ(aeron_counter_get(addr), value);
 }
 
 void int64_key_func(uint8_t *key, size_t key_max_length, void *clientd)

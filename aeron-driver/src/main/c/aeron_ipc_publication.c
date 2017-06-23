@@ -145,7 +145,7 @@ int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication)
 
     for (size_t i = 0, length = publication->conductor_fields.subscribeable.length; i < length; i++)
     {
-        int64_t position = aeron_counter_get_value(publication->conductor_fields.subscribeable.array[i].value_addr);
+        int64_t position = aeron_counter_get_volatile(publication->conductor_fields.subscribeable.array[i].value_addr);
 
         min_sub_pos = (position < min_sub_pos) ? (position) : (min_sub_pos);
         max_sub_pos = (position > max_sub_pos) ? (position) : (max_sub_pos);

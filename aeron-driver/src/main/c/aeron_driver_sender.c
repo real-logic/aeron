@@ -258,12 +258,28 @@ int aeron_driver_sender_do_send(aeron_driver_sender_t *sender, int64_t now_ns)
 
     for (size_t i = starting_index; i < length; i++)
     {
-        bytes_sent += aeron_network_publication_send(publications[i].publication, now_ns);
+        int result = aeron_network_publication_send(publications[i].publication, now_ns);
+        if (result < 0)
+        {
+            AERON_DRIVER_SENDER_ERROR(sender, "sender do_send: %s", aeron_errmsg());
+        }
+        else
+        {
+            bytes_sent += result;
+        }
     }
 
     for (size_t i = 0; i < starting_index; i++)
     {
-        bytes_sent += aeron_network_publication_send(publications[i].publication, now_ns);
+        int result = aeron_network_publication_send(publications[i].publication, now_ns);
+        if (result < 0)
+        {
+            AERON_DRIVER_SENDER_ERROR(sender, "sender do_send: %s", aeron_errmsg());
+        }
+        else
+        {
+            bytes_sent += result;
+        }
     }
 
     aeron_counter_add_ordered(sender->total_bytes_sent_counter, bytes_sent);

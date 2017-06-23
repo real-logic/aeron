@@ -56,7 +56,8 @@ public:
                             publicationReady.sessionId(),
                             publicationReady.positionLimitCounterId(),
                             publicationReady.logFileName(),
-                            publicationReady.correlationId());
+                            publicationReady.correlationId(),
+                            publicationReady.registrationId());
                     }
                     break;
 

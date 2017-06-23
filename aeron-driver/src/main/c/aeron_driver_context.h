@@ -23,6 +23,7 @@
 #include "util/aeron_fileutil.h"
 #include "concurrent/aeron_spsc_concurrent_array_queue.h"
 #include "concurrent/aeron_mpsc_concurrent_array_queue.h"
+#include "aeron_flow_control.h"
 
 #define AERON_CNC_FILE "cnc.dat"
 #define AERON_CNC_VERSION (7)
@@ -114,6 +115,9 @@ typedef struct aeron_driver_context_stct
     aeron_usable_fs_space_func_t usable_fs_space_func;
     aeron_map_raw_log_func_t map_raw_log_func;
     aeron_map_raw_log_close_func_t map_raw_log_close_func;
+
+    aeron_flow_control_strategy_supplier_func_t unicast_flow_control_supplier_func;
+    aeron_flow_control_strategy_supplier_func_t multicast_flow_control_supplier_func;
 
     aeron_driver_conductor_proxy_t *conductor_proxy;
     aeron_driver_sender_proxy_t *sender_proxy;

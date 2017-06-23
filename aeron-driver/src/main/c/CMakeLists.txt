@@ -63,6 +63,7 @@ SET(SOURCE
     aeron_driver_sender_proxy.c
     aeron_driver_conductor_proxy.c
     aeron_driver_receiver_proxy.c
+    aeron_flow_control.c
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel.c
     media/aeron_send_channel_endpoint.c
@@ -109,6 +110,7 @@ SET(HEADERS
     aeron_driver_sender_proxy.h
     aeron_driver_conductor_proxy.h
     aeron_driver_receiver_proxy.h
+    aeron_flow_control.h
     media/aeron_udp_channel_transport.h
     media/aeron_udp_channel.h
     media/aeron_send_channel_endpoint.h

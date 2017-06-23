@@ -168,6 +168,18 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         return -1;
     }
 
+    if ((_context->unicast_flow_control_supplier_func =
+        aeron_flow_control_strategy_supplier_load("aeron_unicast_flow_control_strategy_supplier")) == NULL)
+    {
+        return -1;
+    }
+
+    if ((_context->multicast_flow_control_supplier_func =
+        aeron_flow_control_strategy_supplier_load("aeron_max_multicast_flow_control_strategy_supplier")) == NULL)
+    {
+        return -1;
+    }
+
 #if defined(__linux__)
     snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "/dev/shm/aeron-%s", username());
 #elif (_MSC_VER)

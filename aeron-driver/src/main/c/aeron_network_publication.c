@@ -34,6 +34,7 @@ int aeron_network_publication_create(
     aeron_position_t *pub_lmt_position,
     aeron_position_t *snd_pos_position,
     aeron_position_t *snd_lmt_position,
+    aeron_flow_control_strategy_t *flow_control_strategy,
     size_t term_buffer_length,
     bool is_exclusive,
     aeron_system_counters_t *system_counters)
@@ -97,6 +98,7 @@ int aeron_network_publication_create(
         _pub->mapped_raw_log.log_meta_data.addr, session_id, stream_id, initial_term_id);
 
     _pub->endpoint = endpoint;
+    _pub->flow_control = flow_control_strategy;
     _pub->conductor_fields.subscribeable.array = NULL;
     _pub->conductor_fields.subscribeable.length = 0;
     _pub->conductor_fields.subscribeable.capacity = 0;
@@ -155,6 +157,7 @@ void aeron_network_publication_close(aeron_counters_manager_t *counters_manager,
     if (NULL != publication)
     {
         publication->map_raw_log_close_func(&publication->mapped_raw_log);
+        publication->flow_control->fini(publication->flow_control);
         aeron_free(publication->log_file_name);
     }
 
@@ -327,7 +330,9 @@ int aeron_network_publication_send(aeron_network_publication_t *publication, int
             return -1;
         }
 
-        int64_t flow_control_position = 0; /* TODO: get from flow control on_idle */
+        int64_t snd_lmt = aeron_counter_get(publication->snd_lmt_position.value_addr);
+        int64_t flow_control_position =
+            publication->flow_control->on_idle(publication->flow_control->state, now_ns, snd_lmt);
         aeron_counter_set_ordered(publication->snd_lmt_position.value_addr, flow_control_position);
     }
 

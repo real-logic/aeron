@@ -25,6 +25,7 @@
 extern "C"
 {
 #include "aeron_driver_conductor.h"
+#include "util/aeron_error.h"
 }
 
 #include "concurrent/ringbuffer/ManyToOneRingBuffer.h"
@@ -105,7 +106,7 @@ struct TestDriverContext
 
         if (aeron_driver_context_init(&m_context) < 0)
         {
-            throw std::runtime_error("could not init context");
+            throw std::runtime_error("could not init context: " + std::string(aeron_errmsg()));
         }
 
         m_context->cnc_map.length = aeron_cnc_length(m_context);
@@ -146,7 +147,7 @@ struct TestDriverConductor
     {
         if (aeron_driver_conductor_init(&m_conductor, context.m_context) < 0)
         {
-            throw std::runtime_error("could not init context");
+            throw std::runtime_error("could not init context: " + std::string(aeron_errmsg()));
         }
     }
 

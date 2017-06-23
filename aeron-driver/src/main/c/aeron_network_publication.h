@@ -62,6 +62,7 @@ typedef struct aeron_network_publication_stct
     aeron_position_t snd_lmt_position;
     aeron_logbuffer_metadata_t *log_meta_data;
     aeron_send_channel_endpoint_t *endpoint;
+    aeron_flow_control_strategy_t *flow_control;
 
     char *log_file_name;
     int64_t term_window_length;
@@ -99,6 +100,7 @@ int aeron_network_publication_create(
     aeron_position_t *pub_lmt_position,
     aeron_position_t *snd_pos_position,
     aeron_position_t *snd_lmt_position,
+    aeron_flow_control_strategy_t *flow_control_strategy,
     size_t term_buffer_length,
     bool is_exclusive,
     aeron_system_counters_t *system_counters);

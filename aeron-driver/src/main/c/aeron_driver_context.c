@@ -218,6 +218,22 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s", value);
     }
 
+    if ((value = getenv(AERON_UNICAST_FLOWCONTROL_SUPPLIER_ENV_VAR)))
+    {
+        if ((_context->unicast_flow_control_supplier_func = aeron_flow_control_strategy_supplier_load(value)) == NULL)
+        {
+            return -1;
+        }
+    }
+
+    if ((value = getenv(AERON_MULTICAST_FLOWCONTROL_SUPPLIER_ENV_VAR)))
+    {
+        if ((_context->multicast_flow_control_supplier_func = aeron_flow_control_strategy_supplier_load(value)) == NULL)
+        {
+            return -1;
+        }
+    }
+
     if ((value = getenv(AERON_THREADING_MODE_ENV_VAR)))
     {
         if (strncmp(value, "SHARED", sizeof("SHARED")) == 0)

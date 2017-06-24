@@ -59,7 +59,7 @@ public:
         ClientConductor& conductor,
         const std::string& channel,
         std::int64_t registrationId,
-        std::int64_t correlationId,
+        std::int64_t originalRegistrationId,
         std::int32_t streamId,
         std::int32_t sessionId,
         UnsafeBufferPosition& publicationLimit,
@@ -110,7 +110,7 @@ public:
     }
 
     /**
-     * Correlation Id set for the original Publication in the media driver.
+     * Get the original registration used to register this Publication with the media driver by the first publisher.
      *
      * @return the original registratioId of the publication.
      */
@@ -127,6 +127,17 @@ public:
     inline std::int64_t registrationId() const
     {
         return m_registrationId;
+    }
+
+    /**
+     * Is this Publication the original instance added to the driver? If not then it was added after another client
+     * has already added the publication.
+     *
+     * @return true if this instance is the first added otherwise false.
+     */
+    inline bool isOriginal() const
+    {
+        return m_originalRegistrationId == m_registrationId;
     }
 
     /**

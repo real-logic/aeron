@@ -121,7 +121,8 @@ public:
         std::int32_t sessionId,
         std::int32_t positionLimitCounterId,
         const std::string& logFileName,
-        std::int64_t registrationId);
+        std::int64_t registrationId,
+        std::int64_t originalRegistrationId);
 
     void onOperationSuccess(std::int64_t correlationId);
 
@@ -192,6 +193,7 @@ private:
     {
         std::string m_channel;
         std::int64_t m_registrationId;
+        std::int64_t m_originalRegistrationId;
         std::int32_t m_streamId;
         std::int32_t m_sessionId = -1;
         std::int32_t m_positionLimitCounterId = -1;

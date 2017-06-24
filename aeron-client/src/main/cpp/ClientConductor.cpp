@@ -181,7 +181,7 @@ std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(
                 UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_positionLimitCounterId);
 
                 pub = std::make_shared<ExclusivePublication>(
-                    *this, state.m_channel, state.m_registrationId, state.m_streamId,
+                    *this, state.m_channel, state.m_registrationId, state.m_originalRegistrationId, state.m_streamId,
                     state.m_sessionId, publicationLimit, *(state.m_buffers));
 
                 state.m_publication = std::weak_ptr<ExclusivePublication>(pub);
@@ -349,7 +349,8 @@ void ClientConductor::onNewExclusivePublication(
     std::int32_t sessionId,
     std::int32_t positionLimitCounterId,
     const std::string &logFileName,
-    std::int64_t registrationId)
+    std::int64_t registrationId,
+    std::int64_t originalRegistrationId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
@@ -367,6 +368,7 @@ void ClientConductor::onNewExclusivePublication(
         state.m_sessionId = sessionId;
         state.m_positionLimitCounterId = positionLimitCounterId;
         state.m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
+        state.m_originalRegistrationId = originalRegistrationId;
 
         m_onNewPublicationHandler(state.m_channel, streamId, sessionId, registrationId);
     }

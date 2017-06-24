@@ -23,6 +23,7 @@ ExclusivePublication::ExclusivePublication(
     ClientConductor &conductor,
     const std::string &channel,
     std::int64_t registrationId,
+    std::int64_t correlationId,
     std::int32_t streamId,
     std::int32_t sessionId,
     UnsafeBufferPosition& publicationLimit,

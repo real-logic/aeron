@@ -28,7 +28,6 @@ import java.util.concurrent.locks.*;
 
 import static io.aeron.Aeron.IDLE_SLEEP_NS;
 import static io.aeron.Aeron.sleep;
-import static io.aeron.ClientConductor.Status.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -37,11 +36,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 class ClientConductor implements Agent, DriverListener
 {
-    enum Status
-    {
-        ACTIVE, CLOSING, CLOSED
-    }
-
     private static final long NO_CORRELATION_ID = -1;
     private static final long RESOURCE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
     private static final long RESOURCE_LINGER_NS = TimeUnit.SECONDS.toNanos(3);
@@ -55,7 +49,7 @@ class ClientConductor implements Agent, DriverListener
     private long timeOfLastCheckResourcesNs;
     private long timeOfLastWorkNs;
     private boolean isDriverActive = true;
-    private volatile Status status = ACTIVE;
+    private volatile boolean isClosed;
 
     private final Lock clientLock;
     private final EpochClock epochClock;
@@ -104,9 +98,9 @@ class ClientConductor implements Agent, DriverListener
 
     public void onClose()
     {
-        if (ACTIVE == status)
+        if (!isClosed)
         {
-            status = CLOSING;
+            isClosed = true;
 
             for (final ExclusivePublication publication : activeExclusivePublications.values())
             {
@@ -124,8 +118,6 @@ class ClientConductor implements Agent, DriverListener
                 lingeringResources.get(i).delete();
             }
             lingeringResources.clear();
-
-            status = CLOSED;
         }
     }
 
@@ -137,7 +129,7 @@ class ClientConductor implements Agent, DriverListener
         {
             try
             {
-                if (ACTIVE == status)
+                if (!isClosed)
                 {
                     workCount = doWork(NO_CORRELATION_ID, null);
                 }
@@ -156,9 +148,9 @@ class ClientConductor implements Agent, DriverListener
         return "aeron-client-conductor";
     }
 
-    Status status()
+    boolean isClosed()
     {
-        return status;
+        return isClosed;
     }
 
     Lock clientLock()
@@ -199,7 +191,7 @@ class ClientConductor implements Agent, DriverListener
 
     void releasePublication(final Publication publication)
     {
-        if (CLOSED == status)
+        if (isClosed)
         {
             throw new IllegalStateException("Aeron client is closed");
         }
@@ -213,7 +205,7 @@ class ClientConductor implements Agent, DriverListener
 
     void releasePublication(final ExclusivePublication publication)
     {
-        if (CLOSED == status)
+        if (isClosed)
         {
             throw new IllegalStateException("Aeron client is closed");
         }
@@ -264,7 +256,7 @@ class ClientConductor implements Agent, DriverListener
 
     void releaseSubscription(final Subscription subscription)
     {
-        if (CLOSED == status)
+        if (isClosed)
         {
             throw new IllegalStateException("Aeron client is closed");
         }
@@ -487,14 +479,14 @@ class ClientConductor implements Agent, DriverListener
 
     private void verifyActive()
     {
+        if (isClosed)
+        {
+            throw new IllegalStateException("Aeron client is closed");
+        }
+
         if (!isDriverActive)
         {
             throw new DriverTimeoutException("MediaDriver is inactive");
-        }
-
-        if (CLOSED == status)
-        {
-            throw new IllegalStateException("Aeron client is closed");
         }
     }
 

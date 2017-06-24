@@ -36,6 +36,7 @@ static const std::int32_t SESSION_ID = 200;
 static const std::int32_t PUBLICATION_LIMIT_COUNTER_ID = 0;
 
 static const std::int64_t CORRELATION_ID = 100;
+static const std::int64_t ORIGINAL_REGISTRATION_ID = 100;
 static const std::int32_t TERM_ID_1 = 1;
 
 inline std::int64_t rawTailValue(std::int32_t termId, std::int64_t position)
@@ -75,7 +76,8 @@ public:
         m_logMetaDataBuffer.putInt64(termTailCounterOffset(index), static_cast<std::int64_t>(TERM_ID_1) << 32);
 
         m_publication = std::unique_ptr<Publication>(new Publication(
-            m_conductor, CHANNEL, CORRELATION_ID, STREAM_ID, SESSION_ID, m_publicationLimit, m_logBuffers));
+            m_conductor, CHANNEL, CORRELATION_ID, ORIGINAL_REGISTRATION_ID,
+            STREAM_ID, SESSION_ID, m_publicationLimit, m_logBuffers));
     }
 
 protected:

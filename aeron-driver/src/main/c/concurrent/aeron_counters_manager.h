@@ -146,4 +146,17 @@ inline int64_t aeron_counter_add_ordered(volatile int64_t *addr, int64_t value)
     return current;
 }
 
+inline bool aeron_counter_propose_max_ordered(volatile int64_t *addr, int64_t proposed_value)
+{
+    bool updated = false;
+
+    if (*addr < proposed_value)
+    {
+        AERON_PUT_ORDERED(*addr, proposed_value);
+        updated = true;
+    }
+
+    return updated;
+}
+
 #endif //AERON_AERON_COUNTERS_MANAGER_H

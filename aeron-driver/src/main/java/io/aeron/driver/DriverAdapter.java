@@ -177,12 +177,12 @@ class DriverAdapter implements MessageHandler
         }
         catch (final ControlProtocolException ex)
         {
-            clientProxy.onError(ex.errorCode(), ex.getMessage(), correlationId);
+            clientProxy.onError(correlationId, ex.errorCode(), ex.getMessage());
             recordError(ex);
         }
         catch (final Exception ex)
         {
-            clientProxy.onError(GENERIC_ERROR, ex.getMessage(), correlationId);
+            clientProxy.onError(correlationId, GENERIC_ERROR, ex.getMessage());
             recordError(ex);
         }
     }

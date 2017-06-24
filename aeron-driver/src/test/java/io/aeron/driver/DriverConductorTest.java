@@ -178,7 +178,8 @@ public class DriverConductorTest
         final NetworkPublication publication = captor.getValue();
         assertThat(publication.streamId(), is(STREAM_ID_1));
 
-        verify(mockClientProxy).onPublicationReady(anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
+        verify(mockClientProxy)
+            .onPublicationReady(anyLong(), anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
     }
 
     @Test
@@ -215,7 +216,8 @@ public class DriverConductorTest
         assertThat(publication.producerPosition(), is(expectedPosition));
         assertThat(publication.consumerPosition(), is(expectedPosition));
 
-        verify(mockClientProxy).onPublicationReady(anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(true));
+        verify(mockClientProxy)
+            .onPublicationReady(anyLong(), anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(true));
     }
 
     @Test
@@ -240,7 +242,7 @@ public class DriverConductorTest
 
         final ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
         verify(mockClientProxy).onPublicationReady(
-            captor.capture(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(true));
+            anyLong(), captor.capture(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(true));
 
         final long registrationId = captor.getValue();
         final IpcPublication publication = driverConductor.getIpcPublication(registrationId);
@@ -391,8 +393,8 @@ public class DriverConductorTest
 
         inOrder.verify(senderProxy).newNetworkPublication(any());
         inOrder.verify(mockClientProxy).onPublicationReady(
-            eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
-        inOrder.verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), anyString(), anyLong());
+            anyLong(), eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
+        inOrder.verify(mockClientProxy).onError(anyLong(), eq(UNKNOWN_PUBLICATION), anyString());
         inOrder.verifyNoMoreInteractions();
 
         verify(mockErrorCounter).increment();
@@ -426,7 +428,7 @@ public class DriverConductorTest
 
         inOrder.verify(receiverProxy).addSubscription(any(), anyInt());
         inOrder.verify(mockClientProxy).operationSucceeded(id1);
-        inOrder.verify(mockClientProxy).onError(eq(UNKNOWN_SUBSCRIPTION), anyString(), anyLong());
+        inOrder.verify(mockClientProxy).onError(anyLong(), eq(UNKNOWN_SUBSCRIPTION), anyString());
         inOrder.verifyNoMoreInteractions();
 
         verify(mockErrorLog).record(any(Throwable.class));
@@ -442,7 +444,7 @@ public class DriverConductorTest
 
         verify(senderProxy, never()).newNetworkPublication(any());
 
-        verify(mockClientProxy).onError(eq(INVALID_CHANNEL), anyString(), anyLong());
+        verify(mockClientProxy).onError(anyLong(), eq(INVALID_CHANNEL), anyString());
         verify(mockClientProxy, never()).operationSucceeded(anyLong());
 
         verify(mockErrorCounter).increment();
@@ -760,7 +762,8 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         assertNotNull(driverConductor.getSharedIpcPublication(STREAM_ID_1));
-        verify(mockClientProxy).onPublicationReady(eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
+        verify(mockClientProxy)
+            .onPublicationReady(anyLong(), eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
     }
 
     @Test
@@ -776,7 +779,7 @@ public class DriverConductorTest
 
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy).onPublicationReady(
-            eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
+            anyLong(), eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublication.registrationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
@@ -805,13 +808,13 @@ public class DriverConductorTest
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
         inOrder.verify(mockClientProxy).onPublicationReady(
-            eq(idPubOne), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
+            anyLong(), eq(idPubOne), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublicationOne.registrationId()), eq(STREAM_ID_1), eq(ipcPublicationOne.sessionId()),
             eq(ipcPublicationOne.rawLog().fileName()), any(), anyString());
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idPubOneRemove));
         inOrder.verify(mockClientProxy).onPublicationReady(
-            eq(idPubTwo), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
+            anyLong(), eq(idPubTwo), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublicationTwo.registrationId()), eq(STREAM_ID_1), eq(ipcPublicationTwo.sessionId()),
             eq(ipcPublicationTwo.rawLog().fileName()), any(), anyString());
@@ -831,7 +834,7 @@ public class DriverConductorTest
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
         inOrder.verify(mockClientProxy).onPublicationReady(
-            eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
+            anyLong(), eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublication.registrationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
             eq(ipcPublication.rawLog().fileName()), any(), anyString());
@@ -1128,7 +1131,7 @@ public class DriverConductorTest
         final long id2 = driverProxy.addSubscription(CHANNEL_4000 + "|reliable=false", STREAM_ID_1);
         driverConductor.doWork();
 
-        verify(mockClientProxy).onError(any(ErrorCode.class), anyString(), eq(id2));
+        verify(mockClientProxy).onError(eq(id2), any(ErrorCode.class), anyString());
     }
 
     @Test
@@ -1140,7 +1143,7 @@ public class DriverConductorTest
         final long id2 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
         driverConductor.doWork();
 
-        verify(mockClientProxy).onError(any(ErrorCode.class), anyString(), eq(id2));
+        verify(mockClientProxy).onError(eq(id2), any(ErrorCode.class), anyString());
     }
 
     @Test
@@ -1152,7 +1155,7 @@ public class DriverConductorTest
         final long id2 = driverProxy.addSubscription(CHANNEL_4000 + "|reliable=true", STREAM_ID_1);
         driverConductor.doWork();
 
-        verify(mockClientProxy).onError(any(ErrorCode.class), anyString(), eq(id2));
+        verify(mockClientProxy).onError(eq(id2), any(ErrorCode.class), anyString());
     }
 
     private void doWorkUntil(final BooleanSupplier condition) throws Exception

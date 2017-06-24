@@ -98,7 +98,7 @@ TEST_F(ClientConductorTest, shouldReturnPublicationAfterLogBuffersCreated)
 {
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
 
-    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id);
+    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id, id);
 
     std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
 
@@ -120,7 +120,7 @@ TEST_F(ClientConductorTest, shouldReleasePublicationAfterGoingOutOfScope)
         {
         });
 
-    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id);
+    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id, id);
 
     {
         std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
@@ -155,7 +155,7 @@ TEST_F(ClientConductorTest, shouldReturnSamePublicationAfterLogBuffersCreated)
 {
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
 
-    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id);
+    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id, id);
 
     std::shared_ptr<Publication> pub1 = m_conductor.findPublication(id);
     std::shared_ptr<Publication> pub2 = m_conductor.findPublication(id);
@@ -169,7 +169,7 @@ TEST_F(ClientConductorTest, shouldIgnorePublicationReadyForUnknownCorrelationId)
 {
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
 
-    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id + 1);
+    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id + 1, id + 1);
 
     std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
 
@@ -591,7 +591,7 @@ TEST_F(ClientConductorTest, shouldCallOnNewPubAfterLogBuffersCreated)
     EXPECT_CALL(m_handlers, onNewPub(testing::StrEq(CHANNEL), STREAM_ID, SESSION_ID, id))
         .Times(1);
 
-    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id);
+    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id, id);
 }
 
 TEST_F(ClientConductorTest, shouldCallOnNewSubAfterOperationSuccess)
@@ -769,7 +769,7 @@ TEST_F(ClientConductorTest, shouldClosePublicationOnInterServiceTimeout)
 {
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
 
-    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id);
+    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id, id);
 
     std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
 
@@ -814,7 +814,7 @@ TEST_F(ClientConductorTest, shouldCloseAllPublicationsAndSubscriptionsOnInterSer
     std::int64_t exPubId = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
     std::int64_t subId = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
-    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, pubId);
+    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, pubId, pubId);
     m_conductor.onNewExclusivePublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID_2, m_logFileName2, exPubId);
     m_conductor.onOperationSuccess(subId);
 

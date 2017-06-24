@@ -59,6 +59,7 @@ public:
         ClientConductor& conductor,
         const std::string& channel,
         std::int64_t registrationId,
+        std::int64_t correlationId,
         std::int32_t streamId,
         std::int32_t sessionId,
         UnsafeBufferPosition& publicationLimit,
@@ -106,6 +107,16 @@ public:
     inline std::int32_t initialTermId() const
     {
         return m_initialTermId;
+    }
+
+    /**
+     * Correlation Id set for the original Publication in the media driver.
+     *
+     * @return the original registratioId of the publication.
+     */
+    inline std::int64_t originalRegistrationId() const
+    {
+        return m_originalRegistrationId;
     }
 
     /**
@@ -390,6 +401,7 @@ private:
     AtomicBuffer& m_logMetaDataBuffer;
     const std::string m_channel;
     std::int64_t m_registrationId;
+    std::int64_t m_originalRegistrationId;
     std::int32_t m_streamId;
     std::int32_t m_sessionId;
     std::int32_t m_initialTermId;

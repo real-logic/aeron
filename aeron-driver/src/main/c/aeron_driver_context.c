@@ -168,6 +168,18 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         return -1;
     }
 
+    if ((_context->unicast_flow_control_supplier_func =
+        aeron_flow_control_strategy_supplier_load("aeron_unicast_flow_control_strategy_supplier")) == NULL)
+    {
+        return -1;
+    }
+
+    if ((_context->multicast_flow_control_supplier_func =
+        aeron_flow_control_strategy_supplier_load("aeron_max_multicast_flow_control_strategy_supplier")) == NULL)
+    {
+        return -1;
+    }
+
 #if defined(__linux__)
     snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "/dev/shm/aeron-%s", username());
 #elif (_MSC_VER)
@@ -204,6 +216,22 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     if ((value = getenv(AERON_DIR_ENV_VAR)))
     {
         snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s", value);
+    }
+
+    if ((value = getenv(AERON_UNICAST_FLOWCONTROL_SUPPLIER_ENV_VAR)))
+    {
+        if ((_context->unicast_flow_control_supplier_func = aeron_flow_control_strategy_supplier_load(value)) == NULL)
+        {
+            return -1;
+        }
+    }
+
+    if ((value = getenv(AERON_MULTICAST_FLOWCONTROL_SUPPLIER_ENV_VAR)))
+    {
+        if ((_context->multicast_flow_control_supplier_func = aeron_flow_control_strategy_supplier_load(value)) == NULL)
+        {
+            return -1;
+        }
     }
 
     if ((value = getenv(AERON_THREADING_MODE_ENV_VAR)))

@@ -51,6 +51,7 @@ import static java.nio.file.StandardOpenOption.*;
 class RecordingWriter implements AutoCloseable, RawBlockHandler
 {
     private static final boolean VALIDATE_POSITION_ASSUMPTIONS = true;
+
     static class Marker
     {
         private final ByteBuffer buffer =
@@ -286,7 +287,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         }
     }
 
-
     public void close()
     {
         if (closed)
@@ -458,7 +458,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     {
         if (VALIDATE_POSITION_ASSUMPTIONS)
         {
-            final int expectedStartTermOffset = (int) (joinPosition & (termBufferLength - 1));
+            final int expectedStartTermOffset = (int)(joinPosition & (termBufferLength - 1));
             if (expectedStartTermOffset != termOffset)
             {
                 throw new IllegalStateException();
@@ -474,6 +474,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             {
                 throw new IllegalStateException();
             }
+
             final int recordingOffset = recordingOffset(
                 termOffset,
                 termId,
@@ -504,7 +505,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         private File archiveDir;
         private EpochClock epochClock;
         private boolean forceWrites = true;
-        private int segmentFileLength = 128 * 1024 * 1024;
+        private int segmentFileLength = 1024 * 1024 * 1024;
 
         RecordingContext archiveDir(final File archiveDir)
         {

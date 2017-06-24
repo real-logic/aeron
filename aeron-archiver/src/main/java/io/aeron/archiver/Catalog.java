@@ -19,6 +19,7 @@ import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.archiver.codecs.RecordingDescriptorEncoder;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -50,18 +51,16 @@ class Catalog implements AutoCloseable
     private static final int PAGE_SIZE = 4096;
 
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
-
-    private final ByteBuffer byteBuffer;
-    private final UnsafeBuffer unsafeBuffer;
+    private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(RECORD_LENGTH, PAGE_SIZE);
+    private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
     private final FileChannel catalogFileChannel;
     private final File archiveDir;
+
     private long nextRecordingId = 0;
 
     Catalog(final File archiveDir)
     {
         this.archiveDir = archiveDir;
-        byteBuffer = allocateDirectAligned(RECORD_LENGTH, PAGE_SIZE);
-        unsafeBuffer = new UnsafeBuffer(byteBuffer);
         recordingDescriptorEncoder.wrap(unsafeBuffer, CATALOG_FRAME_LENGTH);
 
         final File catalogFile = new File(archiveDir, CATALOG_FILE_NAME);

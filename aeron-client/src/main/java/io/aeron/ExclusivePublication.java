@@ -63,6 +63,7 @@ public class ExclusivePublication implements AutoCloseable
      */
     public static final long CLOSED = -4;
 
+    private final long originalRegistrationId;
     private final long registrationId;
     private final int streamId;
     private final int sessionId;
@@ -92,6 +93,7 @@ public class ExclusivePublication implements AutoCloseable
         final int sessionId,
         final ReadablePosition positionLimit,
         final LogBuffers logBuffers,
+        final long originalRegistrationId,
         final long registrationId)
     {
         final UnsafeBuffer[] buffers = logBuffers.termBuffers();
@@ -111,6 +113,7 @@ public class ExclusivePublication implements AutoCloseable
         this.sessionId = sessionId;
         this.initialTermId = LogBufferDescriptor.initialTermId(logMetaDataBuffer);
         this.logMetaDataBuffer = logMetaDataBuffer;
+        this.originalRegistrationId = originalRegistrationId;
         this.registrationId = registrationId;
         this.positionLimit = positionLimit;
         this.logBuffers = logBuffers;
@@ -199,7 +202,31 @@ public class ExclusivePublication implements AutoCloseable
     }
 
     /**
-     * Return the registration id used to register this Publication with the media driver.
+     * Get the original registration used to register this Publication with the media driver by the first publisher.
+     *
+     * @return original registration id
+     */
+    public long originalRegistrationId()
+    {
+        return originalRegistrationId;
+    }
+
+    /**
+     * Is this Publication the original instance added to the driver? If not then it was added after another client
+     * has already added the publication.
+     *
+     * @return true if this instance is the first added otherwise false.
+     */
+    public boolean isOriginal()
+    {
+        return originalRegistrationId == registrationId;
+    }
+
+    /**
+     * Get the registration id used to register this Publication with the media driver.
+     * <p>
+     * If this value is different from the {@link #originalRegistrationId()} then another client has previously added
+     * this Publication. In the case of an exclusive publication this should never happen.
      *
      * @return registration id
      */

@@ -22,31 +22,33 @@ import org.agrona.collections.Long2LongHashMap;
  */
 interface DriverListener
 {
-    void onError(ErrorCode errorCode, String message, long correlationId);
+    void onError(long correlationId, ErrorCode errorCode, String message);
 
     void onAvailableImage(
+        long correlationId,
         int streamId,
         int sessionId,
         Long2LongHashMap subscriberPositionMap,
         String logFileName,
-        String sourceIdentity,
-        long correlationId);
+        String sourceIdentity);
 
     void onNewPublication(
-        String channel,
+        long correlationId,
+        long registrationId,
         int streamId,
         int sessionId,
         int publicationLimitId,
-        String logFileName,
-        long correlationId);
+        String channel,
+        String logFileName);
 
-    void onUnavailableImage(int streamId, long correlationId);
+    void onUnavailableImage(long correlationId, int streamId);
 
     void onNewExclusivePublication(
-        String channel,
+        long correlationId,
+        long registrationId,
         int streamId,
         int sessionId,
         int publicationLimitId,
-        String logFileName,
-        long correlationId);
+        String channel,
+        String logFileName);
 }

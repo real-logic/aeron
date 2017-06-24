@@ -20,10 +20,36 @@
 #include "aeron_driver_conductor.h"
 #include "command/aeron_control_protocol.h"
 
+#define AERON_AGENT_MASK_ENV_VAR "AERON_EVENT_LOG"
+#define RING_BUFFER_LENGTH (2 * 1024 * 1024)
+#define MAX_CMD_LENGTH (512)
+
+#define AERON_CMD_IN (0x01)
+#define AERON_CMD_OUT (0x02)
+#define AERON_FRAME_IN (0x04)
+#define AERON_FRAME_OUT (0x08)
+
+typedef struct aeron_driver_agent_cmd_log_header_stct
+{
+    int64_t time_ms;
+    int64_t cmd_id;
+}
+aeron_driver_agent_cmd_log_header_t;
+
+typedef struct aeron_driver_agent_frame_log_header_stct
+{
+    int64_t time_ms;
+    int32_t sockaddr_len;
+}
+aeron_driver_agent_frame_log_header_t;
+
 typedef void (*aeron_driver_conductor_on_command_t)(int32_t, const void *, size_t, void *);
 typedef void (*aeron_driver_conductor_client_transmit_t)(aeron_driver_conductor_t *, int32_t, const void *, size_t);
 
+void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, size_t length, void *clientd);
+
 /* TODO: hook aeron_driver_context_init to do initial hooks (event log, etc.) under lock */
 /* TODO: hook aeron_driver_init to display options, etc. for instance. */
+/* TODO: hook aeron_set_err to display setting an error */
 
 #endif //AERON_AERON_DRIVER_AGENT_H

@@ -313,7 +313,7 @@ public final class Aeron implements AutoCloseable
      */
     public long nextCorrelationId()
     {
-        if (conductor.status() != ClientConductor.Status.ACTIVE)
+        if (conductor.isClosed())
         {
             throw new IllegalStateException("Client is closed");
         }
@@ -328,7 +328,7 @@ public final class Aeron implements AutoCloseable
      */
     public CountersReader countersReader()
     {
-        if (conductor.status() != ClientConductor.Status.ACTIVE)
+        if (conductor.isClosed())
         {
             throw new IllegalStateException("Client is closed");
         }

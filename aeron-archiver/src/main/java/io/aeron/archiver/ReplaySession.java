@@ -46,8 +46,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * <li>Stream recorded data into the replayPublication {@link ExclusivePublication}</li>
  * </ul>
  */
-class ReplaySession
-    implements Session, RecordingFragmentReader.SimplifiedControlledPoll
+class ReplaySession implements Session, RecordingFragmentReader.SimplifiedControlledPoll
 {
     enum State
     {

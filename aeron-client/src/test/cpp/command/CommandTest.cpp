@@ -106,23 +106,25 @@ TEST (commandTests, testPublicationReadyFlyweight)
     ASSERT_NO_THROW({
         PublicationBuffersReadyFlyweight cmd(ab, BASEOFFSET);
 
-        cmd.correlationId(-1).streamId(0x01010101).sessionId(0x02020202).positionLimitCounterId(10);
+        cmd.correlationId(-1).registrationId(1).streamId(0x01010101).sessionId(0x02020202).positionLimitCounterId(10);
         cmd.logFileName(logFileNameData);
 
         ASSERT_EQ(ab.getInt64(BASEOFFSET + 0), -1);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 8), 0x02020202);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 12), 0x01010101);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 16), 10);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 20), static_cast<int>(logFileNameData.length()));
-        ASSERT_EQ(ab.getStringUtf8(BASEOFFSET + 20), logFileNameData);
+        ASSERT_EQ(ab.getInt64(BASEOFFSET + 8), 1);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 16), 0x02020202);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 20), 0x01010101);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 24), 10);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 28), static_cast<int>(logFileNameData.length()));
+        ASSERT_EQ(ab.getStringUtf8(BASEOFFSET + 28), logFileNameData);
 
         ASSERT_EQ(cmd.correlationId(), -1);
+        ASSERT_EQ(cmd.registrationId(), 1);
         ASSERT_EQ(cmd.streamId(), 0x01010101);
         ASSERT_EQ(cmd.sessionId(), 0x02020202);
         ASSERT_EQ(cmd.positionLimitCounterId(), 10);
         ASSERT_EQ(cmd.logFileName(), logFileNameData);
 
-        ASSERT_EQ(cmd.length(), static_cast<int>(20 + sizeof(std::int32_t) + logFileNameData.length()));
+        ASSERT_EQ(cmd.length(), static_cast<int>(28 + sizeof(std::int32_t) + logFileNameData.length()));
     });
 }
 

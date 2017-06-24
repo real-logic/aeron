@@ -112,7 +112,7 @@ public:
     /**
      * Get the original registration used to register this Publication with the media driver by the first publisher.
      *
-     * @return the original registratioId of the publication.
+     * @return the original registrationId of the publication.
      */
     inline std::int64_t originalRegistrationId() const
     {

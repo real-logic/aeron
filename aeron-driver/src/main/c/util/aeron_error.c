@@ -41,7 +41,7 @@ static void initialize_per_thread_error()
 
 int aeron_errcode()
 {
-    (void)pthread_once(&error_is_initialized, initialize_per_thread_error);
+    (void) pthread_once(&error_is_initialized, initialize_per_thread_error);
     aeron_per_thread_error_t *error_state = pthread_getspecific(error_key);
     int result = 0;
 
@@ -55,7 +55,7 @@ int aeron_errcode()
 
 const char *aeron_errmsg()
 {
-    (void)pthread_once(&error_is_initialized, initialize_per_thread_error);
+    (void) pthread_once(&error_is_initialized, initialize_per_thread_error);
     aeron_per_thread_error_t *error_state = pthread_getspecific(error_key);
     const char *result = "";
 
@@ -69,7 +69,7 @@ const char *aeron_errmsg()
 
 void aeron_set_err(int errcode, const char *format, ...)
 {
-    (void)pthread_once(&error_is_initialized, initialize_per_thread_error);
+    (void) pthread_once(&error_is_initialized, initialize_per_thread_error);
     aeron_per_thread_error_t *error_state = pthread_getspecific(error_key);
 
     if (NULL == error_state)

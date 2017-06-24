@@ -151,5 +151,12 @@ target_link_libraries(
     ${AERON_LIB_BSD_LIBS}
     ${CMAKE_THREAD_LIBS_INIT})
 
+target_link_libraries(
+    aeron_driver_agent
+    aeron_driver
+    ${CMAKE_DL_LIBS}
+    ${AERON_LIB_BSD_LIBS}
+    ${CMAKE_THREAD_LIBS_INIT})
+
 install(TARGETS aeron_driver LIBRARY DESTINATION lib)
 install(TARGETS aeron_driver_agent LIBRARY DESTINATION lib)

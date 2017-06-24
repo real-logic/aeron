@@ -1015,7 +1015,7 @@ public class DriverConductor implements Agent
     }
 
     private IpcPublication getOrAddIpcPublication(
-        final long registrationId, final int streamId, final String channel, final boolean isExclusive)
+        final long correlationId, final int streamId, final String channel, final boolean isExclusive)
     {
         IpcPublication publication = null;
 
@@ -1030,7 +1030,7 @@ public class DriverConductor implements Agent
         if (null == publication)
         {
             validateMtuForMaxMessage(params, isExclusive);
-            publication = addIpcPublication(registrationId, streamId, channel, isExclusive, params);
+            publication = addIpcPublication(correlationId, streamId, channel, isExclusive, params);
         }
         else
         {

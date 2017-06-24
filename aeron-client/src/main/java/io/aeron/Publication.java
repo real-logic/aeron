@@ -199,6 +199,9 @@ public class Publication implements AutoCloseable
 
     /**
      * Get the registration id used to register this Publication with the media driver.
+     * <p>
+     * If this value is different from the {@link #correlationId()} then another client has previously added this
+     * Publication.
      *
      * @return registration id
      */

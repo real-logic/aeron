@@ -59,7 +59,7 @@ public class Publication implements AutoCloseable
      */
     public static final long CLOSED = -4;
 
-    private final long correlationId;
+    private final long originalRegistrationId;
     private final long registrationId;
     private int refCount = 0;
     private final int streamId;
@@ -85,7 +85,7 @@ public class Publication implements AutoCloseable
         final int sessionId,
         final ReadablePosition positionLimit,
         final LogBuffers logBuffers,
-        final long correlationId,
+        final long originalRegistrationId,
         final long registrationId)
     {
         final UnsafeBuffer[] buffers = logBuffers.termBuffers();
@@ -105,7 +105,7 @@ public class Publication implements AutoCloseable
         this.sessionId = sessionId;
         this.initialTermId = LogBufferDescriptor.initialTermId(logMetaDataBuffer);
         this.logMetaDataBuffer = logMetaDataBuffer;
-        this.correlationId = correlationId;
+        this.originalRegistrationId = originalRegistrationId;
         this.registrationId = registrationId;
         this.positionLimit = positionLimit;
         this.logBuffers = logBuffers;
@@ -188,20 +188,20 @@ public class Publication implements AutoCloseable
     }
 
     /**
-     * Get the correlation id used to register this Publication with the media driver.
+     * Get the original registration used to register this Publication with the media driver by the first publisher.
      *
-     * @return correlation id
+     * @return original registration id
      */
-    public long correlationId()
+    public long originalRegistrationId()
     {
-        return correlationId;
+        return originalRegistrationId;
     }
 
     /**
      * Get the registration id used to register this Publication with the media driver.
      * <p>
-     * If this value is different from the {@link #correlationId()} then another client has previously added this
-     * Publication.
+     * If this value is different from the {@link #originalRegistrationId()} then another client has previously added
+     * this Publication.
      *
      * @return registration id
      */

@@ -152,9 +152,9 @@ public class Image
     }
 
     /**
-     * The correlationId for identification of the image with the media driver.
+     * The originalRegistrationId for identification of the image with the media driver.
      *
-     * @return the correlationId for identification of the image with the media driver.
+     * @return the originalRegistrationId for identification of the image with the media driver.
      */
     public long correlationId()
     {

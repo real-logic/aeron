@@ -212,6 +212,17 @@ public class ExclusivePublication implements AutoCloseable
     }
 
     /**
+     * Is this Publication the original instance added to the driver? If not then it was added after another client
+     * has already added the publication.
+     *
+     * @return true if this instance is the first added otherwise false.
+     */
+    public boolean isOriginal()
+    {
+        return originalRegistrationId == registrationId;
+    }
+
+    /**
      * Get the registration id used to register this Publication with the media driver.
      * <p>
      * If this value is different from the {@link #originalRegistrationId()} then another client has previously added

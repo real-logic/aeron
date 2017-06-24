@@ -547,8 +547,15 @@ class ClientConductor implements Agent, DriverListener
         {
             isDriverActive = false;
 
-            errorHandler.onError(new DriverTimeoutException(
-                "MediaDriver has been inactive for over " + driverTimeoutMs + "ms"));
+            try
+            {
+                onClose();
+            }
+            finally
+            {
+                errorHandler.onError(new DriverTimeoutException(
+                    "MediaDriver has been inactive for over " + driverTimeoutMs + "ms"));
+            }
         }
     }
 }

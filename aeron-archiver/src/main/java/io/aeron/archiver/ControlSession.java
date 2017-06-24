@@ -25,7 +25,6 @@ import java.util.ArrayDeque;
 
 class ControlSession implements Session, ControlRequestListener
 {
-
     enum State
     {
         INIT, ACTIVE, INACTIVE, CLOSED

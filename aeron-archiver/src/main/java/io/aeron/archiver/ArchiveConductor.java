@@ -232,6 +232,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             notificationsProxy,
             image,
             recordingContext);
+
         recordingSessionByIdMap.put(recordingId, session);
         recorder.addSession(session);
     }

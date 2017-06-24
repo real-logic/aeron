@@ -46,17 +46,14 @@ class Catalog implements AutoCloseable
     private static final int PAGE_SIZE = 4096;
 
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
-
-    private final ByteBuffer byteBuffer;
-    private final UnsafeBuffer unsafeBuffer;
+    private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(RECORD_LENGTH, PAGE_SIZE);
+    private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
     private final FileChannel catalogFileChannel;
+
     private long nextRecordingId = 0;
 
     Catalog(final File archiveDir)
     {
-        byteBuffer = BufferUtil.allocateDirectAligned(RECORD_LENGTH, PAGE_SIZE);
-        unsafeBuffer = new UnsafeBuffer(byteBuffer);
-
         FileChannel channel = null;
         try
         {

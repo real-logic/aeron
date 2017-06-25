@@ -23,6 +23,7 @@
 #define AERON_AGENT_MASK_ENV_VAR "AERON_EVENT_LOG"
 #define RING_BUFFER_LENGTH (2 * 1024 * 1024)
 #define MAX_CMD_LENGTH (512)
+#define MAX_FRAME_LENGTH (512)
 
 #define AERON_CMD_IN (0x01)
 #define AERON_CMD_OUT (0x02)
@@ -39,7 +40,9 @@ aeron_driver_agent_cmd_log_header_t;
 typedef struct aeron_driver_agent_frame_log_header_stct
 {
     int64_t time_ms;
+    int32_t result;
     int32_t sockaddr_len;
+    size_t message_len;
 }
 aeron_driver_agent_frame_log_header_t;
 

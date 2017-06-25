@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
+#if defined(__linux__)
 #define _GNU_SOURCE
+#endif
 
 #if !defined(_MSC_VER)
 #include <pthread.h>
@@ -29,6 +31,7 @@ static pthread_once_t agent_is_initialized = PTHREAD_ONCE_INIT;
 #include <stdlib.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <sys/socket.h>
 #include "agent/aeron_driver_agent.h"
 #include "aeron_driver_context.h"
 
@@ -160,6 +163,142 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     return result;
 }
+
+void aeron_driver_agent_log_frame(int32_t msg_type_id, int sockfd, const struct msghdr *msghdr, int flags, int result)
+{
+    uint8_t buffer[MAX_FRAME_LENGTH + sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_in6)];
+    aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)buffer;
+    size_t length = sizeof(aeron_driver_agent_frame_log_header_t);
+
+    hdr->time_ms = aeron_agent_epochclock();
+    hdr->result = (int32_t)result;
+    hdr->sockaddr_len = msghdr->msg_namelen;
+    hdr->message_len = msghdr->msg_iov[0].iov_len;
+
+    if (msghdr->msg_iovlen > 1)
+    {
+        fprintf(stderr, "only aware of 1 iov. %d iovs detected.\n", msghdr->msg_iovlen);
+    }
+
+    uint8_t *ptr = buffer + sizeof(aeron_driver_agent_frame_log_header_t);
+    memcpy(ptr, msghdr->msg_name, msghdr->msg_namelen);
+    length += msghdr->msg_namelen;
+
+    ptr += msghdr->msg_namelen;
+    size_t copy_length = msghdr->msg_iov[0].iov_len < MAX_FRAME_LENGTH ? msghdr->msg_iov[0].iov_len : MAX_FRAME_LENGTH;
+    memcpy(ptr, msghdr->msg_iov[0].iov_base, copy_length);
+    length += copy_length;
+
+    aeron_mpsc_rb_write(&logging_mpsc_rb, msg_type_id, buffer, copy_length);
+}
+
+typedef ssize_t (*aeron_driver_agent_sendmsg_func_t)(int socket, const struct msghdr *message, int flags);
+typedef ssize_t (*aeron_driver_agent_recvmsg_func_t)(int socket, struct msghdr *message, int flags);
+
+ssize_t sendmsg(int socket, const struct msghdr *message, int flags)
+{
+    static aeron_driver_agent_sendmsg_func_t _original_func = NULL;
+
+    if (NULL == _original_func)
+    {
+        if ((_original_func = (aeron_driver_agent_sendmsg_func_t)dlsym(RTLD_NEXT, "sendmsg")) == NULL)
+        {
+            fprintf(stderr, "%s\n", dlerror());
+            exit(EXIT_FAILURE);
+        }
+
+        printf("hooked sendmsg\n");
+    }
+
+    (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
+
+    ssize_t result = _original_func(socket, message, flags);
+    aeron_driver_agent_log_frame(AERON_CMD_OUT, socket, message, flags, (int)result);
+    return result;
+}
+
+ssize_t recvmsg(int socket, struct msghdr *message, int flags)
+{
+    static aeron_driver_agent_recvmsg_func_t _original_func = NULL;
+
+    if (NULL == _original_func)
+    {
+        if ((_original_func = (aeron_driver_agent_recvmsg_func_t)dlsym(RTLD_NEXT, "recvmsg")) == NULL)
+        {
+            fprintf(stderr, "%s\n", dlerror());
+            exit(EXIT_FAILURE);
+        }
+
+        printf("hooked recvmsg\n");
+    }
+
+    (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
+
+    ssize_t result = _original_func(socket, message, flags);
+    aeron_driver_agent_log_frame(AERON_CMD_IN, socket, message, flags, (int)result);
+    return result;
+}
+
+#if defined(HAVE_RECVMMSG)
+typedef int (*aeron_driver_agent_sendmmsg_func_t)
+    (int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int flags);
+typedef int (*aeron_driver_agent_recvmmsg_func_t)
+    (int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int flags, struct timespec *timeout);
+
+int sendmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int flags)
+{
+    static aeron_driver_agent_sendmmsg_func_t _original_func = NULL;
+
+    if (NULL == _original_func)
+    {
+        if ((_original_func = (aeron_driver_agent_sendmmsg_func_t)dlsym(RTLD_NEXT, "sendmmsg")) == NULL)
+        {
+            fprintf(stderr, "%s\n", dlerror());
+            exit(EXIT_FAILURE);
+        }
+
+        printf("hooked sendmmsg\n");
+    }
+
+    (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
+
+    int result = _original_func(sockfd, msgvec, vlen, flags);
+
+    for (size_t i = 0; i < result; i++)
+    {
+        aeron_driver_agent_log_frame(AERON_CMD_OUT, sockfd, msgvec[i].msg_hdr, flags, msgvec[i].mdg_len);
+    }
+
+    return result
+}
+
+int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int flags, struct timespec *timeout)
+{
+    static aeron_driver_agent_recvmmsg_func_t _original_func = NULL;
+
+    if (NULL == _original_func)
+    {
+        if ((_original_func = (aeron_driver_agent_recvmmsg_func_t)dlsym(RTLD_NEXT, "recvmmsg")) == NULL)
+        {
+            fprintf(stderr, "%s\n", dlerror());
+            exit(EXIT_FAILURE);
+        }
+
+        printf("hooked recvmmsg\n");
+    }
+
+    (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
+
+    int result = _original_func(sockfd, msgvec, vlen, flags, timeout);
+
+    for (size_t i = 0; i < result; i++)
+    {
+        aeron_driver_agent_log_frame(AERON_CMD_OUT, sockfd, msgvec[i].msg_hdr, flags, msgvec[i].mdg_len);
+    }
+
+    return result
+}
+#endif
 
 static const char *dissect_msg_type_id(int32_t id)
 {

@@ -22,11 +22,6 @@
 /* Win32 Threads */
 #endif
 
-#include "util/aeron_error.h"
-#include "aeronmd.h"
-#include "command/aeron_control_protocol.h"
-#include "protocol/aeron_udp_protocol.h"
-
 static pthread_once_t agent_is_initialized = PTHREAD_ONCE_INIT;
 
 #include <stdio.h>
@@ -35,20 +30,7 @@ static pthread_once_t agent_is_initialized = PTHREAD_ONCE_INIT;
 #include <unistd.h>
 #include <inttypes.h>
 #include "agent/aeron_driver_agent.h"
-
-#define AERON_INTERCEPT_FUNC_RETURN_ON_ERROR(type,funcvar) \
-do \
-{ \
-    if (NULL == funcvar) \
-    { \
-        if ((funcvar = (type ## _t)dlsym(RTLD_NEXT, #type)) == NULL) \
-        { \
-            fprintf(stderr, "could not hook func <%s>: %s\n", #type, dlerror()); \
-            return; \
-        } \
-    } \
-} \
-while(0)
+#include "aeron_driver_context.h"
 
 static aeron_mpsc_rb_t logging_mpsc_rb;
 static uint8_t *rb_buffer = NULL;
@@ -98,46 +80,85 @@ static void initialize_agent_logging()
     }
 }
 
-void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message, size_t length, void *clientd)
+int64_t aeron_agent_epochclock()
 {
-    static aeron_driver_conductor_on_command_t _original_func = NULL;
+    struct timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts) < 0)
+    {
+        return -1;
+    }
 
-    (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
+    return (ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+}
 
-    AERON_INTERCEPT_FUNC_RETURN_ON_ERROR(aeron_driver_conductor_on_command, _original_func);
-
+void aeron_driver_agent_conductor_to_driver_interceptor(
+    int32_t msg_type_id, const void *message, size_t length, void *clientd)
+{
     uint8_t buffer[MAX_CMD_LENGTH + sizeof(aeron_driver_agent_cmd_log_header_t)];
     aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
-    hdr->time_ms = aeron_epochclock();
+    hdr->time_ms = aeron_agent_epochclock();
     hdr->cmd_id = msg_type_id;
     memcpy(buffer + sizeof(aeron_driver_agent_cmd_log_header_t), message, length);
 
     aeron_mpsc_rb_write(&logging_mpsc_rb, AERON_CMD_IN, buffer, length + sizeof(aeron_driver_agent_cmd_log_header_t));
-
-    _original_func(msg_type_id, message, length, clientd);
 }
 
-void aeron_driver_conductor_client_transmit(
-    aeron_driver_conductor_t *conductor,
-    int32_t msg_type_id,
-    const void *message,
-    size_t length)
+void aeron_driver_agent_conductor_to_client_interceptor(
+    aeron_driver_conductor_t *conductor, int32_t msg_type_id, const void *message, size_t length)
 {
-    static aeron_driver_conductor_client_transmit_t _original_func = NULL;
-
-    (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
-
-    AERON_INTERCEPT_FUNC_RETURN_ON_ERROR(aeron_driver_conductor_client_transmit, _original_func);
-
     uint8_t buffer[MAX_CMD_LENGTH + sizeof(aeron_driver_agent_cmd_log_header_t)];
     aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
-    hdr->time_ms = aeron_epochclock();
+    hdr->time_ms = aeron_agent_epochclock();
     hdr->cmd_id = msg_type_id;
     memcpy(buffer + sizeof(aeron_driver_agent_cmd_log_header_t), message, length);
 
     aeron_mpsc_rb_write(&logging_mpsc_rb, AERON_CMD_OUT, buffer, length + sizeof(aeron_driver_agent_cmd_log_header_t));
+}
 
-    _original_func(conductor, msg_type_id, message, length);
+static void *aeron_lib = NULL;
+
+int aeron_driver_context_init(aeron_driver_context_t **context)
+{
+    static aeron_driver_context_init_t _original_func = NULL;
+
+#if defined(Darwin)
+    static const char *aeron_driver_libname = "libaeron_driver.dylib";
+#elif defined(__linux__)
+    static const char *aeron_driver_libname = "libaeron_driver.so";
+#endif
+
+    if (NULL == _original_func)
+    {
+        if ((aeron_lib = dlopen(aeron_driver_libname, RTLD_LAZY)) == NULL)
+        {
+            fprintf(stderr, "%s\n", dlerror());
+            exit(EXIT_FAILURE);
+        }
+
+        if ((_original_func = (aeron_driver_context_init_t)dlsym(aeron_lib, "aeron_driver_context_init")) == NULL)
+        {
+            fprintf(stderr, "%s\n", dlerror());
+            exit(EXIT_FAILURE);
+        }
+
+        printf("hooked aeron_driver_context_init\n");
+    }
+
+    (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
+
+    int result = _original_func(context);
+
+    if (mask & AERON_CMD_IN)
+    {
+        (*context)->to_driver_interceptor_func = aeron_driver_agent_conductor_to_driver_interceptor;
+    }
+
+    if (mask & AERON_CMD_OUT)
+    {
+        (*context)->to_client_interceptor_func = aeron_driver_agent_conductor_to_client_interceptor;
+    }
+
+    return result;
 }
 
 static const char *dissect_msg_type_id(int32_t id)
@@ -206,7 +227,7 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
         {
             aeron_subscription_command_t *command = (aeron_subscription_command_t *)message;
 
-            const char *channel = (const char *)message + sizeof(aeron_publication_command_t);
+            const char *channel = (const char *)message + sizeof(aeron_subscription_command_t);
             snprintf(buffer, sizeof(buffer) - 1, "ADD_SUBSCRIPTION %d %*s [%" PRId64 "][%" PRId64 ":%" PRId64 "]",
                 command->stream_id,
                 command->channel_length,
@@ -349,7 +370,10 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
                 "[%s] %s %s\n",
                 dissect_timestamp(hdr->time_ms),
                 dissect_msg_type_id(msg_type_id),
-                dissect_cmd_out(hdr->cmd_id, message, length));
+                dissect_cmd_out(
+                    hdr->cmd_id,
+                    (const char *)message + sizeof(aeron_driver_agent_cmd_log_header_t),
+                    length - sizeof(aeron_driver_agent_cmd_log_header_t)));
             break;
         }
 
@@ -361,7 +385,10 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
                 "[%s] %s %s\n",
                 dissect_timestamp(hdr->time_ms),
                 dissect_msg_type_id(msg_type_id),
-                dissect_cmd_in(hdr->cmd_id, message, length));
+                dissect_cmd_in(
+                    hdr->cmd_id,
+                    (const char *)message + sizeof(aeron_driver_agent_cmd_log_header_t),
+                    length - sizeof(aeron_driver_agent_cmd_log_header_t)));
             break;
         }
 

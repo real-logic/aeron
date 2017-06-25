@@ -23,6 +23,7 @@
 #include "util/aeron_fileutil.h"
 #include "concurrent/aeron_spsc_concurrent_array_queue.h"
 #include "concurrent/aeron_mpsc_concurrent_array_queue.h"
+#include "concurrent/aeron_mpsc_rb.h"
 #include "aeron_flow_control.h"
 
 #define AERON_CNC_FILE "cnc.dat"
@@ -47,9 +48,15 @@ aeron_cnc_metadata_t;
 
 #define AERON_COMMAND_QUEUE_CAPACITY (256)
 
+typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
+
 typedef struct aeron_driver_conductor_proxy_stct aeron_driver_conductor_proxy_t;
 typedef struct aeron_driver_sender_proxy_stct aeron_driver_sender_proxy_t;
 typedef struct aeron_driver_receiver_proxy_stct aeron_driver_receiver_proxy_t;
+
+typedef aeron_rb_handler_t aeron_driver_conductor_to_driver_interceptor_func_t;
+typedef void (*aeron_driver_conductor_to_client_interceptor_func_t)
+    (aeron_driver_conductor_t *conductor, int32_t msg_type_id, const void *message, size_t length);
 
 typedef enum aeron_threading_mode_enum
 {
@@ -122,6 +129,9 @@ typedef struct aeron_driver_context_stct
     aeron_driver_conductor_proxy_t *conductor_proxy;
     aeron_driver_sender_proxy_t *sender_proxy;
     aeron_driver_receiver_proxy_t *receiver_proxy;
+
+    aeron_driver_conductor_to_driver_interceptor_func_t to_driver_interceptor_func;
+    aeron_driver_conductor_to_client_interceptor_func_t to_client_interceptor_func;
 }
 aeron_driver_context_t;
 

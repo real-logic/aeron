@@ -122,10 +122,13 @@ SET(HEADERS
     collections/aeron_str_to_ptr_hash_map.h)
 
 set(AGENT_SOURCE
-    agent/aeron_driver_agent.c)
+    agent/aeron_driver_agent.c
+    concurrent/aeron_mpsc_rb.c
+    concurrent/aeron_atomic.c)
 
 set(AGENT_HEADERS
-    agent/aeron_driver_agent.h)
+    agent/aeron_driver_agent.h
+    concurrent/aeron_mpsc_rb.h)
 
 add_library(aeron_driver_agent SHARED ${AGENT_SOURCE} ${AGENT_HEADERS})
 
@@ -153,7 +156,6 @@ target_link_libraries(
 
 target_link_libraries(
     aeron_driver_agent
-    aeron_driver
     ${CMAKE_DL_LIBS}
     ${AERON_LIB_BSD_LIBS}
     ${CMAKE_THREAD_LIBS_INIT})

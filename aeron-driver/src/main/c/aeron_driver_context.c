@@ -127,6 +127,16 @@ uint64_t aeron_config_parse_uint64(const char *str, uint64_t def, uint64_t min, 
     return result;
 }
 
+static void aeron_driver_conductor_to_driver_interceptor_null(
+    int32_t msg_type_id, const void *message, size_t length, void *clientd)
+{
+}
+
+static void aeron_driver_conductor_to_client_interceptor_null(
+    aeron_driver_conductor_t *conductor, int32_t msg_type_id, const void *message, size_t length)
+{
+}
+
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
     aeron_driver_context_t *_context = NULL;
@@ -397,6 +407,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->usable_fs_space_func = aeron_usable_fs_space;
     _context->map_raw_log_func = aeron_map_raw_log;
     _context->map_raw_log_close_func = aeron_map_raw_log_close;
+
+    _context->to_driver_interceptor_func = aeron_driver_conductor_to_driver_interceptor_null;
+    _context->to_client_interceptor_func = aeron_driver_conductor_to_client_interceptor_null;
 
     *context = _context;
     return 0;

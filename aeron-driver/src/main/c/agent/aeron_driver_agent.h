@@ -43,13 +43,11 @@ typedef struct aeron_driver_agent_frame_log_header_stct
 }
 aeron_driver_agent_frame_log_header_t;
 
-typedef void (*aeron_driver_conductor_on_command_t)(int32_t, const void *, size_t, void *);
-typedef void (*aeron_driver_conductor_client_transmit_t)(aeron_driver_conductor_t *, int32_t, const void *, size_t);
+typedef int (*aeron_driver_context_init_t)(aeron_driver_context_t **);
 
 void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, size_t length, void *clientd);
 
-/* TODO: hook aeron_driver_context_init to do initial hooks (event log, etc.) under lock */
+/* TODO: hook recvmsg, recvmmsg, to do FRAME_IN, FRAME_OUT */
 /* TODO: hook aeron_driver_init to display options, etc. for instance. */
-/* TODO: hook aeron_set_err to display setting an error */
 
 #endif //AERON_AERON_DRIVER_AGENT_H

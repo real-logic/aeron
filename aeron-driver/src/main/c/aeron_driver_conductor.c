@@ -418,6 +418,7 @@ void aeron_driver_conductor_client_transmit(
     const void *msg,
     size_t length)
 {
+    conductor->context->to_client_interceptor_func(conductor, msg_type_id, msg, length);
     aeron_broadcast_transmitter_transmit(&conductor->to_clients, msg_type_id, msg, length);
 }
 
@@ -584,6 +585,8 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
     int64_t correlation_id = 0;
     int result = 0;
+
+    conductor->context->to_driver_interceptor_func(msg_type_id, message, length, clientd);
 
     char error_message[AERON_MAX_PATH] = "\0";
     char *error_description = "generic error";

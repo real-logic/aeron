@@ -78,4 +78,7 @@ int64_t aeron_epochclock();
 typedef void (*aeron_log_func_t)(const char *);
 bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, aeron_log_func_t log_func);
 
+int aeron_errcode();
+const char *aeron_errmsg();
+
 #endif //AERON_AERONMD_H

@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <math.h>
 #include <limits.h>
+#include "util/aeron_error.h"
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_fileutil.h"
 #include "aeron_driver_context.h"
@@ -143,7 +144,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     if (NULL == context)
     {
-        /* TODO: EINVAL */
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_driver_context_init(NULL): %s", strerror(EINVAL));
         return -1;
     }
 
@@ -419,7 +421,8 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
 {
     if (NULL == context)
     {
-        /* TODO: EINVAL */
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_driver_context_close(NULL): %s", strerror(EINVAL));
         return -1;
     }
 
@@ -440,8 +443,8 @@ static int unlink_func(const char *path, const struct stat *sb, int type_flag, s
 {
     if (remove(path) != 0)
     {
-        /* TODO: change to normal error handling */
-        perror(path);
+        int errcode = errno;
+        aeron_set_err(errcode, "could not remove %s: %s", path, strerror(errcode));
     }
 
     return 0; /* just continue */
@@ -514,7 +517,6 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, a
         snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_CNC_FILE);
         if (aeron_map_existing_file(&cnc_map, buffer) < 0)
         {
-            /* TODO: EINVAL? or ESTATE? */
             snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to mmap CnC file");
             log_func(buffer);
             return false;
@@ -546,11 +548,14 @@ int aeron_driver_context_set(aeron_driver_context_t *context, const char *settin
 {
     if (NULL == setting || NULL == value)
     {
-        /* TODO: EINVAL */
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_driver_context_set: %s", strerror(EINVAL));
         return -1;
     }
 
     /* TODO: */
 
+    errno = ENOTSUP;
+    aeron_set_err(ENOTSUP, "aeron_driver_context_set: %s", strerror(ENOTSUP));
     return -1;
 }

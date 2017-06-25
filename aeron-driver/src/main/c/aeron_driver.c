@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <stdlib.h>
+#include "util/aeron_error.h"
 #include "aeronmd.h"
 #include "aeron_alloc.h"
 #include "util/aeron_strutil.h"
@@ -170,7 +171,6 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
             snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_CNC_FILE);
             if (aeron_map_existing_file(&cnc_mmap, buffer) < 0)
             {
-                /* TODO: EINVAL? or ESTATE? */
                 snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to mmap CnC file");
                 log_func(buffer);
                 return -1;
@@ -182,7 +182,6 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
             if (aeron_is_driver_active_with_cnc(
                 &cnc_mmap, driver->context->driver_timeout_ms, aeron_epochclock(), log_func))
             {
-                /* TODO: EINVAL? or ESTATE? */
                 aeron_unmap(&cnc_mmap);
                 return -1;
             }
@@ -201,19 +200,24 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
 
     if (mkdir(driver->context->aeron_dir, S_IRWXU) != 0)
     {
-        /* TODO: report error */
+        int errcode = errno;
+        aeron_set_err(errcode, "mkdir %s: %s", driver->context->aeron_dir, strerror(errcode));
         return -1;
     }
 
     snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_PUBLICATIONS_DIR);
     if (mkdir(buffer, S_IRWXU) != 0)
     {
+        int errcode = errno;
+        aeron_set_err(errcode, "mkdir %s: %s", buffer, strerror(errcode));
         return -1;
     }
 
     snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_IMAGES_DIR);
     if (mkdir(buffer, S_IRWXU) != 0)
     {
+        int errcode = errno;
+        aeron_set_err(errcode, "mkdir %s: %s", buffer, strerror(errcode));
         return -1;
     }
 
@@ -304,7 +308,8 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     if (NULL == driver || NULL == context)
     {
-        /* TODO: EINVAL */
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_driver_init: %s", strerror(EINVAL));
         return -1;
     }
 
@@ -446,7 +451,8 @@ int aeron_driver_start(aeron_driver_t *driver, bool manual_main_loop)
 {
     if (NULL == driver)
     {
-        /* TODO: EINVAL */
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_driver_start: %s", strerror(EINVAL));
         return -1;
     }
 
@@ -480,7 +486,8 @@ int aeron_driver_main_do_work(aeron_driver_t *driver)
 {
     if (NULL == driver)
     {
-        /* TODO: EINVAL */
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_driver_main_do_work: %s", strerror(EINVAL));
         return -1;
     }
 
@@ -492,7 +499,8 @@ void aeron_driver_main_idle_strategy(aeron_driver_t *driver, int work_count)
 {
     if (NULL == driver)
     {
-        /* TODO: EINVAL */
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_driver_main_idle_strategy: %s", strerror(EINVAL));
         return;
     }
 
@@ -503,7 +511,8 @@ int aeron_driver_close(aeron_driver_t *driver)
 {
     if (NULL == driver)
     {
-        /* TODO: EINVAL */
+        errno = EINVAL;
+        aeron_set_err(EINVAL, "aeron_driver_close: %s", strerror(EINVAL));
         return -1;
     }
 

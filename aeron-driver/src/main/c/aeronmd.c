@@ -45,16 +45,19 @@ int main(int argc, char **argv)
 
     if (aeron_driver_context_init(&context) < 0)
     {
+        fprintf(stderr, "ERROR: context init (%d) %s\n", aeron_errcode(), aeron_errmsg());
         goto cleanup;
     }
 
     if (aeron_driver_init(&driver, context) < 0)
     {
+        fprintf(stderr, "ERROR: driver init (%d) %s\n", aeron_errcode(), aeron_errmsg());
         goto cleanup;
     }
 
     if (aeron_driver_start(driver, true) < 0)
     {
+        fprintf(stderr, "ERROR: driver start (%d) %s\n", aeron_errcode(), aeron_errmsg());
         goto cleanup;
     }
 

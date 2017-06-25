@@ -32,6 +32,7 @@ static pthread_once_t agent_is_initialized = PTHREAD_ONCE_INIT;
 #include <unistd.h>
 #include <inttypes.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 #include "agent/aeron_driver_agent.h"
 #include "aeron_driver_context.h"
 
@@ -497,6 +498,130 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
     return buffer;
 }
 
+static const char *dissect_sockaddr(const struct sockaddr *addr, size_t sockaddr_len)
+{
+    static char addr_buffer[128], buffer[256];
+    unsigned short port = 0;
+
+    if (AF_INET == addr->sa_family)
+    {
+        struct sockaddr_in *addr4 = (struct sockaddr_in *)addr;
+
+        inet_ntop(AF_INET, &addr4->sin_addr, addr_buffer, sizeof(addr_buffer));
+        port = ntohs(addr4->sin_port);
+    }
+    else if (AF_INET6 == addr->sa_family)
+    {
+        struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)addr;
+
+        inet_ntop(AF_INET6, &addr6->sin6_addr, addr_buffer, sizeof(addr_buffer));
+        port = ntohs(addr6->sin6_port);
+    }
+    else
+    {
+        snprintf(addr_buffer, sizeof(addr_buffer) - 1, "%s", "unknown");
+    }
+
+    snprintf(buffer, sizeof(buffer) - 1, "%s.%d", addr_buffer, port);
+
+    return buffer;
+}
+
+static const char *dissect_frame(const void *message, size_t length)
+{
+    static char buffer[256];
+    aeron_frame_header_t *hdr = (aeron_frame_header_t *)message;
+
+    buffer[0] = '\0';
+    switch (hdr->type)
+    {
+        case AERON_HDR_TYPE_DATA:
+        case AERON_HDR_TYPE_PAD:
+        {
+            aeron_data_header_t *data = (aeron_data_header_t *)message;
+
+            snprintf(buffer, sizeof(buffer) - 1, "%s 0x%x len %d %d:%d:%d @%x",
+                (hdr->type == AERON_HDR_TYPE_DATA) ? "DATA" : "PAD",
+                hdr->flags,
+                hdr->frame_length,
+                data->session_id,
+                data->stream_id,
+                data->term_id,
+                data->term_offset);
+            break;
+        }
+
+        case AERON_HDR_TYPE_SM:
+        {
+            aeron_status_message_header_t *sm = (aeron_status_message_header_t *)message;
+
+            snprintf(buffer, sizeof(buffer) - 1, "SM 0x%x len %d %d:%d:%d @%x %d %" PRId64,
+                hdr->flags,
+                hdr->frame_length,
+                sm->session_id,
+                sm->stream_id,
+                sm->consumption_term_id,
+                sm->consumption_term_offset,
+                sm->receiver_window,
+                sm->receiver_id);
+            break;
+        }
+
+        case AERON_HDR_TYPE_NAK:
+        {
+            aeron_nak_header_t *nak = (aeron_nak_header_t *)message;
+
+            snprintf(buffer, sizeof(buffer) - 1, "NAK 0x%x len %d %d:%d:%d @%x %d",
+                hdr->flags,
+                hdr->frame_length,
+                nak->session_id,
+                nak->stream_id,
+                nak->term_id,
+                nak->term_offset,
+                nak->length);
+            break;
+        }
+
+        case AERON_HDR_TYPE_SETUP:
+        {
+            aeron_setup_header_t *setup = (aeron_setup_header_t *)message;
+
+            snprintf(buffer, sizeof(buffer) - 1, "SETUP 0x%x len %d %d:%d:%d %d @%x %d MTU %d TTL %d",
+                hdr->flags,
+                hdr->frame_length,
+                setup->session_id,
+                setup->stream_id,
+                setup->active_term_id,
+                setup->initial_term_id,
+                setup->term_offset,
+                setup->term_length,
+                setup->mtu,
+                setup->ttl);
+            break;
+        }
+
+        case AERON_HDR_TYPE_RTTM:
+        {
+            aeron_rttm_header_t *rttm = (aeron_rttm_header_t *)message;
+
+            snprintf(buffer, sizeof(buffer) - 1, "RTT 0x%x len %d %d:%d %" PRId64 " %" PRId64 " %" PRId64,
+                hdr->flags,
+                hdr->frame_length,
+                rttm->session_id,
+                rttm->stream_id,
+                rttm->echo_timestamp,
+                rttm->reception_delta,
+                rttm->receiver_id);
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    return buffer;
+}
+
 void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, size_t length, void *clientd)
 {
     switch (msg_type_id)
@@ -534,6 +659,18 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
         case AERON_FRAME_IN:
         case AERON_FRAME_OUT:
         {
+            aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)message;
+            const struct sockaddr *addr =
+                (const struct sockaddr *)((const char *)message + sizeof(aeron_driver_agent_frame_log_header_t));
+            const char *frame = (const char *)message + sizeof(aeron_driver_agent_frame_log_header_t) + hdr->sockaddr_len;
+
+            printf(
+                "[%s] [%d] %s %s: %s\n",
+                dissect_timestamp(hdr->time_ms),
+                (int)hdr->message_len,
+                (msg_type_id == AERON_FRAME_IN) ? "FRAME_IN from " : "FRAME_OUT to ",
+                dissect_sockaddr(addr, (size_t)hdr->sockaddr_len),
+                dissect_frame(frame, hdr->message_len));
             break;
         }
 

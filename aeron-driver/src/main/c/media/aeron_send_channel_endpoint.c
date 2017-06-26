@@ -54,8 +54,8 @@ int aeron_send_channel_endpoint_create(
 
     if (aeron_udp_channel_transport_init(
         &_endpoint->transport,
-        &channel->remote_control,
         &channel->local_control,
+        &channel->remote_control,
         channel->interface_index,
         (0 != channel->multicast_ttl) ? channel->multicast_ttl : context->multicast_ttl,
         context->socket_rcvbuf,

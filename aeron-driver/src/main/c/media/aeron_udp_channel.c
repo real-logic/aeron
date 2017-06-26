@@ -200,6 +200,8 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
 
     strncpy(_channel->original_uri, uri, sizeof(_channel->original_uri));
     _channel->uri_length = uri_length;
+    _channel->explicit_control = false;
+    _channel->multicast = false;
 
     if (_channel->uri.type != AERON_URI_UDP)
     {
@@ -256,6 +258,7 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
         aeron_uri_udp_canonicalize(
             _channel->canonical_form, sizeof(_channel->canonical_form), &interface_addr, &endpoint_addr);
         _channel->canonical_length = strlen(_channel->canonical_form);
+        _channel->multicast = true;
     }
     else if (NULL != _channel->uri.params.udp.control_key)
     {
@@ -268,6 +271,7 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
         aeron_uri_udp_canonicalize(
             _channel->canonical_form, sizeof(_channel->canonical_form), &explicit_control_addr, &endpoint_addr);
         _channel->canonical_length = strlen(_channel->canonical_form);
+        _channel->explicit_control = true;
     }
     else
     {

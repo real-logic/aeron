@@ -86,3 +86,63 @@ void aeron_driver_sender_proxy_remove_endpoint(
         aeron_driver_sender_proxy_offer(sender_proxy, cmd);
     }
 }
+
+void aeron_driver_sender_proxy_add_publication(
+    aeron_driver_sender_proxy_t *sender_proxy, aeron_network_publication_t *publication)
+{
+    if (AERON_THREADING_MODE_SHARED == sender_proxy->threading_mode)
+    {
+        aeron_command_base_t cmd =
+            {
+                .func = aeron_driver_sender_on_add_publication,
+                .item = publication
+            };
+
+        aeron_driver_sender_on_add_publication(sender_proxy->sender, &cmd);
+    }
+    else
+    {
+        aeron_command_base_t *cmd;
+
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        {
+            aeron_counter_ordered_increment(sender_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->func = aeron_driver_sender_on_add_publication;
+        cmd->item = publication;
+
+        aeron_driver_sender_proxy_offer(sender_proxy, cmd);
+    }
+}
+
+void aeron_driver_sender_proxy_remove_publication(
+    aeron_driver_sender_proxy_t *sender_proxy, aeron_network_publication_t *publication)
+{
+    if (AERON_THREADING_MODE_SHARED == sender_proxy->threading_mode)
+    {
+        aeron_command_base_t cmd =
+            {
+                .func = aeron_driver_sender_on_remove_publication,
+                .item = publication
+            };
+
+        aeron_driver_sender_on_remove_publication(sender_proxy->sender, &cmd);
+    }
+    else
+    {
+        aeron_command_base_t *cmd;
+
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        {
+            aeron_counter_ordered_increment(sender_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->func = aeron_driver_sender_on_remove_publication;
+        cmd->item = publication;
+
+        aeron_driver_sender_proxy_offer(sender_proxy, cmd);
+    }
+}

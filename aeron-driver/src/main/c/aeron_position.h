@@ -38,7 +38,27 @@ int32_t aeron_channel_endpoint_status_allocate(
 #define AERON_COUNTER_PUBLISHER_LIMIT_NAME "pub-lmt"
 #define AERON_COUNTER_PUBLISHER_LIMIT_TYPE_ID (1)
 
+#define AERON_COUNTER_SENDER_POSITION_NAME "snd-pos"
+#define AERON_COUNTER_SENDER_POSITION_TYPE_ID (2)
+
+#define AERON_COUNTER_SENDER_LIMIT_NAME "snd-lmt"
+#define AERON_COUNTER_SENDER_LIMIT_TYPE_ID (9)
+
 int32_t aeron_counter_publisher_limit_allocate(
+    aeron_counters_manager_t *counters_manager,
+    int64_t registration_id,
+    int32_t session_id,
+    int32_t stream_id,
+    const char *channel);
+
+int32_t aeron_counter_sender_position_allocate(
+    aeron_counters_manager_t *counters_manager,
+    int64_t registration_id,
+    int32_t session_id,
+    int32_t stream_id,
+    const char *channel);
+
+int32_t aeron_counter_sender_limit_allocate(
     aeron_counters_manager_t *counters_manager,
     int64_t registration_id,
     int32_t session_id,

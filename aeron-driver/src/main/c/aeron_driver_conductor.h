@@ -85,6 +85,12 @@ typedef struct aeron_ipc_publication_entry_stct
 }
 aeron_ipc_publication_entry_t;
 
+typedef struct aeron_network_publication_entry_stct
+{
+    aeron_network_publication_t *publication;
+}
+aeron_network_publication_entry_t;
+
 typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
 
 typedef struct aeron_driver_conductor_stct
@@ -129,6 +135,17 @@ typedef struct aeron_driver_conductor_stct
         void (*delete_func)(aeron_driver_conductor_t *, aeron_ipc_publication_entry_t *);
     }
     ipc_publications;
+
+    struct network_publication_stct
+    {
+        aeron_network_publication_entry_t *array;
+        size_t length;
+        size_t capacity;
+        void (*on_time_event)(aeron_driver_conductor_t *, aeron_network_publication_entry_t *, int64_t, int64_t);
+        bool (*has_reached_end_of_life)(aeron_driver_conductor_t *, aeron_network_publication_entry_t *);
+        void (*delete_func)(aeron_driver_conductor_t *, aeron_network_publication_entry_t *);
+    }
+    network_publications;
 
     int64_t *errors_counter;
     int64_t *client_keep_alives_counter;

@@ -191,7 +191,7 @@ void aeron_driver_agent_log_frame(
     memcpy(ptr, msghdr->msg_iov[0].iov_base, copy_length);
     length += copy_length;
 
-    aeron_mpsc_rb_write(&logging_mpsc_rb, msg_type_id, buffer, (size_t)copy_length);
+    aeron_mpsc_rb_write(&logging_mpsc_rb, msg_type_id, buffer, (size_t)length);
 }
 
 typedef ssize_t (*aeron_driver_agent_sendmsg_func_t)(int socket, const struct msghdr *message, int flags);
@@ -216,7 +216,7 @@ ssize_t sendmsg(int socket, const struct msghdr *message, int flags)
 
     ssize_t result = _original_func(socket, message, flags);
     aeron_driver_agent_log_frame(
-        AERON_CMD_OUT, socket, message, flags, (int)result, (int32_t)message->msg_iov[0].iov_len);
+        AERON_FRAME_OUT, socket, message, flags, (int)result, (int32_t)message->msg_iov[0].iov_len);
     return result;
 }
 
@@ -238,7 +238,12 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
     (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
 
     ssize_t result = _original_func(socket, message, flags);
-    aeron_driver_agent_log_frame(AERON_CMD_IN, socket, message, flags, (int)result, (int32_t)result);
+
+    if (result > 0)
+    {
+        aeron_driver_agent_log_frame(AERON_FRAME_IN, socket, message, flags, (int) result, (int32_t) result);
+    }
+
     return result;
 }
 
@@ -270,7 +275,7 @@ int sendmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int
     for (size_t i = 0; i < result; i++)
     {
         aeron_driver_agent_log_frame(
-            AERON_CMD_OUT, sockfd, msgvec[i].msg_hdr, flags, msgvec[i].msg_len), msg[i].msg_hdr->msg_iov[0].iov_len;
+            AERON_FRAME_OUT, sockfd, msgvec[i].msg_hdr, flags, msgvec[i].msg_len), msg[i].msg_hdr->msg_iov[0].iov_len;
     }
 
     return result
@@ -298,7 +303,7 @@ int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int
     for (size_t i = 0; i < result; i++)
     {
         aeron_driver_agent_log_frame(
-            AERON_CMD_OUT, sockfd, msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msgvec[i].msg_len);
+            AERON_FRAME_IN, sockfd, msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msgvec[i].msg_len);
     }
 
     return result
@@ -674,7 +679,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
                 dissect_timestamp(hdr->time_ms),
                 hdr->result,
                 (int)hdr->message_len,
-                (msg_type_id == AERON_FRAME_IN) ? "FRAME_IN from " : "FRAME_OUT to ",
+                (msg_type_id == AERON_FRAME_IN) ? "FRAME_IN from" : "FRAME_OUT to",
                 dissect_sockaddr(addr, (size_t)hdr->sockaddr_len),
                 dissect_frame(frame, (size_t)hdr->message_len));
             break;

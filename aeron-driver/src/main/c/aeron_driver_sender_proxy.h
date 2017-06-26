@@ -37,4 +37,10 @@ void aeron_driver_sender_proxy_add_endpoint(
 void aeron_driver_sender_proxy_remove_endpoint(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint);
 
+void aeron_driver_sender_proxy_add_publication(
+    aeron_driver_sender_proxy_t *sender_proxy, aeron_network_publication_t *publication);
+
+void aeron_driver_sender_proxy_remove_publication(
+    aeron_driver_sender_proxy_t *sender_proxy, aeron_network_publication_t *publication);
+
 #endif //AERON_AERON_DRIVER_SENDER_PROXY_H

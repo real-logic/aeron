@@ -118,6 +118,42 @@ int32_t aeron_counter_subscription_position_allocate(
         buffer);
 }
 
+int32_t aeron_counter_sender_position_allocate(
+    aeron_counters_manager_t *counters_manager,
+    int64_t registration_id,
+    int32_t session_id,
+    int32_t stream_id,
+    const char *channel)
+{
+    return aeron_stream_position_counter_allocate(
+        counters_manager,
+        AERON_COUNTER_SENDER_POSITION_NAME,
+        AERON_COUNTER_SENDER_POSITION_TYPE_ID,
+        registration_id,
+        session_id,
+        stream_id,
+        channel,
+        "");
+}
+
+int32_t aeron_counter_sender_limit_allocate(
+    aeron_counters_manager_t *counters_manager,
+    int64_t registration_id,
+    int32_t session_id,
+    int32_t stream_id,
+    const char *channel)
+{
+    return aeron_stream_position_counter_allocate(
+        counters_manager,
+        AERON_COUNTER_SENDER_LIMIT_NAME,
+        AERON_COUNTER_SENDER_LIMIT_TYPE_ID,
+        registration_id,
+        session_id,
+        stream_id,
+        channel,
+        "");
+}
+
 static void aeron_channel_endpopint_status_key_func(uint8_t *key, size_t key_max_length, void *clientd)
 {
     aeron_channel_endpoint_status_key_layout_t *layout = (aeron_channel_endpoint_status_key_layout_t *)clientd;

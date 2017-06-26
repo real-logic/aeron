@@ -165,7 +165,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     return result;
 }
 
-void aeron_driver_agent_log_frame(int32_t msg_type_id, int sockfd, const struct msghdr *msghdr, int flags, int result)
+void aeron_driver_agent_log_frame(
+    int32_t msg_type_id, int sockfd, const struct msghdr *msghdr, int flags, int result, int32_t message_len)
 {
     uint8_t buffer[MAX_FRAME_LENGTH + sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_in6)];
     aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)buffer;
@@ -174,7 +175,7 @@ void aeron_driver_agent_log_frame(int32_t msg_type_id, int sockfd, const struct 
     hdr->time_ms = aeron_agent_epochclock();
     hdr->result = (int32_t)result;
     hdr->sockaddr_len = msghdr->msg_namelen;
-    hdr->message_len = msghdr->msg_iov[0].iov_len;
+    hdr->message_len = message_len;
 
     if (msghdr->msg_iovlen > 1)
     {
@@ -186,11 +187,11 @@ void aeron_driver_agent_log_frame(int32_t msg_type_id, int sockfd, const struct 
     length += msghdr->msg_namelen;
 
     ptr += msghdr->msg_namelen;
-    size_t copy_length = msghdr->msg_iov[0].iov_len < MAX_FRAME_LENGTH ? msghdr->msg_iov[0].iov_len : MAX_FRAME_LENGTH;
+    int32_t copy_length = message_len < MAX_FRAME_LENGTH ? message_len : MAX_FRAME_LENGTH;
     memcpy(ptr, msghdr->msg_iov[0].iov_base, copy_length);
     length += copy_length;
 
-    aeron_mpsc_rb_write(&logging_mpsc_rb, msg_type_id, buffer, copy_length);
+    aeron_mpsc_rb_write(&logging_mpsc_rb, msg_type_id, buffer, (size_t)copy_length);
 }
 
 typedef ssize_t (*aeron_driver_agent_sendmsg_func_t)(int socket, const struct msghdr *message, int flags);
@@ -214,7 +215,8 @@ ssize_t sendmsg(int socket, const struct msghdr *message, int flags)
     (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
 
     ssize_t result = _original_func(socket, message, flags);
-    aeron_driver_agent_log_frame(AERON_CMD_OUT, socket, message, flags, (int)result);
+    aeron_driver_agent_log_frame(
+        AERON_CMD_OUT, socket, message, flags, (int)result, (int32_t)message->msg_iov[0].iov_len);
     return result;
 }
 
@@ -236,7 +238,7 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
     (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
 
     ssize_t result = _original_func(socket, message, flags);
-    aeron_driver_agent_log_frame(AERON_CMD_IN, socket, message, flags, (int)result);
+    aeron_driver_agent_log_frame(AERON_CMD_IN, socket, message, flags, (int)result, (int32_t)result);
     return result;
 }
 
@@ -267,7 +269,8 @@ int sendmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int
 
     for (size_t i = 0; i < result; i++)
     {
-        aeron_driver_agent_log_frame(AERON_CMD_OUT, sockfd, msgvec[i].msg_hdr, flags, msgvec[i].mdg_len);
+        aeron_driver_agent_log_frame(
+            AERON_CMD_OUT, sockfd, msgvec[i].msg_hdr, flags, msgvec[i].msg_len), msg[i].msg_hdr->msg_iov[0].iov_len;
     }
 
     return result
@@ -294,7 +297,8 @@ int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int
 
     for (size_t i = 0; i < result; i++)
     {
-        aeron_driver_agent_log_frame(AERON_CMD_OUT, sockfd, msgvec[i].msg_hdr, flags, msgvec[i].mdg_len);
+        aeron_driver_agent_log_frame(
+            AERON_CMD_OUT, sockfd, msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msgvec[i].msg_len);
     }
 
     return result
@@ -662,15 +666,17 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)message;
             const struct sockaddr *addr =
                 (const struct sockaddr *)((const char *)message + sizeof(aeron_driver_agent_frame_log_header_t));
-            const char *frame = (const char *)message + sizeof(aeron_driver_agent_frame_log_header_t) + hdr->sockaddr_len;
+            const char *frame =
+                (const char *)message + sizeof(aeron_driver_agent_frame_log_header_t) + hdr->sockaddr_len;
 
             printf(
-                "[%s] [%d] %s %s: %s\n",
+                "[%s] [%d:%d] %s %s: %s\n",
                 dissect_timestamp(hdr->time_ms),
+                hdr->result,
                 (int)hdr->message_len,
                 (msg_type_id == AERON_FRAME_IN) ? "FRAME_IN from " : "FRAME_OUT to ",
                 dissect_sockaddr(addr, (size_t)hdr->sockaddr_len),
-                dissect_frame(frame, hdr->message_len));
+                dissect_frame(frame, (size_t)hdr->message_len));
             break;
         }
 

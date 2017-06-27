@@ -91,6 +91,12 @@ typedef struct aeron_network_publication_entry_stct
 }
 aeron_network_publication_entry_t;
 
+typedef struct aeron_send_channel_endpoint_entry_stct
+{
+    aeron_send_channel_endpoint_t *endpoint;
+}
+aeron_send_channel_endpoint_entry_t;
+
 typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
 
 typedef struct aeron_driver_conductor_stct
@@ -147,6 +153,17 @@ typedef struct aeron_driver_conductor_stct
     }
     network_publications;
 
+    struct send_channel_endpoint_stct
+    {
+        aeron_send_channel_endpoint_entry_t *array;
+        size_t length;
+        size_t capacity;
+        void (*on_time_event)(aeron_driver_conductor_t *, aeron_send_channel_endpoint_entry_t *, int64_t, int64_t);
+        bool (*has_reached_end_of_life)(aeron_driver_conductor_t *, aeron_send_channel_endpoint_entry_t *);
+        void (*delete_func)(aeron_driver_conductor_t *, aeron_send_channel_endpoint_entry_t *);
+    }
+    send_channel_endpoints;
+
     int64_t *errors_counter;
     int64_t *client_keep_alives_counter;
 
@@ -176,6 +193,12 @@ void aeron_network_publication_entry_on_time_event(
 bool aeron_network_publication_entry_has_reached_end_of_life(
     aeron_driver_conductor_t *conductor, aeron_network_publication_entry_t *entry);
 void aeron_network_publication_entry_delete(aeron_driver_conductor_t *conductor, aeron_network_publication_entry_t *);
+
+void aeron_send_channel_endpoint_entry_on_time_event(
+    aeron_driver_conductor_t *conductor, aeron_send_channel_endpoint_entry_t *entry, int64_t now_ns, int64_t now_ms);
+bool aeron_send_channel_endpoint_entry_has_reached_end_of_life(
+    aeron_driver_conductor_t *conductor, aeron_send_channel_endpoint_entry_t *entry);
+void aeron_send_channel_endpoint_entry_delete(aeron_driver_conductor_t *conductor, aeron_send_channel_endpoint_entry_t *);
 
 int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *context);
 

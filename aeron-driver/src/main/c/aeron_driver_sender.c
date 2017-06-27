@@ -193,6 +193,8 @@ void aeron_driver_sender_on_remove_endpoint(void *clientd, void *command)
     {
         AERON_DRIVER_SENDER_ERROR(sender, "sender on_remove_endpoint: %s", aeron_errmsg());
     }
+
+    aeron_send_channel_endpoint_sender_release(endpoint);
 }
 
 void aeron_driver_sender_on_add_publication(void *clientd, void *command)

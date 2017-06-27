@@ -48,7 +48,12 @@ int aeron_send_channel_endpoint_create(
     {
         return -1;
     }
+    _endpoint->conductor_fields.refcnt = 0;
     _endpoint->conductor_fields.udp_channel = channel;
+    _endpoint->conductor_fields.managed_resource.incref = aeron_send_channel_endpoint_incref;
+    _endpoint->conductor_fields.managed_resource.decref = aeron_send_channel_endpoint_decref;
+    _endpoint->conductor_fields.managed_resource.clientd = _endpoint;
+    _endpoint->conductor_fields.managed_resource.registration_id = -1;
     _endpoint->transport.fd = -1;
     _endpoint->channel_status.counter_id = -1;
 
@@ -73,6 +78,7 @@ int aeron_send_channel_endpoint_create(
     }
 
     _endpoint->transport.dispatch_clientd = _endpoint;
+    _endpoint->has_sender_released = false;
 
     _endpoint->channel_status.counter_id = status_indicator->counter_id;
     _endpoint->channel_status.value_addr = status_indicator->value_addr;
@@ -93,6 +99,19 @@ int aeron_send_channel_endpoint_delete(aeron_counters_manager_t *counters_manage
     aeron_udp_channel_transport_close(&channel->transport);
     aeron_free(channel);
     return 0;
+}
+
+void aeron_send_channel_endpoint_incref(void *clientd)
+{
+    aeron_send_channel_endpoint_t *endpoint = (aeron_send_channel_endpoint_t *)clientd;
+
+    endpoint->conductor_fields.refcnt++;
+}
+
+void aeron_send_channel_endpoint_decref(void *clientd)
+{
+    aeron_send_channel_endpoint_t *endpoint = (aeron_send_channel_endpoint_t *)clientd;
+    --endpoint->conductor_fields.refcnt;
 }
 
 int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen)
@@ -244,3 +263,6 @@ void aeron_send_channel_endpoint_on_rttm(
         aeron_network_publication_on_rttm(publication, buffer, length, addr);
     }
 }
+
+extern void aeron_send_channel_endpoint_sender_release(aeron_send_channel_endpoint_t *endpoint);
+extern bool aeron_send_channel_endpoint_has_sender_released(aeron_send_channel_endpoint_t *endpoint);

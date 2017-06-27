@@ -40,6 +40,7 @@ typedef struct aeron_send_channel_endpoint_stct
     aeron_udp_channel_transport_t transport;
     aeron_int64_to_ptr_hash_map_t publication_dispatch_map;
     aeron_counter_t channel_status;
+    bool has_sender_released;
 }
 aeron_send_channel_endpoint_t;
 
@@ -50,6 +51,9 @@ int aeron_send_channel_endpoint_create(
     aeron_driver_context_t *context);
 
 int aeron_send_channel_endpoint_delete(aeron_counters_manager_t *counters_manager, aeron_send_channel_endpoint_t *channel);
+
+void aeron_send_channel_endpoint_incref(void *clientd);
+void aeron_send_channel_endpoint_decref(void *clientd);
 
 int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen);
 int aeron_send_channel_sendmsg(aeron_send_channel_endpoint_t *endpoint, struct msghdr *msghdr);
@@ -71,5 +75,18 @@ void aeron_send_channel_endpoint_on_status_message(
 
 void aeron_send_channel_endpoint_on_rttm(
     aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
+
+inline void aeron_send_channel_endpoint_sender_release(aeron_send_channel_endpoint_t *endpoint)
+{
+    AERON_PUT_ORDERED(endpoint->has_sender_released, true);
+}
+
+inline bool aeron_send_channel_endpoint_has_sender_released(aeron_send_channel_endpoint_t *endpoint)
+{
+    bool has_sender_released;
+    AERON_GET_VOLATILE(has_sender_released, endpoint->has_sender_released);
+
+    return has_sender_released;
+}
 
 #endif //AERON_AERON_SEND_CHANNEL_ENDPOINT_H

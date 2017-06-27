@@ -108,6 +108,13 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->network_publications.has_reached_end_of_life = aeron_network_publication_entry_has_reached_end_of_life;
     conductor->network_publications.delete_func = aeron_network_publication_entry_delete;
 
+    conductor->send_channel_endpoints.array = NULL;
+    conductor->send_channel_endpoints.length = 0;
+    conductor->send_channel_endpoints.capacity = 0;
+    conductor->send_channel_endpoints.on_time_event = aeron_send_channel_endpoint_entry_on_time_event;
+    conductor->send_channel_endpoints.has_reached_end_of_life = aeron_send_channel_endpoint_entry_has_reached_end_of_life;
+    conductor->send_channel_endpoints.delete_func = aeron_send_channel_endpoint_entry_delete;
+
     conductor->ipc_subscriptions.array = NULL;
     conductor->ipc_subscriptions.length = 0;
     conductor->ipc_subscriptions.capacity = 0;
@@ -289,17 +296,12 @@ bool aeron_network_publication_entry_has_reached_end_of_life(
 void aeron_network_publication_entry_delete(
     aeron_driver_conductor_t *conductor, aeron_network_publication_entry_t *entry)
 {
-    /* TODO: */
-
-//    for (size_t i = 0, size = conductor->ipc_subscriptions.length; i < size; i++)
-//    {
-//        aeron_subscription_link_t *link = &conductor->ipc_subscriptions.array[i];
-//
-//        aeron_driver_conductor_unlink_subscribeable(link, &entry->publication->conductor_fields.subscribeable);
-//    }
+    aeron_send_channel_endpoint_t *endpoint = entry->publication->endpoint;
 
     aeron_network_publication_close(&conductor->counters_manager, entry->publication);
     entry->publication = NULL;
+
+    endpoint->conductor_fields.managed_resource.decref(endpoint->conductor_fields.managed_resource.clientd);
 }
 
 void aeron_driver_conductor_cleanup_spies(aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication)
@@ -318,8 +320,33 @@ void aeron_driver_conductor_cleanup_network_publication(
     aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication)
 {
     aeron_driver_sender_proxy_remove_publication(conductor->context->sender_proxy, publication);
+}
 
-    /* TODO: clean out send channel endpoint */
+void aeron_send_channel_endpoint_entry_on_time_event(
+    aeron_driver_conductor_t *conductor, aeron_send_channel_endpoint_entry_t *entry, int64_t now_ns, int64_t now_ms)
+{
+    aeron_send_channel_endpoint_t *endpoint = entry->endpoint;
+
+    if (0 == endpoint->conductor_fields.refcnt)
+    {
+        aeron_str_to_ptr_hash_map_remove(
+            &conductor->send_channel_endpoint_by_channel_map,
+            endpoint->conductor_fields.udp_channel->canonical_form,
+            endpoint->conductor_fields.udp_channel->canonical_length);
+        aeron_driver_sender_proxy_remove_endpoint(conductor->context->sender_proxy, endpoint);
+    }
+}
+
+bool aeron_send_channel_endpoint_entry_has_reached_end_of_life(
+    aeron_driver_conductor_t *conductor, aeron_send_channel_endpoint_entry_t *entry)
+{
+    return aeron_send_channel_endpoint_has_sender_released(entry->endpoint);
+}
+
+void aeron_send_channel_endpoint_entry_delete(
+    aeron_driver_conductor_t *conductor, aeron_send_channel_endpoint_entry_t *entry)
+{
+    aeron_send_channel_endpoint_delete(&conductor->counters_manager, entry->endpoint);
 }
 
 #define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(c, l,t,now_ns,now_ms) \
@@ -345,6 +372,8 @@ void aeron_driver_conductor_on_check_managed_resources(
         conductor, conductor->ipc_publications, aeron_ipc_publication_entry_t, now_ns, now_ms);
     AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(
         conductor, conductor->network_publications, aeron_network_publication_entry_t, now_ns, now_ms);
+    AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(
+        conductor, conductor->send_channel_endpoints, aeron_send_channel_endpoint_entry_t, now_ns, now_ms);
 }
 
 aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
@@ -532,6 +561,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                         is_exclusive,
                         &conductor->system_counters) >= 0)
                 {
+                    endpoint->conductor_fields.managed_resource.incref(endpoint->conductor_fields.managed_resource.clientd);
                     aeron_driver_sender_proxy_add_publication(conductor->context->sender_proxy, publication);
 
                     client->publication_links.array[client->publication_links.length++].resource =
@@ -566,6 +596,15 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
     if (NULL == endpoint)
     {
         aeron_counter_t status_indicator;
+        int ensure_capacity_result = 0;
+
+        AERON_ARRAY_ENSURE_CAPACITY(
+            ensure_capacity_result, conductor->send_channel_endpoints, aeron_send_channel_endpoint_entry_t);
+
+        if (ensure_capacity_result < 0)
+        {
+            return NULL;
+        }
 
         status_indicator.counter_id =
             aeron_counter_send_channel_status_allocate(&conductor->counters_manager, channel->original_uri);
@@ -590,6 +629,8 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
         }
 
         aeron_driver_sender_proxy_add_endpoint(conductor->context->sender_proxy, endpoint);
+
+        conductor->send_channel_endpoints.array[conductor->send_channel_endpoints.length++].endpoint = endpoint;
 
         *status_indicator.value_addr = AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE;
     }

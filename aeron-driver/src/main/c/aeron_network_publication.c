@@ -552,7 +552,6 @@ void aeron_network_publication_decref(void *clientd)
     if (0 == ref_count)
     {
         publication->conductor_fields.status = AERON_NETWORK_PUBLICATION_STATUS_DRAINING;
-        publication->endpoint->conductor_fields.refcnt--;
         publication->conductor_fields.managed_resource.time_of_last_status_change = publication->nano_clock();
     }
 }

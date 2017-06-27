@@ -44,7 +44,7 @@ Persisted Format
 =====
 The Archiver is backed by 3 file types, all of which are expected to reside in the __archiveDir__.
 
- -  **Catalog (one per archive):** The catalog contains fixed size (4k) records of recording descriptors. The 
+ -  **Catalog (one per archive):** The catalog contains fixed length (4k) records of recording descriptors. The 
  descriptors can be queried as described above. Each descriptor is 4k aligned, and the __recordingId__
  is a simple sequence, which means lookup is a straight dead reconning operation. See the codec
  fo full descriptor details.

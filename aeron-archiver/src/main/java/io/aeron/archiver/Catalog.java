@@ -78,7 +78,7 @@ class Catalog implements AutoCloseable
             catalogFileChannel = channel;
         }
 
-        sanitizeCatalog();
+        refreshCatalog();
     }
 
     public void close()
@@ -143,15 +143,15 @@ class Catalog implements AutoCloseable
             throw new IllegalArgumentException("buffer must have exactly RECORD_LENGTH remaining to read into");
         }
 
-        final int read = catalogFileChannel.read(buffer, recordingId * RECORD_LENGTH);
-        if (read == 0 || read == -1)
+        final int bytesRead = catalogFileChannel.read(buffer, recordingId * RECORD_LENGTH);
+        if (bytesRead == 0 || bytesRead == -1)
         {
             return false;
         }
 
-        if (read != RECORD_LENGTH)
+        if (bytesRead != RECORD_LENGTH)
         {
-            throw new IllegalStateException("Wrong read size:" + read);
+            throw new IllegalStateException("Wrong read length: " + bytesRead);
         }
 
         return true;
@@ -184,7 +184,7 @@ class Catalog implements AutoCloseable
         return nextRecordingId;
     }
 
-    private void sanitizeCatalog()
+    private void refreshCatalog()
     {
         try
         {
@@ -202,6 +202,7 @@ class Catalog implements AutoCloseable
                 {
                     throw new IllegalStateException();
                 }
+
                 byteBuffer.clear();
                 decoder.wrap(
                     unsafeBuffer,
@@ -209,7 +210,7 @@ class Catalog implements AutoCloseable
                     RecordingDescriptorDecoder.BLOCK_LENGTH,
                     RecordingDescriptorDecoder.SCHEMA_VERSION);
 
-                sanitizeCatalogEntry(decoder, nextRecordingId);
+                refreshCatalogEntry(decoder, nextRecordingId);
                 nextRecordingId++;
                 byteBuffer.clear();
             }
@@ -221,7 +222,7 @@ class Catalog implements AutoCloseable
         }
     }
 
-    private void sanitizeCatalogEntry(
+    private void refreshCatalogEntry(
         final RecordingDescriptorDecoder catalogRecordingDescriptor,
         final long recordingId) throws IOException
     {
@@ -237,22 +238,21 @@ class Catalog implements AutoCloseable
             return;
         }
 
-        // On load from a clean shutdown all catalog entries should have a valid end time. If we see a NULL_TIME we
-        // need to patch up the entry or declare the index unusable
         if (catalogRecordingDescriptor.endTimestamp() == NULL_TIME)
         {
             final File metaFile = new File(archiveDir, recordingMetaFileName(recordingId));
             final RecordingDescriptorDecoder fileRecordingDescriptor = loadRecordingDescriptor(metaFile);
             if (fileRecordingDescriptor.endTimestamp() != NULL_TIME)
             {
-                // metafile has an end time -> it concluded recording, update catalog entry
                 updateRecordingMetaDataInCatalog(recordingId,
                     fileRecordingDescriptor.endPosition(),
                     fileRecordingDescriptor.joinTimestamp(),
                     fileRecordingDescriptor.endTimestamp());
-                return;
             }
-            recoverIncompleteMetaData(recordingId, metaFile, fileRecordingDescriptor);
+            else
+            {
+                recoverIncompleteMetaData(recordingId, metaFile, fileRecordingDescriptor);
+            }
         }
     }
 
@@ -261,17 +261,13 @@ class Catalog implements AutoCloseable
         final File metaFile,
         final RecordingDescriptorDecoder fileRecordingDescriptor) throws IOException
     {
-        // last metadata update failed -> look in the recording files for end position
-        final int maxSegment = findRecordingLastSegment(recordingId);
-
-        // there are no segments
+        final int maxSegment = findLastRecordingSegment(recordingId);
         final long endPosition;
         final long joinTimestamp;
         final long endTimestamp;
 
         if (maxSegment == -1)
         {
-            // no segments found, no data written, update catalog and meta file with the last modified TS
             endPosition = fileRecordingDescriptor.joinPosition();
             joinTimestamp = fileRecordingDescriptor.joinTimestamp();
             endTimestamp = metaFile.lastModified();
@@ -288,14 +284,14 @@ class Catalog implements AutoCloseable
             }
 
             final File segmentFile = new File(archiveDir, recordingDataFileName(recordingId, maxSegment));
-            final ByteBuffer headerBuffer =
-                allocateDirectAligned(DataHeaderFlyweight.HEADER_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
+            final ByteBuffer headerBuffer = allocateDirectAligned(
+                DataHeaderFlyweight.HEADER_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
             final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(headerBuffer);
 
             try (FileChannel segmentFileChannel = FileChannel.open(segmentFile.toPath(), READ))
             {
                 final long joinPosition = fileRecordingDescriptor.joinPosition();
-                // validate initial padding frame in first file
+
                 if (joinPosition != 0 && maxSegment == 0)
                 {
                     validateFirstWritePreamble(
@@ -306,14 +302,11 @@ class Catalog implements AutoCloseable
                         joinPosition);
                 }
 
-                // chase frames to END_OF_DATA/RECORDING
                 endPosition = readToEndPosition(
                     headerBuffer,
                     headerFlyweight,
-                    segmentFileChannel
-                );
+                    segmentFileChannel);
 
-                // correct recording final terminal marker if not found
                 if (headerFlyweight.frameLength() != RecordingWriter.END_OF_RECORDING_INDICATOR)
                 {
                     headerFlyweight.frameLength(RecordingWriter.END_OF_RECORDING_INDICATOR);
@@ -323,8 +316,8 @@ class Catalog implements AutoCloseable
 
             endTimestamp = segmentFile.lastModified();
         }
-        updateRecordingMetaDataInCatalog(recordingId, endPosition, joinTimestamp, endTimestamp);
 
+        updateRecordingMetaDataInCatalog(recordingId, endPosition, joinTimestamp, endTimestamp);
         updateRecordingMetaDataFile(metaFile, endPosition, joinTimestamp, endTimestamp);
     }
 
@@ -366,6 +359,7 @@ class Catalog implements AutoCloseable
                 ". Expected a padding frame as join position is non-zero, but type is:" +
                 headerType);
         }
+
         final int frameLength = headerFlyweight.frameLength();
         if (frameLength != joinPosition)
         {
@@ -381,7 +375,7 @@ class Catalog implements AutoCloseable
         final FileChannel segmentFileChannel) throws IOException
     {
         long endPosition = 0;
-        // first read required before examining the flyweight value
+
         segmentFileChannel.read(headerBuffer, endPosition);
         headerBuffer.clear();
 
@@ -391,10 +385,11 @@ class Catalog implements AutoCloseable
             segmentFileChannel.read(headerBuffer, endPosition);
             headerBuffer.clear();
         }
+
         return endPosition;
     }
 
-    private int findRecordingLastSegment(final long recordingId)
+    private int findLastRecordingSegment(final long recordingId)
     {
         int maxSegment = -1;
         final String[] recordingSegments = ArchiveUtil.listRecordingSegments(archiveDir, recordingId);
@@ -403,6 +398,7 @@ class Catalog implements AutoCloseable
             final int segmentIndex = ArchiveUtil.segmentIndexFromFileName(segmentName);
             maxSegment = Math.max(maxSegment, segmentIndex);
         }
+
         return maxSegment;
     }
 }

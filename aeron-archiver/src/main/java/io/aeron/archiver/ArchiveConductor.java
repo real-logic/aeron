@@ -17,14 +17,19 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.codecs.ControlResponseCode;
+import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Objects;
+
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 abstract class ArchiveConductor extends SessionWorker<Session>
 {
@@ -53,6 +58,9 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final NotificationsProxy notificationsProxy;
     private final int maxConcurrentRecordings;
     private final int maxConcurrentReplays;
+
+    private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, CACHE_LINE_LENGTH);
+    private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer(byteBuffer);
 
     private int replaySessionId;
 
@@ -246,6 +254,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         return new ListRecordingsSession(
             correlationId,
+            byteBuffer,
+            descriptorBuffer,
             controlPublication,
             fromId,
             count,

@@ -17,14 +17,11 @@ package io.aeron.archiver;
 
 import io.aeron.Publication;
 import io.aeron.archiver.codecs.ControlResponseCode;
-import org.agrona.BufferUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 class ListRecordingsSession implements Session
 {
@@ -33,13 +30,13 @@ class ListRecordingsSession implements Session
         INIT, ACTIVE, INACTIVE, CLOSED
     }
 
-    private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, CACHE_LINE_LENGTH);
-    private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer(byteBuffer);
+    private final ByteBuffer byteBuffer;
+    private final UnsafeBuffer descriptorBuffer;
 
     private final Publication controlPublication;
     private final long fromId;
-    private final ControlSession controlSession;
     private final long toId;
+    private final ControlSession controlSession;
     private final Catalog catalog;
     private final ControlSessionProxy proxy;
     private final long correlationId;
@@ -49,6 +46,8 @@ class ListRecordingsSession implements Session
 
     ListRecordingsSession(
         final long correlationId,
+        final ByteBuffer byteBuffer,
+        final UnsafeBuffer descriptorBuffer,
         final Publication controlPublication,
         final long fromId,
         final int count,
@@ -64,6 +63,9 @@ class ListRecordingsSession implements Session
         this.catalog = catalog;
         this.proxy = proxy;
         this.correlationId = correlationId;
+
+        this.byteBuffer = byteBuffer;
+        this.descriptorBuffer = descriptorBuffer;
     }
 
     public void abort()

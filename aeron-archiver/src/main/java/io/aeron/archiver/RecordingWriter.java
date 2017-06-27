@@ -220,7 +220,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
             validateWritePreConditions(termId, termOffset);
             // Note: since files are assumed pre-filled with 0 there's no need to write the marker ahead of the data
-            final long written = tranferDataFrom(fileChannel, fileOffset, blockLength);
+            final long written = transferDataFrom(fileChannel, fileOffset, blockLength);
             if (written != blockLength)
             {
                 throw new IllegalStateException();
@@ -372,7 +372,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     }
 
     // extend for testing
-    long tranferDataFrom(
+    long transferDataFrom(
         final FileChannel fromFileChannel,
         final long fileOffset,
         final int blockLength) throws IOException
@@ -427,8 +427,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         validateStartTermOffset(termOffset);
 
         segmentPosition = termOffset;
-
-        // update join TS before creating first file
         joinTimestamp = epochClock.time();
         metaDataEncoder.joinTimestamp(joinTimestamp);
         forceMetaData(metaDataBuffer);

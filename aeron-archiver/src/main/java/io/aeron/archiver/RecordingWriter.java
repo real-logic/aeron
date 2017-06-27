@@ -119,7 +119,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     {
         this.epochClock = recordingContext.epochClock;
         this.archiveDir = recordingContext.archiveDir;
-        this.segmentFileLength = recordingContext.segmentFileLength;
+        this.segmentFileLength = Math.max(recordingContext.segmentFileLength, termBufferLength);
         this.forceWrites = recordingContext.forceWrites;
 
         this.recordingId = recordingId;

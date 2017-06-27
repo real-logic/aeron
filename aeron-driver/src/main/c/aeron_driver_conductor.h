@@ -171,6 +171,12 @@ bool aeron_ipc_publication_entry_has_reached_end_of_life(
     aeron_driver_conductor_t *conductor, aeron_ipc_publication_entry_t *entry);
 void aeron_ipc_publication_entry_delete(aeron_driver_conductor_t *conductor, aeron_ipc_publication_entry_t *);
 
+void aeron_network_publication_entry_on_time_event(
+    aeron_driver_conductor_t *conductor, aeron_network_publication_entry_t *entry, int64_t now_ns, int64_t now_ms);
+bool aeron_network_publication_entry_has_reached_end_of_life(
+    aeron_driver_conductor_t *conductor, aeron_network_publication_entry_t *entry);
+void aeron_network_publication_entry_delete(aeron_driver_conductor_t *conductor, aeron_network_publication_entry_t *);
+
 int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *context);
 
 void aeron_driver_conductor_client_transmit(
@@ -185,6 +191,11 @@ void aeron_driver_conductor_on_unavailable_image(
     int32_t stream_id,
     const char *channel,
     size_t channel_length);
+
+void aeron_driver_conductor_cleanup_spies(
+    aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication);
+void aeron_driver_conductor_cleanup_network_publication(
+    aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication);
 
 void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message, size_t length, void *clientd);
 

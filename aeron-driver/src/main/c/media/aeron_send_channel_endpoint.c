@@ -219,7 +219,14 @@ void aeron_send_channel_endpoint_on_status_message(
 
     if (NULL != publication)
     {
-        aeron_network_publication_on_status_message(publication, buffer, length, addr);
+        if (sm_header->frame_header.flags & AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG)
+        {
+            aeron_network_publication_trigger_send_setup_frame(publication);
+        }
+        else
+        {
+            aeron_network_publication_on_status_message(publication, buffer, length, addr);
+        }
     }
 }
 

@@ -88,6 +88,7 @@ typedef struct aeron_network_publication_stct
     bool is_connected;
     bool is_complete;
     bool track_sender_limits;
+    bool has_sender_released;
     aeron_map_raw_log_close_func_t map_raw_log_close_func;
 
     int64_t *short_sends_counter;
@@ -141,26 +142,6 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
 void aeron_network_publication_check_for_blocked_publisher(
     aeron_network_publication_t *publication, int64_t now_ns, int64_t snd_pos);
 
-inline bool aeron_network_publication_spies_not_behind_sender(
-    aeron_network_publication_t *publication, aeron_driver_conductor_t *conductor, int64_t snd_pos)
-{
-    if (publication->conductor_fields.subscribeable.length > 0)
-    {
-        for (size_t i = 0, length = publication->conductor_fields.subscribeable.length; i < length; i++)
-        {
-            if (aeron_counter_get_volatile(publication->conductor_fields.subscribeable.array[i].value_addr) < snd_pos)
-            {
-                return false;
-            }
-        }
-
-        /* TODO: conductor cleanup_spies() */
-        /* TODO: close subscribeables (spies) */
-    }
-
-    return true;
-}
-
 inline int64_t aeron_network_publication_producer_position(aeron_network_publication_t *publication)
 {
     int64_t raw_tail;
@@ -186,6 +167,24 @@ inline int64_t aeron_network_publication_spy_join_position(aeron_network_publica
     }
 
     return max_spy_position;
+}
+
+inline void aeron_network_publication_trigger_send_setup_frame(aeron_network_publication_t *publication)
+{
+    publication->should_send_setup_frame = true;
+}
+
+inline void aeron_network_publication_sender_release(aeron_network_publication_t *publication)
+{
+    AERON_PUT_ORDERED(publication->has_sender_released, true);
+}
+
+inline bool aeron_network_publication_has_sender_released(aeron_network_publication_t *publication)
+{
+    bool has_sender_released;
+    AERON_GET_VOLATILE(has_sender_released, publication->has_sender_released);
+
+    return has_sender_released;
 }
 
 #endif //AERON_AERON_NETWORK_PUBLICATION_H

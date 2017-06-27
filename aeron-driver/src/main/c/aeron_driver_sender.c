@@ -242,6 +242,8 @@ void aeron_driver_sender_on_remove_publication(void *clientd, void *command)
     {
         AERON_DRIVER_SENDER_ERROR(sender, "sender on_remove_publication: %s", aeron_errmsg());
     }
+
+    aeron_network_publication_sender_release(publication);
 }
 
 int aeron_driver_sender_do_send(aeron_driver_sender_t *sender, int64_t now_ns)

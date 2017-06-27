@@ -101,6 +101,13 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->ipc_publications.has_reached_end_of_life = aeron_ipc_publication_entry_has_reached_end_of_life;
     conductor->ipc_publications.delete_func = aeron_ipc_publication_entry_delete;
 
+    conductor->network_publications.array = NULL;
+    conductor->network_publications.length = 0;
+    conductor->network_publications.capacity = 0;
+    conductor->network_publications.on_time_event = aeron_network_publication_entry_on_time_event;
+    conductor->network_publications.has_reached_end_of_life = aeron_network_publication_entry_has_reached_end_of_life;
+    conductor->network_publications.delete_func = aeron_network_publication_entry_delete;
+
     conductor->ipc_subscriptions.array = NULL;
     conductor->ipc_subscriptions.length = 0;
     conductor->ipc_subscriptions.capacity = 0;
@@ -267,6 +274,54 @@ void aeron_ipc_publication_entry_delete(
     entry->publication = NULL;
 }
 
+void aeron_network_publication_entry_on_time_event(
+    aeron_driver_conductor_t *conductor, aeron_network_publication_entry_t *entry, int64_t now_ns, int64_t now_ms)
+{
+    aeron_network_publication_on_time_event(conductor, entry->publication, now_ns, now_ms);
+}
+
+bool aeron_network_publication_entry_has_reached_end_of_life(
+    aeron_driver_conductor_t *conductor, aeron_network_publication_entry_t *entry)
+{
+    return aeron_network_publication_has_sender_released(entry->publication);
+}
+
+void aeron_network_publication_entry_delete(
+    aeron_driver_conductor_t *conductor, aeron_network_publication_entry_t *entry)
+{
+    /* TODO: */
+
+//    for (size_t i = 0, size = conductor->ipc_subscriptions.length; i < size; i++)
+//    {
+//        aeron_subscription_link_t *link = &conductor->ipc_subscriptions.array[i];
+//
+//        aeron_driver_conductor_unlink_subscribeable(link, &entry->publication->conductor_fields.subscribeable);
+//    }
+
+    aeron_network_publication_close(&conductor->counters_manager, entry->publication);
+    entry->publication = NULL;
+}
+
+void aeron_driver_conductor_cleanup_spies(aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication)
+{
+    aeron_driver_conductor_on_unavailable_image(
+        conductor,
+        publication->conductor_fields.managed_resource.registration_id,
+        publication->stream_id,
+        publication->endpoint->conductor_fields.udp_channel->original_uri,
+        publication->endpoint->conductor_fields.udp_channel->uri_length);
+
+    /* TODO: unlink spies */
+}
+
+void aeron_driver_conductor_cleanup_network_publication(
+    aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication)
+{
+    aeron_driver_sender_proxy_remove_publication(conductor->context->sender_proxy, publication);
+
+    /* TODO: clean out send channel endpoint */
+}
+
 #define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(c, l,t,now_ns,now_ms) \
 for (int last_index = (int)l.length - 1, i = last_index; i >= 0; i--) \
 { \
@@ -288,6 +343,8 @@ void aeron_driver_conductor_on_check_managed_resources(
         conductor, conductor->clients, aeron_client_t, now_ns, now_ms);
     AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(
         conductor, conductor->ipc_publications, aeron_ipc_publication_entry_t, now_ns, now_ms);
+    AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(
+        conductor, conductor->network_publications, aeron_network_publication_entry_t, now_ns, now_ms);
 }
 
 aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(

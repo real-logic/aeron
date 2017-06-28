@@ -17,8 +17,8 @@
 #ifndef AERON_AERON_SEND_CHANNEL_ENDPOINT_H
 #define AERON_AERON_SEND_CHANNEL_ENDPOINT_H
 
-#include <collections/aeron_int64_to_ptr_hash_map.h>
-#include <aeron_network_publication.h>
+#include "collections/aeron_int64_to_ptr_hash_map.h"
+#include "aeron_network_publication.h"
 #include "aeron_driver_context.h"
 #include "aeron_udp_channel.h"
 #include "aeron_udp_channel_transport.h"

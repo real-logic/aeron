@@ -352,7 +352,8 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     _driver->context->sender_proxy = &_driver->sender.sender_proxy;
 
-    if (aeron_driver_receiver_init(&_driver->receiver, context, &_driver->conductor.system_counters) < 0)
+    if (aeron_driver_receiver_init(
+        &_driver->receiver, context, &_driver->conductor.system_counters, &_driver->conductor.error_log) < 0)
     {
         return -1;
     }

@@ -17,19 +17,40 @@
 #ifndef AERON_AERON_DRIVER_RECEIVER_H
 #define AERON_AERON_DRIVER_RECEIVER_H
 
+#include "media/aeron_udp_transport_poller.h"
+#include "concurrent/aeron_distinct_error_log.h"
 #include "aeron_driver_context.h"
 #include "aeron_driver_receiver_proxy.h"
 #include "aeron_system_counters.h"
 
+#define AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS (2)
+#define AERON_DRIVER_RECEIVER_MAX_UDP_PACKET_LENGTH (64 * 1024)
+
 typedef struct aeron_driver_receiver_stct
 {
     aeron_driver_receiver_proxy_t receiver_proxy;
+    aeron_udp_transport_poller_t poller;
+
+    struct aeron_driver_receiver_buffers_stct
+    {
+        uint8_t *buffers[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
+        struct iovec iov[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
+        struct sockaddr_storage addrs[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
+    }
+    recv_buffers;
+
     aeron_driver_context_t *context;
+    aeron_distinct_error_log_t *error_log;
+
+    int64_t *errors_counter;
 }
 aeron_driver_receiver_t;
 
 int aeron_driver_receiver_init(
-    aeron_driver_receiver_t *receiver, aeron_driver_context_t *context, aeron_system_counters_t *system_counters);
+    aeron_driver_receiver_t *receiver,
+    aeron_driver_context_t *context,
+    aeron_system_counters_t *system_counters,
+    aeron_distinct_error_log_t *error_log);
 
 int aeron_driver_receiver_do_work(void *clientd);
 void aeron_driver_receiver_on_close(void *clientd);

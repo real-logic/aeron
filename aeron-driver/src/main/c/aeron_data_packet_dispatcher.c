@@ -1,0 +1,226 @@
+/*
+ * Copyright 2014 - 2017 Real Logic Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <string.h>
+#include "util/aeron_error.h"
+#include "aeron_data_packet_dispatcher.h"
+#include "aeron_publication_image.h"
+
+int aeron_data_packet_dispatcher_init(aeron_data_packet_dispatcher_t *dispatcher)
+{
+    if (aeron_int64_to_ptr_hash_map_init(
+        &dispatcher->ignored_sessions_map, 16, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "could not init ignored_session_map: %s", strerror(errcode));
+        return -1;
+    }
+
+    if (aeron_int64_to_ptr_hash_map_init(
+        &dispatcher->session_by_stream_id_map, 16, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "could not init session_by_stream_id_map: %s", strerror(errcode));
+        return -1;
+    }
+
+    return 0;
+}
+
+int aeron_data_packet_dispatcher_close(aeron_data_packet_dispatcher_t *dispatcher)
+{
+    aeron_int64_to_ptr_hash_map_delete(&dispatcher->ignored_sessions_map);
+    aeron_int64_to_ptr_hash_map_delete(&dispatcher->session_by_stream_id_map);
+
+    return 0;
+}
+
+int aeron_data_packet_dispatcher_add_subscription(aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id)
+{
+    aeron_int64_to_ptr_hash_map_t *session_map;
+
+    if ((session_map = aeron_int64_to_ptr_hash_map_get(&dispatcher->session_by_stream_id_map, stream_id)) == NULL)
+    {
+        if (aeron_alloc((void **)&session_map, sizeof(aeron_int64_to_ptr_hash_map_t)) < 0 ||
+            aeron_int64_to_ptr_hash_map_init(session_map, 16, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0 ||
+            aeron_int64_to_ptr_hash_map_put(&dispatcher->session_by_stream_id_map, stream_id, session_map) < 0)
+        {
+            int errcode = errno;
+
+            aeron_set_err(errcode, "could not aeron_data_packet_dispatcher_add_subscription: %s", strerror(errcode));
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int aeron_data_packet_dispatcher_remove_subscription(aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id)
+{
+    aeron_int64_to_ptr_hash_map_t *session_map;
+
+    if ((session_map = aeron_int64_to_ptr_hash_map_remove(&dispatcher->session_by_stream_id_map, stream_id)) != NULL)
+    {
+        aeron_int64_to_ptr_hash_map_delete(session_map);
+        aeron_free(session_map);
+    }
+
+    return 0;
+}
+
+int aeron_data_packet_dispatcher_add_publication_image(
+    aeron_data_packet_dispatcher_t *dispatcher, aeron_publication_image_t *image)
+{
+    aeron_int64_to_ptr_hash_map_t *session_map =
+        aeron_int64_to_ptr_hash_map_get(&dispatcher->session_by_stream_id_map, image->stream_id);
+
+    if (NULL != session_map)
+    {
+        if (aeron_int64_to_ptr_hash_map_put(session_map, image->session_id, image) < 0)
+        {
+            int errcode = errno;
+
+            aeron_set_err(errcode, "could not aeron_data_packet_dispatcher_add_publication_image: %s", strerror(errcode));
+            return -1;
+        }
+
+        aeron_int64_to_ptr_hash_map_remove(
+            &dispatcher->ignored_sessions_map,
+            aeron_int64_to_ptr_hash_map_compound_key(image->session_id, image->stream_id));
+    }
+
+    return 0;
+}
+
+int aeron_data_packet_dispatcher_remove_publication_image(
+    aeron_data_packet_dispatcher_t *dispatcher, aeron_publication_image_t *image)
+{
+    aeron_int64_to_ptr_hash_map_t *session_map =
+        aeron_int64_to_ptr_hash_map_get(&dispatcher->session_by_stream_id_map, image->stream_id);
+
+    if (NULL != session_map)
+    {
+        aeron_publication_image_t *mapped_image = aeron_int64_to_ptr_hash_map_get(session_map, image->session_id);
+
+        if (NULL != mapped_image && image->correlation_id == mapped_image->correlation_id)
+        {
+            aeron_int64_to_ptr_hash_map_remove(session_map, image->session_id);
+            aeron_int64_to_ptr_hash_map_remove(
+                &dispatcher->ignored_sessions_map,
+                aeron_int64_to_ptr_hash_map_compound_key(image->session_id, image->stream_id));
+        }
+    }
+
+    if (aeron_int64_to_ptr_hash_map_put(
+        &dispatcher->ignored_sessions_map,
+        aeron_int64_to_ptr_hash_map_compound_key(image->session_id, image->stream_id),
+        &dispatcher->tokens.on_cooldown) < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "could not aeron_data_packet_dispatcher_remove_publication_image: %s", strerror(errcode));
+        return -1;
+    }
+
+    return 0;
+}
+
+int aeron_data_packet_dispatcher_on_data(
+    aeron_data_packet_dispatcher_t *dispatcher,
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_data_header_t *header,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr)
+{
+    aeron_int64_to_ptr_hash_map_t *session_map =
+        aeron_int64_to_ptr_hash_map_get(&dispatcher->session_by_stream_id_map, header->stream_id);
+
+    if (NULL != session_map)
+    {
+        aeron_publication_image_t *image = aeron_int64_to_ptr_hash_map_get(session_map, header->session_id);
+
+        if (NULL != image)
+        {
+            /* TODO: insert data into image */
+        }
+        else if (NULL == aeron_int64_to_ptr_hash_map_get(
+            &dispatcher->ignored_sessions_map,
+            aeron_int64_to_ptr_hash_map_compound_key(header->session_id, header->stream_id)))
+        {
+            /* TODO: elicit SM */
+        }
+    }
+
+    return 0;
+}
+
+int aeron_data_packet_dispatcher_on_setup(
+    aeron_data_packet_dispatcher_t *dispatcher,
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_setup_header_t *header,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr)
+{
+    aeron_int64_to_ptr_hash_map_t *session_map =
+        aeron_int64_to_ptr_hash_map_get(&dispatcher->session_by_stream_id_map, header->stream_id);
+
+    if (NULL != session_map)
+    {
+        aeron_publication_image_t *image = aeron_int64_to_ptr_hash_map_get(session_map, header->session_id);
+
+        if (NULL != image)
+        {
+            /* TODO: */
+        }
+    }
+
+    return 0;
+}
+
+int aeron_data_packet_dispatcher_on_rttm(
+    aeron_data_packet_dispatcher_t *dispatcher,
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_rttm_header_t *header,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr)
+{
+    aeron_int64_to_ptr_hash_map_t *session_map =
+        aeron_int64_to_ptr_hash_map_get(&dispatcher->session_by_stream_id_map, header->stream_id);
+
+    if (NULL != session_map)
+    {
+        aeron_publication_image_t *image = aeron_int64_to_ptr_hash_map_get(session_map, header->session_id);
+
+        if (NULL != image)
+        {
+            if (header->frame_header.flags & AERON_RTTM_HEADER_REPLY_FLAG)
+            {
+                /* TODO: */
+            }
+            else
+            {
+                /* TODO: */
+            }
+        }
+    }
+
+    return 0;
+}

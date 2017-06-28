@@ -65,10 +65,13 @@ SET(SOURCE
     aeron_driver_conductor_proxy.c
     aeron_driver_receiver_proxy.c
     aeron_flow_control.c
+    aeron_data_packet_dispatcher.c
+    aeron_publication_image.c
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel.c
     media/aeron_send_channel_endpoint.c
     media/aeron_udp_transport_poller.c
+    media/aeron_receive_channel_endpoint.c
     uri/aeron_uri.c
     collections/aeron_int64_to_ptr_hash_map.c
     collections/aeron_str_to_ptr_hash_map.c)
@@ -113,10 +116,13 @@ SET(HEADERS
     aeron_driver_conductor_proxy.h
     aeron_driver_receiver_proxy.h
     aeron_flow_control.h
+    aeron_data_packet_dispatcher.h
+    aeron_publication_image.h
     media/aeron_udp_channel_transport.h
     media/aeron_udp_channel.h
     media/aeron_send_channel_endpoint.h
     media/aeron_udp_transport_poller.h
+    media/aeron_receive_channel_endpoint.h
     uri/aeron_uri.h
     collections/aeron_int64_to_ptr_hash_map.h
     collections/aeron_str_to_ptr_hash_map.h)

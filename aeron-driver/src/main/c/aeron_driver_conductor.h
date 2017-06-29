@@ -262,6 +262,8 @@ int aeron_driver_conductor_on_client_keepalive(
     aeron_driver_conductor_t *conductor,
     int64_t client_id);
 
+void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item);
+
 inline size_t aeron_driver_conductor_num_clients(aeron_driver_conductor_t *conductor)
 {
     return conductor->clients.length;

@@ -18,6 +18,7 @@
 #define AERON_AERON_PUBLICATION_IMAGE_H
 
 #include "aeron_driver_common.h"
+#include "media/aeron_receive_channel_endpoint.h"
 
 typedef enum aeron_publication_image_status_enum
 {
@@ -41,6 +42,8 @@ typedef struct aeron_publication_image_stct
         aeron_publication_image_status_t status;
     }
     conductor_fields;
+
+    aeron_receive_channel_endpoint_t *endpoint;
 
     int64_t correlation_id;
     int32_t session_id;

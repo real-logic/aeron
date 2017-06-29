@@ -23,7 +23,7 @@
 #include "aeron_driver_conductor.h"
 #include "aeron_position.h"
 #include "aeron_driver_sender.h"
-#include "aeron_driver_sender_proxy.h"
+#include "aeron_driver_receiver.h"
 
 static void aeron_error_log_resource_linger(uint8_t *resource)
 {
@@ -1432,6 +1432,16 @@ int aeron_driver_conductor_on_client_keepalive(
         client->time_of_last_keepalive = conductor->nano_clock();
     }
     return 0;
+}
+
+void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item)
+{
+    aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
+    aeron_command_create_publication_image_t *command = (aeron_command_create_publication_image_t *)item;
+
+    /* TODO: create publication image */
+
+    aeron_driver_receiver_proxy_on_delete_create_publication_image_cmd(conductor->context->receiver_proxy, item);
 }
 
 extern size_t aeron_driver_conductor_num_clients(aeron_driver_conductor_t *conductor);

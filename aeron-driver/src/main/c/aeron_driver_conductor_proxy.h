@@ -33,4 +33,33 @@ aeron_driver_conductor_proxy_t;
 void aeron_driver_conductor_proxy_on_delete_cmd(
     aeron_driver_conductor_proxy_t *conductor_proxy, aeron_command_base_t *cmd);
 
+typedef struct aeron_command_create_publication_image_stct
+{
+    aeron_command_base_t base;
+    int32_t session_id;
+    int32_t stream_id;
+    int32_t initial_term_id;
+    int32_t active_term_id;
+    int32_t term_offset;
+    int32_t term_length;
+    int32_t mtu_length;
+    struct sockaddr_storage control_address;
+    struct sockaddr_storage src_address;
+    void *endpoint;
+}
+aeron_command_create_publication_image_t;
+
+void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    int32_t session_id,
+    int32_t stream_id,
+    int32_t initial_term_id,
+    int32_t active_term_id,
+    int32_t term_offset,
+    int32_t term_length,
+    int32_t mtu_length,
+    struct sockaddr_storage *control_address,
+    struct sockaddr_storage *src_address,
+    void *endpoint);
+
 #endif //AERON_AERON_DRIVER_CONDUCTOR_PROXY_H

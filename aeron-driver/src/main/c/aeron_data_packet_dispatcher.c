@@ -17,8 +17,8 @@
 #include <string.h>
 #include "media/aeron_receive_channel_endpoint.h"
 #include "util/aeron_error.h"
-#include "aeron_data_packet_dispatcher.h"
 #include "aeron_publication_image.h"
+#include "aeron_driver_conductor_proxy.h"
 
 int aeron_data_packet_dispatcher_init(
     aeron_data_packet_dispatcher_t *dispatcher,
@@ -213,10 +213,21 @@ int aeron_data_packet_dispatcher_on_setup(
                 return -1;
             }
 
-//            struct sockaddr_storage *control_addr =
-//                endpoint->conductor_fields.udp_channel->multicast ? &endpoint->conductor_fields.udp_channel->remote_control : addr;
+            struct sockaddr_storage *control_addr =
+                endpoint->conductor_fields.udp_channel->multicast ? &endpoint->conductor_fields.udp_channel->remote_control : addr;
 
-            /* TODO: call conductor_proxy to create publication image */
+            aeron_driver_conductor_proxy_on_create_publication_image_cmd(
+                dispatcher->conductor_proxy,
+                header->session_id,
+                header->stream_id,
+                header->initial_term_id,
+                header->active_term_id,
+                header->term_offset,
+                header->term_length,
+                header->mtu,
+                control_addr,
+                addr,
+                endpoint);
         }
     }
 

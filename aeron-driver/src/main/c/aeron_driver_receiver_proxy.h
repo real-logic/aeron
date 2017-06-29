@@ -30,4 +30,7 @@ typedef struct aeron_driver_receiver_proxy_stct
 }
 aeron_driver_receiver_proxy_t;
 
+void aeron_driver_receiver_proxy_on_delete_create_publication_image_cmd(
+    aeron_driver_receiver_proxy_t *receiver_proxy, aeron_command_base_t *cmd);
+
 #endif //AERON_AERON_DRIVER_RECEIVER_PROXY_H

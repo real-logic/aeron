@@ -141,3 +141,76 @@ void aeron_driver_receiver_on_close(void *clientd)
     aeron_udp_transport_poller_close(&receiver->poller);
 }
 
+void aeron_driver_receiver_on_add_endpoint(void *clientd, void *command)
+{
+    aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
+    aeron_command_base_t *cmd = (aeron_command_base_t *)command;
+    aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)cmd->item;
+
+    if (aeron_udp_transport_poller_add(&receiver->poller, &endpoint->transport) < 0)
+    {
+        AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_add_endpoint: %s", aeron_errmsg());
+    }
+}
+
+void aeron_driver_receiver_on_remove_endpoint(void *clientd, void *command)
+{
+    aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
+    aeron_command_base_t *cmd = (aeron_command_base_t *)command;
+    aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)cmd->item;
+
+    if (aeron_udp_transport_poller_remove(&receiver->poller, &endpoint->transport) < 0)
+    {
+        AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_remove_endpoint: %s", aeron_errmsg());
+    }
+
+    aeron_receive_channel_endpoint_receiver_release(endpoint);
+}
+
+void aeron_driver_receiver_on_add_subscription(void *clientd, void *item)
+{
+    aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
+    aeron_command_subscription_t *cmd = (aeron_command_subscription_t *)item;
+    aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)cmd->endpoint;
+
+    if (aeron_receive_channel_endpoint_on_add_subscription(endpoint, cmd->stream_id) < 0)
+    {
+        AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_add_subscription: %s", aeron_errmsg());
+    }
+}
+
+void aeron_driver_receiver_on_remove_subscription(void *clientd, void *item)
+{
+    aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
+    aeron_command_subscription_t *cmd = (aeron_command_subscription_t *)item;
+    aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)cmd->endpoint;
+
+    if (aeron_receive_channel_endpoint_on_remove_subscription(endpoint, cmd->stream_id) < 0)
+    {
+        AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_remove_subscription: %s", aeron_errmsg());
+    }
+}
+
+void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item)
+{
+    aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
+    aeron_command_publication_image_t *cmd = (aeron_command_publication_image_t *)item;
+    aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)cmd->endpoint;
+
+    if (aeron_receive_channel_endpoint_on_add_publication_image(endpoint, cmd->image) < 0)
+    {
+        AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_add_publication_image: %s", aeron_errmsg());
+    }
+}
+
+void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item)
+{
+    aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
+    aeron_command_publication_image_t *cmd = (aeron_command_publication_image_t *)item;
+    aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)cmd->endpoint;
+
+    if (aeron_receive_channel_endpoint_on_remove_publication_image(endpoint, cmd->image) < 0)
+    {
+        AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_remove_publication_image: %s", aeron_errmsg());
+    }
+}

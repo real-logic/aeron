@@ -17,6 +17,8 @@
 #include <sched.h>
 #include "concurrent/aeron_counters_manager.h"
 #include "aeron_driver_receiver_proxy.h"
+#include "aeron_driver_receiver.h"
+#include "aeron_alloc.h"
 
 void aeron_driver_receiver_proxy_offer(aeron_driver_receiver_proxy_t *receiver_proxy, void *cmd)
 {
@@ -43,4 +45,202 @@ void aeron_driver_receiver_proxy_on_delete_create_publication_image_cmd(
     }
 }
 
+void aeron_driver_receiver_proxy_on_add_endpoint(
+    aeron_driver_receiver_proxy_t *receiver_proxy, aeron_receive_channel_endpoint_t *endpoint)
+{
+    if (AERON_THREADING_MODE_SHARED == receiver_proxy->threading_mode)
+    {
+        aeron_command_base_t cmd =
+            {
+                .func = aeron_driver_receiver_on_add_endpoint,
+                .item = endpoint
+            };
 
+        aeron_driver_receiver_on_add_endpoint(receiver_proxy->receiver, &cmd);
+    }
+    else
+    {
+        aeron_command_base_t *cmd;
+
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        {
+            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->func = aeron_driver_receiver_on_add_endpoint;
+        cmd->item = endpoint;
+
+        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+    }
+}
+
+void aeron_driver_receiver_proxy_on_remove_endpoint(
+    aeron_driver_receiver_proxy_t *receiver_proxy, aeron_receive_channel_endpoint_t *endpoint)
+{
+    if (AERON_THREADING_MODE_SHARED == receiver_proxy->threading_mode)
+    {
+        aeron_command_base_t cmd =
+            {
+                .func = aeron_driver_receiver_on_remove_endpoint,
+                .item = endpoint
+            };
+
+        aeron_driver_receiver_on_remove_endpoint(receiver_proxy->receiver, &cmd);
+    }
+    else
+    {
+        aeron_command_base_t *cmd;
+
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        {
+            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->func = aeron_driver_receiver_on_remove_endpoint;
+        cmd->item = endpoint;
+
+        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+    }
+}
+
+void aeron_driver_receiver_proxy_on_add_subscription(
+    aeron_driver_receiver_proxy_t *receiver_proxy, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
+{
+    if (AERON_THREADING_MODE_SHARED == receiver_proxy->threading_mode)
+    {
+        aeron_command_subscription_t cmd =
+            {
+                .base.func = aeron_driver_receiver_on_add_subscription,
+                .base.item = NULL,
+                .endpoint = endpoint,
+                .stream_id = stream_id
+            };
+
+        aeron_driver_receiver_on_add_subscription(receiver_proxy->receiver, &cmd);
+    }
+    else
+    {
+        aeron_command_subscription_t *cmd;
+
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        {
+            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->base.func = aeron_driver_receiver_on_add_subscription;
+        cmd->base.item = NULL;
+        cmd->endpoint = endpoint;
+        cmd->stream_id = stream_id;
+
+        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+    }
+}
+
+void aeron_driver_receiver_proxy_on_remove_subscription(
+    aeron_driver_receiver_proxy_t *receiver_proxy, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
+{
+    if (AERON_THREADING_MODE_SHARED == receiver_proxy->threading_mode)
+    {
+        aeron_command_subscription_t cmd =
+            {
+                .base.func = aeron_driver_receiver_on_remove_subscription,
+                .base.item = NULL,
+                .endpoint = endpoint,
+                .stream_id = stream_id
+            };
+
+        aeron_driver_receiver_on_remove_subscription(receiver_proxy->receiver, &cmd);
+    }
+    else
+    {
+        aeron_command_subscription_t *cmd;
+
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        {
+            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->base.func = aeron_driver_receiver_on_remove_subscription;
+        cmd->base.item = NULL;
+        cmd->endpoint = endpoint;
+        cmd->stream_id = stream_id;
+
+        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+    }
+}
+
+void aeron_driver_receiver_proxy_on_add_publication_image(
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_publication_image_t *image)
+{
+    if (AERON_THREADING_MODE_SHARED == receiver_proxy->threading_mode)
+    {
+        aeron_command_publication_image_t cmd =
+            {
+                .base.func = aeron_driver_receiver_on_add_publication_image,
+                .base.item = NULL,
+                .endpoint = endpoint,
+                .image = image
+            };
+
+        aeron_driver_receiver_on_add_publication_image(receiver_proxy->receiver, &cmd);
+    }
+    else
+    {
+        aeron_command_publication_image_t *cmd;
+
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        {
+            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->base.func = aeron_driver_receiver_on_add_publication_image;
+        cmd->base.item = NULL;
+        cmd->endpoint = endpoint;
+        cmd->image = image;
+
+        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+    }
+}
+
+void aeron_driver_receiver_proxy_on_remove_publication_image(
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_publication_image_t *image)
+{
+    if (AERON_THREADING_MODE_SHARED == receiver_proxy->threading_mode)
+    {
+        aeron_command_publication_image_t cmd =
+            {
+                .base.func = aeron_driver_receiver_on_remove_publication_image,
+                .base.item = NULL,
+                .endpoint = endpoint,
+                .image = image
+            };
+
+        aeron_driver_receiver_on_remove_publication_image(receiver_proxy->receiver, &cmd);
+    }
+    else
+    {
+        aeron_command_publication_image_t *cmd;
+
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        {
+            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->base.func = aeron_driver_receiver_on_remove_publication_image;
+        cmd->base.item = NULL;
+        cmd->endpoint = endpoint;
+        cmd->image = image;
+
+        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+    }
+}

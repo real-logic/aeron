@@ -1437,7 +1437,7 @@ int aeron_driver_conductor_on_client_keepalive(
 void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
-    aeron_command_create_publication_image_t *command = (aeron_command_create_publication_image_t *)item;
+    //aeron_command_create_publication_image_t *command = (aeron_command_create_publication_image_t *)item;
 
     /* TODO: create publication image */
 

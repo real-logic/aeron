@@ -68,4 +68,13 @@ int aeron_driver_receiver_init(
 int aeron_driver_receiver_do_work(void *clientd);
 void aeron_driver_receiver_on_close(void *clientd);
 
+void aeron_driver_receiver_on_add_endpoint(void *clientd, void *item);
+void aeron_driver_receiver_on_remove_endpoint(void *clientd, void *item);
+
+void aeron_driver_receiver_on_add_subscription(void *clientd, void *item);
+void aeron_driver_receiver_on_remove_subscription(void *clientd, void *item);
+
+void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item);
+void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item);
+
 #endif //AERON_AERON_DRIVER_RECEIVER_H

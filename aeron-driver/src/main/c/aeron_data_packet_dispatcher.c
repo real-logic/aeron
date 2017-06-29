@@ -15,10 +15,8 @@
  */
 
 #include <string.h>
-#include "media/aeron_receive_channel_endpoint.h"
 #include "util/aeron_error.h"
 #include "aeron_publication_image.h"
-#include "aeron_driver_conductor_proxy.h"
 
 int aeron_data_packet_dispatcher_init(
     aeron_data_packet_dispatcher_t *dispatcher,

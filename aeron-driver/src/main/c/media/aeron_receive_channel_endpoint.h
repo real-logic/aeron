@@ -24,6 +24,13 @@
 #include "aeron_driver_context.h"
 #include "aeron_system_counters.h"
 
+typedef enum aeron_receive_channel_endpoint_status_enum
+{
+    AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_ACTIVE,
+    AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING
+}
+aeron_receive_channel_endpoint_status_t;
+
 typedef struct aeron_stream_id_refcnt_stct
 {
     int32_t refcnt;
@@ -36,6 +43,7 @@ typedef struct aeron_receive_channel_endpoint_stct
     {
         aeron_driver_managed_resource_t managed_resource;
         aeron_udp_channel_t *udp_channel;
+        aeron_receive_channel_endpoint_status_t status;
     }
     conductor_fields;
 
@@ -45,6 +53,7 @@ typedef struct aeron_receive_channel_endpoint_stct
     aeron_data_packet_dispatcher_t dispatcher;
     aeron_int64_to_ptr_hash_map_t stream_id_to_refcnt_map;
     aeron_counter_t channel_status;
+    aeron_driver_receiver_proxy_t *receiver_proxy;
     int64_t receiver_id;
     bool has_receiver_released;
 
@@ -61,7 +70,7 @@ int aeron_receive_channel_endpoint_create(
     aeron_driver_context_t *context);
 
 int aeron_receive_channel_endpoint_delete(
-    aeron_counters_manager_t *counters_manager, aeron_receive_channel_endpoint_t *channel);
+    aeron_counters_manager_t *counters_manager, aeron_receive_channel_endpoint_t *endpoint);
 
 int aeron_receive_channel_endpoint_sendmsg(aeron_receive_channel_endpoint_t *endpoint, struct msghdr *msghdr);
 
@@ -98,6 +107,15 @@ int aeron_receive_channel_endpoint_on_rttm(
 
 int32_t aeron_receive_channel_endpoint_incref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
 int32_t aeron_receive_channel_endpoint_decref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+
+int aeron_receive_channel_endpoint_on_add_subscription(
+    aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+int aeron_receive_channel_endpoint_on_remove_subscription(
+    aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+int aeron_receive_channel_endpoint_on_add_publication_image(
+    aeron_receive_channel_endpoint_t *endpoint, aeron_publication_image_t *image);
+int aeron_receive_channel_endpoint_on_remove_publication_image(
+    aeron_receive_channel_endpoint_t *endpoint, aeron_publication_image_t *image);
 
 inline void aeron_receive_channel_endpoint_receiver_release(aeron_receive_channel_endpoint_t *endpoint)
 {

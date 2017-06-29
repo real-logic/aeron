@@ -18,12 +18,12 @@
 #define AERON_AERON_DATA_PACKET_DISPATCHER_H
 
 #include <netinet/in.h>
-#include "protocol/aeron_udp_protocol.h"
 #include "collections/aeron_int64_to_ptr_hash_map.h"
-#include "aeron_driver_receiver_proxy.h"
+#include "aeron_driver_conductor_proxy.h"
 
 typedef struct aeron_publication_image_stct aeron_publication_image_t;
 typedef struct aeron_receive_channel_endpoint_stct aeron_receive_channel_endpoint_t;
+typedef struct aeron_driver_receiver_stct aeron_driver_receiver_t;
 
 typedef struct aeron_data_packet_dispatcher_stct
 {

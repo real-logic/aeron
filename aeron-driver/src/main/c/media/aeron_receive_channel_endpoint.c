@@ -59,6 +59,7 @@ int aeron_receive_channel_endpoint_create(
     _endpoint->conductor_fields.udp_channel = channel;
     _endpoint->conductor_fields.managed_resource.clientd = _endpoint;
     _endpoint->conductor_fields.managed_resource.registration_id = -1;
+    _endpoint->conductor_fields.status = AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_ACTIVE;
     _endpoint->transport.fd = -1;
     _endpoint->channel_status.counter_id = -1;
 
@@ -82,6 +83,7 @@ int aeron_receive_channel_endpoint_create(
     _endpoint->channel_status.value_addr = status_indicator->value_addr;
 
     _endpoint->receiver_id = context->receiver_id;
+    _endpoint->receiver_proxy = context->receiver_proxy;
 
     _endpoint->short_sends_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_SHORT_SENDS);
     _endpoint->possible_ttl_asymmetry_counter =
@@ -92,18 +94,18 @@ int aeron_receive_channel_endpoint_create(
 }
 
 int aeron_receive_channel_endpoint_delete(
-    aeron_counters_manager_t *counters_manager, aeron_receive_channel_endpoint_t *channel)
+    aeron_counters_manager_t *counters_manager, aeron_receive_channel_endpoint_t *endpoint)
 {
-    if (NULL != counters_manager && -1 != channel->channel_status.counter_id)
+    if (NULL != counters_manager && -1 != endpoint->channel_status.counter_id)
     {
-        aeron_counters_manager_free(counters_manager, (int32_t)channel->channel_status.counter_id);
+        aeron_counters_manager_free(counters_manager, (int32_t)endpoint->channel_status.counter_id);
     }
 
-    aeron_int64_to_ptr_hash_map_delete(&channel->stream_id_to_refcnt_map);
-    aeron_data_packet_dispatcher_close(&channel->dispatcher);
-    aeron_udp_channel_delete(channel->conductor_fields.udp_channel);
-    aeron_udp_channel_transport_close(&channel->transport);
-    aeron_free(channel);
+    aeron_int64_to_ptr_hash_map_delete(&endpoint->stream_id_to_refcnt_map);
+    aeron_data_packet_dispatcher_close(&endpoint->dispatcher);
+    aeron_udp_channel_delete(endpoint->conductor_fields.udp_channel);
+    aeron_udp_channel_transport_close(&endpoint->transport);
+    aeron_free(endpoint);
     return 0;
 }
 
@@ -305,6 +307,8 @@ int32_t aeron_receive_channel_endpoint_incref_to_stream(
 
     if (NULL == count)
     {
+        bool is_first_subscription = (0 == endpoint->stream_id_to_refcnt_map.size) ? true : false;
+
         if (aeron_alloc((void **)&count, sizeof(aeron_stream_id_refcnt_t)) < 0)
         {
             int errcode = errno;
@@ -321,6 +325,13 @@ int32_t aeron_receive_channel_endpoint_incref_to_stream(
             aeron_set_err(errcode, "could not put aeron_stream_id_refcnt: %s", strerror(errcode));
             return -1;
         }
+
+        if (is_first_subscription)
+        {
+            aeron_driver_receiver_proxy_on_add_endpoint(endpoint->receiver_proxy, endpoint);
+        }
+
+        aeron_driver_receiver_proxy_on_add_subscription(endpoint->receiver_proxy, endpoint, stream_id);
     }
 
     return ++count->refcnt;
@@ -341,10 +352,44 @@ int32_t aeron_receive_channel_endpoint_decref_to_stream(
     {
         aeron_int64_to_ptr_hash_map_remove(&endpoint->stream_id_to_refcnt_map, stream_id);
         aeron_free(count);
+
+        aeron_driver_receiver_proxy_on_remove_subscription(endpoint->receiver_proxy, endpoint, stream_id);
+
+        if (0 == endpoint->stream_id_to_refcnt_map.size)
+        {
+            /* mark as CLOSING to be aware not to use again (to be receiver_released and deleted) */
+            endpoint->conductor_fields.status = AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_CLOSING;
+            aeron_driver_receiver_proxy_on_remove_endpoint(endpoint->receiver_proxy, endpoint);
+        }
     }
 
     return result;
 }
 
+int aeron_receive_channel_endpoint_on_add_subscription(
+    aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
+{
+    return aeron_data_packet_dispatcher_add_subscription(&endpoint->dispatcher, stream_id);
+}
+
+int aeron_receive_channel_endpoint_on_remove_subscription(
+    aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
+{
+    return aeron_data_packet_dispatcher_remove_subscription(&endpoint->dispatcher, stream_id);
+}
+
+int aeron_receive_channel_endpoint_on_add_publication_image(
+    aeron_receive_channel_endpoint_t *endpoint, aeron_publication_image_t *image)
+{
+    return aeron_data_packet_dispatcher_add_publication_image(&endpoint->dispatcher, image);
+}
+
+int aeron_receive_channel_endpoint_on_remove_publication_image(
+    aeron_receive_channel_endpoint_t *endpoint, aeron_publication_image_t *image)
+{
+    return aeron_data_packet_dispatcher_remove_publication_image(&endpoint->dispatcher, image);
+}
+
+extern size_t aeron_receive_channel_endpoint_stream_count(aeron_receive_channel_endpoint_t *endpoint);
 extern void aeron_receive_channel_endpoint_receiver_release(aeron_receive_channel_endpoint_t *endpoint);
 extern bool aeron_send_channel_endpoint_has_receiver_released(aeron_receive_channel_endpoint_t *endpoint);

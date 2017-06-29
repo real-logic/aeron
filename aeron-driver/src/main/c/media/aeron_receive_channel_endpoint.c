@@ -392,4 +392,4 @@ int aeron_receive_channel_endpoint_on_remove_publication_image(
 
 extern size_t aeron_receive_channel_endpoint_stream_count(aeron_receive_channel_endpoint_t *endpoint);
 extern void aeron_receive_channel_endpoint_receiver_release(aeron_receive_channel_endpoint_t *endpoint);
-extern bool aeron_send_channel_endpoint_has_receiver_released(aeron_receive_channel_endpoint_t *endpoint);
+extern bool aeron_receive_channel_endpoint_has_receiver_released(aeron_receive_channel_endpoint_t *endpoint);

@@ -190,3 +190,14 @@ int32_t aeron_counter_send_channel_status_allocate(
         AERON_COUNTER_SEND_CHANNEL_STATUS_TYPE_ID,
         channel);
 }
+
+int32_t aeron_counter_receive_channel_status_allocate(
+    aeron_counters_manager_t *counters_manager,
+    const char *channel)
+{
+    return aeron_channel_endpoint_status_allocate(
+        counters_manager,
+        AERON_COUNTER_RECEIVE_CHANNEL_STATUS_NAME,
+        AERON_COUNTER_RECEIVE_CHANNEL_STATUS_TYPE_ID,
+        channel);
+}

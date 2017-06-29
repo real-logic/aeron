@@ -79,12 +79,19 @@ int32_t aeron_counter_subscription_position_allocate(
 #define AERON_COUNTER_SEND_CHANNEL_STATUS_NAME "snd-channel"
 #define AERON_COUNTER_SEND_CHANNEL_STATUS_TYPE_ID (6)
 
+#define AERON_COUNTER_RECEIVE_CHANNEL_STATUS_NAME "rcv-channel"
+#define AERON_COUNTER_RECEIVE_CHANNEL_STATUS_TYPE_ID (7)
+
 #define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_INITIALIZING (0)
 #define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ERRORED (-1)
 #define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE (1)
 #define AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_CLOSING (2)
 
 int32_t aeron_counter_send_channel_status_allocate(
+    aeron_counters_manager_t *counters_manager,
+    const char *channel);
+
+int32_t aeron_counter_receive_channel_status_allocate(
     aeron_counters_manager_t *counters_manager,
     const char *channel);
 

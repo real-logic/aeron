@@ -20,12 +20,13 @@
 #include <exception>
 
 #include <gtest/gtest.h>
-#include <command/ImageMessageFlyweight.h>
 
 extern "C"
 {
 #include "aeron_driver_conductor.h"
 #include "util/aeron_error.h"
+#include "aeron_driver_sender.h"
+#include "aeron_driver_receiver.h"
 }
 
 #include "concurrent/ringbuffer/ManyToOneRingBuffer.h"
@@ -36,11 +37,17 @@ extern "C"
 #include "command/PublicationMessageFlyweight.h"
 #include "command/SubscriptionMessageFlyweight.h"
 #include "command/RemoveMessageFlyweight.h"
+#include "command/ImageMessageFlyweight.h"
 
 using namespace aeron::concurrent::broadcast;
 using namespace aeron::concurrent::ringbuffer;
 using namespace aeron::concurrent;
 using namespace aeron;
+
+#define CHANNEL_1 "aeron:udp?endpoint=localhost:40001"
+#define CHANNEL_2 "aeron:udp?endpoint=localhost:40002"
+#define CHANNEL_3 "aeron:udp?endpoint=localhost:40003"
+#define CHANNEL_4 "aeron:udp?endpoint=localhost:40004"
 
 #define STREAM_ID_1 (101)
 #define STREAM_ID_2 (102)
@@ -149,6 +156,20 @@ struct TestDriverConductor
         {
             throw std::runtime_error("could not init context: " + std::string(aeron_errmsg()));
         }
+
+        if (aeron_driver_sender_init(&m_sender, context.m_context, &m_conductor.system_counters, &m_conductor.error_log) < 0)
+        {
+            throw std::runtime_error("could not init sender: " + std::string(aeron_errmsg()));
+        }
+
+        context.m_context->sender_proxy = &m_sender.sender_proxy;
+
+        if (aeron_driver_receiver_init(&m_receiver, context.m_context, &m_conductor.system_counters, &m_conductor.error_log) < 0)
+        {
+            throw std::runtime_error("could not init receiver: " + std::string(aeron_errmsg()));
+        }
+
+        context.m_context->receiver_proxy = &m_receiver.receiver_proxy;
     }
 
     virtual ~TestDriverConductor()
@@ -157,6 +178,8 @@ struct TestDriverConductor
     }
 
     aeron_driver_conductor_t m_conductor;
+    aeron_driver_sender_t m_sender;
+    aeron_driver_receiver_t m_receiver;
 };
 
 class DriverConductorTest : public testing::Test
@@ -213,6 +236,20 @@ public:
         return writeCommand(msg_type_id, command.length());
     }
 
+    int addNetworkPublication(
+        int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id, bool is_exclusive)
+    {
+        int32_t msg_type_id = is_exclusive ? AERON_COMMAND_ADD_EXCLUSIVE_PUBLICATION : AERON_COMMAND_ADD_PUBLICATION;
+        command::PublicationMessageFlyweight command(m_command, 0);
+
+        command.clientId(client_id);
+        command.correlationId(correlation_id);
+        command.streamId(stream_id);
+        command.channel(channel);
+
+        return writeCommand(msg_type_id, command.length());
+    }
+
     int removePublication(int64_t client_id, int64_t correlation_id, int64_t registration_id)
     {
         command::RemoveMessageFlyweight command(m_command, 0);
@@ -233,6 +270,20 @@ public:
         command.streamId(stream_id);
         command.registrationCorrelationId(registration_id);
         command.channel(AERON_IPC_CHANNEL);
+
+        return writeCommand(AERON_COMMAND_ADD_SUBSCRIPTION, command.length());
+    }
+
+    int addNetworkSubscription(
+        int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id, int64_t registration_id)
+    {
+        command::SubscriptionMessageFlyweight command(m_command, 0);
+
+        command.clientId(client_id);
+        command.correlationId(correlation_id);
+        command.streamId(stream_id);
+        command.registrationCorrelationId(registration_id);
+        command.channel(channel);
 
         return writeCommand(AERON_COMMAND_ADD_SUBSCRIPTION, command.length());
     }
@@ -895,4 +946,293 @@ TEST_F(DriverConductorTest, shouldBeAbleToTimeoutIpcPublicationWithActiveIpcSubs
         };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToAddSingleNetworkPublication)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, false), 0);
+
+    doWork();
+
+    aeron_send_channel_endpoint_t *endpoint =
+        aeron_driver_conductor_find_send_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+
+    ASSERT_NE(endpoint, (aeron_send_channel_endpoint_t *)NULL);
+
+    aeron_network_publication_t *publication =
+        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id);
+
+    ASSERT_NE(publication, (aeron_network_publication_t *)NULL);
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+
+        const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.streamId(), STREAM_ID_1);
+        EXPECT_EQ(response.correlationId(), pub_id);
+        EXPECT_GT(response.logFileName().length(), 0u);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToAddAndRemoveSingleNetworkPublication)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id = nextCorrelationId();
+    int64_t remove_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, false), 0);
+    doWork();
+    EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 1u);
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    ASSERT_EQ(removePublication(client_id, remove_correlation_id, pub_id), 0);
+    doWork();
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+        const command::CorrelatedMessageFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.correlationId(), remove_correlation_id);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToAddSingleNetworkSubscription)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
+
+    doWork();
+
+    aeron_receive_channel_endpoint_t *endpoint =
+        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+
+    ASSERT_NE(endpoint, (aeron_receive_channel_endpoint_t *)NULL);
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+        const command::CorrelatedMessageFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.correlationId(), sub_id);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscription)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+    int64_t remove_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
+    doWork();
+    EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 1u);
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
+    doWork();
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+        const command::CorrelatedMessageFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.correlationId(), remove_correlation_id);
+    };
+
+    EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 0u);
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleNetworkPublications)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id_1 = nextCorrelationId();
+    int64_t pub_id_2 = nextCorrelationId();
+    int64_t pub_id_3 = nextCorrelationId();
+    int64_t pub_id_4 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_1, STREAM_ID_2, false), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_3, CHANNEL_1, STREAM_ID_3, false), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_4, CHANNEL_1, STREAM_ID_4, false), 0);
+    doWork();
+
+    aeron_send_channel_endpoint_t *endpoint =
+        aeron_driver_conductor_find_send_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+
+    ASSERT_NE(endpoint, (aeron_send_channel_endpoint_t *)NULL);
+    ASSERT_EQ(aeron_driver_conductor_num_send_channel_endpoints(&m_conductor.m_conductor), 1u);
+
+    aeron_network_publication_t *publication_1 =
+        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_1);
+    aeron_network_publication_t *publication_2 =
+        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_2);
+    aeron_network_publication_t *publication_3 =
+        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_3);
+    aeron_network_publication_t *publication_4 =
+        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_4);
+
+    ASSERT_NE(publication_1, (aeron_network_publication_t *)NULL);
+    ASSERT_NE(publication_2, (aeron_network_publication_t *)NULL);
+    ASSERT_NE(publication_3, (aeron_network_publication_t *)NULL);
+    ASSERT_NE(publication_4, (aeron_network_publication_t *)NULL);
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleNetworkPublicationsDifferentChannelsSameStreamId)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id_1 = nextCorrelationId();
+    int64_t pub_id_2 = nextCorrelationId();
+    int64_t pub_id_3 = nextCorrelationId();
+    int64_t pub_id_4 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_2, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_3, CHANNEL_3, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_4, CHANNEL_4, STREAM_ID_1, false), 0);
+    doWork();
+
+    aeron_send_channel_endpoint_t *endpoint_1 =
+        aeron_driver_conductor_find_send_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+    aeron_send_channel_endpoint_t *endpoint_2 =
+        aeron_driver_conductor_find_send_channel_endpoint(&m_conductor.m_conductor, CHANNEL_2);
+    aeron_send_channel_endpoint_t *endpoint_3 =
+        aeron_driver_conductor_find_send_channel_endpoint(&m_conductor.m_conductor, CHANNEL_3);
+    aeron_send_channel_endpoint_t *endpoint_4 =
+        aeron_driver_conductor_find_send_channel_endpoint(&m_conductor.m_conductor, CHANNEL_4);
+
+    ASSERT_NE(endpoint_1, (aeron_send_channel_endpoint_t *)NULL);
+    ASSERT_NE(endpoint_2, (aeron_send_channel_endpoint_t *)NULL);
+    ASSERT_NE(endpoint_3, (aeron_send_channel_endpoint_t *)NULL);
+    ASSERT_NE(endpoint_4, (aeron_send_channel_endpoint_t *)NULL);
+    ASSERT_EQ(aeron_driver_conductor_num_send_channel_endpoints(&m_conductor.m_conductor), 4u);
+
+    aeron_network_publication_t *publication_1 =
+        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_1);
+    aeron_network_publication_t *publication_2 =
+        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_2);
+    aeron_network_publication_t *publication_3 =
+        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_3);
+    aeron_network_publication_t *publication_4 =
+        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_4);
+
+    ASSERT_NE(publication_1, (aeron_network_publication_t *)NULL);
+    ASSERT_NE(publication_2, (aeron_network_publication_t *)NULL);
+    ASSERT_NE(publication_3, (aeron_network_publication_t *)NULL);
+    ASSERT_NE(publication_4, (aeron_network_publication_t *)NULL);
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleExclusiveNetworkPublicationsWithSameChannelSameStreamId)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id_1 = nextCorrelationId();
+    int64_t pub_id_2 = nextCorrelationId();
+    int64_t pub_id_3 = nextCorrelationId();
+    int64_t pub_id_4 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_1, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_1, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_3, CHANNEL_1, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_4, CHANNEL_1, STREAM_ID_1, true), 0);
+    doWork();
+
+    aeron_send_channel_endpoint_t *endpoint =
+        aeron_driver_conductor_find_send_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+
+    ASSERT_NE(endpoint, (aeron_send_channel_endpoint_t *)NULL);
+    ASSERT_EQ(aeron_driver_conductor_num_send_channel_endpoints(&m_conductor.m_conductor), 1u);
+
+    aeron_network_publication_t *publication_1 =
+        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_1);
+    aeron_network_publication_t *publication_2 =
+        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_2);
+    aeron_network_publication_t *publication_3 =
+        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_3);
+    aeron_network_publication_t *publication_4 =
+        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_4);
+
+    ASSERT_NE(publication_1, (aeron_network_publication_t *)NULL);
+    ASSERT_NE(publication_2, (aeron_network_publication_t *)NULL);
+    ASSERT_NE(publication_3, (aeron_network_publication_t *)NULL);
+    ASSERT_NE(publication_4, (aeron_network_publication_t *)NULL);
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleNetworkSubscriptionsWithSameChannelSameStreamId)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id_1 = nextCorrelationId();
+    int64_t sub_id_2 = nextCorrelationId();
+    int64_t sub_id_3 = nextCorrelationId();
+    int64_t sub_id_4 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_3, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_4, CHANNEL_1, STREAM_ID_1, -1), 0);
+
+    doWork();
+
+    aeron_receive_channel_endpoint_t *endpoint =
+        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+
+    ASSERT_NE(endpoint, (aeron_receive_channel_endpoint_t *)NULL);
+    ASSERT_EQ(aeron_driver_conductor_num_receive_channel_endpoints(&m_conductor.m_conductor), 1u);
+    ASSERT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 4u);
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
+}
+
+TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleNetworkSubscriptionsWithDifferentChannelSameStreamId)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id_1 = nextCorrelationId();
+    int64_t sub_id_2 = nextCorrelationId();
+    int64_t sub_id_3 = nextCorrelationId();
+    int64_t sub_id_4 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_2, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_3, CHANNEL_3, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_4, CHANNEL_4, STREAM_ID_1, -1), 0);
+
+    doWork();
+
+    aeron_receive_channel_endpoint_t *endpoint_1 =
+        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+    aeron_receive_channel_endpoint_t *endpoint_2 =
+        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_2);
+    aeron_receive_channel_endpoint_t *endpoint_3 =
+        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_3);
+    aeron_receive_channel_endpoint_t *endpoint_4 =
+        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_4);
+
+    ASSERT_NE(endpoint_1, (aeron_receive_channel_endpoint_t *)NULL);
+    ASSERT_NE(endpoint_2, (aeron_receive_channel_endpoint_t *)NULL);
+    ASSERT_NE(endpoint_3, (aeron_receive_channel_endpoint_t *)NULL);
+    ASSERT_NE(endpoint_4, (aeron_receive_channel_endpoint_t *)NULL);
+    ASSERT_EQ(aeron_driver_conductor_num_receive_channel_endpoints(&m_conductor.m_conductor), 4u);
+    ASSERT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 4u);
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
 }

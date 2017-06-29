@@ -122,7 +122,7 @@ inline void aeron_receive_channel_endpoint_receiver_release(aeron_receive_channe
     AERON_PUT_ORDERED(endpoint->has_receiver_released, true);
 }
 
-inline bool aeron_send_channel_endpoint_has_receiver_released(aeron_receive_channel_endpoint_t *endpoint)
+inline bool aeron_receive_channel_endpoint_has_receiver_released(aeron_receive_channel_endpoint_t *endpoint)
 {
     bool has_receiver_released;
     AERON_GET_VOLATILE(has_receiver_released, endpoint->has_receiver_released);

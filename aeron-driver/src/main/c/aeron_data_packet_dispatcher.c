@@ -15,11 +15,15 @@
  */
 
 #include <string.h>
+#include "media/aeron_receive_channel_endpoint.h"
 #include "util/aeron_error.h"
 #include "aeron_data_packet_dispatcher.h"
 #include "aeron_publication_image.h"
 
-int aeron_data_packet_dispatcher_init(aeron_data_packet_dispatcher_t *dispatcher)
+int aeron_data_packet_dispatcher_init(
+    aeron_data_packet_dispatcher_t *dispatcher,
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    aeron_driver_receiver_t *receiver)
 {
     if (aeron_int64_to_ptr_hash_map_init(
         &dispatcher->ignored_sessions_map, 16, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
@@ -39,6 +43,8 @@ int aeron_data_packet_dispatcher_init(aeron_data_packet_dispatcher_t *dispatcher
         return -1;
     }
 
+    dispatcher->conductor_proxy = conductor_proxy;
+    dispatcher->receiver = receiver;
     return 0;
 }
 
@@ -163,7 +169,8 @@ int aeron_data_packet_dispatcher_on_data(
             &dispatcher->ignored_sessions_map,
             aeron_int64_to_ptr_hash_map_compound_key(header->session_id, header->stream_id)))
         {
-            /* TODO: elicit SM */
+            return aeron_data_packet_dispatcher_elicit_setup_from_source(
+                dispatcher, endpoint, addr, header->stream_id, header->session_id);
         }
     }
 
@@ -185,9 +192,31 @@ int aeron_data_packet_dispatcher_on_setup(
     {
         aeron_publication_image_t *image = aeron_int64_to_ptr_hash_map_get(session_map, header->session_id);
 
-        if (NULL != image)
+        if (NULL == image &&
+            aeron_data_packet_dispatcher_is_not_already_in_progress_or_on_cooldown(
+                dispatcher, header->stream_id, header->session_id))
         {
-            /* TODO: */
+            if (endpoint->conductor_fields.udp_channel->multicast &&
+                endpoint->conductor_fields.udp_channel->multicast_ttl < header->ttl)
+            {
+                aeron_counter_ordered_increment(endpoint->possible_ttl_asymmetry_counter, 1);
+            }
+
+            if (aeron_int64_to_ptr_hash_map_put(
+                &dispatcher->ignored_sessions_map,
+                aeron_int64_to_ptr_hash_map_compound_key(header->session_id, header->stream_id),
+                &dispatcher->tokens.init_in_progress) < 0)
+            {
+                int errcode = errno;
+
+                aeron_set_err(errcode, "could not aeron_data_packet_dispatcher_on_setup: %s", strerror(errcode));
+                return -1;
+            }
+
+//            struct sockaddr_storage *control_addr =
+//                endpoint->conductor_fields.udp_channel->multicast ? &endpoint->conductor_fields.udp_channel->remote_control : addr;
+
+            /* TODO: call conductor_proxy to create publication image */
         }
     }
 
@@ -213,14 +242,52 @@ int aeron_data_packet_dispatcher_on_rttm(
         {
             if (header->frame_header.flags & AERON_RTTM_HEADER_REPLY_FLAG)
             {
-                /* TODO: */
+                struct sockaddr_storage *control_addr =
+                    endpoint->conductor_fields.udp_channel->multicast ? &endpoint->conductor_fields.udp_channel->remote_control : addr;
+
+                return aeron_receive_channel_endpoint_send_rttm(
+                    endpoint, control_addr, header->stream_id, header->session_id, header->echo_timestamp, 0, false);
             }
             else
             {
-                /* TODO: */
+                /* TODO: send to image for processing */
             }
         }
     }
 
     return 0;
 }
+
+int aeron_data_packet_dispatcher_elicit_setup_from_source(
+    aeron_data_packet_dispatcher_t *dispatcher,
+    aeron_receive_channel_endpoint_t *endpoint,
+    struct sockaddr_storage *addr,
+    int32_t stream_id,
+    int32_t session_id)
+{
+    struct sockaddr_storage *control_addr =
+        endpoint->conductor_fields.udp_channel->multicast ? &endpoint->conductor_fields.udp_channel->remote_control : addr;
+
+    if (aeron_int64_to_ptr_hash_map_put(
+        &dispatcher->ignored_sessions_map,
+        aeron_int64_to_ptr_hash_map_compound_key(session_id, stream_id),
+        &dispatcher->tokens.pending_setup_frame) < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "could not aeron_data_packet_dispatcher_remove_publication_image: %s", strerror(errcode));
+        return -1;
+    }
+
+    if (aeron_receive_channel_endpoint_send_sm(
+        endpoint, control_addr, stream_id, session_id, 0, 0, 0, AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG) < 0)
+    {
+        return -1;
+    }
+
+    /* TODO: receiver add pending setup message so it can time it out */
+    return 0;
+}
+
+extern bool aeron_data_packet_dispatcher_is_not_already_in_progress_or_on_cooldown(
+    aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id, int32_t session_id);

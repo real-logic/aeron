@@ -63,8 +63,21 @@ typedef struct aeron_driver_sender_stct
 
     int64_t *total_bytes_sent_counter;
     int64_t *errors_counter;
+    int64_t *invalid_frames_counter;
 }
 aeron_driver_sender_t;
+
+#define AERON_DRIVER_SENDER_ERROR(sender, format, ...) \
+do \
+{ \
+    char error_buffer[AERON_MAX_PATH]; \
+    int err_code = aeron_errcode(); \
+    snprintf(error_buffer, sizeof(error_buffer) - 1, format, __VA_ARGS__); \
+    aeron_distinct_error_log_record(sender->error_log, err_code, aeron_errmsg(), error_buffer); \
+    aeron_counter_increment(sender->errors_counter, 1); \
+    aeron_set_err(0, "%s", "no error"); \
+} \
+while(0)
 
 int aeron_driver_sender_init(
     aeron_driver_sender_t *sender,

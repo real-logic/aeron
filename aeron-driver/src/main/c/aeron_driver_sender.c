@@ -82,20 +82,10 @@ int aeron_driver_sender_init(
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_BYTES_SENT);
     sender->errors_counter =
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_ERRORS);
+    sender->invalid_frames_counter =
+        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS);
     return 0;
 }
-
-#define AERON_DRIVER_SENDER_ERROR(sender, format, ...) \
-do \
-{ \
-    char error_buffer[AERON_MAX_PATH]; \
-    int err_code = aeron_errcode(); \
-    snprintf(error_buffer, sizeof(error_buffer) - 1, format, __VA_ARGS__); \
-    aeron_distinct_error_log_record(sender->error_log, err_code, aeron_errmsg(), error_buffer); \
-    aeron_counter_increment(sender->errors_counter, 1); \
-    aeron_set_err(0, "%s", "no error"); \
-} \
-while(0)
 
 void aeron_driver_sender_on_command(void *clientd, volatile void *item)
 {

@@ -21,6 +21,7 @@
 
 #include <string.h>
 #include <sys/socket.h>
+#include "aeron_driver_sender.h"
 #include "util/aeron_netutil.h"
 #include "aeron_driver_context.h"
 #include "concurrent/aeron_counters_manager.h"
@@ -161,12 +162,13 @@ int aeron_send_channel_endpoint_remove_publication(
 void aeron_send_channel_endpoint_dispatch(
     void *sender_clientd, void *endpoint_clientd, uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
 {
+    aeron_driver_sender_t *sender = (aeron_driver_sender_t *)sender_clientd;
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *)buffer;
     aeron_send_channel_endpoint_t *endpoint = (aeron_send_channel_endpoint_t *)endpoint_clientd;
 
     if ((length < sizeof(aeron_frame_header_t)) || (frame_header->version != AERON_FRAME_HEADER_VERSION))
     {
-        /* TODO: bump invalid counter (in sender_clientd?) */
+        aeron_counter_increment(sender->invalid_frames_counter, 1);
         return;
     }
 
@@ -179,7 +181,7 @@ void aeron_send_channel_endpoint_dispatch(
             }
             else
             {
-                /* TODO: bump invalid counter (in sender_clientd?) */
+                aeron_counter_increment(sender->invalid_frames_counter, 1);
             }
             break;
 
@@ -190,7 +192,7 @@ void aeron_send_channel_endpoint_dispatch(
             }
             else
             {
-                /* TODO: bump invalid counter (in sender_clientd?) */
+                aeron_counter_increment(sender->invalid_frames_counter, 1);
             }
             break;
 
@@ -201,7 +203,7 @@ void aeron_send_channel_endpoint_dispatch(
             }
             else
             {
-                /* TODO: bump invalid counter (in sender_clientd?) */
+                aeron_counter_increment(sender->invalid_frames_counter, 1);
             }
             break;
 

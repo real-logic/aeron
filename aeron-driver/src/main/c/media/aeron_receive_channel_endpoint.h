@@ -22,6 +22,7 @@
 #include "aeron_udp_channel_transport.h"
 #include "concurrent/aeron_counters_manager.h"
 #include "aeron_driver_context.h"
+#include "aeron_system_counters.h"
 
 typedef struct aeron_stream_id_refcnt_stct
 {
@@ -44,7 +45,11 @@ typedef struct aeron_receive_channel_endpoint_stct
     aeron_data_packet_dispatcher_t dispatcher;
     aeron_int64_to_ptr_hash_map_t stream_id_to_refcnt_map;
     aeron_counter_t channel_status;
+    int64_t receiver_id;
     bool has_receiver_released;
+
+    int64_t *short_sends_counter;
+    int64_t *possible_ttl_asymmetry_counter;
 }
 aeron_receive_channel_endpoint_t;
 
@@ -52,21 +57,43 @@ int aeron_receive_channel_endpoint_create(
     aeron_receive_channel_endpoint_t **endpoint,
     aeron_udp_channel_t *channel,
     aeron_counter_t *status_indicator,
+    aeron_system_counters_t *system_counters,
     aeron_driver_context_t *context);
 
 int aeron_receive_channel_endpoint_delete(
     aeron_counters_manager_t *counters_manager, aeron_receive_channel_endpoint_t *channel);
 
+int aeron_receive_channel_endpoint_sendmsg(aeron_receive_channel_endpoint_t *endpoint, struct msghdr *msghdr);
+
+int aeron_receive_channel_endpoint_send_sm(
+    aeron_receive_channel_endpoint_t *endpoint,
+    struct sockaddr_storage *addr,
+    int32_t stream_id,
+    int32_t session_id,
+    int32_t term_id,
+    int32_t term_offset,
+    int32_t receiver_window,
+    uint8_t flags);
+
+int aeron_receive_channel_endpoint_send_rttm(
+    aeron_receive_channel_endpoint_t *endpoint,
+    struct sockaddr_storage *addr,
+    int32_t stream_id,
+    int32_t session_id,
+    int64_t echo_timestamp,
+    int64_t reception_delta,
+    bool is_reply);
+
 void aeron_receive_channel_endpoint_dispatch(
     void *receiver_clientd, void *endpoint_clientd, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
 
-void aeron_receive_channel_endpoint_on_data(
+int aeron_receive_channel_endpoint_on_data(
     aeron_receive_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
 
-void aeron_receive_channel_endpoint_on_setup(
+int aeron_receive_channel_endpoint_on_setup(
     aeron_receive_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
 
-void aeron_receive_channel_endpoint_on_rttm(
+int aeron_receive_channel_endpoint_on_rttm(
     aeron_receive_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
 
 int32_t aeron_receive_channel_endpoint_incref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);

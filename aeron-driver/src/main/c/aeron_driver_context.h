@@ -132,6 +132,8 @@ typedef struct aeron_driver_context_stct
 
     aeron_driver_conductor_to_driver_interceptor_func_t to_driver_interceptor_func;
     aeron_driver_conductor_to_client_interceptor_func_t to_client_interceptor_func;
+
+    int64_t receiver_id;
 }
 aeron_driver_context_t;
 

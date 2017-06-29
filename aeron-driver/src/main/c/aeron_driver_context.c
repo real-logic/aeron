@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <math.h>
 #include <limits.h>
+#include <uuid/uuid.h>
 #include "util/aeron_error.h"
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_fileutil.h"
@@ -412,6 +413,18 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     _context->to_driver_interceptor_func = aeron_driver_conductor_to_driver_interceptor_null;
     _context->to_client_interceptor_func = aeron_driver_conductor_to_client_interceptor_null;
+
+    uuid_t id;
+    uuid_generate(id);
+
+    struct uuid_as_uint64
+    {
+        uint64_t high;
+        uint64_t low;
+    }
+    *id_as_uint64 = (struct uuid_as_uint64 *)&id;
+
+    _context->receiver_id = id_as_uint64->high ^ id_as_uint64->low;
 
     *context = _context;
     return 0;

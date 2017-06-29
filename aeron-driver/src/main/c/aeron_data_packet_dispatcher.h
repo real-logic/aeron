@@ -20,6 +20,7 @@
 #include <netinet/in.h>
 #include "protocol/aeron_udp_protocol.h"
 #include "collections/aeron_int64_to_ptr_hash_map.h"
+#include "aeron_driver_receiver_proxy.h"
 
 typedef struct aeron_publication_image_stct aeron_publication_image_t;
 typedef struct aeron_receive_channel_endpoint_stct aeron_receive_channel_endpoint_t;
@@ -37,10 +38,16 @@ typedef struct aeron_data_packet_dispatcher_stct
         int on_cooldown;
     }
     tokens;
+
+    aeron_driver_conductor_proxy_t *conductor_proxy;
+    aeron_driver_receiver_t *receiver;
 }
 aeron_data_packet_dispatcher_t;
 
-int aeron_data_packet_dispatcher_init(aeron_data_packet_dispatcher_t *dispatcher);
+int aeron_data_packet_dispatcher_init(
+    aeron_data_packet_dispatcher_t *dispatcher,
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    aeron_driver_receiver_t *receiver);
 int aeron_data_packet_dispatcher_close(aeron_data_packet_dispatcher_t *dispatcher);
 
 int aeron_data_packet_dispatcher_add_subscription(aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id);
@@ -74,5 +81,21 @@ int aeron_data_packet_dispatcher_on_rttm(
     uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *addr);
+
+int aeron_data_packet_dispatcher_elicit_setup_from_source(
+    aeron_data_packet_dispatcher_t *dispatcher,
+    aeron_receive_channel_endpoint_t *endpoint,
+    struct sockaddr_storage *addr,
+    int32_t stream_id,
+    int32_t session_id);
+
+inline bool aeron_data_packet_dispatcher_is_not_already_in_progress_or_on_cooldown(
+    aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id, int32_t session_id)
+{
+    void *status = aeron_int64_to_ptr_hash_map_get(&dispatcher->ignored_sessions_map,
+        aeron_int64_to_ptr_hash_map_compound_key(session_id, stream_id));
+
+    return (&dispatcher->tokens.init_in_progress != status && &dispatcher->tokens.on_cooldown != status);
+}
 
 #endif //AERON_AERON_DATA_PACKET_DISPATCHER_H

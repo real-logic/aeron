@@ -1545,6 +1545,11 @@ int aeron_driver_conductor_on_add_network_subscription(
         return -1;
     }
 
+    if (aeron_receive_channel_endpoint_incref_to_stream(endpoint, command->stream_id) < 0)
+    {
+        return -1;
+    }
+
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->network_subscriptions, aeron_subscription_link_t);
     if (ensure_capacity_result >= 0)
     {

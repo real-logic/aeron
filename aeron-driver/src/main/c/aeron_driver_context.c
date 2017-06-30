@@ -193,6 +193,12 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         return -1;
     }
 
+    if ((_context->congestion_control_supplier_func =
+        aeron_congestion_control_strategy_supplier_load("aeron_static_window_congestion_control_strategy_supplier")) == NULL)
+    {
+        return -1;
+    }
+
 #if defined(__linux__)
     snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "/dev/shm/aeron-%s", username());
 #elif (_MSC_VER)
@@ -222,6 +228,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->multicast_ttl = 0;
     _context->send_to_sm_poll_ratio = 4;
     _context->status_message_timeout_ns = 200 * 1000 * 1000L;
+    _context->image_liveness_timeout_ns = 10 * 1000 * 1000 * 1000L;
+    _context->initial_window_length = 128 * 1024;
 
     /* set from env */
     char *value = NULL;
@@ -242,6 +250,14 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     if ((value = getenv(AERON_MULTICAST_FLOWCONTROL_SUPPLIER_ENV_VAR)))
     {
         if ((_context->multicast_flow_control_supplier_func = aeron_flow_control_strategy_supplier_load(value)) == NULL)
+        {
+            return -1;
+        }
+    }
+
+    if ((value = getenv(AERON_CONGESTIONCONTROL_SUPPLIER_ENV_VAR)))
+    {
+        if ((_context->congestion_control_supplier_func = aeron_congestion_control_strategy_supplier_load(value)) == NULL)
         {
             return -1;
         }
@@ -386,6 +402,20 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             _context->status_message_timeout_ns,
             1000,
             INT64_MAX);
+
+    _context->image_liveness_timeout_ns =
+        aeron_config_parse_uint64(
+            getenv(AERON_IMAGE_LIVENESS_TIMEOUT_ENV_VAR),
+            _context->image_liveness_timeout_ns,
+            1000,
+            INT64_MAX);
+
+    _context->initial_window_length =
+        aeron_config_parse_uint64(
+            getenv(AERON_RCV_INITIAL_WINDOW_LENGTH_ENV_VAR),
+            _context->initial_window_length,
+            256,
+            INT32_MAX);
 
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;

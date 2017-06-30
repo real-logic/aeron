@@ -67,6 +67,7 @@ SET(SOURCE
     aeron_flow_control.c
     aeron_data_packet_dispatcher.c
     aeron_publication_image.c
+    aeron_congestion_control.c
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel.c
     media/aeron_send_channel_endpoint.c
@@ -118,6 +119,7 @@ SET(HEADERS
     aeron_flow_control.h
     aeron_data_packet_dispatcher.h
     aeron_publication_image.h
+    aeron_congestion_control.h
     media/aeron_udp_channel_transport.h
     media/aeron_udp_channel.h
     media/aeron_send_channel_endpoint.h

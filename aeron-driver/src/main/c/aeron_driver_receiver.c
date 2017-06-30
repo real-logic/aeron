@@ -201,6 +201,8 @@ void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item)
     {
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_add_publication_image: %s", aeron_errmsg());
     }
+
+    /* TODO: add image to list of images */
 }
 
 void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item)
@@ -213,4 +215,6 @@ void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item
     {
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_remove_publication_image: %s", aeron_errmsg());
     }
+
+    /* TODO: remove image from list of images */
 }

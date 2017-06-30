@@ -25,6 +25,7 @@
 #include "concurrent/aeron_mpsc_concurrent_array_queue.h"
 #include "concurrent/aeron_mpsc_rb.h"
 #include "aeron_flow_control.h"
+#include "aeron_congestion_control.h"
 
 #define AERON_CNC_FILE "cnc.dat"
 #define AERON_CNC_VERSION (7)
@@ -78,6 +79,7 @@ typedef struct aeron_driver_context_stct
     uint64_t client_liveness_timeout_ns;    /* aeron.client.liveness.timeout = 5s */
     uint64_t publication_linger_timeout_ns; /* aeron.publication.linger.timeout = 5s */
     uint64_t status_message_timeout_ns;     /* aeron.rcv.status.message.timeout = 200ms */
+    uint64_t image_liveness_timeout_ns;     /* aeron.image.liveness.timeout = 10s */
     size_t to_driver_buffer_length;         /* aeron.conductor.buffer.length = 1MB + trailer*/
     size_t to_clients_buffer_length;        /* aeron.clients.buffer.length = 1MB + trailer */
     size_t counters_values_buffer_length;   /* aeron.counters.buffer.length = 1MB */
@@ -91,6 +93,7 @@ typedef struct aeron_driver_context_stct
     size_t socket_rcvbuf;                   /* aeron.socket.so_rcvbuf = 128 * 1024 */
     size_t socket_sndbuf;                   /* aeron.socket.so_sndbuf = 0 */
     size_t send_to_sm_poll_ratio;           /* aeron.send.to.status.poll.ratio = 4 */
+    size_t initial_window_length;           /* aeron.rcv.initial.window.length = 128KB */
     uint8_t multicast_ttl;                  /* aeron.socket.multicast.ttl = 0 */
 
     aeron_mapped_file_t cnc_map;
@@ -125,6 +128,8 @@ typedef struct aeron_driver_context_stct
 
     aeron_flow_control_strategy_supplier_func_t unicast_flow_control_supplier_func;
     aeron_flow_control_strategy_supplier_func_t multicast_flow_control_supplier_func;
+
+    aeron_congestion_control_strategy_supplier_func_t congestion_control_supplier_func;
 
     aeron_driver_conductor_proxy_t *conductor_proxy;
     aeron_driver_sender_proxy_t *sender_proxy;

@@ -161,7 +161,7 @@ int aeron_data_packet_dispatcher_on_data(
 
         if (NULL != image)
         {
-            /* TODO: insert data into image */
+            return aeron_publication_image_insert_packet(image, header->term_id, header->term_offset, buffer, length);
         }
         else if (NULL == aeron_int64_to_ptr_hash_map_get(
             &dispatcher->ignored_sessions_map,
@@ -259,7 +259,7 @@ int aeron_data_packet_dispatcher_on_rttm(
             }
             else
             {
-                /* TODO: send to image for processing */
+                return aeron_publication_image_on_rttm(image, header, addr);
             }
         }
     }

@@ -45,6 +45,7 @@ SET(SOURCE
     concurrent/aeron_spsc_concurrent_array_queue.c
     concurrent/aeron_mpsc_concurrent_array_queue.c
     concurrent/aeron_term_scanner.c
+    concurrent/aeron_term_rebuilder.c
     util/aeron_strutil.c
     util/aeron_fileutil.c
     util/aeron_arrayutil.c
@@ -98,6 +99,7 @@ SET(HEADERS
     concurrent/aeron_spsc_concurrent_array_queue.h
     concurrent/aeron_mpsc_concurrent_array_queue.h
     concurrent/aeron_term_scanner.h
+    concurrent/aeron_term_rebuilder.h
     command/aeron_control_protocol.h
     protocol/aeron_udp_protocol.h
     aeronmd.h

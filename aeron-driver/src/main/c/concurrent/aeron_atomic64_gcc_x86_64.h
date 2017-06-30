@@ -80,6 +80,12 @@ inline bool aeron_cmpxchgu64(volatile uint64_t* destination,  uint64_t expected,
     return (original == expected);
 }
 
+inline void aeron_acquire()
+{
+    volatile int64_t* dummy;
+    __asm__ volatile("movq 0(%%rsp), %0" : "=r" (dummy) : : "memory");
+}
+
 #define AERON_CMPXCHG32(original,dst,expected,desired) \
 do \
 { \

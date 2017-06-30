@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include <concurrent/aeron_atomic.h>
+#include "concurrent/aeron_term_rebuilder.h"
 
-extern bool aeron_cmpxchg64(volatile int64_t* destination,  int64_t expected, int64_t desired);
-extern bool aeron_cmpxchgu64(volatile uint64_t* destination,  uint64_t expected, uint64_t desired);
-extern void aeron_acquire();
+extern void aeron_term_rebuilder_insert(uint8_t *dest, const uint8_t *src, size_t length);

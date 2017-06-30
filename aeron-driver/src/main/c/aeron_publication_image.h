@@ -75,13 +75,19 @@ typedef struct aeron_publication_image_stct
     aeron_map_raw_log_close_func_t map_raw_log_close_func;
 
     int64_t last_packet_timestamp_ns;
+    int64_t last_status_mesage_timestamp;
 
+    int64_t last_sm_change_number;
+
+    volatile int64_t begin_sm_change;
+    volatile int64_t end_sm_change;
     int64_t next_sm_position;
     int32_t next_sm_receiver_window_length;
 
     int64_t *heartbeats_received_counter;
     int64_t *flow_control_under_runs_counter;
     int64_t *flow_control_over_runs_counter;
+    int64_t *status_messages_sent_counter;
 }
 aeron_publication_image_t;
 
@@ -107,14 +113,18 @@ int aeron_publication_image_create(
 
 int aeron_publication_image_close(aeron_counters_manager_t *counters_manager, aeron_publication_image_t *image);
 
+void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, int64_t new_clean_position);
+
 void aeron_publication_image_track_rebuild(
-    aeron_publication_image_t *image, int64_t now_nw, int64_t status_message_timeout);
+    aeron_publication_image_t *image, int64_t now_ns, int64_t status_message_timeout);
 
 int aeron_publication_image_insert_packet(
     aeron_publication_image_t *image, int32_t term_id, int32_t term_offset, const uint8_t *buffer, size_t length);
 
 int aeron_publication_image_on_rttm(
     aeron_publication_image_t *image, aeron_rttm_header_t *header, struct sockaddr_storage *addr);
+
+int aeron_publicaion_image_send_pending_status_message(aeron_publication_image_t *image);
 
 inline bool aeron_publication_image_is_heartbeat(const uint8_t *buffer, size_t length)
 {
@@ -157,6 +167,20 @@ inline void aeron_publication_image_hwm_candidate(aeron_publication_image_t *ima
 {
     image->last_packet_timestamp_ns = image->nano_clock();
     aeron_counter_propose_max_ordered(image->rcv_hwm_position.value_addr, proposed_position);
+}
+
+inline void aeron_publication_image_schedule_status_message(
+    aeron_publication_image_t *image, int64_t now_ns, int64_t sm_position, int32_t window_length)
+{
+    const int64_t change_number = image->begin_sm_change + 1;
+
+    AERON_PUT_ORDERED(image->begin_sm_change, change_number);
+
+    image->next_sm_position = sm_position;
+    image->next_sm_receiver_window_length = window_length;
+    image->last_status_mesage_timestamp = now_ns;
+
+    AERON_PUT_ORDERED(image->end_sm_change, change_number);
 }
 
 #endif //AERON_AERON_PUBLICATION_IMAGE_H

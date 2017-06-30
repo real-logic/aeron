@@ -5,7 +5,7 @@ Aeron
 
 Efficient reliable UDP unicast, UDP multicast, and IPC message transport. Java and C++ clients are available in this repository, and a [.NET client](https://github.com/AdaptiveConsulting/Aeron.NET) is available from a 3rd party. All three clients can exchange messages across machines, or on the same machine via IPC, very efficiently.
 
-Performance is the key focus. Aeron is designed to be the highest throughput with the lowest and most predictable latency possible of any messaging system. Aeron integrates with [Simple Binary Encoding (SBE)](https://github.com/real-logic/simple-binary-encoding) for the best possible performance in message encoding and decoding. Many of the data structures used in the creation of Aeron have been factored out to the [Agrona](https://github.com/real-logic/Agrona) project.
+Performance is the key focus. Aeron is designed to be the highest throughput with the lowest and most predictable latency possible of any messaging system. Aeron integrates with [Simple Binary Encoding (SBE)](https://github.com/real-logic/simple-binary-encoding) for the best possible performance in message encoding and decoding. Many of the data structures used in the creation of Aeron have been factored out to the [Agrona](https://github.com/real-logic/agrona) project.
 
 For details of usage, protocol specification, FAQ, etc. please check out the
 [Wiki](https://github.com/real-logic/Aeron/wiki).
@@ -79,7 +79,7 @@ You require the following to build Aeron:
 
 * Latest stable [Oracle JDK 8](http://www.oracle.com/technetwork/java/)
 
-You must first build and install [Agrona](https://github.com/real-logic/Agrona) into the local maven repository
+You must first build and install [Agrona](https://github.com/real-logic/agrona) into the local maven repository
 
     $ ./gradlew
 

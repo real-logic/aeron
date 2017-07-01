@@ -25,6 +25,7 @@
 #include "aeron_position.h"
 #include "aeron_driver_sender.h"
 #include "aeron_driver_receiver.h"
+#include "aeron_publication_image.h"
 
 static void aeron_error_log_resource_linger(uint8_t *resource)
 {
@@ -122,6 +123,13 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->receive_channel_endpoints.on_time_event = aeron_receive_channel_endpoint_entry_on_time_event;
     conductor->receive_channel_endpoints.has_reached_end_of_life = aeron_receive_channel_endpoint_entry_has_reached_end_of_life;
     conductor->receive_channel_endpoints.delete_func = aeron_receive_channel_endpoint_entry_delete;
+
+    conductor->publication_images.array = NULL;
+    conductor->publication_images.length = 0;
+    conductor->publication_images.capacity = 0;
+    conductor->publication_images.on_time_event = aeron_publication_image_entry_on_time_event;
+    conductor->publication_images.has_reached_end_of_life = aeron_publication_image_entry_has_reached_end_of_life;
+    conductor->publication_images.delete_func = aeron_publication_image_entry_delete;
 
     conductor->ipc_subscriptions.array = NULL;
     conductor->ipc_subscriptions.length = 0;
@@ -406,6 +414,25 @@ void aeron_receive_channel_endpoint_entry_delete(
     aeron_receive_channel_endpoint_delete(&conductor->counters_manager, entry->endpoint);
 }
 
+void aeron_publication_image_entry_on_time_event(
+    aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry, int64_t now_ns, int64_t now_ms)
+{
+    /* TODO: */
+}
+
+bool aeron_publication_image_entry_has_reached_end_of_life(
+    aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry)
+{
+    /* TODO: */
+    return entry->image->conductor_fields.has_reached_end_of_life;
+}
+
+void aeron_publication_image_entry_delete(
+    aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry)
+{
+    aeron_publication_image_close(&conductor->counters_manager, entry->image);
+}
+
 #define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(c, l,t,now_ns,now_ms) \
 for (int last_index = (int)l.length - 1, i = last_index; i >= 0; i--) \
 { \
@@ -433,6 +460,8 @@ void aeron_driver_conductor_on_check_managed_resources(
         conductor, conductor->send_channel_endpoints, aeron_send_channel_endpoint_entry_t, now_ns, now_ms);
     AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(
         conductor, conductor->receive_channel_endpoints, aeron_receive_channel_endpoint_entry_t, now_ns, now_ms);
+    AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(
+        conductor, conductor->publication_images, aeron_publication_image_entry_t, now_ns, now_ms);
 }
 
 aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
@@ -1112,6 +1141,17 @@ int aeron_driver_conductor_do_work(void *clientd)
         work_count += aeron_ipc_publication_update_pub_lmt(conductor->ipc_publications.array[i].publication);
     }
 
+    for (size_t i = 0, length = conductor->network_publications.length; i < length; i++)
+    {
+        work_count += aeron_network_publication_update_pub_lmt(conductor->network_publications.array[i].publication);
+    }
+
+    for (size_t i = 0, length = conductor->publication_images.length; i < length; i++)
+    {
+        aeron_publication_image_track_rebuild(
+            conductor->publication_images.array[i].image, now_ns, conductor->context->status_message_timeout_ns);
+    }
+
     return work_count;
 }
 
@@ -1154,12 +1194,20 @@ void aeron_driver_conductor_on_close(void *clientd)
         aeron_send_channel_endpoint_delete(
             &conductor->counters_manager, conductor->send_channel_endpoints.array[i].endpoint);
     }
+    aeron_free(conductor->send_channel_endpoints.array);
 
     for (size_t i = 0, length = conductor->receive_channel_endpoints.length; i < length; i++)
     {
         aeron_receive_channel_endpoint_delete(
             &conductor->counters_manager, conductor->receive_channel_endpoints.array[i].endpoint);
     }
+    aeron_free(conductor->receive_channel_endpoints.array);
+
+    for (size_t i = 0, length = conductor->publication_images.length; i < length; i++)
+    {
+        aeron_publication_image_close(&conductor->counters_manager, conductor->publication_images.array[i].image);
+    }
+    aeron_free(conductor->publication_images.array);
 
     aeron_system_counters_close(&conductor->system_counters);
     aeron_counters_manager_close(&conductor->counters_manager);
@@ -1656,9 +1704,92 @@ int aeron_driver_conductor_on_client_keepalive(
 void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
-    //aeron_command_create_publication_image_t *command = (aeron_command_create_publication_image_t *)item;
+    aeron_command_create_publication_image_t *command = (aeron_command_create_publication_image_t *)item;
 
-    /* TODO: create publication image */
+    /* TODO: validate sender MTU length */
+
+    int ensure_capacity_result = 0;
+    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->publication_images, aeron_publication_image_entry_t);
+
+    if (ensure_capacity_result < 0)
+    {
+        return;
+    }
+
+    aeron_receive_channel_endpoint_t *endpoint = command->endpoint;
+    const char *channel_str = endpoint->conductor_fields.udp_channel->original_uri;
+
+    const int64_t registration_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_commands);
+//    const int64_t join_position = aeron_logbuffer_compute_position(command->active_term_id, command->term_offset,
+//        (size_t)aeron_number_of_trailing_zeroes(command->term_length), command->initial_term_id);
+
+    /* TODO: check if interest exists to create image */
+
+    bool is_reliable = true;
+    aeron_congestion_control_strategy_t *congestion_control = NULL;
+    if (conductor->context->congestion_control_supplier_func(
+        &congestion_control,
+        channel_str,
+        command->stream_id,
+        command->session_id,
+        registration_id,
+        command->term_length,
+        command->mtu_length,
+        conductor->context,
+        &conductor->counters_manager) < 0)
+    {
+        return;
+    }
+
+    aeron_position_t rcv_hwm_position;
+    aeron_position_t rcv_pos_position;
+
+    rcv_hwm_position.counter_id =
+        aeron_counter_receiver_hwm_allocate(
+            &conductor->counters_manager, registration_id, command->session_id, command->stream_id, channel_str);
+    rcv_pos_position.counter_id =
+        aeron_counter_receiver_position_allocate(
+            &conductor->counters_manager, registration_id, command->session_id, command->stream_id, channel_str);
+
+    if (rcv_hwm_position.counter_id < 0 || rcv_pos_position.counter_id < 0)
+    {
+        return;
+    }
+
+    rcv_hwm_position.value_addr =
+        aeron_counter_addr(&conductor->counters_manager, (int32_t)rcv_hwm_position.counter_id);
+    rcv_pos_position.value_addr =
+        aeron_counter_addr(&conductor->counters_manager, (int32_t)rcv_pos_position.counter_id);
+
+    aeron_publication_image_t *image = NULL;
+    if (aeron_publication_image_create(
+        &image,
+        endpoint,
+        conductor->context,
+        registration_id,
+        command->session_id,
+        command->stream_id,
+        command->initial_term_id,
+        command->active_term_id,
+        command->term_offset,
+        &rcv_hwm_position,
+        &rcv_pos_position,
+        congestion_control,
+        &command->control_address,
+        &command->src_address,
+        command->term_length,
+        command->mtu_length,
+        is_reliable,
+        &conductor->system_counters) < 0)
+    {
+        return;
+    }
+
+    conductor->publication_images.array[conductor->publication_images.length++].image = image;
+
+    aeron_driver_receiver_proxy_on_add_publication_image(conductor->context->receiver_proxy, endpoint, image);
+
+    /* TODO: on_available_image */
 
     aeron_driver_receiver_proxy_on_delete_create_publication_image_cmd(conductor->context->receiver_proxy, item);
 }

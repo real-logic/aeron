@@ -26,6 +26,12 @@
 #define AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS (2)
 #define AERON_DRIVER_RECEIVER_MAX_UDP_PACKET_LENGTH (64 * 1024)
 
+typedef struct aeron_driver_receiver_image_entry_stct
+{
+    aeron_publication_image_t *image;
+}
+aeron_driver_receiver_image_entry_t;
+
 typedef struct aeron_driver_receiver_stct
 {
     aeron_driver_receiver_proxy_t receiver_proxy;
@@ -38,6 +44,14 @@ typedef struct aeron_driver_receiver_stct
         struct sockaddr_storage addrs[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
     }
     recv_buffers;
+
+    struct aeron_driver_receiver_images_stct
+    {
+        aeron_driver_receiver_image_entry_t *array;
+        size_t length;
+        size_t capacity;
+    }
+    images;
 
     aeron_driver_context_t *context;
     aeron_distinct_error_log_t *error_log;

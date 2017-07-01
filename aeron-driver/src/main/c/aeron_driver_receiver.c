@@ -20,11 +20,10 @@
 
 #include <sys/socket.h>
 #include <stdio.h>
+#include "util/aeron_arrayutil.h"
 #include "media/aeron_receive_channel_endpoint.h"
 #include "aeron_driver_receiver.h"
-#include "aeron_driver_conductor_proxy.h"
-#include "aeron_alloc.h"
-#include "util/aeron_error.h"
+#include "aeron_publication_image.h"
 
 #if !defined(HAVE_RECVMMSG)
 struct mmsghdr
@@ -60,6 +59,10 @@ int aeron_driver_receiver_init(
         receiver->recv_buffers.iov[i].iov_base = receiver->recv_buffers.buffers[i] + offset;
         receiver->recv_buffers.iov[i].iov_len = AERON_DRIVER_RECEIVER_MAX_UDP_PACKET_LENGTH;
     }
+
+    receiver->images.array = NULL;
+    receiver->images.length = 0;
+    receiver->images.capacity = 0;
 
     receiver->context = context;
     receiver->error_log = error_log;
@@ -120,9 +123,32 @@ int aeron_driver_receiver_do_work(void *clientd)
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver poller_poll: %s", aeron_errmsg());
     }
 
-    //int64_t now_ns = receiver->context->nano_clock();
-
     work_count += (poll_result < 0) ? 0 : poll_result;
+
+    for (size_t i = 0, length = receiver->images.length; i < length; i++)
+    {
+        aeron_publication_image_t *image = receiver->images.array[i].image;
+
+        int send_sm_result = aeron_publicaion_image_send_pending_status_message(image);
+        if (send_sm_result < 0)
+        {
+            AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver send SM: %s", aeron_errmsg());
+        }
+
+        work_count += (send_sm_result < 0) ? 0 : send_sm_result;
+
+        int send_nak_result = aeron_publicaion_image_send_pending_loss(image);
+        if (send_nak_result < 0)
+        {
+            AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver send SM: %s", aeron_errmsg());
+        }
+
+        /* TODO: initiate RTTM */
+
+        work_count += (send_nak_result < 0) ? 0 : send_nak_result;
+    }
+
+    /* TODO: check pending status messages */
 
     /* TODO: add_ordered total bytes_received */
 
@@ -137,6 +163,8 @@ void aeron_driver_receiver_on_close(void *clientd)
     {
         aeron_free(receiver->recv_buffers.buffers[i]);
     }
+
+    aeron_free(receiver->images.array);
 
     aeron_udp_transport_poller_close(&receiver->poller);
 }
@@ -197,12 +225,15 @@ void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item)
     aeron_command_publication_image_t *cmd = (aeron_command_publication_image_t *)item;
     aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)cmd->endpoint;
 
-    if (aeron_receive_channel_endpoint_on_add_publication_image(endpoint, cmd->image) < 0)
+    int ensure_capacity_result = 0;
+    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, receiver->images, aeron_driver_receiver_image_entry_t);
+
+    if (aeron_receive_channel_endpoint_on_add_publication_image(endpoint, cmd->image) < 0 || ensure_capacity_result < 0)
     {
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_add_publication_image: %s", aeron_errmsg());
     }
 
-    /* TODO: add image to list of images */
+    receiver->images.array[receiver->images.length++].image = cmd->image;
 }
 
 void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item)
@@ -216,5 +247,14 @@ void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_remove_publication_image: %s", aeron_errmsg());
     }
 
-    /* TODO: remove image from list of images */
+    for (size_t i = 0, size = receiver->images.length, last_index = size - 1; i < size; i++)
+    {
+        if (cmd->image == receiver->images.array[i].image)
+        {
+            aeron_array_fast_unordered_remove(
+                (uint8_t *)receiver->images.array, sizeof(aeron_driver_receiver_image_entry_t), i, last_index);
+            receiver->images.length--;
+            break;
+        }
+    }
 }

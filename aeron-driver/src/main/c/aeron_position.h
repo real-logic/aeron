@@ -76,6 +76,26 @@ int32_t aeron_counter_subscription_position_allocate(
     const char *channel,
     int64_t joining_position);
 
+#define AERON_COUNTER_RECEIVER_HWM_NAME "rcv-hwm"
+#define AERON_COUNTER_RECEIVER_HWM_TYPE_ID (3)
+
+int32_t aeron_counter_receiver_hwm_allocate(
+    aeron_counters_manager_t *counters_manager,
+    int64_t registration_id,
+    int32_t session_id,
+    int32_t stream_id,
+    const char *channel);
+
+#define AERON_COUNTER_RECEIVER_POSITION_NAME "rcv-pos"
+#define AERON_COUNTER_RECEIVER_POSITION_TYPE_ID (5)
+
+int32_t aeron_counter_receiver_position_allocate(
+    aeron_counters_manager_t *counters_manager,
+    int64_t registration_id,
+    int32_t session_id,
+    int32_t stream_id,
+    const char *channel);
+
 #define AERON_COUNTER_SEND_CHANNEL_STATUS_NAME "snd-channel"
 #define AERON_COUNTER_SEND_CHANNEL_STATUS_TYPE_ID (6)
 

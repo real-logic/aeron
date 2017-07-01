@@ -69,7 +69,6 @@ int64_t aeron_epochclock()
 extern int aeron_number_of_trailing_zeroes(int32_t value);
 extern int aeron_number_of_leading_zeroes(int32_t value);
 extern int32_t aeron_find_next_power_of_two(int32_t value);
-extern int aeron_fast_mod3(int32_t value);
 
 int32_t aeron_randomised_int32()
 {

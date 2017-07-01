@@ -46,6 +46,7 @@ SET(SOURCE
     concurrent/aeron_mpsc_concurrent_array_queue.c
     concurrent/aeron_term_scanner.c
     concurrent/aeron_term_rebuilder.c
+    concurrent/aeron_term_gap_scanner.c
     util/aeron_strutil.c
     util/aeron_fileutil.c
     util/aeron_arrayutil.c
@@ -69,6 +70,7 @@ SET(SOURCE
     aeron_data_packet_dispatcher.c
     aeron_publication_image.c
     aeron_congestion_control.c
+    aeron_loss_detector.c
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel.c
     media/aeron_send_channel_endpoint.c
@@ -100,6 +102,7 @@ SET(HEADERS
     concurrent/aeron_mpsc_concurrent_array_queue.h
     concurrent/aeron_term_scanner.h
     concurrent/aeron_term_rebuilder.h
+    concurrent/aeron_term_gap_scanner.h
     command/aeron_control_protocol.h
     protocol/aeron_udp_protocol.h
     aeronmd.h
@@ -122,6 +125,7 @@ SET(HEADERS
     aeron_data_packet_dispatcher.h
     aeron_publication_image.h
     aeron_congestion_control.h
+    aeron_loss_detector.h
     media/aeron_udp_channel_transport.h
     media/aeron_udp_channel.h
     media/aeron_send_channel_endpoint.h

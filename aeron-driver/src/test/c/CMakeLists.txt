@@ -37,6 +37,7 @@ if(BUILD_TESTING)
     aeron_driver_test(int64_to_ptr_hash_map_test collections/aeron_int64_to_ptr_hash_masp_test.cpp)
     aeron_driver_test(str_to_ptr_hash_map_test collections/aeron_str_to_ptr_hash_map_test.cpp)
     aeron_driver_test(term_scanner_test aeron_term_scanner_test.cpp)
+    aeron_driver_test(loss_detector_test aeron_loss_detector_test.cpp)
 
     function(aeron_driver_benchmark name file)
         add_executable(${name} ${file})

@@ -84,6 +84,15 @@ int aeron_receive_channel_endpoint_send_sm(
     int32_t receiver_window,
     uint8_t flags);
 
+int aeron_receive_channel_endpoint_send_nak(
+    aeron_receive_channel_endpoint_t *endpoint,
+    struct sockaddr_storage *addr,
+    int32_t stream_id,
+    int32_t session_id,
+    int32_t term_id,
+    int32_t term_offset,
+    int32_t length);
+
 int aeron_receive_channel_endpoint_send_rttm(
     aeron_receive_channel_endpoint_t *endpoint,
     struct sockaddr_storage *addr,

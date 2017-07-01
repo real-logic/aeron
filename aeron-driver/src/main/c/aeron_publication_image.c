@@ -51,6 +51,7 @@ int aeron_publication_image_create(
     aeron_publication_image_t *_image = NULL;
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
     const uint64_t log_length = AERON_LOGBUFFER_COMPUTE_LOG_LENGTH(term_buffer_length);
+    bool is_multicast = endpoint->conductor_fields.udp_channel->multicast;
 
     *image = NULL;
 
@@ -71,6 +72,17 @@ int aeron_publication_image_create(
     {
         aeron_free(_image);
         aeron_set_err(ENOMEM, "%s", "Could not allocate publication image log_file_name");
+        return -1;
+    }
+
+    if (aeron_loss_detector_init(
+        &_image->loss_detector,
+        is_multicast ? false : true,
+        is_multicast ? aeron_loss_detector_nak_multicast_delay_generator : aeron_loss_detector_nak_unicast_delay_generator,
+        aeron_publication_image_on_gap_detected, _image) < 0)
+    {
+        aeron_free(_image);
+        aeron_set_err(ENOMEM, "%s", "Could not init publication image loss detector");
         return -1;
     }
 
@@ -121,6 +133,7 @@ int aeron_publication_image_create(
     _image->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)term_buffer_length);
     _image->mtu_length = sender_mtu_length;
     _image->last_sm_change_number = -1;
+    _image->last_loss_change_number = -1;
 
     memcpy(&_image->control_address, control_address, sizeof(_image->control_address));
     memcpy(&_image->source_address, source_address, sizeof(_image->source_address));
@@ -133,10 +146,18 @@ int aeron_publication_image_create(
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_FLOW_CONTROL_OVER_RUNS);
     _image->status_messages_sent_counter =
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_STATUS_MESSAGES_SENT);
+    _image->nak_messages_sent_counter =
+        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_NAK_MESSAGES_SENT);
 
     const int64_t initial_position =
         aeron_logbuffer_compute_position(
             active_term_id, initial_term_offset, _image->position_bits_to_shift, initial_term_id);
+
+    _image->begin_loss_change = -1;
+    _image->end_loss_change = -1;
+    _image->loss_term_id = active_term_id;
+    _image->loss_term_offset = initial_term_offset;
+    _image->loss_length = 0;
 
     _image->begin_sm_change = -1;
     _image->end_sm_change = -1;
@@ -193,6 +214,23 @@ void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, i
     }
 }
 
+void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int32_t term_offset, size_t length)
+{
+    aeron_publication_image_t *image = (aeron_publication_image_t *)clientd;
+
+    const int64_t change_number = image->begin_loss_change + 1;
+
+    AERON_PUT_ORDERED(image->begin_loss_change, change_number);
+
+    image->loss_term_id = term_id;
+    image->loss_term_offset = term_offset;
+    image->loss_length = length;
+
+    AERON_PUT_ORDERED(image->end_loss_change, change_number);
+
+    /* TODO: loss reporter */
+}
+
 void aeron_publication_image_track_rebuild(
     aeron_publication_image_t *image, int64_t now_ns, int64_t status_message_timeout)
 {
@@ -212,9 +250,21 @@ void aeron_publication_image_track_rebuild(
     int64_t hwm_position = aeron_counter_get_volatile(image->rcv_hwm_position.value_addr);
 
     bool loss_found = false;
-    /* TODO: loss detector scan */
+    const size_t index = aeron_logbuffer_index_by_position(rebuild_position, image->position_bits_to_shift);
+    const int32_t rebuild_offset =
+        aeron_loss_detector_scan(
+            &image->loss_detector,
+            &loss_found,
+            image->mapped_raw_log.term_buffers[index].addr,
+            rebuild_position,
+            hwm_position,
+            now_ns,
+            (size_t)image->term_length_mask,
+            image->position_bits_to_shift,
+            image->initial_term_id);
+
     const int32_t rebuild_term_offset = (int32_t)(rebuild_position & image->term_length_mask);
-    const int64_t new_rebuild_position = (rebuild_position - rebuild_term_offset) + 0; /* TODO: use outcome of scan */
+    const int64_t new_rebuild_position = (rebuild_position - rebuild_term_offset) + rebuild_offset;
 
     aeron_counter_propose_max_ordered(image->rcv_pos_position.value_addr, new_rebuild_position);
 
@@ -309,7 +359,7 @@ int aeron_publicaion_image_send_pending_status_message(aeron_publication_image_t
                         sm_position, image->position_bits_to_shift, image->initial_term_id);
                 const int32_t term_offset = (int32_t)(sm_position & image->term_length_mask);
 
-                int send_sm_result = send_sm_result = aeron_receive_channel_endpoint_send_sm(
+                int send_sm_result = aeron_receive_channel_endpoint_send_sm(
                     image->endpoint,
                     &image->control_address,
                     image->stream_id,
@@ -324,6 +374,43 @@ int aeron_publicaion_image_send_pending_status_message(aeron_publication_image_t
                 image->last_sm_change_number = change_number;
                 work_count = send_sm_result < 0 ? send_sm_result : 1;
             }
+        }
+    }
+
+    return work_count;
+}
+
+int aeron_publicaion_image_send_pending_loss(aeron_publication_image_t *image)
+{
+    int work_count = 0;
+
+    int64_t change_number;
+    AERON_GET_VOLATILE(change_number, image->end_loss_change);
+
+    if (change_number != image->last_sm_change_number)
+    {
+        const int32_t term_id = image->loss_term_id;
+        const int32_t term_offset = image->loss_term_offset;
+        const int32_t length = (int32_t)image->loss_length;
+
+        aeron_acquire(); /* loadFence */
+
+        if (change_number == image->begin_loss_change)
+        {
+            /* TODO: if not reliable, then don't send, fill gap instead */
+            int send_nak_result = aeron_receive_channel_endpoint_send_nak(
+                image->endpoint,
+                &image->control_address,
+                image->stream_id,
+                image->session_id,
+                term_id,
+                term_offset,
+                length);
+
+            aeron_counter_ordered_increment(image->status_messages_sent_counter, 1);
+
+            image->last_loss_change_number = change_number;
+            work_count = send_nak_result < 0 ? send_nak_result : 1;
         }
     }
 

@@ -20,6 +20,7 @@
 #include "aeron_driver_common.h"
 #include "media/aeron_receive_channel_endpoint.h"
 #include "aeron_congestion_control.h"
+#include "aeron_loss_detector.h"
 
 typedef enum aeron_publication_image_status_enum
 {
@@ -49,6 +50,7 @@ typedef struct aeron_publication_image_stct
 
     struct sockaddr_storage control_address;
     struct sockaddr_storage source_address;
+    aeron_loss_detector_t loss_detector;
 
     aeron_mapped_raw_log_t mapped_raw_log;
     aeron_position_t rcv_hwm_position;
@@ -78,16 +80,24 @@ typedef struct aeron_publication_image_stct
     int64_t last_status_mesage_timestamp;
 
     int64_t last_sm_change_number;
+    int64_t last_loss_change_number;
 
     volatile int64_t begin_sm_change;
     volatile int64_t end_sm_change;
     int64_t next_sm_position;
     int32_t next_sm_receiver_window_length;
 
+    volatile int64_t begin_loss_change;
+    volatile int64_t end_loss_change;
+    int32_t loss_term_id;
+    int32_t loss_term_offset;
+    size_t loss_length;
+
     int64_t *heartbeats_received_counter;
     int64_t *flow_control_under_runs_counter;
     int64_t *flow_control_over_runs_counter;
     int64_t *status_messages_sent_counter;
+    int64_t *nak_messages_sent_counter;
 }
 aeron_publication_image_t;
 
@@ -115,6 +125,8 @@ int aeron_publication_image_close(aeron_counters_manager_t *counters_manager, ae
 
 void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, int64_t new_clean_position);
 
+void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int32_t term_offset, size_t length);
+
 void aeron_publication_image_track_rebuild(
     aeron_publication_image_t *image, int64_t now_ns, int64_t status_message_timeout);
 
@@ -125,6 +137,8 @@ int aeron_publication_image_on_rttm(
     aeron_publication_image_t *image, aeron_rttm_header_t *header, struct sockaddr_storage *addr);
 
 int aeron_publicaion_image_send_pending_status_message(aeron_publication_image_t *image);
+
+int aeron_publicaion_image_send_pending_loss(aeron_publication_image_t *image);
 
 inline bool aeron_publication_image_is_heartbeat(const uint8_t *buffer, size_t length)
 {

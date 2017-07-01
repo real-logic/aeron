@@ -71,6 +71,7 @@ SET(SOURCE
     aeron_publication_image.c
     aeron_congestion_control.c
     aeron_loss_detector.c
+    aeron_retransmit_handler.c
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel.c
     media/aeron_send_channel_endpoint.c
@@ -126,6 +127,7 @@ SET(HEADERS
     aeron_publication_image.h
     aeron_congestion_control.h
     aeron_loss_detector.h
+    aeron_retransmit_handler.h
     media/aeron_udp_channel_transport.h
     media/aeron_udp_channel.h
     media/aeron_send_channel_endpoint.h

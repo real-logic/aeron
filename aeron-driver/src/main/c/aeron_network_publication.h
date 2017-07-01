@@ -23,6 +23,7 @@
 #include "aeron_driver_context.h"
 #include "concurrent/aeron_counters_manager.h"
 #include "aeron_system_counters.h"
+#include "aeron_retransmit_handler.h"
 
 typedef enum aeron_network_publication_status_enum
 {
@@ -64,6 +65,7 @@ typedef struct aeron_network_publication_stct
     aeron_position_t pub_lmt_position;
     aeron_position_t snd_pos_position;
     aeron_position_t snd_lmt_position;
+    aeron_retransmit_handler_t retransmit_handler;
     aeron_logbuffer_metadata_t *log_meta_data;
     aeron_send_channel_endpoint_t *endpoint;
     aeron_flow_control_strategy_t *flow_control;
@@ -94,6 +96,7 @@ typedef struct aeron_network_publication_stct
     int64_t *short_sends_counter;
     int64_t *heartbeats_sent_counter;
     int64_t *sender_flow_control_limits_counter;
+    int64_t *retransmits_sent_counter;
 }
 aeron_network_publication_t;
 

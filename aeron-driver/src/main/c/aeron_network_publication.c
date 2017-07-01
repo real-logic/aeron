@@ -92,6 +92,17 @@ int aeron_network_publication_create(
         return -1;
     }
 
+    if (aeron_retransmit_handler_init(
+        &_pub->retransmit_handler,
+        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS),
+        AERON_RETRANSMIT_HANDLER_DEFAULT_LINGER_TIMEOUT_NS) < 0)
+    {
+        aeron_free(_pub->log_file_name);
+        aeron_free(_pub);
+        aeron_set_err(aeron_errcode(), "Could not init network publication retransmit handler: %s", aeron_errmsg());
+        return -1;
+    }
+
     if (context->map_raw_log_func(&_pub->mapped_raw_log, path, context->term_buffer_sparse_file, term_buffer_length) < 0)
     {
         aeron_free(_pub->log_file_name);
@@ -157,6 +168,7 @@ int aeron_network_publication_create(
     _pub->heartbeats_sent_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_HEARTBEATS_SENT);
     _pub->sender_flow_control_limits_counter =
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_SENDER_FLOW_CONTROL_LIMITS);
+    _pub->retransmits_sent_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_RETRANSMITS_SENT);
 
     *publication = _pub;
     return 0;
@@ -179,6 +191,7 @@ void aeron_network_publication_close(aeron_counters_manager_t *counters_manager,
 
         aeron_free(subscribeable->array);
 
+        aeron_retransmit_handler_close(&publication->retransmit_handler);
         publication->map_raw_log_close_func(&publication->mapped_raw_log);
         publication->flow_control->fini(publication->flow_control);
         aeron_free(publication->log_file_name);
@@ -398,15 +411,92 @@ int aeron_network_publication_send(aeron_network_publication_t *publication, int
         aeron_counter_set_ordered(publication->snd_lmt_position.value_addr, flow_control_position);
     }
 
-    /* TODO: handle retransmit handler timeouts */
+    aeron_retransmit_handler_process_timeouts(&publication->retransmit_handler, now_ns);
 
     return bytes_sent;
+}
+
+int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t term_offset, size_t length)
+{
+    aeron_network_publication_t *publication = (aeron_network_publication_t *)clientd;
+    const int64_t sender_position = aeron_counter_get(publication->snd_pos_position.value_addr);
+    const int64_t resend_position =
+        aeron_logbuffer_compute_position(
+            term_id, term_offset, publication->position_bits_to_shift, publication->initial_term_id);
+    const size_t term_length = (size_t)(publication->term_length_mask + 1);
+    int result = 0;
+
+    if (resend_position < sender_position && resend_position >= (sender_position - (int32_t)term_length))
+    {
+        const size_t index = aeron_logbuffer_index_by_position(resend_position, publication->position_bits_to_shift);
+
+        size_t remaining_bytes = length;
+        int32_t bytes_sent = 0;
+        int32_t offset = term_offset;
+
+        do
+        {
+            offset += bytes_sent;
+
+            uint8_t *ptr = publication->mapped_raw_log.term_buffers[index].addr + offset;
+            const size_t term_length_left = term_length - (size_t)offset;
+            size_t padding = 0;
+
+            size_t available =
+                aeron_term_scanner_scan_for_availability(ptr, term_length_left, publication->mtu_length, &padding);
+            if (available <= 0)
+            {
+                break;
+            }
+
+            struct iovec iov[1];
+            struct msghdr msghdr;
+
+            iov[0].iov_base = ptr;
+            iov[0].iov_len = available;
+            msghdr.msg_iov = iov;
+            msghdr.msg_iovlen = 1;
+            msghdr.msg_control = NULL;
+            msghdr.msg_flags = 0;
+
+            int sendmsg_result;
+            if ((sendmsg_result = aeron_send_channel_sendmsg(publication->endpoint, &msghdr)) != (int)iov[0].iov_len)
+            {
+                if (sendmsg_result >= 0)
+                {
+                    aeron_counter_increment(publication->short_sends_counter, 1);
+                    break;
+                }
+                else
+                {
+                    result = -1;
+                    break;
+                }
+            }
+
+            bytes_sent = (int32_t)(available + padding);
+            remaining_bytes -= bytes_sent;
+        }
+        while (remaining_bytes > 0);
+
+        aeron_counter_ordered_increment(publication->retransmits_sent_counter, 1);
+    }
+
+    return result;
 }
 
 void aeron_network_publication_on_nak(
     aeron_network_publication_t *publication, int32_t term_id, int32_t term_offset, int32_t length)
 {
-    /* TODO: retransmit handler */
+    aeron_retransmit_handler_on_nak(
+        &publication->retransmit_handler,
+        term_id,
+        term_offset,
+        (size_t)length,
+        (size_t)(publication->term_length_mask + 1),
+        publication->nano_clock(),
+        aeron_network_publication_resend,
+        publication);
 }
 
 void aeron_network_publication_on_status_message(

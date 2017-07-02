@@ -295,6 +295,7 @@ int aeron_driver_conductor_link_subscribeable(
     int32_t stream_id,
     int64_t join_position,
     const char *original_uri,
+    const char *source_identity,
     const char *log_file_name,
     size_t log_file_name_length);
 

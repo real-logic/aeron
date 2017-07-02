@@ -696,3 +696,26 @@ bool aeron_is_wildcard_addr(struct sockaddr_storage *addr)
 
     return result;
 }
+
+void aeron_format_source_identity(char *buffer, size_t length, struct sockaddr_storage *addr)
+{
+    char addr_str[AERON_MAX_PATH] = "";
+    unsigned short port = 0;
+
+    if (AF_INET6 == addr->ss_family)
+    {
+        struct sockaddr_in6 *in6 = (struct sockaddr_in6 *)addr;
+
+        inet_ntop(addr->ss_family, &in6->sin6_addr, addr_str, sizeof(addr_str));
+        port = ntohs(in6->sin6_port);
+    }
+    else if (AF_INET == addr->ss_family)
+    {
+        struct sockaddr_in *in4 = (struct sockaddr_in *)addr;
+
+        inet_ntop(addr->ss_family, &in4->sin_addr, addr_str, sizeof(addr_str));
+        port = ntohs(in4->sin_port);
+    }
+
+    snprintf(buffer, length, "%s:%d", addr_str, port);
+}

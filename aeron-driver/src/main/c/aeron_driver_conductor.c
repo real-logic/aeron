@@ -17,7 +17,8 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <errno.h>
-#include <media/aeron_receive_channel_endpoint.h>
+#include "media/aeron_receive_channel_endpoint.h"
+#include "util/aeron_netutil.h"
 #include "util/aeron_error.h"
 #include "media/aeron_send_channel_endpoint.h"
 #include "util/aeron_arrayutil.h"
@@ -1266,6 +1267,7 @@ int aeron_driver_conductor_link_subscribeable(
     int32_t stream_id,
     int64_t join_position,
     const char *original_uri,
+    const char *source_identity,
     const char *log_file_name,
     size_t log_file_name_length)
 {
@@ -1310,8 +1312,8 @@ int aeron_driver_conductor_link_subscribeable(
                     log_file_name_length,
                     &position,
                     1,
-                    original_uri,
-                    strlen(original_uri));
+                    source_identity,
+                    strlen(source_identity));
 
                 result = 0;
             }
@@ -1393,6 +1395,7 @@ int aeron_driver_conductor_on_add_ipc_publication(
                 publication->session_id,
                 publication->stream_id,
                 aeron_ipc_publication_joining_position(publication),
+                AERON_IPC_CHANNEL,
                 AERON_IPC_CHANNEL,
                 publication->log_file_name,
                 publication->log_file_name_length) < 0)
@@ -1547,6 +1550,7 @@ int aeron_driver_conductor_on_add_ipc_subscription(
                     publication->session_id,
                     publication->stream_id,
                     aeron_ipc_publication_joining_position(publication),
+                    AERON_IPC_CHANNEL,
                     AERON_IPC_CHANNEL,
                     publication->log_file_name,
                     publication->log_file_name_length) < 0)
@@ -1798,12 +1802,15 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
 
     for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
     {
+        char source_identity[AERON_MAX_PATH];
         aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
 
         if (endpoint != link->endpoint || command->stream_id != link->stream_id)
         {
             continue;
         }
+
+        aeron_format_source_identity(source_identity, sizeof(source_identity), &command->src_address);
 
         if (aeron_driver_conductor_link_subscribeable(
             conductor,
@@ -1814,6 +1821,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
             command->stream_id,
             join_position,
             endpoint->conductor_fields.udp_channel->original_uri,
+            source_identity,
             image->log_file_name,
             image->log_file_name_length) < 0)
         {

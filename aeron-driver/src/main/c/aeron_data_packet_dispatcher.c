@@ -121,7 +121,8 @@ int aeron_data_packet_dispatcher_remove_publication_image(
     {
         aeron_publication_image_t *mapped_image = aeron_int64_to_ptr_hash_map_get(session_map, image->session_id);
 
-        if (NULL != mapped_image && image->correlation_id == mapped_image->correlation_id)
+        if (NULL != mapped_image &&
+            image->conductor_fields.managed_resource.registration_id == mapped_image->conductor_fields.managed_resource.registration_id)
         {
             aeron_int64_to_ptr_hash_map_remove(session_map, image->session_id);
             aeron_int64_to_ptr_hash_map_remove(

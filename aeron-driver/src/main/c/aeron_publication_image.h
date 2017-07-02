@@ -63,7 +63,6 @@ typedef struct aeron_publication_image_stct
     aeron_clock_func_t epoch_clock;
 
     char *log_file_name;
-    int64_t correlation_id;
     int32_t session_id;
     int32_t stream_id;
     int32_t initial_term_id;
@@ -195,6 +194,21 @@ inline void aeron_publication_image_schedule_status_message(
     image->last_status_mesage_timestamp = now_ns;
 
     AERON_PUT_ORDERED(image->end_sm_change, change_number);
+}
+
+inline const char *aeron_publication_image_log_file_name(aeron_publication_image_t *image)
+{
+    return image->log_file_name;
+}
+
+inline int64_t aeron_publication_image_registration_id(aeron_publication_image_t *image)
+{
+    return image->conductor_fields.managed_resource.registration_id;
+}
+
+inline size_t aeron_publication_image_num_subscriptions(aeron_publication_image_t *image)
+{
+    return image->conductor_fields.subscribeable.length;
 }
 
 #endif //AERON_AERON_PUBLICATION_IMAGE_H

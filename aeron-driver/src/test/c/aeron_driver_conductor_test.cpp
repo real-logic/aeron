@@ -20,6 +20,7 @@
 #include <exception>
 
 #include <gtest/gtest.h>
+#include <arpa/inet.h>
 
 extern "C"
 {
@@ -54,7 +55,17 @@ using namespace aeron;
 #define STREAM_ID_3 (103)
 #define STREAM_ID_4 (104)
 
+#define SESSION_ID (0x5E5510)
+#define INITIAL_TERM_ID (0x3456)
+
 #define TERM_LENGTH (64 * 1024)
+
+#define SRC_IP_ADDR "127.0.0.1"
+#define SRC_UDP_PORT (43657)
+#define SOURCE_IDENTITY "127.0.0.1:43657"
+
+#define CONTROL_IP_ADDR "127.0.0.1"
+#define CONTROL_UDP_PORT (43657)
 
 static int64_t ms_timestamp = 0;
 
@@ -330,6 +341,41 @@ public:
             doWork();
         }
         while (ms_timestamp <= end_ns);
+    }
+
+    void fill_sockaddr_ipv4(struct sockaddr_storage *addr, const char *ip, unsigned short int port)
+    {
+        struct sockaddr_in *ipv4addr = (struct sockaddr_in *)addr;
+
+        ipv4addr->sin_family = AF_INET;
+        if (inet_pton(AF_INET, ip, &ipv4addr->sin_addr) != 1)
+        {
+            throw std::runtime_error("can't get IPv4 address");
+        }
+        ipv4addr->sin_port = htons(port);
+    }
+
+    void createPublicationImage(aeron_receive_channel_endpoint_t *endpoint, int64_t position)
+    {
+        aeron_command_create_publication_image_t cmd;
+        size_t position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes(TERM_LENGTH);
+
+        cmd.base.func = aeron_driver_conductor_on_create_publication_image;
+        cmd.base.item = NULL;
+        cmd.endpoint = endpoint;
+        cmd.session_id = SESSION_ID;
+        cmd.stream_id = STREAM_ID_1;
+        cmd.term_offset = 0;
+        cmd.active_term_id =
+            aeron_logbuffer_compute_term_id_from_position(position, position_bits_to_shift, INITIAL_TERM_ID);
+        cmd.initial_term_id = INITIAL_TERM_ID;
+        cmd.mtu_length = (int32_t)m_context.m_context->mtu_length;
+        cmd.term_length = TERM_LENGTH;
+
+        fill_sockaddr_ipv4(&cmd.src_address, SRC_IP_ADDR, SRC_UDP_PORT);
+        fill_sockaddr_ipv4(&cmd.control_address, CONTROL_IP_ADDR, CONTROL_UDP_PORT);
+
+        aeron_driver_conductor_on_create_publication_image(&m_conductor.m_conductor, &cmd);
     }
 
 protected:
@@ -1384,4 +1430,48 @@ TEST_F(DriverConductorTest, shouldBeAbleToTimeoutReceiveChannelEndpointWithClien
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_receive_channel_endpoints(&m_conductor.m_conductor), 0u);
+}
+
+TEST_F(DriverConductorTest, shouldCreatePublicationImageForActiveNetworkSubscription)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
+    doWork();
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    aeron_receive_channel_endpoint_t *endpoint =
+        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+
+    createPublicationImage(endpoint, 1000);
+
+    EXPECT_EQ(aeron_driver_conductor_num_images(&m_conductor.m_conductor), 1u);
+
+    aeron_publication_image_t *image =
+        aeron_driver_conductor_find_publication_image(&m_conductor.m_conductor, endpoint, STREAM_ID_1);
+
+    EXPECT_NE(image, (aeron_publication_image_t *)NULL);
+    EXPECT_EQ(aeron_publication_image_num_subscriptions(image), 1u);
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+
+        const command::ImageBuffersReadyFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.sessionId(), SESSION_ID);
+        EXPECT_EQ(response.streamId(), STREAM_ID_1);
+        EXPECT_EQ(response.correlationId(), aeron_publication_image_registration_id(image));
+        EXPECT_EQ(response.subscriberPositionCount(), 1);
+
+        const command::ImageBuffersReadyDefn::SubscriberPosition position = response.subscriberPosition(0);
+
+        EXPECT_EQ(position.registrationId, sub_id);
+
+        EXPECT_EQ(std::string(aeron_publication_image_log_file_name(image)), response.logFileName());
+        EXPECT_EQ(SOURCE_IDENTITY, response.sourceIdentity());
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }

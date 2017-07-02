@@ -426,3 +426,7 @@ extern bool aeron_publication_image_is_flow_control_over_run(
 extern void aeron_publication_image_hwm_candidate(aeron_publication_image_t *image, int64_t proposed_position);
 extern void aeron_publication_image_schedule_status_message(
     aeron_publication_image_t *image, int64_t now_ns, int64_t sm_position, int32_t window_length);
+extern const char *aeron_publication_image_log_file_name(aeron_publication_image_t *image);
+extern int64_t aeron_publication_image_registration_id(aeron_publication_image_t *image);
+extern size_t aeron_publication_image_num_subscriptions(aeron_publication_image_t *image);
+extern void aeron_publication_image_format_source_identity(char *buffer, size_t length, struct sockaddr_storage *addr);

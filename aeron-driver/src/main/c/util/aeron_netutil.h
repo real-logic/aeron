@@ -19,6 +19,9 @@
 
 #include <stdbool.h>
 #include <netinet/in.h>
+#include <stdio.h>
+#include <arpa/inet.h>
+#include "aeron_driver_common.h"
 
 struct ifaddrs;
 struct addrinfo;
@@ -51,5 +54,7 @@ int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_
 
 bool aeron_is_addr_multicast(struct sockaddr_storage *addr);
 bool aeron_is_wildcard_addr(struct sockaddr_storage *addr);
+
+void aeron_format_source_identity(char *buffer, size_t length, struct sockaddr_storage *addr);
 
 #endif //AERON_AERON_NETUTIL_H

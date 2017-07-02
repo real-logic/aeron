@@ -30,6 +30,7 @@
 #include "media/aeron_send_channel_endpoint.h"
 #include "media/aeron_receive_channel_endpoint.h"
 #include "aeron_driver_conductor_proxy.h"
+#include "aeron_publication_image.h"
 
 #define AERON_DRIVER_CONDUCTOR_TIMEOUT_CHECK_NS (1 * 1000 * 1000 * 1000)
 
@@ -281,6 +282,22 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 int aeron_driver_conductor_do_work(void *clientd);
 void aeron_driver_conductor_on_close(void *clientd);
 
+int aeron_driver_subscribeable_add_position(
+    aeron_subscribeable_t *subscribeable, int64_t counter_id, int64_t *value_addr);
+void aeron_driver_subscribeable_remove_position(aeron_subscribeable_t *subscribeable, int64_t counter_id);
+
+int aeron_driver_conductor_link_subscribeable(
+    aeron_driver_conductor_t *conductor,
+    aeron_subscription_link_t *link,
+    aeron_subscribeable_t *subscribeable,
+    int64_t original_registration_id,
+    int32_t session_id,
+    int32_t stream_id,
+    int64_t join_position,
+    const char *original_uri,
+    const char *log_file_name,
+    size_t log_file_name_length);
+
 void aeron_driver_conductor_unlink_subscribeable(aeron_subscription_link_t *link, aeron_subscribeable_t *subscribeable);
 void aeron_driver_conductor_unlink_all_subscribeable(aeron_driver_conductor_t *conductor, aeron_subscription_link_t *link);
 
@@ -320,6 +337,41 @@ int aeron_driver_conductor_on_client_keepalive(
 
 void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item);
 
+inline bool aeron_driver_conductor_is_subscribeable_linked(
+    aeron_subscription_link_t *link, aeron_subscribeable_t *subscribeable)
+{
+    bool result = false;
+
+    for (size_t i = 0; i < link->subscribeable_list.length; i++)
+    {
+        aeron_subscribeable_list_entry_t *entry = &link->subscribeable_list.array[i];
+
+        if (subscribeable == entry->subscribeable)
+        {
+            result = true;
+            break;
+        }
+    }
+
+    return result;
+}
+
+inline bool aeron_driver_conductor_has_network_subscription_interest(
+    aeron_driver_conductor_t *conductor, const aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
+{
+    for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
+    {
+        aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
+
+        if (endpoint == link->endpoint && stream_id == link->stream_id)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 inline size_t aeron_driver_conductor_num_clients(aeron_driver_conductor_t *conductor)
 {
     return conductor->clients.length;
@@ -353,6 +405,11 @@ inline size_t aeron_driver_conductor_num_send_channel_endpoints(aeron_driver_con
 inline size_t aeron_driver_conductor_num_receive_channel_endpoints(aeron_driver_conductor_t *conductor)
 {
     return conductor->receive_channel_endpoints.length;
+}
+
+inline size_t aeron_driver_conductor_num_images(aeron_driver_conductor_t *conductor)
+{
+    return conductor->publication_images.length;
 }
 
 inline size_t aeron_driver_conductor_num_active_ipc_subscriptions(aeron_driver_conductor_t *conductor, int32_t stream_id)
@@ -451,6 +508,22 @@ inline aeron_network_publication_t *aeron_driver_conductor_find_network_publicat
         if (id == publication->conductor_fields.managed_resource.registration_id)
         {
             return publication;
+        }
+    }
+
+    return NULL;
+}
+
+inline aeron_publication_image_t *aeron_driver_conductor_find_publication_image(
+    aeron_driver_conductor_t *conductor, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
+{
+    for (size_t i = 0, length = conductor->publication_images.length; i < length; i++)
+    {
+        aeron_publication_image_t *image = conductor->publication_images.array[i].image;
+
+        if (endpoint == image->endpoint && stream_id == image->stream_id)
+        {
+            return image;
         }
     }
 

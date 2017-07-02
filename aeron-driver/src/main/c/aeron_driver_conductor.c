@@ -1252,14 +1252,22 @@ void aeron_driver_subscribeable_remove_position(aeron_subscribeable_t *subscribe
             aeron_array_fast_unordered_remove(
                 (uint8_t *)subscribeable->array, sizeof(aeron_position_t), i, last_index);
             subscribeable->length--;
+            break;
         }
     }
 }
 
-int aeron_driver_conductor_link_ipc_subscribeable(
+int aeron_driver_conductor_link_subscribeable(
     aeron_driver_conductor_t *conductor,
     aeron_subscription_link_t *link,
-    aeron_ipc_publication_t *ipc_publication)
+    aeron_subscribeable_t *subscribeable,
+    int64_t original_registration_id,
+    int32_t session_id,
+    int32_t stream_id,
+    int64_t join_position,
+    const char *original_uri,
+    const char *log_file_name,
+    size_t log_file_name_length)
 {
     int ensure_capacity_result = 0, result = -1;
 
@@ -1268,21 +1276,20 @@ int aeron_driver_conductor_link_ipc_subscribeable(
     if (ensure_capacity_result >= 0)
     {
         aeron_image_buffers_ready_subscriber_position_t position;
-        int64_t joining_position = aeron_ipc_publication_joining_position(ipc_publication);
+        int64_t joining_position = join_position;
         int32_t counter_id = aeron_counter_subscription_position_allocate(
             &conductor->counters_manager,
             link->registration_id,
-            ipc_publication->session_id,
-            ipc_publication->stream_id,
-            AERON_IPC_CHANNEL,
+            session_id,
+            stream_id,
+            original_uri,
             joining_position);
 
         if (counter_id >= 0)
         {
             int64_t *position_addr = aeron_counter_addr(&conductor->counters_manager, counter_id);
 
-            if (aeron_driver_subscribeable_add_position(
-                &ipc_publication->conductor_fields.subscribeable, counter_id, position_addr) >= 0)
+            if (aeron_driver_subscribeable_add_position(subscribeable, counter_id, position_addr) >= 0)
             {
                 aeron_subscribeable_list_entry_t
                     *entry = &link->subscribeable_list.array[link->subscribeable_list.length++];
@@ -1291,20 +1298,20 @@ int aeron_driver_conductor_link_ipc_subscribeable(
                 position.indicator_id = counter_id;
                 position.registration_id = link->registration_id;
 
-                entry->subscribeable = &ipc_publication->conductor_fields.subscribeable;
+                entry->subscribeable = subscribeable;
                 entry->counter_id = counter_id;
 
                 aeron_driver_conductor_on_available_image(
                     conductor,
-                    ipc_publication->conductor_fields.managed_resource.registration_id,
-                    ipc_publication->stream_id,
-                    ipc_publication->session_id,
-                    ipc_publication->log_file_name,
-                    ipc_publication->log_file_name_length,
+                    original_registration_id,
+                    stream_id,
+                    session_id,
+                    log_file_name,
+                    log_file_name_length,
                     &position,
                     1,
-                    AERON_IPC_CHANNEL,
-                    strlen(AERON_IPC_CHANNEL));
+                    original_uri,
+                    strlen(original_uri));
 
                 result = 0;
             }
@@ -1337,25 +1344,6 @@ void aeron_driver_conductor_unlink_all_subscribeable(aeron_driver_conductor_t *c
         aeron_driver_subscribeable_remove_position(entry->subscribeable, entry->counter_id);
         aeron_counters_manager_free(&conductor->counters_manager, (int32_t)entry->counter_id);
     }
-}
-
-inline static bool aeron_driver_conductor_is_subscribeable_linked(
-    aeron_subscription_link_t *link, aeron_subscribeable_t *subscribeable)
-{
-    bool result = false;
-
-    for (size_t i = 0; i < link->subscribeable_list.length; i++)
-    {
-        aeron_subscribeable_list_entry_t *entry = &link->subscribeable_list.array[i];
-
-        if (subscribeable == entry->subscribeable)
-        {
-            result = true;
-            break;
-        }
-    }
-
-    return result;
 }
 
 int aeron_driver_conductor_on_add_ipc_publication(
@@ -1397,7 +1385,17 @@ int aeron_driver_conductor_on_add_ipc_publication(
         if (command->stream_id == subscription_link->stream_id &&
             !aeron_driver_conductor_is_subscribeable_linked(subscription_link, subscribeable))
         {
-            if (aeron_driver_conductor_link_ipc_subscribeable(conductor, subscription_link, publication) < 0)
+            if (aeron_driver_conductor_link_subscribeable(
+                conductor,
+                subscription_link,
+                subscribeable,
+                publication->conductor_fields.managed_resource.registration_id,
+                publication->session_id,
+                publication->stream_id,
+                aeron_ipc_publication_joining_position(publication),
+                AERON_IPC_CHANNEL,
+                publication->log_file_name,
+                publication->log_file_name_length) < 0)
             {
                 return -1;
             }
@@ -1541,7 +1539,17 @@ int aeron_driver_conductor_on_add_ipc_subscription(
             {
                 aeron_ipc_publication_t *publication = publication_entry->publication;
 
-                if (aeron_driver_conductor_link_ipc_subscribeable(conductor, link, publication) < 0)
+                if (aeron_driver_conductor_link_subscribeable(
+                    conductor,
+                    link,
+                    &publication->conductor_fields.subscribeable,
+                    publication->conductor_fields.managed_resource.registration_id,
+                    publication->session_id,
+                    publication->stream_id,
+                    aeron_ipc_publication_joining_position(publication),
+                    AERON_IPC_CHANNEL,
+                    publication->log_file_name,
+                    publication->log_file_name_length) < 0)
                 {
                     return -1;
                 }
@@ -1705,25 +1713,26 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
     aeron_command_create_publication_image_t *command = (aeron_command_create_publication_image_t *)item;
+    aeron_receive_channel_endpoint_t *endpoint = command->endpoint;
+    const char *channel_str = endpoint->conductor_fields.udp_channel->original_uri;
 
     /* TODO: validate sender MTU length */
 
+    if (!aeron_driver_conductor_has_network_subscription_interest(conductor, endpoint, command->stream_id))
+    {
+        return;
+    }
+
     int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->publication_images, aeron_publication_image_entry_t);
-
     if (ensure_capacity_result < 0)
     {
         return;
     }
 
-    aeron_receive_channel_endpoint_t *endpoint = command->endpoint;
-    const char *channel_str = endpoint->conductor_fields.udp_channel->original_uri;
-
     const int64_t registration_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_commands);
-//    const int64_t join_position = aeron_logbuffer_compute_position(command->active_term_id, command->term_offset,
-//        (size_t)aeron_number_of_trailing_zeroes(command->term_length), command->initial_term_id);
-
-    /* TODO: check if interest exists to create image */
+    const int64_t join_position = aeron_logbuffer_compute_position(command->active_term_id, command->term_offset,
+        (size_t)aeron_number_of_trailing_zeroes(command->term_length), command->initial_term_id);
 
     bool is_reliable = true;
     aeron_congestion_control_strategy_t *congestion_control = NULL;
@@ -1787,13 +1796,40 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
 
     conductor->publication_images.array[conductor->publication_images.length++].image = image;
 
-    aeron_driver_receiver_proxy_on_add_publication_image(conductor->context->receiver_proxy, endpoint, image);
+    for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
+    {
+        aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
 
-    /* TODO: on_available_image */
+        if (endpoint != link->endpoint || command->stream_id != link->stream_id)
+        {
+            continue;
+        }
+
+        if (aeron_driver_conductor_link_subscribeable(
+            conductor,
+            link,
+            &image->conductor_fields.subscribeable,
+            registration_id,
+            command->session_id,
+            command->stream_id,
+            join_position,
+            endpoint->conductor_fields.udp_channel->original_uri,
+            image->log_file_name,
+            image->log_file_name_length) < 0)
+        {
+            return;
+        }
+    }
+
+    aeron_driver_receiver_proxy_on_add_publication_image(conductor->context->receiver_proxy, endpoint, image);
 
     aeron_driver_receiver_proxy_on_delete_create_publication_image_cmd(conductor->context->receiver_proxy, item);
 }
 
+extern bool aeron_driver_conductor_is_subscribeable_linked(
+    aeron_subscription_link_t *link, aeron_subscribeable_t *subscribeable);
+extern bool aeron_driver_conductor_has_network_subscription_interest(
+    aeron_driver_conductor_t *conductor, const aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
 extern size_t aeron_driver_conductor_num_clients(aeron_driver_conductor_t *conductor);
 extern size_t aeron_driver_conductor_num_ipc_publications(aeron_driver_conductor_t *conductor);
 extern size_t aeron_driver_conductor_num_ipc_subscriptions(aeron_driver_conductor_t *conductor);
@@ -1804,9 +1840,12 @@ extern size_t aeron_driver_conductor_num_receive_channel_endpoints(aeron_driver_
 extern size_t aeron_driver_conductor_num_active_ipc_subscriptions(aeron_driver_conductor_t *conductor, int32_t stream_id);
 extern size_t aeron_driver_conductor_num_active_network_subscriptions(
     aeron_driver_conductor_t *conductor, const char *original_uri, int32_t stream_id);
+extern size_t aeron_driver_conductor_num_images(aeron_driver_conductor_t *conductor);
 extern aeron_ipc_publication_t *aeron_driver_conductor_find_ipc_publication(
     aeron_driver_conductor_t *conductor, int64_t id);
 extern aeron_network_publication_t *aeron_driver_conductor_find_network_publication(
     aeron_driver_conductor_t *conductor, int64_t id);
+extern aeron_publication_image_t *aeron_driver_conductor_find_publication_image(
+    aeron_driver_conductor_t *conductor, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
 extern int64_t *aeron_driver_conductor_system_counter_addr(
     aeron_driver_conductor_t *conductor, aeron_system_counter_enum_t type);

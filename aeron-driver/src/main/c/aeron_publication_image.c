@@ -68,7 +68,7 @@ int aeron_publication_image_create(
     }
 
     _image->log_file_name = NULL;
-    if (aeron_alloc((void **)(&_image->log_file_name), (size_t)path_length) < 0)
+    if (aeron_alloc((void **)(&_image->log_file_name), (size_t)path_length + 1) < 0)
     {
         aeron_free(_image);
         aeron_set_err(ENOMEM, "%s", "Could not allocate publication image log_file_name");
@@ -96,6 +96,7 @@ int aeron_publication_image_create(
     _image->map_raw_log_close_func = context->map_raw_log_close_func;
 
     strncpy(_image->log_file_name, path, path_length);
+    _image->log_file_name[path_length] = '\0';
     _image->log_file_name_length = (size_t)path_length;
     _image->log_meta_data = (aeron_logbuffer_metadata_t *)(_image->mapped_raw_log.log_meta_data.addr);
 
@@ -119,7 +120,7 @@ int aeron_publication_image_create(
     _image->conductor_fields.managed_resource.incref = NULL;
     _image->conductor_fields.managed_resource.decref = NULL;
     _image->conductor_fields.has_reached_end_of_life = false;
-    _image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_INIT;
+    _image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_ACTIVE;
     _image->conductor_fields.time_of_last_activity_ns = 0;
     _image->conductor_fields.liveness_timeout_ns = context->image_liveness_timeout_ns;
     _image->session_id = session_id;
@@ -164,6 +165,7 @@ int aeron_publication_image_create(
     _image->next_sm_position = initial_position;
     _image->next_sm_receiver_window_length =
         _image->congestion_control->initial_window_length(_image->congestion_control->state);
+    _image->last_status_mesage_timestamp = 0;
     _image->conductor_fields.clean_position = initial_position;
 
     aeron_counter_set_ordered(_image->rcv_hwm_position.value_addr, initial_position);
@@ -387,7 +389,7 @@ int aeron_publicaion_image_send_pending_loss(aeron_publication_image_t *image)
     int64_t change_number;
     AERON_GET_VOLATILE(change_number, image->end_loss_change);
 
-    if (change_number != image->last_sm_change_number)
+    if (change_number != image->last_loss_change_number)
     {
         const int32_t term_id = image->loss_term_id;
         const int32_t term_offset = image->loss_term_offset;
@@ -429,4 +431,3 @@ extern void aeron_publication_image_schedule_status_message(
 extern const char *aeron_publication_image_log_file_name(aeron_publication_image_t *image);
 extern int64_t aeron_publication_image_registration_id(aeron_publication_image_t *image);
 extern size_t aeron_publication_image_num_subscriptions(aeron_publication_image_t *image);
-extern void aeron_publication_image_format_source_identity(char *buffer, size_t length, struct sockaddr_storage *addr);

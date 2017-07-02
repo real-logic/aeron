@@ -82,13 +82,9 @@ int aeron_driver_receiver_init(
 
 void aeron_driver_receiver_on_command(void *clientd, volatile void *item)
 {
-    aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
     aeron_command_base_t *cmd = (aeron_command_base_t *)item;
 
     cmd->func(clientd, cmd);
-
-    /* recycle cmd by sending to conductor as on_cmd_free */
-    aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, cmd);
 }
 
 int aeron_driver_receiver_do_work(void *clientd)
@@ -179,6 +175,8 @@ void aeron_driver_receiver_on_add_endpoint(void *clientd, void *command)
     {
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_add_endpoint: %s", aeron_errmsg());
     }
+
+    aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, command);
 }
 
 void aeron_driver_receiver_on_remove_endpoint(void *clientd, void *command)
@@ -193,6 +191,7 @@ void aeron_driver_receiver_on_remove_endpoint(void *clientd, void *command)
     }
 
     aeron_receive_channel_endpoint_receiver_release(endpoint);
+    aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, command);
 }
 
 void aeron_driver_receiver_on_add_subscription(void *clientd, void *item)
@@ -205,6 +204,8 @@ void aeron_driver_receiver_on_add_subscription(void *clientd, void *item)
     {
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_add_subscription: %s", aeron_errmsg());
     }
+
+    aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, item);
 }
 
 void aeron_driver_receiver_on_remove_subscription(void *clientd, void *item)
@@ -217,6 +218,8 @@ void aeron_driver_receiver_on_remove_subscription(void *clientd, void *item)
     {
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_remove_subscription: %s", aeron_errmsg());
     }
+
+    aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, item);
 }
 
 void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item)
@@ -234,6 +237,7 @@ void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item)
     }
 
     receiver->images.array[receiver->images.length++].image = cmd->image;
+    aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, item);
 }
 
 void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item)
@@ -257,4 +261,6 @@ void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item
             break;
         }
     }
+
+    aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, item);
 }

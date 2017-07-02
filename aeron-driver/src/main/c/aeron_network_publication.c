@@ -85,7 +85,7 @@ int aeron_network_publication_create(
     }
 
     _pub->log_file_name = NULL;
-    if (aeron_alloc((void **)(&_pub->log_file_name), (size_t)path_length) < 0)
+    if (aeron_alloc((void **)(&_pub->log_file_name), (size_t)path_length + 1) < 0)
     {
         aeron_free(_pub);
         aeron_set_err(ENOMEM, "%s", "Could not allocate network publication log_file_name");
@@ -113,6 +113,7 @@ int aeron_network_publication_create(
     _pub->map_raw_log_close_func = context->map_raw_log_close_func;
 
     strncpy(_pub->log_file_name, path, path_length);
+    _pub->log_file_name[path_length] = '\0';
     _pub->log_file_name_length = (size_t)path_length;
     _pub->log_meta_data = (aeron_logbuffer_metadata_t *)(_pub->mapped_raw_log.log_meta_data.addr);
 

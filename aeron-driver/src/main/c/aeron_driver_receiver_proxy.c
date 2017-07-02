@@ -124,7 +124,7 @@ void aeron_driver_receiver_proxy_on_add_subscription(
     {
         aeron_command_subscription_t *cmd;
 
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_subscription_t)) < 0)
         {
             aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
             return;
@@ -158,7 +158,7 @@ void aeron_driver_receiver_proxy_on_remove_subscription(
     {
         aeron_command_subscription_t *cmd;
 
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_subscription_t)) < 0)
         {
             aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
             return;
@@ -194,7 +194,7 @@ void aeron_driver_receiver_proxy_on_add_publication_image(
     {
         aeron_command_publication_image_t *cmd;
 
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_publication_image_t)) < 0)
         {
             aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
             return;
@@ -230,7 +230,7 @@ void aeron_driver_receiver_proxy_on_remove_publication_image(
     {
         aeron_command_publication_image_t *cmd;
 
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_publication_image_t)) < 0)
         {
             aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
             return;

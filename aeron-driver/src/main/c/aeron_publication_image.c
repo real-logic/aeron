@@ -236,7 +236,8 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
 void aeron_publication_image_track_rebuild(
     aeron_publication_image_t *image, int64_t now_ns, int64_t status_message_timeout)
 {
-    int64_t min_sub_pos = INT64_MAX;
+    int64_t hwm_position = aeron_counter_get_volatile(image->rcv_hwm_position.value_addr);
+    int64_t min_sub_pos = hwm_position;
     int64_t max_sub_pos = INT64_MIN;
 
     for (size_t i = 0, length = image->conductor_fields.subscribeable.length; i < length; i++)
@@ -249,7 +250,6 @@ void aeron_publication_image_track_rebuild(
 
     const int64_t rebuild_position =
         *image->rcv_pos_position.value_addr > max_sub_pos ? *image->rcv_pos_position.value_addr : max_sub_pos;
-    int64_t hwm_position = aeron_counter_get_volatile(image->rcv_hwm_position.value_addr);
 
     bool loss_found = false;
     const size_t index = aeron_logbuffer_index_by_position(rebuild_position, image->position_bits_to_shift);

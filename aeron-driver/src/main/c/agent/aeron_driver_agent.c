@@ -427,7 +427,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             aeron_publication_buffers_ready_t *command = (aeron_publication_buffers_ready_t *)message;
 
             const char *log_file_name = (const char *)message + sizeof(aeron_publication_buffers_ready_t);
-            snprintf(buffer, sizeof(buffer) - 1, "%s %d:%d %d [%" PRId64 " %" PRId64 "]\n    %*s",
+            snprintf(buffer, sizeof(buffer) - 1, "%s %d:%d %d [%" PRId64 " %" PRId64 "]\n    \"%*s\"",
                 (cmd_id == AERON_RESPONSE_ON_PUBLICATION_READY) ? "ON_PUBLICATION_READY" : "ON_EXCLUSIVE_PUBLICATION_READY",
                 command->session_id,
                 command->stream_id,
@@ -485,18 +485,19 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
                     i, position[i].indicator_id, position[i].registration_id);
             }
 
-            char *source_identity_ptr =
+            char *log_file_name_ptr =
                 positions + command->subscriber_position_count * sizeof(aeron_image_buffers_ready_subscriber_position_t);
-            int32_t *source_identity_length = (int32_t *)source_identity_ptr;
-            const char *source_identity = source_identity_ptr + sizeof(int32_t);
-            len += snprintf(ptr + len, sizeof(buffer) - 1 - len, "\"%*s\" [%" PRId64 "]",
-                *source_identity_length, source_identity, command->correlation_id);
-
-            char *log_file_name_ptr = source_identity_ptr + *source_identity_length + sizeof(int32_t);
             int32_t *log_file_name_length = (int32_t *)log_file_name_ptr;
             const char *log_file_name = log_file_name_ptr + sizeof(int32_t);
 
-            len += snprintf(ptr + len, sizeof(buffer) - 1 - len, "%*s", *log_file_name_length, log_file_name);
+            char *source_identity_ptr =
+                log_file_name_ptr + *log_file_name_length + sizeof(int32_t);
+            int32_t *source_identity_length = (int32_t *)source_identity_ptr;
+            const char *source_identity = source_identity_ptr + sizeof(int32_t);
+            len += snprintf(ptr + len, sizeof(buffer) - 1 - len, " \"%*s\" [%" PRId64 "]\n",
+                *source_identity_length, source_identity, command->correlation_id);
+
+            len += snprintf(ptr + len, sizeof(buffer) - 1 - len, "    \"%*s\"", *log_file_name_length, log_file_name);
             break;
         }
 

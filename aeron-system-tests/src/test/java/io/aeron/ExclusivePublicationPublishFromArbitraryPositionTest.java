@@ -79,11 +79,11 @@ public class ExclusivePublicationPublishFromArbitraryPositionTest
         final int expectedNumberOfFragments = 10 + rnd.nextInt(10000);
 
 
-        final MediaDriver.Context driverCtx = new MediaDriver.Context();
-        final Aeron.Context clientCtx = new Aeron.Context();
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .termBufferSparseFile(true);
 
         try (MediaDriver ignore = MediaDriver.launch(driverCtx);
-             Aeron aeron = Aeron.connect(clientCtx);
+             Aeron aeron = Aeron.connect();
              ExclusivePublication publicationOne = aeron.addExclusivePublication(publishUri, STREAM_ID);
              Subscription subscription = aeron.addSubscription(publishUri, STREAM_ID))
         {
@@ -92,35 +92,37 @@ public class ExclusivePublicationPublishFromArbitraryPositionTest
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
             }
 
-            final Thread t = new Thread(() ->
-            {
-                int totalFragmentsRead = 0;
-                do
+            final Thread t = new Thread(
+                () ->
                 {
-                    int fragmentsRead = subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
-                    while (0 == fragmentsRead)
+                    int totalFragmentsRead = 0;
+                    do
                     {
-                        Thread.yield();
-                        fragmentsRead = subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
+                        int fragmentsRead = subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
+                        while (0 == fragmentsRead)
+                        {
+                            Thread.yield();
+                            fragmentsRead = subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
+                        }
+
+                        totalFragmentsRead += fragmentsRead;
                     }
+                    while (totalFragmentsRead < expectedNumberOfFragments);
 
-                    totalFragmentsRead += fragmentsRead;
-                }
-                while (totalFragmentsRead < expectedNumberOfFragments);
+                    verify(mockFragmentHandler, times(expectedNumberOfFragments)).onFragment(
+                        any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class));
+                });
 
-                verify(mockFragmentHandler, times(expectedNumberOfFragments)).onFragment(
-                    any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class));
-            });
             t.setDaemon(false);
             t.setName("image-consumer");
             t.start();
+
             for (int i = 0; i < expectedNumberOfFragments; i++)
             {
                 publishMessage(srcBuffer, publicationOne, rnd);
             }
 
             t.join();
-
         }
         finally
         {

@@ -105,7 +105,7 @@ public class ArchiverSystemTest
             .mtu(1 << (10 + rnd.nextInt(3))) // 1024 to 8096
             .media("udp");
         publishUri = builder.buildUri();
-        System.out.println(publishUri);
+
         driverCtx
             .termBufferSparseFile(true)
             .threadingMode(driverThreadingMode())
@@ -158,9 +158,9 @@ public class ArchiverSystemTest
     public void recordAndReplayExclusivePublication() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
-            archiverCtx.controlChannel(), archiverCtx.controlStreamId());
+                archiverCtx.controlChannel(), archiverCtx.controlStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
-                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
+                archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
             final ArchiveClient client = new ArchiveClient(controlPublication, recordingEvents);
 
@@ -364,7 +364,7 @@ public class ArchiverSystemTest
     {
         final int messageCount = 5000 + rnd.nextInt(10000);
         final CountDownLatch waitForData = new CountDownLatch(1);
-        prepFragementsAndListener(client, messageCount, waitForData);
+        prepFragmentsAndListener(client, messageCount, waitForData);
         publishDataToRecorded(publication, messageCount);
         await(waitForData);
         return messageCount;
@@ -374,7 +374,7 @@ public class ArchiverSystemTest
     {
         final int messageCount = 5000 + rnd.nextInt(10000);
         final CountDownLatch waitForData = new CountDownLatch(1);
-        prepFragementsAndListener(client, messageCount, waitForData);
+        prepFragmentsAndListener(client, messageCount, waitForData);
         publishDataToRecorded(publication, messageCount);
         await(waitForData);
         return messageCount;
@@ -392,7 +392,7 @@ public class ArchiverSystemTest
         }
     }
 
-    private void prepFragementsAndListener(
+    private void prepFragmentsAndListener(
         final ArchiveClient client,
         final int messageCount,
         final CountDownLatch waitForData)
@@ -431,7 +431,6 @@ public class ArchiverSystemTest
         assertThat(decoder.termBufferLength(), is(termBufferLength));
 
         assertThat(ArchiveUtil.recordingLength(decoder), is(totalRecordingLength));
-        // length might exceed data sent due to padding
         assertThat(totalDataLength, lessThanOrEqualTo(totalRecordingLength));
     }
 

@@ -75,9 +75,16 @@ int aeron_reallocf(void **ptr, size_t size)
     /* mimic reallocf */
     if ((*ptr = realloc(*ptr, size)) == NULL)
     {
-        free(*ptr);
-        errno = ENOMEM;
-        return -1;
+        if (0 == size)
+        {
+            *ptr = NULL;
+        }
+        else
+        {
+            free(*ptr);
+            errno = ENOMEM;
+            return -1;
+        }
     }
 #else
     if ((*ptr = reallocf(*ptr, size)) == NULL)

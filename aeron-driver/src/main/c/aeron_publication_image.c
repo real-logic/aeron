@@ -17,6 +17,8 @@
 #include "concurrent/aeron_term_rebuilder.h"
 #include "util/aeron_error.h"
 #include "aeron_publication_image.h"
+#include "aeron_driver_receiver_proxy.h"
+#include "aeron_driver_conductor.h"
 
 int aeron_publication_image_create(
     aeron_publication_image_t **image,
@@ -52,6 +54,7 @@ int aeron_publication_image_create(
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
     const uint64_t log_length = AERON_LOGBUFFER_COMPUTE_LOG_LENGTH(term_buffer_length);
     bool is_multicast = endpoint->conductor_fields.udp_channel->multicast;
+    int64_t now_ns = context->nano_clock();
 
     *image = NULL;
 
@@ -121,7 +124,6 @@ int aeron_publication_image_create(
     _image->conductor_fields.managed_resource.decref = NULL;
     _image->conductor_fields.has_reached_end_of_life = false;
     _image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_ACTIVE;
-    _image->conductor_fields.time_of_last_activity_ns = 0;
     _image->conductor_fields.liveness_timeout_ns = context->image_liveness_timeout_ns;
     _image->session_id = session_id;
     _image->stream_id = stream_id;
@@ -165,8 +167,10 @@ int aeron_publication_image_create(
     _image->next_sm_position = initial_position;
     _image->next_sm_receiver_window_length =
         _image->congestion_control->initial_window_length(_image->congestion_control->state);
+    _image->last_packet_timestamp_ns = now_ns;
     _image->last_status_mesage_timestamp = 0;
     _image->conductor_fields.clean_position = initial_position;
+    _image->conductor_fields.time_of_last_status_change_ns = now_ns;
 
     aeron_counter_set_ordered(_image->rcv_hwm_position.value_addr, initial_position);
     aeron_counter_set_ordered(_image->rcv_pos_position.value_addr, initial_position);
@@ -419,6 +423,52 @@ int aeron_publicaion_image_send_pending_loss(aeron_publication_image_t *image)
     return work_count;
 }
 
+void aeron_publication_image_on_time_event(
+    aeron_driver_conductor_t *conductor, aeron_publication_image_t *image, int64_t now_ns, int64_t now_ms)
+{
+    switch (image->conductor_fields.status)
+    {
+        case AERON_PUBLICATION_IMAGE_STATUS_ACTIVE:
+        {
+            int64_t last_packet_timestamp_ns;
+            AERON_GET_VOLATILE(last_packet_timestamp_ns, image->last_packet_timestamp_ns);
+
+            if (0 == image->conductor_fields.subscribeable.length ||
+                now_ns > (last_packet_timestamp_ns + image->conductor_fields.liveness_timeout_ns))
+            {
+                image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_INACTIVE;
+                image->conductor_fields.time_of_last_status_change_ns = now_ns;
+
+                aeron_driver_receiver_proxy_on_remove_publication_image(
+                    conductor->context->receiver_proxy, image->endpoint, image);
+            }
+            break;
+        }
+
+        case AERON_PUBLICATION_IMAGE_STATUS_INACTIVE:
+        {
+            if (aeron_publication_image_is_drained(image) ||
+                now_ns > (image->conductor_fields.time_of_last_status_change_ns + image->conductor_fields.liveness_timeout_ns))
+            {
+                image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_LINGER;
+                image->conductor_fields.time_of_last_status_change_ns = now_ns;
+
+                aeron_driver_conductor_image_transition_to_linger(conductor, image);
+            }
+            break;
+        }
+
+        case AERON_PUBLICATION_IMAGE_STATUS_LINGER:
+        {
+            if (now_ns > (image->conductor_fields.time_of_last_status_change_ns + image->conductor_fields.liveness_timeout_ns))
+            {
+                image->conductor_fields.has_reached_end_of_life = true;
+            }
+            break;
+        }
+    }
+}
+
 extern bool aeron_publication_image_is_heartbeat(const uint8_t *buffer, size_t length);
 extern bool aeron_publication_image_is_end_of_stream(const uint8_t *buffer, size_t length);
 extern bool aeron_publication_image_is_flow_control_under_run(
@@ -428,6 +478,7 @@ extern bool aeron_publication_image_is_flow_control_over_run(
 extern void aeron_publication_image_hwm_candidate(aeron_publication_image_t *image, int64_t proposed_position);
 extern void aeron_publication_image_schedule_status_message(
     aeron_publication_image_t *image, int64_t now_ns, int64_t sm_position, int32_t window_length);
+extern bool aeron_publication_image_is_drained(aeron_publication_image_t *image);
 extern const char *aeron_publication_image_log_file_name(aeron_publication_image_t *image);
 extern int64_t aeron_publication_image_registration_id(aeron_publication_image_t *image);
 extern size_t aeron_publication_image_num_subscriptions(aeron_publication_image_t *image);

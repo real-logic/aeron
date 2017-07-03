@@ -257,6 +257,9 @@ bool aeron_publication_image_entry_has_reached_end_of_life(
     aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry);
 void aeron_publication_image_entry_delete(aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *);
 
+void aeron_driver_conductor_image_transition_to_linger(
+    aeron_driver_conductor_t *conductor, aeron_publication_image_t *image);
+
 int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *context);
 
 void aeron_driver_conductor_client_transmit(

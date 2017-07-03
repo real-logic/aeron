@@ -24,7 +24,6 @@
 
 typedef enum aeron_publication_image_status_enum
 {
-    AERON_PUBLICATION_IMAGE_STATUS_INIT,
     AERON_PUBLICATION_IMAGE_STATUS_INACTIVE,
     AERON_PUBLICATION_IMAGE_STATUS_ACTIVE,
     AERON_PUBLICATION_IMAGE_STATUS_LINGER,
@@ -38,7 +37,7 @@ typedef struct aeron_publication_image_stct
         aeron_driver_managed_resource_t managed_resource;
         aeron_subscribeable_t subscribeable;
         int64_t clean_position;
-        int64_t time_of_last_activity_ns;
+        int64_t time_of_last_status_change_ns;
         int64_t liveness_timeout_ns;
         bool has_reached_end_of_life;
         aeron_publication_image_status_t status;
@@ -139,6 +138,9 @@ int aeron_publicaion_image_send_pending_status_message(aeron_publication_image_t
 
 int aeron_publicaion_image_send_pending_loss(aeron_publication_image_t *image);
 
+void aeron_publication_image_on_time_event(
+    aeron_driver_conductor_t *conductor, aeron_publication_image_t *image, int64_t now_ns, int64_t now_ms);
+
 inline bool aeron_publication_image_is_heartbeat(const uint8_t *buffer, size_t length)
 {
     return (length == AERON_DATA_HEADER_LENGTH && 0 == ((aeron_frame_header_t *)buffer)->frame_length);
@@ -178,7 +180,7 @@ inline bool aeron_publication_image_is_flow_control_over_run(
 
 inline void aeron_publication_image_hwm_candidate(aeron_publication_image_t *image, int64_t proposed_position)
 {
-    image->last_packet_timestamp_ns = image->nano_clock();
+    AERON_PUT_ORDERED(image->last_packet_timestamp_ns, image->nano_clock());
     aeron_counter_propose_max_ordered(image->rcv_hwm_position.value_addr, proposed_position);
 }
 
@@ -194,6 +196,23 @@ inline void aeron_publication_image_schedule_status_message(
     image->last_status_mesage_timestamp = now_ns;
 
     AERON_PUT_ORDERED(image->end_sm_change, change_number);
+}
+
+inline bool aeron_publication_image_is_drained(aeron_publication_image_t *image)
+{
+    int64_t rebuild_position = aeron_counter_get(image->rcv_pos_position.value_addr);
+
+    for (size_t i = 0, length = image->conductor_fields.subscribeable.length; i < length; i++)
+    {
+        int64_t position = aeron_counter_get_volatile(image->conductor_fields.subscribeable.array[i].value_addr);
+
+        if (position < rebuild_position)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 inline const char *aeron_publication_image_log_file_name(aeron_publication_image_t *image)

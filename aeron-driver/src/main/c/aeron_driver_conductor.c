@@ -418,13 +418,12 @@ void aeron_receive_channel_endpoint_entry_delete(
 void aeron_publication_image_entry_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry, int64_t now_ns, int64_t now_ms)
 {
-    /* TODO: */
+    aeron_publication_image_on_time_event(conductor, entry->image, now_ns, now_ms);
 }
 
 bool aeron_publication_image_entry_has_reached_end_of_life(
     aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry)
 {
-    /* TODO: */
     return entry->image->conductor_fields.has_reached_end_of_life;
 }
 
@@ -432,6 +431,19 @@ void aeron_publication_image_entry_delete(
     aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry)
 {
     aeron_publication_image_close(&conductor->counters_manager, entry->image);
+}
+
+void aeron_driver_conductor_image_transition_to_linger(
+    aeron_driver_conductor_t *conductor, aeron_publication_image_t *image)
+{
+    aeron_driver_conductor_on_unavailable_image(
+        conductor,
+        image->conductor_fields.managed_resource.registration_id,
+        image->stream_id,
+        image->endpoint->conductor_fields.udp_channel->original_uri,
+        image->endpoint->conductor_fields.udp_channel->uri_length);
+
+    /* TODO: remove cool down for image */
 }
 
 #define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(c, l,t,now_ns,now_ms) \

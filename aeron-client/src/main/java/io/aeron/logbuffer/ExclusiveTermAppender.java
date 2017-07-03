@@ -72,26 +72,6 @@ public class ExclusiveTermAppender
     }
 
     /**
-     * Get the raw value of the current tail.
-     *
-     * @return the current tail value.
-     */
-    public long rawTail()
-    {
-        return UnsafeAccess.UNSAFE.getLong(tailBuffer, tailAddressOffset);
-    }
-
-    /**
-     * Set the value for the tail counter.
-     *
-     * @param termId for the tail counter
-     */
-    public void tailTermId(final int termId)
-    {
-        UnsafeAccess.UNSAFE.putLong(tailBuffer, tailAddressOffset, ((long)termId) << 32);
-    }
-
-    /**
      * Claim length of a the term buffer for writing in the message with zero copy semantics.
      *
      * @param termId      for the current term.
@@ -113,9 +93,9 @@ public class ExclusiveTermAppender
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
 
-        putRawTailOrdered(termId, termOffset + alignedLength);
-
         int resultingOffset = termOffset + alignedLength;
+        putRawTailOrdered(termId, resultingOffset);
+
         if (resultingOffset > termLength)
         {
             resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
@@ -149,9 +129,9 @@ public class ExclusiveTermAppender
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
 
-        putRawTailOrdered(termId, termOffset + alignedLength);
-
         int resultingOffset = termOffset + alignedLength;
+        putRawTailOrdered(termId, resultingOffset);
+
         if (resultingOffset > termLength)
         {
             resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
@@ -192,9 +172,9 @@ public class ExclusiveTermAppender
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
 
-        putRawTailOrdered(termId, termOffset + alignedLength);
-
         int resultingOffset = termOffset + alignedLength;
+        putRawTailOrdered(termId, resultingOffset);
+
         if (resultingOffset > termLength)
         {
             resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
@@ -247,9 +227,9 @@ public class ExclusiveTermAppender
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
 
-        putRawTailOrdered(termId, termOffset + requiredLength);
-
         int resultingOffset = termOffset + requiredLength;
+        putRawTailOrdered(termId, resultingOffset);
+
         if (resultingOffset > termLength)
         {
             resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);

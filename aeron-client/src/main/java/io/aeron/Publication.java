@@ -507,7 +507,7 @@ public class Publication implements AutoCloseable
     private long newPosition(final int index, final int currentTail, final long position, final long result)
     {
         long newPosition = ADMIN_ACTION;
-        final int termOffset = TermAppender.termOffset(result);
+        final int termOffset = termOffset(result);
         if (termOffset > 0)
         {
             newPosition = (position - currentTail) + termOffset;
@@ -515,8 +515,8 @@ public class Publication implements AutoCloseable
         else if (termOffset == TermAppender.TRIPPED)
         {
             final int nextIndex = nextPartitionIndex(index);
-            termAppenders[nextIndex].tailTermId(TermAppender.termId(result) + 1);
-            LogBufferDescriptor.activePartitionIndexOrdered(logMetaDataBuffer, nextIndex);
+            initialiseTailWithTermId(logMetaDataBuffer, nextIndex, termId(result) + 1);
+            activePartitionIndexOrdered(logMetaDataBuffer, nextIndex);
         }
 
         return newPosition;

@@ -552,7 +552,7 @@ public class LogBufferDescriptor
     public static void initialiseTailWithTermId(
         final UnsafeBuffer logMetaData, final int partitionIndex, final int termId)
     {
-        logMetaData.putLong(TERM_TAIL_COUNTERS_OFFSET + (partitionIndex * SIZE_OF_LONG), ((long)termId) << 32);
+        logMetaData.putLong(TERM_TAIL_COUNTERS_OFFSET + (partitionIndex * SIZE_OF_LONG), packTail(termId, 0));
     }
 
     /**
@@ -563,7 +563,7 @@ public class LogBufferDescriptor
      */
     public static int termId(final long rawTail)
     {
-        return (int)(rawTail >>> 32);
+        return (int)(rawTail >> 32);
     }
 
     /**
@@ -581,6 +581,17 @@ public class LogBufferDescriptor
     }
 
     /**
+     * The termOffset as a result of the append
+     *
+     * @param result into which the termOffset value has been packed.
+     * @return the termOffset after the append
+     */
+    public static int termOffset(final long result)
+    {
+        return (int)result;
+    }
+
+    /**
      * Pack a termId and termOffset into a raw tail value.
      *
      * @param termId     to be packed.
@@ -589,7 +600,7 @@ public class LogBufferDescriptor
      */
     public static long packTail(final int termId, final int termOffset)
     {
-        return (((long)termId) << 32) + termOffset;
+        return ((long)termId << 32) | (termOffset & 0xFFFF_FFFFL);
     }
 
     /**
@@ -603,6 +614,18 @@ public class LogBufferDescriptor
         final UnsafeBuffer logMetaDataBuffer, final int partitionIndex, final long rawTail)
     {
         logMetaDataBuffer.putLong(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex), rawTail);
+    }
+
+    /**
+     * Get the raw value of the tail for the given partition.
+     *
+     * @param logMetaDataBuffer containing the tail counters.
+     * @param partitionIndex    for the tail counter.
+     * @return the raw value of the tail for the current active partition.
+     */
+    public static long rawTail(final UnsafeBuffer logMetaDataBuffer, final int partitionIndex)
+    {
+        return logMetaDataBuffer.getLong(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex));
     }
 
     /**

@@ -753,10 +753,10 @@ public class DriverConductor implements Agent
 
         if (params.isReplay)
         {
-            final int activeIndex = indexByTerm(params.initialTermId, params.termId);
-            final UnsafeBuffer logMetaDataBuffer = publication.rawLog().metaData();
-            rawTail(logMetaDataBuffer, activeIndex, packTail(params.termId, params.termOffset));
-            activePartitionIndex(logMetaDataBuffer, activeIndex);
+            final int activeIndex = indexByTerm(initialTermId, params.termId);
+            final UnsafeBuffer logMetaData = publication.rawLog().metaData();
+            rawTail(logMetaData, activeIndex, packTail(params.termId, params.termOffset));
+            activePartitionIndex(logMetaData, activeIndex);
         }
 
         channelEndpoint.incRef();
@@ -780,12 +780,15 @@ public class DriverConductor implements Agent
 
         final UnsafeBuffer logMetaData = rawLog.metaData();
         storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
-        initialiseTailWithTermId(logMetaData, 0, initialTermId);
 
         initialTermId(logMetaData, initialTermId);
         mtuLength(logMetaData, params.mtuLength);
         correlationId(logMetaData, registrationId);
-        timeOfLastStatusMessage(logMetaData, 0);
+
+        if (!params.isReplay)
+        {
+            initialiseTailWithTermId(logMetaData, 0, initialTermId);
+        }
 
         return rawLog;
     }
@@ -797,17 +800,20 @@ public class DriverConductor implements Agent
         final long registrationId,
         final PublicationParams params)
     {
-        final int termLength = params.termLength;
-        final RawLog rawLog = rawLogFactory.newIpcPublication(sessionId, streamId, registrationId, termLength);
-        final UnsafeBuffer logMetaData = rawLog.metaData();
+        final RawLog rawLog = rawLogFactory.newIpcPublication(sessionId, streamId, registrationId, params.termLength);
 
+        final UnsafeBuffer logMetaData = rawLog.metaData();
         storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
-        initialiseTailWithTermId(logMetaData, 0, initialTermId);
+
         initialTermId(logMetaData, initialTermId);
         mtuLength(logMetaData, params.mtuLength);
         correlationId(logMetaData, registrationId);
-        timeOfLastStatusMessage(logMetaData, 0);
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
+
+        if (!params.isReplay)
+        {
+            initialiseTailWithTermId(logMetaData, 0, initialTermId);
+        }
 
         return rawLog;
     }
@@ -829,7 +835,6 @@ public class DriverConductor implements Agent
         initialTermId(logMetaData, initialTermId);
         mtuLength(logMetaData, senderMtuLength);
         correlationId(logMetaData, correlationId);
-        timeOfLastStatusMessage(logMetaData, 0);
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
 
         return rawLog;
@@ -1054,8 +1059,9 @@ public class DriverConductor implements Agent
         if (params.isReplay)
         {
             final int activeIndex = indexByTerm(initialTermId, params.termId);
-            rawTail(rawLog.metaData(), activeIndex, packTail(params.termId, params.termOffset));
-            activePartitionIndex(rawLog.metaData(), activeIndex);
+            final UnsafeBuffer logMetaData = rawLog.metaData();
+            rawTail(logMetaData, activeIndex, packTail(params.termId, params.termOffset));
+            activePartitionIndex(logMetaData, activeIndex);
         }
 
         final IpcPublication publication = new IpcPublication(

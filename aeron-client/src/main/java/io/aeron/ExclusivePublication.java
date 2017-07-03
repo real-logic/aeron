@@ -105,25 +105,27 @@ public class ExclusivePublication implements AutoCloseable
         }
 
         final int termLength = logBuffers.termLength();
-        this.maxPayloadLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
-        this.maxMessageLength = FrameDescriptor.computeExclusiveMaxMessageLength(termLength);
-        this.conductor = clientConductor;
+        maxPayloadLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
+        maxMessageLength = FrameDescriptor.computeExclusiveMaxMessageLength(termLength);
+        conductor = clientConductor;
         this.channel = channel;
         this.streamId = streamId;
         this.sessionId = sessionId;
-        this.initialTermId = LogBufferDescriptor.initialTermId(logMetaDataBuffer);
         this.logMetaDataBuffer = logMetaDataBuffer;
         this.originalRegistrationId = originalRegistrationId;
         this.registrationId = registrationId;
         this.positionLimit = positionLimit;
         this.logBuffers = logBuffers;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
-        this.headerWriter = new HeaderWriter(defaultFrameHeader(logMetaDataBuffer));
-        this.activePartitionIndex = activePartitionIndex(logMetaDataBuffer);
+        positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+        headerWriter = new HeaderWriter(defaultFrameHeader(logMetaDataBuffer));
+        initialTermId = LogBufferDescriptor.initialTermId(logMetaDataBuffer);
 
-        final long rawTail = termAppenders[activePartitionIndex].rawTail();
+        final int activeIndex = activePartitionIndex(logMetaDataBuffer);
+        activePartitionIndex = activeIndex;
+
+        final long rawTail = rawTail(logMetaDataBuffer, activeIndex);
         termId = termId(rawTail);
-        termOffset = termOffset(rawTail, termLength);
+        termOffset = termOffset(rawTail);
         termBeginPosition = computeTermBeginPosition(termId, positionBitsToShift, initialTermId);
     }
 
@@ -563,8 +565,8 @@ public class ExclusivePublication implements AutoCloseable
             termId = nextTermId;
             termBeginPosition = computeTermBeginPosition(nextTermId, positionBitsToShift, initialTermId);
 
-            termAppenders[nextIndex].tailTermId(nextTermId);
-            LogBufferDescriptor.activePartitionIndexOrdered(logMetaDataBuffer, nextIndex);
+            initialiseTailWithTermId(logMetaDataBuffer, nextIndex, nextTermId);
+            activePartitionIndexOrdered(logMetaDataBuffer, nextIndex);
 
             return ADMIN_ACTION;
         }

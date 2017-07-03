@@ -22,8 +22,8 @@ import org.mockito.InOrder;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTERS_OFFSET;
+import static io.aeron.logbuffer.LogBufferDescriptor.packTail;
 import static io.aeron.logbuffer.LogBufferDescriptor.rawTailVolatile;
-import static io.aeron.logbuffer.TermAppender.pack;
 import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static java.nio.ByteBuffer.allocateDirect;
@@ -67,10 +67,10 @@ public class TermAppenderTest
         final int termId = 7;
         final int termOffset = -1;
 
-        final long result = pack(termId, termOffset);
+        final long result = LogBufferDescriptor.packTail(termId, termOffset);
 
-        assertThat(TermAppender.termId(result), is(termId));
-        assertThat(TermAppender.termOffset(result), is(termOffset));
+        assertThat(LogBufferDescriptor.termId(result), is(termId));
+        assertThat(LogBufferDescriptor.termOffset(result), is(termOffset));
     }
 
     @Test
@@ -83,13 +83,13 @@ public class TermAppenderTest
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
         final int tail = 0;
 
-        logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, pack(TERM_ID, tail));
+        logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, packTail(TERM_ID, tail));
 
         assertThat(termAppender.appendUnfragmentedMessage(
             headerWriter, buffer, 0, msgLength, RVS), is((long)alignedFrameLength));
 
         assertThat(rawTailVolatile(logMetaDataBuffer, PARTITION_INDEX),
-            is(pack(TERM_ID, tail + alignedFrameLength)));
+            is(packTail(TERM_ID, tail + alignedFrameLength)));
 
         final InOrder inOrder = inOrder(termBuffer, headerWriter);
         inOrder.verify(headerWriter, times(1)).write(termBuffer, tail, frameLength, TERM_ID);
@@ -108,7 +108,7 @@ public class TermAppenderTest
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
         int tail = 0;
 
-        logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, pack(TERM_ID, tail));
+        logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, packTail(TERM_ID, tail));
 
         assertThat(termAppender.appendUnfragmentedMessage(
             headerWriter, buffer, 0, msgLength, RVS), is((long)alignedFrameLength));
@@ -116,7 +116,7 @@ public class TermAppenderTest
             headerWriter, buffer, 0, msgLength, RVS), is((long)alignedFrameLength * 2));
 
         assertThat(rawTailVolatile(logMetaDataBuffer, PARTITION_INDEX),
-            is(pack(TERM_ID, tail + (alignedFrameLength * 2))));
+            is(packTail(TERM_ID, tail + (alignedFrameLength * 2))));
 
         final InOrder inOrder = inOrder(termBuffer, headerWriter);
         inOrder.verify(headerWriter, times(1)).write(termBuffer, tail, frameLength, TERM_ID);
@@ -141,13 +141,13 @@ public class TermAppenderTest
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
         final int frameLength = TERM_BUFFER_LENGTH - tailValue;
 
-        logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, pack(TERM_ID, tailValue));
+        logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, packTail(TERM_ID, tailValue));
 
-        final long expectResult = pack(TERM_ID, TRIPPED);
+        final long expectResult = packTail(TERM_ID, TRIPPED);
         assertThat(termAppender.appendUnfragmentedMessage(headerWriter, buffer, 0, msgLength, RVS), is(expectResult));
 
         assertThat(rawTailVolatile(logMetaDataBuffer, PARTITION_INDEX),
-            is(pack(TERM_ID, tailValue + requiredFrameSize)));
+            is(packTail(TERM_ID, tailValue + requiredFrameSize)));
 
         final InOrder inOrder = inOrder(termBuffer, headerWriter);
         inOrder.verify(headerWriter, times(1)).write(termBuffer, tailValue, frameLength, TERM_ID);
@@ -165,13 +165,13 @@ public class TermAppenderTest
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[msgLength]);
         int tail = 0;
 
-        logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, pack(TERM_ID, tail));
+        logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, packTail(TERM_ID, tail));
 
         assertThat(termAppender.appendFragmentedMessage(
             headerWriter, buffer, 0, msgLength, MAX_PAYLOAD_LENGTH, RVS), is((long)requiredCapacity));
 
         assertThat(rawTailVolatile(logMetaDataBuffer, PARTITION_INDEX),
-            is(pack(TERM_ID, tail + requiredCapacity)));
+            is(packTail(TERM_ID, tail + requiredCapacity)));
 
         final InOrder inOrder = inOrder(termBuffer, headerWriter);
         inOrder.verify(headerWriter, times(1)).write(termBuffer, tail, MAX_FRAME_LENGTH, TERM_ID);
@@ -198,7 +198,7 @@ public class TermAppenderTest
         final int tail = 0;
         final BufferClaim bufferClaim = new BufferClaim();
 
-        logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, pack(TERM_ID, tail));
+        logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, packTail(TERM_ID, tail));
 
         assertThat(termAppender.claim(headerWriter, msgLength, bufferClaim), is((long)alignedFrameLength));
 
@@ -206,7 +206,7 @@ public class TermAppenderTest
         assertThat(bufferClaim.length(), is(msgLength));
 
         assertThat(rawTailVolatile(logMetaDataBuffer, PARTITION_INDEX),
-            is(pack(TERM_ID, tail + alignedFrameLength)));
+            is(packTail(TERM_ID, tail + alignedFrameLength)));
 
         // Map flyweight or encode to buffer directly then call commit() when done
         bufferClaim.commit();

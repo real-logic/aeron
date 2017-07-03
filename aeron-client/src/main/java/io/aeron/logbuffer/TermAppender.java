@@ -28,6 +28,8 @@ import static io.aeron.logbuffer.FrameDescriptor.frameFlags;
 import static io.aeron.logbuffer.FrameDescriptor.frameLengthOrdered;
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTERS_OFFSET;
+import static io.aeron.logbuffer.LogBufferDescriptor.packTail;
+import static io.aeron.logbuffer.LogBufferDescriptor.termId;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.align;
@@ -87,16 +89,6 @@ public class TermAppender
     public long rawTailVolatile()
     {
         return UnsafeAccess.UNSAFE.getLongVolatile(tailBuffer, tailAddressOffset);
-    }
-
-    /**
-     * Set the value for the tail counter.
-     *
-     * @param termId for the tail counter
-     */
-    public void tailTermId(final int termId)
-    {
-        UnsafeAccess.UNSAFE.putLong(tailBuffer, tailAddressOffset, ((long)termId) << 32);
     }
 
     /**
@@ -262,41 +254,6 @@ public class TermAppender
         return resultingOffset;
     }
 
-
-    /**
-     * Pack the values for termOffset and termId into a long for returning on the stack.
-     *
-     * @param termId     value to be packed.
-     * @param termOffset value to be packed.
-     * @return a long with both ints packed into it.
-     */
-    public static long pack(final int termId, final int termOffset)
-    {
-        return ((long)termId << 32) | (termOffset & 0xFFFF_FFFFL);
-    }
-
-    /**
-     * The termOffset as a result of the append
-     *
-     * @param result into which the termOffset value has been packed.
-     * @return the termOffset after the append
-     */
-    public static int termOffset(final long result)
-    {
-        return (int)result;
-    }
-
-    /**
-     * The termId in which the append operation took place.
-     *
-     * @param result into which the termId value has been packed.
-     * @return the termId in which the append operation took place.
-     */
-    public static int termId(final long result)
-    {
-        return (int)(result >>> 32);
-    }
-
     private long handleEndOfLogCondition(
         final UnsafeBuffer termBuffer,
         final long termOffset,
@@ -320,7 +277,7 @@ public class TermAppender
             }
         }
 
-        return pack(termId, resultingOffset);
+        return packTail(termId, resultingOffset);
     }
 
     private long getAndAddRawTail(final int alignedLength)

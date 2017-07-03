@@ -18,10 +18,8 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
-import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -31,11 +29,11 @@ import org.junit.runner.Description;
 
 import java.nio.ByteBuffer;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
+@Ignore
 public class ExclusivePublicationPublishFromArbitraryPositionTest
 {
     @Rule
@@ -43,7 +41,9 @@ public class ExclusivePublicationPublishFromArbitraryPositionTest
     {
         protected void failed(final Throwable t, final Description description)
         {
-            System.err.println("ExclusivePublicationPublishFromArbitraryPositionTest failed with random seed: " + seed);
+            System.err.println(
+                ExclusivePublicationPublishFromArbitraryPositionTest.class.getName() +
+                    " failed with random seed: " + seed);
         }
     };
 
@@ -56,40 +56,38 @@ public class ExclusivePublicationPublishFromArbitraryPositionTest
     private long seed;
 
     @Test(timeout = 10000)
-    @Ignore
     public void shouldPublishFromArbitraryJoinPosition() throws Exception
     {
         final Random rnd = new Random();
         seed = System.nanoTime();
         rnd.setSeed(seed);
-        final int initialTermId = rnd.nextInt(1234);
+
         final int termLength = 1 << (16 + rnd.nextInt(10)); // 64k to 64M
+        final int initialTermId = rnd.nextInt(1234);
         final int termOffset = BitUtil.align(rnd.nextInt(termLength), FrameDescriptor.FRAME_ALIGNMENT);
-        // This test passes when termId=initialTermId
-        final int termId = initialTermId + rnd.nextInt(1000);
-        final ChannelUriBuilder builder = new ChannelUriBuilder()
+        final int termId = initialTermId + rnd.nextInt(1000); // This test passes when termId = initialTermId
+        final String channelUri = new ChannelUriBuilder()
             .endpoint("localhost:54325")
             .termLength(termLength)
             .initialTermId(initialTermId)
             .termId(termId)
             .termOffset(termOffset)
             .mtu(1 << (10 + rnd.nextInt(3))) // 1024 to 8096
-            .media("udp");
-        final String publishUri = builder.buildUri();
+            .media("udp")
+            .buildUri();
         final int expectedNumberOfFragments = 10 + rnd.nextInt(10000);
-
 
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .termBufferSparseFile(true);
 
         try (MediaDriver ignore = MediaDriver.launch(driverCtx);
              Aeron aeron = Aeron.connect();
-             ExclusivePublication publicationOne = aeron.addExclusivePublication(publishUri, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(publishUri, STREAM_ID))
+             ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID);
+             Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID))
         {
-            while (!publicationOne.isConnected())
+            while (!publication.isConnected())
             {
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
+                Thread.yield();
             }
 
             final Thread t = new Thread(
@@ -109,8 +107,7 @@ public class ExclusivePublicationPublishFromArbitraryPositionTest
                     }
                     while (totalFragmentsRead < expectedNumberOfFragments);
 
-                    verify(mockFragmentHandler, times(expectedNumberOfFragments)).onFragment(
-                        any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class));
+                    assertEquals(expectedNumberOfFragments, totalFragmentsRead);
                 });
 
             t.setDaemon(false);
@@ -119,7 +116,7 @@ public class ExclusivePublicationPublishFromArbitraryPositionTest
 
             for (int i = 0; i < expectedNumberOfFragments; i++)
             {
-                publishMessage(srcBuffer, publicationOne, rnd);
+                publishMessage(srcBuffer, publication, rnd);
             }
 
             t.join();
@@ -131,11 +128,9 @@ public class ExclusivePublicationPublishFromArbitraryPositionTest
     }
 
     private static void publishMessage(
-        final UnsafeBuffer srcBuffer,
-        final ExclusivePublication publication,
-        final Random rnd)
+        final UnsafeBuffer buffer, final ExclusivePublication publication, final Random rnd)
     {
-        while (publication.offer(srcBuffer, 0, 1 + rnd.nextInt(MAX_MESSAGE_LENGTH - 1)) < 0L)
+        while (publication.offer(buffer, 0, 1 + rnd.nextInt(MAX_MESSAGE_LENGTH - 1)) < 0L)
         {
             Thread.yield();
         }

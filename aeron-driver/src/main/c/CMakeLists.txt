@@ -79,7 +79,8 @@ SET(SOURCE
     media/aeron_receive_channel_endpoint.c
     uri/aeron_uri.c
     collections/aeron_int64_to_ptr_hash_map.c
-    collections/aeron_str_to_ptr_hash_map.c)
+    collections/aeron_str_to_ptr_hash_map.c
+    reports/aeron_loss_reporter.c)
 
 SET(HEADERS
     util/aeron_platform.h
@@ -135,7 +136,8 @@ SET(HEADERS
     media/aeron_receive_channel_endpoint.h
     uri/aeron_uri.h
     collections/aeron_int64_to_ptr_hash_map.h
-    collections/aeron_str_to_ptr_hash_map.h)
+    collections/aeron_str_to_ptr_hash_map.h
+    reports/aeron_loss_reporter.h)
 
 set(AGENT_SOURCE
     agent/aeron_driver_agent.c

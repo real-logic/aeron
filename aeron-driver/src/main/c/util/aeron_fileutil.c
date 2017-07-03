@@ -59,29 +59,32 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
             {
                 if (fill_with_zeroes)
                 {
-                    char block[BLOCK_SIZE];
-
-                    memset(block, 0, sizeof(block));
-                    const size_t blocks = mapped_file->length / sizeof(block);
-                    const size_t block_remainder = mapped_file->length % sizeof(block);
-
-                    for (size_t i = 0; i < blocks; i++)
+                    if (lseek(fd, (off_t)0, SEEK_SET) >= 0)
                     {
-                        if (write(fd, block, sizeof(block)) < (ssize_t)sizeof(block))
+                        char block[BLOCK_SIZE];
+
+                        memset(block, 0, sizeof(block));
+                        const size_t blocks = mapped_file->length / sizeof(block);
+                        const size_t block_remainder = mapped_file->length % sizeof(block);
+
+                        for (size_t i = 0; i < blocks; i++)
                         {
-                            /* TODO: error */
-                            close(fd);
-                            return -1;
+                            if (write(fd, block, sizeof(block)) < (ssize_t) sizeof(block))
+                            {
+                                /* TODO: error */
+                                close(fd);
+                                return -1;
+                            }
                         }
-                    }
 
-                    if (block_remainder > 0)
-                    {
-                        if (write(fd, block, block_remainder) < (ssize_t)block_remainder)
+                        if (block_remainder > 0)
                         {
-                            /* TODO: error */
-                            close(fd);
-                            return -1;
+                            if (write(fd, block, block_remainder) < (ssize_t) block_remainder)
+                            {
+                                /* TODO: error */
+                                close(fd);
+                                return -1;
+                            }
                         }
                     }
                 }

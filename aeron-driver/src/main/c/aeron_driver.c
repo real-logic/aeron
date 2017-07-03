@@ -261,6 +261,23 @@ int aeron_driver_create_cnc_file(aeron_driver_t *driver)
     return 0;
 }
 
+int aeron_driver_create_loss_report_file(aeron_driver_t *driver)
+{
+    char buffer[AERON_MAX_PATH];
+
+    driver->context->loss_report.addr = NULL;
+    driver->context->loss_report.length = driver->context->loss_report_length;
+
+    snprintf(buffer, sizeof(buffer) - 1, "%s/%s", driver->context->aeron_dir, AERON_LOSS_REPORT_FILE);
+
+    if (aeron_map_new_file(&driver->context->loss_report, buffer, true) < 0)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
 int aeron_driver_shared_do_work(void *clientd)
 {
     aeron_driver_t *driver = (aeron_driver_t *)clientd;
@@ -332,6 +349,11 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     }
 
     if (aeron_driver_create_cnc_file(_driver) < 0)
+    {
+        return -1;
+    }
+
+    if (aeron_driver_create_loss_report_file(_driver) < 0)
     {
         return -1;
     }

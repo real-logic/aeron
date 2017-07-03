@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <util/aeron_netutil.h>
 #include "concurrent/aeron_term_rebuilder.h"
 #include "util/aeron_error.h"
 #include "aeron_publication_image.h"
@@ -37,6 +38,7 @@ int aeron_publication_image_create(
     struct sockaddr_storage *source_address,
     int32_t term_buffer_length,
     int32_t sender_mtu_length,
+    aeron_loss_reporter_t *loss_reporter,
     bool is_reliable,
     aeron_system_counters_t *system_counters)
 {
@@ -113,6 +115,8 @@ int aeron_publication_image_create(
 
     _image->endpoint = endpoint;
     _image->congestion_control = congestion_control;
+    _image->loss_reporter = loss_reporter;
+    _image->loss_reporter_offset = -1;
     _image->nano_clock = context->nano_clock;
     _image->epoch_clock = context->epoch_clock;
     _image->conductor_fields.subscribeable.array = NULL;
@@ -234,7 +238,33 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
 
     AERON_PUT_ORDERED(image->end_loss_change, change_number);
 
-    /* TODO: loss reporter */
+    if (image->loss_reporter_offset >= 0)
+    {
+        aeron_loss_reporter_record_observation(
+            image->loss_reporter, image->loss_reporter_offset, (int64_t)length, image->epoch_clock());
+    }
+    else if (NULL != image->loss_reporter)
+    {
+        char source[AERON_MAX_PATH];
+
+        aeron_format_source_identity(source, sizeof(source), &image->source_address);
+
+        image->loss_reporter_offset =
+            aeron_loss_reporter_create_entry(
+                image->loss_reporter,
+                (int64_t)length,
+                image->epoch_clock(),
+                image->session_id,
+                image->stream_id,
+                image->endpoint->conductor_fields.udp_channel->original_uri,
+                image->endpoint->conductor_fields.udp_channel->uri_length,
+                source,
+                strlen(source));
+        if (-1 == image->loss_reporter_offset)
+        {
+            image->loss_reporter = NULL;
+        }
+    }
 }
 
 void aeron_publication_image_track_rebuild(

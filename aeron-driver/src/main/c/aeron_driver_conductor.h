@@ -31,6 +31,7 @@
 #include "media/aeron_receive_channel_endpoint.h"
 #include "aeron_driver_conductor_proxy.h"
 #include "aeron_publication_image.h"
+#include "reports/aeron_loss_reporter.h"
 
 #define AERON_DRIVER_CONDUCTOR_TIMEOUT_CHECK_NS (1 * 1000 * 1000 * 1000)
 
@@ -122,6 +123,7 @@ typedef struct aeron_driver_conductor_stct
     aeron_counters_manager_t counters_manager;
     aeron_system_counters_t system_counters;
     aeron_driver_conductor_proxy_t conductor_proxy;
+    aeron_loss_reporter_t loss_reporter;
 
     aeron_str_to_ptr_hash_map_t send_channel_endpoint_by_channel_map;
     aeron_str_to_ptr_hash_map_t receive_channel_endpoint_by_channel_map;

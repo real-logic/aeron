@@ -91,19 +91,21 @@ public class ArchiverSystemTest
     {
         seed = System.nanoTime();
         rnd.setSeed(seed);
+
         final int initialTermId = rnd.nextInt(1234);
         final int termLength = 1 << (16 + rnd.nextInt(10));
         final int termOffset = BitUtil.align(rnd.nextInt(termLength), FrameDescriptor.FRAME_ALIGNMENT);
         final int termId = initialTermId + rnd.nextInt(1000);
-        final ChannelUriBuilder builder = new ChannelUriBuilder()
+
+        publishUri = new ChannelUriBuilder()
             .endpoint("127.0.0.1:54325")
             .termLength(termLength) // 1M to 8M
             .initialTermId(initialTermId)
             .termId(termId)
             .termOffset(termOffset)
             .mtu(1 << (10 + rnd.nextInt(3))) // 1024 to 8096
-            .media("udp");
-        publishUri = builder.buildUri();
+            .media("udp")
+            .buildUri();
 
         driverCtx
             .termBufferSparseFile(true)

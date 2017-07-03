@@ -68,6 +68,7 @@ aeron_subscribeable_list_entry_t;
 typedef struct aeron_subscription_link_stct
 {
     aeron_receive_channel_endpoint_t *endpoint;
+    aeron_udp_channel_t *spy_channel;
     int32_t stream_id;
     int64_t client_id;
     int64_t registration_id;
@@ -165,6 +166,14 @@ typedef struct aeron_driver_conductor_stct
         size_t capacity;
     }
     network_subscriptions;
+
+    struct spy_subscriptions_stct
+    {
+        aeron_subscription_link_t *array;
+        size_t length;
+        size_t capacity;
+    }
+    spy_subscriptions;
 
     struct network_publication_stct
     {

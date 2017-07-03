@@ -305,6 +305,21 @@ public:
         return writeCommand(AERON_COMMAND_ADD_SUBSCRIPTION, command.length());
     }
 
+    int addSpySubscription(
+        int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id, int64_t registration_id)
+    {
+        command::SubscriptionMessageFlyweight command(m_command, 0);
+        std::string channel_str(AERON_SPY_PREFIX + std::string(channel));
+
+        command.clientId(client_id);
+        command.correlationId(correlation_id);
+        command.streamId(stream_id);
+        command.registrationCorrelationId(registration_id);
+        command.channel(channel_str.c_str());
+
+        return writeCommand(AERON_COMMAND_ADD_SUBSCRIPTION, command.length());
+    }
+
     int removeSubscription(int64_t client_id, int64_t correlation_id, int64_t registration_id)
     {
         command::RemoveMessageFlyweight command(m_command, 0);

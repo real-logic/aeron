@@ -251,11 +251,11 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
 
 #if defined(HAVE_RECVMMSG)
 typedef int (*aeron_driver_agent_sendmmsg_func_t)
-    (int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int flags);
+    (int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags);
 typedef int (*aeron_driver_agent_recvmmsg_func_t)
-    (int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int flags, struct timespec *timeout);
+    (int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, struct timespec *timeout);
 
-int sendmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int flags)
+int sendmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags)
 {
     static aeron_driver_agent_sendmmsg_func_t _original_func = NULL;
 
@@ -277,13 +277,13 @@ int sendmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int
     for (int i = 0; i < result; i++)
     {
         aeron_driver_agent_log_frame(
-            AERON_FRAME_OUT, sockfd, &msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msgvec[i].msg_hdr->msg_iov[0].iov_len);
+            AERON_FRAME_OUT, sockfd, &msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msgvec[i].msg_hdr.msg_iov[0].iov_len);
     }
 
     return result;
 }
 
-int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int flags, struct timespec *timeout)
+int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, struct timespec *timeout)
 {
     static aeron_driver_agent_recvmmsg_func_t _original_func = NULL;
 

@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+#if defined(__linux__)
+#define _GNU_SOURCE
+#endif
+
 #include <dlfcn.h>
 #include <errno.h>
 #include "protocol/aeron_udp_protocol.h"

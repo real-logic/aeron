@@ -28,6 +28,7 @@
 #include "aeron_congestion_control.h"
 
 #define AERON_CNC_FILE "cnc.dat"
+#define AERON_LOSS_REPORT_FILE "loss-report.dat"
 #define AERON_CNC_VERSION (7)
 
 #pragma pack(push)
@@ -94,9 +95,11 @@ typedef struct aeron_driver_context_stct
     size_t socket_sndbuf;                   /* aeron.socket.so_sndbuf = 0 */
     size_t send_to_sm_poll_ratio;           /* aeron.send.to.status.poll.ratio = 4 */
     size_t initial_window_length;           /* aeron.rcv.initial.window.length = 128KB */
+    size_t loss_report_length;              /* aeron.loss.report.buffer.length = 1MB */
     uint8_t multicast_ttl;                  /* aeron.socket.multicast.ttl = 0 */
 
     aeron_mapped_file_t cnc_map;
+    aeron_mapped_file_t loss_report;
 
     uint8_t *to_driver_buffer;
     uint8_t *to_clients_buffer;

@@ -21,6 +21,7 @@
 #include "media/aeron_receive_channel_endpoint.h"
 #include "aeron_congestion_control.h"
 #include "aeron_loss_detector.h"
+#include "reports/aeron_loss_reporter.h"
 
 typedef enum aeron_publication_image_status_enum
 {
@@ -60,6 +61,9 @@ typedef struct aeron_publication_image_stct
     aeron_congestion_control_strategy_t *congestion_control;
     aeron_clock_func_t nano_clock;
     aeron_clock_func_t epoch_clock;
+
+    aeron_loss_reporter_t *loss_reporter;
+    aeron_loss_reporter_entry_offset_t loss_reporter_offset;
 
     char *log_file_name;
     int32_t session_id;
@@ -116,6 +120,7 @@ int aeron_publication_image_create(
     struct sockaddr_storage *source_address,
     int32_t term_buffer_length,
     int32_t sender_mtu_length,
+    aeron_loss_reporter_t *loss_reporter,
     bool is_reliable,
     aeron_system_counters_t *system_counters);
 

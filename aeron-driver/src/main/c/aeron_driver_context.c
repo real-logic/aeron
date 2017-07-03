@@ -156,6 +156,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     }
 
     _context->cnc_map.addr = NULL;
+    _context->loss_report.addr = NULL;
     _context->aeron_dir = NULL;
     _context->conductor_proxy = NULL;
     _context->sender_proxy = NULL;
@@ -230,6 +231,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->status_message_timeout_ns = 200 * 1000 * 1000L;
     _context->image_liveness_timeout_ns = 10 * 1000 * 1000 * 1000L;
     _context->initial_window_length = 128 * 1024;
+    _context->loss_report_length = 1024 * 1024;
 
     /* set from env */
     char *value = NULL;
@@ -417,6 +419,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             256,
             INT32_MAX);
 
+    _context->loss_report_length =
+        aeron_config_parse_uint64(
+            getenv(AERON_LOSS_REPORT_BUFFER_LENGTH_ENV_VAR),
+            _context->loss_report_length,
+            1024,
+            INT32_MAX);
+
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;
     _context->counters_values_buffer = NULL;
@@ -474,6 +483,7 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_spsc_concurrent_array_queue_close(&context->receiver_command_queue);
 
     aeron_unmap(&context->cnc_map);
+    aeron_unmap(&context->loss_report);
 
     aeron_free((void *)context->aeron_dir);
     aeron_free(context->conductor_idle_strategy_state);

@@ -84,6 +84,11 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
         return -1;
     }
 
+    if (aeron_loss_reporter_init(&conductor->loss_reporter, context->loss_report.addr, context->loss_report.length) < 0)
+    {
+        return -1;
+    }
+
     conductor->conductor_proxy.command_queue = &context->conductor_command_queue;
     conductor->conductor_proxy.fail_counter =
         aeron_counter_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_CONDUCTOR_PROXY_FAILS);
@@ -1830,6 +1835,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         &command->src_address,
         command->term_length,
         command->mtu_length,
+        &conductor->loss_reporter,
         is_reliable,
         &conductor->system_counters) < 0)
     {

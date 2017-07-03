@@ -102,9 +102,10 @@ class ClientConductor implements Agent, DriverListener
         {
             isClosed = true;
 
+            final int lingeringResourcesSize = lingeringResources.size();
             forceClosePublicationsAndSubscriptions();
 
-            if (lingeringResources.size() > 0)
+            if (lingeringResources.size() > lingeringResourcesSize)
             {
                 sleep(1);
             }
@@ -113,6 +114,7 @@ class ClientConductor implements Agent, DriverListener
             {
                 lingeringResources.get(i).delete();
             }
+
             lingeringResources.clear();
         }
     }
@@ -498,8 +500,9 @@ class ClientConductor implements Agent, DriverListener
 
         if (nowNs > (timeOfLastWorkNs + interServiceTimeoutNs))
         {
+            final int lingeringResourcesSize = lingeringResources.size();
             forceClosePublicationsAndSubscriptions();
-            if (lingeringResources.size() > 0)
+            if (lingeringResources.size() > lingeringResourcesSize)
             {
                 sleep(1000);
             }
@@ -544,19 +547,22 @@ class ClientConductor implements Agent, DriverListener
 
     private void checkDriverHeartbeat()
     {
-        final long deadlineMs = driverProxy.timeOfLastDriverKeepaliveMs() + driverTimeoutMs;
-        if (isDriverActive && (epochClock.time() > deadlineMs))
+        if (isDriverActive)
         {
-            isDriverActive = false;
+            final long deadlineMs = driverProxy.timeOfLastDriverKeepaliveMs() + driverTimeoutMs;
+            if ((epochClock.time() > deadlineMs))
+            {
+                isDriverActive = false;
 
-            try
-            {
-                onClose();
-            }
-            finally
-            {
-                errorHandler.onError(new DriverTimeoutException(
-                    "MediaDriver has been inactive for over " + driverTimeoutMs + "ms"));
+                try
+                {
+                    onClose();
+                }
+                finally
+                {
+                    errorHandler.onError(new DriverTimeoutException(
+                        "MediaDriver has been inactive for over " + driverTimeoutMs + "ms"));
+                }
             }
         }
     }

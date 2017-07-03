@@ -518,6 +518,15 @@ int aeron_driver_close(aeron_driver_t *driver)
 
     for (int i = 0; i < AERON_AGENT_RUNNER_MAX; i++)
     {
+        if (aeron_agent_stop(&driver->runners[i]) < 0)
+        {
+            return -1;
+        }
+
+    }
+
+    for (int i = 0; i < AERON_AGENT_RUNNER_MAX; i++)
+    {
         if (aeron_agent_close(&driver->runners[i]) < 0)
         {
             return -1;

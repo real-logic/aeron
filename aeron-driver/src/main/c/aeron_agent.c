@@ -203,7 +203,7 @@ extern int aeron_agent_do_work(aeron_agent_runner_t *runner);
 extern bool aeron_agent_is_running(aeron_agent_runner_t *runner);
 extern void aeron_agent_idle(aeron_agent_runner_t *runner, int work_count);
 
-int aeron_agent_close(aeron_agent_runner_t *runner)
+int aeron_agent_stop(aeron_agent_runner_t *runner)
 {
     int pthread_result = 0;
 
@@ -232,6 +232,17 @@ int aeron_agent_close(aeron_agent_runner_t *runner)
     else if (AERON_AGENT_STATE_MANUAL == runner->state)
     {
         runner->state = AERON_AGENT_STATE_STOPPED;
+    }
+
+    return 0;
+}
+
+int aeron_agent_close(aeron_agent_runner_t *runner)
+{
+    if (NULL == runner)
+    {
+        /* TODO: EINVAL */
+        return -1;
     }
 
     if (NULL != runner->on_close)

@@ -135,6 +135,18 @@ class PublicationParams
                         TERM_LENGTH_PARAM_NAME + "=" + params.termLength);
                 }
 
+                if (params.termOffset < 0)
+                {
+                    throw new IllegalArgumentException(
+                        TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " must be greater than zero");
+                }
+
+                if ((params.termOffset & (FrameDescriptor.FRAME_ALIGNMENT - 1)) != 0)
+                {
+                    throw new IllegalArgumentException(
+                        TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " must be a multiple of FRAME_ALIGNMENT");
+                }
+
                 params.isReplay = true;
             }
         }

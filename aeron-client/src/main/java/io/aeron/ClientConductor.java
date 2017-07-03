@@ -102,16 +102,12 @@ class ClientConductor implements Agent, DriverListener
         {
             isClosed = true;
 
-            for (final ExclusivePublication publication : activeExclusivePublications.values())
+            forceClosePublicationsAndSubscriptions();
+
+            if (lingeringResources.size() > 0)
             {
-                publication.forceClose();
+                sleep(1);
             }
-            activeExclusivePublications.clear();
-
-            activePublications.close();
-            activeSubscriptions.close();
-
-            Thread.yield();
 
             for (int i = 0, size = lingeringResources.size(); i < size; i++)
             {
@@ -502,6 +498,12 @@ class ClientConductor implements Agent, DriverListener
 
         if (nowNs > (timeOfLastWorkNs + interServiceTimeoutNs))
         {
+            forceClosePublicationsAndSubscriptions();
+            if (lingeringResources.size() > 0)
+            {
+                sleep(1000);
+            }
+
             onClose();
 
             throw new ConductorServiceTimeoutException(
@@ -557,5 +559,17 @@ class ClientConductor implements Agent, DriverListener
                     "MediaDriver has been inactive for over " + driverTimeoutMs + "ms"));
             }
         }
+    }
+
+    private void forceClosePublicationsAndSubscriptions()
+    {
+        for (final ExclusivePublication publication : activeExclusivePublications.values())
+        {
+            publication.forceClose();
+        }
+        activeExclusivePublications.clear();
+
+        activePublications.close();
+        activeSubscriptions.close();
     }
 }

@@ -479,6 +479,8 @@ extern void aeron_publication_image_hwm_candidate(aeron_publication_image_t *ima
 extern void aeron_publication_image_schedule_status_message(
     aeron_publication_image_t *image, int64_t now_ns, int64_t sm_position, int32_t window_length);
 extern bool aeron_publication_image_is_drained(aeron_publication_image_t *image);
+extern bool aeron_publication_image_is_accepting_subscriptions(aeron_publication_image_t *image);
+
 extern const char *aeron_publication_image_log_file_name(aeron_publication_image_t *image);
 extern int64_t aeron_publication_image_registration_id(aeron_publication_image_t *image);
 extern size_t aeron_publication_image_num_subscriptions(aeron_publication_image_t *image);

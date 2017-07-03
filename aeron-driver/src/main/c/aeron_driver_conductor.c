@@ -1637,7 +1637,33 @@ int aeron_driver_conductor_on_add_network_subscription(
 
         aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
 
-        /* TODO: scan images and link in ones of interest */
+        for (size_t i = 0, length = conductor->publication_images.length; i < length; i++)
+        {
+            aeron_publication_image_t *image = conductor->publication_images.array[i].image;
+
+            if (endpoint == image->endpoint && command->stream_id == image->stream_id &&
+                aeron_publication_image_is_accepting_subscriptions(image))
+            {
+                char source_identity[AERON_MAX_PATH];
+                aeron_format_source_identity(source_identity, sizeof(source_identity), &image->source_address);
+
+                if (aeron_driver_conductor_link_subscribeable(
+                    conductor,
+                    link,
+                    &image->conductor_fields.subscribeable,
+                    image->conductor_fields.managed_resource.registration_id,
+                    image->session_id,
+                    image->stream_id,
+                    aeron_counter_get(image->rcv_pos_position.value_addr),
+                    endpoint->conductor_fields.udp_channel->original_uri,
+                    source_identity,
+                    image->log_file_name,
+                    image->log_file_name_length) < 0)
+                {
+                    return -1;
+                }
+            }
+        }
 
         return 0;
     }

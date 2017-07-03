@@ -215,6 +215,12 @@ inline bool aeron_publication_image_is_drained(aeron_publication_image_t *image)
     return true;
 }
 
+inline bool aeron_publication_image_is_accepting_subscriptions(aeron_publication_image_t *image)
+{
+    return (image->conductor_fields.subscribeable.length > 0 &&
+        image->conductor_fields.status == AERON_PUBLICATION_IMAGE_STATUS_ACTIVE);
+}
+
 inline const char *aeron_publication_image_log_file_name(aeron_publication_image_t *image)
 {
     return image->log_file_name;

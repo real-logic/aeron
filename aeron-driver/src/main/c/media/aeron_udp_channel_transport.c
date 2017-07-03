@@ -325,6 +325,8 @@ int aeron_udp_channel_transport_sendmmsg(
         aeron_set_err(errno, "sendmmsg: %s", strerror(errno));
         return -1;
     }
+
+    return sendmmsg_result;
 #else
     int result = 0;
 

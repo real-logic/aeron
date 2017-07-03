@@ -153,7 +153,7 @@ class RecordingSession implements Session
                     recordingWriter.endPosition());
             }
 
-            if (image.isClosed())
+            if (image.isClosed() || recordingWriter.isClosed())
             {
                 state = State.INACTIVE;
             }

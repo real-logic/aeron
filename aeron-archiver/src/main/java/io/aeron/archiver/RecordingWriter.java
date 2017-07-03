@@ -79,7 +79,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     private final boolean forceWrites;
 
-    private final int initialTermId;
+    private final int initialRecordingTermId;
     private final int termBufferLength;
     private final int termsMask;
     private final long recordingId;
@@ -124,7 +124,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
         this.recordingId = recordingId;
         this.termBufferLength = termBufferLength;
-        this.initialTermId = initialTermId;
+        this.initialRecordingTermId = (int) (initialTermId + (joinPosition / termBufferLength));
         this.joinPosition = joinPosition;
         this.endPosition = joinPosition;
 
@@ -218,7 +218,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
                 onFileRollOver();
             }
 
-            validateWritePreConditions(termId, termOffset);
+            validateWritePreConditions(termId, termOffset, blockLength);
             // Note: since files are assumed pre-filled with 0 there's no need to write the marker ahead of the data
             final long written = transferDataFrom(fileChannel, fileOffset, blockLength);
             if (written != blockLength)
@@ -261,8 +261,8 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
                 onFileRollOver();
             }
 
-            validateWritePreConditions(header.termId(), termOffset);
-            // Note: since files are assumed pre-filled with 0 there's no need to write the marker ahead of the data
+            validateWritePreConditions(header.termId(), termOffset, alignedLength);
+            // NB: since files are assumed pre-filled with 0 there's no need to write the marker ahead of the data
             final ByteBuffer src = buffer.byteBuffer().duplicate();
             src.position(termOffset).limit(termOffset + frameLength);
             final int written = writeData(src, segmentPosition, recordingFileChannel);
@@ -409,6 +409,11 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         fileChannel.force(false);
     }
 
+    boolean isClosed()
+    {
+        return closed;
+    }
+
     private void forceMetaData(final MappedByteBuffer metaDataBuffer)
     {
         metaDataBuffer.force();
@@ -464,25 +469,36 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         }
     }
 
-    private void validateWritePreConditions(final int termId, final int termOffset) throws IOException
+    private void validateWritePreConditions(
+        final int termId,
+        final int termOffset,
+        final int blockLength) throws IOException
     {
         if (VALIDATE_POSITION_ASSUMPTIONS)
         {
+            if ((termOffset + blockLength) > termBufferLength)
+            {
+                throw new IllegalStateException("termOffset(=" + termOffset +
+                    ") + blockLength(=" + blockLength +
+                    ") > termBufferLength(=" + termBufferLength + ")");
+            }
             if (recordingFileChannel.position() != segmentPosition)
             {
-                throw new IllegalStateException();
+                throw new IllegalStateException("Expected recordingFileChannel.position(): " +
+                    recordingFileChannel.position() + " to match segmentPosition: " + segmentPosition);
             }
 
             final int recordingOffset = recordingOffset(
                 termOffset,
                 termId,
-                initialTermId,
+                initialRecordingTermId,
                 termsMask,
                 termBufferLength);
 
             if (recordingOffset != segmentPosition)
             {
-                throw new IllegalStateException();
+                throw new IllegalStateException("Expected recordingOffset:" +
+                    recordingOffset + " to match segmentPosition: " + segmentPosition);
             }
         }
     }

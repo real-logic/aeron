@@ -15,6 +15,7 @@
  */
 package io.aeron.archiver;
 
+import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archiver.client.ArchiveClient;
@@ -97,6 +98,11 @@ public class TestUtil
     }
 
     public static void offer(final Publication publication, final UnsafeBuffer buffer, final int length)
+    {
+        waitFor(() -> publication.offer(buffer, 0, length) > 0);
+    }
+
+    public static void offer(final ExclusivePublication publication, final UnsafeBuffer buffer, final int length)
     {
         waitFor(() -> publication.offer(buffer, 0, length) > 0);
     }

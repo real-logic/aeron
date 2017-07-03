@@ -99,7 +99,9 @@ class RecordingFragmentReader implements AutoCloseable
 
         final long fromPosition = position == NULL_POSITION ? joinPosition : position;
         segmentFileIndex = segmentFileIndex(joinPosition, fromPosition, segmentFileLength);
-        final long recordingOffset = fromPosition & (segmentFileLength - 1);
+        final long initialRecordingTermPosition = (joinPosition / termBufferLength) * termBufferLength;
+        final long recordingOffset = (fromPosition - initialRecordingTermPosition)
+            & (segmentFileLength - 1);
         openRecordingFile();
 
         recordingTermStartOffset = (int)(recordingOffset - (recordingOffset & (termBufferLength - 1)));

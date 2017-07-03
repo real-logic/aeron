@@ -156,6 +156,7 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
 if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     set(AERON_LIB_BSD_LIBS "-lbsd")
     set(AERON_LIB_UUID_LIBS "-luuid")
+    set(AERON_LIB_M_LIBS "-lm")
 endif()
 
 target_link_libraries(
@@ -163,6 +164,7 @@ target_link_libraries(
     ${CMAKE_DL_LIBS}
     ${AERON_LIB_BSD_LIBS}
     ${AERON_LIB_UUID_LIBS}
+    ${AERON_LIB_M_LIBS}
     ${CMAKE_THREAD_LIBS_INIT})
 
 target_link_libraries(
@@ -171,6 +173,7 @@ target_link_libraries(
     ${CMAKE_DL_LIBS}
     ${AERON_LIB_BSD_LIBS}
     ${AERON_LIB_UUID_LIBS}
+    ${AERON_LIB_M_LIBS}
     ${CMAKE_THREAD_LIBS_INIT})
 
 target_link_libraries(
@@ -178,6 +181,7 @@ target_link_libraries(
     ${CMAKE_DL_LIBS}
     ${AERON_LIB_BSD_LIBS}
     ${AERON_LIB_UUID_LIBS}
+    ${AERON_LIB_M_LIBS}
     ${CMAKE_THREAD_LIBS_INIT})
 
 install(TARGETS aeron_driver LIBRARY DESTINATION lib)

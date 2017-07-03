@@ -90,7 +90,6 @@ public class ArchiverSystemTest
     public void before() throws Exception
     {
         seed = System.nanoTime();
-//        rnd.setSeed(27897105948329L);
         rnd.setSeed(seed);
         final int initialTermId = rnd.nextInt(1234);
         final int termLength = 1 << (16 + rnd.nextInt(10));

@@ -50,6 +50,8 @@ static void *aeron_driver_agent_log_reader(void *arg)
         aeron_mpsc_rb_read(&logging_mpsc_rb, aeron_driver_agent_log_dissector, NULL, 10);
         nanosleep(&ts, NULL);
     }
+
+    return NULL;
 }
 
 static void initialize_agent_logging()
@@ -275,7 +277,7 @@ int sendmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int
     for (size_t i = 0; i < result; i++)
     {
         aeron_driver_agent_log_frame(
-            AERON_FRAME_OUT, sockfd, msgvec[i].msg_hdr, flags, msgvec[i].msg_len), msg[i].msg_hdr->msg_iov[0].iov_len;
+            AERON_FRAME_OUT, sockfd, &msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msg[i].msg_hdr->msg_iov[0].iov_len);
     }
 
     return result
@@ -303,7 +305,7 @@ int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int
     for (size_t i = 0; i < result; i++)
     {
         aeron_driver_agent_log_frame(
-            AERON_FRAME_IN, sockfd, msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msgvec[i].msg_len);
+            AERON_FRAME_IN, sockfd, &msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msgvec[i].msg_len);
     }
 
     return result

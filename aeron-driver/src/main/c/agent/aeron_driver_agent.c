@@ -274,13 +274,13 @@ int sendmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int
 
     int result = _original_func(sockfd, msgvec, vlen, flags);
 
-    for (size_t i = 0; i < result; i++)
+    for (int i = 0; i < result; i++)
     {
         aeron_driver_agent_log_frame(
-            AERON_FRAME_OUT, sockfd, &msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msg[i].msg_hdr->msg_iov[0].iov_len);
+            AERON_FRAME_OUT, sockfd, &msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msgvec[i].msg_hdr->msg_iov[0].iov_len);
     }
 
-    return result
+    return result;
 }
 
 int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int flags, struct timespec *timeout)
@@ -302,13 +302,13 @@ int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, unsigned int
 
     int result = _original_func(sockfd, msgvec, vlen, flags, timeout);
 
-    for (size_t i = 0; i < result; i++)
+    for (int i = 0; i < result; i++)
     {
         aeron_driver_agent_log_frame(
             AERON_FRAME_IN, sockfd, &msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msgvec[i].msg_len);
     }
 
-    return result
+    return result;
 }
 #endif
 

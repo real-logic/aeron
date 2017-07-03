@@ -32,8 +32,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 
 /**
@@ -421,8 +419,6 @@ public class FlowControlStrategiesTest
             {
                 numFragmentsFromB += subscriptionB.poll(fragmentHandlerB, 1);
             }
-
-            assertThat(numFragmentsFromB, lessThanOrEqualTo(numFragmentsFromA));
         }
 
         verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(

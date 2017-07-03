@@ -68,7 +68,7 @@ public class ExclusivePublicationTest
              ExclusivePublication publicationTwo = aeron.addExclusivePublication(channel, STREAM_ID);
              Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
         {
-            final int expectedNumberOfFragments = 10;
+            final int expectedNumberOfFragments = 778;
 
             for (int i = 0; i < expectedNumberOfFragments; i += 2)
             {

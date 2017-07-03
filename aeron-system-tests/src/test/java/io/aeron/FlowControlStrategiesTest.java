@@ -32,6 +32,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 
 /**
@@ -398,6 +400,7 @@ public class FlowControlStrategiesTest
             Thread.yield();
         }
 
+        int numFragmentsFromB = 0;
         for (long i = 0; numFragmentsFromA < numMessagesToSend; i++)
         {
             if (numMessagesLeftToSend > 0)
@@ -416,8 +419,10 @@ public class FlowControlStrategiesTest
             // B receives slowly
             if ((i % 2) == 0)
             {
-                subscriptionB.poll(fragmentHandlerB, 1);
+                numFragmentsFromB += subscriptionB.poll(fragmentHandlerB, 1);
             }
+
+            assertThat(numFragmentsFromB, lessThanOrEqualTo(numFragmentsFromA));
         }
 
         verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(
@@ -426,7 +431,7 @@ public class FlowControlStrategiesTest
             eq(MESSAGE_LENGTH),
             any(Header.class));
 
-        verify(fragmentHandlerB, atMost(numMessagesToSend - 1)).onFragment(
+        verify(fragmentHandlerB, atMost(numMessagesToSend)).onFragment(
             any(DirectBuffer.class),
             anyInt(),
             eq(MESSAGE_LENGTH),
@@ -439,7 +444,7 @@ public class FlowControlStrategiesTest
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         int numMessagesLeftToSend = numMessagesToSend;
         int numFragmentsReadFromA = 0, numFragmentsReadFromB = 0;
-        boolean isBclosed = false;
+        boolean isBClosed = false;
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
         driverAContext.multicastFlowControlSupplier(
@@ -475,10 +480,10 @@ public class FlowControlStrategiesTest
             {
                 numFragmentsReadFromB += subscriptionB.poll(fragmentHandlerB, 10);
             }
-            else if (!isBclosed)
+            else if (!isBClosed)
             {
                 subscriptionB.close();
-                isBclosed = true;
+                isBClosed = true;
             }
         }
 

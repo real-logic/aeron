@@ -155,7 +155,6 @@ public class ArchiverSystemTest
     }
 
     @Test(timeout = 10000)
-    @Ignore
     public void recordAndReplayExclusivePublication() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(

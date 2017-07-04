@@ -455,7 +455,7 @@ public class ChannelUriBuilder
      *
      * @return a channel URI String for the given parameters.
      */
-    public String buildUri()
+    public String build()
     {
         sb.setLength(0);
 

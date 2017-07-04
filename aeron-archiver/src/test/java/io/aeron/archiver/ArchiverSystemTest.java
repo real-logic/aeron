@@ -105,7 +105,7 @@ public class ArchiverSystemTest
             .termOffset(termOffset)
             .mtu(1 << (10 + rnd.nextInt(3))) // 1024 to 8096
             .media("udp")
-            .buildUri();
+            .build();
 
         driverCtx
             .termBufferSparseFile(true)

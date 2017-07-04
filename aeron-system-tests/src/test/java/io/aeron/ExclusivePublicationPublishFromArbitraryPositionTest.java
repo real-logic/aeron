@@ -72,7 +72,7 @@ public class ExclusivePublicationPublishFromArbitraryPositionTest
             .termOffset(termOffset)
             .mtu(1 << (10 + rnd.nextInt(3))) // 1024 to 8096
             .media("udp")
-            .buildUri();
+            .build();
         final int expectedNumberOfFragments = 10 + rnd.nextInt(10000);
 
         final MediaDriver.Context driverCtx = new MediaDriver.Context()

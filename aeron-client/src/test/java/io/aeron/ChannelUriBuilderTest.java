@@ -53,7 +53,7 @@ public class ChannelUriBuilderTest
         final ChannelUriBuilder builder = new ChannelUriBuilder()
             .media("ipc");
 
-        assertThat(builder.buildUri(), is("aeron:ipc"));
+        assertThat(builder.build(), is("aeron:ipc"));
     }
 
     @Test
@@ -63,7 +63,7 @@ public class ChannelUriBuilderTest
             .media("udp")
             .endpoint("localhost:9999");
 
-        assertThat(builder.buildUri(), is("aeron:udp?endpoint=localhost:9999"));
+        assertThat(builder.build(), is("aeron:udp?endpoint=localhost:9999"));
     }
 
     @Test
@@ -74,7 +74,7 @@ public class ChannelUriBuilderTest
             .media("udp")
             .endpoint("localhost:9999");
 
-        assertThat(builder.buildUri(), is("aeron-spy:aeron:udp?endpoint=localhost:9999"));
+        assertThat(builder.build(), is("aeron-spy:aeron:udp?endpoint=localhost:9999"));
     }
 
     @Test
@@ -86,7 +86,7 @@ public class ChannelUriBuilderTest
             .ttl(9)
             .termLength(1024 * 128);
 
-        assertThat(builder.buildUri(), is("aeron:udp?endpoint=localhost:9999|ttl=9|term-length=131072"));
+        assertThat(builder.build(), is("aeron:udp?endpoint=localhost:9999|ttl=9|term-length=131072"));
     }
 
     @Test
@@ -101,7 +101,7 @@ public class ChannelUriBuilderTest
             .termOffset(64);
 
         assertThat(
-            builder.buildUri(),
+            builder.build(),
             is("aeron:udp?endpoint=address:9999|term-length=131072|init-term-id=777|term-id=999|term-offset=64"));
     }
 }

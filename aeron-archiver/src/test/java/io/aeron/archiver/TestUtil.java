@@ -20,6 +20,7 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archiver.client.ArchiveClient;
 import io.aeron.archiver.codecs.ControlResponseCode;
+import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Assert;
@@ -29,6 +30,8 @@ import java.io.IOException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
+import static io.aeron.archiver.ArchiveUtil.loadRecordingDescriptor;
+import static io.aeron.archiver.ArchiveUtil.recordingMetaFileName;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.Is.is;
@@ -128,5 +131,24 @@ public class TestUtil
     public static void awaitPublicationIsConnected(final Publication publication)
     {
         waitFor(publication::isConnected);
+    }
+
+    static RecordingFragmentReader newRecordingFragmentReader(
+        final long recordingId,
+        final File archiveDir) throws IOException
+    {
+        final String recordingMetaFileName = recordingMetaFileName(recordingId);
+        final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
+
+        final RecordingDescriptorDecoder desc = loadRecordingDescriptor(recordingMetaFile);
+        return new RecordingFragmentReader(
+            desc.joinPosition(),
+            desc.endPosition(),
+            desc.termBufferLength(),
+            desc.segmentFileLength(),
+            recordingId,
+            archiveDir,
+            RecordingFragmentReader.NULL_POSITION,
+            RecordingFragmentReader.NULL_LENGTH);
     }
 }

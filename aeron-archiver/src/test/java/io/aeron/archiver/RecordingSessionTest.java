@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archiver.ArchiveUtil.recordingMetaFileName;
+import static io.aeron.archiver.TestUtil.newRecordingFragmentReader;
 import static java.nio.file.StandardOpenOption.*;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -164,7 +165,7 @@ public class RecordingSessionTest
             new File(tempDirForTest, ArchiveUtil.recordingDataFileName(RECORDING_ID, 0));
         assertTrue(segmentFile.exists());
 
-        try (RecordingFragmentReader reader = new RecordingFragmentReader(session.sessionId(), tempDirForTest))
+        try (RecordingFragmentReader reader = newRecordingFragmentReader(session.sessionId(), tempDirForTest))
         {
             final int polled = reader.controlledPoll(
                 (buffer, offset, length) ->

@@ -44,11 +44,11 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
 class Catalog implements AutoCloseable
 {
     private static final String CATALOG_FILE_NAME = "archive.cat";
+    static final int PAGE_SIZE = 4096;
     static final int RECORD_LENGTH = 4096;
     static final int CATALOG_FRAME_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     static final int NULL_RECORD_ID = -1;
 
-    private static final int PAGE_SIZE = 4096;
 
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
     private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(RECORD_LENGTH, PAGE_SIZE);
@@ -241,7 +241,7 @@ class Catalog implements AutoCloseable
         if (catalogRecordingDescriptor.endTimestamp() == NULL_TIME)
         {
             final File metaFile = new File(archiveDir, recordingMetaFileName(recordingId));
-            final RecordingDescriptorDecoder fileRecordingDescriptor = loadRecordingDescriptor(metaFile);
+            final RecordingDescriptorDecoder fileRecordingDescriptor = loadRecordingDescriptor(metaFile, byteBuffer);
             if (fileRecordingDescriptor.endTimestamp() != NULL_TIME)
             {
                 updateRecordingMetaDataInCatalog(recordingId,

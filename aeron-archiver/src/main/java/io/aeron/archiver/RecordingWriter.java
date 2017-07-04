@@ -50,7 +50,8 @@ import static java.nio.file.StandardOpenOption.*;
  */
 class RecordingWriter implements AutoCloseable, RawBlockHandler
 {
-    private static final boolean VALIDATE_POSITION_ASSUMPTIONS = true;
+    private static final boolean VALIDATE_POSITION_ASSUMPTIONS =
+        !Boolean.getBoolean("io.aeron.archiver.validate.recording.writer.position.off");
 
     static class Marker
     {

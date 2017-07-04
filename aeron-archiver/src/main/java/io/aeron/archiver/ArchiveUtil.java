@@ -67,10 +67,18 @@ class ArchiveUtil
     static RecordingDescriptorDecoder loadRecordingDescriptor(final File metaFile)
         throws IOException
     {
+        // assume this is called for short lived buffers, in which case let GC take the hit rather than relying
+        // on DirectByteBuffer cleaner
+        final ByteBuffer metaDataBuffer = ByteBuffer.allocate(Catalog.RECORD_LENGTH);
+        return loadRecordingDescriptor(metaFile, metaDataBuffer);
+    }
+
+    static RecordingDescriptorDecoder loadRecordingDescriptor(
+        final File metaFile,
+        final ByteBuffer metaDataBuffer) throws IOException
+    {
         try (FileChannel metadataFileChannel = FileChannel.open(metaFile.toPath(), READ, WRITE))
         {
-            // TODO: Pass in buffer that can be reused.
-            final ByteBuffer metaDataBuffer = ByteBuffer.allocateDirect(Catalog.RECORD_LENGTH);
             metadataFileChannel.read(metaDataBuffer);
 
             return new RecordingDescriptorDecoder().wrap(

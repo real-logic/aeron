@@ -29,6 +29,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import static io.aeron.logbuffer.FrameDescriptor.frameFlags;
@@ -82,7 +83,8 @@ class ReplaySession implements Session, RecordingFragmentReader.SimplifiedContro
         final long correlationId,
         final EpochClock epochClock,
         final String replayChannel,
-        final int replayStreamId)
+        final int replayStreamId,
+        final ByteBuffer threadLocalMetaBuffer)
     {
         this.controlPublication = controlPublication;
         this.controlSessionProxy = controlSessionProxy;
@@ -102,8 +104,7 @@ class ReplaySession implements Session, RecordingFragmentReader.SimplifiedContro
         RecordingDescriptorDecoder metaData = null;
         try
         {
-            // TODO: Reuse an Agent scoped direct ByteBuffer to avoid the allocation.
-            metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
+            metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile, threadLocalMetaBuffer);
         }
         catch (final IOException ex)
         {
@@ -125,7 +126,15 @@ class ReplaySession implements Session, RecordingFragmentReader.SimplifiedContro
         RecordingFragmentReader cursor = null;
         try
         {
-            cursor = new RecordingFragmentReader(recordingId, archiveDir, replayPosition, replayLength);
+            cursor = new RecordingFragmentReader(
+                metaData.joinPosition(),
+                metaData.endPosition(),
+                metaData.termBufferLength(),
+                metaData.segmentFileLength(),
+                recordingId,
+                archiveDir,
+                replayPosition,
+                replayLength);
         }
         catch (final IOException ex)
         {

@@ -28,7 +28,9 @@ import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
+import static io.aeron.archiver.TestUtil.newRecordingFragmentReader;
 import static io.aeron.archiver.TestUtil.makeTempDir;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
@@ -108,7 +110,7 @@ public class ReplaySessionTest
     public void verifyRecordingFile() throws IOException
     {
         // Verify file reader matches file writer
-        try (RecordingFragmentReader reader = new RecordingFragmentReader(RECORDING_ID, archiveDir))
+        try (RecordingFragmentReader reader = newRecordingFragmentReader(RECORDING_ID, archiveDir))
         {
             int polled = reader.controlledPoll(
                 (buffer, offset, length) ->
@@ -251,7 +253,8 @@ public class ReplaySessionTest
             correlationId,
             epochClock,
             REPLAY_CHANNEL,
-            REPLAY_STREAM_ID);
+            REPLAY_STREAM_ID,
+            ByteBuffer.allocate(Catalog.RECORD_LENGTH));
 
 
         when(mockReplayPub.isClosed()).thenReturn(false);
@@ -613,7 +616,8 @@ public class ReplaySessionTest
             correlationId,
             epochClock,
             REPLAY_CHANNEL,
-            REPLAY_STREAM_ID);
+            REPLAY_STREAM_ID,
+            ByteBuffer.allocate(Catalog.RECORD_LENGTH));
     }
 
     private void validateFrame(final UnsafeBuffer buffer, final int message, final byte flags)

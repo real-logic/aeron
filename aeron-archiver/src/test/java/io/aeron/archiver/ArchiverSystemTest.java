@@ -39,6 +39,7 @@ import java.util.concurrent.CountDownLatch;
 
 import static io.aeron.archiver.ArchiveUtil.loadRecordingDescriptor;
 import static io.aeron.archiver.ArchiveUtil.recordingMetaFileName;
+import static io.aeron.archiver.TestUtil.newRecordingFragmentReader;
 import static io.aeron.archiver.TestUtil.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
@@ -538,7 +539,7 @@ public class ArchiverSystemTest
     private void validateArchiveFile(final int messageCount, final long recordingId) throws IOException
     {
         remaining = totalDataLength;
-        try (RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(recordingId, archiveDir))
+        try (RecordingFragmentReader archiveDataFileReader = newRecordingFragmentReader(recordingId, archiveDir))
         {
             fragmentCount = 0;
             remaining = totalDataLength;

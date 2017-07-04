@@ -15,7 +15,6 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
@@ -27,7 +26,8 @@ import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.ArchiveUtil.*;
+import static io.aeron.archiver.ArchiveUtil.recordingDataFileName;
+import static io.aeron.archiver.ArchiveUtil.segmentFileIndex;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardOpenOption.READ;
@@ -37,15 +37,15 @@ class RecordingFragmentReader implements AutoCloseable
     interface SimplifiedControlledPoll
     {
         /**
-         * Called by the {@link RecordingFragmentReader}. Implementors need only process DATA fragments.
+         * Called by the {@link RecordingFragmentReader}. Implementors need to process DATA and PAD fragments.
          *
          * @return true if fragment processed, false to abort.
          */
         boolean onFragment(UnsafeBuffer fragmentBuffer, int fragmentOffset, int fragmentLength);
     }
 
-    private static final long NULL_POSITION = -1;
-    private static final long NULL_LENGTH = -1;
+    static final long NULL_POSITION = -1;
+    static final long NULL_LENGTH = -1;
 
     private final long recordingId;
     private final File archiveDir;
@@ -62,42 +62,26 @@ class RecordingFragmentReader implements AutoCloseable
     private MappedByteBuffer mappedByteBuffer;
     private boolean isDone = false;
 
-    RecordingFragmentReader(final long recordingId, final File archiveDir) throws IOException
-    {
-        this(getDescriptor(recordingId, archiveDir), recordingId, archiveDir, NULL_POSITION, NULL_LENGTH);
-    }
-
     RecordingFragmentReader(
+        final long joinPosition,
+        final long endPosition,
+        final int termBufferLength,
+        final int segmentFileLength,
         final long recordingId,
         final File archiveDir,
         final long position,
         final long length) throws IOException
     {
-        this(getDescriptor(recordingId, archiveDir), recordingId, archiveDir, position, length);
-    }
+        this.termBufferLength = termBufferLength;
+        this.segmentFileLength = segmentFileLength;
+        final long recordingLength = endPosition - joinPosition;
 
-    public void close()
-    {
-        closeRecordingFile();
-    }
-
-    private RecordingFragmentReader(
-        final RecordingDescriptorDecoder metaDecoder,
-        final long recordingId,
-        final File archiveDir,
-        final long position,
-        final long length) throws IOException
-    {
         this.recordingId = recordingId;
         this.archiveDir = archiveDir;
-        termBufferLength = metaDecoder.termBufferLength();
-        segmentFileLength = metaDecoder.segmentFileLength();
-        final long recordingLength = ArchiveUtil.recordingLength(metaDecoder);
-        final long joinPosition = metaDecoder.joinPosition();
 
         final long replayLength = length == NULL_LENGTH ? recordingLength : length;
-
         final long fromPosition = position == NULL_POSITION ? joinPosition : position;
+
         segmentFileIndex = segmentFileIndex(joinPosition, fromPosition, segmentFileLength);
         final long initialRecordingTermPosition = (joinPosition / termBufferLength) * termBufferLength;
         final long recordingOffset = (fromPosition - initialRecordingTermPosition) & (segmentFileLength - 1);
@@ -136,6 +120,11 @@ class RecordingFragmentReader implements AutoCloseable
         {
             termOffset = frameOffset;
         }
+    }
+
+    public void close()
+    {
+        closeRecordingFile();
     }
 
     boolean isDone()
@@ -235,12 +224,4 @@ class RecordingFragmentReader implements AutoCloseable
         }
     }
 
-    private static RecordingDescriptorDecoder getDescriptor(final long recordingId, final File archiveDir)
-        throws IOException
-    {
-        final String recordingMetaFileName = recordingMetaFileName(recordingId);
-        final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
-
-        return loadRecordingDescriptor(recordingMetaFile);
-    }
 }

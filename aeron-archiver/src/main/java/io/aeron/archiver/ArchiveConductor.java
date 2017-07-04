@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
+import static io.aeron.archiver.Catalog.PAGE_SIZE;
 
 abstract class ArchiveConductor extends SessionWorker<Session>
 {
@@ -40,6 +40,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private static final String DEFAULT_CONTROL_CHANNEL_TERM_LENGTH_PARAM =
         CommonContext.TERM_LENGTH_PARAM_NAME + "=" + Integer.toString(64 * 1024);
 
+    private final ByteBuffer threadLocalMetaBuffer = BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, PAGE_SIZE);
+    private final UnsafeBuffer threadLocalDescriptorBuffer = new UnsafeBuffer(threadLocalMetaBuffer);
     private final StringBuilder uriBuilder = new StringBuilder(1024);
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
@@ -60,9 +62,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final NotificationsProxy notificationsProxy;
     private final int maxConcurrentRecordings;
     private final int maxConcurrentReplays;
-
-    private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, CACHE_LINE_LENGTH);
-    private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer(byteBuffer);
 
     private int replaySessionId;
 
@@ -257,8 +256,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         return new ListRecordingsSession(
             correlationId,
-            byteBuffer,
-            descriptorBuffer,
+            threadLocalMetaBuffer,
+            threadLocalDescriptorBuffer,
             controlPublication,
             fromId,
             count,
@@ -318,7 +317,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             correlationId,
             epochClock,
             replayChannel,
-            replayStreamId);
+            replayStreamId,
+            threadLocalMetaBuffer);
 
         replaySessionByIdMap.put(newId, replaySession);
         replayer.addSession(replaySession);

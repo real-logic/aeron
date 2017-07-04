@@ -45,9 +45,9 @@ public class ExclusivePublicationPublishFromArbitraryPositionTest
         }
     };
 
-    public static final int STREAM_ID = 7;
-    public static final int FRAGMENT_COUNT_LIMIT = 10;
-    public static final int MAX_MESSAGE_LENGTH = 1024 - DataHeaderFlyweight.HEADER_LENGTH;
+    private static final int STREAM_ID = 7;
+    private static final int FRAGMENT_COUNT_LIMIT = 10;
+    private static final int MAX_MESSAGE_LENGTH = 1024 - DataHeaderFlyweight.HEADER_LENGTH;
 
     private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MAX_MESSAGE_LENGTH));
@@ -61,16 +61,17 @@ public class ExclusivePublicationPublishFromArbitraryPositionTest
         rnd.setSeed(seed);
 
         final int termLength = 1 << (16 + rnd.nextInt(10)); // 64k to 64M
+        final int mtu = 1 << (10 + rnd.nextInt(3)); // 1024 to 8096
         final int initialTermId = rnd.nextInt(1234);
         final int termOffset = BitUtil.align(rnd.nextInt(termLength), FrameDescriptor.FRAME_ALIGNMENT);
-        final int termId = initialTermId + rnd.nextInt(1000); // This test passes when termId = initialTermId
+        final int termId = initialTermId + rnd.nextInt(1000);
         final String channelUri = new ChannelUriBuilder()
             .endpoint("localhost:54325")
             .termLength(termLength)
             .initialTermId(initialTermId)
             .termId(termId)
             .termOffset(termOffset)
-            .mtu(1 << (10 + rnd.nextInt(3))) // 1024 to 8096
+            .mtu(mtu)
             .media("udp")
             .buildUri();
         final int expectedNumberOfFragments = 10 + rnd.nextInt(10000);

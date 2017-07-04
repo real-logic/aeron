@@ -71,8 +71,8 @@ public class CatalogTest
 
     private void initRecordingMetaFileFromCatalog(final Catalog catalog, final long recordingId) throws IOException
     {
-        final File metaFile = new File(archiveDir, ArchiveUtil.recordingMetaFileName(recordingId));
-        try (FileChannel meta = FileChannel.open(metaFile.toPath(), CREATE, WRITE))
+        final File descriptorFile = new File(archiveDir, ArchiveUtil.recordingDescriptorFileName(recordingId));
+        try (FileChannel descriptorFileChannel = FileChannel.open(descriptorFile.toPath(), CREATE, WRITE))
         {
             byteBuffer.clear();
             catalog.readDescriptor(recordingId, byteBuffer);
@@ -82,7 +82,7 @@ public class CatalogTest
                 RecordingDescriptorDecoder.BLOCK_LENGTH,
                 RecordingDescriptorDecoder.SCHEMA_VERSION);
             byteBuffer.clear();
-            meta.write(byteBuffer);
+            descriptorFileChannel.write(byteBuffer);
         }
     }
 

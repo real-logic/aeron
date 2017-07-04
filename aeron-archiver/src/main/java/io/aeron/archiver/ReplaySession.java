@@ -93,7 +93,7 @@ class ReplaySession implements Session, RecordingFragmentReader.SimplifiedContro
         this.epochClock = epochClock;
         this.lingerSinceMs = epochClock.time();
 
-        final String recordingMetaFileName = ArchiveUtil.recordingMetaFileName(recordingId);
+        final String recordingMetaFileName = ArchiveUtil.recordingDescriptorFileName(recordingId);
         final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
         if (!recordingMetaFile.exists())
         {
@@ -101,21 +101,21 @@ class ReplaySession implements Session, RecordingFragmentReader.SimplifiedContro
             closeOnError(new IllegalArgumentException(errorMessage), errorMessage);
         }
 
-        RecordingDescriptorDecoder metaData = null;
+        RecordingDescriptorDecoder descriptorDecoder = null;
         try
         {
-            metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile, threadLocalMetaBuffer);
+            descriptorDecoder = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile, threadLocalMetaBuffer);
         }
         catch (final IOException ex)
         {
             closeOnError(ex, recordingMetaFile.getAbsolutePath() + " : failed to load");
         }
 
-        Objects.requireNonNull(metaData);
-        final long joinPosition = metaData.joinPosition();
-        final int mtuLength = metaData.mtuLength();
-        final int termBufferLength = metaData.termBufferLength();
-        final int initialTermId = metaData.initialTermId();
+        Objects.requireNonNull(descriptorDecoder);
+        final long joinPosition = descriptorDecoder.joinPosition();
+        final int mtuLength = descriptorDecoder.mtuLength();
+        final int termBufferLength = descriptorDecoder.termBufferLength();
+        final int initialTermId = descriptorDecoder.initialTermId();
 
         if (replayPosition < joinPosition)
         {
@@ -127,10 +127,10 @@ class ReplaySession implements Session, RecordingFragmentReader.SimplifiedContro
         try
         {
             cursor = new RecordingFragmentReader(
-                metaData.joinPosition(),
-                metaData.endPosition(),
-                metaData.termBufferLength(),
-                metaData.segmentFileLength(),
+                descriptorDecoder.joinPosition(),
+                descriptorDecoder.endPosition(),
+                descriptorDecoder.termBufferLength(),
+                descriptorDecoder.segmentFileLength(),
                 recordingId,
                 archiveDir,
                 replayPosition,

@@ -38,7 +38,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
 import static io.aeron.archiver.ArchiveUtil.loadRecordingDescriptor;
-import static io.aeron.archiver.ArchiveUtil.recordingMetaFileName;
+import static io.aeron.archiver.ArchiveUtil.recordingDescriptorFileName;
 import static io.aeron.archiver.TestUtil.newRecordingFragmentReader;
 import static io.aeron.archiver.TestUtil.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -435,15 +435,15 @@ public class ArchiverSystemTest
         final int streamId,
         final int termBufferLength) throws IOException
     {
-        final File metaFile = new File(archiveDir, recordingMetaFileName(recordingId));
-        assertTrue(metaFile.exists());
+        final File descriptorFile = new File(archiveDir, recordingDescriptorFileName(recordingId));
+        assertTrue(descriptorFile.exists());
 
         if (TestUtil.DEBUG)
         {
-            ArchiveUtil.printMetaFile(metaFile);
+            ArchiveUtil.printDescriptorFile(descriptorFile);
         }
 
-        final RecordingDescriptorDecoder decoder = loadRecordingDescriptor(metaFile);
+        final RecordingDescriptorDecoder decoder = loadRecordingDescriptor(descriptorFile);
 
         assertThat(decoder.sessionId(), is(sessionId));
         assertThat(decoder.streamId(), is(streamId));

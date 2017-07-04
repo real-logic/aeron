@@ -31,11 +31,12 @@ import static java.nio.file.StandardOpenOption.WRITE;
 class ArchiveUtil
 {
 
-    public static final String RECORDING_SEGMENT_POSTFIX = ".rec";
+    static final String RECORDING_SEGMENT_POSTFIX = ".rec";
+    static final String RECORDING_DESCRIPTOR_POSTFIX = ".inf";
 
-    static String recordingMetaFileName(final long recordingId)
+    static String recordingDescriptorFileName(final long recordingId)
     {
-        return recordingId + ".inf";
+        return recordingId + RECORDING_DESCRIPTOR_POSTFIX;
     }
 
     static String recordingDataFileName(final long recordingId, final int segmentIndex)
@@ -48,41 +49,41 @@ class ArchiveUtil
         return (int)((position - joinPosition) / segmentFileLength);
     }
 
-    static void printMetaFile(final File metaFile) throws IOException
+    static void printDescriptorFile(final File descriptorFile) throws IOException
     {
-        final RecordingDescriptorDecoder formatDecoder = loadRecordingDescriptor(metaFile);
+        final RecordingDescriptorDecoder descriptorDecoder = loadRecordingDescriptor(descriptorFile);
 
-        System.out.println("recordingId: " + formatDecoder.recordingId());
-        System.out.println("termBufferLength: " + formatDecoder.termBufferLength());
-        System.out.println("joinTimestamp: " + new Date(formatDecoder.joinTimestamp()));
-        System.out.println("joinPosition: " + formatDecoder.joinPosition());
-        System.out.println("endPosition: " + formatDecoder.endPosition());
-        System.out.println("endTimestamp: " + new Date(formatDecoder.endTimestamp()));
-        System.out.println("sessionId: " + formatDecoder.sessionId());
-        System.out.println("streamId: " + formatDecoder.streamId());
-        System.out.println("channel: " + formatDecoder.channel());
-        System.out.println("sourceIdentity: " + formatDecoder.sourceIdentity());
+        System.out.println("recordingId: " + descriptorDecoder.recordingId());
+        System.out.println("termBufferLength: " + descriptorDecoder.termBufferLength());
+        System.out.println("joinTimestamp: " + new Date(descriptorDecoder.joinTimestamp()));
+        System.out.println("joinPosition: " + descriptorDecoder.joinPosition());
+        System.out.println("endPosition: " + descriptorDecoder.endPosition());
+        System.out.println("endTimestamp: " + new Date(descriptorDecoder.endTimestamp()));
+        System.out.println("sessionId: " + descriptorDecoder.sessionId());
+        System.out.println("streamId: " + descriptorDecoder.streamId());
+        System.out.println("channel: " + descriptorDecoder.channel());
+        System.out.println("sourceIdentity: " + descriptorDecoder.sourceIdentity());
     }
 
-    static RecordingDescriptorDecoder loadRecordingDescriptor(final File metaFile)
+    static RecordingDescriptorDecoder loadRecordingDescriptor(final File descriptorFile)
         throws IOException
     {
         // assume this is called for short lived buffers, in which case let GC take the hit rather than relying
         // on DirectByteBuffer cleaner
-        final ByteBuffer metaDataBuffer = ByteBuffer.allocate(Catalog.RECORD_LENGTH);
-        return loadRecordingDescriptor(metaFile, metaDataBuffer);
+        final ByteBuffer descriptorBuffer = ByteBuffer.allocate(Catalog.RECORD_LENGTH);
+        return loadRecordingDescriptor(descriptorFile, descriptorBuffer);
     }
 
     static RecordingDescriptorDecoder loadRecordingDescriptor(
-        final File metaFile,
-        final ByteBuffer metaDataBuffer) throws IOException
+        final File descriptorFile,
+        final ByteBuffer descriptorBuffer) throws IOException
     {
-        try (FileChannel metadataFileChannel = FileChannel.open(metaFile.toPath(), READ, WRITE))
+        try (FileChannel descriptorFileChannel = FileChannel.open(descriptorFile.toPath(), READ, WRITE))
         {
-            metadataFileChannel.read(metaDataBuffer);
+            descriptorFileChannel.read(descriptorBuffer);
 
             return new RecordingDescriptorDecoder().wrap(
-                new UnsafeBuffer(metaDataBuffer),
+                new UnsafeBuffer(descriptorBuffer),
                 Catalog.CATALOG_FRAME_LENGTH,
                 RecordingDescriptorDecoder.BLOCK_LENGTH,
                 RecordingDescriptorDecoder.SCHEMA_VERSION);
@@ -99,9 +100,9 @@ class ArchiveUtil
         return ((termId - initialTermId) & termsMask) * termBufferLength + termOffset;
     }
 
-    static long recordingLength(final RecordingDescriptorDecoder metaDecoder)
+    static long recordingLength(final RecordingDescriptorDecoder descriptorDecoder)
     {
-        return metaDecoder.endPosition() - metaDecoder.joinPosition();
+        return descriptorDecoder.endPosition() - descriptorDecoder.joinPosition();
     }
 
     static String[] listRecordingSegments(final File archiveDir, final long recordingId)
@@ -124,11 +125,9 @@ class ArchiveUtil
             this.recordingPrefix = recordingPrefix;
         }
 
-        @Override
         public boolean accept(final File dir, final String name)
         {
-            return name.startsWith(recordingPrefix) && name.endsWith(
-                RECORDING_SEGMENT_POSTFIX);
+            return name.startsWith(recordingPrefix) && name.endsWith(RECORDING_SEGMENT_POSTFIX);
         }
     }
 }

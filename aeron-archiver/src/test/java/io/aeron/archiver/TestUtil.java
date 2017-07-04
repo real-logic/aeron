@@ -31,7 +31,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
 import static io.aeron.archiver.ArchiveUtil.loadRecordingDescriptor;
-import static io.aeron.archiver.ArchiveUtil.recordingMetaFileName;
+import static io.aeron.archiver.ArchiveUtil.recordingDescriptorFileName;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.Is.is;
@@ -41,8 +41,8 @@ import static org.junit.Assert.fail;
 public class TestUtil
 {
     public static final int TIMEOUT = 5000;
-    public static final boolean DEBUG = false;
-    public static final int SLEEP_TIME_NS = 5000;
+    static final boolean DEBUG = false;
+    private static final int SLEEP_TIME_NS = 5000;
 
     public static File makeTempDir() throws IOException
     {
@@ -83,7 +83,7 @@ public class TestUtil
         }, 1) != 0);
     }
 
-    public static void waitForFail(final ArchiveClient client, final Subscription reply, final long correlationId1)
+    static void waitForFail(final ArchiveClient client, final Subscription reply, final long correlationId1)
     {
         waitFor(() -> client.pollResponses(reply, new FailResponseListener()
         {
@@ -95,7 +95,7 @@ public class TestUtil
         }, 1) != 0);
     }
 
-    public static void poll(final Subscription subscription, final FragmentHandler handler)
+    static void poll(final Subscription subscription, final FragmentHandler handler)
     {
         waitFor(() -> subscription.poll(handler, 1) > 0);
     }
@@ -105,7 +105,7 @@ public class TestUtil
         waitFor(() -> publication.offer(buffer, 0, length) > 0);
     }
 
-    public static void offer(final ExclusivePublication publication, final UnsafeBuffer buffer, final int length)
+    static void offer(final ExclusivePublication publication, final UnsafeBuffer buffer, final int length)
     {
         waitFor(() -> publication.offer(buffer, 0, length) > 0);
     }
@@ -137,7 +137,7 @@ public class TestUtil
         final long recordingId,
         final File archiveDir) throws IOException
     {
-        final String recordingMetaFileName = recordingMetaFileName(recordingId);
+        final String recordingMetaFileName = recordingDescriptorFileName(recordingId);
         final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
 
         final RecordingDescriptorDecoder desc = loadRecordingDescriptor(recordingMetaFile);

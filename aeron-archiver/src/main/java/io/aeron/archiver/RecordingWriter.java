@@ -32,11 +32,12 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
+import static io.aeron.archiver.ArchiveUtil.recordingDescriptorFileName;
 import static io.aeron.archiver.ArchiveUtil.recordingOffset;
 import static java.nio.file.StandardOpenOption.*;
 
 /**
- * Responsible for writing out a recording into the file system. A recording has metadata file and a set of data files
+ * Responsible for writing out a recording into the file system. A recording has descriptor file and a set of data files
  * written into the archive folder.
  * <p>
  * Design note: While this class is notionally closely related to the {@link RecordingSession} it is separated from it
@@ -88,8 +89,8 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     private final File archiveDir;
     private final EpochClock epochClock;
 
-    private final MappedByteBuffer metaDataBuffer;
-    private final RecordingDescriptorEncoder metaDataEncoder;
+    private final MappedByteBuffer descriptorBuffer;
+    private final RecordingDescriptorEncoder descriptorEncoder;
     private final int segmentFileLength;
     private final long joinPosition;
 
@@ -137,11 +138,10 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
                     "in a file is also a power of 2");
         }
 
-        final String recordingMetaFileName = ArchiveUtil.recordingMetaFileName(recordingId);
-        final File metadataFile = new File(archiveDir, recordingMetaFileName);
+        final File descriptorFile = new File(archiveDir, recordingDescriptorFileName(recordingId));
         try
         {
-            metaDataBuffer = mapMetaData(metadataFile);
+            descriptorBuffer = mapDescriptor(descriptorFile);
         }
         catch (final IOException ex)
         {
@@ -149,11 +149,11 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             throw new RuntimeException(ex);
         }
 
-        final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(metaDataBuffer);
-        metaDataEncoder = new RecordingDescriptorEncoder().wrap(unsafeBuffer, Catalog.CATALOG_FRAME_LENGTH);
+        final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(descriptorBuffer);
+        descriptorEncoder = new RecordingDescriptorEncoder().wrap(unsafeBuffer, Catalog.CATALOG_FRAME_LENGTH);
 
         initDescriptor(
-            metaDataEncoder,
+            descriptorEncoder,
             recordingId,
             termBufferLength,
             segmentFileLength,
@@ -165,8 +165,8 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             channel,
             sourceIdentity);
 
-        unsafeBuffer.putInt(0, metaDataEncoder.encodedLength());
-        forceMetaData(metaDataBuffer);
+        unsafeBuffer.putInt(0, descriptorEncoder.encodedLength());
+        forceDescriptor(descriptorBuffer);
     }
 
     static void initDescriptor(
@@ -297,12 +297,12 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
         closed = true;
 
-        if (metaDataBuffer != null)
+        if (descriptorBuffer != null)
         {
             endTimestamp = epochClock.time();
-            metaDataEncoder.endTimestamp(endTimestamp);
-            forceMetaData(metaDataBuffer);
-            IoUtil.unmap(metaDataBuffer);
+            descriptorEncoder.endTimestamp(endTimestamp);
+            forceDescriptor(descriptorBuffer);
+            IoUtil.unmap(descriptorBuffer);
         }
 
         if (recordingFileChannel != null)
@@ -358,11 +358,11 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     }
 
     // extend for testing
-    MappedByteBuffer mapMetaData(final File file) throws IOException
+    MappedByteBuffer mapDescriptor(final File file) throws IOException
     {
-        try (FileChannel metadataFileChannel = FileChannel.open(file.toPath(), CREATE_NEW, READ, WRITE))
+        try (FileChannel descriptorFileChannel = FileChannel.open(file.toPath(), CREATE_NEW, READ, WRITE))
         {
-            return metadataFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
+            return descriptorFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
         }
     }
 
@@ -415,9 +415,9 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         return closed;
     }
 
-    private void forceMetaData(final MappedByteBuffer metaDataBuffer)
+    private void forceDescriptor(final MappedByteBuffer descriptorBuffer)
     {
-        metaDataBuffer.force();
+        descriptorBuffer.force();
     }
 
     private void onFileRollOver()
@@ -434,8 +434,8 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
         segmentPosition = termOffset;
         joinTimestamp = epochClock.time();
-        metaDataEncoder.joinTimestamp(joinTimestamp);
-        forceMetaData(metaDataBuffer);
+        descriptorEncoder.joinTimestamp(joinTimestamp);
+        forceDescriptor(descriptorBuffer);
 
         newRecordingSegmentFile();
 
@@ -455,7 +455,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     {
         segmentPosition += blockLength;
         endPosition += blockLength;
-        metaDataEncoder.endPosition(endPosition);
+        descriptorEncoder.endPosition(endPosition);
     }
 
     private void validateStartTermOffset(final int termOffset)

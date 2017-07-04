@@ -40,8 +40,9 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private static final String DEFAULT_CONTROL_CHANNEL_TERM_LENGTH_PARAM =
         CommonContext.TERM_LENGTH_PARAM_NAME + "=" + Integer.toString(64 * 1024);
 
-    private final ByteBuffer threadLocalMetaBuffer = BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, PAGE_SIZE);
-    private final UnsafeBuffer threadLocalDescriptorBuffer = new UnsafeBuffer(threadLocalMetaBuffer);
+    private final ByteBuffer threadLocalDescriptorBBuffer =
+        BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, PAGE_SIZE);
+    private final UnsafeBuffer threadLocalDescriptorUBuffer = new UnsafeBuffer(threadLocalDescriptorBBuffer);
     private final StringBuilder uriBuilder = new StringBuilder(1024);
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
@@ -256,8 +257,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         return new ListRecordingsSession(
             correlationId,
-            threadLocalMetaBuffer,
-            threadLocalDescriptorBuffer,
+            threadLocalDescriptorBBuffer,
+            threadLocalDescriptorUBuffer,
             controlPublication,
             fromId,
             count,
@@ -318,7 +319,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             epochClock,
             replayChannel,
             replayStreamId,
-            threadLocalMetaBuffer);
+            threadLocalDescriptorBBuffer);
 
         replaySessionByIdMap.put(newId, replaySession);
         replayer.addSession(replaySession);

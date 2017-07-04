@@ -240,8 +240,9 @@ class Catalog implements AutoCloseable
 
         if (catalogRecordingDescriptor.endTimestamp() == NULL_TIME)
         {
-            final File metaFile = new File(archiveDir, recordingMetaFileName(recordingId));
-            final RecordingDescriptorDecoder fileRecordingDescriptor = loadRecordingDescriptor(metaFile, byteBuffer);
+            final File descriptorFile = new File(archiveDir, recordingDescriptorFileName(recordingId));
+            final RecordingDescriptorDecoder fileRecordingDescriptor =
+                loadRecordingDescriptor(descriptorFile, byteBuffer);
             if (fileRecordingDescriptor.endTimestamp() != NULL_TIME)
             {
                 updateRecordingMetaDataInCatalog(recordingId,
@@ -251,14 +252,14 @@ class Catalog implements AutoCloseable
             }
             else
             {
-                recoverIncompleteMetaData(recordingId, metaFile, fileRecordingDescriptor);
+                recoverIncompleteMetaData(recordingId, descriptorFile, fileRecordingDescriptor);
             }
         }
     }
 
     private void recoverIncompleteMetaData(
         final long recordingId,
-        final File metaFile,
+        final File descriptorFile,
         final RecordingDescriptorDecoder fileRecordingDescriptor) throws IOException
     {
         final int maxSegment = findLastRecordingSegment(recordingId);
@@ -270,7 +271,7 @@ class Catalog implements AutoCloseable
         {
             endPosition = fileRecordingDescriptor.joinPosition();
             joinTimestamp = fileRecordingDescriptor.joinTimestamp();
-            endTimestamp = metaFile.lastModified();
+            endTimestamp = descriptorFile.lastModified();
         }
         else
         {
@@ -318,19 +319,19 @@ class Catalog implements AutoCloseable
         }
 
         updateRecordingMetaDataInCatalog(recordingId, endPosition, joinTimestamp, endTimestamp);
-        updateRecordingMetaDataFile(metaFile, endPosition, joinTimestamp, endTimestamp);
+        updateRecordingMetaDataFile(descriptorFile, endPosition, joinTimestamp, endTimestamp);
     }
 
     private void updateRecordingMetaDataFile(
-        final File metaDataFile,
+        final File descriptorFile,
         final long endPosition,
         final long joinTimestamp,
         final long endTimestamp) throws IOException
     {
-        try (FileChannel metaDataFileChannel = FileChannel.open(metaDataFile.toPath(), WRITE, READ))
+        try (FileChannel descriptorFileChannel = FileChannel.open(descriptorFile.toPath(), WRITE, READ))
         {
             byteBuffer.clear();
-            metaDataFileChannel.read(byteBuffer);
+            descriptorFileChannel.read(byteBuffer);
             recordingDescriptorEncoder
                 .wrap(unsafeBuffer, CATALOG_FRAME_LENGTH)
                 .endPosition(endPosition)
@@ -338,7 +339,7 @@ class Catalog implements AutoCloseable
                 .endTimestamp(endTimestamp);
 
             byteBuffer.clear();
-            metaDataFileChannel.write(byteBuffer, 0);
+            descriptorFileChannel.write(byteBuffer, 0);
         }
     }
 

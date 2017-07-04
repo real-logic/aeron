@@ -28,7 +28,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.ArchiveUtil.recordingMetaFileName;
+import static io.aeron.archiver.ArchiveUtil.recordingDescriptorFileName;
 import static io.aeron.archiver.TestUtil.newRecordingFragmentReader;
 import static java.nio.file.StandardOpenOption.*;
 import static org.junit.Assert.*;
@@ -115,21 +115,21 @@ public class RecordingSessionTest
 
         session.doWork();
 
-        final File recordingMetaFile = new File(tempDirForTest, recordingMetaFileName(session.sessionId()));
+        final File recordingMetaFile = new File(tempDirForTest, recordingDescriptorFileName(session.sessionId()));
         assertTrue(recordingMetaFile.exists());
 
-        RecordingDescriptorDecoder metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
+        RecordingDescriptorDecoder descriptorDecoder = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
 
-        assertEquals(RECORDING_ID, metaData.recordingId());
-        assertEquals(termBufferLength, metaData.termBufferLength());
-        assertEquals(streamId, metaData.streamId());
-        assertEquals(mtuLength, metaData.mtuLength());
-        assertEquals(RecordingWriter.NULL_TIME, metaData.joinTimestamp());
-        assertEquals(joinPosition, metaData.joinPosition());
-        assertEquals(RecordingWriter.NULL_TIME, metaData.endTimestamp());
-        assertEquals(joinPosition, metaData.endPosition());
-        assertEquals(channel, metaData.channel());
-        assertEquals(sourceIdentity, metaData.sourceIdentity());
+        assertEquals(RECORDING_ID, descriptorDecoder.recordingId());
+        assertEquals(termBufferLength, descriptorDecoder.termBufferLength());
+        assertEquals(streamId, descriptorDecoder.streamId());
+        assertEquals(mtuLength, descriptorDecoder.mtuLength());
+        assertEquals(RecordingWriter.NULL_TIME, descriptorDecoder.joinTimestamp());
+        assertEquals(joinPosition, descriptorDecoder.joinPosition());
+        assertEquals(RecordingWriter.NULL_TIME, descriptorDecoder.endTimestamp());
+        assertEquals(joinPosition, descriptorDecoder.endPosition());
+        assertEquals(channel, descriptorDecoder.channel());
+        assertEquals(sourceIdentity, descriptorDecoder.sourceIdentity());
 
         when(image.rawPoll(any(), anyInt())).thenAnswer(
             (invocation) ->
@@ -154,12 +154,12 @@ public class RecordingSessionTest
 
         assertNotEquals("Expect some work", 0, session.doWork());
 
-        metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
+        descriptorDecoder = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
 
-        assertEquals(42L, metaData.joinTimestamp());
+        assertEquals(42L, descriptorDecoder.joinTimestamp());
 
-        assertEquals(RecordingWriter.NULL_TIME, metaData.endTimestamp());
-        assertEquals(joinPosition + RECORDED_BLOCK_LENGTH, metaData.endPosition());
+        assertEquals(RecordingWriter.NULL_TIME, descriptorDecoder.endTimestamp());
+        assertEquals(joinPosition + RECORDED_BLOCK_LENGTH, descriptorDecoder.endPosition());
 
         final File segmentFile =
             new File(tempDirForTest, ArchiveUtil.recordingDataFileName(RECORDING_ID, 0));
@@ -189,8 +189,8 @@ public class RecordingSessionTest
         session.doWork();
         assertTrue(session.isDone());
         session.close();
-        metaData = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
-        assertEquals(128L, metaData.endTimestamp());
+        descriptorDecoder = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile);
+        assertEquals(128L, descriptorDecoder.endTimestamp());
     }
 
     private Subscription mockSubscription(final String channel, final int streamId)

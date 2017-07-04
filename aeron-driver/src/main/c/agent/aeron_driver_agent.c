@@ -219,8 +219,12 @@ ssize_t sendmsg(int socket, const struct msghdr *message, int flags)
     (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
 
     ssize_t result = _original_func(socket, message, flags);
-    aeron_driver_agent_log_frame(
-        AERON_FRAME_OUT, socket, message, flags, (int)result, (int32_t)message->msg_iov[0].iov_len);
+
+    if (mask & AERON_FRAME_OUT)
+    {
+        aeron_driver_agent_log_frame(
+            AERON_FRAME_OUT, socket, message, flags, (int) result, (int32_t) message->msg_iov[0].iov_len);
+    }
     return result;
 }
 
@@ -243,9 +247,12 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
 
     ssize_t result = _original_func(socket, message, flags);
 
-    if (result > 0)
+    if (mask & AERON_FRAME_IN)
     {
-        aeron_driver_agent_log_frame(AERON_FRAME_IN, socket, message, flags, (int) result, (int32_t) result);
+        if (result > 0)
+        {
+            aeron_driver_agent_log_frame(AERON_FRAME_IN, socket, message, flags, (int) result, (int32_t) result);
+        }
     }
 
     return result;
@@ -276,10 +283,13 @@ int sendmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags)
 
     int result = _original_func(sockfd, msgvec, vlen, flags);
 
-    for (int i = 0; i < result; i++)
+    if (mask & AERON_FRAME_OUT)
     {
-        aeron_driver_agent_log_frame(
-            AERON_FRAME_OUT, sockfd, &msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msgvec[i].msg_hdr.msg_iov[0].iov_len);
+        for (int i = 0; i < result; i++)
+        {
+            aeron_driver_agent_log_frame(
+                AERON_FRAME_OUT, sockfd, &msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msgvec[i].msg_hdr.msg_iov[0].iov_len);
+        }
     }
 
     return result;
@@ -304,10 +314,13 @@ int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, s
 
     int result = _original_func(sockfd, msgvec, vlen, flags, timeout);
 
-    for (int i = 0; i < result; i++)
+    if (mask & AERON_FRAME_IN)
     {
-        aeron_driver_agent_log_frame(
-            AERON_FRAME_IN, sockfd, &msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msgvec[i].msg_len);
+        for (int i = 0; i < result; i++)
+        {
+            aeron_driver_agent_log_frame(
+                AERON_FRAME_IN, sockfd, &msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msgvec[i].msg_len);
+        }
     }
 
     return result;

@@ -25,7 +25,10 @@ import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
@@ -69,6 +72,7 @@ public class ArchiverSystemTest
     private long totalDataLength;
     private long totalRecordingLength;
     private long recorded;
+    private long requestedJoinPosition;
     private volatile long endPosition = -1;
     private Throwable trackerError;
     private final Random rnd = new Random();
@@ -85,6 +89,7 @@ public class ArchiverSystemTest
     private Subscription controlResponses;
     private long correlationId;
     private long joinPosition;
+    private int requestedInitialTermId;
 
     @Before
     public void before() throws Exception
@@ -92,20 +97,30 @@ public class ArchiverSystemTest
         seed = System.nanoTime();
         rnd.setSeed(seed);
 
-        final int initialTermId = rnd.nextInt(1234);
-        final int termLength = 1 << (16 + rnd.nextInt(10));
+        requestedInitialTermId = rnd.nextInt(1234);
+        final int termLength = 1 << (16 + rnd.nextInt(10)); // 1M to 8M
+        final int mtu = 1 << (10 + rnd.nextInt(3)); // 1024 to 8096
         final int termOffset = BitUtil.align(rnd.nextInt(termLength), FrameDescriptor.FRAME_ALIGNMENT);
-        final int termId = initialTermId + rnd.nextInt(1000);
+        final int termId = requestedInitialTermId + rnd.nextInt(1000);
 
-        publishUri = new ChannelUriBuilder()
+        final ChannelUriBuilder channelUriBuilder = new ChannelUriBuilder()
             .endpoint("127.0.0.1:54325")
-            .termLength(termLength) // 1M to 8M
-            .initialTermId(initialTermId)
+            .termLength(termLength)
+            .mtu(mtu)
+            .media("udp");
+
+        // the following settings are only respected for ExclusivePublication
+        channelUriBuilder
+            .initialTermId(requestedInitialTermId)
             .termId(termId)
-            .termOffset(termOffset)
-            .mtu(1 << (10 + rnd.nextInt(3))) // 1024 to 8096
-            .media("udp")
+            .termOffset(termOffset);
+
+        publishUri = channelUriBuilder
             .build();
+
+
+
+        requestedJoinPosition = (termId - requestedInitialTermId) * termLength + termOffset;
 
         driverCtx
             .termBufferSparseFile(true)
@@ -115,12 +130,13 @@ public class ArchiverSystemTest
 
         driver = MediaDriver.launch(driverCtx);
 
+        final int segmentFileLength = termLength << rnd.nextInt(4);
         archiveDir = TestUtil.makeTempDir();
         archiverCtx
             .forceDataWrites(false)
             .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
             .archiveDir(archiveDir)
-            .segmentFileLength(termLength << rnd.nextInt(4))
+            .segmentFileLength(segmentFileLength)
             .threadingMode(archiverThreadingMode());
 
         archiver = Archiver.launch(archiverCtx);
@@ -177,6 +193,9 @@ public class ArchiverSystemTest
             final int initialTermId = recordedPublication.initialTermId();
             final int maxPayloadLength = recordedPublication.maxPayloadLength();
             final long joinPosition = recordedPublication.position();
+
+            assertThat(joinPosition, is(requestedJoinPosition));
+            assertThat(recordedPublication.initialTermId(), is(requestedInitialTermId));
             preSendChecks(client, sessionId, termBufferLength, joinPosition);
 
             final int messageCount = prepAndSendMessages(client, recordedPublication);

@@ -710,14 +710,21 @@ public class DriverConductor implements Agent
         final UnsafeBufferPosition senderLimit = SenderLimit.allocate(
             countersManager, registrationId, sessionId, streamId, channel);
 
-        int initialTermId = BitUtil.generateRandomisedId();
+        final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
+        final RawLog rawLog = newNetworkPublicationLog(
+            sessionId, streamId, initialTermId, udpChannel, registrationId, params);
+
         if (params.isReplay)
         {
-            initialTermId = params.initialTermId;
             final int bits = Integer.numberOfTrailingZeros(params.termLength);
             final long position = computePosition(params.termId, params.termOffset, bits, initialTermId);
             senderLimit.setOrdered(position);
             senderPosition.setOrdered(position);
+
+            final int activeIndex = indexByTerm(initialTermId, params.termId);
+            final UnsafeBuffer logMetaData = rawLog.metaData();
+            rawTail(logMetaData, activeIndex, packTail(params.termId, params.termOffset));
+            activePartitionIndex(logMetaData, activeIndex);
         }
 
         final RetransmitHandler retransmitHandler = new RetransmitHandler(
@@ -736,7 +743,7 @@ public class DriverConductor implements Agent
             channelEndpoint,
             nanoClock,
             cachedEpochClock,
-            newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId, params),
+            rawLog,
             PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, channel),
             senderPosition,
             senderLimit,
@@ -750,14 +757,6 @@ public class DriverConductor implements Agent
             networkPublicationThreadLocals,
             publicationUnblockTimeoutNs,
             isExclusive);
-
-        if (params.isReplay)
-        {
-            final int activeIndex = indexByTerm(initialTermId, params.termId);
-            final UnsafeBuffer logMetaData = publication.rawLog().metaData();
-            rawTail(logMetaData, activeIndex, packTail(params.termId, params.termOffset));
-            activePartitionIndex(logMetaData, activeIndex);
-        }
 
         channelEndpoint.incRef();
         networkPublications.add(publication);

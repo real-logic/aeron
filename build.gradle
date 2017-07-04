@@ -117,14 +117,11 @@ subprojects {
     repositories {
         mavenCentral()
         mavenLocal()
-        maven {
-            url "http://sevntu-checkstyle.github.com/sevntu.checkstyle/maven2"
-        }
     }
 
     dependencies {
         checkstyle 'com.puppycrawl.tools:checkstyle:8.0'
-        checkstyle 'com.github.sevntu.checkstyle:sevntu-checks:1.23.1'
+        checkstyle 'com.github.sevntu-checkstyle:sevntu-checks:1.24.1'
 
         testCompile(
                 'org.hamcrest:hamcrest-all:1.3',

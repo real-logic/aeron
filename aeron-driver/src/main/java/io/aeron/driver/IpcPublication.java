@@ -92,6 +92,8 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         this.unblockedPublications = systemCounters.get(UNBLOCKED_PUBLICATIONS);
 
         consumerPosition = producerPosition();
+        lastConsumerPosition = consumerPosition;
+        cleanPosition = consumerPosition;
     }
 
     public int sessionId()
@@ -178,7 +180,6 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
             consumerPosition = maxSubscriberPosition;
         }
-
 
         return workCount;
     }

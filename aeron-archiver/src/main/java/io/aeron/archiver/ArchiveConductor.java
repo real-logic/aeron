@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archiver.codecs.ControlResponseCode;
 import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
+import org.agrona.ErrorHandler;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
@@ -50,6 +51,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final AgentInvoker driverAgentInvoker;
     private final EpochClock epochClock;
     private final File archiveDir;
+    private final ErrorHandler errorHandler;
     private final RecordingWriter.RecordingContext recordingContext;
 
     private final Subscription controlSubscription;
@@ -101,6 +103,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         this.archiveDir = ctx.archiveDir();
         this.maxConcurrentRecordings = ctx.maxConcurrentRecordings();
         this.maxConcurrentReplays = ctx.maxConcurrentReplays();
+        this.errorHandler = ctx.errorHandler();
         replayer = constructReplayer(ctx);
         recorder = constructRecorder(ctx);
     }
@@ -402,8 +405,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         }
         catch (final IOException ex)
         {
-            // TODO: Fix this.
-            ex.printStackTrace();
+            errorHandler.onError(ex);
         }
     }
 

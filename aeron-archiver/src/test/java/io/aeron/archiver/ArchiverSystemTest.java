@@ -120,7 +120,7 @@ public class ArchiverSystemTest
 
 
 
-        requestedJoinPosition = (termId - requestedInitialTermId) * termLength + termOffset;
+        requestedJoinPosition = ((termId - requestedInitialTermId) * (long)termLength) + termOffset;
 
         driverCtx
             .termBufferSparseFile(true)

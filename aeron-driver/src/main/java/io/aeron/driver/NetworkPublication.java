@@ -191,6 +191,9 @@ public class NetworkPublication
 
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
+
+        lastSenderPosition = senderPosition.get();
+        cleanPosition = lastSenderPosition;
     }
 
     public void close()

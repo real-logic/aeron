@@ -21,7 +21,6 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -33,7 +32,6 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
-@Ignore
 public class ExclusivePublicationPublishFromArbitraryPositionTest
 {
     @Rule

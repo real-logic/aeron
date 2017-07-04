@@ -32,16 +32,14 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
-public class ExclusivePublicationPublishFromArbitraryPositionTest
+public class PublishFromArbitraryPositionTest
 {
     @Rule
     public TestWatcher testWatcher = new TestWatcher()
     {
         protected void failed(final Throwable t, final Description description)
         {
-            System.err.println(
-                ExclusivePublicationPublishFromArbitraryPositionTest.class.getName() +
-                    " failed with random seed: " + seed);
+            System.err.println(PublishFromArbitraryPositionTest.class.getName() + " failed with random seed: " + seed);
         }
     };
 

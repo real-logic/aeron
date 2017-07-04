@@ -922,7 +922,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
                 dissect_timestamp(hdr->time_ms),
                 hdr->fd_op_munmap.result,
                 (void *)hdr->fd_op_munmap.addr,
-                (int)hdr->fd_op_mmap.len);
+                (int)hdr->fd_op_munmap.len);
             break;
         }
 

@@ -109,7 +109,7 @@ public class LossDetector implements TermGapScanner.GapHandler
      *
      * @param rebuildOffset value to be packed.
      * @param lossFound     value to be packed.
-     * @return a long with both ints packed into it.
+     * @return a long with rebuildOffset and lossFound packed into it.
      */
     public static long pack(final int rebuildOffset, final boolean lossFound)
     {

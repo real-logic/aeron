@@ -16,7 +16,11 @@
 
 #include "aeron_driver_conductor_test.h"
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublication)
+class DriverConductorIpcTest : public DriverConductorTest
+{
+};
+
+TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcPublication)
 {
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
@@ -44,7 +48,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublication)
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddAndRemoveSingleIpcPublication)
+TEST_F(DriverConductorIpcTest, shouldBeAbleToAddAndRemoveSingleIpcPublication)
 {
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
@@ -69,7 +73,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddAndRemoveSingleIpcPublication)
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscription)
+TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcSubscription)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
@@ -90,7 +94,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscription)
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddAndRemoveSingleIpcSubscription)
+TEST_F(DriverConductorIpcTest, shouldBeAbleToAddAndRemoveSingleIpcSubscription)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
@@ -116,7 +120,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddAndRemoveSingleIpcSubscription)
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleIpcPublications)
+TEST_F(DriverConductorIpcTest, shouldBeAbleToAddMultipleIpcPublications)
 {
     int64_t client_id = nextCorrelationId();
     int64_t pub_id_1 = nextCorrelationId();
@@ -147,7 +151,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleIpcPublications)
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleExclusiveIpcPublicationsWithSameStreamId)
+TEST_F(DriverConductorIpcTest, shouldBeAbleToAddMultipleExclusiveIpcPublicationsWithSameStreamId)
 {
     int64_t client_id = nextCorrelationId();
     int64_t pub_id_1 = nextCorrelationId();
@@ -178,7 +182,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleExclusiveIpcPublicationsWit
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleIpcSubscriptionsWithSameStreamId)
+TEST_F(DriverConductorIpcTest, shouldBeAbleToAddMultipleIpcSubscriptionsWithSameStreamId)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id_1 = nextCorrelationId();
@@ -196,7 +200,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleIpcSubscriptionsWithSameStr
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSingleIpcPublication)
+TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSingleIpcPublication)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
@@ -255,7 +259,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSingleI
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 3u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingleIpcSubscription)
+TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingleIpcSubscription)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
@@ -313,7 +317,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingleIp
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 3u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleIpcSubscriptionWithSameStreamIdThenAddSingleIpcPublication)
+TEST_F(DriverConductorIpcTest, shouldBeAbleToAddMultipleIpcSubscriptionWithSameStreamIdThenAddSingleIpcPublication)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id_1 = nextCorrelationId();
@@ -382,7 +386,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleIpcSubscriptionWithSameStre
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 5u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddMultipleExclusiveIpcPublicationsWithSameStreamId)
+TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddMultipleExclusiveIpcPublicationsWithSameStreamId)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
@@ -471,7 +475,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddMultipl
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 5u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToTimeoutIpcPublication)
+TEST_F(DriverConductorIpcTest, shouldBeAbleToTimeoutIpcPublication)
 {
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
@@ -488,7 +492,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToTimeoutIpcPublication)
     EXPECT_EQ(aeron_driver_conductor_num_ipc_publications(&m_conductor.m_conductor), 0u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToNotTimeoutIpcPublicationOnKeepalive)
+TEST_F(DriverConductorIpcTest, shouldBeAbleToNotTimeoutIpcPublicationOnKeepalive)
 {
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
@@ -514,7 +518,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToNotTimeoutIpcPublicationOnKeepalive)
     EXPECT_EQ(aeron_driver_conductor_num_ipc_publications(&m_conductor.m_conductor), 1u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToTimeoutIpcSubscription)
+TEST_F(DriverConductorIpcTest, shouldBeAbleToTimeoutIpcSubscription)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
@@ -531,7 +535,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToTimeoutIpcSubscription)
     EXPECT_EQ(aeron_driver_conductor_num_ipc_subscriptions(&m_conductor.m_conductor), 0u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToNotTimeoutIpcSubscriptionOnKeepalive)
+TEST_F(DriverConductorIpcTest, shouldBeAbleToNotTimeoutIpcSubscriptionOnKeepalive)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
@@ -557,7 +561,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToNotTimeoutIpcSubscriptionOnKeepalive)
     EXPECT_EQ(aeron_driver_conductor_num_ipc_subscriptions(&m_conductor.m_conductor), 1u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToTimeoutIpcPublicationWithActiveIpcSubscription)
+TEST_F(DriverConductorIpcTest, shouldBeAbleToTimeoutIpcPublicationWithActiveIpcSubscription)
 {
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();

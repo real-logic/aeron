@@ -16,7 +16,11 @@
 
 #include "aeron_driver_conductor_test.h"
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddSingleNetworkPublication)
+class DriverConductorNetworkTest : public DriverConductorTest
+{
+};
+
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkPublication)
 {
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
@@ -49,7 +53,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleNetworkPublication)
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddAndRemoveSingleNetworkPublication)
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkPublication)
 {
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
@@ -74,7 +78,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddAndRemoveSingleNetworkPublication)
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddSingleNetworkSubscription)
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkSubscription)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
@@ -100,7 +104,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleNetworkSubscription)
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscription)
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscription)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
@@ -126,7 +130,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscription)
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleNetworkPublications)
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkPublications)
 {
     int64_t client_id = nextCorrelationId();
     int64_t pub_id_1 = nextCorrelationId();
@@ -163,7 +167,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleNetworkPublications)
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleNetworkPublicationsDifferentChannelsSameStreamId)
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkPublicationsDifferentChannelsSameStreamId)
 {
     int64_t client_id = nextCorrelationId();
     int64_t pub_id_1 = nextCorrelationId();
@@ -209,7 +213,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleNetworkPublicationsDifferen
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleExclusiveNetworkPublicationsWithSameChannelSameStreamId)
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleExclusiveNetworkPublicationsWithSameChannelSameStreamId)
 {
     int64_t client_id = nextCorrelationId();
     int64_t pub_id_1 = nextCorrelationId();
@@ -246,7 +250,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleExclusiveNetworkPublication
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleNetworkSubscriptionsWithSameChannelSameStreamId)
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkSubscriptionsWithSameChannelSameStreamId)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id_1 = nextCorrelationId();
@@ -271,7 +275,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleNetworkSubscriptionsWithSam
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleNetworkSubscriptionsWithDifferentChannelSameStreamId)
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkSubscriptionsWithDifferentChannelSameStreamId)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id_1 = nextCorrelationId();
@@ -305,7 +309,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleNetworkSubscriptionsWithDif
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToTimeoutNetworkPublication)
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToTimeoutNetworkPublication)
 {
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
@@ -324,7 +328,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToTimeoutNetworkPublication)
     EXPECT_EQ(aeron_driver_conductor_num_send_channel_endpoints(&m_conductor.m_conductor), 0u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToNotTimeoutNetworkPublicationOnKeepalive)
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToNotTimeoutNetworkPublicationOnKeepalive)
 {
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
@@ -350,7 +354,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToNotTimeoutNetworkPublicationOnKeepaliv
     EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 1u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToTimeoutNetworkSubscription)
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToTimeoutNetworkSubscription)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
@@ -369,7 +373,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToTimeoutNetworkSubscription)
     EXPECT_EQ(aeron_driver_conductor_num_receive_channel_endpoints(&m_conductor.m_conductor), 0u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToNotTimeoutNetworkSubscriptionOnKeepalive)
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToNotTimeoutNetworkSubscriptionOnKeepalive)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
@@ -395,7 +399,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToNotTimeoutNetworkSubscriptionOnKeepali
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 1u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToTimeoutSendChannelEndpointWithClientKeepaliveAfterRemovePublication)
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToTimeoutSendChannelEndpointWithClientKeepaliveAfterRemovePublication)
 {
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
@@ -425,7 +429,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToTimeoutSendChannelEndpointWithClientKe
     EXPECT_EQ(aeron_driver_conductor_num_send_channel_endpoints(&m_conductor.m_conductor), 0u);
 }
 
-TEST_F(DriverConductorTest, shouldBeAbleToTimeoutReceiveChannelEndpointWithClientKeepaliveAfterRemoveSubscription)
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToTimeoutReceiveChannelEndpointWithClientKeepaliveAfterRemoveSubscription)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
@@ -453,7 +457,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToTimeoutReceiveChannelEndpointWithClien
     EXPECT_EQ(aeron_driver_conductor_num_receive_channel_endpoints(&m_conductor.m_conductor), 0u);
 }
 
-TEST_F(DriverConductorTest, shouldCreatePublicationImageForActiveNetworkSubscription)
+TEST_F(DriverConductorNetworkTest, shouldCreatePublicationImageForActiveNetworkSubscription)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
@@ -493,7 +497,7 @@ TEST_F(DriverConductorTest, shouldCreatePublicationImageForActiveNetworkSubscrip
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
 
-TEST_F(DriverConductorTest, shouldNotCreatePublicationImageForNonActiveNetworkSubscription)
+TEST_F(DriverConductorNetworkTest, shouldNotCreatePublicationImageForNonActiveNetworkSubscription)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
@@ -512,7 +516,7 @@ TEST_F(DriverConductorTest, shouldNotCreatePublicationImageForNonActiveNetworkSu
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 0u);
 }
 
-TEST_F(DriverConductorTest, shouldRemoveSubscriptionFromImageWhenRemoveSubscription)
+TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionFromImageWhenRemoveSubscription)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();

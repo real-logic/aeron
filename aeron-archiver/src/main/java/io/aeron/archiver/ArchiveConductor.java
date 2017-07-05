@@ -204,12 +204,15 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         try
         {
+            // TODO: strip channel to minimal set of media/endpoint? maybe change API to specify only those 2? channel
+            // TODO: should only be a spy
             // Subscription is closed on RecordingSession close(this is consistent with local archiver usage)
             aeron.addSubscription(channel, streamId, availableImageHandler, null);
             controlSessionProxy.sendOkResponse(correlationId, controlPublication);
         }
         catch (final Exception ex)
         {
+            errorHandler.onError(ex);
             controlSessionProxy.sendError(
                 correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlPublication);
         }
@@ -378,6 +381,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         final int termId = (int)((fromPosition / termBufferLength) + initialTermId);
         final int termOffset = (int)(fromPosition % termBufferLength);
+        // TODO: strip channel to minimal set of media/endpoint? maybe change API to specify only those 2?
         initUriBuilder(replayChannel);
 
         uriBuilder

@@ -41,7 +41,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  +---------------------------------------------------------------+
  *  |                     Padding for alignment                     |
  *  +---------------------------------------------------------------+
- *  |                       Registration Id                         |
+ *  |                   Subscriber Registration Id                  |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                        Log File Length                        |
@@ -62,8 +62,8 @@ public class ImageBuffersReadyFlyweight
     private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
     private static final int SUBSCRIBER_POSITION_ID_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int SUBSCRIBER_POSITION_REGISTRATION_ID_OFFSET = SUBSCRIBER_POSITION_ID_OFFSET + SIZE_OF_LONG;
-    private static final int LOG_FILE_NAME_OFFSET = SUBSCRIBER_POSITION_REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
+    private static final int SUBSCRIBER_REGISTRATION_ID_OFFSET = SUBSCRIBER_POSITION_ID_OFFSET + SIZE_OF_LONG;
+    private static final int LOG_FILE_NAME_OFFSET = SUBSCRIBER_REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
 
     private MutableDirectBuffer buffer;
     private int offset;
@@ -155,7 +155,7 @@ public class ImageBuffersReadyFlyweight
     /**
      * Set the position Id for the subscriber
      *
-     * @param id    for the subscriber position
+     * @param id for the subscriber position
      * @return flyweight
      */
     public ImageBuffersReadyFlyweight subscriberPositionId(final int id)
@@ -178,12 +178,12 @@ public class ImageBuffersReadyFlyweight
     /**
      * Set the registration Id for the subscriber position
      *
-     * @param id    for the subscriber position
+     * @param id for the subscriber position
      * @return flyweight
      */
-    public ImageBuffersReadyFlyweight subscriberPositionRegistrationId(final long id)
+    public ImageBuffersReadyFlyweight subscriberRegistrationId(final long id)
     {
-        buffer.putLong(offset + SUBSCRIBER_POSITION_REGISTRATION_ID_OFFSET, id);
+        buffer.putLong(offset + SUBSCRIBER_REGISTRATION_ID_OFFSET, id);
 
         return this;
     }
@@ -193,9 +193,9 @@ public class ImageBuffersReadyFlyweight
      *
      * @return registration Id for the subscriber position
      */
-    public long subscriberPositionRegistrationId()
+    public long subscriberRegistrationId()
     {
-        return buffer.getLong(offset + SUBSCRIBER_POSITION_REGISTRATION_ID_OFFSET);
+        return buffer.getLong(offset + SUBSCRIBER_REGISTRATION_ID_OFFSET);
     }
 
     /**

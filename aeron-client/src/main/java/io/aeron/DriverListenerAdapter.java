@@ -89,8 +89,8 @@ class DriverListenerAdapter implements MessageHandler
                     imageReady.correlationId(),
                     imageReady.streamId(),
                     imageReady.sessionId(),
+                    imageReady.subscriberRegistrationId(),
                     imageReady.subscriberPositionId(),
-                    imageReady.subscriberPositionRegistrationId(),
                     imageReady.logFileName(),
                     imageReady.sourceIdentity());
                 break;

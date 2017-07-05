@@ -340,8 +340,8 @@ class ClientConductor implements Agent, DriverListener
         final long correlationId,
         final int streamId,
         final int sessionId,
+        final long subscriberRegistrationId,
         final int subscriberPositionCounterId,
-        final long subscriberPositionRegistrationId,
         final String logFileName,
         final String sourceIdentity)
     {
@@ -349,13 +349,12 @@ class ClientConductor implements Agent, DriverListener
             streamId,
             (subscription) ->
             {
-                if (!subscription.hasImage(correlationId) &&
-                    subscription.registrationId() == subscriberPositionRegistrationId)
+                if (!subscription.hasImage(correlationId) && subscription.registrationId() == subscriberRegistrationId)
                 {
                     final Image image = new Image(
                         subscription,
                         sessionId,
-                        new UnsafeBufferPosition(counterValuesBuffer, (int)subscriberPositionCounterId),
+                        new UnsafeBufferPosition(counterValuesBuffer, subscriberPositionCounterId),
                         logBuffersFactory.map(logFileName, imageMapMode),
                         errorHandler,
                         sourceIdentity,

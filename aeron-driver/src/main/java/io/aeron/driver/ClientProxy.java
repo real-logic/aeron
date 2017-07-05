@@ -68,21 +68,17 @@ public class ClientProxy
         final long correlationId,
         final int streamId,
         final int sessionId,
-        final String logFileName,
-        final int positionCounterId,
         final long subscriptionRegistrationId,
+        final int positionCounterId,
+        final String logFileName,
         final String sourceIdentity)
     {
         imageReady
             .sessionId(sessionId)
             .streamId(streamId)
-            .correlationId(correlationId);
-
-        imageReady
+            .correlationId(correlationId)
+            .subscriberRegistrationId(subscriptionRegistrationId)
             .subscriberPositionId(positionCounterId)
-            .subscriberPositionRegistrationId(subscriptionRegistrationId);
-
-        imageReady
             .logFileName(logFileName)
             .sourceIdentity(sourceIdentity);
 

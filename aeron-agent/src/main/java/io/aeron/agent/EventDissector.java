@@ -190,7 +190,7 @@ public class EventDissector
         return builder.toString();
     }
 
-    private static int readStackTraceElement(
+    private static void readStackTraceElement(
         final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         int i = offset;
@@ -208,11 +208,8 @@ public class EventDissector
 
         length = buffer.getInt(i);
         final String fileName = buffer.getStringUtf8(i, length);
-        i += SIZE_OF_INT + length;
 
         builder.append(String.format("%s.%s %s:%d", className, methodName, fileName, lineNumber));
-
-        return i;
     }
 
     private static int dissectLogHeader(
@@ -371,7 +368,7 @@ public class EventDissector
             msg.sessionId(),
             msg.streamId(),
             msg.subscriberPositionId(),
-            msg.subscriberPositionRegistrationId(),
+            msg.subscriberRegistrationId(),
             msg.sourceIdentity(),
             msg.correlationId(),
             msg.logFileName());

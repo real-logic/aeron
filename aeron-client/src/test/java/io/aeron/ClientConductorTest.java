@@ -491,8 +491,8 @@ public class ClientConductorTest
             CORRELATION_ID,
             STREAM_ID_1,
             SESSION_ID_1,
-            SUBSCRIBER_POSITION_ID,
             subscription.registrationId(),
+            SUBSCRIBER_POSITION_ID,
             SESSION_ID_1 + "-log",
             SOURCE_INFO);
 
@@ -517,8 +517,8 @@ public class ClientConductorTest
             CORRELATION_ID,
             STREAM_ID_1,
             SESSION_ID_1,
-            SUBSCRIBER_POSITION_ID,
             subscription.registrationId(),
+            SUBSCRIBER_POSITION_ID,
             SESSION_ID_1 + "-log",
             SOURCE_INFO);
 
@@ -538,8 +538,8 @@ public class ClientConductorTest
             CORRELATION_ID_2,
             STREAM_ID_2,
             SESSION_ID_2,
-            SUBSCRIBER_POSITION_ID,
             SUBSCRIBER_POSITION_REGISTRATION_ID,
+            SUBSCRIBER_POSITION_ID,
             SESSION_ID_2 + "-log",
             SOURCE_INFO);
 

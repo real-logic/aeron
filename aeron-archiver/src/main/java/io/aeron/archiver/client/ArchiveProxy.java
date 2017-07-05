@@ -19,7 +19,7 @@ import io.aeron.*;
 import io.aeron.archiver.codecs.*;
 import org.agrona.*;
 
-public class ArchiveClient
+public class ArchiveProxy
 {
     private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
 
@@ -45,7 +45,7 @@ public class ArchiveClient
     private final RecordingNotFoundResponseDecoder recordingNotFoundResponseDecoder =
         new RecordingNotFoundResponseDecoder();
 
-    public ArchiveClient(final Publication controlRequest, final Subscription recordingEvents)
+    public ArchiveProxy(final Publication controlRequest, final Subscription recordingEvents)
     {
         this.controlRequest = controlRequest;
         this.recordingEvents = recordingEvents;

@@ -16,7 +16,7 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
-import io.aeron.archiver.client.ArchiveClient;
+import io.aeron.archiver.client.ArchiveProxy;
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -84,9 +84,10 @@ public class ArchiverSystemTest
     {
         protected void failed(final Throwable t, final Description description)
         {
-            System.err.println("ArchiveAndReplaySystemTest failed with random seed: " + seed);
+            System.err.println(ArchiverSystemTest.class.getName() + " failed with random seed: " + seed);
         }
     };
+
     private Subscription controlResponses;
     private long correlationId;
     private long joinPosition;
@@ -110,23 +111,19 @@ public class ArchiverSystemTest
             .mtu(mtu)
             .media("udp");
 
-        // the following settings are only respected for ExclusivePublication
         channelUriBuilder
             .initialTermId(requestedInitialTermId)
             .termId(termId)
             .termOffset(termOffset);
 
-        publishUri = channelUriBuilder
-            .build();
-
-
+        publishUri = channelUriBuilder.build();
 
         requestedJoinPosition = ((termId - requestedInitialTermId) * (long)termLength) + termOffset;
 
         driverCtx
             .termBufferSparseFile(true)
             .threadingMode(driverThreadingMode())
-            .errorHandler(LangUtil::rethrowUnchecked)
+            .errorHandler(Throwable::printStackTrace)
             .dirsDeleteOnStart(true);
 
         driver = MediaDriver.launch(driverCtx);
@@ -179,9 +176,9 @@ public class ArchiverSystemTest
              Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
-            final ArchiveClient client = new ArchiveClient(controlPublication, recordingEvents);
+            final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication, recordingEvents);
 
-            prePublicationVerifications(client, controlPublication, recordingEvents);
+            prePublicationVerifications(archiveProxy, controlPublication, recordingEvents);
 
             final ExclusivePublication recordedPublication =
                 publishingClient.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
@@ -197,12 +194,12 @@ public class ArchiverSystemTest
 
             assertThat(joinPosition, is(requestedJoinPosition));
             assertThat(recordedPublication.initialTermId(), is(requestedInitialTermId));
-            preSendChecks(client, sessionId, termBufferLength, joinPosition);
+            preSendChecks(archiveProxy, sessionId, termBufferLength, joinPosition);
 
-            final int messageCount = prepAndSendMessages(client, recordedPublication);
+            final int messageCount = prepAndSendMessages(archiveProxy, recordedPublication);
 
             postPublicationValidations(
-                client,
+                archiveProxy,
                 sessionId,
                 streamId,
                 termBufferLength,
@@ -220,9 +217,9 @@ public class ArchiverSystemTest
              Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
-            final ArchiveClient client = new ArchiveClient(controlPublication, recordingEvents);
+            final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication, recordingEvents);
 
-            prePublicationVerifications(client, controlPublication, recordingEvents);
+            prePublicationVerifications(archiveProxy, controlPublication, recordingEvents);
 
             final Publication recordedPublication = publishingClient.addPublication(publishUri, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(recordedPublication);
@@ -234,12 +231,12 @@ public class ArchiverSystemTest
             final int maxPayloadLength = recordedPublication.maxPayloadLength();
             final long joinPosition = recordedPublication.position();
 
-            preSendChecks(client, sessionId, termBufferLength, joinPosition);
+            preSendChecks(archiveProxy, sessionId, termBufferLength, joinPosition);
 
-            final int messageCount = prepAndSendMessages(client, recordedPublication);
+            final int messageCount = prepAndSendMessages(archiveProxy, recordedPublication);
 
             postPublicationValidations(
-                client,
+                archiveProxy,
                 sessionId,
                 streamId,
                 termBufferLength,
@@ -250,35 +247,37 @@ public class ArchiverSystemTest
     }
 
     private void preSendChecks(
-        final ArchiveClient client,
+        final ArchiveProxy archiveProxy,
         final int sessionId,
         final int termBufferLength,
         final long joinPosition)
     {
-        waitFor(() -> client.pollEvents(new FailRecordingEventsListener()
-        {
-            public void onStart(
-                final long recordingId0,
-                final long joinPosition0,
-                final int sessionId0,
-                final int streamId0,
-                final String channel,
-                final String sourceIdentity)
+        waitFor(() -> archiveProxy.pollEvents(
+            new FailRecordingEventsListener()
             {
-                recordingId = recordingId0;
-                assertThat(streamId0, is(PUBLISH_STREAM_ID));
-                assertThat(sessionId0, is(sessionId));
-                assertThat(joinPosition0, is(joinPosition));
-                assertThat(channel, is(publishUri));
-                println("Recording started. sourceIdentity: " + sourceIdentity);
-            }
-        }, 1) != 0);
+                public void onStart(
+                    final long recordingId0,
+                    final long joinPosition0,
+                    final int sessionId0,
+                    final int streamId0,
+                    final String channel,
+                    final String sourceIdentity)
+                {
+                    recordingId = recordingId0;
+                    assertThat(streamId0, is(PUBLISH_STREAM_ID));
+                    assertThat(sessionId0, is(sessionId));
+                    assertThat(joinPosition0, is(joinPosition));
+                    assertThat(channel, is(publishUri));
+                    println("Recording started. sourceIdentity: " + sourceIdentity);
+                }
+            },
+            1) != 0);
 
-        verifyDescriptorListOngoingArchive(client, termBufferLength);
+        verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
     }
 
     private void postPublicationValidations(
-        final ArchiveClient client,
+        final ArchiveProxy archiveProxy,
         final int sessionId,
         final int streamId,
         final int termBufferLength,
@@ -286,25 +285,27 @@ public class ArchiverSystemTest
         final int maxPayloadLength,
         final int messageCount) throws IOException
     {
-        verifyDescriptorListOngoingArchive(client, termBufferLength);
+        verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
 
         assertNull(trackerError);
         println("All data arrived");
 
         println("Request stop recording");
         final long requestStopCorrelationId = this.correlationId++;
-        waitFor(() -> client.stopRecording(recordingId, requestStopCorrelationId));
-        waitForOk(client, controlResponses, requestStopCorrelationId);
+        waitFor(() -> archiveProxy.stopRecording(recordingId, requestStopCorrelationId));
+        waitForOk(archiveProxy, controlResponses, requestStopCorrelationId);
 
-        waitFor(() -> client.pollEvents(new FailRecordingEventsListener()
-        {
-            public void onStop(final long rId, final long joinPosition, final long endPosition)
+        waitFor(() -> archiveProxy.pollEvents(
+            new FailRecordingEventsListener()
             {
-                assertThat(rId, is(recordingId));
-            }
-        }, 1) != 0);
+                public void onStop(final long rId, final long joinPosition, final long endPosition)
+                {
+                    assertThat(rId, is(recordingId));
+                }
+            },
+            1) != 0);
 
-        verifyDescriptorListOngoingArchive(client, termBufferLength);
+        verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
 
         println("Recording id: " + recordingId);
         println("Meta data file printout: ");
@@ -312,7 +313,7 @@ public class ArchiverSystemTest
         validateArchiveFile(messageCount, recordingId);
 
         validateReplay(
-            client,
+            archiveProxy,
             messageCount,
             initialTermId,
             maxPayloadLength,
@@ -320,7 +321,7 @@ public class ArchiverSystemTest
     }
 
     private void prePublicationVerifications(
-        final ArchiveClient client,
+        final ArchiveProxy archiveProxy,
         final Publication controlPublication,
         final Subscription recordingEvents)
     {
@@ -329,74 +330,80 @@ public class ArchiverSystemTest
         println("Archive service connected");
 
         controlResponses = publishingClient.addSubscription(CONTROL_URI, CONTROL_STREAM_ID);
-        client.connect(CONTROL_URI, CONTROL_STREAM_ID);
+        archiveProxy.connect(CONTROL_URI, CONTROL_STREAM_ID);
         awaitSubscriptionIsConnected(controlResponses);
         println("Client connected");
 
-        verifyEmptyDescriptorList(client);
+        verifyEmptyDescriptorList(archiveProxy);
         final long startRecordingCorrelationId = this.correlationId++;
-        waitFor(() -> client.startRecording(publishUri, PUBLISH_STREAM_ID, startRecordingCorrelationId));
+        waitFor(() -> archiveProxy.startRecording(publishUri, PUBLISH_STREAM_ID, startRecordingCorrelationId));
         println("Recording requested");
-        waitForOk(client, controlResponses, startRecordingCorrelationId);
+        waitForOk(archiveProxy, controlResponses, startRecordingCorrelationId);
     }
 
-    private void verifyEmptyDescriptorList(final ArchiveClient client)
+    private void verifyEmptyDescriptorList(final ArchiveProxy client)
     {
         final long requestRecordingsCorrelationId = this.correlationId++;
         client.listRecordings(0, 100, requestRecordingsCorrelationId);
         TestUtil.waitForFail(client, controlResponses, requestRecordingsCorrelationId);
     }
 
-    private void verifyDescriptorListOngoingArchive(final ArchiveClient client, final int publicationRermBufferLength)
+    private void verifyDescriptorListOngoingArchive(
+        final ArchiveProxy archiveProxy, final int publicationTermBufferLength)
     {
         final long requestRecordingsCorrelationId = this.correlationId++;
-        client.listRecordings(recordingId, 1, requestRecordingsCorrelationId);
+        archiveProxy.listRecordings(recordingId, 1, requestRecordingsCorrelationId);
         println("Await result");
-        waitFor(() -> client.pollResponses(controlResponses, new FailResponseListener()
-        {
-            public void onRecordingDescriptor(
-                final long correlationId,
-                final long recordingId,
-                final long joinTimestamp,
-                final long endTimestamp,
-                final long joinPosition,
-                final long endPosition,
-                final int initialTermId,
-                final int termBufferLength,
-                final int mtuLength,
-                final int segmentFileLength,
-                final int sessionId,
-                final int streamId,
-                final String channel,
-                final String sourceIdentity)
+        waitFor(() -> archiveProxy.pollResponses(
+            controlResponses,
+            new FailResponseListener()
             {
-                assertThat(recordingId, is(ArchiverSystemTest.this.recordingId));
-                assertThat(termBufferLength, is(publicationRermBufferLength));
+                public void onRecordingDescriptor(
+                    final long correlationId,
+                    final long recordingId,
+                    final long joinTimestamp,
+                    final long endTimestamp,
+                    final long joinPosition,
+                    final long endPosition,
+                    final int initialTermId,
+                    final int termBufferLength,
+                    final int mtuLength,
+                    final int segmentFileLength,
+                    final int sessionId,
+                    final int streamId,
+                    final String channel,
+                    final String sourceIdentity)
+                {
+                    assertThat(recordingId, is(ArchiverSystemTest.this.recordingId));
+                    assertThat(termBufferLength, is(publicationTermBufferLength));
 
-                assertThat(streamId, is(PUBLISH_STREAM_ID));
+                    assertThat(streamId, is(PUBLISH_STREAM_ID));
 
-                assertThat(correlationId, is(requestRecordingsCorrelationId));
-            }
-        }, 1) != 0);
+                    assertThat(correlationId, is(requestRecordingsCorrelationId));
+                }
+            },
+            1) != 0);
     }
 
-    private int prepAndSendMessages(final ArchiveClient client, final Publication publication)
+    private int prepAndSendMessages(final ArchiveProxy archiveProxy, final Publication publication)
     {
         final int messageCount = 5000 + rnd.nextInt(10000);
         final CountDownLatch waitForData = new CountDownLatch(1);
-        prepFragmentsAndListener(client, messageCount, waitForData);
+        prepFragmentsAndListener(archiveProxy, messageCount, waitForData);
         publishDataToRecorded(publication, messageCount);
         await(waitForData);
+
         return messageCount;
     }
 
-    private int prepAndSendMessages(final ArchiveClient client, final ExclusivePublication publication)
+    private int prepAndSendMessages(final ArchiveProxy archiveProxy, final ExclusivePublication publication)
     {
         final int messageCount = 5000 + rnd.nextInt(10000);
         final CountDownLatch waitForData = new CountDownLatch(1);
-        prepFragmentsAndListener(client, messageCount, waitForData);
+        prepFragmentsAndListener(archiveProxy, messageCount, waitForData);
         publishDataToRecorded(publication, messageCount);
         await(waitForData);
+
         return messageCount;
     }
 
@@ -413,7 +420,7 @@ public class ArchiverSystemTest
     }
 
     private void prepFragmentsAndListener(
-        final ArchiveClient client,
+        final ArchiveProxy archiveProxy,
         final int messageCount,
         final CountDownLatch waitForData)
     {
@@ -427,7 +434,7 @@ public class ArchiverSystemTest
 
         printf("Sending %d messages, total length=%d %n", messageCount, totalDataLength);
 
-        trackRecordingProgress(client, waitForData);
+        trackRecordingProgress(archiveProxy, waitForData);
     }
 
     private void validateMetaDataFile(
@@ -495,7 +502,7 @@ public class ArchiverSystemTest
     }
 
     private void validateReplay(
-        final ArchiveClient client,
+        final ArchiveProxy archiveProxy,
         final int messageCount,
         final int initialTermId,
         final int maxPayloadLength,
@@ -505,7 +512,7 @@ public class ArchiverSystemTest
         {
             final long replayCorrelationId = correlationId++;
 
-            waitFor(() -> client.replay(
+            waitFor(() -> archiveProxy.replay(
                 recordingId,
                 joinPosition,
                 totalRecordingLength,
@@ -513,7 +520,7 @@ public class ArchiverSystemTest
                 REPLAY_STREAM_ID,
                 replayCorrelationId
             ));
-            waitForOk(client, controlResponses, replayCorrelationId);
+            waitForOk(archiveProxy, controlResponses, replayCorrelationId);
 
             awaitSubscriptionIsConnected(replay);
             final Image image = replay.images().get(0);
@@ -561,6 +568,7 @@ public class ArchiverSystemTest
         {
             return true;
         }
+
         final int expectedLength = fragmentLength[fragmentCount] - HEADER_LENGTH;
         assertThat("on fragment[" + fragmentCount + "]", length, is(expectedLength));
         assertThat(buffer.getInt(offset), is(fragmentCount));
@@ -586,7 +594,7 @@ public class ArchiverSystemTest
         printf("Fragment2: offset=%d length=%d %n", offset, length);
     }
 
-    private void trackRecordingProgress(final ArchiveClient client, final CountDownLatch waitForData)
+    private void trackRecordingProgress(final ArchiveProxy archiveProxy, final CountDownLatch waitForData)
     {
         final Thread t = new Thread(
             () ->
@@ -599,18 +607,20 @@ public class ArchiverSystemTest
                     // each message is fragmentLength[fragmentCount]
                     while (endPosition == -1 || recorded < totalRecordingLength)
                     {
-                        waitFor(() -> (client.pollEvents(new FailRecordingEventsListener()
-                        {
-                            public void onProgress(
-                                final long recordingId0,
-                                final long joinPosition,
-                                final long position)
+                        waitFor(() -> (archiveProxy.pollEvents(
+                            new FailRecordingEventsListener()
                             {
-                                assertThat(recordingId0, is(recordingId));
-                                recorded = position - joinPosition;
-                                printf("a=%d total=%d %n", recorded, totalRecordingLength);
-                            }
-                        }, 1)) != 0);
+                                public void onProgress(
+                                    final long recordingId0,
+                                    final long joinPosition,
+                                    final long position)
+                                {
+                                    assertThat(recordingId0, is(recordingId));
+                                    recorded = position - joinPosition;
+                                    printf("a=%d total=%d %n", recorded, totalRecordingLength);
+                                }
+                            },
+                            1)) != 0);
 
                         final long end = System.currentTimeMillis();
                         final long deltaTime = end - start;

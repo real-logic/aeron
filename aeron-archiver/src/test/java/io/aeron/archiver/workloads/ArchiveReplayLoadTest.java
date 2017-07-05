@@ -18,7 +18,7 @@ package io.aeron.archiver.workloads;
 
 import io.aeron.*;
 import io.aeron.archiver.*;
-import io.aeron.archiver.client.ArchiveClient;
+import io.aeron.archiver.client.ArchiveProxy;
 import io.aeron.archiver.client.RecordingEventsListener;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -136,39 +136,39 @@ public class ArchiveReplayLoadTest
              Subscription archiverNotifications = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
-            final ArchiveClient client = new ArchiveClient(archiverServiceRequest, archiverNotifications);
+            final ArchiveProxy archiveProxy = new ArchiveProxy(archiverServiceRequest, archiverNotifications);
 
             awaitPublicationIsConnected(archiverServiceRequest);
             awaitSubscriptionIsConnected(archiverNotifications);
             println("Archive service connected");
 
             reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
-            client.connect(REPLY_URI, REPLY_STREAM_ID);
+            archiveProxy.connect(REPLY_URI, REPLY_STREAM_ID);
             awaitSubscriptionIsConnected(reply);
             println("Client connected");
 
             final long startRecordingCorrelationId = this.correlationId++;
-            waitFor(() -> client.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
+            waitFor(() -> archiveProxy.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
             println("Recording requested");
-            waitForOk(client, reply, startRecordingCorrelationId);
+            waitForOk(archiveProxy, reply, startRecordingCorrelationId);
 
             final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(publication);
-            final int messageCount = prepAndSendMessages(client, publication);
+            final int messageCount = prepAndSendMessages(archiveProxy, publication);
 
             assertNull(trackerError);
             println("All data arrived");
 
             println("Request stop recording");
             final long requestStopCorrelationId = this.correlationId++;
-            waitFor(() -> client.stopRecording(recordingId, requestStopCorrelationId));
-            waitForOk(client, reply, requestStopCorrelationId);
+            waitFor(() -> archiveProxy.stopRecording(recordingId, requestStopCorrelationId));
+            waitForOk(archiveProxy, reply, requestStopCorrelationId);
             final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
             int i = 0;
             while (System.currentTimeMillis() < duration)
             {
                 final long start = System.currentTimeMillis();
-                validateReplay(client, messageCount);
+                validateReplay(archiveProxy, messageCount);
                 final long delta = System.currentTimeMillis() - start;
                 final double rate = (totalDataLength * 1000.0) / (MEGABYTE * delta);
                 System.out.printf("Replay[%d] rate %.02f MB/s %n", ++i, rate);
@@ -177,7 +177,7 @@ public class ArchiveReplayLoadTest
     }
 
     private int prepAndSendMessages(
-        final ArchiveClient client,
+        final ArchiveProxy archiveProxy,
         final Publication publication)
         throws InterruptedException
     {
@@ -193,7 +193,7 @@ public class ArchiveReplayLoadTest
         final CountDownLatch waitForData = new CountDownLatch(1);
         System.out.printf("Sending %,d messages with a total length of %,d bytes %n", messageCount, totalDataLength);
 
-        trackRecordingProgress(client, waitForData);
+        trackRecordingProgress(archiveProxy, waitForData);
         publishDataToRecorded(publication, messageCount);
         waitForData.await();
 
@@ -230,7 +230,7 @@ public class ArchiveReplayLoadTest
         lastTermId = termIdFromPosition;
     }
 
-    private void validateReplay(final ArchiveClient client, final int messageCount)
+    private void validateReplay(final ArchiveProxy archiveProxy, final int messageCount)
     {
         final int replayStreamId = (int)correlationId;
 
@@ -239,7 +239,7 @@ public class ArchiveReplayLoadTest
             // request replay
             final long correlationId = this.correlationId++;
 
-            TestUtil.waitFor(() -> client.replay(
+            TestUtil.waitFor(() -> archiveProxy.replay(
                 recordingId,
                 joinPosition,
                 totalRecordingLength,
@@ -274,7 +274,7 @@ public class ArchiveReplayLoadTest
         fragmentCount++;
     }
 
-    private void trackRecordingProgress(final ArchiveClient client, final CountDownLatch waitForData)
+    private void trackRecordingProgress(final ArchiveProxy archiveProxy, final CountDownLatch waitForData)
     {
         final Thread t = new Thread(
             () ->
@@ -287,33 +287,35 @@ public class ArchiveReplayLoadTest
                     // each message is fragmentLength[fragmentCount]
                     while (lastTermId == -1 || recorded < totalRecordingLength)
                     {
-                        TestUtil.waitFor(() -> (client.pollEvents(new RecordingEventsListener()
-                        {
-                            public void onStart(
-                                final long recordingId,
-                                final long joinPosition,
-                                final int sessionId,
-                                final int streamId,
-                                final String channel,
-                                final String sourceIdentity)
+                        TestUtil.waitFor(() -> (archiveProxy.pollEvents(
+                            new RecordingEventsListener()
                             {
-                            }
+                                public void onStart(
+                                    final long recordingId,
+                                    final long joinPosition,
+                                    final int sessionId,
+                                    final int streamId,
+                                    final String channel,
+                                    final String sourceIdentity)
+                                {
+                                }
 
-                            public void onProgress(
-                                final long recordingId0,
-                                final long joinPosition,
-                                final long position)
-                            {
-                                assertThat(recordingId0, is(recordingId));
-                                recorded = position - joinPosition;
-                                printf("a=%d total=%d %n", recorded, totalRecordingLength);
-                            }
+                                public void onProgress(
+                                    final long recordingId0,
+                                    final long joinPosition,
+                                    final long position)
+                                {
+                                    assertThat(recordingId0, is(recordingId));
+                                    recorded = position - joinPosition;
+                                    printf("a=%d total=%d %n", recorded, totalRecordingLength);
+                                }
 
-                            public void onStop(final long recordingId0, final long joinPosition, final long endPosition)
-                            {
-                            }
-                        }, 1)) != 0);
-
+                                public void onStop(
+                                    final long recordingId0, final long joinPosition, final long endPosition)
+                                {
+                                }
+                            },
+                            1)) != 0);
 
                         final long end = System.currentTimeMillis();
                         final long deltaTime = end - start;

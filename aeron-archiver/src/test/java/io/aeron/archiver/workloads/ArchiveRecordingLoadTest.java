@@ -18,7 +18,7 @@ package io.aeron.archiver.workloads;
 
 import io.aeron.*;
 import io.aeron.archiver.*;
-import io.aeron.archiver.client.ArchiveClient;
+import io.aeron.archiver.client.ArchiveProxy;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -128,15 +128,15 @@ public class ArchiveRecordingLoadTest
              Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
-            final ArchiveClient client = new ArchiveClient(control, recordingEvents);
-            initRecordingStartIndicator(client);
-            initRecordingEndIndicator(client);
+            final ArchiveProxy archiveProxy = new ArchiveProxy(control, recordingEvents);
+            initRecordingStartIndicator(archiveProxy);
+            initRecordingEndIndicator(archiveProxy);
             TestUtil.awaitPublicationIsConnected(control);
             TestUtil.awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 
             final Subscription reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
-            client.connect(REPLY_URI, REPLY_STREAM_ID);
+            archiveProxy.connect(REPLY_URI, REPLY_STREAM_ID);
             TestUtil.awaitSubscriptionIsConnected(reply);
             println("Client connected");
 
@@ -145,8 +145,8 @@ public class ArchiveRecordingLoadTest
             while (System.currentTimeMillis() < duration)
             {
                 final long startRecordingCorrelationId = this.correlationId++;
-                waitFor(() -> client.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
-                waitForOk(client, reply, startRecordingCorrelationId);
+                waitFor(() -> archiveProxy.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
+                waitForOk(archiveProxy, reply, startRecordingCorrelationId);
                 println("Recording requested");
 
                 try (Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID))
@@ -175,45 +175,49 @@ public class ArchiveRecordingLoadTest
         }
     }
 
-    private void initRecordingStartIndicator(final ArchiveClient client)
+    private void initRecordingStartIndicator(final ArchiveProxy archiveProxy)
     {
-        recordingStartedIndicator = () -> client.pollEvents(new FailRecordingEventsListener()
-        {
-            public void onStart(
-                final long recordingId0,
-                final long joinPosition,
-                final int sessionId,
-                final int streamId,
-                final String channel,
-                final String sourceIdentity)
+        recordingStartedIndicator = () -> archiveProxy.pollEvents(
+            new FailRecordingEventsListener()
             {
-                recordingId = recordingId0;
-                assertThat(streamId, is(PUBLISH_STREAM_ID));
-                assertThat(channel, is(PUBLISH_URI));
-            }
-        }, 1) != 0;
-    }
-
-    private void initRecordingEndIndicator(final ArchiveClient client)
-    {
-        recordingEndIndicator =
-            () -> client.pollEvents(new FailRecordingEventsListener()
-            {
-                public void onProgress(
+                public void onStart(
                     final long recordingId0,
                     final long joinPosition,
-                    final long position)
+                    final int sessionId,
+                    final int streamId,
+                    final String channel,
+                    final String sourceIdentity)
                 {
-                    assertThat(recordingId0, is(recordingId));
-                    recorded = position - joinPosition;
+                    recordingId = recordingId0;
+                    assertThat(streamId, is(PUBLISH_STREAM_ID));
+                    assertThat(channel, is(PUBLISH_URI));
                 }
+            },
+            1) != 0;
+    }
 
-                public void onStop(final long recordingId0, final long joinPosition, final long endPosition)
+    private void initRecordingEndIndicator(final ArchiveProxy archiveProxy)
+    {
+        recordingEndIndicator =
+            () -> archiveProxy.pollEvents(
+                new FailRecordingEventsListener()
                 {
-                    doneRecording = true;
-                    assertThat(recordingId0, is(recordingId));
-                }
-            }, 1) != 0;
+                    public void onProgress(
+                        final long recordingId0,
+                        final long joinPosition,
+                        final long position)
+                    {
+                        assertThat(recordingId0, is(recordingId));
+                        recorded = position - joinPosition;
+                    }
+
+                    public void onStop(final long recordingId0, final long joinPosition, final long endPosition)
+                    {
+                        doneRecording = true;
+                        assertThat(recordingId0, is(recordingId));
+                    }
+                },
+                1) != 0;
     }
 
     private void prepAndSendMessages(final Publication publication)

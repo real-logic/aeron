@@ -18,7 +18,7 @@ package io.aeron.archiver;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.Subscription;
-import io.aeron.archiver.client.ArchiveClient;
+import io.aeron.archiver.client.ArchiveProxy;
 import io.aeron.archiver.codecs.ControlResponseCode;
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.FragmentHandler;
@@ -70,7 +70,7 @@ public class TestUtil
         }
     }
 
-    public static void waitForOk(final ArchiveClient client, final Subscription reply, final long correlationId1)
+    public static void waitForOk(final ArchiveProxy client, final Subscription reply, final long correlationId1)
     {
         waitFor(() -> client.pollResponses(reply, new FailResponseListener()
         {
@@ -83,7 +83,7 @@ public class TestUtil
         }, 1) != 0);
     }
 
-    static void waitForFail(final ArchiveClient client, final Subscription reply, final long correlationId1)
+    static void waitForFail(final ArchiveProxy client, final Subscription reply, final long correlationId1)
     {
         waitFor(() -> client.pollResponses(reply, new FailResponseListener()
         {

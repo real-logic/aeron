@@ -27,8 +27,6 @@ import static io.aeron.command.ControlProtocolEvents.*;
  */
 class DriverListenerAdapter implements MessageHandler
 {
-    public static final long MISSING_REGISTRATION_ID = -1L;
-
     private final CopyBroadcastReceiver broadcastReceiver;
 
     private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();

@@ -137,23 +137,26 @@ TEST (commandTests, testImageBuffersReadyFlyweight)
     std::string logFileNameData = "logfilenamedata";
     std::string sourceInfoData = "sourceinfodata";
 
-    ASSERT_NO_THROW(
-    {
+    ASSERT_NO_THROW({
         ImageBuffersReadyFlyweight cmd(ab, BASEOFFSET);
 
-        cmd.correlationId(-1).streamId(0x01010101).sessionId(0x02020202);
-        cmd.logFileName(logFileNameData).sourceIdentity(sourceInfoData);
-        cmd.subscriberPositionIndicatorId(1);
-        cmd.subscriberPositionRegistrationId(2);
+        cmd.correlationId(-1);
+
+        cmd.sessionId(0x02020202)
+            .streamId(0x01010101)
+            .subscriberRegistrationId(2)
+            .subscriberPositionId(1)
+            .logFileName(logFileNameData)
+            .sourceIdentity(sourceInfoData);
 
         ASSERT_EQ(ab.getInt64(BASEOFFSET + 0), -1);
         ASSERT_EQ(ab.getInt32(BASEOFFSET + 8), 0x02020202);
         ASSERT_EQ(ab.getInt32(BASEOFFSET + 12), 0x01010101);
 
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 16), 1);
-        ASSERT_EQ(ab.getInt64(BASEOFFSET + 24), 2);
+        ASSERT_EQ(ab.getInt64(BASEOFFSET + 16), 2);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 24), 1);
 
-        const index_t startOfLogFileName = BASEOFFSET + 32;
+        const index_t startOfLogFileName = BASEOFFSET + 28;
         ASSERT_EQ(ab.getInt32(startOfLogFileName), static_cast<int>(logFileNameData.length()));
         ASSERT_EQ(ab.getStringUtf8(startOfLogFileName), logFileNameData);
 
@@ -162,18 +165,17 @@ TEST (commandTests, testImageBuffersReadyFlyweight)
         ASSERT_EQ(ab.getStringUtf8(startOfSourceIdentity), sourceInfoData);
 
         ASSERT_EQ(cmd.correlationId(), -1);
-        ASSERT_EQ(cmd.streamId(), 0x01010101);
         ASSERT_EQ(cmd.sessionId(), 0x02020202);
+        ASSERT_EQ(cmd.streamId(), 0x01010101);
+        ASSERT_EQ(cmd.subscriberRegistrationId(), 2);
+        ASSERT_EQ(cmd.subscriberPositionId(), 1);
         ASSERT_EQ(cmd.logFileName(), logFileNameData);
         ASSERT_EQ(cmd.sourceIdentity(), sourceInfoData);
-        ASSERT_EQ(cmd.subscriberPositionIndicatorId(), 1);
-        ASSERT_EQ(cmd.subscriberPositionRegistrationId(), 2);
 
         ASSERT_EQ(
             cmd.length(),
             static_cast<int>(sizeof(ImageBuffersReadyDefn) +
                 sizeof(std::int32_t) + logFileNameData.length() +
                 sizeof(std::int32_t) + sourceInfoData.length()));
-    }
-    );
+    });
 }

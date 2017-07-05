@@ -34,28 +34,26 @@ namespace aeron { namespace command {
 * 0                   1                   2                   3
 * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-* |                         Correlation ID                        |
+* |                       Correlation ID                          |
 * |                                                               |
 * +---------------------------------------------------------------+
-* |                          Session ID                           |
+* |                         Session ID                            |
 * +---------------------------------------------------------------+
-* |                           Stream ID                           |
+* |                         Stream ID                             |
 * +---------------------------------------------------------------+
-* |                     Subscriber Position Id                    |
-* +---------------------------------------------------------------+
-* |                     Padding for alignment                     |
-* +---------------------------------------------------------------+
-* |                       Registration Id 0                       |
+* |                  Subscriber Registration Id                   |
 * |                                                               |
 * +---------------------------------------------------------------+
-* |                         Log File Length                       |
+* |                    Subscriber Position Id                     |
 * +---------------------------------------------------------------+
-* |                         Log File Name                        ...
+* |                       Log File Length                         |
+* +---------------------------------------------------------------+
+* |                        Log File Name                         ...
 *...                                                              |
 * +---------------------------------------------------------------+
-* |                     Source identity Length                    |
+* |                    Source identity Length                     |
 * +---------------------------------------------------------------+
-* |                     Source identity Name                     ...
+* |                    Source identity Name                      ...
 *...                                                              |
 * +---------------------------------------------------------------+
 */
@@ -67,9 +65,8 @@ struct ImageBuffersReadyDefn
     std::int64_t correlationId;
     std::int32_t sessionId;
     std::int32_t streamId;
-    std::int32_t subscriberPositionIndicatorId;
-    std::int32_t padding;
-    std::int64_t subscriberPositionRegistrationId;
+    std::int64_t subscriberRegistrationId;
+    std::int32_t subscriberPositionId;
 };
 #pragma pack(pop)
 
@@ -116,25 +113,25 @@ public:
         return *this;
     }
 
-    inline std::int32_t subscriberPositionIndicatorId() const
+    inline std::int64_t subscriberRegistrationId() const
     {
-        return m_struct.subscriberPositionIndicatorId;
+        return m_struct.subscriberRegistrationId;
     }
 
-    inline this_t& subscriberPositionIndicatorId(std::int32_t value)
+    inline this_t& subscriberRegistrationId(std::int64_t value)
     {
-        m_struct.subscriberPositionIndicatorId = value;
+        m_struct.subscriberRegistrationId = value;
         return *this;
     }
 
-    inline std::int64_t subscriberPositionRegistrationId() const
+    inline std::int32_t subscriberPositionId() const
     {
-        return m_struct.subscriberPositionRegistrationId;
+        return m_struct.subscriberPositionId;
     }
 
-    inline this_t& subscriberPositionRegistrationId(std::int64_t value)
+    inline this_t& subscriberPositionId(std::int32_t value)
     {
-        m_struct.subscriberPositionRegistrationId = value;
+        m_struct.subscriberPositionId = value;
         return *this;
     }
 

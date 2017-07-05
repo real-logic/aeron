@@ -63,6 +63,11 @@ class SessionWorker<T extends Session> implements Agent
     void addSession(final T session)
     {
         sessions.add(session);
+        postSessionAdd(session);
+    }
+
+    void postSessionAdd(final T session)
+    {
     }
 
     void closeSession(final T session)

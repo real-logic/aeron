@@ -57,6 +57,13 @@ class DedicatedModeArchiveConductor extends ArchiveConductor
     {
         return new DedicatedModeSessionWorker<ReplaySession>("replayer")
         {
+            ControlSessionProxy proxy = new ControlSessionProxy(ctx.idleStrategy());
+
+            void postSessionAdd(final ReplaySession session)
+            {
+                session.setThreadLocalControlSessionProxy(proxy);
+            }
+
             void closeSession(final ReplaySession session)
             {
                 closeQueue.offer(session);
@@ -66,7 +73,7 @@ class DedicatedModeArchiveConductor extends ArchiveConductor
 
     protected int preSessionWork()
     {
-        return processCommandQueue();
+        return processCloseQueue();
     }
 
     public void onStart()
@@ -82,13 +89,13 @@ class DedicatedModeArchiveConductor extends ArchiveConductor
         CloseHelper.quietClose(recorderAgentRunner);
         CloseHelper.quietClose(replayerAgentRunner);
 
-        while (processCommandQueue() > 0)
+        while (processCloseQueue() > 0)
         {
             // drain the command queue
         }
     }
 
-    private int processCommandQueue()
+    private int processCloseQueue()
     {
         int i;
         Session session;
@@ -100,7 +107,9 @@ class DedicatedModeArchiveConductor extends ArchiveConductor
             }
             else if (session instanceof ReplaySession)
             {
-                closeReplaySession((ReplaySession)session);
+                final ReplaySession replaySession = (ReplaySession) session;
+                replaySession.setThreadLocalControlSessionProxy(controlSessionProxy);
+                closeReplaySession(replaySession);
             }
             else
             {

@@ -42,34 +42,39 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * The {@link ArchiveConductor} will initiate a session on receiving a ReplayRequest
  * (see {@link io.aeron.archiver.codecs.ReplayRequestDecoder}). The session will:
  * <ul>
- * <li>Validate request parameters and respond with error, or OK message
- * (see {@link io.aeron.archiver.codecs.ControlResponseDecoder})</li>
+ * <li>Validate request parameters and respond with appropriate error if unable to replay </li>
+ * <li>Wait for replay subscription to connect to the requested replay publication. If no subscription appears within
+ * LINGER_LENGTH_MS the session will terminate and respond will error.</li>
+ * <li>Once the replay publication is connected send an OK response to control client</li>
  * <li>Stream recorded data into the replayPublication {@link ExclusivePublication}</li>
+ * <li>If the replay is aborted part way through, send a ReplayAborted message and terminate.</li>
+ * <li>Once replay is terminated the publication kept open for LINGER_LENGTH_MS then the session is closed.</li>
  * </ul>
  */
-class ReplaySession implements Session, RecordingFragmentReader.SimplifiedControlledPoll
+class ReplaySession implements Session
 {
     enum State
     {
         INIT, REPLAY, LINGER, INACTIVE, CLOSED
     }
 
-    private static final int REPLAY_SEND_BATCH_SIZE = 8;
     static final long LINGER_LENGTH_MS = 1000;
+    private static final int REPLAY_SEND_BATCH_SIZE = Integer.getInteger("io.aeron.archiver.replay.send.batch", 8);
+
+    private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
+    private final RecordingFragmentReader.SimplifiedControlledPoll fragmentPoller = this::onFragment;
 
     private final long replaySessionId;
     private final long correlationId;
     private final Publication controlPublication;
-    private final ControlSessionProxy controlSessionProxy;
     private final EpochClock epochClock;
 
-    private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
     private final ExclusivePublication replayPublication;
     private final RecordingFragmentReader cursor;
 
+    private ControlSessionProxy threadLocalControlSessionProxy;
     private State state = State.INIT;
     private long lingerSinceMs;
-    private boolean aborted = false;
 
     ReplaySession(
         final long recordingId,
@@ -78,7 +83,7 @@ class ReplaySession implements Session, RecordingFragmentReader.SimplifiedContro
         final ArchiveConductor.ReplayPublicationSupplier supplier,
         final Publication controlPublication,
         final File archiveDir,
-        final ControlSessionProxy controlSessionProxy,
+        final ControlSessionProxy threadLocalControlSessionProxy,
         final long replaySessionId,
         final long correlationId,
         final EpochClock epochClock,
@@ -87,7 +92,7 @@ class ReplaySession implements Session, RecordingFragmentReader.SimplifiedContro
         final ByteBuffer threadLocalMetaBuffer)
     {
         this.controlPublication = controlPublication;
-        this.controlSessionProxy = controlSessionProxy;
+        this.threadLocalControlSessionProxy = threadLocalControlSessionProxy;
         this.replaySessionId = replaySessionId;
         this.correlationId = correlationId;
         this.epochClock = epochClock;
@@ -157,11 +162,28 @@ class ReplaySession implements Session, RecordingFragmentReader.SimplifiedContro
         }
         catch (final Exception ex)
         {
-            CloseHelper.close(cursor);
+            CloseHelper.quietClose(cursor);
             closeOnError(ex, "Failed to create replay publication");
         }
 
         this.replayPublication = replayPublication;
+    }
+
+    public void close()
+    {
+        if (state == State.CLOSED)
+        {
+            throw new IllegalStateException();
+        }
+
+        CloseHelper.quietClose(replayPublication);
+        CloseHelper.quietClose(cursor);
+        state = State.CLOSED;
+    }
+
+    public long sessionId()
+    {
+        return replaySessionId;
     }
 
     public int doWork()
@@ -185,7 +207,15 @@ class ReplaySession implements Session, RecordingFragmentReader.SimplifiedContro
 
     public void abort()
     {
-        aborted = true;
+        if (controlPublication.isConnected())
+        {
+            threadLocalControlSessionProxy.sendReplayAborted(
+                correlationId,
+                replaySessionId,
+                replayPublication.position(),
+                controlPublication);
+        }
+
         state = State.INACTIVE;
     }
 
@@ -194,7 +224,36 @@ class ReplaySession implements Session, RecordingFragmentReader.SimplifiedContro
         return state == State.INACTIVE;
     }
 
-    public boolean onFragment(final UnsafeBuffer termBuffer, final int offset, final int length)
+    State state()
+    {
+        return state;
+    }
+
+    void setThreadLocalControlSessionProxy(final ControlSessionProxy proxy)
+    {
+        threadLocalControlSessionProxy = proxy;
+    }
+
+    private int replay()
+    {
+        try
+        {
+            final int polled = cursor.controlledPoll(fragmentPoller, REPLAY_SEND_BATCH_SIZE);
+            if (cursor.isDone())
+            {
+                lingerSinceMs = epochClock.time();
+                state = State.LINGER;
+            }
+
+            return polled;
+        }
+        catch (final Exception ex)
+        {
+            return closeOnError(ex, "Cursor read failed");
+        }
+    }
+
+    private boolean onFragment(final UnsafeBuffer termBuffer, final int offset, final int length)
     {
         if (isDone())
         {
@@ -220,11 +279,6 @@ class ReplaySession implements Session, RecordingFragmentReader.SimplifiedContro
         return false;
     }
 
-    State state()
-    {
-        return state;
-    }
-
     private long replayFrame(final UnsafeBuffer termBuffer, final int offset, final int length, final int frameOffset)
     {
         final long result = replayPublication.tryClaim(length, bufferClaim);
@@ -248,11 +302,10 @@ class ReplaySession implements Session, RecordingFragmentReader.SimplifiedContro
 
     private int linger()
     {
-        if (isLingerDone())
+        if (isLingerDone() || !replayPublication.isConnected())
         {
             state = State.INACTIVE;
         }
-
         return 0;
     }
 
@@ -273,7 +326,7 @@ class ReplaySession implements Session, RecordingFragmentReader.SimplifiedContro
             return 0;
         }
 
-        controlSessionProxy.sendOkResponse(correlationId, controlPublication);
+        threadLocalControlSessionProxy.sendOkResponse(correlationId, controlPublication);
         state = State.REPLAY;
 
         return 1;
@@ -284,7 +337,11 @@ class ReplaySession implements Session, RecordingFragmentReader.SimplifiedContro
         this.state = State.INACTIVE;
         if (controlPublication.isConnected())
         {
-            controlSessionProxy.sendError(correlationId, ControlResponseCode.ERROR, errorMessage, controlPublication);
+            threadLocalControlSessionProxy.sendError(
+                correlationId,
+                ControlResponseCode.ERROR,
+                errorMessage,
+                controlPublication);
         }
 
         if (e != null)
@@ -295,43 +352,4 @@ class ReplaySession implements Session, RecordingFragmentReader.SimplifiedContro
         return 0;
     }
 
-    private int replay()
-    {
-        try
-        {
-            final int polled = cursor.controlledPoll(this, REPLAY_SEND_BATCH_SIZE);
-            if (cursor.isDone())
-            {
-                lingerSinceMs = epochClock.time();
-                state = State.LINGER;
-            }
-
-            return polled;
-        }
-        catch (final Exception ex)
-        {
-            return closeOnError(ex, "Cursor read failed");
-        }
-    }
-
-    public void close()
-    {
-        if (aborted && controlPublication.isConnected())
-        {
-            controlSessionProxy.sendReplayAborted(
-                correlationId,
-                replaySessionId,
-                replayPublication.position(),
-                controlPublication);
-        }
-
-        CloseHelper.close(replayPublication);
-        CloseHelper.close(cursor);
-        state = State.CLOSED;
-    }
-
-    public long sessionId()
-    {
-        return replaySessionId;
-    }
 }

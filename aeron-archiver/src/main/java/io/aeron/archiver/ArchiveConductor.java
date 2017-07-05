@@ -59,7 +59,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     private final Subscription controlSubscription;
     private final Catalog catalog;
-    private final ControlSessionProxy controlSessionProxy;
+    protected final ControlSessionProxy controlSessionProxy;
     private final NotificationsProxy notificationsProxy;
     private final int maxConcurrentRecordings;
     private final int maxConcurrentReplays;

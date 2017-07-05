@@ -256,7 +256,6 @@ public class ReplaySessionTest
             REPLAY_STREAM_ID,
             ByteBuffer.allocate(Catalog.RECORD_LENGTH));
 
-
         when(mockReplayPub.isClosed()).thenReturn(false);
         when(mockControlPub.isClosed()).thenReturn(false);
 

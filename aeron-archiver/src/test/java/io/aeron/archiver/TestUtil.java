@@ -72,27 +72,35 @@ public class TestUtil
 
     public static void waitForOk(final ArchiveProxy client, final Subscription reply, final long correlationId1)
     {
-        waitFor(() -> client.pollResponses(reply, new FailResponseListener()
-        {
-            public void onResponse(final long correlationId2, final ControlResponseCode code, final String errorMessage)
+        waitFor(() -> client.pollResponses(
+            reply,
+            new FailResponseListener()
             {
-                assertThat("Error message: " + errorMessage, code, is(ControlResponseCode.OK));
-                assertThat(errorMessage, isEmptyOrNullString());
-                assertThat(correlationId1, is(correlationId2));
-            }
-        }, 1) != 0);
+                public void onResponse(
+                    final long correlationId2, final ControlResponseCode code, final String errorMessage)
+                {
+                    assertThat("Error message: " + errorMessage, code, is(ControlResponseCode.OK));
+                    assertThat(errorMessage, isEmptyOrNullString());
+                    assertThat(correlationId1, is(correlationId2));
+                }
+            },
+            1) != 0);
     }
 
     static void waitForFail(final ArchiveProxy client, final Subscription reply, final long correlationId1)
     {
-        waitFor(() -> client.pollResponses(reply, new FailResponseListener()
-        {
-            public void onResponse(final long correlationId2, final ControlResponseCode code, final String errorMessage)
+        waitFor(() -> client.pollResponses(
+            reply,
+            new FailResponseListener()
             {
-                assertThat(code, not(ControlResponseCode.OK));
-                assertThat(correlationId1, is(correlationId2));
-            }
-        }, 1) != 0);
+                public void onResponse(
+                    final long correlationId2, final ControlResponseCode code, final String errorMessage)
+                {
+                    assertThat(code, not(ControlResponseCode.OK));
+                    assertThat(correlationId1, is(correlationId2));
+                }
+            },
+            1) != 0);
     }
 
     static void poll(final Subscription subscription, final FragmentHandler handler)
@@ -133,9 +141,8 @@ public class TestUtil
         waitFor(publication::isConnected);
     }
 
-    static RecordingFragmentReader newRecordingFragmentReader(
-        final long recordingId,
-        final File archiveDir) throws IOException
+    static RecordingFragmentReader newRecordingFragmentReader(final long recordingId, final File archiveDir)
+        throws IOException
     {
         final String recordingMetaFileName = recordingDescriptorFileName(recordingId);
         final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);

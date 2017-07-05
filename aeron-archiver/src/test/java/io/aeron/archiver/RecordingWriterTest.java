@@ -22,7 +22,6 @@ import static org.mockito.Mockito.when;
 
 public class RecordingWriterTest
 {
-
     private static final int RECORDING_ID = 1;
     private static final int TERM_BUFFER_LENGTH = 16 * 1024;
     private static final int MTU_LENGTH = 4 * 1024;
@@ -85,6 +84,7 @@ public class RecordingWriterTest
             assertEquals(SOURCE, descriptorDecoder.sourceIdentity());
             when(epochClock.time()).thenReturn(43L);
         }
+
         final RecordingDescriptorDecoder descriptorDecoder = loadMetaData();
         assertEquals(RECORDING_ID, descriptorDecoder.recordingId());
         assertEquals(TERM_BUFFER_LENGTH, descriptorDecoder.termBufferLength());

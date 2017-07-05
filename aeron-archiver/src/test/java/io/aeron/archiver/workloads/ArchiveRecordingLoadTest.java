@@ -74,7 +74,8 @@ public class ArchiveRecordingLoadTest
         protected void failed(final Throwable t, final Description description)
         {
             System.err.println(
-                "ArchiveAndReplaySystemTest failed with random seed: " + ArchiveRecordingLoadTest.this.seed);
+                ArchiveRecordingLoadTest.class.getName() +
+                    " failed with random seed: " + ArchiveRecordingLoadTest.this.seed);
         }
     };
     private long correlationId;

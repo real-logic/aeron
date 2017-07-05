@@ -82,10 +82,10 @@ public class ArchiveReplayLoadTest
         protected void failed(final Throwable t, final Description description)
         {
             System.err.println(
-                "ArchiveAndReplaySystemTest failed with random seed: " + ArchiveReplayLoadTest.this.seed);
+                ArchiveReplayLoadTest.class.getName() + " failed with random seed: " + ArchiveReplayLoadTest.this.seed);
         }
     };
-    private Subscription reply;
+
     private long correlationId;
     private long joinPosition;
     private FragmentHandler validateFragmentHandler = this::validateFragment;
@@ -142,7 +142,7 @@ public class ArchiveReplayLoadTest
             awaitSubscriptionIsConnected(archiverNotifications);
             println("Archive service connected");
 
-            reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
+            final Subscription reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
             archiveProxy.connect(REPLY_URI, REPLY_STREAM_ID);
             awaitSubscriptionIsConnected(reply);
             println("Client connected");
@@ -236,7 +236,6 @@ public class ArchiveReplayLoadTest
 
         try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, replayStreamId))
         {
-            // request replay
             final long correlationId = this.correlationId++;
 
             TestUtil.waitFor(() -> archiveProxy.replay(

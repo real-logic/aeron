@@ -34,7 +34,6 @@ public class ControlSessionTest
         when(mockConductor.newListRecordingsSession(1, mockControlPublication, 2, 3, session))
             .thenReturn(mockListRecordingSession1);
 
-        // first list recording is created and added to conductor
         session.onListRecordings(1, 2, 3);
         verify(mockConductor).newListRecordingsSession(1, mockControlPublication, 2, 3, session);
         verify(mockConductor).addSession(mockListRecordingSession1);
@@ -43,12 +42,10 @@ public class ControlSessionTest
         when(mockConductor.newListRecordingsSession(2, mockControlPublication, 3, 4, session))
             .thenReturn(mockListRecordingSession2);
 
-        // second list recording is created but cannot start until the first is done
         session.onListRecordings(2, 3, 4);
         verify(mockConductor).newListRecordingsSession(2, mockControlPublication, 3, 4, session);
         verify(mockConductor, never()).addSession(mockListRecordingSession2);
 
-        // second session added to conductor after the first is done
         session.onListRecordingSessionClosed(mockListRecordingSession1);
         verify(mockConductor).addSession(mockListRecordingSession2);
     }

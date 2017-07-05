@@ -17,7 +17,6 @@ package io.aeron;
 
 import io.aeron.command.*;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.collections.Long2LongHashMap;
 import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 
@@ -38,7 +37,6 @@ class DriverListenerAdapter implements MessageHandler
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
     private final DriverListener listener;
-    private final Long2LongHashMap subscriberPositionMap = new Long2LongHashMap(MISSING_REGISTRATION_ID);
 
     private long activeCorrelationId;
     private long lastReceivedCorrelationId;
@@ -87,20 +85,12 @@ class DriverListenerAdapter implements MessageHandler
             {
                 imageReady.wrap(buffer, index);
 
-                subscriberPositionMap.clear();
-                for (int i = 0, max = imageReady.subscriberPositionCount(); i < max; i++)
-                {
-                    final long registrationId = imageReady.positionIndicatorRegistrationId(i);
-                    final int positionId = imageReady.subscriberPositionId(i);
-
-                    subscriberPositionMap.put(registrationId, positionId);
-                }
-
                 listener.onAvailableImage(
                     imageReady.correlationId(),
                     imageReady.streamId(),
                     imageReady.sessionId(),
-                    subscriberPositionMap,
+                    imageReady.subscriberPositionId(),
+                    imageReady.subscriberPositionRegistrationId(),
                     imageReady.logFileName(),
                     imageReady.sourceIdentity());
                 break;

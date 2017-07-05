@@ -15,16 +15,20 @@
  */
 package io.aeron;
 
-import io.aeron.exceptions.*;
-import org.agrona.*;
-import org.agrona.collections.*;
+import io.aeron.exceptions.ConductorServiceTimeoutException;
+import io.aeron.exceptions.DriverTimeoutException;
+import io.aeron.exceptions.RegistrationException;
+import org.agrona.ErrorHandler;
+import org.agrona.ManagedResource;
+import org.agrona.collections.ArrayListUtil;
+import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.*;
+import java.util.concurrent.locks.Lock;
 
 import static io.aeron.Aeron.IDLE_SLEEP_NS;
 import static io.aeron.Aeron.sleep;
@@ -336,7 +340,8 @@ class ClientConductor implements Agent, DriverListener
         final long correlationId,
         final int streamId,
         final int sessionId,
-        final Long2LongHashMap subscriberPositionMap,
+        final int subscriberPositionCounterId,
+        final long subscriberPositionRegistrationId,
         final String logFileName,
         final String sourceIdentity)
     {
@@ -344,36 +349,32 @@ class ClientConductor implements Agent, DriverListener
             streamId,
             (subscription) ->
             {
-                if (!subscription.hasImage(correlationId))
+                if (!subscription.hasImage(correlationId) &&
+                    subscription.registrationId() == subscriberPositionRegistrationId)
                 {
-                    final long positionId = subscriberPositionMap.get(subscription.registrationId());
+                    final Image image = new Image(
+                        subscription,
+                        sessionId,
+                        new UnsafeBufferPosition(counterValuesBuffer, (int)subscriberPositionCounterId),
+                        logBuffersFactory.map(logFileName, imageMapMode),
+                        errorHandler,
+                        sourceIdentity,
+                        correlationId);
 
-                    if (DriverListenerAdapter.MISSING_REGISTRATION_ID != positionId)
+                    try
                     {
-                        final Image image = new Image(
-                            subscription,
-                            sessionId,
-                            new UnsafeBufferPosition(counterValuesBuffer, (int)positionId),
-                            logBuffersFactory.map(logFileName, imageMapMode),
-                            errorHandler,
-                            sourceIdentity,
-                            correlationId);
-
-                        try
+                        final AvailableImageHandler handler = subscription.availableImageHandler();
+                        if (null != handler)
                         {
-                            final AvailableImageHandler handler = subscription.availableImageHandler();
-                            if (null != handler)
-                            {
-                                handler.onAvailableImage(image);
-                            }
+                            handler.onAvailableImage(image);
                         }
-                        catch (final Throwable ex)
-                        {
-                            errorHandler.onError(ex);
-                        }
-
-                        subscription.addImage(image);
                     }
+                    catch (final Throwable ex)
+                    {
+                        errorHandler.onError(ex);
+                    }
+
+                    subscription.addImage(image);
                 }
             });
     }

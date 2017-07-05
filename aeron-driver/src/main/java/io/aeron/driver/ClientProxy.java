@@ -79,9 +79,8 @@ public class ClientProxy
             .correlationId(correlationId);
 
         imageReady
-            .subscriberPositionCount(1)
-            .subscriberPositionId(0, positionCounterId)
-            .positionIndicatorRegistrationId(0, subscriptionRegistrationId);
+            .subscriberPositionId(positionCounterId)
+            .subscriberPositionRegistrationId(subscriptionRegistrationId);
 
         imageReady
             .logFileName(logFileName)

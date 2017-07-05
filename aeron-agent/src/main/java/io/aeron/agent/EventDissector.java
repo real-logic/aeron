@@ -366,22 +366,12 @@ public class EventDissector
 
     private static String dissect(final ImageBuffersReadyFlyweight msg)
     {
-        final StringBuilder positions = new StringBuilder();
-
-        for (int i = 0; i < msg.subscriberPositionCount(); i++)
-        {
-            positions.append(String.format(
-                "[%d:%d:%d]",
-                i,
-                msg.subscriberPositionId(i),
-                msg.positionIndicatorRegistrationId(i)));
-        }
-
         return String.format(
-            "%d:%d %s \"%s\" [%d]%n    %s",
+            "%d:%d [%d:%d] \"%s\" [%d]%n    %s",
             msg.sessionId(),
             msg.streamId(),
-            positions.toString(),
+            msg.subscriberPositionId(),
+            msg.subscriberPositionRegistrationId(),
             msg.sourceIdentity(),
             msg.correlationId(),
             msg.logFileName());

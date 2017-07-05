@@ -37,26 +37,12 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  +---------------------------------------------------------------+
  *  |                           Stream ID                           |
  *  +---------------------------------------------------------------+
- *  |                Subscriber Position Block Length               |
- *  +---------------------------------------------------------------+
- *  |                   Subscriber Position Count                   |
- *  +---------------------------------------------------------------+
- *  |                    Subscriber Position Id 0                   |
+ *  |                    Subscriber Position Id                     |
  *  +---------------------------------------------------------------+
  *  |                     Padding for alignment                     |
  *  +---------------------------------------------------------------+
- *  |                       Registration Id 0                       |
+ *  |                       Registration Id                         |
  *  |                                                               |
- *  +---------------------------------------------------------------+
- *  |                    Subscriber Position Id 1                   |
- *  +---------------------------------------------------------------+
- *  |                     Padding for alignment                     |
- *  +---------------------------------------------------------------+
- *  |                       Registration Id 1                       |
- *  |                                                               |
- *  +---------------------------------------------------------------+
- *  |                                                              ...
- * ...     Up to "Position Indicators Count" entries of this form   |
  *  +---------------------------------------------------------------+
  *  |                        Log File Length                        |
  *  +---------------------------------------------------------------+
@@ -75,11 +61,9 @@ public class ImageBuffersReadyFlyweight
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
-    private static final int SUBSCRIBER_POSITION_BLOCK_LENGTH_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int SUBSCRIBER_POSITION_COUNT_OFFSET = SUBSCRIBER_POSITION_BLOCK_LENGTH_OFFSET + SIZE_OF_INT;
-    private static final int SUBSCRIBER_POSITIONS_OFFSET = SUBSCRIBER_POSITION_COUNT_OFFSET + SIZE_OF_INT;
-
-    private static final int SUBSCRIBER_POSITION_BLOCK_LENGTH = SIZE_OF_INT + SIZE_OF_INT + SIZE_OF_LONG;
+    private static final int SUBSCRIBER_POSITION_ID_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int SUBSCRIBER_POSITION_REGISTRATION_ID_OFFSET = SUBSCRIBER_POSITION_ID_OFFSET + SIZE_OF_LONG;
+    private static final int LOG_FILE_NAME_OFFSET = SUBSCRIBER_POSITION_REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
 
     private MutableDirectBuffer buffer;
     private int offset;
@@ -169,39 +153,14 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * return the number of position indicators
-     *
-     * @return the number of position indicators
-     */
-    public int subscriberPositionCount()
-    {
-        return buffer.getInt(offset + SUBSCRIBER_POSITION_COUNT_OFFSET);
-    }
-
-    /**
-     * set the number of position indicators
-     *
-     * @param value the number of position indicators
-     * @return flyweight
-     */
-    public ImageBuffersReadyFlyweight subscriberPositionCount(final int value)
-    {
-        buffer.putInt(offset + SUBSCRIBER_POSITION_BLOCK_LENGTH_OFFSET, SUBSCRIBER_POSITION_BLOCK_LENGTH);
-        buffer.putInt(offset + SUBSCRIBER_POSITION_COUNT_OFFSET, value);
-
-        return this;
-    }
-
-    /**
      * Set the position Id for the subscriber
      *
-     * @param index for the subscriber position
      * @param id    for the subscriber position
      * @return flyweight
      */
-    public ImageBuffersReadyFlyweight subscriberPositionId(final int index, final int id)
+    public ImageBuffersReadyFlyweight subscriberPositionId(final int id)
     {
-        buffer.putInt(offset + subscriberPositionOffset(index), id);
+        buffer.putInt(offset + SUBSCRIBER_POSITION_ID_OFFSET, id);
 
         return this;
     }
@@ -209,24 +168,22 @@ public class ImageBuffersReadyFlyweight
     /**
      * Return the position Id for the subscriber
      *
-     * @param index for the subscriber position
      * @return position Id for the subscriber
      */
-    public int subscriberPositionId(final int index)
+    public int subscriberPositionId()
     {
-        return buffer.getInt(offset + subscriberPositionOffset(index));
+        return buffer.getInt(offset + SUBSCRIBER_POSITION_ID_OFFSET);
     }
 
     /**
      * Set the registration Id for the subscriber position
      *
-     * @param index for the subscriber position
      * @param id    for the subscriber position
      * @return flyweight
      */
-    public ImageBuffersReadyFlyweight positionIndicatorRegistrationId(final int index, final long id)
+    public ImageBuffersReadyFlyweight subscriberPositionRegistrationId(final long id)
     {
-        buffer.putLong(offset + subscriberPositionOffset(index) + (SIZE_OF_INT * 2), id);
+        buffer.putLong(offset + SUBSCRIBER_POSITION_REGISTRATION_ID_OFFSET, id);
 
         return this;
     }
@@ -234,12 +191,11 @@ public class ImageBuffersReadyFlyweight
     /**
      * Return the registration Id for the subscriber position
      *
-     * @param index for the subscriber position
      * @return registration Id for the subscriber position
      */
-    public long positionIndicatorRegistrationId(final int index)
+    public long subscriberPositionRegistrationId()
     {
-        return buffer.getLong(offset + subscriberPositionOffset(index) + (SIZE_OF_INT * 2));
+        return buffer.getLong(offset + SUBSCRIBER_POSITION_REGISTRATION_ID_OFFSET);
     }
 
     /**
@@ -249,7 +205,7 @@ public class ImageBuffersReadyFlyweight
      */
     public String logFileName()
     {
-        return buffer.getStringAscii(offset + logFileNameOffset());
+        return buffer.getStringAscii(offset + LOG_FILE_NAME_OFFSET);
     }
 
     /**
@@ -260,7 +216,7 @@ public class ImageBuffersReadyFlyweight
      */
     public ImageBuffersReadyFlyweight logFileName(final String logFileName)
     {
-        buffer.putStringAscii(offset + logFileNameOffset(), logFileName);
+        buffer.putStringAscii(offset + LOG_FILE_NAME_OFFSET, logFileName);
         return this;
     }
 
@@ -299,19 +255,8 @@ public class ImageBuffersReadyFlyweight
         return sourceIdentityOffset + buffer.getInt(offset + sourceIdentityOffset) + SIZE_OF_INT;
     }
 
-    private int subscriberPositionOffset(final int index)
-    {
-        return SUBSCRIBER_POSITIONS_OFFSET + (index * SUBSCRIBER_POSITION_BLOCK_LENGTH);
-    }
-
-    private int logFileNameOffset()
-    {
-        return subscriberPositionOffset(subscriberPositionCount());
-    }
-
     private int sourceIdentityOffset()
     {
-        final int logFileNameOffset = logFileNameOffset();
-        return logFileNameOffset + buffer.getInt(offset + logFileNameOffset) + SIZE_OF_INT;
+        return LOG_FILE_NAME_OFFSET + buffer.getInt(offset + LOG_FILE_NAME_OFFSET) + SIZE_OF_INT;
     }
 }

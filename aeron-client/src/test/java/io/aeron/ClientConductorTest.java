@@ -15,8 +15,6 @@
  */
 package io.aeron;
 
-import org.junit.Before;
-import org.junit.Test;
 import io.aeron.command.ControlProtocolEvents;
 import io.aeron.command.CorrelatedMessageFlyweight;
 import io.aeron.command.ErrorResponseFlyweight;
@@ -28,15 +26,21 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.ErrorHandler;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.collections.Long2LongHashMap;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.function.ToIntFunction;
 
+import static io.aeron.ErrorCode.INVALID_CHANNEL;
+import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
+import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static java.lang.Boolean.TRUE;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
@@ -48,8 +52,6 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
-import static io.aeron.ErrorCode.INVALID_CHANNEL;
-import static io.aeron.logbuffer.LogBufferDescriptor.*;
 
 public class ClientConductorTest
 {
@@ -73,6 +75,9 @@ public class ClientConductorTest
     private static final long AWAIT_TIMEOUT = 100;
     private static final long INTER_SERVICE_TIMEOUT_MS = 1000;
     private static final long PUBLICATION_CONNECTION_TIMEOUT_MS = 5000;
+
+    private static final int SUBSCRIBER_POSITION_ID = 2;
+    private static final int SUBSCRIBER_POSITION_REGISTRATION_ID = 4001;
 
     private static final String SOURCE_INFO = "127.0.0.1:40789";
 
@@ -102,7 +107,6 @@ public class ClientConductorTest
     private UnavailableImageHandler mockUnavailableImageHandler = mock(UnavailableImageHandler.class);
     private LogBuffersFactory logBuffersFactory = mock(LogBuffersFactory.class);
     private Lock mockClientLock = mock(Lock.class);
-    private Long2LongHashMap subscriberPositionMap = new Long2LongHashMap(-1L);
     private boolean suppressPrintError = false;
 
     @Before
@@ -145,8 +149,6 @@ public class ClientConductorTest
         publicationReady.sessionId(SESSION_ID_1);
         publicationReady.streamId(STREAM_ID_1);
         publicationReady.logFileName(SESSION_ID_1 + "-log");
-
-        subscriberPositionMap.put(CORRELATION_ID, 0);
 
         correlatedMessage.correlationId(CLOSE_CORRELATION_ID);
 
@@ -483,10 +485,16 @@ public class ClientConductorTest
                 return CorrelatedMessageFlyweight.LENGTH;
             });
 
-        conductor.addSubscription(CHANNEL, STREAM_ID_1);
+        final Subscription subscription = conductor.addSubscription(CHANNEL, STREAM_ID_1);
 
         conductor.onAvailableImage(
-            CORRELATION_ID, STREAM_ID_1, SESSION_ID_1, subscriberPositionMap, SESSION_ID_1 + "-log", SOURCE_INFO);
+            CORRELATION_ID,
+            STREAM_ID_1,
+            SESSION_ID_1,
+            SUBSCRIBER_POSITION_ID,
+            subscription.registrationId(),
+            SESSION_ID_1 + "-log",
+            SOURCE_INFO);
 
         verify(logBuffersFactory).map(eq(SESSION_ID_1 + "-log"), any(FileChannel.MapMode.class));
     }
@@ -506,7 +514,13 @@ public class ClientConductorTest
         final Subscription subscription = conductor.addSubscription(CHANNEL, STREAM_ID_1);
 
         conductor.onAvailableImage(
-            CORRELATION_ID, STREAM_ID_1, SESSION_ID_1, subscriberPositionMap, SESSION_ID_1 + "-log", SOURCE_INFO);
+            CORRELATION_ID,
+            STREAM_ID_1,
+            SESSION_ID_1,
+            SUBSCRIBER_POSITION_ID,
+            subscription.registrationId(),
+            SESSION_ID_1 + "-log",
+            SOURCE_INFO);
 
         assertFalse(subscription.hasNoImages());
         verify(mockAvailableImageHandler).onAvailableImage(any(Image.class));
@@ -521,7 +535,13 @@ public class ClientConductorTest
     public void shouldIgnoreUnknownNewImage()
     {
         conductor.onAvailableImage(
-            CORRELATION_ID_2, STREAM_ID_2, SESSION_ID_2, subscriberPositionMap, SESSION_ID_2 + "-log", SOURCE_INFO);
+            CORRELATION_ID_2,
+            STREAM_ID_2,
+            SESSION_ID_2,
+            SUBSCRIBER_POSITION_ID,
+            SUBSCRIBER_POSITION_REGISTRATION_ID,
+            SESSION_ID_2 + "-log",
+            SOURCE_INFO);
 
         verify(logBuffersFactory, never()).map(anyString(), any(FileChannel.MapMode.class));
         verify(mockAvailableImageHandler, never()).onAvailableImage(any(Image.class));

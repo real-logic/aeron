@@ -15,8 +15,6 @@
  */
 package io.aeron;
 
-import org.agrona.collections.Long2LongHashMap;
-
 /**
  * Callback interface for dispatching command responses from the driver on the control protocol.
  */
@@ -28,7 +26,8 @@ interface DriverListener
         long correlationId,
         int streamId,
         int sessionId,
-        Long2LongHashMap subscriberPositionMap,
+        int subscriberPositionCounterId,
+        long subscriberPositionRegistrationId,
         String logFileName,
         String sourceIdentity);
 

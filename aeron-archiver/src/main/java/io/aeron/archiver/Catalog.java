@@ -40,6 +40,20 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
  * Catalog for the archive keeps details of recorded images, past and present, and used for browsing.
  * The format is simple, allocating a fixed 4KB record for each record descriptor. This allows offset
  * based look up of a descriptor in the file.
+ * <p>
+ * Catalog file format:
+ * <pre><code>
+ * # |---------------- 32b --------------|
+ * 0 |desc-length 4b|------24b-unused----|
+ * 1 |RecordingDescriptor (length < 4064)|
+ * 2 |...continues...                    |
+ *128|------------- repeat --------------|
+ * </code></pre>
+ * <p>
+ * Catalog descriptors may legitimately differ from recording descriptors while recordings are in flight. Once a
+ * recording is closed the 2 sources should match. To verify a match between catalog contents and archive folder
+ * contents the file contents are scanned on startup. Minor descreprencies are fixed on startup, but more severe
+ * issues may prevent a catalog from loading.
  */
 class Catalog implements AutoCloseable
 {
@@ -47,8 +61,9 @@ class Catalog implements AutoCloseable
     static final int PAGE_SIZE = 4096;
     static final int RECORD_LENGTH = 4096;
     static final int CATALOG_FRAME_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
+    static final int MAX_DESCRIPTOR_STRINGS_COMBINED_LENGTH =
+        (RECORD_LENGTH - (CATALOG_FRAME_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 8));
     static final int NULL_RECORD_ID = -1;
-
 
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
     private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(RECORD_LENGTH, PAGE_SIZE);
@@ -97,6 +112,11 @@ class Catalog implements AutoCloseable
         final long joinPosition,
         final int segmentFileLength)
     {
+        if (channel.length() + sourceIdentity.length() > MAX_DESCRIPTOR_STRINGS_COMBINED_LENGTH)
+        {
+            throw new IllegalArgumentException("Combined length of channel:'" + channel + "' and sourceIdentity:'" +
+                sourceIdentity + "' exceeds max allowed:" + MAX_DESCRIPTOR_STRINGS_COMBINED_LENGTH);
+        }
         final long newRecordingId = nextRecordingId;
 
         recordingDescriptorEncoder.limit(CATALOG_FRAME_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH);
@@ -127,6 +147,9 @@ class Catalog implements AutoCloseable
         }
         catch (final Exception ex)
         {
+            // because writes to the catalog are at absolute position based on newRecordingId, a failure here does not
+            // leave the file in an inconsistent state. A partial write followed by a shutdown however may leave the
+            // file in a bad size. The refreshCatalog method handles this eventuallity.
             LangUtil.rethrowUnchecked(ex);
         }
 
@@ -184,10 +207,18 @@ class Catalog implements AutoCloseable
         return nextRecordingId;
     }
 
+    /**
+     * On catalog load we verify entries are in coherent state and attempt to recover entries data where untimely
+     * termination of recording has resulted in an unaccounted for endPosition/endTimestamp. This operation may be
+     * expensive for large catalogs.
+     */
     private void refreshCatalog()
     {
         try
         {
+            // make sure file size is a multiple of RECORD_LENGTH
+            catalogFileChannel.truncate((catalogFileChannel.size() / RECORD_LENGTH) * RECORD_LENGTH);
+
             final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();
 
             while (catalogFileChannel.read(byteBuffer, nextRecordingId * RECORD_LENGTH) != -1)
@@ -200,7 +231,8 @@ class Catalog implements AutoCloseable
 
                 if (byteBuffer.remaining() != RECORD_LENGTH)
                 {
-                    throw new IllegalStateException();
+                    throw new IllegalStateException("Catalog read should be of " + RECORD_LENGTH +
+                        " but was:" + byteBuffer.remaining());
                 }
 
                 byteBuffer.clear();

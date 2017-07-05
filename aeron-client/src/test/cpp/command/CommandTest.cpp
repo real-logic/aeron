@@ -141,29 +141,19 @@ TEST (commandTests, testImageBuffersReadyFlyweight)
     {
         ImageBuffersReadyFlyweight cmd(ab, BASEOFFSET);
 
-        cmd.correlationId(-1).streamId(0x01010101).sessionId(0x02020202).subscriberPositionCount(4);
+        cmd.correlationId(-1).streamId(0x01010101).sessionId(0x02020202);
         cmd.logFileName(logFileNameData).sourceIdentity(sourceInfoData);
-        for (int n = 0; n < 4; n++)
-        {
-            cmd.subscriberPosition(n, ImageBuffersReadyDefn::SubscriberPosition {n, 0, n});
-        }
+        cmd.subscriberPositionIndicatorId(1);
+        cmd.subscriberPositionRegistrationId(2);
 
         ASSERT_EQ(ab.getInt64(BASEOFFSET + 0), -1);
         ASSERT_EQ(ab.getInt32(BASEOFFSET + 8), 0x02020202);
         ASSERT_EQ(ab.getInt32(BASEOFFSET + 12), 0x01010101);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 16), 16);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 20), 4);
 
-        const index_t startOfSubscriberPositions = BASEOFFSET + 24;
-        for (int n = 0; n < 4; n++)
-        {
-            ASSERT_EQ(
-                ab.getInt32(startOfSubscriberPositions + (n * sizeof(ImageBuffersReadyDefn::SubscriberPosition))), n);
-            ASSERT_EQ(
-                ab.getInt64(startOfSubscriberPositions + (n * sizeof(ImageBuffersReadyDefn::SubscriberPosition)) + 8), n);
-        }
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 16), 1);
+        ASSERT_EQ(ab.getInt64(BASEOFFSET + 24), 2);
 
-        const index_t startOfLogFileName = BASEOFFSET + 24 + (4 * sizeof(ImageBuffersReadyDefn::SubscriberPosition));
+        const index_t startOfLogFileName = BASEOFFSET + 32;
         ASSERT_EQ(ab.getInt32(startOfLogFileName), static_cast<int>(logFileNameData.length()));
         ASSERT_EQ(ab.getStringUtf8(startOfLogFileName), logFileNameData);
 
@@ -174,28 +164,14 @@ TEST (commandTests, testImageBuffersReadyFlyweight)
         ASSERT_EQ(cmd.correlationId(), -1);
         ASSERT_EQ(cmd.streamId(), 0x01010101);
         ASSERT_EQ(cmd.sessionId(), 0x02020202);
-        ASSERT_EQ(cmd.subscriberPositionCount(), 4);
         ASSERT_EQ(cmd.logFileName(), logFileNameData);
         ASSERT_EQ(cmd.sourceIdentity(), sourceInfoData);
-        for (int n = 0; n < 4; n++)
-        {
-            const ImageBuffersReadyDefn::SubscriberPosition subscriberPosition = cmd.subscriberPosition(n);
-
-            ASSERT_EQ(subscriberPosition.indicatorId, n);
-            ASSERT_EQ(subscriberPosition.registrationId, n);
-        }
-
-        const ImageBuffersReadyDefn::SubscriberPosition* subscriberPositions = cmd.subscriberPositions();
-        for (int n = 0; n < 4; n++)
-        {
-            ASSERT_EQ(subscriberPositions[n].indicatorId, n);
-            ASSERT_EQ(subscriberPositions[n].registrationId, n);
-        }
+        ASSERT_EQ(cmd.subscriberPositionIndicatorId(), 1);
+        ASSERT_EQ(cmd.subscriberPositionRegistrationId(), 2);
 
         ASSERT_EQ(
             cmd.length(),
             static_cast<int>(sizeof(ImageBuffersReadyDefn) +
-                (4 * sizeof(ImageBuffersReadyDefn::SubscriberPosition)) +
                 sizeof(std::int32_t) + logFileNameData.length() +
                 sizeof(std::int32_t) + sourceInfoData.length()));
     }

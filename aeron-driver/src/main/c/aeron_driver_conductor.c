@@ -904,23 +904,17 @@ void aeron_driver_conductor_on_available_image(
     int32_t session_id,
     const char *log_file_name,
     size_t log_file_name_length,
-    const aeron_image_buffers_ready_subscriber_position_t *subscriber_positions,
-    size_t subscriber_positions_count,
+    int32_t subscriber_position_indicator_id,
+    int64_t subscriber_position_registyration_id,
     const char *source_identity,
     size_t source_identity_length)
 {
-    char response_buffer[
-        sizeof(aeron_image_buffers_ready_t) +
-        (sizeof(aeron_image_buffers_ready_subscriber_position_t) * AERON_MAX_SUB_POSITIONS_PER_MESSAGE) +
-        (2 * AERON_MAX_PATH)];
+    char response_buffer[sizeof(aeron_image_buffers_ready_t) + (2 * AERON_MAX_PATH)];
     char *response_ptr = response_buffer;
     char *ptr = response_buffer;
     aeron_image_buffers_ready_t *response;
-    size_t subscriber_positions_length =
-        sizeof(aeron_image_buffers_ready_subscriber_position_t) * subscriber_positions_count;
     size_t response_length =
         sizeof(aeron_image_buffers_ready_t) +
-        subscriber_positions_length +
         log_file_name_length +
         source_identity_length +
         (2 * sizeof(int32_t));
@@ -940,12 +934,9 @@ void aeron_driver_conductor_on_available_image(
     response->correlation_id = correlation_id;
     response->stream_id = stream_id;
     response->session_id = session_id;
-    response->subscriber_position_block_length = sizeof(aeron_image_buffers_ready_subscriber_position_t);
-    response->subscriber_position_count = (int32_t)subscriber_positions_count;
+    response->subscriber_position_indicator_id = subscriber_position_indicator_id;
+    response->subscriber_position_registration_id = subscriber_position_registyration_id;
     ptr += sizeof(aeron_image_buffers_ready_t);
-
-    memcpy(ptr, subscriber_positions, subscriber_positions_length);
-    ptr += subscriber_positions_length;
 
     *((int32_t *)ptr) = (int32_t)log_file_name_length;
     ptr += sizeof(int32_t);
@@ -1325,7 +1316,6 @@ int aeron_driver_conductor_link_subscribeable(
 
     if (ensure_capacity_result >= 0)
     {
-        aeron_image_buffers_ready_subscriber_position_t position;
         int64_t joining_position = join_position;
         int32_t counter_id = aeron_counter_subscription_position_allocate(
             &conductor->counters_manager,
@@ -1345,8 +1335,6 @@ int aeron_driver_conductor_link_subscribeable(
                     *entry = &link->subscribeable_list.array[link->subscribeable_list.length++];
 
                 aeron_counter_set_ordered(position_addr, joining_position);
-                position.indicator_id = counter_id;
-                position.registration_id = link->registration_id;
 
                 entry->subscribeable = subscribeable;
                 entry->counter_id = counter_id;
@@ -1358,8 +1346,8 @@ int aeron_driver_conductor_link_subscribeable(
                     session_id,
                     log_file_name,
                     log_file_name_length,
-                    &position,
-                    1,
+                    counter_id,
+                    link->registration_id,
                     source_identity,
                     strlen(source_identity));
 

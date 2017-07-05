@@ -242,11 +242,8 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSingleI
 
             EXPECT_EQ(response.streamId(), STREAM_ID_1);
             EXPECT_EQ(response.sessionId(), session_id);
-            EXPECT_EQ(response.subscriberPositionCount(), 1);
 
-            const command::ImageBuffersReadyDefn::SubscriberPosition position = response.subscriberPosition(0);
-
-            EXPECT_EQ(position.registrationId, sub_id);
+            EXPECT_EQ(response.subscriberPositionRegistrationId(), sub_id);
 
             EXPECT_EQ(log_file_name, response.logFileName());
             EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
@@ -304,11 +301,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingleIp
 
             EXPECT_EQ(response.streamId(), STREAM_ID_1);
             EXPECT_EQ(response.sessionId(), session_id);
-            EXPECT_EQ(response.subscriberPositionCount(), 1);
-
-            const command::ImageBuffersReadyDefn::SubscriberPosition position = response.subscriberPosition(0);
-
-            EXPECT_EQ(position.registrationId, sub_id);
+            EXPECT_EQ(response.subscriberPositionRegistrationId(), sub_id);
 
             EXPECT_EQ(log_file_name, response.logFileName());
             EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
@@ -376,11 +369,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddMultipleIpcSubscriptionWithSameStre
 
             EXPECT_EQ(response.streamId(), STREAM_ID_1);
             EXPECT_EQ(response.sessionId(), session_id);
-            EXPECT_EQ(response.subscriberPositionCount(), 1);
-
-            const command::ImageBuffersReadyDefn::SubscriberPosition position = response.subscriberPosition(0);
-
-            EXPECT_TRUE(position.registrationId == sub_id_1 || position.registrationId == sub_id_2);
+            EXPECT_TRUE(response.subscriberPositionRegistrationId() == sub_id_1 || response.subscriberPositionRegistrationId() == sub_id_2);
 
             EXPECT_EQ(log_file_name, response.logFileName());
             EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
@@ -444,10 +433,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddMultipl
             const command::ImageBuffersReadyFlyweight response(buffer, offset);
 
             EXPECT_EQ(response.streamId(), STREAM_ID_1);
-            EXPECT_EQ(response.subscriberPositionCount(), 1);
-
-            const command::ImageBuffersReadyDefn::SubscriberPosition position = response.subscriberPosition(0);
-            EXPECT_EQ(position.registrationId, sub_id);
+            EXPECT_EQ(response.subscriberPositionRegistrationId(), sub_id);
             EXPECT_EQ(response.sessionId(), session_id_1);
             EXPECT_EQ(response.correlationId(), pub_id_1);
             EXPECT_EQ(log_file_name_1, response.logFileName());
@@ -471,10 +457,7 @@ TEST_F(DriverConductorTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddMultipl
             const command::ImageBuffersReadyFlyweight response(buffer, offset);
 
             EXPECT_EQ(response.streamId(), STREAM_ID_1);
-            EXPECT_EQ(response.subscriberPositionCount(), 1);
-
-            const command::ImageBuffersReadyDefn::SubscriberPosition position = response.subscriberPosition(0);
-            EXPECT_EQ(position.registrationId, sub_id);
+            EXPECT_EQ(response.subscriberPositionRegistrationId(), sub_id);
             EXPECT_EQ(response.sessionId(), session_id_2);
             EXPECT_EQ(response.correlationId(), pub_id_2);
             EXPECT_EQ(log_file_name_2, response.logFileName());

@@ -617,11 +617,9 @@ TEST_F(ClientConductorTest, shouldCallNewConnectionAfterOnNewConnection)
         .Times(1)
         .InSequence(sequence);
 
-    ImageBuffersReadyDefn::SubscriberPosition positions[] = { { 1, 0, id } };
-
     m_conductor.onOperationSuccess(id);
     // must be able to handle newImage even if findSubscription not called
-    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, correlationId);
+    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
 
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
     ASSERT_TRUE(sub != nullptr);
@@ -638,10 +636,8 @@ TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfNoOperationSuccess)
     EXPECT_CALL(m_handlers, onNewImage(testing::_))
         .Times(0);
 
-    ImageBuffersReadyDefn::SubscriberPosition positions[] = { { 1, 0, id } };
-
     // must be able to handle newImage even if findSubscription not called
-    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, correlationId);
+    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
 
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
     ASSERT_TRUE(sub == nullptr);
@@ -657,11 +653,9 @@ TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfUninterestingRegistratio
     EXPECT_CALL(m_handlers, onNewImage(testing::_))
         .Times(0);
 
-    ImageBuffersReadyDefn::SubscriberPosition positions[] = { { 1, 0, id + 1 } };
-
     m_conductor.onOperationSuccess(id);
     // must be able to handle newImage even if findSubscription not called
-    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, correlationId);
+    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id + 1, correlationId);
 
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
     ASSERT_TRUE(sub != nullptr);
@@ -684,12 +678,10 @@ TEST_F(ClientConductorTest, shouldCallInactiveConnecitonAfterInactiveConnection)
         .Times(1)
         .InSequence(sequence);
 
-    ImageBuffersReadyDefn::SubscriberPosition positions[] = { { 1, 0, id } };
-
     m_conductor.onOperationSuccess(id);
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
     m_conductor.onAvailableImage(
-        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, correlationId);
+        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
     m_conductor.onUnavailableImage(STREAM_ID, correlationId);
     EXPECT_FALSE(sub->hasImage(correlationId));
 }
@@ -706,11 +698,9 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfNoOperationSuccess)
     EXPECT_CALL(m_handlers, onInactive(testing::_))
         .Times(0);
 
-    ImageBuffersReadyDefn::SubscriberPosition positions[] = { { 1, 0, id } };
-
     // must be able to handle newImage even if findSubscription not called
     m_conductor.onAvailableImage(
-        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, correlationId);
+        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
     m_conductor.onUnavailableImage(STREAM_ID, correlationId);
 }
 
@@ -729,12 +719,10 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfUinterestingConnect
     EXPECT_CALL(m_handlers, onInactive(testing::_))
         .Times(0);
 
-    ImageBuffersReadyDefn::SubscriberPosition positions[] = { { 1, 0, id } };
-
     m_conductor.onOperationSuccess(id);
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
     m_conductor.onAvailableImage(
-        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, correlationId);
+        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
     m_conductor.onUnavailableImage(STREAM_ID, correlationId + 1);
     EXPECT_TRUE(sub->hasImage(correlationId));
 
@@ -756,12 +744,10 @@ TEST_F(ClientConductorTest, shouldCallUnavailableImageIfSubscriptionReleased)
     EXPECT_CALL(m_handlers, onInactive(testing::_))
         .Times(1);
 
-    ImageBuffersReadyDefn::SubscriberPosition positions[] = { { 1, 0, id } };
-
     m_conductor.onOperationSuccess(id);
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
     m_conductor.onAvailableImage(
-        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, correlationId);
+        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
     EXPECT_TRUE(sub->hasImage(correlationId));
 }
 
@@ -847,9 +833,7 @@ TEST_F(ClientConductorTest, shouldRemoveImageOnInterServiceTimeout)
 
     ASSERT_TRUE(sub != nullptr);
 
-    ImageBuffersReadyDefn::SubscriberPosition positions[] = { { 1, 0, id } };
-
-    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, correlationId);
+    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
     ASSERT_TRUE(sub->hasImage(correlationId));
 
     m_conductor.onInterServiceTimeout(m_currentTime);

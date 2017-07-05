@@ -453,8 +453,8 @@ void ClientConductor::onAvailableImage(
     std::int32_t sessionId,
     const std::string &logFilename,
     const std::string &sourceIdentity,
-    std::int32_t subscriberPositionCount,
-    const ImageBuffersReadyDefn::SubscriberPosition *subscriberPositions,
+    std::int32_t subscriberPositionIndicatorId,
+    std::int64_t subscriberPositionRegistrationId,
     std::int64_t correlationId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
@@ -467,35 +467,29 @@ void ClientConductor::onAvailableImage(
                 std::shared_ptr<Subscription> subscription = entry.m_subscription.lock();
 
                 if (subscription != nullptr &&
-                    !(subscription->hasImage(correlationId)))
+                    !(subscription->hasImage(correlationId)) &&
+                    subscriberPositionRegistrationId == subscription->registrationId())
                 {
-                    for (int i = 0; i < subscriberPositionCount; i++)
+                    std::shared_ptr<LogBuffers> logBuffers = std::make_shared<LogBuffers>(logFilename.c_str());
+
+                    UnsafeBufferPosition subscriberPosition(m_counterValuesBuffer, subscriberPositionIndicatorId);
+
+                    Image image(
+                        sessionId,
+                        correlationId,
+                        subscription->registrationId(),
+                        sourceIdentity,
+                        subscriberPosition,
+                        logBuffers,
+                        m_errorHandler);
+
+                    entry.m_onAvailableImageHandler(image);
+
+                    Image* oldArray = subscription->addImage(image);
+
+                    if (nullptr != oldArray)
                     {
-                        if (subscription->registrationId() == subscriberPositions[i].registrationId)
-                        {
-                            std::shared_ptr<LogBuffers> logBuffers = std::make_shared<LogBuffers>(logFilename.c_str());
-
-                            UnsafeBufferPosition subscriberPosition(m_counterValuesBuffer, subscriberPositions[i].indicatorId);
-
-                            Image image(
-                                sessionId,
-                                correlationId,
-                                subscription->registrationId(),
-                                sourceIdentity,
-                                subscriberPosition,
-                                logBuffers,
-                                m_errorHandler);
-
-                            entry.m_onAvailableImageHandler(image);
-
-                            Image* oldArray = subscription->addImage(image);
-
-                            if (nullptr != oldArray)
-                            {
-                                lingerResource(m_epochClock(), oldArray);
-                            }
-                            break;
-                        }
+                        lingerResource(m_epochClock(), oldArray);
                     }
                 }
             }

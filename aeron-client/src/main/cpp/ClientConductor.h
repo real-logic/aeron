@@ -136,8 +136,8 @@ public:
         std::int32_t sessionId,
         const std::string &logFilename,
         const std::string &sourceIdentity,
-        std::int32_t subscriberPositionCount,
-        const ImageBuffersReadyDefn::SubscriberPosition *subscriberPositions,
+        std::int32_t subscriberPositionIndicatorId,
+        std::int64_t subscriberPositionRegistrationId,
         std::int64_t correlationId);
 
     void onUnavailableImage(

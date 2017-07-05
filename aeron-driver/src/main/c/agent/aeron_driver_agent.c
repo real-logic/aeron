@@ -683,22 +683,13 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             char *ptr = buffer;
             int len = 0;
 
-            char *positions = (char *)message + sizeof(aeron_image_buffers_ready_t);
-            len = snprintf(buffer, sizeof(buffer) - 1, "ON_AVAILABLE_IMAGE %d:%d ",
+            len = snprintf(buffer, sizeof(buffer) - 1, "ON_AVAILABLE_IMAGE %d:%d [%" PRId32 ":%" PRId64 "]",
                 command->session_id,
-                command->stream_id);
+                command->stream_id,
+                command->subscriber_position_indicator_id,
+                command->subscriber_position_registration_id);
 
-            aeron_image_buffers_ready_subscriber_position_t *position =
-                (aeron_image_buffers_ready_subscriber_position_t *)positions;
-
-            for (int32_t i = 0; i < command->subscriber_position_count; i++)
-            {
-                len += snprintf(ptr + len, sizeof(buffer) - 1 - len, "[%" PRId32 ":%" PRId32 ":%" PRId64 "]",
-                    i, position[i].indicator_id, position[i].registration_id);
-            }
-
-            char *log_file_name_ptr =
-                positions + command->subscriber_position_count * sizeof(aeron_image_buffers_ready_subscriber_position_t);
+            char *log_file_name_ptr = (char *)message + sizeof(aeron_image_buffers_ready_t);
             int32_t *log_file_name_length = (int32_t *)log_file_name_ptr;
             const char *log_file_name = log_file_name_ptr + sizeof(int32_t);
 

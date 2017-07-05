@@ -41,26 +41,12 @@ namespace aeron { namespace command {
 * +---------------------------------------------------------------+
 * |                           Stream ID                           |
 * +---------------------------------------------------------------+
-* |                Subscriber Position Block Length               |
-* +---------------------------------------------------------------+
-* |                   Subscriber Position Count                   |
-* +---------------------------------------------------------------+
-* |                     Subscriber Position Id 0                  |
+* |                     Subscriber Position Id                    |
 * +---------------------------------------------------------------+
 * |                     Padding for alignment                     |
 * +---------------------------------------------------------------+
 * |                       Registration Id 0                       |
 * |                                                               |
-* +---------------------------------------------------------------+
-* |                    Subscriber Position Id 1                   |
-* +---------------------------------------------------------------+
-* |                     Padding for alignment                     |
-* +---------------------------------------------------------------+
-* |                       Registration Id 1                       |
-* |                                                               |
-* +---------------------------------------------------------------+
-* |                                                              ...
-*...     Up to "Position Indicators Count" entries of this form
 * +---------------------------------------------------------------+
 * |                         Log File Length                       |
 * +---------------------------------------------------------------+
@@ -81,15 +67,9 @@ struct ImageBuffersReadyDefn
     std::int64_t correlationId;
     std::int32_t sessionId;
     std::int32_t streamId;
-    std::int32_t subscriberPositionBlockLength;
-    std::int32_t subscriberPositionCount;
-
-    struct SubscriberPosition
-    {
-        std::int32_t indicatorId;
-        std::int32_t padding;
-        std::int64_t registrationId;
-    };
+    std::int32_t subscriberPositionIndicatorId;
+    std::int32_t padding;
+    std::int64_t subscriberPositionRegistrationId;
 };
 #pragma pack(pop)
 
@@ -136,32 +116,26 @@ public:
         return *this;
     }
 
-    inline std::int32_t subscriberPositionCount() const
+    inline std::int32_t subscriberPositionIndicatorId() const
     {
-        return m_struct.subscriberPositionCount;
+        return m_struct.subscriberPositionIndicatorId;
     }
 
-    inline this_t& subscriberPositionCount(std::int32_t value)
+    inline this_t& subscriberPositionIndicatorId(std::int32_t value)
     {
-        m_struct.subscriberPositionBlockLength = sizeof(ImageBuffersReadyDefn::SubscriberPosition);
-        m_struct.subscriberPositionCount = value;
+        m_struct.subscriberPositionIndicatorId = value;
         return *this;
     }
 
-    inline this_t& subscriberPosition(std::int32_t index, const ImageBuffersReadyDefn::SubscriberPosition& value)
+    inline std::int64_t subscriberPositionRegistrationId() const
     {
-        overlayStruct<ImageBuffersReadyDefn::SubscriberPosition>(subscriberPositionOffset(index)) = value;
+        return m_struct.subscriberPositionRegistrationId;
+    }
+
+    inline this_t& subscriberPositionRegistrationId(std::int64_t value)
+    {
+        m_struct.subscriberPositionRegistrationId = value;
         return *this;
-    }
-
-    inline const ImageBuffersReadyDefn::SubscriberPosition subscriberPosition(std::int32_t index) const
-    {
-        return overlayStruct<ImageBuffersReadyDefn::SubscriberPosition>(subscriberPositionOffset(index));
-    }
-
-    inline const ImageBuffersReadyDefn::SubscriberPosition* subscriberPositions() const
-    {
-        return &overlayStruct<ImageBuffersReadyDefn::SubscriberPosition>(subscriberPositionOffset(0));
     }
 
     inline std::string logFileName() const
@@ -195,16 +169,9 @@ public:
 
 private:
 
-    inline util::index_t subscriberPositionOffset(int index) const
-    {
-        const util::index_t startOfPositions = sizeof(ImageBuffersReadyDefn);
-
-        return startOfPositions + (index * (util::index_t)sizeof(ImageBuffersReadyDefn::SubscriberPosition));
-    }
-
     inline util::index_t logFileNameOffset() const
     {
-        return subscriberPositionOffset(subscriberPositionCount());
+        return sizeof(ImageBuffersReadyDefn);
     }
 
     inline util::index_t sourceIdentityOffset() const

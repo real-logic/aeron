@@ -84,8 +84,8 @@ public:
                             imageReady.sessionId(),
                             imageReady.logFileName(),
                             imageReady.sourceIdentity(),
-                            imageReady.subscriberPositionCount(),
-                            imageReady.subscriberPositions(),
+                            imageReady.subscriberPositionIndicatorId(),
+                            imageReady.subscriberPositionRegistrationId(),
                             imageReady.correlationId());
                     }
                     break;

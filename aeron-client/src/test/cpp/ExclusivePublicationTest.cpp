@@ -53,17 +53,17 @@ class ExclusivePublicationTest : public testing::Test, public ClientConductorFix
 public:
     ExclusivePublicationTest() :
         m_srcBuffer(m_src, 0),
-        m_logBuffers(m_log.data(), static_cast<index_t>(m_log.size())),
+        m_logBuffers(new LogBuffers(m_log.data(), static_cast<index_t>(m_log.size()))),
         m_publicationLimit(m_counterValuesBuffer, PUBLICATION_LIMIT_COUNTER_ID)
     {
         m_log.fill(0);
 
         for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
         {
-            m_termBuffers[i] = m_logBuffers.atomicBuffer(i);
+            m_termBuffers[i] = m_logBuffers->atomicBuffer(i);
         }
 
-        m_logMetaDataBuffer = m_logBuffers.atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX);
+        m_logMetaDataBuffer = m_logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX);
 
         m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_MTU_LENGTH_OFFSET, (3 * m_srcBuffer.capacity()));
         m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_INITIAL_TERM_ID_OFFSET, TERM_ID_1);
@@ -89,7 +89,7 @@ protected:
     AtomicBuffer m_logMetaDataBuffer;
     AtomicBuffer m_srcBuffer;
 
-    LogBuffers m_logBuffers;
+    std::shared_ptr<LogBuffers> m_logBuffers;
     UnsafeBufferPosition m_publicationLimit;
     std::unique_ptr<ExclusivePublication> m_publication;
 };

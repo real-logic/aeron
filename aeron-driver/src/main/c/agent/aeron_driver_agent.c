@@ -686,8 +686,8 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             len = snprintf(buffer, sizeof(buffer) - 1, "ON_AVAILABLE_IMAGE %d:%d [%" PRId32 ":%" PRId64 "]",
                 command->session_id,
                 command->stream_id,
-                command->subscriber_position_indicator_id,
-                command->subscriber_position_registration_id);
+                command->subscriber_position_id,
+                command->subscriber_registration_id);
 
             char *log_file_name_ptr = (char *)message + sizeof(aeron_image_buffers_ready_t);
             int32_t *log_file_name_length = (int32_t *)log_file_name_ptr;

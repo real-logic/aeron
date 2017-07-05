@@ -87,9 +87,8 @@ typedef struct aeron_image_buffers_ready_stct
     int64_t correlation_id;
     int32_t session_id;
     int32_t stream_id;
-    int32_t subscriber_position_indicator_id;
-    int32_t padding;
-    int64_t subscriber_position_registration_id;
+    int64_t subscriber_registration_id;
+    int32_t subscriber_position_id;
 }
 aeron_image_buffers_ready_t;
 

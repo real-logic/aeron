@@ -902,8 +902,8 @@ void aeron_driver_conductor_on_available_image(
     int32_t session_id,
     const char *log_file_name,
     size_t log_file_name_length,
-    int32_t subscriber_position_indicator_id,
-    int64_t subscriber_position_registyration_id,
+    int32_t subscriber_position_id,
+    int64_t subscriber_registyration_id,
     const char *source_identity,
     size_t source_identity_length)
 {
@@ -921,8 +921,8 @@ void aeron_driver_conductor_on_available_image(
     response->correlation_id = correlation_id;
     response->stream_id = stream_id;
     response->session_id = session_id;
-    response->subscriber_position_indicator_id = subscriber_position_indicator_id;
-    response->subscriber_position_registration_id = subscriber_position_registyration_id;
+    response->subscriber_position_id = subscriber_position_id;
+    response->subscriber_registration_id = subscriber_registyration_id;
     ptr += sizeof(aeron_image_buffers_ready_t);
 
     *((int32_t *)ptr) = (int32_t)log_file_name_length;

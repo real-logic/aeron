@@ -27,10 +27,10 @@ Publication::Publication(
     std::int32_t streamId,
     std::int32_t sessionId,
     UnsafeBufferPosition& publicationLimit,
-    LogBuffers &buffers)
+    std::shared_ptr<LogBuffers> buffers)
     :
     m_conductor(conductor),
-    m_logMetaDataBuffer(buffers.atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX)),
+    m_logMetaDataBuffer(buffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX)),
     m_channel(channel),
     m_registrationId(registrationId),
     m_originalRegistrationId(originalRegistrationId),
@@ -38,9 +38,10 @@ Publication::Publication(
     m_sessionId(sessionId),
     m_initialTermId(LogBufferDescriptor::initialTermId(m_logMetaDataBuffer)),
     m_maxPayloadLength(LogBufferDescriptor::mtuLength(m_logMetaDataBuffer) - DataFrameHeader::LENGTH),
-    m_maxMessageLength(FrameDescriptor::computeMaxMessageLength(buffers.atomicBuffer(0).capacity())),
-    m_positionBitsToShift(util::BitUtil::numberOfTrailingZeroes(buffers.atomicBuffer(0).capacity())),
+    m_maxMessageLength(FrameDescriptor::computeMaxMessageLength(buffers->atomicBuffer(0).capacity())),
+    m_positionBitsToShift(util::BitUtil::numberOfTrailingZeroes(buffers->atomicBuffer(0).capacity())),
     m_publicationLimit(publicationLimit),
+    m_logbuffers(buffers),
     m_headerWriter(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer))
 {
     for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
@@ -51,8 +52,8 @@ Publication::Publication(
          * locality.
          */
         m_appenders[i] = std::unique_ptr<TermAppender>(new TermAppender(
-            buffers.atomicBuffer(i),
-            buffers.atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX),
+            buffers->atomicBuffer(i),
+            buffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX),
             i));
     }
 }

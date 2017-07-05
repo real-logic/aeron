@@ -63,7 +63,7 @@ public:
         std::int32_t streamId,
         std::int32_t sessionId,
         UnsafeBufferPosition& publicationLimit,
-        LogBuffers& buffers);
+        std::shared_ptr<LogBuffers> buffers);
     /// @endcond
 
     virtual ~Publication();
@@ -422,6 +422,7 @@ private:
     ReadablePosition<UnsafeBufferPosition> m_publicationLimit;
     std::atomic<bool> m_isClosed = { false };
 
+    std::shared_ptr<LogBuffers> m_logbuffers;
     std::unique_ptr<TermAppender> m_appenders[3];
     HeaderWriter m_headerWriter;
 

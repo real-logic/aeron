@@ -484,7 +484,7 @@ TEST_F(DriverConductorTest, shouldCreatePublicationImageForActiveNetworkSubscrip
         EXPECT_EQ(response.sessionId(), SESSION_ID);
         EXPECT_EQ(response.streamId(), STREAM_ID_1);
         EXPECT_EQ(response.correlationId(), aeron_publication_image_registration_id(image));
-        EXPECT_EQ(response.subscriberPositionRegistrationId(), sub_id);
+        EXPECT_EQ(response.subscriberRegistrationId(), sub_id);
 
         EXPECT_EQ(std::string(aeron_publication_image_log_file_name(image)), response.logFileName());
         EXPECT_EQ(SOURCE_IDENTITY, response.sourceIdentity());

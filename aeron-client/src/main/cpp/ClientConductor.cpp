@@ -101,7 +101,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
 
                     pub = std::make_shared<Publication>(
                         *this, state.m_channel, state.m_registrationId, state.m_originalRegistrationId, state.m_streamId,
-                        state.m_sessionId, publicationLimit, *(state.m_buffers));
+                        state.m_sessionId, publicationLimit, state.m_buffers);
 
                     state.m_publication = std::weak_ptr<Publication>(pub);
                 }
@@ -182,7 +182,7 @@ std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(
 
                 pub = std::make_shared<ExclusivePublication>(
                     *this, state.m_channel, state.m_registrationId, state.m_originalRegistrationId, state.m_streamId,
-                    state.m_sessionId, publicationLimit, *(state.m_buffers));
+                    state.m_sessionId, publicationLimit, state.m_buffers);
 
                 state.m_publication = std::weak_ptr<ExclusivePublication>(pub);
                 break;

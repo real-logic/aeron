@@ -895,8 +895,6 @@ void aeron_driver_conductor_on_operation_succeeded(
         conductor, AERON_RESPONSE_ON_OPERATION_SUCCESS, response, sizeof(aeron_correlated_command_t));
 }
 
-#define AERON_MAX_SUB_POSITIONS_PER_MESSAGE 10
-
 void aeron_driver_conductor_on_available_image(
     aeron_driver_conductor_t *conductor,
     int64_t correlation_id,
@@ -910,7 +908,6 @@ void aeron_driver_conductor_on_available_image(
     size_t source_identity_length)
 {
     char response_buffer[sizeof(aeron_image_buffers_ready_t) + (2 * AERON_MAX_PATH)];
-    char *response_ptr = response_buffer;
     char *ptr = response_buffer;
     aeron_image_buffers_ready_t *response;
     size_t response_length =
@@ -918,16 +915,6 @@ void aeron_driver_conductor_on_available_image(
         log_file_name_length +
         source_identity_length +
         (2 * sizeof(int32_t));
-
-    if (response_length > sizeof(response_buffer))
-    {
-        if (aeron_alloc((void **)&ptr, response_length) < 0)
-        {
-            return;
-        }
-
-        response_ptr = ptr;
-    }
 
     response = (aeron_image_buffers_ready_t *)ptr;
 
@@ -949,12 +936,7 @@ void aeron_driver_conductor_on_available_image(
     /* ptr += source_identity_length; */
 
     aeron_driver_conductor_client_transmit(
-        conductor, AERON_RESPONSE_ON_AVAILABLE_IMAGE, response_ptr, response_length);
-
-    if (response_buffer != response_ptr)
-    {
-        aeron_free(response_ptr);
-    }
+        conductor, AERON_RESPONSE_ON_AVAILABLE_IMAGE, response, response_length);
 }
 
 void aeron_driver_conductor_on_unavailable_image(

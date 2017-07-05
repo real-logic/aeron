@@ -341,7 +341,7 @@ class ClientConductor implements Agent, DriverListener
         final int streamId,
         final int sessionId,
         final long subscriberRegistrationId,
-        final int subscriberPositionCounterId,
+        final int subscriberPositionId,
         final String logFileName,
         final String sourceIdentity)
     {
@@ -354,7 +354,7 @@ class ClientConductor implements Agent, DriverListener
                     final Image image = new Image(
                         subscription,
                         sessionId,
-                        new UnsafeBufferPosition(counterValuesBuffer, subscriberPositionCounterId),
+                        new UnsafeBufferPosition(counterValuesBuffer, subscriberPositionId),
                         logBuffersFactory.map(logFileName, imageMapMode),
                         errorHandler,
                         sourceIdentity,

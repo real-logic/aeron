@@ -23,12 +23,13 @@ interface DriverListener
     void onError(long correlationId, ErrorCode errorCode, String message);
 
     void onAvailableImage(
-                             long correlationId,
-                             int streamId,
-                             int sessionId,
-                             long subscriberPositionRegistrationId, int subscriberPositionCounterId,
-                             String logFileName,
-                             String sourceIdentity);
+        long correlationId,
+        int streamId,
+        int sessionId,
+        long subscriberRegistrationId,
+        int subscriberPositionId,
+        String logFileName,
+        String sourceIdentity);
 
     void onNewPublication(
         long correlationId,

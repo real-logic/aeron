@@ -15,17 +15,17 @@
  */
 package io.aeron.driver;
 
+import io.aeron.AeronUri;
 import io.aeron.CommonContext;
-import io.aeron.driver.buffer.RawLogFactory;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.RawLog;
+import io.aeron.driver.buffer.RawLogFactory;
 import io.aeron.driver.cmd.DriverConductorCmd;
 import io.aeron.driver.exceptions.ControlProtocolException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.*;
-import io.aeron.AeronUri;
 import org.agrona.BitUtil;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
@@ -33,18 +33,16 @@ import org.agrona.concurrent.status.*;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static io.aeron.CommonContext.*;
+import static io.aeron.CommonContext.RELIABLE_STREAM_PARAM_NAME;
+import static io.aeron.ErrorCode.UNKNOWN_PUBLICATION;
+import static io.aeron.ErrorCode.UNKNOWN_SUBSCRIPTION;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.PublicationParams.*;
-import static io.aeron.driver.status.SystemCounterDescriptor.CLIENT_KEEP_ALIVES;
-import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
-import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_COMMANDS;
-import static io.aeron.ErrorCode.*;
+import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
@@ -232,21 +230,24 @@ public class DriverConductor implements Agent
                 context.lossReport(),
                 subscriberPositions.get(0).subscription().isReliable());
 
-            for (int i = 0, size = subscriberPositions.size(); i < size; i++)
-            {
-                subscriberPositions.get(i).addLink(image);
-            }
-
             publicationImages.add(image);
             receiverProxy.newPublicationImage(channelEndpoint, image);
 
-            clientProxy.onAvailableImage(
-                registrationId,
-                streamId,
-                sessionId,
-                rawLog.fileName(),
-                subscriberPositions,
-                generateSourceIdentity(sourceAddress));
+            for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+            {
+                final SubscriberPosition position = subscriberPositions.get(i);
+
+                position.addLink(image);
+
+                clientProxy.onAvailableImage(
+                    registrationId,
+                    streamId,
+                    sessionId,
+                    rawLog.fileName(),
+                    position.positionCounterId(),
+                    position.subscription().registrationId(),
+                    generateSourceIdentity(sourceAddress));
+            }
         }
     }
 
@@ -905,7 +906,8 @@ public class DriverConductor implements Agent
                     streamId,
                     sessionId,
                     image.rawLog().fileName(),
-                    Collections.singletonList(new SubscriberPosition(subscription, position)),
+                    position.id(),
+                    subscription.registrationId(),
                     generateSourceIdentity(image.sourceAddress()));
             }
         }
@@ -959,7 +961,8 @@ public class DriverConductor implements Agent
             streamId,
             sessionId,
             publication.rawLog().fileName(),
-            Collections.singletonList(new SubscriberPosition(subscription, position)),
+            position.id(),
+            subscription.registrationId(),
             channel);
     }
 
@@ -983,7 +986,8 @@ public class DriverConductor implements Agent
             streamId,
             sessionId,
             publication.rawLog().fileName(),
-            Collections.singletonList(new SubscriberPosition(subscription, position)),
+            position.id(),
+            subscription.registrationId(),
             channel);
     }
 

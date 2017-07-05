@@ -22,7 +22,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.broadcast.BroadcastTransmitter;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 
 import static io.aeron.command.ControlProtocolEvents.*;
 
@@ -70,7 +69,8 @@ public class ClientProxy
         final int streamId,
         final int sessionId,
         final String logFileName,
-        final List<SubscriberPosition> subscriberPositions,
+        final int positionCounterId,
+        final long subscriptionRegistrationId,
         final String sourceIdentity)
     {
         imageReady
@@ -78,14 +78,10 @@ public class ClientProxy
             .streamId(streamId)
             .correlationId(correlationId);
 
-        final int size = subscriberPositions.size();
-        imageReady.subscriberPositionCount(size);
-        for (int i = 0; i < size; i++)
-        {
-            final SubscriberPosition position = subscriberPositions.get(i);
-            imageReady.subscriberPositionId(i, position.positionCounterId());
-            imageReady.positionIndicatorRegistrationId(i, position.subscription().registrationId());
-        }
+        imageReady
+            .subscriberPositionCount(1)
+            .subscriberPositionId(0, positionCounterId)
+            .positionIndicatorRegistrationId(0, subscriptionRegistrationId);
 
         imageReady
             .logFileName(logFileName)

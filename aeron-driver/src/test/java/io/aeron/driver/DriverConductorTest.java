@@ -609,7 +609,7 @@ public class DriverConductorTest
         assertThat(publicationImage.streamId(), is(STREAM_ID_1));
 
         verify(mockClientProxy).onAvailableImage(
-            anyLong(), eq(STREAM_ID_1), eq(SESSION_ID), any(), any(), anyString());
+            anyLong(), eq(STREAM_ID_1), eq(SESSION_ID), any(), anyInt(), anyLong(), anyString());
     }
 
     @Test
@@ -633,7 +633,7 @@ public class DriverConductorTest
 
         verify(receiverProxy, never()).newPublicationImage(any(), any());
         verify(mockClientProxy, never()).onAvailableImage(
-            anyLong(), anyInt(), anyInt(), any(), any(), anyString());
+            anyLong(), anyInt(), anyInt(), any(), anyInt(), anyLong(), anyString());
     }
 
     @Test
@@ -703,7 +703,13 @@ public class DriverConductorTest
 
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy, times(2)).onAvailableImage(
-            eq(publicationImage.correlationId()), eq(STREAM_ID_1), eq(SESSION_ID), any(), any(), anyString());
+            eq(publicationImage.correlationId()),
+            eq(STREAM_ID_1),
+            eq(SESSION_ID),
+            any(),
+            anyInt(),
+            anyLong(),
+            anyString());
         inOrder.verify(mockClientProxy, times(1)).onUnavailableImage(
             eq(publicationImage.correlationId()), eq(STREAM_ID_1), anyString());
     }
@@ -747,7 +753,13 @@ public class DriverConductorTest
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy, times(1)).operationSucceeded(subOneId);
         inOrder.verify(mockClientProxy, times(1)).onAvailableImage(
-            eq(publicationImage.correlationId()), eq(STREAM_ID_1), eq(SESSION_ID), any(), any(), anyString());
+            eq(publicationImage.correlationId()),
+            eq(STREAM_ID_1),
+            eq(SESSION_ID),
+            any(),
+            anyInt(),
+            anyLong(),
+            anyString());
         inOrder.verify(mockClientProxy, times(1)).onUnavailableImage(
             eq(publicationImage.correlationId()), eq(STREAM_ID_1), anyString());
         inOrder.verify(mockClientProxy, times(1)).operationSucceeded(subTwoId);
@@ -783,7 +795,7 @@ public class DriverConductorTest
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublication.registrationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
-            eq(ipcPublication.rawLog().fileName()), any(), anyString());
+            eq(ipcPublication.rawLog().fileName()), anyInt(), anyLong(), anyString());
     }
 
     @Test
@@ -811,13 +823,13 @@ public class DriverConductorTest
             anyLong(), eq(idPubOne), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublicationOne.registrationId()), eq(STREAM_ID_1), eq(ipcPublicationOne.sessionId()),
-            eq(ipcPublicationOne.rawLog().fileName()), any(), anyString());
+            eq(ipcPublicationOne.rawLog().fileName()), anyInt(), anyLong(), anyString());
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idPubOneRemove));
         inOrder.verify(mockClientProxy).onPublicationReady(
             anyLong(), eq(idPubTwo), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublicationTwo.registrationId()), eq(STREAM_ID_1), eq(ipcPublicationTwo.sessionId()),
-            eq(ipcPublicationTwo.rawLog().fileName()), any(), anyString());
+            eq(ipcPublicationTwo.rawLog().fileName()), anyInt(), anyLong(), anyString());
     }
 
     @Test
@@ -837,7 +849,7 @@ public class DriverConductorTest
             anyLong(), eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublication.registrationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
-            eq(ipcPublication.rawLog().fileName()), any(), anyString());
+            eq(ipcPublication.rawLog().fileName()), anyInt(), anyLong(), anyString());
     }
 
     @Test
@@ -972,7 +984,7 @@ public class DriverConductorTest
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSpy));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), eq(publication.sessionId()),
-            eq(publication.rawLog().fileName()), any(), anyString());
+            eq(publication.rawLog().fileName()), anyInt(), anyLong(), anyString());
     }
 
     @Test
@@ -993,7 +1005,7 @@ public class DriverConductorTest
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSpy));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), eq(publication.sessionId()),
-            eq(publication.rawLog().fileName()), any(), anyString());
+            eq(publication.rawLog().fileName()), anyInt(), anyLong(), anyString());
     }
 
     @Test

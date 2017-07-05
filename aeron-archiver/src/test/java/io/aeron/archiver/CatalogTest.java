@@ -156,4 +156,6 @@ public class CatalogTest
             assertNotEquals(recordingOneId, newRecordingId);
         }
     }
+
+    // TODO: cover refreshCatalog and IO exception cases
 }

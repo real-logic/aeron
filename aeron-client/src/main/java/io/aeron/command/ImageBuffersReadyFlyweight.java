@@ -21,7 +21,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * Message to denote that new buffers have been added for a subscription.
+ * Message to denote that new buffers for a publication image are ready for a subscription.
  * <p>
  * NOTE: Layout should be SBE compliant
  *
@@ -30,26 +30,24 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                         Correlation ID                        |
+ *  |                       Correlation ID                          |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                          Session ID                           |
+ *  |                         Session ID                            |
  *  +---------------------------------------------------------------+
- *  |                           Stream ID                           |
+ *  |                          Stream ID                            |
+ *  +---------------------------------------------------------------+
+ *  |                  Subscriber Registration Id                   |
+ *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                    Subscriber Position Id                     |
  *  +---------------------------------------------------------------+
- *  |                     Padding for alignment                     |
- *  +---------------------------------------------------------------+
- *  |                   Subscriber Registration Id                  |
- *  |                                                               |
- *  +---------------------------------------------------------------+
- *  |                        Log File Length                        |
+ *  |                       Log File Length                         |
  *  +---------------------------------------------------------------+
  *  |                     Log File Name (ASCII)                    ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
- *  |                     Source identity Length                    |
+ *  |                    Source identity Length                     |
  *  +---------------------------------------------------------------+
  *  |                    Source identity (ASCII)                   ...
  * ...                                                              |
@@ -61,9 +59,9 @@ public class ImageBuffersReadyFlyweight
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
-    private static final int SUBSCRIBER_POSITION_ID_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int SUBSCRIBER_REGISTRATION_ID_OFFSET = SUBSCRIBER_POSITION_ID_OFFSET + SIZE_OF_LONG;
-    private static final int LOG_FILE_NAME_OFFSET = SUBSCRIBER_REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
+    private static final int SUBSCRIBER_REGISTRATION_ID_OFFSET =  STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int SUBSCRIBER_POSITION_ID_OFFSET = SUBSCRIBER_REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
+    private static final int LOG_FILE_NAME_OFFSET = SUBSCRIBER_POSITION_ID_OFFSET + SIZE_OF_INT;
 
     private MutableDirectBuffer buffer;
     private int offset;

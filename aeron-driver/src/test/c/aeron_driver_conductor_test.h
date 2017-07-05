@@ -42,6 +42,7 @@ extern "C"
 #include "command/SubscriptionMessageFlyweight.h"
 #include "command/RemoveMessageFlyweight.h"
 #include "command/ImageMessageFlyweight.h"
+#include <command/ErrorResponseFlyweight.h>
 
 using namespace aeron::concurrent::broadcast;
 using namespace aeron::concurrent::ringbuffer;
@@ -52,6 +53,7 @@ using namespace aeron;
 #define CHANNEL_2 "aeron:udp?endpoint=localhost:40002"
 #define CHANNEL_3 "aeron:udp?endpoint=localhost:40003"
 #define CHANNEL_4 "aeron:udp?endpoint=localhost:40004"
+#define INVALID_URI "aeron:udp://"
 
 #define STREAM_ID_1 (101)
 #define STREAM_ID_2 (102)

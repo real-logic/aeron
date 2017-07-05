@@ -309,6 +309,119 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkSubscriptions
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
 }
 
+TEST_F(DriverConductorNetworkTest, shouldKeepSubscriptionMediaEndpointUponRemovalOfAllButOneSubscriber)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id_1 = nextCorrelationId();
+    int64_t sub_id_2 = nextCorrelationId();
+    int64_t sub_id_3 = nextCorrelationId();
+    int64_t sub_id_4 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_2, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_3, CHANNEL_1, STREAM_ID_3, -1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_4, CHANNEL_1, STREAM_ID_4, -1), 0);
+
+    doWork();
+
+    int64_t remove_correlation_id_1 = nextCorrelationId();
+    int64_t remove_correlation_id_2 = nextCorrelationId();
+    int64_t remove_correlation_id_3 = nextCorrelationId();
+
+    ASSERT_EQ(removeSubscription(client_id, remove_correlation_id_1, sub_id_1), 0);
+    ASSERT_EQ(removeSubscription(client_id, remove_correlation_id_2, sub_id_2), 0);
+    ASSERT_EQ(removeSubscription(client_id, remove_correlation_id_3, sub_id_3), 0);
+
+    doWork();
+
+    aeron_receive_channel_endpoint_t *endpoint =
+        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+
+    ASSERT_NE(endpoint, (aeron_receive_channel_endpoint_t *)NULL);
+    ASSERT_EQ(aeron_driver_conductor_num_receive_channel_endpoints(&m_conductor.m_conductor), 1u);
+    ASSERT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 1u);
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 7u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldErrorOnRemovePublicationOnUnknownRegistrationId)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id = nextCorrelationId();
+    int64_t remove_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(removePublication(client_id, remove_correlation_id, pub_id), 0);
+    doWork();
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+
+        const command::ErrorResponseFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.offendingCommandCorrelationId(), remove_correlation_id);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldErrorOnRemoveSubscriptionOnUnknownRegistrationId)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+    int64_t remove_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
+    doWork();
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+
+        const command::ErrorResponseFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.offendingCommandCorrelationId(), remove_correlation_id);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldErrorOnAddPublicationWithInvalidUri)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id, INVALID_URI, STREAM_ID_1, -1), 0);
+    doWork();
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+
+        const command::ErrorResponseFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldErrorOnAddSubscriptionWithInvalidUri)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, INVALID_URI, STREAM_ID_1, -1), 0);
+    doWork();
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+
+        const command::ErrorResponseFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.offendingCommandCorrelationId(), sub_id);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
 TEST_F(DriverConductorNetworkTest, shouldBeAbleToTimeoutNetworkPublication)
 {
     int64_t client_id = nextCorrelationId();

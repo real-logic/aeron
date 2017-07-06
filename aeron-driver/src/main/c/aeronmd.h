@@ -55,6 +55,7 @@ typedef struct aeron_driver_stct aeron_driver_t;
 #define AERON_LOSS_REPORT_BUFFER_LENGTH_ENV_VAR "AERON_LOSS_REPORT_BUFFER_LENGTH"
 
 #define AERON_IPC_CHANNEL "aeron:ipc"
+#define AERON_IPC_CHANNEL_LEN strlen(AERON_IPC_CHANNEL)
 #define AERON_SPY_PREFIX "aeron-spy:"
 
 /* load settings from Java properties file (https://en.wikipedia.org/wiki/.properties) and set env vars */

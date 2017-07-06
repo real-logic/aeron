@@ -20,19 +20,19 @@ import org.junit.Test;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
-public class ChannelUriBuilderTest
+public class ChannelUriStringBuilderTest
 {
     @Test(expected = IllegalStateException.class)
     public void shouldValidateMedia()
     {
-        new ChannelUriBuilder()
+        new ChannelUriStringBuilder()
             .validate();
     }
 
     @Test(expected = IllegalStateException.class)
     public void shouldValidateEndpointOrControl()
     {
-        new ChannelUriBuilder()
+        new ChannelUriStringBuilder()
             .media("udp")
             .validate();
     }
@@ -40,7 +40,7 @@ public class ChannelUriBuilderTest
     @Test(expected = IllegalStateException.class)
     public void shouldValidateInitialPosition()
     {
-        new ChannelUriBuilder()
+        new ChannelUriStringBuilder()
             .media("udp")
             .endpoint("address:port")
             .termId(999)
@@ -50,7 +50,7 @@ public class ChannelUriBuilderTest
     @Test
     public void shouldGenerateBasicIpcChannel()
     {
-        final ChannelUriBuilder builder = new ChannelUriBuilder()
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media("ipc");
 
         assertThat(builder.build(), is("aeron:ipc"));
@@ -59,7 +59,7 @@ public class ChannelUriBuilderTest
     @Test
     public void shouldGenerateBasicUdpChannel()
     {
-        final ChannelUriBuilder builder = new ChannelUriBuilder()
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media("udp")
             .endpoint("localhost:9999");
 
@@ -69,7 +69,7 @@ public class ChannelUriBuilderTest
     @Test
     public void shouldGenerateBasicUdpChannelSpy()
     {
-        final ChannelUriBuilder builder = new ChannelUriBuilder()
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .prefix("aeron-spy")
             .media("udp")
             .endpoint("localhost:9999");
@@ -80,7 +80,7 @@ public class ChannelUriBuilderTest
     @Test
     public void shouldGenerateComplexUdpChannel()
     {
-        final ChannelUriBuilder builder = new ChannelUriBuilder()
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media("udp")
             .endpoint("localhost:9999")
             .ttl(9)
@@ -92,7 +92,7 @@ public class ChannelUriBuilderTest
     @Test
     public void shouldGenerateReplayUdpChannel()
     {
-        final ChannelUriBuilder builder = new ChannelUriBuilder()
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media("udp")
             .endpoint("address:9999")
             .termLength(1024 * 128)

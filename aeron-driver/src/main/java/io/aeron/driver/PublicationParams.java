@@ -17,7 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.CommonContext;
 import io.aeron.driver.buffer.RawLog;
-import io.aeron.AeronUri;
+import io.aeron.ChannelUri;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 
@@ -32,9 +32,9 @@ class PublicationParams
     int termOffset = 0;
     boolean isReplay = false;
 
-    static int getTermBufferLength(final AeronUri aeronUri, final int defaultTermLength)
+    static int getTermBufferLength(final ChannelUri channelUri, final int defaultTermLength)
     {
-        final String termLengthParam = aeronUri.get(CommonContext.TERM_LENGTH_PARAM_NAME);
+        final String termLengthParam = channelUri.get(CommonContext.TERM_LENGTH_PARAM_NAME);
         int termLength = defaultTermLength;
         if (null != termLengthParam)
         {
@@ -45,10 +45,10 @@ class PublicationParams
         return termLength;
     }
 
-    static int getMtuLength(final AeronUri aeronUri, final int defaultMtuLength)
+    static int getMtuLength(final ChannelUri channelUri, final int defaultMtuLength)
     {
         int mtuLength = defaultMtuLength;
-        final String mtu = aeronUri.get(CommonContext.MTU_LENGTH_PARAM_NAME);
+        final String mtu = channelUri.get(CommonContext.MTU_LENGTH_PARAM_NAME);
         if (null != mtu)
         {
             mtuLength = Integer.parseInt(mtu);
@@ -73,7 +73,7 @@ class PublicationParams
     }
 
     static void confirmMatch(
-        final AeronUri uri, final PublicationParams params, final RawLog rawLog)
+        final ChannelUri uri, final PublicationParams params, final RawLog rawLog)
     {
         final int mtuLength = LogBufferDescriptor.mtuLength(rawLog.metaData());
         if (uri.containsKey(MTU_LENGTH_PARAM_NAME) && mtuLength != params.mtuLength)
@@ -92,28 +92,28 @@ class PublicationParams
     @SuppressWarnings("ConstantConditions")
     static PublicationParams getPublicationParams(
         final MediaDriver.Context context,
-        final AeronUri aeronUri,
+        final ChannelUri channelUri,
         final boolean isExclusive,
         final boolean isIpc)
     {
         final PublicationParams params = new PublicationParams();
 
         params.termLength = getTermBufferLength(
-            aeronUri, isIpc ? context.ipcTermBufferLength() : context.publicationTermBufferLength());
+            channelUri, isIpc ? context.ipcTermBufferLength() : context.publicationTermBufferLength());
 
-        params.mtuLength = getMtuLength(aeronUri, isIpc ? context.ipcMtuLength() : context.mtuLength());
+        params.mtuLength = getMtuLength(channelUri, isIpc ? context.ipcMtuLength() : context.mtuLength());
 
         if (isExclusive)
         {
             int count = 0;
 
-            final String initialTermIdStr = aeronUri.get(INITIAL_TERM_ID_PARAM_NAME);
+            final String initialTermIdStr = channelUri.get(INITIAL_TERM_ID_PARAM_NAME);
             count = initialTermIdStr != null ? count + 1 : count;
 
-            final String termIdStr = aeronUri.get(TERM_ID_PARAM_NAME);
+            final String termIdStr = channelUri.get(TERM_ID_PARAM_NAME);
             count = termIdStr != null ? count + 1 : count;
 
-            final String termOffsetStr = aeronUri.get(TERM_OFFSET_PARAM_NAME);
+            final String termOffsetStr = channelUri.get(TERM_OFFSET_PARAM_NAME);
             count = termOffsetStr != null ? count + 1 : count;
 
             if (count > 0)

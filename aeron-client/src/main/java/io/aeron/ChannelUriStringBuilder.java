@@ -22,13 +22,13 @@ import static io.aeron.CommonContext.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
 /**
- * Type safe means of building a channel URI associated with a publication or subscription.
+ * Type safe means of building a channel URI associated with a {@link Publication} or {@link Subscription}.
  *
  * @see Aeron#addPublication(String, int)
  * @see Aeron#addSubscription(String, int)
- * @see AeronUri
+ * @see ChannelUri
  */
-public class ChannelUriBuilder
+public class ChannelUriStringBuilder
 {
     private StringBuilder sb = new StringBuilder(64);
 
@@ -51,7 +51,7 @@ public class ChannelUriBuilder
      *
      * @return this for a fluent API.
      */
-    public ChannelUriBuilder clear()
+    public ChannelUriStringBuilder clear()
     {
         prefix = null;
         media = null;
@@ -76,7 +76,7 @@ public class ChannelUriBuilder
      * @return this for a fluent API.
      * @throws IllegalStateException if the combination of params is invalid.
      */
-    public ChannelUriBuilder validate()
+    public ChannelUriStringBuilder validate()
     {
         if (null == media)
         {
@@ -108,7 +108,7 @@ public class ChannelUriBuilder
      * @param prefix to be applied to the URI before the the scheme.
      * @return this for a fluent API.
      */
-    public ChannelUriBuilder prefix(final String prefix)
+    public ChannelUriStringBuilder prefix(final String prefix)
     {
         if (null != prefix && !prefix.equals("aeron-spy"))
         {
@@ -135,7 +135,7 @@ public class ChannelUriBuilder
      * @param media for this channel.
      * @return this for a fluent API.
      */
-    public ChannelUriBuilder media(final String media)
+    public ChannelUriStringBuilder media(final String media)
     {
         switch (media)
         {
@@ -168,7 +168,7 @@ public class ChannelUriBuilder
      * @param endpoint address and port for the channel.
      * @return this for a fluent API.
      */
-    public ChannelUriBuilder endpoint(final String endpoint)
+    public ChannelUriStringBuilder endpoint(final String endpoint)
     {
         this.endpoint = endpoint;
         return this;
@@ -190,7 +190,7 @@ public class ChannelUriBuilder
      * @param networkInterface for routing traffic.
      * @return this for a fluent API.
      */
-    public ChannelUriBuilder networkInterface(final String networkInterface)
+    public ChannelUriStringBuilder networkInterface(final String networkInterface)
     {
         this.networkInterface = networkInterface;
         return this;
@@ -212,7 +212,7 @@ public class ChannelUriBuilder
      * @param controlEndpoint for joining a MDC control socket.
      * @return this for a fluent API.
      */
-    public ChannelUriBuilder controlEndpoint(final String controlEndpoint)
+    public ChannelUriStringBuilder controlEndpoint(final String controlEndpoint)
     {
         this.controlEndpoint = controlEndpoint;
         return this;
@@ -236,7 +236,7 @@ public class ChannelUriBuilder
      * @see Publication#addDestination(String)
      * @see Publication#removeDestination(String)
      */
-    public ChannelUriBuilder controlMode(final String controlMode)
+    public ChannelUriStringBuilder controlMode(final String controlMode)
     {
         if (null != controlMode && !controlMode.equals(CommonContext.MDC_CONTROL_MODE_MANUAL))
         {
@@ -263,7 +263,7 @@ public class ChannelUriBuilder
      * @param isReliable false if loss can be be gap filled.
      * @return this for a fluent API.
      */
-    public ChannelUriBuilder reliable(final Boolean isReliable)
+    public ChannelUriStringBuilder reliable(final Boolean isReliable)
     {
         this.reliable = isReliable;
         return this;
@@ -286,7 +286,7 @@ public class ChannelUriBuilder
      * @param ttl value for a multicast datagram.
      * @return this for a fluent API.
      */
-    public ChannelUriBuilder ttl(final Integer ttl)
+    public ChannelUriStringBuilder ttl(final Integer ttl)
     {
         if (null != ttl && (ttl < 0 || ttl > 255))
         {
@@ -313,7 +313,7 @@ public class ChannelUriBuilder
      * @param mtu the maximum transmission unit including Aeron header for a datagram payload.
      * @return this for a fluent API.
      */
-    public ChannelUriBuilder mtu(final Integer mtu)
+    public ChannelUriStringBuilder mtu(final Integer mtu)
     {
         if (null != mtu)
         {
@@ -348,7 +348,7 @@ public class ChannelUriBuilder
      * @param termLength of the buffer used for each term of the log.
      * @return this for a fluent API.
      */
-    public ChannelUriBuilder termLength(final Integer termLength)
+    public ChannelUriStringBuilder termLength(final Integer termLength)
     {
         if (null != termLength)
         {
@@ -375,7 +375,7 @@ public class ChannelUriBuilder
      * @param initialTermId the initial term id at which a publication will start.
      * @return this for a fluent API.
      */
-    public ChannelUriBuilder initialTermId(final Integer initialTermId)
+    public ChannelUriStringBuilder initialTermId(final Integer initialTermId)
     {
         this.initialTermId = initialTermId;
         return this;
@@ -398,7 +398,7 @@ public class ChannelUriBuilder
      * @param termId at which a publication will start.
      * @return this for a fluent API.
      */
-    public ChannelUriBuilder termId(final Integer termId)
+    public ChannelUriStringBuilder termId(final Integer termId)
     {
         this.termId = termId;
         return this;
@@ -421,7 +421,7 @@ public class ChannelUriBuilder
      * @param termOffset within a term at which a publication will start.
      * @return this for a fluent API.
      */
-    public ChannelUriBuilder termOffset(final Integer termOffset)
+    public ChannelUriStringBuilder termOffset(final Integer termOffset)
     {
         if (null != termOffset)
         {
@@ -464,7 +464,7 @@ public class ChannelUriBuilder
             sb.append(prefix).append(':');
         }
 
-        sb.append(AeronUri.AERON_SCHEME).append(':').append(media).append('?');
+        sb.append(ChannelUri.AERON_SCHEME).append(':').append(media).append('?');
 
         if (null != endpoint)
         {

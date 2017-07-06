@@ -107,18 +107,18 @@ public class ArchiverSystemTest
         final int termOffset = BitUtil.align(rnd.nextInt(termLength), FrameDescriptor.FRAME_ALIGNMENT);
         final int termId = requestedInitialTermId + rnd.nextInt(1000);
 
-        final ChannelUriBuilder channelUriBuilder = new ChannelUriBuilder()
+        final ChannelUriStringBuilder channelUriStringBuilder = new ChannelUriStringBuilder()
             .endpoint("127.0.0.1:54325")
             .termLength(termLength)
             .mtu(mtu)
             .media("udp");
 
-        channelUriBuilder
+        channelUriStringBuilder
             .initialTermId(requestedInitialTermId)
             .termId(termId)
             .termOffset(termOffset);
 
-        publishUri = channelUriBuilder.build();
+        publishUri = channelUriStringBuilder.build();
 
         requestedJoinPosition = ((termId - requestedInitialTermId) * (long)termLength) + termOffset;
 

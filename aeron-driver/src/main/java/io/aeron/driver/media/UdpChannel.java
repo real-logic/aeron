@@ -19,7 +19,7 @@ import io.aeron.CommonContext;
 import io.aeron.ErrorCode;
 import io.aeron.driver.Configuration;
 import io.aeron.driver.exceptions.InvalidChannelException;
-import io.aeron.AeronUri;
+import io.aeron.ChannelUri;
 import org.agrona.BitUtil;
 
 import java.net.*;
@@ -34,7 +34,7 @@ import static org.agrona.BitUtil.toHex;
 /**
  * Encapsulation of UDP Channels.
  * <p>
- * Format of URI as in {@link AeronUri}.
+ * Format of URI as in {@link ChannelUri}.
  */
 public final class UdpChannel
 {
@@ -49,7 +49,7 @@ public final class UdpChannel
     private final String canonicalForm;
     private final NetworkInterface localInterface;
     private final ProtocolFamily protocolFamily;
-    private final AeronUri aeronUri;
+    private final ChannelUri channelUri;
     private final boolean hasExplicitControl;
     private final boolean isMulticast;
 
@@ -64,29 +64,29 @@ public final class UdpChannel
         localInterface = context.localInterface;
         protocolFamily = context.protocolFamily;
         multicastTtl = context.multicastTtl;
-        aeronUri = context.aeronUri;
+        channelUri = context.channelUri;
         hasExplicitControl = context.hasExplicitControl;
         isMulticast = context.isMulticast;
     }
 
     /**
-     * Parse URI and create channel
+     * Parse URI and create {@link UdpChannel}.
      *
-     * @param uriStr to parse
-     * @return created channel
+     * @param channelUriString to parse
+     * @return a new {@link UdpChannel}
      */
-    public static UdpChannel parse(final String uriStr)
+    public static UdpChannel parse(final String channelUriString)
     {
         try
         {
-            final AeronUri aeronUri = AeronUri.parse(uriStr);
+            final ChannelUri channelUri = ChannelUri.parse(channelUriString);
 
-            validateConfiguration(aeronUri);
+            validateConfiguration(channelUri);
 
-            final Context context = new Context().uriStr(uriStr).aeronUri(aeronUri);
+            final Context context = new Context().uriStr(channelUriString).channelUri(channelUri);
 
-            InetSocketAddress endpointAddress = getEndpointAddress(aeronUri);
-            final InetSocketAddress explicitControlAddress = getExplicitControlAddress(aeronUri);
+            InetSocketAddress endpointAddress = getEndpointAddress(channelUri);
+            final InetSocketAddress explicitControlAddress = getExplicitControlAddress(channelUri);
 
             if (null == endpointAddress && null == explicitControlAddress)
             {
@@ -114,7 +114,7 @@ public final class UdpChannel
             {
                 final InetSocketAddress controlAddress = getMulticastControlAddress(endpointAddress);
 
-                final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(aeronUri);
+                final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(channelUri);
 
                 context
                     .isMulticast(true)
@@ -123,7 +123,7 @@ public final class UdpChannel
                     .localDataAddress(resolveToAddressOfInterface(findInterface(searchAddress), searchAddress))
                     .remoteDataAddress(endpointAddress)
                     .localInterface(findInterface(searchAddress))
-                    .multicastTtl(getMulticastTtl(aeronUri))
+                    .multicastTtl(getMulticastTtl(channelUri))
                     .protocolFamily(getProtocolFamily(endpointAddress.getAddress()))
                     .canonicalForm(canonicalise(
                         resolveToAddressOfInterface(findInterface(searchAddress), searchAddress), endpointAddress));
@@ -141,7 +141,7 @@ public final class UdpChannel
             }
             else
             {
-                final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(aeronUri);
+                final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(channelUri);
                 final InetSocketAddress localAddress;
                 if (searchAddress.getInetAddress().isAnyLocalAddress())
                 {
@@ -249,13 +249,13 @@ public final class UdpChannel
     }
 
     /**
-     * Get the {@link AeronUri} for this channel.
+     * Get the {@link ChannelUri} for this channel.
      *
-     * @return the {@link AeronUri} for this channel.
+     * @return the {@link ChannelUri} for this channel.
      */
-    public AeronUri aeronUri()
+    public ChannelUri channelUri()
     {
-        return aeronUri;
+        return channelUri;
     }
 
     /**
@@ -364,7 +364,7 @@ public final class UdpChannel
      * @param uri to check
      * @return endpoint address for URI
      */
-    public static InetSocketAddress destinationAddress(final AeronUri uri)
+    public static InetSocketAddress destinationAddress(final ChannelUri uri)
     {
         try
         {
@@ -377,7 +377,7 @@ public final class UdpChannel
         }
     }
 
-    private static InterfaceSearchAddress getInterfaceSearchAddress(final AeronUri uri) throws UnknownHostException
+    private static InterfaceSearchAddress getInterfaceSearchAddress(final ChannelUri uri) throws UnknownHostException
     {
         final String interfaceValue = uri.get(CommonContext.INTERFACE_PARAM_NAME);
         if (null != interfaceValue)
@@ -388,7 +388,7 @@ public final class UdpChannel
         return InterfaceSearchAddress.wildcard();
     }
 
-    private static InetSocketAddress getEndpointAddress(final AeronUri uri) throws UnknownHostException
+    private static InetSocketAddress getEndpointAddress(final ChannelUri uri) throws UnknownHostException
     {
         final String endpointValue = uri.get(CommonContext.ENDPOINT_PARAM_NAME);
         if (null != endpointValue)
@@ -399,7 +399,7 @@ public final class UdpChannel
         return null;
     }
 
-    private static int getMulticastTtl(final AeronUri uri)
+    private static int getMulticastTtl(final ChannelUri uri)
     {
         final String ttlValue = uri.get(CommonContext.TTL_PARAM_NAME);
         if (null != ttlValue)
@@ -410,7 +410,7 @@ public final class UdpChannel
         return Configuration.SOCKET_MULTICAST_TTL;
     }
 
-    private static InetSocketAddress getExplicitControlAddress(final AeronUri uri) throws UnknownHostException
+    private static InetSocketAddress getExplicitControlAddress(final ChannelUri uri) throws UnknownHostException
     {
         final String controlValue = uri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
         if (null != controlValue)
@@ -429,12 +429,12 @@ public final class UdpChannel
         }
     }
 
-    private static void validateConfiguration(final AeronUri uri)
+    private static void validateConfiguration(final ChannelUri uri)
     {
         validateMedia(uri);
     }
 
-    private static void validateMedia(final AeronUri uri)
+    private static void validateMedia(final ChannelUri uri)
     {
         if (!UDP_MEDIA_ID.equals(uri.media()))
         {
@@ -484,7 +484,7 @@ public final class UdpChannel
         private String canonicalForm;
         private NetworkInterface localInterface;
         private ProtocolFamily protocolFamily;
-        private AeronUri aeronUri;
+        private ChannelUri channelUri;
         private boolean hasExplicitControl = false;
         private boolean isMulticast = false;
 
@@ -542,9 +542,9 @@ public final class UdpChannel
             return this;
         }
 
-        public Context aeronUri(final AeronUri aeronUri)
+        public Context channelUri(final ChannelUri channelUri)
         {
-            this.aeronUri = aeronUri;
+            this.channelUri = channelUri;
             return this;
         }
 

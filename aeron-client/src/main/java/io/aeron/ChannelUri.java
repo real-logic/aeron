@@ -28,9 +28,9 @@ import java.util.*;
  * </pre>
  * <p>
  * Multiple params with the same key are allowed, the last value specified takes precedence.
- * @see ChannelUriBuilder
+ * @see ChannelUriStringBuilder
  */
-public class AeronUri
+public class ChannelUri
 {
     private enum State
     {
@@ -53,7 +53,7 @@ public class AeronUri
      * @param media  for the channel which is typically "udp" or "ipc".
      * @param params for the query string as key value pairs.
      */
-    public AeronUri(final String media, final Map<String, String> params)
+    public ChannelUri(final String media, final Map<String, String> params)
     {
         this.media = media;
         this.params = params;
@@ -149,9 +149,9 @@ public class AeronUri
      * Parse a {@link CharSequence} which contains an Aeron URI.
      *
      * @param cs to be parsed.
-     * @return a new {@link AeronUri} representing the URI string.
+     * @return a new {@link ChannelUri} representing the URI string.
      */
-    public static AeronUri parse(final CharSequence cs)
+    public static ChannelUri parse(final CharSequence cs)
     {
         if (!startsWith(cs, AERON_PREFIX))
         {
@@ -234,7 +234,7 @@ public class AeronUri
                 throw new IllegalArgumentException("No more input found, but was in state: " + state);
         }
 
-        return new AeronUri(media, params);
+        return new ChannelUri(media, params);
     }
 
     private static boolean startsWith(final CharSequence input, final CharSequence prefix)

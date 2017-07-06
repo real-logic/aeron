@@ -15,7 +15,7 @@
  */
 package io.aeron.driver;
 
-import io.aeron.AeronUri;
+import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.RawLog;
@@ -288,8 +288,8 @@ public class DriverConductor implements Agent
         final boolean isExclusive)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
-        final AeronUri aeronUri = udpChannel.aeronUri();
-        final PublicationParams params = getPublicationParams(context, aeronUri, isExclusive, false);
+        final ChannelUri channelUri = udpChannel.channelUri();
+        final PublicationParams params = getPublicationParams(context, channelUri, isExclusive, false);
         validateMtuForMaxMessage(params, isExclusive);
 
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel);
@@ -307,7 +307,7 @@ public class DriverConductor implements Agent
         }
         else
         {
-            confirmMatch(aeronUri, params, publication.rawLog());
+            confirmMatch(channelUri, params, publication.rawLog());
         }
 
         publicationLinks.add(new PublicationLink(correlationId, publication, getOrAddClient(clientId)));
@@ -466,8 +466,8 @@ public class DriverConductor implements Agent
 
         sendChannelEndpoint.validateAllowsManualControl();
 
-        final AeronUri aeronUri = AeronUri.parse(destinationChannel);
-        final InetSocketAddress dstAddress = UdpChannel.destinationAddress(aeronUri);
+        final ChannelUri channelUri = ChannelUri.parse(destinationChannel);
+        final InetSocketAddress dstAddress = UdpChannel.destinationAddress(channelUri);
         senderProxy.addDestination(sendChannelEndpoint, dstAddress);
         clientProxy.operationSucceeded(correlationId);
     }
@@ -494,8 +494,8 @@ public class DriverConductor implements Agent
 
         sendChannelEndpoint.validateAllowsManualControl();
 
-        final AeronUri aeronUri = AeronUri.parse(destinationChannel);
-        final InetSocketAddress dstAddress = UdpChannel.destinationAddress(aeronUri);
+        final ChannelUri channelUri = ChannelUri.parse(destinationChannel);
+        final InetSocketAddress dstAddress = UdpChannel.destinationAddress(channelUri);
         senderProxy.removeDestination(sendChannelEndpoint, dstAddress);
         clientProxy.operationSucceeded(correlationId);
     }
@@ -504,7 +504,7 @@ public class DriverConductor implements Agent
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
-        final String reliableParam = udpChannel.aeronUri().get(RELIABLE_STREAM_PARAM_NAME, "true");
+        final String reliableParam = udpChannel.channelUri().get(RELIABLE_STREAM_PARAM_NAME, "true");
         final boolean isReliable = !"false".equals(reliableParam);
 
         checkForClashingSubscription(isReliable, udpChannel, streamId);
@@ -1036,8 +1036,8 @@ public class DriverConductor implements Agent
             publication = findSharedIpcPublication(ipcPublications, streamId);
         }
 
-        final AeronUri aeronUri = AeronUri.parse(channel);
-        final PublicationParams params = getPublicationParams(context, aeronUri, isExclusive, true);
+        final ChannelUri channelUri = ChannelUri.parse(channel);
+        final PublicationParams params = getPublicationParams(context, channelUri, isExclusive, true);
 
         if (null == publication)
         {
@@ -1046,7 +1046,7 @@ public class DriverConductor implements Agent
         }
         else
         {
-            confirmMatch(aeronUri, params, publication.rawLog());
+            confirmMatch(channelUri, params, publication.rawLog());
         }
 
         return publication;

@@ -22,7 +22,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-public class AeronUriTest
+public class ChannelUriTest
 {
     @Test
     public void shouldParseSimpleDefaultUri()
@@ -69,7 +69,7 @@ public class AeronUriTest
     @Test
     public void shouldAllowReturnDefaultIfParamNotSpecified() throws Exception
     {
-        final AeronUri uri = AeronUri.parse("aeron:udp?endpoint=224.10.9.8");
+        final ChannelUri uri = ChannelUri.parse("aeron:udp?endpoint=224.10.9.8");
         assertThat(uri.get("interface"), is(nullValue()));
         assertThat(uri.get("interface", "192.168.0.0"), is("192.168.0.0"));
     }
@@ -78,7 +78,7 @@ public class AeronUriTest
     public void shouldRoundTripToString()
     {
         final String uriString = "aeron:udp?endpoint=224.10.9.8:777";
-        final AeronUri uri = AeronUri.parse(uriString);
+        final ChannelUri uri = ChannelUri.parse(uriString);
 
         final String result = uri.toString();
         assertThat(result, is(uriString));
@@ -91,7 +91,7 @@ public class AeronUriTest
             throw new IllegalArgumentException();
         }
 
-        final AeronUri uri = AeronUri.parse(uriStr);
+        final ChannelUri uri = ChannelUri.parse(uriStr);
 
         for (int i = 0; i < params.length; i += 2)
         {
@@ -101,7 +101,7 @@ public class AeronUriTest
 
     private void assertParseWithMedia(final String uriStr, final String media)
     {
-        final AeronUri uri = AeronUri.parse(uriStr);
+        final ChannelUri uri = ChannelUri.parse(uriStr);
         assertThat(uri.scheme(), is("aeron"));
         assertThat(uri.media(), is(media));
     }
@@ -110,7 +110,7 @@ public class AeronUriTest
     {
         try
         {
-            AeronUri.parse(string);
+            ChannelUri.parse(string);
             fail(IllegalArgumentException.class.getName() + " not thrown");
         }
         catch (final IllegalArgumentException ignore)

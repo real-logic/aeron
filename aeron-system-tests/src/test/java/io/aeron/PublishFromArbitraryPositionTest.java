@@ -63,7 +63,7 @@ public class PublishFromArbitraryPositionTest
         final int initialTermId = rnd.nextInt(1234);
         final int termOffset = BitUtil.align(rnd.nextInt(termLength), FrameDescriptor.FRAME_ALIGNMENT);
         final int termId = initialTermId + rnd.nextInt(1000);
-        final String channelUri = new ChannelUriBuilder()
+        final String channelUri = new ChannelUriStringBuilder()
             .endpoint("localhost:54325")
             .termLength(termLength)
             .initialTermId(initialTermId)

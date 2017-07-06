@@ -349,7 +349,7 @@ class ClientConductor implements Agent, DriverListener
             streamId,
             (subscription) ->
             {
-                if (!subscription.hasImage(correlationId) && subscription.registrationId() == subscriberRegistrationId)
+                if (subscription.registrationId() == subscriberRegistrationId && !subscription.hasImage(correlationId))
                 {
                     final Image image = new Image(
                         subscription,
@@ -573,6 +573,7 @@ class ClientConductor implements Agent, DriverListener
         {
             publication.forceClose();
         }
+
         activeExclusivePublications.clear();
 
         activePublications.close();

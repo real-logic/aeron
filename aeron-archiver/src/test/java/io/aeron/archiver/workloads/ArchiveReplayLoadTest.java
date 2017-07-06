@@ -19,7 +19,6 @@ package io.aeron.archiver.workloads;
 import io.aeron.*;
 import io.aeron.archiver.*;
 import io.aeron.archiver.client.ArchiveProxy;
-import io.aeron.archiver.client.RecordingEventsListener;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.*;
@@ -52,7 +51,6 @@ public class ArchiveReplayLoadTest
     static final int REPLY_STREAM_ID = 100;
     private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
     private static final String PUBLISH_URI = "aeron:ipc?endpoint=127.0.0.1:54325";
-    //        +"|" + CommonContext.TERM_LENGTH_PARAM_NAME + "=4194304|" + CommonContext.MTU_LENGTH_PARAM_NAME + "=4096";
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final int MESSAGE_COUNT = 2000000;
@@ -177,9 +175,7 @@ public class ArchiveReplayLoadTest
         }
     }
 
-    private int prepAndSendMessages(
-        final ArchiveProxy archiveProxy,
-        final Publication publication)
+    private int prepAndSendMessages(final ArchiveProxy archiveProxy, final Publication publication)
         throws InterruptedException
     {
         final int messageCount = MESSAGE_COUNT;
@@ -264,7 +260,8 @@ public class ArchiveReplayLoadTest
 
     private void validateFragment(
         final DirectBuffer buffer,
-        final int offset, final int length,
+        final int offset,
+        final int length,
         @SuppressWarnings("unused") final Header header)
     {
         assertThat(length, is(fragmentLength[fragmentCount] - DataHeaderFlyweight.HEADER_LENGTH));
@@ -284,22 +281,12 @@ public class ArchiveReplayLoadTest
                     recorded = 0;
                     long start = System.currentTimeMillis();
                     long startBytes = remaining;
-                    // each message is fragmentLength[fragmentCount]
+
                     while (lastTermId == -1 || recorded < totalRecordingLength)
                     {
                         TestUtil.waitFor(() -> (archiveProxy.pollEvents(
-                            new RecordingEventsListener()
+                            new NoOpRecordingEventsListener()
                             {
-                                public void onStart(
-                                    final long recordingId,
-                                    final long joinPosition,
-                                    final int sessionId,
-                                    final int streamId,
-                                    final String channel,
-                                    final String sourceIdentity)
-                                {
-                                }
-
                                 public void onProgress(
                                     final long recordingId0,
                                     final long joinPosition,
@@ -308,11 +295,6 @@ public class ArchiveReplayLoadTest
                                     assertThat(recordingId0, is(recordingId));
                                     recorded = position - joinPosition;
                                     printf("a=%d total=%d %n", recorded, totalRecordingLength);
-                                }
-
-                                public void onStop(
-                                    final long recordingId0, final long joinPosition, final long endPosition)
-                                {
                                 }
                             },
                             1)) != 0);
@@ -328,9 +310,8 @@ public class ArchiveReplayLoadTest
                             printf("Archive reported rate: %.02f MB/s %n", rate);
                         }
                     }
-                    final long end = System.currentTimeMillis();
-                    final long deltaTime = end - start;
 
+                    final long deltaTime = System.currentTimeMillis() - start;
                     final long deltaBytes = remaining - startBytes;
                     final double rate = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
                     printf("Archive reported rate: %.02f MB/s %n", rate);

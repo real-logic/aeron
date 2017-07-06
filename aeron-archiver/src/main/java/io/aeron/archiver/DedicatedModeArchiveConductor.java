@@ -20,68 +20,47 @@ import io.aeron.Aeron;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.status.AtomicCounter;
 
-import java.util.concurrent.ThreadFactory;
-
-class DedicatedModeArchiveConductor extends ArchiveConductor
+final class DedicatedModeArchiveConductor extends ArchiveConductor
 {
     private static final int COMMAND_LIMIT = 10;
 
     private final ManyToOneConcurrentArrayQueue<Session> closeQueue;
-    private final AgentRunner replayerAgentRunner;
-    private final AgentRunner recorderAgentRunner;
-    private final ThreadFactory threadFactory;
+    private AgentRunner replayerAgentRunner;
+    private AgentRunner recorderAgentRunner;
 
     DedicatedModeArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
         super(aeron, ctx);
 
         closeQueue = new ManyToOneConcurrentArrayQueue<>(ctx.maxConcurrentRecordings() + ctx.maxConcurrentReplays());
-        recorderAgentRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), recorder);
-        replayerAgentRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), replayer);
-        threadFactory = ctx.threadFactory();
-    }
-
-    protected SessionWorker<RecordingSession> constructRecorder(final Archiver.Context ctx)
-    {
-        return new DedicatedModeSessionWorker<RecordingSession>("recorder")
-        {
-            void closeSession(final RecordingSession session)
-            {
-                closeQueue.offer(session);
-            }
-        };
-    }
-
-    protected SessionWorker<ReplaySession> constructReplayer(final Archiver.Context ctx)
-    {
-        return new DedicatedModeSessionWorker<ReplaySession>("replayer")
-        {
-            ControlSessionProxy proxy = new ControlSessionProxy(ctx.idleStrategy());
-
-            void postSessionAdd(final ReplaySession session)
-            {
-                session.setThreadLocalControlSessionProxy(proxy);
-            }
-
-            void closeSession(final ReplaySession session)
-            {
-                closeQueue.offer(session);
-            }
-        };
-    }
-
-    protected int preSessionWork()
-    {
-        return processCloseQueue();
     }
 
     public void onStart()
     {
         super.onStart();
 
-        AgentRunner.startOnThread(replayerAgentRunner, threadFactory);
-        AgentRunner.startOnThread(recorderAgentRunner, threadFactory);
+        recorderAgentRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), recorder);
+        replayerAgentRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), replayer);
+
+        AgentRunner.startOnThread(replayerAgentRunner, ctx.threadFactory());
+        AgentRunner.startOnThread(recorderAgentRunner, ctx.threadFactory());
+    }
+
+    protected SessionWorker<RecordingSession> constructRecorder()
+    {
+        return new DedicatedModeRecorder(ctx.errorCounter(), closeQueue);
+    }
+
+    protected SessionWorker<ReplaySession> constructReplayer()
+    {
+        return new DedicatedModeReplayer(ctx.errorCounter(), closeQueue, new ControlSessionProxy(ctx.idleStrategy()));
+    }
+
+    protected int preWork()
+    {
+        return super.preWork() + processCloseQueue();
     }
 
     protected void closeSessionWorkers()
@@ -118,5 +97,49 @@ class DedicatedModeArchiveConductor extends ArchiveConductor
         }
 
         return i;
+    }
+
+    private static class DedicatedModeRecorder extends DedicatedModeSessionWorker<RecordingSession>
+    {
+        private final ManyToOneConcurrentArrayQueue<Session> closeQueue;
+
+        DedicatedModeRecorder(
+            final AtomicCounter errorCounter,
+            final ManyToOneConcurrentArrayQueue<Session> closeQueue)
+        {
+            super("recorder", errorCounter);
+            this.closeQueue = closeQueue;
+        }
+
+        protected void closeSession(final RecordingSession session)
+        {
+            closeQueue.offer(session);
+        }
+    }
+
+    private static class DedicatedModeReplayer extends DedicatedModeSessionWorker<ReplaySession>
+    {
+        private final ManyToOneConcurrentArrayQueue<Session> closeQueue;
+        private final ControlSessionProxy proxy;
+
+        DedicatedModeReplayer(
+            final AtomicCounter errorCounter,
+            final ManyToOneConcurrentArrayQueue<Session> closeQueue,
+            final ControlSessionProxy proxy)
+        {
+            super("replayer", errorCounter);
+            this.closeQueue = closeQueue;
+            this.proxy = proxy;
+        }
+
+        protected void postSessionAdd(final ReplaySession session)
+        {
+            session.setThreadLocalControlSessionProxy(proxy);
+        }
+
+        protected void closeSession(final ReplaySession session)
+        {
+            closeQueue.offer(session);
+        }
     }
 }

@@ -19,57 +19,70 @@ import io.aeron.Aeron;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.AgentInvoker;
 
-class SharedModeArchiveConductor extends ArchiveConductor
+final class SharedModeArchiveConductor extends ArchiveConductor
 {
-    private final AgentInvoker replayerAgentInvoker;
-    private final AgentInvoker recorderAgentInvoker;
+    private AgentInvoker replayerAgentInvoker;
+    private AgentInvoker recorderAgentInvoker;
 
     SharedModeArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
         super(aeron, ctx);
-
-        replayerAgentInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), replayer);
-        recorderAgentInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), recorder);
     }
 
     public void onStart()
     {
         super.onStart();
+        replayerAgentInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), replayer);
+        recorderAgentInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), recorder);
 
         replayerAgentInvoker.start();
         recorderAgentInvoker.start();
     }
 
-    protected SessionWorker<RecordingSession> constructRecorder(final Archiver.Context ctx)
+    protected SessionWorker<RecordingSession> constructRecorder()
     {
-        return new SessionWorker<RecordingSession>("recorder")
-        {
-            void closeSession(final RecordingSession session)
-            {
-                closeRecordingSession(session);
-            }
-        };
+        return new SharedModeRecorder();
     }
 
-    protected SessionWorker<ReplaySession> constructReplayer(final Archiver.Context ctx)
+    protected SessionWorker<ReplaySession> constructReplayer()
     {
-        return new SessionWorker<ReplaySession>("replayer")
-        {
-            void closeSession(final ReplaySession session)
-            {
-                closeReplaySession(session);
-            }
-        };
+        return new SharedModeReplayer();
     }
 
-    protected int preSessionWork()
+    protected int preWork()
     {
-        return replayerAgentInvoker.invoke() + recorderAgentInvoker.invoke();
+        return super.preWork() + replayerAgentInvoker.invoke() + recorderAgentInvoker.invoke();
     }
 
     protected void closeSessionWorkers()
     {
         CloseHelper.quietClose(recorderAgentInvoker);
         CloseHelper.quietClose(replayerAgentInvoker);
+    }
+
+    private class SharedModeRecorder extends SessionWorker<RecordingSession>
+    {
+        SharedModeRecorder()
+        {
+            super("recorder");
+        }
+
+        protected void closeSession(final RecordingSession session)
+        {
+            closeRecordingSession(session);
+        }
+    }
+
+    private class SharedModeReplayer extends SessionWorker<ReplaySession>
+    {
+        SharedModeReplayer()
+        {
+            super("replayer");
+        }
+
+        protected void closeSession(final ReplaySession session)
+        {
+            closeReplaySession(session);
+        }
     }
 }

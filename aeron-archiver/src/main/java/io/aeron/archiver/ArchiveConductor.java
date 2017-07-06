@@ -59,21 +59,24 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     private final Subscription controlSubscription;
     private final Catalog catalog;
-    protected final ControlSessionProxy controlSessionProxy;
     private final NotificationsProxy notificationsProxy;
     private final int maxConcurrentRecordings;
     private final int maxConcurrentReplays;
 
+    protected final Archiver.Context ctx;
+    protected final ControlSessionProxy controlSessionProxy;
+    protected SessionWorker<ReplaySession> replayer;
+    protected SessionWorker<RecordingSession> recorder;
+
     private int replaySessionId;
 
-    final SessionWorker<ReplaySession> replayer;
-    final SessionWorker<RecordingSession> recorder;
 
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
         super("archiver-conductor");
 
         this.aeron = aeron;
+        this.ctx = ctx;
         aeronClientAgentInvoker = aeron.conductorAgentInvoker();
         Objects.requireNonNull(aeronClientAgentInvoker, "In the archiver context an aeron invoker should be present");
 
@@ -104,13 +107,17 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         this.maxConcurrentRecordings = ctx.maxConcurrentRecordings();
         this.maxConcurrentReplays = ctx.maxConcurrentReplays();
         this.errorHandler = ctx.errorHandler();
-        replayer = constructReplayer(ctx);
-        recorder = constructRecorder(ctx);
     }
 
-    protected abstract SessionWorker<RecordingSession> constructRecorder(Archiver.Context ctx);
+    public void onStart()
+    {
+        replayer = constructReplayer();
+        recorder = constructRecorder();
+    }
 
-    protected abstract SessionWorker<ReplaySession> constructReplayer(Archiver.Context ctx);
+    protected abstract SessionWorker<RecordingSession> constructRecorder();
+
+    protected abstract SessionWorker<ReplaySession> constructReplayer();
 
     protected final void preSessionsClose()
     {
@@ -136,17 +143,12 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         }
     }
 
-    public int doWork()
+    protected int preWork()
     {
         int workDone = (null != driverAgentInvoker) ? driverAgentInvoker.invoke() : 0;
         workDone += aeronClientAgentInvoker.invoke();
-        workDone += preSessionWork();
-        workDone += super.doWork();
-
         return workDone;
     }
-
-    protected abstract int preSessionWork();
 
     /**
      * Note: this is only a thread safe interaction because we are running the aeron client as an invoked agent so the

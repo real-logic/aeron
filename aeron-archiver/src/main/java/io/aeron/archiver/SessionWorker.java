@@ -20,6 +20,12 @@ import org.agrona.concurrent.Agent;
 
 import java.util.ArrayList;
 
+/**
+ * This is a common workflow to {@link Session} handling in the archiver. Hooks are provided for specialization as
+ * protected methods.
+ *
+ * @param <T> session type
+ */
 class SessionWorker<T extends Session> implements Agent
 {
     private final ArrayList<T> sessions = new ArrayList<>();
@@ -36,9 +42,10 @@ class SessionWorker<T extends Session> implements Agent
         return roleName;
     }
 
-    public int doWork()
+    public final int doWork()
     {
-        int workDone = 0;
+        int workDone = preWork();
+
         final ArrayList<T> sessions = this.sessions;
         for (int lastIndex = sessions.size() - 1, i = lastIndex; i >= 0; i--)
         {
@@ -55,32 +62,6 @@ class SessionWorker<T extends Session> implements Agent
         return workDone;
     }
 
-    protected void abortSession(final T session)
-    {
-        session.abort();
-    }
-
-    void addSession(final T session)
-    {
-        sessions.add(session);
-        postSessionAdd(session);
-    }
-
-    void postSessionAdd(final T session)
-    {
-    }
-
-    void closeSession(final T session)
-    {
-        session.abort();
-        session.close();
-    }
-
-    boolean isClosed()
-    {
-        return isClosed;
-    }
-
     public final void onClose()
     {
         if (isClosed)
@@ -95,11 +76,42 @@ class SessionWorker<T extends Session> implements Agent
         postSessionsClose();
     }
 
+    protected int preWork()
+    {
+        return 0;
+    }
+
+    protected void closeSession(final T session)
+    {
+        session.abort();
+        session.close();
+    }
+
     protected void postSessionsClose()
     {
     }
 
     protected void preSessionsClose()
     {
+    }
+
+    protected void postSessionAdd(final T session)
+    {
+    }
+
+    boolean isClosed()
+    {
+        return isClosed;
+    }
+
+    protected void addSession(final T session)
+    {
+        sessions.add(session);
+        postSessionAdd(session);
+    }
+
+    protected void abortSession(final T session)
+    {
+        session.abort();
     }
 }

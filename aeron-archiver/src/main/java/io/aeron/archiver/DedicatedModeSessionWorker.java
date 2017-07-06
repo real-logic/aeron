@@ -17,19 +17,21 @@
 package io.aeron.archiver;
 
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import org.agrona.concurrent.status.AtomicCounter;
 
 class DedicatedModeSessionWorker<T extends Session> extends SessionWorker<T>
 {
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue = new OneToOneConcurrentArrayQueue<>(256);
-
-    DedicatedModeSessionWorker(final String roleName)
+    private final AtomicCounter errorCounter;
+    DedicatedModeSessionWorker(final String roleName, final AtomicCounter errorCounter)
     {
         super(roleName);
+        this.errorCounter = errorCounter;
     }
 
-    public int doWork()
+    protected int preWork()
     {
-        return commandQueue.drain(Runnable::run) + super.doWork();
+        return commandQueue.drain(Runnable::run);
     }
 
     protected void addSession(final T session)
@@ -42,16 +44,18 @@ class DedicatedModeSessionWorker<T extends Session> extends SessionWorker<T>
         send(() -> super.abortSession(session));
     }
 
+    protected void preSessionsClose()
+    {
+        commandQueue.drain(Runnable::run);
+    }
+
     private void send(final Runnable r)
     {
         while (!commandQueue.offer(r))
         {
             Thread.yield();
+            errorCounter.increment();
         }
     }
 
-    protected void preSessionsClose()
-    {
-        commandQueue.drain(Runnable::run);
-    }
 }

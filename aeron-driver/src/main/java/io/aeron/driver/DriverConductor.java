@@ -905,7 +905,7 @@ public class DriverConductor implements Agent
                     image.correlationId(),
                     streamId,
                     sessionId,
-                    subscription.registrationId(),
+                    registrationId,
                     position.id(),
                     image.rawLog().fileName(),
                     generateSourceIdentity(image.sourceAddress()));
@@ -960,7 +960,7 @@ public class DriverConductor implements Agent
             publication.registrationId(),
             streamId,
             sessionId,
-            subscription.registrationId(),
+            registrationId,
             position.id(),
             publication.rawLog().fileName(),
             channel);
@@ -985,7 +985,7 @@ public class DriverConductor implements Agent
             correlationId(publication.rawLog().metaData()),
             streamId,
             sessionId,
-            subscription.registrationId(),
+            registrationId,
             position.id(),
             publication.rawLog().fileName(),
             channel);

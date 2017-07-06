@@ -66,7 +66,11 @@ public class RecordingEventsPoller
         return subscription.poll(fragmentAssembler, fragmentLimit);
     }
 
-    private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    private void onFragment(
+        final DirectBuffer buffer,
+        final int offset,
+        @SuppressWarnings("unused") final int length,
+        @SuppressWarnings("unused") final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 

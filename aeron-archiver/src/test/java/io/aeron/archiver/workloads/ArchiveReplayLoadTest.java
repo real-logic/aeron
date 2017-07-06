@@ -19,6 +19,7 @@ package io.aeron.archiver.workloads;
 import io.aeron.*;
 import io.aeron.archiver.*;
 import io.aeron.archiver.client.ArchiveProxy;
+import io.aeron.archiver.client.RecordingEventsPoller;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.*;
@@ -132,13 +133,13 @@ public class ArchiveReplayLoadTest
     {
         try (Publication archiverServiceRequest = publishingClient.addPublication(
                 archiverCtx.controlChannel(), archiverCtx.controlStreamId());
-             Subscription archiverNotifications = publishingClient.addSubscription(
+             Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
-            final ArchiveProxy archiveProxy = new ArchiveProxy(archiverServiceRequest, archiverNotifications);
+            final ArchiveProxy archiveProxy = new ArchiveProxy(archiverServiceRequest);
 
             awaitPublicationIsConnected(archiverServiceRequest);
-            awaitSubscriptionIsConnected(archiverNotifications);
+            awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 
             final Subscription reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
@@ -153,7 +154,7 @@ public class ArchiveReplayLoadTest
 
             final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(publication);
-            final int messageCount = prepAndSendMessages(archiveProxy, publication);
+            final int messageCount = prepAndSendMessages(recordingEvents, publication);
 
             assertNull(trackerError);
             println("All data arrived");
@@ -175,7 +176,7 @@ public class ArchiveReplayLoadTest
         }
     }
 
-    private int prepAndSendMessages(final ArchiveProxy archiveProxy, final Publication publication)
+    private int prepAndSendMessages(final Subscription recordingEvents, final Publication publication)
         throws InterruptedException
     {
         final int messageCount = MESSAGE_COUNT;
@@ -190,7 +191,7 @@ public class ArchiveReplayLoadTest
         final CountDownLatch waitForData = new CountDownLatch(1);
         System.out.printf("Sending %,d messages with a total length of %,d bytes %n", messageCount, totalDataLength);
 
-        trackRecordingProgress(archiveProxy, waitForData);
+        trackRecordingProgress(recordingEvents, waitForData);
         publishDataToRecorded(publication, messageCount);
         waitForData.await();
 
@@ -271,8 +272,24 @@ public class ArchiveReplayLoadTest
         fragmentCount++;
     }
 
-    private void trackRecordingProgress(final ArchiveProxy archiveProxy, final CountDownLatch waitForData)
+    private void trackRecordingProgress(final Subscription recordingEvents, final CountDownLatch waitForData)
     {
+        final RecordingEventsPoller recordingEventsPoller = new RecordingEventsPoller(
+            new NoOpRecordingEventsListener()
+            {
+                public void onProgress(
+                    final long recordingId0,
+                    final long joinPosition,
+                    final long position)
+                {
+                    assertThat(recordingId0, is(recordingId));
+                    recorded = position - joinPosition;
+                    printf("a=%d total=%d %n", recorded, totalRecordingLength);
+                }
+            },
+            recordingEvents,
+            1);
+
         final Thread t = new Thread(
             () ->
             {
@@ -284,20 +301,7 @@ public class ArchiveReplayLoadTest
 
                     while (lastTermId == -1 || recorded < totalRecordingLength)
                     {
-                        TestUtil.waitFor(() -> (archiveProxy.pollRecordingEvents(
-                            new NoOpRecordingEventsListener()
-                            {
-                                public void onProgress(
-                                    final long recordingId0,
-                                    final long joinPosition,
-                                    final long position)
-                                {
-                                    assertThat(recordingId0, is(recordingId));
-                                    recorded = position - joinPosition;
-                                    printf("a=%d total=%d %n", recorded, totalRecordingLength);
-                                }
-                            },
-                            1)) != 0);
+                        TestUtil.waitFor(() -> recordingEventsPoller.poll() != 0);
 
                         final long end = System.currentTimeMillis();
                         final long deltaTime = end - start;

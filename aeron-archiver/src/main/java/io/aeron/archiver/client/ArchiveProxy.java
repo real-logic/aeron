@@ -33,7 +33,6 @@ public class ArchiveProxy
 
     private final ExpandableDirectByteBuffer buffer = new ExpandableDirectByteBuffer(2048);
     private final Publication controlRequest;
-    private final Subscription recordingEvents;
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ConnectRequestEncoder connectRequestEncoder = new ConnectRequestEncoder();
     private final StartRecordingRequestEncoder startRecordingRequestEncoder = new StartRecordingRequestEncoder();
@@ -43,9 +42,6 @@ public class ArchiveProxy
     private final ListRecordingsRequestEncoder listRecordingsRequestEncoder = new ListRecordingsRequestEncoder();
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final RecordingStartedDecoder recordingStartedDecoder = new RecordingStartedDecoder();
-    private final RecordingProgressDecoder recordingProgressDecoder = new RecordingProgressDecoder();
-    private final RecordingStoppedDecoder recordingStoppedDecoder = new RecordingStoppedDecoder();
     private final ReplayAbortedDecoder replayAbortedDecoder = new ReplayAbortedDecoder();
     private final ReplayStartedDecoder replayStartedDecoder = new ReplayStartedDecoder();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
@@ -54,37 +50,31 @@ public class ArchiveProxy
         new RecordingNotFoundResponseDecoder();
 
     /**
-     * Create a proxy with a {@link Publication} for sending control message requests and a {@link Subscription} for
-     * receiving events about the progress of recordings.
+     * Create a proxy with a {@link Publication} for sending control message requests.
      *
      * This provides a default {@link IdleStrategy} of a {@link YieldingIdleStrategy} when offers are back pressured
      * with a default maximum retry attempts of 3.
      *
      * @param controlRequest  publication for sending control messages to an archive.
-     * @param recordingEvents subscription for receiving event messages about the progress of recordings.
      */
-    public ArchiveProxy(final Publication controlRequest, final Subscription recordingEvents)
+    public ArchiveProxy(final Publication controlRequest)
     {
-        this(controlRequest, recordingEvents, new YieldingIdleStrategy(), 3);
+        this(controlRequest, new YieldingIdleStrategy(), 3);
     }
 
     /**
-     * Create a proxy with a {@link Publication} for sending control message requests and a {@link Subscription} for
-     * receiving events about the progress of recordings.
+     * Create a proxy with a {@link Publication} for sending control message requests.
      *
      * @param controlRequest    publication for sending control messages to an archive.
-     * @param recordingEvents   subscription for receiving event messages about the progress of recordings.
      * @param retryIdleStrategy for what should happen between retry attempts at offering messages.
      * @param maxRetryAttempts  for offering control messages before giving up.
      */
     public ArchiveProxy(
         final Publication controlRequest,
-        final Subscription recordingEvents,
         final IdleStrategy retryIdleStrategy,
         final int maxRetryAttempts)
     {
         this.controlRequest = controlRequest;
-        this.recordingEvents = recordingEvents;
         this.retryIdleStrategy = retryIdleStrategy;
         this.maxRetryAttempts = maxRetryAttempts;
     }
@@ -344,65 +334,6 @@ public class ArchiveProxy
             recordingDescriptorDecoder.streamId(),
             recordingDescriptorDecoder.channel(),
             recordingDescriptorDecoder.sourceIdentity());
-    }
-
-    public int pollRecordingEvents(final RecordingEventsListener recordingEventsListener, final int fragmentLimit)
-    {
-        return recordingEvents.poll(
-            (buffer, offset, length, header) ->
-            {
-                messageHeaderDecoder.wrap(buffer, offset);
-
-                final int templateId = messageHeaderDecoder.templateId();
-                switch (templateId)
-                {
-                    case RecordingStartedDecoder.TEMPLATE_ID:
-                        recordingStartedDecoder.wrap(
-                            buffer,
-                            offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                            messageHeaderDecoder.blockLength(),
-                            messageHeaderDecoder.version());
-
-                        recordingEventsListener.onStart(
-                            recordingStartedDecoder.recordingId(),
-                            recordingStartedDecoder.joinPosition(),
-                            recordingStartedDecoder.sessionId(),
-                            recordingStartedDecoder.streamId(),
-                            recordingStartedDecoder.channel(),
-                            recordingStartedDecoder.sourceIdentity());
-                        break;
-
-                    case RecordingProgressDecoder.TEMPLATE_ID:
-                        recordingProgressDecoder.wrap(
-                            buffer,
-                            offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                            messageHeaderDecoder.blockLength(),
-                            messageHeaderDecoder.version());
-
-                        recordingEventsListener.onProgress(
-                            recordingProgressDecoder.recordingId(),
-                            recordingProgressDecoder.joinPosition(),
-                            recordingProgressDecoder.position());
-                        break;
-
-                    case RecordingStoppedDecoder.TEMPLATE_ID:
-                        recordingStoppedDecoder.wrap(
-                            buffer,
-                            offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                            messageHeaderDecoder.blockLength(),
-                            messageHeaderDecoder.version());
-
-                        recordingEventsListener.onStop(
-                            recordingStoppedDecoder.recordingId(),
-                            recordingStoppedDecoder.joinPosition(),
-                            recordingStoppedDecoder.endPosition());
-                        break;
-
-                    default:
-                        throw new IllegalStateException("Unknown templateId: " + templateId);
-                }
-            },
-            fragmentLimit);
     }
 
     private boolean offer(final int length)

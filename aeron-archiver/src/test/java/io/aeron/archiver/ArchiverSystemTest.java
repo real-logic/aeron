@@ -17,6 +17,7 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.client.ArchiveProxy;
+import io.aeron.archiver.client.RecordingEventsPoller;
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -176,7 +177,7 @@ public class ArchiverSystemTest
              Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
-            final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication, recordingEvents);
+            final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
             prePublicationVerifications(archiveProxy, controlPublication, recordingEvents);
 
@@ -194,12 +195,13 @@ public class ArchiverSystemTest
 
             assertThat(joinPosition, is(requestedJoinPosition));
             assertThat(recordedPublication.initialTermId(), is(requestedInitialTermId));
-            preSendChecks(archiveProxy, sessionId, termBufferLength, joinPosition);
+            preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, joinPosition);
 
-            final int messageCount = prepAndSendMessages(archiveProxy, recordedPublication);
+            final int messageCount = prepAndSendMessages(recordingEvents, recordedPublication);
 
             postPublicationValidations(
                 archiveProxy,
+                recordingEvents,
                 sessionId,
                 streamId,
                 termBufferLength,
@@ -217,7 +219,7 @@ public class ArchiverSystemTest
              Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
-            final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication, recordingEvents);
+            final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
             prePublicationVerifications(archiveProxy, controlPublication, recordingEvents);
 
@@ -231,12 +233,13 @@ public class ArchiverSystemTest
             final int maxPayloadLength = recordedPublication.maxPayloadLength();
             final long joinPosition = recordedPublication.position();
 
-            preSendChecks(archiveProxy, sessionId, termBufferLength, joinPosition);
+            preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, joinPosition);
 
-            final int messageCount = prepAndSendMessages(archiveProxy, recordedPublication);
+            final int messageCount = prepAndSendMessages(recordingEvents, recordedPublication);
 
             postPublicationValidations(
                 archiveProxy,
+                recordingEvents,
                 sessionId,
                 streamId,
                 termBufferLength,
@@ -248,11 +251,12 @@ public class ArchiverSystemTest
 
     private void preSendChecks(
         final ArchiveProxy archiveProxy,
+        final Subscription recordingEvents,
         final int sessionId,
         final int termBufferLength,
         final long joinPosition)
     {
-        waitFor(() -> archiveProxy.pollRecordingEvents(
+        final RecordingEventsPoller recordingEventsPoller = new RecordingEventsPoller(
             new FailRecordingEventsListener()
             {
                 public void onStart(
@@ -271,13 +275,17 @@ public class ArchiverSystemTest
                     println("Recording started. sourceIdentity: " + sourceIdentity);
                 }
             },
-            1) != 0);
+            recordingEvents,
+            1);
+
+        waitFor(() -> recordingEventsPoller.poll() != 0);
 
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
     }
 
     private void postPublicationValidations(
         final ArchiveProxy archiveProxy,
+        final Subscription recordingEvents,
         final int sessionId,
         final int streamId,
         final int termBufferLength,
@@ -295,7 +303,7 @@ public class ArchiverSystemTest
         waitFor(() -> archiveProxy.stopRecording(recordingId, requestStopCorrelationId));
         waitForOk(archiveProxy, controlResponses, requestStopCorrelationId);
 
-        waitFor(() -> archiveProxy.pollRecordingEvents(
+        final RecordingEventsPoller recordingEventsPoller = new RecordingEventsPoller(
             new FailRecordingEventsListener()
             {
                 public void onStop(final long rId, final long joinPosition, final long endPosition)
@@ -303,7 +311,10 @@ public class ArchiverSystemTest
                     assertThat(rId, is(recordingId));
                 }
             },
-            1) != 0);
+            recordingEvents,
+            1);
+
+        waitFor(() -> recordingEventsPoller.poll() != 0);
 
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
 
@@ -385,22 +396,22 @@ public class ArchiverSystemTest
             1) != 0);
     }
 
-    private int prepAndSendMessages(final ArchiveProxy archiveProxy, final Publication publication)
+    private int prepAndSendMessages(final Subscription recordingEvents, final Publication publication)
     {
         final int messageCount = 5000 + rnd.nextInt(10000);
         final CountDownLatch waitForData = new CountDownLatch(1);
-        prepFragmentsAndListener(archiveProxy, messageCount, waitForData);
+        prepFragmentsAndListener(recordingEvents, messageCount, waitForData);
         publishDataToRecorded(publication, messageCount);
         await(waitForData);
 
         return messageCount;
     }
 
-    private int prepAndSendMessages(final ArchiveProxy archiveProxy, final ExclusivePublication publication)
+    private int prepAndSendMessages(final Subscription recordingEvents, final ExclusivePublication publication)
     {
         final int messageCount = 5000 + rnd.nextInt(10000);
         final CountDownLatch waitForData = new CountDownLatch(1);
-        prepFragmentsAndListener(archiveProxy, messageCount, waitForData);
+        prepFragmentsAndListener(recordingEvents, messageCount, waitForData);
         publishDataToRecorded(publication, messageCount);
         await(waitForData);
 
@@ -420,7 +431,7 @@ public class ArchiverSystemTest
     }
 
     private void prepFragmentsAndListener(
-        final ArchiveProxy archiveProxy,
+        final Subscription recordingEvents,
         final int messageCount,
         final CountDownLatch waitForData)
     {
@@ -434,7 +445,7 @@ public class ArchiverSystemTest
 
         printf("Sending %d messages, total length=%d %n", messageCount, totalDataLength);
 
-        trackRecordingProgress(archiveProxy, waitForData);
+        trackRecordingProgress(recordingEvents, waitForData);
     }
 
     private void validateMetaDataFile(
@@ -594,8 +605,24 @@ public class ArchiverSystemTest
         printf("Fragment2: offset=%d length=%d %n", offset, length);
     }
 
-    private void trackRecordingProgress(final ArchiveProxy archiveProxy, final CountDownLatch waitForData)
+    private void trackRecordingProgress(final Subscription recordingEvents, final CountDownLatch waitForData)
     {
+        final RecordingEventsPoller recordingEventsPoller = new RecordingEventsPoller(
+            new FailRecordingEventsListener()
+            {
+                public void onProgress(
+                    final long recordingId0,
+                    final long joinPosition,
+                    final long position)
+                {
+                    assertThat(recordingId0, is(recordingId));
+                    recorded = position - joinPosition;
+                    printf("a=%d total=%d %n", recorded, totalRecordingLength);
+                }
+            },
+            recordingEvents,
+            1);
+
         final Thread t = new Thread(
             () ->
             {
@@ -607,20 +634,7 @@ public class ArchiverSystemTest
                     // each message is fragmentLength[fragmentCount]
                     while (endPosition == -1 || recorded < totalRecordingLength)
                     {
-                        waitFor(() -> (archiveProxy.pollRecordingEvents(
-                            new FailRecordingEventsListener()
-                            {
-                                public void onProgress(
-                                    final long recordingId0,
-                                    final long joinPosition,
-                                    final long position)
-                                {
-                                    assertThat(recordingId0, is(recordingId));
-                                    recorded = position - joinPosition;
-                                    printf("a=%d total=%d %n", recorded, totalRecordingLength);
-                                }
-                            },
-                            1)) != 0);
+                        waitFor(() -> recordingEventsPoller.poll() != 0);
 
                         final long end = System.currentTimeMillis();
                         final long deltaTime = end - start;

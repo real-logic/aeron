@@ -13,12 +13,12 @@
  * limitations under the License.
  *
  */
-
 package io.aeron.archiver.workloads;
 
 import io.aeron.*;
 import io.aeron.archiver.*;
 import io.aeron.archiver.client.ArchiveProxy;
+import io.aeron.archiver.client.RecordingEventsPoller;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -79,6 +79,7 @@ public class ArchiveRecordingLoadTest
                     " failed with random seed: " + ArchiveRecordingLoadTest.this.seed);
         }
     };
+
     private long correlationId;
     private BooleanSupplier recordingStartedIndicator;
     private BooleanSupplier recordingEndIndicator;
@@ -130,9 +131,9 @@ public class ArchiveRecordingLoadTest
              Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
-            final ArchiveProxy archiveProxy = new ArchiveProxy(control, recordingEvents);
-            initRecordingStartIndicator(archiveProxy);
-            initRecordingEndIndicator(archiveProxy);
+            final ArchiveProxy archiveProxy = new ArchiveProxy(control);
+            initRecordingStartIndicator(recordingEvents);
+            initRecordingEndIndicator(recordingEvents);
             TestUtil.awaitPublicationIsConnected(control);
             TestUtil.awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
@@ -177,9 +178,9 @@ public class ArchiveRecordingLoadTest
         }
     }
 
-    private void initRecordingStartIndicator(final ArchiveProxy archiveProxy)
+    private void initRecordingStartIndicator(final Subscription recordingEvents)
     {
-        recordingStartedIndicator = () -> archiveProxy.pollRecordingEvents(
+        final RecordingEventsPoller recordingEventsPoller = new RecordingEventsPoller(
             new FailRecordingEventsListener()
             {
                 public void onStart(
@@ -195,31 +196,36 @@ public class ArchiveRecordingLoadTest
                     assertThat(channel, is(PUBLISH_URI));
                 }
             },
-            1) != 0;
+            recordingEvents,
+            1);
+
+        recordingStartedIndicator = () -> recordingEventsPoller.poll() != 0;
     }
 
-    private void initRecordingEndIndicator(final ArchiveProxy archiveProxy)
+    private void initRecordingEndIndicator(final Subscription recordingEvents)
     {
-        recordingEndIndicator =
-            () -> archiveProxy.pollRecordingEvents(
-                new FailRecordingEventsListener()
+        final RecordingEventsPoller recordingEventsPoller = new RecordingEventsPoller(
+            new FailRecordingEventsListener()
+            {
+                public void onProgress(
+                    final long recordingId0,
+                    final long joinPosition,
+                    final long position)
                 {
-                    public void onProgress(
-                        final long recordingId0,
-                        final long joinPosition,
-                        final long position)
-                    {
-                        assertThat(recordingId0, is(recordingId));
-                        recorded = position - joinPosition;
-                    }
+                    assertThat(recordingId0, is(recordingId));
+                    recorded = position - joinPosition;
+                }
 
-                    public void onStop(final long recordingId0, final long joinPosition, final long endPosition)
-                    {
-                        doneRecording = true;
-                        assertThat(recordingId0, is(recordingId));
-                    }
-                },
-                1) != 0;
+                public void onStop(final long recordingId0, final long joinPosition, final long endPosition)
+                {
+                    doneRecording = true;
+                    assertThat(recordingId0, is(recordingId));
+                }
+            },
+            recordingEvents,
+            1);
+
+        recordingEndIndicator = () -> recordingEventsPoller.poll() != 0;
     }
 
     private void prepAndSendMessages(final Publication publication)

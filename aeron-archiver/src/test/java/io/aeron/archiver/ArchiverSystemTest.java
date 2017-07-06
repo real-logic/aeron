@@ -252,7 +252,7 @@ public class ArchiverSystemTest
         final int termBufferLength,
         final long joinPosition)
     {
-        waitFor(() -> archiveProxy.pollEvents(
+        waitFor(() -> archiveProxy.pollRecordingEvents(
             new FailRecordingEventsListener()
             {
                 public void onStart(
@@ -295,7 +295,7 @@ public class ArchiverSystemTest
         waitFor(() -> archiveProxy.stopRecording(recordingId, requestStopCorrelationId));
         waitForOk(archiveProxy, controlResponses, requestStopCorrelationId);
 
-        waitFor(() -> archiveProxy.pollEvents(
+        waitFor(() -> archiveProxy.pollRecordingEvents(
             new FailRecordingEventsListener()
             {
                 public void onStop(final long rId, final long joinPosition, final long endPosition)
@@ -354,7 +354,7 @@ public class ArchiverSystemTest
         final long requestRecordingsCorrelationId = this.correlationId++;
         archiveProxy.listRecordings(recordingId, 1, requestRecordingsCorrelationId);
         println("Await result");
-        waitFor(() -> archiveProxy.pollResponses(
+        waitFor(() -> archiveProxy.pollControlResponses(
             controlResponses,
             new FailResponseListener()
             {
@@ -607,7 +607,7 @@ public class ArchiverSystemTest
                     // each message is fragmentLength[fragmentCount]
                     while (endPosition == -1 || recorded < totalRecordingLength)
                     {
-                        waitFor(() -> (archiveProxy.pollEvents(
+                        waitFor(() -> (archiveProxy.pollRecordingEvents(
                             new FailRecordingEventsListener()
                             {
                                 public void onProgress(

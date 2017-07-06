@@ -284,7 +284,7 @@ public class ArchiveReplayLoadTest
 
                     while (lastTermId == -1 || recorded < totalRecordingLength)
                     {
-                        TestUtil.waitFor(() -> (archiveProxy.pollEvents(
+                        TestUtil.waitFor(() -> (archiveProxy.pollRecordingEvents(
                             new NoOpRecordingEventsListener()
                             {
                                 public void onProgress(

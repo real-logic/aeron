@@ -72,7 +72,7 @@ public class TestUtil
 
     public static void waitForOk(final ArchiveProxy client, final Subscription reply, final long correlationId1)
     {
-        waitFor(() -> client.pollResponses(
+        waitFor(() -> client.pollControlResponses(
             reply,
             new FailResponseListener()
             {
@@ -89,7 +89,7 @@ public class TestUtil
 
     static void waitForFail(final ArchiveProxy client, final Subscription reply, final long correlationId1)
     {
-        waitFor(() -> client.pollResponses(
+        waitFor(() -> client.pollControlResponses(
             reply,
             new FailResponseListener()
             {

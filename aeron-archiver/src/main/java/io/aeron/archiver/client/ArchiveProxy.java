@@ -18,10 +18,18 @@ package io.aeron.archiver.client;
 import io.aeron.*;
 import io.aeron.archiver.codecs.*;
 import org.agrona.*;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.YieldingIdleStrategy;
 
+/**
+ * Proxy class for encapsulating interaction with an Archive control protocol.
+ */
 public class ArchiveProxy
 {
     private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
+
+    private final int maxRetryAttempts;
+    private final IdleStrategy retryIdleStrategy;
 
     private final ExpandableDirectByteBuffer buffer = new ExpandableDirectByteBuffer(2048);
     private final Publication controlRequest;
@@ -45,22 +53,67 @@ public class ArchiveProxy
     private final RecordingNotFoundResponseDecoder recordingNotFoundResponseDecoder =
         new RecordingNotFoundResponseDecoder();
 
+    /**
+     * Create a proxy with a {@link Publication} for sending control message requests and a {@link Subscription} for
+     * receiving events about the progress of recordings.
+     *
+     * This provides a default {@link IdleStrategy} of a {@link YieldingIdleStrategy} when offers are back pressured
+     * with a default maximum retry attempts of 3.
+     *
+     * @param controlRequest  publication for sending control messages to an archive.
+     * @param recordingEvents subscription for receiving event messages about the progress of recordings.
+     */
     public ArchiveProxy(final Publication controlRequest, final Subscription recordingEvents)
+    {
+        this(controlRequest, recordingEvents, new YieldingIdleStrategy(), 3);
+    }
+
+    /**
+     * Create a proxy with a {@link Publication} for sending control message requests and a {@link Subscription} for
+     * receiving events about the progress of recordings.
+     *
+     * @param controlRequest    publication for sending control messages to an archive.
+     * @param recordingEvents   subscription for receiving event messages about the progress of recordings.
+     * @param retryIdleStrategy for what should happen between retry attempts at offering messages.
+     * @param maxRetryAttempts  for offering control messages before giving up.
+     */
+    public ArchiveProxy(
+        final Publication controlRequest,
+        final Subscription recordingEvents,
+        final IdleStrategy retryIdleStrategy,
+        final int maxRetryAttempts)
     {
         this.controlRequest = controlRequest;
         this.recordingEvents = recordingEvents;
+        this.retryIdleStrategy = retryIdleStrategy;
+        this.maxRetryAttempts = maxRetryAttempts;
     }
 
-    public boolean connect(final String channel, final int streamId)
+    /**
+     * Connect to an archive on its control interface providing the response stream details.
+     *
+     * @param responseChannel  for the control message responses.
+     * @param responseStreamId for the control message responses.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean connect(final String responseChannel, final int responseStreamId)
     {
         connectRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-            .responseStreamId(streamId)
-            .responseChannel(channel);
+            .responseStreamId(responseStreamId)
+            .responseChannel(responseChannel);
 
         return offer(connectRequestEncoder.encodedLength());
     }
 
+    /**
+     * Start recording streams for a given channel and stream id pairing.
+     *
+     * @param channel       to be recorded.
+     * @param streamId      to be recorded.
+     * @param correlationId for this request.
+     * @return true if successfully offered otherwise false.
+     */
     public boolean startRecording(final String channel, final int streamId, final long correlationId)
     {
         startRecordingRequestEncoder
@@ -72,6 +125,13 @@ public class ArchiveProxy
         return offer(startRecordingRequestEncoder.encodedLength());
     }
 
+    /**
+     * Stop an active recording.
+     *
+     * @param recordingId   to be stopped.
+     * @param correlationId for this request.
+     * @return true if successfully offered otherwise false.
+     */
     public boolean stopRecording(final long recordingId, final long correlationId)
     {
         stopRecordingRequestEncoder
@@ -82,6 +142,17 @@ public class ArchiveProxy
         return offer(stopRecordingRequestEncoder.encodedLength());
     }
 
+    /**
+     * Replay a recording from a given position.
+     *
+     * @param recordingId    to be replayed.
+     * @param position       from which the replay should be started.
+     * @param length         of the stream to be replayed.
+     * @param replayChannel  to which the replay should be sent.
+     * @param replayStreamId to which the replay should be sent.
+     * @param correlationId  for this request.
+     * @return true if successfully offered otherwise false.
+     */
     public boolean replay(
         final long recordingId,
         final long position,
@@ -102,6 +173,13 @@ public class ArchiveProxy
         return offer(replayRequestEncoder.encodedLength());
     }
 
+    /**
+     * Abort an active replay.
+     *
+     * @param replayId      to be aborted.
+     * @param correlationId for this request.
+     * @return true if successfully offered otherwise false.
+     */
     public boolean abortReplay(final int replayId, final long correlationId)
     {
         abortReplayRequestEncoder
@@ -112,6 +190,14 @@ public class ArchiveProxy
         return offer(abortReplayRequestEncoder.encodedLength());
     }
 
+    /**
+     * List a range of recording descriptors.
+     *
+     * @param fromRecordingId at which to begin listing.
+     * @param recordCount     for the number of descriptors to be listed.
+     * @param correlationId   for this request.
+     * @return true if successfully offered otherwise false.
+     */
     public boolean listRecordings(final long fromRecordingId, final int recordCount, final long correlationId)
     {
         listRecordingsRequestEncoder
@@ -123,10 +209,18 @@ public class ArchiveProxy
         return offer(listRecordingsRequestEncoder.encodedLength());
     }
 
-    public int pollResponses(
+    /**
+     * Poll for responses to control message requests.
+     *
+     * @param controlSubscription for the response messages.
+     * @param responseListener    on to which responses are delegated.
+     * @param fragmentLimit       to limit the batch size of a polling operation.
+     * @return the number of fragments delivered.
+     */
+    public int pollControlResponses(
         final Subscription controlSubscription,
         final ResponseListener responseListener,
-        final int count)
+        final int fragmentLimit)
     {
         return controlSubscription.poll(
             (buffer, offset, length, header) ->
@@ -159,7 +253,8 @@ public class ArchiveProxy
                     default:
                         throw new IllegalStateException("Unknown templateId: " + templateId);
                 }
-            }, count);
+            },
+            fragmentLimit);
     }
 
     private void handleRecordingNotFoundResponse(
@@ -251,7 +346,7 @@ public class ArchiveProxy
             recordingDescriptorDecoder.sourceIdentity());
     }
 
-    public int pollEvents(final RecordingEventsListener recordingEventsListener, final int count)
+    public int pollRecordingEvents(final RecordingEventsListener recordingEventsListener, final int fragmentLimit)
     {
         return recordingEvents.poll(
             (buffer, offset, length, header) ->
@@ -306,11 +401,28 @@ public class ArchiveProxy
                     default:
                         throw new IllegalStateException("Unknown templateId: " + templateId);
                 }
-            }, count);
+            },
+            fragmentLimit);
     }
 
     private boolean offer(final int length)
     {
-        return controlRequest.offer(buffer, 0, HEADER_LENGTH + length) > 0;
+        retryIdleStrategy.reset();
+
+        int attempts = 0;
+        while (true)
+        {
+            if (controlRequest.offer(buffer, 0, HEADER_LENGTH + length) > 0)
+            {
+                return true;
+            }
+
+            if (++attempts > maxRetryAttempts)
+            {
+                return false;
+            }
+
+            retryIdleStrategy.idle();
+        }
     }
 }

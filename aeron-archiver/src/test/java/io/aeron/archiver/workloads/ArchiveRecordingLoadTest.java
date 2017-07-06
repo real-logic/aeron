@@ -179,7 +179,7 @@ public class ArchiveRecordingLoadTest
 
     private void initRecordingStartIndicator(final ArchiveProxy archiveProxy)
     {
-        recordingStartedIndicator = () -> archiveProxy.pollEvents(
+        recordingStartedIndicator = () -> archiveProxy.pollRecordingEvents(
             new FailRecordingEventsListener()
             {
                 public void onStart(
@@ -201,7 +201,7 @@ public class ArchiveRecordingLoadTest
     private void initRecordingEndIndicator(final ArchiveProxy archiveProxy)
     {
         recordingEndIndicator =
-            () -> archiveProxy.pollEvents(
+            () -> archiveProxy.pollRecordingEvents(
                 new FailRecordingEventsListener()
                 {
                     public void onProgress(

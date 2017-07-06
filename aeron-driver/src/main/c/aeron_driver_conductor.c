@@ -1383,8 +1383,6 @@ int aeron_driver_conductor_on_add_ipc_publication(
 
     aeron_subscribeable_t *subscribeable = &publication->conductor_fields.subscribeable;
 
-    /* TODO: pre-populate OOM in distinct_error_log so that it never needs to allocate if OOMed */
-
     aeron_driver_conductor_on_publication_ready(
         conductor,
         command->correlated.correlation_id,
@@ -1401,7 +1399,6 @@ int aeron_driver_conductor_on_add_ipc_publication(
         aeron_subscription_link_t *subscription_link = &conductor->ipc_subscriptions.array[i];
 
         /* could be old pub, so have to check to see if already linked */
-        /* TODO: add test for case */
         if (command->stream_id == subscription_link->stream_id &&
             !aeron_driver_conductor_is_subscribeable_linked(subscription_link, subscribeable))
         {

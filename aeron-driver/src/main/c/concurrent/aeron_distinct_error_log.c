@@ -68,6 +68,8 @@ void aeron_distinct_error_log_close(aeron_distinct_error_log_t *log)
     aeron_free(log->observations_pimpl);
 }
 
+/* TODO: pre-populate OOM in distinct_error_log so that it never needs to allocate if OOMed */
+
 static aeron_distinct_observation_t *aeron_distinct_error_log_find_observation(
     aeron_distinct_observation_t *observations,
     size_t num_observations,

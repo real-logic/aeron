@@ -742,3 +742,4 @@ extern int64_t aeron_network_publication_spy_join_position(aeron_network_publica
 extern void aeron_network_publication_trigger_send_setup_frame(aeron_network_publication_t *publication);
 extern void aeron_network_publication_sender_release(aeron_network_publication_t *publication);
 extern bool aeron_network_publication_has_sender_released(aeron_network_publication_t *publication);
+extern size_t aeron_network_publication_num_spy_subscribers(aeron_network_publication_t *publication);

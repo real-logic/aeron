@@ -190,4 +190,9 @@ inline bool aeron_network_publication_has_sender_released(aeron_network_publicat
     return has_sender_released;
 }
 
+inline size_t aeron_network_publication_num_spy_subscribers(aeron_network_publication_t *publication)
+{
+    return publication->conductor_fields.subscribeable.length;
+}
+
 #endif //AERON_AERON_NETWORK_PUBLICATION_H

@@ -475,6 +475,77 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddMult
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 5u);
 }
 
+TEST_F(DriverConductorIpcTest, shouldNotLinkSubscriptionOnAddPublicationAfterFirstAddPublication)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+    int64_t pub_id_1 = nextCorrelationId();
+    int64_t pub_id_2 = nextCorrelationId();
+
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addIpcPublication(client_id, pub_id_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addIpcPublication(client_id, pub_id_2, STREAM_ID_1, false), 0);
+    doWork();
+
+    aeron_ipc_publication_t *publication =
+        aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_1);
+    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 1u);
+    EXPECT_EQ(aeron_driver_conductor_num_active_ipc_subscriptions(&m_conductor.m_conductor, STREAM_ID_1), 1u);
+
+    size_t response_number = 0;
+    int32_t session_id = 0;
+    std::string log_file_name;
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        if (0 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+            const command::CorrelatedMessageFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), sub_id);
+        }
+        else if (1 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+
+            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), pub_id_1);
+            session_id = response.sessionId();
+
+            log_file_name = response.logFileName();
+        }
+        else if (2 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+
+            const command::ImageBuffersReadyFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.streamId(), STREAM_ID_1);
+            EXPECT_EQ(response.subscriberRegistrationId(), sub_id);
+            EXPECT_EQ(response.sessionId(), session_id);
+            EXPECT_EQ(response.correlationId(), pub_id_1);
+            EXPECT_EQ(log_file_name, response.logFileName());
+            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
+        }
+        else if (3 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+
+            const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), pub_id_2);
+            EXPECT_EQ(response.registrationId(), pub_id_1);
+            EXPECT_EQ(response.logFileName(), log_file_name);
+        }
+
+        response_number++;
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 4u);
+}
+
 TEST_F(DriverConductorIpcTest, shouldBeAbleToTimeoutIpcPublication)
 {
     int64_t client_id = nextCorrelationId();

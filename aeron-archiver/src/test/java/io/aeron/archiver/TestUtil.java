@@ -74,7 +74,7 @@ public class TestUtil
     {
         waitFor(() -> client.pollControlResponses(
             reply,
-            new FailResponseListener()
+            new FailControlResponseListener()
             {
                 public void onResponse(
                     final long correlationId2, final ControlResponseCode code, final String errorMessage)
@@ -91,7 +91,7 @@ public class TestUtil
     {
         waitFor(() -> client.pollControlResponses(
             reply,
-            new FailResponseListener()
+            new FailControlResponseListener()
             {
                 public void onResponse(
                     final long correlationId2, final ControlResponseCode code, final String errorMessage)

@@ -367,7 +367,7 @@ public class ArchiverSystemTest
         println("Await result");
         waitFor(() -> archiveProxy.pollControlResponses(
             controlResponses,
-            new FailResponseListener()
+            new FailControlResponseListener()
             {
                 public void onRecordingDescriptor(
                     final long correlationId,

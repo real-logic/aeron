@@ -15,12 +15,12 @@
  */
 package io.aeron.archiver;
 
-import io.aeron.archiver.client.ResponseListener;
+import io.aeron.archiver.client.ControlResponseListener;
 import io.aeron.archiver.codecs.ControlResponseCode;
 
 import static org.junit.Assert.fail;
 
-public class FailResponseListener implements ResponseListener
+public class FailControlResponseListener implements ControlResponseListener
 {
     public void onResponse(final long correlationId, final ControlResponseCode code, final String errorMessage)
     {

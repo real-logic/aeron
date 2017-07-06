@@ -20,7 +20,7 @@ import io.aeron.archiver.codecs.ControlResponseCode;
 /**
  * Interface for listening to events from the archiver in response to requests.
  */
-public interface ResponseListener
+public interface ControlResponseListener
 {
     /**
      * An event has been received from the Archive in response to a request with a given correlation id.

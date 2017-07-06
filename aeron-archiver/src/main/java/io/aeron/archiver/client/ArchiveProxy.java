@@ -203,13 +203,13 @@ public class ArchiveProxy
      * Poll for responses to control message requests.
      *
      * @param controlSubscription for the response messages.
-     * @param responseListener    on to which responses are delegated.
+     * @param controlResponseListener    on to which responses are delegated.
      * @param fragmentLimit       to limit the batch size of a polling operation.
      * @return the number of fragments delivered.
      */
     public int pollControlResponses(
         final Subscription controlSubscription,
-        final ResponseListener responseListener,
+        final ControlResponseListener controlResponseListener,
         final int fragmentLimit)
     {
         return controlSubscription.poll(
@@ -221,23 +221,23 @@ public class ArchiveProxy
                 switch (templateId)
                 {
                     case ControlResponseDecoder.TEMPLATE_ID:
-                        handleArchiverResponse(responseListener, buffer, offset);
+                        handleArchiverResponse(controlResponseListener, buffer, offset);
                         break;
 
                     case ReplayAbortedDecoder.TEMPLATE_ID:
-                        handleReplayAborted(responseListener, buffer, offset);
+                        handleReplayAborted(controlResponseListener, buffer, offset);
                         break;
 
                     case ReplayStartedDecoder.TEMPLATE_ID:
-                        handleReplayStarted(responseListener, buffer, offset);
+                        handleReplayStarted(controlResponseListener, buffer, offset);
                         break;
 
                     case RecordingDescriptorDecoder.TEMPLATE_ID:
-                        handleRecordingDescriptor(responseListener, buffer, offset);
+                        handleRecordingDescriptor(controlResponseListener, buffer, offset);
                         break;
 
                     case RecordingNotFoundResponseDecoder.TEMPLATE_ID:
-                        handleRecordingNotFoundResponse(responseListener, buffer, offset);
+                        handleRecordingNotFoundResponse(controlResponseListener, buffer, offset);
                         break;
 
                     default:
@@ -248,7 +248,7 @@ public class ArchiveProxy
     }
 
     private void handleRecordingNotFoundResponse(
-        final ResponseListener responseListener,
+        final ControlResponseListener controlResponseListener,
         final DirectBuffer buffer,
         final int offset)
     {
@@ -258,14 +258,14 @@ public class ArchiveProxy
             messageHeaderDecoder.blockLength(),
             messageHeaderDecoder.version());
 
-        responseListener.onRecordingNotFound(
+        controlResponseListener.onRecordingNotFound(
             recordingNotFoundResponseDecoder.correlationId(),
             recordingNotFoundResponseDecoder.recordingId(),
             recordingNotFoundResponseDecoder.maxRecordingId());
     }
 
     private void handleArchiverResponse(
-        final ResponseListener responseListener,
+        final ControlResponseListener controlResponseListener,
         final DirectBuffer buffer,
         final int offset)
     {
@@ -277,11 +277,11 @@ public class ArchiveProxy
 
         final long correlationId = archiverResponseDecoder.correlationId();
         final ControlResponseCode code = archiverResponseDecoder.code();
-        responseListener.onResponse(correlationId, code, archiverResponseDecoder.errorMessage());
+        controlResponseListener.onResponse(correlationId, code, archiverResponseDecoder.errorMessage());
     }
 
     private void handleReplayAborted(
-        final ResponseListener responseListener,
+        final ControlResponseListener controlResponseListener,
         final DirectBuffer buffer,
         final int offset)
     {
@@ -291,11 +291,13 @@ public class ArchiveProxy
             messageHeaderDecoder.blockLength(),
             messageHeaderDecoder.version());
 
-        responseListener.onReplayAborted(replayAbortedDecoder.correlationId(), replayAbortedDecoder.endPosition());
+        controlResponseListener.onReplayAborted(
+            replayAbortedDecoder.correlationId(),
+            replayAbortedDecoder.endPosition());
     }
 
     private void handleReplayStarted(
-        final ResponseListener responseListener,
+        final ControlResponseListener controlResponseListener,
         final DirectBuffer buffer,
         final int offset)
     {
@@ -305,11 +307,13 @@ public class ArchiveProxy
             messageHeaderDecoder.blockLength(),
             messageHeaderDecoder.version());
 
-        responseListener.onReplayStarted(replayStartedDecoder.correlationId(), replayStartedDecoder.replayId());
+        controlResponseListener.onReplayStarted(
+            replayStartedDecoder.correlationId(),
+            replayStartedDecoder.replayId());
     }
 
     private void handleRecordingDescriptor(
-        final ResponseListener responseListener,
+        final ControlResponseListener controlResponseListener,
         final DirectBuffer buffer,
         final int offset)
     {
@@ -319,7 +323,7 @@ public class ArchiveProxy
             messageHeaderDecoder.blockLength(),
             messageHeaderDecoder.version());
 
-        responseListener.onRecordingDescriptor(
+        controlResponseListener.onRecordingDescriptor(
             recordingDescriptorDecoder.correlationId(),
             recordingDescriptorDecoder.recordingId(),
             recordingDescriptorDecoder.joinTimestamp(),

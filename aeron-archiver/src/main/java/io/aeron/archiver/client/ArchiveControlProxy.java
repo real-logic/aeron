@@ -24,7 +24,7 @@ import org.agrona.concurrent.YieldingIdleStrategy;
 /**
  * Proxy class for encapsulating interaction with an Archive control protocol.
  */
-public class ArchiveProxy
+public class ArchiveControlProxy
 {
     private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
 
@@ -57,7 +57,7 @@ public class ArchiveProxy
      *
      * @param controlRequests publication for sending control messages to an archive.
      */
-    public ArchiveProxy(final Publication controlRequests)
+    public ArchiveControlProxy(final Publication controlRequests)
     {
         this(controlRequests, new YieldingIdleStrategy(), 3);
     }
@@ -69,7 +69,7 @@ public class ArchiveProxy
      * @param retryIdleStrategy for what should happen between retry attempts at offering messages.
      * @param maxRetryAttempts  for offering control messages before giving up.
      */
-    public ArchiveProxy(
+    public ArchiveControlProxy(
         final Publication controlRequests,
         final IdleStrategy retryIdleStrategy,
         final int maxRetryAttempts)

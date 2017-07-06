@@ -17,7 +17,7 @@ package io.aeron.archiver.workloads;
 
 import io.aeron.*;
 import io.aeron.archiver.*;
-import io.aeron.archiver.client.ArchiveProxy;
+import io.aeron.archiver.client.ArchiveControlProxy;
 import io.aeron.archiver.client.RecordingEventsPoller;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -131,7 +131,7 @@ public class ArchiveRecordingLoadTest
              Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
-            final ArchiveProxy archiveProxy = new ArchiveProxy(control);
+            final ArchiveControlProxy archiveControlProxy = new ArchiveControlProxy(control);
             initRecordingStartIndicator(recordingEvents);
             initRecordingEndIndicator(recordingEvents);
             TestUtil.awaitPublicationIsConnected(control);
@@ -139,7 +139,7 @@ public class ArchiveRecordingLoadTest
             println("Archive service connected");
 
             final Subscription reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
-            assertTrue(archiveProxy.connect(REPLY_URI, REPLY_STREAM_ID));
+            assertTrue(archiveControlProxy.connect(REPLY_URI, REPLY_STREAM_ID));
             TestUtil.awaitSubscriptionIsConnected(reply);
             println("Client connected");
 
@@ -148,8 +148,9 @@ public class ArchiveRecordingLoadTest
             while (System.currentTimeMillis() < duration)
             {
                 final long startRecordingCorrelationId = this.correlationId++;
-                waitFor(() -> archiveProxy.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
-                waitForOk(archiveProxy, reply, startRecordingCorrelationId);
+                waitFor(() -> archiveControlProxy.startRecording(
+                    PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
+                waitForOk(archiveControlProxy, reply, startRecordingCorrelationId);
                 println("Recording requested");
 
                 try (Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID))

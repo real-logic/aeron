@@ -16,7 +16,7 @@
 package io.aeron.archiver;
 
 import io.aeron.*;
-import io.aeron.archiver.client.ArchiveProxy;
+import io.aeron.archiver.client.ArchiveControlProxy;
 import io.aeron.archiver.client.RecordingEventsPoller;
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.driver.MediaDriver;
@@ -177,9 +177,9 @@ public class ArchiverSystemTest
              Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
-            final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
+            final ArchiveControlProxy archiveControlProxy = new ArchiveControlProxy(controlPublication);
 
-            prePublicationVerifications(archiveProxy, controlPublication, recordingEvents);
+            prePublicationVerifications(archiveControlProxy, controlPublication, recordingEvents);
 
             final ExclusivePublication recordedPublication =
                 publishingClient.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
@@ -195,12 +195,12 @@ public class ArchiverSystemTest
 
             assertThat(joinPosition, is(requestedJoinPosition));
             assertThat(recordedPublication.initialTermId(), is(requestedInitialTermId));
-            preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, joinPosition);
+            preSendChecks(archiveControlProxy, recordingEvents, sessionId, termBufferLength, joinPosition);
 
             final int messageCount = prepAndSendMessages(recordingEvents, recordedPublication);
 
             postPublicationValidations(
-                archiveProxy,
+                archiveControlProxy,
                 recordingEvents,
                 sessionId,
                 streamId,
@@ -219,9 +219,9 @@ public class ArchiverSystemTest
              Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
-            final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
+            final ArchiveControlProxy archiveControlProxy = new ArchiveControlProxy(controlPublication);
 
-            prePublicationVerifications(archiveProxy, controlPublication, recordingEvents);
+            prePublicationVerifications(archiveControlProxy, controlPublication, recordingEvents);
 
             final Publication recordedPublication = publishingClient.addPublication(publishUri, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(recordedPublication);
@@ -233,12 +233,12 @@ public class ArchiverSystemTest
             final int maxPayloadLength = recordedPublication.maxPayloadLength();
             final long joinPosition = recordedPublication.position();
 
-            preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, joinPosition);
+            preSendChecks(archiveControlProxy, recordingEvents, sessionId, termBufferLength, joinPosition);
 
             final int messageCount = prepAndSendMessages(recordingEvents, recordedPublication);
 
             postPublicationValidations(
-                archiveProxy,
+                archiveControlProxy,
                 recordingEvents,
                 sessionId,
                 streamId,
@@ -250,7 +250,7 @@ public class ArchiverSystemTest
     }
 
     private void preSendChecks(
-        final ArchiveProxy archiveProxy,
+        final ArchiveControlProxy archiveControlProxy,
         final Subscription recordingEvents,
         final int sessionId,
         final int termBufferLength,
@@ -280,11 +280,11 @@ public class ArchiverSystemTest
 
         waitFor(() -> recordingEventsPoller.poll() != 0);
 
-        verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
+        verifyDescriptorListOngoingArchive(archiveControlProxy, termBufferLength);
     }
 
     private void postPublicationValidations(
-        final ArchiveProxy archiveProxy,
+        final ArchiveControlProxy archiveControlProxy,
         final Subscription recordingEvents,
         final int sessionId,
         final int streamId,
@@ -293,15 +293,15 @@ public class ArchiverSystemTest
         final int maxPayloadLength,
         final int messageCount) throws IOException
     {
-        verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
+        verifyDescriptorListOngoingArchive(archiveControlProxy, termBufferLength);
 
         assertNull(trackerError);
         println("All data arrived");
 
         println("Request stop recording");
         final long requestStopCorrelationId = this.correlationId++;
-        waitFor(() -> archiveProxy.stopRecording(recordingId, requestStopCorrelationId));
-        waitForOk(archiveProxy, controlResponses, requestStopCorrelationId);
+        waitFor(() -> archiveControlProxy.stopRecording(recordingId, requestStopCorrelationId));
+        waitForOk(archiveControlProxy, controlResponses, requestStopCorrelationId);
 
         final RecordingEventsPoller recordingEventsPoller = new RecordingEventsPoller(
             new FailRecordingEventsListener()
@@ -316,7 +316,7 @@ public class ArchiverSystemTest
 
         waitFor(() -> recordingEventsPoller.poll() != 0);
 
-        verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
+        verifyDescriptorListOngoingArchive(archiveControlProxy, termBufferLength);
 
         println("Recording id: " + recordingId);
         println("Meta data file printout: ");
@@ -324,7 +324,7 @@ public class ArchiverSystemTest
         validateArchiveFile(messageCount, recordingId);
 
         validateReplay(
-            archiveProxy,
+            archiveControlProxy,
             messageCount,
             initialTermId,
             maxPayloadLength,
@@ -332,7 +332,7 @@ public class ArchiverSystemTest
     }
 
     private void prePublicationVerifications(
-        final ArchiveProxy archiveProxy,
+        final ArchiveControlProxy archiveControlProxy,
         final Publication controlPublication,
         final Subscription recordingEvents)
     {
@@ -341,18 +341,18 @@ public class ArchiverSystemTest
         println("Archive service connected");
 
         controlResponses = publishingClient.addSubscription(CONTROL_URI, CONTROL_STREAM_ID);
-        assertTrue(archiveProxy.connect(CONTROL_URI, CONTROL_STREAM_ID));
+        assertTrue(archiveControlProxy.connect(CONTROL_URI, CONTROL_STREAM_ID));
         awaitSubscriptionIsConnected(controlResponses);
         println("Client connected");
 
-        verifyEmptyDescriptorList(archiveProxy);
+        verifyEmptyDescriptorList(archiveControlProxy);
         final long startRecordingCorrelationId = this.correlationId++;
-        waitFor(() -> archiveProxy.startRecording(publishUri, PUBLISH_STREAM_ID, startRecordingCorrelationId));
+        waitFor(() -> archiveControlProxy.startRecording(publishUri, PUBLISH_STREAM_ID, startRecordingCorrelationId));
         println("Recording requested");
-        waitForOk(archiveProxy, controlResponses, startRecordingCorrelationId);
+        waitForOk(archiveControlProxy, controlResponses, startRecordingCorrelationId);
     }
 
-    private void verifyEmptyDescriptorList(final ArchiveProxy client)
+    private void verifyEmptyDescriptorList(final ArchiveControlProxy client)
     {
         final long requestRecordingsCorrelationId = this.correlationId++;
         client.listRecordings(0, 100, requestRecordingsCorrelationId);
@@ -360,12 +360,12 @@ public class ArchiverSystemTest
     }
 
     private void verifyDescriptorListOngoingArchive(
-        final ArchiveProxy archiveProxy, final int publicationTermBufferLength)
+        final ArchiveControlProxy archiveControlProxy, final int publicationTermBufferLength)
     {
         final long requestRecordingsCorrelationId = this.correlationId++;
-        archiveProxy.listRecordings(recordingId, 1, requestRecordingsCorrelationId);
+        archiveControlProxy.listRecordings(recordingId, 1, requestRecordingsCorrelationId);
         println("Await result");
-        waitFor(() -> archiveProxy.pollControlResponses(
+        waitFor(() -> archiveControlProxy.pollControlResponses(
             controlResponses,
             new FailControlResponseListener()
             {
@@ -513,7 +513,7 @@ public class ArchiverSystemTest
     }
 
     private void validateReplay(
-        final ArchiveProxy archiveProxy,
+        final ArchiveControlProxy archiveControlProxy,
         final int messageCount,
         final int initialTermId,
         final int maxPayloadLength,
@@ -523,7 +523,7 @@ public class ArchiverSystemTest
         {
             final long replayCorrelationId = correlationId++;
 
-            waitFor(() -> archiveProxy.replay(
+            waitFor(() -> archiveControlProxy.replay(
                 recordingId,
                 joinPosition,
                 totalRecordingLength,
@@ -531,7 +531,7 @@ public class ArchiverSystemTest
                 REPLAY_STREAM_ID,
                 replayCorrelationId
             ));
-            waitForOk(archiveProxy, controlResponses, replayCorrelationId);
+            waitForOk(archiveControlProxy, controlResponses, replayCorrelationId);
 
             awaitSubscriptionIsConnected(replay);
             final Image image = replay.images().get(0);

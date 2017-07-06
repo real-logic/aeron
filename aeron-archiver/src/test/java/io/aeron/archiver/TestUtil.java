@@ -18,7 +18,7 @@ package io.aeron.archiver;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.Subscription;
-import io.aeron.archiver.client.ArchiveProxy;
+import io.aeron.archiver.client.ArchiveControlProxy;
 import io.aeron.archiver.codecs.ControlResponseCode;
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.FragmentHandler;
@@ -70,7 +70,7 @@ public class TestUtil
         }
     }
 
-    public static void waitForOk(final ArchiveProxy client, final Subscription reply, final long correlationId1)
+    public static void waitForOk(final ArchiveControlProxy client, final Subscription reply, final long correlationId1)
     {
         waitFor(() -> client.pollControlResponses(
             reply,
@@ -87,7 +87,7 @@ public class TestUtil
             1) != 0);
     }
 
-    static void waitForFail(final ArchiveProxy client, final Subscription reply, final long correlationId1)
+    static void waitForFail(final ArchiveControlProxy client, final Subscription reply, final long correlationId1)
     {
         waitFor(() -> client.pollControlResponses(
             reply,
@@ -147,12 +147,12 @@ public class TestUtil
         final String recordingMetaFileName = recordingDescriptorFileName(recordingId);
         final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
 
-        final RecordingDescriptorDecoder desc = loadRecordingDescriptor(recordingMetaFile);
+        final RecordingDescriptorDecoder descriptor = loadRecordingDescriptor(recordingMetaFile);
         return new RecordingFragmentReader(
-            desc.joinPosition(),
-            desc.endPosition(),
-            desc.termBufferLength(),
-            desc.segmentFileLength(),
+            descriptor.joinPosition(),
+            descriptor.endPosition(),
+            descriptor.termBufferLength(),
+            descriptor.segmentFileLength(),
             recordingId,
             archiveDir,
             RecordingFragmentReader.NULL_POSITION,

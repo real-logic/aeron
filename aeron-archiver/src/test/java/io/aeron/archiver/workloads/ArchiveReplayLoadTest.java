@@ -18,7 +18,7 @@ package io.aeron.archiver.workloads;
 
 import io.aeron.*;
 import io.aeron.archiver.*;
-import io.aeron.archiver.client.ArchiveProxy;
+import io.aeron.archiver.client.ArchiveControlProxy;
 import io.aeron.archiver.client.RecordingEventsPoller;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -136,21 +136,22 @@ public class ArchiveReplayLoadTest
              Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
-            final ArchiveProxy archiveProxy = new ArchiveProxy(archiverServiceRequest);
+            final ArchiveControlProxy archiveControlProxy = new ArchiveControlProxy(archiverServiceRequest);
 
             awaitPublicationIsConnected(archiverServiceRequest);
             awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 
             final Subscription reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
-            assertTrue(archiveProxy.connect(REPLY_URI, REPLY_STREAM_ID));
+            assertTrue(archiveControlProxy.connect(REPLY_URI, REPLY_STREAM_ID));
             awaitSubscriptionIsConnected(reply);
             println("Client connected");
 
             final long startRecordingCorrelationId = this.correlationId++;
-            waitFor(() -> archiveProxy.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
+            waitFor(() -> archiveControlProxy.startRecording(
+                PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
             println("Recording requested");
-            waitForOk(archiveProxy, reply, startRecordingCorrelationId);
+            waitForOk(archiveControlProxy, reply, startRecordingCorrelationId);
 
             final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(publication);
@@ -161,14 +162,14 @@ public class ArchiveReplayLoadTest
 
             println("Request stop recording");
             final long requestStopCorrelationId = this.correlationId++;
-            waitFor(() -> archiveProxy.stopRecording(recordingId, requestStopCorrelationId));
-            waitForOk(archiveProxy, reply, requestStopCorrelationId);
+            waitFor(() -> archiveControlProxy.stopRecording(recordingId, requestStopCorrelationId));
+            waitForOk(archiveControlProxy, reply, requestStopCorrelationId);
             final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
             int i = 0;
             while (System.currentTimeMillis() < duration)
             {
                 final long start = System.currentTimeMillis();
-                validateReplay(archiveProxy, messageCount);
+                validateReplay(archiveControlProxy, messageCount);
                 final long delta = System.currentTimeMillis() - start;
                 final double rate = (totalDataLength * 1000.0) / (MEGABYTE * delta);
                 System.out.printf("Replay[%d] rate %.02f MB/s %n", ++i, rate);
@@ -228,7 +229,7 @@ public class ArchiveReplayLoadTest
         lastTermId = termIdFromPosition;
     }
 
-    private void validateReplay(final ArchiveProxy archiveProxy, final int messageCount)
+    private void validateReplay(final ArchiveControlProxy archiveControlProxy, final int messageCount)
     {
         final int replayStreamId = (int)correlationId;
 
@@ -236,7 +237,7 @@ public class ArchiveReplayLoadTest
         {
             final long correlationId = this.correlationId++;
 
-            TestUtil.waitFor(() -> archiveProxy.replay(
+            TestUtil.waitFor(() -> archiveControlProxy.replay(
                 recordingId,
                 joinPosition,
                 totalRecordingLength,

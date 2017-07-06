@@ -126,15 +126,15 @@ public class ArchiveRecordingLoadTest
     @Test
     public void archive() throws IOException, InterruptedException
     {
-        try (Publication control = publishingClient.addPublication(
+        try (Publication controlRequest = publishingClient.addPublication(
                 archiverCtx.controlChannel(), archiverCtx.controlStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
-            final ArchiveProxy archiveProxy = new ArchiveProxy(control);
+            final ArchiveProxy archiveProxy = new ArchiveProxy(controlRequest);
             initRecordingStartIndicator(recordingEvents);
             initRecordingEndIndicator(recordingEvents);
-            TestUtil.awaitPublicationIsConnected(control);
+            TestUtil.awaitPublicationIsConnected(controlRequest);
             TestUtil.awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 

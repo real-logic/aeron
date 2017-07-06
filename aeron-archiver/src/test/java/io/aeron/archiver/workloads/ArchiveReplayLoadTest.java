@@ -131,14 +131,14 @@ public class ArchiveReplayLoadTest
     @Test(timeout = 180000)
     public void replay() throws IOException, InterruptedException
     {
-        try (Publication archiverServiceRequest = publishingClient.addPublication(
+        try (Publication controlRequest = publishingClient.addPublication(
                 archiverCtx.controlChannel(), archiverCtx.controlStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
-            final ArchiveProxy archiveProxy = new ArchiveProxy(archiverServiceRequest);
+            final ArchiveProxy archiveProxy = new ArchiveProxy(controlRequest);
 
-            awaitPublicationIsConnected(archiverServiceRequest);
+            awaitPublicationIsConnected(controlRequest);
             awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 
@@ -163,6 +163,7 @@ public class ArchiveReplayLoadTest
             final long requestStopCorrelationId = this.correlationId++;
             waitFor(() -> archiveProxy.stopRecording(recordingId, requestStopCorrelationId));
             waitForOk(controlResponse, requestStopCorrelationId);
+
             final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
             int i = 0;
 

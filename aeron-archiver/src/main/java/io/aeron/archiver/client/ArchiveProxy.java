@@ -30,7 +30,7 @@ public class ArchiveProxy
     private final IdleStrategy retryIdleStrategy;
 
     private final ExpandableDirectByteBuffer buffer = new ExpandableDirectByteBuffer(1024);
-    private final Publication controlRequests;
+    private final Publication controlRequest;
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ConnectRequestEncoder connectRequestEncoder = new ConnectRequestEncoder();
     private final StartRecordingRequestEncoder startRecordingRequestEncoder = new StartRecordingRequestEncoder();
@@ -45,26 +45,26 @@ public class ArchiveProxy
      * This provides a default {@link IdleStrategy} of a {@link YieldingIdleStrategy} when offers are back pressured
      * with a default maximum retry attempts of 3.
      *
-     * @param controlRequests publication for sending control messages to an archive.
+     * @param controlRequest publication for sending control messages to an archive.
      */
-    public ArchiveProxy(final Publication controlRequests)
+    public ArchiveProxy(final Publication controlRequest)
     {
-        this(controlRequests, new YieldingIdleStrategy(), 3);
+        this(controlRequest, new YieldingIdleStrategy(), 3);
     }
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
      *
-     * @param controlRequests   publication for sending control messages to an archive.
+     * @param controlRequest    publication for sending control messages to an archive.
      * @param retryIdleStrategy for what should happen between retry attempts at offering messages.
      * @param maxRetryAttempts  for offering control messages before giving up.
      */
     public ArchiveProxy(
-        final Publication controlRequests,
+        final Publication controlRequest,
         final IdleStrategy retryIdleStrategy,
         final int maxRetryAttempts)
     {
-        this.controlRequests = controlRequests;
+        this.controlRequest = controlRequest;
         this.retryIdleStrategy = retryIdleStrategy;
         this.maxRetryAttempts = maxRetryAttempts;
     }
@@ -196,7 +196,7 @@ public class ArchiveProxy
         int attempts = 0;
         while (true)
         {
-            if (controlRequests.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length) > 0)
+            if (controlRequest.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length) > 0)
             {
                 return true;
             }

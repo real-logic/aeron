@@ -53,7 +53,7 @@ public class RecordingSessionTest
     private final long joinPosition = termOffset;
 
     private final File tempDirForTest = TestUtil.makeTempDir();
-    private final NotificationsProxy proxy;
+    private final RecordingEventsProxy recordingEventsProxy;
 
     private final Image image;
 
@@ -63,7 +63,7 @@ public class RecordingSessionTest
 
     public RecordingSessionTest() throws IOException
     {
-        proxy = mock(NotificationsProxy.class);
+        recordingEventsProxy = mock(RecordingEventsProxy.class);
         final int initialTermId = 0;
 
         image = mockImage(
@@ -109,7 +109,8 @@ public class RecordingSessionTest
             .recordingFileLength(SEGMENT_FILE_SIZE)
             .archiveDir(tempDirForTest)
             .epochClock(epochClock);
-        final RecordingSession session = new RecordingSession(RECORDING_ID, proxy, image, recordingContext);
+        final RecordingSession session = new RecordingSession(
+            RECORDING_ID, recordingEventsProxy, image, recordingContext);
 
         assertEquals(RECORDING_ID, session.sessionId());
 

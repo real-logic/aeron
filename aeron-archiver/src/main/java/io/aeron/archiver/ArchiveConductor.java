@@ -59,7 +59,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     private final Subscription controlSubscription;
     private final Catalog catalog;
-    private final NotificationsProxy notificationsProxy;
+    private final RecordingEventsProxy recordingEventsProxy;
     private final int maxConcurrentRecordings;
     private final int maxConcurrentReplays;
 
@@ -95,7 +95,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         final Publication notificationPublication =
             aeron.addPublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
-        notificationsProxy = new NotificationsProxy(ctx.idleStrategy(), notificationPublication);
+        recordingEventsProxy = new RecordingEventsProxy(ctx.idleStrategy(), notificationPublication);
 
         this.recordingContext = new RecordingWriter.RecordingContext()
             .recordingFileLength(ctx.segmentFileLength())
@@ -245,7 +245,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         final RecordingSession session = new RecordingSession(
             recordingId,
-            notificationsProxy,
+            recordingEventsProxy,
             image,
             recordingContext);
 

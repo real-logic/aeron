@@ -31,7 +31,7 @@ class RecordingSession implements Session
     }
 
     private final long recordingId;
-    private final NotificationsProxy notificationsProxy;
+    private final RecordingEventsProxy recordingEventsProxy;
     private final Image image;
     private final RecordingWriter.RecordingContext recordingContext;
 
@@ -40,12 +40,12 @@ class RecordingSession implements Session
 
     RecordingSession(
         final long recordingId,
-        final NotificationsProxy notificationsProxy,
+        final RecordingEventsProxy recordingEventsProxy,
         final Image image,
         final RecordingWriter.RecordingContext recordingContext)
     {
         this.recordingId = recordingId;
-        this.notificationsProxy = notificationsProxy;
+        this.recordingEventsProxy = recordingEventsProxy;
         this.image = image;
         this.recordingContext = recordingContext;
     }
@@ -116,7 +116,7 @@ class RecordingSession implements Session
             LangUtil.rethrowUnchecked(ex);
         }
 
-        notificationsProxy.recordingStarted(
+        recordingEventsProxy.started(
             recordingId,
             joinPosition,
             sessionId,
@@ -135,7 +135,7 @@ class RecordingSession implements Session
         CloseHelper.quietClose(recordingWriter);
         // this reflects the single local recording assumption
         CloseHelper.quietClose(image.subscription());
-        notificationsProxy.recordingStopped(recordingId, recordingWriter.joinPosition(), recordingWriter.endPosition());
+        recordingEventsProxy.stopped(recordingId, recordingWriter.joinPosition(), recordingWriter.endPosition());
         state = State.CLOSED;
     }
 
@@ -147,7 +147,7 @@ class RecordingSession implements Session
             workCount = image.rawPoll(recordingWriter, recordingWriter.segmentFileLength());
             if (workCount != 0)
             {
-                notificationsProxy.recordingProgress(
+                recordingEventsProxy.progress(
                     recordingWriter.recordingId(),
                     recordingWriter.joinPosition(),
                     recordingWriter.endPosition());

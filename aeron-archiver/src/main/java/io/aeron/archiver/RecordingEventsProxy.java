@@ -20,23 +20,23 @@ import io.aeron.archiver.codecs.*;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.concurrent.IdleStrategy;
 
-class NotificationsProxy
+class RecordingEventsProxy
 {
     private final IdleStrategy idleStrategy;
-    private final Publication recordingNotifications;
-    private final ExpandableDirectByteBuffer outboundBuffer = new ExpandableDirectByteBuffer(2048);
+    private final Publication recordingEventsPublication;
+    private final ExpandableDirectByteBuffer outboundBuffer = new ExpandableDirectByteBuffer(512);
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final RecordingStartedEncoder recordingStartedEncoder = new RecordingStartedEncoder();
     private final RecordingProgressEncoder recordingProgressEncoder = new RecordingProgressEncoder();
     private final RecordingStoppedEncoder recordingStoppedEncoder = new RecordingStoppedEncoder();
 
-    NotificationsProxy(final IdleStrategy idleStrategy, final Publication recordingNotifications)
+    RecordingEventsProxy(final IdleStrategy idleStrategy, final Publication recordingEventsPublication)
     {
         this.idleStrategy = idleStrategy;
-        this.recordingNotifications = recordingNotifications;
+        this.recordingEventsPublication = recordingEventsPublication;
     }
 
-    void recordingStarted(
+    void started(
         final long recordingId,
         final long joinPosition,
         final int sessionId,
@@ -56,7 +56,7 @@ class NotificationsProxy
         send(recordingStartedEncoder.encodedLength());
     }
 
-    void recordingProgress(final long recordingId, final long joinPosition, final long position)
+    void progress(final long recordingId, final long joinPosition, final long position)
     {
         recordingProgressEncoder
             .wrapAndApplyHeader(outboundBuffer, 0, messageHeaderEncoder)
@@ -67,7 +67,7 @@ class NotificationsProxy
         send(recordingProgressEncoder.encodedLength());
     }
 
-    void recordingStopped(final long recordingId, final long joinPosition, final long endPosition)
+    void stopped(final long recordingId, final long joinPosition, final long endPosition)
     {
         recordingStoppedEncoder
             .wrapAndApplyHeader(outboundBuffer, 0, messageHeaderEncoder)
@@ -84,7 +84,7 @@ class NotificationsProxy
         while (true)
         {
             // TODO: should we make this publication unreliable?
-            final long result = recordingNotifications.offer(outboundBuffer, 0, fullLength);
+            final long result = recordingEventsPublication.offer(outboundBuffer, 0, fullLength);
             if (result > 0 || result == Publication.NOT_CONNECTED)
             {
                 idleStrategy.reset();

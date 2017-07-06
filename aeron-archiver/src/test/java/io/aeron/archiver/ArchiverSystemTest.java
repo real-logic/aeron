@@ -330,7 +330,7 @@ public class ArchiverSystemTest
         println("Archive service connected");
 
         controlResponses = publishingClient.addSubscription(CONTROL_URI, CONTROL_STREAM_ID);
-        archiveProxy.connect(CONTROL_URI, CONTROL_STREAM_ID);
+        assertTrue(archiveProxy.connect(CONTROL_URI, CONTROL_STREAM_ID));
         awaitSubscriptionIsConnected(controlResponses);
         println("Client connected");
 

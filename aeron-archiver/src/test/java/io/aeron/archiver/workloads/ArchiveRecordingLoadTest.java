@@ -39,6 +39,7 @@ import java.util.function.BooleanSupplier;
 import static io.aeron.archiver.TestUtil.*;
 import static io.aeron.archiver.workloads.ArchiveReplayLoadTest.REPLY_STREAM_ID;
 import static io.aeron.archiver.workloads.ArchiveReplayLoadTest.REPLY_URI;
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -137,7 +138,7 @@ public class ArchiveRecordingLoadTest
             println("Archive service connected");
 
             final Subscription reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
-            archiveProxy.connect(REPLY_URI, REPLY_STREAM_ID);
+            assertTrue(archiveProxy.connect(REPLY_URI, REPLY_STREAM_ID));
             TestUtil.awaitSubscriptionIsConnected(reply);
             println("Client connected");
 

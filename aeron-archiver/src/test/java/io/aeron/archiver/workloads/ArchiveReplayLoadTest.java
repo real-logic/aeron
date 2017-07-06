@@ -37,6 +37,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archiver.TestUtil.*;
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -143,7 +144,7 @@ public class ArchiveReplayLoadTest
             println("Archive service connected");
 
             final Subscription reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
-            archiveProxy.connect(REPLY_URI, REPLY_STREAM_ID);
+            assertTrue(archiveProxy.connect(REPLY_URI, REPLY_STREAM_ID));
             awaitSubscriptionIsConnected(reply);
             println("Client connected");
 

@@ -202,9 +202,9 @@ public class ArchiveProxy
     /**
      * Poll for responses to control message requests.
      *
-     * @param controlSubscription for the response messages.
-     * @param controlResponseListener    on to which responses are delegated.
-     * @param fragmentLimit       to limit the batch size of a polling operation.
+     * @param controlSubscription     for the response messages.
+     * @param controlResponseListener on to which responses are delegated.
+     * @param fragmentLimit           to limit the batch size of a polling operation.
      * @return the number of fragments delivered.
      */
     public int pollControlResponses(
@@ -329,7 +329,7 @@ public class ArchiveProxy
             recordingDescriptorDecoder.joinTimestamp(),
             recordingDescriptorDecoder.endTimestamp(),
             recordingDescriptorDecoder.joinPosition(),
-            recordingDescriptorDecoder.endTimestamp(),
+            recordingDescriptorDecoder.endPosition(),
             recordingDescriptorDecoder.initialTermId(),
             recordingDescriptorDecoder.termBufferLength(),
             recordingDescriptorDecoder.mtuLength(),

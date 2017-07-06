@@ -631,7 +631,7 @@ public class ArchiverSystemTest
                     recorded = 0;
                     long start = System.currentTimeMillis();
                     long startBytes = remaining;
-                    // each message is fragmentLength[fragmentCount]
+
                     while (endPosition == -1 || recorded < totalRecordingLength)
                     {
                         waitFor(() -> recordingEventsPoller.poll() != 0);

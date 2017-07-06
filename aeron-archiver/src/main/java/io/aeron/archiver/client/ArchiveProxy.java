@@ -22,12 +22,10 @@ import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 
 /**
- * Proxy class for encapsulating interaction with an Archive control protocol.
+ * Proxy class for encapsulating encoding and sending of control protocol messages to an archive.
  */
-public class ArchiveControlProxy
+public class ArchiveProxy
 {
-    private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
-
     private final int maxRetryAttempts;
     private final IdleStrategy retryIdleStrategy;
 
@@ -41,14 +39,6 @@ public class ArchiveControlProxy
     private final StopRecordingRequestEncoder stopRecordingRequestEncoder = new StopRecordingRequestEncoder();
     private final ListRecordingsRequestEncoder listRecordingsRequestEncoder = new ListRecordingsRequestEncoder();
 
-    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final ReplayAbortedDecoder replayAbortedDecoder = new ReplayAbortedDecoder();
-    private final ReplayStartedDecoder replayStartedDecoder = new ReplayStartedDecoder();
-    private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
-    private final ControlResponseDecoder archiverResponseDecoder = new ControlResponseDecoder();
-    private final RecordingNotFoundResponseDecoder recordingNotFoundResponseDecoder =
-        new RecordingNotFoundResponseDecoder();
-
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
      *
@@ -57,7 +47,7 @@ public class ArchiveControlProxy
      *
      * @param controlRequests publication for sending control messages to an archive.
      */
-    public ArchiveControlProxy(final Publication controlRequests)
+    public ArchiveProxy(final Publication controlRequests)
     {
         this(controlRequests, new YieldingIdleStrategy(), 3);
     }
@@ -69,7 +59,7 @@ public class ArchiveControlProxy
      * @param retryIdleStrategy for what should happen between retry attempts at offering messages.
      * @param maxRetryAttempts  for offering control messages before giving up.
      */
-    public ArchiveControlProxy(
+    public ArchiveProxy(
         final Publication controlRequests,
         final IdleStrategy retryIdleStrategy,
         final int maxRetryAttempts)
@@ -199,147 +189,6 @@ public class ArchiveControlProxy
         return offer(listRecordingsRequestEncoder.encodedLength());
     }
 
-    /**
-     * Poll for responses to control message requests.
-     *
-     * @param controlSubscription     for the response messages.
-     * @param controlResponseListener on to which responses are delegated.
-     * @param fragmentLimit           to limit the batch size of a polling operation.
-     * @return the number of fragments delivered.
-     */
-    public int pollControlResponses(
-        final Subscription controlSubscription,
-        final ControlResponseListener controlResponseListener,
-        final int fragmentLimit)
-    {
-        return controlSubscription.poll(
-            (buffer, offset, length, header) ->
-            {
-                messageHeaderDecoder.wrap(buffer, offset);
-
-                final int templateId = messageHeaderDecoder.templateId();
-                switch (templateId)
-                {
-                    case ControlResponseDecoder.TEMPLATE_ID:
-                        handleArchiverResponse(controlResponseListener, buffer, offset);
-                        break;
-
-                    case ReplayAbortedDecoder.TEMPLATE_ID:
-                        handleReplayAborted(controlResponseListener, buffer, offset);
-                        break;
-
-                    case ReplayStartedDecoder.TEMPLATE_ID:
-                        handleReplayStarted(controlResponseListener, buffer, offset);
-                        break;
-
-                    case RecordingDescriptorDecoder.TEMPLATE_ID:
-                        handleRecordingDescriptor(controlResponseListener, buffer, offset);
-                        break;
-
-                    case RecordingNotFoundResponseDecoder.TEMPLATE_ID:
-                        handleRecordingNotFoundResponse(controlResponseListener, buffer, offset);
-                        break;
-
-                    default:
-                        throw new IllegalStateException("Unknown templateId: " + templateId);
-                }
-            },
-            fragmentLimit);
-    }
-
-    private void handleRecordingNotFoundResponse(
-        final ControlResponseListener controlResponseListener,
-        final DirectBuffer buffer,
-        final int offset)
-    {
-        recordingNotFoundResponseDecoder.wrap(
-            buffer,
-            offset + HEADER_LENGTH,
-            messageHeaderDecoder.blockLength(),
-            messageHeaderDecoder.version());
-
-        controlResponseListener.onRecordingNotFound(
-            recordingNotFoundResponseDecoder.correlationId(),
-            recordingNotFoundResponseDecoder.recordingId(),
-            recordingNotFoundResponseDecoder.maxRecordingId());
-    }
-
-    private void handleArchiverResponse(
-        final ControlResponseListener controlResponseListener,
-        final DirectBuffer buffer,
-        final int offset)
-    {
-        archiverResponseDecoder.wrap(
-            buffer,
-            offset + HEADER_LENGTH,
-            messageHeaderDecoder.blockLength(),
-            messageHeaderDecoder.version());
-
-        final long correlationId = archiverResponseDecoder.correlationId();
-        final ControlResponseCode code = archiverResponseDecoder.code();
-        controlResponseListener.onResponse(correlationId, code, archiverResponseDecoder.errorMessage());
-    }
-
-    private void handleReplayAborted(
-        final ControlResponseListener controlResponseListener,
-        final DirectBuffer buffer,
-        final int offset)
-    {
-        replayAbortedDecoder.wrap(
-            buffer,
-            offset + HEADER_LENGTH,
-            messageHeaderDecoder.blockLength(),
-            messageHeaderDecoder.version());
-
-        controlResponseListener.onReplayAborted(
-            replayAbortedDecoder.correlationId(),
-            replayAbortedDecoder.endPosition());
-    }
-
-    private void handleReplayStarted(
-        final ControlResponseListener controlResponseListener,
-        final DirectBuffer buffer,
-        final int offset)
-    {
-        replayStartedDecoder.wrap(
-            buffer,
-            offset + HEADER_LENGTH,
-            messageHeaderDecoder.blockLength(),
-            messageHeaderDecoder.version());
-
-        controlResponseListener.onReplayStarted(
-            replayStartedDecoder.correlationId(),
-            replayStartedDecoder.replayId());
-    }
-
-    private void handleRecordingDescriptor(
-        final ControlResponseListener controlResponseListener,
-        final DirectBuffer buffer,
-        final int offset)
-    {
-        recordingDescriptorDecoder.wrap(
-            buffer,
-            offset + HEADER_LENGTH,
-            messageHeaderDecoder.blockLength(),
-            messageHeaderDecoder.version());
-
-        controlResponseListener.onRecordingDescriptor(
-            recordingDescriptorDecoder.correlationId(),
-            recordingDescriptorDecoder.recordingId(),
-            recordingDescriptorDecoder.joinTimestamp(),
-            recordingDescriptorDecoder.endTimestamp(),
-            recordingDescriptorDecoder.joinPosition(),
-            recordingDescriptorDecoder.endPosition(),
-            recordingDescriptorDecoder.initialTermId(),
-            recordingDescriptorDecoder.termBufferLength(),
-            recordingDescriptorDecoder.mtuLength(),
-            recordingDescriptorDecoder.segmentFileLength(),
-            recordingDescriptorDecoder.sessionId(),
-            recordingDescriptorDecoder.streamId(),
-            recordingDescriptorDecoder.channel(),
-            recordingDescriptorDecoder.sourceIdentity());
-    }
-
     private boolean offer(final int length)
     {
         retryIdleStrategy.reset();
@@ -347,7 +196,7 @@ public class ArchiveControlProxy
         int attempts = 0;
         while (true)
         {
-            if (controlRequests.offer(buffer, 0, HEADER_LENGTH + length) > 0)
+            if (controlRequests.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length) > 0)
             {
                 return true;
             }

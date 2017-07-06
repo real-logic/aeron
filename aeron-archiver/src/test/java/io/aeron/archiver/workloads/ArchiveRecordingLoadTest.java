@@ -17,7 +17,7 @@ package io.aeron.archiver.workloads;
 
 import io.aeron.*;
 import io.aeron.archiver.*;
-import io.aeron.archiver.client.ArchiveControlProxy;
+import io.aeron.archiver.client.ArchiveProxy;
 import io.aeron.archiver.client.RecordingEventsPoller;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -131,16 +131,16 @@ public class ArchiveRecordingLoadTest
              Subscription recordingEvents = publishingClient.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
-            final ArchiveControlProxy archiveControlProxy = new ArchiveControlProxy(control);
+            final ArchiveProxy archiveProxy = new ArchiveProxy(control);
             initRecordingStartIndicator(recordingEvents);
             initRecordingEndIndicator(recordingEvents);
             TestUtil.awaitPublicationIsConnected(control);
             TestUtil.awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 
-            final Subscription reply = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
-            assertTrue(archiveControlProxy.connect(REPLY_URI, REPLY_STREAM_ID));
-            TestUtil.awaitSubscriptionIsConnected(reply);
+            final Subscription controlResponse = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
+            assertTrue(archiveProxy.connect(REPLY_URI, REPLY_STREAM_ID));
+            TestUtil.awaitSubscriptionIsConnected(controlResponse);
             println("Client connected");
 
             long start;
@@ -148,9 +148,8 @@ public class ArchiveRecordingLoadTest
             while (System.currentTimeMillis() < duration)
             {
                 final long startRecordingCorrelationId = this.correlationId++;
-                waitFor(() -> archiveControlProxy.startRecording(
-                    PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
-                waitForOk(archiveControlProxy, reply, startRecordingCorrelationId);
+                waitFor(() -> archiveProxy.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
+                waitForOk(controlResponse, startRecordingCorrelationId);
                 println("Recording requested");
 
                 try (Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID))
@@ -260,7 +259,6 @@ public class ArchiveRecordingLoadTest
         {
             final int dataLength = fragmentLength[i] - DataHeaderFlyweight.HEADER_LENGTH;
             buffer.putInt(0, i);
-            //printf("Sending: index=%d length=%d %n", i, dataLength);
             offer(publication, buffer, dataLength);
         }
 

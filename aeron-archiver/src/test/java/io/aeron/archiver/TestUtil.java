@@ -18,7 +18,7 @@ package io.aeron.archiver;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.Subscription;
-import io.aeron.archiver.client.ArchiveControlProxy;
+import io.aeron.archiver.client.ControlResponsePoller;
 import io.aeron.archiver.codecs.ControlResponseCode;
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.FragmentHandler;
@@ -70,37 +70,43 @@ public class TestUtil
         }
     }
 
-    public static void waitForOk(final ArchiveControlProxy client, final Subscription reply, final long correlationId1)
+    public static void waitForOk(final Subscription controlResponse, final long expectedCorrelationId)
     {
-        waitFor(() -> client.pollControlResponses(
-            reply,
+        final ControlResponsePoller controlResponsePoller = new ControlResponsePoller(
             new FailControlResponseListener()
             {
                 public void onResponse(
-                    final long correlationId2, final ControlResponseCode code, final String errorMessage)
+                    final long correlationId, final ControlResponseCode code, final String errorMessage)
                 {
                     assertThat("Error message: " + errorMessage, code, is(ControlResponseCode.OK));
                     assertThat(errorMessage, isEmptyOrNullString());
-                    assertThat(correlationId1, is(correlationId2));
+                    assertThat(correlationId, is(expectedCorrelationId));
                 }
             },
-            1) != 0);
+            controlResponse,
+            1
+        );
+
+        waitFor(() -> controlResponsePoller.poll() != 0);
     }
 
-    static void waitForFail(final ArchiveControlProxy client, final Subscription reply, final long correlationId1)
+    static void waitForFail(final Subscription controlResponse, final long expectedCorrelationId)
     {
-        waitFor(() -> client.pollControlResponses(
-            reply,
+        final ControlResponsePoller controlResponsePoller = new ControlResponsePoller(
             new FailControlResponseListener()
             {
                 public void onResponse(
-                    final long correlationId2, final ControlResponseCode code, final String errorMessage)
+                    final long correlationId, final ControlResponseCode code, final String errorMessage)
                 {
                     assertThat(code, not(ControlResponseCode.OK));
-                    assertThat(correlationId1, is(correlationId2));
+                    assertThat(correlationId, is(expectedCorrelationId));
                 }
             },
-            1) != 0);
+            controlResponse,
+            1
+        );
+
+        waitFor(() -> controlResponsePoller.poll() != 0);
     }
 
     static void poll(final Subscription subscription, final FragmentHandler handler)

@@ -29,7 +29,7 @@ public class ArchiveProxy
     private final int maxRetryAttempts;
     private final IdleStrategy retryIdleStrategy;
 
-    private final ExpandableDirectByteBuffer buffer = new ExpandableDirectByteBuffer(2048);
+    private final ExpandableDirectByteBuffer buffer = new ExpandableDirectByteBuffer(1024);
     private final Publication controlRequests;
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ConnectRequestEncoder connectRequestEncoder = new ConnectRequestEncoder();

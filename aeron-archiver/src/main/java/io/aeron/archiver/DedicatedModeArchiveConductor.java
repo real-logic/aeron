@@ -107,7 +107,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             final AtomicCounter errorCounter,
             final ManyToOneConcurrentArrayQueue<Session> closeQueue)
         {
-            super("archiver-recorder", errorCounter);
+            super("archive-recorder", errorCounter);
             this.closeQueue = closeQueue;
         }
 
@@ -127,7 +127,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             final ManyToOneConcurrentArrayQueue<Session> closeQueue,
             final ControlSessionProxy proxy)
         {
-            super("archiver-replayer", errorCounter);
+            super("archive-replayer", errorCounter);
             this.closeQueue = closeQueue;
             this.proxy = proxy;
         }

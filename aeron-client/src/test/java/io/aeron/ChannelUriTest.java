@@ -30,6 +30,7 @@ public class ChannelUriTest
         assertParseWithMedia("aeron:udp", "udp");
         assertParseWithMedia("aeron:ipc", "ipc");
         assertParseWithMedia("aeron:", "");
+        assertParseWithMediaAndPrefix("aeron-spy:aeron:ipc", "aeron-spy", "ipc");
     }
 
     @Test
@@ -84,6 +85,31 @@ public class ChannelUriTest
         assertThat(result, is(uriString));
     }
 
+    @Test
+    public void shouldRoundTripToStringBuilder()
+    {
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint("224.10.9.8:777");
+        final String uriString = builder.build();
+        final ChannelUri uri = ChannelUri.parse(uriString);
+
+        assertThat(uri.toString(), is(uriString));
+    }
+
+    @Test
+    public void shouldRoundTripToStringBuilderWithPrefix()
+    {
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
+            .prefix(ChannelUri.SPY_QUALIFIER)
+            .media("udp")
+            .endpoint("224.10.9.8:777");
+        final String uriString = builder.build();
+        final ChannelUri uri = ChannelUri.parse(uriString);
+
+        assertThat(uri.toString(), is(uriString));
+    }
+
     private void assertParseWithParams(final String uriStr, final String... params)
     {
         if (params.length % 2 != 0)
@@ -101,8 +127,14 @@ public class ChannelUriTest
 
     private void assertParseWithMedia(final String uriStr, final String media)
     {
+        assertParseWithMediaAndPrefix(uriStr, "", media);
+    }
+
+    private void assertParseWithMediaAndPrefix(final String uriStr, final String prefix, final String media)
+    {
         final ChannelUri uri = ChannelUri.parse(uriStr);
         assertThat(uri.scheme(), is("aeron"));
+        assertThat(uri.prefix(), is(prefix));
         assertThat(uri.media(), is(media));
     }
 

@@ -123,8 +123,7 @@ class DriverAdapter implements MessageHandler
                     }
                     else if (channel.startsWith(SPY_PREFIX))
                     {
-                        conductor.onAddSpySubscription(
-                            channel.substring(SPY_PREFIX.length()), streamId, correlationId, clientId);
+                        conductor.onAddSpySubscription(channel, streamId, correlationId, clientId);
                     }
                     else
                     {

@@ -17,6 +17,8 @@ package io.aeron;
 
 import java.util.*;
 
+import static io.aeron.CommonContext.SPY_PREFIX;
+
 /**
  * Parser for Aeron channel URIs. The format is:
  * <pre>
@@ -32,6 +34,7 @@ import java.util.*;
  */
 public class ChannelUri
 {
+
     private enum State
     {
         MEDIA, PARAMS_KEY, PARAMS_VALUE
@@ -42,10 +45,30 @@ public class ChannelUri
      */
     public static final String AERON_SCHEME = "aeron";
 
+    /**
+     * Qualifier for spy subscriptions.
+     */
+    public static final String SPY_QUALIFIER = "aeron-spy";
+
     private static final String AERON_PREFIX = AERON_SCHEME + ":";
 
+    private final String prefix;
     private final String media;
     private final Map<String, String> params;
+
+    /**
+     * Construct with the components provided to avoid parsing.
+     *
+     * @param prefix empty if no prefix is required otherwise expected to be 'aeron-spy'
+     * @param media  for the channel which is typically "udp" or "ipc".
+     * @param params for the query string as key value pairs.
+     */
+    public ChannelUri(final String prefix, final String media, final Map<String, String> params)
+    {
+        this.prefix = prefix;
+        this.media = media;
+        this.params = params;
+    }
 
     /**
      * Construct with the components provided to avoid parsing.
@@ -55,8 +78,17 @@ public class ChannelUri
      */
     public ChannelUri(final String media, final Map<String, String> params)
     {
-        this.media = media;
-        this.params = params;
+        this("", media, params);
+    }
+
+    /**
+     * The prefix for the channel.
+     *
+     * @return the prefix for the channel.
+     */
+    public String prefix()
+    {
+        return prefix;
     }
 
     /**
@@ -153,9 +185,25 @@ public class ChannelUri
      */
     public static ChannelUri parse(final CharSequence cs)
     {
-        if (!startsWith(cs, AERON_PREFIX))
+        int position = 0;
+        final String prefix;
+        if (startsWith(cs, SPY_PREFIX))
+        {
+            prefix = SPY_QUALIFIER;
+            position = SPY_PREFIX.length();
+        }
+        else
+        {
+            prefix = "";
+        }
+
+        if (!startsWith(cs, position, AERON_PREFIX))
         {
             throw new IllegalArgumentException("Aeron URIs must start with 'aeron:', found: '" + cs + "'");
+        }
+        else
+        {
+            position += AERON_PREFIX.length();
         }
 
         final StringBuilder builder = new StringBuilder();
@@ -164,7 +212,7 @@ public class ChannelUri
         String key = null;
 
         State state = State.MEDIA;
-        for (int i = AERON_PREFIX.length(); i < cs.length(); i++)
+        for (int i = position; i < cs.length(); i++)
         {
             final char c = cs.charAt(i);
 
@@ -234,24 +282,29 @@ public class ChannelUri
                 throw new IllegalArgumentException("No more input found, but was in state: " + state);
         }
 
-        return new ChannelUri(media, params);
+        return new ChannelUri(prefix, media, params);
     }
 
-    private static boolean startsWith(final CharSequence input, final CharSequence prefix)
+    private static boolean startsWith(final CharSequence input, final int position, final CharSequence prefix)
     {
-        if (input.length() < prefix.length())
+        if ((input.length() - position) < prefix.length())
         {
             return false;
         }
 
         for (int i = 0; i < prefix.length(); i++)
         {
-            if (input.charAt(i) != prefix.charAt(i))
+            if (input.charAt(position + i) != prefix.charAt(i))
             {
                 return false;
             }
         }
 
         return true;
+    }
+
+    private static boolean startsWith(final CharSequence input, final CharSequence prefix)
+    {
+        return startsWith(input, 0, prefix);
     }
 }

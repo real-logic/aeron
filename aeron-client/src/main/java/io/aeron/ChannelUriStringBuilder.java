@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 
+import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
@@ -110,7 +111,7 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder prefix(final String prefix)
     {
-        if (null != prefix && !prefix.equals("aeron-spy"))
+        if (null != prefix && !prefix.equals(SPY_QUALIFIER))
         {
             throw new IllegalArgumentException("Invalid prefix: " + prefix);
         }

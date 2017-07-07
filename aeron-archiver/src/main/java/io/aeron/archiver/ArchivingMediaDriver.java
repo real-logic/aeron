@@ -16,6 +16,7 @@
 package io.aeron.archiver;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
 import static io.aeron.driver.MediaDriver.loadPropertiesFiles;
@@ -36,11 +37,32 @@ public class ArchivingMediaDriver
     {
         loadPropertiesFiles(args);
 
-        try (MediaDriver mediaDriver = MediaDriver.launch();
-             Archiver archiver = Archiver.launch())
-        {
-            new ShutdownSignalBarrier().await();
-            System.out.println("Shutdown Archiver...");
-        }
+        launchDriverAndArchiver(ThreadingMode.DEDICATED, ArchiverThreadingMode.DEDICATED);
+    }
+
+    static void launchDriverAndArchiver(
+        final ThreadingMode mediaDriverThreadingMode,
+        final ArchiverThreadingMode archiverThreadingMode) throws Exception
+    {
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .threadingMode(mediaDriverThreadingMode)
+            .useConcurrentCounterManager(mediaDriverThreadingMode != ThreadingMode.INVOKER);
+        final MediaDriver mediaDriver = MediaDriver.launch(driverCtx);
+
+        final Archiver.Context archiverCtx = new Archiver.Context()
+            .mediaDriverAgentInvoker(mediaDriver.sharedAgentInvoker())
+            .threadingMode(archiverThreadingMode);
+
+        archiverCtx
+            .countersManager(driverCtx.countersManager())
+            .errorHandler(driverCtx.errorHandler());
+
+        final Archiver archiver = Archiver.launch(archiverCtx);
+
+        new ShutdownSignalBarrier().await();
+        System.out.println("Shutdown Archiver...");
+
+        archiver.close();
+        mediaDriver.close();
     }
 }

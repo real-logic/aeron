@@ -93,15 +93,19 @@ public class ArchiveRecordingLoadTest
         driverCtx
             .termBufferSparseFile(false)
             .threadingMode(ThreadingMode.DEDICATED)
+            .useConcurrentCounterManager(true)
             .errorHandler(Throwable::printStackTrace)
             .dirsDeleteOnStart(true);
 
         driver = MediaDriver.launch(driverCtx);
+
         archiveDir = TestUtil.makeTempDir();
         archiverCtx
             .forceDataWrites(true)
             .archiveDir(archiveDir)
-            .threadingMode(ArchiverThreadingMode.DEDICATED);
+            .threadingMode(ArchiverThreadingMode.DEDICATED)
+            .countersManager(driverCtx.countersManager())
+            .errorHandler(driverCtx.errorHandler());
 
         archiver = Archiver.launch(archiverCtx);
         println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());

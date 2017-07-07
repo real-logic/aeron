@@ -16,9 +16,12 @@
 package io.aeron.archiver;
 
 import io.aeron.Aeron;
-import org.agrona.*;
+import org.agrona.CloseHelper;
+import org.agrona.ErrorHandler;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.StatusIndicator;
 
 import java.io.File;
@@ -26,6 +29,10 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+/**
+ * The Aeron Archiver is run with an embedded media driver and allows for the archival of 'local'
+ * {@link io.aeron.Publication}s (ipc or spy subscriptions only).
+ */
 public final class Archiver implements AutoCloseable
 {
     private final Context ctx;
@@ -263,7 +270,10 @@ public final class Archiver implements AutoCloseable
 
         private Supplier<IdleStrategy> idleStrategySupplier;
         private EpochClock epochClock;
+
         private ErrorHandler errorHandler;
+        private CountersManager countersManager;
+
         private AtomicCounter errorCounter;
 
         private AgentInvoker mediaDriverAgentInvoker;
@@ -292,6 +302,17 @@ public final class Archiver implements AutoCloseable
 
         void conclude()
         {
+            if (null == errorHandler)
+            {
+                throw new IllegalStateException("Error handler must be externally supplied");
+            }
+
+            if (null == countersManager)
+            {
+                throw new IllegalStateException("Counter manager must be externally supplied");
+            }
+            errorCounter = countersManager.newCounter("archiver-errors");
+
             if (null == archiveDir)
             {
                 archiveDir = new File(Configuration.archiveDirName());
@@ -313,15 +334,6 @@ public final class Archiver implements AutoCloseable
                 epochClock = new SystemEpochClock();
             }
 
-            if (null == errorHandler)
-            {
-                errorHandler = Throwable::printStackTrace;
-            }
-
-            if (null == errorCounter)
-            {
-                // TODO: create counters file, also expose idleStrategy control via same file if required.
-            }
         }
 
         /**
@@ -628,12 +640,6 @@ public final class Archiver implements AutoCloseable
             return errorCounter;
         }
 
-        public Context errorCounter(final AtomicCounter errorCounter)
-        {
-            this.errorCounter = errorCounter;
-            return this;
-        }
-
         /**
          * Get the max number of concurrent recordings.
          *
@@ -675,6 +681,18 @@ public final class Archiver implements AutoCloseable
         public Context maxConcurrentReplays(final int maxConcurrentReplays)
         {
             this.maxConcurrentReplays = maxConcurrentReplays;
+            return this;
+        }
+
+        /**
+         * The counters manager is a shared resource between the embedded media driver and the archiver.
+         *
+         * @param countersManager shared counters manager to be used
+         * @return this for a fluent API
+         */
+        public Context countersManager(final CountersManager countersManager)
+        {
+            this.countersManager = countersManager;
             return this;
         }
     }

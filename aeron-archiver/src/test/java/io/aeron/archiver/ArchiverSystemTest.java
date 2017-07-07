@@ -126,7 +126,8 @@ public class ArchiverSystemTest
             .termBufferSparseFile(true)
             .threadingMode(driverThreadingMode())
             .errorHandler(Throwable::printStackTrace)
-            .dirsDeleteOnStart(true);
+            .dirsDeleteOnStart(true)
+            .useConcurrentCounterManager(true);
 
         driver = MediaDriver.launch(driverCtx);
 
@@ -137,7 +138,9 @@ public class ArchiverSystemTest
             .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
             .archiveDir(archiveDir)
             .segmentFileLength(segmentFileLength)
-            .threadingMode(archiverThreadingMode());
+            .threadingMode(archiverThreadingMode())
+            .countersManager(driverCtx.countersManager())
+            .errorHandler(driverCtx.errorHandler());
 
         archiver = Archiver.launch(archiverCtx);
 

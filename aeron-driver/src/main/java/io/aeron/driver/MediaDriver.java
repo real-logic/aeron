@@ -493,6 +493,7 @@ public final class MediaDriver implements AutoCloseable
         private MappedByteBuffer cncByteBuffer;
         private UnsafeBuffer cncMetaDataBuffer;
 
+        private boolean useConcurrentCounterManager;
         private CountersManager countersManager;
         private SystemCounters systemCounters;
 
@@ -854,6 +855,12 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context useConcurrentCounterManager(final boolean useConcurrentCounterManager)
+        {
+            this.useConcurrentCounterManager = useConcurrentCounterManager;
+            return this;
+        }
+
         public Context countersManager(final CountersManager countersManager)
         {
             this.countersManager = countersManager;
@@ -1150,6 +1157,11 @@ public final class MediaDriver implements AutoCloseable
             return toDriverCommands;
         }
 
+        public boolean useConcurrentCounterManager()
+        {
+            return useConcurrentCounterManager;
+        }
+
         public CountersManager countersManager()
         {
             return countersManager;
@@ -1308,7 +1320,16 @@ public final class MediaDriver implements AutoCloseable
                     countersValuesBuffer(createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
-                countersManager(new CountersManager(countersMetaDataBuffer(), countersValuesBuffer(), US_ASCII));
+                final UnsafeBuffer metaDataBuffer = countersMetaDataBuffer();
+                final UnsafeBuffer valuesBuffer = countersValuesBuffer();
+                if (useConcurrentCounterManager())
+                {
+                    countersManager(new ConcurrentCountersManager(metaDataBuffer, valuesBuffer, US_ASCII));
+                }
+                else
+                {
+                    countersManager(new CountersManager(metaDataBuffer, valuesBuffer, US_ASCII));
+                }
             }
 
             if (null == systemCounters)

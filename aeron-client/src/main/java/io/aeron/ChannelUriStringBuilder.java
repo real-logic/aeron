@@ -460,7 +460,7 @@ public class ChannelUriStringBuilder
     {
         sb.setLength(0);
 
-        if (null != prefix)
+        if (null != prefix && !"".equals(prefix))
         {
             sb.append(prefix).append(':');
         }

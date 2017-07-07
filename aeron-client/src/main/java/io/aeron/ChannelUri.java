@@ -34,7 +34,6 @@ import static io.aeron.CommonContext.SPY_PREFIX;
  */
 public class ChannelUri
 {
-
     private enum State
     {
         MEDIA, PARAMS_KEY, PARAMS_VALUE

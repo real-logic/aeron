@@ -59,8 +59,15 @@ public class Publication implements AutoCloseable
      */
     public static final long CLOSED = -4;
 
+    /**
+     * The offer failed due to reaching the maximum position of the stream given term buffer length times the total
+     * possible number of terms.
+     */
+    public static final long MAX_POSITION_EXCEEDED = -5;
+
     private final long originalRegistrationId;
     private final long registrationId;
+    private final long maxPossiblePosition;
     private int refCount = 0;
     private final int streamId;
     private final int sessionId;
@@ -99,6 +106,7 @@ public class Publication implements AutoCloseable
         final int termLength = logBuffers.termLength();
         this.maxPayloadLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
         this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(termLength);
+        this.maxPossiblePosition = termLength * (1L << 31L);
         this.conductor = clientConductor;
         this.channel = channel;
         this.streamId = streamId;
@@ -121,6 +129,16 @@ public class Publication implements AutoCloseable
     public int termBufferLength()
     {
         return logBuffers.termLength();
+    }
+
+    /**
+     * The maximum possible position this stream can reach due to it term buffer length.
+     *
+     * @return the maximum possible position this stream can reach due to it term buffer length.
+     */
+    public long maxPossiblePosition()
+    {
+        return maxPossiblePosition;
     }
 
     /**
@@ -382,13 +400,9 @@ public class Publication implements AutoCloseable
 
                 newPosition = newPosition(partitionIndex, (int)termOffset, position, result);
             }
-            else if (conductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
-            {
-                newPosition = BACK_PRESSURED;
-            }
             else
             {
-                newPosition = NOT_CONNECTED;
+                newPosition = backPressureStatus(position, length);
             }
         }
 
@@ -447,13 +461,9 @@ public class Publication implements AutoCloseable
                 final long result = termAppender.claim(headerWriter, length, bufferClaim);
                 newPosition = newPosition(partitionIndex, (int)termOffset, position, result);
             }
-            else if (conductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
-            {
-                newPosition = BACK_PRESSURED;
-            }
             else
             {
-                newPosition = NOT_CONNECTED;
+                newPosition = backPressureStatus(position, length);
             }
         }
 
@@ -512,6 +522,10 @@ public class Publication implements AutoCloseable
         {
             newPosition = (position - currentTail) + termOffset;
         }
+        else if ((position + currentTail) > maxPossiblePosition)
+        {
+            newPosition = MAX_POSITION_EXCEEDED;
+        }
         else if (termOffset == TermAppender.TRIPPED)
         {
             final int nextIndex = nextPartitionIndex(index);
@@ -520,6 +534,22 @@ public class Publication implements AutoCloseable
         }
 
         return newPosition;
+    }
+
+    private long backPressureStatus(final long currentPosition, final int messageLength)
+    {
+        long status = NOT_CONNECTED;
+
+        if ((currentPosition + messageLength) >= maxPossiblePosition)
+        {
+            status = MAX_POSITION_EXCEEDED;
+        }
+        else if (conductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
+        {
+            status = BACK_PRESSURED;
+        }
+
+        return status;
     }
 
     private void checkForMaxPayloadLength(final int length)

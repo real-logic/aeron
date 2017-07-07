@@ -20,6 +20,7 @@ import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
 
+import static io.aeron.Publication.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
@@ -42,32 +43,13 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
  */
 public class ExclusivePublication implements AutoCloseable
 {
-    /**
-     * The publication is not yet connected to a subscriber.
-     */
-    public static final long NOT_CONNECTED = -1;
-
-    /**
-     * The offer failed due to back pressure from the subscribers preventing further transmission.
-     */
-    public static final long BACK_PRESSURED = -2;
-
-    /**
-     * The offer failed due to an administration action and should be retried.
-     * The action is an operation such as log rotation which is likely to have succeeded by the next retry attempt.
-     */
-    public static final long ADMIN_ACTION = -3;
-
-    /**
-     * The {@link ExclusivePublication} has been closed and should no longer be used.
-     */
-    public static final long CLOSED = -4;
-
     private final long originalRegistrationId;
     private final long registrationId;
+    private final long maxPossiblePosition;
     private final int streamId;
     private final int sessionId;
     private final int initialTermId;
+    private final int termBufferLength;
     private final int maxMessageLength;
     private final int maxPayloadLength;
     private final int positionBitsToShift;
@@ -105,8 +87,10 @@ public class ExclusivePublication implements AutoCloseable
         }
 
         final int termLength = logBuffers.termLength();
+        termBufferLength = termLength;
         maxPayloadLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
         maxMessageLength = FrameDescriptor.computeExclusiveMaxMessageLength(termLength);
+        maxPossiblePosition = (termLength * (1L << 31L));
         conductor = clientConductor;
         this.channel = channel;
         this.streamId = streamId;
@@ -136,7 +120,17 @@ public class ExclusivePublication implements AutoCloseable
      */
     public int termBufferLength()
     {
-        return logBuffers.termLength();
+        return termBufferLength;
+    }
+
+    /**
+     * The maximum possible position this stream can reach due to it term buffer length.
+     *
+     * @return the maximum possible position this stream can reach due to it term buffer length.
+     */
+    public long maxPossiblePosition()
+    {
+        return maxPossiblePosition;
     }
 
     /**
@@ -330,8 +324,8 @@ public class ExclusivePublication implements AutoCloseable
      * Non-blocking publish of a buffer containing a message.
      *
      * @param buffer containing message.
-     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
-     * {@link #ADMIN_ACTION}, or {@link #CLOSED}.
+     * @return The new stream position, otherwise {@link Publication#NOT_CONNECTED}, {@link Publication#BACK_PRESSURED},
+     * {@link Publication#ADMIN_ACTION}, or {@link Publication#CLOSED}.
      */
     public long offer(final DirectBuffer buffer)
     {
@@ -344,8 +338,8 @@ public class ExclusivePublication implements AutoCloseable
      * @param buffer containing message.
      * @param offset offset in the buffer at which the encoded message begins.
      * @param length in bytes of the encoded message.
-     * @return The new stream position, otherwise a negative error value {@link #NOT_CONNECTED},
-     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, or {@link #CLOSED}.
+     * @return The new stream position, otherwise a negative error value {@link Publication#NOT_CONNECTED},
+     * {@link Publication#BACK_PRESSURED}, {@link Publication#ADMIN_ACTION}, or {@link Publication#CLOSED}.
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
@@ -359,8 +353,8 @@ public class ExclusivePublication implements AutoCloseable
      * @param offset                offset in the buffer at which the encoded message begins.
      * @param length                in bytes of the encoded message.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return The new stream position, otherwise a negative error value {@link #NOT_CONNECTED},
-     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, or {@link #CLOSED}.
+     * @return The new stream position, otherwise a negative error value {@link Publication#NOT_CONNECTED},
+     * {@link Publication#BACK_PRESSURED}, {@link Publication#ADMIN_ACTION}, or {@link Publication#CLOSED}.
      */
     public long offer(
         final DirectBuffer buffer,
@@ -399,13 +393,9 @@ public class ExclusivePublication implements AutoCloseable
 
                 newPosition = newPosition(result);
             }
-            else if (conductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
-            {
-                newPosition = BACK_PRESSURED;
-            }
             else
             {
-                newPosition = NOT_CONNECTED;
+                newPosition = backPressureStatus(position, length);
             }
         }
 
@@ -439,8 +429,8 @@ public class ExclusivePublication implements AutoCloseable
      *
      * @param length      of the range to claim, in bytes..
      * @param bufferClaim to be populated if the claim succeeds.
-     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
-     * {@link #ADMIN_ACTION}, or {@link #CLOSED}.
+     * @return The new stream position, otherwise {@link Publication#NOT_CONNECTED}, {@link Publication#BACK_PRESSURED},
+     * {@link Publication#ADMIN_ACTION}, or {@link Publication#CLOSED}.
      * @throws IllegalArgumentException if the length is greater than {@link #maxPayloadLength()} within an MTU.
      * @see ExclusiveBufferClaim#commit()
      * @see ExclusiveBufferClaim#abort()
@@ -461,13 +451,9 @@ public class ExclusivePublication implements AutoCloseable
                 final int result = termAppender.claim(termId, termOffset, headerWriter, length, bufferClaim);
                 newPosition = newPosition(result);
             }
-            else if (conductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
-            {
-                newPosition = BACK_PRESSURED;
-            }
             else
             {
-                newPosition = NOT_CONNECTED;
+                newPosition = backPressureStatus(position, length);
             }
         }
 
@@ -478,8 +464,8 @@ public class ExclusivePublication implements AutoCloseable
      * Append a padding record log of a given length to make up the log to a position.
      *
      * @param length of the range to claim, in bytes..
-     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
-     * {@link #ADMIN_ACTION}, or {@link #CLOSED}.
+     * @return The new stream position, otherwise {@link Publication#NOT_CONNECTED}, {@link Publication#BACK_PRESSURED},
+     * {@link Publication#ADMIN_ACTION}, or {@link Publication#CLOSED}.
      * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength()}.
      */
     public long appendPadding(final int length)
@@ -498,13 +484,9 @@ public class ExclusivePublication implements AutoCloseable
                 final int result = termAppender.appendPadding(termId, termOffset, headerWriter, length);
                 newPosition = newPosition(result);
             }
-            else if (conductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
-            {
-                newPosition = BACK_PRESSURED;
-            }
             else
             {
-                newPosition = NOT_CONNECTED;
+                newPosition = backPressureStatus(position, length);
             }
         }
 
@@ -557,6 +539,11 @@ public class ExclusivePublication implements AutoCloseable
         }
         else
         {
+            if ((termBeginPosition + termBufferLength) >= maxPossiblePosition())
+            {
+                return MAX_POSITION_EXCEEDED;
+            }
+
             final int nextIndex = nextPartitionIndex(activePartitionIndex);
             final int nextTermId = termId + 1;
 
@@ -570,6 +557,22 @@ public class ExclusivePublication implements AutoCloseable
 
             return ADMIN_ACTION;
         }
+    }
+
+    private long backPressureStatus(final long currentPosition, final int messageLength)
+    {
+        long status = NOT_CONNECTED;
+
+        if ((currentPosition + messageLength) >= maxPossiblePosition)
+        {
+            status = MAX_POSITION_EXCEEDED;
+        }
+        else if (conductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
+        {
+            status = BACK_PRESSURED;
+        }
+
+        return status;
     }
 
     private void checkForMaxPayloadLength(final int length)

@@ -37,8 +37,8 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
 import static io.aeron.archiver.TestUtil.*;
-import static io.aeron.archiver.workloads.ArchiveReplayLoadTest.REPLY_STREAM_ID;
-import static io.aeron.archiver.workloads.ArchiveReplayLoadTest.REPLY_URI;
+import static io.aeron.archiver.workloads.ArchiveReplayLoadTest.CONTROL_STREAM_ID;
+import static io.aeron.archiver.workloads.ArchiveReplayLoadTest.CONTROL_URI;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -93,7 +93,7 @@ public class ArchiveRecordingLoadTest
         driverCtx
             .termBufferSparseFile(false)
             .threadingMode(ThreadingMode.DEDICATED)
-            .errorHandler(LangUtil::rethrowUnchecked)
+            .errorHandler(Throwable::printStackTrace)
             .dirsDeleteOnStart(true);
 
         driver = MediaDriver.launch(driverCtx);
@@ -138,8 +138,8 @@ public class ArchiveRecordingLoadTest
             TestUtil.awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 
-            final Subscription controlResponse = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
-            assertTrue(archiveProxy.connect(REPLY_URI, REPLY_STREAM_ID));
+            final Subscription controlResponse = publishingClient.addSubscription(CONTROL_URI, CONTROL_STREAM_ID);
+            assertTrue(archiveProxy.connect(CONTROL_URI, CONTROL_STREAM_ID));
             TestUtil.awaitSubscriptionIsConnected(controlResponse);
             println("Client connected");
 

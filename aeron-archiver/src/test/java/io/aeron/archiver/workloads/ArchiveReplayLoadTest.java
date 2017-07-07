@@ -48,8 +48,8 @@ public class ArchiveReplayLoadTest
     private static final int TIMEOUT = 5000;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
 
-    static final String REPLY_URI = "aeron:udp?endpoint=127.0.0.1:54327";
-    static final int REPLY_STREAM_ID = 100;
+    static final String CONTROL_URI = "aeron:udp?endpoint=127.0.0.1:54327";
+    static final int CONTROL_STREAM_ID = 100;
     private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
     private static final String PUBLISH_URI = "aeron:ipc?endpoint=127.0.0.1:54325";
     private static final int PUBLISH_STREAM_ID = 1;
@@ -99,7 +99,7 @@ public class ArchiveReplayLoadTest
         driverCtx
             .termBufferSparseFile(true)
             .threadingMode(ThreadingMode.DEDICATED)
-            .errorHandler(LangUtil::rethrowUnchecked)
+            .errorHandler(Throwable::printStackTrace)
             .dirsDeleteOnStart(true);
 
         driver = MediaDriver.launch(driverCtx);
@@ -142,8 +142,8 @@ public class ArchiveReplayLoadTest
             awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 
-            final Subscription controlResponse = publishingClient.addSubscription(REPLY_URI, REPLY_STREAM_ID);
-            assertTrue(archiveProxy.connect(REPLY_URI, REPLY_STREAM_ID));
+            final Subscription controlResponse = publishingClient.addSubscription(CONTROL_URI, CONTROL_STREAM_ID);
+            assertTrue(archiveProxy.connect(CONTROL_URI, CONTROL_STREAM_ID));
             awaitSubscriptionIsConnected(controlResponse);
             println("Client connected");
 

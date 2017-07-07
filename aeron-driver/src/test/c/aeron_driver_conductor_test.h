@@ -194,6 +194,8 @@ struct TestDriverConductor
     virtual ~TestDriverConductor()
     {
         aeron_driver_conductor_on_close(&m_conductor);
+        aeron_driver_sender_on_close(&m_sender);
+        aeron_driver_receiver_on_close(&m_receiver);
     }
 
     aeron_driver_conductor_t m_conductor;

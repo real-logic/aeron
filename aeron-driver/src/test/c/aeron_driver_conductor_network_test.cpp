@@ -18,6 +18,10 @@
 
 class DriverConductorNetworkTest : public DriverConductorTest
 {
+public:
+    DriverConductorNetworkTest() : DriverConductorTest()
+    {
+    }
 };
 
 TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkPublication)
@@ -658,4 +662,58 @@ TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionFromImageWhenRemoveSu
     EXPECT_EQ(aeron_publication_image_num_subscriptions(image), 0u);
 
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 2u);
+}
+
+
+TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSignalUnavailableWhenNoAcitvity)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
+    doWork();
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    aeron_receive_channel_endpoint_t *endpoint =
+        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+
+    createPublicationImage(endpoint, STREAM_ID_1, 1000);
+
+    EXPECT_EQ(aeron_driver_conductor_num_images(&m_conductor.m_conductor), 1u);
+
+    aeron_publication_image_t *image =
+        aeron_driver_conductor_find_publication_image(&m_conductor.m_conductor, endpoint, STREAM_ID_1);
+
+    EXPECT_NE(image, (aeron_publication_image_t *)NULL);
+    EXPECT_EQ(aeron_publication_image_num_subscriptions(image), 1u);
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    int64_t image_correlation_id = image->conductor_fields.managed_resource.registration_id;
+
+    int64_t timeout =
+        m_context.m_context->image_liveness_timeout_ns +
+            (m_context.m_context->client_liveness_timeout_ns * 2);
+
+    doWorkUntilTimeNs(
+        timeout,
+        100,
+        [&]()
+        {
+            clientKeepalive(client_id);
+        });
+
+    EXPECT_EQ(aeron_driver_conductor_num_images(&m_conductor.m_conductor), 0u);
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_UNAVAILABLE_IMAGE);
+
+        const command::ImageMessageFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.streamId(), STREAM_ID_1);
+        EXPECT_EQ(response.correlationId(), image_correlation_id);
+        EXPECT_EQ(response.channel(), CHANNEL_1);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }

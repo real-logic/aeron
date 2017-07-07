@@ -111,7 +111,7 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder prefix(final String prefix)
     {
-        if (null != prefix && !prefix.equals(SPY_QUALIFIER))
+        if (null != prefix && !prefix.equals("") && !prefix.equals(SPY_QUALIFIER))
         {
             throw new IllegalArgumentException("Invalid prefix: " + prefix);
         }

@@ -325,7 +325,7 @@ public class ExclusivePublication implements AutoCloseable
      *
      * @param buffer containing message.
      * @return The new stream position, otherwise {@link Publication#NOT_CONNECTED}, {@link Publication#BACK_PRESSURED},
-     * {@link Publication#ADMIN_ACTION}, or {@link Publication#CLOSED}.
+     * {@link Publication#ADMIN_ACTION}, {@link Publication#CLOSED}, or {@link Publication#MAX_POSITION_EXCEEDED}.
      */
     public long offer(final DirectBuffer buffer)
     {
@@ -339,7 +339,8 @@ public class ExclusivePublication implements AutoCloseable
      * @param offset offset in the buffer at which the encoded message begins.
      * @param length in bytes of the encoded message.
      * @return The new stream position, otherwise a negative error value {@link Publication#NOT_CONNECTED},
-     * {@link Publication#BACK_PRESSURED}, {@link Publication#ADMIN_ACTION}, or {@link Publication#CLOSED}.
+     * {@link Publication#BACK_PRESSURED}, {@link Publication#ADMIN_ACTION}, {@link Publication#CLOSED},
+     * or {@link Publication#MAX_POSITION_EXCEEDED}.
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
@@ -354,7 +355,8 @@ public class ExclusivePublication implements AutoCloseable
      * @param length                in bytes of the encoded message.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @return The new stream position, otherwise a negative error value {@link Publication#NOT_CONNECTED},
-     * {@link Publication#BACK_PRESSURED}, {@link Publication#ADMIN_ACTION}, or {@link Publication#CLOSED}.
+     * {@link Publication#BACK_PRESSURED}, {@link Publication#ADMIN_ACTION}, {@link Publication#CLOSED},
+     * or {@link Publication#MAX_POSITION_EXCEEDED}.
      */
     public long offer(
         final DirectBuffer buffer,
@@ -430,7 +432,7 @@ public class ExclusivePublication implements AutoCloseable
      * @param length      of the range to claim, in bytes..
      * @param bufferClaim to be populated if the claim succeeds.
      * @return The new stream position, otherwise {@link Publication#NOT_CONNECTED}, {@link Publication#BACK_PRESSURED},
-     * {@link Publication#ADMIN_ACTION}, or {@link Publication#CLOSED}.
+     * {@link Publication#ADMIN_ACTION}, {@link Publication#CLOSED}, or {@link Publication#MAX_POSITION_EXCEEDED}.
      * @throws IllegalArgumentException if the length is greater than {@link #maxPayloadLength()} within an MTU.
      * @see ExclusiveBufferClaim#commit()
      * @see ExclusiveBufferClaim#abort()
@@ -465,7 +467,7 @@ public class ExclusivePublication implements AutoCloseable
      *
      * @param length of the range to claim, in bytes..
      * @return The new stream position, otherwise {@link Publication#NOT_CONNECTED}, {@link Publication#BACK_PRESSURED},
-     * {@link Publication#ADMIN_ACTION}, or {@link Publication#CLOSED}.
+     * {@link Publication#ADMIN_ACTION}, {@link Publication#CLOSED}, or {@link Publication#MAX_POSITION_EXCEEDED}.
      * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength()}.
      */
     public long appendPadding(final int length)

@@ -62,6 +62,9 @@ public class Publication implements AutoCloseable
     /**
      * The offer failed due to reaching the maximum position of the stream given term buffer length times the total
      * possible number of terms.
+     * <p>
+     * If this happen then the publication should be closed and a new one added. To make it less likely to happen then
+     * increase the term buffer length.
      */
     public static final long MAX_POSITION_EXCEEDED = -5;
 
@@ -349,7 +352,7 @@ public class Publication implements AutoCloseable
      * @param offset offset in the buffer at which the encoded message begins.
      * @param length in bytes of the encoded message.
      * @return The new stream position, otherwise a negative error value {@link #NOT_CONNECTED},
-     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, or {@link #CLOSED}.
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
@@ -364,7 +367,7 @@ public class Publication implements AutoCloseable
      * @param length                in bytes of the encoded message.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @return The new stream position, otherwise a negative error value {@link #NOT_CONNECTED},
-     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, or {@link #CLOSED}.
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      */
     public long offer(
         final DirectBuffer buffer,
@@ -436,7 +439,7 @@ public class Publication implements AutoCloseable
      * @param length      of the range to claim, in bytes..
      * @param bufferClaim to be populated if the claim succeeds.
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
-     * {@link #ADMIN_ACTION}, or {@link #CLOSED}.
+     * {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      * @throws IllegalArgumentException if the length is greater than {@link #maxPayloadLength()} within an MTU.
      * @see BufferClaim#commit()
      * @see BufferClaim#abort()

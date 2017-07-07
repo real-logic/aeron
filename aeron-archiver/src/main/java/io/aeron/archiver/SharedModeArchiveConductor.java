@@ -64,7 +64,7 @@ final class SharedModeArchiveConductor extends ArchiveConductor
     {
         SharedModeRecorder()
         {
-            super("recorder");
+            super("archiver-recorder");
         }
 
         protected void closeSession(final RecordingSession session)
@@ -77,7 +77,7 @@ final class SharedModeArchiveConductor extends ArchiveConductor
     {
         SharedModeReplayer()
         {
-            super("replayer");
+            super("archiver-replayer");
         }
 
         protected void closeSession(final ReplaySession session)

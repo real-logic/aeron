@@ -157,7 +157,6 @@ public class ChannelUri
      */
     public String toString()
     {
-
         final StringBuilder sb;
         if (prefix == null || "".equals(prefix))
         {
@@ -169,7 +168,9 @@ public class ChannelUri
             sb = new StringBuilder((params.size() * 20) + 20);
             sb.append(SPY_PREFIX);
         }
+
         sb.append(AERON_PREFIX).append(media);
+
         if (params.size() > 0)
         {
             sb.append('?');

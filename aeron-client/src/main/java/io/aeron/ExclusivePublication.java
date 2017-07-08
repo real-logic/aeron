@@ -20,12 +20,11 @@ import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
 
-import static io.aeron.Publication.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 /**
- * Aeron Publisher API for sending messages to subscribers of a given channel and streamId pair. ExclusivePublications
+ * Aeron publisher API for sending messages to subscribers of a given channel and streamId pair. ExclusivePublications
  * each get their own session id so multiple can be concurrently active on the same media driver as independent streams.
  * <p>
  * {@link ExclusivePublication}s are created via the {@link Aeron#addExclusivePublication(String, int)} method,
@@ -36,13 +35,43 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
  * <p>
  * The APIs used try claim and offer are non-blocking.
  * <p>
- * <b>Note:</b> ExclusivePublication instances are NOT threadsafe for offer and try claim method but are for position.
+ * <b>Note:</b> Instances are NOT threadsafe for offer and try claim methods but are for the others.
  *
  * @see Aeron#addExclusivePublication(String, int)
  * @see ExclusiveBufferClaim
  */
 public class ExclusivePublication implements AutoCloseable
 {
+    /**
+     * The publication is not yet connected to a subscriber.
+     */
+    public static final long NOT_CONNECTED = -1;
+
+    /**
+     * The offer failed due to back pressure from the subscribers preventing further transmission.
+     */
+    public static final long BACK_PRESSURED = -2;
+
+    /**
+     * The offer failed due to an administration action and should be retried.
+     * The action is an operation such as log rotation which is likely to have succeeded by the next retry attempt.
+     */
+    public static final long ADMIN_ACTION = -3;
+
+    /**
+     * The {@link Publication} has been closed and should no longer be used.
+     */
+    public static final long CLOSED = -4;
+
+    /**
+     * The offer failed due to reaching the maximum position of the stream given term buffer length times the total
+     * possible number of terms.
+     * <p>
+     * If this happen then the publication should be closed and a new one added. To make it less likely to happen then
+     * increase the term buffer length.
+     */
+    public static final long MAX_POSITION_EXCEEDED = -5;
+
     private final long originalRegistrationId;
     private final long registrationId;
     private final long maxPossiblePosition;
@@ -324,8 +353,8 @@ public class ExclusivePublication implements AutoCloseable
      * Non-blocking publish of a buffer containing a message.
      *
      * @param buffer containing message.
-     * @return The new stream position, otherwise {@link Publication#NOT_CONNECTED}, {@link Publication#BACK_PRESSURED},
-     * {@link Publication#ADMIN_ACTION}, {@link Publication#CLOSED}, or {@link Publication#MAX_POSITION_EXCEEDED}.
+     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
+     * {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      */
     public long offer(final DirectBuffer buffer)
     {
@@ -338,9 +367,8 @@ public class ExclusivePublication implements AutoCloseable
      * @param buffer containing message.
      * @param offset offset in the buffer at which the encoded message begins.
      * @param length in bytes of the encoded message.
-     * @return The new stream position, otherwise a negative error value {@link Publication#NOT_CONNECTED},
-     * {@link Publication#BACK_PRESSURED}, {@link Publication#ADMIN_ACTION}, {@link Publication#CLOSED},
-     * or {@link Publication#MAX_POSITION_EXCEEDED}.
+     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
+     * {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
@@ -354,9 +382,8 @@ public class ExclusivePublication implements AutoCloseable
      * @param offset                offset in the buffer at which the encoded message begins.
      * @param length                in bytes of the encoded message.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return The new stream position, otherwise a negative error value {@link Publication#NOT_CONNECTED},
-     * {@link Publication#BACK_PRESSURED}, {@link Publication#ADMIN_ACTION}, {@link Publication#CLOSED},
-     * or {@link Publication#MAX_POSITION_EXCEEDED}.
+     * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      */
     public long offer(
         final DirectBuffer buffer,
@@ -431,8 +458,8 @@ public class ExclusivePublication implements AutoCloseable
      *
      * @param length      of the range to claim, in bytes..
      * @param bufferClaim to be populated if the claim succeeds.
-     * @return The new stream position, otherwise {@link Publication#NOT_CONNECTED}, {@link Publication#BACK_PRESSURED},
-     * {@link Publication#ADMIN_ACTION}, {@link Publication#CLOSED}, or {@link Publication#MAX_POSITION_EXCEEDED}.
+     * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      * @throws IllegalArgumentException if the length is greater than {@link #maxPayloadLength()} within an MTU.
      * @see ExclusiveBufferClaim#commit()
      * @see ExclusiveBufferClaim#abort()
@@ -466,8 +493,8 @@ public class ExclusivePublication implements AutoCloseable
      * Append a padding record log of a given length to make up the log to a position.
      *
      * @param length of the range to claim, in bytes..
-     * @return The new stream position, otherwise {@link Publication#NOT_CONNECTED}, {@link Publication#BACK_PRESSURED},
-     * {@link Publication#ADMIN_ACTION}, {@link Publication#CLOSED}, or {@link Publication#MAX_POSITION_EXCEEDED}.
+     * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength()}.
      */
     public long appendPadding(final int length)

@@ -24,12 +24,12 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 /**
- * Aeron Publisher API for sending messages to subscribers of a given channel and streamId pair. {@link Publication}s
+ * Aeron publisher API for sending messages to subscribers of a given channel and streamId pair. {@link Publication}s
  * are created via the {@link Aeron#addPublication(String, int)} method, and messages are sent via one of the
  * {@link #offer(DirectBuffer)} methods, or a {@link #tryClaim(int, BufferClaim)} and {@link BufferClaim#commit()}
  * method combination.
  * <p>
- * The APIs used try claim and offer are non-blocking.
+ * The APIs used try claim and offer are non-blocking and thread safe.
  * <p>
  * <b>Note:</b> Publication instances are threadsafe and can be shared between publishing threads.
  *
@@ -337,8 +337,8 @@ public class Publication implements AutoCloseable
      * Non-blocking publish of a buffer containing a message.
      *
      * @param buffer containing message.
-     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
-     * {@link #ADMIN_ACTION}, or {@link #CLOSED}.
+     * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      */
     public long offer(final DirectBuffer buffer)
     {
@@ -351,7 +351,7 @@ public class Publication implements AutoCloseable
      * @param buffer containing message.
      * @param offset offset in the buffer at which the encoded message begins.
      * @param length in bytes of the encoded message.
-     * @return The new stream position, otherwise a negative error value {@link #NOT_CONNECTED},
+     * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
      * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
@@ -366,7 +366,7 @@ public class Publication implements AutoCloseable
      * @param offset                offset in the buffer at which the encoded message begins.
      * @param length                in bytes of the encoded message.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return The new stream position, otherwise a negative error value {@link #NOT_CONNECTED},
+     * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
      * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      */
     public long offer(
@@ -438,8 +438,8 @@ public class Publication implements AutoCloseable
      *
      * @param length      of the range to claim, in bytes..
      * @param bufferClaim to be populated if the claim succeeds.
-     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
-     * {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
+     * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      * @throws IllegalArgumentException if the length is greater than {@link #maxPayloadLength()} within an MTU.
      * @see BufferClaim#commit()
      * @see BufferClaim#abort()

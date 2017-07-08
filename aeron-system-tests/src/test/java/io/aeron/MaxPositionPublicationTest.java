@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 import static io.aeron.Publication.MAX_POSITION_EXCEEDED;
 import static org.junit.Assert.assertEquals;
 
-public class MaxPublicationPositionTest
+public class MaxPositionPublicationTest
 {
     public static final int STREAM_ID = 7;
     public static final int FRAGMENT_COUNT_LIMIT = 10;

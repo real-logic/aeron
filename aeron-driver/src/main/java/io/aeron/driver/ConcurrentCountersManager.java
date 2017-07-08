@@ -1,9 +1,8 @@
 package io.aeron.driver;
 
-
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.AtomicBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 
 import java.nio.charset.Charset;
@@ -11,8 +10,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 /**
- * A thread safe extension of the {@link CountersManager} to allow same process read and write access to the same
- * counter buffer. Note that cross process access is not catered for.
+ * A thread safe extension of {@link CountersManager} which allows intra-process read and write access to the same
+ * counters buffer. Note that inter-process access is not catered for.
  *
  * TODO: move to Agrona when settled.
  */
@@ -46,7 +45,7 @@ public class ConcurrentCountersManager extends CountersManager
         }
     }
 
-    @Override
+
     public int allocate(final String label, final int typeId, final Consumer<MutableDirectBuffer> keyFunc)
     {
         lock.lock();
@@ -60,27 +59,19 @@ public class ConcurrentCountersManager extends CountersManager
         }
     }
 
-    @Override
-    public AtomicCounter newCounter(final String label)
+    public int allocate(
+        final int typeId,
+        final DirectBuffer keyBuffer,
+        final int keyOffset,
+        final int keyLength,
+        final DirectBuffer labelBuffer,
+        final int labelOffset,
+        final int labelLength)
     {
         lock.lock();
         try
         {
-            return super.newCounter(label);
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    @Override
-    public AtomicCounter newCounter(final String label, final int typeId, final Consumer<MutableDirectBuffer> keyFunc)
-    {
-        lock.lock();
-        try
-        {
-            return super.newCounter(label, typeId, keyFunc);
+            return super.allocate(typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
         }
         finally
         {

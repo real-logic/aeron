@@ -133,8 +133,6 @@ class RecordingSession implements Session
     public void close()
     {
         CloseHelper.quietClose(recordingWriter);
-        // this reflects the single local recording assumption
-        CloseHelper.quietClose(image.subscription());
         recordingEventsProxy.stopped(recordingId, recordingWriter.joinPosition(), recordingWriter.endPosition());
         state = State.CLOSED;
     }

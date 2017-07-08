@@ -36,6 +36,8 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.archiver.ArchiverSystemTest.recordingUri;
+import static io.aeron.archiver.ArchiverSystemTest.startChannelDrainingSubscription;
 import static io.aeron.archiver.TestUtil.*;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.core.Is.is;
@@ -51,7 +53,7 @@ public class ArchiveReplayLoadTest
     static final String CONTROL_URI = "aeron:udp?endpoint=127.0.0.1:54327";
     static final int CONTROL_STREAM_ID = 100;
     private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
-    private static final String PUBLISH_URI = "aeron:ipc?endpoint=127.0.0.1:54325";
+    private static final String PUBLISH_URI = "aeron:ipc";
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final int MESSAGE_COUNT = 2000000;
@@ -153,12 +155,15 @@ public class ArchiveReplayLoadTest
             println("Client connected");
 
             final long startRecordingCorrelationId = this.correlationId++;
-            waitFor(() -> archiveProxy.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
+            final String recordingUri = recordingUri(PUBLISH_URI);
+            waitFor(() -> archiveProxy.startRecording(recordingUri, PUBLISH_STREAM_ID, startRecordingCorrelationId));
             println("Recording requested");
             waitForOk(controlResponse, startRecordingCorrelationId);
 
             final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(publication);
+            startChannelDrainingSubscription(publishingClient, PUBLISH_URI, PUBLISH_STREAM_ID);
+
             final int messageCount = prepAndSendMessages(recordingEvents, publication);
 
             assertNull(trackerError);
@@ -166,7 +171,7 @@ public class ArchiveReplayLoadTest
 
             println("Request stop recording");
             final long requestStopCorrelationId = this.correlationId++;
-            waitFor(() -> archiveProxy.stopRecording(recordingId, requestStopCorrelationId));
+            waitFor(() -> archiveProxy.stopRecording(recordingUri, PUBLISH_STREAM_ID, requestStopCorrelationId));
             waitForOk(controlResponse, requestStopCorrelationId);
 
             final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);

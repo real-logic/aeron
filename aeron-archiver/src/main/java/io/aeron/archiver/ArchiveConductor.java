@@ -28,6 +28,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import static io.aeron.archiver.Catalog.PAGE_SIZE;
@@ -46,6 +48,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final StringBuilder uriBuilder = new StringBuilder(1024);
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
+    private final Map<String, Subscription> subscriptionMap = new HashMap<>();
     private final ReplayPublicationSupplier newReplayPublication = this::newReplayPublication;
     private final AvailableImageHandler availableImageHandler = this::onAvailableImage;
 
@@ -122,6 +125,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     protected final void preSessionsClose()
     {
         closeSessionWorkers();
+        subscriptionMap.forEach((k, v) -> v.close());
+        subscriptionMap.clear();
     }
 
     protected abstract void closeSessionWorkers();
@@ -162,38 +167,59 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         }
         else
         {
-            startRecording(image);
+            startImageRecording(image);
         }
     }
 
     void stopRecording(
         final long correlationId,
         final Publication controlPublication,
-        final long recordingId)
+        final String channel,
+        final int streamId)
     {
-        final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
+        try
+        {
+            final ChannelUri channelUri = ChannelUri.parse(channel);
 
-        if (null != recordingSession)
-        {
-            recorder.abortSession(recordingSession);
-            controlSessionProxy.sendOkResponse(correlationId, controlPublication);
+            final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
+                .prefix(channelUri.prefix())
+                .media(channelUri.media())
+                .endpoint(channelUri.get(CommonContext.ENDPOINT_PARAM_NAME))
+                .controlEndpoint(channelUri.get(CommonContext.INTERFACE_PARAM_NAME));
+
+            final String minimalChannel = channelBuilder.build();
+            final String key = "channel=" + minimalChannel + " streamId=" + streamId;
+            final Subscription oldSubscription = subscriptionMap.remove(key);
+            if (oldSubscription != null)
+            {
+                oldSubscription.close();
+                controlSessionProxy.sendOkResponse(correlationId, controlPublication);
+            }
+            else
+            {
+                controlSessionProxy.sendError(
+                    correlationId,
+                    ControlResponseCode.ERROR,
+                    "The subscription " + key + " is not being recorded.",
+                    controlPublication);
+            }
         }
-        else
+        catch (final Exception ex)
         {
+            errorHandler.onError(ex);
             controlSessionProxy.sendError(
-                correlationId,
-                ControlResponseCode.RECORDING_NOT_FOUND,
-                null,
-                controlPublication);
+                correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlPublication);
         }
     }
 
-    void setupRecording(
+    void startRecordingSubscription(
         final long correlationId,
         final Publication controlPublication,
         final String channel,
         final int streamId)
     {
+        // note that since a subscription may trigger multiple images, and therefore multiple recordings this is a soft
+        // limit.
         if (recordingSessionByIdMap.size() >= maxConcurrentRecordings)
         {
             controlSessionProxy.sendError(
@@ -204,13 +230,48 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             return;
         }
 
+
         try
         {
-            // TODO: strip channel to minimal set of media/endpoint? maybe change API to specify only those 2? channel
-            // TODO: should only be a spy
-            // Subscription is closed on RecordingSession close(this is consistent with local archiver usage)
-            aeron.addSubscription(channel, streamId, availableImageHandler, null);
-            controlSessionProxy.sendOkResponse(correlationId, controlPublication);
+            final ChannelUri channelUri = ChannelUri.parse(channel);
+            if (!ChannelUri.SPY_QUALIFIER.equals(channelUri.prefix()) && !"ipc".equals(channelUri.media()))
+            {
+                controlSessionProxy.sendError(
+                    correlationId,
+                    ControlResponseCode.ERROR,
+                    "Can only record IPC or spy subscriptions at this time",
+                    controlPublication);
+                return;
+            }
+
+            final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
+                .prefix(channelUri.prefix())
+                .media(channelUri.media())
+                .endpoint(channelUri.get(CommonContext.ENDPOINT_PARAM_NAME))
+                .controlEndpoint(channelUri.get(CommonContext.INTERFACE_PARAM_NAME));
+
+            final String minimalChannel = channelBuilder.build();
+            final String key = "channel=" + minimalChannel + " streamId=" + streamId;
+            final Subscription oldSubscription = subscriptionMap.get(key);
+            if (oldSubscription == null)
+            {
+                final Subscription subscription = aeron.addSubscription(
+                    minimalChannel,
+                    streamId,
+                    availableImageHandler,
+                    null);
+
+                subscriptionMap.put(key, subscription);
+                controlSessionProxy.sendOkResponse(correlationId, controlPublication);
+            }
+            else
+            {
+                controlSessionProxy.sendError(
+                    correlationId,
+                    ControlResponseCode.ERROR,
+                    "The subscription " + key + " is already being recorded.",
+                    controlPublication);
+            }
         }
         catch (final Exception ex)
         {
@@ -220,7 +281,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         }
     }
 
-    private void startRecording(final Image image)
+    private void startImageRecording(final Image image)
     {
         final Subscription subscription = image.subscription();
         final int sessionId = image.sessionId();

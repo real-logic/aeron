@@ -25,7 +25,10 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.*;
+import org.agrona.BitUtil;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
@@ -38,10 +41,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.LockSupport;
 
+import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.archiver.ArchiveUtil.loadRecordingDescriptor;
 import static io.aeron.archiver.ArchiveUtil.recordingDescriptorFileName;
-import static io.aeron.archiver.TestUtil.newRecordingFragmentReader;
 import static io.aeron.archiver.TestUtil.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
@@ -183,7 +187,7 @@ public class ArchiverSystemTest
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
-            prePublicationVerifications(archiveProxy, controlPublication, recordingEvents);
+            prePublicationActionsAndVerifications(publishingClient, archiveProxy, controlPublication, recordingEvents);
 
             final ExclusivePublication recordedPublication =
                 publishingClient.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
@@ -225,7 +229,7 @@ public class ArchiverSystemTest
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
-            prePublicationVerifications(archiveProxy, controlPublication, recordingEvents);
+            prePublicationActionsAndVerifications(publishingClient, archiveProxy, controlPublication, recordingEvents);
 
             final Publication recordedPublication = publishingClient.addPublication(publishUri, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(recordedPublication);
@@ -275,7 +279,6 @@ public class ArchiverSystemTest
                     assertThat(streamId0, is(PUBLISH_STREAM_ID));
                     assertThat(sessionId0, is(sessionId));
                     assertThat(joinPosition0, is(joinPosition));
-                    assertThat(channel, is(publishUri));
                     println("Recording started. sourceIdentity: " + sourceIdentity);
                 }
             },
@@ -304,7 +307,10 @@ public class ArchiverSystemTest
 
         println("Request stop recording");
         final long requestStopCorrelationId = this.correlationId++;
-        waitFor(() -> archiveProxy.stopRecording(recordingId, requestStopCorrelationId));
+        waitFor(() -> archiveProxy.stopRecording(
+            recordingUri(publishUri),
+            PUBLISH_STREAM_ID,
+            requestStopCorrelationId));
         waitForOk(controlResponse, requestStopCorrelationId);
 
         final RecordingEventsPoller recordingEventsPoller = new RecordingEventsPoller(
@@ -335,7 +341,8 @@ public class ArchiverSystemTest
             termBufferLength);
     }
 
-    private void prePublicationVerifications(
+    private void prePublicationActionsAndVerifications(
+        final Aeron aeron,
         final ArchiveProxy archiveProxy,
         final Publication controlPublication,
         final Subscription recordingEvents)
@@ -351,9 +358,60 @@ public class ArchiverSystemTest
 
         verifyEmptyDescriptorList(archiveProxy);
         final long startRecordingCorrelationId = this.correlationId++;
-        waitFor(() -> archiveProxy.startRecording(publishUri, PUBLISH_STREAM_ID, startRecordingCorrelationId));
+        waitFor(() -> archiveProxy.startRecording(
+            recordingUri(publishUri),
+            PUBLISH_STREAM_ID,
+            startRecordingCorrelationId));
         println("Recording requested");
         waitForOk(controlResponse, startRecordingCorrelationId);
+
+        startChannelDrainingSubscription(aeron, this.publishUri, PUBLISH_STREAM_ID);
+    }
+
+    public static String recordingUri(final String channel)
+    {
+        if (channel.contains("ipc"))
+        {
+            return channel;
+        }
+        else
+        {
+            return SPY_PREFIX + channel;
+        }
+    }
+
+    public static void startChannelDrainingSubscription(final Aeron aeron, final String channel, final int streamId)
+    {
+        if (channel.contains("ipc"))
+        {
+            return;
+        }
+
+        final Thread t = new Thread(() ->
+        {
+            try (Subscription subscription = aeron.addSubscription(channel, streamId))
+            {
+                while (subscription.imageCount() == 0)
+                {
+                    LockSupport.parkNanos(1);
+                }
+
+                while (!subscription.isClosed())
+                {
+                    if (0 == subscription.poll((buffer1, offset, length, header) -> {}, Integer.MAX_VALUE))
+                    {
+                        LockSupport.parkNanos(1);
+                    }
+                }
+            }
+            catch (final Exception e)
+            {
+                e.printStackTrace();
+            }
+        });
+        t.setDaemon(true);
+        t.setName("eager-subscriber");
+        t.start();
     }
 
     private void verifyEmptyDescriptorList(final ArchiveProxy client)

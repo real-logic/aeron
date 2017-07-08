@@ -93,7 +93,8 @@ class ControlRequestAdapter implements FragmentHandler
 
                 listener.onStopRecording(
                     stopRecordingRequestDecoder.correlationId(),
-                    stopRecordingRequestDecoder.recordingId());
+                    stopRecordingRequestDecoder.channel(), stopRecordingRequestDecoder.streamId()
+                );
                 break;
 
             case AbortReplayRequestDecoder.TEMPLATE_ID:

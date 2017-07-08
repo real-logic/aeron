@@ -108,16 +108,20 @@ public class ArchiveProxy
     /**
      * Stop an active recording.
      *
-     * @param recordingId   to be stopped.
+     * @param channel       to be stopped.
+     * @param streamId      to be stopped.
      * @param correlationId for this request.
      * @return true if successfully offered otherwise false.
      */
-    public boolean stopRecording(final long recordingId, final long correlationId)
+    public boolean stopRecording(final String channel,
+                                 final int streamId,
+                                 final long correlationId)
     {
         stopRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
-            .recordingId(recordingId);
+            .streamId(streamId)
+            .channel(channel);
 
         return offer(stopRecordingRequestEncoder.encodedLength());
     }

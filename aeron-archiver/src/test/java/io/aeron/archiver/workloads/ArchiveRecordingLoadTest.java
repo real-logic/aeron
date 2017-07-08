@@ -36,6 +36,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
+import static io.aeron.archiver.ArchiverSystemTest.recordingUri;
+import static io.aeron.archiver.ArchiverSystemTest.startChannelDrainingSubscription;
 import static io.aeron.archiver.TestUtil.*;
 import static io.aeron.archiver.workloads.ArchiveReplayLoadTest.CONTROL_STREAM_ID;
 import static io.aeron.archiver.workloads.ArchiveReplayLoadTest.CONTROL_URI;
@@ -47,7 +49,7 @@ import static org.junit.Assert.fail;
 @Ignore
 public class ArchiveRecordingLoadTest
 {
-    private static final String PUBLISH_URI = "aeron:ipc?endpoint=127.0.0.1:54325";
+    private static final String PUBLISH_URI = "aeron:ipc";
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
@@ -149,10 +151,13 @@ public class ArchiveRecordingLoadTest
 
             long start;
             final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
+            startChannelDrainingSubscription(publishingClient, PUBLISH_URI, PUBLISH_STREAM_ID);
+            final String channel = recordingUri(PUBLISH_URI);
+
             while (System.currentTimeMillis() < duration)
             {
                 final long startRecordingCorrelationId = this.correlationId++;
-                waitFor(() -> archiveProxy.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, startRecordingCorrelationId));
+                waitFor(() -> archiveProxy.startRecording(channel, PUBLISH_STREAM_ID, startRecordingCorrelationId));
                 waitForOk(controlResponse, startRecordingCorrelationId);
                 println("Recording requested");
 
@@ -176,6 +181,9 @@ public class ArchiveRecordingLoadTest
                 final double rate = (totalRecordingLength * 1000.0 / time) / MEGABYTE;
                 final double recordedMb = totalRecordingLength / MEGABYTE;
                 System.out.printf("%d : sent %.02f MB, recorded %.02f MB/s %n", recordingId, recordedMb, rate);
+                final long stopRecordingCorrelationId = this.correlationId++;
+                waitFor(() -> archiveProxy.stopRecording(channel, PUBLISH_STREAM_ID, stopRecordingCorrelationId));
+                waitForOk(controlResponse, stopRecordingCorrelationId);
             }
 
             println("All data arrived");
@@ -197,7 +205,6 @@ public class ArchiveRecordingLoadTest
                 {
                     recordingId = recordingId0;
                     assertThat(streamId, is(PUBLISH_STREAM_ID));
-                    assertThat(channel, is(PUBLISH_URI));
                 }
             },
             recordingEvents,

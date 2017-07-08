@@ -127,18 +127,18 @@ class ControlSession implements Session, ControlRequestListener
         timeConnectedMs = epochClock.time();
     }
 
-    // TODO: remove external access to record start/stop
-    public void onStopRecording(final long correlationId, final long recordingId)
+    public void onStopRecording(final long correlationId,
+                                final String channel,
+                                final int streamId)
     {
         validateActive();
-        conductor.stopRecording(correlationId, controlPublication, recordingId);
+        conductor.stopRecording(correlationId, controlPublication, channel, streamId);
     }
 
-    // TODO: remove external access to record start/stop
     public void onStartRecording(final long correlationId, final String channel, final int streamId)
     {
         validateActive();
-        conductor.setupRecording(correlationId, controlPublication, channel, streamId);
+        conductor.startRecordingSubscription(correlationId, controlPublication, channel, streamId);
     }
 
     public void onListRecordings(final long correlationId, final long fromRecordingId, final int recordCount)

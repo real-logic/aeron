@@ -26,9 +26,7 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.ErrorHandler;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,6 +49,7 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
 
 public class ClientConductorTest
@@ -565,9 +564,18 @@ public class ClientConductorTest
 
         timeNs += (TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS) + 1);
 
-        conductor.doWork();
+        try
+        {
+            conductor.doWork();
+        }
+        catch (final AgentTerminationException ex)
+        {
+            verify(mockClientErrorHandler).onError(any(ConductorServiceTimeoutException.class));
 
-        verify(mockClientErrorHandler).onError(any(ConductorServiceTimeoutException.class));
+            return;
+        }
+
+        fail("Expected " + AgentTerminationException.class.getName());
     }
 
     private void whenReceiveBroadcastOnMessage(
@@ -580,7 +588,8 @@ public class ClientConductorTest
                 conductor.driverListenerAdapter().onMessage(msgTypeId, buffer, 0, length);
 
                 return 1;
-            }).when(mockToClientReceiver).receive(any());
+            })
+            .when(mockToClientReceiver).receive(any(MessageHandler.class));
     }
 
     private class PrintError implements ErrorHandler

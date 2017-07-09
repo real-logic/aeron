@@ -428,6 +428,10 @@ class ClientConductor implements Agent, DriverListener
             workCount += onCheckTimeouts();
             workCount += driverListener.pollMessage(correlationId, expectedChannel);
         }
+        catch (final AgentTerminationException ex)
+        {
+            throw ex;
+        }
         catch (final Throwable throwable)
         {
             errorHandler.onError(throwable);
@@ -507,10 +511,10 @@ class ClientConductor implements Agent, DriverListener
                 sleep(1000);
             }
 
-            onClose();
+            errorHandler.onError(new ConductorServiceTimeoutException(
+                "Timeout between service calls over " + interServiceTimeoutNs + "ns"));
 
-            throw new ConductorServiceTimeoutException(
-                "Timeout between service calls over " + interServiceTimeoutNs + "ns");
+            throw new AgentTerminationException();
         }
 
         timeOfLastWorkNs = nowNs;
@@ -554,15 +558,10 @@ class ClientConductor implements Agent, DriverListener
             {
                 isDriverActive = false;
 
-                try
-                {
-                    onClose();
-                }
-                finally
-                {
-                    errorHandler.onError(new DriverTimeoutException(
-                        "MediaDriver has been inactive for over " + driverTimeoutMs + "ms"));
-                }
+                errorHandler.onError(new DriverTimeoutException(
+                    "MediaDriver has been inactive for over " + driverTimeoutMs + "ms"));
+
+                throw new AgentTerminationException();
             }
         }
     }

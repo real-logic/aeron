@@ -73,8 +73,7 @@ public class ReplaySessionTest
         epochClock = mock(EpochClock.class);
         try (RecordingWriter writer = new RecordingWriter(new RecordingWriter.RecordingContext()
             .archiveDir(archiveDir)
-            .epochClock(epochClock)
-            .forceWrites(true),
+            .epochClock(epochClock),
             RECORDING_ID,
             TERM_BUFFER_LENGTH,
             MTU_LENGTH,
@@ -449,7 +448,7 @@ public class ReplaySessionTest
         try (RecordingWriter writer = new RecordingWriter(new RecordingWriter.RecordingContext()
             .archiveDir(archiveDir)
             .epochClock(epochClock)
-            .forceWrites(true),
+            .forceWrites(false),
             recordingId,
             TERM_BUFFER_LENGTH,
             MTU_LENGTH,

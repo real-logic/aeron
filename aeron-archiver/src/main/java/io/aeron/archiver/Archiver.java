@@ -194,7 +194,7 @@ public final class Archiver implements AutoCloseable
 
         private static boolean forceWrites()
         {
-            return Boolean.valueOf(System.getProperty(FORCE_WRITES_PROP_NAME, "true"));
+            return Boolean.valueOf(System.getProperty(FORCE_WRITES_PROP_NAME, "false"));
         }
 
         private static ArchiverThreadingMode threadingMode()

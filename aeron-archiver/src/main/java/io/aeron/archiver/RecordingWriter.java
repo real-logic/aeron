@@ -520,7 +520,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     {
         private File archiveDir;
         private EpochClock epochClock;
-        private boolean forceWrites = true;
+        private boolean forceWrites = false;
         private int segmentFileLength = 1024 * 1024 * 1024;
 
         RecordingContext archiveDir(final File archiveDir)

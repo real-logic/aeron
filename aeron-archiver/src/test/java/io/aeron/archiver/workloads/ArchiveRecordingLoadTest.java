@@ -54,7 +54,7 @@ public class ArchiveRecordingLoadTest
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
     private static final int MESSAGE_COUNT = 2000000;
-    private static final int TEST_DURATION_SEC = 30;
+    private static final int TEST_DURATION_SEC = 20;
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
     private Aeron aeron;

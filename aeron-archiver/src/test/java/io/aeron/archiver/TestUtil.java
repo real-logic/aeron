@@ -147,6 +147,11 @@ public class TestUtil
         waitFor(publication::isConnected);
     }
 
+    public static void awaitPublicationIsConnected(final ExclusivePublication publication)
+    {
+        waitFor(publication::isConnected);
+    }
+
     static RecordingFragmentReader newRecordingFragmentReader(final long recordingId, final File archiveDir)
         throws IOException
     {

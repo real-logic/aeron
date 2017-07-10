@@ -57,7 +57,7 @@ public class ArchiveRecordingLoadTest
     private static final int TEST_DURATION_SEC = 30;
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
-    private Aeron publishingClient;
+    private Aeron aeron;
     private Archiver archiver;
     private MediaDriver driver;
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
@@ -111,13 +111,13 @@ public class ArchiveRecordingLoadTest
 
         archiver = Archiver.launch(archiverCtx);
         println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
-        publishingClient = Aeron.connect();
+        aeron = Aeron.connect();
     }
 
     @After
     public void closeEverything() throws Exception
     {
-        CloseHelper.quietClose(publishingClient);
+        CloseHelper.quietClose(aeron);
         CloseHelper.quietClose(archiver);
         CloseHelper.quietClose(driver);
 
@@ -132,9 +132,9 @@ public class ArchiveRecordingLoadTest
     @Test
     public void archive() throws IOException, InterruptedException
     {
-        try (Publication controlRequest = publishingClient.addPublication(
+        try (Publication controlRequest = aeron.addPublication(
                 archiverCtx.controlChannel(), archiverCtx.controlStreamId());
-             Subscription recordingEvents = publishingClient.addSubscription(
+             Subscription recordingEvents = aeron.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlRequest);
@@ -144,14 +144,14 @@ public class ArchiveRecordingLoadTest
             TestUtil.awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 
-            final Subscription controlResponse = publishingClient.addSubscription(CONTROL_URI, CONTROL_STREAM_ID);
+            final Subscription controlResponse = aeron.addSubscription(CONTROL_URI, CONTROL_STREAM_ID);
             assertTrue(archiveProxy.connect(CONTROL_URI, CONTROL_STREAM_ID));
             TestUtil.awaitSubscriptionIsConnected(controlResponse);
             println("Client connected");
 
             long start;
             final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
-            startChannelDrainingSubscription(publishingClient, PUBLISH_URI, PUBLISH_STREAM_ID);
+            startChannelDrainingSubscription(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
             final String channel = recordingUri(PUBLISH_URI);
 
             while (System.currentTimeMillis() < duration)
@@ -161,7 +161,7 @@ public class ArchiveRecordingLoadTest
                 waitForOk(controlResponse, startRecordingCorrelationId);
                 println("Recording requested");
 
-                try (Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID))
+                try (ExclusivePublication publication = aeron.addExclusivePublication(PUBLISH_URI, PUBLISH_STREAM_ID))
                 {
                     awaitPublicationIsConnected(publication);
                     waitFor(recordingStartedIndicator);
@@ -239,7 +239,7 @@ public class ArchiveRecordingLoadTest
         recordingEndIndicator = () -> recordingEventsPoller.poll() != 0;
     }
 
-    private void prepAndSendMessages(final Publication publication)
+    private void prepAndSendMessages(final ExclusivePublication publication)
     {
         fragmentLength = new int[ArchiveRecordingLoadTest.MESSAGE_COUNT];
         for (int i = 0; i < ArchiveRecordingLoadTest.MESSAGE_COUNT; i++)
@@ -254,7 +254,7 @@ public class ArchiveRecordingLoadTest
         publishDataToBeRecorded(publication, ArchiveRecordingLoadTest.MESSAGE_COUNT);
     }
 
-    private void publishDataToBeRecorded(final Publication publication, final int messageCount)
+    private void publishDataToBeRecorded(final ExclusivePublication publication, final int messageCount)
     {
         final int positionBitsToShift = Integer.numberOfTrailingZeros(publication.termBufferLength());
 
@@ -284,9 +284,9 @@ public class ArchiveRecordingLoadTest
         assertThat(position - joinPosition, is(totalRecordingLength));
     }
 
-    private void offer(final Publication publication, final UnsafeBuffer buffer, final int length)
+    private void offer(final ExclusivePublication publication, final UnsafeBuffer buffer, final int length)
     {
-        final long limit = System.currentTimeMillis() + (long)TestUtil.TIMEOUT;
+        final long limit = System.currentTimeMillis() + TestUtil.TIMEOUT;
         if (publication.offer(buffer, 0, length) < 0)
         {
             slowOffer(publication, buffer, length, limit);
@@ -294,7 +294,7 @@ public class ArchiveRecordingLoadTest
     }
 
     private void slowOffer(
-        final Publication publication,
+        final ExclusivePublication publication,
         final UnsafeBuffer buffer,
         final int length,
         final long limit)

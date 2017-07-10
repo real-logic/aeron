@@ -47,7 +47,7 @@ import static org.junit.Assert.assertThat;
 @Ignore
 public class ArchiveReplayLoadTest
 {
-    private static final int TIMEOUT = 5000;
+    private static final int TIMEOUT_MS = 5000;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
 
     static final String CONTROL_URI = "aeron:udp?endpoint=127.0.0.1:54327";
@@ -61,7 +61,7 @@ public class ArchiveReplayLoadTest
 
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
-    private Aeron publishingClient;
+    private Aeron aeron;
     private Archiver archiver;
     private MediaDriver driver;
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
@@ -117,13 +117,13 @@ public class ArchiveReplayLoadTest
 
         archiver = Archiver.launch(archiverCtx);
         println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
-        publishingClient = Aeron.connect();
+        aeron = Aeron.connect();
     }
 
     @After
     public void closeEverything() throws Exception
     {
-        CloseHelper.close(publishingClient);
+        CloseHelper.close(aeron);
         CloseHelper.close(archiver);
         CloseHelper.close(driver);
 
@@ -138,9 +138,9 @@ public class ArchiveReplayLoadTest
     @Test(timeout = 180000)
     public void replay() throws IOException, InterruptedException
     {
-        try (Publication controlRequest = publishingClient.addPublication(
+        try (Publication controlRequest = aeron.addPublication(
                 archiverCtx.controlChannel(), archiverCtx.controlStreamId());
-             Subscription recordingEvents = publishingClient.addSubscription(
+             Subscription recordingEvents = aeron.addSubscription(
                 archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlRequest);
@@ -149,7 +149,7 @@ public class ArchiveReplayLoadTest
             awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 
-            final Subscription controlResponse = publishingClient.addSubscription(CONTROL_URI, CONTROL_STREAM_ID);
+            final Subscription controlResponse = aeron.addSubscription(CONTROL_URI, CONTROL_STREAM_ID);
             assertTrue(archiveProxy.connect(CONTROL_URI, CONTROL_STREAM_ID));
             awaitSubscriptionIsConnected(controlResponse);
             println("Client connected");
@@ -160,9 +160,9 @@ public class ArchiveReplayLoadTest
             println("Recording requested");
             waitForOk(controlResponse, startRecordingCorrelationId);
 
-            final Publication publication = publishingClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
+            final Publication publication = aeron.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(publication);
-            startChannelDrainingSubscription(publishingClient, PUBLISH_URI, PUBLISH_STREAM_ID);
+            startChannelDrainingSubscription(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
 
             final int messageCount = prepAndSendMessages(recordingEvents, publication);
 
@@ -244,7 +244,7 @@ public class ArchiveReplayLoadTest
     {
         final int replayStreamId = (int)correlationId;
 
-        try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, replayStreamId))
+        try (Subscription replay = aeron.addSubscription(REPLAY_URI, replayStreamId))
         {
             final long correlationId = this.correlationId++;
 
@@ -317,7 +317,7 @@ public class ArchiveReplayLoadTest
 
                         final long end = System.currentTimeMillis();
                         final long deltaTime = end - start;
-                        if (deltaTime > TIMEOUT)
+                        if (deltaTime > TIMEOUT_MS)
                         {
                             start = end;
                             final long deltaBytes = remaining - startBytes;

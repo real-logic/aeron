@@ -52,6 +52,7 @@ import static java.nio.file.StandardOpenOption.*;
 class RecordingWriter implements AutoCloseable, RawBlockHandler
 {
     // TODO: Really this param name? ;-)
+    // TODO: Option should be writes are default, data, or data + metadata.
     private static final boolean VALIDATE_POSITION_ASSUMPTIONS =
         !Boolean.getBoolean("io.aeron.archiver.validate.recording.writer.position.off");
 

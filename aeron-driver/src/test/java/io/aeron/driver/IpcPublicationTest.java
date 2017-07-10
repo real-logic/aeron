@@ -41,6 +41,7 @@ import static org.mockito.Mockito.when;
 
 public class IpcPublicationTest
 {
+    private static final long CLIENT_ID = 7L;
     private static final int STREAM_ID = 10;
     private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
     private static final int BUFFER_LENGTH = 16 * 1024;
@@ -83,7 +84,7 @@ public class IpcPublicationTest
 
         ctx.countersValuesBuffer(counterBuffer);
 
-        driverProxy = new DriverProxy(fromClientCommands);
+        driverProxy = new DriverProxy(fromClientCommands, CLIENT_ID);
         driverConductor = new DriverConductor(ctx);
 
         driverProxy.addPublication(CommonContext.IPC_CHANNEL, STREAM_ID);

@@ -36,9 +36,10 @@ public class DriverProxyTest
 
     private static final int STREAM_ID = 1;
     private static final long CORRELATION_ID = 3;
+    private static final long CLIENT_ID = 7;
     private final RingBuffer conductorBuffer = new ManyToOneRingBuffer(
         new UnsafeBuffer(ByteBuffer.allocateDirect(TRAILER_LENGTH + 1024)));
-    private final DriverProxy conductor = new DriverProxy(conductorBuffer);
+    private final DriverProxy conductor = new DriverProxy(conductorBuffer, CLIENT_ID);
 
     @Test
     public void threadSendsAddChannelMessage()

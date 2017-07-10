@@ -46,7 +46,7 @@ public class DriverProxy
     private final DestinationMessageFlyweight destinationMessage = new DestinationMessageFlyweight();
     private final RingBuffer toDriverCommandBuffer;
 
-    public DriverProxy(final RingBuffer toDriverCommandBuffer)
+    public DriverProxy(final RingBuffer toDriverCommandBuffer, final long clientId)
     {
         this.toDriverCommandBuffer = toDriverCommandBuffer;
 
@@ -56,7 +56,6 @@ public class DriverProxy
         removeMessage.wrap(buffer, 0);
         destinationMessage.wrap(buffer, 0);
 
-        final long clientId = toDriverCommandBuffer.nextCorrelationId();
         correlatedMessage.clientId(clientId);
     }
 

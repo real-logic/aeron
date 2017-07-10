@@ -152,7 +152,7 @@ public class DriverConductorTest
         ctx.clientLivenessTimeoutNs(CLIENT_LIVENESS_TIMEOUT_NS);
         ctx.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(ctx));
 
-        driverProxy = new DriverProxy(fromClientCommands);
+        driverProxy = new DriverProxy(fromClientCommands, fromClientCommands.nextCorrelationId());
         driverConductor = new DriverConductor(ctx);
 
         doAnswer(closeChannelEndpointAnswer).when(receiverProxy).closeReceiveChannelEndpoint(any());
@@ -1069,7 +1069,8 @@ public class DriverConductorTest
     @Test
     public void shouldTimeoutNetworkPublicationWithSpy() throws Exception
     {
-        final DriverProxy spyDriverProxy = new DriverProxy(fromClientCommands);
+        final long clientId = fromClientCommands.nextCorrelationId();
+        final DriverProxy spyDriverProxy = new DriverProxy(fromClientCommands, clientId);
 
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
         spyDriverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);

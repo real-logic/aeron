@@ -94,6 +94,7 @@ public final class Aeron implements AutoCloseable
      */
     public static final long PUBLICATION_CONNECTION_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
 
+    private final long clientId;
     private final Lock clientLock;
     private final Context ctx;
     private final ClientConductor conductor;
@@ -106,19 +107,20 @@ public final class Aeron implements AutoCloseable
         ctx.conclude();
 
         this.ctx = ctx;
+        clientId = ctx.clientId();
         clientLock = ctx.clientLock();
-        commandBuffer = ctx.toDriverBuffer;
+        commandBuffer = ctx.toDriverBuffer();
         conductor = new ClientConductor(ctx);
 
         if (ctx.useConductorAgentInvoker())
         {
-            conductorInvoker = new AgentInvoker(ctx.errorHandler, null, conductor);
+            conductorInvoker = new AgentInvoker(ctx.errorHandler(), null, conductor);
             conductorRunner = null;
         }
         else
         {
             conductorInvoker = null;
-            conductorRunner = new AgentRunner(ctx.idleStrategy, ctx.errorHandler, null, conductor);
+            conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), null, conductor);
         }
     }
 
@@ -167,6 +169,16 @@ public final class Aeron implements AutoCloseable
             ctx.close();
             throw ex;
         }
+    }
+
+    /**
+     * Get the client identity that has been allocated for communicating with the media driver.
+     *
+     * @return the client identity that has been allocated for communicating with the media driver.
+     */
+    public long clientId()
+    {
+        return clientId;
     }
 
     /**
@@ -355,6 +367,7 @@ public final class Aeron implements AutoCloseable
      */
     public static class Context extends CommonContext
     {
+        private long clientId;
         private boolean useConductorAgentInvoker = false;
         private AgentInvoker driverAgentInvoker;
         private Lock clientLock;
@@ -461,10 +474,20 @@ public final class Aeron implements AutoCloseable
 
             if (null == driverProxy)
             {
-                driverProxy = new DriverProxy(toDriverBuffer);
+                clientId = toDriverBuffer.nextCorrelationId();
+                driverProxy = new DriverProxy(toDriverBuffer, clientId);
             }
 
             return this;
+        }
+
+        /**
+         * Get the client identity that has been allocated for communicating with the media driver.
+         * @return the client identity that has been allocated for communicating with the media driver.
+         */
+        public long clientId()
+        {
+            return clientId;
         }
 
         /**

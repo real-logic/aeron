@@ -185,7 +185,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 .prefix(channelUri.prefix())
                 .media(channelUri.media())
                 .endpoint(channelUri.get(CommonContext.ENDPOINT_PARAM_NAME))
-                .controlEndpoint(channelUri.get(CommonContext.INTERFACE_PARAM_NAME));
+                .controlEndpoint(channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME));
 
             final String minimalChannel = channelBuilder.build();
             final String key = "channel=" + minimalChannel + " streamId=" + streamId;
@@ -248,7 +248,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 .prefix(channelUri.prefix())
                 .media(channelUri.media())
                 .endpoint(channelUri.get(CommonContext.ENDPOINT_PARAM_NAME))
-                .controlEndpoint(channelUri.get(CommonContext.INTERFACE_PARAM_NAME));
+                .controlEndpoint(channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME));
 
             final String minimalChannel = channelBuilder.build();
             final String key = "channel=" + minimalChannel + " streamId=" + streamId;

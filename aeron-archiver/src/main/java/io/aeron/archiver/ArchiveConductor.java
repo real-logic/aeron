@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.archiver.Catalog.PAGE_SIZE;
 
 abstract class ArchiveConductor extends SessionWorker<Session>
@@ -39,13 +40,12 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     /**
      * Low term length for control channel reflect expected low bandwidth usage.
      */
-    private static final String DEFAULT_CONTROL_CHANNEL_TERM_LENGTH_PARAM =
-        CommonContext.TERM_LENGTH_PARAM_NAME + "=" + Integer.toString(64 * 1024);
+    private static final int DEFAULT_CONTROL_TERM_LENGTH = 64 * 1024;
 
     private final ByteBuffer threadLocalDescriptorBBuffer =
         BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, PAGE_SIZE);
     private final UnsafeBuffer threadLocalDescriptorUBuffer = new UnsafeBuffer(threadLocalDescriptorBBuffer);
-    private final StringBuilder uriBuilder = new StringBuilder(1024);
+    private final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder();
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
     private final Map<String, Subscription> subscriptionMap = new HashMap<>();
@@ -179,15 +179,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         try
         {
-            final ChannelUri channelUri = ChannelUri.parse(channel);
-
-            final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
-                .prefix(channelUri.prefix())
-                .media(channelUri.media())
-                .endpoint(channelUri.get(CommonContext.ENDPOINT_PARAM_NAME))
-                .controlEndpoint(channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME));
-
-            final String minimalChannel = channelBuilder.build();
+            final String minimalChannel = minimalChannelBuilder(channel).build();
             final String key = "channel=" + minimalChannel + " streamId=" + streamId;
             final Subscription oldSubscription = subscriptionMap.remove(key);
             if (oldSubscription != null)
@@ -233,8 +225,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         try
         {
-            final ChannelUri channelUri = ChannelUri.parse(channel);
-            if (!ChannelUri.SPY_QUALIFIER.equals(channelUri.prefix()) && !"ipc".equals(channelUri.media()))
+            if (!channel.startsWith(SPY_PREFIX) && !channel.contains("aeron:ipc"))
             {
                 controlSessionProxy.sendError(
                     correlationId,
@@ -243,14 +234,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                     controlPublication);
                 return;
             }
-
-            final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
-                .prefix(channelUri.prefix())
-                .media(channelUri.media())
-                .endpoint(channelUri.get(CommonContext.ENDPOINT_PARAM_NAME))
-                .controlEndpoint(channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME));
-
-            final String minimalChannel = channelBuilder.build();
+            final String minimalChannel = minimalChannelBuilder(channel).build();
             final String key = "channel=" + minimalChannel + " streamId=" + streamId;
             final Subscription oldSubscription = subscriptionMap.get(key);
             if (oldSubscription == null)
@@ -279,39 +263,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             controlSessionProxy.sendError(
                 correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlPublication);
         }
-    }
-
-    private void startImageRecording(final Image image)
-    {
-        final Subscription subscription = image.subscription();
-        final int sessionId = image.sessionId();
-        final int streamId = subscription.streamId();
-        final String channel = subscription.channel();
-        final String sourceIdentity = image.sourceIdentity();
-        final int termBufferLength = image.termBufferLength();
-        final int mtuLength = image.mtuLength();
-        final int initialTermId = image.initialTermId();
-        final long joinPosition = image.joinPosition();
-
-        final long recordingId = catalog.addNewRecording(
-            sessionId,
-            streamId,
-            channel,
-            sourceIdentity,
-            termBufferLength,
-            mtuLength,
-            initialTermId,
-            joinPosition,
-            recordingContext.recordingFileLength());
-
-        final RecordingSession session = new RecordingSession(
-            recordingId,
-            recordingEventsProxy,
-            image,
-            recordingContext);
-
-        recordingSessionByIdMap.put(recordingId, session);
-        recorder.addSession(session);
     }
 
     ListRecordingsSession newListRecordingsSession(
@@ -396,9 +347,9 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final String controlChannel;
         if (!channel.contains(CommonContext.TERM_LENGTH_PARAM_NAME))
         {
-            initUriBuilder(channel);
-            uriBuilder.append(DEFAULT_CONTROL_CHANNEL_TERM_LENGTH_PARAM);
-            controlChannel = uriBuilder.toString();
+            controlChannel = minimalChannelBuilder(channel)
+                .termLength(DEFAULT_CONTROL_TERM_LENGTH)
+                .build();
         }
         else
         {
@@ -408,19 +359,51 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         return aeron.addPublication(controlChannel, streamId);
     }
 
-    private void initUriBuilder(final String channel)
+    private ChannelUriStringBuilder minimalChannelBuilder(final String channel)
     {
-        uriBuilder.setLength(0);
-        uriBuilder.append(channel);
+        final ChannelUri channelUri = ChannelUri.parse(channel);
+        channelBuilder
+            .clear()
+            .prefix(channelUri.prefix())
+            .media(channelUri.media())
+            .endpoint(channelUri.get(CommonContext.ENDPOINT_PARAM_NAME))
+            .networkInterface(channelUri.get(CommonContext.INTERFACE_PARAM_NAME))
+            .controlEndpoint(channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME));
 
-        if (channel.indexOf('?', 0) > -1)
-        {
-            uriBuilder.append('|');
-        }
-        else
-        {
-            uriBuilder.append('?');
-        }
+        return channelBuilder;
+    }
+
+    private void startImageRecording(final Image image)
+    {
+        final Subscription subscription = image.subscription();
+        final int sessionId = image.sessionId();
+        final int streamId = subscription.streamId();
+        final String channel = subscription.channel();
+        final String sourceIdentity = image.sourceIdentity();
+        final int termBufferLength = image.termBufferLength();
+        final int mtuLength = image.mtuLength();
+        final int initialTermId = image.initialTermId();
+        final long joinPosition = image.joinPosition();
+
+        final long recordingId = catalog.addNewRecording(
+            sessionId,
+            streamId,
+            channel,
+            sourceIdentity,
+            termBufferLength,
+            mtuLength,
+            initialTermId,
+            joinPosition,
+            recordingContext.recordingFileLength());
+
+        final RecordingSession session = new RecordingSession(
+            recordingId,
+            recordingEventsProxy,
+            image,
+            recordingContext);
+
+        recordingSessionByIdMap.put(recordingId, session);
+        recorder.addSession(session);
     }
 
     interface ReplayPublicationSupplier
@@ -444,21 +427,16 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         final int termId = (int)((fromPosition / termBufferLength) + initialTermId);
         final int termOffset = (int)(fromPosition % termBufferLength);
-        // TODO: strip channel to minimal set of media/endpoint? maybe change API to specify only those 2?
-        initUriBuilder(replayChannel);
 
-        uriBuilder
-            .append(CommonContext.INITIAL_TERM_ID_PARAM_NAME).append('=').append(initialTermId)
-            .append('|')
-            .append(CommonContext.MTU_LENGTH_PARAM_NAME).append('=').append(mtuLength)
-            .append('|')
-            .append(CommonContext.TERM_LENGTH_PARAM_NAME).append('=').append(termBufferLength)
-            .append('|')
-            .append(CommonContext.TERM_ID_PARAM_NAME).append('=').append(termId)
-            .append('|')
-            .append(CommonContext.TERM_OFFSET_PARAM_NAME).append('=').append(termOffset);
+        final String channel = minimalChannelBuilder(replayChannel)
+            .mtu(mtuLength)
+            .termLength(termBufferLength)
+            .initialTermId(initialTermId)
+            .termId(termId)
+            .termOffset(termOffset)
+            .build();
 
-        return aeron.addExclusivePublication(uriBuilder.toString(), replayStreamId);
+        return aeron.addExclusivePublication(channel, replayStreamId);
     }
 
     void closeRecordingSession(final RecordingSession session)

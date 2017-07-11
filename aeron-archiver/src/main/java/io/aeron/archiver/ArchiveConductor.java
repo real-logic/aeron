@@ -76,15 +76,15 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
-        super("archiver-conductor");
+        super("archive-conductor");
 
         this.aeron = aeron;
         this.ctx = ctx;
         aeronClientAgentInvoker = aeron.conductorAgentInvoker();
-        Objects.requireNonNull(aeronClientAgentInvoker, "In the archiver context an aeron invoker should be present");
+        Objects.requireNonNull(aeronClientAgentInvoker, "An aeron invoker should be present in the archiver context");
 
         epochClock = ctx.epochClock();
-        this.driverAgentInvoker = ctx.mediaDriverAgentInvoker();
+        driverAgentInvoker = ctx.mediaDriverAgentInvoker();
 
         controlSessionProxy = new ControlSessionProxy(ctx.idleStrategy());
 
@@ -100,16 +100,16 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             aeron.addPublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
         recordingEventsProxy = new RecordingEventsProxy(ctx.idleStrategy(), notificationPublication);
 
-        this.recordingContext = new RecordingWriter.RecordingContext()
+        recordingContext = new RecordingWriter.RecordingContext()
             .recordingFileLength(ctx.segmentFileLength())
             .archiveDir(ctx.archiveDir())
             .epochClock(ctx.epochClock())
             .forceWrites(ctx.forceDataWrites());
 
-        this.archiveDir = ctx.archiveDir();
-        this.maxConcurrentRecordings = ctx.maxConcurrentRecordings();
-        this.maxConcurrentReplays = ctx.maxConcurrentReplays();
-        this.errorHandler = ctx.errorHandler();
+        archiveDir = ctx.archiveDir();
+        maxConcurrentRecordings = ctx.maxConcurrentRecordings();
+        maxConcurrentReplays = ctx.maxConcurrentReplays();
+        errorHandler = ctx.errorHandler();
     }
 
     public void onStart()
@@ -125,7 +125,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     protected final void preSessionsClose()
     {
         closeSessionWorkers();
-        subscriptionMap.forEach((k, v) -> v.close());
+        subscriptionMap.values().forEach(Subscription::close);
         subscriptionMap.clear();
     }
 
@@ -139,18 +139,18 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         if (!recordingSessionByIdMap.isEmpty())
         {
-            System.err.println("ERROR: expected empty recordingSessionByIdMap");
+            System.err.println("ERROR: expected no active recording sessions");
         }
 
         if (!replaySessionByIdMap.isEmpty())
         {
-            System.err.println("ERROR: expected empty replaySessionByIdMap");
+            System.err.println("ERROR: expected no active replay sessions");
         }
     }
 
     protected int preWork()
     {
-        int workDone = (null != driverAgentInvoker) ? driverAgentInvoker.invoke() : 0;
+        int workDone = null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
         workDone += aeronClientAgentInvoker.invoke();
         return workDone;
     }
@@ -217,7 +217,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             controlSessionProxy.sendError(
                 correlationId,
                 ControlResponseCode.ERROR,
-                "Max concurrent recording reached: " + maxConcurrentRecordings,
+                "Max concurrent recordings reached: " + maxConcurrentRecordings,
                 controlPublication);
             return;
         }
@@ -230,7 +230,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 controlSessionProxy.sendError(
                     correlationId,
                     ControlResponseCode.ERROR,
-                    "Can only record IPC or spy subscriptions at this time",
+                    "Only IPC and spy subscriptions are supported.",
                     controlPublication);
                 return;
             }
@@ -253,7 +253,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 controlSessionProxy.sendError(
                     correlationId,
                     ControlResponseCode.ERROR,
-                    "The subscription " + key + " is already being recorded.",
+                    "Subscription is already being recorded: " + key,
                     controlPublication);
             }
         }

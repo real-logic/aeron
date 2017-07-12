@@ -439,6 +439,7 @@ public class ReplaySessionTest
     }
 
     @Test
+    @Ignore
     public void shouldReplayDataFromFileWhileBeingWritten()
     {
         final ReplaySession replaySession;

@@ -51,10 +51,8 @@ import static java.nio.file.StandardOpenOption.*;
  */
 class RecordingWriter implements AutoCloseable, RawBlockHandler
 {
-    // TODO: Really this param name? ;-)
-    // TODO: Option should be writes are default, data, or data + metadata.
-    private static final boolean VALIDATE_POSITION_ASSUMPTIONS =
-        !Boolean.getBoolean("io.aeron.archiver.validate.recording.writer.position.off");
+    private static final boolean POSITION_CHECKS =
+        !Boolean.getBoolean("io.aeron.archiver.recorder.position.checks.off");
 
     static class Marker
     {
@@ -72,17 +70,10 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     static final long NULL_TIME = -1L;
     static final long NULL_POSITION = -1;
 
-    /* This is implicit in the file as allocated files are zeroed by reasonable OSs*/
-    static final int END_OF_DATA_INDICATOR = 0;
-
-    static final int END_OF_RECORDING_INDICATOR = -1;
-
     private static final int NULL_SEGMENT_POSITION = -1;
-    // TODO: pull this out to the Agent and pass into the writer so no need for thread local.
-    private static final ThreadLocal<Marker> MARKER = ThreadLocal.withInitial(Marker::new);
 
+    // TODO: Option should be force: none/data/data + metadata.
     private final boolean forceWrites;
-
     private final int initialRecordingTermId;
     private final int termBufferLength;
     private final int termsMask;
@@ -309,23 +300,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
         if (recordingFileChannel != null)
         {
-            // write end of recording marker after data
-            final Marker marker = MARKER.get();
-
-            marker.header.frameLength(END_OF_RECORDING_INDICATOR);
-            try
-            {
-                marker.buffer.clear();
-                writeData(marker.buffer, segmentPosition, recordingFileChannel);
-            }
-            catch (final IOException e)
-            {
-                LangUtil.rethrowUnchecked(e);
-            }
-            finally
-            {
-                CloseHelper.close(recordingFileChannel);
-            }
+            CloseHelper.close(recordingFileChannel);
         }
     }
 
@@ -443,11 +418,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
         if (segmentPosition != 0)
         {
-            // padding frame required
-            final Marker marker = MARKER.get();
-            marker.header.frameLength(termOffset);
-            marker.buffer.clear();
-            writeData(marker.buffer, 0, recordingFileChannel);
+
             // we need to setup starting position for transferTo
             recordingFileChannel.position(segmentPosition);
         }
@@ -462,7 +433,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     private void validateStartTermOffset(final int termOffset)
     {
-        if (VALIDATE_POSITION_ASSUMPTIONS)
+        if (POSITION_CHECKS)
         {
             final int expectedStartTermOffset = (int)(joinPosition & (termBufferLength - 1));
             if (expectedStartTermOffset != termOffset)
@@ -477,7 +448,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         final int termOffset,
         final int blockLength) throws IOException
     {
-        if (VALIDATE_POSITION_ASSUMPTIONS)
+        if (POSITION_CHECKS)
         {
             if ((termOffset + blockLength) > termBufferLength)
             {
@@ -508,7 +479,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     private void validateWritePostConditions() throws IOException
     {
-        if (VALIDATE_POSITION_ASSUMPTIONS)
+        if (POSITION_CHECKS)
         {
             if (recordingFileChannel.position() != segmentPosition)
             {

@@ -42,13 +42,13 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
  * based look up of a descriptor in the file.
  * <p>
  * Catalog file format:
- * <pre><code>
+ * <pre>
  * # |---------------- 32b --------------|
  * 0 |desc-length 4b|------24b-unused----|
  * 1 |RecordingDescriptor (length < 4064)|
  * 2 |...continues...                    |
  *128|------------- repeat --------------|
- * </code></pre>
+ * </pre>
  * <p>
  * Catalog descriptors may legitimately differ from recording descriptors while recordings are in flight. Once a
  * recording is closed the 2 sources should match. To verify a match between catalog contents and archive folder
@@ -339,12 +339,6 @@ class Catalog implements AutoCloseable
                     headerBuffer,
                     headerFlyweight,
                     segmentFileChannel);
-
-                if (headerFlyweight.frameLength() != RecordingWriter.END_OF_RECORDING_INDICATOR)
-                {
-                    headerFlyweight.frameLength(RecordingWriter.END_OF_RECORDING_INDICATOR);
-                    segmentFileChannel.write(headerBuffer, endPosition);
-                }
             }
 
             endTimestamp = segmentFile.lastModified();

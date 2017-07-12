@@ -439,7 +439,7 @@ public class ReplaySessionTest
 
     @Test
     @Ignore
-    public void shouldReplayDataFromFileWhileBeingWritten()
+    public void shouldReplayFromActiveRecording()
     {
         final ReplaySession replaySession;
         final UnsafeBuffer termBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));

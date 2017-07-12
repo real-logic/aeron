@@ -204,7 +204,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         try
         {
             final String minimalChannel = minimalChannelBuilder(channel).build();
-            final String key = "channel=" + minimalChannel + " streamId=" + streamId;
+            final String key = makeKey(streamId, minimalChannel);
             final Subscription oldSubscription = subscriptionMap.remove(key);
             if (oldSubscription != null)
             {
@@ -216,7 +216,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 controlSessionProxy.sendError(
                     correlationId,
                     ControlResponseCode.ERROR,
-                    "The subscription " + key + " is not being recorded.",
+                    "No recording found for: " + key,
                     controlPublication);
             }
         }
@@ -259,7 +259,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 return;
             }
             final String minimalChannel = minimalChannelBuilder(channel).build();
-            final String key = "channel=" + minimalChannel + " streamId=" + streamId;
+            final String key = makeKey(streamId, minimalChannel);
             final Subscription oldSubscription = subscriptionMap.get(key);
             if (oldSubscription == null)
             {
@@ -381,6 +381,11 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         }
 
         return aeron.addPublication(controlChannel, streamId);
+    }
+
+    private String makeKey(final int streamId, final String minimalChannel)
+    {
+        return streamId + ':' + minimalChannel;
     }
 
     private ChannelUriStringBuilder minimalChannelBuilder(final String channel)

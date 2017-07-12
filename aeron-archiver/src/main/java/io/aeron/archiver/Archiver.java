@@ -25,9 +25,13 @@ import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.StatusIndicator;
 
 import java.io.File;
+import java.nio.channels.FileChannel;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
  * The Aeron Archiver is run with an embedded media driver and allows for the archival of 'local'
@@ -318,10 +322,22 @@ public final class Archiver implements AutoCloseable
                 archiveDir = new File(Configuration.archiveDirName());
             }
 
-            if (!archiveDir.exists() && !archiveDir.mkdirs())
+            if (!archiveDir.exists())
             {
-                throw new IllegalArgumentException(
-                    "Failed to create archive dir: " + archiveDir.getAbsolutePath());
+                if (!archiveDir.mkdirs())
+                {
+                    throw new IllegalArgumentException(
+                        "Failed to create archive dir: " + archiveDir.getAbsolutePath());
+                }
+
+                try (FileChannel dirChannel = FileChannel.open(archiveDir.toPath(), READ, WRITE))
+                {
+                    dirChannel.force(true);
+                }
+                catch (final Exception e)
+                {
+                    LangUtil.rethrowUnchecked(e);
+                }
             }
 
             if (null == idleStrategySupplier)

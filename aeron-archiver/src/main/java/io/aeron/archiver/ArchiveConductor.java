@@ -160,6 +160,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         CloseHelper.quietClose(catalog);
         CloseHelper.quietClose(archiveDirChannel);
 
+        // TODO: Should these be exceptions that get recorded or are they asserts?
         if (!recordingSessionByIdMap.isEmpty())
         {
             System.err.println("ERROR: expected no active recording sessions");

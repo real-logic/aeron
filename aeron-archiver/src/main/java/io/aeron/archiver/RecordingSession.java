@@ -33,7 +33,7 @@ class RecordingSession implements Session
     private final long recordingId;
     private final RecordingEventsProxy recordingEventsProxy;
     private final Image image;
-    private final RecordingWriter.RecordingContext recordingContext;
+    private final RecordingWriter.Context context;
 
     private RecordingWriter recordingWriter;
     private State state = State.INIT;
@@ -42,12 +42,12 @@ class RecordingSession implements Session
         final long recordingId,
         final RecordingEventsProxy recordingEventsProxy,
         final Image image,
-        final RecordingWriter.RecordingContext recordingContext)
+        final RecordingWriter.Context context)
     {
         this.recordingId = recordingId;
         this.recordingEventsProxy = recordingEventsProxy;
         this.image = image;
-        this.recordingContext = recordingContext;
+        this.context = context;
     }
 
     public boolean isDone()
@@ -98,7 +98,7 @@ class RecordingSession implements Session
         try
         {
             recordingWriter = new RecordingWriter(
-                recordingContext,
+                context,
                 recordingId,
                 termBufferLength,
                 mtuLength,

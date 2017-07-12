@@ -58,8 +58,8 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     private static final int NULL_SEGMENT_POSITION = -1;
 
-    // TODO: Option should be force: none/data/data + metadata.
     private final boolean forceWrites;
+    private final boolean forceMetadata;
     private final int initialRecordingTermId;
     private final int termBufferLength;
     private final int termsMask;
@@ -87,7 +87,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     private long endTimestamp = NULL_TIME;
 
     RecordingWriter(
-        final RecordingContext recordingContext,
+        final Context context,
         final long recordingId,
         final int termBufferLength,
         final int mtuLength,
@@ -98,10 +98,11 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         final String channel,
         final String sourceIdentity)
     {
-        this.epochClock = recordingContext.epochClock;
-        this.archiveDir = recordingContext.archiveDir;
-        this.segmentFileLength = Math.max(recordingContext.segmentFileLength, termBufferLength);
-        this.forceWrites = recordingContext.forceWrites;
+        this.epochClock = context.epochClock;
+        this.archiveDir = context.archiveDir;
+        this.segmentFileLength = Math.max(context.segmentFileLength, termBufferLength);
+        this.forceWrites = context.fileSyncLevel > 0;
+        this.forceMetadata = context.fileSyncLevel > 1;
 
         this.recordingId = recordingId;
         this.termBufferLength = termBufferLength;
@@ -208,7 +209,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
             if (forceWrites)
             {
-                forceData(recordingFileChannel);
+                forceData(recordingFileChannel, forceMetadata);
             }
 
             afterWrite(blockLength);
@@ -255,7 +256,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
             if (forceWrites)
             {
-                forceData(recordingFileChannel);
+                forceData(recordingFileChannel, forceMetadata);
             }
             afterWrite(alignedLength);
             validateWritePostConditions();
@@ -368,9 +369,9 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     }
 
     // extend for testing
-    void forceData(final FileChannel fileChannel) throws IOException
+    void forceData(final FileChannel fileChannel, final boolean forceMetadata) throws IOException
     {
-        fileChannel.force(false);
+        fileChannel.force(forceMetadata);
     }
 
     boolean isClosed()
@@ -472,32 +473,32 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         }
     }
 
-    static class RecordingContext
+    static class Context
     {
         private File archiveDir;
         private EpochClock epochClock;
-        private boolean forceWrites = false;
+        private int fileSyncLevel = 0;
         private int segmentFileLength = 1024 * 1024 * 1024;
 
-        RecordingContext archiveDir(final File archiveDir)
+        Context archiveDir(final File archiveDir)
         {
             this.archiveDir = archiveDir;
             return this;
         }
 
-        RecordingContext epochClock(final EpochClock epochClock)
+        Context epochClock(final EpochClock epochClock)
         {
             this.epochClock = epochClock;
             return this;
         }
 
-        RecordingContext forceWrites(final boolean forceWrites)
+        Context fileSyncLevel(final int syncLevel)
         {
-            this.forceWrites = forceWrites;
+            this.fileSyncLevel = syncLevel;
             return this;
         }
 
-        RecordingContext recordingFileLength(final int recordingFileLength)
+        Context recordingFileLength(final int recordingFileLength)
         {
             this.segmentFileLength = recordingFileLength;
             return this;

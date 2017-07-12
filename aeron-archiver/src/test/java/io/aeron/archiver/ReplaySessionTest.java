@@ -71,7 +71,7 @@ public class ReplaySessionTest
         archiveDir = makeTempDir();
         proxy = Mockito.mock(ControlSessionProxy.class);
         epochClock = mock(EpochClock.class);
-        try (RecordingWriter writer = new RecordingWriter(new RecordingWriter.RecordingContext()
+        try (RecordingWriter writer = new RecordingWriter(new RecordingWriter.Context()
             .archiveDir(archiveDir)
             .epochClock(epochClock),
             RECORDING_ID,
@@ -445,10 +445,10 @@ public class ReplaySessionTest
         final UnsafeBuffer termBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
 
         final int recordingId = RECORDING_ID + 1;
-        try (RecordingWriter writer = new RecordingWriter(new RecordingWriter.RecordingContext()
+        try (RecordingWriter writer = new RecordingWriter(new RecordingWriter.Context()
             .archiveDir(archiveDir)
             .epochClock(epochClock)
-            .forceWrites(false),
+            .fileSyncLevel(0),
             recordingId,
             TERM_BUFFER_LENGTH,
             MTU_LENGTH,

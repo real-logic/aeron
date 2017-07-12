@@ -110,7 +110,7 @@ public class ArchiveReplayLoadTest
         archiveDir = TestUtil.makeTempDir();
         archiverCtx
             .archiveDir(archiveDir)
-            .forceDataWrites(false)
+            .fileSyncLevel(0)
             .threadingMode(ArchiverThreadingMode.DEDICATED)
             .countersManager(driverCtx.countersManager())
             .errorHandler(driverCtx.errorHandler());

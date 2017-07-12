@@ -58,7 +58,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final EpochClock epochClock;
     private final File archiveDir;
     private final ErrorHandler errorHandler;
-    private final RecordingWriter.RecordingContext recordingContext;
+    private final RecordingWriter.Context recordingCtx;
 
     private final Subscription controlSubscription;
     private final Catalog catalog;
@@ -100,11 +100,11 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
         recordingEventsProxy = new RecordingEventsProxy(ctx.idleStrategy(), notificationPublication);
 
-        recordingContext = new RecordingWriter.RecordingContext()
+        recordingCtx = new RecordingWriter.Context()
             .recordingFileLength(ctx.segmentFileLength())
             .archiveDir(ctx.archiveDir())
             .epochClock(ctx.epochClock())
-            .forceWrites(ctx.forceDataWrites());
+            .fileSyncLevel(ctx.fileSyncLevel());
 
         archiveDir = ctx.archiveDir();
         maxConcurrentRecordings = ctx.maxConcurrentRecordings();
@@ -395,13 +395,13 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             mtuLength,
             initialTermId,
             joinPosition,
-            recordingContext.recordingFileLength());
+            recordingCtx.recordingFileLength());
 
         final RecordingSession session = new RecordingSession(
             recordingId,
             recordingEventsProxy,
             image,
-            recordingContext);
+            recordingCtx);
 
         recordingSessionByIdMap.put(recordingId, session);
         recorder.addSession(session);

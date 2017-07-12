@@ -103,7 +103,7 @@ public class ArchiveRecordingLoadTest
 
         archiveDir = TestUtil.makeTempDir();
         archiverCtx
-            .forceDataWrites(true)
+            .fileSyncLevel(2)
             .archiveDir(archiveDir)
             .threadingMode(ArchiverThreadingMode.DEDICATED)
             .countersManager(driverCtx.countersManager())

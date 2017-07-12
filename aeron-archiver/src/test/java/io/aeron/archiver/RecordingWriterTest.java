@@ -29,11 +29,12 @@ public class RecordingWriterTest
     private static final int JOIN_POSITION = 32;
     private static final int SESSION_ID = 1234;
     private static final int STREAM_ID = 0;
+    private static final int SYNC_LEVEL = 2;
     private static final String CHANNEL = "channel";
     private static final String SOURCE = "source";
     private File archiveDir;
     private EpochClock epochClock = Mockito.mock(EpochClock.class);
-    private final RecordingWriter.RecordingContext recordingContext = new RecordingWriter.RecordingContext();
+    private final RecordingWriter.Context recordingCtx = new RecordingWriter.Context();
     private FileChannel mockFileChannel = Mockito.mock(FileChannel.class);
     private UnsafeBuffer mockTermBuffer = Mockito.mock(UnsafeBuffer.class);
 
@@ -41,11 +42,11 @@ public class RecordingWriterTest
     public void before() throws Exception
     {
         archiveDir = TestUtil.makeTempDir();
-        recordingContext
+        recordingCtx
             .recordingFileLength(1024 * 1024)
             .archiveDir(archiveDir)
             .epochClock(epochClock)
-            .forceWrites(true);
+            .fileSyncLevel(SYNC_LEVEL);
     }
 
     @After
@@ -57,10 +58,10 @@ public class RecordingWriterTest
     @Test
     public void shouldInitMetaData() throws IOException
     {
-
         when(epochClock.time()).thenReturn(42L);
+
         try (RecordingWriter ignored = new RecordingWriter(
-            recordingContext,
+            recordingCtx,
             RECORDING_ID,
             TERM_BUFFER_LENGTH,
             MTU_LENGTH,
@@ -104,7 +105,7 @@ public class RecordingWriterTest
         when(epochClock.time()).thenReturn(42L);
 
         try (RecordingWriter writer = Mockito.spy(new RecordingWriter(
-            recordingContext,
+            recordingCtx,
             RECORDING_ID,
             TERM_BUFFER_LENGTH,
             MTU_LENGTH,
@@ -127,7 +128,9 @@ public class RecordingWriterTest
             writer.onBlock(
                 mockFileChannel, 0, mockTermBuffer, JOIN_POSITION, 256, SESSION_ID, INITIAL_TERM_ID);
             when(epochClock.time()).thenReturn(43L);
-            Mockito.verify(writer).forceData(any(FileChannel.class));
+
+            //noinspection ConstantConditions
+            Mockito.verify(writer).forceData(any(FileChannel.class), eq(SYNC_LEVEL == 2));
         }
 
         final RecordingDescriptorDecoder descriptorDecoder = loadMetaData();

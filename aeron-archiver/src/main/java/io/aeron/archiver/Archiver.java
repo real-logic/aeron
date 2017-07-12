@@ -147,7 +147,8 @@ public final class Archiver implements AutoCloseable
         public static final String SEGMENT_FILE_LENGTH_PROP_NAME = "aeron.archiver.segment.file.length";
         public static final int SEGMENT_FILE_LENGTH_DEFAULT = 128 * 1024 * 1024;
 
-        public static final String FORCE_WRITES_PROP_NAME = "aeron.archiver.force.writes";
+        public static final String FILE_SYNC_LEVEL_PROP_NAME = "aeron.archiver.file.sync.level";
+        public static final int FILE_SYNC_LEVEL_DEFAULT = 0;
 
         public static final String THREADING_MODE_PROP_NAME = "aeron.archiver.threading.mode";
         public static final String ARCHIVER_IDLE_STRATEGY_PROP_NAME = "aeron.archiver.idle.strategy";
@@ -196,9 +197,9 @@ public final class Archiver implements AutoCloseable
             return Integer.getInteger(SEGMENT_FILE_LENGTH_PROP_NAME, SEGMENT_FILE_LENGTH_DEFAULT);
         }
 
-        private static boolean forceWrites()
+        private static int fileSyncLevel()
         {
-            return Boolean.valueOf(System.getProperty(FORCE_WRITES_PROP_NAME, "false"));
+            return Integer.getInteger(FILE_SYNC_LEVEL_PROP_NAME, FILE_SYNC_LEVEL_DEFAULT);
         }
 
         private static ArchiverThreadingMode threadingMode()
@@ -267,7 +268,7 @@ public final class Archiver implements AutoCloseable
         private int recordingEventsStreamId;
 
         private int segmentFileLength;
-        private boolean forceDataWrites;
+        private int fileSyncLevel;
 
         private ArchiverThreadingMode threadingMode;
         private ThreadFactory threadFactory = Thread::new;
@@ -298,7 +299,7 @@ public final class Archiver implements AutoCloseable
             recordingEventsChannel(Configuration.recordingEventsChannel());
             recordingEventsStreamId(Configuration.recordingEventsStreamId());
             segmentFileLength(Configuration.segmentFileLength());
-            forceDataWrites(Configuration.forceWrites());
+            fileSyncLevel(Configuration.fileSyncLevel());
             threadingMode(Configuration.threadingMode());
             maxConcurrentRecordings(Configuration.maxConcurrentRecordings());
             maxConcurrentReplays(Configuration.maxConcurrentReplays());
@@ -537,28 +538,34 @@ public final class Archiver implements AutoCloseable
         }
 
         /**
-         * Indicates if the data writes are to be forced via a {@link java.nio.channels.FileChannel#force(boolean)} call
-         * after each write.
+         * Get level at which files should be sync'ed to disk.
+         * <ul>
+         *     <li>0 - normal writes.</li>
+         *     <li>1 - sync file data.</li>
+         *     <li>2 - sync file data + metadata.</li>
+         * </ul>
          *
-         * @return true if data writes are to be forced via a {@link java.nio.channels.FileChannel#force(boolean)} call
-         * after each write, false otherwise.
+         * @return the level to be applied for file write.
          */
-        boolean forceDataWrites()
+        int fileSyncLevel()
         {
-            return forceDataWrites;
+            return fileSyncLevel;
         }
 
         /**
-         * Set the forceDataWrites flag.
+         * Set level at which files should be sync'ed to disk.
+         * <ul>
+         *     <li>0 - normal writes.</li>
+         *     <li>1 - sync file data.</li>
+         *     <li>2 - sync file data + metadata.</li>
+         * </ul>
          *
-         * @param forceDataWrites true if data writes are to be forced via a
-         * {@link java.nio.channels.FileChannel#force(boolean)} call after each write, false otherwise.
-         *
+         * @param syncLevel to be applied for file writes.
          * @return this for a fluent API.
          */
-        public Context forceDataWrites(final boolean forceDataWrites)
+        public Context fileSyncLevel(final int syncLevel)
         {
-            this.forceDataWrites = forceDataWrites;
+            this.fileSyncLevel = syncLevel;
             return this;
         }
 

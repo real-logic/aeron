@@ -216,7 +216,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 controlSessionProxy.sendError(
                     correlationId,
                     ControlResponseCode.ERROR,
-                    "No recording found for: " + key,
+                    "No recording subscription found for: " + key,
                     controlPublication);
             }
         }
@@ -277,7 +277,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 controlSessionProxy.sendError(
                     correlationId,
                     ControlResponseCode.ERROR,
-                    "Subscription is already being recorded: " + key,
+                    "Recording already setup for subscription: " + key,
                     controlPublication);
             }
         }

@@ -319,13 +319,10 @@ public final class Archiver implements AutoCloseable
                 archiveDir = new File(Configuration.archiveDirName());
             }
 
-            if (!archiveDir.exists())
+            if (!archiveDir.exists() && !archiveDir.mkdirs())
             {
-                if (!archiveDir.mkdirs())
-                {
-                    throw new IllegalArgumentException(
-                        "Failed to create archive dir: " + archiveDir.getAbsolutePath());
-                }
+                throw new IllegalArgumentException(
+                    "Failed to create archive dir: " + archiveDir.getAbsolutePath());
             }
 
             if (null == idleStrategySupplier)

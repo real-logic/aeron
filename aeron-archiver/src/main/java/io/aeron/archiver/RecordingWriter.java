@@ -20,7 +20,6 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -53,19 +52,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 {
     private static final boolean POSITION_CHECKS =
         !Boolean.getBoolean("io.aeron.archiver.recorder.position.checks.off");
-
-    static class Marker
-    {
-        private final ByteBuffer buffer =
-            BufferUtil.allocateDirectAligned(DataHeaderFlyweight.HEADER_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
-        private final DataHeaderFlyweight header = new DataHeaderFlyweight();
-
-        Marker()
-        {
-            header.wrap(buffer);
-            header.headerType(HeaderFlyweight.HDR_TYPE_PAD);
-        }
-    }
 
     static final long NULL_TIME = -1L;
     static final long NULL_POSITION = -1;

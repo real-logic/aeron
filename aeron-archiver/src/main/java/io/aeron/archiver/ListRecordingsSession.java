@@ -124,6 +124,7 @@ class ListRecordingsSession implements Session
                         catalog.nextRecordingId(),
                         controlPublication);
                     state = State.INACTIVE;
+
                     return 0;
                 }
             }

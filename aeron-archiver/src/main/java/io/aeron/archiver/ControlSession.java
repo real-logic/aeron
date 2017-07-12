@@ -127,9 +127,10 @@ class ControlSession implements Session, ControlRequestListener
         timeConnectedMs = epochClock.time();
     }
 
-    public void onStopRecording(final long correlationId,
-                                final String channel,
-                                final int streamId)
+    public void onStopRecording(
+        final long correlationId,
+        final String channel,
+        final int streamId)
     {
         validateActive();
         conductor.stopRecording(correlationId, controlPublication, channel, streamId);

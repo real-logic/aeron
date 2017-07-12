@@ -349,7 +349,6 @@ public final class Archiver implements AutoCloseable
             {
                 epochClock = new SystemEpochClock();
             }
-
         }
 
         /**

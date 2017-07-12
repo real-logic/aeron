@@ -30,7 +30,6 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 class ArchiveUtil
 {
-
     static final String RECORDING_SEGMENT_POSTFIX = ".rec";
     static final String RECORDING_DESCRIPTOR_POSTFIX = ".inf";
 
@@ -68,8 +67,6 @@ class ArchiveUtil
     static RecordingDescriptorDecoder loadRecordingDescriptor(final File descriptorFile)
         throws IOException
     {
-        // assume this is called for short lived buffers, in which case let GC take the hit rather than relying
-        // on DirectByteBuffer cleaner
         final ByteBuffer descriptorBuffer = ByteBuffer.allocate(Catalog.RECORD_LENGTH);
         return loadRecordingDescriptor(descriptorFile, descriptorBuffer);
     }

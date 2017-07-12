@@ -57,5 +57,4 @@ class DedicatedModeSessionWorker<T extends Session> extends SessionWorker<T>
             errorCounter.increment();
         }
     }
-
 }

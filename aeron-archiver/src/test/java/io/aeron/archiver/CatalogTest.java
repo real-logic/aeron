@@ -136,7 +136,6 @@ public class CatalogTest
             newRecordingId = catalog.addNewRecording(
                 9, 4, "channelJ", "sourceN", 4096, 1024, 0, 0L, SEGMENT_FILE_SIZE);
             initRecordingMetaFileFromCatalog(catalog, newRecordingId);
-
         }
 
         try (Catalog catalog = new Catalog(archiveDir))

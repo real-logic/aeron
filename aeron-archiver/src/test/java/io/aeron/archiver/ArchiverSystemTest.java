@@ -409,6 +409,7 @@ public class ArchiverSystemTest
                 e.printStackTrace();
             }
         });
+
         t.setDaemon(true);
         t.setName("eager-subscriber");
         t.start();

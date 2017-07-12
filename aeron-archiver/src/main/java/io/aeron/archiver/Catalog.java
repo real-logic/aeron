@@ -52,7 +52,7 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
  * <p>
  * Catalog descriptors may legitimately differ from recording descriptors while recordings are in flight. Once a
  * recording is closed the 2 sources should match. To verify a match between catalog contents and archive folder
- * contents the file contents are scanned on startup. Minor descreprencies are fixed on startup, but more severe
+ * contents the file contents are scanned on startup. Minor discrepancies are fixed on startup, but more severe
  * issues may prevent a catalog from loading.
  */
 class Catalog implements AutoCloseable
@@ -149,7 +149,7 @@ class Catalog implements AutoCloseable
         {
             // because writes to the catalog are at absolute position based on newRecordingId, a failure here does not
             // leave the file in an inconsistent state. A partial write followed by a shutdown however may leave the
-            // file in a bad size. The refreshCatalog method handles this eventuallity.
+            // file in a bad size. The refreshCatalog method handles this eventuality.
             LangUtil.rethrowUnchecked(ex);
         }
 
@@ -216,7 +216,6 @@ class Catalog implements AutoCloseable
     {
         try
         {
-            // make sure file size is a multiple of RECORD_LENGTH
             catalogFileChannel.truncate((catalogFileChannel.size() / RECORD_LENGTH) * RECORD_LENGTH);
 
             final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();

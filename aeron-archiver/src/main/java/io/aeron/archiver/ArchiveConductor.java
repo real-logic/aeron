@@ -96,8 +96,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         catalog = new Catalog(ctx.archiveDir());
 
-        final Publication notificationPublication =
-            aeron.addPublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
+        final Publication notificationPublication = aeron.addPublication(
+            ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
         recordingEventsProxy = new RecordingEventsProxy(ctx.idleStrategy(), notificationPublication);
 
         recordingContext = new RecordingWriter.RecordingContext()
@@ -152,6 +152,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         int workDone = null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
         workDone += aeronClientAgentInvoker.invoke();
+
         return workDone;
     }
 

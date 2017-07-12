@@ -108,7 +108,6 @@ public class ReplaySessionTest
     @Test
     public void verifyRecordingFile() throws IOException
     {
-        // Verify file reader matches file writer
         try (RecordingFragmentReader reader = newRecordingFragmentReader(RECORDING_ID, archiveDir))
         {
             int polled = reader.controlledPoll(

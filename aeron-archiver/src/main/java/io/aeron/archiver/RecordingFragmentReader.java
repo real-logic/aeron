@@ -68,15 +68,15 @@ class RecordingFragmentReader implements AutoCloseable
 
 
     /**
-     * @param joinPosition the recording join position, which is the original {@link Image#joinPosition()}
-     * @param endPosition last recorded position
-     * @param termBufferLength buffer length
+     * @param joinPosition      the recording join position, which is the original {@link Image#joinPosition()}
+     * @param endPosition       last recorded position
+     * @param termBufferLength  buffer length
      * @param segmentFileLength file length
-     * @param recordingId id
-     * @param archiveDir dir
-     * @param position the replay intended start
-     * @param length replay length
-     * @throws IOException
+     * @param recordingId       id
+     * @param archiveDir        dir
+     * @param position          the replay intended start
+     * @param length            replay length
+     * @throws IOException      if an error occurs while preparing the file for reading.
      */
     RecordingFragmentReader(
         final long joinPosition,
@@ -101,12 +101,11 @@ class RecordingFragmentReader implements AutoCloseable
         segmentFileIndex = segmentFileIndex(joinPosition, fromPosition, segmentFileLength);
         final long joinTermStartPosition = (joinPosition / termBufferLength) * termBufferLength;
 
-        // will init the mappedByteBuffer
         openRecordingFile();
 
         final long fromSegmentOffset = (fromPosition - joinTermStartPosition) & (segmentFileLength - 1);
-        final int fromTermStartSegmentOffset = (int) (fromSegmentOffset - (fromSegmentOffset & (termBufferLength - 1)));
-        final int fromTermOffset = (int) (fromSegmentOffset & (termBufferLength - 1));
+        final int fromTermStartSegmentOffset = (int)(fromSegmentOffset - (fromSegmentOffset & (termBufferLength - 1)));
+        final int fromTermOffset = (int)(fromSegmentOffset & (termBufferLength - 1));
 
         termBuffer = new UnsafeBuffer(mappedByteBuffer, fromTermStartSegmentOffset, termBufferLength);
         termStartSegmentOffset = fromTermStartSegmentOffset;
@@ -115,8 +114,7 @@ class RecordingFragmentReader implements AutoCloseable
         final int fragmentOffset;
         if (segmentFileIndex == 0 && fromTermStartSegmentOffset == 0)
         {
-            // when we replay from the first term of the recording, start looking for fragment from join offset
-            fragmentOffset = findFromFragmentOffset((int) (joinPosition & (termBufferLength - 1)));
+            fragmentOffset = findFromFragmentOffset((int)(joinPosition & (termBufferLength - 1)));
         }
         else
         {
@@ -147,7 +145,7 @@ class RecordingFragmentReader implements AutoCloseable
     }
 
     /**
-     * @param joinTermOffset
+     * @param joinTermOffset from which to start searching.
      * @return the offset within the current term, rounded up to the nearest fragment offset
      */
     private int findFromFragmentOffset(final int joinTermOffset)
@@ -160,6 +158,7 @@ class RecordingFragmentReader implements AutoCloseable
             final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
             frameOffset += alignedLength;
         }
+
         return frameOffset;
     }
 
@@ -259,5 +258,4 @@ class RecordingFragmentReader implements AutoCloseable
             mappedByteBuffer = fileChannel.map(READ_ONLY, 0, segmentFileLength);
         }
     }
-
 }

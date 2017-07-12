@@ -199,7 +199,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             }
 
             validateWritePreConditions(termId, termOffset, blockLength);
-            // Note: since files are assumed pre-filled with 0 there's no need to write the marker ahead of the data
+
             final long written = transferDataFrom(fileChannel, fileOffset, blockLength);
             if (written != blockLength)
             {
@@ -242,7 +242,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             }
 
             validateWritePreConditions(header.termId(), termOffset, alignedLength);
-            // NB: since files are assumed pre-filled with 0 there's no need to write the marker ahead of the data
+
             final ByteBuffer src = buffer.byteBuffer().duplicate();
             src.position(termOffset).limit(termOffset + frameLength);
             final int written = writeData(src, segmentPosition, recordingFileChannel);
@@ -404,8 +404,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
         if (segmentPosition != 0)
         {
-
-            // we need to setup starting position for transferTo
             recordingFileChannel.position(segmentPosition);
         }
     }

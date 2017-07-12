@@ -113,9 +113,10 @@ public class ArchiveProxy
      * @param correlationId for this request.
      * @return true if successfully offered otherwise false.
      */
-    public boolean stopRecording(final String channel,
-                                 final int streamId,
-                                 final long correlationId)
+    public boolean stopRecording(
+        final String channel,
+        final int streamId,
+        final long correlationId)
     {
         stopRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)

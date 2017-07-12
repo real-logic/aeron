@@ -155,7 +155,7 @@ class ReplaySession implements Session
             replayPublication = supplier.newReplayPublication(
                 replayChannel,
                 replayStreamId,
-                cursor.fromPosition(), // may differ from replayPosition due to first fragment alignment
+                cursor.fromPosition(),
                 mtuLength,
                 initialTermId,
                 termBufferLength);
@@ -351,5 +351,4 @@ class ReplaySession implements Session
 
         return 0;
     }
-
 }

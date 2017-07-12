@@ -65,6 +65,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     private final int termsMask;
     private final long recordingId;
 
+    private final FileChannel archiveDirChannel;
     private final File archiveDir;
     private final EpochClock epochClock;
 
@@ -99,6 +100,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         final String sourceIdentity)
     {
         this.epochClock = context.epochClock;
+        this.archiveDirChannel = context.archiveDirChannel;
         this.archiveDir = context.archiveDir;
         this.segmentFileLength = Math.max(context.segmentFileLength, termBufferLength);
         this.forceWrites = context.fileSyncLevel > 0;
@@ -258,6 +260,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             {
                 forceData(recordingFileChannel, forceMetadata);
             }
+
             afterWrite(alignedLength);
             validateWritePostConditions();
         }
@@ -359,6 +362,10 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             // the data files when a recording is done.
             recordingFile.setLength(segmentFileLength + DataHeaderFlyweight.HEADER_LENGTH);
             recordingFileChannel = recordingFile.getChannel();
+            if (forceWrites)
+            {
+                forceData(archiveDirChannel, forceMetadata);
+            }
         }
         catch (final IOException ex)
         {
@@ -475,10 +482,17 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     static class Context
     {
-        private File archiveDir;
-        private EpochClock epochClock;
-        private int fileSyncLevel = 0;
-        private int segmentFileLength = 1024 * 1024 * 1024;
+        FileChannel archiveDirChannel;
+        File archiveDir;
+        EpochClock epochClock;
+        int fileSyncLevel = 0;
+        int segmentFileLength = 1024 * 1024 * 1024;
+
+        Context archiveDirChannel(final FileChannel archiveDirChannel)
+        {
+            this.archiveDirChannel = archiveDirChannel;
+            return this;
+        }
 
         Context archiveDir(final File archiveDir)
         {

@@ -20,6 +20,7 @@ import io.aeron.archiver.codecs.ControlResponseCode;
 import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
+import org.agrona.LangUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
@@ -28,12 +29,15 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.archiver.Catalog.PAGE_SIZE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 abstract class ArchiveConductor extends SessionWorker<Session>
 {
@@ -57,6 +61,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final AgentInvoker driverAgentInvoker;
     private final EpochClock epochClock;
     private final File archiveDir;
+    private final FileChannel archiveDirChannel;
     private final ErrorHandler errorHandler;
     private final RecordingWriter.Context recordingCtx;
 
@@ -100,13 +105,30 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
         recordingEventsProxy = new RecordingEventsProxy(ctx.idleStrategy(), notificationPublication);
 
+        archiveDir = ctx.archiveDir();
+
+        FileChannel channel = null;
+        if (ctx.fileSyncLevel() > 0)
+        {
+            try
+            {
+                channel = FileChannel.open(archiveDir.toPath(), READ, WRITE);
+            }
+            catch (final IOException ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+        }
+
+        archiveDirChannel = channel;
+
         recordingCtx = new RecordingWriter.Context()
-            .recordingFileLength(ctx.segmentFileLength())
+            .archiveDirChannel(archiveDirChannel)
             .archiveDir(ctx.archiveDir())
+            .recordingFileLength(ctx.segmentFileLength())
             .epochClock(ctx.epochClock())
             .fileSyncLevel(ctx.fileSyncLevel());
 
-        archiveDir = ctx.archiveDir();
         maxConcurrentRecordings = ctx.maxConcurrentRecordings();
         maxConcurrentReplays = ctx.maxConcurrentReplays();
         errorHandler = ctx.errorHandler();
@@ -136,6 +158,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         CloseHelper.quietClose(aeronClientAgentInvoker);
         CloseHelper.quietClose(driverAgentInvoker);
         CloseHelper.quietClose(catalog);
+        CloseHelper.quietClose(archiveDirChannel);
 
         if (!recordingSessionByIdMap.isEmpty())
         {
@@ -220,9 +243,9 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 ControlResponseCode.ERROR,
                 "Max concurrent recordings reached: " + maxConcurrentRecordings,
                 controlPublication);
+
             return;
         }
-
 
         try
         {

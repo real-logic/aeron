@@ -7,6 +7,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.io.File;
@@ -35,7 +36,8 @@ public class RecordingWriterTest
     private File archiveDir;
     private EpochClock epochClock = Mockito.mock(EpochClock.class);
     private final RecordingWriter.Context recordingCtx = new RecordingWriter.Context();
-    private FileChannel mockFileChannel = Mockito.mock(FileChannel.class);
+    private FileChannel mockArchiveDirFileChannel = Mockito.mock(FileChannel.class);
+    private FileChannel mockDataFileChannel = Mockito.mock(FileChannel.class);
     private UnsafeBuffer mockTermBuffer = Mockito.mock(UnsafeBuffer.class);
 
     @Before
@@ -43,8 +45,9 @@ public class RecordingWriterTest
     {
         archiveDir = TestUtil.makeTempDir();
         recordingCtx
-            .recordingFileLength(1024 * 1024)
+            .archiveDirChannel(mockArchiveDirFileChannel)
             .archiveDir(archiveDir)
+            .recordingFileLength(1024 * 1024)
             .epochClock(epochClock)
             .fileSyncLevel(SYNC_LEVEL);
     }
@@ -99,6 +102,7 @@ public class RecordingWriterTest
         assertEquals(SOURCE, descriptorDecoder.sourceIdentity());
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void verifyFirstWrite() throws IOException
     {
@@ -119,18 +123,22 @@ public class RecordingWriterTest
             final RecordingDescriptorDecoder descriptorDecoder = loadMetaData();
             assertEquals(RecordingWriter.NULL_TIME, descriptorDecoder.joinTimestamp());
 
-            when(mockFileChannel.transferTo(eq(0L), eq(256L), any(FileChannel.class))).then(invocation ->
-            {
-                final FileChannel dataFileChannel = invocation.getArgument(2);
-                dataFileChannel.position(JOIN_POSITION + 256);
-                return 256L;
-            });
+            when(mockDataFileChannel.transferTo(eq(0L), eq(256L), any(FileChannel.class))).then(
+                (invocation) ->
+                {
+                    final FileChannel dataFileChannel = invocation.getArgument(2);
+                    dataFileChannel.position(JOIN_POSITION + 256);
+                    return 256L;
+                });
+
             writer.onBlock(
-                mockFileChannel, 0, mockTermBuffer, JOIN_POSITION, 256, SESSION_ID, INITIAL_TERM_ID);
+                mockDataFileChannel, 0, mockTermBuffer, JOIN_POSITION, 256, SESSION_ID, INITIAL_TERM_ID);
+
             when(epochClock.time()).thenReturn(43L);
 
-            //noinspection ConstantConditions
-            Mockito.verify(writer).forceData(any(FileChannel.class), eq(SYNC_LEVEL == 2));
+            final InOrder inOrder = Mockito.inOrder(writer);
+            inOrder.verify(writer).forceData(eq(mockArchiveDirFileChannel), eq(SYNC_LEVEL == 2));
+            inOrder.verify(writer).forceData(any(FileChannel.class), eq(SYNC_LEVEL == 2));
         }
 
         final RecordingDescriptorDecoder descriptorDecoder = loadMetaData();

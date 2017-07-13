@@ -19,7 +19,6 @@ import io.aeron.*;
 import io.aeron.archiver.client.ArchiveProxy;
 import io.aeron.archiver.client.ControlResponsePoller;
 import io.aeron.archiver.client.RecordingEventsPoller;
-import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FrameDescriptor;
@@ -44,12 +43,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.LockSupport;
 
 import static io.aeron.CommonContext.SPY_PREFIX;
-import static io.aeron.archiver.ArchiveUtil.loadRecordingDescriptor;
-import static io.aeron.archiver.ArchiveUtil.recordingDescriptorFileName;
 import static io.aeron.archiver.TestUtil.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
@@ -330,7 +326,6 @@ public class ArchiverSystemTest
 
         println("Recording id: " + recordingId);
         println("Meta data file printout: ");
-        validateMetaDataFile(sessionId, streamId, termBufferLength);
         validateArchiveFile(messageCount, recordingId);
 
         validateReplay(
@@ -516,30 +511,6 @@ public class ArchiverSystemTest
         trackRecordingProgress(recordingEvents, waitForData);
     }
 
-    private void validateMetaDataFile(
-        final int sessionId,
-        final int streamId,
-        final int termBufferLength) throws IOException
-    {
-        final File descriptorFile = new File(archiveDir, recordingDescriptorFileName(recordingId));
-        assertTrue(descriptorFile.exists());
-
-        if (TestUtil.DEBUG)
-        {
-            ArchiveUtil.printDescriptorFile(descriptorFile);
-        }
-
-        final RecordingDescriptorDecoder decoder = loadRecordingDescriptor(descriptorFile);
-
-        assertThat(decoder.sessionId(), is(sessionId));
-        assertThat(decoder.streamId(), is(streamId));
-
-        assertThat(decoder.termBufferLength(), is(termBufferLength));
-
-        assertThat(ArchiveUtil.recordingLength(decoder), is(totalRecordingLength));
-        assertThat(totalDataLength, lessThanOrEqualTo(totalRecordingLength));
-    }
-
     private void publishDataToRecorded(final Publication publication, final int messageCount)
     {
         joinPosition = publication.position();
@@ -625,7 +596,9 @@ public class ArchiverSystemTest
     private void validateArchiveFile(final int messageCount, final long recordingId) throws IOException
     {
         remaining = totalDataLength;
-        try (RecordingFragmentReader archiveDataFileReader = newRecordingFragmentReader(recordingId, archiveDir))
+        try (Catalog catalog = new Catalog(archiveDir);
+             RecordingFragmentReader archiveDataFileReader =
+                 newRecordingFragmentReader(catalog.wrapDescriptor(recordingId), archiveDir))
         {
             fragmentCount = 0;
             remaining = totalDataLength;

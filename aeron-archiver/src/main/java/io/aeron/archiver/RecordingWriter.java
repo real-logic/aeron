@@ -15,12 +15,16 @@
  */
 package io.aeron.archiver;
 
+import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.archiver.codecs.RecordingDescriptorEncoder;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.*;
+import org.agrona.BitUtil;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -28,12 +32,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.ArchiveUtil.recordingDescriptorFileName;
 import static io.aeron.archiver.ArchiveUtil.recordingOffset;
-import static java.nio.file.StandardOpenOption.*;
 
 /**
  * Responsible for writing out a recording into the file system. A recording has descriptor file and a set of data files
@@ -68,9 +69,9 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
     private final EpochClock epochClock;
-
-    private final MappedByteBuffer descriptorBuffer;
+    private final UnsafeBuffer descriptorBuffer;
     private final RecordingDescriptorEncoder descriptorEncoder;
+    private final RecordingDescriptorDecoder descriptorDecoder;
     private final int segmentFileLength;
     private final long joinPosition;
 
@@ -87,18 +88,18 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     private long joinTimestamp = NULL_TIME;
     private long endTimestamp = NULL_TIME;
 
-    RecordingWriter(
-        final Context context,
-        final long recordingId,
-        final int termBufferLength,
-        final int mtuLength,
-        final int initialTermId,
-        final long joinPosition,
-        final int sessionId,
-        final int streamId,
-        final String channel,
-        final String sourceIdentity)
+    RecordingWriter(final Context context, final UnsafeBuffer descriptorBuffer)
     {
+        this.descriptorBuffer = descriptorBuffer;
+        descriptorEncoder = new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH);
+        descriptorDecoder = new RecordingDescriptorDecoder().wrap(
+            descriptorBuffer,
+            Catalog.CATALOG_FRAME_LENGTH,
+            RecordingDescriptorDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.SCHEMA_VERSION);
+
+        final int termBufferLength = descriptorDecoder.termBufferLength();
+
         this.epochClock = context.epochClock;
         this.archiveDirChannel = context.archiveDirChannel;
         this.archiveDir = context.archiveDir;
@@ -106,13 +107,13 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         this.forceWrites = context.fileSyncLevel > 0;
         this.forceMetadata = context.fileSyncLevel > 1;
 
-        this.recordingId = recordingId;
         this.termBufferLength = termBufferLength;
-        this.initialRecordingTermId = (int) (initialTermId + (joinPosition / termBufferLength));
-        this.joinPosition = joinPosition;
+        this.recordingId = descriptorDecoder.recordingId();
+        this.joinPosition = descriptorDecoder.joinPosition();
+        this.initialRecordingTermId = (int) (descriptorDecoder.initialTermId() + (joinPosition / termBufferLength));
         this.endPosition = joinPosition;
 
-        this.termsMask = (segmentFileLength / termBufferLength) - 1;
+        this.termsMask = (segmentFileLength / this.termBufferLength) - 1;
         if (((termsMask + 1) & termsMask) != 0)
         {
             throw new IllegalArgumentException(
@@ -120,35 +121,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
                     "in a file is also a power of 2");
         }
 
-        final File descriptorFile = new File(archiveDir, recordingDescriptorFileName(recordingId));
-        try
-        {
-            descriptorBuffer = mapDescriptor(descriptorFile);
-        }
-        catch (final IOException ex)
-        {
-            close();
-            throw new RuntimeException(ex);
-        }
-
-        final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(descriptorBuffer);
-        descriptorEncoder = new RecordingDescriptorEncoder().wrap(unsafeBuffer, Catalog.CATALOG_FRAME_LENGTH);
-
-        initDescriptor(
-            descriptorEncoder,
-            recordingId,
-            termBufferLength,
-            segmentFileLength,
-            mtuLength,
-            initialTermId,
-            joinPosition,
-            sessionId,
-            streamId,
-            channel,
-            sourceIdentity);
-
-        unsafeBuffer.putInt(0, descriptorEncoder.encodedLength());
-        forceDescriptor(descriptorBuffer);
     }
 
     static void initDescriptor(
@@ -284,8 +256,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         {
             endTimestamp = epochClock.time();
             descriptorEncoder.endTimestamp(endTimestamp);
-            forceDescriptor(descriptorBuffer);
-            IoUtil.unmap(descriptorBuffer);
         }
 
         if (recordingFileChannel != null)
@@ -322,15 +292,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     long endTimestamp()
     {
         return endTimestamp;
-    }
-
-    // extend for testing
-    MappedByteBuffer mapDescriptor(final File file) throws IOException
-    {
-        try (FileChannel descriptorFileChannel = FileChannel.open(file.toPath(), CREATE_NEW, READ, WRITE))
-        {
-            return descriptorFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
-        }
     }
 
     // extend for testing
@@ -386,10 +347,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         return closed;
     }
 
-    private void forceDescriptor(final MappedByteBuffer descriptorBuffer)
-    {
-        descriptorBuffer.force();
-    }
 
     private void onFileRollOver()
     {
@@ -406,8 +363,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         segmentPosition = termOffset;
         joinTimestamp = epochClock.time();
         descriptorEncoder.joinTimestamp(joinTimestamp);
-        forceDescriptor(descriptorBuffer);
-
         newRecordingSegmentFile();
 
         if (segmentPosition != 0)

@@ -21,22 +21,11 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Date;
-
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
 
 class ArchiveUtil
 {
     static final String RECORDING_SEGMENT_POSTFIX = ".rec";
-    static final String RECORDING_DESCRIPTOR_POSTFIX = ".inf";
-
-    static String recordingDescriptorFileName(final long recordingId)
-    {
-        return recordingId + RECORDING_DESCRIPTOR_POSTFIX;
-    }
 
     static String recordingDataFileName(final long recordingId, final int segmentIndex)
     {
@@ -48,9 +37,13 @@ class ArchiveUtil
         return (int)((position - joinPosition) / segmentFileLength);
     }
 
-    static void printDescriptorFile(final File descriptorFile) throws IOException
+    static void printDescriptorFile(final UnsafeBuffer descriptorBuffer) throws IOException
     {
-        final RecordingDescriptorDecoder descriptorDecoder = loadRecordingDescriptor(descriptorFile);
+        final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder().wrap(
+            descriptorBuffer,
+            Catalog.CATALOG_FRAME_LENGTH,
+            RecordingDescriptorDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.SCHEMA_VERSION);
 
         System.out.println("recordingId: " + descriptorDecoder.recordingId());
         System.out.println("termBufferLength: " + descriptorDecoder.termBufferLength());
@@ -62,29 +55,6 @@ class ArchiveUtil
         System.out.println("streamId: " + descriptorDecoder.streamId());
         System.out.println("channel: " + descriptorDecoder.channel());
         System.out.println("sourceIdentity: " + descriptorDecoder.sourceIdentity());
-    }
-
-    static RecordingDescriptorDecoder loadRecordingDescriptor(final File descriptorFile)
-        throws IOException
-    {
-        final ByteBuffer descriptorBuffer = ByteBuffer.allocate(Catalog.RECORD_LENGTH);
-        return loadRecordingDescriptor(descriptorFile, descriptorBuffer);
-    }
-
-    static RecordingDescriptorDecoder loadRecordingDescriptor(
-        final File descriptorFile,
-        final ByteBuffer descriptorBuffer) throws IOException
-    {
-        try (FileChannel descriptorFileChannel = FileChannel.open(descriptorFile.toPath(), READ, WRITE))
-        {
-            descriptorFileChannel.read(descriptorBuffer);
-
-            return new RecordingDescriptorDecoder().wrap(
-                new UnsafeBuffer(descriptorBuffer),
-                Catalog.CATALOG_FRAME_LENGTH,
-                RecordingDescriptorDecoder.BLOCK_LENGTH,
-                RecordingDescriptorDecoder.SCHEMA_VERSION);
-        }
     }
 
     static int recordingOffset(

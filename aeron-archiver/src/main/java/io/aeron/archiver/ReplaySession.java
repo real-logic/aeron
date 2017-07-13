@@ -29,7 +29,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import static io.aeron.logbuffer.FrameDescriptor.frameFlags;
@@ -53,6 +52,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  */
 class ReplaySession implements Session
 {
+
     enum State
     {
         INIT, REPLAY, LINGER, INACTIVE, CLOSED
@@ -63,6 +63,7 @@ class ReplaySession implements Session
 
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
     private final RecordingFragmentReader.SimplifiedControlledPoll fragmentPoller = this::onFragment;
+    private final RecordingDescriptorDecoder descriptorDecoder;
 
     private final long replaySessionId;
     private final long correlationId;
@@ -89,7 +90,7 @@ class ReplaySession implements Session
         final EpochClock epochClock,
         final String replayChannel,
         final int replayStreamId,
-        final ByteBuffer threadLocalMetaBuffer)
+        final UnsafeBuffer descriptorBuffer)
     {
         this.controlPublication = controlPublication;
         this.threadLocalControlSessionProxy = threadLocalControlSessionProxy;
@@ -98,23 +99,11 @@ class ReplaySession implements Session
         this.epochClock = epochClock;
         this.lingerSinceMs = epochClock.time();
 
-        final String recordingMetaFileName = ArchiveUtil.recordingDescriptorFileName(recordingId);
-        final File recordingMetaFile = new File(archiveDir, recordingMetaFileName);
-        if (!recordingMetaFile.exists())
-        {
-            final String errorMessage = recordingMetaFile.getAbsolutePath() + " not found";
-            closeOnError(new IllegalArgumentException(errorMessage), errorMessage);
-        }
-
-        RecordingDescriptorDecoder descriptorDecoder = null;
-        try
-        {
-            descriptorDecoder = ArchiveUtil.loadRecordingDescriptor(recordingMetaFile, threadLocalMetaBuffer);
-        }
-        catch (final IOException ex)
-        {
-            closeOnError(ex, recordingMetaFile.getAbsolutePath() + " : failed to load");
-        }
+        descriptorDecoder = new RecordingDescriptorDecoder().wrap(
+            descriptorBuffer,
+            Catalog.CATALOG_FRAME_LENGTH,
+            RecordingDescriptorDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.SCHEMA_VERSION);
 
         Objects.requireNonNull(descriptorDecoder);
         final long joinPosition = descriptorDecoder.joinPosition();

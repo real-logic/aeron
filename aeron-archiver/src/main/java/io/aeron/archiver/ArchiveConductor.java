@@ -17,24 +17,22 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.codecs.ControlResponseCode;
-import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.LangUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 import static io.aeron.CommonContext.SPY_PREFIX;
-import static io.aeron.archiver.Catalog.PAGE_SIZE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 
@@ -45,8 +43,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
      */
     private static final int DEFAULT_CONTROL_TERM_LENGTH = 64 * 1024;
 
-    private final ByteBuffer threadLocalDescriptorBBuffer =
-        BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, PAGE_SIZE);
     private final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder();
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
@@ -342,6 +338,17 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
             return;
         }
+        final UnsafeBuffer descriptorBuffer = catalog.wrapDescriptor(recordingId);
+        if (descriptorBuffer == null)
+        {
+            controlSessionProxy.sendError(
+                correlationId,
+                ControlResponseCode.ERROR,
+                "Recording not found : " + recordingId,
+                controlPublication);
+
+            return;
+        }
 
         final int newId = replaySessionId++;
         final ReplaySession replaySession = new ReplaySession(
@@ -357,7 +364,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             epochClock,
             replayChannel,
             replayStreamId,
-            threadLocalDescriptorBBuffer);
+            descriptorBuffer);
 
         replaySessionByIdMap.put(newId, replaySession);
         replayer.addSession(replaySession);
@@ -424,6 +431,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         final RecordingSession session = new RecordingSession(
             recordingId,
+            catalog.wrapDescriptor(recordingId),
             recordingEventsProxy,
             image,
             recordingCtx);

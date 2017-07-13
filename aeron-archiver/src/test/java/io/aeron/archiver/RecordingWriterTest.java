@@ -1,6 +1,7 @@
 package io.aeron.archiver;
 
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
+import io.aeron.archiver.codecs.RecordingDescriptorEncoder;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -14,8 +15,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.ArchiveUtil.loadRecordingDescriptor;
-import static io.aeron.archiver.ArchiveUtil.recordingDescriptorFileName;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -58,49 +57,6 @@ public class RecordingWriterTest
         IoUtil.delete(archiveDir, false);
     }
 
-    @Test
-    public void shouldInitMetaData() throws IOException
-    {
-        when(epochClock.time()).thenReturn(42L);
-
-        try (RecordingWriter ignored = new RecordingWriter(
-            recordingCtx,
-            RECORDING_ID,
-            TERM_BUFFER_LENGTH,
-            MTU_LENGTH,
-            INITIAL_TERM_ID,
-            JOIN_POSITION,
-            SESSION_ID,
-            STREAM_ID,
-            CHANNEL,
-            SOURCE))
-        {
-            final RecordingDescriptorDecoder descriptorDecoder = loadMetaData();
-            assertEquals(RECORDING_ID, descriptorDecoder.recordingId());
-            assertEquals(TERM_BUFFER_LENGTH, descriptorDecoder.termBufferLength());
-            assertEquals(STREAM_ID, descriptorDecoder.streamId());
-            assertEquals(MTU_LENGTH, descriptorDecoder.mtuLength());
-            assertEquals(RecordingWriter.NULL_TIME, descriptorDecoder.joinTimestamp());
-            assertEquals(JOIN_POSITION, descriptorDecoder.joinPosition());
-            assertEquals(RecordingWriter.NULL_TIME, descriptorDecoder.endTimestamp());
-            assertEquals(JOIN_POSITION, descriptorDecoder.endPosition());
-            assertEquals(CHANNEL, descriptorDecoder.channel());
-            assertEquals(SOURCE, descriptorDecoder.sourceIdentity());
-            when(epochClock.time()).thenReturn(43L);
-        }
-
-        final RecordingDescriptorDecoder descriptorDecoder = loadMetaData();
-        assertEquals(RECORDING_ID, descriptorDecoder.recordingId());
-        assertEquals(TERM_BUFFER_LENGTH, descriptorDecoder.termBufferLength());
-        assertEquals(STREAM_ID, descriptorDecoder.streamId());
-        assertEquals(MTU_LENGTH, descriptorDecoder.mtuLength());
-        assertEquals(RecordingWriter.NULL_TIME, descriptorDecoder.joinTimestamp());
-        assertEquals(JOIN_POSITION, descriptorDecoder.joinPosition());
-        assertEquals(43L, descriptorDecoder.endTimestamp());
-        assertEquals(JOIN_POSITION, descriptorDecoder.endPosition());
-        assertEquals(CHANNEL, descriptorDecoder.channel());
-        assertEquals(SOURCE, descriptorDecoder.sourceIdentity());
-    }
 
     @SuppressWarnings("ConstantConditions")
     @Test
@@ -108,19 +64,30 @@ public class RecordingWriterTest
     {
         when(epochClock.time()).thenReturn(42L);
 
-        try (RecordingWriter writer = Mockito.spy(new RecordingWriter(
-            recordingCtx,
+        final UnsafeBuffer descriptorBuffer = new UnsafeBuffer(new byte[Catalog.RECORD_LENGTH]);
+        final RecordingDescriptorEncoder descriptorEncoder = new RecordingDescriptorEncoder().wrap(
+            descriptorBuffer,
+            Catalog.CATALOG_FRAME_LENGTH);
+        final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder().wrap(
+            descriptorBuffer,
+            Catalog.CATALOG_FRAME_LENGTH,
+            RecordingDescriptorDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.SCHEMA_VERSION);
+        RecordingWriter.initDescriptor(
+            descriptorEncoder,
             RECORDING_ID,
             TERM_BUFFER_LENGTH,
+            recordingCtx.segmentFileLength,
             MTU_LENGTH,
             INITIAL_TERM_ID,
             JOIN_POSITION,
             SESSION_ID,
             STREAM_ID,
             CHANNEL,
-            SOURCE)))
+            SOURCE);
+
+        try (RecordingWriter writer = Mockito.spy(new RecordingWriter(recordingCtx, descriptorBuffer)))
         {
-            final RecordingDescriptorDecoder descriptorDecoder = loadMetaData();
             assertEquals(RecordingWriter.NULL_TIME, descriptorDecoder.joinTimestamp());
 
             when(mockDataFileChannel.transferTo(eq(0L), eq(256L), any(FileChannel.class))).then(
@@ -141,15 +108,9 @@ public class RecordingWriterTest
             inOrder.verify(writer).forceData(any(FileChannel.class), eq(SYNC_LEVEL == 2));
         }
 
-        final RecordingDescriptorDecoder descriptorDecoder = loadMetaData();
         assertEquals(42L, descriptorDecoder.joinTimestamp());
         assertEquals(43L, descriptorDecoder.endTimestamp());
         assertEquals(JOIN_POSITION, descriptorDecoder.joinPosition());
         assertEquals(JOIN_POSITION + 256, descriptorDecoder.endPosition());
-    }
-
-    private RecordingDescriptorDecoder loadMetaData() throws IOException
-    {
-        return loadRecordingDescriptor(new File(archiveDir, recordingDescriptorFileName(RECORDING_ID)));
     }
 }

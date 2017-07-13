@@ -17,21 +17,27 @@ package io.aeron.archiver;
 
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
-import io.aeron.logbuffer.*;
+import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
+import io.aeron.archiver.codecs.RecordingDescriptorEncoder;
+import io.aeron.logbuffer.ExclusiveBufferClaim;
+import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BufferUtil;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import static io.aeron.archiver.TestUtil.newRecordingFragmentReader;
 import static io.aeron.archiver.TestUtil.makeTempDir;
+import static io.aeron.archiver.TestUtil.newRecordingFragmentReader;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
@@ -64,6 +70,10 @@ public class ReplaySessionTest
     private int messageCounter = 0;
     private ControlSessionProxy proxy;
     private EpochClock epochClock;
+    private RecordingWriter.Context context;
+    private UnsafeBuffer descriptorBuffer;
+    private RecordingDescriptorEncoder descriptorEncoder;
+    private RecordingDescriptorDecoder descriptorDecoder;
 
     @Before
     public void before() throws Exception
@@ -71,18 +81,32 @@ public class ReplaySessionTest
         archiveDir = makeTempDir();
         proxy = Mockito.mock(ControlSessionProxy.class);
         epochClock = mock(EpochClock.class);
-        try (RecordingWriter writer = new RecordingWriter(new RecordingWriter.Context()
+
+        context = new RecordingWriter.Context()
             .archiveDir(archiveDir)
-            .epochClock(epochClock),
+            .epochClock(epochClock);
+        descriptorBuffer = new UnsafeBuffer(new byte[Catalog.RECORD_LENGTH]);
+        descriptorEncoder = new RecordingDescriptorEncoder().wrap(
+            descriptorBuffer,
+            Catalog.CATALOG_FRAME_LENGTH);
+        descriptorDecoder = new RecordingDescriptorDecoder().wrap(
+            descriptorBuffer,
+            Catalog.CATALOG_FRAME_LENGTH,
+            RecordingDescriptorDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.SCHEMA_VERSION);
+        RecordingWriter.initDescriptor(
+            descriptorEncoder,
             RECORDING_ID,
             TERM_BUFFER_LENGTH,
+            context.segmentFileLength,
             MTU_LENGTH,
             INITIAL_TERM_ID,
             JOIN_POSITION,
             1,
             1,
             "channel",
-            "sourceIdentity"))
+            "sourceIdentity");
+        try (RecordingWriter writer = new RecordingWriter(context, descriptorBuffer))
         {
             when(epochClock.time()).thenReturn(TIME);
 
@@ -108,7 +132,7 @@ public class ReplaySessionTest
     @Test
     public void verifyRecordingFile() throws IOException
     {
-        try (RecordingFragmentReader reader = newRecordingFragmentReader(RECORDING_ID, archiveDir))
+        try (RecordingFragmentReader reader = newRecordingFragmentReader(descriptorBuffer, archiveDir))
         {
             int polled = reader.controlledPoll(
                 (buffer, offset, length) ->
@@ -252,7 +276,7 @@ public class ReplaySessionTest
             epochClock,
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
-            ByteBuffer.allocate(Catalog.RECORD_LENGTH));
+            descriptorBuffer);
 
         when(mockReplayPub.isClosed()).thenReturn(false);
         when(mockControlPub.isClosed()).thenReturn(false);
@@ -390,27 +414,6 @@ public class ReplaySessionTest
             .sendReplayAborted(correlationId, REPLAY_SESSION_ID, mockReplayPub.position(), mockControlPub);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldFailToReplayDataForNonExistentStream()
-    {
-        final long length = 1024L;
-        final long correlationId = 1L;
-        final ExclusivePublication replayPublication = Mockito.mock(ExclusivePublication.class);
-        final Publication control = Mockito.mock(Publication.class);
-
-        final ArchiveConductor.ReplayPublicationSupplier conductor =
-            Mockito.mock(ArchiveConductor.ReplayPublicationSupplier.class);
-
-        replaySession(
-            RECORDING_ID + 1,
-            RECORDING_POSITION,
-            length,
-            correlationId,
-            replayPublication,
-            control,
-            conductor);
-    }
-
     @Test
     public void shouldGiveUpIfPublishersAreNotConnectedAfterOneSecond()
     {
@@ -445,19 +448,7 @@ public class ReplaySessionTest
         final UnsafeBuffer termBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
 
         final int recordingId = RECORDING_ID + 1;
-        try (RecordingWriter writer = new RecordingWriter(new RecordingWriter.Context()
-            .archiveDir(archiveDir)
-            .epochClock(epochClock)
-            .fileSyncLevel(0),
-            recordingId,
-            TERM_BUFFER_LENGTH,
-            MTU_LENGTH,
-            INITIAL_TERM_ID,
-            JOIN_POSITION,
-            1,
-            1,
-            "channel",
-            "sourceIdentity"))
+        try (RecordingWriter writer = new RecordingWriter(context, descriptorBuffer))
         {
             when(epochClock.time()).thenReturn(TIME);
 
@@ -615,7 +606,7 @@ public class ReplaySessionTest
             epochClock,
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
-            ByteBuffer.allocate(Catalog.RECORD_LENGTH));
+            descriptorBuffer);
     }
 
     private void validateFrame(final UnsafeBuffer buffer, final int message, final byte flags)

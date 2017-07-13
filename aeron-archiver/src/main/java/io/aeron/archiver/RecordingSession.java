@@ -19,6 +19,7 @@ import io.aeron.Image;
 import io.aeron.Subscription;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Consumes an {@link Image} and records data to file using an {@link RecordingWriter}.
@@ -31,6 +32,7 @@ class RecordingSession implements Session
     }
 
     private final long recordingId;
+    private final UnsafeBuffer descriptorBuffer;
     private final RecordingEventsProxy recordingEventsProxy;
     private final Image image;
     private final RecordingWriter.Context context;
@@ -40,11 +42,13 @@ class RecordingSession implements Session
 
     RecordingSession(
         final long recordingId,
+        final UnsafeBuffer descriptorBuffer,
         final RecordingEventsProxy recordingEventsProxy,
         final Image image,
         final RecordingWriter.Context context)
     {
         this.recordingId = recordingId;
+        this.descriptorBuffer = descriptorBuffer;
         this.recordingEventsProxy = recordingEventsProxy;
         this.image = image;
         this.context = context;
@@ -89,25 +93,12 @@ class RecordingSession implements Session
         final int streamId = subscription.streamId();
         final String channel = subscription.channel();
         final String sourceIdentity = image.sourceIdentity();
-        final int termBufferLength = image.termBufferLength();
-        final int mtuLength = image.mtuLength();
-        final int initialTermId = image.initialTermId();
         final long joinPosition = image.joinPosition();
 
         RecordingWriter recordingWriter = null;
         try
         {
-            recordingWriter = new RecordingWriter(
-                context,
-                recordingId,
-                termBufferLength,
-                mtuLength,
-                initialTermId,
-                joinPosition,
-                sessionId,
-                streamId,
-                channel,
-                sourceIdentity);
+            recordingWriter = new RecordingWriter(context, descriptorBuffer);
         }
         catch (final Exception ex)
         {

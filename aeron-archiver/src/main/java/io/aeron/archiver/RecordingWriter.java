@@ -54,9 +54,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     private static final boolean POSITION_CHECKS =
         !Boolean.getBoolean("io.aeron.archiver.recorder.position.checks.off");
 
-    static final long NULL_TIME = -1L;
-    static final long NULL_POSITION = -1;
-
     private static final int NULL_SEGMENT_POSITION = -1;
 
     private final boolean forceWrites;
@@ -84,9 +81,9 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     private FileChannel recordingFileChannel;
 
     private boolean closed = false;
-    private long endPosition = NULL_POSITION;
-    private long joinTimestamp = NULL_TIME;
-    private long endTimestamp = NULL_TIME;
+    private long endPosition = Catalog.NULL_POSITION;
+    private long joinTimestamp = Catalog.NULL_TIME;
+    private long endTimestamp = Catalog.NULL_TIME;
 
     RecordingWriter(final Context context, final UnsafeBuffer descriptorBuffer)
     {
@@ -123,35 +120,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     }
 
-    static void initDescriptor(
-        final RecordingDescriptorEncoder recordingDescriptorEncoder,
-        final long recordingId,
-        final int termBufferLength,
-        final int segmentFileLength,
-        final int mtuLength,
-        final int initialTermId,
-        final long joinPosition,
-        final int sessionId,
-        final int streamId,
-        final String channel,
-        final String sourceIdentity)
-    {
-        recordingDescriptorEncoder
-            .recordingId(recordingId)
-            .termBufferLength(termBufferLength)
-            .joinTimestamp(NULL_TIME)
-            .joinPosition(joinPosition)
-            .endPosition(joinPosition)
-            .endTimestamp(NULL_TIME)
-            .mtuLength(mtuLength)
-            .initialTermId(initialTermId)
-            .sessionId(sessionId)
-            .streamId(streamId)
-            .segmentFileLength(segmentFileLength)
-            .channel(channel)
-            .sourceIdentity(sourceIdentity);
-    }
-
     public void onBlock(
         final FileChannel fileChannel,
         final long fileOffset,
@@ -163,7 +131,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     {
         try
         {
-            if (NULL_POSITION == segmentPosition)
+            if (Catalog.NULL_POSITION == segmentPosition)
             {
                 onFirstWrite(termOffset);
             }
@@ -207,7 +175,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
         try
         {
-            if (NULL_POSITION == segmentPosition)
+            if (Catalog.NULL_POSITION == segmentPosition)
             {
                 onFirstWrite(termOffset);
             }

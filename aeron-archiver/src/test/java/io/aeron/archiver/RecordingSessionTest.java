@@ -116,7 +116,7 @@ public class RecordingSessionTest
             Catalog.CATALOG_FRAME_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
-        RecordingWriter.initDescriptor(
+        Catalog.initDescriptor(
             descriptorEncoder,
             RECORDING_ID,
             termBufferLength,
@@ -152,9 +152,9 @@ public class RecordingSessionTest
 
         session.doWork();
 
-        assertEquals(RecordingWriter.NULL_TIME, descriptorDecoder.joinTimestamp());
+        assertEquals(Catalog.NULL_TIME, descriptorDecoder.joinTimestamp());
         assertEquals(joinPosition, descriptorDecoder.joinPosition());
-        assertEquals(RecordingWriter.NULL_TIME, descriptorDecoder.endTimestamp());
+        assertEquals(Catalog.NULL_TIME, descriptorDecoder.endTimestamp());
         assertEquals(joinPosition, descriptorDecoder.endPosition());
 
         when(image.rawPoll(any(), anyInt())).thenAnswer(
@@ -182,7 +182,7 @@ public class RecordingSessionTest
 
         assertEquals(42L, descriptorDecoder.joinTimestamp());
 
-        assertEquals(RecordingWriter.NULL_TIME, descriptorDecoder.endTimestamp());
+        assertEquals(Catalog.NULL_TIME, descriptorDecoder.endTimestamp());
         assertEquals(joinPosition + RECORDED_BLOCK_LENGTH, descriptorDecoder.endPosition());
 
         final File segmentFile =

@@ -73,7 +73,7 @@ public class RecordingWriterTest
             Catalog.CATALOG_FRAME_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
-        RecordingWriter.initDescriptor(
+        Catalog.initDescriptor(
             descriptorEncoder,
             RECORDING_ID,
             TERM_BUFFER_LENGTH,
@@ -88,7 +88,7 @@ public class RecordingWriterTest
 
         try (RecordingWriter writer = Mockito.spy(new RecordingWriter(recordingCtx, descriptorBuffer)))
         {
-            assertEquals(RecordingWriter.NULL_TIME, descriptorDecoder.joinTimestamp());
+            assertEquals(Catalog.NULL_TIME, descriptorDecoder.joinTimestamp());
 
             when(mockDataFileChannel.transferTo(eq(0L), eq(256L), any(FileChannel.class))).then(
                 (invocation) ->

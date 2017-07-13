@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.RecordingWriter.initDescriptor;
 import static java.nio.file.StandardOpenOption.*;
 
 /**
@@ -50,6 +49,8 @@ import static java.nio.file.StandardOpenOption.*;
  */
 class Catalog implements AutoCloseable
 {
+    static final long NULL_TIME = -1L;
+    static final long NULL_POSITION = -1;
     private static final String CATALOG_FILE_NAME = "archive.cat";
     static final int RECORD_LENGTH = 4096;
     static final int CATALOG_FRAME_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
@@ -205,5 +206,34 @@ class Catalog implements AutoCloseable
     private void validateDescriptor(final RecordingDescriptorDecoder decoder)
     {
         // TODO:
+    }
+
+    static void initDescriptor(
+        final RecordingDescriptorEncoder recordingDescriptorEncoder,
+        final long recordingId,
+        final int termBufferLength,
+        final int segmentFileLength,
+        final int mtuLength,
+        final int initialTermId,
+        final long joinPosition,
+        final int sessionId,
+        final int streamId,
+        final String channel,
+        final String sourceIdentity)
+    {
+        recordingDescriptorEncoder
+            .recordingId(recordingId)
+            .termBufferLength(termBufferLength)
+            .joinTimestamp(NULL_TIME)
+            .joinPosition(joinPosition)
+            .endPosition(joinPosition)
+            .endTimestamp(NULL_TIME)
+            .mtuLength(mtuLength)
+            .initialTermId(initialTermId)
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .segmentFileLength(segmentFileLength)
+            .channel(channel)
+            .sourceIdentity(sourceIdentity);
     }
 }

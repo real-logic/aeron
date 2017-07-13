@@ -94,7 +94,7 @@ public class ReplaySessionTest
             Catalog.CATALOG_FRAME_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
-        RecordingWriter.initDescriptor(
+        Catalog.initDescriptor(
             descriptorEncoder,
             RECORDING_ID,
             TERM_BUFFER_LENGTH,

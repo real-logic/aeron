@@ -201,9 +201,15 @@ public class ArchiveProxy
         int attempts = 0;
         while (true)
         {
-            if (controlRequest.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length) > 0)
+            final long result;
+            if ((result = controlRequest.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length)) > 0)
             {
                 return true;
+            }
+
+            if (result == Publication.MAX_POSITION_EXCEEDED)
+            {
+                throw new IllegalStateException("Publication failed due to max position being reached");
             }
 
             if (++attempts > maxRetryAttempts)

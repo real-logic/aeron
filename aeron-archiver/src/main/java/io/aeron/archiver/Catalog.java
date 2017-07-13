@@ -62,15 +62,12 @@ class Catalog implements AutoCloseable
 
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
     private final UnsafeBuffer unsafeBuffer;
-    private final File archiveDir;
     private final MappedByteBuffer mappedByteBuffer;
 
     private long nextRecordingId = 0;
 
     Catalog(final File archiveDir)
     {
-        this.archiveDir = archiveDir;
-
         final File catalogFile = new File(archiveDir, CATALOG_FILE_NAME);
 
         try (FileChannel channel = FileChannel.open(catalogFile.toPath(), CREATE, READ, WRITE, SPARSE))
@@ -145,6 +142,7 @@ class Catalog implements AutoCloseable
         }
 
         buffer.wrap(mappedByteBuffer, (int)(recordingId * RECORD_LENGTH), RECORD_LENGTH);
+
         return true;
     }
 
@@ -154,6 +152,7 @@ class Catalog implements AutoCloseable
         {
             return null;
         }
+
         return new UnsafeBuffer(mappedByteBuffer, (int)(recordingId * RECORD_LENGTH), RECORD_LENGTH);
     }
 

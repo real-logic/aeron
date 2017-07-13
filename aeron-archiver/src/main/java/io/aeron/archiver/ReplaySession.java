@@ -52,7 +52,6 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  */
 class ReplaySession implements Session
 {
-
     enum State
     {
         INIT, REPLAY, LINGER, INACTIVE, CLOSED

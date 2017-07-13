@@ -84,6 +84,7 @@ class RecordingEventsProxy
         while (true)
         {
             // TODO: should we make this publication unreliable?
+            // TODO: Under back pressure it should drop sends and then do an update on timeout to avoid tail loss.
             final long result = recordingEventsPublication.offer(outboundBuffer, 0, fullLength);
             if (result > 0 || result == Publication.NOT_CONNECTED)
             {
@@ -91,7 +92,7 @@ class RecordingEventsProxy
                 break;
             }
 
-            if (result == Publication.CLOSED)
+            if (result == Publication.CLOSED || result == Publication.MAX_POSITION_EXCEEDED)
             {
                 throw new IllegalStateException();
             }

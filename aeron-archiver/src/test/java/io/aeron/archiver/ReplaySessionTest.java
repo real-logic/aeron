@@ -17,7 +17,6 @@ package io.aeron.archiver;
 
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
-import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.archiver.codecs.RecordingDescriptorEncoder;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
@@ -35,6 +34,7 @@ import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import static io.aeron.archiver.TestUtil.makeTempDir;
 import static io.aeron.archiver.TestUtil.newRecordingFragmentReader;
@@ -61,41 +61,30 @@ public class ReplaySessionTest
     private static final long TIME = 0;
     private static final int REPLAY_SESSION_ID = 0;
     private static final int FRAME_LENGTH = 1024;
-    private File archiveDir;
+
     private final ExclusivePublication mockReplayPub = Mockito.mock(ExclusivePublication.class);
     private final Publication mockControlPub = Mockito.mock(Publication.class);
     private final ArchiveConductor.ReplayPublicationSupplier mockReplyPubSupplier =
         Mockito.mock(ArchiveConductor.ReplayPublicationSupplier.class);
-
     private int messageCounter = 0;
-    private ControlSessionProxy proxy;
-    private EpochClock epochClock;
+
+    private File archiveDir;
+    private ControlSessionProxy proxy = Mockito.mock(ControlSessionProxy.class);
+    private EpochClock epochClock = mock(EpochClock.class);
     private RecordingWriter.Context context;
-    private UnsafeBuffer descriptorBuffer;
-    private RecordingDescriptorEncoder descriptorEncoder;
-    private RecordingDescriptorDecoder descriptorDecoder;
+    private UnsafeBuffer descriptorBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(Catalog.RECORD_LENGTH));
 
     @Before
     public void before() throws Exception
     {
         archiveDir = makeTempDir();
-        proxy = Mockito.mock(ControlSessionProxy.class);
-        epochClock = mock(EpochClock.class);
 
         context = new RecordingWriter.Context()
             .archiveDir(archiveDir)
             .epochClock(epochClock);
-        descriptorBuffer = new UnsafeBuffer(new byte[Catalog.RECORD_LENGTH]);
-        descriptorEncoder = new RecordingDescriptorEncoder().wrap(
-            descriptorBuffer,
-            Catalog.CATALOG_FRAME_LENGTH);
-        descriptorDecoder = new RecordingDescriptorDecoder().wrap(
-            descriptorBuffer,
-            Catalog.CATALOG_FRAME_LENGTH,
-            RecordingDescriptorDecoder.BLOCK_LENGTH,
-            RecordingDescriptorDecoder.SCHEMA_VERSION);
+
         Catalog.initDescriptor(
-            descriptorEncoder,
+            new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH),
             RECORDING_ID,
             TERM_BUFFER_LENGTH,
             context.segmentFileLength,
@@ -106,6 +95,7 @@ public class ReplaySessionTest
             1,
             "channel",
             "sourceIdentity");
+
         try (RecordingWriter writer = new RecordingWriter(context, descriptorBuffer))
         {
             when(epochClock.time()).thenReturn(TIME);

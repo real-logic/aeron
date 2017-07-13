@@ -117,7 +117,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
                 "It is assumed the termBufferLength is a power of 2, and that the number of terms" +
                     "in a file is also a power of 2");
         }
-
     }
 
     public void onBlock(
@@ -315,7 +314,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         return closed;
     }
 
-
     private void onFileRollOver()
     {
         CloseHelper.close(recordingFileChannel);
@@ -371,6 +369,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
                     ") + blockLength(=" + blockLength +
                     ") > termBufferLength(=" + termBufferLength + ")");
             }
+
             if (recordingFileChannel.position() != segmentPosition)
             {
                 throw new IllegalStateException("Expected recordingFileChannel.position(): " +

@@ -191,7 +191,6 @@ public class ArchiverSystemTest
             waitFor(recordedPublication::isConnected);
 
             final int sessionId = recordedPublication.sessionId();
-            final int streamId = recordedPublication.streamId();
             final int termBufferLength = recordedPublication.termBufferLength();
             final int initialTermId = recordedPublication.initialTermId();
             final int maxPayloadLength = recordedPublication.maxPayloadLength();
@@ -206,8 +205,6 @@ public class ArchiverSystemTest
             postPublicationValidations(
                 archiveProxy,
                 recordingEvents,
-                sessionId,
-                streamId,
                 termBufferLength,
                 initialTermId,
                 maxPayloadLength,
@@ -231,7 +228,6 @@ public class ArchiverSystemTest
             awaitPublicationIsConnected(recordedPublication);
 
             final int sessionId = recordedPublication.sessionId();
-            final int streamId = recordedPublication.streamId();
             final int termBufferLength = recordedPublication.termBufferLength();
             final int initialTermId = recordedPublication.initialTermId();
             final int maxPayloadLength = recordedPublication.maxPayloadLength();
@@ -244,8 +240,6 @@ public class ArchiverSystemTest
             postPublicationValidations(
                 archiveProxy,
                 recordingEvents,
-                sessionId,
-                streamId,
                 termBufferLength,
                 initialTermId,
                 maxPayloadLength,
@@ -289,8 +283,6 @@ public class ArchiverSystemTest
     private void postPublicationValidations(
         final ArchiveProxy archiveProxy,
         final Subscription recordingEvents,
-        final int sessionId,
-        final int streamId,
         final int termBufferLength,
         final int initialTermId,
         final int maxPayloadLength,

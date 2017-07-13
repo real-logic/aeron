@@ -21,8 +21,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 class ListRecordingsSession implements Session
 {
-
-
     private enum State
     {
         INIT, ACTIVE, INACTIVE, CLOSED
@@ -105,7 +103,6 @@ class ListRecordingsSession implements Session
         int sentBytes = 0;
         do
         {
-
             if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
             {
                 proxy.sendDescriptorNotFound(

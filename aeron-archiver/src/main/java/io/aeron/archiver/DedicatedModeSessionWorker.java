@@ -53,8 +53,8 @@ class DedicatedModeSessionWorker<T extends Session> extends SessionWorker<T>
     {
         while (!commandQueue.offer(r))
         {
-            Thread.yield();
             errorCounter.increment();
+            Thread.yield();
         }
     }
 }

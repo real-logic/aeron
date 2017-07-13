@@ -55,7 +55,6 @@ class RecordingFragmentReader implements AutoCloseable
     private final int segmentFileLength;
     private final long fromPosition;
 
-
     private MappedByteBuffer mappedByteBuffer;
     private UnsafeBuffer termBuffer = null;
 
@@ -65,7 +64,6 @@ class RecordingFragmentReader implements AutoCloseable
 
     private long transmitted = 0;
     private boolean isDone = false;
-
 
     /**
      * @param joinPosition      the recording join position, which is the original {@link Image#joinPosition()}

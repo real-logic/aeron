@@ -57,7 +57,6 @@ public class RecordingWriterTest
         IoUtil.delete(archiveDir, false);
     }
 
-
     @SuppressWarnings("ConstantConditions")
     @Test
     public void verifyFirstWrite() throws IOException

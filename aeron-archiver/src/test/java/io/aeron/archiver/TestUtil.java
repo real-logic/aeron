@@ -150,8 +150,8 @@ public class TestUtil
         waitFor(publication::isConnected);
     }
 
-    static RecordingFragmentReader newRecordingFragmentReader(final UnsafeBuffer descriptorBuffer,
-                                                              final File archiveDir)
+    static RecordingFragmentReader newRecordingFragmentReader(
+        final UnsafeBuffer descriptorBuffer, final File archiveDir)
         throws IOException
     {
         final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder().wrap(
@@ -159,6 +159,7 @@ public class TestUtil
             Catalog.CATALOG_FRAME_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
+
         return new RecordingFragmentReader(
             descriptorDecoder.joinPosition(),
             descriptorDecoder.endPosition(),

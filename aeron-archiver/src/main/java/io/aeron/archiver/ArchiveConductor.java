@@ -149,10 +149,10 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     protected void postSessionsClose()
     {
+        CloseHelper.quietClose(archiveDirChannel);
         CloseHelper.quietClose(aeronClientAgentInvoker);
         CloseHelper.quietClose(driverAgentInvoker);
         CloseHelper.quietClose(catalog);
-        CloseHelper.quietClose(archiveDirChannel);
 
         // TODO: Should these be exceptions that get recorded or are they asserts?
         if (!recordingSessionByIdMap.isEmpty())
@@ -251,8 +251,10 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                     ControlResponseCode.ERROR,
                     "Only IPC and spy subscriptions are supported.",
                     controlPublication);
+
                 return;
             }
+
             final String minimalChannel = minimalChannelBuilder(channel).build();
             final String key = makeKey(streamId, minimalChannel);
             final Subscription oldSubscription = subscriptionMap.get(key);
@@ -338,6 +340,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
             return;
         }
+
         final UnsafeBuffer descriptorBuffer = catalog.wrapDescriptor(recordingId);
         if (descriptorBuffer == null)
         {

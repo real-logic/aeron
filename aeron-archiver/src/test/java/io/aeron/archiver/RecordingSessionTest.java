@@ -49,33 +49,29 @@ public class RecordingSessionTest
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
     private static final int RECORDED_BLOCK_LENGTH = 100;
     private static final long RECORDING_ID = 12345;
+    private static final int TERM_BUFFER_LENGTH = 4096;
 
-    private final String channel = "channel";
-    private final String sourceIdentity = "sourceIdentity";
-    private final int streamId = 54321;
-    private final int sessionId = 12345;
+    private static final String CHANNEL = "channel";
+    private static final String SOURCE_IDENTITY = "sourceIdentity";
+    private static final int STREAM_ID = 54321;
 
-    private final int termBufferLength = 4096;
-    private final int termOffset = 1024;
-    private final int mtuLength = 1024;
-    private final long joinPosition = termOffset;
-    private final int initialTermId = 0;
+    private static final int SESSION_ID = 12345;
+    private static final int TERM_OFFSET = 1024;
+    private static final int MTU_LENGTH = 1024;
+    private static final long JOIN_POSITION = TERM_OFFSET;
+    private static final int INITIAL_TERM_ID = 0;
 
     private final RecordingEventsProxy recordingEventsProxy = mock(RecordingEventsProxy.class);
-
+    private Image image = mockImage(
+        SESSION_ID, INITIAL_TERM_ID, SOURCE_IDENTITY, TERM_BUFFER_LENGTH, mockSubscription(CHANNEL, STREAM_ID));
     private File tempDirForTest;
-
-    private Image image;
-
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
     private File termFile;
-    private EpochClock epochClock;
-    private RecordingDescriptorEncoder descriptorEncoder;
+    private EpochClock epochClock = Mockito.mock(EpochClock.class);
     private RecordingDescriptorDecoder descriptorDecoder;
     private RecordingWriter.Context context;
-    private UnsafeBuffer descriptorBuffer;
-
+    private UnsafeBuffer descriptorBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(Catalog.RECORD_LENGTH));
 
     @Before
     public void before() throws IOException
@@ -85,49 +81,42 @@ public class RecordingSessionTest
         termFile = File.createTempFile("test.rec", "sourceIdentity");
 
         mockLogBufferChannel = FileChannel.open(termFile.toPath(), CREATE, READ, WRITE);
-        mockLogBufferChannel.position(termBufferLength - 1);
+        mockLogBufferChannel.position(TERM_BUFFER_LENGTH - 1);
         mockLogBufferChannel.write(ByteBuffer.wrap(new byte[1]));
 
         final ByteBuffer bb = ByteBuffer.allocate(RECORDED_BLOCK_LENGTH);
-        mockLogBufferChannel.position(termOffset);
+        mockLogBufferChannel.position(TERM_OFFSET);
         mockLogBufferChannel.write(bb);
         mockLogBufferMapped = new UnsafeBuffer(
-            mockLogBufferChannel.map(FileChannel.MapMode.READ_WRITE, 0, termBufferLength));
+            mockLogBufferChannel.map(FileChannel.MapMode.READ_WRITE, 0, TERM_BUFFER_LENGTH));
 
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
         headerFlyweight.wrap(mockLogBufferMapped);
         headerFlyweight.headerType(DataHeaderFlyweight.HDR_TYPE_DATA).frameLength(RECORDED_BLOCK_LENGTH);
 
-        image = mockImage(
-            sessionId, initialTermId, sourceIdentity, termBufferLength, mockSubscription(channel, streamId));
-
-        epochClock = Mockito.mock(EpochClock.class);
-
         context = new RecordingWriter.Context()
             .recordingFileLength(SEGMENT_FILE_SIZE)
             .archiveDir(tempDirForTest)
             .epochClock(epochClock);
-        descriptorBuffer = new UnsafeBuffer(new byte[Catalog.RECORD_LENGTH]);
-        descriptorEncoder = new RecordingDescriptorEncoder().wrap(
-            descriptorBuffer,
-            Catalog.CATALOG_FRAME_LENGTH);
+
         descriptorDecoder = new RecordingDescriptorDecoder().wrap(
             descriptorBuffer,
             Catalog.CATALOG_FRAME_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
+
         Catalog.initDescriptor(
-            descriptorEncoder,
+            new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH),
             RECORDING_ID,
-            termBufferLength,
+            TERM_BUFFER_LENGTH,
             context.segmentFileLength,
-            mtuLength,
-            initialTermId,
-            joinPosition,
-            sessionId,
-            streamId,
-            channel,
-            sourceIdentity);
+            MTU_LENGTH,
+            INITIAL_TERM_ID,
+            JOIN_POSITION,
+            SESSION_ID,
+            STREAM_ID,
+            CHANNEL,
+            SOURCE_IDENTITY);
     }
 
     @After
@@ -144,7 +133,6 @@ public class RecordingSessionTest
     {
         when(epochClock.time()).thenReturn(42L);
 
-
         final RecordingSession session = new RecordingSession(
             RECORDING_ID, descriptorBuffer, recordingEventsProxy, image, context);
 
@@ -153,9 +141,9 @@ public class RecordingSessionTest
         session.doWork();
 
         assertEquals(Catalog.NULL_TIME, descriptorDecoder.joinTimestamp());
-        assertEquals(joinPosition, descriptorDecoder.joinPosition());
+        assertEquals(JOIN_POSITION, descriptorDecoder.joinPosition());
         assertEquals(Catalog.NULL_TIME, descriptorDecoder.endTimestamp());
-        assertEquals(joinPosition, descriptorDecoder.endPosition());
+        assertEquals(JOIN_POSITION, descriptorDecoder.endPosition());
 
         when(image.rawPoll(any(), anyInt())).thenAnswer(
             (invocation) ->
@@ -170,9 +158,9 @@ public class RecordingSessionTest
                     mockLogBufferChannel,
                     0,
                     mockLogBufferMapped,
-                    termOffset,
+                    TERM_OFFSET,
                     RECORDED_BLOCK_LENGTH,
-                    sessionId,
+                    SESSION_ID,
                     0);
 
                 return RECORDED_BLOCK_LENGTH;
@@ -183,10 +171,9 @@ public class RecordingSessionTest
         assertEquals(42L, descriptorDecoder.joinTimestamp());
 
         assertEquals(Catalog.NULL_TIME, descriptorDecoder.endTimestamp());
-        assertEquals(joinPosition + RECORDED_BLOCK_LENGTH, descriptorDecoder.endPosition());
+        assertEquals(JOIN_POSITION + RECORDED_BLOCK_LENGTH, descriptorDecoder.endPosition());
 
-        final File segmentFile =
-            new File(tempDirForTest, ArchiveUtil.recordingDataFileName(RECORDING_ID, 0));
+        final File segmentFile = new File(tempDirForTest, ArchiveUtil.recordingDataFileName(RECORDING_ID, 0));
         assertTrue(segmentFile.exists());
 
         try (RecordingFragmentReader reader = newRecordingFragmentReader(descriptorBuffer, tempDirForTest))
@@ -195,7 +182,7 @@ public class RecordingSessionTest
                 (buffer, offset, length) ->
                 {
                     final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
-                    assertEquals(termOffset, frameOffset);
+                    assertEquals(TERM_OFFSET, frameOffset);
                     assertEquals(RECORDED_BLOCK_LENGTH, FrameDescriptor.frameLength(buffer, frameOffset));
                     assertEquals(RECORDED_BLOCK_LENGTH - DataHeaderFlyweight.HEADER_LENGTH, length);
                     return true;
@@ -241,8 +228,8 @@ public class RecordingSessionTest
         when(image.sourceIdentity()).thenReturn(sourceIdentity);
         when(image.termBufferLength()).thenReturn(termBufferLength);
         when(image.subscription()).thenReturn(subscription);
-        when(image.mtuLength()).thenReturn(mtuLength);
-        when(image.joinPosition()).thenReturn(joinPosition);
+        when(image.mtuLength()).thenReturn(MTU_LENGTH);
+        when(image.joinPosition()).thenReturn(JOIN_POSITION);
 
         return image;
     }

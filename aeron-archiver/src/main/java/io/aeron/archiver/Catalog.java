@@ -51,7 +51,6 @@ import static java.nio.file.StandardOpenOption.*;
 class Catalog implements AutoCloseable
 {
     private static final String CATALOG_FILE_NAME = "archive.cat";
-    static final int PAGE_SIZE = 4096;
     static final int RECORD_LENGTH = 4096;
     static final int CATALOG_FRAME_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     static final int MAX_DESCRIPTOR_STRINGS_COMBINED_LENGTH =

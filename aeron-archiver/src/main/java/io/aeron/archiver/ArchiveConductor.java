@@ -24,7 +24,6 @@ import org.agrona.LangUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,7 +47,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     private final ByteBuffer threadLocalDescriptorBBuffer =
         BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, PAGE_SIZE);
-    private final UnsafeBuffer threadLocalDescriptorUBuffer = new UnsafeBuffer(threadLocalDescriptorBBuffer);
     private final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder();
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
@@ -299,8 +297,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         return new ListRecordingsSession(
             correlationId,
-            threadLocalDescriptorBBuffer,
-            threadLocalDescriptorUBuffer,
             controlPublication,
             fromId,
             count,

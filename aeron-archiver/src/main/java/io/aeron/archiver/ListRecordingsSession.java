@@ -17,21 +17,19 @@ package io.aeron.archiver;
 
 import io.aeron.Publication;
 import io.aeron.archiver.codecs.ControlResponseCode;
-import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
 class ListRecordingsSession implements Session
 {
+
+
     private enum State
     {
         INIT, ACTIVE, INACTIVE, CLOSED
     }
 
-    private final ByteBuffer byteBuffer;
-    private final UnsafeBuffer descriptorBuffer;
+    private static final byte[] EMPTY_BYTES = new byte[0];
+    private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer(EMPTY_BYTES);
 
     private final Publication controlPublication;
     private final long fromId;
@@ -46,8 +44,6 @@ class ListRecordingsSession implements Session
 
     ListRecordingsSession(
         final long correlationId,
-        final ByteBuffer byteBuffer,
-        final UnsafeBuffer descriptorBuffer,
         final Publication controlPublication,
         final long fromId,
         final int count,
@@ -63,9 +59,6 @@ class ListRecordingsSession implements Session
         this.catalog = catalog;
         this.proxy = proxy;
         this.correlationId = correlationId;
-
-        this.byteBuffer = byteBuffer;
-        this.descriptorBuffer = descriptorBuffer;
     }
 
     public void abort()
@@ -112,26 +105,17 @@ class ListRecordingsSession implements Session
         int sentBytes = 0;
         do
         {
-            byteBuffer.clear();
-            descriptorBuffer.wrap(byteBuffer);
-            try
-            {
-                if (!catalog.readDescriptor(recordingId, byteBuffer))
-                {
-                    proxy.sendDescriptorNotFound(
-                        correlationId,
-                        recordingId,
-                        catalog.nextRecordingId(),
-                        controlPublication);
-                    state = State.INACTIVE;
 
-                    return 0;
-                }
-            }
-            catch (final IOException ex)
+            if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
             {
+                proxy.sendDescriptorNotFound(
+                    correlationId,
+                    recordingId,
+                    catalog.nextRecordingId(),
+                    controlPublication);
                 state = State.INACTIVE;
-                LangUtil.rethrowUnchecked(ex);
+
+                return 0;
             }
 
             sentBytes += proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);

@@ -17,24 +17,17 @@ package io.aeron.archiver;
 
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.archiver.codecs.RecordingDescriptorEncoder;
-import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.BufferUtil;
-import org.agrona.CloseHelper;
-import org.agrona.LangUtil;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archiver.ArchiveUtil.*;
-import static io.aeron.archiver.RecordingWriter.NULL_TIME;
 import static io.aeron.archiver.RecordingWriter.initDescriptor;
 import static java.nio.file.StandardOpenOption.*;
-import static org.agrona.BitUtil.align;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 
 /**
  * Catalog for the archive keeps details of recorded images, past and present, and used for browsing.
@@ -64,33 +57,30 @@ class Catalog implements AutoCloseable
     static final int MAX_DESCRIPTOR_STRINGS_COMBINED_LENGTH =
         (RECORD_LENGTH - (CATALOG_FRAME_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 8));
     static final int NULL_RECORD_ID = -1;
+    static final int MAX_CATALOG_SIZE = Integer.MAX_VALUE - (RECORD_LENGTH - 1);
+    static final int MAX_RECORDING_ID = MAX_CATALOG_SIZE / RECORD_LENGTH;
 
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
-    private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(RECORD_LENGTH, PAGE_SIZE);
-    private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
-    private final FileChannel catalogFileChannel;
+    private final UnsafeBuffer unsafeBuffer;
     private final File archiveDir;
+    private final MappedByteBuffer mappedByteBuffer;
 
     private long nextRecordingId = 0;
 
     Catalog(final File archiveDir)
     {
         this.archiveDir = archiveDir;
-        recordingDescriptorEncoder.wrap(unsafeBuffer, CATALOG_FRAME_LENGTH);
 
         final File catalogFile = new File(archiveDir, CATALOG_FILE_NAME);
-        FileChannel channel = null;
-        try
+
+        try (FileChannel channel = FileChannel.open(catalogFile.toPath(), CREATE, READ, WRITE, SPARSE))
         {
-            channel = FileChannel.open(catalogFile.toPath(), CREATE, READ, WRITE, DSYNC);
+            mappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, MAX_CATALOG_SIZE);
+            unsafeBuffer = new UnsafeBuffer(mappedByteBuffer);
         }
-        catch (final IOException ex)
+        catch (final IOException e)
         {
-            LangUtil.rethrowUnchecked(ex);
-        }
-        finally
-        {
-            catalogFileChannel = channel;
+            throw new RuntimeException(e);
         }
 
         refreshCatalog();
@@ -98,7 +88,7 @@ class Catalog implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(catalogFileChannel);
+        IoUtil.unmap(mappedByteBuffer);
     }
 
     long addNewRecording(
@@ -112,14 +102,21 @@ class Catalog implements AutoCloseable
         final long joinPosition,
         final int segmentFileLength)
     {
+        if (nextRecordingId > MAX_RECORDING_ID)
+        {
+            throw new IllegalStateException("Catalog is full, max recordings reached: " + MAX_RECORDING_ID);
+        }
+
         if (channel.length() + sourceIdentity.length() > MAX_DESCRIPTOR_STRINGS_COMBINED_LENGTH)
         {
             throw new IllegalArgumentException("Combined length of channel:'" + channel + "' and sourceIdentity:'" +
                 sourceIdentity + "' exceeds max allowed:" + MAX_DESCRIPTOR_STRINGS_COMBINED_LENGTH);
         }
+
         final long newRecordingId = nextRecordingId;
 
-        recordingDescriptorEncoder.limit(CATALOG_FRAME_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH);
+        unsafeBuffer.wrap(mappedByteBuffer, (int)(newRecordingId * RECORD_LENGTH), RECORD_LENGTH);
+        recordingDescriptorEncoder.wrap(unsafeBuffer, CATALOG_FRAME_LENGTH);
         initDescriptor(
             recordingDescriptorEncoder,
             newRecordingId,
@@ -133,51 +130,31 @@ class Catalog implements AutoCloseable
             channel,
             sourceIdentity);
 
-        final int encodedLength = recordingDescriptorEncoder.encodedLength();
-        unsafeBuffer.putInt(0, encodedLength);
-
-        try
-        {
-            byteBuffer.clear();
-            final int written = catalogFileChannel.write(byteBuffer, newRecordingId * RECORD_LENGTH);
-            if (written != RECORD_LENGTH)
-            {
-                throw new IllegalStateException();
-            }
-        }
-        catch (final Exception ex)
-        {
-            // because writes to the catalog are at absolute position based on newRecordingId, a failure here does not
-            // leave the file in an inconsistent state. A partial write followed by a shutdown however may leave the
-            // file in a bad size. The refreshCatalog method handles this eventuality.
-            LangUtil.rethrowUnchecked(ex);
-        }
-
+        unsafeBuffer.putInt(0, recordingDescriptorEncoder.encodedLength());
+        mappedByteBuffer.force();
         nextRecordingId++;
 
         return newRecordingId;
     }
 
-    boolean readDescriptor(final long recordingId, final ByteBuffer buffer)
-        throws IOException
+    boolean wrapDescriptor(final long recordingId, final UnsafeBuffer buffer)
     {
-        if (buffer.remaining() != RECORD_LENGTH)
-        {
-            throw new IllegalArgumentException("buffer must have exactly RECORD_LENGTH remaining to read into");
-        }
-
-        final int bytesRead = catalogFileChannel.read(buffer, recordingId * RECORD_LENGTH);
-        if (bytesRead == 0 || bytesRead == -1)
+        if (recordingId < 0 || recordingId > nextRecordingId)
         {
             return false;
         }
 
-        if (bytesRead != RECORD_LENGTH)
-        {
-            throw new IllegalStateException("Wrong read length: " + bytesRead);
-        }
-
+        buffer.wrap(mappedByteBuffer, (int)(recordingId * RECORD_LENGTH), RECORD_LENGTH);
         return true;
+    }
+
+    UnsafeBuffer wrapDescriptor(final long recordingId)
+    {
+        if (recordingId < 0 || recordingId > nextRecordingId)
+        {
+            return null;
+        }
+        return new UnsafeBuffer(mappedByteBuffer, (int)(recordingId * RECORD_LENGTH), RECORD_LENGTH);
     }
 
     void updateRecordingMetaDataInCatalog(
@@ -186,20 +163,15 @@ class Catalog implements AutoCloseable
         final long joinTimestamp,
         final long endTimestamp) throws IOException
     {
-        byteBuffer.clear();
-        if (!readDescriptor(recordingId, byteBuffer))
-        {
-            throw new IllegalArgumentException("Invalid recording id : " + recordingId);
-        }
+
+        unsafeBuffer.wrap(mappedByteBuffer, (int)(recordingId * RECORD_LENGTH), RECORD_LENGTH);
 
         recordingDescriptorEncoder
             .wrap(unsafeBuffer, CATALOG_FRAME_LENGTH)
             .endPosition(endPosition)
             .joinTimestamp(joinTimestamp)
             .endTimestamp(endTimestamp);
-
-        byteBuffer.clear();
-        catalogFileChannel.write(byteBuffer, recordingId * RECORD_LENGTH);
+        mappedByteBuffer.force();
     }
 
     long nextRecordingId()
@@ -214,217 +186,25 @@ class Catalog implements AutoCloseable
      */
     private void refreshCatalog()
     {
-        try
+        final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();
+        unsafeBuffer.wrap(mappedByteBuffer, (int)(nextRecordingId * RECORD_LENGTH), RECORD_LENGTH);
+
+        while (unsafeBuffer.getInt(0) != 0)
         {
-            catalogFileChannel.truncate((catalogFileChannel.size() / RECORD_LENGTH) * RECORD_LENGTH);
+            decoder.wrap(
+                unsafeBuffer,
+                CATALOG_FRAME_LENGTH,
+                RecordingDescriptorDecoder.BLOCK_LENGTH,
+                RecordingDescriptorDecoder.SCHEMA_VERSION);
 
-            final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();
-
-            while (catalogFileChannel.read(byteBuffer, nextRecordingId * RECORD_LENGTH) != -1)
-            {
-                byteBuffer.flip();
-                if (byteBuffer.remaining() == 0)
-                {
-                    break;
-                }
-
-                if (byteBuffer.remaining() != RECORD_LENGTH)
-                {
-                    throw new IllegalStateException("Catalog read should be of " + RECORD_LENGTH +
-                        " but was:" + byteBuffer.remaining());
-                }
-
-                byteBuffer.clear();
-                decoder.wrap(
-                    unsafeBuffer,
-                    CATALOG_FRAME_LENGTH,
-                    RecordingDescriptorDecoder.BLOCK_LENGTH,
-                    RecordingDescriptorDecoder.SCHEMA_VERSION);
-
-                refreshCatalogEntry(decoder, nextRecordingId);
-                nextRecordingId++;
-                byteBuffer.clear();
-            }
-        }
-        catch (final IOException ex)
-        {
-            CloseHelper.quietClose(catalogFileChannel);
-            LangUtil.rethrowUnchecked(ex);
+            validateDescriptor(decoder);
+            ++nextRecordingId;
+            unsafeBuffer.wrap(mappedByteBuffer, (int)(nextRecordingId * RECORD_LENGTH), RECORD_LENGTH);
         }
     }
 
-    private void refreshCatalogEntry(
-        final RecordingDescriptorDecoder catalogRecordingDescriptor,
-        final long recordingId) throws IOException
+    private void validateDescriptor(final RecordingDescriptorDecoder decoder)
     {
-        if (recordingId != catalogRecordingDescriptor.recordingId())
-        {
-            throw new IllegalStateException("Expecting recordingId: " + recordingId +
-                " but found: " + catalogRecordingDescriptor.recordingId());
-        }
-
-        if (catalogRecordingDescriptor.endTimestamp() != NULL_TIME)
-        {
-            // TODO: do we want to confirm all files for an entry exist? are valid?
-            return;
-        }
-
-        if (catalogRecordingDescriptor.endTimestamp() == NULL_TIME)
-        {
-            final File descriptorFile = new File(archiveDir, recordingDescriptorFileName(recordingId));
-            final RecordingDescriptorDecoder fileRecordingDescriptor =
-                loadRecordingDescriptor(descriptorFile, byteBuffer);
-            if (fileRecordingDescriptor.endTimestamp() != NULL_TIME)
-            {
-                updateRecordingMetaDataInCatalog(recordingId,
-                    fileRecordingDescriptor.endPosition(),
-                    fileRecordingDescriptor.joinTimestamp(),
-                    fileRecordingDescriptor.endTimestamp());
-            }
-            else
-            {
-                recoverIncompleteMetaData(recordingId, descriptorFile, fileRecordingDescriptor);
-            }
-        }
-    }
-
-    private void recoverIncompleteMetaData(
-        final long recordingId,
-        final File descriptorFile,
-        final RecordingDescriptorDecoder fileRecordingDescriptor) throws IOException
-    {
-        final int maxSegment = findLastRecordingSegment(recordingId);
-        final long endPosition;
-        final long joinTimestamp;
-        final long endTimestamp;
-
-        if (maxSegment == -1)
-        {
-            endPosition = fileRecordingDescriptor.joinPosition();
-            joinTimestamp = fileRecordingDescriptor.joinTimestamp();
-            endTimestamp = descriptorFile.lastModified();
-        }
-        else
-        {
-            if (fileRecordingDescriptor.joinTimestamp() == NULL_TIME)
-            {
-                throw new IllegalStateException("joinTimestamp is NULL_TIME, but 1 or more segment files found");
-            }
-            else
-            {
-                joinTimestamp = fileRecordingDescriptor.joinTimestamp();
-            }
-
-            final File segmentFile = new File(archiveDir, recordingDataFileName(recordingId, maxSegment));
-            final ByteBuffer headerBuffer = allocateDirectAligned(
-                DataHeaderFlyweight.HEADER_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
-            final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(headerBuffer);
-
-            try (FileChannel segmentFileChannel = FileChannel.open(segmentFile.toPath(), READ))
-            {
-                final long joinPosition = fileRecordingDescriptor.joinPosition();
-
-                if (joinPosition != 0 && maxSegment == 0)
-                {
-                    validateFirstWritePreamble(
-                        recordingId,
-                        headerBuffer,
-                        headerFlyweight,
-                        segmentFileChannel,
-                        joinPosition);
-                }
-
-                endPosition = readToEndPosition(
-                    headerBuffer,
-                    headerFlyweight,
-                    segmentFileChannel);
-            }
-
-            endTimestamp = segmentFile.lastModified();
-        }
-
-        updateRecordingMetaDataInCatalog(recordingId, endPosition, joinTimestamp, endTimestamp);
-        updateRecordingMetaDataFile(descriptorFile, endPosition, joinTimestamp, endTimestamp);
-    }
-
-    private void updateRecordingMetaDataFile(
-        final File descriptorFile,
-        final long endPosition,
-        final long joinTimestamp,
-        final long endTimestamp) throws IOException
-    {
-        try (FileChannel descriptorFileChannel = FileChannel.open(descriptorFile.toPath(), WRITE, READ))
-        {
-            byteBuffer.clear();
-            descriptorFileChannel.read(byteBuffer);
-            recordingDescriptorEncoder
-                .wrap(unsafeBuffer, CATALOG_FRAME_LENGTH)
-                .endPosition(endPosition)
-                .joinTimestamp(joinTimestamp)
-                .endTimestamp(endTimestamp);
-
-            byteBuffer.clear();
-            descriptorFileChannel.write(byteBuffer, 0);
-        }
-    }
-
-    private void validateFirstWritePreamble(
-        final long recordingId,
-        final ByteBuffer headerBuffer,
-        final DataHeaderFlyweight headerFlyweight,
-        final FileChannel segmentFileChannel,
-        final long joinPosition) throws IOException
-    {
-        segmentFileChannel.read(headerBuffer, 0);
-        headerBuffer.clear();
-
-        final int headerType = headerFlyweight.headerType();
-        if (headerType != DataHeaderFlyweight.HDR_TYPE_PAD)
-        {
-            throw new IllegalStateException("Recording : " + recordingId + " segment 0 is corrupt" +
-                ". Expected a padding frame as join position is non-zero, but type is:" +
-                headerType);
-        }
-
-        final int frameLength = headerFlyweight.frameLength();
-        if (frameLength != joinPosition)
-        {
-            throw new IllegalStateException("Recording : " + recordingId + " segment 0 is corrupt" +
-                ". Expected a padding frame with a length equal to join position, but length is:" +
-                headerType);
-        }
-    }
-
-    private long readToEndPosition(
-        final ByteBuffer headerBuffer,
-        final DataHeaderFlyweight headerFlyweight,
-        final FileChannel segmentFileChannel) throws IOException
-    {
-        long endPosition = 0;
-
-        segmentFileChannel.read(headerBuffer, endPosition);
-        headerBuffer.clear();
-
-        while (headerFlyweight.frameLength() > 0)
-        {
-            endPosition += align(headerFlyweight.frameLength(), FrameDescriptor.FRAME_ALIGNMENT);
-            segmentFileChannel.read(headerBuffer, endPosition);
-            headerBuffer.clear();
-        }
-
-        return endPosition;
-    }
-
-    private int findLastRecordingSegment(final long recordingId)
-    {
-        int maxSegment = -1;
-        final String[] recordingSegments = ArchiveUtil.listRecordingSegments(archiveDir, recordingId);
-        for (final String segmentName : recordingSegments)
-        {
-            final int segmentIndex = ArchiveUtil.segmentIndexFromFileName(segmentName);
-            maxSegment = Math.max(maxSegment, segmentIndex);
-        }
-
-        return maxSegment;
+        // TODO:
     }
 }

@@ -129,7 +129,7 @@ public class ArchiverSystemTest
         driver = MediaDriver.launch(driverCtx);
 
         archiverCtx
-            .fileSyncLevel(2)
+            .fileSyncLevel(0)
             .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
             .archiveDir(archiveDir)
             .segmentFileLength(termLength << rnd.nextInt(4))

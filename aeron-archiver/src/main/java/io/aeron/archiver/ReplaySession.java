@@ -103,7 +103,6 @@ class ReplaySession implements Session
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
 
-        Objects.requireNonNull(descriptorDecoder);
         final long joinPosition = descriptorDecoder.joinPosition();
         final int mtuLength = descriptorDecoder.mtuLength();
         final int termBufferLength = descriptorDecoder.termBufferLength();

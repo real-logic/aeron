@@ -89,15 +89,16 @@ class Catalog implements AutoCloseable
     }
 
     long addNewRecording(
+        final long joinPosition,
+        final int imageInitialTermId,
+        final int segmentFileLength,
+        final int termBufferLength,
+        final int mtuLength,
         final int sessionId,
         final int streamId,
         final String channel,
         final String sourceIdentity,
-        final int termBufferLength,
-        final int mtuLength,
-        final int imageInitialTermId,
-        final long joinPosition,
-        final int segmentFileLength)
+        final String originalChannel)
     {
         if (nextRecordingId > MAX_RECORDING_ID)
         {
@@ -117,15 +118,16 @@ class Catalog implements AutoCloseable
         initDescriptor(
             recordingDescriptorEncoder,
             newRecordingId,
-            termBufferLength,
-            segmentFileLength,
-            mtuLength,
-            imageInitialTermId,
             joinPosition,
+            imageInitialTermId,
+            segmentFileLength,
+            termBufferLength,
+            mtuLength,
             sessionId,
             streamId,
             channel,
-            sourceIdentity);
+            sourceIdentity,
+            originalChannel);
 
         unsafeBuffer.putInt(0, recordingDescriptorEncoder.encodedLength());
         mappedByteBuffer.force();
@@ -210,29 +212,31 @@ class Catalog implements AutoCloseable
     static void initDescriptor(
         final RecordingDescriptorEncoder recordingDescriptorEncoder,
         final long recordingId,
-        final int termBufferLength,
-        final int segmentFileLength,
-        final int mtuLength,
-        final int initialTermId,
         final long joinPosition,
+        final int initialTermId,
+        final int segmentFileLength,
+        final int termBufferLength,
+        final int mtuLength,
         final int sessionId,
         final int streamId,
         final String channel,
-        final String sourceIdentity)
+        final String sourceIdentity,
+        final String originalChannel)
     {
         recordingDescriptorEncoder
             .recordingId(recordingId)
-            .termBufferLength(termBufferLength)
             .joinTimestamp(NULL_TIME)
+            .endTimestamp(NULL_TIME)
             .joinPosition(joinPosition)
             .endPosition(joinPosition)
-            .endTimestamp(NULL_TIME)
-            .mtuLength(mtuLength)
             .initialTermId(initialTermId)
+            .segmentFileLength(segmentFileLength)
+            .termBufferLength(termBufferLength)
+            .mtuLength(mtuLength)
             .sessionId(sessionId)
             .streamId(streamId)
-            .segmentFileLength(segmentFileLength)
             .channel(channel)
-            .sourceIdentity(sourceIdentity);
+            .sourceIdentity(sourceIdentity)
+            .originalChannel(originalChannel);
     }
 }

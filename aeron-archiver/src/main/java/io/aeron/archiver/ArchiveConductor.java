@@ -48,7 +48,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
     private final Map<String, Subscription> subscriptionMap = new HashMap<>();
     private final ReplayPublicationSupplier newReplayPublication = this::newReplayPublication;
-    private final AvailableImageHandler availableImageHandler = this::onAvailableImage;
+    private final AvailableImageHandler controlImageHandler = this::onAvailableControlImage;
 
     private final Aeron aeron;
     private final AgentInvoker aeronClientAgentInvoker;
@@ -90,7 +90,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         controlSubscription = aeron.addSubscription(
             ctx.controlChannel(),
             ctx.controlStreamId(),
-            availableImageHandler,
+            controlImageHandler,
             null);
 
         catalog = new Catalog(ctx.archiveDir());
@@ -178,16 +178,9 @@ abstract class ArchiveConductor extends SessionWorker<Session>
      * Note: this is only a thread safe interaction because we are running the aeron client as an invoked agent so the
      * available image notifications are run from this agent thread.
      */
-    private void onAvailableImage(final Image image)
+    private void onAvailableControlImage(final Image image)
     {
-        if (image.subscription() == controlSubscription)
-        {
-            addSession(new ControlSession(image, this, epochClock));
-        }
-        else
-        {
-            startImageRecording(image);
-        }
+        addSession(new ControlSession(image, this, epochClock));
     }
 
     void stopRecording(
@@ -226,7 +219,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     void startRecordingSubscription(
         final long correlationId,
         final Publication controlPublication,
-        final String channel,
+        final String originalChannel,
         final int streamId)
     {
         // note that since a subscription may trigger multiple images, and therefore multiple recordings this is a soft
@@ -244,7 +237,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         try
         {
-            if (!channel.startsWith(SPY_PREFIX) && !channel.contains("aeron:ipc"))
+            if (!originalChannel.startsWith(SPY_PREFIX) && !originalChannel.contains("aeron:ipc"))
             {
                 controlSessionProxy.sendError(
                     correlationId,
@@ -255,7 +248,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 return;
             }
 
-            final String minimalChannel = minimalChannelBuilder(channel).build();
+            final String minimalChannel = minimalChannelBuilder(originalChannel).build();
             final String key = makeKey(streamId, minimalChannel);
             final Subscription oldSubscription = subscriptionMap.get(key);
             if (oldSubscription == null)
@@ -263,7 +256,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 final Subscription subscription = aeron.addSubscription(
                     minimalChannel,
                     streamId,
-                    availableImageHandler,
+                    image -> startImageRecording(originalChannel, image),
                     null);
 
                 subscriptionMap.put(key, subscription);
@@ -409,7 +402,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         return channelBuilder;
     }
 
-    private void startImageRecording(final Image image)
+    private void startImageRecording(final String originalChannel, final Image image)
     {
         final Subscription subscription = image.subscription();
         final int sessionId = image.sessionId();
@@ -422,15 +415,16 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final long joinPosition = image.joinPosition();
 
         final long recordingId = catalog.addNewRecording(
+            joinPosition,
+            initialTermId,
+            recordingCtx.recordingFileLength(),
+            termBufferLength,
+            mtuLength,
             sessionId,
             streamId,
             channel,
             sourceIdentity,
-            termBufferLength,
-            mtuLength,
-            initialTermId,
-            joinPosition,
-            recordingCtx.recordingFileLength());
+            originalChannel);
 
         final RecordingSession session = new RecordingSession(
             recordingId,

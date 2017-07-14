@@ -45,13 +45,14 @@ public class FailControlResponseListener implements ControlResponseListener
         final long joinPosition,
         final long endPosition,
         final int initialTermId,
+        final int segmentFileLength,
         final int termBufferLength,
         final int mtuLength,
-        final int segmentFileLength,
         final int sessionId,
         final int streamId,
         final String channel,
-        final String sourceIdentity)
+        final String sourceIdentity,
+        final String originalChannel)
     {
         fail();
     }

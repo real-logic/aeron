@@ -85,15 +85,16 @@ public class ReplaySessionTest
         Catalog.initDescriptor(
             new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH),
             RECORDING_ID,
-            TERM_BUFFER_LENGTH,
-            context.segmentFileLength,
-            MTU_LENGTH,
-            INITIAL_TERM_ID,
             JOIN_POSITION,
+            INITIAL_TERM_ID,
+            context.segmentFileLength,
+            TERM_BUFFER_LENGTH,
+            MTU_LENGTH,
             1,
             1,
             "channel",
-            "sourceIdentity");
+            "sourceIdentity",
+            "channel");
 
         when(epochClock.time()).thenReturn(TIME);
         try (RecordingWriter writer = new RecordingWriter(context, descriptorBuffer))
@@ -439,15 +440,16 @@ public class ReplaySessionTest
         Catalog.initDescriptor(
             new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH),
             recordingId,
-            TERM_BUFFER_LENGTH,
-            context.segmentFileLength,
-            MTU_LENGTH,
-            INITIAL_TERM_ID,
             JOIN_POSITION,
+            INITIAL_TERM_ID,
+            context.segmentFileLength,
+            TERM_BUFFER_LENGTH,
+            MTU_LENGTH,
             1,
             1,
             "channel",
-            "sourceIdentity");
+            "sourceIdentity",
+            "channel");
 
         try (RecordingWriter writer = new RecordingWriter(context, descriptorBuffer))
         {

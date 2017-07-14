@@ -50,11 +50,11 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir))
         {
             recordingOneId = catalog.addNewRecording(
-                6, 1, "channelG", "sourceA", 4096, 1024, 0, 0L, SEGMENT_FILE_SIZE);
+                0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channelG", "sourceA", "channelG?tag=f");
             recordingTwoId = catalog.addNewRecording(
-                7, 2, "channelH", "sourceV", 4096, 1024, 0, 0L, SEGMENT_FILE_SIZE);
+                0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 7, 2, "channelH", "sourceV", "channelH?tag=f");
             recordingThreeId = catalog.addNewRecording(
-                8, 3, "channelK", "sourceB", 4096, 1024, 0, 0L, SEGMENT_FILE_SIZE);
+                0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 8, 3, "channelK", "sourceB", "channelK?tag=f");
         }
     }
 
@@ -96,6 +96,8 @@ public class CatalogTest
         assertEquals(streamId, recordingDescriptorDecoder.streamId());
         assertEquals(channel, recordingDescriptorDecoder.channel());
         assertEquals(sourceIdentity, recordingDescriptorDecoder.sourceIdentity());
+        assertEquals(channel + "?tag=f", recordingDescriptorDecoder.originalChannel());
+
     }
 
     @Test
@@ -105,7 +107,7 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir))
         {
             newRecordingId = catalog.addNewRecording(
-                9, 4, "channelJ", "sourceN", 4096, 1024, 0, 0L, SEGMENT_FILE_SIZE);
+                0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 9, 4, "channelJ", "sourceN", "channelJ?tag=f");
         }
 
         try (Catalog catalog = new Catalog(archiveDir))
@@ -121,7 +123,7 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir))
         {
             final long newRecordingId = catalog.addNewRecording(
-                6, 1, "channelG", "sourceA", 4096, 1024, 0, 0L, SEGMENT_FILE_SIZE);
+                0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channelG", "sourceA", "channelG?tag=f");
             assertNotEquals(recordingOneId, newRecordingId);
         }
     }

@@ -187,12 +187,13 @@ public class ControlResponsePoller
             recordingDescriptorDecoder.joinPosition(),
             recordingDescriptorDecoder.endPosition(),
             recordingDescriptorDecoder.initialTermId(),
+            recordingDescriptorDecoder.segmentFileLength(),
             recordingDescriptorDecoder.termBufferLength(),
             recordingDescriptorDecoder.mtuLength(),
-            recordingDescriptorDecoder.segmentFileLength(),
             recordingDescriptorDecoder.sessionId(),
             recordingDescriptorDecoder.streamId(),
             recordingDescriptorDecoder.channel(),
-            recordingDescriptorDecoder.sourceIdentity());
+            recordingDescriptorDecoder.sourceIdentity(),
+            recordingDescriptorDecoder.originalChannel());
     }
 }

@@ -75,15 +75,16 @@ public class RecordingWriterTest
         Catalog.initDescriptor(
             descriptorEncoder,
             RECORDING_ID,
-            TERM_BUFFER_LENGTH,
-            recordingCtx.segmentFileLength,
-            MTU_LENGTH,
-            INITIAL_TERM_ID,
             JOIN_POSITION,
+            INITIAL_TERM_ID,
+            recordingCtx.segmentFileLength,
+            TERM_BUFFER_LENGTH,
+            MTU_LENGTH,
             SESSION_ID,
             STREAM_ID,
             CHANNEL,
-            SOURCE);
+            SOURCE,
+            CHANNEL);
 
         try (RecordingWriter writer = Mockito.spy(new RecordingWriter(recordingCtx, descriptorBuffer)))
         {

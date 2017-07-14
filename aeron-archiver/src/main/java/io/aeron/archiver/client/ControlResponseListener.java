@@ -57,13 +57,14 @@ public interface ControlResponseListener
      * @param joinPosition      for the recording against the recorded publication.
      * @param endPosition       reached for the recording.
      * @param initialTermId     for the recorded publication.
+     * @param segmentFileLength for the recording which is a multiple of termBufferLength.
      * @param termBufferLength  for the recorded publication.
      * @param mtuLength         for the recorded publication.
-     * @param segmentFileLength for the recording which is a multiple of termBufferLength.
      * @param sessionId         for the recorded publication.
      * @param streamId          for the recorded publication.
      * @param channel           for the recorded publication.
      * @param sourceIdentity    for the recorded publication.
+     * @param originalChannel   for the recorded publication.
      */
     void onRecordingDescriptor(
         long correlationId,
@@ -73,13 +74,14 @@ public interface ControlResponseListener
         long joinPosition,
         long endPosition,
         int initialTermId,
+        int segmentFileLength,
         int termBufferLength,
         int mtuLength,
-        int segmentFileLength,
         int sessionId,
         int streamId,
         String channel,
-        String sourceIdentity);
+        String sourceIdentity,
+        String originalChannel);
 
     /**
      * Notifies that the request for a recording descriptor of given id has not been found.

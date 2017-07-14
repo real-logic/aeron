@@ -108,15 +108,16 @@ public class RecordingSessionTest
         Catalog.initDescriptor(
             new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH),
             RECORDING_ID,
-            TERM_BUFFER_LENGTH,
-            context.segmentFileLength,
-            MTU_LENGTH,
-            INITIAL_TERM_ID,
             JOIN_POSITION,
+            INITIAL_TERM_ID,
+            context.segmentFileLength,
+            TERM_BUFFER_LENGTH,
+            MTU_LENGTH,
             SESSION_ID,
             STREAM_ID,
             CHANNEL,
-            SOURCE_IDENTITY);
+            SOURCE_IDENTITY,
+            CHANNEL);
     }
 
     @After

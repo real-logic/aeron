@@ -470,20 +470,20 @@ public class ArchiverSystemTest
                     final long joinPosition,
                     final long endPosition,
                     final int initialTermId,
+                    final int segmentFileLength,
                     final int termBufferLength,
                     final int mtuLength,
-                    final int segmentFileLength,
                     final int sessionId,
                     final int streamId,
                     final String channel,
-                    final String sourceIdentity)
+                    final String sourceIdentity,
+                    final String originalChannel)
                 {
                     assertThat(recordingId, is(ArchiverSystemTest.this.recordingId));
                     assertThat(termBufferLength, is(publicationTermBufferLength));
-
                     assertThat(streamId, is(PUBLISH_STREAM_ID));
-
                     assertThat(correlationId, is(requestRecordingsCorrelationId));
+                    assertThat(originalChannel, is(recordingUri(publishUri)));
                 }
 
             },

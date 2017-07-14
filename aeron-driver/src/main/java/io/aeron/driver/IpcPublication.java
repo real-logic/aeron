@@ -177,7 +177,10 @@ public class IpcPublication implements DriverManagedResource, Subscribable
                 cleanBuffer(minSubscriberPosition);
                 workCount = 1;
             }
+        }
 
+        if (maxSubscriberPosition != consumerPosition)
+        {
             consumerPosition = maxSubscriberPosition;
         }
 

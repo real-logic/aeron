@@ -35,7 +35,7 @@ public class CatalogTest
     private long recordingOneId;
     private long recordingTwoId;
     private long recordingThreeId;
-    private File archiveDir;
+    private File archiveDir = TestUtil.makeTempDir();
 
     @Before
     public void before() throws Exception
@@ -45,7 +45,6 @@ public class CatalogTest
             Catalog.CATALOG_FRAME_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
-        archiveDir = TestUtil.makeTempDir();
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0))
         {

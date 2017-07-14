@@ -32,7 +32,7 @@ public class RecordingWriterTest
     private static final int SYNC_LEVEL = 2;
     private static final String CHANNEL = "channel";
     private static final String SOURCE = "source";
-    private File archiveDir;
+    private File archiveDir = TestUtil.makeTempDir();
     private EpochClock epochClock = Mockito.mock(EpochClock.class);
     private final RecordingWriter.Context recordingCtx = new RecordingWriter.Context();
     private FileChannel mockArchiveDirFileChannel = Mockito.mock(FileChannel.class);
@@ -42,7 +42,6 @@ public class RecordingWriterTest
     @Before
     public void before() throws Exception
     {
-        archiveDir = TestUtil.makeTempDir();
         recordingCtx
             .archiveDirChannel(mockArchiveDirFileChannel)
             .archiveDir(archiveDir)

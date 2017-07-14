@@ -67,7 +67,7 @@ public class ReplaySessionTest
         Mockito.mock(ArchiveConductor.ReplayPublicationSupplier.class);
     private int messageCounter = 0;
 
-    private File archiveDir;
+    private File archiveDir = makeTempDir();
     private ControlSessionProxy proxy = Mockito.mock(ControlSessionProxy.class);
     private EpochClock epochClock = mock(EpochClock.class);
     private RecordingWriter.Context context;
@@ -76,8 +76,6 @@ public class ReplaySessionTest
     @Before
     public void before() throws Exception
     {
-        archiveDir = makeTempDir();
-
         context = new RecordingWriter.Context()
             .archiveDir(archiveDir)
             .epochClock(epochClock);

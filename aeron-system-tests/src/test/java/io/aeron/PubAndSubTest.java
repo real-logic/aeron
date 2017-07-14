@@ -20,6 +20,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.reports.LossReport;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableInteger;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Test;
@@ -40,11 +41,11 @@ import org.agrona.BitUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.channels.FileChannel;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.core.IsNot.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -119,12 +120,12 @@ public class PubAndSubTest
 
         publishMessage();
 
-        final AtomicInteger fragmentsRead = new AtomicInteger();
+        final MutableInteger fragmentsRead = new MutableInteger();
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead.get() > 0,
+            () -> fragmentsRead.value > 0,
             (i) ->
             {
-                fragmentsRead.getAndAdd(subscription.poll(fragmentHandler, 10));
+                fragmentsRead.value += subscription.poll(fragmentHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -145,20 +146,19 @@ public class PubAndSubTest
 
         publishMessage();
 
-        final AtomicInteger fragmentsRead = new AtomicInteger();
+        final MutableInteger fragmentsRead = new MutableInteger();
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead.get() > 0,
+            () -> fragmentsRead.value > 0,
             (i) ->
             {
-                fragmentsRead.addAndGet((int)subscription.rawPoll(rawBlockHandler, Integer.MAX_VALUE));
+                fragmentsRead.value += (int)subscription.rawPoll(rawBlockHandler, Integer.MAX_VALUE);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(9900));
 
         final long expectedOffset = 0L;
-        final int messageSize = SIZE_OF_INT;
-        final int expectedLength = BitUtil.align(HEADER_LENGTH + messageSize, FRAME_ALIGNMENT);
+        final int expectedLength = BitUtil.align(HEADER_LENGTH + SIZE_OF_INT, FRAME_ALIGNMENT);
 
         final ArgumentCaptor<FileChannel> channelArgumentCaptor = ArgumentCaptor.forClass(FileChannel.class);
         verify(rawBlockHandler).onBlock(
@@ -203,12 +203,13 @@ public class PubAndSubTest
                 Thread.yield();
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
+            final MutableInteger fragmentsRead = new MutableInteger();
+
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead.get() > 0,
+                () -> fragmentsRead.value > 0,
                 (j) ->
                 {
-                    fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
+                    fragmentsRead.value += subscription.poll(fragmentHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -245,12 +246,13 @@ public class PubAndSubTest
                 Thread.yield();
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
+            final MutableInteger fragmentsRead = new MutableInteger();
+
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead.get() > 0,
+                () -> fragmentsRead.value > 0,
                 (j) ->
                 {
-                    fragmentsRead.getAndAdd(subscription.poll(fragmentHandler, 10));
+                    fragmentsRead.value += subscription.poll(fragmentHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -277,12 +279,13 @@ public class PubAndSubTest
             Thread.yield();
         }
 
-        final int fragmentsRead[] = new int[1];
+        final MutableInteger fragmentsRead = new MutableInteger();
+
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead[0] == 9,
+            () -> fragmentsRead.value == 9,
             (j) ->
             {
-                fragmentsRead[0] += subscription.poll(fragmentHandler, 10);
+                fragmentsRead.value += subscription.poll(fragmentHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -345,12 +348,12 @@ public class PubAndSubTest
                 Thread.yield();
             }
 
-            final int fragmentsRead[] = new int[1];
+            final MutableInteger mutableInteger = new MutableInteger();
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead[0] > 0,
+                () -> mutableInteger.value > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(fragmentHandler, 10);
+                    mutableInteger.value += subscription.poll(fragmentHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -409,12 +412,13 @@ public class PubAndSubTest
                 }
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
+            final MutableInteger fragmentsRead = new MutableInteger();
+
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead.get() >= numMessagesPerBatch,
+                () -> fragmentsRead.value >= numMessagesPerBatch,
                 (j) ->
                 {
-                    fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
+                    fragmentsRead.value += subscription.poll(fragmentHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -455,12 +459,13 @@ public class PubAndSubTest
                 }
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
+            final MutableInteger fragmentsRead = new MutableInteger();
+
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead.get() >= numMessagesPerBatch,
+                () -> fragmentsRead.value >= numMessagesPerBatch,
                 (j) ->
                 {
-                    fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
+                    fragmentsRead.value += subscription.poll(fragmentHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -472,12 +477,13 @@ public class PubAndSubTest
             Thread.yield();
         }
 
-        final AtomicInteger fragmentsRead = new AtomicInteger();
+        final MutableInteger fragmentsRead = new MutableInteger();
+
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead.get() > 0,
+            () -> fragmentsRead.value > 0,
             (j) ->
             {
-                fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
+                fragmentsRead.value += subscription.poll(fragmentHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -515,12 +521,13 @@ public class PubAndSubTest
                 Thread.yield();
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
+            final MutableInteger fragmentsRead = new MutableInteger();
+
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead.get() > 0,
+                () -> fragmentsRead.value > 0,
                 (j) ->
                 {
-                    fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
+                    fragmentsRead.value += subscription.poll(fragmentHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -564,12 +571,13 @@ public class PubAndSubTest
                 }
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
+            final MutableInteger fragmentsRead = new MutableInteger();
+
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead.get() >= numMessagesPerBatch,
+                () -> fragmentsRead.value >= numMessagesPerBatch,
                 (j) ->
                 {
-                    fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
+                    fragmentsRead.value += subscription.poll(fragmentHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -622,13 +630,14 @@ public class PubAndSubTest
             messagesSent++;
         }
 
-        final AtomicInteger fragmentsRead = new AtomicInteger();
+        final MutableInteger fragmentsRead = new MutableInteger();
         final int messagesToReceive = messagesSent;
+
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead.get() >= messagesToReceive,
+            () -> fragmentsRead.value >= messagesToReceive,
             (j) ->
             {
-                fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
+                fragmentsRead.value += subscription.poll(fragmentHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -650,20 +659,16 @@ public class PubAndSubTest
         final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
         final int numMessagesToSendStageOne = numMessagesInTermBuffer / 2;
         final int numMessagesToSendStageTwo = numMessagesInTermBuffer;
-        final CountDownLatch newImageLatch = new CountDownLatch(1);
-        final int stage[] = { 1 };
+        final AtomicInteger stage = new AtomicInteger(1);
 
         context.publicationTermBufferLength(termBufferLength);
-        subscribingAeronContext.availableImageHandler(
-            (image) ->
-            {
-                if (2 == stage[0])
-                {
-                    newImageLatch.countDown();
-                }
-            });
 
         launch(channel);
+
+        while (subscription.hasNoImages())
+        {
+            Thread.yield();
+        }
 
         for (int i = 0; i < numMessagesToSendStageOne; i++)
         {
@@ -672,23 +677,31 @@ public class PubAndSubTest
                 Thread.yield();
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
+            final MutableInteger fragmentsRead = new MutableInteger();
+
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead.get() > 0,
+                () -> fragmentsRead.value > 0,
                 (j) ->
                 {
-                    fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
+                    fragmentsRead.value += subscription.poll(fragmentHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(900));
         }
 
+        assertEquals(publication.position(), subscription.getImage(0).position());
+
         subscription.close();
-        stage[0] = 2;
+        stage.set(2);
         subscription = subscribingClient.addSubscription(channel, STREAM_ID);
 
-        newImageLatch.await();
+        while (subscription.hasNoImages())
+        {
+            Thread.yield();
+        }
+
+        assertEquals(publication.position(), subscription.getImage(0).position());
 
         for (int i = 0; i < numMessagesToSendStageTwo; i++)
         {
@@ -697,17 +710,20 @@ public class PubAndSubTest
                 Thread.yield();
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
+            final MutableInteger fragmentsRead = new MutableInteger();
+
             SystemTestHelper.executeUntil(
-                () -> fragmentsRead.get() > 0,
+                () -> fragmentsRead.value > 0,
                 (j) ->
                 {
-                    fragmentsRead.addAndGet(subscription.poll(fragmentHandler, 10));
+                    fragmentsRead.value += subscription.poll(fragmentHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(900));
         }
+
+        assertEquals(publication.position(), subscription.getImage(0).position());
 
         verify(fragmentHandler, times(numMessagesToSendStageOne + numMessagesToSendStageTwo)).onFragment(
             any(DirectBuffer.class),
@@ -743,12 +759,13 @@ public class PubAndSubTest
             }
         }
 
-        final AtomicInteger fragmentsRead = new AtomicInteger();
+        final MutableInteger fragmentsRead = new MutableInteger();
+
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead.get() > numFramesToExpect,
+            () -> fragmentsRead.value > numFramesToExpect,
             (j) ->
             {
-                fragmentsRead.getAndAdd(subscription.poll(fragmentHandler, 10));
+                fragmentsRead.value += subscription.poll(fragmentHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,

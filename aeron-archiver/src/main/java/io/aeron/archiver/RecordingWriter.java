@@ -72,7 +72,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     /**
      * Index is in the range 0:segmentFileLength, except before the first block for this image is received indicated
-     * by -1
+     * by NULL_SEGMENT_POSITION
      */
     private int segmentPosition = NULL_SEGMENT_POSITION;
     private int segmentIndex = 0;

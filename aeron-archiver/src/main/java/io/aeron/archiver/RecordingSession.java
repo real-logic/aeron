@@ -160,14 +160,4 @@ class RecordingSession implements Session
     {
         return recordingWriter != null ? recordingWriter.endPosition() : Catalog.NULL_POSITION;
     }
-
-    long joinTimestamp()
-    {
-        return recordingWriter != null ? recordingWriter.joinTimestamp() : Catalog.NULL_TIME;
-    }
-
-    long endTimestamp()
-    {
-        return recordingWriter != null ? recordingWriter.endTimestamp() : Catalog.NULL_TIME;
-    }
 }

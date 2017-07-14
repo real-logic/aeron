@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archiver.ArchiveUtil.recordingOffset;
@@ -160,6 +161,33 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         }
     }
 
+    public void close()
+    {
+        if (closed)
+        {
+            return;
+        }
+
+        closed = true;
+
+        if (descriptorBuffer != null)
+        {
+            UnsafeAccess.UNSAFE.storeFence();
+            endTimestamp = epochClock.time();
+            descriptorEncoder.endTimestamp(endTimestamp);
+            UnsafeAccess.UNSAFE.storeFence();
+            if (forceWrites)
+            {
+                forceMappedBuffer(descriptorBuffer.byteBuffer());
+            }
+        }
+
+        if (recordingFileChannel != null)
+        {
+            CloseHelper.close(recordingFileChannel);
+        }
+    }
+
     /**
      * Convenience method for testing purposes only.
      */
@@ -204,29 +232,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         {
             close();
             LangUtil.rethrowUnchecked(ex);
-        }
-    }
-
-    public void close()
-    {
-        if (closed)
-        {
-            return;
-        }
-
-        closed = true;
-
-        if (descriptorBuffer != null)
-        {
-            UnsafeAccess.UNSAFE.storeFence();
-            endTimestamp = epochClock.time();
-            descriptorEncoder.endTimestamp(endTimestamp);
-            UnsafeAccess.UNSAFE.storeFence();
-        }
-
-        if (recordingFileChannel != null)
-        {
-            CloseHelper.close(recordingFileChannel);
         }
     }
 
@@ -343,6 +348,27 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         endPosition += blockLength;
         descriptorEncoder.endPosition(endPosition);
         UnsafeAccess.UNSAFE.storeFence();
+        if (forceWrites)
+        {
+            forceMappedBuffer(descriptorBuffer.byteBuffer());
+        }
+    }
+
+    private void forceMappedBuffer(final ByteBuffer byteBuffer)
+    {
+        // TODO: forcing the mapped byte buffer can be done once per recorder cycle instead of per descriptor
+        if (byteBuffer instanceof MappedByteBuffer)
+        {
+            try
+            {
+                ((MappedByteBuffer) byteBuffer).force();
+            }
+            catch (final UnsupportedOperationException e)
+            {
+                // Due to inexplicable idiocy, DirectByteBuffer extends MappedByteBuffer and not the other way around,
+                // so this can happen. Ignore the exception.
+            }
+        }
     }
 
     private void validateStartTermOffset(final int termOffset)

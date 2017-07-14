@@ -134,7 +134,7 @@ public class ArchiverSystemTest
         final int segmentFileLength = termLength << rnd.nextInt(4);
         archiveDir = TestUtil.makeTempDir();
         archiverCtx
-            .fileSyncLevel(0)
+            .fileSyncLevel(2)
             .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
             .archiveDir(archiveDir)
             .segmentFileLength(segmentFileLength)
@@ -173,7 +173,7 @@ public class ArchiverSystemTest
         driverCtx.deleteAeronDirectory();
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 20000)
     public void recordAndReplayExclusivePublication() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
@@ -212,7 +212,7 @@ public class ArchiverSystemTest
         }
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 20000)
     public void replayExclusivePublicationWhileRecording() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
@@ -239,7 +239,7 @@ public class ArchiverSystemTest
             assertThat(recordedPublication.initialTermId(), is(requestedInitialTermId));
             preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, joinPosition);
 
-            final int messageCount = 5000 + rnd.nextInt(10000);
+            final int messageCount = 5000;
             final CountDownLatch waitForData = new CountDownLatch(2);
             prepFragmentsAndListener(recordingEvents, messageCount, waitForData);
             validateActiveRecordingReplay(
@@ -255,7 +255,7 @@ public class ArchiverSystemTest
         }
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 20000)
     public void recordAndReplayRegularPublication() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
@@ -496,7 +496,7 @@ public class ArchiverSystemTest
 
     private int prepAndSendMessages(final Subscription recordingEvents, final Publication publication)
     {
-        final int messageCount = 5000 + rnd.nextInt(10000);
+        final int messageCount = 5000;
         final CountDownLatch waitForData = new CountDownLatch(1);
         prepFragmentsAndListener(recordingEvents, messageCount, waitForData);
         publishDataToRecorded(publication, messageCount);

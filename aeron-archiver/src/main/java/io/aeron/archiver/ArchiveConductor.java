@@ -33,8 +33,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import static io.aeron.CommonContext.SPY_PREFIX;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
 
 abstract class ArchiveConductor extends SessionWorker<Session>
 {
@@ -104,7 +102,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         {
             try
             {
-                channel = FileChannel.open(archiveDir.toPath(), READ, WRITE);
+                channel = FileChannel.open(archiveDir.toPath());
             }
             catch (final IOException ex)
             {
@@ -474,15 +472,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         closeSession(session);
         final long recordingId = session.sessionId();
         recordingSessionByIdMap.remove(recordingId);
-        try
-        {
-            catalog.updateRecordingMetaDataInCatalog(
-                recordingId, session.endPosition(), session.joinTimestamp(), session.endTimestamp());
-        }
-        catch (final IOException ex)
-        {
-            errorHandler.onError(ex);
-        }
     }
 
     void closeReplaySession(final ReplaySession session)

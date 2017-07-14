@@ -170,26 +170,6 @@ class Catalog implements AutoCloseable
         return new UnsafeBuffer(mappedByteBuffer, (int)(recordingId * RECORD_LENGTH), RECORD_LENGTH);
     }
 
-    void updateRecordingMetaDataInCatalog(
-        final long recordingId,
-        final long endPosition,
-        final long joinTimestamp,
-        final long endTimestamp) throws IOException
-    {
-        unsafeBuffer.wrap(mappedByteBuffer, (int)(recordingId * RECORD_LENGTH), RECORD_LENGTH);
-
-        recordingDescriptorEncoder
-            .wrap(unsafeBuffer, CATALOG_FRAME_LENGTH)
-            .endPosition(endPosition)
-            .joinTimestamp(joinTimestamp)
-            .endTimestamp(endTimestamp);
-
-        if (fileSyncLevel > 0)
-        {
-            mappedByteBuffer.force();
-        }
-    }
-
     long nextRecordingId()
     {
         return nextRecordingId;

@@ -28,6 +28,7 @@ import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -240,6 +241,7 @@ public class ReplaySessionTest
         replaySession.close();
     }
 
+    @Ignore
     @Test(expected = IllegalArgumentException.class)
     public void shouldNotReplayPartialUnalignedDataFromFile()
     {

@@ -45,7 +45,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
     private final Map<String, Subscription> subscriptionMap = new HashMap<>();
     private final ReplayPublicationSupplier newReplayPublication = this::newReplayPublication;
-    private final AvailableImageHandler controlImageHandler = this::onAvailableControlImage;
 
     private final Aeron aeron;
     private final AgentInvoker aeronClientAgentInvoker;
@@ -87,7 +86,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         controlSubscription = aeron.addSubscription(
             ctx.controlChannel(),
             ctx.controlStreamId(),
-            controlImageHandler,
+            this::onAvailableControlImage,
             null);
 
         final Publication notificationPublication = aeron.addPublication(

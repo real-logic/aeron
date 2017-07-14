@@ -343,7 +343,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         final int newId = replaySessionId++;
         final ReplaySession replaySession = new ReplaySession(
-            recordingId,
             position,
             length,
             newReplayPublication,

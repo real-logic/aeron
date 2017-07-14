@@ -247,7 +247,6 @@ public class ReplaySessionTest
     {
         final long correlationId = 1L;
         final ReplaySession replaySession = new ReplaySession(
-            (long)RECORDING_ID,
             RECORDING_POSITION + 1,
             (long)FRAME_LENGTH,
             mockReplyPubSupplier,
@@ -552,7 +551,6 @@ public class ReplaySessionTest
             eq(TERM_BUFFER_LENGTH))).thenReturn(replay);
 
         return new ReplaySession(
-            recordingId,
             recordingPosition,
             length,
             conductor,

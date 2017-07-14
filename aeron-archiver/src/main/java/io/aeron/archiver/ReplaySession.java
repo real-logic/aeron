@@ -63,7 +63,6 @@ class ReplaySession implements Session
 
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
     private final RecordingFragmentReader.SimplifiedControlledPoll fragmentPoller = this::onFragment;
-    private final RecordingDescriptorDecoder descriptorDecoder;
 
     private final long replaySessionId;
     private final long correlationId;
@@ -78,7 +77,6 @@ class ReplaySession implements Session
     private long lingerSinceMs;
 
     ReplaySession(
-        final long recordingId,
         final long replayPosition,
         final long replayLength,
         final ArchiveConductor.ReplayPublicationSupplier supplier,
@@ -99,7 +97,7 @@ class ReplaySession implements Session
         this.epochClock = epochClock;
         this.lingerSinceMs = epochClock.time();
 
-        descriptorDecoder = new RecordingDescriptorDecoder().wrap(
+        final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder().wrap(
             descriptorBuffer,
             Catalog.CATALOG_FRAME_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,

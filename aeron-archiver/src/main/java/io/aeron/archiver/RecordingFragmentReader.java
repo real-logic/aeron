@@ -114,6 +114,7 @@ class RecordingFragmentReader implements AutoCloseable
             flyweight.streamId() != descriptorDecoder.streamId() ||
             flyweight.termOffset() != termOffset)
         {
+            close();
             throw new IllegalArgumentException("fromPosition:" + fromPosition + " is not aligned to fragment");
         }
 

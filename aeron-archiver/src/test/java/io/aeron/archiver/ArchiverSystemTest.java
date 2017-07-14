@@ -53,6 +53,7 @@ public class ArchiverSystemTest
     private static final String CONTROL_URI = "aeron:udp?endpoint=127.0.0.1:54327";
     private static final int CONTROL_STREAM_ID = 100;
     private static final String REPLAY_URI = "aeron:ipc";
+    public static final int MESSAGE_COUNT = 5000;
     private String publishUri;
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
@@ -128,7 +129,7 @@ public class ArchiverSystemTest
         driver = MediaDriver.launch(driverCtx);
 
         archiverCtx
-            .fileSyncLevel(0)
+            .fileSyncLevel(2)
             .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
             .archiveDir(archiveDir)
             .segmentFileLength(termLength << rnd.nextInt(4))
@@ -233,7 +234,7 @@ public class ArchiverSystemTest
             assertThat(recordedPublication.initialTermId(), is(requestedInitialTermId));
             preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, joinPosition);
 
-            final int messageCount = 5000;
+            final int messageCount = MESSAGE_COUNT;
             final CountDownLatch waitForData = new CountDownLatch(2);
             prepFragmentsAndListener(recordingEvents, messageCount, waitForData);
             validateActiveRecordingReplay(
@@ -490,7 +491,7 @@ public class ArchiverSystemTest
 
     private int prepAndSendMessages(final Subscription recordingEvents, final Publication publication)
     {
-        final int messageCount = 5000;
+        final int messageCount = MESSAGE_COUNT;
         final CountDownLatch waitForData = new CountDownLatch(1);
         prepFragmentsAndListener(recordingEvents, messageCount, waitForData);
         publishDataToRecorded(publication, messageCount);
@@ -501,7 +502,7 @@ public class ArchiverSystemTest
 
     private int prepAndSendMessages(final Subscription recordingEvents, final ExclusivePublication publication)
     {
-        final int messageCount = 5000 + rnd.nextInt(10000);
+        final int messageCount = MESSAGE_COUNT;
         final CountDownLatch waitForData = new CountDownLatch(1);
         prepFragmentsAndListener(recordingEvents, messageCount, waitForData);
         publishDataToRecorded(publication, messageCount);

@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
 
+import static io.aeron.archiver.RecordingFragmentReader.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.frameFlags;
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
 import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
@@ -110,10 +111,23 @@ class ReplaySession implements Session
         final int termBufferLength = descriptorDecoder.termBufferLength();
         final int initialTermId = descriptorDecoder.initialTermId();
 
-        if (replayPosition < joinPosition)
+        if (replayPosition - joinPosition < 0)
         {
             closeOnError(null, "Requested replay start position(=" + replayPosition +
-                ") is less than recording join position(=" + joinPosition + ")");
+                ") is before recording join position(=" + joinPosition + ")");
+            cursor = null;
+            replayPublication = null;
+            return;
+        }
+
+        final long endPosition = descriptorDecoder.endPosition();
+        if (replayPosition - endPosition >= 0)
+        {
+            closeOnError(null, "Requested replay start position(=" + replayPosition +
+                ") is after recording end position(=" + endPosition + ")");
+            cursor = null;
+            replayPublication = null;
+            return;
         }
 
         RecordingFragmentReader cursor = null;
@@ -193,10 +207,11 @@ class ReplaySession implements Session
     {
         if (controlPublication.isConnected())
         {
+            final long position = replayPublication == null ? NULL_POSITION : replayPublication.position();
             threadLocalControlSessionProxy.sendReplayAborted(
                 correlationId,
                 replaySessionId,
-                replayPublication.position(),
+                position,
                 controlPublication);
         }
 

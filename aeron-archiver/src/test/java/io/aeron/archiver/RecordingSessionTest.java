@@ -46,10 +46,10 @@ import static org.mockito.Mockito.when;
 
 public class RecordingSessionTest
 {
-    private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
     private static final int RECORDED_BLOCK_LENGTH = 100;
     private static final long RECORDING_ID = 12345;
     private static final int TERM_BUFFER_LENGTH = 4096;
+    private static final int SEGMENT_FILE_SIZE = TERM_BUFFER_LENGTH;
 
     private static final String CHANNEL = "channel";
     private static final String SOURCE_IDENTITY = "sourceIdentity";
@@ -79,18 +79,17 @@ public class RecordingSessionTest
         termFile = File.createTempFile("test.rec", "sourceIdentity");
 
         mockLogBufferChannel = FileChannel.open(termFile.toPath(), CREATE, READ, WRITE);
-        mockLogBufferChannel.position(TERM_BUFFER_LENGTH - 1);
-        mockLogBufferChannel.write(ByteBuffer.wrap(new byte[1]));
-
-        final ByteBuffer bb = ByteBuffer.allocate(RECORDED_BLOCK_LENGTH);
-        mockLogBufferChannel.position(TERM_OFFSET);
-        mockLogBufferChannel.write(bb);
         mockLogBufferMapped = new UnsafeBuffer(
             mockLogBufferChannel.map(FileChannel.MapMode.READ_WRITE, 0, TERM_BUFFER_LENGTH));
 
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
-        headerFlyweight.wrap(mockLogBufferMapped);
-        headerFlyweight.headerType(DataHeaderFlyweight.HDR_TYPE_DATA).frameLength(RECORDED_BLOCK_LENGTH);
+        headerFlyweight.wrap(mockLogBufferMapped, TERM_OFFSET, DataHeaderFlyweight.HEADER_LENGTH);
+        headerFlyweight
+            .termOffset(TERM_OFFSET)
+            .sessionId(SESSION_ID)
+            .streamId(STREAM_ID)
+            .headerType(DataHeaderFlyweight.HDR_TYPE_DATA)
+            .frameLength(RECORDED_BLOCK_LENGTH);
 
         context = new RecordingWriter.Context()
             .recordingFileLength(SEGMENT_FILE_SIZE)
@@ -155,7 +154,7 @@ public class RecordingSessionTest
 
                 handle.onBlock(
                     mockLogBufferChannel,
-                    0,
+                    TERM_OFFSET,
                     mockLogBufferMapped,
                     TERM_OFFSET,
                     RECORDED_BLOCK_LENGTH,

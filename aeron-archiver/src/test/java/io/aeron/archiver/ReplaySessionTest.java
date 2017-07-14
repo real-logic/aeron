@@ -60,6 +60,8 @@ public class ReplaySessionTest
     private static final long TIME = 0;
     private static final int REPLAY_SESSION_ID = 0;
     private static final int FRAME_LENGTH = 1024;
+    public static final int SESSION_ID = 1;
+    public static final int STREAM_ID = 1;
 
     private final ExclusivePublication mockReplayPub = Mockito.mock(ExclusivePublication.class);
     private final Publication mockControlPub = Mockito.mock(Publication.class);
@@ -88,8 +90,8 @@ public class ReplaySessionTest
             context.segmentFileLength,
             TERM_BUFFER_LENGTH,
             MTU_LENGTH,
-            1,
-            1,
+            SESSION_ID,
+            STREAM_ID,
             "channel",
             "sourceIdentity",
             "channel");
@@ -238,19 +240,10 @@ public class ReplaySessionTest
         replaySession.close();
     }
 
-    @Test
-    public void shouldReplayPartialUnalignedDataFromFile()
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldNotReplayPartialUnalignedDataFromFile()
     {
         final long correlationId = 1L;
-
-        when(mockReplyPubSupplier.newReplayPublication(
-            eq(REPLAY_CHANNEL),
-            eq(REPLAY_STREAM_ID),
-            eq(RECORDING_POSITION + FRAME_LENGTH),
-            eq(MTU_LENGTH),
-            eq(INITIAL_TERM_ID),
-            eq(TERM_BUFFER_LENGTH))).thenReturn(mockReplayPub);
-
         final ReplaySession replaySession = new ReplaySession(
             (long)RECORDING_ID,
             RECORDING_POSITION + 1,
@@ -265,46 +258,6 @@ public class ReplaySessionTest
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
             descriptorBuffer);
-
-        when(mockReplayPub.isClosed()).thenReturn(false);
-        when(mockControlPub.isClosed()).thenReturn(false);
-
-        when(mockReplayPub.isConnected()).thenReturn(true);
-        when(mockControlPub.isConnected()).thenReturn(true);
-
-        replaySession.doWork();
-
-        replaySession.doWork();
-        assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
-
-        verify(proxy, times(1)).sendOkResponse(correlationId, mockControlPub);
-        verify(mockReplyPubSupplier).newReplayPublication(
-            REPLAY_CHANNEL,
-            REPLAY_STREAM_ID,
-            RECORDING_POSITION + FRAME_LENGTH,
-            MTU_LENGTH,
-            INITIAL_TERM_ID,
-            TERM_BUFFER_LENGTH);
-
-        final UnsafeBuffer termBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
-        mockPublication(mockReplayPub, termBuffer);
-
-        assertNotEquals(0, replaySession.doWork());
-        assertThat(messageCounter, is(1));
-
-        assertEquals(FRAME_LENGTH, termBuffer.getInt(DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET));
-        assertEquals(FrameDescriptor.BEGIN_FRAG_FLAG, termBuffer.getByte(DataHeaderFlyweight.FLAGS_FIELD_OFFSET));
-        assertEquals(1, termBuffer.getLong(DataHeaderFlyweight.RESERVED_VALUE_OFFSET));
-        assertEquals(1, termBuffer.getByte(DataHeaderFlyweight.HEADER_LENGTH));
-
-        final int expectedFrameLength = 1024;
-        assertEquals(expectedFrameLength, termBuffer.getInt(0));
-        assertFalse(replaySession.isDone());
-
-        when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
-        replaySession.doWork();
-        assertTrue(replaySession.isDone());
-        replaySession.close();
     }
 
     @Test
@@ -537,6 +490,8 @@ public class ReplaySessionTest
         final int offset = INITIAL_TERM_OFFSET + message * FRAME_LENGTH;
         headerFlyweight.wrap(buffer, offset, HEADER_LENGTH);
         headerFlyweight
+            .streamId(STREAM_ID)
+            .sessionId(SESSION_ID)
             .termOffset(offset)
             .termId(INITIAL_TERM_ID)
             .reservedValue(message)

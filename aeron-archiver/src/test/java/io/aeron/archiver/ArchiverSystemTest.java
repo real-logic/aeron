@@ -24,10 +24,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.BitUtil;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
+import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
@@ -170,7 +167,7 @@ public class ArchiverSystemTest
         driverCtx.deleteAeronDirectory();
     }
 
-    @Test(timeout = 20000)
+    @Test(timeout = 10000)
     public void recordAndReplayExclusivePublication() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
@@ -209,7 +206,7 @@ public class ArchiverSystemTest
         }
     }
 
-    @Test(timeout = 20000)
+    @Test(timeout = 10000)
     public void replayExclusivePublicationWhileRecording() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
@@ -252,7 +249,7 @@ public class ArchiverSystemTest
         }
     }
 
-    @Test(timeout = 20000)
+    @Test(timeout = 10000)
     public void recordAndReplayRegularPublication() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
@@ -755,6 +752,13 @@ public class ArchiverSystemTest
     {
         Thread t = new Thread(() ->
         {
+            do
+            {
+                LockSupport.parkNanos(1000000);
+                UnsafeAccess.UNSAFE.loadFence();
+            }
+            while (recorded == 0);
+
             try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
             {
                 final long replayCorrelationId = correlationId++;

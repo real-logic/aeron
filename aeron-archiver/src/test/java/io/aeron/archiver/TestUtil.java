@@ -161,11 +161,7 @@ public class TestUtil
             RecordingDescriptorDecoder.SCHEMA_VERSION);
 
         return new RecordingFragmentReader(
-            descriptorDecoder.joinPosition(),
-            descriptorDecoder.endPosition(),
-            descriptorDecoder.termBufferLength(),
-            descriptorDecoder.segmentFileLength(),
-            descriptorDecoder.recordingId(),
+            descriptorDecoder,
             archiveDir,
             RecordingFragmentReader.NULL_POSITION,
             RecordingFragmentReader.NULL_LENGTH);

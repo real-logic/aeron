@@ -120,11 +120,7 @@ class ReplaySession implements Session
         try
         {
             cursor = new RecordingFragmentReader(
-                descriptorDecoder.joinPosition(),
-                descriptorDecoder.endPosition(),
-                descriptorDecoder.termBufferLength(),
-                descriptorDecoder.segmentFileLength(),
-                recordingId,
+                descriptorDecoder,
                 archiveDir,
                 replayPosition,
                 replayLength);

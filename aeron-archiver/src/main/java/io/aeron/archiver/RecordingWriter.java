@@ -21,10 +21,7 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.BitUtil;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
+import org.agrona.*;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -221,8 +218,10 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
         if (descriptorBuffer != null)
         {
+            UnsafeAccess.UNSAFE.storeFence();
             endTimestamp = epochClock.time();
             descriptorEncoder.endTimestamp(endTimestamp);
+            UnsafeAccess.UNSAFE.storeFence();
         }
 
         if (recordingFileChannel != null)
@@ -339,9 +338,11 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     private void afterWrite(final int blockLength)
     {
+        UnsafeAccess.UNSAFE.storeFence();
         segmentPosition += blockLength;
         endPosition += blockLength;
         descriptorEncoder.endPosition(endPosition);
+        UnsafeAccess.UNSAFE.storeFence();
     }
 
     private void validateStartTermOffset(final int termOffset)

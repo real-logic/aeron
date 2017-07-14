@@ -213,6 +213,49 @@ public class ArchiverSystemTest
     }
 
     @Test(timeout = 10000)
+    public void replayExclusivePublicationWhileRecording() throws IOException, InterruptedException
+    {
+        try (Publication controlPublication = publishingClient.addPublication(
+                archiverCtx.controlChannel(), archiverCtx.controlStreamId());
+             Subscription recordingEvents = publishingClient.addSubscription(
+                archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
+        {
+            final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
+
+            prePublicationActionsAndVerifications(publishingClient, archiveProxy, controlPublication, recordingEvents);
+
+            final ExclusivePublication recordedPublication =
+                publishingClient.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
+
+            waitFor(recordedPublication::isConnected);
+
+            final int sessionId = recordedPublication.sessionId();
+            final int termBufferLength = recordedPublication.termBufferLength();
+            final int initialTermId = recordedPublication.initialTermId();
+            final int maxPayloadLength = recordedPublication.maxPayloadLength();
+            final long joinPosition = recordedPublication.position();
+
+            assertThat(joinPosition, is(requestedJoinPosition));
+            assertThat(recordedPublication.initialTermId(), is(requestedInitialTermId));
+            preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, joinPosition);
+
+            final int messageCount = 5000 + rnd.nextInt(10000);
+            final CountDownLatch waitForData = new CountDownLatch(2);
+            prepFragmentsAndListener(recordingEvents, messageCount, waitForData);
+            validateActiveRecordingReplay(
+                archiveProxy,
+                termBufferLength,
+                initialTermId,
+                maxPayloadLength,
+                messageCount,
+                waitForData);
+
+            publishDataToRecorded(recordedPublication, messageCount);
+            await(waitForData);
+        }
+    }
+
+    @Test(timeout = 10000)
     public void recordAndReplayRegularPublication() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
@@ -667,7 +710,11 @@ public class ArchiverSystemTest
 
                     while (endPosition == -1 || recorded < totalRecordingLength)
                     {
-                        waitFor(() -> recordingEventsPoller.poll() != 0);
+                        if (recordingEventsPoller.poll() == 0)
+                        {
+                            LockSupport.parkNanos(1);
+                            continue;
+                        }
 
                         final long end = System.currentTimeMillis();
                         final long deltaTime = end - start;
@@ -696,6 +743,53 @@ public class ArchiverSystemTest
                 waitForData.countDown();
             });
 
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void validateActiveRecordingReplay(
+        final ArchiveProxy archiveProxy,
+        final int termBufferLength,
+        final int initialTermId,
+        final int maxPayloadLength,
+        final int messageCount,
+        final CountDownLatch waitForData)
+    {
+        Thread t = new Thread(() ->
+        {
+            try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
+            {
+                final long replayCorrelationId = correlationId++;
+
+                waitFor(() -> archiveProxy.replay(
+                    recordingId,
+                    this.joinPosition,
+                    Long.MAX_VALUE,
+                    REPLAY_URI,
+                    REPLAY_STREAM_ID,
+                    replayCorrelationId));
+
+                waitForOk(controlResponse, replayCorrelationId);
+
+                awaitSubscriptionIsConnected(replay);
+                final Image image = replay.images().get(0);
+                assertThat(image.initialTermId(), is(initialTermId));
+                assertThat(image.mtuLength(), is(maxPayloadLength + HEADER_LENGTH));
+                assertThat(image.termBufferLength(), is(termBufferLength));
+                assertThat(image.position(), is(this.joinPosition));
+
+                fragmentCount = 0;
+                remaining = totalDataLength;
+
+                while (fragmentCount < messageCount)
+                {
+                    printf("Fragment [%d of %d]%n", fragmentCount + 1, fragmentLength.length);
+                    poll(replay, this::validateFragment2);
+                }
+                waitForData.countDown();
+            }
+        });
+        t.setName("replay-consumer");
         t.setDaemon(true);
         t.start();
     }

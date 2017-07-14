@@ -28,7 +28,6 @@ import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -96,9 +95,9 @@ public class ReplaySessionTest
             "channel",
             "sourceIdentity");
 
+        when(epochClock.time()).thenReturn(TIME);
         try (RecordingWriter writer = new RecordingWriter(context, descriptorBuffer))
         {
-            when(epochClock.time()).thenReturn(TIME);
 
             final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
 
@@ -431,13 +430,25 @@ public class ReplaySessionTest
     }
 
     @Test
-    @Ignore
     public void shouldReplayFromActiveRecording()
     {
         final ReplaySession replaySession;
         final UnsafeBuffer termBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
 
         final int recordingId = RECORDING_ID + 1;
+        Catalog.initDescriptor(
+            new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH),
+            recordingId,
+            TERM_BUFFER_LENGTH,
+            context.segmentFileLength,
+            MTU_LENGTH,
+            INITIAL_TERM_ID,
+            JOIN_POSITION,
+            1,
+            1,
+            "channel",
+            "sourceIdentity");
+
         try (RecordingWriter writer = new RecordingWriter(context, descriptorBuffer))
         {
             when(epochClock.time()).thenReturn(TIME);

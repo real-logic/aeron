@@ -66,7 +66,7 @@ class Catalog implements AutoCloseable
 
     private long nextRecordingId = 0;
 
-    Catalog(final File archiveDir, final FileChannel archiveDirChannel)
+    Catalog(final File archiveDir, final FileChannel archiveDirChannel, final boolean syncMetadata)
     {
         final File catalogFile = new File(archiveDir, CATALOG_FILE_NAME);
         final boolean filePreExists = catalogFile.exists();
@@ -76,7 +76,7 @@ class Catalog implements AutoCloseable
             unsafeBuffer = new UnsafeBuffer(mappedByteBuffer);
             if (!filePreExists && archiveDirChannel != null)
             {
-                archiveDirChannel.force(true);
+                archiveDirChannel.force(syncMetadata);
             }
         }
         catch (final IOException e)

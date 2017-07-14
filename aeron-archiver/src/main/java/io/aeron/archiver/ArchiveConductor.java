@@ -111,7 +111,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 LangUtil.rethrowUnchecked(ex);
             }
         }
-        catalog = new Catalog(ctx.archiveDir(), channel);
+        catalog = new Catalog(ctx.archiveDir(), channel, ctx.fileSyncLevel() > 1);
 
         archiveDirChannel = channel;
 

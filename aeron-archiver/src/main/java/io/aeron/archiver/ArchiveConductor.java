@@ -19,7 +19,6 @@ import io.aeron.*;
 import io.aeron.archiver.codecs.ControlResponseCode;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
-import org.agrona.LangUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
@@ -104,9 +103,9 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             {
                 channel = FileChannel.open(archiveDir.toPath());
             }
-            catch (final IOException ex)
+            catch (final IOException ignore)
             {
-                LangUtil.rethrowUnchecked(ex);
+                // If directories cannot be opened then we ignore.
             }
         }
         catalog = new Catalog(ctx.archiveDir(), channel, ctx.fileSyncLevel());

@@ -383,7 +383,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         return aeron.addPublication(controlChannel, streamId);
     }
 
-    private String makeKey(final int streamId, final String minimalChannel)
+    private static String makeKey(final int streamId, final String minimalChannel)
     {
         return streamId + ':' + minimalChannel;
     }

@@ -436,14 +436,18 @@ class ClientConductor implements Agent, DriverListener
         {
             errorHandler.onError(throwable);
 
-            if (correlationId != NO_CORRELATION_ID)
+            if (isClientApiCall(correlationId))
             {
-                // has been called from a user thread and not the conductor duty cycle.
                 throw throwable;
             }
         }
 
         return workCount;
+    }
+
+    private static boolean isClientApiCall(final long correlationId)
+    {
+        return correlationId != NO_CORRELATION_ID;
     }
 
     private void awaitResponse(final long correlationId, final String expectedChannel)

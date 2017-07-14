@@ -67,7 +67,7 @@ public class ArchiverSystemTest
     private Archiver archiver;
     private MediaDriver driver;
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
-    private File archiveDir;
+    private File archiveDir = TestUtil.makeTempDir();
     private long recordingId;
     private long remaining;
     private int fragmentCount;
@@ -79,7 +79,7 @@ public class ArchiverSystemTest
     private volatile long endPosition = -1;
     private Throwable trackerError;
     private final Random rnd = new Random();
-    private long seed;
+    private long seed = System.nanoTime();
 
     @Rule
     public TestWatcher testWatcher = new TestWatcher()
@@ -98,10 +98,9 @@ public class ArchiverSystemTest
     @Before
     public void before() throws Exception
     {
-        seed = System.nanoTime();
         rnd.setSeed(seed);
-
         requestedInitialTermId = rnd.nextInt(1234);
+
         final int termLength = 1 << (16 + rnd.nextInt(10)); // 1M to 8M
         final int mtu = 1 << (10 + rnd.nextInt(3)); // 1024 to 8096
         final int termOffset = BitUtil.align(rnd.nextInt(termLength), FrameDescriptor.FRAME_ALIGNMENT);
@@ -131,13 +130,11 @@ public class ArchiverSystemTest
 
         driver = MediaDriver.launch(driverCtx);
 
-        final int segmentFileLength = termLength << rnd.nextInt(4);
-        archiveDir = TestUtil.makeTempDir();
         archiverCtx
-            .fileSyncLevel(2)
+            .fileSyncLevel(0)
             .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
             .archiveDir(archiveDir)
-            .segmentFileLength(segmentFileLength)
+            .segmentFileLength(termLength << rnd.nextInt(4))
             .threadingMode(archiverThreadingMode())
             .countersManager(driverCtx.countersManager())
             .errorHandler(driverCtx.errorHandler());

@@ -65,7 +65,7 @@ public class ArchiveReplayLoadTest
     private Archiver archiver;
     private MediaDriver driver;
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
-    private File archiveDir;
+    private File archiveDir = TestUtil.makeTempDir();
     private final long recordingId = 0;
     private long remaining;
     private int fragmentCount;
@@ -107,7 +107,6 @@ public class ArchiveReplayLoadTest
 
         driver = MediaDriver.launch(driverCtx);
 
-        archiveDir = TestUtil.makeTempDir();
         archiverCtx
             .archiveDir(archiveDir)
             .fileSyncLevel(0)

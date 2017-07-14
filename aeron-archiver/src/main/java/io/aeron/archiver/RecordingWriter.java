@@ -66,7 +66,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     private final EpochClock epochClock;
     private final UnsafeBuffer descriptorBuffer;
     private final RecordingDescriptorEncoder descriptorEncoder;
-    private final RecordingDescriptorDecoder descriptorDecoder;
     private final int segmentFileLength;
     private final long joinPosition;
 
@@ -87,7 +86,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     {
         this.descriptorBuffer = descriptorBuffer;
         descriptorEncoder = new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH);
-        descriptorDecoder = new RecordingDescriptorDecoder().wrap(
+        final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder().wrap(
             descriptorBuffer,
             Catalog.CATALOG_FRAME_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,
@@ -294,7 +293,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             // the data files when a recording is done.
             recordingFile.setLength(segmentFileLength + DataHeaderFlyweight.HEADER_LENGTH);
             recordingFileChannel = recordingFile.getChannel();
-            if (forceWrites)
+            if (forceWrites && null != archiveDirChannel)
             {
                 forceData(archiveDirChannel, forceMetadata);
             }
@@ -361,7 +360,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         {
             try
             {
-                ((MappedByteBuffer) byteBuffer).force();
+                ((MappedByteBuffer)byteBuffer).force();
             }
             catch (final UnsupportedOperationException e)
             {

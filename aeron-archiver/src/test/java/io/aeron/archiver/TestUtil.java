@@ -42,9 +42,17 @@ public class TestUtil
     static final boolean DEBUG = false;
     private static final int SLEEP_TIME_NS = 5000;
 
-    public static File makeTempDir() throws IOException
+    public static File makeTempDir()
     {
-        final File tempDirForTest = File.createTempFile("archiver", "tmp");
+        final File tempDirForTest;
+        try
+        {
+            tempDirForTest = File.createTempFile("archiver", "tmp");
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
 
         Assert.assertTrue(tempDirForTest.delete());
         Assert.assertTrue(tempDirForTest.mkdir());

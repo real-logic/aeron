@@ -61,7 +61,7 @@ public class ArchiveRecordingLoadTest
     private Archiver archiver;
     private MediaDriver driver;
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
-    private File archiveDir;
+    private File archiveDir = TestUtil.makeTempDir();
     private long recordingId;
     private int[] fragmentLength;
     private long totalDataLength;
@@ -101,7 +101,6 @@ public class ArchiveRecordingLoadTest
 
         driver = MediaDriver.launch(driverCtx);
 
-        archiveDir = TestUtil.makeTempDir();
         archiverCtx
             .fileSyncLevel(2)
             .archiveDir(archiveDir)

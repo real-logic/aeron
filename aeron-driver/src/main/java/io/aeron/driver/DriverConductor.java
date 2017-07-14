@@ -953,8 +953,8 @@ public class DriverConductor implements Agent
             countersManager, registrationId, sessionId, streamId, channel, joinPosition);
 
         position.setOrdered(joinPosition);
-        subscription.link(publication, position);
         publication.addSubscriber(position);
+        subscription.link(publication, position);
 
         clientProxy.onAvailableImage(
             publication.registrationId(),

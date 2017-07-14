@@ -64,7 +64,7 @@ public class RecordingSessionTest
     private final RecordingEventsProxy recordingEventsProxy = mock(RecordingEventsProxy.class);
     private Image image = mockImage(
         SESSION_ID, INITIAL_TERM_ID, SOURCE_IDENTITY, TERM_BUFFER_LENGTH, mockSubscription(CHANNEL, STREAM_ID));
-    private File tempDirForTest;
+    private File tempDirForTest = TestUtil.makeTempDir();
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
     private File termFile;
@@ -76,8 +76,6 @@ public class RecordingSessionTest
     @Before
     public void before() throws IOException
     {
-        tempDirForTest = TestUtil.makeTempDir();
-
         termFile = File.createTempFile("test.rec", "sourceIdentity");
 
         mockLogBufferChannel = FileChannel.open(termFile.toPath(), CREATE, READ, WRITE);

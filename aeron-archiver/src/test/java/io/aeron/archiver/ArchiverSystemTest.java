@@ -134,7 +134,7 @@ public class ArchiverSystemTest
         final int segmentFileLength = termLength << rnd.nextInt(4);
         archiveDir = TestUtil.makeTempDir();
         archiverCtx
-            .fileSyncLevel(2)
+            .fileSyncLevel(0)
             .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
             .archiveDir(archiveDir)
             .segmentFileLength(segmentFileLength)

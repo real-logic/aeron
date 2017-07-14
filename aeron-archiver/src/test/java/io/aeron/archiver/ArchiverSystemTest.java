@@ -631,7 +631,7 @@ public class ArchiverSystemTest
     private void validateArchiveFile(final int messageCount, final long recordingId) throws IOException
     {
         remaining = totalDataLength;
-        try (Catalog catalog = new Catalog(archiveDir, null, false);
+        try (Catalog catalog = new Catalog(archiveDir, null, 0);
              RecordingFragmentReader archiveDataFileReader =
                  newRecordingFragmentReader(catalog.wrapDescriptor(recordingId), archiveDir))
         {
@@ -641,6 +641,7 @@ public class ArchiverSystemTest
             {
                 archiveDataFileReader.controlledPoll(this::validateFragment1, messageCount);
             }
+
             assertThat(remaining, is(0L));
             assertThat(fragmentCount, is(messageCount));
         }
@@ -789,6 +790,7 @@ public class ArchiverSystemTest
                 waitForData.countDown();
             }
         });
+
         t.setName("replay-consumer");
         t.setDaemon(true);
         t.start();

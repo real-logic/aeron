@@ -65,26 +65,28 @@ class Catalog implements AutoCloseable
     private final MappedByteBuffer mappedByteBuffer;
 
     private long nextRecordingId = 0;
+    private int fileSyncLevel;
 
-    Catalog(final File archiveDir, final FileChannel archiveDirChannel, final boolean syncMetadata)
+    Catalog(final File archiveDir, final FileChannel archiveDirChannel, final int fileSyncLevel)
     {
+        this.fileSyncLevel = fileSyncLevel;
         final File catalogFile = new File(archiveDir, CATALOG_FILE_NAME);
         final boolean filePreExists = catalogFile.exists();
+
         try (FileChannel channel = FileChannel.open(catalogFile.toPath(), CREATE, READ, WRITE, SPARSE))
         {
             mappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, MAX_CATALOG_SIZE);
             unsafeBuffer = new UnsafeBuffer(mappedByteBuffer);
-            if (!filePreExists && archiveDirChannel != null)
+
+            if (!filePreExists && archiveDirChannel != null && fileSyncLevel > 0)
             {
-                archiveDirChannel.force(syncMetadata);
+                archiveDirChannel.force(fileSyncLevel > 1);
             }
         }
-        catch (final IOException e)
+        catch (final IOException ex)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException(ex);
         }
-
-
 
         refreshCatalog();
     }
@@ -136,8 +138,12 @@ class Catalog implements AutoCloseable
             originalChannel);
 
         unsafeBuffer.putInt(0, recordingDescriptorEncoder.encodedLength());
-        mappedByteBuffer.force();
         nextRecordingId++;
+
+        if (fileSyncLevel > 0)
+        {
+            mappedByteBuffer.force();
+        }
 
         return newRecordingId;
     }
@@ -170,7 +176,6 @@ class Catalog implements AutoCloseable
         final long joinTimestamp,
         final long endTimestamp) throws IOException
     {
-
         unsafeBuffer.wrap(mappedByteBuffer, (int)(recordingId * RECORD_LENGTH), RECORD_LENGTH);
 
         recordingDescriptorEncoder
@@ -178,7 +183,11 @@ class Catalog implements AutoCloseable
             .endPosition(endPosition)
             .joinTimestamp(joinTimestamp)
             .endTimestamp(endTimestamp);
-        mappedByteBuffer.force();
+
+        if (fileSyncLevel > 0)
+        {
+            mappedByteBuffer.force();
+        }
     }
 
     long nextRecordingId()

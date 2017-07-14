@@ -47,7 +47,7 @@ public class CatalogTest
             RecordingDescriptorDecoder.SCHEMA_VERSION);
         archiveDir = TestUtil.makeTempDir();
 
-        try (Catalog catalog = new Catalog(archiveDir, null, false))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0))
         {
             recordingOneId = catalog.addNewRecording(
                 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channelG", "sourceA", "channelG?tag=f");
@@ -67,7 +67,7 @@ public class CatalogTest
     @Test
     public void shouldReloadExistingIndex() throws Exception
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, false))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0))
         {
             verifyRecordingForId(catalog, recordingOneId, 6, 1, "channelG", "sourceA");
             verifyRecordingForId(catalog, recordingTwoId, 7, 2, "channelH", "sourceV");
@@ -97,20 +97,19 @@ public class CatalogTest
         assertEquals(channel, recordingDescriptorDecoder.channel());
         assertEquals(sourceIdentity, recordingDescriptorDecoder.sourceIdentity());
         assertEquals(channel + "?tag=f", recordingDescriptorDecoder.originalChannel());
-
     }
 
     @Test
     public void shouldAppendToExistingIndex() throws Exception
     {
         final long newRecordingId;
-        try (Catalog catalog = new Catalog(archiveDir, null, false))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0))
         {
             newRecordingId = catalog.addNewRecording(
                 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 9, 4, "channelJ", "sourceN", "channelJ?tag=f");
         }
 
-        try (Catalog catalog = new Catalog(archiveDir, null, false))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0))
         {
             verifyRecordingForId(catalog, recordingOneId, 6, 1, "channelG", "sourceA");
             verifyRecordingForId(catalog, newRecordingId, 9, 4, "channelJ", "sourceN");
@@ -120,7 +119,7 @@ public class CatalogTest
     @Test
     public void shouldAllowMultipleInstancesForSameStream() throws Exception
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, false))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0))
         {
             final long newRecordingId = catalog.addNewRecording(
                 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channelG", "sourceA", "channelG?tag=f");

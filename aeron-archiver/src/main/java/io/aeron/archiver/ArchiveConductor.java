@@ -39,7 +39,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
 abstract class ArchiveConductor extends SessionWorker<Session>
 {
     /**
-     * Low term length for control channel reflect expected low bandwidth usage.
+     * Low term length for control channel reflects expected low bandwidth usage.
      */
     private static final int DEFAULT_CONTROL_TERM_LENGTH = 64 * 1024;
 
@@ -111,7 +111,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 LangUtil.rethrowUnchecked(ex);
             }
         }
-        catalog = new Catalog(ctx.archiveDir(), channel, ctx.fileSyncLevel() > 1);
+        catalog = new Catalog(ctx.archiveDir(), channel, ctx.fileSyncLevel());
 
         archiveDirChannel = channel;
 

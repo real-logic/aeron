@@ -631,7 +631,7 @@ public class ArchiverSystemTest
     private void validateArchiveFile(final int messageCount, final long recordingId) throws IOException
     {
         remaining = totalDataLength;
-        try (Catalog catalog = new Catalog(archiveDir);
+        try (Catalog catalog = new Catalog(archiveDir, null);
              RecordingFragmentReader archiveDataFileReader =
                  newRecordingFragmentReader(catalog.wrapDescriptor(recordingId), archiveDir))
         {

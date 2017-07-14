@@ -66,19 +66,25 @@ class Catalog implements AutoCloseable
 
     private long nextRecordingId = 0;
 
-    Catalog(final File archiveDir)
+    Catalog(final File archiveDir, final FileChannel archiveDirChannel)
     {
         final File catalogFile = new File(archiveDir, CATALOG_FILE_NAME);
-
+        final boolean filePreExists = catalogFile.exists();
         try (FileChannel channel = FileChannel.open(catalogFile.toPath(), CREATE, READ, WRITE, SPARSE))
         {
             mappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, MAX_CATALOG_SIZE);
             unsafeBuffer = new UnsafeBuffer(mappedByteBuffer);
+            if (!filePreExists && archiveDirChannel != null)
+            {
+                archiveDirChannel.force(true);
+            }
         }
         catch (final IOException e)
         {
             throw new RuntimeException(e);
         }
+
+
 
         refreshCatalog();
     }

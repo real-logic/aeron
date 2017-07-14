@@ -93,8 +93,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             controlImageHandler,
             null);
 
-        catalog = new Catalog(ctx.archiveDir());
-
         final Publication notificationPublication = aeron.addPublication(
             ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
         recordingEventsProxy = new RecordingEventsProxy(ctx.idleStrategy(), notificationPublication);
@@ -113,6 +111,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 LangUtil.rethrowUnchecked(ex);
             }
         }
+        catalog = new Catalog(ctx.archiveDir(), channel);
 
         archiveDirChannel = channel;
 

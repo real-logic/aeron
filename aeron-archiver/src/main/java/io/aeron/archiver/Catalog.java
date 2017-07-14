@@ -64,8 +64,8 @@ class Catalog implements AutoCloseable
     private final UnsafeBuffer unsafeBuffer;
     private final MappedByteBuffer mappedByteBuffer;
 
+    private final int fileSyncLevel;
     private long nextRecordingId = 0;
-    private int fileSyncLevel;
 
     Catalog(final File archiveDir, final FileChannel archiveDirChannel, final int fileSyncLevel)
     {

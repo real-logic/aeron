@@ -106,7 +106,7 @@ inline int64_t aeron_ipc_publication_producer_position(aeron_ipc_publication_t *
 
 inline int64_t aeron_ipc_publication_joining_position(aeron_ipc_publication_t *publication)
 {
-    return aeron_ipc_publication_producer_position(publication);
+    return publication->conductor_fields.consumer_position;
 }
 
 inline bool aeron_ipc_publication_has_reached_end_of_life(aeron_ipc_publication_t *publication)

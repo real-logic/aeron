@@ -87,7 +87,7 @@ public class ArchiveRecordingLoadTest
     private BooleanSupplier recordingEndIndicator;
 
     @Before
-    public void setUp() throws Exception
+    public void before() throws Exception
     {
         seed = System.nanoTime();
         rnd.setSeed(seed);
@@ -110,11 +110,12 @@ public class ArchiveRecordingLoadTest
 
         archiver = Archiver.launch(archiverCtx);
         println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
+
         aeron = Aeron.connect();
     }
 
     @After
-    public void closeEverything() throws Exception
+    public void after() throws Exception
     {
         CloseHelper.quietClose(aeron);
         CloseHelper.quietClose(archiver);

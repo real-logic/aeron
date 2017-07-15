@@ -144,16 +144,6 @@ public class ArchiverSystemTest
         publishingClient = Aeron.connect();
     }
 
-    ArchiverThreadingMode archiverThreadingMode()
-    {
-        return ArchiverThreadingMode.SHARED;
-    }
-
-    ThreadingMode driverThreadingMode()
-    {
-        return ThreadingMode.INVOKER;
-    }
-
     @After
     public void after() throws Exception
     {
@@ -167,6 +157,16 @@ public class ArchiverSystemTest
         }
 
         driverCtx.deleteAeronDirectory();
+    }
+
+    ArchiverThreadingMode archiverThreadingMode()
+    {
+        return ArchiverThreadingMode.SHARED;
+    }
+
+    ThreadingMode driverThreadingMode()
+    {
+        return ThreadingMode.INVOKER;
     }
 
     @Test(timeout = 10000)

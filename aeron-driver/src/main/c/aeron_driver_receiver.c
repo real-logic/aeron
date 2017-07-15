@@ -189,6 +189,7 @@ void aeron_driver_receiver_on_close(void *clientd)
     }
 
     aeron_free(receiver->images.array);
+    aeron_free(receiver->pending_setups.array);
 
     aeron_udp_transport_poller_close(&receiver->poller);
 }

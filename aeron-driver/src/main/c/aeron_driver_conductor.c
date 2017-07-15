@@ -1260,6 +1260,7 @@ int aeron_driver_subscribeable_add_position(
         aeron_position_t *entry = &subscribeable->array[subscribeable->length++];
         entry->counter_id = counter_id;
         entry->value_addr = value_addr;
+        subscribeable->add_position_hook_func(subscribeable->clientd, value_addr);
         result = 0;
     }
 
@@ -1272,6 +1273,7 @@ void aeron_driver_subscribeable_remove_position(aeron_subscribeable_t *subscribe
     {
         if (counter_id == subscribeable->array[i].counter_id)
         {
+            subscribeable->remove_position_hook_func(subscribeable->clientd, subscribeable->array[i].value_addr);
             aeron_array_fast_unordered_remove(
                 (uint8_t *)subscribeable->array, sizeof(aeron_position_t), i, last_index);
             subscribeable->length--;
@@ -1279,6 +1281,8 @@ void aeron_driver_subscribeable_remove_position(aeron_subscribeable_t *subscribe
         }
     }
 }
+
+extern void aeron_driver_subscribeable_null_hook(void *clientd, int64_t *value_addr);
 
 int aeron_driver_conductor_link_subscribeable(
     aeron_driver_conductor_t *conductor,

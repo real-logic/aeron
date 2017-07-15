@@ -91,6 +91,9 @@ int aeron_ipc_publication_create(
     _pub->conductor_fields.subscribeable.array = NULL;
     _pub->conductor_fields.subscribeable.length = 0;
     _pub->conductor_fields.subscribeable.capacity = 0;
+    _pub->conductor_fields.subscribeable.add_position_hook_func = aeron_driver_subscribeable_null_hook;
+    _pub->conductor_fields.subscribeable.remove_position_hook_func = aeron_ipc_publication_remove_subscriber_hook;
+    _pub->conductor_fields.subscribeable.clientd = _pub;
     _pub->conductor_fields.managed_resource.registration_id = registration_id;
     _pub->conductor_fields.managed_resource.clientd = _pub;
     _pub->conductor_fields.managed_resource.incref = aeron_ipc_publication_incref;
@@ -226,6 +229,7 @@ void aeron_ipc_publication_check_for_blocked_publisher(aeron_ipc_publication_t *
     /* TODO: finish */
 }
 
+extern void aeron_ipc_publication_remove_subscriber_hook(void *clientd, int64_t *value_addr);
 extern int64_t aeron_ipc_publication_producer_position(aeron_ipc_publication_t *publication);
 extern int64_t aeron_ipc_publication_joining_position(aeron_ipc_publication_t *publication);
 extern bool aeron_ipc_publication_has_reached_end_of_life(aeron_ipc_publication_t *publication);

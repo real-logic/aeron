@@ -59,7 +59,7 @@ typedef struct aeron_network_publication_stct
     conductor_fields;
 
     uint8_t conductor_fields_pad[
-        (2 * AERON_CACHE_LINE_LENGTH) - sizeof(struct aeron_network_publication_conductor_fields_stct)];
+        (4 * AERON_CACHE_LINE_LENGTH) - sizeof(struct aeron_network_publication_conductor_fields_stct)];
 
     aeron_mapped_raw_log_t mapped_raw_log;
     aeron_position_t pub_lmt_position;

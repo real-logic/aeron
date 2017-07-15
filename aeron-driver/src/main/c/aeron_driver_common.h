@@ -52,6 +52,9 @@ typedef struct aeron_subscribeable_stct
     aeron_position_t *array;
     size_t length;
     size_t capacity;
+    void (*add_position_hook_func)(void *clientd, int64_t *value_addr);
+    void (*remove_position_hook_func)(void *clientd, int64_t *value_addr);
+    void *clientd;
 }
 aeron_subscribeable_t;
 
@@ -65,6 +68,10 @@ aeron_command_base_t;
 int aeron_driver_subscribeable_add_position(
     aeron_subscribeable_t *subscribeable, int64_t counter_id, int64_t *value_addr);
 void aeron_driver_subscribeable_remove_position(aeron_subscribeable_t *subscribeable, int64_t counter_id);
+
+inline void aeron_driver_subscribeable_null_hook(void *clientd, int64_t *value_addr)
+{
+}
 
 void aeron_command_on_delete_cmd(void *clientd, void *cmd);
 

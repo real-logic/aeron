@@ -122,6 +122,9 @@ int aeron_publication_image_create(
     _image->conductor_fields.subscribeable.array = NULL;
     _image->conductor_fields.subscribeable.length = 0;
     _image->conductor_fields.subscribeable.capacity = 0;
+    _image->conductor_fields.subscribeable.add_position_hook_func = aeron_driver_subscribeable_null_hook;
+    _image->conductor_fields.subscribeable.remove_position_hook_func = aeron_driver_subscribeable_null_hook;
+    _image->conductor_fields.subscribeable.clientd = NULL;
     _image->conductor_fields.managed_resource.registration_id = correlation_id;
     _image->conductor_fields.managed_resource.clientd = _image;
     _image->conductor_fields.managed_resource.incref = NULL;

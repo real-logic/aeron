@@ -91,6 +91,16 @@ void aeron_ipc_publication_decref(void *clientd);
 
 void aeron_ipc_publication_check_for_blocked_publisher(aeron_ipc_publication_t *publication, int64_t now_ns);
 
+inline void aeron_ipc_publication_remove_subscriber_hook(void *clientd, int64_t *value_addr)
+{
+    aeron_ipc_publication_t *publication = (aeron_ipc_publication_t *)clientd;
+    int64_t position = aeron_counter_get_volatile(value_addr);
+
+    publication->conductor_fields.consumer_position =
+        position > publication->conductor_fields.consumer_position ?
+            position : publication->conductor_fields.consumer_position;
+}
+
 inline int64_t aeron_ipc_publication_producer_position(aeron_ipc_publication_t *publication)
 {
     int64_t raw_tail;

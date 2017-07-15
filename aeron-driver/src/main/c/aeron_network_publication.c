@@ -132,6 +132,9 @@ int aeron_network_publication_create(
     _pub->conductor_fields.subscribeable.array = NULL;
     _pub->conductor_fields.subscribeable.length = 0;
     _pub->conductor_fields.subscribeable.capacity = 0;
+    _pub->conductor_fields.subscribeable.add_position_hook_func = aeron_driver_subscribeable_null_hook;
+    _pub->conductor_fields.subscribeable.remove_position_hook_func = aeron_driver_subscribeable_null_hook;
+    _pub->conductor_fields.subscribeable.clientd = NULL;
     _pub->conductor_fields.managed_resource.registration_id = registration_id;
     _pub->conductor_fields.managed_resource.clientd = _pub;
     _pub->conductor_fields.managed_resource.incref = aeron_network_publication_incref;

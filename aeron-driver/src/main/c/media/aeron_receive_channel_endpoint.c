@@ -435,6 +435,8 @@ int aeron_receive_channel_endpoint_on_remove_publication_image(
     return aeron_data_packet_dispatcher_remove_publication_image(&endpoint->dispatcher, image);
 }
 
+extern int aeron_receive_channel_endpoint_on_remove_pending_setup(
+    aeron_receive_channel_endpoint_t *endpoint, int32_t session_id, int32_t stream_id);
 extern int aeron_receive_channel_endpoint_on_remove_cooldown(
     aeron_receive_channel_endpoint_t *endpoint, int32_t session_id, int32_t stream_id);
 extern size_t aeron_receive_channel_endpoint_stream_count(aeron_receive_channel_endpoint_t *endpoint);

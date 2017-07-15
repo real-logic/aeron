@@ -64,6 +64,10 @@ int aeron_driver_receiver_init(
     receiver->images.length = 0;
     receiver->images.capacity = 0;
 
+    receiver->pending_setups.array = NULL;
+    receiver->pending_setups.length = 0;
+    receiver->pending_setups.capacity = 0;
+
     receiver->context = context;
     receiver->error_log = error_log;
 
@@ -144,7 +148,31 @@ int aeron_driver_receiver_do_work(void *clientd)
         work_count += (send_nak_result < 0) ? 0 : send_nak_result;
     }
 
-    /* TODO: check pending status messages */
+    int64_t now_ns = receiver->context->nano_clock();
+
+    for (int last_index = (int)receiver->pending_setups.length - 1, i = last_index; i >= 0; i--)
+    {
+        aeron_driver_receiver_pending_setup_entry_t *entry = &receiver->pending_setups.array[i];
+
+        if (now_ns > (entry->time_of_status_message_ns + AERON_DRIVER_RECEIVER_PENDING_SETUP_TIMEOUT_NS))
+        {
+            /* TODO: handle control SETUP SMs for Multi-Destination-Cast */
+
+            if (aeron_receive_channel_endpoint_on_remove_pending_setup(
+                entry->endpoint, entry->session_id, entry->stream_id) < 0)
+            {
+                AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver pending setups: %s", aeron_errmsg());
+            }
+
+            aeron_array_fast_unordered_remove(
+                (uint8_t *) receiver->pending_setups.array,
+                sizeof(aeron_driver_receiver_pending_setup_entry_t),
+                (size_t) i,
+                (size_t) last_index);
+            last_index--;
+            receiver->pending_setups.length--;
+        }
+    }
 
     /* TODO: add_ordered total bytes_received */
 
@@ -277,6 +305,35 @@ void aeron_driver_receiver_on_remove_cooldown(void *clientd, void *item)
     }
 
     aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, item);
+}
+
+int aeron_driver_receiver_add_pending_setup(
+    aeron_driver_receiver_t *receiver,
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t session_id,
+    int32_t stream_id)
+{
+    int ensure_capacity_result = 0;
+    AERON_ARRAY_ENSURE_CAPACITY(
+        ensure_capacity_result, receiver->pending_setups, aeron_driver_receiver_pending_setup_entry_t);
+
+    if (ensure_capacity_result < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "receiver add_pending_setup: %s", strerror(errcode));
+        return ensure_capacity_result;
+    }
+
+    aeron_driver_receiver_pending_setup_entry_t *entry =
+        &receiver->pending_setups.array[receiver->pending_setups.length++];
+
+    entry->endpoint = endpoint;
+    entry->session_id = session_id;
+    entry->stream_id = stream_id;
+    entry->time_of_status_message_ns = receiver->context->nano_clock();
+
+    return ensure_capacity_result;
 }
 
 extern size_t aeron_driver_receiver_num_images(aeron_driver_receiver_t *receiver);

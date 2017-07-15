@@ -126,6 +126,12 @@ int aeron_receive_channel_endpoint_on_add_publication_image(
 int aeron_receive_channel_endpoint_on_remove_publication_image(
     aeron_receive_channel_endpoint_t *endpoint, aeron_publication_image_t *image);
 
+inline int aeron_receive_channel_endpoint_on_remove_pending_setup(
+    aeron_receive_channel_endpoint_t *endpoint, int32_t session_id, int32_t stream_id)
+{
+    return aeron_data_packet_dispatcher_remove_pending_setup(&endpoint->dispatcher, session_id, stream_id);
+}
+
 inline int aeron_receive_channel_endpoint_on_remove_cooldown(
     aeron_receive_channel_endpoint_t *endpoint, int32_t session_id, int32_t stream_id)
 {

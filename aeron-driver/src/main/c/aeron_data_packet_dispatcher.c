@@ -17,6 +17,7 @@
 #include <string.h>
 #include "util/aeron_error.h"
 #include "aeron_publication_image.h"
+#include "aeron_driver_receiver.h"
 
 int aeron_data_packet_dispatcher_init(
     aeron_data_packet_dispatcher_t *dispatcher,
@@ -295,11 +296,12 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
         return -1;
     }
 
-    /* TODO: receiver add pending setup message so it can time it out */
-    return 0;
+    return aeron_driver_receiver_add_pending_setup(dispatcher->receiver, endpoint, session_id, stream_id);
 }
 
 extern bool aeron_data_packet_dispatcher_is_not_already_in_progress_or_on_cooldown(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id, int32_t session_id);
+extern int aeron_data_packet_dispatcher_remove_pending_setup(
+    aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id);
 extern int aeron_data_packet_dispatcher_remove_cooldown(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id);

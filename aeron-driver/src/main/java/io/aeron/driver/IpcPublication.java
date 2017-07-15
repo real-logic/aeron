@@ -46,6 +46,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
     private final int sessionId;
     private final int streamId;
     private final int tripGain;
+    private final int termBufferLength;
     private final int termWindowLength;
     private final int positionBitsToShift;
     private final int initialTermId;
@@ -84,6 +85,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         this.initialTermId = initialTermId(rawLog.metaData());
 
         final int termLength = rawLog.termLength();
+        this.termBufferLength = termLength;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         this.termWindowLength = Configuration.ipcPublicationTermWindowLength(termLength);
         this.tripGain = termWindowLength / 8;
@@ -195,7 +197,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         final long cleanPosition = this.cleanPosition;
         final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
         final int bytesForCleaning = (int)(minConsumerPosition - cleanPosition);
-        final int bufferCapacity = dirtyTerm.capacity();
+        final int bufferCapacity = termBufferLength;
         final int termOffset = (int)cleanPosition & (bufferCapacity - 1);
         final int length = Math.min(bytesForCleaning, bufferCapacity - termOffset);
 
@@ -214,7 +216,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
     public long producerPosition()
     {
         final long rawTail = rawTailVolatile(metaDataBuffer);
-        final int termOffset = termOffset(rawTail, termWindowLength);
+        final int termOffset = termOffset(rawTail, termBufferLength);
 
         return computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);
     }

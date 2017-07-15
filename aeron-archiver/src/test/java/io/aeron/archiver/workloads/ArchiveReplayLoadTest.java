@@ -93,7 +93,7 @@ public class ArchiveReplayLoadTest
     private FragmentHandler validateFragmentHandler = this::validateFragment;
 
     @Before
-    public void setUp() throws Exception
+    public void before() throws Exception
     {
         seed = System.nanoTime();
         rnd.setSeed(seed);
@@ -120,7 +120,7 @@ public class ArchiveReplayLoadTest
     }
 
     @After
-    public void closeEverything() throws Exception
+    public void after() throws Exception
     {
         CloseHelper.close(aeron);
         CloseHelper.close(archiver);

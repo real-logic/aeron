@@ -53,7 +53,8 @@ public class ArchiverSystemTest
     private static final String CONTROL_URI = "aeron:udp?endpoint=127.0.0.1:54327";
     private static final int CONTROL_STREAM_ID = 100;
     private static final String REPLAY_URI = "aeron:ipc";
-    public static final int MESSAGE_COUNT = 5000;
+    private static final int MESSAGE_COUNT = 5000;
+    private static final int SYNC_LEVEL = 0;
     private String publishUri;
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
@@ -129,7 +130,7 @@ public class ArchiverSystemTest
         driver = MediaDriver.launch(driverCtx);
 
         archiverCtx
-            .fileSyncLevel(0)
+            .fileSyncLevel(SYNC_LEVEL)
             .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
             .archiveDir(archiveDir)
             .segmentFileLength(termLength << rnd.nextInt(4))

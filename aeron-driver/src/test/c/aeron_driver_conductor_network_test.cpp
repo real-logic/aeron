@@ -757,3 +757,165 @@ TEST_F(DriverConductorNetworkTest, shouldSendAvailableImageForMultipleSubscripti
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 2u);
 }
+
+TEST_F(DriverConductorNetworkTest, shouldSendAvailableImageForSecondSubscriptionAfterCreatingImage)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id_1 = nextCorrelationId();
+    int64_t sub_id_2 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1, -1), 0);
+    doWork();
+
+    aeron_receive_channel_endpoint_t *endpoint =
+        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+
+    createPublicationImage(endpoint, STREAM_ID_1, 1000);
+
+    aeron_publication_image_t *image =
+        aeron_driver_conductor_find_publication_image(&m_conductor.m_conductor, endpoint, STREAM_ID_1);
+
+    EXPECT_NE(image, (aeron_publication_image_t *)NULL);
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_1, -1), 0);
+    doWork();
+
+    size_t response_number = 0;
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        if (0 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+            const command::CorrelatedMessageFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), sub_id_1);
+        }
+        else if (1 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+
+            const command::ImageBuffersReadyFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.sessionId(), SESSION_ID);
+            EXPECT_EQ(response.streamId(), STREAM_ID_1);
+            EXPECT_EQ(response.correlationId(), aeron_publication_image_registration_id(image));
+            EXPECT_EQ(response.subscriberRegistrationId(), sub_id_1);
+            EXPECT_EQ(std::string(aeron_publication_image_log_file_name(image)), response.logFileName());
+            EXPECT_EQ(SOURCE_IDENTITY, response.sourceIdentity());
+        }
+        else if (2 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+            const command::CorrelatedMessageFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), sub_id_2);
+        }
+        else if (3 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+
+            const command::ImageBuffersReadyFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.sessionId(), SESSION_ID);
+            EXPECT_EQ(response.streamId(), STREAM_ID_1);
+            EXPECT_EQ(response.correlationId(), aeron_publication_image_registration_id(image));
+            EXPECT_EQ(response.subscriberRegistrationId(), sub_id_2);
+            EXPECT_EQ(std::string(aeron_publication_image_log_file_name(image)), response.logFileName());
+            EXPECT_EQ(SOURCE_IDENTITY, response.sourceIdentity());
+        }
+
+        response_number++;
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 4u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhenNoAcitvityForMultipleSubscriptions)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id_1 = nextCorrelationId();
+    int64_t sub_id_2 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1, -1), 0);
+    doWork();
+
+    aeron_receive_channel_endpoint_t *endpoint =
+        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+
+    createPublicationImage(endpoint, STREAM_ID_1, 1000);
+
+    aeron_publication_image_t *image =
+        aeron_driver_conductor_find_publication_image(&m_conductor.m_conductor, endpoint, STREAM_ID_1);
+
+    EXPECT_NE(image, (aeron_publication_image_t *)NULL);
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id_2, CHANNEL_1, STREAM_ID_1, -1), 0);
+    doWork();
+
+    int64_t image_correlation_id = aeron_publication_image_registration_id(image);
+    int64_t timeout =
+        m_context.m_context->image_liveness_timeout_ns +
+            (m_context.m_context->client_liveness_timeout_ns * 2);
+
+    doWorkUntilTimeNs(
+        timeout,
+        100,
+        [&]()
+        {
+            clientKeepalive(client_id);
+        });
+
+    size_t response_number = 0;
+    auto handler =
+        [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        {
+            if (0 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+                const command::CorrelatedMessageFlyweight response(buffer, offset);
+
+                EXPECT_EQ(response.correlationId(), sub_id_1);
+            }
+            else if (1 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+
+                const command::ImageBuffersReadyFlyweight response(buffer, offset);
+
+                EXPECT_EQ(response.correlationId(), image_correlation_id);
+            }
+            else if (2 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+                const command::CorrelatedMessageFlyweight response(buffer, offset);
+
+                EXPECT_EQ(response.correlationId(), sub_id_2);
+            }
+            else if (3 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_AVAILABLE_IMAGE);
+
+                const command::ImageBuffersReadyFlyweight response(buffer, offset);
+
+                EXPECT_EQ(response.correlationId(), image_correlation_id);
+            }
+            else if (4 == response_number)
+            {
+                ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_UNAVAILABLE_IMAGE);
+
+                const command::ImageMessageFlyweight response(buffer, offset);
+
+                EXPECT_EQ(response.streamId(), STREAM_ID_1);
+                EXPECT_EQ(response.correlationId(), image_correlation_id);
+                EXPECT_EQ(response.channel(), CHANNEL_1);
+            }
+
+            response_number++;
+        };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 5u);
+}

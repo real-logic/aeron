@@ -131,6 +131,7 @@ void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aer
     {
         aeron_counters_manager_free(counters_manager, (int32_t)subscribeable->array[i].counter_id);
     }
+    aeron_free(subscribeable->array);
 
     if (NULL != publication)
     {

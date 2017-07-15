@@ -472,7 +472,8 @@ void aeron_driver_conductor_image_transition_to_linger(
         image->endpoint->conductor_fields.udp_channel->original_uri,
         image->endpoint->conductor_fields.udp_channel->uri_length);
 
-    /* TODO: remove cool down for image */
+    aeron_driver_receiver_proxy_on_remove_cooldown(
+        conductor->context->receiver_proxy, image->endpoint, image->session_id, image->stream_id);
 }
 
 #define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(c, l,t,now_ns,now_ms) \

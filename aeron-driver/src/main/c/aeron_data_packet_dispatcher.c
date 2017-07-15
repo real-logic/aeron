@@ -301,3 +301,5 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
 
 extern bool aeron_data_packet_dispatcher_is_not_already_in_progress_or_on_cooldown(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id, int32_t session_id);
+extern int aeron_data_packet_dispatcher_remove_cooldown(
+    aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id);

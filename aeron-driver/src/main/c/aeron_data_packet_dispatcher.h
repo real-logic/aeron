@@ -98,4 +98,19 @@ inline bool aeron_data_packet_dispatcher_is_not_already_in_progress_or_on_cooldo
     return (&dispatcher->tokens.init_in_progress != status && &dispatcher->tokens.on_cooldown != status);
 }
 
+inline int aeron_data_packet_dispatcher_remove_cooldown(
+    aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id)
+{
+    const void *status = aeron_int64_to_ptr_hash_map_get(&dispatcher->ignored_sessions_map,
+        aeron_int64_to_ptr_hash_map_compound_key(session_id, stream_id));
+
+    if (status == &dispatcher->tokens.on_cooldown)
+    {
+        aeron_int64_to_ptr_hash_map_remove(&dispatcher->ignored_sessions_map,
+            aeron_int64_to_ptr_hash_map_compound_key(session_id, stream_id));
+    }
+
+    return 0;
+}
+
 #endif //AERON_AERON_DATA_PACKET_DISPATCHER_H

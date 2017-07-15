@@ -91,6 +91,8 @@ void aeron_driver_receiver_on_remove_subscription(void *clientd, void *item);
 void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item);
 void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item);
 
+void aeron_driver_receiver_on_remove_cooldown(void *clientd, void *item);
+
 inline size_t aeron_driver_receiver_num_images(aeron_driver_receiver_t *receiver)
 {
     return receiver->images.length;

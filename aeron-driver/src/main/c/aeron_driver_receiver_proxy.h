@@ -61,6 +61,15 @@ typedef struct aeron_command_publication_image_stct
 }
 aeron_command_publication_image_t;
 
+typedef struct aeron_command_remove_cooldown_stct
+{
+    aeron_command_base_t base;
+    void *endpoint;
+    int32_t session_id;
+    int32_t stream_id;
+}
+aeron_command_remove_cooldown_t;
+
 void aeron_driver_receiver_proxy_on_add_publication_image(
     aeron_driver_receiver_proxy_t *receiver_proxy,
     aeron_receive_channel_endpoint_t *endpoint,
@@ -69,5 +78,10 @@ void aeron_driver_receiver_proxy_on_remove_publication_image(
     aeron_driver_receiver_proxy_t *receiver_proxy,
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_publication_image_t *image);
+void aeron_driver_receiver_proxy_on_remove_cooldown(
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t session_id,
+    int32_t stream_id);
 
 #endif //AERON_AERON_DRIVER_RECEIVER_PROXY_H

@@ -94,6 +94,7 @@ public class NetworkPublication
     private final long unblockTimeoutNs;
     private final int positionBitsToShift;
     private final int initialTermId;
+    private final int termBufferLength;
     private final int termLengthMask;
     private final int mtuLength;
     private final int termWindowLength;
@@ -121,6 +122,7 @@ public class NetworkPublication
     private final NanoClock nanoClock;
     private final EpochClock epochClock;
     private final RetransmitHandler retransmitHandler;
+    private final UnsafeBuffer metaDataBuffer;
     private final RawLog rawLog;
     private final AtomicCounter heartbeatsSent;
     private final AtomicCounter retransmitsSent;
@@ -165,6 +167,7 @@ public class NetworkPublication
         this.streamId = streamId;
         this.isExclusive = isExclusive;
 
+        metaDataBuffer = rawLog.metaData();
         setupBuffer = threadLocals.setupBuffer();
         setupHeader = threadLocals.setupHeader();
         heartbeatBuffer = threadLocals.heartbeatBuffer();
@@ -182,6 +185,7 @@ public class NetworkPublication
         sendBuffers = rawLog.sliceTerms();
 
         final int termLength = rawLog.termLength();
+        termBufferLength = termLength;
         termLengthMask = termLength - 1;
         flowControl.initialize(initialTermId, termLength);
 
@@ -323,12 +327,12 @@ public class NetworkPublication
 
     public void onNak(final int termId, final int termOffset, final int length)
     {
-        retransmitHandler.onNak(termId, termOffset, length, termLengthMask + 1, this);
+        retransmitHandler.onNak(termId, termOffset, length, termBufferLength, this);
     }
 
     public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
-        LogBufferDescriptor.timeOfLastStatusMessage(rawLog.metaData(), epochClock.time());
+        LogBufferDescriptor.timeOfLastStatusMessage(metaDataBuffer, epochClock.time());
 
         if (!isConnected)
         {
@@ -483,7 +487,7 @@ public class NetworkPublication
                 .sessionId(sessionId)
                 .streamId(streamId)
                 .initialTermId(initialTermId)
-                .termLength(termLengthMask + 1)
+                .termLength(termBufferLength)
                 .mtuLength(mtuLength)
                 .ttl(channelEndpoint.multicastTtl());
 
@@ -542,7 +546,7 @@ public class NetworkPublication
     {
         final long cleanPosition = this.cleanPosition;
         final long dirtyRange = publisherLimit - cleanPosition;
-        final int bufferCapacity = termLengthMask + 1;
+        final int bufferCapacity = termBufferLength;
         final int reservedRange = bufferCapacity * 2;
 
         if (dirtyRange > reservedRange)
@@ -564,7 +568,7 @@ public class NetworkPublication
             if (producerPosition() > senderPosition &&
                 timeNs > (timeOfLastActivityNs + unblockTimeoutNs))
             {
-                if (LogBufferUnblocker.unblock(termBuffers, rawLog.metaData(), senderPosition))
+                if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition))
                 {
                     unblockedPublications.orderedIncrement();
                 }
@@ -609,7 +613,7 @@ public class NetworkPublication
                 checkForBlockedPublisher(timeNs, senderPosition.getVolatile());
 
                 if (isConnected &&
-                    timeMs > (timeOfLastStatusMessage(rawLog.metaData()) + PUBLICATION_CONNECTION_TIMEOUT_MS))
+                    timeMs > (timeOfLastStatusMessage(metaDataBuffer) + PUBLICATION_CONNECTION_TIMEOUT_MS))
                 {
                     isConnected = false;
                 }
@@ -697,8 +701,8 @@ public class NetworkPublication
 
     long producerPosition()
     {
-        final long rawTail = rawTailVolatile(rawLog.metaData());
-        final int termOffset = termOffset(rawTail, rawLog.termLength());
+        final long rawTail = rawTailVolatile(metaDataBuffer);
+        final int termOffset = termOffset(rawTail, termBufferLength);
 
         return computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);
     }

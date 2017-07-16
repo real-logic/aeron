@@ -293,7 +293,10 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
         }
     }
 
-    client->publication_links.length = 0; /* reuse array if it exists. */
+    aeron_free(client->publication_links.array);
+    client->publication_links.array = NULL;
+    client->publication_links.length = 0;
+    client->publication_links.capacity = 0;
     client->client_id = -1;
 }
 

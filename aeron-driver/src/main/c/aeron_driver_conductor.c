@@ -1373,6 +1373,10 @@ void aeron_driver_conductor_unlink_all_subscribeable(aeron_driver_conductor_t *c
         aeron_driver_subscribeable_remove_position(entry->subscribeable, entry->counter_id);
         aeron_counters_manager_free(&conductor->counters_manager, (int32_t)entry->counter_id);
     }
+    aeron_free(link->subscribeable_list.array);
+    link->subscribeable_list.array = NULL;
+    link->subscribeable_list.length = 0;
+    link->subscribeable_list.capacity = 0;
 }
 
 int aeron_driver_conductor_on_add_ipc_publication(

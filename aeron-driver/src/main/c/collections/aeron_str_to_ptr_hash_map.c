@@ -37,3 +37,6 @@ extern void *aeron_str_to_ptr_hash_map_get(aeron_str_to_ptr_hash_map_t *map, con
 extern void aeron_str_to_ptr_hash_map_compact_chain(aeron_str_to_ptr_hash_map_t *map, size_t delete_index);
 
 extern void *aeron_str_to_ptr_hash_map_remove(aeron_str_to_ptr_hash_map_t *map, const char *key, size_t key_len);
+
+extern void aeron_str_to_ptr_hash_map_for_each(
+        aeron_str_to_ptr_hash_map_t *map, aeron_str_to_ptr_hash_map_for_each_func_t func, void *clientd);

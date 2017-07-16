@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <functional>
+
 #include <gtest/gtest.h>
 
 extern "C"
@@ -24,7 +26,21 @@ extern "C"
 class Int64ToPtrHashMapTest : public testing::Test
 {
 protected:
+    static void for_each(void *clientd, int64_t key, void *value)
+    {
+        Int64ToPtrHashMapTest *t = (Int64ToPtrHashMapTest *)clientd;
+
+        t->m_for_each(key, value);
+    }
+
+    void for_each(const std::function<void(int64_t,void*)>& func)
+    {
+        m_for_each = func;
+        aeron_int64_to_ptr_hash_map_for_each(&m_map, Int64ToPtrHashMapTest::for_each, this);
+    }
+
     aeron_int64_to_ptr_hash_map_t m_map;
+    std::function<void(int64_t,void*)> m_for_each;
 };
 
 TEST_F(Int64ToPtrHashMapTest, shouldDoPutAndThenGetOnEmptyMap)
@@ -109,4 +125,35 @@ TEST_F(Int64ToPtrHashMapTest, shouldRemoveEntryAndCompactCollisionChain)
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, 14, (void *)&value_14), 0);
 
     EXPECT_EQ(aeron_int64_to_ptr_hash_map_remove(&m_map, 12), &value_12);
+}
+
+TEST_F(Int64ToPtrHashMapTest, shouldNotForEachEmptyMap)
+{
+    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR), 0);
+
+    size_t called = 0;
+    for_each([&](int64_t key, void *value_ptr)
+         {
+             called++;
+         });
+
+    ASSERT_EQ(called, 0u);
+}
+
+TEST_F(Int64ToPtrHashMapTest, shouldForEachNonEmptyMap)
+{
+    int value = 42;
+    ASSERT_EQ(aeron_int64_to_ptr_hash_map_init(&m_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR), 0);
+
+    EXPECT_EQ(aeron_int64_to_ptr_hash_map_put(&m_map, 7, (void *)&value), 0);
+
+    size_t called = 0;
+    for_each([&](int64_t key, void *value_ptr)
+         {
+             EXPECT_EQ(key, 7);
+             EXPECT_EQ(value_ptr, &value);
+             called++;
+         });
+
+    ASSERT_EQ(called, 1u);
 }

@@ -264,4 +264,18 @@ inline void *aeron_str_to_ptr_hash_map_remove(aeron_str_to_ptr_hash_map_t *map, 
     return value;
 }
 
+typedef void (*aeron_str_to_ptr_hash_map_for_each_func_t)(void *clientd, const char *key, size_t key_len, void *value);
+
+inline void aeron_str_to_ptr_hash_map_for_each(
+        aeron_str_to_ptr_hash_map_t *map, aeron_str_to_ptr_hash_map_for_each_func_t func, void *clientd)
+{
+    for (size_t i = 0; i < map->capacity; i++)
+    {
+        if (map->values[i] != NULL)
+        {
+            func(clientd, map->keys[i].str, map->keys[i].str_length, map->values[i]);
+        }
+    }
+}
+
 #endif //AERON_AERON_STR_TO_PTR_HASH_MAP_H

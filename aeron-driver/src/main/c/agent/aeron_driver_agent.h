@@ -29,13 +29,9 @@
 #define AERON_CMD_OUT (0x02)
 #define AERON_FRAME_IN (0x04)
 #define AERON_FRAME_OUT (0x08)
-#define AERON_FD_OP (0x10)
+#define AERON_MAP_RAW_LOG_OP (0x10)
 
-#define AERON_FD_OP_OPEN (0x11)
-#define AERON_FD_OP_CLOSE (0x12)
-#define AERON_FD_OP_SOCKET (0x13)
-#define AERON_FD_OP_MMAP (0x14)
-#define AERON_FD_OP_MUNMAP (0x15)
+#define AERON_MAP_RAW_LOG_OP_CLOSE (0x11)
 
 typedef struct aeron_driver_agent_cmd_log_header_stct
 {
@@ -53,56 +49,30 @@ typedef struct aeron_driver_agent_frame_log_header_stct
 }
 aeron_driver_agent_frame_log_header_t;
 
-typedef struct aeron_driver_agent_fd_op_header_stct
+typedef struct aeron_driver_agent_map_raw_log_op_header_stct
 {
     int64_t time_ms;
     union
     {
         struct
         {
-            int fd;
-            int flags;
-            mode_t mode;
+            aeron_mapped_raw_log_t log;
+            int result;
+            uintptr_t addr;
             int32_t path_len;
         }
-        fd_op_open;
+        map_raw_log;
 
         struct
         {
-            int fd;
-            int domain;
-            int type;
-            int protocol;
-        }
-        fd_op_socket;
-
-        struct
-        {
-            int result;
-            int fd;
-        }
-        fd_op_close;
-
-        struct
-        {
-            int fd;
-            uintptr_t result;
-            uintptr_t addr;
-            size_t len;
-            off_t offset;
-        }
-        fd_op_mmap;
-
-        struct
-        {
+            aeron_mapped_raw_log_t log;
             int result;
             uintptr_t addr;
-            size_t len;
         }
-        fd_op_munmap;
+        map_raw_log_close;
     };
 }
-aeron_driver_agent_fd_op_header_t;
+aeron_driver_agent_map_raw_log_op_header_t;
 
 typedef int (*aeron_driver_context_init_t)(aeron_driver_context_t **);
 

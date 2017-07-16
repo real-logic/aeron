@@ -123,6 +123,41 @@ void aeron_driver_agent_conductor_to_client_interceptor(
     aeron_mpsc_rb_write(&logging_mpsc_rb, AERON_CMD_OUT, buffer, length + sizeof(aeron_driver_agent_cmd_log_header_t));
 }
 
+int aeron_driver_agent_map_raw_log_interceptor(
+        aeron_mapped_raw_log_t *mapped_raw_log, const char *path, bool use_sparse_files, uint64_t term_length)
+{
+    int result = aeron_map_raw_log(mapped_raw_log, path, use_sparse_files, term_length);
+
+    uint8_t buffer[AERON_MAX_PATH + sizeof(aeron_driver_agent_map_raw_log_op_header_t)];
+    aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)buffer;
+    size_t path_len = strlen(path);
+
+    hdr->time_ms = aeron_agent_epochclock();
+    hdr->map_raw_log.path_len = (int32_t)path_len;
+    hdr->map_raw_log.result = result;
+    hdr->map_raw_log.addr = (uintptr_t)mapped_raw_log;
+    memcpy(&hdr->map_raw_log.log, mapped_raw_log, sizeof(hdr->map_raw_log.log));
+    memcpy(buffer + sizeof(aeron_driver_agent_map_raw_log_op_header_t), path, path_len);
+
+    aeron_mpsc_rb_write(&logging_mpsc_rb, AERON_MAP_RAW_LOG_OP, buffer, sizeof(aeron_driver_agent_map_raw_log_op_header_t) + path_len);
+
+    return result;
+}
+
+int aeron_driver_agent_map_raw_log_close_interceptor(aeron_mapped_raw_log_t *mapped_raw_log)
+{
+    uint8_t buffer[AERON_MAX_PATH + sizeof(aeron_driver_agent_map_raw_log_op_header_t)];
+    aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)buffer;
+
+    hdr->time_ms = aeron_agent_epochclock();
+    hdr->map_raw_log_close.addr = (uintptr_t)mapped_raw_log;
+    memcpy(&hdr->map_raw_log_close.log, mapped_raw_log, sizeof(hdr->map_raw_log.log));
+    hdr->map_raw_log_close.result = aeron_map_raw_log_close(mapped_raw_log);
+
+    aeron_mpsc_rb_write(&logging_mpsc_rb, AERON_MAP_RAW_LOG_OP_CLOSE, buffer, sizeof(aeron_driver_agent_map_raw_log_op_header_t));
+    return hdr->map_raw_log_close.result;
+}
+
 static void *aeron_lib = NULL;
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
@@ -166,6 +201,12 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         (*context)->to_client_interceptor_func = aeron_driver_agent_conductor_to_client_interceptor;
     }
 
+    if (mask & AERON_MAP_RAW_LOG_OP)
+    {
+        (*context)->map_raw_log_func = aeron_driver_agent_map_raw_log_interceptor;
+        (*context)->map_raw_log_close_func = aeron_driver_agent_map_raw_log_close_interceptor;
+    }
+
     return result;
 }
 
@@ -183,7 +224,7 @@ void aeron_driver_agent_log_frame(
 
     if (msghdr->msg_iovlen > 1)
     {
-        fprintf(stderr, "only aware of 1 iov. %d iovs detected.\n", msghdr->msg_iovlen);
+        fprintf(stderr, "only aware of 1 iov. %d iovs detected.\n", (int)msghdr->msg_iovlen);
     }
 
     uint8_t *ptr = buffer + sizeof(aeron_driver_agent_frame_log_header_t);
@@ -326,201 +367,6 @@ int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, s
     return result;
 }
 #endif
-
-typedef int (*aeron_driver_agent_open_func_t)(const char *pathname, int flags, mode_t mode);
-
-int open(const char *pathname, int flags, ...)
-{
-    static aeron_driver_agent_open_func_t _original_func = NULL;
-
-    if (NULL == _original_func)
-    {
-        if ((_original_func = (aeron_driver_agent_open_func_t)dlsym(RTLD_NEXT, "open")) == NULL)
-        {
-            fprintf(stderr, "%s\n", dlerror());
-            exit(EXIT_FAILURE);
-        }
-
-        printf("hooked open\n");
-    }
-
-    (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
-
-    va_list argp;
-    va_start(argp, flags);
-    mode_t mode = va_arg(argp, int);
-    va_end(argp);
-
-    int result = _original_func(pathname, flags, mode);
-
-    if (mask & AERON_FD_OP)
-    {
-        uint8_t buffer[AERON_MAX_PATH + sizeof(aeron_driver_agent_fd_op_header_t)];
-        aeron_driver_agent_fd_op_header_t *hdr = (aeron_driver_agent_fd_op_header_t *)buffer;
-        size_t path_len = strlen(pathname);
-
-        hdr->time_ms = aeron_agent_epochclock();
-        hdr->fd_op_open.fd = result;
-        hdr->fd_op_open.flags = flags;
-        hdr->fd_op_open.path_len = (int32_t)path_len;
-        hdr->fd_op_open.mode = mode;
-        memcpy(buffer + sizeof(aeron_driver_agent_fd_op_header_t), pathname, path_len);
-
-        aeron_mpsc_rb_write(&logging_mpsc_rb, AERON_FD_OP_OPEN, buffer, sizeof(aeron_driver_agent_fd_op_header_t) + path_len);
-    }
-
-    return result;
-}
-
-typedef void *(*aeron_driver_agent_mmap_func_t)(void *addr, size_t len, int prot, int flags, int fd, off_t offset);
-
-void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset)
-{
-    static aeron_driver_agent_mmap_func_t _original_func = NULL;
-
-    if (NULL == _original_func)
-    {
-        if ((_original_func = (aeron_driver_agent_mmap_func_t)dlsym(RTLD_NEXT, "mmap")) == NULL)
-        {
-            fprintf(stderr, "%s\n", dlerror());
-            exit(EXIT_FAILURE);
-        }
-
-        printf("hooked mmap\n");
-    }
-
-    (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
-
-    void *result = _original_func(addr, len, prot, flags, fd, offset);
-
-    if (mask & AERON_FD_OP)
-    {
-        uint8_t buffer[sizeof(aeron_driver_agent_fd_op_header_t)];
-        aeron_driver_agent_fd_op_header_t *hdr = (aeron_driver_agent_fd_op_header_t *)buffer;
-
-        hdr->time_ms = aeron_agent_epochclock();
-        hdr->fd_op_mmap.fd = fd;
-        hdr->fd_op_mmap.result = (uintptr_t)result;
-        hdr->fd_op_mmap.addr = (uintptr_t)addr;
-        hdr->fd_op_mmap.len = len;
-        hdr->fd_op_mmap.offset = offset;
-
-        aeron_mpsc_rb_write(&logging_mpsc_rb, AERON_FD_OP_MMAP, buffer, sizeof(aeron_driver_agent_fd_op_header_t));
-    }
-
-    return result;
-}
-
-typedef int (*aeron_driver_agent_munmap_func_t)(void *addr, size_t len);
-
-int munmap(void *addr, size_t len)
-{
-    static aeron_driver_agent_munmap_func_t _original_func = NULL;
-
-    if (NULL == _original_func)
-    {
-        if ((_original_func = (aeron_driver_agent_munmap_func_t)dlsym(RTLD_NEXT, "munmap")) == NULL)
-        {
-            fprintf(stderr, "%s\n", dlerror());
-            exit(EXIT_FAILURE);
-        }
-
-        printf("hooked munmap\n");
-    }
-
-    (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
-
-    int result = _original_func(addr, len);
-
-    if (mask & AERON_FD_OP)
-    {
-        uint8_t buffer[sizeof(aeron_driver_agent_fd_op_header_t)];
-        aeron_driver_agent_fd_op_header_t *hdr = (aeron_driver_agent_fd_op_header_t *)buffer;
-
-        hdr->time_ms = aeron_agent_epochclock();
-        hdr->fd_op_munmap.addr = (uintptr_t)addr;
-        hdr->fd_op_munmap.result = result;
-        hdr->fd_op_munmap.len = len;
-
-        aeron_mpsc_rb_write(&logging_mpsc_rb, AERON_FD_OP_MUNMAP, buffer, sizeof(aeron_driver_agent_fd_op_header_t));
-    }
-
-    return result;
-}
-
-typedef int (*aeron_driver_agent_close_func_t)(int fd);
-
-int close(int fd)
-{
-    static aeron_driver_agent_close_func_t _original_func = NULL;
-
-    if (NULL == _original_func)
-    {
-        if ((_original_func = (aeron_driver_agent_close_func_t)dlsym(RTLD_NEXT, "close")) == NULL)
-        {
-            fprintf(stderr, "%s\n", dlerror());
-            exit(EXIT_FAILURE);
-        }
-
-        printf("hooked close\n");
-    }
-
-    (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
-
-    int result = _original_func(fd);
-
-    if (mask & AERON_FD_OP)
-    {
-        uint8_t buffer[sizeof(aeron_driver_agent_fd_op_header_t)];
-        aeron_driver_agent_fd_op_header_t *hdr = (aeron_driver_agent_fd_op_header_t *)buffer;
-
-        hdr->time_ms = aeron_agent_epochclock();
-        hdr->fd_op_close.fd = fd;
-        hdr->fd_op_close.result = result;
-
-        aeron_mpsc_rb_write(&logging_mpsc_rb, AERON_FD_OP_CLOSE, buffer, sizeof(aeron_driver_agent_fd_op_header_t));
-    }
-
-    return result;
-}
-
-typedef int (*aeron_driver_agent_socket_func_t)(int domain, int type, int protocol);
-
-int socket(int domain, int type, int protocol)
-{
-    static aeron_driver_agent_socket_func_t _original_func = NULL;
-
-    if (NULL == _original_func)
-    {
-        if ((_original_func = (aeron_driver_agent_socket_func_t)dlsym(RTLD_NEXT, "socket")) == NULL)
-        {
-            fprintf(stderr, "%s\n", dlerror());
-            exit(EXIT_FAILURE);
-        }
-
-        printf("hooked socket\n");
-    }
-
-    (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
-
-    int result = _original_func(domain, type, protocol);
-
-    if (mask & AERON_FD_OP)
-    {
-        uint8_t buffer[sizeof(aeron_driver_agent_fd_op_header_t)];
-        aeron_driver_agent_fd_op_header_t *hdr = (aeron_driver_agent_fd_op_header_t *)buffer;
-
-        hdr->time_ms = aeron_agent_epochclock();
-        hdr->fd_op_socket.fd = result;
-        hdr->fd_op_socket.domain = domain;
-        hdr->fd_op_socket.type = type;
-        hdr->fd_op_socket.protocol = protocol;
-
-        aeron_mpsc_rb_write(&logging_mpsc_rb, AERON_FD_OP_SOCKET, buffer, sizeof(aeron_driver_agent_fd_op_header_t));
-    }
-
-    return result;
-}
 
 static const char *dissect_msg_type_id(int32_t id)
 {
@@ -889,72 +735,30 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             break;
         }
 
-        case AERON_FD_OP_OPEN:
+        case AERON_MAP_RAW_LOG_OP:
         {
-            aeron_driver_agent_fd_op_header_t *hdr = (aeron_driver_agent_fd_op_header_t *)message;
-            const char *pathname = (const char *)message + sizeof(aeron_driver_agent_fd_op_header_t);
+            aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)message;
+            const char *pathname = (const char *)message + sizeof(aeron_driver_agent_map_raw_log_op_header_t);
 
             printf(
-                "[%s] OPEN %d = \"%*s\"\n",
+                "[%s] MAP_RAW_LOG %p, \"%*s\" = %d\n",
                 dissect_timestamp(hdr->time_ms),
-                hdr->fd_op_open.fd,
-                hdr->fd_op_open.path_len,
-                pathname);
+                (void *)hdr->map_raw_log.addr,
+                hdr->map_raw_log.path_len,
+                pathname,
+                hdr->map_raw_log.result);
             break;
         }
 
-        case AERON_FD_OP_MMAP:
+        case AERON_MAP_RAW_LOG_OP_CLOSE:
         {
-            aeron_driver_agent_fd_op_header_t *hdr = (aeron_driver_agent_fd_op_header_t *)message;
+            aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)message;
 
             printf(
-                "[%s] MMAP %p = fd %d len %d offset %d\n",
+                "[%s] MAP_RAW_LOG_CLOSE %p = %d\n",
                 dissect_timestamp(hdr->time_ms),
-                (void *)hdr->fd_op_mmap.result,
-                hdr->fd_op_mmap.fd,
-                (int)hdr->fd_op_mmap.len,
-                (int)hdr->fd_op_mmap.offset);
-            break;
-        }
-
-        case AERON_FD_OP_MUNMAP:
-        {
-            aeron_driver_agent_fd_op_header_t *hdr = (aeron_driver_agent_fd_op_header_t *)message;
-
-            printf(
-                "[%s] MUNMAP %d = addr %p len %d\n",
-                dissect_timestamp(hdr->time_ms),
-                hdr->fd_op_munmap.result,
-                (void *)hdr->fd_op_munmap.addr,
-                (int)hdr->fd_op_munmap.len);
-            break;
-        }
-
-        case AERON_FD_OP_CLOSE:
-        {
-            aeron_driver_agent_fd_op_header_t *hdr = (aeron_driver_agent_fd_op_header_t *)message;
-
-            printf(
-                "[%s] CLOSE %d = fd %d\n",
-                dissect_timestamp(hdr->time_ms),
-                hdr->fd_op_close.result,
-                hdr->fd_op_close.fd);
-            break;
-        }
-
-        case AERON_FD_OP_SOCKET:
-        {
-            aeron_driver_agent_fd_op_header_t *hdr = (aeron_driver_agent_fd_op_header_t *)message;
-
-            printf(
-                "[%s] SOCKET %d = %d (%s) %d %d\n",
-                dissect_timestamp(hdr->time_ms),
-                hdr->fd_op_socket.fd,
-                hdr->fd_op_socket.domain,
-                hdr->fd_op_socket.domain == AF_INET6 ? "AF_INE6" :
-                    (hdr->fd_op_socket.domain == AF_INET ? "AF_INET" : "unknown" ),
-                hdr->fd_op_socket.type,
-                hdr->fd_op_socket.protocol);
+                (void *)hdr->map_raw_log_close.addr,
+                hdr->map_raw_log_close.result);
             break;
         }
 

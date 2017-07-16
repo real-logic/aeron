@@ -64,6 +64,13 @@ int aeron_distinct_error_log_init(
 void aeron_distinct_error_log_close(aeron_distinct_error_log_t *log)
 {
     aeron_distinct_observation_t *observations = atomic_load(&log->observations_pimpl->observations);
+    size_t num_observations = atomic_load(&log->observations_pimpl->num_observations);
+    
+    for (size_t i = 0; i < num_observations; i++)
+    {
+        aeron_free(observations[i].description);
+    }
+    
     aeron_free(observations);
     aeron_free(log->observations_pimpl);
 }

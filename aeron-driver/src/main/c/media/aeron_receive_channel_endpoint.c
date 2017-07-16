@@ -157,6 +157,7 @@ int aeron_receive_channel_endpoint_send_sm(
     msghdr.msg_name = addr;
     msghdr.msg_namelen = AERON_ADDR_LEN(addr);
     msghdr.msg_control = NULL;
+    msghdr.msg_controllen = 0;
 
     int bytes_sent;
     if ((bytes_sent = aeron_receive_channel_endpoint_sendmsg(endpoint, &msghdr)) != (int) iov[0].iov_len)
@@ -202,6 +203,7 @@ int aeron_receive_channel_endpoint_send_nak(
     msghdr.msg_name = addr;
     msghdr.msg_namelen = AERON_ADDR_LEN(addr);
     msghdr.msg_control = NULL;
+    msghdr.msg_controllen = 0;
 
     int bytes_sent;
     if ((bytes_sent = aeron_receive_channel_endpoint_sendmsg(endpoint, &msghdr)) != (int) iov[0].iov_len)
@@ -247,6 +249,7 @@ int aeron_receive_channel_endpoint_send_rttm(
     msghdr.msg_name = addr;
     msghdr.msg_namelen = AERON_ADDR_LEN(addr);
     msghdr.msg_control = NULL;
+    msghdr.msg_controllen = 0;
 
     int bytes_sent;
     if ((bytes_sent = aeron_receive_channel_endpoint_sendmsg(endpoint, &msghdr)) != (int) iov[0].iov_len)

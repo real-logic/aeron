@@ -235,6 +235,7 @@ int aeron_network_publication_setup_message_check(
         msghdr.msg_iovlen = 1;
         msghdr.msg_flags = 0;
         msghdr.msg_control = NULL;
+        msghdr.msg_controllen = 0;
 
         if ((result = aeron_send_channel_sendmsg(publication->endpoint, &msghdr)) != (int)iov[0].iov_len)
         {
@@ -294,6 +295,7 @@ int aeron_network_publication_heartbeat_message_check(
         msghdr.msg_iovlen = 1;
         msghdr.msg_flags = 0;
         msghdr.msg_control = NULL;
+        msghdr.msg_controllen = 0;
 
         if ((bytes_sent = aeron_send_channel_sendmsg(publication->endpoint, &msghdr)) != (int)iov[0].iov_len)
         {
@@ -341,6 +343,7 @@ int aeron_network_publication_send_data(
             mmsghdr[i].msg_hdr.msg_flags = 0;
             mmsghdr[i].msg_len = 0;
             mmsghdr[i].msg_hdr.msg_control = NULL;
+            mmsghdr[i].msg_hdr.msg_controllen = 0;
             vlen++;
 
             bytes_sent += available;
@@ -461,6 +464,7 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
             msghdr.msg_iov = iov;
             msghdr.msg_iovlen = 1;
             msghdr.msg_control = NULL;
+            msghdr.msg_controllen = 0;
             msghdr.msg_flags = 0;
 
             int sendmsg_result;
@@ -557,6 +561,7 @@ void aeron_network_publication_on_rttm(
         msghdr.msg_iovlen = 1;
         msghdr.msg_flags = 0;
         msghdr.msg_control = NULL;
+        msghdr.msg_controllen = 0;
 
         if ((result = aeron_send_channel_sendmsg(publication->endpoint, &msghdr)) != (int)iov[0].iov_len)
         {

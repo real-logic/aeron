@@ -1506,6 +1506,11 @@ int aeron_driver_conductor_on_add_network_publication(
         }
     }
 
+    if (endpoint->conductor_fields.udp_channel != udp_channel)
+    {
+        aeron_udp_channel_delete(udp_channel);
+    }
+
     return 0;
 }
 
@@ -1671,7 +1676,6 @@ int aeron_driver_conductor_on_add_spy_subscription(
         return 0;
     }
 
-    aeron_set_err(ENOTSUP, "%s", "spy subscriptions not currently supported");
     return -1;
 }
 
@@ -1755,10 +1759,14 @@ int aeron_driver_conductor_on_add_network_subscription(
             }
         }
 
+        if (endpoint->conductor_fields.udp_channel != udp_channel)
+        {
+            aeron_udp_channel_delete(udp_channel);
+        }
+
         return 0;
     }
 
-    aeron_set_err(ENOTSUP, "%s", "network subscriptions not currently supported");
     return -1;
 }
 

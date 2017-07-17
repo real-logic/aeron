@@ -22,6 +22,7 @@
 #include "aeron_driver_context.h"
 #include "util/aeron_fileutil.h"
 #include "concurrent/aeron_counters_manager.h"
+#include "aeron_system_counters.h"
 
 typedef enum aeron_ipc_publication_status_enum
 {
@@ -40,6 +41,8 @@ typedef struct aeron_ipc_publication_stct
         int64_t cleaning_position;
         int64_t trip_limit;
         int64_t consumer_position;
+        int64_t last_consumer_position;
+        int64_t time_of_last_consumer_position_change;
         int32_t refcnt;
         bool has_reached_end_of_life;
         aeron_ipc_publication_status_t status;
@@ -56,6 +59,7 @@ typedef struct aeron_ipc_publication_stct
     int64_t term_window_length;
     int64_t trip_gain;
     int64_t linger_timeout_ns;
+    int64_t unblock_timeout_ns;
     int32_t session_id;
     int32_t stream_id;
     int32_t initial_term_id;
@@ -63,6 +67,8 @@ typedef struct aeron_ipc_publication_stct
     size_t position_bits_to_shift;
     bool is_exclusive;
     aeron_map_raw_log_close_func_t map_raw_log_close_func;
+
+    int64_t *unblocked_publications_counter;
 }
 aeron_ipc_publication_t;
 
@@ -76,7 +82,8 @@ int aeron_ipc_publication_create(
     int32_t initial_term_id,
     size_t term_buffer_length,
     size_t mtu_length,
-    bool is_exclusive);
+    bool is_exclusive,
+    aeron_system_counters_t *system_counters);
 
 void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aeron_ipc_publication_t *publication);
 

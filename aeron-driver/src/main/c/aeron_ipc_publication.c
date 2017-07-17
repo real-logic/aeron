@@ -16,7 +16,8 @@
 
 #include <string.h>
 #include <errno.h>
-#include <concurrent/aeron_counters_manager.h>
+#include "concurrent/aeron_counters_manager.h"
+#include "concurrent/aeron_logbuffer_unblocker.h"
 #include "aeron_ipc_publication.h"
 #include "util/aeron_fileutil.h"
 #include "aeron_alloc.h"
@@ -34,7 +35,8 @@ int aeron_ipc_publication_create(
     int32_t initial_term_id,
     size_t term_buffer_length,
     size_t mtu_length,
-    bool is_exclusive)
+    bool is_exclusive,
+    aeron_system_counters_t *system_counters)
 {
     char path[AERON_MAX_PATH];
     int path_length =
@@ -102,6 +104,8 @@ int aeron_ipc_publication_create(
     _pub->conductor_fields.cleaning_position = 0;
     _pub->conductor_fields.trip_limit = 0;
     _pub->conductor_fields.consumer_position = 0;
+    _pub->conductor_fields.last_consumer_position = 0;
+    _pub->conductor_fields.time_of_last_consumer_position_change = 0;
     _pub->conductor_fields.status = AERON_IPC_PUBLICATION_STATUS_ACTIVE;
     _pub->conductor_fields.refcnt = 1;
     _pub->session_id = session_id;
@@ -113,9 +117,14 @@ int aeron_ipc_publication_create(
     _pub->term_window_length = (int64_t)aeron_ipc_publication_term_window_length(context, term_buffer_length);
     _pub->trip_gain = _pub->term_window_length / 8;
     _pub->linger_timeout_ns = (int64_t)context->publication_linger_timeout_ns;
+    _pub->unblock_timeout_ns = (int64_t)context->publication_unblock_timeout_ns;
     _pub->is_exclusive = is_exclusive;
 
     _pub->conductor_fields.consumer_position = aeron_ipc_publication_producer_position(_pub);
+    _pub->conductor_fields.last_consumer_position = _pub->conductor_fields.consumer_position;
+
+    _pub->unblocked_publications_counter =
+        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_UNBLOCKED_PUBLICATIONS);
 
     *publication = _pub;
     return 0;
@@ -227,7 +236,25 @@ void aeron_ipc_publication_decref(void *clientd)
 
 void aeron_ipc_publication_check_for_blocked_publisher(aeron_ipc_publication_t *publication, int64_t now_ns)
 {
-    /* TODO: finish */
+    if (publication->conductor_fields.consumer_position == publication->conductor_fields.last_consumer_position)
+    {
+        if (aeron_ipc_publication_producer_position(publication) > publication->conductor_fields.consumer_position &&
+            now_ns > (publication->conductor_fields.time_of_last_consumer_position_change + publication->unblock_timeout_ns))
+        {
+            if (aeron_logbuffer_unblocker_unblock(
+                publication->mapped_raw_log.term_buffers,
+                publication->log_meta_data,
+                publication->conductor_fields.consumer_position))
+            {
+                aeron_counter_ordered_increment(publication->unblocked_publications_counter, 1);
+            }
+        }
+    }
+    else
+    {
+        publication->conductor_fields.time_of_last_consumer_position_change = now_ns;
+        publication->conductor_fields.last_consumer_position = publication->conductor_fields.consumer_position;
+    }
 }
 
 extern void aeron_ipc_publication_remove_subscriber_hook(void *clientd, int64_t *value_addr);

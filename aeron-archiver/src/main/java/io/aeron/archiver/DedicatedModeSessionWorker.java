@@ -16,6 +16,7 @@
 
 package io.aeron.archiver;
 
+import org.agrona.ErrorHandler;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -23,9 +24,9 @@ class DedicatedModeSessionWorker<T extends Session> extends SessionWorker<T>
 {
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue = new OneToOneConcurrentArrayQueue<>(256);
     private final AtomicCounter errorCounter;
-    DedicatedModeSessionWorker(final String roleName, final AtomicCounter errorCounter)
+    DedicatedModeSessionWorker(final String roleName, final ErrorHandler errorHandler, final AtomicCounter errorCounter)
     {
-        super(roleName);
+        super(roleName, errorHandler);
         this.errorCounter = errorCounter;
     }
 

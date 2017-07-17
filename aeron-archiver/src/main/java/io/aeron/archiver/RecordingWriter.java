@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archiver.ArchiveUtil.recordingOffset;
@@ -139,11 +140,12 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
             validateWritePreConditions(termId, termOffset, blockLength);
 
-            final long written = transferDataFrom(fileChannel, fileOffset, blockLength);
-            if (written != blockLength)
+            long written = 0;
+            do
             {
-                throw new IllegalStateException();
+                written += transferTo(fileChannel, fileOffset + written, (int) (blockLength - written));
             }
+            while (written != blockLength);
 
             if (forceWrites)
             {
@@ -152,6 +154,12 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
             afterWrite(blockLength);
             validateWritePostConditions();
+        }
+        catch (final ClosedByInterruptException e)
+        {
+            Thread.interrupted();
+            close();
+            throw new IllegalStateException("Image file channel has been closed by interrupt, recording aborted.", e);
         }
         catch (final Exception ex)
         {
@@ -254,16 +262,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         return endPosition;
     }
 
-    long joinTimestamp()
-    {
-        return joinTimestamp;
-    }
-
-    long endTimestamp()
-    {
-        return endTimestamp;
-    }
-
     // extend for testing
     int writeData(final ByteBuffer buffer, final int position, final FileChannel fileChannel) throws IOException
     {
@@ -271,7 +269,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     }
 
     // extend for testing
-    long transferDataFrom(
+    long transferTo(
         final FileChannel fromFileChannel,
         final long fileOffset,
         final int blockLength) throws IOException

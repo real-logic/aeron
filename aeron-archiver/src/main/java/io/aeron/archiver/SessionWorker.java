@@ -15,6 +15,7 @@
  */
 package io.aeron.archiver;
 
+import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.concurrent.Agent;
 
@@ -30,11 +31,13 @@ class SessionWorker<T extends Session> implements Agent
 {
     private final ArrayList<T> sessions = new ArrayList<>();
     private final String roleName;
+    protected final ErrorHandler errorHandler;
     private boolean isClosed = false;
 
-    SessionWorker(final String roleName)
+    SessionWorker(final String roleName, final ErrorHandler errorHandler)
     {
         this.roleName = roleName;
+        this.errorHandler = errorHandler;
     }
 
     public String roleName()
@@ -71,9 +74,21 @@ class SessionWorker<T extends Session> implements Agent
         isClosed = true;
 
         preSessionsClose();
-        sessions.forEach(this::closeSession);
+        sessions.forEach(this::quietCloseSession);
         sessions.clear();
         postSessionsClose();
+    }
+
+    private void quietCloseSession(final T session)
+    {
+        try
+        {
+            closeSession(session);
+        }
+        catch (final Exception e)
+        {
+            errorHandler.onError(e);
+        }
     }
 
     protected int preWork()

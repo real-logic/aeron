@@ -18,7 +18,6 @@ package io.aeron.archiver;
 import io.aeron.*;
 import io.aeron.archiver.codecs.ControlResponseCode;
 import org.agrona.CloseHelper;
-import org.agrona.ErrorHandler;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
@@ -52,7 +51,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final EpochClock epochClock;
     private final File archiveDir;
     private final FileChannel archiveDirChannel;
-    private final ErrorHandler errorHandler;
     private final RecordingWriter.Context recordingCtx;
 
     private final Subscription controlSubscription;
@@ -71,7 +69,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
-        super("archive-conductor");
+        super("archive-conductor", ctx.errorHandler());
 
         this.aeron = aeron;
         this.ctx = ctx;
@@ -120,7 +118,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         maxConcurrentRecordings = ctx.maxConcurrentRecordings();
         maxConcurrentReplays = ctx.maxConcurrentReplays();
-        errorHandler = ctx.errorHandler();
     }
 
     public void onStart()
@@ -466,14 +463,13 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     void closeRecordingSession(final RecordingSession session)
     {
+        recordingSessionByIdMap.remove(session.sessionId());
         closeSession(session);
-        final long recordingId = session.sessionId();
-        recordingSessionByIdMap.remove(recordingId);
     }
 
     void closeReplaySession(final ReplaySession session)
     {
-        closeSession(session);
         replaySessionByIdMap.remove(session.sessionId());
+        closeSession(session);
     }
 }

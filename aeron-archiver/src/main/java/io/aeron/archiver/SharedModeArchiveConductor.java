@@ -64,7 +64,7 @@ final class SharedModeArchiveConductor extends ArchiveConductor
     {
         SharedModeRecorder()
         {
-            super("archive-recorder");
+            super("archive-recorder", SharedModeArchiveConductor.this.errorHandler);
         }
 
         protected void closeSession(final RecordingSession session)
@@ -77,7 +77,7 @@ final class SharedModeArchiveConductor extends ArchiveConductor
     {
         SharedModeReplayer()
         {
-            super("archive-replayer");
+            super("archive-replayer", SharedModeArchiveConductor.this.errorHandler);
         }
 
         protected void closeSession(final ReplaySession session)

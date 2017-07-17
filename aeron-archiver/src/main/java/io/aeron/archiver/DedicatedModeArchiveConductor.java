@@ -18,6 +18,7 @@ package io.aeron.archiver;
 
 import io.aeron.Aeron;
 import org.agrona.CloseHelper;
+import org.agrona.ErrorHandler;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -50,12 +51,16 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
 
     protected SessionWorker<RecordingSession> constructRecorder()
     {
-        return new DedicatedModeRecorder(ctx.errorCounter(), closeQueue);
+        return new DedicatedModeRecorder(errorHandler, ctx.errorCounter(), closeQueue);
     }
 
     protected SessionWorker<ReplaySession> constructReplayer()
     {
-        return new DedicatedModeReplayer(ctx.errorCounter(), closeQueue, new ControlSessionProxy(ctx.idleStrategy()));
+        return new DedicatedModeReplayer(
+            errorHandler,
+            ctx.errorCounter(),
+            closeQueue,
+            new ControlSessionProxy(ctx.idleStrategy()));
     }
 
     protected int preWork()
@@ -66,13 +71,36 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
     @SuppressWarnings("StatementWithEmptyBody")
     protected void closeSessionWorkers()
     {
-        CloseHelper.quietClose(recorderAgentRunner);
-        CloseHelper.quietClose(replayerAgentRunner);
+        try
+        {
+            CloseHelper.close(recorderAgentRunner);
+        }
+        catch (final Exception e)
+        {
+            errorHandler.onError(e);
+        }
+        try
+        {
+            CloseHelper.close(replayerAgentRunner);
+        }
+        catch (final Exception e)
+        {
+            errorHandler.onError(e);
+        }
 
-        while (processCloseQueue() > 0)
+        while (processCloseQueue() > 0 || !closeQueue.isEmpty())
         {
             // drain the command queue
         }
+    }
+
+    protected void postSessionsClose()
+    {
+        if (!closeQueue.isEmpty())
+        {
+            System.err.println("ERR: Close queue not empty");
+        }
+        super.postSessionsClose();
     }
 
     private int processCloseQueue()
@@ -81,19 +109,26 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         Session session;
         for (i = 0; i < COMMAND_LIMIT && (session = closeQueue.poll()) != null; i++)
         {
-            if (session instanceof RecordingSession)
+            try
             {
-                closeRecordingSession((RecordingSession)session);
+                if (session instanceof RecordingSession)
+                {
+                    closeRecordingSession((RecordingSession)session);
+                }
+                else if (session instanceof ReplaySession)
+                {
+                    final ReplaySession replaySession = (ReplaySession) session;
+                    replaySession.setThreadLocalControlSessionProxy(controlSessionProxy);
+                    closeReplaySession(replaySession);
+                }
+                else
+                {
+                    closeSession(session);
+                }
             }
-            else if (session instanceof ReplaySession)
+            catch (final Exception e)
             {
-                final ReplaySession replaySession = (ReplaySession) session;
-                replaySession.setThreadLocalControlSessionProxy(controlSessionProxy);
-                closeReplaySession(replaySession);
-            }
-            else
-            {
-                closeSession(session);
+                errorHandler.onError(e);
             }
         }
 
@@ -105,10 +140,11 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         private final ManyToOneConcurrentArrayQueue<Session> closeQueue;
 
         DedicatedModeRecorder(
+            final ErrorHandler errorHandler,
             final AtomicCounter errorCounter,
             final ManyToOneConcurrentArrayQueue<Session> closeQueue)
         {
-            super("archive-recorder", errorCounter);
+            super("archive-recorder", errorHandler, errorCounter);
             this.closeQueue = closeQueue;
         }
 
@@ -124,11 +160,12 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         private final ControlSessionProxy proxy;
 
         DedicatedModeReplayer(
+            final ErrorHandler errorHandler,
             final AtomicCounter errorCounter,
             final ManyToOneConcurrentArrayQueue<Session> closeQueue,
             final ControlSessionProxy proxy)
         {
-            super("archive-replayer", errorCounter);
+            super("archive-replayer", errorHandler, errorCounter);
             this.closeQueue = closeQueue;
             this.proxy = proxy;
         }

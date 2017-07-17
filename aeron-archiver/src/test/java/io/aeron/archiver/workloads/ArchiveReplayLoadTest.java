@@ -16,19 +16,27 @@
 
 package io.aeron.archiver.workloads;
 
-import io.aeron.*;
-import io.aeron.archiver.*;
+import io.aeron.Aeron;
+import io.aeron.Publication;
+import io.aeron.Subscription;
+import io.aeron.archiver.Archiver;
+import io.aeron.archiver.ArchiverThreadingMode;
+import io.aeron.archiver.NoOpRecordingEventsListener;
+import io.aeron.archiver.TestUtil;
 import io.aeron.archiver.client.ArchiveProxy;
 import io.aeron.archiver.client.RecordingEventsPoller;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.logbuffer.*;
+import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.Header;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.*;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,25 +55,32 @@ import static org.junit.Assert.assertThat;
 @Ignore
 public class ArchiveReplayLoadTest
 {
-    private static final int TIMEOUT_MS = 5000;
-    private static final double MEGABYTE = 1024.0d * 1024.0d;
 
     static final String CONTROL_URI = "aeron:udp?endpoint=127.0.0.1:54327";
     static final int CONTROL_STREAM_ID = 100;
+    static final int TEST_DURATION_SEC = 30;
+
+    private static final int TIMEOUT_MS = 5000;
+
     private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
     private static final String PUBLISH_URI = "aeron:ipc";
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
+    private static final double MEGABYTE = 1024.0d * 1024.0d;
     private static final int MESSAGE_COUNT = 2000000;
-    private static final int TEST_DURATION_SEC = 30;
-
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
+    private final Random rnd = new Random();
+    private final long seed = System.nanoTime();
+    private final File archiveDir = TestUtil.makeTempDir();
+
+    @Rule
+    public final TestWatcher testWatcher = TestUtil.newWatcher(ArchiveReplayLoadTest.class, seed);
+
     private Aeron aeron;
     private Archiver archiver;
     private MediaDriver driver;
-    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
-    private File archiveDir = TestUtil.makeTempDir();
     private final long recordingId = 0;
     private long remaining;
     private int fragmentCount;
@@ -75,18 +90,6 @@ public class ArchiveReplayLoadTest
     private long recorded;
     private volatile int lastTermId = -1;
     private Throwable trackerError;
-    private Random rnd = new Random();
-    private long seed;
-
-    @Rule
-    public TestWatcher testWatcher = new TestWatcher()
-    {
-        protected void failed(final Throwable t, final Description description)
-        {
-            System.err.println(
-                ArchiveReplayLoadTest.class.getName() + " failed with random seed: " + ArchiveReplayLoadTest.this.seed);
-        }
-    };
 
     private long correlationId;
     private long joinPosition;
@@ -95,7 +98,6 @@ public class ArchiveReplayLoadTest
     @Before
     public void before() throws Exception
     {
-        seed = System.nanoTime();
         rnd.setSeed(seed);
 
         driverCtx
@@ -180,11 +182,17 @@ public class ArchiveReplayLoadTest
             {
                 final long start = System.currentTimeMillis();
                 validateReplay(archiveProxy, messageCount);
-                final long delta = System.currentTimeMillis() - start;
-                final double rate = (totalDataLength * 1000.0) / (MEGABYTE * delta);
-                System.out.printf("Replay[%d] rate %.02f MB/s %n", ++i, rate);
+
+                printScore(++i, System.currentTimeMillis() - start);
             }
         }
+    }
+
+    private void printScore(final int i, final long time)
+    {
+        final double rate = (totalRecordingLength * 1000.0 / time) / MEGABYTE;
+        final double receivedMb = totalRecordingLength / MEGABYTE;
+        System.out.printf("%d : received %.02f MB, replayed @ %.02f MB/s %n", i, receivedMb, rate);
     }
 
     private int prepAndSendMessages(final Subscription recordingEvents, final Publication publication)

@@ -23,7 +23,9 @@ import io.aeron.archiver.codecs.ControlResponseCode;
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.hamcrest.Description;
 import org.junit.Assert;
+import org.junit.rules.TestWatcher;
 
 import java.io.File;
 import java.io.IOException;
@@ -173,5 +175,16 @@ public class TestUtil
             archiveDir,
             RecordingFragmentReader.NULL_POSITION,
             RecordingFragmentReader.NULL_LENGTH);
+    }
+
+    public static TestWatcher newWatcher(final Class clazz, final long seed)
+    {
+        return new TestWatcher()
+        {
+            protected void failed(final Throwable t, final Description description)
+            {
+                System.err.println(clazz.getName() + " failed with random seed: " + seed);
+            }
+        };
     }
 }

@@ -15,19 +15,25 @@
  */
 package io.aeron.archiver.workloads;
 
-import io.aeron.*;
-import io.aeron.archiver.*;
+import io.aeron.Aeron;
+import io.aeron.ExclusivePublication;
+import io.aeron.Publication;
+import io.aeron.Subscription;
+import io.aeron.archiver.Archiver;
+import io.aeron.archiver.ArchiverThreadingMode;
+import io.aeron.archiver.FailRecordingEventsListener;
+import io.aeron.archiver.TestUtil;
 import io.aeron.archiver.client.ArchiveProxy;
 import io.aeron.archiver.client.RecordingEventsPoller;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.*;
+import org.agrona.CloseHelper;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,6 +47,7 @@ import static io.aeron.archiver.ArchiverSystemTest.startChannelDrainingSubscript
 import static io.aeron.archiver.TestUtil.*;
 import static io.aeron.archiver.workloads.ArchiveReplayLoadTest.CONTROL_STREAM_ID;
 import static io.aeron.archiver.workloads.ArchiveReplayLoadTest.CONTROL_URI;
+import static io.aeron.archiver.workloads.ArchiveReplayLoadTest.TEST_DURATION_SEC;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -54,33 +61,25 @@ public class ArchiveRecordingLoadTest
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
     private static final int MESSAGE_COUNT = 2000000;
-    private static final int TEST_DURATION_SEC = 20;
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
+    private final Random rnd = new Random();
+    private final long seed = System.nanoTime();
+    private final File archiveDir = TestUtil.makeTempDir();
+
+    @Rule
+    public final TestWatcher testWatcher = TestUtil.newWatcher(ArchiveRecordingLoadTest.class, seed);
+
     private Aeron aeron;
     private Archiver archiver;
     private MediaDriver driver;
-    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
-    private File archiveDir = TestUtil.makeTempDir();
     private long recordingId;
     private int[] fragmentLength;
     private long totalDataLength;
     private long totalRecordingLength;
     private long recorded;
     private boolean doneRecording;
-    private final Random rnd = new Random();
-    private long seed;
-
-    @Rule
-    public TestWatcher ruleExample = new TestWatcher()
-    {
-        protected void failed(final Throwable t, final Description description)
-        {
-            System.err.println(
-                ArchiveRecordingLoadTest.class.getName() +
-                    " failed with random seed: " + ArchiveRecordingLoadTest.this.seed);
-        }
-    };
 
     private long correlationId;
     private BooleanSupplier recordingStartedIndicator;
@@ -89,7 +88,6 @@ public class ArchiveRecordingLoadTest
     @Before
     public void before() throws Exception
     {
-        seed = System.nanoTime();
         rnd.setSeed(seed);
 
         driverCtx
@@ -165,6 +163,7 @@ public class ArchiveRecordingLoadTest
                 {
                     awaitPublicationIsConnected(publication);
                     waitFor(recordingStartedIndicator);
+
                     start = System.currentTimeMillis();
 
                     prepAndSendMessages(publication);
@@ -177,10 +176,9 @@ public class ArchiveRecordingLoadTest
 
                 doneRecording = false;
                 assertThat(totalRecordingLength, is(recorded));
-                final long time = System.currentTimeMillis() - start;
-                final double rate = (totalRecordingLength * 1000.0 / time) / MEGABYTE;
-                final double recordedMb = totalRecordingLength / MEGABYTE;
-                System.out.printf("%d : sent %.02f MB, recorded %.02f MB/s %n", recordingId, recordedMb, rate);
+
+                printScore(System.currentTimeMillis() - start);
+
                 final long stopRecordingCorrelationId = this.correlationId++;
                 waitFor(() -> archiveProxy.stopRecording(channel, PUBLISH_STREAM_ID, stopRecordingCorrelationId));
                 waitForOk(controlResponse, stopRecordingCorrelationId);
@@ -188,6 +186,13 @@ public class ArchiveRecordingLoadTest
 
             println("All data arrived");
         }
+    }
+
+    private void printScore(final long time)
+    {
+        final double rate = (totalRecordingLength * 1000.0 / time) / MEGABYTE;
+        final double recordedMb = totalRecordingLength / MEGABYTE;
+        System.out.printf("%d : sent %.02f MB, recorded @ %.02f MB/s %n", recordingId, recordedMb, rate);
     }
 
     private void initRecordingStartIndicator(final Subscription recordingEvents)

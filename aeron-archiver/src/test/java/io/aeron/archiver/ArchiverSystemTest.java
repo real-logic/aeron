@@ -31,7 +31,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,18 +54,24 @@ public class ArchiverSystemTest
     private static final String REPLAY_URI = "aeron:ipc";
     private static final int MESSAGE_COUNT = 5000;
     private static final int SYNC_LEVEL = 0;
-    private String publishUri;
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final int REPLAY_STREAM_ID = 101;
 
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
+    private final Random rnd = new Random();
+    private final long seed = System.nanoTime();
+    private final File archiveDir = TestUtil.makeTempDir();
+
+    @Rule
+    public final TestWatcher testWatcher = TestUtil.newWatcher(ArchiverSystemTest.class, seed);
+
+    private String publishUri;
     private Aeron publishingClient;
     private Archiver archiver;
     private MediaDriver driver;
-    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
-    private File archiveDir = TestUtil.makeTempDir();
     private long recordingId;
     private long remaining;
     private int fragmentCount;
@@ -77,17 +82,6 @@ public class ArchiverSystemTest
     private long requestedJoinPosition;
     private volatile long endPosition = -1;
     private Throwable trackerError;
-    private final Random rnd = new Random();
-    private long seed = System.nanoTime();
-
-    @Rule
-    public TestWatcher testWatcher = new TestWatcher()
-    {
-        protected void failed(final Throwable t, final Description description)
-        {
-            System.err.println(ArchiverSystemTest.class.getName() + " failed with random seed: " + seed);
-        }
-    };
 
     private Subscription controlResponse;
     private long correlationId;

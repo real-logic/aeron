@@ -113,8 +113,8 @@ public class RecordingSessionTest
             SESSION_ID,
             STREAM_ID,
             CHANNEL,
-            SOURCE_IDENTITY,
-            CHANNEL);
+            CHANNEL,
+            SOURCE_IDENTITY);
     }
 
     @After

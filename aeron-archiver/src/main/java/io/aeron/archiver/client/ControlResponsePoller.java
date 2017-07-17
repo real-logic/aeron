@@ -193,7 +193,7 @@ public class ControlResponsePoller
             recordingDescriptorDecoder.sessionId(),
             recordingDescriptorDecoder.streamId(),
             recordingDescriptorDecoder.channel(),
-            recordingDescriptorDecoder.sourceIdentity(),
-            recordingDescriptorDecoder.originalChannel());
+            recordingDescriptorDecoder.originalChannel(),
+            recordingDescriptorDecoder.sourceIdentity());
     }
 }

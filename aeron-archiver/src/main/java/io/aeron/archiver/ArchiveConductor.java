@@ -66,7 +66,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     private int replaySessionId;
 
-
     ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
     {
         super("archive-conductor", ctx.errorHandler());
@@ -414,8 +413,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             sessionId,
             streamId,
             channel,
-            sourceIdentity,
-            originalChannel);
+            originalChannel,
+            sourceIdentity);
 
         final RecordingSession session = new RecordingSession(
             recordingId,

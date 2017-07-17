@@ -82,8 +82,8 @@ public class RecordingWriterTest
             SESSION_ID,
             STREAM_ID,
             CHANNEL,
-            SOURCE,
-            CHANNEL);
+            CHANNEL,
+            SOURCE);
 
         try (RecordingWriter writer = Mockito.spy(new RecordingWriter(recordingCtx, descriptorBuffer)))
         {

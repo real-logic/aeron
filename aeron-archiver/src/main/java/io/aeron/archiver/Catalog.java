@@ -108,8 +108,8 @@ class Catalog implements AutoCloseable
         final int sessionId,
         final int streamId,
         final String channel,
-        final String sourceIdentity,
-        final String originalChannel)
+        final String originalChannel,
+        final String sourceIdentity)
     {
         if (nextRecordingId > MAX_RECORDING_ID)
         {
@@ -137,8 +137,8 @@ class Catalog implements AutoCloseable
             sessionId,
             streamId,
             channel,
-            sourceIdentity,
-            originalChannel);
+            originalChannel,
+            sourceIdentity);
 
         unsafeBuffer.putInt(0, recordingDescriptorEncoder.encodedLength());
         nextRecordingId++;
@@ -242,6 +242,7 @@ class Catalog implements AutoCloseable
             RecordingDescriptorDecoder.SCHEMA_VERSION);
         recordingDescriptorEncoder.wrap(unsafeBuffer, CATALOG_FRAME_LENGTH);
         consumer.accept(recordingDescriptorEncoder, recordingDescriptorDecoder);
+
         return true;
     }
 
@@ -262,8 +263,8 @@ class Catalog implements AutoCloseable
         final int sessionId,
         final int streamId,
         final String channel,
-        final String sourceIdentity,
-        final String originalChannel)
+        final String originalChannel,
+        final String sourceIdentity)
     {
         recordingDescriptorEncoder
             .recordingId(recordingId)
@@ -278,7 +279,7 @@ class Catalog implements AutoCloseable
             .sessionId(sessionId)
             .streamId(streamId)
             .channel(channel)
-            .sourceIdentity(sourceIdentity)
-            .originalChannel(originalChannel);
+            .originalChannel(originalChannel)
+            .sourceIdentity(sourceIdentity);
     }
 }

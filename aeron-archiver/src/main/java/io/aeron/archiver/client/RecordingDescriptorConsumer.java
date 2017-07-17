@@ -37,8 +37,8 @@ public interface RecordingDescriptorConsumer
      * @param sessionId         for the recorded publication.
      * @param streamId          for the recorded publication.
      * @param channel           for the recorded publication.
-     * @param sourceIdentity    for the recorded publication.
      * @param originalChannel   for the recorded publication.
+     * @param sourceIdentity    for the recorded publication.
      */
     void onRecordingDescriptor(
         long correlationId,
@@ -54,6 +54,6 @@ public interface RecordingDescriptorConsumer
         int sessionId,
         int streamId,
         String channel,
-        String sourceIdentity,
-        String originalChannel);
+        String originalChannel,
+        String sourceIdentity);
 }

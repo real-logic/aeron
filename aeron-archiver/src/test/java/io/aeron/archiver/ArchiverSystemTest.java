@@ -466,8 +466,8 @@ public class ArchiverSystemTest
                     final int sessionId,
                     final int streamId,
                     final String channel,
-                    final String sourceIdentity,
-                    final String originalChannel)
+                    final String originalChannel,
+                    final String sourceIdentity)
                 {
                     assertThat(recordingId, is(ArchiverSystemTest.this.recordingId));
                     assertThat(termBufferLength, is(publicationTermBufferLength));

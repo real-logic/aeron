@@ -93,8 +93,8 @@ public class ReplaySessionTest
             SESSION_ID,
             STREAM_ID,
             "channel",
-            "sourceIdentity",
-            "channel");
+            "channel",
+            "sourceIdentity");
 
         when(epochClock.time()).thenReturn(TIME);
         try (RecordingWriter writer = new RecordingWriter(context, descriptorBuffer))
@@ -398,8 +398,8 @@ public class ReplaySessionTest
             1,
             1,
             "channel",
-            "sourceIdentity",
-            "channel");
+            "channel",
+            "sourceIdentity");
 
         try (RecordingWriter writer = new RecordingWriter(context, descriptorBuffer))
         {

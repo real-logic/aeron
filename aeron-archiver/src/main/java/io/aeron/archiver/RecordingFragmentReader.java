@@ -36,7 +36,6 @@ import static java.nio.file.StandardOpenOption.READ;
 
 class RecordingFragmentReader implements AutoCloseable
 {
-
     interface SimplifiedControlledPoll
     {
         /**
@@ -99,6 +98,7 @@ class RecordingFragmentReader implements AutoCloseable
         {
             throw new IllegalStateException("First file must be available");
         }
+
         final long joinTermStartPosition = (joinPosition / termBufferLength) * termBufferLength;
         final long fromSegmentOffset = (fromPosition - joinTermStartPosition) & (segmentFileLength - 1);
         final int termMask = termBufferLength - 1;
@@ -110,6 +110,7 @@ class RecordingFragmentReader implements AutoCloseable
         termOffset = fromTermOffset;
         final DataHeaderFlyweight flyweight = new DataHeaderFlyweight();
         flyweight.wrap(termBuffer, termOffset, DataHeaderFlyweight.HEADER_LENGTH);
+
         if (flyweight.sessionId() != descriptorDecoder.sessionId() ||
             flyweight.streamId() != descriptorDecoder.streamId() ||
             flyweight.termOffset() != termOffset)
@@ -217,6 +218,7 @@ class RecordingFragmentReader implements AutoCloseable
             this.endPosition = newEndPosition;
             return true;
         }
+
         return false;
     }
 
@@ -245,8 +247,10 @@ class RecordingFragmentReader implements AutoCloseable
                 throw new IllegalStateException("Failed to open segment file: " +
                     recordingDataFileName(recordingId, segmentFileIndex));
             }
+
             termStartSegmentOffset = 0;
         }
+
         termBuffer.wrap(mappedSegmentBuffer, termStartSegmentOffset, termBufferLength);
     }
 
@@ -260,6 +264,7 @@ class RecordingFragmentReader implements AutoCloseable
         final String recordingDataFileName = recordingDataFileName(recordingId, segmentFileIndex);
         final File recordingDataFile = new File(archiveDir, recordingDataFileName);
         final long endPosition = currentRecordingEndPosition();
+
         if (!recordingDataFile.exists())
         {
             final int lastSegment = segmentFileIndex(joinPosition, endPosition, segmentFileLength);
@@ -276,6 +281,7 @@ class RecordingFragmentReader implements AutoCloseable
         {
             mappedSegmentBuffer = fileChannel.map(READ_ONLY, 0, segmentFileLength);
         }
+
         return true;
     }
 }

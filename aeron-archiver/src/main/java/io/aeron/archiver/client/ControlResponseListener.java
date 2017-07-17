@@ -20,7 +20,7 @@ import io.aeron.archiver.codecs.ControlResponseCode;
 /**
  * Interface for listening to events from the archiver in response to requests.
  */
-public interface ControlResponseListener
+public interface ControlResponseListener extends RecordingDescriptorConsumer
 {
     /**
      * An event has been received from the Archive in response to a request with a given correlation id.
@@ -46,42 +46,6 @@ public interface ControlResponseListener
      * @param endPosition   reached for the replay.
      */
     void onReplayAborted(long correlationId, long endPosition);
-
-    /**
-     * A recording descriptor returned as a result of requesting a listing of recordings.
-     *
-     * @param correlationId     of the associated request to list recordings.
-     * @param recordingId       of this recording descriptor.
-     * @param joinTimestamp     for the recording.
-     * @param endTimestamp      for the recording.
-     * @param joinPosition      for the recording against the recorded publication.
-     * @param endPosition       reached for the recording.
-     * @param initialTermId     for the recorded publication.
-     * @param segmentFileLength for the recording which is a multiple of termBufferLength.
-     * @param termBufferLength  for the recorded publication.
-     * @param mtuLength         for the recorded publication.
-     * @param sessionId         for the recorded publication.
-     * @param streamId          for the recorded publication.
-     * @param channel           for the recorded publication.
-     * @param sourceIdentity    for the recorded publication.
-     * @param originalChannel   for the recorded publication.
-     */
-    void onRecordingDescriptor(
-        long correlationId,
-        long recordingId,
-        long joinTimestamp,
-        long endTimestamp,
-        long joinPosition,
-        long endPosition,
-        int initialTermId,
-        int segmentFileLength,
-        int termBufferLength,
-        int mtuLength,
-        int sessionId,
-        int streamId,
-        String channel,
-        String sourceIdentity,
-        String originalChannel);
 
     /**
      * Notifies that the request for a recording descriptor of given id has not been found.

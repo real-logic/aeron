@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.function.BiConsumer;
 
 import static java.nio.file.StandardOpenOption.*;
 
@@ -61,6 +62,8 @@ class Catalog implements AutoCloseable
     static final int MAX_RECORDING_ID = MAX_CATALOG_SIZE / RECORD_LENGTH;
 
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
+    private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
+
     private final UnsafeBuffer unsafeBuffer;
     private final MappedByteBuffer mappedByteBuffer;
 
@@ -182,31 +185,70 @@ class Catalog implements AutoCloseable
      */
     private void refreshCatalog()
     {
-        final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();
-        unsafeBuffer.wrap(mappedByteBuffer, (int)(nextRecordingId * RECORD_LENGTH), RECORD_LENGTH);
+        forEach(this::refreshDescriptor, 0, MAX_CATALOG_SIZE / RECORD_LENGTH);
+    }
 
-        while (unsafeBuffer.getInt(0) != 0)
+    void forEach(final BiConsumer<RecordingDescriptorEncoder, RecordingDescriptorDecoder> consumer)
+    {
+        forEach(consumer, 0, nextRecordingId);
+    }
+
+    void forEach(
+        final BiConsumer<RecordingDescriptorEncoder, RecordingDescriptorDecoder> consumer,
+        final long fromId,
+        final long toId)
+    {
+        long nextRecordingId = fromId;
+        while (nextRecordingId < toId && consumeDescriptor(nextRecordingId, consumer))
         {
-            decoder.wrap(
-                unsafeBuffer,
-                CATALOG_FRAME_LENGTH,
-                RecordingDescriptorDecoder.BLOCK_LENGTH,
-                RecordingDescriptorDecoder.SCHEMA_VERSION);
-
-            validateDescriptor(decoder);
             ++nextRecordingId;
-            final int nextRecordOffset = (int) (nextRecordingId * RECORD_LENGTH);
-            if (nextRecordOffset == MAX_CATALOG_SIZE)
-            {
-                break;
-            }
-            unsafeBuffer.wrap(mappedByteBuffer, nextRecordOffset, RECORD_LENGTH);
         }
     }
 
-    private void validateDescriptor(final RecordingDescriptorDecoder decoder)
+    void forEntry(
+        final long recordingId,
+        final BiConsumer<RecordingDescriptorEncoder, RecordingDescriptorDecoder> consumer)
+    {
+        if (recordingId < 0 || recordingId > nextRecordingId)
+        {
+            throw new IllegalArgumentException("recordingId:" + recordingId + " not found.");
+        }
+
+        if (!consumeDescriptor(recordingId, consumer))
+        {
+            throw new IllegalArgumentException("recordingId:" + recordingId + " not valid.");
+        }
+    }
+
+    private boolean consumeDescriptor(
+        final long recordingId,
+        final BiConsumer<RecordingDescriptorEncoder, RecordingDescriptorDecoder> consumer)
+    {
+        final int offset = (int) (recordingId * RECORD_LENGTH);
+        if (offset >= MAX_CATALOG_SIZE)
+        {
+            return false;
+        }
+
+        unsafeBuffer.wrap(mappedByteBuffer, offset, RECORD_LENGTH);
+        if (unsafeBuffer.getInt(0) == 0)
+        {
+            return false;
+        }
+        recordingDescriptorDecoder.wrap(
+            unsafeBuffer,
+            CATALOG_FRAME_LENGTH,
+            RecordingDescriptorDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.SCHEMA_VERSION);
+        recordingDescriptorEncoder.wrap(unsafeBuffer, CATALOG_FRAME_LENGTH);
+        consumer.accept(recordingDescriptorEncoder, recordingDescriptorDecoder);
+        return true;
+    }
+
+    private void refreshDescriptor(final RecordingDescriptorEncoder encoder, final RecordingDescriptorDecoder decoder)
     {
         // TODO:
+        nextRecordingId = decoder.recordingId() + 1;
     }
 
     static void initDescriptor(

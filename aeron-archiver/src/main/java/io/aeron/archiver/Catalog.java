@@ -195,7 +195,12 @@ class Catalog implements AutoCloseable
 
             validateDescriptor(decoder);
             ++nextRecordingId;
-            unsafeBuffer.wrap(mappedByteBuffer, (int)(nextRecordingId * RECORD_LENGTH), RECORD_LENGTH);
+            final int nextRecordOffset = (int) (nextRecordingId * RECORD_LENGTH);
+            if (nextRecordOffset == MAX_CATALOG_SIZE)
+            {
+                break;
+            }
+            unsafeBuffer.wrap(mappedByteBuffer, nextRecordOffset, RECORD_LENGTH);
         }
     }
 

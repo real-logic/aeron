@@ -604,19 +604,3 @@ extern size_t aeron_cnc_length(aeron_driver_context_t *context);
 
 extern size_t aeron_ipc_publication_term_window_length(aeron_driver_context_t *context, size_t term_length);
 extern size_t aeron_network_publication_term_window_length(aeron_driver_context_t *context, size_t term_length);
-
-int aeron_driver_context_set(aeron_driver_context_t *context, const char *setting, const char *value)
-{
-    if (NULL == setting || NULL == value)
-    {
-        errno = EINVAL;
-        aeron_set_err(EINVAL, "aeron_driver_context_set: %s", strerror(EINVAL));
-        return -1;
-    }
-
-    /* TODO: */
-
-    errno = ENOTSUP;
-    aeron_set_err(ENOTSUP, "aeron_driver_context_set: %s", strerror(ENOTSUP));
-    return -1;
-}

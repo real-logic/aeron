@@ -31,9 +31,6 @@ void sigint_handler(int signal)
     atomic_store(&running, false);
 }
 
-/**
- *  $ $0 <file and URL list>
- */
 int main(int argc, char **argv)
 {
     int status = EXIT_FAILURE;

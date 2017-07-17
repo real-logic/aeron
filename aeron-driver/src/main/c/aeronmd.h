@@ -59,12 +59,8 @@ typedef struct aeron_driver_stct aeron_driver_t;
 #define AERON_IPC_CHANNEL_LEN strlen(AERON_IPC_CHANNEL)
 #define AERON_SPY_PREFIX "aeron-spy:"
 
-/* load settings from Java properties file (https://en.wikipedia.org/wiki/.properties) and set env vars */
-int aeron_driver_load_properties_file(const char *filename);
-
 /* create and init context */
 int aeron_driver_context_init(aeron_driver_context_t **context);
-int aeron_driver_context_set(aeron_driver_context_t *context, const char *setting, const char *value);
 int aeron_driver_context_close(aeron_driver_context_t *context);
 
 /* create and init driver from context */

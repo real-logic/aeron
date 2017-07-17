@@ -29,6 +29,7 @@
 #include "aeron_alloc.h"
 #include "media/aeron_send_channel_endpoint.h"
 #include "aeron_driver_conductor.h"
+#include "concurrent/aeron_logbuffer_unblocker.h"
 
 #if !defined(HAVE_RECVMMSG)
 struct mmsghdr
@@ -159,6 +160,7 @@ int aeron_network_publication_create(
     _pub->mtu_length = mtu_length;
     _pub->term_window_length = (int64_t)aeron_network_publication_term_window_length(context, term_buffer_length);
     _pub->linger_timeout_ns = (int64_t)context->publication_linger_timeout_ns;
+    _pub->unblock_timeout_ns = (int64_t)context->publication_unblock_timeout_ns;
     _pub->time_of_last_send_or_heartbeat_ns = now_ns - AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
     _pub->time_of_last_setup_ns = now_ns - AERON_NETWORK_PUBLICATION_SETUP_TIMEOUT_NS - 1;
     _pub->is_exclusive = is_exclusive;
@@ -173,6 +175,8 @@ int aeron_network_publication_create(
     _pub->sender_flow_control_limits_counter =
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_SENDER_FLOW_CONTROL_LIMITS);
     _pub->retransmits_sent_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_RETRANSMITS_SENT);
+    _pub->unblocked_publications_counter =
+        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_UNBLOCKED_PUBLICATIONS);
 
     *publication = _pub;
     return 0;
@@ -633,7 +637,25 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
 void aeron_network_publication_check_for_blocked_publisher(
     aeron_network_publication_t *publication, int64_t now_ns, int64_t snd_pos)
 {
-    /* TODO: */
+    if (snd_pos == publication->conductor_fields.last_snd_pos)
+    {
+        if (aeron_network_publication_producer_position(publication) > snd_pos &&
+            now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->unblock_timeout_ns))
+        {
+            if (aeron_logbuffer_unblocker_unblock(
+                publication->mapped_raw_log.term_buffers,
+                publication->log_meta_data,
+                snd_pos))
+            {
+                aeron_counter_ordered_increment(publication->unblocked_publications_counter, 1);
+            }
+        }
+    }
+    else
+    {
+        publication->conductor_fields.time_of_last_activity_ns = now_ns;
+        publication->conductor_fields.last_snd_pos = snd_pos;
+    }
 }
 
 void aeron_network_publication_incref(void *clientd)

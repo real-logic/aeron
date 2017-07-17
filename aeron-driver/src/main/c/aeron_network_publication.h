@@ -76,6 +76,7 @@ typedef struct aeron_network_publication_stct
     int64_t term_window_length;
     int64_t trip_gain;
     int64_t linger_timeout_ns;
+    int64_t unblock_timeout_ns;
     int64_t time_of_last_send_or_heartbeat_ns;
     int64_t time_of_last_setup_ns;
     int32_t session_id;
@@ -97,6 +98,7 @@ typedef struct aeron_network_publication_stct
     int64_t *heartbeats_sent_counter;
     int64_t *sender_flow_control_limits_counter;
     int64_t *retransmits_sent_counter;
+    int64_t *unblocked_publications_counter;
 }
 aeron_network_publication_t;
 

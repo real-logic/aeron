@@ -234,9 +234,6 @@ TEST_F(LogBufferUnblockerTest, shouldUnblockWhenPositionHasNonCommittedMessageAn
         aeron_logbuffer_compute_position(TERM_ID, blocked_offset, m_position_bits_to_shift, TERM_ID);
     const size_t active_index = aeron_logbuffer_index_by_position(blocked_position, m_position_bits_to_shift);
 
-    aeron_data_header_t *data_header;
-    data_header = (aeron_data_header_t *)(m_term_buffers[active_index].data() + blocked_offset);
-
     m_log_meta_data->term_tail_counters[active_index] = (int64_t)TERM_ID << 32 | TERM_LENGTH;
 
     ASSERT_TRUE(aeron_logbuffer_unblocker_unblock(m_mapped_buffers, m_log_meta_data, blocked_position));

@@ -47,6 +47,8 @@ SET(SOURCE
     concurrent/aeron_term_scanner.c
     concurrent/aeron_term_rebuilder.c
     concurrent/aeron_term_gap_scanner.c
+    concurrent/aeron_term_unblocker.c
+    concurrent/aeron_logbuffer_unblocker.c
     util/aeron_strutil.c
     util/aeron_fileutil.c
     util/aeron_arrayutil.c
@@ -105,6 +107,8 @@ SET(HEADERS
     concurrent/aeron_term_scanner.h
     concurrent/aeron_term_rebuilder.h
     concurrent/aeron_term_gap_scanner.h
+    concurrent/aeron_term_unblocker.h
+    concurrent/aeron_logbuffer_unblocker.h
     command/aeron_control_protocol.h
     protocol/aeron_udp_protocol.h
     aeronmd.h

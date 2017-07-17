@@ -18,7 +18,8 @@
 #define AERON_AERON_LOGBUFFER_DESCRIPTOR_H
 
 #include <assert.h>
-#include <protocol/aeron_udp_protocol.h>
+#include <string.h>
+#include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_bitutil.h"
 #include "concurrent/aeron_atomic.h"
 
@@ -96,6 +97,21 @@ inline int32_t aeron_logbuffer_compute_term_id_from_position(
     return (int32_t)(position >> position_bits_to_shift) + initial_term_id;
 }
 
+inline int32_t aeron_logbuffer_compute_term_offset_from_position(int64_t position, size_t position_bits_to_shift)
+{
+    int64_t mask = (1l << position_bits_to_shift) - 1l;
+
+    return (int32_t)(position & mask);
+}
+
+inline void aeron_logbuffer_rotate_log(
+    aeron_logbuffer_metadata_t *log_meta_data, size_t active_partition_index, int32_t term_id)
+{
+    const size_t next_index = (active_partition_index + 1) % AERON_LOGBUFFER_PARTITION_COUNT;
+    log_meta_data->term_tail_counters[next_index] = (int64_t)term_id << 32;
+    AERON_PUT_ORDERED(log_meta_data->active_partition_index, next_index);
+}
+
 inline void aeron_logbuffer_fill_default_header(
     uint8_t *log_meta_data_buffer, int32_t session_id, int32_t stream_id, int32_t initial_term_id)
 {
@@ -112,6 +128,14 @@ inline void aeron_logbuffer_fill_default_header(
     data_header->term_id = initial_term_id;
     data_header->term_offset = 0;
     data_header->reserved_value = AERON_DATA_HEADER_DEFAULT_RESERVED_VALUE;
+}
+
+inline void aeron_logbuffer_apply_default_header(uint8_t *log_meta_data_buffer, uint8_t *buffer)
+{
+    aeron_logbuffer_metadata_t *log_meta_data = (aeron_logbuffer_metadata_t *)log_meta_data_buffer;
+    uint8_t *default_header = log_meta_data_buffer + sizeof(aeron_logbuffer_metadata_t);
+
+    memcpy(buffer, default_header, (size_t)log_meta_data->default_frame_header_length);
 }
 
 #endif //AERON_AERON_LOGBUFFER_DESCRIPTOR_H

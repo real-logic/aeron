@@ -79,7 +79,7 @@ public class CatalogTest
         final long id,
         final int sessionId,
         final int streamId,
-        final String channel,
+        final String strippedChannel,
         final String sourceIdentity)
         throws IOException
     {
@@ -93,8 +93,8 @@ public class CatalogTest
         assertEquals(id, recordingDescriptorDecoder.recordingId());
         assertEquals(sessionId, recordingDescriptorDecoder.sessionId());
         assertEquals(streamId, recordingDescriptorDecoder.streamId());
-        assertEquals(channel, recordingDescriptorDecoder.channel());
-        assertEquals(channel + "?tag=f", recordingDescriptorDecoder.originalChannel());
+        assertEquals(strippedChannel, recordingDescriptorDecoder.strippedChannel());
+        assertEquals(strippedChannel + "?tag=f", recordingDescriptorDecoder.originalChannel());
         assertEquals(sourceIdentity, recordingDescriptorDecoder.sourceIdentity());
     }
 

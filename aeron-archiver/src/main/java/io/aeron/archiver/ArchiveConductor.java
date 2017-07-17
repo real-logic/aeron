@@ -182,8 +182,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         try
         {
-            final String minimalChannel = minimalChannelBuilder(channel).build();
-            final String key = makeKey(streamId, minimalChannel);
+            final String key = makeKey(streamId, strippedChannelBuilder(channel).build());
             final Subscription oldSubscription = subscriptionMap.remove(key);
             if (oldSubscription != null)
             {
@@ -239,13 +238,13 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 return;
             }
 
-            final String minimalChannel = minimalChannelBuilder(originalChannel).build();
-            final String key = makeKey(streamId, minimalChannel);
+            final String strippedChannel = strippedChannelBuilder(originalChannel).build();
+            final String key = makeKey(streamId, strippedChannel);
             final Subscription oldSubscription = subscriptionMap.get(key);
             if (oldSubscription == null)
             {
                 final Subscription subscription = aeron.addSubscription(
-                    minimalChannel,
+                    strippedChannel,
                     streamId,
                     image -> startImageRecording(originalChannel, image),
                     null);
@@ -361,7 +360,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final String controlChannel;
         if (!channel.contains(CommonContext.TERM_LENGTH_PARAM_NAME))
         {
-            controlChannel = minimalChannelBuilder(channel)
+            controlChannel = strippedChannelBuilder(channel)
                 .termLength(DEFAULT_CONTROL_TERM_LENGTH)
                 .build();
         }
@@ -378,7 +377,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         return streamId + ':' + minimalChannel;
     }
 
-    private ChannelUriStringBuilder minimalChannelBuilder(final String channel)
+    private ChannelUriStringBuilder strippedChannelBuilder(final String channel)
     {
         final ChannelUri channelUri = ChannelUri.parse(channel);
         channelBuilder
@@ -449,7 +448,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final int termId = (int)((fromPosition / termBufferLength) + initialTermId);
         final int termOffset = (int)(fromPosition % termBufferLength);
 
-        final String channel = minimalChannelBuilder(replayChannel)
+        final String channel = strippedChannelBuilder(replayChannel)
             .mtu(mtuLength)
             .termLength(termBufferLength)
             .initialTermId(initialTermId)

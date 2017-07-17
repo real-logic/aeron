@@ -50,7 +50,7 @@ public class FailControlResponseListener implements ControlResponseListener
         final int mtuLength,
         final int sessionId,
         final int streamId,
-        final String channel,
+        final String strippedChannel,
         final String originalChannel,
         final String sourceIdentity)
     {

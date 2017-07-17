@@ -192,7 +192,7 @@ public class ControlResponsePoller
             recordingDescriptorDecoder.mtuLength(),
             recordingDescriptorDecoder.sessionId(),
             recordingDescriptorDecoder.streamId(),
-            recordingDescriptorDecoder.channel(),
+            recordingDescriptorDecoder.strippedChannel(),
             recordingDescriptorDecoder.originalChannel(),
             recordingDescriptorDecoder.sourceIdentity());
     }

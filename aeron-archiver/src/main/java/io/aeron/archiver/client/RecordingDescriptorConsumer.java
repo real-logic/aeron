@@ -36,7 +36,7 @@ public interface RecordingDescriptorConsumer
      * @param mtuLength         for the recorded publication.
      * @param sessionId         for the recorded publication.
      * @param streamId          for the recorded publication.
-     * @param channel           for the recorded publication.
+     * @param strippedChannel   for the recorded publication.
      * @param originalChannel   for the recorded publication.
      * @param sourceIdentity    for the recorded publication.
      */
@@ -53,7 +53,7 @@ public interface RecordingDescriptorConsumer
         int mtuLength,
         int sessionId,
         int streamId,
-        String channel,
+        String strippedChannel,
         String originalChannel,
         String sourceIdentity);
 }

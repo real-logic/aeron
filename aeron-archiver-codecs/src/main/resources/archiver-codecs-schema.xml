@@ -144,7 +144,7 @@
         <field name="mtuLength"          id="10" type="int32"/>
         <field name="sessionId"          id="11" type="int32"/>
         <field name="streamId"           id="12" type="int32"/>
-        <data  name="channel"            id="13" type="varAsciiEncoding"/>
+        <data  name="strippedChannel"    id="13" type="varAsciiEncoding"/>
         <data  name="originalChannel"    id="14" type="varAsciiEncoding"/>
         <data  name="sourceIdentity"     id="15" type="varAsciiEncoding"/>
     </sbe:message>

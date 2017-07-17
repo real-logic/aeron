@@ -262,7 +262,7 @@ class Catalog implements AutoCloseable
         final int mtuLength,
         final int sessionId,
         final int streamId,
-        final String channel,
+        final String strippedChannel,
         final String originalChannel,
         final String sourceIdentity)
     {
@@ -278,7 +278,7 @@ class Catalog implements AutoCloseable
             .mtuLength(mtuLength)
             .sessionId(sessionId)
             .streamId(streamId)
-            .channel(channel)
+            .strippedChannel(strippedChannel)
             .originalChannel(originalChannel)
             .sourceIdentity(sourceIdentity);
     }

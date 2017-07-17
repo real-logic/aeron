@@ -221,11 +221,14 @@ typedef struct aeron_driver_conductor_stct
 
     int64_t *errors_counter;
     int64_t *client_keep_alives_counter;
+    int64_t *unblocked_commands_counter;
 
     aeron_clock_func_t nano_clock;
     aeron_clock_func_t epoch_clock;
 
     int64_t time_of_last_timeout_check_ns;
+    int64_t time_of_last_to_driver_position_change_ns;
+    int64_t last_consumer_command_position;
     int32_t next_session_id;
 }
 aeron_driver_conductor_t;

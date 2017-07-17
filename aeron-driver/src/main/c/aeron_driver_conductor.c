@@ -152,11 +152,17 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->errors_counter = aeron_counter_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_ERRORS);
     conductor->client_keep_alives_counter =
         aeron_counter_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_CLIENT_KEEP_ALIVES);
+    conductor->unblocked_commands_counter =
+        aeron_counter_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_UNBLOCKED_COMMANDS);
+
+    int64_t now_ns = context->nano_clock();
 
     conductor->nano_clock = context->nano_clock;
     conductor->epoch_clock = context->epoch_clock;
     conductor->next_session_id = aeron_randomised_int32();
-    conductor->time_of_last_timeout_check_ns = context->nano_clock();
+    conductor->time_of_last_timeout_check_ns = now_ns;
+    conductor->time_of_last_to_driver_position_change_ns = now_ns;
+    conductor->last_consumer_command_position = aeron_mpsc_rb_consumer_position(&conductor->to_driver_commands);
 
     conductor->context = context;
     return 0;
@@ -1134,6 +1140,28 @@ void aeron_driver_conductor_on_command_queue(void *clientd, volatile void *item)
     cmd->func(clientd, cmd);
 }
 
+void aeron_driver_conductor_on_check_for_blocked_driver_commands(aeron_driver_conductor_t *conductor, int64_t now_ns)
+{
+    int64_t consumer_position = aeron_mpsc_rb_consumer_position(&conductor->to_driver_commands);
+
+    if (consumer_position == conductor->last_consumer_command_position)
+    {
+        if (aeron_mpsc_rb_producer_position(&conductor->to_driver_commands) > consumer_position &&
+            now_ns > (conductor->time_of_last_to_driver_position_change_ns + (int64_t)conductor->context->client_liveness_timeout_ns))
+        {
+            if (aeron_mpsc_rb_unblock(&conductor->to_driver_commands))
+            {
+                aeron_counter_ordered_increment(conductor->unblocked_commands_counter, 1);
+            }
+        }
+    }
+    else
+    {
+        conductor->time_of_last_to_driver_position_change_ns = now_ns;
+        conductor->last_consumer_command_position = consumer_position;
+    }
+}
+
 int aeron_driver_conductor_do_work(void *clientd)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
@@ -1152,7 +1180,7 @@ int aeron_driver_conductor_do_work(void *clientd)
 
         aeron_mpsc_rb_consumer_heartbeat_time(&conductor->to_driver_commands, now_ms);
         aeron_driver_conductor_on_check_managed_resources(conductor, now_ns, now_ms);
-        /* TODO: checkUnblock */
+        aeron_driver_conductor_on_check_for_blocked_driver_commands(conductor, now_ns);
         conductor->time_of_last_timeout_check_ns = now_ns;
         work_count++;
     }

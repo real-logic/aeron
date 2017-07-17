@@ -289,3 +289,6 @@ bool aeron_mpsc_rb_unblock(volatile aeron_mpsc_rb_t *ring_buffer)
 
     return unblocked;
 }
+
+extern int64_t aeron_mpsc_rb_consumer_position(volatile aeron_mpsc_rb_t *ring_buffer);
+extern int64_t aeron_mpsc_rb_producer_position(volatile aeron_mpsc_rb_t *ring_buffer);

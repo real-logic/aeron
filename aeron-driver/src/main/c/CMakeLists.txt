@@ -142,11 +142,13 @@ SET(HEADERS
 set(AGENT_SOURCE
     agent/aeron_driver_agent.c
     concurrent/aeron_mpsc_rb.c
-    concurrent/aeron_atomic.c)
+    concurrent/aeron_atomic.c
+    util/aeron_fileutil.c)
 
 set(AGENT_HEADERS
     agent/aeron_driver_agent.h
-    concurrent/aeron_mpsc_rb.h)
+    concurrent/aeron_mpsc_rb.h
+    util/aeron_fileutil.h)
 
 add_library(aeron_driver_agent SHARED ${AGENT_SOURCE} ${AGENT_HEADERS})
 

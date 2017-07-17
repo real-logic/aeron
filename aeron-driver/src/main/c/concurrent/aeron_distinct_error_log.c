@@ -68,7 +68,7 @@ void aeron_distinct_error_log_close(aeron_distinct_error_log_t *log)
     
     for (size_t i = 0; i < num_observations; i++)
     {
-        aeron_free(observations[i].description);
+        aeron_free((void *)observations[i].description);
     }
     
     aeron_free(observations);

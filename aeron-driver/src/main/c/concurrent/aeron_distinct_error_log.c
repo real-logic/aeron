@@ -19,6 +19,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdatomic.h>
+#include <errno.h>
+#include "util/aeron_error.h"
 #include "aeron_alloc.h"
 #include "aeron_distinct_error_log.h"
 #include "aeron_atomic.h"
@@ -40,7 +42,7 @@ int aeron_distinct_error_log_init(
 {
     if (NULL == log || NULL == clock || NULL == linger)
     {
-        /* TODO: EINVAL */
+        aeron_set_err(EINVAL, "%s", "invalid argument");
         return -1;
     }
 
@@ -161,7 +163,7 @@ int aeron_distinct_error_log_record(
 
     if (NULL == log)
     {
-        /* TODO: EINVAL */
+        aeron_set_err(EINVAL, "%s", "invalid argument");
         return -1;
     }
 
@@ -180,7 +182,7 @@ int aeron_distinct_error_log_record(
 
         if (NULL == observation)
         {
-            // TODO: if no room, then ENOMEM
+            aeron_set_err(ENOMEM, "%s", strerror(ENOMEM));
             return -1;
         }
     }

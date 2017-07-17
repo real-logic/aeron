@@ -20,9 +20,11 @@
 #include <stdio.h>
 #include <dlfcn.h>
 #include <sched.h>
+#include <errno.h>
 #include "aeron_agent.h"
 #include "aeron_alloc.h"
 #include "aeron_driver_context.h"
+#include "util/aeron_error.h"
 
 static void aeron_idle_strategy_sleeping_idle(void *state, int work_count)
 {
@@ -89,7 +91,7 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
 
     if (NULL == idle_strategy_name || NULL == idle_strategy_state)
     {
-        /* TODO: EINVAL */
+        aeron_set_err(EINVAL, "%s", "invalid idle strategy name or state");
         return NULL;
     }
 
@@ -114,7 +116,7 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
         snprintf(idle_func_name, sizeof(idle_func_name) - 1, "%s", idle_strategy_name);
         if ((idle_strat = (aeron_idle_strategy_t *)dlsym(RTLD_DEFAULT, idle_func_name)) == NULL)
         {
-            /* TODO: dlerror and EINVAL */
+            aeron_set_err(EINVAL, "could not find idle strategy %s: dlsym - %s", idle_func_name, dlerror());
             return NULL;
         }
 
@@ -143,7 +145,7 @@ int aeron_agent_init(
 {
     if (NULL == runner || NULL == do_work || NULL == idle_strategy_func)
     {
-        /* TODO: EINVAL */
+        aeron_set_err(EINVAL, "%s", "invalid argument");
         return -1;
     }
 
@@ -178,19 +180,19 @@ int aeron_agent_start(aeron_agent_runner_t *runner)
 
     if (NULL == runner)
     {
-        /* TODO: EINVAL */
+        aeron_set_err(EINVAL, "%s", "invalid argument");
         return -1;
     }
 
     if ((pthread_result = pthread_attr_init(&attr)) != 0)
     {
-        /* TODO: pthread_result has error */
+        aeron_set_err(pthread_result, "pthread_attr_init: %s", strerror(pthread_result));
         return -1;
     }
 
     if ((pthread_result = pthread_create(&runner->thread, &attr, agent_main, runner)) != 0)
     {
-        /* TODO: pthread-result has error */
+        aeron_set_err(pthread_result, "pthread_create: %s", strerror(pthread_result));
         return -1;
     }
 
@@ -209,7 +211,7 @@ int aeron_agent_stop(aeron_agent_runner_t *runner)
 
     if (NULL == runner)
     {
-        /* TODO: EINVAL */
+        aeron_set_err(EINVAL, "%s", "invalid argument");
         return -1;
     }
 
@@ -223,7 +225,7 @@ int aeron_agent_stop(aeron_agent_runner_t *runner)
 
         if ((pthread_result = pthread_join(runner->thread, NULL)))
         {
-            /* TODO: pthread-result has error */
+            aeron_set_err(pthread_result, "pthread_join: %s", strerror(pthread_result));
             return -1;
         }
 
@@ -241,7 +243,7 @@ int aeron_agent_close(aeron_agent_runner_t *runner)
 {
     if (NULL == runner)
     {
-        /* TODO: EINVAL */
+        aeron_set_err(EINVAL, "%s", "invalid argument");
         return -1;
     }
 

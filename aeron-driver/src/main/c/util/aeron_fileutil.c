@@ -25,6 +25,7 @@
 #include <inttypes.h>
 #include <errno.h>
 #include "util/aeron_fileutil.h"
+#include "aeron_error.h"
 
 #define BLOCK_SIZE (4 * 1024)
 
@@ -71,7 +72,9 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
                         {
                             if (write(fd, block, sizeof(block)) < (ssize_t) sizeof(block))
                             {
-                                /* TODO: error */
+                                int errcode = errno;
+
+                                aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
                                 close(fd);
                                 return -1;
                             }
@@ -81,7 +84,9 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
                         {
                             if (write(fd, block, block_remainder) < (ssize_t) block_remainder)
                             {
-                                /* TODO: error */
+                                int errcode = errno;
+
+                                aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
                                 close(fd);
                                 return -1;
                             }
@@ -99,7 +104,9 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
                 }
                 else
                 {
-                    /* TODO: error */
+                    int errcode = errno;
+
+                    aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
                 }
             }
             else
@@ -114,7 +121,9 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
     }
     else
     {
-        /* TODO: grab error */
+        int errcode = errno;
+
+        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
     }
 
     return result;
@@ -140,7 +149,9 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
             }
             else
             {
-                /* TODO: error */
+                int errcode = errno;
+
+                aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
             }
         }
 
@@ -148,7 +159,9 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
     }
     else
     {
-        /* TODO: grab error */
+        int errcode = errno;
+
+        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
     }
 
     return result;
@@ -337,19 +350,25 @@ int aeron_map_raw_log(
             }
             else
             {
-                /* TODO: grab error */
+                int errcode = errno;
+
+                aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
                 close(fd);
             }
         }
         else
         {
-            /* TODO: grab error */
+            int errcode = errno;
+
+            aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
             close(fd);
         }
     }
     else
     {
-        /* TODO: grab error */
+        int errcode = errno;
+
+        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
     }
 
     return result;

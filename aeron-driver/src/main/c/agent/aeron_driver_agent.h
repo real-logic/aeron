@@ -78,7 +78,6 @@ typedef int (*aeron_driver_context_init_t)(aeron_driver_context_t **);
 
 void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, size_t length, void *clientd);
 
-/* TODO: hook recvmsg, recvmmsg, to do FRAME_IN, FRAME_OUT */
 /* TODO: hook aeron_driver_init to display options, etc. for instance. */
 
 #endif //AERON_AERON_DRIVER_AGENT_H

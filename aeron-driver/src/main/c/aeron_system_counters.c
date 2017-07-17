@@ -15,6 +15,8 @@
  */
 
 #include <string.h>
+#include <errno.h>
+#include "util/aeron_error.h"
 #include "aeron_system_counters.h"
 #include "aeron_alloc.h"
 
@@ -59,7 +61,7 @@ int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters
 {
     if (NULL == counters || NULL == manager)
     {
-        /* TODO: EINVAL */
+        aeron_set_err(EINVAL, "%s", "invalid argument");
         return -1;
     }
 

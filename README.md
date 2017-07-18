@@ -95,6 +95,7 @@ You require the following to build the C++ API for Aeron:
 
 * 3.0.2 or higher of [CMake](http://www.cmake.org/)
 * C++11 supported compiler for the supported platform
+* C11 supported compiler for the supported platform
 * Requirements to build [HdrHistogram_c](https://github.com/HdrHistogram/HdrHistogram_c). HdrHistogram requires `zlib.h` currently. So on Ubuntu:
 
     `$ sudo apt-get install libz-dev`
@@ -114,6 +115,26 @@ If you are comfortable with using CMake, then a full clean, build, and test look
     $ cmake --build . --clean-first
     $ ctest
 
+#### C Media Driver
+
+By default, the C Media Driver is not built as part of the C++ Build. However, it can be enabled via the CMake
+option `BUILD_AERON_DRIVER` being set to `ON`.
+
+For convenience, a script is provided that does a full clean, build, and test of all targets as a Release build of the
+C++ API and the C Media Driver.
+
+    $ ./cppbuild/cppbuild-driver
+
+If you are comfortable with using CMake, then a full clean, build, and test looks like:
+
+    $ mkdir -p cppbuild/Debug
+    $ cd cppbuild/Debug
+    $ cmake -DBUILD_AERON_DRIVER=ON ../..
+    $ cmake --build . --clean-first
+    $ ctest
+
+__NOTE__: C Media Driver is currently only supported on Mac and Linux.
+
 #### Documentation
 
 If you have doxygen installed and want to build the Doxygen doc, there is a nice `doc` target that can be used.
@@ -127,13 +148,6 @@ has been built previous to the packaging, it will be included. Packages created 
 by running `cpack` directly.
 
     $ make package
-
-#### C++ Driver
-
-__WARNING__: The C++ media driver is currently in development. Any C++ code in `aeron-driver` should be considered experimental
-and may not build or work correctly at this time.
-
-The driver can be added to the build and tests by enabling the CMake variable `BUILD_AERON_DRIVER` to `ON`.
 
 Running Samples
 ---------------

@@ -154,7 +154,7 @@ class ControlSession implements Session, ControlRequestListener
             controlPublication,
             fromIndex,
             recordCount,
-            channel,
+            conductor.strippedChannelBuilder(channel).build(),
             streamId,
             this);
         this.listRecordingsSessions.add(listRecordingsSession);

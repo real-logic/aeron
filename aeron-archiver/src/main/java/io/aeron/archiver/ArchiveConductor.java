@@ -398,7 +398,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         return streamId + ':' + minimalChannel;
     }
 
-    private ChannelUriStringBuilder strippedChannelBuilder(final String channel)
+    ChannelUriStringBuilder strippedChannelBuilder(final String channel)
     {
         final ChannelUri channelUri = ChannelUri.parse(channel);
         channelBuilder

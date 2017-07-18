@@ -37,8 +37,6 @@ import static org.agrona.BitUtil.SIZE_OF_SHORT;
  */
 public class HeaderFlyweight extends UnsafeBuffer
 {
-    public static final byte[] EMPTY_BUFFER = new byte[0];
-
     /**
      * header type PAD
      */
@@ -91,7 +89,6 @@ public class HeaderFlyweight extends UnsafeBuffer
 
     public HeaderFlyweight()
     {
-        super(EMPTY_BUFFER);
     }
 
     public HeaderFlyweight(final UnsafeBuffer buffer)

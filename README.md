@@ -79,11 +79,11 @@ You require the following to build Aeron:
 
 * Latest stable [Oracle JDK 8](http://www.oracle.com/technetwork/java/)
 
-You must first build and install [Agrona](https://github.com/real-logic/agrona) into the local maven repository
+You must first build and install [Agrona](https://github.com/real-logic/agrona) and [Simple Binary Encoding (SBE)](https://github.com/real-logic/simple-binary-encoding) into the local maven repository
 
     $ ./gradlew
 
-After Agrona is compiled and installed, then you can build Aeron.
+After Agrona & SBE is compiled and installed, then you can build Aeron.
 
 Full clean and build of all modules
 

@@ -34,4 +34,6 @@ interface ControlRequestListener
         long recordingId,
         long position,
         long length);
+
+    void onListRecordingsForUri(long correlationId, int fromIndex, int recordCount, String channel, int streamId);
 }

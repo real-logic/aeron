@@ -16,33 +16,43 @@
 package io.aeron.archiver;
 
 import io.aeron.Publication;
-import io.aeron.archiver.codecs.ControlResponseCode;
+import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 
-class ListRecordingsSession extends AbstractListRecordingsSession
+class ListRecordingsForUriSession extends AbstractListRecordingsSession
 {
-    private final long fromId;
-    private final long toId;
-
+    private static final int MAX_SCAN_PER_WORK = 16;
+    private final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();
+    private final int fromIndex;
+    private final int count;
+    private final String channel;
+    private final int streamId;
     private long recordingId;
+    private int matched;
+    private int sent;
 
-    ListRecordingsSession(
+    ListRecordingsForUriSession(
         final long correlationId,
         final Publication controlPublication,
-        final long fromId,
+        final int fromIndex,
         final int count,
+        final String channel,
+        final int streamId,
         final Catalog catalog,
         final ControlSessionProxy proxy,
         final ControlSession controlSession)
     {
         super(correlationId, controlPublication, catalog, proxy, controlSession);
-        this.recordingId = fromId;
-        this.fromId = fromId;
-        this.toId = fromId + count;
+
+        this.fromIndex = fromIndex;
+        this.count = count;
+        this.channel = channel;
+        this.streamId = streamId;
     }
 
     protected int sendDescriptors()
     {
         int sentBytes = 0;
+        int scanned = 0;
         do
         {
             if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
@@ -56,32 +66,38 @@ class ListRecordingsSession extends AbstractListRecordingsSession
 
                 return 0;
             }
+            recordingId++;
+            scanned++;
+            decoder.wrap(
+                descriptorBuffer,
+                Catalog.CATALOG_FRAME_LENGTH,
+                RecordingDescriptorDecoder.BLOCK_LENGTH,
+                RecordingDescriptorDecoder.SCHEMA_VERSION);
+            if (decoder.streamId() != streamId || !decoder.strippedChannel().equals(channel))
+            {
+                continue;
+            }
 
+            if (matched++ < fromIndex)
+            {
+                continue;
+            }
             sentBytes += proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
 
-            if (++recordingId >= toId)
+            if (sent++ >= count)
             {
                 state = State.INACTIVE;
                 break;
             }
         }
-        while (sentBytes < controlPublication.maxPayloadLength());
+        while (sentBytes < controlPublication.maxPayloadLength() && scanned < MAX_SCAN_PER_WORK);
 
         return sentBytes;
     }
 
     protected int init()
     {
-        if (fromId >= catalog.nextRecordingId())
-        {
-            sendError(ControlResponseCode.RECORDING_NOT_FOUND, "Requested start id exceeds max known recording id");
-            state = State.INACTIVE;
-        }
-        else
-        {
-            state = State.ACTIVE;
-        }
-
+        state = State.ACTIVE;
         return 1;
     }
 }

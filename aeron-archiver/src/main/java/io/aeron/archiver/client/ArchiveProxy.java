@@ -15,9 +15,9 @@
  */
 package io.aeron.archiver.client;
 
-import io.aeron.*;
+import io.aeron.Publication;
 import io.aeron.archiver.codecs.*;
-import org.agrona.*;
+import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 
@@ -38,6 +38,8 @@ public class ArchiveProxy
     private final AbortReplayRequestEncoder abortReplayRequestEncoder = new AbortReplayRequestEncoder();
     private final StopRecordingRequestEncoder stopRecordingRequestEncoder = new StopRecordingRequestEncoder();
     private final ListRecordingsRequestEncoder listRecordingsRequestEncoder = new ListRecordingsRequestEncoder();
+    private final ListRecordingsForUriRequestEncoder listRecordingsForUriRequestEncoder =
+        new ListRecordingsForUriRequestEncoder();
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -192,6 +194,34 @@ public class ArchiveProxy
             .recordCount(recordCount);
 
         return offer(listRecordingsRequestEncoder.encodedLength());
+    }
+
+    /**
+     * List a range of recording descriptors.
+     *
+     * @param fromIndex       at which to begin listing.
+     * @param recordCount     for the number of descriptors to be listed.
+     * @param channel         to match recordings on.
+     * @param streamId        to match recordings on.
+     * @param correlationId   for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean listRecordingsForChannelUri(
+        final int fromIndex,
+        final int recordCount,
+        final String channel,
+        final int streamId,
+        final long correlationId)
+    {
+        listRecordingsForUriRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId)
+            .fromIndex(fromIndex)
+            .recordCount(recordCount)
+            .streamId(streamId)
+            .channel(channel);
+
+        return offer(listRecordingsForUriRequestEncoder.encodedLength());
     }
 
     private boolean offer(final int length)

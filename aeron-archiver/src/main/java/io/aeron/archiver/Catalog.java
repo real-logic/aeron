@@ -153,7 +153,7 @@ class Catalog implements AutoCloseable
 
     boolean wrapDescriptor(final long recordingId, final UnsafeBuffer buffer)
     {
-        if (recordingId < 0 || recordingId > nextRecordingId)
+        if (recordingId < 0 || recordingId >= nextRecordingId)
         {
             return false;
         }
@@ -165,7 +165,7 @@ class Catalog implements AutoCloseable
 
     UnsafeBuffer wrapDescriptor(final long recordingId)
     {
-        if (recordingId < 0 || recordingId > nextRecordingId)
+        if (recordingId < 0 || recordingId >= nextRecordingId)
         {
             return null;
         }
@@ -209,7 +209,7 @@ class Catalog implements AutoCloseable
         final long recordingId,
         final BiConsumer<RecordingDescriptorEncoder, RecordingDescriptorDecoder> consumer)
     {
-        if (recordingId < 0 || recordingId > nextRecordingId)
+        if (recordingId < 0 || recordingId >= nextRecordingId)
         {
             throw new IllegalArgumentException("recordingId:" + recordingId + " not found.");
         }

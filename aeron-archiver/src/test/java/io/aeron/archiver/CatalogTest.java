@@ -40,12 +40,6 @@ public class CatalogTest
     @Before
     public void before() throws Exception
     {
-        recordingDescriptorDecoder.wrap(
-            unsafeBuffer,
-            Catalog.CATALOG_FRAME_LENGTH,
-            RecordingDescriptorDecoder.BLOCK_LENGTH,
-            RecordingDescriptorDecoder.SCHEMA_VERSION);
-
         try (Catalog catalog = new Catalog(archiveDir, null, 0))
         {
             recordingOneId = catalog.addNewRecording(

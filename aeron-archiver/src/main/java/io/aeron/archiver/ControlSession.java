@@ -39,7 +39,7 @@ class ControlSession implements Session, ControlRequestListener
     private Publication controlPublication;
     private State state = State.INIT;
     private long timeConnectedMs;
-    private ArrayDeque<ListRecordingsSession> listRecordingsSessions = new ArrayDeque<>();
+    private ArrayDeque<AbstractListRecordingsSession> listRecordingsSessions = new ArrayDeque<>();
 
     ControlSession(final Image image, final ArchiveConductor conductor, final EpochClock epochClock)
     {
@@ -142,6 +142,29 @@ class ControlSession implements Session, ControlRequestListener
         conductor.startRecordingSubscription(correlationId, controlPublication, channel, streamId);
     }
 
+    public void onListRecordingsForUri(
+        final long correlationId,
+        final int fromIndex,
+        final int recordCount,
+        final String channel,
+        final int streamId)
+    {
+        final ListRecordingsForUriSession listRecordingsSession = conductor.newListRecordingsForUriSession(
+            correlationId,
+            controlPublication,
+            fromIndex,
+            recordCount,
+            channel,
+            streamId,
+            this);
+        this.listRecordingsSessions.add(listRecordingsSession);
+
+        if (listRecordingsSessions.size() == 1)
+        {
+            conductor.addSession(listRecordingsSession);
+        }
+    }
+
     public void onListRecordings(final long correlationId, final long fromRecordingId, final int recordCount)
     {
         validateActive();
@@ -156,19 +179,6 @@ class ControlSession implements Session, ControlRequestListener
         if (listRecordingsSessions.size() == 1)
         {
             conductor.addSession(listRecordingsSession);
-        }
-    }
-
-    void onListRecordingSessionClosed(final ListRecordingsSession listRecordingsSession)
-    {
-        if (listRecordingsSession != listRecordingsSessions.poll())
-        {
-            throw new IllegalStateException();
-        }
-
-        if (!isDone() && listRecordingsSessions.size() != 0)
-        {
-            conductor.addSession(listRecordingsSessions.peek());
         }
     }
 
@@ -196,6 +206,19 @@ class ControlSession implements Session, ControlRequestListener
             recordingId,
             position,
             length);
+    }
+
+    void onListRecordingSessionClosed(final AbstractListRecordingsSession listRecordingsSession)
+    {
+        if (listRecordingsSession != listRecordingsSessions.poll())
+        {
+            throw new IllegalStateException();
+        }
+
+        if (!isDone() && listRecordingsSessions.size() != 0)
+        {
+            conductor.addSession(listRecordingsSessions.peek());
+        }
     }
 
     private void validateActive()

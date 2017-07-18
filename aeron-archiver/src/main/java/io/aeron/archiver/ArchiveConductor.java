@@ -286,6 +286,27 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             controlSession);
     }
 
+    ListRecordingsForUriSession newListRecordingsForUriSession(
+        final long correlationId,
+        final Publication controlPublication,
+        final int fromIndex,
+        final int count,
+        final String channel,
+        final int streamId,
+        final ControlSession controlSession)
+    {
+        return new ListRecordingsForUriSession(
+            correlationId,
+            controlPublication,
+            fromIndex,
+            count,
+            channel,
+            streamId,
+            catalog,
+            controlSessionProxy,
+            controlSession);
+    }
+
     void stopReplay(final long correlationId, final Publication controlPublication, final long replayId)
     {
         final ReplaySession session = replaySessionByIdMap.remove(replayId);

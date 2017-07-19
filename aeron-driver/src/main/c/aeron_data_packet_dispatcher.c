@@ -314,3 +314,4 @@ extern int aeron_data_packet_dispatcher_remove_pending_setup(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id);
 extern int aeron_data_packet_dispatcher_remove_cooldown(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id);
+extern bool aeron_data_packet_dispatcher_should_elicit_setup_message(aeron_data_packet_dispatcher_t *dispatcher);

@@ -172,7 +172,7 @@ int aeron_driver_receiver_do_work(void *clientd)
                 last_index--;
                 receiver->pending_setups.length--;
             }
-            else
+            else if (aeron_receive_channel_endpoint_should_elicit_setup_message(entry->endpoint))
             {
                 if (aeron_receive_channel_endpoint_send_sm(
                     entry->endpoint,
@@ -186,6 +186,7 @@ int aeron_driver_receiver_do_work(void *clientd)
                 {
                     AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver send periodic SM: %s", aeron_errmsg());
                 }
+                entry->time_of_status_message_ns = now_ns;
             }
         }
     }

@@ -151,4 +151,9 @@ inline bool aeron_receive_channel_endpoint_has_receiver_released(aeron_receive_c
     return has_receiver_released;
 }
 
+inline bool aeron_receive_channel_endpoint_should_elicit_setup_message(aeron_receive_channel_endpoint_t *endpoint)
+{
+    return aeron_data_packet_dispatcher_should_elicit_setup_message(&endpoint->dispatcher);
+}
+
 #endif //AERON_AERON_RECEIVE_CHANNEL_ENDPOINT_H

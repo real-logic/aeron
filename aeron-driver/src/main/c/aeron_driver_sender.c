@@ -195,7 +195,7 @@ void aeron_driver_sender_on_add_publication(void *clientd, void *command)
 
     int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(
-        ensure_capacity_result, sender->network_publicaitons, sizeof(aeron_driver_sender_network_publication_entry_t));
+        ensure_capacity_result, sender->network_publicaitons, aeron_driver_sender_network_publication_entry_t);
 
     if (ensure_capacity_result < 0)
     {

@@ -23,6 +23,7 @@
 #include "aeron_udp_channel.h"
 #include "aeron_udp_channel_transport.h"
 #include "concurrent/aeron_counters_manager.h"
+#include "aeron_udp_destination_tracker.h"
 
 typedef struct aeron_send_channel_endpoint_stct
 {
@@ -40,6 +41,7 @@ typedef struct aeron_send_channel_endpoint_stct
     aeron_udp_channel_transport_t transport;
     aeron_int64_to_ptr_hash_map_t publication_dispatch_map;
     aeron_counter_t channel_status;
+    aeron_udp_destination_tracker_t *destination_tracker;
     bool has_sender_released;
 }
 aeron_send_channel_endpoint_t;
@@ -50,7 +52,7 @@ int aeron_send_channel_endpoint_create(
     aeron_counter_t *status_indicator,
     aeron_driver_context_t *context);
 
-int aeron_send_channel_endpoint_delete(aeron_counters_manager_t *counters_manager, aeron_send_channel_endpoint_t *channel);
+int aeron_send_channel_endpoint_delete(aeron_counters_manager_t *counters_manager, aeron_send_channel_endpoint_t *endpoint);
 
 void aeron_send_channel_endpoint_incref(void *clientd);
 void aeron_send_channel_endpoint_decref(void *clientd);
@@ -87,6 +89,18 @@ inline bool aeron_send_channel_endpoint_has_sender_released(aeron_send_channel_e
     AERON_GET_VOLATILE(has_sender_released, endpoint->has_sender_released);
 
     return has_sender_released;
+}
+
+inline int aeron_send_channel_endpoint_add_destination(
+    aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr)
+{
+    return aeron_udp_destination_tracker_add_destination(endpoint->destination_tracker, 0, INT64_MAX, addr);
+}
+
+inline int aeron_send_channel_endpoint_remove_destination(
+    aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr)
+{
+    return aeron_udp_destination_tracker_remove_destination(endpoint->destination_tracker, addr);
 }
 
 #endif //AERON_AERON_SEND_CHANNEL_ENDPOINT_H

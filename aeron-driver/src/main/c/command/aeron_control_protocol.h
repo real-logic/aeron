@@ -114,6 +114,14 @@ typedef struct aeron_image_message_stct
     int32_t channel_length;
 }
 aeron_image_message_t;
+
+typedef struct aeron_destination_command_stct
+{
+    aeron_correlated_command_t correlated;
+    int64_t registration_id;
+    int32_t channel_length;
+}
+aeron_destination_command_t;
 #pragma pack(pop)
 
 

@@ -40,6 +40,8 @@ int aeron_udp_destination_tracker_init(
     tracker->destinations.array = NULL;
     tracker->destinations.length = 0;
     tracker->destinations.capacity = 0;
+    tracker->is_manual_control_mode =
+        timeout == AERON_UDP_DESTINATION_TRACKER_MANUAL_DESTINATION_TIMEOUT_NS ? true : false;
 
     return 0;
 }

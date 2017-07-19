@@ -38,6 +38,9 @@ aeron_uri_params_t;
 #define AERON_UDP_CHANNEL_TTL_KEY "ttl"
 #define AERON_UDP_CHANNEL_CONTROL_KEY "control"
 
+#define AERON_UDP_CHANNEL_CONTROL_MODE_KEY "control-mode"
+#define AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL_VALUE "manual"
+
 typedef struct aeron_udp_channel_params_stct
 {
     const char *endpoint_key;
@@ -84,5 +87,7 @@ int aeron_ipc_uri_parse(char *uri, aeron_ipc_channel_params_t *params);
 int aeron_uri_parse(const char *uri, aeron_uri_t *params);
 
 uint8_t aeron_uri_multicast_ttl(aeron_uri_t *uri);
+
+const char *aeron_uri_find_udp_param_value(aeron_uri_t *uri, const char *key);
 
 #endif //AERON_AERON_URI_H

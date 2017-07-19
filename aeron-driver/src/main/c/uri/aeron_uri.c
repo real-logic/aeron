@@ -232,3 +232,18 @@ uint8_t aeron_uri_multicast_ttl(aeron_uri_t *uri)
 
     return result;
 }
+
+const char *aeron_uri_find_udp_param_value(aeron_uri_t *uri, const char *key)
+{
+    for (size_t i = 0, length = uri->params.udp.additional_params.length; i < length; i++)
+    {
+        aeron_uri_param_t *param = &uri->params.udp.additional_params.array[i];
+
+        if (strncmp(key, param->key, strlen(key)) == 0)
+        {
+            return param->value;
+        }
+    }
+
+    return NULL;
+}

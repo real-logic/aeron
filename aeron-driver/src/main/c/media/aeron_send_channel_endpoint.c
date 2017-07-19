@@ -49,6 +49,32 @@ int aeron_send_channel_endpoint_create(
     {
         return -1;
     }
+
+    _endpoint->destination_tracker = NULL;
+    if (channel->explicit_control)
+    {
+        const char *control_mode = aeron_uri_find_udp_param_value(&channel->uri, AERON_UDP_CHANNEL_CONTROL_MODE_KEY);
+        int64_t destination_timeout_ns = AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS;
+
+        if (NULL != control_mode &&
+            strncmp(
+                control_mode,
+                AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL_VALUE,
+                strlen(AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL_VALUE)) == 0)
+        {
+            destination_timeout_ns = AERON_UDP_DESTINATION_TRACKER_MANUAL_DESTINATION_TIMEOUT_NS;
+        }
+
+        if (aeron_alloc((void **)&_endpoint->destination_tracker, sizeof(aeron_udp_destination_tracker_t)) < 0 ||
+            aeron_udp_destination_tracker_init(
+                _endpoint->destination_tracker,
+                context->nano_clock,
+                destination_timeout_ns) < 0)
+        {
+            return -1;
+        }
+    }
+
     _endpoint->conductor_fields.refcnt = 0;
     _endpoint->conductor_fields.udp_channel = channel;
     _endpoint->conductor_fields.managed_resource.incref = aeron_send_channel_endpoint_incref;
@@ -88,17 +114,24 @@ int aeron_send_channel_endpoint_create(
     return 0;
 }
 
-int aeron_send_channel_endpoint_delete(aeron_counters_manager_t *counters_manager, aeron_send_channel_endpoint_t *channel)
+int aeron_send_channel_endpoint_delete(aeron_counters_manager_t *counters_manager, aeron_send_channel_endpoint_t *endpoint)
 {
-    if (NULL != counters_manager && -1 != channel->channel_status.counter_id)
+    if (NULL != counters_manager && -1 != endpoint->channel_status.counter_id)
     {
-        aeron_counters_manager_free(counters_manager, (int32_t)channel->channel_status.counter_id);
+        aeron_counters_manager_free(counters_manager, (int32_t)endpoint->channel_status.counter_id);
     }
 
-    aeron_int64_to_ptr_hash_map_delete(&channel->publication_dispatch_map);
-    aeron_udp_channel_delete(channel->conductor_fields.udp_channel);
-    aeron_udp_channel_transport_close(&channel->transport);
-    aeron_free(channel);
+    aeron_int64_to_ptr_hash_map_delete(&endpoint->publication_dispatch_map);
+    aeron_udp_channel_delete(endpoint->conductor_fields.udp_channel);
+    aeron_udp_channel_transport_close(&endpoint->transport);
+
+    if (NULL != endpoint->destination_tracker)
+    {
+        aeron_udp_destination_tracker_close(endpoint->destination_tracker);
+        aeron_free(endpoint->destination_tracker);
+    }
+
+    aeron_free(endpoint);
     return 0;
 }
 
@@ -117,23 +150,44 @@ void aeron_send_channel_endpoint_decref(void *clientd)
 
 int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen)
 {
-    /* TODO: handle MDC */
-    for (size_t i = 0; i < vlen; i++)
+    int result = 0;
+
+    if (NULL == endpoint->destination_tracker)
     {
-        mmsghdr[i].msg_hdr.msg_name = &endpoint->conductor_fields.udp_channel->remote_data;
-        mmsghdr[i].msg_hdr.msg_namelen = AERON_ADDR_LEN(&endpoint->conductor_fields.udp_channel->remote_data);
+        for (size_t i = 0; i < vlen; i++)
+        {
+            mmsghdr[i].msg_hdr.msg_name = &endpoint->conductor_fields.udp_channel->remote_data;
+            mmsghdr[i].msg_hdr.msg_namelen = AERON_ADDR_LEN(&endpoint->conductor_fields.udp_channel->remote_data);
+        }
+
+        result = aeron_udp_channel_transport_sendmmsg(&endpoint->transport, mmsghdr, vlen);
+    }
+    else
+    {
+        result = aeron_udp_destination_tracker_sendmmsg(
+            endpoint->destination_tracker, &endpoint->transport, mmsghdr, vlen);
     }
 
-    return aeron_udp_channel_transport_sendmmsg(&endpoint->transport, mmsghdr, vlen);
+    return result;
 }
 
 int aeron_send_channel_sendmsg(aeron_send_channel_endpoint_t *endpoint, struct msghdr *msghdr)
 {
-    /* TODO: handle MDC */
-    msghdr->msg_name = &endpoint->conductor_fields.udp_channel->remote_data;
-    msghdr->msg_namelen = AERON_ADDR_LEN(&endpoint->conductor_fields.udp_channel->remote_data);
+    int result = 0;
 
-    return aeron_udp_channel_transport_sendmsg(&endpoint->transport, msghdr);
+    if (NULL == endpoint->destination_tracker)
+    {
+        msghdr->msg_name = &endpoint->conductor_fields.udp_channel->remote_data;
+        msghdr->msg_namelen = AERON_ADDR_LEN(&endpoint->conductor_fields.udp_channel->remote_data);
+
+        result = aeron_udp_channel_transport_sendmsg(&endpoint->transport, msghdr);
+    }
+    else
+    {
+        result = aeron_udp_destination_tracker_sendmsg(endpoint->destination_tracker, &endpoint->transport, msghdr);
+    }
+
+    return result;
 }
 
 int aeron_send_channel_endpoint_add_publication(
@@ -227,6 +281,14 @@ void aeron_send_channel_endpoint_on_nak(
     }
 }
 
+void aeron_send_channel_endpoint_publication_trigger_send_setup_frame(
+    void *clientd, int64_t key, void *value)
+{
+    aeron_network_publication_t *publication = (aeron_network_publication_t *)value;
+
+    aeron_network_publication_trigger_send_setup_frame(publication);
+}
+
 void aeron_send_channel_endpoint_on_status_message(
     aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
 {
@@ -236,7 +298,20 @@ void aeron_send_channel_endpoint_on_status_message(
     aeron_network_publication_t *publication =
         aeron_int64_to_ptr_hash_map_get(&endpoint->publication_dispatch_map, key_value);
 
-    /* TODO: handle multi-destination-cast via destination tracker */
+    if (NULL != endpoint->destination_tracker)
+    {
+        aeron_udp_destination_tracker_on_status_message(endpoint->destination_tracker, buffer, length, addr);
+
+        if (0 == sm_header->session_id &&
+            0 == sm_header->stream_id &&
+            (sm_header->frame_header.flags & AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG))
+        {
+            aeron_int64_to_ptr_hash_map_for_each(
+                &endpoint->publication_dispatch_map,
+                aeron_send_channel_endpoint_publication_trigger_send_setup_frame,
+                endpoint);
+        }
+    }
 
     if (NULL != publication)
     {
@@ -268,3 +343,7 @@ void aeron_send_channel_endpoint_on_rttm(
 
 extern void aeron_send_channel_endpoint_sender_release(aeron_send_channel_endpoint_t *endpoint);
 extern bool aeron_send_channel_endpoint_has_sender_released(aeron_send_channel_endpoint_t *endpoint);
+extern int aeron_send_channel_endpoint_add_destination(
+    aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr);
+extern int aeron_send_channel_endpoint_remove_destination(
+    aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr);

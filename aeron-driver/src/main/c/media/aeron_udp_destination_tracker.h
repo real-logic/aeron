@@ -21,6 +21,9 @@
 #include "aeronmd.h"
 #include "aeron_udp_channel_transport.h"
 
+#define AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS (5 * 1000 * 1000 * 1000L)
+#define AERON_UDP_DESTINATION_TRACKER_MANUAL_DESTINATION_TIMEOUT_NS (0L)
+
 typedef struct aeron_udp_destination_entry_stct
 {
     struct sockaddr_storage addr;
@@ -41,6 +44,7 @@ typedef struct aeron_udp_destination_tracker_stct
 
     aeron_clock_func_t nano_clock;
     int64_t destination_timeout_ns;
+    bool is_manual_control_mode;
 }
 aeron_udp_destination_tracker_t;
 

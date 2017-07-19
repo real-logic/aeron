@@ -146,3 +146,71 @@ void aeron_driver_sender_proxy_remove_publication(
         aeron_driver_sender_proxy_offer(sender_proxy, cmd);
     }
 }
+
+void aeron_driver_sender_proxy_add_destination(
+    aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr)
+{
+    if (AERON_THREADING_MODE_SHARED == sender_proxy->threading_mode)
+    {
+        aeron_command_destination_t cmd =
+            {
+                .base.func = aeron_driver_sender_on_add_destination,
+                .base.item = NULL,
+                .endpoint = endpoint
+            };
+        memcpy(&cmd.control_address, addr, sizeof(cmd.control_address));
+
+        aeron_driver_sender_on_add_destination(sender_proxy->sender, &cmd);
+    }
+    else
+    {
+        aeron_command_destination_t *cmd;
+
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_destination_t)) < 0)
+        {
+            aeron_counter_ordered_increment(sender_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->base.func = aeron_driver_sender_on_add_destination;
+        cmd->base.item = NULL;
+        cmd->endpoint = endpoint;
+        memcpy(&cmd->control_address, addr, sizeof(cmd->control_address));
+
+        aeron_driver_sender_proxy_offer(sender_proxy, cmd);
+    }
+}
+
+void aeron_driver_sender_proxy_remove_destination(
+    aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr)
+{
+    if (AERON_THREADING_MODE_SHARED == sender_proxy->threading_mode)
+    {
+        aeron_command_destination_t cmd =
+            {
+                .base.func = aeron_driver_sender_on_remove_destination,
+                .base.item = NULL,
+                .endpoint = endpoint
+            };
+        memcpy(&cmd.control_address, addr, sizeof(cmd.control_address));
+
+        aeron_driver_sender_on_remove_destination(sender_proxy->sender, &cmd);
+    }
+    else
+    {
+        aeron_command_destination_t *cmd;
+
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_destination_t)) < 0)
+        {
+            aeron_counter_ordered_increment(sender_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->base.func = aeron_driver_sender_on_remove_destination;
+        cmd->base.item = NULL;
+        cmd->endpoint = endpoint;
+        memcpy(&cmd->control_address, addr, sizeof(cmd->control_address));
+
+        aeron_driver_sender_proxy_offer(sender_proxy, cmd);
+    }
+}

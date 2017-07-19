@@ -353,6 +353,14 @@ int aeron_driver_conductor_on_client_keepalive(
     aeron_driver_conductor_t *conductor,
     int64_t client_id);
 
+int aeron_driver_conductoor_on_add_destination(
+    aeron_driver_conductor_t *conductor,
+    aeron_destination_command_t *command);
+
+int aeron_driver_conductoor_on_remove_destination(
+    aeron_driver_conductor_t *conductor,
+    aeron_destination_command_t *command);
+
 void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item);
 
 inline bool aeron_driver_conductor_is_subscribeable_linked(

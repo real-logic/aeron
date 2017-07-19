@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <errno.h>
+#include <uri/aeron_uri.h>
 #include "media/aeron_receive_channel_endpoint.h"
 #include "util/aeron_netutil.h"
 #include "util/aeron_error.h"
@@ -1107,6 +1108,38 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             break;
         }
 
+        case AERON_COMMAND_ADD_DESTINATION:
+        {
+            aeron_destination_command_t *command = (aeron_destination_command_t *)message;
+
+            if (length < sizeof(aeron_destination_command_t) ||
+                length < (sizeof(aeron_destination_command_t) + command->channel_length))
+            {
+                goto malformed_command;
+            }
+
+            correlation_id = command->correlated.correlation_id;
+
+            result = aeron_driver_conductoor_on_add_destination(conductor, command);
+            break;
+        }
+
+        case AERON_COMMAND_REMOVE_DESTINATION:
+        {
+            aeron_destination_command_t *command = (aeron_destination_command_t *)message;
+
+            if (length < sizeof(aeron_destination_command_t) ||
+                length < (sizeof(aeron_destination_command_t) + command->channel_length))
+            {
+                goto malformed_command;
+            }
+
+            correlation_id = command->correlated.correlation_id;
+
+            result = aeron_driver_conductoor_on_remove_destination(conductor, command);
+            break;
+        }
+
         default:
             AERON_FORMAT_BUFFER(error_message, "command=%d unknown", msg_type_id);
             aeron_driver_conductor_error(
@@ -1898,6 +1931,139 @@ int aeron_driver_conductor_on_client_keepalive(
         client->time_of_last_keepalive = conductor->nano_clock();
     }
     return 0;
+}
+
+int aeron_driver_conductoor_on_add_destination(
+    aeron_driver_conductor_t *conductor,
+    aeron_destination_command_t *command)
+{
+    aeron_send_channel_endpoint_t *endpoint = NULL;
+    const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
+
+    for (size_t i = 0, length = conductor->network_publications.length; i < length; i++)
+    {
+        aeron_network_publication_t *publication = conductor->network_publications.array[i].publication;
+
+        if (command->registration_id == publication->conductor_fields.managed_resource.registration_id)
+        {
+            endpoint = publication->endpoint;
+            break;
+        }
+    }
+
+    if (NULL != endpoint)
+    {
+        char buffer[AERON_MAX_PATH];
+        aeron_uri_t uri_params;
+        struct sockaddr_storage destination_addr;
+
+        if (NULL != endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
+        {
+            aeron_set_err(EINVAL, "channel does not allow manual control of destinations: %s", buffer);
+            return -1;
+        }
+
+        strncpy(buffer, command_uri, command->channel_length);
+        if (aeron_uri_parse(buffer, &uri_params) < 0)
+        {
+            return -1;
+        }
+
+        if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint_key)
+        {
+            aeron_set_err(EINVAL, "incorrect URI format for destination: %s", buffer);
+            return -1;
+        }
+
+        if (aeron_host_and_port_parse_and_resolve(uri_params.params.udp.endpoint_key, &destination_addr) < 0)
+        {
+            aeron_set_err(
+                aeron_errcode(),
+                "could not resolve destination address=(%s): %s",
+                uri_params.params.udp.endpoint_key,
+                aeron_errmsg());
+            return -1;
+        }
+
+        aeron_driver_sender_proxy_add_destination(conductor->context->sender_proxy, endpoint, &destination_addr);
+        aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
+
+        return 0;
+    }
+
+    aeron_set_err(
+        EINVAL,
+        "unknown add destination registration_id=%" PRId64,
+        command->correlated.client_id,
+        command->registration_id);
+    return -1;
+}
+
+int aeron_driver_conductoor_on_remove_destination(
+    aeron_driver_conductor_t *conductor,
+    aeron_destination_command_t *command)
+{
+
+    aeron_send_channel_endpoint_t *endpoint = NULL;
+    const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
+
+    for (size_t i = 0, length = conductor->network_publications.length; i < length; i++)
+    {
+        aeron_network_publication_t *publication = conductor->network_publications.array[i].publication;
+
+        if (command->registration_id == publication->conductor_fields.managed_resource.registration_id)
+        {
+            endpoint = publication->endpoint;
+            break;
+        }
+    }
+
+    if (NULL != endpoint)
+    {
+        char buffer[AERON_MAX_PATH];
+        aeron_uri_t uri_params;
+        struct sockaddr_storage destination_addr;
+
+        if (NULL != endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
+        {
+            aeron_set_err(EINVAL, "channel does not allow manual control of destinations: %s", buffer);
+            return -1;
+        }
+
+        strncpy(buffer, command_uri, command->channel_length);
+        if (aeron_uri_parse(buffer, &uri_params) < 0)
+        {
+            return -1;
+        }
+
+        if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint_key)
+        {
+            aeron_set_err(EINVAL, "incorrect URI format for destination: %s", buffer);
+            return -1;
+        }
+
+        if (aeron_host_and_port_parse_and_resolve(uri_params.params.udp.endpoint_key, &destination_addr) < 0)
+        {
+            aeron_set_err(
+                aeron_errcode(),
+                "could not resolve destination address=(%s): %s",
+                uri_params.params.udp.endpoint_key,
+                aeron_errmsg());
+            return -1;
+        }
+
+        aeron_driver_sender_proxy_remove_destination(conductor->context->sender_proxy, endpoint, &destination_addr);
+        aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
+
+        return 0;
+    }
+
+    aeron_set_err(
+        EINVAL,
+        "unknown remove destination registration_id=%" PRId64,
+        command->correlated.client_id,
+        command->registration_id);
+    return -1;
 }
 
 void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item)

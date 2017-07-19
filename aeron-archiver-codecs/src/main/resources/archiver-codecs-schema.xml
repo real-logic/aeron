@@ -27,6 +27,7 @@
             <validValue name="RECORDING_NOT_FOUND">2</validValue>
             <validValue name="REPLAY_NOT_FOUND">3</validValue>
         </enum>
+        <type name="time_t" primitiveType="int64" description="Unix epoch time"/>
     </types>
 
     <sbe:message name="RecordingStarted"
@@ -134,8 +135,8 @@
                  description="Describes a recording in the metadata file and catalog">
         <field name="correlationId"      id="1" type="int64" />
         <field name="recordingId"        id="2" type="int64"/>
-        <field name="joinTimestamp"      id="3" type="uint64" epoch="unix" timeUnit="milliseconds"/>
-        <field name="endTimestamp"       id="4" type="uint64" epoch="unix" timeUnit="milliseconds"/>
+        <field name="joinTimestamp"      id="3" type="time_t"/>
+        <field name="endTimestamp"       id="4" type="time_t"/>
         <field name="joinPosition"       id="5" type="int64"/>
         <field name="endPosition"        id="6" type="int64"/>
         <field name="initialTermId"      id="7" type="int32"/>

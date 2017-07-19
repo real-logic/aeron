@@ -60,7 +60,8 @@ public class ArchiverSystemTest
 
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
-    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
+    private final UnsafeBuffer buffer =
+        new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT));
     private final Random rnd = new Random();
     private final long seed = System.nanoTime();
     private final File archiveDir = TestUtil.makeTempDir();

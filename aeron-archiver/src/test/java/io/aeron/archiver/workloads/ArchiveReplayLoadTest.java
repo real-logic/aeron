@@ -28,9 +28,11 @@ import io.aeron.archiver.client.RecordingEventsPoller;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
@@ -70,7 +72,8 @@ public class ArchiveReplayLoadTest
     private static final int MESSAGE_COUNT = 2000000;
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
-    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
+    private final UnsafeBuffer buffer =
+        new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT));
     private final Random rnd = new Random();
     private final long seed = System.nanoTime();
     private final File archiveDir = TestUtil.makeTempDir();

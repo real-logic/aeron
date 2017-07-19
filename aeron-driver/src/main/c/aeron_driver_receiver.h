@@ -40,6 +40,8 @@ typedef struct aeron_driver_receiver_pending_setup_entry_stct
     int64_t time_of_status_message_ns;
     int32_t session_id;
     int32_t stream_id;
+    struct sockaddr_storage control_addr;
+    bool is_periodic;
 }
 aeron_driver_receiver_pending_setup_entry_t;
 
@@ -116,7 +118,8 @@ int aeron_driver_receiver_add_pending_setup(
     aeron_driver_receiver_t *receiver,
     aeron_receive_channel_endpoint_t *endpoint,
     int32_t session_id,
-    int32_t stream_id);
+    int32_t stream_id,
+    struct sockaddr_storage *control_addr);
 
 inline size_t aeron_driver_receiver_num_images(aeron_driver_receiver_t *receiver)
 {

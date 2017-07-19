@@ -305,7 +305,7 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
         return -1;
     }
 
-    return aeron_driver_receiver_add_pending_setup(dispatcher->receiver, endpoint, session_id, stream_id);
+    return aeron_driver_receiver_add_pending_setup(dispatcher->receiver, endpoint, session_id, stream_id, NULL);
 }
 
 extern bool aeron_data_packet_dispatcher_is_not_already_in_progress_or_on_cooldown(

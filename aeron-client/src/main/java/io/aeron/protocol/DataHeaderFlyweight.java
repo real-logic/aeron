@@ -218,9 +218,8 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public static UnsafeBuffer createDefaultHeader(final int sessionId, final int streamId, final int termId)
     {
-        final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(
-            HEADER_LENGTH,
-            FrameDescriptor.FRAME_ALIGNMENT));
+        final UnsafeBuffer buffer =
+            new UnsafeBuffer(BufferUtil.allocateDirectAligned(HEADER_LENGTH, FrameDescriptor.FRAME_ALIGNMENT));
 
         buffer.putByte(VERSION_FIELD_OFFSET, CURRENT_VERSION);
         buffer.putByte(FLAGS_FIELD_OFFSET, (byte)BEGIN_AND_END_FLAGS);

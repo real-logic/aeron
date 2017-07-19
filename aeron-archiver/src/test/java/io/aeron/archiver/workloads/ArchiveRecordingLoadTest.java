@@ -27,6 +27,7 @@ import io.aeron.archiver.client.ArchiveProxy;
 import io.aeron.archiver.client.RecordingEventsPoller;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BufferUtil;
@@ -64,7 +65,8 @@ public class ArchiveRecordingLoadTest
     private static final int MESSAGE_COUNT = 2000000;
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
     private final Archiver.Context archiverCtx = new Archiver.Context();
-    private final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 32));
+    private final UnsafeBuffer buffer =
+        new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT));
     private final Random rnd = new Random();
     private final long seed = System.nanoTime();
     private final File archiveDir = TestUtil.makeTempDir();

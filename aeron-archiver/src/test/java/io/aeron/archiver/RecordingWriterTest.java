@@ -2,6 +2,7 @@ package io.aeron.archiver;
 
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.archiver.codecs.RecordingDescriptorEncoder;
+import io.aeron.logbuffer.FrameDescriptor;
 import org.agrona.BufferUtil;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
@@ -63,9 +64,8 @@ public class RecordingWriterTest
     {
         when(epochClock.time()).thenReturn(42L);
 
-        final UnsafeBuffer descriptorBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(
-            Catalog.RECORD_LENGTH,
-            32));
+        final UnsafeBuffer descriptorBuffer =
+            new UnsafeBuffer(BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, FrameDescriptor.FRAME_ALIGNMENT));
         final RecordingDescriptorEncoder descriptorEncoder = new RecordingDescriptorEncoder().wrap(
             descriptorBuffer,
             Catalog.CATALOG_FRAME_LENGTH);

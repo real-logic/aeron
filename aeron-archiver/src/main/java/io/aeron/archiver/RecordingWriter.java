@@ -29,7 +29,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 
@@ -183,10 +182,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             endTimestamp = epochClock.time();
             descriptorEncoder.endTimestamp(endTimestamp);
             UnsafeAccess.UNSAFE.storeFence();
-            if (forceWrites)
-            {
-                forceMappedBuffer(descriptorBuffer.byteBuffer());
-            }
         }
 
         if (recordingFileChannel != null)
@@ -345,27 +340,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         endPosition += blockLength;
         descriptorEncoder.endPosition(endPosition);
         UnsafeAccess.UNSAFE.storeFence();
-        if (forceWrites)
-        {
-            forceMappedBuffer(descriptorBuffer.byteBuffer());
-        }
-    }
-
-    private void forceMappedBuffer(final ByteBuffer byteBuffer)
-    {
-        // TODO: forcing the mapped byte buffer can be done once per recorder cycle instead of per descriptor
-        if (byteBuffer instanceof MappedByteBuffer)
-        {
-            try
-            {
-                ((MappedByteBuffer)byteBuffer).force();
-            }
-            catch (final UnsupportedOperationException e)
-            {
-                // Due to inexplicable idiocy, DirectByteBuffer extends MappedByteBuffer and not the other way around,
-                // so this can happen. Ignore the exception.
-            }
-        }
     }
 
     private void validateStartTermOffset(final int termOffset)

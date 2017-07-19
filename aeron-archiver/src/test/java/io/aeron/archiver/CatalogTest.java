@@ -30,7 +30,7 @@ import static org.junit.Assert.*;
 public class CatalogTest
 {
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
-    private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(new byte[0]);
+    private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private long recordingOneId;
     private long recordingTwoId;

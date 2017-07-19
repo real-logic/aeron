@@ -26,9 +26,7 @@ abstract class AbstractListRecordingsSession implements Session
         INIT, ACTIVE, INACTIVE, CLOSED
     }
 
-    private static final byte[] EMPTY_BYTES = new byte[0];
-    protected final UnsafeBuffer descriptorBuffer = new UnsafeBuffer(EMPTY_BYTES);
-
+    protected final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     protected final Publication controlPublication;
     private final ControlSession controlSession;
     protected final Catalog catalog;

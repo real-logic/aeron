@@ -81,6 +81,8 @@ int aeron_driver_receiver_init(
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_ERRORS);
     receiver->invalid_frames_counter =
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS);
+    receiver->total_bytes_received_counter =
+        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_BYTES_RECEIVED);
     return 0;
 }
 
@@ -95,6 +97,7 @@ int aeron_driver_receiver_do_work(void *clientd)
 {
     struct mmsghdr mmsghdr[AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS];
     aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
+    int64_t bytes_received = 0;
     int work_count = 0;
 
     work_count +=
@@ -123,7 +126,13 @@ int aeron_driver_receiver_do_work(void *clientd)
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver poller_poll: %s", aeron_errmsg());
     }
 
-    work_count += (poll_result < 0) ? 0 : poll_result;
+    for (int i = 0; i < poll_result; i++)
+    {
+        bytes_received += mmsghdr[i].msg_len;
+        work_count++;
+    }
+
+    aeron_counter_add_ordered(receiver->total_bytes_received_counter, bytes_received);
 
     for (size_t i = 0, length = receiver->images.length; i < length; i++)
     {
@@ -190,8 +199,6 @@ int aeron_driver_receiver_do_work(void *clientd)
             }
         }
     }
-
-    /* TODO: add_ordered total bytes_received */
 
     return work_count;
 }

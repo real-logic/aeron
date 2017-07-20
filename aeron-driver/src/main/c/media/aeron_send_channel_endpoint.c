@@ -232,6 +232,7 @@ void aeron_send_channel_endpoint_dispatch(
             if (length >= sizeof(aeron_nak_header_t))
             {
                 aeron_send_channel_endpoint_on_nak(endpoint, buffer, length, addr);
+                aeron_counter_ordered_increment(sender->nak_messages_received_counter, 1);
             }
             else
             {
@@ -243,6 +244,7 @@ void aeron_send_channel_endpoint_dispatch(
             if (length >= sizeof(aeron_status_message_header_t))
             {
                 aeron_send_channel_endpoint_on_status_message(endpoint, buffer, length, addr);
+                aeron_counter_ordered_increment(sender->status_messages_received_counter, 1);
             }
             else
             {

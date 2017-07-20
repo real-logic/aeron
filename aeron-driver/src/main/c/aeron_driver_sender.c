@@ -84,6 +84,10 @@ int aeron_driver_sender_init(
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_ERRORS);
     sender->invalid_frames_counter =
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS);
+    sender->status_messages_received_counter =
+        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_STATUS_MESSAGES_RECEIVED);
+    sender->nak_messages_received_counter =
+        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_NAK_MESSAGES_RECEIVED);
     return 0;
 }
 

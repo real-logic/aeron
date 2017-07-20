@@ -79,6 +79,7 @@ typedef struct aeron_driver_receiver_stct
 
     int64_t *errors_counter;
     int64_t *invalid_frames_counter;
+    int64_t *total_bytes_received_counter;
 }
 aeron_driver_receiver_t;
 

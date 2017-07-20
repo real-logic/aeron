@@ -564,10 +564,9 @@ public class NetworkPublication
 
     private void checkForBlockedPublisher(final long timeNs, final long senderPosition)
     {
-        if (senderPosition == lastSenderPosition)
+        if (senderPosition == lastSenderPosition && producerPosition() > senderPosition)
         {
-            if (timeNs > (timeOfLastActivityNs + unblockTimeoutNs) &&
-                producerPosition() > senderPosition)
+            if (timeNs > (timeOfLastActivityNs + unblockTimeoutNs))
             {
                 if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition))
                 {

@@ -20,7 +20,6 @@ import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.LogBufferUnblocker;
 import org.agrona.collections.ArrayUtil;
-import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.Position;
@@ -54,7 +53,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
     private long tripLimit;
     private long consumerPosition;
     private long lastConsumerPosition;
-    private long timeOfLastConsumerPositionChangeNs;
+    private long timeOfLastConsumerPositionUpdateNs;
     private long cleanPosition;
     private long timeOfLastStatusChangeNs;
     private int refCount = 0;
@@ -65,7 +64,6 @@ public class IpcPublication implements DriverManagedResource, Subscribable
     private ReadablePosition[] subscriberPositions = EMPTY_POSITIONS;
     private final Position publisherLimit;
     private final UnsafeBuffer metaDataBuffer;
-    private final NanoClock nanoClock;
     private final RawLog rawLog;
     private final AtomicCounter unblockedPublications;
 
@@ -76,8 +74,8 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         final Position publisherLimit,
         final RawLog rawLog,
         final long unblockTimeoutNs,
+        final long nowNs,
         final SystemCounters systemCounters,
-        final NanoClock nanoClock,
         final boolean isExclusive)
     {
         this.registrationId = registrationId;
@@ -86,7 +84,6 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         this.isExclusive = isExclusive;
         this.termBuffers = rawLog.termBuffers();
         this.initialTermId = initialTermId(rawLog.metaData());
-        this.nanoClock = nanoClock;
 
         final int termLength = rawLog.termLength();
         this.termBufferLength = termLength;
@@ -102,7 +99,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         consumerPosition = producerPosition();
         lastConsumerPosition = consumerPosition;
         cleanPosition = consumerPosition;
-        timeOfLastConsumerPositionChangeNs = nanoClock.nanoTime();
+        timeOfLastConsumerPositionUpdateNs = nowNs;
     }
 
     public int sessionId()
@@ -148,11 +145,6 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
     public void addSubscriber(final ReadablePosition subscriberPosition)
     {
-        if (subscriberPositions.length == 0)
-        {
-            timeOfLastConsumerPositionChangeNs = nanoClock.nanoTime();
-        }
-
         subscriberPositions = ArrayUtil.add(subscriberPositions, subscriberPosition);
     }
 
@@ -326,10 +318,10 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
     private void checkForBlockedPublisher(final long timeNs)
     {
-        if (consumerPosition == lastConsumerPosition)
+        final long consumerPosition = this.consumerPosition;
+        if (consumerPosition == lastConsumerPosition && producerPosition() > consumerPosition)
         {
-            if (timeNs > (timeOfLastConsumerPositionChangeNs + unblockTimeoutNs) &&
-                producerPosition() > consumerPosition)
+            if (timeNs > (timeOfLastConsumerPositionUpdateNs + unblockTimeoutNs))
             {
                 if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, consumerPosition))
                 {
@@ -339,7 +331,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         }
         else
         {
-            timeOfLastConsumerPositionChangeNs = timeNs;
+            timeOfLastConsumerPositionUpdateNs = timeNs;
             lastConsumerPosition = consumerPosition;
         }
     }

@@ -1070,8 +1070,8 @@ public class DriverConductor implements Agent
             PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, channel),
             rawLog,
             publicationUnblockTimeoutNs,
+            nanoClock.nanoTime(),
             context.systemCounters(),
-            nanoClock,
             isExclusive);
 
         ipcPublications.add(publication);

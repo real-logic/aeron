@@ -44,6 +44,7 @@ int aeron_ipc_publication_create(
     aeron_ipc_publication_t *_pub = NULL;
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
     const uint64_t log_length = AERON_LOGBUFFER_COMPUTE_LOG_LENGTH(term_buffer_length);
+    const int64_t now_ns = context->nano_clock();
 
     *publication = NULL;
 
@@ -90,10 +91,11 @@ int aeron_ipc_publication_create(
     aeron_logbuffer_fill_default_header(
         _pub->mapped_raw_log.log_meta_data.addr, session_id, stream_id, initial_term_id);
 
+    _pub->nano_clock = context->nano_clock;
     _pub->conductor_fields.subscribeable.array = NULL;
     _pub->conductor_fields.subscribeable.length = 0;
     _pub->conductor_fields.subscribeable.capacity = 0;
-    _pub->conductor_fields.subscribeable.add_position_hook_func = aeron_driver_subscribeable_null_hook;
+    _pub->conductor_fields.subscribeable.add_position_hook_func = aeron_ipc_publication_add_subscriber_hook;
     _pub->conductor_fields.subscribeable.remove_position_hook_func = aeron_ipc_publication_remove_subscriber_hook;
     _pub->conductor_fields.subscribeable.clientd = _pub;
     _pub->conductor_fields.managed_resource.registration_id = registration_id;
@@ -105,7 +107,7 @@ int aeron_ipc_publication_create(
     _pub->conductor_fields.trip_limit = 0;
     _pub->conductor_fields.consumer_position = 0;
     _pub->conductor_fields.last_consumer_position = 0;
-    _pub->conductor_fields.time_of_last_consumer_position_change = 0;
+    _pub->conductor_fields.time_of_last_consumer_position_change = now_ns;
     _pub->conductor_fields.status = AERON_IPC_PUBLICATION_STATUS_ACTIVE;
     _pub->conductor_fields.refcnt = 1;
     _pub->session_id = session_id;
@@ -238,8 +240,8 @@ void aeron_ipc_publication_check_for_blocked_publisher(aeron_ipc_publication_t *
 {
     if (publication->conductor_fields.consumer_position == publication->conductor_fields.last_consumer_position)
     {
-        if (aeron_ipc_publication_producer_position(publication) > publication->conductor_fields.consumer_position &&
-            now_ns > (publication->conductor_fields.time_of_last_consumer_position_change + publication->unblock_timeout_ns))
+        if (now_ns > (publication->conductor_fields.time_of_last_consumer_position_change + publication->unblock_timeout_ns) &&
+            aeron_ipc_publication_producer_position(publication) > publication->conductor_fields.consumer_position)
         {
             if (aeron_logbuffer_unblocker_unblock(
                 publication->mapped_raw_log.term_buffers,
@@ -257,6 +259,7 @@ void aeron_ipc_publication_check_for_blocked_publisher(aeron_ipc_publication_t *
     }
 }
 
+extern void aeron_ipc_publication_add_subscriber_hook(void *clientd, int64_t *value_addr);
 extern void aeron_ipc_publication_remove_subscriber_hook(void *clientd, int64_t *value_addr);
 extern int64_t aeron_ipc_publication_producer_position(aeron_ipc_publication_t *publication);
 extern int64_t aeron_ipc_publication_joining_position(aeron_ipc_publication_t *publication);

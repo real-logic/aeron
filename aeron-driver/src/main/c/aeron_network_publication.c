@@ -144,7 +144,7 @@ int aeron_network_publication_create(
     _pub->conductor_fields.clean_position = 0;
     _pub->conductor_fields.status = AERON_NETWORK_PUBLICATION_STATUS_ACTIVE;
     _pub->conductor_fields.refcnt = 1;
-    _pub->conductor_fields.time_of_last_activity_ns = 0;
+    _pub->conductor_fields.time_of_last_activity_ns = now_ns;
     _pub->conductor_fields.last_snd_pos = 0;
     _pub->session_id = session_id;
     _pub->stream_id = stream_id;
@@ -639,8 +639,8 @@ void aeron_network_publication_check_for_blocked_publisher(
 {
     if (snd_pos == publication->conductor_fields.last_snd_pos)
     {
-        if (aeron_network_publication_producer_position(publication) > snd_pos &&
-            now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->unblock_timeout_ns))
+        if (now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->unblock_timeout_ns) &&
+            aeron_network_publication_producer_position(publication) > snd_pos)
         {
             if (aeron_logbuffer_unblocker_unblock(
                 publication->mapped_raw_log.term_buffers,

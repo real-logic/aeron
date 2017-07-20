@@ -437,6 +437,8 @@ public class ExclusivePublication implements AutoCloseable
      * available.
      * <p>
      * <b>Note:</b> This method can only be used for message lengths less than MTU length minus header.
+     * If the claim is held for more than the aeron.publication.unblock.timeout system property then the driver will
+     * assume the publication thread is dead and will unblock the claim thus allowing other threads to make progress.
      * <pre>{@code
      *     final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
      *

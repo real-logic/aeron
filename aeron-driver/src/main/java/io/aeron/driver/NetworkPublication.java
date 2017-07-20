@@ -198,6 +198,7 @@ public class NetworkPublication
 
         lastSenderPosition = senderPosition.get();
         cleanPosition = lastSenderPosition;
+        timeOfLastActivityNs = nowNs;
     }
 
     public void close()
@@ -565,8 +566,8 @@ public class NetworkPublication
     {
         if (senderPosition == lastSenderPosition)
         {
-            if (producerPosition() > senderPosition &&
-                timeNs > (timeOfLastActivityNs + unblockTimeoutNs))
+            if (timeNs > (timeOfLastActivityNs + unblockTimeoutNs) &&
+                producerPosition() > senderPosition)
             {
                 if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition))
                 {

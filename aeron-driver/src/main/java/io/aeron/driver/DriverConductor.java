@@ -1071,6 +1071,7 @@ public class DriverConductor implements Agent
             rawLog,
             publicationUnblockTimeoutNs,
             context.systemCounters(),
+            nanoClock,
             isExclusive);
 
         ipcPublications.add(publication);

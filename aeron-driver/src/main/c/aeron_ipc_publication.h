@@ -54,6 +54,7 @@ typedef struct aeron_ipc_publication_stct
     aeron_mapped_raw_log_t mapped_raw_log;
     aeron_position_t pub_lmt_position;
     aeron_logbuffer_metadata_t *log_meta_data;
+    aeron_clock_func_t nano_clock;
 
     char *log_file_name;
     int64_t term_window_length;
@@ -97,6 +98,17 @@ void aeron_ipc_publication_incref(void *clientd);
 void aeron_ipc_publication_decref(void *clientd);
 
 void aeron_ipc_publication_check_for_blocked_publisher(aeron_ipc_publication_t *publication, int64_t now_ns);
+
+inline void aeron_ipc_publication_add_subscriber_hook(void *clientd, int64_t *value_addr)
+{
+    aeron_ipc_publication_t *publication = (aeron_ipc_publication_t *)clientd;
+
+    /* 0 to 1 transition */
+    if (0 == publication->conductor_fields.subscribeable.length)
+    {
+        publication->conductor_fields.time_of_last_consumer_position_change = publication->nano_clock();
+    }
+}
 
 inline void aeron_ipc_publication_remove_subscriber_hook(void *clientd, int64_t *value_addr)
 {

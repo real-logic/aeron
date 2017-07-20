@@ -1323,10 +1323,11 @@ int aeron_driver_subscribeable_add_position(
 
     if (ensure_capacity_result >= 0)
     {
-        aeron_position_t *entry = &subscribeable->array[subscribeable->length++];
+        aeron_position_t *entry = &subscribeable->array[subscribeable->length];
         entry->counter_id = counter_id;
         entry->value_addr = value_addr;
         subscribeable->add_position_hook_func(subscribeable->clientd, value_addr);
+        subscribeable->length++;
         result = 0;
     }
 

@@ -99,17 +99,6 @@ void aeron_ipc_publication_decref(void *clientd);
 
 void aeron_ipc_publication_check_for_blocked_publisher(aeron_ipc_publication_t *publication, int64_t now_ns);
 
-inline void aeron_ipc_publication_add_subscriber_hook(void *clientd, int64_t *value_addr)
-{
-    aeron_ipc_publication_t *publication = (aeron_ipc_publication_t *)clientd;
-
-    /* 0 to 1 transition */
-    if (0 == publication->conductor_fields.subscribeable.length)
-    {
-        publication->conductor_fields.time_of_last_consumer_position_change = publication->nano_clock();
-    }
-}
-
 inline void aeron_ipc_publication_remove_subscriber_hook(void *clientd, int64_t *value_addr)
 {
     aeron_ipc_publication_t *publication = (aeron_ipc_publication_t *)clientd;

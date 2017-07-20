@@ -637,10 +637,9 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
 void aeron_network_publication_check_for_blocked_publisher(
     aeron_network_publication_t *publication, int64_t now_ns, int64_t snd_pos)
 {
-    if (snd_pos == publication->conductor_fields.last_snd_pos)
+    if (snd_pos == publication->conductor_fields.last_snd_pos && aeron_network_publication_producer_position(publication) > snd_pos)
     {
-        if (now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->unblock_timeout_ns) &&
-            aeron_network_publication_producer_position(publication) > snd_pos)
+        if (now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->unblock_timeout_ns))
         {
             if (aeron_logbuffer_unblocker_unblock(
                 publication->mapped_raw_log.term_buffers,

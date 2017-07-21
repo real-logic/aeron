@@ -366,3 +366,18 @@ int aeron_udp_channel_transport_sendmsg(
 
     return (int)sendmsg_result;
 }
+
+int aeron_udp_channel_transport_get_so_rcvbuf(aeron_udp_channel_transport_t *transport, size_t *so_rcvbuf)
+{
+    socklen_t len = sizeof(size_t);
+
+    if (getsockopt(transport->fd, SOL_SOCKET, SO_RCVBUF, so_rcvbuf, &len) < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "getsockopt(SO_RCVBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        return -1;
+    }
+
+    return 0;
+}

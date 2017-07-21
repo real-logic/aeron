@@ -55,6 +55,7 @@ typedef struct aeron_receive_channel_endpoint_stct
     aeron_counter_t channel_status;
     aeron_driver_receiver_proxy_t *receiver_proxy;
     int64_t receiver_id;
+    size_t so_rcvbuf;
     bool has_receiver_released;
 
     int64_t *short_sends_counter;
@@ -125,6 +126,9 @@ int aeron_receive_channel_endpoint_on_add_publication_image(
     aeron_receive_channel_endpoint_t *endpoint, aeron_publication_image_t *image);
 int aeron_receive_channel_endpoint_on_remove_publication_image(
     aeron_receive_channel_endpoint_t *endpoint, aeron_publication_image_t *image);
+
+int aeron_receiver_channel_endpoint_validate_sender_mtu_length(
+    aeron_receive_channel_endpoint_t *endpoint, size_t sender_mtu_length, size_t window_max_length);
 
 inline int aeron_receive_channel_endpoint_on_remove_pending_setup(
     aeron_receive_channel_endpoint_t *endpoint, int32_t session_id, int32_t stream_id)

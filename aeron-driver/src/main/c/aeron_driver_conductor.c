@@ -1306,14 +1306,6 @@ void aeron_driver_conductor_on_close(void *clientd)
     aeron_str_to_ptr_hash_map_delete(&conductor->receive_channel_endpoint_by_channel_map);
 }
 
-#define AERON_ERROR(c, ecode, desc, format, ...) \
-do \
-{ \
-    snprintf(c->stack_error.buffer, sizeof(c->stack_error.buffer) - 1, format, __VA_ARGS__); \
-    c->stack_error.code = ecode; \
-    c->stack_error.description = desc; \
-} while (0)
-
 int aeron_driver_subscribeable_add_position(
     aeron_subscribeable_t *subscribeable, int64_t counter_id, int64_t *value_addr)
 {
@@ -2074,7 +2066,12 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     aeron_receive_channel_endpoint_t *endpoint = command->endpoint;
     const char *channel_str = endpoint->conductor_fields.udp_channel->original_uri;
 
-    /* TODO: validate sender MTU length */
+    if (aeron_receiver_channel_endpoint_validate_sender_mtu_length(
+        endpoint, (size_t)command->mtu_length, conductor->context->initial_window_length) < 0)
+    {
+        aeron_driver_conductor_error(conductor, aeron_errcode(), aeron_errmsg(), aeron_errmsg());
+        return;
+    }
 
     if (!aeron_driver_conductor_has_network_subscription_interest(conductor, endpoint, command->stream_id))
     {

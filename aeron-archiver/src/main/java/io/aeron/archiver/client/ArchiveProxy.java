@@ -29,11 +29,12 @@ import java.util.concurrent.TimeUnit;
 public class ArchiveProxy
 {
     /**
-     * Timeout for retrying control requests.
+     * Default timeout for retrying connect requests.
      */
-    public static final long REQUEST_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
+    public static final long DEFAULT_CONNECT_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
 
-    private final long requestTimeoutNs;
+    private final long connectTimeoutNs;
+    private final int maxRetryAttempts;
     private final IdleStrategy retryIdleStrategy;
 
     private final ExpandableDirectByteBuffer buffer = new ExpandableDirectByteBuffer(1024);
@@ -58,7 +59,7 @@ public class ArchiveProxy
      */
     public ArchiveProxy(final Publication controlRequest)
     {
-        this(controlRequest, new YieldingIdleStrategy(), REQUEST_TIMEOUT_NS);
+        this(controlRequest, new YieldingIdleStrategy(), DEFAULT_CONNECT_TIMEOUT_NS, 3);
     }
 
     /**
@@ -66,16 +67,19 @@ public class ArchiveProxy
      *
      * @param controlRequest    publication for sending control messages to an archive.
      * @param retryIdleStrategy for what should happen between retry attempts at offering messages.
-     * @param requestTimeoutNs  for offering control messages before giving up.
+     * @param connectTimeoutNs  for for connection requests.
+     * @param maxRetryAttempts  for offering control messages before giving up.
      */
     public ArchiveProxy(
         final Publication controlRequest,
         final IdleStrategy retryIdleStrategy,
-        final long requestTimeoutNs)
+        final long connectTimeoutNs,
+        final int maxRetryAttempts)
     {
         this.controlRequest = controlRequest;
         this.retryIdleStrategy = retryIdleStrategy;
-        this.requestTimeoutNs = requestTimeoutNs;
+        this.connectTimeoutNs = connectTimeoutNs;
+        this.maxRetryAttempts = maxRetryAttempts;
     }
 
     /**
@@ -92,7 +96,7 @@ public class ArchiveProxy
             .responseStreamId(responseStreamId)
             .responseChannel(responseChannel);
 
-        return offer(connectRequestEncoder.encodedLength());
+        return offerWithTimeout(connectRequestEncoder.encodedLength());
     }
 
     /**
@@ -235,7 +239,7 @@ public class ArchiveProxy
     {
         retryIdleStrategy.reset();
 
-        final long timeoutNs = System.nanoTime() + requestTimeoutNs;
+        int attempts = 0;
         while (true)
         {
             final long result;
@@ -247,6 +251,27 @@ public class ArchiveProxy
             if (result == Publication.MAX_POSITION_EXCEEDED)
             {
                 throw new IllegalStateException("Publication failed due to max position being reached");
+            }
+
+            if (++attempts > maxRetryAttempts)
+            {
+                return false;
+            }
+
+            retryIdleStrategy.idle();
+        }
+    }
+
+    private boolean offerWithTimeout(final int length)
+    {
+        retryIdleStrategy.reset();
+
+        final long timeoutNs = System.nanoTime() + connectTimeoutNs;
+        while (true)
+        {
+            if (controlRequest.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length) > 0)
+            {
+                return true;
             }
 
             if (System.nanoTime() > timeoutNs)

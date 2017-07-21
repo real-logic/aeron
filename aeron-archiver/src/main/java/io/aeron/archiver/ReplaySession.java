@@ -59,7 +59,7 @@ class ReplaySession implements Session
     }
 
     static final long LINGER_LENGTH_MS = 1000;
-    private static final int REPLAY_SEND_BATCH_SIZE = Integer.getInteger("io.aeron.archiver.replay.send.batch", 8);
+    private static final int REPLAY_SEND_BATCH_SIZE = Integer.getInteger("aeron.archive.replay.send.batch", 8);
 
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
     private final RecordingFragmentReader.SimplifiedControlledPoll fragmentPoller = this::onFragment;

@@ -21,12 +21,19 @@ import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Proxy class for encapsulating encoding and sending of control protocol messages to an archive.
  */
 public class ArchiveProxy
 {
-    private final int maxRetryAttempts;
+    /**
+     * Timeout for retrying control requests.
+     */
+    public static final long REQUEST_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
+
+    private final long requestTimeoutNs;
     private final IdleStrategy retryIdleStrategy;
 
     private final ExpandableDirectByteBuffer buffer = new ExpandableDirectByteBuffer(1024);
@@ -51,7 +58,7 @@ public class ArchiveProxy
      */
     public ArchiveProxy(final Publication controlRequest)
     {
-        this(controlRequest, new YieldingIdleStrategy(), 3);
+        this(controlRequest, new YieldingIdleStrategy(), REQUEST_TIMEOUT_NS);
     }
 
     /**
@@ -59,16 +66,16 @@ public class ArchiveProxy
      *
      * @param controlRequest    publication for sending control messages to an archive.
      * @param retryIdleStrategy for what should happen between retry attempts at offering messages.
-     * @param maxRetryAttempts  for offering control messages before giving up.
+     * @param requestTimeoutNs  for offering control messages before giving up.
      */
     public ArchiveProxy(
         final Publication controlRequest,
         final IdleStrategy retryIdleStrategy,
-        final int maxRetryAttempts)
+        final long requestTimeoutNs)
     {
         this.controlRequest = controlRequest;
         this.retryIdleStrategy = retryIdleStrategy;
-        this.maxRetryAttempts = maxRetryAttempts;
+        this.requestTimeoutNs = requestTimeoutNs;
     }
 
     /**
@@ -228,7 +235,7 @@ public class ArchiveProxy
     {
         retryIdleStrategy.reset();
 
-        int attempts = 0;
+        final long timeoutNs = System.nanoTime() + requestTimeoutNs;
         while (true)
         {
             final long result;
@@ -242,7 +249,7 @@ public class ArchiveProxy
                 throw new IllegalStateException("Publication failed due to max position being reached");
             }
 
-            if (++attempts > maxRetryAttempts)
+            if (System.nanoTime() > timeoutNs)
             {
                 return false;
             }

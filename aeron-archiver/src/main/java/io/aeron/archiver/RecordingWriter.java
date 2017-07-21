@@ -50,7 +50,7 @@ import static io.aeron.archiver.ArchiveUtil.recordingOffset;
 class RecordingWriter implements AutoCloseable, RawBlockHandler
 {
     private static final boolean POSITION_CHECKS =
-        !Boolean.getBoolean("io.aeron.archiver.recorder.position.checks.off");
+        !Boolean.getBoolean("aeron.archive.recorder.position.checks.off");
 
     private static final int NULL_SEGMENT_POSITION = -1;
 

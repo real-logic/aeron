@@ -16,6 +16,7 @@
 package io.aeron.archiver;
 
 import io.aeron.Aeron;
+import io.aeron.archiver.client.AeronArchive;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.LangUtil;
@@ -127,27 +128,17 @@ public final class Archiver implements AutoCloseable
 
     public static class Configuration
     {
-        public static final String ARCHIVE_DIR_PROP_NAME = "aeron.archiver.dir";
+        public static final String ARCHIVE_DIR_PROP_NAME = "aeron.archive.dir";
         public static final String ARCHIVE_DIR_DEFAULT = "archive";
 
-        public static final String CONTROL_CHANNEL_PROP_NAME = "aeron.archiver.control.channel";
-        public static final String CONTROL_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8010";
-        public static final String CONTROL_STREAM_ID_PROP_NAME = "aeron.archiver.control.stream.id";
-        public static final int CONTROL_STREAM_ID_DEFAULT = 0;
-
-        public static final String RECORDING_EVENTS_CHANNEL_PROP_NAME = "aeron.archiver.recording.events.channel";
-        public static final String RECORDING_EVENTS_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8011";
-        public static final String RECORDING_EVENTS_STREAM_ID_PROP_NAME = "aeron.archiver.recording.events.stream.id";
-        public static final int RECORDING_EVENTS_STREAM_ID_DEFAULT = 0;
-
-        public static final String SEGMENT_FILE_LENGTH_PROP_NAME = "aeron.archiver.segment.file.length";
+        public static final String SEGMENT_FILE_LENGTH_PROP_NAME = "aeron.archive.segment.file.length";
         public static final int SEGMENT_FILE_LENGTH_DEFAULT = 128 * 1024 * 1024;
 
-        public static final String FILE_SYNC_LEVEL_PROP_NAME = "aeron.archiver.file.sync.level";
+        public static final String FILE_SYNC_LEVEL_PROP_NAME = "aeron.archive.file.sync.level";
         public static final int FILE_SYNC_LEVEL_DEFAULT = 0;
 
-        public static final String THREADING_MODE_PROP_NAME = "aeron.archiver.threading.mode";
-        public static final String ARCHIVER_IDLE_STRATEGY_PROP_NAME = "aeron.archiver.idle.strategy";
+        public static final String THREADING_MODE_PROP_NAME = "aeron.archive.threading.mode";
+        public static final String ARCHIVER_IDLE_STRATEGY_PROP_NAME = "aeron.archive.idle.strategy";
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
         private static final String CONTROLLABLE_IDLE_STRATEGY = "org.agrona.concurrent.ControllableIdleStrategy";
 
@@ -156,36 +147,16 @@ public final class Archiver implements AutoCloseable
         private static final long AGENT_IDLE_MIN_PARK_NS = 1;
         private static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
 
-        public static final String MAX_CONCURRENT_RECORDINGS_PROP_NAME = "aeron.archiver.max.concurrent.recordings";
+        public static final String MAX_CONCURRENT_RECORDINGS_PROP_NAME = "aeron.archive.max.concurrent.recordings";
         public static final int MAX_CONCURRENT_RECORDINGS_DEFAULT = 128;
 
-        public static final String MAX_CONCURRENT_REPLAYS_PROP_NAME = "aeron.archiver.max.concurrent.replays";
+        public static final String MAX_CONCURRENT_REPLAYS_PROP_NAME = "aeron.archive.max.concurrent.replays";
         public static final int MAX_CONCURRENT_REPLAYS_DEFAULT = 128;
 
 
         public static String archiveDirName()
         {
             return System.getProperty(ARCHIVE_DIR_PROP_NAME, ARCHIVE_DIR_DEFAULT);
-        }
-
-        public static String controlChannel()
-        {
-            return System.getProperty(CONTROL_CHANNEL_PROP_NAME, CONTROL_CHANNEL_DEFAULT);
-        }
-
-        public static int controlStreamId()
-        {
-            return Integer.getInteger(CONTROL_STREAM_ID_PROP_NAME, CONTROL_STREAM_ID_DEFAULT);
-        }
-
-        public static String recordingEventsChannel()
-        {
-            return System.getProperty(RECORDING_EVENTS_CHANNEL_PROP_NAME, RECORDING_EVENTS_CHANNEL_DEFAULT);
-        }
-
-        public static int recordingEventsStreamId()
-        {
-            return Integer.getInteger(RECORDING_EVENTS_STREAM_ID_PROP_NAME, RECORDING_EVENTS_STREAM_ID_DEFAULT);
         }
 
         private static int segmentFileLength()
@@ -290,10 +261,10 @@ public final class Archiver implements AutoCloseable
         {
             this.clientContext = clientContext;
             clientContext.useConductorAgentInvoker(true);
-            controlChannel(Configuration.controlChannel());
-            controlStreamId(Configuration.controlStreamId());
-            recordingEventsChannel(Configuration.recordingEventsChannel());
-            recordingEventsStreamId(Configuration.recordingEventsStreamId());
+            controlChannel(AeronArchive.Configuration.controlRequestChannel());
+            controlStreamId(AeronArchive.Configuration.controlRequestStreamId());
+            recordingEventsChannel(AeronArchive.Configuration.recordingEventsChannel());
+            recordingEventsStreamId(AeronArchive.Configuration.recordingEventsStreamId());
             segmentFileLength(Configuration.segmentFileLength());
             fileSyncLevel(Configuration.fileSyncLevel());
             threadingMode(Configuration.threadingMode());

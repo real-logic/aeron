@@ -278,6 +278,113 @@ int aeron_driver_create_loss_report_file(aeron_driver_t *driver)
     return 0;
 }
 
+int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *driver)
+{
+    int result = -1, probe_fd;
+
+    if ((probe_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "socket %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        goto cleanup;
+    }
+
+    size_t default_sndbuf = 0;
+    socklen_t len = sizeof(default_sndbuf);
+    if (getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &default_sndbuf, &len) < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "getsockopt(SO_SNDBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        goto cleanup;
+    }
+
+    if (driver->context->socket_sndbuf > 0)
+    {
+        size_t socket_sndbuf = driver->context->socket_sndbuf;
+
+        if (setsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, sizeof(socket_sndbuf)) < 0)
+        {
+            int errcode = errno;
+
+            aeron_set_err(errcode, "setsockopt(SO_SNDBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            goto cleanup;
+        }
+
+        len = sizeof(socket_sndbuf);
+        if (getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, &len) < 0)
+        {
+            int errcode = errno;
+
+            aeron_set_err(errcode, "getsockopt(SO_SNDBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            goto cleanup;
+        }
+
+        if (driver->context->socket_sndbuf > socket_sndbuf)
+        {
+            fprintf(
+                stderr,
+                "WARNING: Could not get desired SO_SNDBUF, adjust OS buffer to match %s: attempted=%" PRIu64 ", actual=%" PRIu64 "\n",
+                AERON_SOCKET_SO_SNDBUF_ENV_VAR,
+                (uint64_t)driver->context->socket_sndbuf,
+                (uint64_t)socket_sndbuf);
+        }
+    }
+
+    if (driver->context->socket_rcvbuf > 0)
+    {
+        size_t socket_rcvbuf = driver->context->socket_rcvbuf;
+
+        if (setsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, sizeof(socket_rcvbuf)) < 0)
+        {
+            int errcode = errno;
+
+            aeron_set_err(errcode, "setsockopt(SO_RCVBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            goto cleanup;
+        }
+
+        len = sizeof(socket_rcvbuf);
+        if (getsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, &len) < 0)
+        {
+            int errcode = errno;
+
+            aeron_set_err(errcode, "getsockopt(SO_RCVBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            goto cleanup;
+        }
+
+        if (driver->context->socket_rcvbuf > socket_rcvbuf)
+        {
+            fprintf(
+                stderr,
+                "WARNING: Could not get desired SO_RCVBUF, adjust OS buffer to match %s: attempted=%" PRIu64 ", actual=%" PRIu64 "\n",
+                AERON_SOCKET_SO_RCVBUF_ENV_VAR,
+                (uint64_t)driver->context->socket_rcvbuf,
+                (uint64_t)socket_rcvbuf);
+        }
+    }
+
+    size_t sndbuf = (0 == driver->context->socket_sndbuf) ? default_sndbuf : driver->context->socket_sndbuf;
+
+    if (driver->context->mtu_length > sndbuf)
+    {
+        aeron_set_err(
+            EINVAL,
+            "MTU greater than socket SO_SNDBUF, adjust %s to match MTU: mtuLength=%" PRIu64 ", SO_SNDBUF=%" PRIu64 "\n",
+            AERON_SOCKET_SO_SNDBUF_ENV_VAR,
+            (uint64_t)driver->context->mtu_length,
+            sndbuf);
+        goto cleanup;
+    }
+
+    result = 0;
+
+    cleanup:
+        close(probe_fd);
+
+    return result;
+}
+
 int aeron_driver_shared_do_work(void *clientd)
 {
     aeron_driver_t *driver = (aeron_driver_t *)clientd;
@@ -341,7 +448,10 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
         _driver->runners[i].state = AERON_AGENT_STATE_UNUSED;
     }
 
-    /* TODO: validate socket settings */
+    if (aeron_driver_validate_sufficient_socket_buffer_lengths(_driver) < 0)
+    {
+        return -1;
+    }
 
     if (aeron_driver_ensure_dir_is_recreated(_driver) < 0)
     {

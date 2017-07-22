@@ -50,13 +50,14 @@ import static java.nio.file.StandardOpenOption.*;
  */
 class Catalog implements AutoCloseable
 {
+    private static final String CATALOG_FILE_NAME = "archive.cat";
+
     static final long NULL_TIME = -1L;
     static final long NULL_POSITION = -1;
-    private static final String CATALOG_FILE_NAME = "archive.cat";
     static final int RECORD_LENGTH = 4096;
     static final int CATALOG_FRAME_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     static final int MAX_DESCRIPTOR_STRINGS_COMBINED_LENGTH =
-        (RECORD_LENGTH - (CATALOG_FRAME_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 8));
+        (RECORD_LENGTH - (CATALOG_FRAME_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 12));
     static final int NULL_RECORD_ID = -1;
     static final int MAX_CATALOG_SIZE = Integer.MAX_VALUE - (RECORD_LENGTH - 1);
     static final int MAX_RECORDING_ID = MAX_CATALOG_SIZE / RECORD_LENGTH;
@@ -107,7 +108,7 @@ class Catalog implements AutoCloseable
         final int mtuLength,
         final int sessionId,
         final int streamId,
-        final String channel,
+        final String strippedChannel,
         final String originalChannel,
         final String sourceIdentity)
     {
@@ -116,10 +117,13 @@ class Catalog implements AutoCloseable
             throw new IllegalStateException("Catalog is full, max recordings reached: " + MAX_RECORDING_ID);
         }
 
-        if (channel.length() + sourceIdentity.length() > MAX_DESCRIPTOR_STRINGS_COMBINED_LENGTH)
+        if (strippedChannel.length() + sourceIdentity.length() + originalChannel.length() >
+            MAX_DESCRIPTOR_STRINGS_COMBINED_LENGTH)
         {
-            throw new IllegalArgumentException("Combined length of channel:'" + channel + "' and sourceIdentity:'" +
-                sourceIdentity + "' exceeds max allowed:" + MAX_DESCRIPTOR_STRINGS_COMBINED_LENGTH);
+            throw new IllegalArgumentException("Combined length of channel:'" + strippedChannel +
+                "' and sourceIdentity:'" + sourceIdentity +
+                "' and originalChannel:'" + originalChannel +
+                "' exceeds max allowed:" + MAX_DESCRIPTOR_STRINGS_COMBINED_LENGTH);
         }
 
         final long newRecordingId = nextRecordingId;
@@ -136,7 +140,7 @@ class Catalog implements AutoCloseable
             mtuLength,
             sessionId,
             streamId,
-            channel,
+            strippedChannel,
             originalChannel,
             sourceIdentity);
 

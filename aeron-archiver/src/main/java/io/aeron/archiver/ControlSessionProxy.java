@@ -41,10 +41,10 @@ class ControlSessionProxy
 
     void sendOkResponse(final long correlationId, final Publication controlPublication)
     {
-        sendError(correlationId, ControlResponseCode.OK, null, controlPublication);
+        sendResponse(correlationId, ControlResponseCode.OK, null, controlPublication);
     }
 
-    void sendError(
+    void sendResponse(
         final long correlationId,
         final ControlResponseCode code,
         final String errorMessage,

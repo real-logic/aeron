@@ -191,7 +191,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             }
             else
             {
-                controlSessionProxy.sendError(
+                controlSessionProxy.sendResponse(
                     correlationId,
                     ControlResponseCode.ERROR,
                     "No recording subscription found for: " + key,
@@ -201,7 +201,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         catch (final Exception ex)
         {
             errorHandler.onError(ex);
-            controlSessionProxy.sendError(
+            controlSessionProxy.sendResponse(
                 correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlPublication);
         }
     }
@@ -216,7 +216,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         // limit.
         if (recordingSessionByIdMap.size() >= maxConcurrentRecordings)
         {
-            controlSessionProxy.sendError(
+            controlSessionProxy.sendResponse(
                 correlationId,
                 ControlResponseCode.ERROR,
                 "Max concurrent recordings reached: " + maxConcurrentRecordings,
@@ -229,7 +229,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         {
             if (!originalChannel.startsWith(SPY_PREFIX) && !originalChannel.contains("aeron:ipc"))
             {
-                controlSessionProxy.sendError(
+                controlSessionProxy.sendResponse(
                     correlationId,
                     ControlResponseCode.ERROR,
                     "Only IPC and spy subscriptions are supported.",
@@ -246,7 +246,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 final Subscription subscription = aeron.addSubscription(
                     strippedChannel,
                     streamId,
-                    image -> startImageRecording(originalChannel, image),
+                    (image) -> startImageRecording(originalChannel, image),
                     null);
 
                 subscriptionMap.put(key, subscription);
@@ -254,7 +254,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             }
             else
             {
-                controlSessionProxy.sendError(
+                controlSessionProxy.sendResponse(
                     correlationId,
                     ControlResponseCode.ERROR,
                     "Recording already setup for subscription: " + key,
@@ -264,7 +264,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         catch (final Exception ex)
         {
             errorHandler.onError(ex);
-            controlSessionProxy.sendError(
+            controlSessionProxy.sendResponse(
                 correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlPublication);
         }
     }
@@ -317,7 +317,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         }
         else
         {
-            controlSessionProxy.sendError(
+            controlSessionProxy.sendResponse(
                 correlationId,
                 ControlResponseCode.REPLAY_NOT_FOUND,
                 null,
@@ -336,7 +336,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         if (replaySessionByIdMap.size() >= maxConcurrentReplays)
         {
-            controlSessionProxy.sendError(
+            controlSessionProxy.sendResponse(
                 correlationId,
                 ControlResponseCode.ERROR,
                 "Max concurrent replays reached: " + maxConcurrentReplays,
@@ -348,7 +348,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final UnsafeBuffer descriptorBuffer = catalog.wrapDescriptor(recordingId);
         if (descriptorBuffer == null)
         {
-            controlSessionProxy.sendError(
+            controlSessionProxy.sendResponse(
                 correlationId,
                 ControlResponseCode.ERROR,
                 "Recording not found : " + recordingId,

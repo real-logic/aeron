@@ -16,6 +16,10 @@
 package io.aeron.archiver.client;
 
 import io.aeron.Aeron;
+import io.aeron.Publication;
+import io.aeron.archiver.codecs.ControlResponseCode;
+import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
 
 /**
  * Client for interacting with a local or remote Aeron Archive that records and replays message streams.
@@ -24,10 +28,19 @@ import io.aeron.Aeron;
  * The underlying components such as the {@link ArchiveProxy} and the {@link ControlResponsePoller} may be used
  * directly is a more asynchronous pattern of interaction is required.
  */
-public final class AeronArchive implements AutoCloseable
+public final class AeronArchive implements AutoCloseable, ControlResponseListener
 {
+    private static final int RESPONSE_FRAGMENT_LIMIT = 10;
+
     private final Context context;
+    private final Aeron aeron;
     private final ArchiveProxy archiveProxy;
+    private final IdleStrategy idleStrategy;
+    private final ControlResponsePoller controlResponsePoller;
+    private long expectedCorrelationId;
+    private long receivedCorrelationId;
+    private ControlResponseCode controlResponseCode;
+    private String responseErrorMessage;
 
     private AeronArchive(final Context context)
     {
@@ -35,12 +48,19 @@ public final class AeronArchive implements AutoCloseable
         {
             context.conclude();
             this.context = context;
+            aeron = context.aeron();
+            idleStrategy = context.idleStrategy();
 
             archiveProxy = context.archiveProxy();
             if (!archiveProxy.connect(context.controlResponseChannel(), context.controlResponseStreamId()))
             {
                 throw new IllegalStateException("Cannot connect to aeron archive: " + context.controlRequestChannel());
             }
+
+            controlResponsePoller = new ControlResponsePoller(
+                this,
+                aeron.addSubscription(context.controlRequestChannel(), context.controlRequestStreamId),
+                RESPONSE_FRAGMENT_LIMIT);
         }
         catch (final Exception ex)
         {
@@ -74,6 +94,94 @@ public final class AeronArchive implements AutoCloseable
     public static AeronArchive connect(final Context context)
     {
         return new AeronArchive(context);
+    }
+
+    /**
+     * Add a {@link Publication} and set it up to be recorded.
+     *
+     * @param channel  for the publication.
+     * @param streamId for the publication.
+     * @return the {@link Publication} ready for use.
+     */
+    public Publication addRecordedPublication(final String channel, final int streamId)
+    {
+        final long correlationId = aeron.nextCorrelationId();
+        if (!archiveProxy.startRecording(channel, streamId, correlationId))
+        {
+            throw new IllegalStateException("Failed to send start recording request");
+        }
+
+        expectedCorrelationId = correlationId;
+        pollForResponse();
+
+        final Publication publication = aeron.addPublication(channel, streamId);
+        if (!publication.isOriginal())
+        {
+            publication.close();
+
+            throw new IllegalStateException(
+                "Publication already added for channel=" + channel + " streamId=" + streamId);
+        }
+
+        return publication;
+    }
+
+    public void onResponse(final long correlationId, final ControlResponseCode code, final String errorMessage)
+    {
+        receivedCorrelationId = correlationId;
+        controlResponseCode = code;
+        responseErrorMessage = errorMessage;
+    }
+
+    public void onReplayStarted(final long correlationId, final long replayId)
+    {
+
+    }
+
+    public void onReplayAborted(final long correlationId, final long endPosition)
+    {
+
+    }
+
+    public void onRecordingNotFound(final long correlationId, final long recordingId, final long maxRecordingId)
+    {
+
+    }
+
+    public void onRecordingDescriptor(
+        final long correlationId,
+        final long recordingId,
+        final long joinTimestamp,
+        final long endTimestamp,
+        final long joinPosition,
+        final long endPosition,
+        final int initialTermId,
+        final int segmentFileLength,
+        final int termBufferLength,
+        final int mtuLength,
+        final int sessionId,
+        final int streamId,
+        final String strippedChannel,
+        final String originalChannel,
+        final String sourceIdentity)
+    {
+
+    }
+
+    private void pollForResponse()
+    {
+        idleStrategy.reset();
+
+        while (receivedCorrelationId != expectedCorrelationId && controlResponsePoller.poll() <= 0)
+        {
+            idleStrategy.idle();
+        }
+
+        if (controlResponseCode != ControlResponseCode.OK)
+        {
+            throw new IllegalStateException(
+                "Response code=" + controlResponseCode + " message=" + responseErrorMessage);
+        }
     }
 
     /**
@@ -225,6 +333,7 @@ public final class AeronArchive implements AutoCloseable
         private int controlResponseStreamId = Configuration.controlResponseStreamId();
         private Aeron aeron;
         private ArchiveProxy archiveProxy;
+        private IdleStrategy idleStrategy;
 
         /**
          * Conclude configuration by setting up defaults when specifics are not provided.
@@ -236,9 +345,18 @@ public final class AeronArchive implements AutoCloseable
                 aeron = Aeron.connect();
             }
 
+            if (null == idleStrategy)
+            {
+                idleStrategy = new BackoffIdleStrategy(10, 10, 1, 1);
+            }
+
             if (null == archiveProxy)
             {
-                archiveProxy = new ArchiveProxy(aeron.addPublication(controlRequestChannel, controlRequestStreamId));
+                archiveProxy = new ArchiveProxy(
+                    aeron.addPublication(controlRequestChannel, controlRequestStreamId),
+                    idleStrategy,
+                    ArchiveProxy.DEFAULT_CONNECT_TIMEOUT_NS,
+                    ArchiveProxy.DEFAULT_MAX_RETRY_ATTEMPTS);
             }
         }
 
@@ -378,6 +496,28 @@ public final class AeronArchive implements AutoCloseable
         public ArchiveProxy archiveProxy()
         {
             return archiveProxy;
+        }
+
+        /**
+         * Set the {@link IdleStrategy} used when waiting for responses.
+         *
+         * @param idleStrategy used when waiting for responses.
+         * @return this for a fluent API.
+         */
+        public Context idleStrategy(final IdleStrategy idleStrategy)
+        {
+            this.idleStrategy = idleStrategy;
+            return this;
+        }
+
+        /**
+         * Get the {@link IdleStrategy} used when waiting for responses.
+         *
+         * @return the {@link IdleStrategy} used when waiting for responses.
+         */
+        public IdleStrategy idleStrategy()
+        {
+            return idleStrategy;
         }
 
         /**

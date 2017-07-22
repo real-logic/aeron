@@ -93,6 +93,6 @@ abstract class AbstractListRecordingsSession implements Session
 
     protected void sendError(final ControlResponseCode code, final String message)
     {
-        proxy.sendError(correlationId, code, message, controlPublication);
+        proxy.sendResponse(correlationId, code, message, controlPublication);
     }
 }

@@ -333,7 +333,7 @@ class ReplaySession implements Session
         this.state = State.INACTIVE;
         if (controlPublication.isConnected())
         {
-            threadLocalControlSessionProxy.sendError(
+            threadLocalControlSessionProxy.sendResponse(
                 correlationId,
                 ControlResponseCode.ERROR,
                 errorMessage,

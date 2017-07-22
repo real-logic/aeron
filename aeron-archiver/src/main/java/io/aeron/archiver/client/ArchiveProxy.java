@@ -33,6 +33,11 @@ public class ArchiveProxy
      */
     public static final long DEFAULT_CONNECT_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
 
+    /**
+     * Default maximum number of retry attempts to be made at offering request messages.
+     */
+    public static final int DEFAULT_MAX_RETRY_ATTEMPTS = 3;
+
     private final long connectTimeoutNs;
     private final int maxRetryAttempts;
     private final IdleStrategy retryIdleStrategy;
@@ -53,13 +58,13 @@ public class ArchiveProxy
      * Create a proxy with a {@link Publication} for sending control message requests.
      *
      * This provides a default {@link IdleStrategy} of a {@link YieldingIdleStrategy} when offers are back pressured
-     * with a default maximum retry attempts of 3.
+     * with a defaults of {@link #DEFAULT_CONNECT_TIMEOUT_NS} and {@link #DEFAULT_MAX_RETRY_ATTEMPTS}.
      *
      * @param controlRequest publication for sending control messages to an archive.
      */
     public ArchiveProxy(final Publication controlRequest)
     {
-        this(controlRequest, new YieldingIdleStrategy(), DEFAULT_CONNECT_TIMEOUT_NS, 3);
+        this(controlRequest, new YieldingIdleStrategy(), DEFAULT_CONNECT_TIMEOUT_NS, DEFAULT_MAX_RETRY_ATTEMPTS);
     }
 
     /**

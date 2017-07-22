@@ -78,19 +78,19 @@ public class ControlResponsePoller
         switch (templateId)
         {
             case ControlResponseDecoder.TEMPLATE_ID:
-                handleArchiverResponse(listener, buffer, offset);
+                handleGenericResponse(listener, buffer, offset);
                 break;
 
-            case ReplayAbortedDecoder.TEMPLATE_ID:
-                handleReplayAborted(listener, buffer, offset);
+            case RecordingDescriptorDecoder.TEMPLATE_ID:
+                handleRecordingDescriptor(listener, buffer, offset);
                 break;
 
             case ReplayStartedDecoder.TEMPLATE_ID:
                 handleReplayStarted(listener, buffer, offset);
                 break;
 
-            case RecordingDescriptorDecoder.TEMPLATE_ID:
-                handleRecordingDescriptor(listener, buffer, offset);
+            case ReplayAbortedDecoder.TEMPLATE_ID:
+                handleReplayAborted(listener, buffer, offset);
                 break;
 
             case RecordingNotFoundResponseDecoder.TEMPLATE_ID:
@@ -102,24 +102,7 @@ public class ControlResponsePoller
         }
     }
 
-    private void handleRecordingNotFoundResponse(
-        final ControlResponseListener controlResponseListener,
-        final DirectBuffer buffer,
-        final int offset)
-    {
-        recordingNotFoundResponseDecoder.wrap(
-            buffer,
-            offset + MessageHeaderEncoder.ENCODED_LENGTH,
-            messageHeaderDecoder.blockLength(),
-            messageHeaderDecoder.version());
-
-        controlResponseListener.onRecordingNotFound(
-            recordingNotFoundResponseDecoder.correlationId(),
-            recordingNotFoundResponseDecoder.recordingId(),
-            recordingNotFoundResponseDecoder.maxRecordingId());
-    }
-
-    private void handleArchiverResponse(
+    private void handleGenericResponse(
         final ControlResponseListener listener,
         final DirectBuffer buffer,
         final int offset)
@@ -134,38 +117,6 @@ public class ControlResponsePoller
             archiverResponseDecoder.correlationId(),
             archiverResponseDecoder.code(),
             archiverResponseDecoder.errorMessage());
-    }
-
-    private void handleReplayAborted(
-        final ControlResponseListener listener,
-        final DirectBuffer buffer,
-        final int offset)
-    {
-        replayAbortedDecoder.wrap(
-            buffer,
-            offset + MessageHeaderEncoder.ENCODED_LENGTH,
-            messageHeaderDecoder.blockLength(),
-            messageHeaderDecoder.version());
-
-        listener.onReplayAborted(
-            replayAbortedDecoder.correlationId(),
-            replayAbortedDecoder.endPosition());
-    }
-
-    private void handleReplayStarted(
-        final ControlResponseListener listener,
-        final DirectBuffer buffer,
-        final int offset)
-    {
-        replayStartedDecoder.wrap(
-            buffer,
-            offset + MessageHeaderEncoder.ENCODED_LENGTH,
-            messageHeaderDecoder.blockLength(),
-            messageHeaderDecoder.version());
-
-        listener.onReplayStarted(
-            replayStartedDecoder.correlationId(),
-            replayStartedDecoder.replayId());
     }
 
     private void handleRecordingDescriptor(
@@ -195,5 +146,54 @@ public class ControlResponsePoller
             recordingDescriptorDecoder.strippedChannel(),
             recordingDescriptorDecoder.originalChannel(),
             recordingDescriptorDecoder.sourceIdentity());
+    }
+
+    private void handleReplayStarted(
+        final ControlResponseListener listener,
+        final DirectBuffer buffer,
+        final int offset)
+    {
+        replayStartedDecoder.wrap(
+            buffer,
+            offset + MessageHeaderEncoder.ENCODED_LENGTH,
+            messageHeaderDecoder.blockLength(),
+            messageHeaderDecoder.version());
+
+        listener.onReplayStarted(
+            replayStartedDecoder.correlationId(),
+            replayStartedDecoder.replayId());
+    }
+
+    private void handleReplayAborted(
+        final ControlResponseListener listener,
+        final DirectBuffer buffer,
+        final int offset)
+    {
+        replayAbortedDecoder.wrap(
+            buffer,
+            offset + MessageHeaderEncoder.ENCODED_LENGTH,
+            messageHeaderDecoder.blockLength(),
+            messageHeaderDecoder.version());
+
+        listener.onReplayAborted(
+            replayAbortedDecoder.correlationId(),
+            replayAbortedDecoder.endPosition());
+    }
+
+    private void handleRecordingNotFoundResponse(
+        final ControlResponseListener controlResponseListener,
+        final DirectBuffer buffer,
+        final int offset)
+    {
+        recordingNotFoundResponseDecoder.wrap(
+            buffer,
+            offset + MessageHeaderEncoder.ENCODED_LENGTH,
+            messageHeaderDecoder.blockLength(),
+            messageHeaderDecoder.version());
+
+        controlResponseListener.onRecordingNotFound(
+            recordingNotFoundResponseDecoder.correlationId(),
+            recordingNotFoundResponseDecoder.recordingId(),
+            recordingNotFoundResponseDecoder.maxRecordingId());
     }
 }

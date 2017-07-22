@@ -131,7 +131,7 @@ public class ListRecordingsSessionTest
             controlSession);
         session.doWork();
         assertThat(session.isDone(), is(true));
-        verify(controlSessionProxy).sendError(eq(correlationId), any(), any(), eq(controlPublication));
+        verify(controlSessionProxy).sendResponse(eq(correlationId), any(), any(), eq(controlPublication));
         verify(controlSessionProxy, never()).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
     }
 }

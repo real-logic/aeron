@@ -24,7 +24,7 @@ public interface RecordingEventsListener
      * Fired when a recording is started.
      *
      * @param recordingId    assigned to the new recording.
-     * @param joinPosition   in the stream at which the recording started.
+     * @param startPosition  in the stream at which the recording started.
      * @param sessionId      of the publication being recorded.
      * @param streamId       of the publication being recorded.
      * @param channel        of the publication being recorded.
@@ -32,7 +32,7 @@ public interface RecordingEventsListener
      */
     void onStart(
         long recordingId,
-        long joinPosition,
+        long startPosition,
         int sessionId,
         int streamId,
         String channel,
@@ -41,17 +41,18 @@ public interface RecordingEventsListener
     /**
      * Progress indication of an active recording.
      *
-     * @param recordingId  for which progress is being reported.
-     * @param joinPosition in the stream at which the recording started.
-     * @param position     reached in recording the publication.
+     * @param recordingId   for which progress is being reported.
+     * @param startPosition in the stream at which the recording started.
+     * @param position      reached in recording the publication.
      */
-    void onProgress(long recordingId, long joinPosition, long position);
+    void onProgress(long recordingId, long startPosition, long position);
 
     /**
      * Fired when a recording is stopped.
-     * @param recordingId  of the publication that has stopped recording.
-     * @param joinPosition in the stream at which the recording started.
-     * @param endPosition  at which the recording stopped.
+     *
+     * @param recordingId   of the publication that has stopped recording.
+     * @param startPosition in the stream at which the recording started.
+     * @param stopPosition  at which the recording stopped.
      */
-    void onStop(long recordingId, long joinPosition, long endPosition);
+    void onStop(long recordingId, long startPosition, long stopPosition);
 }

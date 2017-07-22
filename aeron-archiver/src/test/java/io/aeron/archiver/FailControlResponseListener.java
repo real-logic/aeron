@@ -32,7 +32,7 @@ public class FailControlResponseListener implements ControlResponseListener
         fail();
     }
 
-    public void onReplayAborted(final long correlationId, final long endPosition)
+    public void onReplayAborted(final long correlationId, final long stopPosition)
     {
         fail();
     }
@@ -40,10 +40,10 @@ public class FailControlResponseListener implements ControlResponseListener
     public void onRecordingDescriptor(
         final long correlationId,
         final long recordingId,
-        final long joinTimestamp,
-        final long endTimestamp,
-        final long joinPosition,
-        final long endPosition,
+        final long startTimestamp,
+        final long stopTimestamp,
+        final long startPosition,
+        final long stopPosition,
         final int initialTermId,
         final int segmentFileLength,
         final int termBufferLength,

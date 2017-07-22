@@ -38,7 +38,7 @@ class RecordingEventsProxy
 
     void started(
         final long recordingId,
-        final long joinPosition,
+        final long startPosition,
         final int sessionId,
         final int streamId,
         final String channel,
@@ -47,7 +47,7 @@ class RecordingEventsProxy
         recordingStartedEncoder
             .wrapAndApplyHeader(outboundBuffer, 0, messageHeaderEncoder)
             .recordingId(recordingId)
-            .joinPosition(joinPosition)
+            .startPosition(startPosition)
             .sessionId(sessionId)
             .streamId(streamId)
             .channel(channel)
@@ -56,24 +56,24 @@ class RecordingEventsProxy
         send(recordingStartedEncoder.encodedLength());
     }
 
-    void progress(final long recordingId, final long joinPosition, final long position)
+    void progress(final long recordingId, final long startPosition, final long position)
     {
         recordingProgressEncoder
             .wrapAndApplyHeader(outboundBuffer, 0, messageHeaderEncoder)
             .recordingId(recordingId)
-            .joinPosition(joinPosition)
+            .startPosition(startPosition)
             .position(position);
 
         send(recordingProgressEncoder.encodedLength());
     }
 
-    void stopped(final long recordingId, final long joinPosition, final long endPosition)
+    void stopped(final long recordingId, final long startPosition, final long stopPosition)
     {
         recordingStoppedEncoder
             .wrapAndApplyHeader(outboundBuffer, 0, messageHeaderEncoder)
             .recordingId(recordingId)
-            .joinPosition(joinPosition)
-            .endPosition(endPosition);
+            .startPosition(startPosition)
+            .stopPosition(stopPosition);
 
         send(recordingStoppedEncoder.encodedLength());
     }

@@ -54,7 +54,7 @@ public class ReplaySessionTest
     private static final int TERM_BUFFER_LENGTH = 4096 * 4;
     private static final int INITIAL_TERM_ID = 8231773;
     private static final int INITIAL_TERM_OFFSET = 1024;
-    private static final long JOIN_POSITION = INITIAL_TERM_OFFSET;
+    private static final long START_POSITION = INITIAL_TERM_OFFSET;
     private static final long RECORDING_POSITION = INITIAL_TERM_OFFSET;
     private static final int MTU_LENGTH = 4096;
     private static final long TIME = 0;
@@ -85,7 +85,7 @@ public class ReplaySessionTest
         Catalog.initDescriptor(
             new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH),
             RECORDING_ID,
-            JOIN_POSITION,
+            START_POSITION,
             INITIAL_TERM_ID,
             context.segmentFileLength,
             TERM_BUFFER_LENGTH,
@@ -192,7 +192,6 @@ public class ReplaySessionTest
         final long correlationId = 1L;
 
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID,
             RECORDING_POSITION,
             FRAME_LENGTH,
             correlationId,
@@ -244,7 +243,7 @@ public class ReplaySessionTest
     public void shouldNotReplayPartialUnalignedDataFromFile()
     {
         final long correlationId = 1L;
-        final ReplaySession replaySession = new ReplaySession(
+        new ReplaySession(
             RECORDING_POSITION + 1,
             (long)FRAME_LENGTH,
             mockReplyPubSupplier,
@@ -266,7 +265,6 @@ public class ReplaySessionTest
         final long correlationId = 1L;
 
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID,
             RECORDING_POSITION,
             length,
             correlationId,
@@ -325,7 +323,6 @@ public class ReplaySessionTest
         final long correlationId = 1L;
 
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID,
             RECORDING_POSITION,
             length,
             correlationId,
@@ -360,7 +357,6 @@ public class ReplaySessionTest
         final long length = 1024L;
         final long correlationId = 1L;
         final ReplaySession replaySession = replaySession(
-            RECORDING_ID,
             RECORDING_POSITION,
             length,
             correlationId,
@@ -390,7 +386,7 @@ public class ReplaySessionTest
         Catalog.initDescriptor(
             new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH),
             recordingId,
-            JOIN_POSITION,
+            START_POSITION,
             INITIAL_TERM_ID,
             context.segmentFileLength,
             TERM_BUFFER_LENGTH,
@@ -418,7 +414,6 @@ public class ReplaySessionTest
             final long correlationId = 1L;
 
             replaySession = replaySession(
-                recordingId,
                 RECORDING_POSITION,
                 length,
                 correlationId,
@@ -532,7 +527,6 @@ public class ReplaySessionTest
     }
 
     private ReplaySession replaySession(
-        final long recordingId,
         final long recordingPosition,
         final long length,
         final long correlationId,

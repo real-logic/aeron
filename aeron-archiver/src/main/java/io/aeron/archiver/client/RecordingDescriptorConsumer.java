@@ -26,10 +26,10 @@ public interface RecordingDescriptorConsumer
      *
      * @param correlationId     of the associated request to list recordings.
      * @param recordingId       of this recording descriptor.
-     * @param joinTimestamp     for the recording.
-     * @param endTimestamp      for the recording.
-     * @param joinPosition      for the recording against the recorded publication.
-     * @param endPosition       reached for the recording.
+     * @param startTimestamp    for the recording.
+     * @param stopTimestamp     for the recording.
+     * @param startPosition     for the recording against the recorded publication.
+     * @param stopPosition      reached for the recording.
      * @param initialTermId     for the recorded publication.
      * @param segmentFileLength for the recording which is a multiple of termBufferLength.
      * @param termBufferLength  for the recorded publication.
@@ -43,10 +43,10 @@ public interface RecordingDescriptorConsumer
     void onRecordingDescriptor(
         long correlationId,
         long recordingId,
-        long joinTimestamp,
-        long endTimestamp,
-        long joinPosition,
-        long endPosition,
+        long startTimestamp,
+        long stopTimestamp,
+        long startPosition,
+        long stopPosition,
         int initialTermId,
         int segmentFileLength,
         int termBufferLength,

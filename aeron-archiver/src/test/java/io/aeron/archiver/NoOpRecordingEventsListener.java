@@ -21,7 +21,7 @@ public class NoOpRecordingEventsListener implements RecordingEventsListener
 {
     public void onStart(
         final long recordingId,
-        final long joinPosition,
+        final long startPosition,
         final int sessionId,
         final int streamId,
         final String channel,
@@ -29,11 +29,11 @@ public class NoOpRecordingEventsListener implements RecordingEventsListener
     {
     }
 
-    public void onProgress(final long recordingId, final long joinPosition, final long position)
+    public void onProgress(final long recordingId, final long startPosition, final long position)
     {
     }
 
-    public void onStop(final long recordingId, final long joinPosition, final long endPosition)
+    public void onStop(final long recordingId, final long startPosition, final long stopPosition)
     {
     }
 }

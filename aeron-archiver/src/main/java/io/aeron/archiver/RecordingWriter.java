@@ -67,7 +67,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     private final UnsafeBuffer descriptorBuffer;
     private final RecordingDescriptorEncoder descriptorEncoder;
     private final int segmentFileLength;
-    private final long joinPosition;
+    private final long startPosition;
 
     /**
      * Index is in the range 0:segmentFileLength, except before the first block for this image is received indicated
@@ -78,9 +78,9 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     private FileChannel recordingFileChannel;
 
     private boolean closed = false;
-    private long endPosition = Catalog.NULL_POSITION;
-    private long joinTimestamp = Catalog.NULL_TIME;
-    private long endTimestamp = Catalog.NULL_TIME;
+    private long stopPosition = Catalog.NULL_POSITION;
+    private long startTimestamp = Catalog.NULL_TIME;
+    private long stopTimestamp = Catalog.NULL_TIME;
 
     RecordingWriter(final Context context, final UnsafeBuffer descriptorBuffer)
     {
@@ -103,9 +103,9 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
         this.termBufferLength = termBufferLength;
         this.recordingId = descriptorDecoder.recordingId();
-        this.joinPosition = descriptorDecoder.joinPosition();
-        this.initialRecordingTermId = (int) (descriptorDecoder.initialTermId() + (joinPosition / termBufferLength));
-        this.endPosition = joinPosition;
+        this.startPosition = descriptorDecoder.startPosition();
+        this.initialRecordingTermId = (int) (descriptorDecoder.initialTermId() + (startPosition / termBufferLength));
+        this.stopPosition = startPosition;
 
         this.termsMask = (segmentFileLength / this.termBufferLength) - 1;
         if (((termsMask + 1) & termsMask) != 0)
@@ -179,8 +179,8 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         if (descriptorBuffer != null)
         {
             UnsafeAccess.UNSAFE.storeFence();
-            endTimestamp = epochClock.time();
-            descriptorEncoder.endTimestamp(endTimestamp);
+            stopTimestamp = epochClock.time();
+            descriptorEncoder.stopTimestamp(stopTimestamp);
             UnsafeAccess.UNSAFE.storeFence();
         }
 
@@ -247,14 +247,14 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         return segmentFileLength;
     }
 
-    long joinPosition()
+    long startPosition()
     {
-        return joinPosition;
+        return startPosition;
     }
 
-    long endPosition()
+    long stopPosition()
     {
-        return endPosition;
+        return stopPosition;
     }
 
     // extend for testing
@@ -282,8 +282,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         try
         {
             recordingFile = new RandomAccessFile(file, "rw");
-            // Note: extra room allocated for marker write at end of file. This is required so that we can tell from
-            // the data files when a recording is done.
             recordingFile.setLength(segmentFileLength + DataHeaderFlyweight.HEADER_LENGTH);
             recordingFileChannel = recordingFile.getChannel();
             if (forceWrites && null != archiveDirChannel)
@@ -323,8 +321,8 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         validateStartTermOffset(termOffset);
 
         segmentPosition = termOffset;
-        joinTimestamp = epochClock.time();
-        descriptorEncoder.joinTimestamp(joinTimestamp);
+        startTimestamp = epochClock.time();
+        descriptorEncoder.startTimestamp(startTimestamp);
         newRecordingSegmentFile();
 
         if (segmentPosition != 0)
@@ -337,8 +335,8 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     {
         UnsafeAccess.UNSAFE.storeFence();
         segmentPosition += blockLength;
-        endPosition += blockLength;
-        descriptorEncoder.endPosition(endPosition);
+        stopPosition += blockLength;
+        descriptorEncoder.stopPosition(stopPosition);
         UnsafeAccess.UNSAFE.storeFence();
     }
 
@@ -346,7 +344,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     {
         if (POSITION_CHECKS)
         {
-            final int expectedStartTermOffset = (int)(joinPosition & (termBufferLength - 1));
+            final int expectedStartTermOffset = (int)(startPosition & (termBufferLength - 1));
             if (expectedStartTermOffset != termOffset)
             {
                 throw new IllegalStateException();

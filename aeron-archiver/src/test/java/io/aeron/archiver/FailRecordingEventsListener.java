@@ -23,7 +23,7 @@ public class FailRecordingEventsListener implements RecordingEventsListener
 {
     public void onStart(
         final long recordingId,
-        final long joinPosition,
+        final long startPosition,
         final int sessionId,
         final int streamId,
         final String channel,
@@ -32,12 +32,12 @@ public class FailRecordingEventsListener implements RecordingEventsListener
         fail();
     }
 
-    public void onProgress(final long recordingId, final long joinPosition, final long position)
+    public void onProgress(final long recordingId, final long startPosition, final long position)
     {
         fail();
     }
 
-    public void onStop(final long recordingId, final long joinPosition, final long endPosition)
+    public void onStop(final long recordingId, final long startPosition, final long stopPosition)
     {
         fail();
     }

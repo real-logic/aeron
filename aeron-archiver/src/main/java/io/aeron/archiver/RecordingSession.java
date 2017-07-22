@@ -93,7 +93,7 @@ class RecordingSession implements Session
         final int streamId = subscription.streamId();
         final String channel = subscription.channel();
         final String sourceIdentity = image.sourceIdentity();
-        final long joinPosition = image.joinPosition();
+        final long startPosition = image.joinPosition();
 
         RecordingWriter recordingWriter = null;
         try
@@ -109,7 +109,7 @@ class RecordingSession implements Session
 
         recordingEventsProxy.started(
             recordingId,
-            joinPosition,
+            startPosition,
             sessionId,
             streamId,
             channel,
@@ -124,7 +124,7 @@ class RecordingSession implements Session
     public void close()
     {
         CloseHelper.quietClose(recordingWriter);
-        recordingEventsProxy.stopped(recordingId, recordingWriter.joinPosition(), recordingWriter.endPosition());
+        recordingEventsProxy.stopped(recordingId, recordingWriter.startPosition(), recordingWriter.stopPosition());
         state = State.CLOSED;
     }
 
@@ -138,8 +138,8 @@ class RecordingSession implements Session
             {
                 recordingEventsProxy.progress(
                     recordingWriter.recordingId(),
-                    recordingWriter.joinPosition(),
-                    recordingWriter.endPosition());
+                    recordingWriter.startPosition(),
+                    recordingWriter.stopPosition());
             }
 
             if (image.isClosed() || recordingWriter.isClosed())
@@ -156,8 +156,8 @@ class RecordingSession implements Session
         return workCount;
     }
 
-    long endPosition()
+    long stopPosition()
     {
-        return recordingWriter != null ? recordingWriter.endPosition() : Catalog.NULL_POSITION;
+        return recordingWriter != null ? recordingWriter.stopPosition() : Catalog.NULL_POSITION;
     }
 }

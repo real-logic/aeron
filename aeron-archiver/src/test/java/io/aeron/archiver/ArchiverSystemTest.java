@@ -80,13 +80,13 @@ public class ArchiverSystemTest
     private long totalDataLength;
     private long totalRecordingLength;
     private long recorded;
-    private long requestedJoinPosition;
-    private volatile long endPosition = -1;
+    private long requestedStartPosition;
+    private volatile long stopPosition = -1;
     private Throwable trackerError;
 
     private Subscription controlResponse;
     private long correlationId;
-    private long joinPosition;
+    private long startPosition;
     private int requestedInitialTermId;
 
     @Before
@@ -113,7 +113,7 @@ public class ArchiverSystemTest
 
         publishUri = channelUriStringBuilder.build();
 
-        requestedJoinPosition = ((termId - requestedInitialTermId) * (long)termLength) + termOffset;
+        requestedStartPosition = ((termId - requestedInitialTermId) * (long)termLength) + termOffset;
 
         driverCtx
             .termBufferSparseFile(true)
@@ -185,11 +185,11 @@ public class ArchiverSystemTest
             final int termBufferLength = recordedPublication.termBufferLength();
             final int initialTermId = recordedPublication.initialTermId();
             final int maxPayloadLength = recordedPublication.maxPayloadLength();
-            final long joinPosition = recordedPublication.position();
+            final long startPosition = recordedPublication.position();
 
-            assertThat(joinPosition, is(requestedJoinPosition));
+            assertThat(startPosition, is(requestedStartPosition));
             assertThat(recordedPublication.initialTermId(), is(requestedInitialTermId));
-            preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, joinPosition);
+            preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
 
             final int messageCount = prepAndSendMessages(recordingEvents, recordedPublication);
 
@@ -224,11 +224,11 @@ public class ArchiverSystemTest
             final int termBufferLength = recordedPublication.termBufferLength();
             final int initialTermId = recordedPublication.initialTermId();
             final int maxPayloadLength = recordedPublication.maxPayloadLength();
-            final long joinPosition = recordedPublication.position();
+            final long startPosition = recordedPublication.position();
 
-            assertThat(joinPosition, is(requestedJoinPosition));
+            assertThat(startPosition, is(requestedStartPosition));
             assertThat(recordedPublication.initialTermId(), is(requestedInitialTermId));
-            preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, joinPosition);
+            preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
 
             final int messageCount = MESSAGE_COUNT;
             final CountDownLatch waitForData = new CountDownLatch(2);
@@ -265,9 +265,9 @@ public class ArchiverSystemTest
             final int termBufferLength = recordedPublication.termBufferLength();
             final int initialTermId = recordedPublication.initialTermId();
             final int maxPayloadLength = recordedPublication.maxPayloadLength();
-            final long joinPosition = recordedPublication.position();
+            final long startPosition = recordedPublication.position();
 
-            preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, joinPosition);
+            preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
 
             final int messageCount = prepAndSendMessages(recordingEvents, recordedPublication);
 
@@ -286,14 +286,14 @@ public class ArchiverSystemTest
         final Subscription recordingEvents,
         final int sessionId,
         final int termBufferLength,
-        final long joinPosition)
+        final long startPosition)
     {
         final RecordingEventsPoller recordingEventsPoller = new RecordingEventsPoller(
             new FailRecordingEventsListener()
             {
                 public void onStart(
                     final long recordingId0,
-                    final long joinPosition0,
+                    final long startPosition0,
                     final int sessionId0,
                     final int streamId0,
                     final String channel,
@@ -302,7 +302,7 @@ public class ArchiverSystemTest
                     recordingId = recordingId0;
                     assertThat(streamId0, is(PUBLISH_STREAM_ID));
                     assertThat(sessionId0, is(sessionId));
-                    assertThat(joinPosition0, is(joinPosition));
+                    assertThat(startPosition0, is(startPosition));
                     println("Recording started. sourceIdentity: " + sourceIdentity);
                 }
             },
@@ -338,7 +338,7 @@ public class ArchiverSystemTest
         final RecordingEventsPoller recordingEventsPoller = new RecordingEventsPoller(
             new FailRecordingEventsListener()
             {
-                public void onStop(final long rId, final long joinPosition, final long endPosition)
+                public void onStop(final long rId, final long startPosition, final long stopPosition)
                 {
                     assertThat(rId, is(recordingId));
                 }
@@ -456,10 +456,10 @@ public class ArchiverSystemTest
                 public void onRecordingDescriptor(
                     final long correlationId,
                     final long recordingId,
-                    final long joinTimestamp,
-                    final long endTimestamp,
-                    final long joinPosition,
-                    final long endPosition,
+                    final long startTimestamp,
+                    final long stopTimestamp,
+                    final long startPosition,
+                    final long stopPosition,
                     final int initialTermId,
                     final int segmentFileLength,
                     final int termBufferLength,
@@ -539,7 +539,7 @@ public class ArchiverSystemTest
 
     private void publishDataToRecorded(final Publication publication, final int messageCount)
     {
-        joinPosition = publication.position();
+        startPosition = publication.position();
 
         buffer.setMemory(0, 1024, (byte)'z');
         buffer.putStringAscii(32, "TEST");
@@ -553,13 +553,13 @@ public class ArchiverSystemTest
         }
 
         final long position = publication.position();
-        totalRecordingLength = position - joinPosition;
-        endPosition = position;
+        totalRecordingLength = position - startPosition;
+        stopPosition = position;
     }
 
     private void publishDataToRecorded(final ExclusivePublication publication, final int messageCount)
     {
-        joinPosition = publication.position();
+        startPosition = publication.position();
 
         buffer.setMemory(0, 1024, (byte)'z');
         buffer.putStringAscii(32, "TEST");
@@ -573,8 +573,8 @@ public class ArchiverSystemTest
         }
 
         final long position = publication.position();
-        totalRecordingLength = position - joinPosition;
-        endPosition = position;
+        totalRecordingLength = position - startPosition;
+        stopPosition = position;
     }
 
     private void validateReplay(
@@ -590,7 +590,7 @@ public class ArchiverSystemTest
 
             waitFor(() -> archiveProxy.replay(
                 recordingId,
-                joinPosition,
+                startPosition,
                 totalRecordingLength,
                 REPLAY_URI,
                 REPLAY_STREAM_ID,
@@ -603,7 +603,7 @@ public class ArchiverSystemTest
             assertThat(image.initialTermId(), is(initialTermId));
             assertThat(image.mtuLength(), is(maxPayloadLength + HEADER_LENGTH));
             assertThat(image.termBufferLength(), is(termBufferLength));
-            assertThat(image.position(), is(joinPosition));
+            assertThat(image.position(), is(startPosition));
 
             fragmentCount = 0;
             remaining = totalDataLength;
@@ -680,11 +680,11 @@ public class ArchiverSystemTest
             {
                 public void onProgress(
                     final long recordingId0,
-                    final long joinPosition,
+                    final long startPosition,
                     final long position)
                 {
                     assertThat(recordingId0, is(recordingId));
-                    recorded = position - joinPosition;
+                    recorded = position - startPosition;
                     printf("a=%d total=%d %n", recorded, totalRecordingLength);
                 }
             },
@@ -700,7 +700,7 @@ public class ArchiverSystemTest
                     long start = System.currentTimeMillis();
                     long startBytes = remaining;
 
-                    while (endPosition == -1 || recorded < totalRecordingLength)
+                    while (stopPosition == -1 || recorded < totalRecordingLength)
                     {
                         if (recordingEventsPoller.poll() == 0)
                         {
@@ -762,7 +762,7 @@ public class ArchiverSystemTest
 
                 waitFor(() -> archiveProxy.replay(
                     recordingId,
-                    this.joinPosition,
+                    this.startPosition,
                     Long.MAX_VALUE,
                     REPLAY_URI,
                     REPLAY_STREAM_ID,
@@ -775,7 +775,7 @@ public class ArchiverSystemTest
                 assertThat(image.initialTermId(), is(initialTermId));
                 assertThat(image.mtuLength(), is(maxPayloadLength + HEADER_LENGTH));
                 assertThat(image.termBufferLength(), is(termBufferLength));
-                assertThat(image.position(), is(this.joinPosition));
+                assertThat(image.position(), is(this.startPosition));
 
                 fragmentCount = 0;
                 remaining = totalDataLength;

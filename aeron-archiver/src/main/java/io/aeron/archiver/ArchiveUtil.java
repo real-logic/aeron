@@ -24,9 +24,9 @@ class ArchiveUtil
         return recordingId + "." + segmentIndex + RECORDING_SEGMENT_POSTFIX;
     }
 
-    static int segmentFileIndex(final long joinPosition, final long position, final int segmentFileLength)
+    static int segmentFileIndex(final long startPosition, final long position, final int segmentFileLength)
     {
-        return (int)((position - joinPosition) / segmentFileLength);
+        return (int)((position - startPosition) / segmentFileLength);
     }
 
     static int recordingOffset(

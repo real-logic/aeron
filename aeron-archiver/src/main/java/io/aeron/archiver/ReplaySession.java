@@ -103,25 +103,25 @@ class ReplaySession implements Session
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
 
-        final long joinPosition = descriptorDecoder.joinPosition();
+        final long startPosition = descriptorDecoder.startPosition();
         final int mtuLength = descriptorDecoder.mtuLength();
         final int termBufferLength = descriptorDecoder.termBufferLength();
         final int initialTermId = descriptorDecoder.initialTermId();
 
-        if (replayPosition - joinPosition < 0)
+        if (replayPosition - startPosition < 0)
         {
             closeOnError(null, "Requested replay start position(=" + replayPosition +
-                ") is before recording join position(=" + joinPosition + ")");
+                ") is before recording start position(=" + startPosition + ")");
             cursor = null;
             replayPublication = null;
             return;
         }
 
-        final long endPosition = descriptorDecoder.endPosition();
-        if (replayPosition - endPosition >= 0)
+        final long stopPosition = descriptorDecoder.stopPosition();
+        if (replayPosition - stopPosition >= 0)
         {
             closeOnError(null, "Requested replay start position(=" + replayPosition +
-                ") is after recording end position(=" + endPosition + ")");
+                ") is after recording stop position(=" + stopPosition + ")");
             cursor = null;
             replayPublication = null;
             return;

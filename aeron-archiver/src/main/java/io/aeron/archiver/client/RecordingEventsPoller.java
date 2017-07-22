@@ -86,7 +86,7 @@ public class RecordingEventsPoller
 
                 listener.onStart(
                     recordingStartedDecoder.recordingId(),
-                    recordingStartedDecoder.joinPosition(),
+                    recordingStartedDecoder.startPosition(),
                     recordingStartedDecoder.sessionId(),
                     recordingStartedDecoder.streamId(),
                     recordingStartedDecoder.channel(),
@@ -102,7 +102,7 @@ public class RecordingEventsPoller
 
                 listener.onProgress(
                     recordingProgressDecoder.recordingId(),
-                    recordingProgressDecoder.joinPosition(),
+                    recordingProgressDecoder.startPosition(),
                     recordingProgressDecoder.position());
                 break;
 
@@ -115,8 +115,8 @@ public class RecordingEventsPoller
 
                 listener.onStop(
                     recordingStoppedDecoder.recordingId(),
-                    recordingStoppedDecoder.joinPosition(),
-                    recordingStoppedDecoder.endPosition());
+                    recordingStoppedDecoder.startPosition(),
+                    recordingStoppedDecoder.stopPosition());
                 break;
 
             default:

@@ -58,7 +58,7 @@ public class RecordingSessionTest
     private static final int SESSION_ID = 12345;
     private static final int TERM_OFFSET = 1024;
     private static final int MTU_LENGTH = 1024;
-    private static final long JOIN_POSITION = TERM_OFFSET;
+    private static final long START_POSITION = TERM_OFFSET;
     private static final int INITIAL_TERM_ID = 0;
 
     private final RecordingEventsProxy recordingEventsProxy = mock(RecordingEventsProxy.class);
@@ -105,7 +105,7 @@ public class RecordingSessionTest
         Catalog.initDescriptor(
             new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH),
             RECORDING_ID,
-            JOIN_POSITION,
+            START_POSITION,
             INITIAL_TERM_ID,
             context.segmentFileLength,
             TERM_BUFFER_LENGTH,
@@ -138,10 +138,10 @@ public class RecordingSessionTest
 
         session.doWork();
 
-        assertEquals(Catalog.NULL_TIME, descriptorDecoder.joinTimestamp());
-        assertEquals(JOIN_POSITION, descriptorDecoder.joinPosition());
-        assertEquals(Catalog.NULL_TIME, descriptorDecoder.endTimestamp());
-        assertEquals(JOIN_POSITION, descriptorDecoder.endPosition());
+        assertEquals(Catalog.NULL_TIME, descriptorDecoder.startTimestamp());
+        assertEquals(START_POSITION, descriptorDecoder.startPosition());
+        assertEquals(Catalog.NULL_TIME, descriptorDecoder.stopTimestamp());
+        assertEquals(START_POSITION, descriptorDecoder.stopPosition());
 
         when(image.rawPoll(any(), anyInt())).thenAnswer(
             (invocation) ->
@@ -166,10 +166,10 @@ public class RecordingSessionTest
 
         assertNotEquals("Expect some work", 0, session.doWork());
 
-        assertEquals(42L, descriptorDecoder.joinTimestamp());
+        assertEquals(42L, descriptorDecoder.startTimestamp());
 
-        assertEquals(Catalog.NULL_TIME, descriptorDecoder.endTimestamp());
-        assertEquals(JOIN_POSITION + RECORDED_BLOCK_LENGTH, descriptorDecoder.endPosition());
+        assertEquals(Catalog.NULL_TIME, descriptorDecoder.stopTimestamp());
+        assertEquals(START_POSITION + RECORDED_BLOCK_LENGTH, descriptorDecoder.stopPosition());
 
         final File segmentFile = new File(tempDirForTest, ArchiveUtil.recordingDataFileName(RECORDING_ID, 0));
         assertTrue(segmentFile.exists());
@@ -199,7 +199,7 @@ public class RecordingSessionTest
         assertTrue(session.isDone());
         session.close();
 
-        assertEquals(128L, descriptorDecoder.endTimestamp());
+        assertEquals(128L, descriptorDecoder.stopTimestamp());
     }
 
     private Subscription mockSubscription(final String channel, final int streamId)
@@ -227,7 +227,7 @@ public class RecordingSessionTest
         when(image.termBufferLength()).thenReturn(termBufferLength);
         when(image.subscription()).thenReturn(subscription);
         when(image.mtuLength()).thenReturn(MTU_LENGTH);
-        when(image.joinPosition()).thenReturn(JOIN_POSITION);
+        when(image.joinPosition()).thenReturn(START_POSITION);
 
         return image;
     }

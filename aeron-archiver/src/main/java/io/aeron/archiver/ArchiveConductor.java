@@ -422,10 +422,10 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final int termBufferLength = image.termBufferLength();
         final int mtuLength = image.mtuLength();
         final int initialTermId = image.initialTermId();
-        final long joinPosition = image.joinPosition();
+        final long startPosition = image.joinPosition();
 
         final long recordingId = catalog.addNewRecording(
-            joinPosition,
+            startPosition,
             initialTermId,
             recordingCtx.recordingFileLength(),
             termBufferLength,

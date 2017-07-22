@@ -205,7 +205,7 @@ public class ArchiveRecordingLoadTest
             {
                 public void onStart(
                     final long recordingId0,
-                    final long joinPosition,
+                    final long startPosition,
                     final int sessionId,
                     final int streamId,
                     final String channel,
@@ -228,14 +228,14 @@ public class ArchiveRecordingLoadTest
             {
                 public void onProgress(
                     final long recordingId0,
-                    final long joinPosition,
+                    final long startPosition,
                     final long position)
                 {
                     assertThat(recordingId0, is(recordingId));
-                    recorded = position - joinPosition;
+                    recorded = position - startPosition;
                 }
 
-                public void onStop(final long recordingId0, final long joinPosition, final long endPosition)
+                public void onStop(final long recordingId0, final long startPosition, final long stopPosition)
                 {
                     doneRecording = true;
                     assertThat(recordingId0, is(recordingId));
@@ -268,11 +268,11 @@ public class ArchiveRecordingLoadTest
 
         buffer.setMemory(0, 1024, (byte)'z');
         buffer.putStringAscii(32, "TEST");
-        final long joinPosition = publication.position();
+        final long startPosition = publication.position();
         final int startTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(
-            joinPosition, positionBitsToShift);
+            startPosition, positionBitsToShift);
         final int startTermIdFromPosition = LogBufferDescriptor.computeTermIdFromPosition(
-            joinPosition, positionBitsToShift, publication.initialTermId());
+            startPosition, positionBitsToShift, publication.initialTermId());
 
         for (int i = 0; i < messageCount; i++)
         {
@@ -289,7 +289,7 @@ public class ArchiveRecordingLoadTest
             (lastTermIdFromPosition - startTermIdFromPosition) * publication.termBufferLength() +
                 (lastTermOffset - startTermOffset);
 
-        assertThat(position - joinPosition, is(totalRecordingLength));
+        assertThat(position - startPosition, is(totalRecordingLength));
     }
 
     private void offer(final ExclusivePublication publication, final UnsafeBuffer buffer, final int length)

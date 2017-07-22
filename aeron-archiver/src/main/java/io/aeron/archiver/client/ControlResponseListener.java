@@ -43,9 +43,9 @@ public interface ControlResponseListener extends RecordingDescriptorConsumer
      * Notifies the successful abort of recording replay.
      *
      * @param correlationId for the associated request to abort the replay.
-     * @param endPosition   reached for the replay.
+     * @param stopPosition   reached for the replay.
      */
-    void onReplayAborted(long correlationId, long endPosition);
+    void onReplayAborted(long correlationId, long stopPosition);
 
     /**
      * Notifies that the request for a recording descriptor of given id has not been found.

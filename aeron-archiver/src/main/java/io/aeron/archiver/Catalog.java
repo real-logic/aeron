@@ -100,7 +100,7 @@ class Catalog implements AutoCloseable
     }
 
     long addNewRecording(
-        final long joinPosition,
+        final long startPosition,
         final int imageInitialTermId,
         final int segmentFileLength,
         final int termBufferLength,
@@ -129,7 +129,7 @@ class Catalog implements AutoCloseable
         initDescriptor(
             recordingDescriptorEncoder,
             newRecordingId,
-            joinPosition,
+            startPosition,
             imageInitialTermId,
             segmentFileLength,
             termBufferLength,
@@ -180,7 +180,7 @@ class Catalog implements AutoCloseable
 
     /**
      * On catalog load we verify entries are in coherent state and attempt to recover entries data where untimely
-     * termination of recording has resulted in an unaccounted for endPosition/endTimestamp. This operation may be
+     * termination of recording has resulted in an unaccounted for stopPosition/stopTimestamp. This operation may be
      * expensive for large catalogs.
      */
     private void refreshCatalog()
@@ -255,7 +255,7 @@ class Catalog implements AutoCloseable
     static void initDescriptor(
         final RecordingDescriptorEncoder recordingDescriptorEncoder,
         final long recordingId,
-        final long joinPosition,
+        final long startPosition,
         final int initialTermId,
         final int segmentFileLength,
         final int termBufferLength,
@@ -268,10 +268,10 @@ class Catalog implements AutoCloseable
     {
         recordingDescriptorEncoder
             .recordingId(recordingId)
-            .joinTimestamp(NULL_TIME)
-            .endTimestamp(NULL_TIME)
-            .joinPosition(joinPosition)
-            .endPosition(joinPosition)
+            .startTimestamp(NULL_TIME)
+            .stopTimestamp(NULL_TIME)
+            .startPosition(startPosition)
+            .stopPosition(startPosition)
             .initialTermId(initialTermId)
             .segmentFileLength(segmentFileLength)
             .termBufferLength(termBufferLength)

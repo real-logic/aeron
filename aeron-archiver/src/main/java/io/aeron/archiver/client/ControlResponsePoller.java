@@ -133,10 +133,10 @@ public class ControlResponsePoller
         listener.onRecordingDescriptor(
             recordingDescriptorDecoder.correlationId(),
             recordingDescriptorDecoder.recordingId(),
-            recordingDescriptorDecoder.joinTimestamp(),
-            recordingDescriptorDecoder.endTimestamp(),
-            recordingDescriptorDecoder.joinPosition(),
-            recordingDescriptorDecoder.endPosition(),
+            recordingDescriptorDecoder.startTimestamp(),
+            recordingDescriptorDecoder.stopTimestamp(),
+            recordingDescriptorDecoder.startPosition(),
+            recordingDescriptorDecoder.stopPosition(),
             recordingDescriptorDecoder.initialTermId(),
             recordingDescriptorDecoder.segmentFileLength(),
             recordingDescriptorDecoder.termBufferLength(),
@@ -177,7 +177,7 @@ public class ControlResponsePoller
 
         listener.onReplayAborted(
             replayAbortedDecoder.correlationId(),
-            replayAbortedDecoder.endPosition());
+            replayAbortedDecoder.stopPosition());
     }
 
     private void handleRecordingNotFoundResponse(

@@ -20,12 +20,17 @@ import io.aeron.archiver.client.AeronArchive;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.LangUtil;
+import org.agrona.collections.IntArrayList;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.StatusIndicator;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -153,6 +158,8 @@ public final class Archiver implements AutoCloseable
         public static final String MAX_CONCURRENT_REPLAYS_PROP_NAME = "aeron.archive.max.concurrent.replays";
         public static final int MAX_CONCURRENT_REPLAYS_DEFAULT = 128;
 
+        private static final String PRESET_RECORDINGS_FILE_PROP_NAME = "aeron.archiver.preset.recordings.file";
+
 
         public static String archiveDirName()
         {
@@ -221,11 +228,19 @@ public final class Archiver implements AutoCloseable
         {
             return Integer.getInteger(MAX_CONCURRENT_REPLAYS_PROP_NAME, MAX_CONCURRENT_REPLAYS_DEFAULT);
         }
+
+        public static String presetRecordingFileName()
+        {
+            return System.getProperty(PRESET_RECORDINGS_FILE_PROP_NAME);
+        }
     }
 
     public static class Context
     {
         private final Aeron.Context clientContext;
+        private final List<String> presetRecordingChannels = new ArrayList<>();
+        private final IntArrayList presetRecordingStreamIds = new IntArrayList();
+
         private File archiveDir;
 
         private String controlChannel;
@@ -251,6 +266,7 @@ public final class Archiver implements AutoCloseable
         private AgentInvoker mediaDriverAgentInvoker;
         private int maxConcurrentRecordings;
         private int maxConcurrentReplays;
+        private String presetRecordingFileName;
 
         public Context()
         {
@@ -270,6 +286,7 @@ public final class Archiver implements AutoCloseable
             threadingMode(Configuration.threadingMode());
             maxConcurrentRecordings(Configuration.maxConcurrentRecordings());
             maxConcurrentReplays(Configuration.maxConcurrentReplays());
+            presetRecordingFileName(Configuration.presetRecordingFileName());
         }
 
         void conclude()
@@ -304,6 +321,26 @@ public final class Archiver implements AutoCloseable
             if (null == epochClock)
             {
                 epochClock = new SystemEpochClock();
+            }
+
+            if (presetRecordingFileName != null)
+            {
+                try (BufferedReader reader = new BufferedReader(new FileReader(new File(presetRecordingFileName))))
+                {
+                    String line;
+                    while ((line = reader.readLine()) != null)
+                    {
+                        final int splitIndex = line.lastIndexOf(' ');
+                        final String channel = line.substring(0, splitIndex);
+                        final int streamId = Integer.valueOf(line.substring(splitIndex + 1));
+                        presetRecordingChannels.add(channel);
+                        presetRecordingStreamIds.add(streamId);
+                    }
+                }
+                catch (final Exception e)
+                {
+                    LangUtil.rethrowUnchecked(e);
+                }
             }
         }
 
@@ -671,6 +708,42 @@ public final class Archiver implements AutoCloseable
         {
             this.countersManager = countersManager;
             return this;
+        }
+
+        /**
+         * A file with recording presets to be subscribed to by the Archiver on startup. The file is expected to follow
+         * the format:
+         * <pre>
+         *     channel streamId
+         * </pre>
+         *
+         * @param presetRecordingFileName preset recordings file to be loaded
+         * @return this for a fluent API
+         */
+        public Context presetRecordingFileName(final String presetRecordingFileName)
+        {
+            this.presetRecordingFileName = presetRecordingFileName;
+            return this;
+        }
+
+        /**
+         * Get the preset recording file name.
+         *
+         * @return the preset recording file name
+         */
+        public String presetRecordingFileName()
+        {
+            return presetRecordingFileName;
+        }
+
+        List<String> presetRecordingChannels()
+        {
+            return presetRecordingChannels;
+        }
+
+        IntArrayList presetRecordingStreamIds()
+        {
+            return presetRecordingStreamIds;
         }
     }
 }

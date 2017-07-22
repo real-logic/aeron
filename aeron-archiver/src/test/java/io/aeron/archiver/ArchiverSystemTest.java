@@ -88,6 +88,12 @@ public class ArchiverSystemTest
     private long correlationId;
     private long startPosition;
     private int requestedInitialTermId;
+    private int requestedStartTermId;
+    private int requestedStartTermOffset;
+
+    private int publicationInitialTermId;
+    private int publicationStartTermId;
+    private int publicationStartTermOffset;
 
     @Before
     public void before() throws Exception
@@ -97,8 +103,8 @@ public class ArchiverSystemTest
 
         final int termLength = 1 << (16 + rnd.nextInt(10)); // 1M to 8M
         final int mtu = 1 << (10 + rnd.nextInt(3)); // 1024 to 8096
-        final int termOffset = BitUtil.align(rnd.nextInt(termLength), FrameDescriptor.FRAME_ALIGNMENT);
-        final int termId = requestedInitialTermId + rnd.nextInt(1000);
+        requestedStartTermOffset = BitUtil.align(rnd.nextInt(termLength), FrameDescriptor.FRAME_ALIGNMENT);
+        requestedStartTermId = requestedInitialTermId + rnd.nextInt(1000);
 
         final ChannelUriStringBuilder channelUriStringBuilder = new ChannelUriStringBuilder()
             .endpoint("127.0.0.1:54325")
@@ -108,12 +114,13 @@ public class ArchiverSystemTest
 
         channelUriStringBuilder
             .initialTermId(requestedInitialTermId)
-            .termId(termId)
-            .termOffset(termOffset);
+            .termId(requestedStartTermId)
+            .termOffset(requestedStartTermOffset);
 
         publishUri = channelUriStringBuilder.build();
 
-        requestedStartPosition = ((termId - requestedInitialTermId) * (long)termLength) + termOffset;
+        requestedStartPosition = ((requestedStartTermId - requestedInitialTermId) * (long)termLength) +
+            requestedStartTermOffset;
 
         driverCtx
             .termBufferSparseFile(true)
@@ -541,6 +548,9 @@ public class ArchiverSystemTest
     {
         startPosition = publication.position();
 
+        publicationInitialTermId = publication.initialTermId();
+        publicationStartTermId = (int) (publicationInitialTermId + (startPosition / publication.termBufferLength()));
+        publicationStartTermOffset = (int) (startPosition % publication.termBufferLength());
         buffer.setMemory(0, 1024, (byte)'z');
         buffer.putStringAscii(32, "TEST");
 
@@ -560,6 +570,10 @@ public class ArchiverSystemTest
     private void publishDataToRecorded(final ExclusivePublication publication, final int messageCount)
     {
         startPosition = publication.position();
+
+        publicationInitialTermId = publication.initialTermId();
+        publicationStartTermId = (int) (publicationInitialTermId + (startPosition / publication.termBufferLength()));
+        publicationStartTermOffset = (int) (startPosition % publication.termBufferLength());
 
         buffer.setMemory(0, 1024, (byte)'z');
         buffer.putStringAscii(32, "TEST");
@@ -653,6 +667,11 @@ public class ArchiverSystemTest
         assertThat(buffer.getInt(offset), is(fragmentCount));
         assertThat(buffer.getByte(offset + 4), is((byte)'z'));
 
+        if (fragmentCount == 0)
+        {
+            assertThat(headerFlyweight.termId(), is(this.publicationStartTermId));
+            assertThat(headerFlyweight.termOffset(), is(this.publicationStartTermOffset));
+        }
         remaining -= BitUtil.align(fragmentLength[fragmentCount], FrameDescriptor.FRAME_ALIGNMENT);
         fragmentCount++;
 

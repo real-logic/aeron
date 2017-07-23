@@ -109,6 +109,13 @@ public final class AeronArchive implements AutoCloseable
 
         pollForResponse(correlationId, ControlResponseDecoder.TEMPLATE_ID);
 
+        final ControlResponseCode code = controlResponsePoller.controlResponseDecoder().code();
+        if (code != ControlResponseCode.OK)
+        {
+            throw new IllegalStateException(
+                "Response code=" + code + " message=" + controlResponsePoller.controlResponseDecoder().errorMessage());
+        }
+
         final Publication publication = aeron.addPublication(channel, streamId);
         if (!publication.isOriginal())
         {
@@ -121,8 +128,7 @@ public final class AeronArchive implements AutoCloseable
         return publication;
     }
 
-
-    private void pollForResponse(final long correlationId, final int templateId)
+    private void pollForResponse(final long expectedCorrelationId, final int expectedTemplateId)
     {
         idleStrategy.reset();
 
@@ -139,17 +145,18 @@ public final class AeronArchive implements AutoCloseable
             }
         }
 
-        if (templateId != controlResponsePoller.templateId())
+        final int templateId = controlResponsePoller.templateId();
+        if (expectedTemplateId != templateId)
         {
             throw new IllegalStateException(
-                "Unexpected message templateId=" + controlResponsePoller.templateId() + " expected=" + templateId);
+                "Unexpected response templateId=" + templateId + " expected " + expectedTemplateId);
         }
 
-        final ControlResponseCode code = controlResponsePoller.controlResponseDecoder().code();
-        if (code != ControlResponseCode.OK)
+        final long correlationId = controlResponsePoller.correlationId();
+        if (expectedCorrelationId != correlationId)
         {
             throw new IllegalStateException(
-                "Response code=" + code + " message=" + controlResponsePoller.controlResponseDecoder().errorMessage());
+                "Unexpected response correlationId=" + correlationId + " expected " + expectedCorrelationId);
         }
     }
 

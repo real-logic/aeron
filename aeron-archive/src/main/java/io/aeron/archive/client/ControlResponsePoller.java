@@ -37,8 +37,9 @@ public class ControlResponsePoller
     private final int fragmentLimit;
     private final Subscription subscription;
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this::onFragment);
-    private boolean pollComplete = false;
+    private long correlationId = -1;
     private int templateId = -1;
+    private boolean pollComplete = false;
 
     /**
      * Create a poller for a given subscription to an archive for control response messages.
@@ -59,9 +60,20 @@ public class ControlResponsePoller
      */
     public int poll()
     {
+        correlationId = -1;
         pollComplete = false;
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
+    }
+
+    /**
+     * Correlation id of the last polled message or -1 if unrecognised template.
+     *
+     * @return correlation id of the last polled message or -1 if unrecognised template.
+     */
+    public long correlationId()
+    {
+        return correlationId;
     }
 
     /**
@@ -101,6 +113,8 @@ public class ControlResponsePoller
                     offset + MessageHeaderEncoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
+
+                correlationId = controlResponseDecoder.correlationId();
                 break;
 
             case RecordingDescriptorDecoder.TEMPLATE_ID:
@@ -109,6 +123,8 @@ public class ControlResponsePoller
                     offset + MessageHeaderEncoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
+
+                correlationId = recordingDescriptorDecoder.correlationId();
                 break;
 
             case ReplayStartedDecoder.TEMPLATE_ID:
@@ -117,6 +133,8 @@ public class ControlResponsePoller
                     offset + MessageHeaderEncoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
+
+                correlationId = replayStartedDecoder.correlationId();
                 break;
 
             case ReplayAbortedDecoder.TEMPLATE_ID:
@@ -125,6 +143,8 @@ public class ControlResponsePoller
                     offset + MessageHeaderEncoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
+
+                correlationId = replayAbortedDecoder.correlationId();
                 break;
 
             case RecordingNotFoundResponseDecoder.TEMPLATE_ID:
@@ -133,6 +153,8 @@ public class ControlResponsePoller
                     offset + MessageHeaderEncoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
+
+                correlationId = recordingNotFoundResponseDecoder.correlationId();
                 break;
 
             default:

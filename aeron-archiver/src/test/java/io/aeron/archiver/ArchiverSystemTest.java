@@ -17,8 +17,8 @@ package io.aeron.archiver;
 
 import io.aeron.*;
 import io.aeron.archiver.client.ArchiveProxy;
-import io.aeron.archiver.client.ControlResponsePoller;
-import io.aeron.archiver.client.RecordingEventsPoller;
+import io.aeron.archiver.client.ControlResponseAdapter;
+import io.aeron.archiver.client.RecordingEventsAdapter;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FrameDescriptor;
@@ -295,7 +295,7 @@ public class ArchiverSystemTest
         final int termBufferLength,
         final long startPosition)
     {
-        final RecordingEventsPoller recordingEventsPoller = new RecordingEventsPoller(
+        final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new FailRecordingEventsListener()
             {
                 public void onStart(
@@ -316,7 +316,7 @@ public class ArchiverSystemTest
             recordingEvents,
             1);
 
-        waitFor(() -> recordingEventsPoller.poll() != 0);
+        waitFor(() -> recordingEventsAdapter.poll() != 0);
 
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
     }
@@ -342,7 +342,7 @@ public class ArchiverSystemTest
             requestStopCorrelationId));
         waitForOk(controlResponse, requestStopCorrelationId);
 
-        final RecordingEventsPoller recordingEventsPoller = new RecordingEventsPoller(
+        final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new FailRecordingEventsListener()
             {
                 public void onStop(final long rId, final long startPosition, final long stopPosition)
@@ -353,7 +353,7 @@ public class ArchiverSystemTest
             recordingEvents,
             1);
 
-        waitFor(() -> recordingEventsPoller.poll() != 0);
+        waitFor(() -> recordingEventsAdapter.poll() != 0);
 
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
 
@@ -457,7 +457,7 @@ public class ArchiverSystemTest
         archiveProxy.listRecordings(recordingId, 1, requestRecordingsCorrelationId);
         println("Await result");
 
-        final ControlResponsePoller controlResponsePoller = new ControlResponsePoller(
+        final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
             {
                 public void onRecordingDescriptor(
@@ -489,7 +489,7 @@ public class ArchiverSystemTest
             1
         );
 
-        waitFor(() -> controlResponsePoller.poll() != 0);
+        waitFor(() -> controlResponseAdapter.poll() != 0);
     }
 
     private int prepAndSendMessages(final Subscription recordingEvents, final Publication publication)
@@ -694,7 +694,7 @@ public class ArchiverSystemTest
 
     private void trackRecordingProgress(final Subscription recordingEvents, final CountDownLatch waitForData)
     {
-        final RecordingEventsPoller recordingEventsPoller = new RecordingEventsPoller(
+        final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new FailRecordingEventsListener()
             {
                 public void onProgress(
@@ -721,7 +721,7 @@ public class ArchiverSystemTest
 
                     while (stopPosition == -1 || recorded < totalRecordingLength)
                     {
-                        if (recordingEventsPoller.poll() == 0)
+                        if (recordingEventsAdapter.poll() == 0)
                         {
                             LockSupport.parkNanos(1);
                             continue;

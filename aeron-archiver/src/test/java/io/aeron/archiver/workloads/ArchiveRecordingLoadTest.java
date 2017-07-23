@@ -24,7 +24,7 @@ import io.aeron.archiver.ArchiverThreadingMode;
 import io.aeron.archiver.FailRecordingEventsListener;
 import io.aeron.archiver.TestUtil;
 import io.aeron.archiver.client.ArchiveProxy;
-import io.aeron.archiver.client.RecordingEventsPoller;
+import io.aeron.archiver.client.RecordingEventsAdapter;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FrameDescriptor;
@@ -200,7 +200,7 @@ public class ArchiveRecordingLoadTest
 
     private void initRecordingStartIndicator(final Subscription recordingEvents)
     {
-        final RecordingEventsPoller recordingEventsPoller = new RecordingEventsPoller(
+        final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new FailRecordingEventsListener()
             {
                 public void onStart(
@@ -218,12 +218,12 @@ public class ArchiveRecordingLoadTest
             recordingEvents,
             1);
 
-        recordingStartedIndicator = () -> recordingEventsPoller.poll() != 0;
+        recordingStartedIndicator = () -> recordingEventsAdapter.poll() != 0;
     }
 
     private void initRecordingEndIndicator(final Subscription recordingEvents)
     {
-        final RecordingEventsPoller recordingEventsPoller = new RecordingEventsPoller(
+        final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new FailRecordingEventsListener()
             {
                 public void onProgress(
@@ -244,7 +244,7 @@ public class ArchiveRecordingLoadTest
             recordingEvents,
             1);
 
-        recordingEndIndicator = () -> recordingEventsPoller.poll() != 0;
+        recordingEndIndicator = () -> recordingEventsAdapter.poll() != 0;
     }
 
     private void prepAndSendMessages(final ExclusivePublication publication)

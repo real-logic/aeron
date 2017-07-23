@@ -24,7 +24,7 @@ import org.agrona.DirectBuffer;
 /**
  * Encapsulate the polling, decoding, and dispatching of archive control protocol response messages.
  */
-public class ControlResponsePoller
+public class ControlResponseAdapter
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ReplayAbortedDecoder replayAbortedDecoder = new ReplayAbortedDecoder();
@@ -46,7 +46,7 @@ public class ControlResponsePoller
      * @param subscription  to poll for new events.
      * @param fragmentLimit to apply for each polling operation.
      */
-    public ControlResponsePoller(
+    public ControlResponseAdapter(
         final ControlResponseListener listener,
         final Subscription subscription,
         final int fragmentLimit)

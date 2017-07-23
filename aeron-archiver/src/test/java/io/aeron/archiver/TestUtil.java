@@ -18,7 +18,7 @@ package io.aeron.archiver;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.Subscription;
-import io.aeron.archiver.client.ControlResponsePoller;
+import io.aeron.archiver.client.ControlResponseAdapter;
 import io.aeron.archiver.codecs.ControlResponseCode;
 import io.aeron.archiver.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.FragmentHandler;
@@ -80,7 +80,7 @@ public class TestUtil
 
     public static void waitForOk(final Subscription controlResponse, final long expectedCorrelationId)
     {
-        final ControlResponsePoller controlResponsePoller = new ControlResponsePoller(
+        final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
             {
                 public void onResponse(
@@ -95,12 +95,12 @@ public class TestUtil
             1
         );
 
-        waitFor(() -> controlResponsePoller.poll() != 0);
+        waitFor(() -> controlResponseAdapter.poll() != 0);
     }
 
     static void waitForFail(final Subscription controlResponse, final long expectedCorrelationId)
     {
-        final ControlResponsePoller controlResponsePoller = new ControlResponsePoller(
+        final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
             {
                 public void onResponse(
@@ -114,7 +114,7 @@ public class TestUtil
             1
         );
 
-        waitFor(() -> controlResponsePoller.poll() != 0);
+        waitFor(() -> controlResponseAdapter.poll() != 0);
     }
 
     static void poll(final Subscription subscription, final FragmentHandler handler)

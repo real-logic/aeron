@@ -25,7 +25,7 @@ import org.agrona.concurrent.IdleStrategy;
  * Client for interacting with a local or remote Aeron Archive that records and replays message streams.
  * <p>
  * This client provides a simple interaction model which is mostly synchronous and may not be optimal.
- * The underlying components such as the {@link ArchiveProxy} and the {@link ControlResponsePoller} may be used
+ * The underlying components such as the {@link ArchiveProxy} and the {@link ControlResponseAdapter} may be used
  * directly is a more asynchronous pattern of interaction is required.
  */
 public final class AeronArchive implements AutoCloseable, ControlResponseListener
@@ -36,7 +36,7 @@ public final class AeronArchive implements AutoCloseable, ControlResponseListene
     private final Aeron aeron;
     private final ArchiveProxy archiveProxy;
     private final IdleStrategy idleStrategy;
-    private final ControlResponsePoller controlResponsePoller;
+    private final ControlResponseAdapter controlResponseAdapter;
     private long expectedCorrelationId;
     private long receivedCorrelationId;
     private ControlResponseCode controlResponseCode;
@@ -57,7 +57,7 @@ public final class AeronArchive implements AutoCloseable, ControlResponseListene
                 throw new IllegalStateException("Cannot connect to aeron archive: " + context.controlRequestChannel());
             }
 
-            controlResponsePoller = new ControlResponsePoller(
+            controlResponseAdapter = new ControlResponseAdapter(
                 this,
                 aeron.addSubscription(context.controlRequestChannel(), context.controlRequestStreamId),
                 RESPONSE_FRAGMENT_LIMIT);
@@ -172,7 +172,7 @@ public final class AeronArchive implements AutoCloseable, ControlResponseListene
     {
         idleStrategy.reset();
 
-        while (receivedCorrelationId != expectedCorrelationId && controlResponsePoller.poll() <= 0)
+        while (receivedCorrelationId != expectedCorrelationId && controlResponseAdapter.poll() <= 0)
         {
             idleStrategy.idle();
         }

@@ -27,7 +27,7 @@ import org.agrona.DirectBuffer;
 /**
  * Encapsulate the polling, decoding, and dispatching of recording events.
  */
-public class RecordingEventsPoller
+public class RecordingEventsAdapter
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final RecordingStartedDecoder recordingStartedDecoder = new RecordingStartedDecoder();
@@ -46,7 +46,7 @@ public class RecordingEventsPoller
      * @param subscription  to poll for new events.
      * @param fragmentLimit to apply for each polling operation.
      */
-    public RecordingEventsPoller(
+    public RecordingEventsAdapter(
         final RecordingEventsListener listener,
         final Subscription subscription,
         final int fragmentLimit)

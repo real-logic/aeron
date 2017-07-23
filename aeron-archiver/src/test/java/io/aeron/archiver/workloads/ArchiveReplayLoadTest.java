@@ -24,7 +24,7 @@ import io.aeron.archiver.ArchiverThreadingMode;
 import io.aeron.archiver.NoOpRecordingEventsListener;
 import io.aeron.archiver.TestUtil;
 import io.aeron.archiver.client.ArchiveProxy;
-import io.aeron.archiver.client.RecordingEventsPoller;
+import io.aeron.archiver.client.RecordingEventsAdapter;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
@@ -296,7 +296,7 @@ public class ArchiveReplayLoadTest
 
     private void trackRecordingProgress(final Subscription recordingEvents, final CountDownLatch waitForData)
     {
-        final RecordingEventsPoller recordingEventsPoller = new RecordingEventsPoller(
+        final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new NoOpRecordingEventsListener()
             {
                 public void onProgress(
@@ -323,7 +323,7 @@ public class ArchiveReplayLoadTest
 
                     while (lastTermId == -1 || recorded < totalRecordingLength)
                     {
-                        TestUtil.waitFor(() -> recordingEventsPoller.poll() != 0);
+                        TestUtil.waitFor(() -> recordingEventsAdapter.poll() != 0);
 
                         final long end = System.currentTimeMillis();
                         final long deltaTime = end - start;

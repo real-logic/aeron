@@ -27,10 +27,10 @@ import org.agrona.DirectBuffer;
 public class ControlResponseAdapter
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final ReplayAbortedDecoder replayAbortedDecoder = new ReplayAbortedDecoder();
+    private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
     private final ReplayStartedDecoder replayStartedDecoder = new ReplayStartedDecoder();
+    private final ReplayAbortedDecoder replayAbortedDecoder = new ReplayAbortedDecoder();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
-    private final ControlResponseDecoder archiverResponseDecoder = new ControlResponseDecoder();
     private final RecordingNotFoundResponseDecoder recordingNotFoundResponseDecoder =
         new RecordingNotFoundResponseDecoder();
 
@@ -40,7 +40,7 @@ public class ControlResponseAdapter
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment);
 
     /**
-     * Create a poller for a given subscription to an archive for control response messages.
+     * Create an adapter for a given subscription to an archive for control response messages.
      *
      * @param listener      to which responses are dispatched.
      * @param subscription  to poll for new events.
@@ -78,7 +78,7 @@ public class ControlResponseAdapter
         switch (templateId)
         {
             case ControlResponseDecoder.TEMPLATE_ID:
-                handleGenericResponse(listener, buffer, offset);
+                handleControlResponse(listener, buffer, offset);
                 break;
 
             case RecordingDescriptorDecoder.TEMPLATE_ID:
@@ -102,21 +102,21 @@ public class ControlResponseAdapter
         }
     }
 
-    private void handleGenericResponse(
+    private void handleControlResponse(
         final ControlResponseListener listener,
         final DirectBuffer buffer,
         final int offset)
     {
-        archiverResponseDecoder.wrap(
+        controlResponseDecoder.wrap(
             buffer,
             offset + MessageHeaderEncoder.ENCODED_LENGTH,
             messageHeaderDecoder.blockLength(),
             messageHeaderDecoder.version());
 
         listener.onResponse(
-            archiverResponseDecoder.correlationId(),
-            archiverResponseDecoder.code(),
-            archiverResponseDecoder.errorMessage());
+            controlResponseDecoder.correlationId(),
+            controlResponseDecoder.code(),
+            controlResponseDecoder.errorMessage());
     }
 
     private void handleRecordingDescriptor(

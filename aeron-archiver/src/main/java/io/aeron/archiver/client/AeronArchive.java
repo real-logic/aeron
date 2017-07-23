@@ -18,6 +18,7 @@ package io.aeron.archiver.client;
 import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.archiver.codecs.ControlResponseCode;
+import io.aeron.archiver.codecs.ControlResponseDecoder;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 
@@ -25,10 +26,10 @@ import org.agrona.concurrent.IdleStrategy;
  * Client for interacting with a local or remote Aeron Archive that records and replays message streams.
  * <p>
  * This client provides a simple interaction model which is mostly synchronous and may not be optimal.
- * The underlying components such as the {@link ArchiveProxy} and the {@link ControlResponseAdapter} may be used
+ * The underlying components such as the {@link ArchiveProxy} and the {@link ControlResponsePoller} may be used
  * directly is a more asynchronous pattern of interaction is required.
  */
-public final class AeronArchive implements AutoCloseable, ControlResponseListener
+public final class AeronArchive implements AutoCloseable
 {
     private static final int RESPONSE_FRAGMENT_LIMIT = 10;
 
@@ -36,11 +37,7 @@ public final class AeronArchive implements AutoCloseable, ControlResponseListene
     private final Aeron aeron;
     private final ArchiveProxy archiveProxy;
     private final IdleStrategy idleStrategy;
-    private final ControlResponseAdapter controlResponseAdapter;
-    private long expectedCorrelationId;
-    private long receivedCorrelationId;
-    private ControlResponseCode controlResponseCode;
-    private String responseErrorMessage;
+    private final ControlResponsePoller controlResponsePoller;
 
     private AeronArchive(final Context context)
     {
@@ -57,8 +54,7 @@ public final class AeronArchive implements AutoCloseable, ControlResponseListene
                 throw new IllegalStateException("Cannot connect to aeron archive: " + context.controlRequestChannel());
             }
 
-            controlResponseAdapter = new ControlResponseAdapter(
-                this,
+            controlResponsePoller = new ControlResponsePoller(
                 aeron.addSubscription(context.controlRequestChannel(), context.controlRequestStreamId),
                 RESPONSE_FRAGMENT_LIMIT);
         }
@@ -111,8 +107,7 @@ public final class AeronArchive implements AutoCloseable, ControlResponseListene
             throw new IllegalStateException("Failed to send start recording request");
         }
 
-        expectedCorrelationId = correlationId;
-        pollForResponse();
+        pollForResponse(correlationId, ControlResponseDecoder.TEMPLATE_ID);
 
         final Publication publication = aeron.addPublication(channel, streamId);
         if (!publication.isOriginal())
@@ -126,61 +121,35 @@ public final class AeronArchive implements AutoCloseable, ControlResponseListene
         return publication;
     }
 
-    public void onResponse(final long correlationId, final ControlResponseCode code, final String errorMessage)
-    {
-        receivedCorrelationId = correlationId;
-        controlResponseCode = code;
-        responseErrorMessage = errorMessage;
-    }
 
-    public void onReplayStarted(final long correlationId, final long replayId)
-    {
-
-    }
-
-    public void onReplayAborted(final long correlationId, final long stopPosition)
-    {
-
-    }
-
-    public void onRecordingNotFound(final long correlationId, final long recordingId, final long maxRecordingId)
-    {
-
-    }
-
-    public void onRecordingDescriptor(
-        final long correlationId,
-        final long recordingId,
-        final long startTimestamp,
-        final long stopTimestamp,
-        final long startPosition,
-        final long stopPosition,
-        final int initialTermId,
-        final int segmentFileLength,
-        final int termBufferLength,
-        final int mtuLength,
-        final int sessionId,
-        final int streamId,
-        final String strippedChannel,
-        final String originalChannel,
-        final String sourceIdentity)
-    {
-
-    }
-
-    private void pollForResponse()
+    private void pollForResponse(final long correlationId, final int templateId)
     {
         idleStrategy.reset();
 
-        while (receivedCorrelationId != expectedCorrelationId && controlResponseAdapter.poll() <= 0)
+        while (true)
         {
-            idleStrategy.idle();
+            while (controlResponsePoller.poll() <= 0)
+            {
+                idleStrategy.idle();
+            }
+
+            if (controlResponsePoller.isPollComplete())
+            {
+                break;
+            }
         }
 
-        if (controlResponseCode != ControlResponseCode.OK)
+        if (templateId != controlResponsePoller.templateId())
         {
             throw new IllegalStateException(
-                "Response code=" + controlResponseCode + " message=" + responseErrorMessage);
+                "Unexpected message templateId=" + controlResponsePoller.templateId() + " expected=" + templateId);
+        }
+
+        final ControlResponseCode code = controlResponsePoller.controlResponseDecoder().code();
+        if (code != ControlResponseCode.OK)
+        {
+            throw new IllegalStateException(
+                "Response code=" + code + " message=" + controlResponsePoller.controlResponseDecoder().errorMessage());
         }
     }
 

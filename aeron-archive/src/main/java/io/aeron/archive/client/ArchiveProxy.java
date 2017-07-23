@@ -213,7 +213,7 @@ public class ArchiveProxy
     }
 
     /**
-     * List a range of recording descriptors.
+     * List a range of recording descriptors which match a channel and stream id.
      *
      * @param fromIndex       at which to begin listing.
      * @param recordCount     for the number of descriptors to be listed.

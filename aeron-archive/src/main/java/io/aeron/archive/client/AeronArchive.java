@@ -16,6 +16,7 @@
 package io.aeron.archive.client;
 
 import io.aeron.Aeron;
+import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.ControlResponseDecoder;
@@ -101,6 +102,42 @@ public final class AeronArchive implements AutoCloseable
      */
     public Publication addRecordedPublication(final String channel, final int streamId)
     {
+        startRecording(channel, streamId);
+
+        final Publication publication = aeron.addPublication(channel, streamId);
+        if (!publication.isOriginal())
+        {
+            publication.close();
+
+            throw new IllegalStateException(
+                "Publication already added for channel=" + channel + " streamId=" + streamId);
+        }
+
+        return publication;
+    }
+
+    /**
+     * Add a {@link ExclusivePublication} and set it up to be recorded.
+     *
+     * @param channel  for the publication.
+     * @param streamId for the publication.
+     * @return the {@link ExclusivePublication} ready for use.
+     */
+    public ExclusivePublication addRecordedExclusivePublication(final String channel, final int streamId)
+    {
+        startRecording(channel, streamId);
+
+        return aeron.addExclusivePublication(channel, streamId);
+    }
+
+    /**
+     * Start recording a channel and stream.
+     *
+     * @param channel  to be recorded.
+     * @param streamId to be recorded.
+     */
+    public void startRecording(final String channel, final int streamId)
+    {
         final long correlationId = aeron.nextCorrelationId();
         if (!archiveProxy.startRecording(channel, streamId, correlationId))
         {
@@ -115,17 +152,6 @@ public final class AeronArchive implements AutoCloseable
             throw new IllegalStateException(
                 "Response code=" + code + " message=" + controlResponsePoller.controlResponseDecoder().errorMessage());
         }
-
-        final Publication publication = aeron.addPublication(channel, streamId);
-        if (!publication.isOriginal())
-        {
-            publication.close();
-
-            throw new IllegalStateException(
-                "Publication already added for channel=" + channel + " streamId=" + streamId);
-        }
-
-        return publication;
     }
 
     private void pollForResponse(final long expectedCorrelationId, final int expectedTemplateId)

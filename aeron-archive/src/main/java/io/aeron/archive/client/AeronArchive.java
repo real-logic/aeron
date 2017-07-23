@@ -150,7 +150,7 @@ public final class AeronArchive implements AutoCloseable
         if (code != ControlResponseCode.OK)
         {
             throw new IllegalStateException(
-                "Response code=" + code + " message=" + controlResponsePoller.controlResponseDecoder().errorMessage());
+                "Response code=" + code + " error=" + controlResponsePoller.controlResponseDecoder().errorMessage());
         }
     }
 

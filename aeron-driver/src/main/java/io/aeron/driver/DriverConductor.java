@@ -69,7 +69,7 @@ public class DriverConductor implements Agent
     private final SenderProxy senderProxy;
     private final ClientProxy clientProxy;
     private final RingBuffer toDriverCommands;
-    private final DriverAdapter driverAdapter;
+    private final ClientRequestAdapter clientRequestAdapter;
     private final ManyToOneConcurrentArrayQueue<DriverConductorCmd> driverCmdQueue;
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
     private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
@@ -108,7 +108,7 @@ public class DriverConductor implements Agent
         countersManager = context.countersManager();
         clientKeepAlives = context.systemCounters().get(CLIENT_KEEP_ALIVES);
 
-        driverAdapter = new DriverAdapter(
+        clientRequestAdapter = new ClientRequestAdapter(
             context.systemCounters().get(ERRORS),
             ctx.errorLog(),
             toDriverCommands,
@@ -140,7 +140,7 @@ public class DriverConductor implements Agent
     {
         int workCount = 0;
 
-        workCount += driverAdapter.receive();
+        workCount += clientRequestAdapter.receive();
         workCount += driverCmdQueue.drain(onDriverConductorCmdFunc, 10);
 
         final long nowNs = nanoClock.nanoTime();

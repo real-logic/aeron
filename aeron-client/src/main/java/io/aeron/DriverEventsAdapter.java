@@ -25,7 +25,7 @@ import static io.aeron.command.ControlProtocolEvents.*;
 /**
  * Analogue of {@link DriverProxy} on the client side
  */
-class DriverListenerAdapter implements MessageHandler
+class DriverEventsAdapter implements MessageHandler
 {
     private final CopyBroadcastReceiver broadcastReceiver;
 
@@ -34,19 +34,19 @@ class DriverListenerAdapter implements MessageHandler
     private final ImageBuffersReadyFlyweight imageReady = new ImageBuffersReadyFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
-    private final DriverListener listener;
+    private final DriverEventsListener listener;
 
     private long activeCorrelationId;
     private long lastReceivedCorrelationId;
     private String expectedChannel;
 
-    DriverListenerAdapter(final CopyBroadcastReceiver broadcastReceiver, final DriverListener listener)
+    DriverEventsAdapter(final CopyBroadcastReceiver broadcastReceiver, final DriverEventsListener listener)
     {
         this.broadcastReceiver = broadcastReceiver;
         this.listener = listener;
     }
 
-    public int pollMessage(final long activeCorrelationId, final String expectedChannel)
+    public int receive(final long activeCorrelationId, final String expectedChannel)
     {
         this.activeCorrelationId = activeCorrelationId;
         this.lastReceivedCorrelationId = -1;

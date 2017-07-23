@@ -16,9 +16,9 @@
 package io.aeron;
 
 /**
- * Callback interface for dispatching command responses from the driver on the control protocol.
+ * Callback interface for dispatching driver events on the control protocol.
  */
-interface DriverListener
+interface DriverEventsListener
 {
     void onError(long correlationId, ErrorCode errorCode, String message);
 

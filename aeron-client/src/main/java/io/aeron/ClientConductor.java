@@ -38,7 +38,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * Client conductor takes responses and notifications from Media Driver and acts on them in addition to forwarding
  * commands from the various Client APIs to the Media Driver.
  */
-class ClientConductor implements Agent, DriverListener
+class ClientConductor implements Agent, DriverEventsListener
 {
     private static final long NO_CORRELATION_ID = -1;
     private static final long RESOURCE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
@@ -59,7 +59,7 @@ class ClientConductor implements Agent, DriverListener
     private final EpochClock epochClock;
     private final FileChannel.MapMode imageMapMode;
     private final NanoClock nanoClock;
-    private final DriverListenerAdapter driverListener;
+    private final DriverEventsAdapter driverEventsAdapter;
     private final LogBuffersFactory logBuffersFactory;
     private final ActivePublications activePublications = new ActivePublications();
     private final Long2ObjectHashMap<ExclusivePublication> activeExclusivePublications = new Long2ObjectHashMap<>();
@@ -91,7 +91,7 @@ class ClientConductor implements Agent, DriverListener
         publicationConnectionTimeoutMs = ctx.publicationConnectionTimeout();
         defaultAvailableImageHandler = ctx.availableImageHandler();
         defaultUnavailableImageHandler = ctx.unavailableImageHandler();
-        driverListener = new DriverListenerAdapter(ctx.toClientBuffer(), this);
+        driverEventsAdapter = new DriverEventsAdapter(ctx.toClientBuffer(), this);
         driverAgentInvoker = ctx.driverAgentInvoker();
 
         final long nowNs = nanoClock.nanoTime();
@@ -403,9 +403,9 @@ class ClientConductor implements Agent, DriverListener
             });
     }
 
-    DriverListenerAdapter driverListenerAdapter()
+    DriverEventsAdapter driverListenerAdapter()
     {
-        return driverListener;
+        return driverEventsAdapter;
     }
 
     void lingerResource(final ManagedResource managedResource)
@@ -426,7 +426,7 @@ class ClientConductor implements Agent, DriverListener
         try
         {
             workCount += onCheckTimeouts();
-            workCount += driverListener.pollMessage(correlationId, expectedChannel);
+            workCount += driverEventsAdapter.receive(correlationId, expectedChannel);
         }
         catch (final AgentTerminationException ex)
         {
@@ -468,7 +468,7 @@ class ClientConductor implements Agent, DriverListener
 
             doWork(correlationId, expectedChannel);
 
-            if (driverListener.lastReceivedCorrelationId() == correlationId)
+            if (driverEventsAdapter.lastReceivedCorrelationId() == correlationId)
             {
                 if (null != driverException)
                 {

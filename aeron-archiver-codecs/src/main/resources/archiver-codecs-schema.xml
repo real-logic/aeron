@@ -30,36 +30,16 @@
         <type name="time_t" primitiveType="int64" description="Unix epoch time"/>
     </types>
 
-    <sbe:message name="RecordingStarted"
-                 id="101"
-                 description="Describes a new image recording, sent both as notification and reply">
-        <field name="recordingId"        id="1" type="int64"/>
-        <field name="startPosition"      id="2" type="int64"/>
-        <field name="sessionId"          id="3" type="int32"/>
-        <field name="streamId"           id="4" type="int32"/>
-        <data  name="channel"            id="5" type="varAsciiEncoding"/>
-        <data  name="sourceIdentity"     id="6" type="varAsciiEncoding"/>
-    </sbe:message>
-
-    <sbe:message name="RecordingProgress"
-                 id="102"
-                 description="Recording progress notification for an image">
-        <field name="recordingId"        id="1" type="int64"/>
-        <field name="startPosition"      id="2" type="int64"/>
-        <field name="position"           id="3" type="int64"/>
-    </sbe:message>
-
-    <sbe:message name="RecordingStopped"
-                 id="103"
-                 description="Recording termination notification">
-        <field name="recordingId"        id="1" type="int64"/>
-        <field name="startPosition"      id="2" type="int64"/>
-        <field name="stopPosition"       id="3" type="int64"/>
+    <sbe:message name="ConnectRequest"
+                 id="1"
+                 description="Request a connection to the archive and provide response stream details">
+        <field name="responseStreamId"   id="1" type="int32"/>
+        <data  name="responseChannel"    id="2" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="ControlResponse"
-                 id="1"
-                 description="Generic response to a control request. Empty error message is an OK response">
+                 id="11"
+                 description="Generic response to a control request. Error message will be empty if code is OK.">
         <field name="correlationId"      id="1" type="int64"/>
         <field name="code"               id="2" type="ControlResponseCode"/>
         <data  name="errorMessage"       id="3" type="varAsciiEncoding"/>
@@ -122,6 +102,16 @@
         <field name="recordCount"        id="3" type="int32"/>
     </sbe:message>
 
+    <sbe:message name="ListRecordingsForUriRequest"
+                 id="7"
+                 description="Request a range of recording descriptors">
+        <field name="correlationId"      id="1" type="int64"/>
+        <field name="fromIndex"          id="2" type="int32"/>
+        <field name="recordCount"        id="3" type="int32"/>
+        <field name="streamId"           id="4" type="int32"/>
+        <data  name="channel"            id="5" type="varAsciiEncoding"/>
+    </sbe:message>
+
     <sbe:message name="RecordingNotFoundResponse"
                  id="61"
                  description="Failed to find a recording, also terminates query">
@@ -131,7 +121,7 @@
     </sbe:message>
 
     <sbe:message name="RecordingDescriptor"
-                 id="7"
+                 id="62"
                  description="Describes a recording in the metadata file and catalog">
         <field name="correlationId"      id="1" type="int64" />
         <field name="recordingId"        id="2" type="int64"/>
@@ -150,20 +140,33 @@
         <data  name="sourceIdentity"     id="15" type="varAsciiEncoding"/>
     </sbe:message>
 
-    <sbe:message name="ConnectRequest"
-                 id="8"
-                 description="Request a connection to the archive and provide response stream details">
-        <field name="responseStreamId"   id="1" type="int32"/>
-        <data  name="responseChannel"    id="2" type="varAsciiEncoding"/>
-    </sbe:message>
+    <!-- Progress events for active recordings. -->
 
-    <sbe:message name="ListRecordingsForUriRequest"
-                 id="9"
-                 description="Request a range of recording descriptors">
-        <field name="correlationId"      id="1" type="int64"/>
-        <field name="fromIndex"          id="2" type="int32"/>
-        <field name="recordCount"        id="3" type="int32"/>
+    <sbe:message name="RecordingStarted"
+                 id="101"
+                 description="Describes a new image recording, sent both as notification and reply">
+        <field name="recordingId"        id="1" type="int64"/>
+        <field name="startPosition"      id="2" type="int64"/>
+        <field name="sessionId"          id="3" type="int32"/>
         <field name="streamId"           id="4" type="int32"/>
         <data  name="channel"            id="5" type="varAsciiEncoding"/>
+        <data  name="sourceIdentity"     id="6" type="varAsciiEncoding"/>
     </sbe:message>
+
+    <sbe:message name="RecordingProgress"
+                 id="102"
+                 description="Recording progress notification for an image">
+        <field name="recordingId"        id="1" type="int64"/>
+        <field name="startPosition"      id="2" type="int64"/>
+        <field name="position"           id="3" type="int64"/>
+    </sbe:message>
+
+    <sbe:message name="RecordingStopped"
+                 id="103"
+                 description="Recording termination notification">
+        <field name="recordingId"        id="1" type="int64"/>
+        <field name="startPosition"      id="2" type="int64"/>
+        <field name="stopPosition"       id="3" type="int64"/>
+    </sbe:message>
+
 </sbe:messageSchema>

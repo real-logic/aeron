@@ -154,14 +154,20 @@ public final class AeronArchive implements AutoCloseable
 
     private void pollForResponse(final long expectedCorrelationId, final Class expectedMessage)
     {
-        idleStrategy.reset();
-
         final long deadline = System.nanoTime() + messageTimeoutNs;
         final ControlResponsePoller poller = this.controlResponsePoller;
-        do
+        idleStrategy.reset();
+
+        while (true)
         {
             while (poller.poll() <= 0 && !poller.isPollComplete())
             {
+                if (System.nanoTime() > deadline)
+                {
+                    throw new AeronTimeoutException(
+                        "Waiting for correlationId=" + expectedCorrelationId + " type=" + expectedMessage.getName());
+                }
+
                 idleStrategy.idle();
             }
 
@@ -175,13 +181,9 @@ public final class AeronArchive implements AutoCloseable
                             " error: " + poller.controlResponseDecoder().errorMessage());
                 }
 
-                return;
+                break;
             }
         }
-        while (System.nanoTime() < deadline);
-
-        throw new AeronTimeoutException(
-            "Waiting for correlationId=" + expectedCorrelationId + " type=" + expectedMessage.getName());
     }
 
     /**
@@ -368,7 +370,7 @@ public final class AeronArchive implements AutoCloseable
 
             if (null == idleStrategy)
             {
-                idleStrategy = new BackoffIdleStrategy(10, 10, 1, 1);
+                idleStrategy = new BackoffIdleStrategy(1, 10, 1, 1);
             }
 
             if (null == archiveProxy)

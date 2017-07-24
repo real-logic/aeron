@@ -39,7 +39,8 @@ int aeron_distinct_error_log_init(
     uint8_t *buffer,
     size_t buffer_size,
     aeron_clock_func_t clock,
-    aeron_resource_linger_func_t linger)
+    aeron_resource_linger_func_t linger,
+    void *clientd)
 {
     if (NULL == log || NULL == clock || NULL == linger)
     {
@@ -56,6 +57,7 @@ int aeron_distinct_error_log_init(
     log->buffer_capacity = buffer_size;
     log->clock = clock;
     log->linger_resource = linger;
+    log->linger_resource_clientd = clientd;
     log->next_offset = 0;
     atomic_store(&log->observations_pimpl->num_observations, 0);
     atomic_store(&log->observations_pimpl->observations, NULL);
@@ -152,7 +154,7 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
 
         if (NULL != log->linger_resource)
         {
-            log->linger_resource((uint8_t *)observations);
+            log->linger_resource(log->linger_resource_clientd, (uint8_t *)observations);
         }
     }
 

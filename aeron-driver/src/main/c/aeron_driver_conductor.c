@@ -29,9 +29,11 @@
 #include "aeron_driver_receiver.h"
 #include "aeron_publication_image.h"
 
-static void aeron_error_log_resource_linger(uint8_t *resource)
+static void aeron_error_log_resource_linger(void *clientd, uint8_t *resource)
 {
-    /* TODO: use driver conductor MPSC command queue. Then linger. */
+    aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
+
+    aeron_driver_conductor_proxy_on_linger_buffer(conductor->context->conductor_proxy, resource);
 }
 
 int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *context)
@@ -68,7 +70,8 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
         context->error_buffer,
         context->error_buffer_length,
         context->epoch_clock,
-        aeron_error_log_resource_linger) < 0)
+        aeron_error_log_resource_linger,
+        conductor) < 0)
     {
         return -1;
     }
@@ -137,6 +140,13 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->publication_images.on_time_event = aeron_publication_image_entry_on_time_event;
     conductor->publication_images.has_reached_end_of_life = aeron_publication_image_entry_has_reached_end_of_life;
     conductor->publication_images.delete_func = aeron_publication_image_entry_delete;
+
+    conductor->lingering_resources.array = NULL;
+    conductor->lingering_resources.length = 0;
+    conductor->lingering_resources.capacity = 0;
+    conductor->lingering_resources.on_time_event = aeron_linger_resource_entry_on_time_event;
+    conductor->lingering_resources.has_reached_end_of_life = aeron_linger_resource_entry_has_reached_end_of_life;
+    conductor->lingering_resources.delete_func = aeron_linger_resource_entry_delete;
 
     conductor->ipc_subscriptions.array = NULL;
     conductor->ipc_subscriptions.length = 0;
@@ -472,6 +482,26 @@ void aeron_publication_image_entry_delete(
     aeron_publication_image_close(&conductor->counters_manager, entry->image);
 }
 
+void aeron_linger_resource_entry_on_time_event(
+    aeron_driver_conductor_t *conductor, aeron_linger_resource_entry_t *entry, int64_t now_ns, int64_t now_ms)
+{
+    if (now_ns > entry->timeout)
+    {
+        entry->has_reached_end_of_life = true;
+    }
+}
+
+bool aeron_linger_resource_entry_has_reached_end_of_life(
+    aeron_driver_conductor_t *conductor, aeron_linger_resource_entry_t *entry)
+{
+    return entry->has_reached_end_of_life;
+}
+
+void aeron_linger_resource_entry_delete(aeron_driver_conductor_t *conductor, aeron_linger_resource_entry_t *entry)
+{
+    aeron_free(entry->buffer);
+}
+
 void aeron_driver_conductor_image_transition_to_linger(
     aeron_driver_conductor_t *conductor, aeron_publication_image_t *image)
 {
@@ -515,6 +545,8 @@ void aeron_driver_conductor_on_check_managed_resources(
         conductor, conductor->receive_channel_endpoints, aeron_receive_channel_endpoint_entry_t, now_ns, now_ms);
     AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(
         conductor, conductor->publication_images, aeron_publication_image_entry_t, now_ns, now_ms);
+    AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(
+        conductor, conductor->lingering_resources, aeron_linger_resource_entry_t, now_ns, now_ms);
 }
 
 aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
@@ -2184,6 +2216,28 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     aeron_driver_receiver_proxy_on_add_publication_image(conductor->context->receiver_proxy, endpoint, image);
 
     aeron_driver_receiver_proxy_on_delete_create_publication_image_cmd(conductor->context->receiver_proxy, item);
+}
+
+void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
+{
+    aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
+    aeron_command_base_t *command = (aeron_command_base_t *)item;
+    int ensure_capacity_result = 0;
+
+    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->lingering_resources, aeron_linger_resource_entry_t);
+    if (ensure_capacity_result >= 0)
+    {
+        aeron_linger_resource_entry_t *entry = &conductor->lingering_resources.array[conductor->lingering_resources.length++];
+
+        entry->buffer = command->item;
+        entry->has_reached_end_of_life = false;
+        entry->timeout = conductor->nano_clock() + AERON_DRIVER_CONDUCTOR_LINGER_RESOURCE_TIMEOUT_NS;
+    }
+
+    if (conductor->context->threading_mode != AERON_THREADING_MODE_SHARED)
+    {
+        aeron_free(command); /* do not know where it came from originally, so just free command on the conductor duty cycle */
+    }
 }
 
 extern bool aeron_driver_conductor_is_subscribeable_linked(

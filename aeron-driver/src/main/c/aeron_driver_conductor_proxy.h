@@ -62,4 +62,7 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     struct sockaddr_storage *src_address,
     void *endpoint);
 
+void aeron_driver_conductor_proxy_on_linger_buffer(
+    aeron_driver_conductor_proxy_t *conductor_proxy, uint8_t *buffer);
+
 #endif //AERON_AERON_DRIVER_CONDUCTOR_PROXY_H

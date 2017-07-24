@@ -107,6 +107,29 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     }
 }
 
+void aeron_driver_conductor_proxy_on_linger_buffer(
+    aeron_driver_conductor_proxy_t *conductor_proxy, uint8_t *buffer)
+{
+    if (AERON_THREADING_MODE_SHARED == conductor_proxy->threading_mode)
+    {
+        aeron_free(buffer);
+    }
+    else
+    {
+        aeron_command_base_t *cmd;
+
+        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
+        {
+            aeron_counter_ordered_increment(conductor_proxy->fail_counter, 1);
+            return;
+        }
+
+        cmd->func = aeron_driver_conductor_on_linger_buffer;
+        cmd->item = buffer;
+
+        aeron_driver_conductor_proxy_offer(conductor_proxy, cmd);
+    }
+}
 
 void aeron_command_on_delete_cmd(void *clientd, void *cmd)
 {

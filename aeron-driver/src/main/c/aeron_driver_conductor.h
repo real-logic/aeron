@@ -34,6 +34,7 @@
 #include "reports/aeron_loss_reporter.h"
 
 #define AERON_DRIVER_CONDUCTOR_TIMEOUT_CHECK_NS (1 * 1000 * 1000 * 1000)
+#define AERON_DRIVER_CONDUCTOR_LINGER_RESOURCE_TIMEOUT_NS (5 * 1000 * 1000 * 1000L)
 
 typedef struct aeron_publication_link_stct
 {
@@ -112,6 +113,14 @@ typedef struct aeron_publication_image_entry_stct
     aeron_publication_image_t *image;
 }
 aeron_publication_image_entry_t;
+
+typedef struct aeron_linger_resource_entry_stct
+{
+    uint8_t *buffer;
+    int64_t timeout;
+    bool has_reached_end_of_life;
+}
+aeron_linger_resource_entry_t;
 
 typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
 
@@ -219,6 +228,17 @@ typedef struct aeron_driver_conductor_stct
     }
     publication_images;
 
+    struct aeron_driver_conductor_lingering_resources_stct
+    {
+        aeron_linger_resource_entry_t *array;
+        size_t length;
+        size_t capacity;
+        void (*on_time_event)(aeron_driver_conductor_t *, aeron_linger_resource_entry_t *, int64_t, int64_t);
+        bool (*has_reached_end_of_life)(aeron_driver_conductor_t *, aeron_linger_resource_entry_t *);
+        void (*delete_func)(aeron_driver_conductor_t *, aeron_linger_resource_entry_t *);
+    }
+    lingering_resources;
+
     int64_t *errors_counter;
     int64_t *client_keep_alives_counter;
     int64_t *unblocked_commands_counter;
@@ -270,6 +290,12 @@ void aeron_publication_image_entry_on_time_event(
 bool aeron_publication_image_entry_has_reached_end_of_life(
     aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry);
 void aeron_publication_image_entry_delete(aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *);
+
+void aeron_linger_resource_entry_on_time_event(
+    aeron_driver_conductor_t *conductor, aeron_linger_resource_entry_t *entry, int64_t now_ns, int64_t now_ms);
+bool aeron_linger_resource_entry_has_reached_end_of_life(
+    aeron_driver_conductor_t *conductor, aeron_linger_resource_entry_t *entry);
+void aeron_linger_resource_entry_delete(aeron_driver_conductor_t *conductor, aeron_linger_resource_entry_t *);
 
 void aeron_driver_conductor_image_transition_to_linger(
     aeron_driver_conductor_t *conductor, aeron_publication_image_t *image);
@@ -362,6 +388,8 @@ int aeron_driver_conductoor_on_remove_destination(
     aeron_destination_command_t *command);
 
 void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item);
+
+void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item);
 
 inline bool aeron_driver_conductor_is_subscribeable_linked(
     aeron_subscription_link_t *link, aeron_subscribeable_t *subscribeable)

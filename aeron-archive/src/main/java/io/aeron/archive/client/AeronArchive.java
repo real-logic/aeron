@@ -160,25 +160,22 @@ public final class AeronArchive implements AutoCloseable
         final ControlResponsePoller poller = this.controlResponsePoller;
         do
         {
-            while (poller.poll() <= 0)
+            while (poller.poll() <= 0 && !poller.isPollComplete())
             {
                 idleStrategy.idle();
             }
 
-            if (poller.isPollComplete())
+            if (poller.correlationId() == expectedCorrelationId)
             {
-                if (poller.correlationId() == expectedCorrelationId)
+                if (poller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
+                    poller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
                 {
-                    if (poller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
-                        poller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
-                    {
-                        throw new IllegalStateException(
-                            "Response correlationId=" + expectedCorrelationId +
-                                " error: " + poller.controlResponseDecoder().errorMessage());
-                    }
-
-                    return;
+                    throw new IllegalStateException(
+                        "Response correlationId=" + expectedCorrelationId +
+                            " error: " + poller.controlResponseDecoder().errorMessage());
                 }
+
+                return;
             }
         }
         while (System.nanoTime() < deadline);

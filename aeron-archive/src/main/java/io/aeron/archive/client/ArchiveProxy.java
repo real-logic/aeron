@@ -21,18 +21,13 @@ import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 
-import java.util.concurrent.TimeUnit;
+import static io.aeron.archive.client.AeronArchive.Configuration.MESSAGE_TIMEOUT_DEFAULT_NS;
 
 /**
  * Proxy class for encapsulating encoding and sending of control protocol messages to an archive.
  */
 public class ArchiveProxy
 {
-    /**
-     * Default timeout for retrying connect requests.
-     */
-    public static final long DEFAULT_CONNECT_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
-
     /**
      * Default maximum number of retry attempts to be made at offering request messages.
      */
@@ -58,13 +53,14 @@ public class ArchiveProxy
      * Create a proxy with a {@link Publication} for sending control message requests.
      *
      * This provides a default {@link IdleStrategy} of a {@link YieldingIdleStrategy} when offers are back pressured
-     * with a defaults of {@link #DEFAULT_CONNECT_TIMEOUT_NS} and {@link #DEFAULT_MAX_RETRY_ATTEMPTS}.
+     * with a defaults of {@link AeronArchive.Configuration#MESSAGE_TIMEOUT_DEFAULT_NS} and
+     * {@link #DEFAULT_MAX_RETRY_ATTEMPTS}.
      *
      * @param controlRequest publication for sending control messages to an archive.
      */
     public ArchiveProxy(final Publication controlRequest)
     {
-        this(controlRequest, new YieldingIdleStrategy(), DEFAULT_CONNECT_TIMEOUT_NS, DEFAULT_MAX_RETRY_ATTEMPTS);
+        this(controlRequest, new YieldingIdleStrategy(), MESSAGE_TIMEOUT_DEFAULT_NS, DEFAULT_MAX_RETRY_ATTEMPTS);
     }
 
     /**

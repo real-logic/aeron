@@ -18,7 +18,7 @@ package io.aeron.exceptions;
 /**
  * A timeout has occurred while waiting on the media driver responding to an operation.
  */
-public class DriverTimeoutException extends RuntimeException
+public class DriverTimeoutException extends AeronTimeoutException
 {
     public DriverTimeoutException(final String message)
     {

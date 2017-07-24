@@ -20,8 +20,11 @@ import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.ControlResponseDecoder;
+import io.aeron.exceptions.AeronTimeoutException;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Client for interacting with a local or remote Aeron Archive that records and replays message streams.
@@ -34,6 +37,7 @@ public final class AeronArchive implements AutoCloseable
 {
     private static final int RESPONSE_FRAGMENT_LIMIT = 10;
 
+    private final long messageTimeoutNs;
     private final Context context;
     private final Aeron aeron;
     private final ArchiveProxy archiveProxy;
@@ -48,6 +52,7 @@ public final class AeronArchive implements AutoCloseable
             this.context = context;
             aeron = context.aeron();
             idleStrategy = context.idleStrategy();
+            messageTimeoutNs = context.messageTimeoutNs();
 
             archiveProxy = context.archiveProxy();
             if (!archiveProxy.connect(context.controlResponseChannel(), context.controlResponseStreamId()))
@@ -144,7 +149,7 @@ public final class AeronArchive implements AutoCloseable
             throw new IllegalStateException("Failed to send start recording request");
         }
 
-        pollForResponse(correlationId, ControlResponseDecoder.TEMPLATE_ID);
+        pollForResponse(correlationId, ControlResponseDecoder.class);
 
         final ControlResponseCode code = controlResponsePoller.controlResponseDecoder().code();
         if (code != ControlResponseCode.OK)
@@ -154,36 +159,39 @@ public final class AeronArchive implements AutoCloseable
         }
     }
 
-    private void pollForResponse(final long expectedCorrelationId, final int expectedTemplateId)
+    private void pollForResponse(final long expectedCorrelationId, final Class expectedMessage)
     {
         idleStrategy.reset();
 
-        while (true)
+        final long deadline = System.nanoTime() + messageTimeoutNs;
+        final ControlResponsePoller poller = this.controlResponsePoller;
+        do
         {
-            while (controlResponsePoller.poll() <= 0)
+            while (poller.poll() <= 0)
             {
                 idleStrategy.idle();
             }
 
-            if (controlResponsePoller.isPollComplete())
+            if (poller.isPollComplete())
             {
-                break;
+                if (poller.correlationId() == expectedCorrelationId)
+                {
+                    if (poller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
+                        poller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
+                    {
+                        throw new IllegalStateException(
+                            "Response correlationId=" + expectedCorrelationId +
+                                " error: " + poller.controlResponseDecoder().errorMessage());
+                    }
+
+                    return;
+                }
             }
         }
+        while (System.nanoTime() < deadline);
 
-        final int templateId = controlResponsePoller.templateId();
-        if (expectedTemplateId != templateId)
-        {
-            throw new IllegalStateException(
-                "Unexpected response templateId=" + templateId + " expected " + expectedTemplateId);
-        }
-
-        final long correlationId = controlResponsePoller.correlationId();
-        if (expectedCorrelationId != correlationId)
-        {
-            throw new IllegalStateException(
-                "Unexpected response correlationId=" + correlationId + " expected " + expectedCorrelationId);
-        }
+        throw new AeronTimeoutException(
+            "Waiting for correlationId=" + expectedCorrelationId + " type=" + expectedMessage.getName());
     }
 
     /**
@@ -191,6 +199,16 @@ public final class AeronArchive implements AutoCloseable
      */
     public static class Configuration
     {
+        /**
+         * Timeout when waiting on a message to be sent or received.
+         */
+        public static final String MESSAGE_TIMEOUT_PROP_NAME = "aeron.archive.message.timeout";
+
+        /**
+         * Default to 5 seconds in nanoseconds.
+         */
+        public static final long MESSAGE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
+
         /**
          * Channel for sending control messages to an archive.
          */
@@ -250,6 +268,16 @@ public final class AeronArchive implements AutoCloseable
          * Default to a stream id of 0.
          */
         public static final int RECORDING_EVENTS_STREAM_ID_DEFAULT = 0;
+
+        /**
+         * The timeout in nanoseconds to wait for a message.
+         *
+         * @return timeout in nanoseconds to wait for a message.
+         */
+        public static long messageTimeoutNs()
+        {
+            return Long.getLong(MESSAGE_TIMEOUT_PROP_NAME, MESSAGE_TIMEOUT_DEFAULT_NS);
+        }
 
         /**
          * The value {@link #CONTROL_REQUEST_CHANNEL_DEFAULT} or system property
@@ -329,6 +357,7 @@ public final class AeronArchive implements AutoCloseable
      */
     public static class Context implements AutoCloseable
     {
+        private long messageTimeoutNs = Configuration.messageTimeoutNs();
         private String controlRequestChannel = Configuration.controlRequestChannel();
         private int controlRequestStreamId = Configuration.controlRequestStreamId();
         private String controlResponseChannel = Configuration.controlResponseChannel();
@@ -357,9 +386,31 @@ public final class AeronArchive implements AutoCloseable
                 archiveProxy = new ArchiveProxy(
                     aeron.addPublication(controlRequestChannel, controlRequestStreamId),
                     idleStrategy,
-                    ArchiveProxy.DEFAULT_CONNECT_TIMEOUT_NS,
+                    messageTimeoutNs,
                     ArchiveProxy.DEFAULT_MAX_RETRY_ATTEMPTS);
             }
+        }
+
+        /**
+         * Set the message timeout in nanoseconds to wait for sending or receiving a message.
+         *
+         * @param messageTimeoutNs to wait for sending or receiving a message.
+         * @return this for a fluent API.
+         */
+        public Context messageTimeoutNs(final long messageTimeoutNs)
+        {
+            this.messageTimeoutNs = messageTimeoutNs;
+            return this;
+        }
+
+        /**
+         * The message timeout in nanoseconds to wait for sending or receiving a message.
+         *
+         * @return the message timeout in nanoseconds to wait for sending or receiving a message.
+         */
+        public long messageTimeoutNs()
+        {
+            return messageTimeoutNs;
         }
 
         /**

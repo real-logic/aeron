@@ -2227,7 +2227,8 @@ void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->lingering_resources, aeron_linger_resource_entry_t);
     if (ensure_capacity_result >= 0)
     {
-        aeron_linger_resource_entry_t *entry = &conductor->lingering_resources.array[conductor->lingering_resources.length++];
+        aeron_linger_resource_entry_t *entry =
+            &conductor->lingering_resources.array[conductor->lingering_resources.length++];
 
         entry->buffer = command->item;
         entry->has_reached_end_of_life = false;
@@ -2236,7 +2237,8 @@ void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
 
     if (conductor->context->threading_mode != AERON_THREADING_MODE_SHARED)
     {
-        aeron_free(command); /* do not know where it came from originally, so just free command on the conductor duty cycle */
+        aeron_free(command);
+        /* do not know where it came from originally, so just free command on the conductor duty cycle */
     }
 }
 
@@ -2252,7 +2254,8 @@ extern size_t aeron_driver_conductor_num_network_subscriptions(aeron_driver_cond
 extern size_t aeron_driver_conductor_num_spy_subscriptions(aeron_driver_conductor_t *conductor);
 extern size_t aeron_driver_conductor_num_send_channel_endpoints(aeron_driver_conductor_t *conductor);
 extern size_t aeron_driver_conductor_num_receive_channel_endpoints(aeron_driver_conductor_t *conductor);
-extern size_t aeron_driver_conductor_num_active_ipc_subscriptions(aeron_driver_conductor_t *conductor, int32_t stream_id);
+extern size_t aeron_driver_conductor_num_active_ipc_subscriptions(
+    aeron_driver_conductor_t *conductor, int32_t stream_id);
 extern size_t aeron_driver_conductor_num_active_network_subscriptions(
     aeron_driver_conductor_t *conductor, const char *original_uri, int32_t stream_id);
 extern size_t aeron_driver_conductor_num_active_spy_subscriptions(

@@ -150,13 +150,6 @@ public final class AeronArchive implements AutoCloseable
         }
 
         pollForResponse(correlationId, ControlResponseDecoder.class);
-
-        final ControlResponseCode code = controlResponsePoller.controlResponseDecoder().code();
-        if (code != ControlResponseCode.OK)
-        {
-            throw new IllegalStateException(
-                "Response code=" + code + " error=" + controlResponsePoller.controlResponseDecoder().errorMessage());
-        }
     }
 
     private void pollForResponse(final long expectedCorrelationId, final Class expectedMessage)

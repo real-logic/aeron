@@ -18,29 +18,29 @@ package io.aeron.exceptions;
 /**
  * Generic timeout has occurred while waiting on some action or event.
  */
-public class AeronTimeoutException extends RuntimeException
+public class TimeoutException extends RuntimeException
 {
-    public AeronTimeoutException()
+    public TimeoutException()
     {
         super();
     }
 
-    public AeronTimeoutException(final String message)
+    public TimeoutException(final String message)
     {
         super(message);
     }
 
-    public AeronTimeoutException(final String message, final Throwable cause)
+    public TimeoutException(final String message, final Throwable cause)
     {
         super(message, cause);
     }
 
-    public AeronTimeoutException(final Throwable cause)
+    public TimeoutException(final Throwable cause)
     {
         super(cause);
     }
 
-    protected AeronTimeoutException(
+    protected TimeoutException(
         final String message,
         final Throwable cause,
         final boolean enableSuppression,

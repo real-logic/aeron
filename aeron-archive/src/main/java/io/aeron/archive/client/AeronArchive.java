@@ -20,7 +20,7 @@ import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.ControlResponseDecoder;
-import io.aeron.exceptions.AeronTimeoutException;
+import io.aeron.exceptions.TimeoutException;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 
@@ -164,7 +164,7 @@ public final class AeronArchive implements AutoCloseable
             {
                 if (System.nanoTime() > deadline)
                 {
-                    throw new AeronTimeoutException(
+                    throw new TimeoutException(
                         "Waiting for correlationId=" + expectedCorrelationId + " type=" + expectedMessage.getName());
                 }
 

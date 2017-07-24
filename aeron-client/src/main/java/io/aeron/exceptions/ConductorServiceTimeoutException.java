@@ -18,7 +18,7 @@ package io.aeron.exceptions;
 /**
  * A timeout has occurred between service calls for the client conductor.
  */
-public class ConductorServiceTimeoutException extends AeronTimeoutException
+public class ConductorServiceTimeoutException extends TimeoutException
 {
     public ConductorServiceTimeoutException(final String message)
     {

@@ -169,7 +169,7 @@ public:
 
         m_position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes(TERM_LENGTH);
         m_log_meta_data_buffer.fill(0);
-        m_log_meta_data->initialTerm_id = TERM_ID;
+        m_log_meta_data->initial_term_id = TERM_ID;
         m_log_meta_data->term_tail_counters[PARTITION_INDEX] = (int64_t)TERM_ID << 32;
     }
 

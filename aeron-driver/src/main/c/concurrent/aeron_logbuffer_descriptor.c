@@ -19,6 +19,7 @@
 extern int32_t aeron_logbuffer_term_offset(int64_t raw_tail, int32_t term_length);
 extern int32_t aeron_logbuffer_term_id(int64_t raw_tail);
 extern size_t aeron_logbuffer_index_by_position(int64_t position, size_t position_bits_to_shift);
+extern size_t aeron_logbuffer_index_by_term(int32_t initial_term_id, int32_t active_term_id);
 extern int64_t aeron_logbuffer_compute_position(
     int32_t active_term_id, int32_t term_offset, size_t position_bits_to_shift, int32_t initial_term_id);
 extern int32_t aeron_logbuffer_compute_term_id_from_position(

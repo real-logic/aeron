@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-#include <util/aeron_netutil.h>
+#include "util/aeron_netutil.h"
 #include "concurrent/aeron_term_rebuilder.h"
 #include "util/aeron_error.h"
 #include "aeron_publication_image.h"
 #include "aeron_driver_receiver_proxy.h"
 #include "aeron_driver_conductor.h"
+#include "concurrent/aeron_term_gap_filler.h"
 
 int aeron_publication_image_create(
     aeron_publication_image_t **image,
@@ -105,7 +106,7 @@ int aeron_publication_image_create(
     _image->log_file_name_length = (size_t)path_length;
     _image->log_meta_data = (aeron_logbuffer_metadata_t *)(_image->mapped_raw_log.log_meta_data.addr);
 
-    _image->log_meta_data->initialTerm_id = initial_term_id;
+    _image->log_meta_data->initial_term_id = initial_term_id;
     _image->log_meta_data->mtu_length = sender_mtu_length;
     _image->log_meta_data->correlation_id = correlation_id;
     _image->log_meta_data->time_of_last_status_message = 0;
@@ -130,6 +131,7 @@ int aeron_publication_image_create(
     _image->conductor_fields.managed_resource.incref = NULL;
     _image->conductor_fields.managed_resource.decref = NULL;
     _image->conductor_fields.has_reached_end_of_life = false;
+    _image->conductor_fields.is_reliable = is_reliable;
     _image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_ACTIVE;
     _image->conductor_fields.liveness_timeout_ns = context->image_liveness_timeout_ns;
     _image->session_id = session_id;
@@ -158,6 +160,8 @@ int aeron_publication_image_create(
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_STATUS_MESSAGES_SENT);
     _image->nak_messages_sent_counter =
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_NAK_MESSAGES_SENT);
+    _image->loss_gap_fills_counter =
+        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_LOSS_GAP_FILLS);
 
     const int64_t initial_position =
         aeron_logbuffer_compute_position(
@@ -375,7 +379,7 @@ int aeron_publication_image_on_rttm(
     return 1;
 }
 
-int aeron_publicaion_image_send_pending_status_message(aeron_publication_image_t *image)
+int aeron_publication_image_send_pending_status_message(aeron_publication_image_t *image)
 {
     int work_count = 0;
 
@@ -419,7 +423,7 @@ int aeron_publicaion_image_send_pending_status_message(aeron_publication_image_t
     return work_count;
 }
 
-int aeron_publicaion_image_send_pending_loss(aeron_publication_image_t *image)
+int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image)
 {
     int work_count = 0;
 
@@ -436,21 +440,56 @@ int aeron_publicaion_image_send_pending_loss(aeron_publication_image_t *image)
 
         if (change_number == image->begin_loss_change)
         {
-            /* TODO: if not reliable, then don't send, fill gap instead */
-            int send_nak_result = aeron_receive_channel_endpoint_send_nak(
-                image->endpoint,
-                &image->control_address,
-                image->stream_id,
-                image->session_id,
-                term_id,
-                term_offset,
-                length);
+            if (image->conductor_fields.is_reliable)
+            {
+                int send_nak_result = aeron_receive_channel_endpoint_send_nak(
+                    image->endpoint,
+                    &image->control_address,
+                    image->stream_id,
+                    image->session_id,
+                    term_id,
+                    term_offset,
+                    length);
 
-            aeron_counter_ordered_increment(image->status_messages_sent_counter, 1);
+                aeron_counter_ordered_increment(image->nak_messages_sent_counter, 1);
+                work_count = send_nak_result < 0 ? send_nak_result : 1;
+            }
+            else
+            {
+                const size_t index = aeron_logbuffer_index_by_term(image->initial_term_id, term_id);
+                uint8_t *buffer = image->mapped_raw_log.term_buffers[index].addr;
+
+                if (aeron_term_gap_filler_try_fill_gap(image->log_meta_data, buffer, term_id, term_offset, length))
+                {
+                    aeron_counter_ordered_increment(image->loss_gap_fills_counter, 1);
+                }
+
+                work_count = 1;
+            }
 
             image->last_loss_change_number = change_number;
-            work_count = send_nak_result < 0 ? send_nak_result : 1;
         }
+    }
+
+    return work_count;
+}
+
+int aeron_publication_image_initiate_rttm(aeron_publication_image_t *image, int64_t now_ns)
+{
+    int work_count = 0;
+
+    if (image->congestion_control->should_measure_rtt(image->congestion_control->state, now_ns))
+    {
+        int send_rttm_result = aeron_receive_channel_endpoint_send_rttm(
+            image->endpoint,
+            &image->control_address,
+            image->stream_id,
+            image->session_id,
+            now_ns,
+            0,
+            true);
+
+        work_count = send_rttm_result < 0 ? send_rttm_result : 1;
     }
 
     return work_count;

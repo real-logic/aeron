@@ -134,11 +134,13 @@ int aeron_driver_receiver_do_work(void *clientd)
 
     aeron_counter_add_ordered(receiver->total_bytes_received_counter, bytes_received);
 
+    int64_t now_ns = receiver->context->nano_clock();
+
     for (size_t i = 0, length = receiver->images.length; i < length; i++)
     {
         aeron_publication_image_t *image = receiver->images.array[i].image;
 
-        int send_sm_result = aeron_publicaion_image_send_pending_status_message(image);
+        int send_sm_result = aeron_publication_image_send_pending_status_message(image);
         if (send_sm_result < 0)
         {
             AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver send SM: %s", aeron_errmsg());
@@ -146,18 +148,22 @@ int aeron_driver_receiver_do_work(void *clientd)
 
         work_count += (send_sm_result < 0) ? 0 : send_sm_result;
 
-        int send_nak_result = aeron_publicaion_image_send_pending_loss(image);
+        int send_nak_result = aeron_publication_image_send_pending_loss(image);
         if (send_nak_result < 0)
         {
-            AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver send SM: %s", aeron_errmsg());
+            AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver send NAK: %s", aeron_errmsg());
         }
 
-        /* TODO: initiate RTTM */
-
         work_count += (send_nak_result < 0) ? 0 : send_nak_result;
-    }
 
-    int64_t now_ns = receiver->context->nano_clock();
+        int initiate_rttm_result = aeron_publication_image_initiate_rttm(image, now_ns);
+        if (send_nak_result < 0)
+        {
+            AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver send RTTM: %s", aeron_errmsg());
+        }
+
+        work_count += (initiate_rttm_result < 0) ? 0 : initiate_rttm_result;
+    }
 
     for (int last_index = (int)receiver->pending_setups.length - 1, i = last_index; i >= 0; i--)
     {

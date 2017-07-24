@@ -45,6 +45,7 @@ if(BUILD_TESTING)
     aeron_driver_test(retransmit_handler_test aeron_retransmit_handler_test.cpp)
     aeron_driver_test(loss_reporter_test aeron_loss_reporter_test.cpp)
     aeron_driver_test(logbuffer_unblocker aeron_logbuffer_unblocker_test.cpp)
+    aeron_driver_test(term_gap_filler_test aeron_term_gap_filler_test.cpp)
 
     function(aeron_driver_benchmark name file)
         add_executable(${name} ${file})

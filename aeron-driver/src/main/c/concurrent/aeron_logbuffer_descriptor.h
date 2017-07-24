@@ -41,7 +41,7 @@ typedef struct aeron_logbuffer_metadata_stct
     int64_t end_of_stream_position;
     uint8_t pad2[(2 * AERON_CACHE_LINE_LENGTH) - (2 * sizeof(int64_t))];
     int64_t correlation_id;
-    int32_t initialTerm_id;
+    int32_t initial_term_id;
     int32_t default_frame_header_length;
     int32_t mtu_length;
     uint8_t pad3[(AERON_CACHE_LINE_LENGTH) - (5 * sizeof(int32_t))];
@@ -81,6 +81,11 @@ inline int32_t aeron_logbuffer_term_id(int64_t raw_tail)
 inline size_t aeron_logbuffer_index_by_position(int64_t position, size_t position_bits_to_shift)
 {
     return (size_t)((position >> position_bits_to_shift) % AERON_LOGBUFFER_PARTITION_COUNT);
+}
+
+inline size_t aeron_logbuffer_index_by_term(int32_t initial_term_id, int32_t active_term_id)
+{
+    return (size_t)((active_term_id - initial_term_id) % AERON_LOGBUFFER_PARTITION_COUNT);
 }
 
 inline int64_t aeron_logbuffer_compute_position(

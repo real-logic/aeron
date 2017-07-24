@@ -41,6 +41,7 @@ typedef struct aeron_publication_image_stct
         int64_t time_of_last_status_change_ns;
         int64_t liveness_timeout_ns;
         bool has_reached_end_of_life;
+        bool is_reliable;
         aeron_publication_image_status_t status;
     }
     conductor_fields;
@@ -100,6 +101,7 @@ typedef struct aeron_publication_image_stct
     int64_t *flow_control_over_runs_counter;
     int64_t *status_messages_sent_counter;
     int64_t *nak_messages_sent_counter;
+    int64_t *loss_gap_fills_counter;
 }
 aeron_publication_image_t;
 
@@ -139,9 +141,11 @@ int aeron_publication_image_insert_packet(
 int aeron_publication_image_on_rttm(
     aeron_publication_image_t *image, aeron_rttm_header_t *header, struct sockaddr_storage *addr);
 
-int aeron_publicaion_image_send_pending_status_message(aeron_publication_image_t *image);
+int aeron_publication_image_send_pending_status_message(aeron_publication_image_t *image);
 
-int aeron_publicaion_image_send_pending_loss(aeron_publication_image_t *image);
+int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image);
+
+int aeron_publication_image_initiate_rttm(aeron_publication_image_t *image, int64_t now_ns);
 
 void aeron_publication_image_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_publication_image_t *image, int64_t now_ns, int64_t now_ms);

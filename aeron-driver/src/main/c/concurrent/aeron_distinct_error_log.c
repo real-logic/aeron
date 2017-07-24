@@ -21,6 +21,7 @@
 #include <stdatomic.h>
 #include <errno.h>
 #include "util/aeron_error.h"
+#include "util/aeron_strutil.h"
 #include "aeron_alloc.h"
 #include "aeron_distinct_error_log.h"
 #include "aeron_atomic.h"
@@ -77,8 +78,6 @@ void aeron_distinct_error_log_close(aeron_distinct_error_log_t *log)
     aeron_free(log->observations_pimpl);
 }
 
-/* TODO: pre-populate OOM in distinct_error_log so that it never needs to allocate if OOMed */
-
 static aeron_distinct_observation_t *aeron_distinct_error_log_find_observation(
     aeron_distinct_observation_t *observations,
     size_t num_observations,
@@ -88,7 +87,7 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_find_observation(
     for (size_t i = 0; i < num_observations; i++)
     {
         if (observations[i].error_code == error_code &&
-            strncmp(observations[i].description, description, AERON_MAX_PATH) == 0)
+            strncmp(observations[i].description, description, observations[i].description_length) == 0)
         {
             return &observations[i];
         }
@@ -116,14 +115,17 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
 
         snprintf(encoded_error, sizeof(encoded_error) - 1, "%d: %s %s", error_code, description, message);
 
+        size_t description_length = strlen(description);
         size_t encoded_error_length = strlen(encoded_error);
         size_t length = AERON_ERROR_LOG_HEADER_LENGTH + encoded_error_length;
         aeron_distinct_observation_t *new_array = NULL;
+        char *new_description = NULL;
         size_t offset = log->next_offset;
         aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(log->buffer + offset);
 
         if ((offset + length) > log->buffer_capacity ||
-            aeron_alloc((void **)&new_array, sizeof(aeron_distinct_observation_t) * (num_observations + 1)) < 0)
+            aeron_alloc((void **)&new_array, sizeof(aeron_distinct_observation_t) * (num_observations + 1)) < 0 ||
+            aeron_alloc((void **)&new_description, description_length + 1) < 0)
         {
             return NULL;
         }
@@ -135,7 +137,9 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
         log->next_offset = AERON_ALIGN(offset + length, AERON_ERROR_LOG_RECORD_ALIGNMENT);
 
         new_array[0].error_code = error_code;
-        new_array[0].description = strndup(description, AERON_MAX_PATH);
+        new_array[0].description = new_description;
+        strncpy(new_description, description, description_length + 1);
+        new_array[0].description_length = description_length;
         new_array[0].offset = offset;
         memcpy(&new_array[1], observations, sizeof(aeron_distinct_observation_t) * num_observations);
 
@@ -182,7 +186,11 @@ int aeron_distinct_error_log_record(
 
         if (NULL == observation)
         {
-            aeron_set_err(ENOMEM, "%s", strerror(ENOMEM));
+            char buffer[AERON_MAX_PATH];
+
+            aeron_format_date(buffer, sizeof(buffer), timestamp);
+            fprintf(stderr, "%s - unrecordable error %d: %s %s\n", buffer, error_code, description, message);
+            errno = ENOMEM;
             return -1;
         }
     }

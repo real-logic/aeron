@@ -44,8 +44,9 @@ typedef void (*aeron_resource_linger_func_t)(uint8_t *resource);
 typedef struct aeron_distinct_observation_stct
 {
     const char *description;
-    size_t offset;
     int error_code;
+    size_t offset;
+    size_t description_length;
 }
 aeron_distinct_observation_t;
 

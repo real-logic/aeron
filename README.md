@@ -28,7 +28,7 @@ For the latest version information and changes see the [Change Log](https://gith
 1. [Protocol Specification](https://github.com/real-logic/aeron/wiki/Protocol-Specification)
 1. [Design Overview](https://github.com/real-logic/aeron/wiki/Design-Overview)
 1. [Design Principles](https://github.com/real-logic/aeron/wiki/Design-Principles)
-1. [Flow Control Semantics](https://github.com/real-logic/aeron/wiki/Flow-Control)
+1. [Flow Control Semantics](https://github.com/real-logic/aeron/wiki/Flow-and-Congestion-Control)
 1. [Media Driver Operation](https://github.com/real-logic/aeron/wiki/Media-Driver-Operation)
 
 ### How do I hack on Aeron?

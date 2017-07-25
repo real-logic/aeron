@@ -18,21 +18,29 @@ package io.aeron.archive;
 import io.aeron.*;
 import io.aeron.archive.codecs.ControlResponseCode;
 import org.agrona.CloseHelper;
+import org.agrona.IoUtil;
 import org.agrona.collections.IntArrayList;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 import static io.aeron.CommonContext.SPY_PREFIX;
+import static java.nio.file.StandardOpenOption.*;
+import static org.agrona.concurrent.status.CountersReader.COUNTER_LENGTH;
+import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 abstract class ArchiveConductor extends SessionWorker<Session>
 {
@@ -40,10 +48,12 @@ abstract class ArchiveConductor extends SessionWorker<Session>
      * Low term length for control channel reflects expected low bandwidth usage.
      */
     private static final int DEFAULT_CONTROL_TERM_LENGTH = 64 * 1024;
+    private static final String POSITIONS_FILE_NAME = "archive.positions";
 
     private final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder();
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<AtomicCounter> recordingPositionByIdMap = new Long2ObjectHashMap<>();
     private final Map<String, Subscription> subscriptionMap = new HashMap<>();
     private final ReplayPublicationSupplier newReplayPublication = this::newReplayPublication;
 
@@ -61,6 +71,9 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final int maxConcurrentRecordings;
     private final int maxConcurrentReplays;
 
+    private final CountersManager recordingPositionsManager;
+    private final MappedByteBuffer countersMappedBBuffer;
+
     protected final Archiver.Context ctx;
     protected final ControlSessionProxy controlSessionProxy;
     protected SessionWorker<ReplaySession> replayer;
@@ -74,11 +87,17 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         this.aeron = aeron;
         this.ctx = ctx;
+
         aeronClientAgentInvoker = aeron.conductorAgentInvoker();
         Objects.requireNonNull(aeronClientAgentInvoker, "An aeron invoker should be present in the archive context");
 
+        maxConcurrentRecordings = ctx.maxConcurrentRecordings();
+        maxConcurrentReplays = ctx.maxConcurrentReplays();
         epochClock = ctx.epochClock();
         driverAgentInvoker = ctx.mediaDriverAgentInvoker();
+        archiveDir = ctx.archiveDir();
+        final int fileSyncLevel = ctx.fileSyncLevel();
+        archiveDirChannel = getDirectoryChannel(archiveDir, fileSyncLevel);
 
         controlSessionProxy = new ControlSessionProxy(ctx.idleStrategy());
 
@@ -92,33 +111,41 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
         recordingEventsProxy = new RecordingEventsProxy(ctx.idleStrategy(), notificationPublication);
 
-        archiveDir = ctx.archiveDir();
 
-        FileChannel channel = null;
-        if (ctx.fileSyncLevel() > 0)
+        catalog = new Catalog(archiveDir, archiveDirChannel, fileSyncLevel);
+
+        final File countersFile = new File(archiveDir, POSITIONS_FILE_NAME);
+        final boolean filePreExists = countersFile.exists();
+
+        try (FileChannel channel = FileChannel.open(countersFile.toPath(), CREATE, READ, WRITE, SPARSE))
         {
-            try
+            countersMappedBBuffer =
+                channel.map(MapMode.READ_WRITE, 0, maxConcurrentRecordings * (METADATA_LENGTH + COUNTER_LENGTH));
+            final UnsafeBuffer countersMetaBuffer =
+                new UnsafeBuffer(countersMappedBBuffer, 0, maxConcurrentRecordings * METADATA_LENGTH);
+            final UnsafeBuffer countersValuesBuffer = new UnsafeBuffer(
+                countersMappedBBuffer,
+                maxConcurrentRecordings * METADATA_LENGTH,
+                maxConcurrentRecordings * COUNTER_LENGTH);
+            recordingPositionsManager = new CountersManager(countersMetaBuffer, countersValuesBuffer);
+            if (!filePreExists && archiveDirChannel != null && fileSyncLevel > 0)
             {
-                channel = FileChannel.open(archiveDir.toPath());
-            }
-            catch (final IOException ignore)
-            {
-                // If directories cannot be opened then we ignore.
+                archiveDirChannel.force(fileSyncLevel > 1);
             }
         }
-        catalog = new Catalog(ctx.archiveDir(), channel, ctx.fileSyncLevel());
-
-        archiveDirChannel = channel;
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
 
         recordingCtx = new RecordingWriter.Context()
             .archiveDirChannel(archiveDirChannel)
-            .archiveDir(ctx.archiveDir())
+            .archiveDir(archiveDir)
             .recordingFileLength(ctx.segmentFileLength())
             .epochClock(ctx.epochClock())
-            .fileSyncLevel(ctx.fileSyncLevel());
+            .fileSyncLevel(fileSyncLevel);
 
-        maxConcurrentRecordings = ctx.maxConcurrentRecordings();
-        maxConcurrentReplays = ctx.maxConcurrentReplays();
+
     }
 
     public void onStart()
@@ -152,9 +179,15 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         CloseHelper.quietClose(aeronClientAgentInvoker);
         CloseHelper.quietClose(driverAgentInvoker);
         CloseHelper.quietClose(catalog);
+        IoUtil.unmap(countersMappedBBuffer);
 
         // TODO: Should these be exceptions that get recorded or are they asserts?
         if (!recordingSessionByIdMap.isEmpty())
+        {
+            System.err.println("ERROR: expected no active recording sessions");
+        }
+
+        if (!recordingPositionByIdMap.isEmpty())
         {
             System.err.println("ERROR: expected no active recording sessions");
         }
@@ -485,14 +518,19 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             originalChannel,
             sourceIdentity);
 
+        final AtomicCounter position =
+            recordingPositionsManager.newCounter(makeKey(streamId, channel) + ":" + recordingId);
         final RecordingSession session = new RecordingSession(
             recordingId,
             catalog.wrapDescriptor(recordingId),
             recordingEventsProxy,
             image,
+            position,
             recordingCtx);
 
         recordingSessionByIdMap.put(recordingId, session);
+        recordingPositionByIdMap.put(recordingId, position);
+
         recorder.addSession(session);
     }
 
@@ -532,6 +570,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     void closeRecordingSession(final RecordingSession session)
     {
         recordingSessionByIdMap.remove(session.sessionId());
+        recordingPositionByIdMap.remove(session.sessionId());
         closeSession(session);
     }
 
@@ -539,5 +578,22 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         replaySessionByIdMap.remove(session.sessionId());
         closeSession(session);
+    }
+
+    private static FileChannel getDirectoryChannel(final File directory, final int fileSyncLevel)
+    {
+        FileChannel dirChannel = null;
+        if (fileSyncLevel > 0)
+        {
+            try
+            {
+                dirChannel = FileChannel.open(directory.toPath());
+            }
+            catch (final IOException ignore)
+            {
+                // If directories cannot be opened then we ignore.
+            }
+        }
+        return dirChannel;
     }
 }

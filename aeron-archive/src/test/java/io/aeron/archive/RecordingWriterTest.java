@@ -7,6 +7,7 @@ import org.agrona.BufferUtil;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,7 +20,10 @@ import java.nio.channels.FileChannel;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class RecordingWriterTest
@@ -40,10 +44,20 @@ public class RecordingWriterTest
     private FileChannel mockArchiveDirFileChannel = Mockito.mock(FileChannel.class);
     private FileChannel mockDataFileChannel = Mockito.mock(FileChannel.class);
     private UnsafeBuffer mockTermBuffer = Mockito.mock(UnsafeBuffer.class);
+    private final AtomicCounter position = mock(AtomicCounter.class);
+    private long positionLong;
 
     @Before
     public void before() throws Exception
     {
+        when(position.getWeak()).then(invocation -> positionLong);
+        when(position.get()).then(invocation -> positionLong);
+        doAnswer(invocation ->
+        {
+            positionLong = invocation.getArgument(0);
+            return null;
+        }).when(position).setOrdered(anyLong());
+
         recordingCtx
             .archiveDirChannel(mockArchiveDirFileChannel)
             .archiveDir(archiveDir)
@@ -88,7 +102,7 @@ public class RecordingWriterTest
             CHANNEL,
             SOURCE);
 
-        try (RecordingWriter writer = Mockito.spy(new RecordingWriter(recordingCtx, descriptorBuffer)))
+        try (RecordingWriter writer = Mockito.spy(new RecordingWriter(recordingCtx, descriptorBuffer, position)))
         {
             assertEquals(Catalog.NULL_TIME, descriptorDecoder.startTimestamp());
 

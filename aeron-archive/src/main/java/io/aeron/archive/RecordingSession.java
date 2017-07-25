@@ -17,9 +17,11 @@ package io.aeron.archive;
 
 import io.aeron.Image;
 import io.aeron.Subscription;
+import io.aeron.archive.RecordingWriter.Context;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 
 /**
  * Consumes an {@link Image} and records data to file using an {@link RecordingWriter}.
@@ -35,6 +37,7 @@ class RecordingSession implements Session
     private final UnsafeBuffer descriptorBuffer;
     private final RecordingEventsProxy recordingEventsProxy;
     private final Image image;
+    private final AtomicCounter position;
     private final RecordingWriter.Context context;
 
     private RecordingWriter recordingWriter;
@@ -45,12 +48,14 @@ class RecordingSession implements Session
         final UnsafeBuffer descriptorBuffer,
         final RecordingEventsProxy recordingEventsProxy,
         final Image image,
-        final RecordingWriter.Context context)
+        final AtomicCounter position,
+        final Context context)
     {
         this.recordingId = recordingId;
         this.descriptorBuffer = descriptorBuffer;
         this.recordingEventsProxy = recordingEventsProxy;
         this.image = image;
+        this.position = position;
         this.context = context;
     }
 
@@ -98,7 +103,7 @@ class RecordingSession implements Session
         RecordingWriter recordingWriter = null;
         try
         {
-            recordingWriter = new RecordingWriter(context, descriptorBuffer);
+            recordingWriter = new RecordingWriter(context, descriptorBuffer, position);
         }
         catch (final Exception ex)
         {

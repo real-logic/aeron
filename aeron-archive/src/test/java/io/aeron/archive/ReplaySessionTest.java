@@ -26,6 +26,7 @@ import org.agrona.BufferUtil;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -67,6 +68,8 @@ public class ReplaySessionTest
     private final Publication mockControlPub = Mockito.mock(Publication.class);
     private final ArchiveConductor.ReplayPublicationSupplier mockReplyPubSupplier =
         Mockito.mock(ArchiveConductor.ReplayPublicationSupplier.class);
+    private final AtomicCounter position = mock(AtomicCounter.class);
+
     private int messageCounter = 0;
 
     private File archiveDir = makeTempDir();
@@ -74,10 +77,19 @@ public class ReplaySessionTest
     private EpochClock epochClock = mock(EpochClock.class);
     private RecordingWriter.Context context;
     private UnsafeBuffer descriptorBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(Catalog.RECORD_LENGTH));
+    private long positionLong;
 
     @Before
     public void before() throws Exception
     {
+        when(position.getWeak()).then(invocation -> positionLong);
+        when(position.get()).then(invocation -> positionLong);
+        doAnswer(invocation ->
+        {
+            positionLong = invocation.getArgument(0);
+            return null;
+        }).when(position).setOrdered(anyLong());
+
         context = new RecordingWriter.Context()
             .archiveDir(archiveDir)
             .epochClock(epochClock);
@@ -97,7 +109,7 @@ public class ReplaySessionTest
             "sourceIdentity");
 
         when(epochClock.time()).thenReturn(TIME);
-        try (RecordingWriter writer = new RecordingWriter(context, descriptorBuffer))
+        try (RecordingWriter writer = new RecordingWriter(context, descriptorBuffer, position))
         {
 
             final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
@@ -397,7 +409,7 @@ public class ReplaySessionTest
             "channel",
             "sourceIdentity");
 
-        try (RecordingWriter writer = new RecordingWriter(context, descriptorBuffer))
+        try (RecordingWriter writer = new RecordingWriter(context, descriptorBuffer, position))
         {
             when(epochClock.time()).thenReturn(TIME);
 

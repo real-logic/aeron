@@ -26,13 +26,13 @@ import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
@@ -41,8 +41,8 @@ import static java.nio.file.StandardOpenOption.*;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.*;
 
 public class RecordingSessionTest
 {
@@ -62,6 +62,7 @@ public class RecordingSessionTest
     private static final int INITIAL_TERM_ID = 0;
 
     private final RecordingEventsProxy recordingEventsProxy = mock(RecordingEventsProxy.class);
+    private final AtomicCounter position = mock(AtomicCounter.class);
     private Image image = mockImage(
         SESSION_ID, INITIAL_TERM_ID, SOURCE_IDENTITY, TERM_BUFFER_LENGTH, mockSubscription(CHANNEL, STREAM_ID));
     private File tempDirForTest = TestUtil.makeTempDir();
@@ -73,9 +74,19 @@ public class RecordingSessionTest
     private RecordingWriter.Context context;
     private UnsafeBuffer descriptorBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(Catalog.RECORD_LENGTH));
 
+    private long positionLong;
+
     @Before
-    public void before() throws IOException
+    public void before() throws Exception
     {
+        when(position.getWeak()).then(invocation -> positionLong);
+        when(position.get()).then(invocation -> positionLong);
+        doAnswer(invocation ->
+        {
+            positionLong = invocation.getArgument(0);
+            return null;
+        }).when(position).setOrdered(anyLong());
+
         termFile = File.createTempFile("test.rec", "sourceIdentity");
 
         mockLogBufferChannel = FileChannel.open(termFile.toPath(), CREATE, READ, WRITE);
@@ -132,7 +143,7 @@ public class RecordingSessionTest
         when(epochClock.time()).thenReturn(42L);
 
         final RecordingSession session = new RecordingSession(
-            RECORDING_ID, descriptorBuffer, recordingEventsProxy, image, context);
+            RECORDING_ID, descriptorBuffer, recordingEventsProxy, image, position, context);
 
         assertEquals(RECORDING_ID, session.sessionId());
 

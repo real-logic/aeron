@@ -24,6 +24,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,6 +67,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     private final EpochClock epochClock;
     private final UnsafeBuffer descriptorBuffer;
     private final RecordingDescriptorEncoder descriptorEncoder;
+    private final AtomicCounter stopPosition;
     private final int segmentFileLength;
     private final long startPosition;
 
@@ -78,14 +80,15 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     private FileChannel recordingFileChannel;
 
     private boolean closed = false;
-    private long stopPosition = Catalog.NULL_POSITION;
-    private long startTimestamp = Catalog.NULL_TIME;
-    private long stopTimestamp = Catalog.NULL_TIME;
 
-    RecordingWriter(final Context context, final UnsafeBuffer descriptorBuffer)
+    RecordingWriter(
+        final Context context,
+        final UnsafeBuffer descriptorBuffer,
+        final AtomicCounter stopPosition)
     {
         this.descriptorBuffer = descriptorBuffer;
         descriptorEncoder = new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH);
+        this.stopPosition = stopPosition;
         final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder().wrap(
             descriptorBuffer,
             Catalog.CATALOG_FRAME_LENGTH,
@@ -105,7 +108,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         this.recordingId = descriptorDecoder.recordingId();
         this.startPosition = descriptorDecoder.startPosition();
         this.initialRecordingTermId = (int) (descriptorDecoder.initialTermId() + (startPosition / termBufferLength));
-        this.stopPosition = startPosition;
+        this.stopPosition.setOrdered(startPosition);
 
         this.termsMask = (segmentFileLength / this.termBufferLength) - 1;
         if (((termsMask + 1) & termsMask) != 0)
@@ -179,8 +182,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         if (descriptorBuffer != null)
         {
             UnsafeAccess.UNSAFE.storeFence();
-            stopTimestamp = epochClock.time();
-            descriptorEncoder.stopTimestamp(stopTimestamp);
+            descriptorEncoder.stopTimestamp(epochClock.time());
             UnsafeAccess.UNSAFE.storeFence();
         }
 
@@ -188,6 +190,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         {
             CloseHelper.close(recordingFileChannel);
         }
+        stopPosition.close();
     }
 
     /**
@@ -254,11 +257,10 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     long stopPosition()
     {
-        return stopPosition;
+        return stopPosition.getWeak();
     }
 
-    // extend for testing
-    int writeData(final ByteBuffer buffer, final int position, final FileChannel fileChannel) throws IOException
+    private int writeData(final ByteBuffer buffer, final int position, final FileChannel fileChannel) throws IOException
     {
         return fileChannel.write(buffer, position);
     }
@@ -321,8 +323,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         validateStartTermOffset(termOffset);
 
         segmentPosition = termOffset;
-        startTimestamp = epochClock.time();
-        descriptorEncoder.startTimestamp(startTimestamp);
+        descriptorEncoder.startTimestamp(epochClock.time());
         newRecordingSegmentFile();
 
         if (segmentPosition != 0)
@@ -333,11 +334,10 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     private void afterWrite(final int blockLength)
     {
-        UnsafeAccess.UNSAFE.storeFence();
         segmentPosition += blockLength;
-        stopPosition += blockLength;
-        descriptorEncoder.stopPosition(stopPosition);
-        UnsafeAccess.UNSAFE.storeFence();
+        final long newPosition = stopPosition.getWeak() + blockLength;
+        descriptorEncoder.stopPosition(newPosition);
+        stopPosition.setOrdered(newPosition);
     }
 
     private void validateStartTermOffset(final int termOffset)

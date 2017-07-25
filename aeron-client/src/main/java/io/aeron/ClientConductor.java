@@ -52,7 +52,6 @@ class ClientConductor implements Agent, DriverEventsListener
     private long timeOfLastKeepaliveNs;
     private long timeOfLastCheckResourcesNs;
     private long timeOfLastWorkNs;
-    private boolean isDriverActive = true;
     private volatile boolean isClosed;
 
     private final Lock clientLock;
@@ -134,6 +133,10 @@ class ClientConductor implements Agent, DriverEventsListener
                 if (!isClosed)
                 {
                     workCount = doWork(NO_CORRELATION_ID, null);
+                }
+                else
+                {
+                    throw new AgentTerminationException();
                 }
             }
             finally
@@ -428,10 +431,6 @@ class ClientConductor implements Agent, DriverEventsListener
             workCount += onCheckTimeouts();
             workCount += driverEventsAdapter.receive(correlationId, expectedChannel);
         }
-        catch (final AgentTerminationException ex)
-        {
-            throw ex;
-        }
         catch (final Throwable throwable)
         {
             errorHandler.onError(throwable);
@@ -489,11 +488,6 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             throw new IllegalStateException("Aeron client is closed");
         }
-
-        if (!isDriverActive)
-        {
-            throw new DriverTimeoutException("MediaDriver is inactive");
-        }
     }
 
     private int onCheckTimeouts()
@@ -509,16 +503,18 @@ class ClientConductor implements Agent, DriverEventsListener
         if (nowNs > (timeOfLastWorkNs + interServiceTimeoutNs))
         {
             final int lingeringResourcesSize = lingeringResources.size();
+
             forceClosePublicationsAndSubscriptions();
+
             if (lingeringResources.size() > lingeringResourcesSize)
             {
                 sleep(1000);
             }
 
-            errorHandler.onError(new ConductorServiceTimeoutException(
-                "Timeout between service calls over " + interServiceTimeoutNs + "ns"));
+            onClose();
 
-            throw new AgentTerminationException();
+            throw new ConductorServiceTimeoutException(
+                "Timeout between service calls exceeds " + interServiceTimeoutNs + "ns");
         }
 
         timeOfLastWorkNs = nowNs;
@@ -555,18 +551,12 @@ class ClientConductor implements Agent, DriverEventsListener
 
     private void checkDriverHeartbeat()
     {
-        if (isDriverActive)
+        final long deadlineMs = driverProxy.timeOfLastDriverKeepaliveMs() + driverTimeoutMs;
+        if (epochClock.time() > deadlineMs)
         {
-            final long deadlineMs = driverProxy.timeOfLastDriverKeepaliveMs() + driverTimeoutMs;
-            if ((epochClock.time() > deadlineMs))
-            {
-                isDriverActive = false;
+            onClose();
 
-                errorHandler.onError(new DriverTimeoutException(
-                    "MediaDriver has been inactive for over " + driverTimeoutMs + "ms"));
-
-                throw new AgentTerminationException();
-            }
+            throw new DriverTimeoutException("MediaDriver has been inactive for over " + driverTimeoutMs + "ms");
         }
     }
 

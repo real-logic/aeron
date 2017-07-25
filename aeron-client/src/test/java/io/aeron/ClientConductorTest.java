@@ -49,7 +49,6 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
 
 public class ClientConductorTest
@@ -564,18 +563,11 @@ public class ClientConductorTest
 
         timeNs += (TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS) + 1);
 
-        try
-        {
-            conductor.doWork();
-        }
-        catch (final AgentTerminationException ex)
-        {
-            verify(mockClientErrorHandler).onError(any(ConductorServiceTimeoutException.class));
+        conductor.doWork();
 
-            return;
-        }
+        verify(mockClientErrorHandler).onError(any(ConductorServiceTimeoutException.class));
 
-        fail("Expected " + AgentTerminationException.class.getName());
+        assertTrue(conductor.isClosed());
     }
 
     private void whenReceiveBroadcastOnMessage(

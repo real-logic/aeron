@@ -27,6 +27,7 @@
 #include "ClientConductor.h"
 #include "concurrent/SleepingIdleStrategy.h"
 #include "concurrent/AgentRunner.h"
+#include "concurrent/AgentInvoker.h"
 #include "Publication.h"
 #include "Subscription.h"
 #include "Context.h"
@@ -222,6 +223,16 @@ public:
         return m_toDriverRingBuffer.nextCorrelationId();
     }
 
+    /**
+     * Return the AgentInvoker for the client conductor.
+     *
+     * @return AgenInvoker for the conductor.
+     */
+    inline AgentInvoker<ClientConductor>& conductorAgentInvoker()
+    {
+        return m_conductorInvoker;
+    }
+
 private:
     std::random_device m_randomDevice;
     std::default_random_engine m_randomEngine;
@@ -244,6 +255,7 @@ private:
     ClientConductor m_conductor;
     SleepingIdleStrategy m_idleStrategy;
     AgentRunner<ClientConductor, SleepingIdleStrategy> m_conductorRunner;
+    AgentInvoker<ClientConductor> m_conductorInvoker;
 
     MemoryMappedFile::ptr_t mapCncFile(Context& context);
 };

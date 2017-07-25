@@ -58,14 +58,29 @@ Aeron::Aeron(Context &context) :
         CncFileDescriptor::clientLivenessTimeout(m_cncBuffer),
         context.m_publicationConnectionTimeout),
     m_idleStrategy(IDLE_SLEEP_MS),
-    m_conductorRunner(m_conductor, m_idleStrategy, m_context.m_exceptionHandler)
+    m_conductorRunner(m_conductor, m_idleStrategy, m_context.m_exceptionHandler),
+    m_conductorInvoker(m_conductor, m_context.m_exceptionHandler)
 {
-    m_conductorRunner.start();
+    if (m_context.m_useConductorAgentInvoker)
+    {
+        m_conductorInvoker.start();
+    }
+    else
+    {
+        m_conductorRunner.start();
+    }
 }
 
 Aeron::~Aeron()
 {
-    m_conductorRunner.close();
+    if (m_context.m_useConductorAgentInvoker)
+    {
+        m_conductorInvoker.close();
+    }
+    else
+    {
+        m_conductorRunner.close();
+    }
 
     // memory mapped files should be free'd by the destructor of the shared_ptr
 }

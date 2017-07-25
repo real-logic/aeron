@@ -284,6 +284,18 @@ public:
         return *this;
     }
 
+    /**
+     * Set whether to use an invoker to control the conductor agent or spawn a thread.
+     *
+     * @param useConductorAgentInvoker to use an invoker or not.
+     * @return reference to this Context instance
+     */
+    inline this_t& useConductorAgentInvoker(bool useConductorAgentInvoker)
+    {
+        m_useConductorAgentInvoker = useConductorAgentInvoker;
+        return *this;
+    }
+
     inline static std::string tmpDir()
     {
 #if defined(_MSC_VER)
@@ -350,6 +362,7 @@ private:
     long m_mediaDriverTimeout = NULL_TIMEOUT;
     long m_resourceLingerTimeout = NULL_TIMEOUT;
     long m_publicationConnectionTimeout = NULL_TIMEOUT;
+    bool m_useConductorAgentInvoker = false;
 };
 
 }

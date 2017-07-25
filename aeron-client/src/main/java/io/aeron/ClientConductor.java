@@ -130,14 +130,12 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             try
             {
-                if (!isClosed)
-                {
-                    workCount = doWork(NO_CORRELATION_ID, null);
-                }
-                else
+                if (isClosed)
                 {
                     throw new AgentTerminationException();
                 }
+
+                workCount = doWork(NO_CORRELATION_ID, null);
             }
             finally
             {

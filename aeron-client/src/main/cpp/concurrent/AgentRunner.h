@@ -57,26 +57,45 @@ public:
      */
     inline void run()
     {
+        try
+        {
+            m_agent.onStart();
+        }
+        catch (const util::SourcedException &exception)
+        {
+            m_exceptionHandler(exception);
+            m_running = false;
+        }
+
         while (m_running)
         {
             try
             {
-                const int workCount = m_agent.doWork();
-                m_idleStrategy.idle(workCount);
+                m_idleStrategy.idle(m_agent.doWork());
             }
             catch (const util::SourcedException &exception)
             {
                 m_exceptionHandler(exception);
             }
         }
+
+        try
+        {
+            m_agent.onClose();
+        }
+        catch (const util::SourcedException &exception)
+        {
+            m_exceptionHandler(exception);
+        }
+
     }
 
     inline void close()
     {
         m_running = false;
         m_thread.join();
-        m_agent.onClose();
     }
+
 private:
     Agent& m_agent;
     IdleStrategy& m_idleStrategy;

@@ -1466,7 +1466,7 @@ void aeron_driver_conductor_unlink_all_subscribeable(aeron_driver_conductor_t *c
     link->subscribeable_list.capacity = 0;
 }
 
-/* TODO: add replay creation */
+/* TODO: add replay params from URIs */
 /* TODO: add params from URIs */
 
 int aeron_driver_conductor_on_add_ipc_publication(

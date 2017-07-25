@@ -78,6 +78,10 @@ public:
 
     virtual ~ClientConductor();
 
+    void onStart()
+    {
+    }
+
     int doWork()
     {
         int workCount = 0;

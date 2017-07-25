@@ -74,16 +74,17 @@ class SessionWorker<T extends Session> implements Agent
         isClosed = true;
 
         preSessionsClose();
-        sessions.forEach(this::quietCloseSession);
+        sessions.forEach(this::closeSession);
         sessions.clear();
         postSessionsClose();
     }
 
-    private void quietCloseSession(final T session)
+    protected void closeSession(final T session)
     {
         try
         {
-            closeSession(session);
+            session.abort();
+            session.close();
         }
         catch (final Exception e)
         {
@@ -94,12 +95,6 @@ class SessionWorker<T extends Session> implements Agent
     protected int preWork()
     {
         return 0;
-    }
-
-    protected void closeSession(final T session)
-    {
-        session.abort();
-        session.close();
     }
 
     protected void postSessionsClose()

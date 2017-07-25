@@ -119,14 +119,15 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         try (FileChannel channel = FileChannel.open(countersFile.toPath(), CREATE, READ, WRITE, SPARSE))
         {
+            final int maxPositionCounters = this.maxConcurrentRecordings * 2;
             countersMappedBBuffer =
-                channel.map(MapMode.READ_WRITE, 0, maxConcurrentRecordings * (METADATA_LENGTH + COUNTER_LENGTH));
+                channel.map(MapMode.READ_WRITE, 0, maxPositionCounters * (METADATA_LENGTH + COUNTER_LENGTH));
             final UnsafeBuffer countersMetaBuffer =
-                new UnsafeBuffer(countersMappedBBuffer, 0, maxConcurrentRecordings * METADATA_LENGTH);
+                new UnsafeBuffer(countersMappedBBuffer, 0, maxPositionCounters * METADATA_LENGTH);
             final UnsafeBuffer countersValuesBuffer = new UnsafeBuffer(
                 countersMappedBBuffer,
-                maxConcurrentRecordings * METADATA_LENGTH,
-                maxConcurrentRecordings * COUNTER_LENGTH);
+                maxPositionCounters * METADATA_LENGTH,
+                maxPositionCounters * COUNTER_LENGTH);
             recordingPositionsManager = new CountersManager(countersMetaBuffer, countersValuesBuffer);
             if (!filePreExists && archiveDirChannel != null && fileSyncLevel > 0)
             {
@@ -440,6 +441,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         }
 
         final int newId = replaySessionId++;
+        final AtomicCounter recordingPosition = recordingPositionByIdMap.get(recordingId);
         final ReplaySession replaySession = new ReplaySession(
             position,
             length,
@@ -452,7 +454,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             epochClock,
             replayChannel,
             replayStreamId,
-            descriptorBuffer);
+            descriptorBuffer,
+            recordingPosition);
 
         replaySessionByIdMap.put(newId, replaySession);
         replayer.addSession(replaySession);
@@ -496,6 +499,12 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     private void startImageRecording(final String originalChannel, final Image image)
     {
+        if (recordingSessionByIdMap.size() >= 2 * maxConcurrentRecordings)
+        {
+            throw new IllegalStateException("Too many recordings, can't record: '" + originalChannel + ":" +
+                image.subscription().streamId() + "'");
+        }
+
         final Subscription subscription = image.subscription();
         final int sessionId = image.sessionId();
         final int streamId = subscription.streamId();
@@ -570,8 +579,9 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     void closeRecordingSession(final RecordingSession session)
     {
         recordingSessionByIdMap.remove(session.sessionId());
-        recordingPositionByIdMap.remove(session.sessionId());
         closeSession(session);
+        final AtomicCounter position = recordingPositionByIdMap.remove(session.sessionId());
+        position.close();
     }
 
     void closeReplaySession(final ReplaySession session)

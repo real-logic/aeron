@@ -174,7 +174,8 @@ public class TestUtil
             descriptorDecoder,
             archiveDir,
             RecordingFragmentReader.NULL_POSITION,
-            RecordingFragmentReader.NULL_LENGTH);
+            RecordingFragmentReader.NULL_LENGTH,
+            null);
     }
 
     public static TestWatcher newWatcher(final Class clazz, final long seed)

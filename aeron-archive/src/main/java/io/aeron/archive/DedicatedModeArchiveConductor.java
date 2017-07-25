@@ -109,26 +109,17 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         Session session;
         for (i = 0; i < COMMAND_LIMIT && (session = closeQueue.poll()) != null; i++)
         {
-            try
+            if (session instanceof RecordingSession)
             {
-                if (session instanceof RecordingSession)
-                {
-                    closeRecordingSession((RecordingSession)session);
-                }
-                else if (session instanceof ReplaySession)
-                {
-                    final ReplaySession replaySession = (ReplaySession) session;
-                    replaySession.setThreadLocalControlSessionProxy(controlSessionProxy);
-                    closeReplaySession(replaySession);
-                }
-                else
-                {
-                    closeSession(session);
-                }
-            }
-            catch (final Exception e)
+                closeRecordingSession((RecordingSession) session);
+            } else if (session instanceof ReplaySession)
             {
-                errorHandler.onError(e);
+                final ReplaySession replaySession = (ReplaySession) session;
+                replaySession.setThreadLocalControlSessionProxy(controlSessionProxy);
+                closeReplaySession(replaySession);
+            } else
+            {
+                closeSession(session);
             }
         }
 

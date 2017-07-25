@@ -128,9 +128,9 @@ class RecordingSession implements Session
 
     public void close()
     {
+        state = State.CLOSED;
         CloseHelper.quietClose(recordingWriter);
         recordingEventsProxy.stopped(recordingId, recordingWriter.startPosition(), recordingWriter.stopPosition());
-        state = State.CLOSED;
     }
 
     private int record()

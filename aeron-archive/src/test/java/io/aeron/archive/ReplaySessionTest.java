@@ -267,7 +267,7 @@ public class ReplaySessionTest
             epochClock,
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
-            descriptorBuffer);
+            descriptorBuffer, position);
     }
 
     @Test
@@ -566,7 +566,7 @@ public class ReplaySessionTest
             epochClock,
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
-            descriptorBuffer);
+            descriptorBuffer, position);
     }
 
     private void validateFrame(final UnsafeBuffer buffer, final int message, final byte flags)

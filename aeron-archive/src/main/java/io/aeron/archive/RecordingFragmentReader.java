@@ -22,6 +22,7 @@ import org.agrona.BitUtil;
 import org.agrona.IoUtil;
 import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,6 +58,7 @@ class RecordingFragmentReader implements AutoCloseable
     private final int mtuLength;
 
     private long fromPosition;
+    private final AtomicCounter recordingPosition;
 
     private final RecordingDescriptorDecoder descriptorDecoder;
 
@@ -77,7 +79,8 @@ class RecordingFragmentReader implements AutoCloseable
         final RecordingDescriptorDecoder descriptorDecoder,
         final File archiveDir,
         final long position,
-        final long length) throws IOException
+        final long length,
+        final AtomicCounter recordingPosition) throws IOException
     {
         this.descriptorDecoder = descriptorDecoder;
         this.mtuLength = descriptorDecoder.mtuLength();
@@ -90,7 +93,9 @@ class RecordingFragmentReader implements AutoCloseable
         this.archiveDir = archiveDir;
 
         this.fromPosition = position == NULL_POSITION ? startPosition : position;
-        final long replayLength = length == NULL_LENGTH ? Long.MAX_VALUE : length;
+        this.recordingPosition = recordingPosition;
+        final long maxLength = recordingPosition == null ? stopPosition - fromPosition : Long.MAX_VALUE;
+        final long replayLength = length == NULL_LENGTH ? maxLength : Math.min(length, maxLength);
 
         segmentFileIndex = segmentFileIndex(startPosition, fromPosition, segmentFileLength);
 
@@ -146,8 +151,7 @@ class RecordingFragmentReader implements AutoCloseable
             return 0;
         }
 
-        final long oldStopPosition = this.stopPosition;
-        if (replayPosition == oldStopPosition && !refreshStopPositionAndLimit(replayPosition, oldStopPosition))
+        if (newDataUnavailable())
         {
             return 0;
         }
@@ -187,6 +191,7 @@ class RecordingFragmentReader implements AutoCloseable
             }
 
             polled++;
+            // TODO: if length crosses a fragment boundary we will send more than requested, consider under supplying
             if ((replayLimit - replayPosition) <= 0)
             {
                 isDone = true;
@@ -197,10 +202,22 @@ class RecordingFragmentReader implements AutoCloseable
         return polled;
     }
 
+    private boolean newDataUnavailable()
+    {
+        if (recordingPosition != null &&
+            replayPosition == this.stopPosition &&
+            !refreshStopPositionAndLimit(replayPosition, this.stopPosition))
+        {
+            return true;
+        }
+        return false;
+    }
+
     private boolean refreshStopPositionAndLimit(final long replayPosition, final long oldStopPosition)
     {
         final long stopTimestamp = currentRecordingStopTimestamp();
-        final long newStopPosition = currentRecordingStopPosition();
+        final long recordingPosition = this.recordingPosition.get();
+        final long newStopPosition = this.recordingPosition.isClosed() ? descriptorStopPosition() : recordingPosition;
 
         if (stopTimestamp != Catalog.NULL_TIME && (newStopPosition - this.replayLimit) < 0)
         {
@@ -228,7 +245,7 @@ class RecordingFragmentReader implements AutoCloseable
         return descriptorDecoder.stopTimestamp();
     }
 
-    private long currentRecordingStopPosition()
+    private long descriptorStopPosition()
     {
         UnsafeAccess.UNSAFE.loadFence();
         return descriptorDecoder.stopPosition();
@@ -263,7 +280,7 @@ class RecordingFragmentReader implements AutoCloseable
     {
         final String recordingDataFileName = recordingDataFileName(recordingId, segmentFileIndex);
         final File recordingDataFile = new File(archiveDir, recordingDataFileName);
-        final long stopPosition = currentRecordingStopPosition();
+        final long stopPosition = descriptorStopPosition();
 
         if (!recordingDataFile.exists())
         {

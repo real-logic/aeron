@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
+import io.aeron.archive.ArchiveConductor.ReplayPublicationSupplier;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
@@ -26,6 +27,7 @@ import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
 import java.io.IOException;
@@ -79,7 +81,7 @@ class ReplaySession implements Session
     ReplaySession(
         final long replayPosition,
         final long replayLength,
-        final ArchiveConductor.ReplayPublicationSupplier supplier,
+        final ReplayPublicationSupplier supplier,
         final Publication controlPublication,
         final File archiveDir,
         final ControlSessionProxy threadLocalControlSessionProxy,
@@ -88,7 +90,8 @@ class ReplaySession implements Session
         final EpochClock epochClock,
         final String replayChannel,
         final int replayStreamId,
-        final UnsafeBuffer descriptorBuffer)
+        final UnsafeBuffer descriptorBuffer,
+        final AtomicCounter recordingPosition)
     {
         this.controlPublication = controlPublication;
         this.threadLocalControlSessionProxy = threadLocalControlSessionProxy;
@@ -134,7 +137,8 @@ class ReplaySession implements Session
                 descriptorDecoder,
                 archiveDir,
                 replayPosition,
-                replayLength);
+                replayLength,
+                recordingPosition);
         }
         catch (final IOException ex)
         {

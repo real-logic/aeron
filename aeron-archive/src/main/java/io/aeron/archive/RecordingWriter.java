@@ -190,7 +190,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         {
             CloseHelper.close(recordingFileChannel);
         }
-        stopPosition.close();
     }
 
     /**

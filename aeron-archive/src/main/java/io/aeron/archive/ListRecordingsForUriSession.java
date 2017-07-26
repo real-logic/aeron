@@ -21,7 +21,7 @@ import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 class ListRecordingsForUriSession extends AbstractListRecordingsSession
 {
     private static final int MAX_SCAN_PER_WORK = 16;
-    private final RecordingDescriptorDecoder decoder = new RecordingDescriptorDecoder();
+    private final RecordingDescriptorDecoder decoder;
     private final int fromIndex;
     private final int count;
     private final String channel;
@@ -39,7 +39,8 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
         final int streamId,
         final Catalog catalog,
         final ControlSessionProxy proxy,
-        final ControlSession controlSession)
+        final ControlSession controlSession,
+        final RecordingDescriptorDecoder recordingDescriptorDecoder)
     {
         super(correlationId, controlPublication, catalog, proxy, controlSession);
 
@@ -47,6 +48,7 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
         this.count = count;
         this.channel = channel;
         this.streamId = streamId;
+        this.decoder = recordingDescriptorDecoder;
     }
 
     protected int sendDescriptors()

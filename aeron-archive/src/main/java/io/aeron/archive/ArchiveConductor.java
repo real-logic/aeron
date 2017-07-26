@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.*;
 import io.aeron.archive.codecs.ControlResponseCode;
+import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.collections.IntArrayList;
@@ -56,6 +57,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final Long2ObjectHashMap<AtomicCounter> recordingPositionByIdMap = new Long2ObjectHashMap<>();
     private final Map<String, Subscription> subscriptionMap = new HashMap<>();
     private final ReplayPublicationSupplier newReplayPublication = this::newReplayPublication;
+    private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
 
     private final Aeron aeron;
     private final AgentInvoker aeronClientAgentInvoker;
@@ -145,8 +147,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             .recordingFileLength(ctx.segmentFileLength())
             .epochClock(ctx.epochClock())
             .fileSyncLevel(fileSyncLevel);
-
-
     }
 
     public void onStart()
@@ -339,7 +339,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 final Subscription subscription = aeron.addSubscription(
                     strippedChannel,
                     streamId,
-                    image -> startImageRecording(originalChannel, image),
+                    (image) -> startImageRecording(originalChannel, image),
                     null);
 
                 subscriptionMap.put(key, subscription);
@@ -387,7 +387,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             streamId,
             catalog,
             controlSessionProxy,
-            controlSession);
+            controlSession,
+            recordingDescriptorDecoder);
     }
 
     void stopReplay(final long correlationId, final Publication controlPublication, final long replayId)

@@ -66,7 +66,9 @@ public class ListRecordingsForUriSessionTest
             1,
             catalog,
             controlSessionProxy,
-            controlSession);
+            controlSession,
+            recordingDescriptorDecoder);
+
         session.doWork();
         assertThat(session.isDone(), is(false));
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
@@ -87,7 +89,8 @@ public class ListRecordingsForUriSessionTest
             1,
             catalog,
             controlSessionProxy,
-            controlSession);
+            controlSession,
+            recordingDescriptorDecoder);
 
         session.doWork();
         assertThat(session.isDone(), is(false));
@@ -119,7 +122,8 @@ public class ListRecordingsForUriSessionTest
             1,
             catalog,
             controlSessionProxy,
-            controlSession);
+            controlSession,
+            recordingDescriptorDecoder);
 
         session.doWork();
         assertThat(session.isDone(), is(false));
@@ -141,7 +145,8 @@ public class ListRecordingsForUriSessionTest
             1,
             catalog,
             controlSessionProxy,
-            controlSession);
+            controlSession,
+            recordingDescriptorDecoder);
 
         session.doWork();
         assertThat(session.isDone(), is(false));

@@ -176,7 +176,7 @@ class Catalog implements AutoCloseable
             return false;
         }
 
-        buffer.wrap(indexMappedBBuffer, (int) (recordingId * RECORD_LENGTH), RECORD_LENGTH);
+        buffer.wrap(indexMappedBBuffer, (int)(recordingId * RECORD_LENGTH), RECORD_LENGTH);
 
         return true;
     }
@@ -326,6 +326,7 @@ class Catalog implements AutoCloseable
             }
             encoder.stopTimestamp(epochClock.time());
         }
+
         nextRecordingId = decoder.recordingId() + 1;
     }
 

@@ -61,7 +61,7 @@ public final class AeronArchive implements AutoCloseable
             }
 
             controlResponsePoller = new ControlResponsePoller(
-                aeron.addSubscription(context.controlRequestChannel(), context.controlRequestStreamId),
+                aeron.addSubscription(context.controlResponseChannel(), context.controlResponseStreamId()),
                 RESPONSE_FRAGMENT_LIMIT);
         }
         catch (final Exception ex)

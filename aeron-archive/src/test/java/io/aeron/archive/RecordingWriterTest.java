@@ -38,6 +38,8 @@ public class RecordingWriterTest
     private static final int SYNC_LEVEL = 2;
     private static final String CHANNEL = "channel";
     private static final String SOURCE = "source";
+    private static final long START_TIMESTAMP = 0L;
+    public static final long STOP_TIMESTAMP = 43L;
     private File archiveDir = TestUtil.makeTempDir();
     private EpochClock epochClock = Mockito.mock(EpochClock.class);
     private final RecordingWriter.Context recordingCtx = new RecordingWriter.Context();
@@ -93,6 +95,7 @@ public class RecordingWriterTest
         Catalog.initDescriptor(
             descriptorEncoder,
             RECORDING_ID,
+            START_TIMESTAMP,
             START_POSITION,
             INITIAL_TERM_ID,
             recordingCtx.segmentFileLength,
@@ -106,7 +109,7 @@ public class RecordingWriterTest
 
         try (RecordingWriter writer = Mockito.spy(new RecordingWriter(recordingCtx, descriptorBuffer, position)))
         {
-            assertEquals(Catalog.NULL_TIME, descriptorDecoder.startTimestamp());
+            assertEquals(START_TIMESTAMP, descriptorDecoder.startTimestamp());
 
             when(mockDataFileChannel.transferTo(eq(0L), eq(256L), any(FileChannel.class))).then(
                 (invocation) ->
@@ -119,15 +122,15 @@ public class RecordingWriterTest
             writer.onBlock(
                 mockDataFileChannel, 0, mockTermBuffer, START_POSITION, 256, SESSION_ID, INITIAL_TERM_ID);
 
-            when(epochClock.time()).thenReturn(43L);
+            when(epochClock.time()).thenReturn(STOP_TIMESTAMP);
 
             final InOrder inOrder = Mockito.inOrder(writer);
             inOrder.verify(writer).forceData(eq(mockArchiveDirFileChannel), eq(SYNC_LEVEL == 2));
             inOrder.verify(writer).forceData(any(FileChannel.class), eq(SYNC_LEVEL == 2));
         }
 
-        assertEquals(42L, descriptorDecoder.startTimestamp());
-        assertEquals(43L, descriptorDecoder.stopTimestamp());
+        assertEquals(START_TIMESTAMP, descriptorDecoder.startTimestamp());
+        assertEquals(STOP_TIMESTAMP, descriptorDecoder.stopTimestamp());
         assertEquals(START_POSITION, descriptorDecoder.startPosition());
         assertEquals(START_POSITION + 256, descriptorDecoder.stopPosition());
     }

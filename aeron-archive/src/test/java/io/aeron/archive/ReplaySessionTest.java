@@ -62,6 +62,7 @@ public class ReplaySessionTest
     private static final int FRAME_LENGTH = 1024;
     public static final int SESSION_ID = 1;
     public static final int STREAM_ID = 1;
+    public static final long START_TIMESTAMP = 0L;
 
     private final ExclusivePublication mockReplayPub = mock(ExclusivePublication.class);
     private final Publication mockControlPub = mock(Publication.class);
@@ -98,6 +99,7 @@ public class ReplaySessionTest
         Catalog.initDescriptor(
             new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH),
             RECORDING_ID,
+            START_TIMESTAMP,
             START_POSITION,
             INITIAL_TERM_ID,
             context.segmentFileLength,
@@ -399,6 +401,7 @@ public class ReplaySessionTest
         Catalog.initDescriptor(
             new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH),
             recordingId,
+            START_TIMESTAMP,
             START_POSITION,
             INITIAL_TERM_ID,
             context.segmentFileLength,

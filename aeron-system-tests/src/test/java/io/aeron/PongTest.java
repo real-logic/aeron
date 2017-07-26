@@ -42,9 +42,6 @@ public class PongTest
 
     private static final int PING_STREAM_ID = 1;
     private static final int PONG_STREAM_ID = 2;
-    private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
-
-    private final MediaDriver.Context context = new MediaDriver.Context();
 
     private Aeron pingClient;
     private Aeron pongClient;
@@ -60,9 +57,7 @@ public class PongTest
     @Before
     public void setUp() throws Exception
     {
-        context.threadingMode(THREADING_MODE);
-
-        driver = MediaDriver.launch(context);
+        driver = MediaDriver.launch(new MediaDriver.Context().threadingMode(ThreadingMode.SHARED));
         pingClient = Aeron.connect();
         pongClient = Aeron.connect();
 
@@ -80,7 +75,7 @@ public class PongTest
         pingClient.close();
         driver.close();
 
-        context.deleteAeronDirectory();
+        driver.context().deleteAeronDirectory();
     }
 
     @Test

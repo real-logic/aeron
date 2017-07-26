@@ -49,7 +49,6 @@ public class MultiDestinationCastTest
     private static final String SUB2_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:54327";
 
     private static final int STREAM_ID = 1;
-    private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
 
     private static final int TERM_BUFFER_LENGTH = 64 * 1024;
     private static final int NUM_MESSAGES_PER_TERM = 64;
@@ -58,7 +57,6 @@ public class MultiDestinationCastTest
     private static final String ROOT_DIR =
         IoUtil.tmpDirName() + "aeron-system-tests-" + UUID.randomUUID().toString() + File.separator;
 
-    private final MediaDriver.Context driverAContext = new MediaDriver.Context();
     private final MediaDriver.Context driverBContext = new MediaDriver.Context();
 
     private Aeron clientA;
@@ -80,13 +78,14 @@ public class MultiDestinationCastTest
 
         buffer.putInt(0, 1);
 
-        driverAContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
+        final MediaDriver.Context driverAContext = new MediaDriver.Context()
+            .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
-            .threadingMode(THREADING_MODE);
+            .threadingMode(ThreadingMode.SHARED);
 
         driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
-            .threadingMode(THREADING_MODE);
+            .threadingMode(ThreadingMode.SHARED);
 
         driverA = MediaDriver.launch(driverAContext);
         driverB = MediaDriver.launch(driverBContext);

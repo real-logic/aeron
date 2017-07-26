@@ -51,9 +51,6 @@ public class MultiDriverTest
     private static final String ROOT_DIR =
         IoUtil.tmpDirName() + "aeron-system-tests-" + UUID.randomUUID().toString() + File.separator;
 
-    private final MediaDriver.Context driverAContext = new MediaDriver.Context();
-    private final MediaDriver.Context driverBContext = new MediaDriver.Context();
-
     private Aeron clientA;
     private Aeron clientB;
     private MediaDriver driverA;
@@ -73,11 +70,13 @@ public class MultiDriverTest
 
         buffer.putInt(0, 1);
 
-        driverAContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
+        final MediaDriver.Context driverAContext = new MediaDriver.Context()
+            .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
             .threadingMode(THREADING_MODE);
 
-        driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
+        final MediaDriver.Context driverBContext = new MediaDriver.Context()
+            .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
             .threadingMode(THREADING_MODE);
 

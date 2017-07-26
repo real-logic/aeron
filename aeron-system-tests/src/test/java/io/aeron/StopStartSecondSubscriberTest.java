@@ -61,13 +61,10 @@ public class StopStartSecondSubscriberTest
     private final FragmentHandler fragmentHandler2 =
         (buffer, offset, length, header) -> subscriber2Count.getAndIncrement();
 
-    final MediaDriver.Context mediaDriverContext1 = new MediaDriver.Context();
-    final MediaDriver.Context mediaDriverContext2 = new MediaDriver.Context();
-
     private void launch(final String channel1, final int stream1, final String channel2, final int stream2)
     {
-        driver1 = MediaDriver.launchEmbedded(mediaDriverContext1);
-        driver2 = MediaDriver.launchEmbedded(mediaDriverContext2);
+        driver1 = MediaDriver.launchEmbedded();
+        driver2 = MediaDriver.launchEmbedded();
 
         final Aeron.Context publishingAeronContext1 = new Aeron.Context();
         final Aeron.Context subscribingAeronContext1 = new Aeron.Context();
@@ -101,8 +98,8 @@ public class StopStartSecondSubscriberTest
         driver1.close();
         driver2.close();
 
-        mediaDriverContext1.deleteAeronDirectory();
-        mediaDriverContext2.deleteAeronDirectory();
+        driver1.context().deleteAeronDirectory();
+        driver2.context().deleteAeronDirectory();
     }
 
     @Test(timeout = 10000)

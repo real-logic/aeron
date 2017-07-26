@@ -53,8 +53,6 @@ public class MultiDriverTest
 
     private final MediaDriver.Context driverAContext = new MediaDriver.Context();
     private final MediaDriver.Context driverBContext = new MediaDriver.Context();
-    private final Aeron.Context aeronAContext = new Aeron.Context();
-    private final Aeron.Context aeronBContext = new Aeron.Context();
 
     private Aeron clientA;
     private Aeron clientB;
@@ -79,18 +77,14 @@ public class MultiDriverTest
             .aeronDirectoryName(baseDirA)
             .threadingMode(THREADING_MODE);
 
-        aeronAContext.aeronDirectoryName(driverAContext.aeronDirectoryName());
-
         driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
             .threadingMode(THREADING_MODE);
 
-        aeronBContext.aeronDirectoryName(driverBContext.aeronDirectoryName());
-
         driverA = MediaDriver.launch(driverAContext);
         driverB = MediaDriver.launch(driverBContext);
-        clientA = Aeron.connect(aeronAContext);
-        clientB = Aeron.connect(aeronBContext);
+        clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverAContext.aeronDirectoryName()));
+        clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverBContext.aeronDirectoryName()));
     }
 
     @After
@@ -128,9 +122,6 @@ public class MultiDriverTest
     {
         final int numMessagesToSendPreJoin = NUM_MESSAGES_PER_TERM / 2;
         final int numMessagesToSendPostJoin = NUM_MESSAGES_PER_TERM;
-        final CountDownLatch newImageLatch = new CountDownLatch(1);
-
-        aeronBContext.availableImageHandler((image) -> newImageLatch.countDown());
 
         launch();
 
@@ -156,9 +147,9 @@ public class MultiDriverTest
                 TimeUnit.MILLISECONDS.toNanos(500));
         }
 
-        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+        final CountDownLatch newImageLatch = new CountDownLatch(1);
+        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID, (image) -> newImageLatch.countDown(), null);
 
-        // wait until new subscriber gets new image indication
         newImageLatch.await();
 
         for (int i = 0; i < numMessagesToSendPostJoin; i++)
@@ -209,9 +200,6 @@ public class MultiDriverTest
     {
         final int numMessagesToSendPreJoin = 0;
         final int numMessagesToSendPostJoin = NUM_MESSAGES_PER_TERM;
-        final CountDownLatch newImageLatch = new CountDownLatch(1);
-
-        aeronBContext.availableImageHandler((image) -> newImageLatch.countDown());
 
         launch();
 
@@ -223,9 +211,9 @@ public class MultiDriverTest
             Thread.yield();
         }
 
-        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+        final CountDownLatch newImageLatch = new CountDownLatch(1);
+        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID, (image) -> newImageLatch.countDown(), null);
 
-        // wait until new subscriber gets new image indication
         newImageLatch.await();
 
         for (int i = 0; i < numMessagesToSendPostJoin; i++)

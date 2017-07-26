@@ -40,7 +40,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 import org.junit.rules.TestWatcher;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -73,7 +72,6 @@ public class ArchiveReplayLoadTest
         4096, FrameDescriptor.FRAME_ALIGNMENT));
     private final Random rnd = new Random();
     private final long seed = System.nanoTime();
-    private final File archiveDir = TestUtil.makeTempDir();
 
     @Rule
     public final TestWatcher testWatcher = TestUtil.newWatcher(ArchiveReplayLoadTest.class, seed);
@@ -110,7 +108,7 @@ public class ArchiveReplayLoadTest
         driver = MediaDriver.launch(driverCtx);
 
         final Archiver.Context archiverCtx = new Archiver.Context()
-            .archiveDir(archiveDir)
+            .archiveDir(TestUtil.makeTempDir())
             .fileSyncLevel(0)
             .threadingMode(ArchiverThreadingMode.DEDICATED)
             .countersManager(driverCtx.countersManager())
@@ -128,9 +126,9 @@ public class ArchiveReplayLoadTest
         CloseHelper.close(archiver);
         CloseHelper.close(driver);
 
-        if (null != archiveDir)
+        if (null != archiver.context().archiveDir())
         {
-            IoUtil.delete(archiveDir, false);
+            IoUtil.delete(archiver.context().archiveDir(), false);
         }
 
         driver.context().deleteAeronDirectory();

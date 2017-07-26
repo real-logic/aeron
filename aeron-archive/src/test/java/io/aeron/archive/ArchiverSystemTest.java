@@ -32,7 +32,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -62,7 +61,6 @@ public class ArchiverSystemTest
         new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT));
     private final Random rnd = new Random();
     private final long seed = System.nanoTime();
-    private final File archiveDir = TestUtil.makeTempDir();
 
     @Rule
     public final TestWatcher testWatcher = TestUtil.newWatcher(ArchiverSystemTest.class, seed);
@@ -130,7 +128,7 @@ public class ArchiverSystemTest
         final Archiver.Context archiverCtx = new Archiver.Context()
             .fileSyncLevel(SYNC_LEVEL)
             .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
-            .archiveDir(archiveDir)
+            .archiveDir(TestUtil.makeTempDir())
             .segmentFileLength(termLength << rnd.nextInt(4))
             .threadingMode(archiverThreadingMode())
             .countersManager(driverCtx.countersManager())
@@ -149,9 +147,9 @@ public class ArchiverSystemTest
         CloseHelper.close(archiver);
         CloseHelper.close(driver);
 
-        if (null != archiveDir)
+        if (null != archiver.context().archiveDir())
         {
-            IoUtil.delete(archiveDir, false);
+            IoUtil.delete(archiver.context().archiveDir(), false);
         }
 
         driver.context().deleteAeronDirectory();
@@ -632,9 +630,9 @@ public class ArchiverSystemTest
     private void validateArchiveFile(final int messageCount, final long recordingId) throws IOException
     {
         remaining = totalDataLength;
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, () -> System.currentTimeMillis());
+        try (Catalog catalog = new Catalog(archiver.context().archiveDir(), null, 0, System::currentTimeMillis);
              RecordingFragmentReader archiveDataFileReader =
-                 newRecordingFragmentReader(catalog.wrapDescriptor(recordingId), archiveDir))
+                 newRecordingFragmentReader(catalog.wrapDescriptor(recordingId), archiver.context().archiveDir()))
         {
             fragmentCount = 0;
             remaining = totalDataLength;

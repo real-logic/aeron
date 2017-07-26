@@ -37,7 +37,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 import org.junit.rules.TestWatcher;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -67,7 +66,6 @@ public class ArchiveRecordingLoadTest
         new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT));
     private final Random rnd = new Random();
     private final long seed = System.nanoTime();
-    private final File archiveDir = TestUtil.makeTempDir();
 
     @Rule
     public final TestWatcher testWatcher = TestUtil.newWatcher(ArchiveRecordingLoadTest.class, seed);
@@ -102,7 +100,7 @@ public class ArchiveRecordingLoadTest
 
         final Archiver.Context archiverCtx = new Archiver.Context()
             .fileSyncLevel(2)
-            .archiveDir(archiveDir)
+            .archiveDir(TestUtil.makeTempDir())
             .threadingMode(ArchiverThreadingMode.DEDICATED)
             .countersManager(driverCtx.countersManager())
             .errorHandler(driverCtx.errorHandler());
@@ -120,9 +118,9 @@ public class ArchiveRecordingLoadTest
         CloseHelper.quietClose(archiver);
         CloseHelper.quietClose(driver);
 
-        if (null != archiveDir)
+        if (null != archiver.context().archiveDir())
         {
-            IoUtil.delete(archiveDir, false);
+            IoUtil.delete(archiver.context().archiveDir(), false);
         }
 
         driver.context().deleteAeronDirectory();

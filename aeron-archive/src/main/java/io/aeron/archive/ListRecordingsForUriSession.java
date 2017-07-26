@@ -66,13 +66,16 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
 
                 return 0;
             }
+
             recordingId++;
             scanned++;
+
             decoder.wrap(
                 descriptorBuffer,
                 Catalog.CATALOG_FRAME_LENGTH,
                 RecordingDescriptorDecoder.BLOCK_LENGTH,
                 RecordingDescriptorDecoder.SCHEMA_VERSION);
+
             if (decoder.streamId() != streamId || !decoder.strippedChannel().equals(channel))
             {
                 continue;
@@ -82,6 +85,7 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
             {
                 continue;
             }
+
             sentBytes += proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
 
             if (sent++ >= count)

@@ -163,7 +163,6 @@ int aeron_agent_init(
     }
     memcpy((char *)runner->role_name, role_name, role_name_length);
 
-    runner->role_name = strndup(role_name, AERON_MAX_PATH);
     runner->idle_strategy_state = idle_strategy_state;
     runner->idle_strategy = idle_strategy_func;
     atomic_init(&runner->running, true);

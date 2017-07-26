@@ -446,6 +446,8 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     for (int i = 0; i < AERON_AGENT_RUNNER_MAX; i++)
     {
         _driver->runners[i].state = AERON_AGENT_STATE_UNUSED;
+        _driver->runners[i].role_name = NULL;
+        _driver->runners[i].on_close = NULL;
     }
 
     if (aeron_driver_validate_sufficient_socket_buffer_lengths(_driver) < 0)

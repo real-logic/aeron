@@ -746,6 +746,8 @@ TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionAfterImageTimeout)
 
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 3u);
     EXPECT_EQ(aeron_driver_conductor_num_images(&m_conductor.m_conductor), 0u);
+    EXPECT_EQ(
+        aeron_driver_conductor_num_active_network_subscriptions(&m_conductor.m_conductor, CHANNEL_1, STREAM_ID_1), 0u);
     ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
     doWork();
     doWork();

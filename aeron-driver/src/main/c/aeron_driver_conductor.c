@@ -390,6 +390,13 @@ void aeron_network_publication_entry_delete(
 {
     aeron_send_channel_endpoint_t *endpoint = entry->publication->endpoint;
 
+    for (size_t i = 0, size = conductor->spy_subscriptions.length; i < size; i++)
+    {
+        aeron_subscription_link_t *link = &conductor->spy_subscriptions.array[i];
+
+        aeron_driver_conductor_unlink_subscribeable(link, &entry->publication->conductor_fields.subscribeable);
+    }
+
     aeron_network_publication_close(&conductor->counters_manager, entry->publication);
     entry->publication = NULL;
 
@@ -478,7 +485,15 @@ bool aeron_publication_image_entry_has_reached_end_of_life(
 void aeron_publication_image_entry_delete(
     aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry)
 {
+    for (size_t i = 0, size = conductor->network_subscriptions.length; i < size; i++)
+    {
+        aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
+
+        aeron_driver_conductor_unlink_subscribeable(link, &entry->image->conductor_fields.subscribeable);
+    }
+
     aeron_publication_image_close(&conductor->counters_manager, entry->image);
+    entry->image = NULL;
 }
 
 void aeron_linger_resource_entry_on_time_event(

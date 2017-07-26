@@ -332,7 +332,7 @@ void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item
     aeron_command_publication_image_t *cmd = (aeron_command_publication_image_t *)item;
     aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)cmd->endpoint;
 
-    if (aeron_receive_channel_endpoint_on_remove_publication_image(endpoint, cmd->image) < 0)
+    if (NULL != endpoint && aeron_receive_channel_endpoint_on_remove_publication_image(endpoint, cmd->image) < 0)
     {
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_remove_publication_image: %s", aeron_errmsg());
     }

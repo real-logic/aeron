@@ -467,6 +467,16 @@ bool aeron_receive_channel_endpoint_entry_has_reached_end_of_life(
 void aeron_receive_channel_endpoint_entry_delete(
     aeron_driver_conductor_t *conductor, aeron_receive_channel_endpoint_entry_t *entry)
 {
+    for (size_t i = 0, size = conductor->publication_images.length; i < size; i++)
+    {
+        aeron_publication_image_t *image = conductor->publication_images.array[i].image;
+
+        if (entry->endpoint == image->endpoint)
+        {
+            aeron_publication_image_disconnect_endpoint(image);
+        }
+    }
+
     aeron_receive_channel_endpoint_delete(&conductor->counters_manager, entry->endpoint);
 }
 
@@ -519,15 +529,18 @@ void aeron_linger_resource_entry_delete(aeron_driver_conductor_t *conductor, aer
 void aeron_driver_conductor_image_transition_to_linger(
     aeron_driver_conductor_t *conductor, aeron_publication_image_t *image)
 {
-    aeron_driver_conductor_on_unavailable_image(
-        conductor,
-        image->conductor_fields.managed_resource.registration_id,
-        image->stream_id,
-        image->endpoint->conductor_fields.udp_channel->original_uri,
-        image->endpoint->conductor_fields.udp_channel->uri_length);
+    if (NULL != image->endpoint)
+    {
+        aeron_driver_conductor_on_unavailable_image(
+            conductor,
+            image->conductor_fields.managed_resource.registration_id,
+            image->stream_id,
+            image->endpoint->conductor_fields.udp_channel->original_uri,
+            image->endpoint->conductor_fields.udp_channel->uri_length);
 
-    aeron_driver_receiver_proxy_on_remove_cooldown(
-        conductor->context->receiver_proxy, image->endpoint, image->session_id, image->stream_id);
+        aeron_driver_receiver_proxy_on_remove_cooldown(
+            conductor->context->receiver_proxy, image->endpoint, image->session_id, image->stream_id);
+    }
 }
 
 #define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(c, l,t,now_ns,now_ms) \

@@ -230,6 +230,11 @@ inline bool aeron_publication_image_is_accepting_subscriptions(aeron_publication
         image->conductor_fields.status == AERON_PUBLICATION_IMAGE_STATUS_ACTIVE);
 }
 
+inline void aeron_publication_image_disconnect_endpoint(aeron_publication_image_t *image)
+{
+    image->endpoint = NULL;
+}
+
 inline const char *aeron_publication_image_log_file_name(aeron_publication_image_t *image)
 {
     return image->log_file_name;

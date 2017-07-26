@@ -16,6 +16,7 @@
 package io.aeron.archive.client;
 
 import io.aeron.Aeron;
+import io.aeron.CommonContext;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.archive.codecs.ControlResponseCode;
@@ -143,8 +144,10 @@ public final class AeronArchive implements AutoCloseable
      */
     public void startRecording(final String channel, final int streamId)
     {
+        final String recordingChannel = channel.contains("ipc") ? channel : CommonContext.SPY_PREFIX + channel;
         final long correlationId = aeron.nextCorrelationId();
-        if (!archiveProxy.startRecording(channel, streamId, correlationId))
+
+        if (!archiveProxy.startRecording(recordingChannel, streamId, correlationId))
         {
             throw new IllegalStateException("Failed to send start recording request");
         }

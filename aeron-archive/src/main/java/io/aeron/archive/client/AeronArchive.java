@@ -16,7 +16,6 @@
 package io.aeron.archive.client;
 
 import io.aeron.Aeron;
-import io.aeron.CommonContext;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.archive.codecs.ControlResponseCode;
@@ -26,6 +25,9 @@ import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 
 import java.util.concurrent.TimeUnit;
+
+import static io.aeron.CommonContext.IPC_CHANNEL;
+import static io.aeron.CommonContext.SPY_PREFIX;
 
 /**
  * Client for interacting with a local or remote Aeron Archive that records and replays message streams.
@@ -144,7 +146,7 @@ public final class AeronArchive implements AutoCloseable
      */
     public void startRecording(final String channel, final int streamId)
     {
-        final String recordingChannel = channel.contains("ipc") ? channel : CommonContext.SPY_PREFIX + channel;
+        final String recordingChannel = channel.startsWith(IPC_CHANNEL) ? channel : SPY_PREFIX + channel;
         final long correlationId = aeron.nextCorrelationId();
 
         if (!archiveProxy.startRecording(recordingChannel, streamId, correlationId))

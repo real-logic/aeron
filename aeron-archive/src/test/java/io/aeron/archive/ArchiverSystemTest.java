@@ -58,8 +58,6 @@ public class ArchiverSystemTest
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final int REPLAY_STREAM_ID = 101;
 
-    private final MediaDriver.Context driverCtx = new MediaDriver.Context();
-    private final Archiver.Context archiverCtx = new Archiver.Context();
     private final UnsafeBuffer buffer =
         new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT));
     private final Random rnd = new Random();
@@ -88,8 +86,6 @@ public class ArchiverSystemTest
     private long correlationId;
     private long startPosition;
     private int requestedInitialTermId;
-    private int requestedStartTermId;
-    private int requestedStartTermOffset;
 
     private int publicationInitialTermId;
     private int publicationStartTermId;
@@ -103,8 +99,8 @@ public class ArchiverSystemTest
 
         final int termLength = 1 << (16 + rnd.nextInt(10)); // 1M to 8M
         final int mtu = 1 << (10 + rnd.nextInt(3)); // 1024 to 8096
-        requestedStartTermOffset = BitUtil.align(rnd.nextInt(termLength), FrameDescriptor.FRAME_ALIGNMENT);
-        requestedStartTermId = requestedInitialTermId + rnd.nextInt(1000);
+        final int requestedStartTermOffset = BitUtil.align(rnd.nextInt(termLength), FrameDescriptor.FRAME_ALIGNMENT);
+        final int requestedStartTermId = requestedInitialTermId + rnd.nextInt(1000);
 
         final ChannelUriStringBuilder channelUriStringBuilder = new ChannelUriStringBuilder()
             .endpoint("127.0.0.1:54325")
@@ -122,7 +118,7 @@ public class ArchiverSystemTest
         requestedStartPosition = ((requestedStartTermId - requestedInitialTermId) * (long)termLength) +
             requestedStartTermOffset;
 
-        driverCtx
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .termBufferSparseFile(true)
             .threadingMode(driverThreadingMode())
             .errorHandler(Throwable::printStackTrace)
@@ -131,7 +127,7 @@ public class ArchiverSystemTest
 
         driver = MediaDriver.launch(driverCtx);
 
-        archiverCtx
+        final Archiver.Context archiverCtx = new Archiver.Context()
             .fileSyncLevel(SYNC_LEVEL)
             .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
             .archiveDir(archiveDir)
@@ -158,7 +154,7 @@ public class ArchiverSystemTest
             IoUtil.delete(archiveDir, false);
         }
 
-        driverCtx.deleteAeronDirectory();
+        driver.context().deleteAeronDirectory();
     }
 
     ArchiverThreadingMode archiverThreadingMode()
@@ -175,9 +171,9 @@ public class ArchiverSystemTest
     public void recordAndReplayExclusivePublication() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
-                archiverCtx.controlChannel(), archiverCtx.controlStreamId());
+                archiver.context().controlChannel(), archiver.context().controlStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
-                archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
+                archiver.context().recordingEventsChannel(), archiver.context().recordingEventsStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
@@ -214,9 +210,9 @@ public class ArchiverSystemTest
     public void replayExclusivePublicationWhileRecording() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
-                archiverCtx.controlChannel(), archiverCtx.controlStreamId());
+                archiver.context().controlChannel(), archiver.context().controlStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
-                archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
+                archiver.context().recordingEventsChannel(), archiver.context().recordingEventsStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
@@ -257,9 +253,9 @@ public class ArchiverSystemTest
     public void recordAndReplayRegularPublication() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
-                archiverCtx.controlChannel(), archiverCtx.controlStreamId());
+                archiver.context().controlChannel(), archiver.context().controlStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
-                archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
+                archiver.context().recordingEventsChannel(), archiver.context().recordingEventsStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
@@ -729,7 +725,7 @@ public class ArchiverSystemTest
 
                         final long end = System.currentTimeMillis();
                         final long deltaTime = end - start;
-                        if (deltaTime > TestUtil.TIMEOUT)
+                        if (deltaTime > TestUtil.TIMEOUT_MS)
                         {
                             start = end;
                             final long deltaBytes = remaining - startBytes;

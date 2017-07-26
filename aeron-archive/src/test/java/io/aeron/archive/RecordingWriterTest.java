@@ -50,13 +50,15 @@ public class RecordingWriterTest
     @Before
     public void before() throws Exception
     {
-        when(position.getWeak()).then(invocation -> positionLong);
-        when(position.get()).then(invocation -> positionLong);
-        doAnswer(invocation ->
-        {
-            positionLong = invocation.getArgument(0);
-            return null;
-        }).when(position).setOrdered(anyLong());
+        when(position.getWeak()).then((invocation) -> positionLong);
+        when(position.get()).then((invocation) -> positionLong);
+        doAnswer(
+            (invocation) ->
+            {
+                positionLong = invocation.getArgument(0);
+                return null;
+            })
+            .when(position).setOrdered(anyLong());
 
         recordingCtx
             .archiveDirChannel(mockArchiveDirFileChannel)

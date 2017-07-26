@@ -30,7 +30,6 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
@@ -64,16 +63,16 @@ public class ReplaySessionTest
     public static final int SESSION_ID = 1;
     public static final int STREAM_ID = 1;
 
-    private final ExclusivePublication mockReplayPub = Mockito.mock(ExclusivePublication.class);
-    private final Publication mockControlPub = Mockito.mock(Publication.class);
+    private final ExclusivePublication mockReplayPub = mock(ExclusivePublication.class);
+    private final Publication mockControlPub = mock(Publication.class);
     private final ArchiveConductor.ReplayPublicationSupplier mockReplyPubSupplier =
-        Mockito.mock(ArchiveConductor.ReplayPublicationSupplier.class);
+        mock(ArchiveConductor.ReplayPublicationSupplier.class);
     private final AtomicCounter position = mock(AtomicCounter.class);
 
     private int messageCounter = 0;
 
     private File archiveDir = makeTempDir();
-    private ControlSessionProxy proxy = Mockito.mock(ControlSessionProxy.class);
+    private ControlSessionProxy proxy = mock(ControlSessionProxy.class);
     private EpochClock epochClock = mock(EpochClock.class);
     private RecordingWriter.Context context;
     private UnsafeBuffer descriptorBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(Catalog.RECORD_LENGTH));
@@ -82,13 +81,15 @@ public class ReplaySessionTest
     @Before
     public void before() throws Exception
     {
-        when(position.getWeak()).then(invocation -> positionLong);
-        when(position.get()).then(invocation -> positionLong);
-        doAnswer(invocation ->
-        {
-            positionLong = invocation.getArgument(0);
-            return null;
-        }).when(position).setOrdered(anyLong());
+        when(position.getWeak()).then((invocation) -> positionLong);
+        when(position.get()).then((invocation) -> positionLong);
+        doAnswer(
+            (invocation) ->
+            {
+                positionLong = invocation.getArgument(0);
+                return null;
+            })
+            .when(position).setOrdered(anyLong());
 
         context = new RecordingWriter.Context()
             .archiveDir(archiveDir)

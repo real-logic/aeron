@@ -30,7 +30,7 @@ public class ListRecordingsSessionTest
     private final long correlationId = 1;
     private final Publication controlPublication = mock(Publication.class);
     private final ControlSessionProxy controlSessionProxy = mock(ControlSessionProxy.class);
-    private final ControlSession controlSession = mock(ControlSession.class);;
+    private final ControlSession controlSession = mock(ControlSession.class);
 
     @Before
     public void before() throws Exception

@@ -93,6 +93,16 @@ public final class Archiver implements AutoCloseable
         }
     }
 
+    /**
+     * Get the {@link Archiver.Context} that is used by this {@link Archiver}.
+     *
+     * @return the {@link Archiver.Context} that is used by this {@link Archiver}.
+     */
+    public Context context()
+    {
+        return ctx;
+    }
+
     public void close() throws Exception
     {
         CloseHelper.close(conductorInvoker);

@@ -40,7 +40,7 @@ import static org.junit.Assert.fail;
 
 public class TestUtil
 {
-    public static final int TIMEOUT = 5000;
+    public static final int TIMEOUT_MS = 5000;
     static final boolean DEBUG = false;
     private static final int SLEEP_TIME_NS = 5000;
 
@@ -134,11 +134,11 @@ public class TestUtil
 
     public static void waitFor(final BooleanSupplier conditionSupplier)
     {
-        final long limit = System.currentTimeMillis() + TIMEOUT;
+        final long deadlineMs = System.currentTimeMillis() + TIMEOUT_MS;
         while (!conditionSupplier.getAsBoolean())
         {
             LockSupport.parkNanos(SLEEP_TIME_NS);
-            if (limit < System.currentTimeMillis())
+            if (deadlineMs < System.currentTimeMillis())
             {
                 fail();
             }

@@ -63,8 +63,6 @@ public class ArchiveRecordingLoadTest
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
     private static final int MESSAGE_COUNT = 2000000;
-    private final MediaDriver.Context driverCtx = new MediaDriver.Context();
-    private final Archiver.Context archiverCtx = new Archiver.Context();
     private final UnsafeBuffer buffer =
         new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT));
     private final Random rnd = new Random();
@@ -93,7 +91,7 @@ public class ArchiveRecordingLoadTest
     {
         rnd.setSeed(seed);
 
-        driverCtx
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .termBufferSparseFile(false)
             .threadingMode(ThreadingMode.DEDICATED)
             .useConcurrentCounterManager(true)
@@ -102,7 +100,7 @@ public class ArchiveRecordingLoadTest
 
         driver = MediaDriver.launch(driverCtx);
 
-        archiverCtx
+        final Archiver.Context archiverCtx = new Archiver.Context()
             .fileSyncLevel(2)
             .archiveDir(archiveDir)
             .threadingMode(ArchiverThreadingMode.DEDICATED)
@@ -127,16 +125,16 @@ public class ArchiveRecordingLoadTest
             IoUtil.delete(archiveDir, false);
         }
 
-        driverCtx.deleteAeronDirectory();
+        driver.context().deleteAeronDirectory();
     }
 
     @Test
     public void archive() throws IOException, InterruptedException
     {
         try (Publication controlRequest = aeron.addPublication(
-                archiverCtx.controlChannel(), archiverCtx.controlStreamId());
+                archiver.context().controlChannel(), archiver.context().controlStreamId());
              Subscription recordingEvents = aeron.addSubscription(
-                archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
+                archiver.context().recordingEventsChannel(), archiver.context().recordingEventsStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlRequest);
             initRecordingStartIndicator(recordingEvents);
@@ -294,7 +292,7 @@ public class ArchiveRecordingLoadTest
 
     private void offer(final ExclusivePublication publication, final UnsafeBuffer buffer, final int length)
     {
-        final long limit = System.currentTimeMillis() + TestUtil.TIMEOUT;
+        final long limit = System.currentTimeMillis() + TestUtil.TIMEOUT_MS;
         if (publication.offer(buffer, 0, length) < 0)
         {
             slowOffer(publication, buffer, length, limit);
@@ -327,7 +325,7 @@ public class ArchiveRecordingLoadTest
 
         while (publication.offer(buffer, 0, length) < 0)
         {
-            LockSupport.parkNanos(TIMEOUT);
+            LockSupport.parkNanos(TIMEOUT_MS);
             if (limit < System.currentTimeMillis())
             {
                 fail("Offer has timed out");

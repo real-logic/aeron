@@ -30,7 +30,7 @@ public class ListRecordingsForUriSessionTest
     private final long correlationId = 1;
     private final Publication controlPublication = mock(Publication.class);
     private final ControlSessionProxy controlSessionProxy = mock(ControlSessionProxy.class);
-    private final ControlSession controlSession = mock(ControlSession.class);;
+    private final ControlSession controlSession = mock(ControlSession.class);
 
     @Before
     public void before() throws Exception
@@ -85,6 +85,7 @@ public class ListRecordingsForUriSessionTest
             catalog,
             controlSessionProxy,
             controlSession);
+
         session.doWork();
         assertThat(session.isDone(), is(false));
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
@@ -116,6 +117,7 @@ public class ListRecordingsForUriSessionTest
             catalog,
             controlSessionProxy,
             controlSession);
+
         session.doWork();
         assertThat(session.isDone(), is(false));
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
@@ -137,6 +139,7 @@ public class ListRecordingsForUriSessionTest
             catalog,
             controlSessionProxy,
             controlSession);
+
         session.doWork();
         assertThat(session.isDone(), is(false));
         when(controlPublication.maxPayloadLength()).thenReturn(8096);

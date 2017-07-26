@@ -143,6 +143,8 @@ int aeron_agent_init(
     aeron_idle_strategy_func_t idle_strategy_func,
     void *idle_strategy_state)
 {
+    size_t role_name_length = strlen(role_name);
+
     if (NULL == runner || NULL == do_work || NULL == idle_strategy_func)
     {
         aeron_set_err(EINVAL, "%s", "invalid argument");
@@ -152,6 +154,15 @@ int aeron_agent_init(
     runner->agent_state = state;
     runner->do_work = do_work;
     runner->on_close = on_close;
+    if (aeron_alloc((void **)&runner->role_name, role_name_length + 1) < 0)
+    {
+        int err_code = errno;
+
+        aeron_set_err(err_code, "%s:%d: %s", __FILE__, __LINE__, strerror(err_code));
+        return -1;
+    }
+    memcpy((char *)runner->role_name, role_name, role_name_length);
+
     runner->role_name = strndup(role_name, AERON_MAX_PATH);
     runner->idle_strategy_state = idle_strategy_state;
     runner->idle_strategy = idle_strategy_func;
@@ -246,6 +257,8 @@ int aeron_agent_close(aeron_agent_runner_t *runner)
         aeron_set_err(EINVAL, "%s", "invalid argument");
         return -1;
     }
+
+    aeron_free((char *)runner->role_name);
 
     if (NULL != runner->on_close)
     {

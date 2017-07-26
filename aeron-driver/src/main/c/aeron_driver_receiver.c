@@ -111,6 +111,8 @@ int aeron_driver_receiver_do_work(void *clientd)
         mmsghdr[i].msg_hdr.msg_iov = &receiver->recv_buffers.iov[i];
         mmsghdr[i].msg_hdr.msg_iovlen = 1;
         mmsghdr[i].msg_hdr.msg_flags = 0;
+        mmsghdr[i].msg_hdr.msg_control = NULL;
+        mmsghdr[i].msg_hdr.msg_controllen = 0;
         mmsghdr[i].msg_len = 0;
     }
 

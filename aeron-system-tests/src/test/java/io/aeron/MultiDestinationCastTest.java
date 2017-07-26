@@ -60,8 +60,6 @@ public class MultiDestinationCastTest
 
     private final MediaDriver.Context driverAContext = new MediaDriver.Context();
     private final MediaDriver.Context driverBContext = new MediaDriver.Context();
-    private final Aeron.Context aeronAContext = new Aeron.Context();
-    private final Aeron.Context aeronBContext = new Aeron.Context();
 
     private Aeron clientA;
     private Aeron clientB;
@@ -86,18 +84,14 @@ public class MultiDestinationCastTest
             .aeronDirectoryName(baseDirA)
             .threadingMode(THREADING_MODE);
 
-        aeronAContext.aeronDirectoryName(driverAContext.aeronDirectoryName());
-
         driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
             .threadingMode(THREADING_MODE);
 
-        aeronBContext.aeronDirectoryName(driverBContext.aeronDirectoryName());
-
         driverA = MediaDriver.launch(driverAContext);
         driverB = MediaDriver.launch(driverBContext);
-        clientA = Aeron.connect(aeronAContext);
-        clientB = Aeron.connect(aeronBContext);
+        clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverAContext.aeronDirectoryName()));
+        clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverBContext.aeronDirectoryName()));
     }
 
     @After
@@ -336,13 +330,13 @@ public class MultiDestinationCastTest
         final CountDownLatch unavailableCountDownLatch = new CountDownLatch(1);
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
-        aeronBContext.unavailableImageHandler((image) -> unavailableCountDownLatch.countDown());
 
         launch();
 
         publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
-        subscriptionB = clientB.addSubscription(SUB2_MDC_MANUAL_URI, STREAM_ID);
+        subscriptionB = clientB.addSubscription(
+            SUB2_MDC_MANUAL_URI, STREAM_ID, null, (image) -> unavailableCountDownLatch.countDown());
 
         publication.addDestination(SUB1_MDC_MANUAL_URI);
         publication.addDestination(SUB2_MDC_MANUAL_URI);
@@ -418,13 +412,12 @@ public class MultiDestinationCastTest
         final int numMessageForSub2 = 10;
         final CountDownLatch availableCountDownLatch = new CountDownLatch(1);
 
-        aeronBContext.availableImageHandler((image) -> availableCountDownLatch.countDown());
-
         launch();
 
         publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
-        subscriptionB = clientB.addSubscription(SUB2_MDC_MANUAL_URI, STREAM_ID);
+        subscriptionB = clientB.addSubscription(
+            SUB2_MDC_MANUAL_URI, STREAM_ID, (image) -> availableCountDownLatch.countDown(), null);
 
         publication.addDestination(SUB1_MDC_MANUAL_URI);
 

@@ -110,37 +110,31 @@ int aeron_udp_transport_poller_add(aeron_udp_transport_poller_t *poller, aeron_u
 
 int aeron_udp_transport_poller_remove(aeron_udp_transport_poller_t *poller, aeron_udp_channel_transport_t *transport)
 {
-    int index = -1;
+    int index = -1, last_index = (int)poller->transports.length - 1;
 
-    for (size_t i = 0, length = poller->transports.length; i < length; i++)
+    for (int i = last_index; i >= 0; i--)
     {
         if (poller->transports.array[i].transport == transport)
         {
-            index = (int)i;
+            index = i;
             break;
         }
     }
 
     if (index >= 0)
     {
-        if (aeron_array_remove(
-            (uint8_t **)&poller->transports.array,
+        aeron_array_fast_unordered_remove(
+            (uint8_t *)poller->transports.array,
             sizeof(aeron_udp_channel_transport_entry_t),
             (size_t)index,
-            poller->transports.length) < 0)
-        {
-            return -1;
-        }
+            (size_t)last_index);
 
 #if defined(HAVE_EPOLL)
-        if (aeron_array_remove(
-            (uint8_t **)&poller->epoll_events,
+        aeron_array_fast_unordered_remove(
+            (uint8_t *)poller->epoll_events,
             sizeof(struct epoll_event),
             (size_t)index,
-            poller->transports.length) < 0)
-        {
-            return -1;
-        }
+            (size_t)last_index);
 
         struct epoll_event event;
 
@@ -155,14 +149,11 @@ int aeron_udp_transport_poller_remove(aeron_udp_transport_poller_t *poller, aero
         }
 
 #elif defined(HAVE_POLL)
-        if (aeron_array_remove(
-            (uint8_t **)&poller->pollfds,
+        aeron_array_fast_unordered_remove(
+            (uint8_t *)poller->pollfds,
             sizeof(struct pollfd),
             (size_t)index,
-            poller->transports.length) < 0)
-        {
-            return -1;
-        }
+            (size_t)last_index);
 #endif
         poller->transports.length--;
     }

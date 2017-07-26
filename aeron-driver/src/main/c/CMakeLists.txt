@@ -202,3 +202,5 @@ target_link_libraries(
 
 install(TARGETS aeron_driver LIBRARY DESTINATION lib)
 install(TARGETS aeron_driver_agent LIBRARY DESTINATION lib)
+install(TARGETS aeronmd DESTINATION bin)
+install(DIRECTORY . DESTINATION  include/aeronmd FILES_MATCHING PATTERN "*.h")

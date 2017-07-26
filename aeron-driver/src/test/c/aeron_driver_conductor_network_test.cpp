@@ -718,6 +718,40 @@ TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhen
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
 
+TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionAfterImageTimeout)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
+    int64_t remove_correlation_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
+    doWork();
+
+    aeron_receive_channel_endpoint_t *endpoint =
+        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+
+    createPublicationImage(endpoint, STREAM_ID_1, 1000);
+
+    int64_t timeout =
+        m_context.m_context->image_liveness_timeout_ns +
+            (m_context.m_context->client_liveness_timeout_ns * 2);
+
+    doWorkUntilTimeNs(
+        timeout,
+        100,
+        [&]()
+        {
+            clientKeepalive(client_id);
+        });
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 3u);
+    EXPECT_EQ(aeron_driver_conductor_num_images(&m_conductor.m_conductor), 0u);
+    ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
+    doWork();
+    doWork();
+    EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 0u);
+}
+
 TEST_F(DriverConductorNetworkTest, shouldSendAvailableImageForMultipleSubscriptions)
 {
     int64_t client_id = nextCorrelationId();

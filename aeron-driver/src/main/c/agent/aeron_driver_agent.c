@@ -73,6 +73,7 @@ static void initialize_agent_logging()
             fprintf(stderr, "could not allocate ring buffer buffer. exiting.\n");
             exit(EXIT_FAILURE);
         }
+        memset(rb_buffer, 0, rb_length);
 
         if (aeron_mpsc_rb_init(&logging_mpsc_rb, rb_buffer, rb_length) < 0)
         {

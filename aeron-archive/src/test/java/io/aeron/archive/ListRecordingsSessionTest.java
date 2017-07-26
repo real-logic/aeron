@@ -5,6 +5,7 @@ import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.collections.MutableInteger;
+import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
@@ -25,23 +26,25 @@ public class ListRecordingsSessionTest
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private long[] recordingIds = new long[3];
-    private File archiveDir = TestUtil.makeTempDir();
+    private final File archiveDir = TestUtil.makeTempDir();
+    private final EpochClock clock = mock(EpochClock.class);
+
     private Catalog catalog;
     private final long correlationId = 1;
     private final Publication controlPublication = mock(Publication.class);
     private final ControlSessionProxy controlSessionProxy = mock(ControlSessionProxy.class);
-    private final ControlSession controlSession = mock(ControlSession.class);;
+    private final ControlSession controlSession = mock(ControlSession.class);
 
     @Before
     public void before() throws Exception
     {
-        catalog = new Catalog(archiveDir, null, 0);
+        catalog = new Catalog(archiveDir, null, 0, clock);
         recordingIds[0] = catalog.addNewRecording(
-            0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channelG", "channelG?tag=f", "sourceA");
+            0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channelG", "channelG?tag=f", "sourceA");
         recordingIds[1] = catalog.addNewRecording(
-            0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 7, 2, "channelH", "channelH?tag=f", "sourceV");
+            0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 7, 2, "channelH", "channelH?tag=f", "sourceV");
         recordingIds[2] = catalog.addNewRecording(
-            0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 8, 3, "channelK", "channelK?tag=f", "sourceB");
+            0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 8, 3, "channelK", "channelK?tag=f", "sourceB");
     }
 
     @After

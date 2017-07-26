@@ -35,12 +35,10 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 import org.junit.rules.TestWatcher;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -57,7 +55,6 @@ import static org.junit.Assert.assertThat;
 @Ignore
 public class ArchiveReplayLoadTest
 {
-
     static final String CONTROL_URI = "aeron:udp?endpoint=127.0.0.1:54327";
     static final int CONTROL_STREAM_ID = 100;
     static final int TEST_DURATION_SEC = 30;
@@ -70,13 +67,10 @@ public class ArchiveReplayLoadTest
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
     private static final int MESSAGE_COUNT = 2000000;
-    private final MediaDriver.Context driverCtx = new MediaDriver.Context();
-    private final Archiver.Context archiverCtx = new Archiver.Context();
-    private final UnsafeBuffer buffer =
-        new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(
+        4096, FrameDescriptor.FRAME_ALIGNMENT));
     private final Random rnd = new Random();
     private final long seed = System.nanoTime();
-    private final File archiveDir = TestUtil.makeTempDir();
 
     @Rule
     public final TestWatcher testWatcher = TestUtil.newWatcher(ArchiveReplayLoadTest.class, seed);
@@ -103,7 +97,7 @@ public class ArchiveReplayLoadTest
     {
         rnd.setSeed(seed);
 
-        driverCtx
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .termBufferSparseFile(true)
             .threadingMode(ThreadingMode.DEDICATED)
             .useConcurrentCounterManager(true)
@@ -112,8 +106,8 @@ public class ArchiveReplayLoadTest
 
         driver = MediaDriver.launch(driverCtx);
 
-        archiverCtx
-            .archiveDir(archiveDir)
+        final Archiver.Context archiverCtx = new Archiver.Context()
+            .archiveDir(TestUtil.makeTempDir())
             .fileSyncLevel(0)
             .threadingMode(ArchiverThreadingMode.DEDICATED)
             .countersManager(driverCtx.countersManager())
@@ -131,21 +125,17 @@ public class ArchiveReplayLoadTest
         CloseHelper.close(archiver);
         CloseHelper.close(driver);
 
-        if (null != archiveDir)
-        {
-            IoUtil.delete(archiveDir, false);
-        }
-
-        driverCtx.deleteAeronDirectory();
+        archiver.context().deleteArchiveDirectory();
+        driver.context().deleteAeronDirectory();
     }
 
     @Test(timeout = 180000)
     public void replay() throws IOException, InterruptedException
     {
         try (Publication controlRequest = aeron.addPublication(
-                archiverCtx.controlChannel(), archiverCtx.controlStreamId());
+                archiver.context().controlChannel(), archiver.context().controlStreamId());
              Subscription recordingEvents = aeron.addSubscription(
-                archiverCtx.recordingEventsChannel(), archiverCtx.recordingEventsStreamId()))
+                archiver.context().recordingEventsChannel(), archiver.context().recordingEventsStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlRequest);
 

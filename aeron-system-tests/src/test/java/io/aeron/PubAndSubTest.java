@@ -71,8 +71,6 @@ public class PubAndSubTest
     private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
 
     private final MediaDriver.Context context = new MediaDriver.Context();
-    private final Aeron.Context publishingAeronContext = new Aeron.Context();
-    private final Aeron.Context subscribingAeronContext = new Aeron.Context();
 
     private Aeron publishingClient;
     private Aeron subscribingClient;
@@ -88,9 +86,8 @@ public class PubAndSubTest
     {
         context.threadingMode(THREADING_MODE);
         driver = MediaDriver.launch(context);
-        publishingAeronContext.publicationConnectionTimeout(1000);
-        publishingClient = Aeron.connect(publishingAeronContext);
-        subscribingClient = Aeron.connect(subscribingAeronContext);
+        publishingClient = Aeron.connect(new Aeron.Context().publicationConnectionTimeout(1000));
+        subscribingClient = Aeron.connect();
         publication = publishingClient.addPublication(channel, STREAM_ID);
         subscription = subscribingClient.addSubscription(channel, STREAM_ID);
     }

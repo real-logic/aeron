@@ -276,6 +276,16 @@ public final class MediaDriver implements AutoCloseable
     }
 
     /**
+     * Get the {@link MediaDriver.Context} that is used by this {@link MediaDriver}.
+     *
+     * @return the {@link MediaDriver.Context} that is used by this {@link MediaDriver}.
+     */
+    public Context context()
+    {
+        return ctx;
+    }
+
+    /**
      * Get the {@link AgentInvoker} for the shared agents when running without threads.
      *
      * @return the {@link AgentInvoker} for the shared agents when running without threads.

@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
+import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.collections.IntArrayList;
 import org.agrona.concurrent.*;
@@ -91,6 +92,16 @@ public final class Archiver implements AutoCloseable
                     ctx.errorCounter(),
                     archiveConductor);
         }
+    }
+
+    /**
+     * Get the {@link Archiver.Context} that is used by this {@link Archiver}.
+     *
+     * @return the {@link Archiver.Context} that is used by this {@link Archiver}.
+     */
+    public Context context()
+    {
+        return ctx;
     }
 
     public void close() throws Exception
@@ -734,6 +745,17 @@ public final class Archiver implements AutoCloseable
         public String presetRecordingFileName()
         {
             return presetRecordingFileName;
+        }
+
+        /**
+         * Delete the archive directory if the {@link #archiveDir()} value is not null.
+         */
+        public void deleteArchiveDirectory()
+        {
+            if (null != archiveDir)
+            {
+                IoUtil.delete(archiveDir, false);
+            }
         }
 
         List<String> presetRecordingChannels()

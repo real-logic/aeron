@@ -172,6 +172,16 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
+     * Get the {@link Aeron.Context} that is used by this client.
+     *
+     * @return the {@link Aeron.Context} that is use by this client.
+     */
+    public Context context()
+    {
+        return ctx;
+    }
+
+    /**
      * Get the client identity that has been allocated for communicating with the media driver.
      *
      * @return the client identity that has been allocated for communicating with the media driver.

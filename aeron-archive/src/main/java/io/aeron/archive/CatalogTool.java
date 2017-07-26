@@ -41,28 +41,28 @@ public class CatalogTool
 
         if (args.length == 2 && args[1].equals("describe"))
         {
-            try (Catalog catalog = new Catalog(archiveDir, null, 0))
+            try (Catalog catalog = new Catalog(archiveDir, null, 0, null))
             {
                 catalog.forEach((e, d) -> System.out.println(d));
             }
         }
         else if (args.length == 3 && args[1].equals("describe"))
         {
-            try (Catalog catalog = new Catalog(archiveDir, null, 0))
+            try (Catalog catalog = new Catalog(archiveDir, null, 0, null))
             {
                 catalog.forEntry(Long.valueOf(args[2]), (e, d) -> System.out.println(d));
             }
         }
         else if (args.length == 2 && args[1].equals("verify"))
         {
-            try (Catalog catalog = new Catalog(archiveDir, null, 0))
+            try (Catalog catalog = new Catalog(archiveDir, null, 0, null))
             {
                 catalog.forEach((e, d) -> verify(e, d));
             }
         }
         else if (args.length == 3 && args[1].equals("verify"))
         {
-            try (Catalog catalog = new Catalog(archiveDir, null, 0))
+            try (Catalog catalog = new Catalog(archiveDir, null, 0, null))
             {
                 catalog.forEntry(Long.valueOf(args[2]), (e, d) -> verify(e, d));
             }

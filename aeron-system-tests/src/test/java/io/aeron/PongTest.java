@@ -42,11 +42,6 @@ public class PongTest
 
     private static final int PING_STREAM_ID = 1;
     private static final int PONG_STREAM_ID = 2;
-    private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
-
-    private final MediaDriver.Context context = new MediaDriver.Context();
-    private final Aeron.Context pingAeronContext = new Aeron.Context();
-    private final Aeron.Context pongAeronContext = new Aeron.Context();
 
     private Aeron pingClient;
     private Aeron pongClient;
@@ -62,11 +57,9 @@ public class PongTest
     @Before
     public void setUp() throws Exception
     {
-        context.threadingMode(THREADING_MODE);
-
-        driver = MediaDriver.launch(context);
-        pingClient = Aeron.connect(pingAeronContext);
-        pongClient = Aeron.connect(pongAeronContext);
+        driver = MediaDriver.launch(new MediaDriver.Context().threadingMode(ThreadingMode.SHARED));
+        pingClient = Aeron.connect();
+        pongClient = Aeron.connect();
 
         pingPublication = pingClient.addPublication(PING_URI, PING_STREAM_ID);
         pingSubscription = pongClient.addSubscription(PING_URI, PING_STREAM_ID);
@@ -82,7 +75,7 @@ public class PongTest
         pingClient.close();
         driver.close();
 
-        context.deleteAeronDirectory();
+        driver.context().deleteAeronDirectory();
     }
 
     @Test
@@ -126,7 +119,8 @@ public class PongTest
             any(Header.class));
     }
 
-    public void pingHandler(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    public void pingHandler(
+        final DirectBuffer buffer, final int offset, final int length, @SuppressWarnings("unused") final Header header)
     {
         // echoes back the ping
         while (pongPublication.offer(buffer, offset, length) < 0L)

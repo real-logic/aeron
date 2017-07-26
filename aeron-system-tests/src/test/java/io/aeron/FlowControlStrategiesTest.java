@@ -52,8 +52,6 @@ public class FlowControlStrategiesTest
 
     private final MediaDriver.Context driverAContext = new MediaDriver.Context();
     private final MediaDriver.Context driverBContext = new MediaDriver.Context();
-    private final Aeron.Context aeronAContext = new Aeron.Context();
-    private final Aeron.Context aeronBContext = new Aeron.Context();
 
     private Aeron clientA;
     private Aeron clientB;
@@ -79,19 +77,15 @@ public class FlowControlStrategiesTest
             .sharedIdleStrategy(new YieldingIdleStrategy())
             .threadingMode(ThreadingMode.SHARED);
 
-        aeronAContext.aeronDirectoryName(driverAContext.aeronDirectoryName());
-
         driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
             .sharedIdleStrategy(new YieldingIdleStrategy())
             .threadingMode(ThreadingMode.SHARED);
 
-        aeronBContext.aeronDirectoryName(driverBContext.aeronDirectoryName());
-
         driverA = MediaDriver.launch(driverAContext);
         driverB = MediaDriver.launch(driverBContext);
-        clientA = Aeron.connect(aeronAContext);
-        clientB = Aeron.connect(aeronBContext);
+        clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverAContext.aeronDirectoryName()));
+        clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverBContext.aeronDirectoryName()));
     }
 
     @After
@@ -135,15 +129,15 @@ public class FlowControlStrategiesTest
         driverAContext.multicastFlowControlSupplier(
             (udpChannel, streamId, registrationId) -> new MaxMulticastFlowControl());
 
-        aeronAContext.availableImageHandler(mock(AvailableImageHandler.class));
-        aeronBContext.availableImageHandler((image) -> availableCountDownLatch.countDown());
-        aeronBContext.unavailableImageHandler((image) -> unavailableCountDownLatch.countDown());
-
         launch();
 
         publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
-        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+        subscriptionB = clientB.addSubscription(
+            MULTICAST_URI,
+            STREAM_ID,
+            (image) -> availableCountDownLatch.countDown(),
+            (image) -> unavailableCountDownLatch.countDown());
 
         while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages())
         {
@@ -398,7 +392,6 @@ public class FlowControlStrategiesTest
             Thread.yield();
         }
 
-        int numFragmentsFromB = 0;
         for (long i = 0; numFragmentsFromA < numMessagesToSend; i++)
         {
             if (numMessagesLeftToSend > 0)
@@ -417,7 +410,7 @@ public class FlowControlStrategiesTest
             // B receives slowly
             if ((i % 2) == 0)
             {
-                numFragmentsFromB += subscriptionB.poll(fragmentHandlerB, 1);
+                subscriptionB.poll(fragmentHandlerB, 1);
             }
         }
 

@@ -96,7 +96,6 @@ public class ReceiverTest
     private ReceiverProxy receiverProxy;
     private ManyToOneConcurrentArrayQueue<DriverConductorCmd> toConductorQueue;
 
-    private MediaDriver.Context context = new MediaDriver.Context();
     private ReceiveChannelEndpoint receiveChannelEndpoint;
     private CongestionControl congestionControl = mock(CongestionControl.class);
 
@@ -140,7 +139,9 @@ public class ReceiverTest
 
         termBuffers = rawLog.termBuffers();
 
-        context.systemCounters(mockSystemCounters);
+        final MediaDriver.Context context = new MediaDriver.Context()
+            .systemCounters(mockSystemCounters);
+
         context.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(context));
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(

@@ -19,15 +19,23 @@ import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.function.BiConsumer;
 
+import static io.aeron.archive.ArchiveUtil.recordingDataFileName;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.file.StandardOpenOption.*;
+import static org.agrona.BitUtil.align;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 
 /**
  * Catalog for the archive keeps details of recorded images, past and present, and used for browsing.
@@ -51,7 +59,7 @@ class Catalog implements AutoCloseable
     static final long NULL_TIME = -1L;
     static final long NULL_POSITION = -1;
     static final int RECORD_LENGTH = 4096;
-    static final int CATALOG_FRAME_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
+    static final int CATALOG_FRAME_LENGTH = HEADER_LENGTH;
     static final int MAX_DESCRIPTOR_STRINGS_COMBINED_LENGTH =
         (RECORD_LENGTH - (CATALOG_FRAME_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 12));
     static final int NULL_RECORD_ID = -1;
@@ -64,12 +72,20 @@ class Catalog implements AutoCloseable
     private final UnsafeBuffer indexUBuffer;
     private final MappedByteBuffer indexMappedBBuffer;
 
+    private final File archiveDir;
     private final int fileSyncLevel;
+    private final EpochClock epochClock;
     private long nextRecordingId = 0;
 
-    Catalog(final File archiveDir, final FileChannel archiveDirChannel, final int fileSyncLevel)
+    Catalog(
+        final File archiveDir,
+        final FileChannel archiveDirChannel,
+        final int fileSyncLevel,
+        final EpochClock epochClock)
     {
+        this.archiveDir = archiveDir;
         this.fileSyncLevel = fileSyncLevel;
+        this.epochClock = epochClock;
         final File indexFile = new File(archiveDir, CATALOG_INDEX_FILE_NAME);
         final boolean indexPreExists = indexFile.exists();
 
@@ -98,6 +114,7 @@ class Catalog implements AutoCloseable
 
     long addNewRecording(
         final long startPosition,
+        final long startTimestamp,
         final int imageInitialTermId,
         final int segmentFileLength,
         final int termBufferLength,
@@ -129,6 +146,7 @@ class Catalog implements AutoCloseable
         initDescriptor(
             recordingDescriptorEncoder,
             newRecordingId,
+            startTimestamp,
             startPosition,
             imageInitialTermId,
             segmentFileLength,
@@ -140,7 +158,7 @@ class Catalog implements AutoCloseable
             originalChannel,
             sourceIdentity);
 
-        indexUBuffer.putInt(0, recordingDescriptorEncoder.encodedLength());
+        indexUBuffer.putIntOrdered(0, recordingDescriptorEncoder.encodedLength());
         nextRecordingId++;
 
         if (fileSyncLevel > 0)
@@ -158,7 +176,7 @@ class Catalog implements AutoCloseable
             return false;
         }
 
-        buffer.wrap(indexMappedBBuffer, (int) (recordingId * RECORD_LENGTH), RECORD_LENGTH);
+        buffer.wrap(indexMappedBBuffer, (int)(recordingId * RECORD_LENGTH), RECORD_LENGTH);
 
         return true;
     }
@@ -248,13 +266,74 @@ class Catalog implements AutoCloseable
 
     private void refreshDescriptor(final RecordingDescriptorEncoder encoder, final RecordingDescriptorDecoder decoder)
     {
-        // TODO:
+        // clean shutdown of recordings will fill in the stopTimestamp, check for it
+        if (decoder.stopTimestamp() == NULL_TIME)
+        {
+            final long stopPosition = decoder.stopPosition();
+            final long recordingLength = stopPosition - decoder.startPosition();
+            final int segmentFileLength = decoder.segmentFileLength();
+            final int segmentIndex = (int) (recordingLength / segmentFileLength);
+            final long stoppedSegmentOffset =
+                ((decoder.startPosition() % decoder.termBufferLength()) + recordingLength) % segmentFileLength;
+
+            final File segmentFile = new File(archiveDir, recordingDataFileName(decoder.recordingId(), segmentIndex));
+            if (!segmentFile.exists())
+            {
+                if (recordingLength == 0L || stoppedSegmentOffset == 0)
+                {
+                    // the process failed before writing to a new file
+                }
+                else
+                {
+                    // ???
+                    throw new IllegalStateException();
+                }
+            }
+            else
+            {
+                try (FileChannel segment = FileChannel.open(segmentFile.toPath(), READ))
+                {
+                    final ByteBuffer headerBB = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
+                    final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(headerBB);
+                    long lastFragmentSegmentOffset;
+                    long nextFragmentSegmentOffset = stoppedSegmentOffset;
+                    do
+                    {
+                        lastFragmentSegmentOffset = nextFragmentSegmentOffset;
+                        headerBB.clear();
+                        if (HEADER_LENGTH != segment.read(headerBB, nextFragmentSegmentOffset))
+                        {
+                            throw new IllegalStateException();
+                        }
+                        nextFragmentSegmentOffset = lastFragmentSegmentOffset +
+                            align(headerFlyweight.frameLength(), FRAME_ALIGNMENT);
+                    }
+                    while (headerFlyweight.frameLength() != 0 && nextFragmentSegmentOffset != segmentFileLength);
+                    // since we know descriptor buffers are forced on file rollover we don't need to handle rollover
+                    // beyond segment boundary (see RecordingWriter#onFileRollover)
+
+                    if (lastFragmentSegmentOffset != stoppedSegmentOffset)
+                    {
+                        // process has failed between transfering the data to updating th stop position, we cant trust
+                        // the last fragment, so take the position of the previous fragment as the stop position
+                        encoder.stopPosition(stopPosition + (lastFragmentSegmentOffset - stoppedSegmentOffset));
+                    }
+                }
+                catch (final Exception e)
+                {
+                    LangUtil.rethrowUnchecked(e);
+                }
+            }
+            encoder.stopTimestamp(epochClock.time());
+        }
+
         nextRecordingId = decoder.recordingId() + 1;
     }
 
     static void initDescriptor(
         final RecordingDescriptorEncoder recordingDescriptorEncoder,
         final long recordingId,
+        final long startTimestamp,
         final long startPosition,
         final int initialTermId,
         final int segmentFileLength,
@@ -268,7 +347,7 @@ class Catalog implements AutoCloseable
     {
         recordingDescriptorEncoder
             .recordingId(recordingId)
-            .startTimestamp(NULL_TIME)
+            .startTimestamp(startTimestamp)
             .stopTimestamp(NULL_TIME)
             .startPosition(startPosition)
             .stopPosition(startPosition)

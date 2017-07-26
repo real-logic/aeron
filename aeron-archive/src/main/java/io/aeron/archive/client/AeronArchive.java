@@ -26,6 +26,9 @@ import org.agrona.concurrent.IdleStrategy;
 
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.CommonContext.IPC_CHANNEL;
+import static io.aeron.CommonContext.SPY_PREFIX;
+
 /**
  * Client for interacting with a local or remote Aeron Archive that records and replays message streams.
  * <p>
@@ -61,7 +64,7 @@ public final class AeronArchive implements AutoCloseable
             }
 
             controlResponsePoller = new ControlResponsePoller(
-                aeron.addSubscription(context.controlRequestChannel(), context.controlRequestStreamId),
+                aeron.addSubscription(context.controlResponseChannel(), context.controlResponseStreamId()),
                 RESPONSE_FRAGMENT_LIMIT);
         }
         catch (final Exception ex)
@@ -143,8 +146,10 @@ public final class AeronArchive implements AutoCloseable
      */
     public void startRecording(final String channel, final int streamId)
     {
+        final String recordingChannel = channel.startsWith(IPC_CHANNEL) ? channel : SPY_PREFIX + channel;
         final long correlationId = aeron.nextCorrelationId();
-        if (!archiveProxy.startRecording(channel, streamId, correlationId))
+
+        if (!archiveProxy.startRecording(recordingChannel, streamId, correlationId))
         {
             throw new IllegalStateException("Failed to send start recording request");
         }

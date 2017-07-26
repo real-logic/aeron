@@ -81,6 +81,7 @@ int aeron_send_channel_endpoint_create(
     _endpoint->conductor_fields.managed_resource.decref = aeron_send_channel_endpoint_decref;
     _endpoint->conductor_fields.managed_resource.clientd = _endpoint;
     _endpoint->conductor_fields.managed_resource.registration_id = -1;
+    _endpoint->conductor_fields.status = AERON_SEND_CHANNEL_ENDPOINT_STATUS_ACTIVE;
     _endpoint->transport.fd = -1;
     _endpoint->channel_status.counter_id = -1;
 
@@ -109,6 +110,8 @@ int aeron_send_channel_endpoint_create(
 
     _endpoint->channel_status.counter_id = status_indicator->counter_id;
     _endpoint->channel_status.value_addr = status_indicator->value_addr;
+
+    _endpoint->sender_proxy = context->sender_proxy;
 
     *endpoint = _endpoint;
     return 0;
@@ -145,7 +148,13 @@ void aeron_send_channel_endpoint_incref(void *clientd)
 void aeron_send_channel_endpoint_decref(void *clientd)
 {
     aeron_send_channel_endpoint_t *endpoint = (aeron_send_channel_endpoint_t *)clientd;
-    --endpoint->conductor_fields.refcnt;
+
+    if (0 == --endpoint->conductor_fields.refcnt)
+    {
+        /* mark as CLOSING to be aware not to use again (to be receiver_released and deleted) */
+        endpoint->conductor_fields.status = AERON_SEND_CHANNEL_ENDPOINT_STATUS_CLOSING;
+        aeron_driver_sender_proxy_on_remove_endpoint(endpoint->sender_proxy, endpoint);
+    }
 }
 
 int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct mmsghdr *mmsghdr, size_t vlen)

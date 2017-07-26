@@ -18,9 +18,10 @@
 #define AERON_AERON_DRIVER_SENDER_PROXY_H
 
 #include "aeron_driver_context.h"
-#include "media/aeron_send_channel_endpoint.h"
 
 typedef struct aeron_driver_sender_stct aeron_driver_sender_t;
+typedef struct aeron_send_channel_endpoint_stct aeron_send_channel_endpoint_t;
+typedef struct aeron_network_publication_stct aeron_network_publication_t;
 
 typedef struct aeron_driver_sender_proxy_stct
 {
@@ -31,16 +32,16 @@ typedef struct aeron_driver_sender_proxy_stct
 }
 aeron_driver_sender_proxy_t;
 
-void aeron_driver_sender_proxy_add_endpoint(
+void aeron_driver_sender_proxy_on_add_endpoint(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint);
 
-void aeron_driver_sender_proxy_remove_endpoint(
+void aeron_driver_sender_proxy_on_remove_endpoint(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint);
 
-void aeron_driver_sender_proxy_add_publication(
+void aeron_driver_sender_proxy_on_add_publication(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_network_publication_t *publication);
 
-void aeron_driver_sender_proxy_remove_publication(
+void aeron_driver_sender_proxy_on_remove_publication(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_network_publication_t *publication);
 
 typedef struct aeron_command_destination_stct
@@ -51,10 +52,10 @@ typedef struct aeron_command_destination_stct
 }
 aeron_command_destination_t;
 
-void aeron_driver_sender_proxy_add_destination(
+void aeron_driver_sender_proxy_on_add_destination(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr);
 
-void aeron_driver_sender_proxy_remove_destination(
+void aeron_driver_sender_proxy_on_remove_destination(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr);
 
 #endif //AERON_AERON_DRIVER_SENDER_PROXY_H

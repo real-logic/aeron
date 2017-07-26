@@ -24,6 +24,14 @@
 #include "aeron_udp_channel_transport.h"
 #include "concurrent/aeron_counters_manager.h"
 #include "aeron_udp_destination_tracker.h"
+#include "aeron_driver_sender_proxy.h"
+
+typedef enum aeron_send_channel_endpoint_status_enum
+{
+    AERON_SEND_CHANNEL_ENDPOINT_STATUS_ACTIVE,
+    AERON_SEND_CHANNEL_ENDPOINT_STATUS_CLOSING
+}
+aeron_send_channel_endpoint_status_t;
 
 typedef struct aeron_send_channel_endpoint_stct
 {
@@ -33,6 +41,7 @@ typedef struct aeron_send_channel_endpoint_stct
         int32_t refcnt;
         bool has_reached_end_of_life;
         aeron_udp_channel_t *udp_channel;
+        aeron_send_channel_endpoint_status_t status;
     }
     conductor_fields;
 
@@ -42,6 +51,7 @@ typedef struct aeron_send_channel_endpoint_stct
     aeron_int64_to_ptr_hash_map_t publication_dispatch_map;
     aeron_counter_t channel_status;
     aeron_udp_destination_tracker_t *destination_tracker;
+    aeron_driver_sender_proxy_t *sender_proxy;
     bool has_sender_released;
 }
 aeron_send_channel_endpoint_t;

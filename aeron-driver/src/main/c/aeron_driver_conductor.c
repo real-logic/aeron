@@ -394,6 +394,14 @@ void aeron_network_publication_entry_delete(
     entry->publication = NULL;
 
     endpoint->conductor_fields.managed_resource.decref(endpoint->conductor_fields.managed_resource.clientd);
+
+    if (AERON_SEND_CHANNEL_ENDPOINT_STATUS_CLOSING == endpoint->conductor_fields.status)
+    {
+        aeron_str_to_ptr_hash_map_remove(
+            &conductor->send_channel_endpoint_by_channel_map,
+            endpoint->conductor_fields.udp_channel->canonical_form,
+            endpoint->conductor_fields.udp_channel->canonical_length);
+    }
 }
 
 void aeron_driver_conductor_cleanup_spies(aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication)
@@ -416,22 +424,13 @@ void aeron_driver_conductor_cleanup_spies(aeron_driver_conductor_t *conductor, a
 void aeron_driver_conductor_cleanup_network_publication(
     aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication)
 {
-    aeron_driver_sender_proxy_remove_publication(conductor->context->sender_proxy, publication);
+    aeron_driver_sender_proxy_on_remove_publication(conductor->context->sender_proxy, publication);
 }
 
 void aeron_send_channel_endpoint_entry_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_send_channel_endpoint_entry_t *entry, int64_t now_ns, int64_t now_ms)
 {
-    aeron_send_channel_endpoint_t *endpoint = entry->endpoint;
-
-    if (0 == endpoint->conductor_fields.refcnt)
-    {
-        aeron_str_to_ptr_hash_map_remove(
-            &conductor->send_channel_endpoint_by_channel_map,
-            endpoint->conductor_fields.udp_channel->canonical_form,
-            endpoint->conductor_fields.udp_channel->canonical_length);
-        aeron_driver_sender_proxy_remove_endpoint(conductor->context->sender_proxy, endpoint);
-    }
+    /* nothing done here. Could linger if needed. */
 }
 
 bool aeron_send_channel_endpoint_entry_has_reached_end_of_life(
@@ -736,7 +735,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                         &conductor->system_counters) >= 0)
                 {
                     endpoint->conductor_fields.managed_resource.incref(endpoint->conductor_fields.managed_resource.clientd);
-                    aeron_driver_sender_proxy_add_publication(conductor->context->sender_proxy, publication);
+                    aeron_driver_sender_proxy_on_add_publication(conductor->context->sender_proxy, publication);
 
                     client->publication_links.array[client->publication_links.length++].resource =
                         &publication->conductor_fields.managed_resource;
@@ -802,7 +801,7 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
             return NULL;
         }
 
-        aeron_driver_sender_proxy_add_endpoint(conductor->context->sender_proxy, endpoint);
+        aeron_driver_sender_proxy_on_add_endpoint(conductor->context->sender_proxy, endpoint);
 
         conductor->send_channel_endpoints.array[conductor->send_channel_endpoints.length++].endpoint = endpoint;
 
@@ -1552,6 +1551,12 @@ int aeron_driver_conductor_on_add_network_publication(
         return -1;
     }
 
+    if (AERON_SEND_CHANNEL_ENDPOINT_STATUS_CLOSING == endpoint->conductor_fields.status)
+    {
+        aeron_set_err(EINVAL, "%s", "send_channel_endpoint found in CLOSING state");
+        return -1;
+    }
+
     if ((publication = aeron_driver_conductor_get_or_add_network_publication(
         conductor, client, endpoint, command->correlated.correlation_id, command->stream_id, is_exclusive)) == NULL)
     {
@@ -2013,7 +2018,7 @@ int aeron_driver_conductoor_on_add_destination(
             return -1;
         }
 
-        aeron_driver_sender_proxy_add_destination(conductor->context->sender_proxy, endpoint, &destination_addr);
+        aeron_driver_sender_proxy_on_add_destination(conductor->context->sender_proxy, endpoint, &destination_addr);
         aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
 
         return 0;
@@ -2080,7 +2085,7 @@ int aeron_driver_conductoor_on_remove_destination(
             return -1;
         }
 
-        aeron_driver_sender_proxy_remove_destination(conductor->context->sender_proxy, endpoint, &destination_addr);
+        aeron_driver_sender_proxy_on_remove_destination(conductor->context->sender_proxy, endpoint, &destination_addr);
         aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
 
         return 0;

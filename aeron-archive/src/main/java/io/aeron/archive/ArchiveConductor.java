@@ -517,6 +517,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         final long recordingId = catalog.addNewRecording(
             startPosition,
+            epochClock.time(),
             initialTermId,
             recordingCtx.recordingFileLength(),
             termBufferLength,

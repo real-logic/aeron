@@ -98,6 +98,7 @@ class Catalog implements AutoCloseable
 
     long addNewRecording(
         final long startPosition,
+        final long startTimestamp,
         final int imageInitialTermId,
         final int segmentFileLength,
         final int termBufferLength,
@@ -129,6 +130,7 @@ class Catalog implements AutoCloseable
         initDescriptor(
             recordingDescriptorEncoder,
             newRecordingId,
+            startTimestamp,
             startPosition,
             imageInitialTermId,
             segmentFileLength,
@@ -248,13 +250,13 @@ class Catalog implements AutoCloseable
 
     private void refreshDescriptor(final RecordingDescriptorEncoder encoder, final RecordingDescriptorDecoder decoder)
     {
-        // TODO:
         nextRecordingId = decoder.recordingId() + 1;
     }
 
     static void initDescriptor(
         final RecordingDescriptorEncoder recordingDescriptorEncoder,
         final long recordingId,
+        final long startTimestamp,
         final long startPosition,
         final int initialTermId,
         final int segmentFileLength,
@@ -268,7 +270,7 @@ class Catalog implements AutoCloseable
     {
         recordingDescriptorEncoder
             .recordingId(recordingId)
-            .startTimestamp(NULL_TIME)
+            .startTimestamp(startTimestamp)
             .stopTimestamp(NULL_TIME)
             .startPosition(startPosition)
             .stopPosition(startPosition)

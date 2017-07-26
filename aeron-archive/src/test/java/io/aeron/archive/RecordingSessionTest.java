@@ -60,6 +60,8 @@ public class RecordingSessionTest
     private static final int MTU_LENGTH = 1024;
     private static final long START_POSITION = TERM_OFFSET;
     private static final int INITIAL_TERM_ID = 0;
+    public static final long START_TIMESTAMP = 0L;
+    public static final long STOP_TIMSTAMP = 128L;
 
     private final RecordingEventsProxy recordingEventsProxy = mock(RecordingEventsProxy.class);
     private final AtomicCounter position = mock(AtomicCounter.class);
@@ -118,6 +120,7 @@ public class RecordingSessionTest
         Catalog.initDescriptor(
             new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH),
             RECORDING_ID,
+            START_TIMESTAMP,
             START_POSITION,
             INITIAL_TERM_ID,
             context.segmentFileLength,
@@ -142,8 +145,6 @@ public class RecordingSessionTest
     @Test
     public void shouldRecordFragmentsFromImage() throws Exception
     {
-        when(epochClock.time()).thenReturn(42L);
-
         final RecordingSession session = new RecordingSession(
             RECORDING_ID, descriptorBuffer, recordingEventsProxy, image, position, context);
 
@@ -151,7 +152,7 @@ public class RecordingSessionTest
 
         session.doWork();
 
-        assertEquals(Catalog.NULL_TIME, descriptorDecoder.startTimestamp());
+        assertEquals(START_TIMESTAMP, descriptorDecoder.startTimestamp());
         assertEquals(START_POSITION, descriptorDecoder.startPosition());
         assertEquals(Catalog.NULL_TIME, descriptorDecoder.stopTimestamp());
         assertEquals(START_POSITION, descriptorDecoder.stopPosition());
@@ -179,8 +180,6 @@ public class RecordingSessionTest
 
         assertNotEquals("Expect some work", 0, session.doWork());
 
-        assertEquals(42L, descriptorDecoder.startTimestamp());
-
         assertEquals(Catalog.NULL_TIME, descriptorDecoder.stopTimestamp());
         assertEquals(START_POSITION + RECORDED_BLOCK_LENGTH, descriptorDecoder.stopPosition());
 
@@ -207,12 +206,12 @@ public class RecordingSessionTest
         assertEquals("Expect no work", 0, session.doWork());
 
         when(image.isClosed()).thenReturn(true);
-        when(epochClock.time()).thenReturn(128L);
+        when(epochClock.time()).thenReturn(STOP_TIMSTAMP);
         session.doWork();
         assertTrue(session.isDone());
         session.close();
 
-        assertEquals(128L, descriptorDecoder.stopTimestamp());
+        assertEquals(STOP_TIMSTAMP, descriptorDecoder.stopTimestamp());
     }
 
     private Subscription mockSubscription(final String channel, final int streamId)

@@ -43,11 +43,11 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, null, 0))
         {
             recordingOneId = catalog.addNewRecording(
-                0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channelG", "channelG?tag=f", "sourceA");
+                0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channelG", "channelG?tag=f", "sourceA");
             recordingTwoId = catalog.addNewRecording(
-                0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 7, 2, "channelH", "channelH?tag=f", "sourceV");
+                0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 7, 2, "channelH", "channelH?tag=f", "sourceV");
             recordingThreeId = catalog.addNewRecording(
-                0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 8, 3, "channelK", "channelK?tag=f", "sourceB");
+                0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 8, 3, "channelK", "channelK?tag=f", "sourceB");
         }
     }
 
@@ -99,7 +99,7 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, null, 0))
         {
             newRecordingId = catalog.addNewRecording(
-                0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 9, 4, "channelJ", "channelJ?tag=f", "sourceN");
+                0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 9, 4, "channelJ", "channelJ?tag=f", "sourceN");
         }
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0))
@@ -115,7 +115,7 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, null, 0))
         {
             final long newRecordingId = catalog.addNewRecording(
-                0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channelG", "channelG?tag=f", "sourceA");
+                0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channelG", "channelG?tag=f", "sourceA");
             assertNotEquals(recordingOneId, newRecordingId);
         }
     }

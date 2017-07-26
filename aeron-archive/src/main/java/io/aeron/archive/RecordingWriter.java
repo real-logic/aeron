@@ -322,7 +322,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         validateStartTermOffset(termOffset);
 
         segmentPosition = termOffset;
-        descriptorEncoder.startTimestamp(epochClock.time());
         newRecordingSegmentFile();
 
         if (segmentPosition != 0)

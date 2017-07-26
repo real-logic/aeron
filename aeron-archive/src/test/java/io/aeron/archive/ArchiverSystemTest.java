@@ -147,11 +147,7 @@ public class ArchiverSystemTest
         CloseHelper.close(archiver);
         CloseHelper.close(driver);
 
-        if (null != archiver.context().archiveDir())
-        {
-            IoUtil.delete(archiver.context().archiveDir(), false);
-        }
-
+        archiver.context().deleteArchiveDirectory();
         driver.context().deleteAeronDirectory();
     }
 

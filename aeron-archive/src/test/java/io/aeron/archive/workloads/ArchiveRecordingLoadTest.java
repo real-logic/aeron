@@ -32,7 +32,6 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
-import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 import org.junit.rules.TestWatcher;
@@ -118,11 +117,7 @@ public class ArchiveRecordingLoadTest
         CloseHelper.quietClose(archiver);
         CloseHelper.quietClose(driver);
 
-        if (null != archiver.context().archiveDir())
-        {
-            IoUtil.delete(archiver.context().archiveDir(), false);
-        }
-
+        archiver.context().deleteArchiveDirectory();
         driver.context().deleteAeronDirectory();
     }
 

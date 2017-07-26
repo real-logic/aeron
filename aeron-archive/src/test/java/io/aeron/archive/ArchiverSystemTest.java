@@ -75,7 +75,7 @@ public class ArchiverSystemTest
     private int[] fragmentLength;
     private long totalDataLength;
     private long totalRecordingLength;
-    private long recorded;
+    private volatile long recorded;
     private long requestedStartPosition;
     private volatile long stopPosition = -1;
     private Throwable trackerError;
@@ -761,7 +761,6 @@ public class ArchiverSystemTest
             do
             {
                 LockSupport.parkNanos(1000000);
-                UnsafeAccess.UNSAFE.loadFence();
             }
             while (recorded == 0);
 

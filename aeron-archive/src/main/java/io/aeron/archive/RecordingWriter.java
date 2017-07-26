@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 
@@ -314,7 +315,26 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         CloseHelper.close(recordingFileChannel);
         segmentPosition = 0;
         segmentIndex++;
+        // Forcing the descriptor on file rollover simplifies assumptions on recovery and is low overhead. If this
+        // changes we need to change the Catalog#refreshCatalog logic to match.
+        forceMappedBuffer(descriptorBuffer.byteBuffer());
         newRecordingSegmentFile();
+    }
+
+    private void forceMappedBuffer(final ByteBuffer byteBuffer)
+    {
+        if (byteBuffer instanceof MappedByteBuffer)
+        {
+            try
+            {
+                ((MappedByteBuffer)byteBuffer).force();
+            }
+            catch (final UnsupportedOperationException e)
+            {
+                // Due to inexplicable idiocy, DirectByteBuffer extends MappedByteBuffer and not the other way around,
+                // so this can happen. Ignore the exception.
+            }
+        }
     }
 
     private void onFirstWrite(final int termOffset) throws IOException

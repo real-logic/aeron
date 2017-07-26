@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import org.agrona.IoUtil;
+import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
@@ -26,21 +27,24 @@ import java.io.File;
 import java.io.IOException;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
 
 public class CatalogTest
 {
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
+    private final File archiveDir = TestUtil.makeTempDir();
+    private final EpochClock clock = mock(EpochClock.class);
     private long recordingOneId;
     private long recordingTwoId;
     private long recordingThreeId;
-    private File archiveDir = TestUtil.makeTempDir();
+
 
     @Before
     public void before() throws Exception
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
             recordingOneId = catalog.addNewRecording(
                 0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channelG", "channelG?tag=f", "sourceA");
@@ -60,7 +64,7 @@ public class CatalogTest
     @Test
     public void shouldReloadExistingIndex() throws Exception
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
             verifyRecordingForId(catalog, recordingOneId, 6, 1, "channelG", "sourceA");
             verifyRecordingForId(catalog, recordingTwoId, 7, 2, "channelH", "sourceV");
@@ -96,13 +100,13 @@ public class CatalogTest
     public void shouldAppendToExistingIndex() throws Exception
     {
         final long newRecordingId;
-        try (Catalog catalog = new Catalog(archiveDir, null, 0))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
             newRecordingId = catalog.addNewRecording(
                 0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 9, 4, "channelJ", "channelJ?tag=f", "sourceN");
         }
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
             verifyRecordingForId(catalog, recordingOneId, 6, 1, "channelG", "sourceA");
             verifyRecordingForId(catalog, newRecordingId, 9, 4, "channelJ", "sourceN");
@@ -112,7 +116,7 @@ public class CatalogTest
     @Test
     public void shouldAllowMultipleInstancesForSameStream() throws Exception
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
             final long newRecordingId = catalog.addNewRecording(
                 0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channelG", "channelG?tag=f", "sourceA");

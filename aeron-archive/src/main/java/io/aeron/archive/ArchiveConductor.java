@@ -112,7 +112,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         recordingEventsProxy = new RecordingEventsProxy(ctx.idleStrategy(), notificationPublication);
 
 
-        catalog = new Catalog(archiveDir, archiveDirChannel, fileSyncLevel);
+        catalog = new Catalog(archiveDir, archiveDirChannel, fileSyncLevel, epochClock);
 
         final File countersFile = new File(archiveDir, POSITIONS_FILE_NAME);
         final boolean filePreExists = countersFile.exists();

@@ -83,6 +83,16 @@ class Catalog implements AutoCloseable
         final int fileSyncLevel,
         final EpochClock epochClock)
     {
+        this(archiveDir, archiveDirChannel, fileSyncLevel, epochClock, true);
+    }
+
+    Catalog(
+        final File archiveDir,
+        final FileChannel archiveDirChannel,
+        final int fileSyncLevel,
+        final EpochClock epochClock,
+        final boolean fixupOnRefresh)
+    {
         this.archiveDir = archiveDir;
         this.fileSyncLevel = fileSyncLevel;
         this.epochClock = epochClock;
@@ -104,7 +114,7 @@ class Catalog implements AutoCloseable
             throw new RuntimeException(ex);
         }
 
-        refreshCatalog();
+        refreshCatalog(fixupOnRefresh);
     }
 
     public void close()
@@ -201,9 +211,30 @@ class Catalog implements AutoCloseable
      * termination of recording has resulted in an unaccounted for stopPosition/stopTimestamp. This operation may be
      * expensive for large catalogs.
      */
-    private void refreshCatalog()
+    private void refreshCatalog(final boolean fixupOnRefresh)
     {
-        forEach(this::refreshDescriptor, 0, MAX_CATALOG_SIZE / RECORD_LENGTH);
+        if (fixupOnRefresh)
+        {
+            forEach(this::refreshAndFixupDescriptor, 0, MAX_CATALOG_SIZE / RECORD_LENGTH);
+        }
+        else
+        {
+            while (true)
+            {
+                final int offset = (int) (nextRecordingId * RECORD_LENGTH);
+                if (offset >= MAX_CATALOG_SIZE)
+                {
+                    break;
+                }
+
+                indexUBuffer.wrap(indexMappedBBuffer, offset, RECORD_LENGTH);
+                if (indexUBuffer.getInt(0) == 0)
+                {
+                    break;
+                }
+                nextRecordingId++;
+            }
+        }
     }
 
     void forEach(final BiConsumer<RecordingDescriptorEncoder, RecordingDescriptorDecoder> consumer)
@@ -264,7 +295,9 @@ class Catalog implements AutoCloseable
         return true;
     }
 
-    private void refreshDescriptor(final RecordingDescriptorEncoder encoder, final RecordingDescriptorDecoder decoder)
+    private void refreshAndFixupDescriptor(
+        final RecordingDescriptorEncoder encoder,
+        final RecordingDescriptorDecoder decoder)
     {
         if (decoder.stopTimestamp() == NULL_TIME)
         {
@@ -284,8 +317,8 @@ class Catalog implements AutoCloseable
                 }
                 else
                 {
-                    // ???
-                    throw new IllegalStateException();
+                    throw new IllegalStateException("Could not open data file: " + segmentFile.getAbsolutePath() +
+                        " - Please use the CatalogTool to fix up archive directory.");
                 }
             }
             else
@@ -294,20 +327,24 @@ class Catalog implements AutoCloseable
                 {
                     final ByteBuffer headerBB = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
                     final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(headerBB);
-                    long lastFragmentSegmentOffset;
+                    long lastFragmentSegmentOffset = stoppedSegmentOffset;
                     long nextFragmentSegmentOffset = stoppedSegmentOffset;
                     do
                     {
-                        lastFragmentSegmentOffset = nextFragmentSegmentOffset;
                         headerBB.clear();
                         if (HEADER_LENGTH != segment.read(headerBB, nextFragmentSegmentOffset))
                         {
-                            throw new IllegalStateException();
+                            throw new IllegalStateException("Unexpected read failure from file: " +
+                                segmentFile.getAbsolutePath() + " at position:" + nextFragmentSegmentOffset);
                         }
-                        nextFragmentSegmentOffset = lastFragmentSegmentOffset +
-                            align(headerFlyweight.frameLength(), FRAME_ALIGNMENT);
+                        if (headerFlyweight.frameLength() == 0)
+                        {
+                            break;
+                        }
+                        lastFragmentSegmentOffset = nextFragmentSegmentOffset;
+                        nextFragmentSegmentOffset += align(headerFlyweight.frameLength(), FRAME_ALIGNMENT);
                     }
-                    while (headerFlyweight.frameLength() != 0 && nextFragmentSegmentOffset != segmentFileLength);
+                    while (nextFragmentSegmentOffset != segmentFileLength);
                     // since we know descriptor buffers are forced on file rollover we don't need to handle rollover
                     // beyond segment boundary (see RecordingWriter#onFileRollover)
 

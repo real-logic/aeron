@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
+import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -25,13 +26,24 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 
+import static io.aeron.archive.Catalog.NULL_TIME;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static org.agrona.BufferUtil.allocateDirectAligned;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class CatalogTest
 {
-    private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
+    public static final int SEGMENT_FILE_SIZE = 4096;
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final File archiveDir = TestUtil.makeTempDir();
@@ -118,11 +130,164 @@ public class CatalogTest
     {
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
-            final long newRecordingId = catalog.addNewRecording(
-                0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channelG", "channelG?tag=f", "sourceA");
+            final long newRecordingId = newRecording();
             assertNotEquals(recordingOneId, newRecordingId);
         }
     }
 
-    // TODO: cover refreshCatalog and IO exception cases
+    @Test
+    public void shouldFixupTimestampForEmptyRecordingAfterFailure() throws Exception
+    {
+        final long newRecordingId = newRecording();
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
+        {
+            catalog.forEntry(newRecordingId,
+                (e, decoder) ->
+                {
+                    assertThat(decoder.stopTimestamp(), is(NULL_TIME));
+                });
+        }
+        when(clock.time()).thenReturn(42L);
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        {
+            catalog.forEntry(newRecordingId,
+                (e, decoder) ->
+                {
+                    assertThat(decoder.stopTimestamp(), is(42L));
+                });
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldFailFixupOnMissingFile() throws Exception
+    {
+        final long newRecordingId = newRecording();
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
+        {
+            catalog.forEntry(newRecordingId,
+                (encoder, decoder) ->
+                {
+                    encoder.stopPosition(decoder.startPosition() + 1024);
+                });
+        }
+        when(clock.time()).thenReturn(42L);
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        {
+        }
+    }
+
+    @Test
+    public void shouldFixupTimestampAndPositionAfterFailure() throws Exception
+    {
+        final long newRecordingId = newRecording();
+
+        try (FileChannel log = FileChannel.open(
+            new File(archiveDir, ArchiveUtil.recordingDataFileName(newRecordingId, 0)).toPath(),
+            READ,
+            WRITE,
+            CREATE))
+        {
+
+            final ByteBuffer bb = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
+            final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
+            flyweight.frameLength(1024);
+            log.write(bb);
+            bb.clear();
+            flyweight.frameLength(128);
+            log.write(bb, 1024);
+            bb.clear();
+            flyweight.frameLength(0);
+            log.write(bb, 1024 + 128);
+        }
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
+        {
+            catalog.forEntry(newRecordingId,
+                (e, decoder) ->
+                {
+                    assertThat(decoder.stopTimestamp(), is(NULL_TIME));
+                    assertThat(decoder.stopPosition(), is(decoder.startPosition()));
+                });
+        }
+
+        when(clock.time()).thenReturn(42L);
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        {
+            catalog.forEntry(newRecordingId,
+                (e, decoder) ->
+                {
+                    assertThat(decoder.stopTimestamp(), is(42L));
+                    assertThat(decoder.stopPosition(), is(1024L));
+                });
+        }
+    }
+
+    private long newRecording()
+    {
+        final long newRecordingId;
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        {
+            newRecordingId = catalog.addNewRecording(
+                0L,
+                0L,
+                0,
+                SEGMENT_FILE_SIZE,
+                4096,
+                1024,
+                6,
+                1,
+                "channelG",
+                "channelG?tag=f",
+                "sourceA");
+        }
+        return newRecordingId;
+    }
+
+    @Test
+    public void shouldFixupTimestampAndPositionAfterFailureFullSegment() throws Exception
+    {
+        final long newRecordingId = newRecording();
+        final long expectedLastFrame = SEGMENT_FILE_SIZE - 128;
+        try (FileChannel log = FileChannel.open(
+            new File(archiveDir, ArchiveUtil.recordingDataFileName(newRecordingId, 0)).toPath(),
+            READ,
+            WRITE,
+            CREATE))
+        {
+
+            final ByteBuffer bb = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
+            final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
+            flyweight.frameLength((int) expectedLastFrame);
+            log.write(bb);
+            bb.clear();
+            flyweight.frameLength(128);
+            log.write(bb, expectedLastFrame);
+            bb.clear();
+            flyweight.frameLength(0);
+            log.write(bb, expectedLastFrame + 128);
+            log.truncate(SEGMENT_FILE_SIZE);
+        }
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
+        {
+            catalog.forEntry(newRecordingId,
+                (e, decoder) ->
+                {
+                    assertThat(decoder.stopTimestamp(), is(NULL_TIME));
+                    assertThat(decoder.stopPosition(), is(decoder.startPosition()));
+                });
+        }
+
+        when(clock.time()).thenReturn(42L);
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        {
+            catalog.forEntry(newRecordingId,
+                (e, decoder) ->
+                {
+                    assertThat(decoder.stopTimestamp(), is(42L));
+                    assertThat(decoder.stopPosition(), is(expectedLastFrame));
+                });
+        }
+    }
 }

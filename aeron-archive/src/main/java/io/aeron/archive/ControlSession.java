@@ -144,7 +144,7 @@ class ControlSession implements Session, ControlRequestListener
 
     public void onListRecordingsForUri(
         final long correlationId,
-        final int fromIndex,
+        final long fromRecordingId,
         final int recordCount,
         final String channel,
         final int streamId)
@@ -152,7 +152,7 @@ class ControlSession implements Session, ControlRequestListener
         final ListRecordingsForUriSession listRecordingsSession = conductor.newListRecordingsForUriSession(
             correlationId,
             controlPublication,
-            fromIndex,
+            fromRecordingId,
             recordCount,
             conductor.strippedChannelBuilder(channel).build(),
             streamId,

@@ -22,18 +22,16 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
 {
     private static final int MAX_SCAN_PER_WORK = 16;
     private final RecordingDescriptorDecoder decoder;
-    private final int fromIndex;
     private final int count;
     private final String channel;
     private final int streamId;
     private long recordingId;
-    private int matched;
     private int sent;
 
     ListRecordingsForUriSession(
         final long correlationId,
         final Publication controlPublication,
-        final int fromIndex,
+        final long fromRecordingId,
         final int count,
         final String channel,
         final int streamId,
@@ -44,7 +42,7 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
     {
         super(correlationId, controlPublication, catalog, proxy, controlSession);
 
-        this.fromIndex = fromIndex;
+        this.recordingId = fromRecordingId;
         this.count = count;
         this.channel = channel;
         this.streamId = streamId;
@@ -79,11 +77,6 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
                 RecordingDescriptorDecoder.SCHEMA_VERSION);
 
             if (decoder.streamId() != streamId || !decoder.strippedChannel().equals(channel))
-            {
-                continue;
-            }
-
-            if (matched++ < fromIndex)
             {
                 continue;
             }

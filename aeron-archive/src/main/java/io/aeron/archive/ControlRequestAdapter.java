@@ -134,7 +134,7 @@ class ControlRequestAdapter implements FragmentHandler
 
                 listener.onListRecordingsForUri(
                     listRecordingsForUriRequestDecoder.correlationId(),
-                    listRecordingsForUriRequestDecoder.fromIndex(),
+                    listRecordingsForUriRequestDecoder.fromRecordingId(),
                     listRecordingsForUriRequestDecoder.recordCount(),
                     listRecordingsForUriRequestDecoder.channel(),
                     listRecordingsForUriRequestDecoder.streamId());

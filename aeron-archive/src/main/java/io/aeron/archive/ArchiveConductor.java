@@ -372,7 +372,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     ListRecordingsForUriSession newListRecordingsForUriSession(
         final long correlationId,
         final Publication controlPublication,
-        final int fromIndex,
+        final long fromRecordingId,
         final int count,
         final String channel,
         final int streamId,
@@ -381,7 +381,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         return new ListRecordingsForUriSession(
             correlationId,
             controlPublication,
-            fromIndex,
+            fromRecordingId,
             count,
             channel,
             streamId,

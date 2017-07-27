@@ -211,7 +211,7 @@ public class ArchiveProxy
     /**
      * List a range of recording descriptors which match a channel and stream id.
      *
-     * @param fromIndex       at which to begin listing.
+     * @param fromRecordingId at which to begin listing.
      * @param recordCount     for the number of descriptors to be listed.
      * @param channel         to match recordings on.
      * @param streamId        to match recordings on.
@@ -219,7 +219,7 @@ public class ArchiveProxy
      * @return true if successfully offered otherwise false.
      */
     public boolean listRecordingsForChannelUri(
-        final int fromIndex,
+        final long fromRecordingId,
         final int recordCount,
         final String channel,
         final int streamId,
@@ -228,7 +228,7 @@ public class ArchiveProxy
         listRecordingsForUriRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
-            .fromIndex(fromIndex)
+            .fromRecordingId(fromRecordingId)
             .recordCount(recordCount)
             .streamId(streamId)
             .channel(channel);

@@ -23,8 +23,6 @@ interface ControlRequestListener
 
     void onStartRecording(long correlationId, String channel, int streamId);
 
-    void onListRecordings(long correlationId, long fromRecordingId, int recordCount);
-
     void onAbortReplay(long correlationId, long replayId);
 
     void onStartReplay(
@@ -35,5 +33,12 @@ interface ControlRequestListener
         long position,
         long length);
 
-    void onListRecordingsForUri(long correlationId, int fromIndex, int recordCount, String channel, int streamId);
+    void onListRecordings(long correlationId, long fromRecordingId, int recordCount);
+
+    void onListRecordingsForUri(
+        long correlationId,
+        long fromRecordingId,
+        int recordCount,
+        String channel,
+        int streamId);
 }

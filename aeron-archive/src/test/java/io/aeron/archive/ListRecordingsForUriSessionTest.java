@@ -79,11 +79,11 @@ public class ListRecordingsForUriSessionTest
     @Test
     public void shouldSend2Descriptors()
     {
-        final int fromIndex = 1;
+        final int fromRecordingId = 1;
         final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
             correlationId,
             controlPublication,
-            fromIndex,
+            fromRecordingId,
             3,
             "channel",
             1,
@@ -95,7 +95,7 @@ public class ListRecordingsForUriSessionTest
         session.doWork();
         assertThat(session.isDone(), is(false));
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
-        final MutableInteger counter = new MutableInteger(fromIndex);
+        final MutableInteger counter = new MutableInteger(fromRecordingId);
         when(controlSessionProxy.sendDescriptor(eq(correlationId), any(), eq(controlPublication)))
             .then(invocation ->
             {

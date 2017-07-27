@@ -34,6 +34,7 @@ public class ListRecordingsSessionTest
     private final Publication controlPublication = mock(Publication.class);
     private final ControlSessionProxy controlSessionProxy = mock(ControlSessionProxy.class);
     private final ControlSession controlSession = mock(ControlSession.class);
+    private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
 
     @Before
     public void before() throws Exception
@@ -64,7 +65,8 @@ public class ListRecordingsSessionTest
             3,
             catalog,
             controlSessionProxy,
-            controlSession);
+            controlSession,
+            descriptorBuffer);
         session.doWork();
         assertThat(session.isDone(), is(false));
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
@@ -83,13 +85,15 @@ public class ListRecordingsSessionTest
             2,
             catalog,
             controlSessionProxy,
-            controlSession);
+            controlSession,
+            descriptorBuffer);
+
         session.doWork();
         assertThat(session.isDone(), is(false));
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
         final MutableInteger counter = new MutableInteger(fromId);
-        when(controlSessionProxy.sendDescriptor(eq(correlationId), any(), eq(controlPublication)))
-            .then(invocation ->
+        when(controlSessionProxy.sendDescriptor(eq(correlationId), any(), eq(controlPublication))).then(
+            (invocation) ->
             {
                 final UnsafeBuffer b = invocation.getArgument(1);
                 recordingDescriptorDecoder.wrap(b, Catalog.CATALOG_FRAME_LENGTH, BLOCK_LENGTH, SCHEMA_VERSION);
@@ -112,7 +116,9 @@ public class ListRecordingsSessionTest
             3,
             catalog,
             controlSessionProxy,
-            controlSession);
+            controlSession,
+            descriptorBuffer);
+
         session.doWork();
         assertThat(session.isDone(), is(false));
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
@@ -131,7 +137,9 @@ public class ListRecordingsSessionTest
             3,
             catalog,
             controlSessionProxy,
-            controlSession);
+            controlSession,
+            descriptorBuffer);
+
         session.doWork();
         assertThat(session.isDone(), is(true));
         verify(controlSessionProxy).sendResponse(eq(correlationId), any(), any(), eq(controlPublication));

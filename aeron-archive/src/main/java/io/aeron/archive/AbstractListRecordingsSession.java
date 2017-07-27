@@ -28,7 +28,7 @@ abstract class AbstractListRecordingsSession implements Session
     }
 
     private final ControlSession controlSession;
-    protected final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
+    protected final UnsafeBuffer descriptorBuffer;
     protected final Publication controlPublication;
     protected final Catalog catalog;
     protected final ControlSessionProxy proxy;
@@ -43,7 +43,8 @@ abstract class AbstractListRecordingsSession implements Session
         final Publication controlPublication,
         final Catalog catalog,
         final ControlSessionProxy proxy,
-        final ControlSession controlSession)
+        final ControlSession controlSession,
+        final UnsafeBuffer descriptorBuffer)
     {
         this.correlationId = correlationId;
         this.recordingId = recordingId;
@@ -51,6 +52,7 @@ abstract class AbstractListRecordingsSession implements Session
         this.controlSession = controlSession;
         this.catalog = catalog;
         this.proxy = proxy;
+        this.descriptorBuffer = descriptorBuffer;
     }
 
     public void abort()

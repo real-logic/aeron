@@ -26,6 +26,7 @@ import static org.mockito.Mockito.*;
 public class ListRecordingsForUriSessionTest
 {
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
+    private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private long[] recordingIds = new long[5];
     private long[] matchingRecordingIds = new long[3];
@@ -74,6 +75,7 @@ public class ListRecordingsForUriSessionTest
             catalog,
             controlSessionProxy,
             controlSession,
+            descriptorBuffer,
             recordingDescriptorDecoder);
 
         session.doWork();
@@ -98,6 +100,7 @@ public class ListRecordingsForUriSessionTest
             catalog,
             controlSessionProxy,
             controlSession,
+            descriptorBuffer,
             recordingDescriptorDecoder);
 
         session.doWork();
@@ -125,6 +128,7 @@ public class ListRecordingsForUriSessionTest
             catalog,
             controlSessionProxy,
             controlSession,
+            descriptorBuffer,
             recordingDescriptorDecoder);
 
         session.doWork();
@@ -167,6 +171,7 @@ public class ListRecordingsForUriSessionTest
             catalog,
             controlSessionProxy,
             controlSession,
+            descriptorBuffer,
             recordingDescriptorDecoder);
 
         session.doWork();
@@ -191,6 +196,7 @@ public class ListRecordingsForUriSessionTest
             catalog,
             controlSessionProxy,
             controlSession,
+            descriptorBuffer,
             recordingDescriptorDecoder);
 
         session.doWork();
@@ -215,6 +221,7 @@ public class ListRecordingsForUriSessionTest
             catalog,
             controlSessionProxy,
             controlSession,
+            descriptorBuffer,
             recordingDescriptorDecoder);
 
         session.doWork();

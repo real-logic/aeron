@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.Publication;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
+import org.agrona.concurrent.UnsafeBuffer;
 
 class ListRecordingsForUriSession extends AbstractListRecordingsSession
 {
@@ -38,9 +39,10 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
         final Catalog catalog,
         final ControlSessionProxy proxy,
         final ControlSession controlSession,
+        final UnsafeBuffer descriptorBuffer,
         final RecordingDescriptorDecoder recordingDescriptorDecoder)
     {
-        super(correlationId, fromRecordingId, controlPublication, catalog, proxy, controlSession);
+        super(correlationId, fromRecordingId, controlPublication, catalog, proxy, controlSession, descriptorBuffer);
 
         this.count = count;
         this.channel = channel;

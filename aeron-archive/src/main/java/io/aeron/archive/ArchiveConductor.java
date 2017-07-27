@@ -57,6 +57,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final Long2ObjectHashMap<AtomicCounter> recordingPositionByIdMap = new Long2ObjectHashMap<>();
     private final Map<String, Subscription> subscriptionMap = new HashMap<>();
     private final ReplayPublicationSupplier newReplayPublication = this::newReplayPublication;
+    private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
 
     private final Aeron aeron;
@@ -352,7 +353,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             count,
             catalog,
             controlSessionProxy,
-            controlSession);
+            controlSession,
+            descriptorBuffer);
     }
 
     ListRecordingsForUriSession newListRecordingsForUriSession(
@@ -374,6 +376,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             catalog,
             controlSessionProxy,
             controlSession,
+            descriptorBuffer,
             recordingDescriptorDecoder);
     }
 

@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.Publication;
+import org.agrona.concurrent.UnsafeBuffer;
 
 class ListRecordingsSession extends AbstractListRecordingsSession
 {
@@ -28,9 +29,10 @@ class ListRecordingsSession extends AbstractListRecordingsSession
         final int count,
         final Catalog catalog,
         final ControlSessionProxy proxy,
-        final ControlSession controlSession)
+        final ControlSession controlSession,
+        final UnsafeBuffer descriptorBuffer)
     {
-        super(correlationId, fromRecordingId, controlPublication, catalog, proxy, controlSession);
+        super(correlationId, fromRecordingId, controlPublication, catalog, proxy, controlSession, descriptorBuffer);
 
         this.limitId = fromRecordingId + count;
     }

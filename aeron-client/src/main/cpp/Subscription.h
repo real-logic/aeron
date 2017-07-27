@@ -104,7 +104,7 @@ public:
 
         if (length > 0)
         {
-            int startingIndex = m_roundRobinIndex;
+            int startingIndex = m_roundRobinIndex++;
             if (startingIndex >= length)
             {
                 m_roundRobinIndex = startingIndex = 0;

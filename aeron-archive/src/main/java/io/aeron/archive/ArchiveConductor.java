@@ -113,7 +113,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
         recordingEventsProxy = new RecordingEventsProxy(ctx.idleStrategy(), notificationPublication);
 
-
         catalog = new Catalog(archiveDir, archiveDirChannel, fileSyncLevel, epochClock);
 
         final File countersFile = new File(archiveDir, POSITIONS_FILE_NAME);
@@ -183,22 +182,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         CloseHelper.quietClose(driverAgentInvoker);
         CloseHelper.quietClose(catalog);
         IoUtil.unmap(countersMappedBBuffer);
-
-        // TODO: Should these be exceptions that get recorded or are they asserts?
-        if (!recordingSessionByIdMap.isEmpty())
-        {
-            System.err.println("ERROR: expected no active recording sessions");
-        }
-
-        if (!recordingPositionByIdMap.isEmpty())
-        {
-            System.err.println("ERROR: expected no active recording sessions");
-        }
-
-        if (!replaySessionByIdMap.isEmpty())
-        {
-            System.err.println("ERROR: expected no active replay sessions");
-        }
     }
 
     protected int preWork()
@@ -330,6 +313,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             {
                 errorHandler.onError(new IllegalArgumentException("Only IPC and spy subscriptions are supported." +
                     "Not recording: " + originalChannel + " : " + streamId));
+
                 return;
             }
 

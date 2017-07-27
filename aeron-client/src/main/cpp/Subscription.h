@@ -115,47 +115,82 @@ public:
      * as a series of fragments ordered withing a session.
      *
      * @param fragmentHandler callback for handling each message fragment as it is read.
-     * @param fragmentLimit   number of message fragments to limit for the poll across multiple {@link Image}s.
+     * @param fragmentLimit   number of message fragments to limit for the poll across multiple Image s.
      * @return the number of fragments received
      *
-     * @see FragmentAssembler
+     * @see fragment_handler_t
      */
     template <typename F>
     inline int poll(F&& fragmentHandler, int fragmentLimit)
     {
-        int fragmentsRead = 0;
         const int length = std::atomic_load(&m_imagesLength);
         Image *images = std::atomic_load(&m_images);
+        int fragmentsRead = 0;
 
-        if (length > 0)
+        int startingIndex = m_roundRobinIndex++;
+        if (startingIndex >= length)
         {
-            int startingIndex = m_roundRobinIndex++;
-            if (startingIndex >= length)
-            {
-                m_roundRobinIndex = startingIndex = 0;
-            }
+            m_roundRobinIndex = startingIndex = 0;
+        }
 
-            int i = startingIndex;
+        for (int i = startingIndex; i < length && fragmentsRead < fragmentLimit; i++)
+        {
+            fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit - fragmentsRead);
+        }
 
-            do
-            {
-                fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit - fragmentsRead);
-
-                if (++i == length)
-                {
-                    i = 0;
-                }
-            }
-            while (fragmentsRead < fragmentLimit && i != startingIndex);
+        for (int i = 0; i < startingIndex && fragmentsRead < fragmentLimit; i++)
+        {
+            fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit - fragmentsRead);
         }
 
         return fragmentsRead;
     }
 
     /**
-     * Poll the {@link Image}s under the subscription for available message fragments in blocks.
+     * Poll in a controlled manner the Image s under the subscription for available message fragments.
+     * Control is applied to fragments in the stream. If more fragments can be read on another stream
+     * they will even if BREAK or ABORT is returned from the fragment handler.
+     * <p>
+     * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
+     * as a series of fragments ordered within a session.
+     * <p>
+     * To assemble messages that span multiple fragments then use controlled_poll_fragment_handler_t.
      *
-     * @param blockHandler     to receive a block of fragments from each {@link Image}.
+     * @param fragmentHandler callback for handling each message fragment as it is read.
+     * @param fragmentLimit   number of message fragments to limit for the poll operation across multiple Image s.
+     * @return the number of fragments received
+     * @see controlled_poll_fragment_handler_t
+     */
+    template <typename F>
+    inline int controlledPoll(F&& fragmentHandler, int fragmentLimit)
+    {
+        const int length = std::atomic_load(&m_imagesLength);
+        Image *images = std::atomic_load(&m_images);
+        int fragmentsRead = 0;
+
+        int startingIndex = m_roundRobinIndex++;
+        if (startingIndex >= length)
+        {
+            m_roundRobinIndex = startingIndex = 0;
+        }
+
+        for (int i = startingIndex; i < length && fragmentsRead < fragmentLimit; i++)
+        {
+            fragmentsRead += images[i].controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
+        }
+
+        for (int i = 0; i < startingIndex && fragmentsRead < fragmentLimit; i++)
+        {
+            fragmentsRead += images[i].controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
+        }
+
+        return fragmentsRead;
+    }
+
+    /**
+     * Poll the Image s under the subscription for available message fragments in blocks.
+     *
+     * @param blockHandler     to receive a block of fragments from each Image.
      * @param blockLengthLimit for each individual block.
      * @return the number of bytes consumed.
      */

@@ -122,8 +122,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         try (FileChannel channel = FileChannel.open(countersFile.toPath(), CREATE, READ, WRITE, SPARSE))
         {
             final int maxPositionCounters = this.maxConcurrentRecordings * 2;
-            countersMappedBBuffer =
-                channel.map(MapMode.READ_WRITE, 0, maxPositionCounters * (METADATA_LENGTH + COUNTER_LENGTH));
+            countersMappedBBuffer = channel.map(
+                MapMode.READ_WRITE, 0, maxPositionCounters * (METADATA_LENGTH + COUNTER_LENGTH));
             final UnsafeBuffer countersMetaBuffer =
                 new UnsafeBuffer(countersMappedBBuffer, 0, maxPositionCounters * METADATA_LENGTH);
             final UnsafeBuffer countersValuesBuffer = new UnsafeBuffer(
@@ -153,9 +153,11 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         replayer = constructReplayer();
         recorder = constructRecorder();
+
         final List<String> presetChannels = ctx.presetRecordingChannels();
         final IntArrayList presetStreamIds = ctx.presetRecordingStreamIds();
-        for (int i = 0; i < presetChannels.size(); i++)
+
+        for (int i = 0, size = presetChannels.size(); i < size; i++)
         {
             internalStartRecordingSubscription(presetChannels.get(i), presetStreamIds.get(i));
         }
@@ -606,6 +608,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 // If directories cannot be opened then we ignore.
             }
         }
+
         return dirChannel;
     }
 }

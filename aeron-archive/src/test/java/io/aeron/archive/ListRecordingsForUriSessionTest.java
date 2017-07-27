@@ -4,7 +4,7 @@ import io.aeron.Publication;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
-import org.agrona.collections.MutableInteger;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
@@ -79,7 +79,7 @@ public class ListRecordingsForUriSessionTest
     @Test
     public void shouldSend2Descriptors()
     {
-        final int fromRecordingId = 1;
+        final long fromRecordingId = 1;
         final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
             correlationId,
             controlPublication,
@@ -95,9 +95,9 @@ public class ListRecordingsForUriSessionTest
         session.doWork();
         assertThat(session.isDone(), is(false));
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
-        final MutableInteger counter = new MutableInteger(fromRecordingId);
-        when(controlSessionProxy.sendDescriptor(eq(correlationId), any(), eq(controlPublication)))
-            .then(invocation ->
+        final MutableLong counter = new MutableLong(fromRecordingId);
+        when(controlSessionProxy.sendDescriptor(eq(correlationId), any(), eq(controlPublication))).then(
+            (invocation) ->
             {
                 final UnsafeBuffer b = invocation.getArgument(1);
                 recordingDescriptorDecoder.wrap(b, Catalog.CATALOG_FRAME_LENGTH, BLOCK_LENGTH, SCHEMA_VERSION);

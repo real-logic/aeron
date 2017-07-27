@@ -188,7 +188,7 @@ class Catalog implements AutoCloseable
             return null;
         }
 
-        return new UnsafeBuffer(indexMappedBBuffer, (int) (recordingId * RECORD_LENGTH), RECORD_LENGTH);
+        return new UnsafeBuffer(indexMappedBBuffer, (int)(recordingId * RECORD_LENGTH), RECORD_LENGTH);
     }
 
     long nextRecordingId()
@@ -266,7 +266,6 @@ class Catalog implements AutoCloseable
 
     private void refreshDescriptor(final RecordingDescriptorEncoder encoder, final RecordingDescriptorDecoder decoder)
     {
-        // clean shutdown of recordings will fill in the stopTimestamp, check for it
         if (decoder.stopTimestamp() == NULL_TIME)
         {
             final long stopPosition = decoder.stopPosition();
@@ -314,7 +313,7 @@ class Catalog implements AutoCloseable
 
                     if (lastFragmentSegmentOffset != stoppedSegmentOffset)
                     {
-                        // process has failed between transfering the data to updating th stop position, we cant trust
+                        // process has failed between transferring the data to updating th stop position, we cant trust
                         // the last fragment, so take the position of the previous fragment as the stop position
                         encoder.stopPosition(stopPosition + (lastFragmentSegmentOffset - stoppedSegmentOffset));
                     }

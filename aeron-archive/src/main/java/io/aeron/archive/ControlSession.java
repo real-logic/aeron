@@ -127,10 +127,7 @@ class ControlSession implements Session, ControlRequestListener
         timeConnectedMs = epochClock.time();
     }
 
-    public void onStopRecording(
-        final long correlationId,
-        final String channel,
-        final int streamId)
+    public void onStopRecording(final long correlationId, final String channel, final int streamId)
     {
         validateActive();
         conductor.stopRecording(correlationId, controlPublication, channel, streamId);
@@ -157,7 +154,8 @@ class ControlSession implements Session, ControlRequestListener
             conductor.strippedChannelBuilder(channel).build(),
             streamId,
             this);
-        this.listRecordingsSessions.add(listRecordingsSession);
+
+        listRecordingsSessions.add(listRecordingsSession);
 
         if (listRecordingsSessions.size() == 1)
         {
@@ -168,13 +166,15 @@ class ControlSession implements Session, ControlRequestListener
     public void onListRecordings(final long correlationId, final long fromRecordingId, final int recordCount)
     {
         validateActive();
+
         final ListRecordingsSession listRecordingsSession = conductor.newListRecordingsSession(
             correlationId,
             controlPublication,
             fromRecordingId,
             recordCount,
             this);
-        this.listRecordingsSessions.add(listRecordingsSession);
+
+        listRecordingsSessions.add(listRecordingsSession);
 
         if (listRecordingsSessions.size() == 1)
         {

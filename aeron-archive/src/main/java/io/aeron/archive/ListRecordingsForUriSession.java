@@ -20,7 +20,8 @@ import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 
 class ListRecordingsForUriSession extends AbstractListRecordingsSession
 {
-    private static final int MAX_SCAN_PER_WORK = 16;
+    private static final int MAX_SCANS_PER_WORK_CYCLE = 16;
+
     private final RecordingDescriptorDecoder decoder;
     private final int count;
     private final String channel;
@@ -51,8 +52,8 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
 
     protected int sendDescriptors()
     {
-        int sentBytes = 0;
-        int scanned = 0;
+        int bytesSent = 0;
+        int recordsScanned = 0;
         do
         {
             if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
@@ -64,11 +65,11 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
                     controlPublication);
                 state = State.INACTIVE;
 
-                return 0;
+                break;
             }
 
             recordingId++;
-            scanned++;
+            recordsScanned++;
 
             decoder.wrap(
                 descriptorBuffer,
@@ -76,22 +77,20 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
                 RecordingDescriptorDecoder.BLOCK_LENGTH,
                 RecordingDescriptorDecoder.SCHEMA_VERSION);
 
-            if (decoder.streamId() != streamId || !decoder.strippedChannel().equals(channel))
+            if (decoder.streamId() == streamId && decoder.strippedChannel().equals(channel))
             {
-                continue;
-            }
+                bytesSent += proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
 
-            sentBytes += proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
-
-            if (sent++ >= count)
-            {
-                state = State.INACTIVE;
-                break;
+                if (sent++ >= count)
+                {
+                    state = State.INACTIVE;
+                    break;
+                }
             }
         }
-        while (sentBytes < controlPublication.maxPayloadLength() && scanned < MAX_SCAN_PER_WORK);
+        while (bytesSent < controlPublication.maxPayloadLength() && recordsScanned < MAX_SCANS_PER_WORK_CYCLE);
 
-        return sentBytes;
+        return bytesSent;
     }
 
     protected int init()

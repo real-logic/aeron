@@ -51,7 +51,7 @@ public class ArchiveProxy
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
-     *
+     * <p>
      * This provides a default {@link IdleStrategy} of a {@link YieldingIdleStrategy} when offers are back pressured
      * with a defaults of {@link AeronArchive.Configuration#MESSAGE_TIMEOUT_DEFAULT_NS} and
      * {@link #DEFAULT_MAX_RETRY_ATTEMPTS}.
@@ -218,7 +218,7 @@ public class ArchiveProxy
      * @param correlationId   for this request.
      * @return true if successfully offered otherwise false.
      */
-    public boolean listRecordingsForChannelUri(
+    public boolean listRecordingsForUri(
         final long fromRecordingId,
         final int recordCount,
         final String channel,

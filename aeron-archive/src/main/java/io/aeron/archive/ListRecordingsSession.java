@@ -16,7 +16,8 @@
 package io.aeron.archive;
 
 import io.aeron.Publication;
-import io.aeron.archive.codecs.ControlResponseCode;
+
+import static io.aeron.archive.codecs.ControlResponseCode.RECORDING_NOT_FOUND;
 
 class ListRecordingsSession extends AbstractListRecordingsSession
 {
@@ -74,7 +75,7 @@ class ListRecordingsSession extends AbstractListRecordingsSession
     {
         if (fromId >= catalog.nextRecordingId())
         {
-            sendError(ControlResponseCode.RECORDING_NOT_FOUND, "Requested start id exceeds max known recording id");
+            sendError(RECORDING_NOT_FOUND, "Requested start id exceeds max allocated recording id");
             state = State.INACTIVE;
         }
         else

@@ -18,6 +18,8 @@ package io.aeron.archive;
 import io.aeron.Publication;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 
+import static io.aeron.archive.codecs.ControlResponseCode.RECORDING_NOT_FOUND;
+
 class ListRecordingsForUriSession extends AbstractListRecordingsSession
 {
     private static final int MAX_SCANS_PER_WORK_CYCLE = 16;
@@ -27,7 +29,7 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
     private final String channel;
     private final int streamId;
     private long recordingId;
-    private int sent;
+    private int sent = 0;
 
     ListRecordingsForUriSession(
         final long correlationId,
@@ -81,7 +83,7 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
             {
                 bytesSent += proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
 
-                if (sent++ >= count)
+                if (++sent >= count)
                 {
                     state = State.INACTIVE;
                     break;
@@ -95,7 +97,16 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
 
     protected int init()
     {
-        state = State.ACTIVE;
+        if (recordingId >= catalog.nextRecordingId())
+        {
+            sendError(RECORDING_NOT_FOUND, "Requested start id exceeds max allocated recording id");
+            state = State.INACTIVE;
+        }
+        else
+        {
+            state = State.ACTIVE;
+        }
+
         return 1;
     }
 }

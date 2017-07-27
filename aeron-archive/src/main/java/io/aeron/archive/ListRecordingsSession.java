@@ -17,34 +17,29 @@ package io.aeron.archive;
 
 import io.aeron.Publication;
 
-import static io.aeron.archive.codecs.ControlResponseCode.RECORDING_NOT_FOUND;
-
 class ListRecordingsSession extends AbstractListRecordingsSession
 {
-    private final long fromId;
-    private final long toId;
-
-    private long recordingId;
+    private final long limitId;
 
     ListRecordingsSession(
         final long correlationId,
         final Publication controlPublication,
-        final long fromId,
+        final long fromRecordingId,
         final int count,
         final Catalog catalog,
         final ControlSessionProxy proxy,
         final ControlSession controlSession)
     {
-        super(correlationId, controlPublication, catalog, proxy, controlSession);
-        this.recordingId = fromId;
-        this.fromId = fromId;
-        this.toId = fromId + count;
+        super(correlationId, fromRecordingId, controlPublication, catalog, proxy, controlSession);
+
+        this.limitId = fromRecordingId + count;
     }
 
     protected int sendDescriptors()
     {
         int sentBytes = 0;
-        do
+
+        while (recordingId < limitId && sentBytes < controlPublication.maxPayloadLength())
         {
             if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
             {
@@ -55,34 +50,17 @@ class ListRecordingsSession extends AbstractListRecordingsSession
                     controlPublication);
                 state = State.INACTIVE;
 
-                return 0;
+                return sentBytes;
             }
 
             sentBytes += proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
 
-            if (++recordingId >= toId)
+            if (++recordingId >= limitId)
             {
                 state = State.INACTIVE;
-                break;
             }
         }
-        while (sentBytes < controlPublication.maxPayloadLength());
 
         return sentBytes;
-    }
-
-    protected int init()
-    {
-        if (fromId >= catalog.nextRecordingId())
-        {
-            sendError(RECORDING_NOT_FOUND, "Requested start id exceeds max allocated recording id");
-            state = State.INACTIVE;
-        }
-        else
-        {
-            state = State.ACTIVE;
-        }
-
-        return 1;
     }
 }

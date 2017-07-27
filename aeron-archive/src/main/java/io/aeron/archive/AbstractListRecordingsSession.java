@@ -16,8 +16,9 @@
 package io.aeron.archive;
 
 import io.aeron.Publication;
-import io.aeron.archive.codecs.ControlResponseCode;
 import org.agrona.concurrent.UnsafeBuffer;
+
+import static io.aeron.archive.codecs.ControlResponseCode.RECORDING_NOT_FOUND;
 
 abstract class AbstractListRecordingsSession implements Session
 {
@@ -26,26 +27,30 @@ abstract class AbstractListRecordingsSession implements Session
         INIT, ACTIVE, INACTIVE, CLOSED
     }
 
+    private final ControlSession controlSession;
     protected final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     protected final Publication controlPublication;
-    private final ControlSession controlSession;
     protected final Catalog catalog;
     protected final ControlSessionProxy proxy;
     protected final long correlationId;
+
+    protected long recordingId;
     protected State state = State.INIT;
 
     AbstractListRecordingsSession(
         final long correlationId,
+        final long recordingId,
         final Publication controlPublication,
         final Catalog catalog,
         final ControlSessionProxy proxy,
         final ControlSession controlSession)
     {
+        this.correlationId = correlationId;
+        this.recordingId = recordingId;
         this.controlPublication = controlPublication;
         this.controlSession = controlSession;
         this.catalog = catalog;
         this.proxy = proxy;
-        this.correlationId = correlationId;
     }
 
     public void abort()
@@ -83,16 +88,29 @@ abstract class AbstractListRecordingsSession implements Session
 
     protected abstract int sendDescriptors();
 
-    protected abstract int init();
+    protected int init()
+    {
+        if (recordingId >= catalog.nextRecordingId())
+        {
+            proxy.sendResponse(
+                correlationId,
+                RECORDING_NOT_FOUND,
+                "Requested start id exceeds max allocated recording id",
+                controlPublication);
+
+            state = State.INACTIVE;
+        }
+        else
+        {
+            state = State.ACTIVE;
+        }
+
+        return 1;
+    }
 
     public void close()
     {
         state = State.CLOSED;
         controlSession.onListRecordingSessionClosed(this);
-    }
-
-    protected void sendError(final ControlResponseCode code, final String message)
-    {
-        proxy.sendResponse(correlationId, code, message, controlPublication);
     }
 }

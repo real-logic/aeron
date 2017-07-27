@@ -48,7 +48,7 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
  * 0 |desc-length 4b|------24b-unused----|
  * 1 |RecordingDescriptor (length < 4064)|
  * 2 |...continues...                    |
- *128|------------- repeat --------------|
+ * 128|------------- repeat --------------|
  * </pre>
  * <p>
  */
@@ -91,7 +91,7 @@ class Catalog implements AutoCloseable
         final FileChannel archiveDirChannel,
         final int fileSyncLevel,
         final EpochClock epochClock,
-        final boolean fixupOnRefresh)
+        final boolean fixOnRefresh)
     {
         this.archiveDir = archiveDir;
         this.fileSyncLevel = fileSyncLevel;
@@ -114,7 +114,15 @@ class Catalog implements AutoCloseable
             throw new RuntimeException(ex);
         }
 
-        refreshCatalog(fixupOnRefresh);
+        try
+        {
+            refreshCatalog(fixOnRefresh);
+        }
+        catch (final Throwable ex)
+        {
+            close();
+            throw ex;
+        }
     }
 
     public void close()
@@ -151,7 +159,7 @@ class Catalog implements AutoCloseable
 
         final long newRecordingId = nextRecordingId;
 
-        indexUBuffer.wrap(indexMappedBBuffer, (int) (newRecordingId * RECORD_LENGTH), RECORD_LENGTH);
+        indexUBuffer.wrap(indexMappedBBuffer, (int)(newRecordingId * RECORD_LENGTH), RECORD_LENGTH);
         recordingDescriptorEncoder.wrap(indexUBuffer, CATALOG_FRAME_LENGTH);
         initDescriptor(
             recordingDescriptorEncoder,
@@ -211,17 +219,17 @@ class Catalog implements AutoCloseable
      * termination of recording has resulted in an unaccounted for stopPosition/stopTimestamp. This operation may be
      * expensive for large catalogs.
      */
-    private void refreshCatalog(final boolean fixupOnRefresh)
+    private void refreshCatalog(final boolean fixOnRefresh)
     {
-        if (fixupOnRefresh)
+        if (fixOnRefresh)
         {
-            forEach(this::refreshAndFixupDescriptor, 0, MAX_CATALOG_SIZE / RECORD_LENGTH);
+            forEach(this::refreshAndFixDescriptor, 0, MAX_CATALOG_SIZE / RECORD_LENGTH);
         }
         else
         {
             while (true)
             {
-                final int offset = (int) (nextRecordingId * RECORD_LENGTH);
+                final int offset = (int)(nextRecordingId * RECORD_LENGTH);
                 if (offset >= MAX_CATALOG_SIZE)
                 {
                     break;
@@ -232,6 +240,7 @@ class Catalog implements AutoCloseable
                 {
                     break;
                 }
+
                 nextRecordingId++;
             }
         }
@@ -273,7 +282,7 @@ class Catalog implements AutoCloseable
         final long recordingId,
         final BiConsumer<RecordingDescriptorEncoder, RecordingDescriptorDecoder> consumer)
     {
-        final int offset = (int) (recordingId * RECORD_LENGTH);
+        final int offset = (int)(recordingId * RECORD_LENGTH);
         if (offset >= MAX_CATALOG_SIZE)
         {
             return false;
@@ -284,6 +293,7 @@ class Catalog implements AutoCloseable
         {
             return false;
         }
+
         recordingDescriptorDecoder.wrap(
             indexUBuffer,
             CATALOG_FRAME_LENGTH,
@@ -295,7 +305,7 @@ class Catalog implements AutoCloseable
         return true;
     }
 
-    private void refreshAndFixupDescriptor(
+    private void refreshAndFixDescriptor(
         final RecordingDescriptorEncoder encoder,
         final RecordingDescriptorDecoder decoder)
     {
@@ -304,7 +314,7 @@ class Catalog implements AutoCloseable
             final long stopPosition = decoder.stopPosition();
             final long recordingLength = stopPosition - decoder.startPosition();
             final int segmentFileLength = decoder.segmentFileLength();
-            final int segmentIndex = (int) (recordingLength / segmentFileLength);
+            final int segmentIndex = (int)(recordingLength / segmentFileLength);
             final long stoppedSegmentOffset =
                 ((decoder.startPosition() % decoder.termBufferLength()) + recordingLength) % segmentFileLength;
 
@@ -337,10 +347,12 @@ class Catalog implements AutoCloseable
                             throw new IllegalStateException("Unexpected read failure from file: " +
                                 segmentFile.getAbsolutePath() + " at position:" + nextFragmentSegmentOffset);
                         }
+
                         if (headerFlyweight.frameLength() == 0)
                         {
                             break;
                         }
+
                         lastFragmentSegmentOffset = nextFragmentSegmentOffset;
                         nextFragmentSegmentOffset += align(headerFlyweight.frameLength(), FRAME_ALIGNMENT);
                     }
@@ -355,11 +367,12 @@ class Catalog implements AutoCloseable
                         encoder.stopPosition(stopPosition + (lastFragmentSegmentOffset - stoppedSegmentOffset));
                     }
                 }
-                catch (final Exception e)
+                catch (final Exception ex)
                 {
-                    LangUtil.rethrowUnchecked(e);
+                    LangUtil.rethrowUnchecked(ex);
                 }
             }
+
             encoder.stopTimestamp(epochClock.time());
         }
 

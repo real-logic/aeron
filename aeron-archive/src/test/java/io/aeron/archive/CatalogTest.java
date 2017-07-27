@@ -52,7 +52,6 @@ public class CatalogTest
     private long recordingTwoId;
     private long recordingThreeId;
 
-
     @Before
     public void before() throws Exception
     {
@@ -128,7 +127,7 @@ public class CatalogTest
     @Test
     public void shouldAllowMultipleInstancesForSameStream() throws Exception
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog ignore = new Catalog(archiveDir, null, 0, clock))
         {
             final long newRecordingId = newRecording();
             assertNotEquals(recordingOneId, newRecordingId);
@@ -136,50 +135,41 @@ public class CatalogTest
     }
 
     @Test
-    public void shouldFixupTimestampForEmptyRecordingAfterFailure() throws Exception
+    public void shouldFixTimestampForEmptyRecordingAfterFailure() throws Exception
     {
         final long newRecordingId = newRecording();
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
         {
-            catalog.forEntry(newRecordingId,
-                (e, decoder) ->
-                {
-                    assertThat(decoder.stopTimestamp(), is(NULL_TIME));
-                });
+            catalog.forEntry(newRecordingId, (e, decoder) -> assertThat(decoder.stopTimestamp(), is(NULL_TIME)));
         }
+
         when(clock.time()).thenReturn(42L);
+
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
-            catalog.forEntry(newRecordingId,
-                (e, decoder) ->
-                {
-                    assertThat(decoder.stopTimestamp(), is(42L));
-                });
+            catalog.forEntry(newRecordingId, (e, decoder) -> assertThat(decoder.stopTimestamp(), is(42L)));
         }
     }
 
     @Test(expected = IllegalStateException.class)
-    public void shouldFailFixupOnMissingFile() throws Exception
+    public void shouldFailFixOnMissingFile() throws Exception
     {
         final long newRecordingId = newRecording();
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
         {
-            catalog.forEntry(newRecordingId,
-                (encoder, decoder) ->
-                {
-                    encoder.stopPosition(decoder.startPosition() + 1024);
-                });
+            catalog.forEntry(
+                newRecordingId, (encoder, decoder) -> encoder.stopPosition(decoder.startPosition() + 1024));
         }
+
         when(clock.time()).thenReturn(42L);
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
-        {
-        }
+
+        new Catalog(archiveDir, null, 0, clock);
     }
 
     @Test
-    public void shouldFixupTimestampAndPositionAfterFailure() throws Exception
+    public void shouldFixTimestampAndPositionAfterFailure() throws Exception
     {
         final long newRecordingId = newRecording();
 
@@ -201,6 +191,7 @@ public class CatalogTest
             flyweight.frameLength(0);
             log.write(bb, 1024 + 128);
         }
+
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
         {
             catalog.forEntry(newRecordingId,
@@ -212,6 +203,7 @@ public class CatalogTest
         }
 
         when(clock.time()).thenReturn(42L);
+
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
             catalog.forEntry(newRecordingId,
@@ -241,11 +233,12 @@ public class CatalogTest
                 "channelG?tag=f",
                 "sourceA");
         }
+
         return newRecordingId;
     }
 
     @Test
-    public void shouldFixupTimestampAndPositionAfterFailureFullSegment() throws Exception
+    public void shouldFixTimestampAndPositionAfterFailureFullSegment() throws Exception
     {
         final long newRecordingId = newRecording();
         final long expectedLastFrame = SEGMENT_FILE_SIZE - 128;

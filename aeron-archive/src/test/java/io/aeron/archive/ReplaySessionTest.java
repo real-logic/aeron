@@ -22,7 +22,6 @@ import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.BufferUtil;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -33,13 +32,15 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
+import static io.aeron.archive.Catalog.RECORD_LENGTH;
 import static io.aeron.archive.TestUtil.makeTempDir;
 import static io.aeron.archive.TestUtil.newRecordingFragmentReader;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -60,15 +61,17 @@ public class ReplaySessionTest
     private static final long TIME = 0;
     private static final int REPLAY_SESSION_ID = 0;
     private static final int FRAME_LENGTH = 1024;
-    public static final int SESSION_ID = 1;
-    public static final int STREAM_ID = 1;
-    public static final long START_TIMESTAMP = 0L;
+    private static final int SESSION_ID = 1;
+    private static final int STREAM_ID = 1;
+    private static final long START_TIMESTAMP = 0L;
 
     private final ExclusivePublication mockReplayPub = mock(ExclusivePublication.class);
     private final Publication mockControlPub = mock(Publication.class);
     private final ArchiveConductor.ReplayPublicationSupplier mockReplyPubSupplier =
         mock(ArchiveConductor.ReplayPublicationSupplier.class);
     private final AtomicCounter position = mock(AtomicCounter.class);
+    private final UnsafeBuffer descriptorBuffer =
+        new UnsafeBuffer(allocateDirectAligned(RECORD_LENGTH, FRAME_ALIGNMENT));
 
     private int messageCounter = 0;
 
@@ -76,7 +79,6 @@ public class ReplaySessionTest
     private ControlSessionProxy proxy = mock(ControlSessionProxy.class);
     private EpochClock epochClock = mock(EpochClock.class);
     private RecordingWriter.Context context;
-    private UnsafeBuffer descriptorBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(Catalog.RECORD_LENGTH));
     private long positionLong;
 
     @Before
@@ -115,7 +117,7 @@ public class ReplaySessionTest
         try (RecordingWriter writer = new RecordingWriter(context, descriptorBuffer, position))
         {
 
-            final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
+            final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
 
             final DataHeaderFlyweight headerFwt = new DataHeaderFlyweight();
             final Header header = new Header(INITIAL_TERM_ID, Integer.numberOfLeadingZeros(TERM_BUFFER_LENGTH));
@@ -239,7 +241,7 @@ public class ReplaySessionTest
             INITIAL_TERM_ID,
             TERM_BUFFER_LENGTH);
 
-        final UnsafeBuffer termBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
         mockPublication(mockReplayPub, termBuffer);
         assertNotEquals(0, replaySession.doWork());
         assertThat(messageCounter, is(1));
@@ -312,7 +314,7 @@ public class ReplaySessionTest
             INITIAL_TERM_ID,
             TERM_BUFFER_LENGTH);
 
-        final UnsafeBuffer termBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
         mockPublication(mockReplayPub, termBuffer);
 
         assertNotEquals(0, replaySession.doWork());
@@ -395,7 +397,7 @@ public class ReplaySessionTest
     public void shouldReplayFromActiveRecording()
     {
         final ReplaySession replaySession;
-        final UnsafeBuffer termBuffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, 64));
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
 
         final int recordingId = RECORDING_ID + 1;
         Catalog.initDescriptor(
@@ -417,7 +419,7 @@ public class ReplaySessionTest
         {
             when(epochClock.time()).thenReturn(TIME);
 
-            final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
+            final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
 
             final DataHeaderFlyweight headerFwt = new DataHeaderFlyweight();
             final Header header = new Header(INITIAL_TERM_ID, Integer.numberOfLeadingZeros(TERM_BUFFER_LENGTH));

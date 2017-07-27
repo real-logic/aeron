@@ -257,7 +257,7 @@ TEST_F(ImageTest, shouldEnsureImageIsOpenBeforeReadingPosition)
         SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     image.close();
-    EXPECT_EQ(image.position(), IMAGE_CLOSED);
+    EXPECT_EQ(image.position(), initialPosition);
 }
 
 TEST_F(ImageTest, shouldEnsureImageIsOpenBeforePoll)
@@ -273,7 +273,7 @@ TEST_F(ImageTest, shouldEnsureImageIsOpenBeforePoll)
         SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     image.close();
-    EXPECT_EQ(image.poll(m_handler, INT_MAX), IMAGE_CLOSED);
+    EXPECT_EQ(image.poll(m_handler, INT_MAX), 0);
 }
 
 TEST_F(ImageTest, shouldPollNoFragmentsToControlledFragmentHandler)

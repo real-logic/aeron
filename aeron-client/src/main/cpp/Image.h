@@ -35,8 +35,6 @@ using namespace aeron::concurrent::status;
 
 static UnsafeBufferPosition NULL_POSITION;
 
-static const int IMAGE_CLOSED = -1;
-
 enum class ControlledPollAction : int
 {
     /**
@@ -133,8 +131,10 @@ public:
         const util::index_t capacity = m_termBuffers[0].capacity();
 
         m_joinPosition = subscriberPosition.get();
+        m_finalPosition = m_joinPosition;
         m_termLengthMask = capacity - 1;
         m_positionBitsToShift = BitUtil::numberOfTrailingZeroes(capacity);
+        m_isEos = false;
     }
 
     Image(const Image& image) :
@@ -153,9 +153,12 @@ public:
         m_logBuffers = image.m_logBuffers;
         m_correlationId = image.m_correlationId;
         m_subscriptionRegistrationId = image.m_subscriptionRegistrationId;
+        m_joinPosition = image.m_joinPosition;
+        m_finalPosition = image.m_finalPosition;
         m_sessionId = image.m_sessionId;
         m_termLengthMask = image.m_termLengthMask;
         m_positionBitsToShift = image.m_positionBitsToShift;
+        m_isEos = image.m_isEos;
     }
 
     Image& operator=(Image& image)
@@ -173,9 +176,12 @@ public:
         m_exceptionHandler = image.m_exceptionHandler;
         m_correlationId = image.m_correlationId;
         m_subscriptionRegistrationId = image.m_subscriptionRegistrationId;
+        m_joinPosition = image.m_joinPosition;
+        m_finalPosition = image.m_finalPosition;
         m_sessionId = image.m_sessionId;
         m_termLengthMask = image.m_termLengthMask;
         m_positionBitsToShift = image.m_positionBitsToShift;
+        m_isEos = image.m_isEos;
         return *this;
     }
 
@@ -194,9 +200,12 @@ public:
         m_exceptionHandler = image.m_exceptionHandler;
         m_correlationId = image.m_correlationId;
         m_subscriptionRegistrationId = image.m_subscriptionRegistrationId;
+        m_joinPosition = image.m_joinPosition;
+        m_finalPosition = image.m_finalPosition;
         m_sessionId = image.m_sessionId;
         m_termLengthMask = image.m_termLengthMask;
         m_positionBitsToShift = image.m_positionBitsToShift;
+        m_isEos = image.m_isEos;
         return *this;
     }
 
@@ -289,14 +298,29 @@ public:
      */
     inline std::int64_t position()
     {
-        std::int64_t result = IMAGE_CLOSED;
-
-        if (!isClosed())
+        if (isClosed())
         {
-            result = m_subscriberPosition.get();
+            return m_finalPosition;
         }
 
-        return result;
+        return m_subscriberPosition.get();
+    }
+
+    /**
+     * Is the current consumed position at the end of the stream?
+     *
+     * @return true if at the end of the stream or false if not.
+     */
+    inline bool isEndOfStream()
+    {
+        if (isClosed())
+        {
+            return m_isEos;
+        }
+
+        return m_subscriberPosition.get() >=
+            LogBufferDescriptor::endOfStreamPosition(m_logBuffers->atomicBuffer(
+                LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX));
     }
 
     /**
@@ -312,7 +336,7 @@ public:
     template <typename F>
     inline int poll(F&& fragmentHandler, int fragmentLimit)
     {
-        int result = IMAGE_CLOSED;
+        int result = 0;
 
         if (!isClosed())
         {
@@ -351,7 +375,7 @@ public:
     template <typename F>
     inline int controlledPoll(F&& fragmentHandler, int fragmentLimit)
     {
-        int result = IMAGE_CLOSED;
+        int result = 0;
 
         if (!isClosed())
         {
@@ -442,7 +466,7 @@ public:
     template <typename F>
     inline int blockPoll(F&& blockHandler, int blockLengthLimit)
     {
-        int result = IMAGE_CLOSED;
+        int result = 0;
 
         if (!isClosed())
         {
@@ -478,8 +502,6 @@ public:
         return result;
     }
 
-    // TODO: filePoll() with fd/HANDLE (or MemoryMappedFile) ptr access
-
     std::shared_ptr<LogBuffers> logBuffers()
     {
         return m_logBuffers;
@@ -489,6 +511,9 @@ public:
     inline void close()
     {
         std::atomic_store_explicit(&m_isClosed, true, std::memory_order_relaxed);
+        m_finalPosition = m_subscriberPosition.getVolatile();
+        m_isEos = m_finalPosition >= LogBufferDescriptor::endOfStreamPosition(
+                m_logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX));
     }
     /// @endcond
 
@@ -504,9 +529,11 @@ private:
     std::int64_t m_correlationId;
     std::int64_t m_subscriptionRegistrationId;
     std::int64_t m_joinPosition;
+    std::int64_t m_finalPosition;
     std::int32_t m_sessionId;
     std::int32_t m_termLengthMask;
     std::int32_t m_positionBitsToShift;
+    bool m_isEos;
 };
 
 }

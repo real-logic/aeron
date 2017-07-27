@@ -200,7 +200,9 @@ target_link_libraries(
     ${AERON_LIB_M_LIBS}
     ${CMAKE_THREAD_LIBS_INIT})
 
-install(TARGETS aeron_driver LIBRARY DESTINATION lib)
-install(TARGETS aeron_driver_agent LIBRARY DESTINATION lib)
+install(
+    TARGETS aeron_driver aeron_driver_agent
+    RUNTIME DESTINATION lib
+    LIBRARY DESTINATION lib)
 install(TARGETS aeronmd DESTINATION bin)
 install(DIRECTORY . DESTINATION  include/aeronmd FILES_MATCHING PATTERN "*.h")

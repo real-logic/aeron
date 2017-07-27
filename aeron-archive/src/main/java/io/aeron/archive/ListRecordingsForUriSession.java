@@ -56,7 +56,10 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
     {
         int bytesSent = 0;
         int recordsScanned = 0;
-        do
+
+        while (sent < count &&
+               bytesSent < controlPublication.maxPayloadLength() &&
+               recordsScanned < MAX_SCANS_PER_WORK_CYCLE)
         {
             if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
             {
@@ -86,11 +89,9 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
                 if (++sent >= count)
                 {
                     state = State.INACTIVE;
-                    break;
                 }
             }
         }
-        while (bytesSent < controlPublication.maxPayloadLength() && recordsScanned < MAX_SCANS_PER_WORK_CYCLE);
 
         return bytesSent;
     }

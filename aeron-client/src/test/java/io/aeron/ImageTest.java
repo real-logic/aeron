@@ -92,6 +92,7 @@ public class ImageTest
 
         assertTrue(image.isClosed());
         assertThat(image.poll(mockFragmentHandler, Integer.MAX_VALUE), is(0));
+        assertThat(image.position(), is(0L));
     }
 
     @Test

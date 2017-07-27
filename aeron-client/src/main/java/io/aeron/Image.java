@@ -48,11 +48,12 @@ public class Image
 {
     private final long correlationId;
     private final long joinPosition;
+    private long finalPosition;
     private final int sessionId;
     private final int initialTermId;
     private final int termLengthMask;
     private final int positionBitsToShift;
-    private volatile boolean isEos;
+    private boolean isEos;
     private volatile boolean isClosed;
 
     private final Position subscriberPosition;
@@ -200,7 +201,7 @@ public class Image
     {
         if (isClosed)
         {
-            return 0;
+            return finalPosition;
         }
 
         return subscriberPosition.get();
@@ -575,7 +576,8 @@ public class Image
 
     ManagedResource managedResource()
     {
-        isEos = subscriberPosition.getVolatile() >= endOfStreamPosition(logBuffers.metaDataBuffer());
+        finalPosition = subscriberPosition.getVolatile();
+        isEos = finalPosition >= endOfStreamPosition(logBuffers.metaDataBuffer());
         isClosed = true;
 
         return new ImageManagedResource();

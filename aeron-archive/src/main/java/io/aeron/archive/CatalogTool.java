@@ -132,8 +132,8 @@ public class CatalogTool
     private static boolean verifyLastFile(
         final long recordingId, final int recordingFileCount, final long endSegmentOffset)
     {
-        final String fileName = segmentFileName(recordingId, recordingFileCount - 1);
-        try (FileChannel lastFile = FileChannel.open(new File(archiveDir, fileName).toPath(), READ))
+        final File lastSegmentFile = new File(archiveDir, segmentFileName(recordingId, recordingFileCount - 1));
+        try (FileChannel lastFile = FileChannel.open(lastSegmentFile.toPath(), READ))
         {
             TEMP_BUFFER.clear();
             long position = 0L;
@@ -157,7 +157,8 @@ public class CatalogTool
         }
         catch (final Exception ex)
         {
-            System.err.println("(recordingId=" + recordingId + ") ERR: failed to verify file:" + fileName);
+            System.err.println("(recordingId=" + recordingId + ") ERR: failed to verify file:" +
+                segmentFileName(recordingId, recordingFileCount - 1));
             ex.printStackTrace(System.err);
             return true;
         }
@@ -168,8 +169,8 @@ public class CatalogTool
     private static boolean verifyFirstFile(
         final long recordingId, final RecordingDescriptorDecoder decoder, final long joinSegmentOffset)
     {
-        final String fileName = segmentFileName(recordingId, 0);
-        try (FileChannel firstFile = FileChannel.open(new File(archiveDir, fileName).toPath(), READ))
+        final File firstSegmentFile = new File(archiveDir, segmentFileName(recordingId, 0));
+        try (FileChannel firstFile = FileChannel.open(firstSegmentFile.toPath(), READ))
         {
             TEMP_BUFFER.clear();
             TEMP_BUFFER.limit(DataHeaderFlyweight.HEADER_LENGTH);
@@ -211,7 +212,8 @@ public class CatalogTool
         }
         catch (final Exception ex)
         {
-            System.err.println("(recordingId=" + recordingId + ") ERR: fail to verify file:" + fileName);
+            System.err.println("(recordingId=" + recordingId + ") ERR: fail to verify file:" +
+                segmentFileName(recordingId, 0));
             ex.printStackTrace(System.err);
             return true;
         }

@@ -36,6 +36,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+import static io.aeron.archive.ArchiveUtil.segmentFileName;
 import static io.aeron.archive.TestUtil.newRecordingFragmentReader;
 import static java.nio.file.StandardOpenOption.*;
 import static org.junit.Assert.*;
@@ -183,7 +184,7 @@ public class RecordingSessionTest
         assertEquals(Catalog.NULL_TIME, descriptorDecoder.stopTimestamp());
         assertEquals(START_POSITION + RECORDED_BLOCK_LENGTH, descriptorDecoder.stopPosition());
 
-        final File segmentFile = new File(tempDirForTest, ArchiveUtil.segmentFileName(RECORDING_ID, 0));
+        final File segmentFile = new File(tempDirForTest, segmentFileName(RECORDING_ID, 0));
         assertTrue(segmentFile.exists());
 
         try (RecordingFragmentReader reader = newRecordingFragmentReader(descriptorBuffer, tempDirForTest))

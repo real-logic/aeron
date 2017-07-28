@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+import static io.aeron.archive.ArchiveUtil.segmentFileName;
 import static io.aeron.archive.Catalog.NULL_TIME;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -173,11 +174,8 @@ public class CatalogTest
     {
         final long newRecordingId = newRecording();
 
-        try (FileChannel log = FileChannel.open(
-            new File(archiveDir, ArchiveUtil.segmentFileName(newRecordingId, 0)).toPath(),
-            READ,
-            WRITE,
-            CREATE))
+        final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));
+        try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
 
             final ByteBuffer bb = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
@@ -242,11 +240,9 @@ public class CatalogTest
     {
         final long newRecordingId = newRecording();
         final long expectedLastFrame = SEGMENT_FILE_SIZE - 128;
-        try (FileChannel log = FileChannel.open(
-            new File(archiveDir, ArchiveUtil.segmentFileName(newRecordingId, 0)).toPath(),
-            READ,
-            WRITE,
-            CREATE))
+
+        final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));
+        try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
 
             final ByteBuffer bb = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);

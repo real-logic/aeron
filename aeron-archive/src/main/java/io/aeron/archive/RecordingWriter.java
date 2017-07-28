@@ -35,6 +35,7 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.ArchiveUtil.recordingOffset;
+import static io.aeron.archive.ArchiveUtil.segmentFileName;
 
 /**
  * Responsible for writing out a recording into the file system. A recording has descriptor file and a set of data files
@@ -277,8 +278,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     // extend for testing
     void newRecordingSegmentFile()
     {
-        final String segmentFileName = ArchiveUtil.segmentFileName(recordingId, segmentIndex);
-        final File file = new File(archiveDir, segmentFileName);
+        final File file = new File(archiveDir, segmentFileName(recordingId, segmentIndex));
 
         RandomAccessFile recordingFile = null;
         try

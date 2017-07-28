@@ -52,6 +52,7 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
  * </pre>
  * <p>
  */
+// TODO: use space in the frame to mark an entry as unusable(by the CatalogTool).
 class Catalog implements AutoCloseable
 {
     private static final String CATALOG_INDEX_FILE_NAME = "archive.catalog";

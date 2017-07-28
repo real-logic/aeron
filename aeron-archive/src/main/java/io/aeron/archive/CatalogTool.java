@@ -67,6 +67,7 @@ public class CatalogTool
                 catalog.forEntry(Long.valueOf(args[2]), CatalogTool::verify);
             }
         }
+        // TODO: add a manual override tool to force mark entries as unusable
     }
 
     private static Catalog openCatalog()
@@ -116,6 +117,7 @@ public class CatalogTool
             }
         }
 
+        // TODO: mark entries as 'unusable' on error, and revert that status when confirmed usable again
         if (verifyFirstFile(recordingId, decoder, startSegmentOffset))
         {
             return;
@@ -224,10 +226,10 @@ public class CatalogTool
     private static void printHelp()
     {
         System.out.println("Usage: <archive-dir> <command> <optional recordingId>");
-        System.out.println("  describe: prints out all descriptors in the file. Optionally specify a recording id as" +
-            " the second argument to describe a single recording.");
+        System.out.println("  describe: prints out all descriptors in the file. Optionally specify a recording id" +
+            " to describe a single recording.");
         System.out.println("  verify: verifies all descriptors in the file, checking recording files availability %n" +
-            "and contents. Faulty entries are marked as unusable. Optionally specify a recording id as second%n" +
-            "argument to verify a single recording.");
+            "and contents. Faulty entries are marked as unusable. Optionally specify a recording id%n" +
+            "to verify a single recording.");
     }
 }

@@ -48,11 +48,11 @@ public interface ControlResponseListener extends RecordingDescriptorConsumer
     void onReplayAborted(long correlationId, long stopPosition);
 
     /**
-     * Notifies that the request for a recording descriptor of given id has not been found.
+     * Notifies that the request for a recording descriptor of given id is not found
      *
      * @param correlationId  of the associated request to replay a recording.
      * @param recordingId    requested for recording descriptor.
      * @param maxRecordingId for this archive.
      */
-    void onRecordingNotFound(long correlationId, long recordingId, long maxRecordingId);
+    void onUnknownRecording(long correlationId, long recordingId, long maxRecordingId);
 }

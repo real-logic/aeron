@@ -393,7 +393,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         {
             controlSessionProxy.sendResponse(
                 correlationId,
-                ControlResponseCode.REPLAY_NOT_FOUND,
+                ControlResponseCode.REPLAY_UNKNOWN,
                 null,
                 controlPublication);
         }
@@ -425,7 +425,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             controlSessionProxy.sendResponse(
                 correlationId,
                 ControlResponseCode.ERROR,
-                "Recording not found : " + recordingId,
+                "Unknown recording : " + recordingId,
                 controlPublication);
 
             return;

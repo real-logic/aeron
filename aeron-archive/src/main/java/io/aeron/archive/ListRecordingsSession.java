@@ -21,6 +21,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 class ListRecordingsSession extends AbstractListRecordingsSession
 {
     private final long limitId;
+    private long recordingId;
 
     ListRecordingsSession(
         final long correlationId,
@@ -32,9 +33,10 @@ class ListRecordingsSession extends AbstractListRecordingsSession
         final ControlSession controlSession,
         final UnsafeBuffer descriptorBuffer)
     {
-        super(correlationId, fromRecordingId, controlPublication, catalog, proxy, controlSession, descriptorBuffer);
+        super(correlationId, controlPublication, catalog, proxy, controlSession, descriptorBuffer);
 
-        this.limitId = fromRecordingId + count;
+        recordingId = fromRecordingId;
+        limitId = fromRecordingId + count;
     }
 
     protected int sendDescriptors()
@@ -45,21 +47,21 @@ class ListRecordingsSession extends AbstractListRecordingsSession
         {
             if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
             {
-                proxy.sendDescriptorNotFound(
+                proxy.sendDescriptorUnknown(
                     correlationId,
                     recordingId,
                     catalog.nextRecordingId(),
                     controlPublication);
-                state = State.INACTIVE;
 
-                return sentBytes;
+                isDone = true;
+                break;
             }
 
             sentBytes += proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
 
             if (++recordingId >= limitId)
             {
-                state = State.INACTIVE;
+                isDone = true;
             }
         }
 

@@ -270,7 +270,7 @@ class Catalog implements AutoCloseable
     {
         if (recordingId < 0 || recordingId >= nextRecordingId)
         {
-            throw new IllegalArgumentException("recordingId:" + recordingId + " not found.");
+            throw new IllegalArgumentException("recordingId:" + recordingId + " unknown.");
         }
 
         if (!consumeDescriptor(recordingId, consumer))

@@ -57,7 +57,7 @@ public class FailControlResponseListener implements ControlResponseListener
         fail();
     }
 
-    public void onRecordingNotFound(final long correlationId, final long recordingId, final long maxRecordingId)
+    public void onUnknownRecording(final long correlationId, final long recordingId, final long maxRecordingId)
     {
         fail();
     }

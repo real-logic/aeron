@@ -24,8 +24,7 @@
         <enum name="ControlResponseCode" encodingType="uint8">
             <validValue name="OK">0</validValue>
             <validValue name="ERROR">1</validValue>
-            <validValue name="RECORDING_NOT_FOUND">2</validValue>
-            <validValue name="REPLAY_NOT_FOUND">3</validValue>
+            <validValue name="REPLAY_UNKNOWN">2</validValue>
         </enum>
         <type name="time_t" primitiveType="int64" description="Unix epoch time"/>
     </types>
@@ -112,9 +111,9 @@
         <data  name="channel"            id="5" type="varAsciiEncoding"/>
     </sbe:message>
 
-    <sbe:message name="RecordingNotFoundResponse"
+    <sbe:message name="RecordingUnknownResponse"
                  id="61"
-                 description="Failed to find a recording, also terminates query">
+                 description="Requested recording is unknown, also terminates query">
         <field name="correlationId"      id="1" type="int64"/>
         <field name="recordingId"        id="2" type="int64"/>
         <field name="maxRecordingId"     id="3" type="int64"/>
@@ -122,7 +121,7 @@
 
     <sbe:message name="RecordingDescriptor"
                  id="62"
-                 description="Describes a recording in the metadata file and catalog">
+                 description="Describes a recording in the catalog">
         <field name="correlationId"      id="1" type="int64" />
         <field name="recordingId"        id="2" type="int64"/>
         <field name="startTimestamp"     id="3" type="time_t"/>

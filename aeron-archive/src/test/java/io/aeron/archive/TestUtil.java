@@ -33,7 +33,6 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
 import static org.hamcrest.Matchers.isEmptyOrNullString;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -98,15 +97,14 @@ public class TestUtil
         waitFor(() -> controlResponseAdapter.poll() != 0);
     }
 
-    static void waitForFail(final Subscription controlResponse, final long expectedCorrelationId)
+    static void waitForNotFound(final Subscription controlResponse, final long expectedCorrelationId)
     {
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
             {
-                public void onResponse(
-                    final long correlationId, final ControlResponseCode code, final String errorMessage)
+                public void onUnknownRecording(
+                    final long correlationId, final long recordingId, final long maxRecordingId)
                 {
-                    assertThat(code, not(ControlResponseCode.OK));
                     assertThat(correlationId, is(expectedCorrelationId));
                 }
             },

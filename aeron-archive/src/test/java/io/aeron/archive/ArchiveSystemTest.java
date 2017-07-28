@@ -437,7 +437,7 @@ public class ArchiveSystemTest
     {
         final long requestRecordingsCorrelationId = this.correlationId++;
         client.listRecordings(0, 100, requestRecordingsCorrelationId);
-        TestUtil.waitForFail(controlResponse, requestRecordingsCorrelationId);
+        TestUtil.waitForNotFound(controlResponse, requestRecordingsCorrelationId);
     }
 
     private void verifyDescriptorListOngoingArchive(

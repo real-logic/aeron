@@ -18,28 +18,18 @@ package io.aeron.archive;
 import io.aeron.Publication;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import static io.aeron.archive.codecs.ControlResponseCode.RECORDING_NOT_FOUND;
-
 abstract class AbstractListRecordingsSession implements Session
 {
-    enum State
-    {
-        INIT, ACTIVE, INACTIVE, CLOSED
-    }
-
     private final ControlSession controlSession;
     protected final UnsafeBuffer descriptorBuffer;
     protected final Publication controlPublication;
     protected final Catalog catalog;
     protected final ControlSessionProxy proxy;
     protected final long correlationId;
-
-    protected long recordingId;
-    protected State state = State.INIT;
+    protected boolean isDone = false;
 
     AbstractListRecordingsSession(
         final long correlationId,
-        final long recordingId,
         final Publication controlPublication,
         final Catalog catalog,
         final ControlSessionProxy proxy,
@@ -47,7 +37,6 @@ abstract class AbstractListRecordingsSession implements Session
         final UnsafeBuffer descriptorBuffer)
     {
         this.correlationId = correlationId;
-        this.recordingId = recordingId;
         this.controlPublication = controlPublication;
         this.controlSession = controlSession;
         this.catalog = catalog;
@@ -57,12 +46,12 @@ abstract class AbstractListRecordingsSession implements Session
 
     public void abort()
     {
-        state = State.INACTIVE;
+        isDone = true;
     }
 
     public boolean isDone()
     {
-        return state == State.INACTIVE;
+        return isDone;
     }
 
     public long sessionId()
@@ -72,47 +61,20 @@ abstract class AbstractListRecordingsSession implements Session
 
     public int doWork()
     {
-        int workDone = 0;
+        int workCount = 0;
 
-        switch (state)
+        if (!isDone)
         {
-            case INIT:
-                workDone += init();
-                break;
-
-            case ACTIVE:
-                workDone += sendDescriptors();
-                break;
+            workCount += sendDescriptors();
         }
 
-        return workDone;
+        return workCount;
     }
 
     protected abstract int sendDescriptors();
 
-    protected int init()
-    {
-        if (recordingId >= catalog.nextRecordingId())
-        {
-            proxy.sendResponse(
-                correlationId,
-                RECORDING_NOT_FOUND,
-                "Requested start id exceeds max allocated recording id",
-                controlPublication);
-
-            state = State.INACTIVE;
-        }
-        else
-        {
-            state = State.ACTIVE;
-        }
-
-        return 1;
-    }
-
     public void close()
     {
-        state = State.CLOSED;
         controlSession.onListRecordingSessionClosed(this);
     }
 }

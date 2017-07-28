@@ -28,6 +28,7 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
     private final String channel;
     private final int streamId;
     private int sent = 0;
+    private long recordingId;
 
     ListRecordingsForUriSession(
         final long correlationId,
@@ -42,8 +43,9 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
         final UnsafeBuffer descriptorBuffer,
         final RecordingDescriptorDecoder recordingDescriptorDecoder)
     {
-        super(correlationId, fromRecordingId, controlPublication, catalog, proxy, controlSession, descriptorBuffer);
+        super(correlationId, controlPublication, catalog, proxy, controlSession, descriptorBuffer);
 
+        this.recordingId = fromRecordingId;
         this.count = count;
         this.channel = channel;
         this.streamId = streamId;
@@ -61,13 +63,13 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
         {
             if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
             {
-                proxy.sendDescriptorNotFound(
+                proxy.sendDescriptorUnknown(
                     correlationId,
                     recordingId,
                     catalog.nextRecordingId(),
                     controlPublication);
-                state = State.INACTIVE;
 
+                isDone = true;
                 break;
             }
 
@@ -86,7 +88,7 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
 
                 if (++sent >= count)
                 {
-                    state = State.INACTIVE;
+                    isDone = true;
                 }
             }
         }

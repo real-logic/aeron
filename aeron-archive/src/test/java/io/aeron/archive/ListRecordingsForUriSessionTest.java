@@ -14,7 +14,6 @@ import org.mockito.stubbing.Answer;
 
 import java.io.File;
 
-import static io.aeron.archive.codecs.ControlResponseCode.RECORDING_NOT_FOUND;
 import static io.aeron.archive.codecs.RecordingDescriptorDecoder.BLOCK_LENGTH;
 import static io.aeron.archive.codecs.RecordingDescriptorDecoder.SCHEMA_VERSION;
 import static org.hamcrest.Matchers.is;
@@ -131,8 +130,6 @@ public class ListRecordingsForUriSessionTest
             descriptorBuffer,
             recordingDescriptorDecoder);
 
-        session.doWork();
-        assertThat(session.isDone(), is(false));
         final MutableLong counter = new MutableLong(0);
         when(controlSessionProxy.sendDescriptor(eq(correlationId), any(), eq(controlPublication)))
             .then(verifySendDescriptor(counter));
@@ -179,7 +176,7 @@ public class ListRecordingsForUriSessionTest
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
         session.doWork();
         verify(controlSessionProxy, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
-        verify(controlSessionProxy).sendDescriptorNotFound(eq(correlationId), eq(5L), eq(5L), eq(controlPublication));
+        verify(controlSessionProxy).sendDescriptorUnknown(eq(correlationId), eq(5L), eq(5L), eq(controlPublication));
         verifyNoMoreInteractions(controlSessionProxy);
     }
 
@@ -204,19 +201,21 @@ public class ListRecordingsForUriSessionTest
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
         session.doWork();
         verify(controlSessionProxy, never()).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
-        verify(controlSessionProxy).sendDescriptorNotFound(eq(correlationId), eq(5L), eq(5L), eq(controlPublication));
+        verify(controlSessionProxy).sendDescriptorUnknown(eq(correlationId), eq(5L), eq(5L), eq(controlPublication));
         verifyNoMoreInteractions(controlSessionProxy);
     }
 
     @Test
-    public void shouldSendError()
+    public void shouldSendUnknownOnFirst()
     {
+        when(controlPublication.maxPayloadLength()).thenReturn(4096 - 32);
+
         final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
             correlationId,
             controlPublication,
             5,
             3,
-            "notchannel",
+            "channel",
             1,
             catalog,
             controlSessionProxy,
@@ -225,9 +224,9 @@ public class ListRecordingsForUriSessionTest
             recordingDescriptorDecoder);
 
         session.doWork();
-        assertThat(session.isDone(), is(true));
-        verify(controlSessionProxy)
-            .sendResponse(eq(correlationId), eq(RECORDING_NOT_FOUND), any(), eq(controlPublication));
+
+        verify(controlSessionProxy, never()).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
+        verify(controlSessionProxy).sendDescriptorUnknown(eq(correlationId), eq(5L), eq(5L), eq(controlPublication));
         verifyNoMoreInteractions(controlSessionProxy);
     }
 }

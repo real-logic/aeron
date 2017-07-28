@@ -124,12 +124,14 @@ public class ListRecordingsSessionTest
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
         session.doWork();
         verify(controlSessionProxy, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
-        verify(controlSessionProxy).sendDescriptorNotFound(eq(correlationId), eq(3L), eq(3L), eq(controlPublication));
+        verify(controlSessionProxy).sendDescriptorUnknown(eq(correlationId), eq(3L), eq(3L), eq(controlPublication));
     }
 
     @Test
-    public void shouldSendError()
+    public void shouldSendUnknownOnFirst()
     {
+        when(controlPublication.maxPayloadLength()).thenReturn(8096);
+
         final ListRecordingsSession session = new ListRecordingsSession(
             correlationId,
             controlPublication,
@@ -141,8 +143,8 @@ public class ListRecordingsSessionTest
             descriptorBuffer);
 
         session.doWork();
-        assertThat(session.isDone(), is(true));
-        verify(controlSessionProxy).sendResponse(eq(correlationId), any(), any(), eq(controlPublication));
+
         verify(controlSessionProxy, never()).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
+        verify(controlSessionProxy).sendDescriptorUnknown(eq(correlationId), eq(3L), eq(3L), eq(controlPublication));
     }
 }

@@ -31,8 +31,8 @@ public class ControlResponsePoller
     private final ReplayStartedDecoder replayStartedDecoder = new ReplayStartedDecoder();
     private final ReplayAbortedDecoder replayAbortedDecoder = new ReplayAbortedDecoder();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
-    private final RecordingNotFoundResponseDecoder recordingNotFoundResponseDecoder =
-        new RecordingNotFoundResponseDecoder();
+    private final RecordingUnknownResponseDecoder recordingUnknownResponseDecoder =
+        new RecordingUnknownResponseDecoder();
 
     private final int fragmentLimit;
     private final Subscription subscription;
@@ -147,14 +147,14 @@ public class ControlResponsePoller
                 correlationId = replayAbortedDecoder.correlationId();
                 break;
 
-            case RecordingNotFoundResponseDecoder.TEMPLATE_ID:
-                recordingNotFoundResponseDecoder.wrap(
+            case RecordingUnknownResponseDecoder.TEMPLATE_ID:
+                recordingUnknownResponseDecoder.wrap(
                     buffer,
                     offset + MessageHeaderEncoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                correlationId = recordingNotFoundResponseDecoder.correlationId();
+                correlationId = recordingUnknownResponseDecoder.correlationId();
                 break;
 
             default:
@@ -191,8 +191,8 @@ public class ControlResponsePoller
         return recordingDescriptorDecoder;
     }
 
-    public RecordingNotFoundResponseDecoder recordingNotFoundResponseDecoder()
+    public RecordingUnknownResponseDecoder recordingNotFoundResponseDecoder()
     {
-        return recordingNotFoundResponseDecoder;
+        return recordingUnknownResponseDecoder;
     }
 }

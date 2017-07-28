@@ -31,8 +31,8 @@ public class ControlResponseAdapter
     private final ReplayStartedDecoder replayStartedDecoder = new ReplayStartedDecoder();
     private final ReplayAbortedDecoder replayAbortedDecoder = new ReplayAbortedDecoder();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
-    private final RecordingNotFoundResponseDecoder recordingNotFoundResponseDecoder =
-        new RecordingNotFoundResponseDecoder();
+    private final RecordingUnknownResponseDecoder recordingUnknownResponseDecoder =
+        new RecordingUnknownResponseDecoder();
 
     private final int fragmentLimit;
     private final ControlResponseListener listener;
@@ -93,8 +93,8 @@ public class ControlResponseAdapter
                 handleReplayAborted(listener, buffer, offset);
                 break;
 
-            case RecordingNotFoundResponseDecoder.TEMPLATE_ID:
-                handleRecordingNotFoundResponse(listener, buffer, offset);
+            case RecordingUnknownResponseDecoder.TEMPLATE_ID:
+                handleRecordingUnknownResponse(listener, buffer, offset);
                 break;
 
             default:
@@ -180,20 +180,20 @@ public class ControlResponseAdapter
             replayAbortedDecoder.stopPosition());
     }
 
-    private void handleRecordingNotFoundResponse(
+    private void handleRecordingUnknownResponse(
         final ControlResponseListener controlResponseListener,
         final DirectBuffer buffer,
         final int offset)
     {
-        recordingNotFoundResponseDecoder.wrap(
+        recordingUnknownResponseDecoder.wrap(
             buffer,
             offset + MessageHeaderEncoder.ENCODED_LENGTH,
             messageHeaderDecoder.blockLength(),
             messageHeaderDecoder.version());
 
-        controlResponseListener.onRecordingNotFound(
-            recordingNotFoundResponseDecoder.correlationId(),
-            recordingNotFoundResponseDecoder.recordingId(),
-            recordingNotFoundResponseDecoder.maxRecordingId());
+        controlResponseListener.onUnknownRecording(
+            recordingUnknownResponseDecoder.correlationId(),
+            recordingUnknownResponseDecoder.recordingId(),
+            recordingUnknownResponseDecoder.maxRecordingId());
     }
 }

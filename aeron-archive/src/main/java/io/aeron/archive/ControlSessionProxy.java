@@ -31,8 +31,8 @@ class ControlSessionProxy
     private final ControlResponseEncoder responseEncoder = new ControlResponseEncoder();
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
     private final ReplayAbortedEncoder replayAbortedEncoder = new ReplayAbortedEncoder();
-    private final RecordingNotFoundResponseEncoder recordingNotFoundResponseEncoder =
-        new RecordingNotFoundResponseEncoder();
+    private final RecordingUnknownResponseEncoder recordingUnknownResponseEncoder =
+        new RecordingUnknownResponseEncoder();
 
     ControlSessionProxy(final IdleStrategy idleStrategy)
     {
@@ -97,18 +97,18 @@ class ControlSessionProxy
         }
     }
 
-    void sendDescriptorNotFound(
+    void sendDescriptorUnknown(
         final long correlationId,
         final long recordingId,
         final long maxRecordingId,
         final Publication controlPublication)
     {
-        recordingNotFoundResponseEncoder.wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+        recordingUnknownResponseEncoder.wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
             .recordingId(recordingId)
             .maxRecordingId(maxRecordingId);
 
-        send(controlPublication, HEADER_LENGTH + recordingNotFoundResponseEncoder.encodedLength());
+        send(controlPublication, HEADER_LENGTH + recordingUnknownResponseEncoder.encodedLength());
     }
 
     int sendDescriptor(

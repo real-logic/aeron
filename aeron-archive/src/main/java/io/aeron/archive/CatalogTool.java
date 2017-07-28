@@ -24,7 +24,6 @@ public class CatalogTool
 
     public static void main(final String[] args)
     {
-
         if (args.length == 0 || args.length > 3)
         {
             printHelp();
@@ -57,21 +56,21 @@ public class CatalogTool
         {
             try (Catalog catalog = openCatalog())
             {
-                catalog.forEach((e, d) -> verify(e, d));
+                catalog.forEach(CatalogTool::verify);
             }
         }
         else if (args.length == 3 && args[1].equals("verify"))
         {
             try (Catalog catalog = openCatalog())
             {
-                catalog.forEntry(Long.valueOf(args[2]), (e, d) -> verify(e, d));
+                catalog.forEntry(Long.valueOf(args[2]), CatalogTool::verify);
             }
         }
     }
 
     private static Catalog openCatalog()
     {
-        return new Catalog(archiveDir, null, 0, () -> System.currentTimeMillis(), false);
+        return new Catalog(archiveDir, null, 0, System::currentTimeMillis, false);
     }
 
     private static void verify(final RecordingDescriptorEncoder encoder, final RecordingDescriptorDecoder decoder)
@@ -86,12 +85,11 @@ public class CatalogTool
         final long dataLength = joinSegmentOffset + recordingLength;
         final long endSegmentOffset = dataLength & (segmentFileLength - 1);
 
-        final int recordingFileCount = (int) ((dataLength + segmentFileLength - 1) / segmentFileLength);
+        final int recordingFileCount = (int)((dataLength + segmentFileLength - 1) / segmentFileLength);
 
         final String prefix = recordingId + ".";
-        final String[] recordingFileNames = archiveDir.list((dir, name) -> name.startsWith(prefix));
         final boolean[] filesFound = new boolean[recordingFileCount];
-        for (final String recordingFileName : recordingFileNames)
+        for (final String recordingFileName : archiveDir.list((dir, name) -> name.startsWith(prefix)))
         {
             try
             {
@@ -106,6 +104,7 @@ public class CatalogTool
                 System.err.println("(recordingId=" + recordingId + ") ERR: malformed recording filename:" +
                     recordingFileName);
                 ex.printStackTrace(System.err);
+
                 return;
             }
         }
@@ -133,13 +132,10 @@ public class CatalogTool
     }
 
     private static boolean verifyLastFile(
-        final long recordingId,
-        final int recordingFileCount, final long endSegmentOffset)
+        final long recordingId, final int recordingFileCount, final long endSegmentOffset)
     {
         final String recordingDataFileName = recordingDataFileName(recordingId, recordingFileCount - 1);
-        try (FileChannel lastFile = FileChannel.open(new File(
-            archiveDir,
-            recordingDataFileName).toPath(), READ))
+        try (FileChannel lastFile = FileChannel.open(new File(archiveDir, recordingDataFileName).toPath(), READ))
         {
             TEMP_BUFFER.clear();
             long position = 0L;
@@ -167,18 +163,15 @@ public class CatalogTool
             ex.printStackTrace(System.err);
             return true;
         }
+
         return false;
     }
 
     private static boolean verifyFirstFile(
-        final long recordingId,
-        final RecordingDescriptorDecoder decoder,
-        final long joinSegmentOffset)
+        final long recordingId, final RecordingDescriptorDecoder decoder, final long joinSegmentOffset)
     {
         final String recordingDataFileName = recordingDataFileName(recordingId, 0);
-        try (FileChannel firstFile = FileChannel.open(new File(
-            archiveDir,
-            recordingDataFileName).toPath(), READ))
+        try (FileChannel firstFile = FileChannel.open(new File(archiveDir, recordingDataFileName).toPath(), READ))
         {
             TEMP_BUFFER.clear();
             TEMP_BUFFER.limit(DataHeaderFlyweight.HEADER_LENGTH);
@@ -202,7 +195,7 @@ public class CatalogTool
                 return true;
             }
 
-            final int joinTermOffset = (int) joinSegmentOffset;
+            final int joinTermOffset = (int)joinSegmentOffset;
             if (HEADER_FLYWEIGHT.termOffset() != joinTermOffset)
             {
                 System.err.println("(recordingId=" + recordingId + ") ERR: first fragment termOffset=" +
@@ -224,6 +217,7 @@ public class CatalogTool
             ex.printStackTrace(System.err);
             return true;
         }
+
         return false;
     }
 
@@ -235,6 +229,6 @@ public class CatalogTool
         System.out.println("  verify: verifies all descriptors in the file, checking recording files availability %n" +
             "and contents. Faulty entries are marked as unusable. Optionally specify a recording id as second%n" +
             "argument to verify a single recording.");
-        System.out.println("  reverify: verify a descriptor and, if successful, mark it as usable.");
+        System.out.println("  re-verify: verify a descriptor and, if successful, mark it as usable.");
     }
 }

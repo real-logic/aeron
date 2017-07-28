@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archive.ArchiveUtil.recordingFileName;
+import static io.aeron.archive.ArchiveUtil.segmentFileName;
 import static io.aeron.archive.ArchiveUtil.segmentFileIndex;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
@@ -262,7 +262,7 @@ class RecordingFragmentReader implements AutoCloseable
             if (!openRecordingFile())
             {
                 throw new IllegalStateException("Failed to open segment file: " +
-                    recordingFileName(recordingId, segmentFileIndex));
+                    segmentFileName(recordingId, segmentFileIndex));
             }
 
             termStartSegmentOffset = 0;
@@ -278,7 +278,7 @@ class RecordingFragmentReader implements AutoCloseable
 
     private boolean openRecordingFile() throws IOException
     {
-        final String recordingDataFileName = recordingFileName(recordingId, segmentFileIndex);
+        final String recordingDataFileName = segmentFileName(recordingId, segmentFileIndex);
         final File recordingDataFile = new File(archiveDir, recordingDataFileName);
         final long stopPosition = descriptorStopPosition();
 

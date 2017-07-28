@@ -174,7 +174,7 @@ public class CatalogTest
         final long newRecordingId = newRecording();
 
         try (FileChannel log = FileChannel.open(
-            new File(archiveDir, ArchiveUtil.recordingFileName(newRecordingId, 0)).toPath(),
+            new File(archiveDir, ArchiveUtil.segmentFileName(newRecordingId, 0)).toPath(),
             READ,
             WRITE,
             CREATE))
@@ -243,7 +243,7 @@ public class CatalogTest
         final long newRecordingId = newRecording();
         final long expectedLastFrame = SEGMENT_FILE_SIZE - 128;
         try (FileChannel log = FileChannel.open(
-            new File(archiveDir, ArchiveUtil.recordingFileName(newRecordingId, 0)).toPath(),
+            new File(archiveDir, ArchiveUtil.segmentFileName(newRecordingId, 0)).toPath(),
             READ,
             WRITE,
             CREATE))

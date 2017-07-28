@@ -183,7 +183,7 @@ public class RecordingSessionTest
         assertEquals(Catalog.NULL_TIME, descriptorDecoder.stopTimestamp());
         assertEquals(START_POSITION + RECORDED_BLOCK_LENGTH, descriptorDecoder.stopPosition());
 
-        final File segmentFile = new File(tempDirForTest, ArchiveUtil.recordingFileName(RECORDING_ID, 0));
+        final File segmentFile = new File(tempDirForTest, ArchiveUtil.segmentFileName(RECORDING_ID, 0));
         assertTrue(segmentFile.exists());
 
         try (RecordingFragmentReader reader = newRecordingFragmentReader(descriptorBuffer, tempDirForTest))

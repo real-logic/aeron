@@ -12,7 +12,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.ArchiveUtil.RECORDING_SEGMENT_POSTFIX;
-import static io.aeron.archive.ArchiveUtil.recordingFileName;
+import static io.aeron.archive.ArchiveUtil.segmentFileName;
 import static java.nio.file.StandardOpenOption.READ;
 
 public class CatalogTool
@@ -82,8 +82,8 @@ public class CatalogTool
         final long startPosition = decoder.startPosition();
         final long stopPosition = decoder.stopPosition();
         final long recordingLength = stopPosition - startPosition;
-        final long joinSegmentOffset = startPosition & (termBufferLength - 1);
-        final long dataLength = joinSegmentOffset + recordingLength;
+        final long startSegmentOffset = startPosition & (termBufferLength - 1);
+        final long dataLength = startSegmentOffset + recordingLength;
         final long endSegmentOffset = dataLength & (segmentFileLength - 1);
 
         final int recordingFileCount = (int)((dataLength + segmentFileLength - 1) / segmentFileLength);
@@ -116,7 +116,7 @@ public class CatalogTool
             }
         }
 
-        if (verifyFirstFile(recordingId, decoder, joinSegmentOffset))
+        if (verifyFirstFile(recordingId, decoder, startSegmentOffset))
         {
             return;
         }
@@ -132,7 +132,7 @@ public class CatalogTool
     private static boolean verifyLastFile(
         final long recordingId, final int recordingFileCount, final long endSegmentOffset)
     {
-        final String fileName = recordingFileName(recordingId, recordingFileCount - 1);
+        final String fileName = segmentFileName(recordingId, recordingFileCount - 1);
         try (FileChannel lastFile = FileChannel.open(new File(archiveDir, fileName).toPath(), READ))
         {
             TEMP_BUFFER.clear();
@@ -168,7 +168,7 @@ public class CatalogTool
     private static boolean verifyFirstFile(
         final long recordingId, final RecordingDescriptorDecoder decoder, final long joinSegmentOffset)
     {
-        final String fileName = recordingFileName(recordingId, 0);
+        final String fileName = segmentFileName(recordingId, 0);
         try (FileChannel firstFile = FileChannel.open(new File(archiveDir, fileName).toPath(), READ))
         {
             TEMP_BUFFER.clear();

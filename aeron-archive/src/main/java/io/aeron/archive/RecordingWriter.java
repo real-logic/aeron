@@ -277,7 +277,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     // extend for testing
     void newRecordingSegmentFile()
     {
-        final String segmentFileName = ArchiveUtil.recordingFileName(recordingId, segmentIndex);
+        final String segmentFileName = ArchiveUtil.segmentFileName(recordingId, segmentIndex);
         final File file = new File(archiveDir, segmentFileName);
 
         RandomAccessFile recordingFile = null;

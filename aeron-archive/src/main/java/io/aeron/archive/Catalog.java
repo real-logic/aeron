@@ -44,10 +44,10 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
  * <p>
  * Catalog file format:
  * <pre>
- * # |---------------- 32b --------------|
- * 0 |desc-length 4b|------24b-unused----|
- * 1 |RecordingDescriptor (length < 4064)|
- * 2 |...continues...                    |
+ *  # |---------------- 32b --------------|
+ *  0 |desc-length 4b|------24b-unused----|
+ *  1 |RecordingDescriptor (length < 4064)|
+ *  2 |...continues...                    |
  * 128|------------- repeat --------------|
  * </pre>
  * <p>

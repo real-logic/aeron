@@ -269,7 +269,6 @@ public final class AeronArchive implements AutoCloseable
             if (poller.correlationId() == expectedCorrelationId)
             {
                 final int templateId = poller.templateId();
-                System.out.println("templateId = " + templateId);
 
                 if (templateId == RecordingDescriptorDecoder.TEMPLATE_ID)
                 {
@@ -282,8 +281,6 @@ public final class AeronArchive implements AutoCloseable
                 }
                 else if (templateId == RecordingUnknownResponseDecoder.TEMPLATE_ID)
                 {
-                    final long maxId = poller.recordingUnknownResponseDecoder().maxRecordingId();
-                    System.out.println("maxId = " + maxId);
                     break;
                 }
                 else if (templateId == ControlResponseDecoder.TEMPLATE_ID &&

@@ -320,14 +320,10 @@ class Catalog implements AutoCloseable
             final File segmentFile = new File(archiveDir, segmentFileName(decoder.recordingId(), segmentIndex));
             if (!segmentFile.exists())
             {
-                if (recordingLength == 0L || stoppedSegmentOffset == 0)
+                if (recordingLength != 0 || stoppedSegmentOffset != 0)
                 {
-                    // the process failed before writing to a new file
-                }
-                else
-                {
-                    throw new IllegalStateException("Could not open data file: " + segmentFile.getAbsolutePath() +
-                        " - Please use the CatalogTool to fix up archive directory.");
+                    throw new IllegalStateException("Failed to open recording: " + segmentFile.getAbsolutePath() +
+                        " - Please use the CatalogTool to fix the archive.");
                 }
             }
             else
@@ -372,6 +368,7 @@ class Catalog implements AutoCloseable
                 nextFragmentSegmentOffset += align(headerFlyweight.frameLength(), FRAME_ALIGNMENT);
             }
             while (nextFragmentSegmentOffset != segmentFileLength);
+
             // since we know descriptor buffers are forced on file rollover we don't need to handle rollover
             // beyond segment boundary (see RecordingWriter#onFileRollover)
 
@@ -383,7 +380,7 @@ class Catalog implements AutoCloseable
 
             if (lastFragmentSegmentOffset != stoppedSegmentOffset)
             {
-                // process has failed between transferring the data to updating th stop position, we cant trust
+                // process has failed between transferring the data to updating the stop position, we can't trust
                 // the last fragment, so take the position of the previous fragment as the stop position
                 encoder.stopPosition(stopPosition + (lastFragmentSegmentOffset - stoppedSegmentOffset));
             }

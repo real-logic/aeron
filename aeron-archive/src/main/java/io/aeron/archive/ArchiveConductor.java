@@ -69,7 +69,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final RecordingWriter.Context recordingCtx;
 
     private final Subscription controlSubscription;
-    private final Subscription recordingControlSubscription;
+
     private final Catalog catalog;
     private final RecordingEventsProxy recordingEventsProxy;
     private final int maxConcurrentRecordings;
@@ -109,12 +109,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             ctx.controlChannel(),
             ctx.controlStreamId(),
             this::onAvailableControlImage,
-            null);
-
-        recordingControlSubscription = aeron.addSubscription(
-            ctx.recordingControlChannel(),
-            ctx.recordingControlStreamId(),
-            this::onAvailableRecordingControlImage,
             null);
 
         final Publication notificationPublication = aeron.addPublication(
@@ -205,12 +199,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
      * available image notifications are run from this agent thread.
      */
     private void onAvailableControlImage(final Image image)
-    {
-        addSession(new ControlSession(image, this, epochClock));
-    }
-
-
-    private void onAvailableRecordingControlImage(final Image image)
     {
         addSession(new ControlSession(image, this, epochClock));
     }

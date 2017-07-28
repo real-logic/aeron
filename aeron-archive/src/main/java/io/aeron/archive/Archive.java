@@ -257,9 +257,6 @@ public final class Archive implements AutoCloseable
         private String controlChannel;
         private int controlStreamId;
 
-        private String recordingControlChannel;
-        private int recordingControlStreamId;
-
         private String recordingEventsChannel;
         private int recordingEventsStreamId;
 
@@ -294,9 +291,6 @@ public final class Archive implements AutoCloseable
 
             controlChannel(AeronArchive.Configuration.controlChannel());
             controlStreamId(AeronArchive.Configuration.controlStreamId());
-
-            recordingControlChannel(AeronArchive.Configuration.recordingControlChannel());
-            recordingControlStreamId(AeronArchive.Configuration.recordingControlStreamId());
 
             recordingEventsChannel(AeronArchive.Configuration.recordingEventsChannel());
             recordingEventsStreamId(AeronArchive.Configuration.recordingEventsStreamId());
@@ -437,50 +431,6 @@ public final class Archive implements AutoCloseable
         public Context controlStreamId(final int controlStreamId)
         {
             this.controlStreamId = controlStreamId;
-            return this;
-        }
-
-        /**
-         * Get the channel URI on which the recording control request subscription will listen.
-         *
-         * @return the channel URI on which the recording control request subscription will listen
-         */
-        public String recordingControlChannel()
-        {
-            return recordingControlChannel;
-        }
-
-        /**
-         * Set the channel URI on which the recording control request subscription will listen.
-         *
-         * @param recordingControlChannel channel URI on which the recording control request subscription will listen
-         * @return this for a fluent API.
-         */
-        public Context recordingControlChannel(final String recordingControlChannel)
-        {
-            this.recordingControlChannel = recordingControlChannel;
-            return this;
-        }
-
-        /**
-         * Get the stream id on which the recording control request subscription will listen.
-         *
-         * @return the stream id on which the recording control request subscription will listen
-         */
-        public int recordingControlStreamId()
-        {
-            return recordingControlStreamId;
-        }
-
-        /**
-         * Set the stream id on which the recording control request subscription will listen.
-         *
-         * @param recordingControlStreamId recording stream id on which the control request subscription will listen
-         * @return this for a fluent API.
-         */
-        public Context recordingControlStreamId(final int recordingControlStreamId)
-        {
-            this.recordingControlStreamId = recordingControlStreamId;
             return this;
         }
 

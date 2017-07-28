@@ -55,8 +55,6 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
 // TODO: use space in the frame to mark an entry as unusable(by the CatalogTool).
 class Catalog implements AutoCloseable
 {
-    private static final String CATALOG_INDEX_FILE_NAME = "archive.catalog";
-
     static final int PAGE_SIZE = 4096;
     static final long NULL_TIME = -1L;
     static final long NULL_POSITION = -1;
@@ -67,6 +65,8 @@ class Catalog implements AutoCloseable
     static final int NULL_RECORD_ID = -1;
     static final int MAX_CATALOG_SIZE = Integer.MAX_VALUE - (RECORD_LENGTH - 1);
     static final int MAX_RECORDING_ID = MAX_CATALOG_SIZE / RECORD_LENGTH;
+
+    private static final String CATALOG_INDEX_FILE_NAME = "archive.catalog";
 
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
@@ -161,7 +161,7 @@ class Catalog implements AutoCloseable
 
         final long newRecordingId = nextRecordingId;
 
-        indexUBuffer.wrap(indexMappedBBuffer, (int)(newRecordingId * RECORD_LENGTH), RECORD_LENGTH);
+        indexUBuffer.wrap(indexMappedBBuffer, (int) (newRecordingId * RECORD_LENGTH), RECORD_LENGTH);
         recordingDescriptorEncoder.wrap(indexUBuffer, CATALOG_FRAME_LENGTH);
         initDescriptor(
             recordingDescriptorEncoder,
@@ -196,7 +196,7 @@ class Catalog implements AutoCloseable
             return false;
         }
 
-        buffer.wrap(indexMappedBBuffer, (int)(recordingId * RECORD_LENGTH), RECORD_LENGTH);
+        buffer.wrap(indexMappedBBuffer, (int) (recordingId * RECORD_LENGTH), RECORD_LENGTH);
 
         return true;
     }
@@ -208,7 +208,7 @@ class Catalog implements AutoCloseable
             return null;
         }
 
-        return new UnsafeBuffer(indexMappedBBuffer, (int)(recordingId * RECORD_LENGTH), RECORD_LENGTH);
+        return new UnsafeBuffer(indexMappedBBuffer, (int) (recordingId * RECORD_LENGTH), RECORD_LENGTH);
     }
 
     long nextRecordingId()
@@ -231,7 +231,7 @@ class Catalog implements AutoCloseable
         {
             while (true)
             {
-                final int offset = (int)(nextRecordingId * RECORD_LENGTH);
+                final int offset = (int) (nextRecordingId * RECORD_LENGTH);
                 if (offset >= MAX_CATALOG_SIZE)
                 {
                     break;
@@ -266,8 +266,7 @@ class Catalog implements AutoCloseable
     }
 
     void forEntry(
-        final long recordingId,
-        final BiConsumer<RecordingDescriptorEncoder, RecordingDescriptorDecoder> consumer)
+        final long recordingId, final BiConsumer<RecordingDescriptorEncoder, RecordingDescriptorDecoder> consumer)
     {
         if (recordingId < 0 || recordingId >= nextRecordingId)
         {
@@ -281,10 +280,9 @@ class Catalog implements AutoCloseable
     }
 
     private boolean consumeDescriptor(
-        final long recordingId,
-        final BiConsumer<RecordingDescriptorEncoder, RecordingDescriptorDecoder> consumer)
+        final long recordingId, final BiConsumer<RecordingDescriptorEncoder, RecordingDescriptorDecoder> consumer)
     {
-        final int offset = (int)(recordingId * RECORD_LENGTH);
+        final int offset = (int) (recordingId * RECORD_LENGTH);
         if (offset >= MAX_CATALOG_SIZE)
         {
             return false;
@@ -308,15 +306,14 @@ class Catalog implements AutoCloseable
     }
 
     private void refreshAndFixDescriptor(
-        final RecordingDescriptorEncoder encoder,
-        final RecordingDescriptorDecoder decoder)
+        final RecordingDescriptorEncoder encoder, final RecordingDescriptorDecoder decoder)
     {
         if (decoder.stopTimestamp() == NULL_TIME)
         {
             final long stopPosition = decoder.stopPosition();
             final long recordingLength = stopPosition - decoder.startPosition();
             final int segmentFileLength = decoder.segmentFileLength();
-            final int segmentIndex = (int)(recordingLength / segmentFileLength);
+            final int segmentIndex = (int) (recordingLength / segmentFileLength);
             final long stoppedSegmentOffset =
                 ((decoder.startPosition() % decoder.termBufferLength()) + recordingLength) % segmentFileLength;
 
@@ -335,56 +332,66 @@ class Catalog implements AutoCloseable
             }
             else
             {
-                try (FileChannel segment = FileChannel.open(segmentFile.toPath(), READ))
-                {
-                    final ByteBuffer headerBB = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
-                    final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(headerBB);
-                    long lastFragmentSegmentOffset = stoppedSegmentOffset;
-                    long nextFragmentSegmentOffset = stoppedSegmentOffset;
-                    do
-                    {
-                        headerBB.clear();
-                        if (HEADER_LENGTH != segment.read(headerBB, nextFragmentSegmentOffset))
-                        {
-                            throw new IllegalStateException("Unexpected read failure from file: " +
-                                segmentFile.getAbsolutePath() + " at position:" + nextFragmentSegmentOffset);
-                        }
-
-                        if (headerFlyweight.frameLength() == 0)
-                        {
-                            break;
-                        }
-
-                        lastFragmentSegmentOffset = nextFragmentSegmentOffset;
-                        nextFragmentSegmentOffset += align(headerFlyweight.frameLength(), FRAME_ALIGNMENT);
-                    }
-                    while (nextFragmentSegmentOffset != segmentFileLength);
-                    // since we know descriptor buffers are forced on file rollover we don't need to handle rollover
-                    // beyond segment boundary (see RecordingWriter#onFileRollover)
-
-                    if (nextFragmentSegmentOffset / PAGE_SIZE == lastFragmentSegmentOffset / PAGE_SIZE)
-                    {
-                        // if fragment does not straddle page boundaries we need not drop the last fragment
-                        lastFragmentSegmentOffset = nextFragmentSegmentOffset;
-                    }
-
-                    if (lastFragmentSegmentOffset != stoppedSegmentOffset)
-                    {
-                        // process has failed between transferring the data to updating th stop position, we cant trust
-                        // the last fragment, so take the position of the previous fragment as the stop position
-                        encoder.stopPosition(stopPosition + (lastFragmentSegmentOffset - stoppedSegmentOffset));
-                    }
-                }
-                catch (final Exception ex)
-                {
-                    LangUtil.rethrowUnchecked(ex);
-                }
+                recoverStopPosition(encoder, segmentFile, segmentFileLength, stopPosition, stoppedSegmentOffset);
             }
 
             encoder.stopTimestamp(epochClock.time());
         }
 
         nextRecordingId = decoder.recordingId() + 1;
+    }
+
+    private void recoverStopPosition(
+        final RecordingDescriptorEncoder encoder,
+        final File segmentFile,
+        final int segmentFileLength,
+        final long stopPosition,
+        final long stoppedSegmentOffset)
+    {
+        try (FileChannel segment = FileChannel.open(segmentFile.toPath(), READ))
+        {
+            final ByteBuffer headerBB = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
+            final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(headerBB);
+            long lastFragmentSegmentOffset = stoppedSegmentOffset;
+            long nextFragmentSegmentOffset = stoppedSegmentOffset;
+            do
+            {
+                headerBB.clear();
+                if (HEADER_LENGTH != segment.read(headerBB, nextFragmentSegmentOffset))
+                {
+                    throw new IllegalStateException("Unexpected read failure from file: " +
+                        segmentFile.getAbsolutePath() + " at position:" + nextFragmentSegmentOffset);
+                }
+
+                if (headerFlyweight.frameLength() == 0)
+                {
+                    break;
+                }
+
+                lastFragmentSegmentOffset = nextFragmentSegmentOffset;
+                nextFragmentSegmentOffset += align(headerFlyweight.frameLength(), FRAME_ALIGNMENT);
+            }
+            while (nextFragmentSegmentOffset != segmentFileLength);
+            // since we know descriptor buffers are forced on file rollover we don't need to handle rollover
+            // beyond segment boundary (see RecordingWriter#onFileRollover)
+
+            if (nextFragmentSegmentOffset / PAGE_SIZE == lastFragmentSegmentOffset / PAGE_SIZE)
+            {
+                // if fragment does not straddle page boundaries we need not drop the last fragment
+                lastFragmentSegmentOffset = nextFragmentSegmentOffset;
+            }
+
+            if (lastFragmentSegmentOffset != stoppedSegmentOffset)
+            {
+                // process has failed between transferring the data to updating th stop position, we cant trust
+                // the last fragment, so take the position of the previous fragment as the stop position
+                encoder.stopPosition(stopPosition + (lastFragmentSegmentOffset - stoppedSegmentOffset));
+            }
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
     }
 
     static void initDescriptor(

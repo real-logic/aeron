@@ -11,7 +11,8 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archive.ArchiveUtil.recordingDataFileName;
+import static io.aeron.archive.ArchiveUtil.RECORDING_SEGMENT_POSTFIX;
+import static io.aeron.archive.ArchiveUtil.recordingFileName;
 import static java.nio.file.StandardOpenOption.READ;
 
 public class CatalogTool
@@ -89,20 +90,17 @@ public class CatalogTool
 
         final String prefix = recordingId + ".";
         final boolean[] filesFound = new boolean[recordingFileCount];
-        for (final String recordingFileName : archiveDir.list((dir, name) -> name.startsWith(prefix)))
+        for (final String fileName : archiveDir.list((dir, name) -> name.startsWith(prefix)))
         {
             try
             {
                 final int index = Integer.valueOf(
-                    recordingFileName.substring(
-                        prefix.length(),
-                        recordingFileName.length() - ArchiveUtil.RECORDING_SEGMENT_POSTFIX.length()));
+                    fileName.substring(prefix.length(), fileName.length() - RECORDING_SEGMENT_POSTFIX.length()));
                 filesFound[index] = true;
             }
             catch (final Exception ex)
             {
-                System.err.println("(recordingId=" + recordingId + ") ERR: malformed recording filename:" +
-                    recordingFileName);
+                System.err.println("(recordingId=" + recordingId + ") ERR: malformed recording filename:" + fileName);
                 ex.printStackTrace(System.err);
 
                 return;
@@ -134,8 +132,8 @@ public class CatalogTool
     private static boolean verifyLastFile(
         final long recordingId, final int recordingFileCount, final long endSegmentOffset)
     {
-        final String recordingDataFileName = recordingDataFileName(recordingId, recordingFileCount - 1);
-        try (FileChannel lastFile = FileChannel.open(new File(archiveDir, recordingDataFileName).toPath(), READ))
+        final String fileName = recordingFileName(recordingId, recordingFileCount - 1);
+        try (FileChannel lastFile = FileChannel.open(new File(archiveDir, fileName).toPath(), READ))
         {
             TEMP_BUFFER.clear();
             long position = 0L;
@@ -159,7 +157,7 @@ public class CatalogTool
         }
         catch (final Exception ex)
         {
-            System.err.println("(recordingId=" + recordingId + ") ERR: failed to verify file:" + recordingDataFileName);
+            System.err.println("(recordingId=" + recordingId + ") ERR: failed to verify file:" + fileName);
             ex.printStackTrace(System.err);
             return true;
         }
@@ -170,8 +168,8 @@ public class CatalogTool
     private static boolean verifyFirstFile(
         final long recordingId, final RecordingDescriptorDecoder decoder, final long joinSegmentOffset)
     {
-        final String recordingDataFileName = recordingDataFileName(recordingId, 0);
-        try (FileChannel firstFile = FileChannel.open(new File(archiveDir, recordingDataFileName).toPath(), READ))
+        final String fileName = recordingFileName(recordingId, 0);
+        try (FileChannel firstFile = FileChannel.open(new File(archiveDir, fileName).toPath(), READ))
         {
             TEMP_BUFFER.clear();
             TEMP_BUFFER.limit(DataHeaderFlyweight.HEADER_LENGTH);
@@ -213,7 +211,7 @@ public class CatalogTool
         }
         catch (final Exception ex)
         {
-            System.err.println("(recordingId=" + recordingId + ") ERR: fail to verify file:" + recordingDataFileName);
+            System.err.println("(recordingId=" + recordingId + ") ERR: fail to verify file:" + fileName);
             ex.printStackTrace(System.err);
             return true;
         }
@@ -225,10 +223,9 @@ public class CatalogTool
     {
         System.out.println("Usage: <archive-dir> <command> <optional recordingId>");
         System.out.println("  describe: prints out all descriptors in the file. Optionally specify a recording id as" +
-            " second argument to describe a single recording.");
+            " the second argument to describe a single recording.");
         System.out.println("  verify: verifies all descriptors in the file, checking recording files availability %n" +
             "and contents. Faulty entries are marked as unusable. Optionally specify a recording id as second%n" +
             "argument to verify a single recording.");
-        System.out.println("  re-verify: verify a descriptor and, if successful, mark it as usable.");
     }
 }

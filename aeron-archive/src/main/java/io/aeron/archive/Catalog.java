@@ -30,7 +30,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.function.BiConsumer;
 
-import static io.aeron.archive.ArchiveUtil.recordingDataFileName;
+import static io.aeron.archive.ArchiveUtil.recordingFileName;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.file.StandardOpenOption.*;
@@ -318,7 +318,7 @@ class Catalog implements AutoCloseable
             final long stoppedSegmentOffset =
                 ((decoder.startPosition() % decoder.termBufferLength()) + recordingLength) % segmentFileLength;
 
-            final File segmentFile = new File(archiveDir, recordingDataFileName(decoder.recordingId(), segmentIndex));
+            final File segmentFile = new File(archiveDir, recordingFileName(decoder.recordingId(), segmentIndex));
             if (!segmentFile.exists())
             {
                 if (recordingLength == 0L || stoppedSegmentOffset == 0)

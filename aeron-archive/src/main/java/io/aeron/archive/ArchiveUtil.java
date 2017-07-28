@@ -19,7 +19,7 @@ class ArchiveUtil
 {
     static final String RECORDING_SEGMENT_POSTFIX = ".rec";
 
-    static String recordingDataFileName(final long recordingId, final int segmentIndex)
+    static String recordingFileName(final long recordingId, final int segmentIndex)
     {
         return recordingId + "." + segmentIndex + RECORDING_SEGMENT_POSTFIX;
     }

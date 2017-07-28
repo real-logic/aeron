@@ -204,13 +204,9 @@ class RecordingFragmentReader implements AutoCloseable
 
     private boolean newDataUnavailable()
     {
-        if (recordingPosition != null &&
+        return recordingPosition != null &&
             replayPosition == this.stopPosition &&
-            !refreshStopPositionAndLimit(replayPosition, this.stopPosition))
-        {
-            return true;
-        }
-        return false;
+            !refreshStopPositionAndLimit(replayPosition, this.stopPosition);
     }
 
     private boolean refreshStopPositionAndLimit(final long replayPosition, final long oldStopPosition)

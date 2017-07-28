@@ -61,7 +61,7 @@ class ReplaySession implements Session
     }
 
     static final long LINGER_LENGTH_MS = 1000;
-    private static final int REPLAY_SEND_BATCH_SIZE = Integer.getInteger("aeron.archive.replay.send.batch", 8);
+    private static final int REPLAY_BATCH_SIZE = Archive.Configuration.replayBatchSize();
 
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
     private final RecordingFragmentReader.SimplifiedControlledPoll fragmentPoller = this::onFragment;
@@ -117,6 +117,7 @@ class ReplaySession implements Session
                 ") is before recording start position(=" + startPosition + ")");
             cursor = null;
             replayPublication = null;
+
             return;
         }
 
@@ -127,6 +128,7 @@ class ReplaySession implements Session
                 ") is after recording stop position(=" + stopPosition + ")");
             cursor = null;
             replayPublication = null;
+
             return;
         }
 
@@ -170,14 +172,10 @@ class ReplaySession implements Session
 
     public void close()
     {
-        if (state == State.CLOSED)
-        {
-            throw new IllegalStateException();
-        }
+        state = State.CLOSED;
 
         CloseHelper.quietClose(replayPublication);
         CloseHelper.quietClose(cursor);
-        state = State.CLOSED;
     }
 
     public long sessionId()
@@ -188,6 +186,7 @@ class ReplaySession implements Session
     public int doWork()
     {
         int workDone = 0;
+
         if (state == State.REPLAY)
         {
             workDone += replay();
@@ -208,11 +207,10 @@ class ReplaySession implements Session
     {
         if (controlPublication.isConnected())
         {
-            final long position = replayPublication == null ? NULL_POSITION : replayPublication.position();
             threadLocalControlSessionProxy.sendReplayAborted(
                 correlationId,
                 replaySessionId,
-                position,
+                replayPublication == null ? NULL_POSITION : replayPublication.position(),
                 controlPublication);
         }
 
@@ -238,7 +236,7 @@ class ReplaySession implements Session
     {
         try
         {
-            final int polled = cursor.controlledPoll(fragmentPoller, REPLAY_SEND_BATCH_SIZE);
+            final int polled = cursor.controlledPoll(fragmentPoller, REPLAY_BATCH_SIZE);
             if (cursor.isDone())
             {
                 lingerSinceMs = epochClock.time();
@@ -302,14 +300,15 @@ class ReplaySession implements Session
 
     private int linger()
     {
-        if (isLingerDone() || !replayPublication.isConnected())
+        if (hasLingered() || !replayPublication.isConnected())
         {
             state = State.INACTIVE;
         }
+
         return 0;
     }
 
-    private boolean isLingerDone()
+    private boolean hasLingered()
     {
         return epochClock.time() - LINGER_LENGTH_MS > lingerSinceMs;
     }
@@ -318,7 +317,7 @@ class ReplaySession implements Session
     {
         if (!replayPublication.isConnected())
         {
-            if (isLingerDone())
+            if (hasLingered())
             {
                 return closeOnError(null, "No connection established for replay");
             }
@@ -332,9 +331,9 @@ class ReplaySession implements Session
         return 1;
     }
 
-    private int closeOnError(final Throwable e, final String errorMessage)
+    private int closeOnError(final Throwable ex, final String errorMessage)
     {
-        this.state = State.INACTIVE;
+        state = State.INACTIVE;
         if (controlPublication.isConnected())
         {
             threadLocalControlSessionProxy.sendResponse(
@@ -344,9 +343,9 @@ class ReplaySession implements Session
                 controlPublication);
         }
 
-        if (e != null)
+        if (ex != null)
         {
-            LangUtil.rethrowUnchecked(e);
+            LangUtil.rethrowUnchecked(ex);
         }
 
         return 0;

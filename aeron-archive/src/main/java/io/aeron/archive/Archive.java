@@ -156,7 +156,6 @@ public final class Archive implements AutoCloseable
         public static final String THREADING_MODE_PROP_NAME = "aeron.archive.threading.mode";
         public static final String ARCHIVER_IDLE_STRATEGY_PROP_NAME = "aeron.archive.idle.strategy";
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
-        private static final String CONTROLLABLE_IDLE_STRATEGY = "org.agrona.concurrent.ControllableIdleStrategy";
 
         private static final long AGENT_IDLE_MAX_SPINS = 100;
         private static final long AGENT_IDLE_MAX_YIELDS = 100;
@@ -169,6 +168,10 @@ public final class Archive implements AutoCloseable
         public static final String MAX_CONCURRENT_REPLAYS_PROP_NAME = "aeron.archive.max.concurrent.replays";
         public static final int MAX_CONCURRENT_REPLAYS_DEFAULT = 128;
 
+        public static final String REPLAY_BATCH_SIZE_PROP_NAME = "aeron.archive.replay.batch.size";
+        public static final int REPLAY_BATCH_SIZE_DEFAULT = 8;
+
+        private static final String CONTROLLABLE_IDLE_STRATEGY = "org.agrona.concurrent.ControllableIdleStrategy";
         private static final String PRESET_RECORDINGS_FILE_PROP_NAME = "aeron.archive.preset.recordings.file";
 
 
@@ -243,6 +246,11 @@ public final class Archive implements AutoCloseable
         public static String presetRecordingFileName()
         {
             return System.getProperty(PRESET_RECORDINGS_FILE_PROP_NAME);
+        }
+
+        public static int replayBatchSize()
+        {
+            return Integer.getInteger(REPLAY_BATCH_SIZE_PROP_NAME, REPLAY_BATCH_SIZE_DEFAULT);
         }
     }
 

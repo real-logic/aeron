@@ -403,7 +403,7 @@ int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, s
 
     for (int i = 0; i < result; i++)
     {
-        if (receive_loss_rate > 0.0 && aeron_agent_should_drop_frame(&msgvec[i].msg_hdr))
+        if (receive_data_loss_rate > 0.0 && aeron_agent_should_drop_frame(&msgvec[i].msg_hdr))
         {
             aeron_driver_agent_log_frame(
                 AERON_FRAME_IN_DROPPED, sockfd, &msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msgvec[i].msg_len);

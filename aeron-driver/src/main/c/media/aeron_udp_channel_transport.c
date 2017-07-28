@@ -288,7 +288,7 @@ int aeron_udp_channel_transport_recvmmsg(
 
             if (EINTR == err || EAGAIN == err)
             {
-                return 0;
+                break;
             }
 
             aeron_set_err(err, "recvmsg: %s", strerror(err));

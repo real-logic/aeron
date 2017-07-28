@@ -41,7 +41,32 @@ static pthread_once_t agent_is_initialized = PTHREAD_ONCE_INIT;
 static aeron_mpsc_rb_t logging_mpsc_rb;
 static uint8_t *rb_buffer = NULL;
 static uint64_t mask = 0;
+static double receive_data_loss_rate = 0.0;
+static unsigned short receive_data_loss_xsubi[3];
 static pthread_t log_reader_thread;
+
+int64_t aeron_agent_epochclock()
+{
+    struct timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts) < 0)
+    {
+        return -1;
+    }
+
+    return (ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+}
+
+bool aeron_agent_should_drop_frame(struct msghdr *message)
+{
+    aeron_frame_header_t *frame_header = (aeron_frame_header_t *)(message->msg_iov->iov_base);
+
+    if (frame_header->type == AERON_HDR_TYPE_DATA || frame_header->type == AERON_HDR_TYPE_PAD)
+    {
+        return erand48(receive_data_loss_xsubi) <= receive_data_loss_rate;
+    }
+
+    return false;
+}
 
 static void *aeron_driver_agent_log_reader(void *arg)
 {
@@ -59,6 +84,7 @@ static void *aeron_driver_agent_log_reader(void *arg)
 static void initialize_agent_logging()
 {
     char *mask_str = getenv(AERON_AGENT_MASK_ENV_VAR);
+    char *receive_loss_rate_str = getenv(AERON_AGENT_RECEIVE_DATA_LOSS_RATE_ENV_VAR);
 
     if (mask_str)
     {
@@ -87,17 +113,30 @@ static void initialize_agent_logging()
             exit(EXIT_FAILURE);
         }
     }
-}
 
-int64_t aeron_agent_epochclock()
-{
-    struct timespec ts;
-    if (clock_gettime(CLOCK_REALTIME, &ts) < 0)
+    if (receive_loss_rate_str)
     {
-        return -1;
+        receive_data_loss_rate = strtod(receive_loss_rate_str, NULL);
     }
 
-    return (ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+    if (0.0 != receive_data_loss_rate)
+    {
+        char *receive_loss_seed_str = getenv(AERON_AGENT_RECEIVE_DATA_LOSS_SEED_ENV_VAR);
+        long seed_value;
+
+        if (receive_loss_seed_str)
+        {
+            seed_value = strtol(receive_loss_seed_str, NULL, 0);
+        }
+        else
+        {
+            seed_value = aeron_agent_epochclock();
+        }
+
+        receive_data_loss_xsubi[2] = (unsigned short)(seed_value & 0xFFFF);
+        receive_data_loss_xsubi[1] = (unsigned short)((seed_value >> 16) & 0xFFFF);
+        receive_data_loss_xsubi[0] = (unsigned short)((seed_value >> 32) & 0xFFFF);
+    }
 }
 
 void aeron_driver_agent_conductor_to_driver_interceptor(
@@ -289,9 +328,15 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
 
     ssize_t result = _original_func(socket, message, flags);
 
-    if (mask & AERON_FRAME_IN)
+    if (result > 0)
     {
-        if (result > 0)
+        if (receive_data_loss_rate > 0.0 && aeron_agent_should_drop_frame(message))
+        {
+            aeron_driver_agent_log_frame(
+                AERON_FRAME_IN_DROPPED, socket, message, flags, (int) result, (int32_t) result);
+            result = 0;
+        }
+        else if (mask & AERON_FRAME_IN)
         {
             aeron_driver_agent_log_frame(AERON_FRAME_IN, socket, message, flags, (int) result, (int32_t) result);
         }
@@ -356,9 +401,16 @@ int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, s
 
     int result = _original_func(sockfd, msgvec, vlen, flags, timeout);
 
-    if (mask & AERON_FRAME_IN)
+    for (int i = 0; i < result; i++)
     {
-        for (int i = 0; i < result; i++)
+        if (receive_loss_rate > 0.0 && aeron_agent_should_drop_frame(&msgvec[i].msg_hdr))
+        {
+            aeron_driver_agent_log_frame(
+                AERON_FRAME_IN_DROPPED, sockfd, &msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msgvec[i].msg_len);
+            result = i;
+            break;
+        }
+        else if (mask & AERON_FRAME_IN)
         {
             aeron_driver_agent_log_frame(
                 AERON_FRAME_IN, sockfd, &msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msgvec[i].msg_len);
@@ -379,6 +431,8 @@ static const char *dissect_msg_type_id(int32_t id)
             return "CMD_OUT";
         case AERON_FRAME_IN:
             return "FRAME_IN";
+        case AERON_FRAME_IN_DROPPED:
+            return "FRAME_IN_DROPPED";
         case AERON_FRAME_OUT:
             return "FRAME_OUT";
         default:
@@ -717,6 +771,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
         }
 
         case AERON_FRAME_IN:
+        case AERON_FRAME_IN_DROPPED:
         case AERON_FRAME_OUT:
         {
             aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)message;
@@ -730,7 +785,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
                 dissect_timestamp(hdr->time_ms),
                 hdr->result,
                 (int)hdr->message_len,
-                (msg_type_id == AERON_FRAME_IN) ? "FRAME_IN from" : "FRAME_OUT to",
+                dissect_msg_type_id(msg_type_id),
                 dissect_sockaddr(addr, (size_t)hdr->sockaddr_len),
                 dissect_frame(frame, (size_t)hdr->message_len));
             break;

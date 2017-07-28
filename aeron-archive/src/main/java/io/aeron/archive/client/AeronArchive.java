@@ -209,22 +209,42 @@ public final class AeronArchive implements AutoCloseable
         /**
          * Channel for sending control messages to an archive.
          */
-        public static final String CONTROL_REQUEST_CHANNEL_PROP_NAME = "aeron.archive.control.request.channel";
+        public static final String CONTROL_CHANNEL_PROP_NAME = "aeron.archive.control.channel";
 
         /**
          * Default to localhost.
          */
-        public static final String CONTROL_REQUEST_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8010";
+        public static final String CONTROL_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8010";
 
         /**
          * Stream id within a channel for sending control messages to an archive.
          */
-        public static final String CONTROL_REQUEST_STREAM_ID_PROP_NAME = "aeron.archive.control.request.stream.id";
+        public static final String CONTROL_STREAM_ID_PROP_NAME = "aeron.archive.control.stream.id";
 
         /**
          * Default to stream id of 0.
          */
-        public static final int CONTROL_REQUEST_STREAM_ID_DEFAULT = 0;
+        public static final int CONTROL_STREAM_ID_DEFAULT = 0;
+
+        /**
+         * Channel for sending recording control messages to an archive.
+         */
+        public static final String RECORDING_CONTROL_CHANNEL_PROP_NAME = "aeron.archive.recording.control.channel";
+
+        /**
+         * Default to ipc.
+         */
+        public static final String RECORDING_CONTROL_CHANNEL_DEFAULT = "aeron:ipc";
+
+        /**
+         * Stream id within a channel for sending control messages to an archive.
+         */
+        public static final String RECORDING_CONTROL_STREAM_ID_PROP_NAME = "aeron.archive.recording.control.stream.id";
+
+        /**
+         * Default to stream id of 0.
+         */
+        public static final int RECORDING_CONTROL_STREAM_ID_DEFAULT = 0;
 
         /**
          * Channel for receiving control response messages from an archive.
@@ -277,27 +297,51 @@ public final class AeronArchive implements AutoCloseable
         }
 
         /**
-         * The value {@link #CONTROL_REQUEST_CHANNEL_DEFAULT} or system property
-         * {@link #CONTROL_REQUEST_CHANNEL_PROP_NAME} if set.
+         * The value {@link #CONTROL_CHANNEL_DEFAULT} or system property
+         * {@link #CONTROL_CHANNEL_PROP_NAME} if set.
          *
-         * @return {@link #CONTROL_REQUEST_CHANNEL_DEFAULT} or system property
-         * {@link #CONTROL_REQUEST_CHANNEL_PROP_NAME} if set.
+         * @return {@link #CONTROL_CHANNEL_DEFAULT} or system property
+         * {@link #CONTROL_CHANNEL_PROP_NAME} if set.
          */
-        public static String controlRequestChannel()
+        public static String controlChannel()
         {
-            return System.getProperty(CONTROL_REQUEST_CHANNEL_PROP_NAME, CONTROL_REQUEST_CHANNEL_DEFAULT);
+            return System.getProperty(CONTROL_CHANNEL_PROP_NAME, CONTROL_CHANNEL_DEFAULT);
         }
 
         /**
-         * The value {@link #CONTROL_REQUEST_STREAM_ID_DEFAULT} or system property
-         * {@link #CONTROL_REQUEST_STREAM_ID_DEFAULT} if set.
+         * The value {@link #CONTROL_STREAM_ID_DEFAULT} or system property
+         * {@link #CONTROL_STREAM_ID_DEFAULT} if set.
          *
-         * @return {@link #CONTROL_REQUEST_STREAM_ID_DEFAULT} or system property
-         * {@link #CONTROL_REQUEST_STREAM_ID_DEFAULT} if set.
+         * @return {@link #CONTROL_STREAM_ID_DEFAULT} or system property
+         * {@link #CONTROL_STREAM_ID_DEFAULT} if set.
          */
-        public static int controlRequestStreamId()
+        public static int controlStreamId()
         {
-            return Integer.getInteger(CONTROL_REQUEST_STREAM_ID_PROP_NAME, CONTROL_REQUEST_STREAM_ID_DEFAULT);
+            return Integer.getInteger(CONTROL_STREAM_ID_PROP_NAME, CONTROL_STREAM_ID_DEFAULT);
+        }
+
+        /**
+         * The value {@link #RECORDING_CONTROL_CHANNEL_DEFAULT} or system property
+         * {@link #RECORDING_CONTROL_CHANNEL_PROP_NAME} if set.
+         *
+         * @return {@link #RECORDING_CONTROL_CHANNEL_DEFAULT} or system property
+         * {@link #RECORDING_CONTROL_CHANNEL_PROP_NAME} if set.
+         */
+        public static String recordingControlChannel()
+        {
+            return System.getProperty(RECORDING_CONTROL_CHANNEL_PROP_NAME, RECORDING_CONTROL_CHANNEL_DEFAULT);
+        }
+
+        /**
+         * The value {@link #RECORDING_CONTROL_STREAM_ID_DEFAULT} or system property
+         * {@link #RECORDING_CONTROL_STREAM_ID_DEFAULT} if set.
+         *
+         * @return {@link #RECORDING_CONTROL_STREAM_ID_DEFAULT} or system property
+         * {@link #RECORDING_CONTROL_STREAM_ID_DEFAULT} if set.
+         */
+        public static int recordingControlStreamId()
+        {
+            return Integer.getInteger(RECORDING_CONTROL_STREAM_ID_PROP_NAME, RECORDING_CONTROL_STREAM_ID_DEFAULT);
         }
 
         /**
@@ -355,8 +399,8 @@ public final class AeronArchive implements AutoCloseable
     public static class Context implements AutoCloseable
     {
         private long messageTimeoutNs = Configuration.messageTimeoutNs();
-        private String controlRequestChannel = Configuration.controlRequestChannel();
-        private int controlRequestStreamId = Configuration.controlRequestStreamId();
+        private String controlRequestChannel = Configuration.controlChannel();
+        private int controlRequestStreamId = Configuration.controlStreamId();
         private String controlResponseChannel = Configuration.controlResponseChannel();
         private int controlResponseStreamId = Configuration.controlResponseStreamId();
         private Aeron aeron;

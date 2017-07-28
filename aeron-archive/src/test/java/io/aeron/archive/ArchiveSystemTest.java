@@ -44,7 +44,7 @@ import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
-public class ArchiverSystemTest
+public class ArchiveSystemTest
 {
     private static final double MEGABYTE = 1024.0d * 1024.0d;
 
@@ -63,11 +63,11 @@ public class ArchiverSystemTest
     private final long seed = System.nanoTime();
 
     @Rule
-    public final TestWatcher testWatcher = TestUtil.newWatcher(ArchiverSystemTest.class, seed);
+    public final TestWatcher testWatcher = TestUtil.newWatcher(ArchiveSystemTest.class, seed);
 
     private String publishUri;
     private Aeron publishingClient;
-    private Archiver archiver;
+    private Archive archive;
     private MediaDriver driver;
     private long recordingId;
     private long remaining;
@@ -125,7 +125,7 @@ public class ArchiverSystemTest
 
         driver = MediaDriver.launch(driverCtx);
 
-        final Archiver.Context archiverCtx = new Archiver.Context()
+        final Archive.Context archiverCtx = new Archive.Context()
             .fileSyncLevel(SYNC_LEVEL)
             .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
             .archiveDir(TestUtil.makeTempDir())
@@ -134,9 +134,9 @@ public class ArchiverSystemTest
             .countersManager(driverCtx.countersManager())
             .errorHandler(driverCtx.errorHandler());
 
-        archiver = Archiver.launch(archiverCtx);
+        archive = Archive.launch(archiverCtx);
 
-        println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
+        println("Archive started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
         publishingClient = Aeron.connect();
     }
 
@@ -144,16 +144,16 @@ public class ArchiverSystemTest
     public void after() throws Exception
     {
         CloseHelper.close(publishingClient);
-        CloseHelper.close(archiver);
+        CloseHelper.close(archive);
         CloseHelper.close(driver);
 
-        archiver.context().deleteArchiveDirectory();
+        archive.context().deleteArchiveDirectory();
         driver.context().deleteAeronDirectory();
     }
 
-    ArchiverThreadingMode archiverThreadingMode()
+    ArchiveThreadingMode archiverThreadingMode()
     {
-        return ArchiverThreadingMode.SHARED;
+        return ArchiveThreadingMode.SHARED;
     }
 
     ThreadingMode driverThreadingMode()
@@ -165,9 +165,9 @@ public class ArchiverSystemTest
     public void recordAndReplayExclusivePublication() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
-                archiver.context().controlChannel(), archiver.context().controlStreamId());
+            archive.context().controlChannel(), archive.context().controlStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
-                archiver.context().recordingEventsChannel(), archiver.context().recordingEventsStreamId()))
+                 archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
@@ -204,9 +204,9 @@ public class ArchiverSystemTest
     public void replayExclusivePublicationWhileRecording() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
-                archiver.context().controlChannel(), archiver.context().controlStreamId());
+            archive.context().controlChannel(), archive.context().controlStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
-                archiver.context().recordingEventsChannel(), archiver.context().recordingEventsStreamId()))
+                 archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
@@ -247,9 +247,9 @@ public class ArchiverSystemTest
     public void recordAndReplayRegularPublication() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
-                archiver.context().controlChannel(), archiver.context().controlStreamId());
+            archive.context().controlChannel(), archive.context().controlStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
-                archiver.context().recordingEventsChannel(), archiver.context().recordingEventsStreamId()))
+                 archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
@@ -467,7 +467,7 @@ public class ArchiverSystemTest
                     final String originalChannel,
                     final String sourceIdentity)
                 {
-                    assertThat(recordingId, is(ArchiverSystemTest.this.recordingId));
+                    assertThat(recordingId, is(ArchiveSystemTest.this.recordingId));
                     assertThat(termBufferLength, is(publicationTermBufferLength));
                     assertThat(streamId, is(PUBLISH_STREAM_ID));
                     assertThat(correlationId, is(requestRecordingsCorrelationId));
@@ -626,9 +626,9 @@ public class ArchiverSystemTest
     private void validateArchiveFile(final int messageCount, final long recordingId) throws IOException
     {
         remaining = totalDataLength;
-        try (Catalog catalog = new Catalog(archiver.context().archiveDir(), null, 0, System::currentTimeMillis);
+        try (Catalog catalog = new Catalog(archive.context().archiveDir(), null, 0, System::currentTimeMillis);
              RecordingFragmentReader archiveDataFileReader =
-                 newRecordingFragmentReader(catalog.wrapDescriptor(recordingId), archiver.context().archiveDir()))
+                 newRecordingFragmentReader(catalog.wrapDescriptor(recordingId), archive.context().archiveDir()))
         {
             fragmentCount = 0;
             remaining = totalDataLength;

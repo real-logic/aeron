@@ -15,25 +15,17 @@
  */
 package io.aeron.archive;
 
-/**
- * Threading mode to be employed by the {@link org.agrona.concurrent.Agent}s in the {@link Archiver}.
- */
-public enum ArchiverThreadingMode
+import io.aeron.driver.ThreadingMode;
+
+public class ArchiveDedicatedThreadsSystemTest extends ArchiveSystemTest
 {
-    /**
-     * No threads are started in the {@link Archiver}.
-     * <p>
-     * The {@link Archiver} will be made runnable via an {@link Archiver#invoker()}
-     */
-    INVOKER,
+    ThreadingMode driverThreadingMode()
+    {
+        return ThreadingMode.DEDICATED;
+    }
 
-    /**
-     * One thread shared by all {@link Archiver} {@link org.agrona.concurrent.Agent}s.
-     */
-    SHARED,
-
-    /**
-     * 3 Threads, one dedicated to each of the {@link org.agrona.concurrent.Agent}s.
-     */
-    DEDICATED
+    ArchiveThreadingMode archiverThreadingMode()
+    {
+        return ArchiveThreadingMode.DEDICATED;
+    }
 }

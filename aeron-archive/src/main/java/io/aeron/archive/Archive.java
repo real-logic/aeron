@@ -37,17 +37,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
- * The Aeron Archiver is run with an embedded media driver and allows for the archival of 'local'
+ * The Aeron Archive is run with an embedded media driver and allows for the archival of 'local'
  * {@link io.aeron.Publication}s (ipc or spy subscriptions only).
  */
-public final class Archiver implements AutoCloseable
+public final class Archive implements AutoCloseable
 {
     private final Context ctx;
     private final AgentRunner conductorRunner;
     private final AgentInvoker conductorInvoker;
     private final Aeron aeron;
 
-    private Archiver(final Context ctx)
+    private Archive(final Context ctx)
     {
         this.ctx = ctx;
 
@@ -58,7 +58,7 @@ public final class Archiver implements AutoCloseable
         ctx.conclude();
 
         final ArchiveConductor archiveConductor;
-        if (ctx.threadingMode() == ArchiverThreadingMode.DEDICATED)
+        if (ctx.threadingMode() == ArchiveThreadingMode.DEDICATED)
         {
             archiveConductor = new DedicatedModeArchiveConductor(aeron, ctx);
         }
@@ -95,9 +95,9 @@ public final class Archiver implements AutoCloseable
     }
 
     /**
-     * Get the {@link Archiver.Context} that is used by this {@link Archiver}.
+     * Get the {@link Archive.Context} that is used by this {@link Archive}.
      *
-     * @return the {@link Archiver.Context} that is used by this {@link Archiver}.
+     * @return the {@link Archive.Context} that is used by this {@link Archive}.
      */
     public Context context()
     {
@@ -111,10 +111,10 @@ public final class Archiver implements AutoCloseable
         CloseHelper.close(aeron);
     }
 
-    private Archiver start()
+    private Archive start()
     {
-        if (ctx.threadingMode() == ArchiverThreadingMode.SHARED ||
-            ctx.threadingMode() == ArchiverThreadingMode.DEDICATED)
+        if (ctx.threadingMode() == ArchiveThreadingMode.SHARED ||
+            ctx.threadingMode() == ArchiveThreadingMode.DEDICATED)
         {
             AgentRunner.startOnThread(conductorRunner, ctx.threadFactory());
         }
@@ -132,14 +132,14 @@ public final class Archiver implements AutoCloseable
         return conductorInvoker;
     }
 
-    public static Archiver launch()
+    public static Archive launch()
     {
         return launch(new Context());
     }
 
-    public static Archiver launch(final Context ctx)
+    public static Archive launch(final Context ctx)
     {
-        return new Archiver(ctx).start();
+        return new Archive(ctx).start();
     }
 
     public static class Configuration
@@ -187,10 +187,10 @@ public final class Archiver implements AutoCloseable
             return Integer.getInteger(FILE_SYNC_LEVEL_PROP_NAME, FILE_SYNC_LEVEL_DEFAULT);
         }
 
-        private static ArchiverThreadingMode threadingMode()
+        private static ArchiveThreadingMode threadingMode()
         {
-            return ArchiverThreadingMode.valueOf(System.getProperty(
-                THREADING_MODE_PROP_NAME, ArchiverThreadingMode.DEDICATED.name()));
+            return ArchiveThreadingMode.valueOf(System.getProperty(
+                THREADING_MODE_PROP_NAME, ArchiveThreadingMode.DEDICATED.name()));
         }
 
         private static Supplier<IdleStrategy> idleStrategySupplier(final StatusIndicator controllableStatus)
@@ -266,7 +266,7 @@ public final class Archiver implements AutoCloseable
         private int segmentFileLength;
         private int fileSyncLevel;
 
-        private ArchiverThreadingMode threadingMode;
+        private ArchiveThreadingMode threadingMode;
         private ThreadFactory threadFactory = Thread::new;
 
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -365,9 +365,9 @@ public final class Archiver implements AutoCloseable
         }
 
         /**
-         * Get the directory in which the Archiver will store recordings/index/counters etc.
+         * Get the directory in which the Archive will store recordings/index/counters etc.
          *
-         * @return the directory in which the Archiver will store recordings/index/counters etc
+         * @return the directory in which the Archive will store recordings/index/counters etc
          */
         public File archiveDir()
         {
@@ -375,9 +375,9 @@ public final class Archiver implements AutoCloseable
         }
 
         /**
-         * Set the directory in which the Archiver will store recordings/index/counters etc.
+         * Set the directory in which the Archive will store recordings/index/counters etc.
          *
-         * @param archiveDir the directory in which the Archiver will store recordings/index/counters etc
+         * @param archiveDir the directory in which the Archive will store recordings/index/counters etc
          * @return this for a fluent API.
          */
         public Context archiveDir(final File archiveDir)
@@ -387,9 +387,9 @@ public final class Archiver implements AutoCloseable
         }
 
         /**
-         * Get the Aeron client context used by the Archiver.
+         * Get the Aeron client context used by the Archive.
          *
-         * @return Aeron client context used by the Archiver
+         * @return Aeron client context used by the Archive
          */
         public Aeron.Context clientContext()
         {
@@ -648,9 +648,9 @@ public final class Archiver implements AutoCloseable
         }
 
         /**
-         * Get the {@link ErrorHandler} to be used by the Archiver.
+         * Get the {@link ErrorHandler} to be used by the Archive.
          *
-         * @return the {@link ErrorHandler} to be used by the Archiver
+         * @return the {@link ErrorHandler} to be used by the Archive
          */
         public ErrorHandler errorHandler()
         {
@@ -658,9 +658,9 @@ public final class Archiver implements AutoCloseable
         }
 
         /**
-         * Set the {@link ErrorHandler} to be used by the Archiver.
+         * Set the {@link ErrorHandler} to be used by the Archive.
          *
-         * @param errorHandler the error handler to be used by the Archiver
+         * @param errorHandler the error handler to be used by the Archive
          * @return this for a fluent API
          */
         public Context errorHandler(final ErrorHandler errorHandler)
@@ -674,7 +674,7 @@ public final class Archiver implements AutoCloseable
          *
          * @return the archive threading mode
          */
-        public ArchiverThreadingMode threadingMode()
+        public ArchiveThreadingMode threadingMode()
         {
             return threadingMode;
         }
@@ -685,7 +685,7 @@ public final class Archiver implements AutoCloseable
          * @param threadingMode archive threading mode
          * @return this for a fluent API
          */
-        public Context threadingMode(final ArchiverThreadingMode threadingMode)
+        public Context threadingMode(final ArchiveThreadingMode threadingMode)
         {
             this.threadingMode = threadingMode;
             return this;
@@ -775,7 +775,7 @@ public final class Archiver implements AutoCloseable
         }
 
         /**
-         * A file with recording presets to be subscribed to by the Archiver on startup. The file is expected to follow
+         * A file with recording presets to be subscribed to by the Archive on startup. The file is expected to follow
          * the format:
          * <pre>
          *     channel streamId

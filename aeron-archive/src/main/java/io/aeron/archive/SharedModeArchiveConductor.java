@@ -24,7 +24,7 @@ final class SharedModeArchiveConductor extends ArchiveConductor
     private AgentInvoker replayerAgentInvoker;
     private AgentInvoker recorderAgentInvoker;
 
-    SharedModeArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
+    SharedModeArchiveConductor(final Aeron aeron, final Archive.Context ctx)
     {
         super(aeron, ctx);
     }

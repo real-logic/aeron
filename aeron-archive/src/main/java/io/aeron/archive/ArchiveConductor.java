@@ -78,14 +78,14 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final CountersManager recordingPositionsManager;
     private final MappedByteBuffer countersMappedBBuffer;
 
-    protected final Archiver.Context ctx;
+    protected final Archive.Context ctx;
     protected final ControlSessionProxy controlSessionProxy;
     protected SessionWorker<ReplaySession> replayer;
     protected SessionWorker<RecordingSession> recorder;
 
     private int replaySessionId;
 
-    ArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
+    ArchiveConductor(final Aeron aeron, final Archive.Context ctx)
     {
         super("archive-conductor", ctx.errorHandler());
 

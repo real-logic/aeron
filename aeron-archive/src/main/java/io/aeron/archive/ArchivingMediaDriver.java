@@ -37,32 +37,32 @@ public class ArchivingMediaDriver
     {
         loadPropertiesFiles(args);
 
-        launchDriverAndArchiver(ThreadingMode.DEDICATED, ArchiverThreadingMode.DEDICATED);
+        launchDriverAndArchiver(ThreadingMode.DEDICATED, ArchiveThreadingMode.DEDICATED);
     }
 
     static void launchDriverAndArchiver(
         final ThreadingMode mediaDriverThreadingMode,
-        final ArchiverThreadingMode archiverThreadingMode) throws Exception
+        final ArchiveThreadingMode archiveThreadingMode) throws Exception
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .threadingMode(mediaDriverThreadingMode)
             .useConcurrentCounterManager(mediaDriverThreadingMode != ThreadingMode.INVOKER);
         final MediaDriver mediaDriver = MediaDriver.launch(driverCtx);
 
-        final Archiver.Context archiverCtx = new Archiver.Context()
+        final Archive.Context archiverCtx = new Archive.Context()
             .mediaDriverAgentInvoker(mediaDriver.sharedAgentInvoker())
-            .threadingMode(archiverThreadingMode);
+            .threadingMode(archiveThreadingMode);
 
         archiverCtx
             .countersManager(driverCtx.countersManager())
             .errorHandler(driverCtx.errorHandler());
 
-        final Archiver archiver = Archiver.launch(archiverCtx);
+        final Archive archive = Archive.launch(archiverCtx);
 
         new ShutdownSignalBarrier().await();
-        System.out.println("Shutdown Archiver...");
+        System.out.println("Shutdown Archive...");
 
-        archiver.close();
+        archive.close();
         mediaDriver.close();
     }
 }

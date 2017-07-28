@@ -35,6 +35,6 @@ public class LightweightArchivingMediaDriver
     {
         loadPropertiesFiles(args);
 
-        ArchivingMediaDriver.launchDriverAndArchiver(ThreadingMode.INVOKER, ArchiverThreadingMode.SHARED);
+        ArchivingMediaDriver.launchDriverAndArchiver(ThreadingMode.INVOKER, ArchiveThreadingMode.SHARED);
     }
 }

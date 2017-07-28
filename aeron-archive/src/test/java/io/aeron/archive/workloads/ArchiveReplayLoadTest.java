@@ -19,8 +19,8 @@ package io.aeron.archive.workloads;
 import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.Subscription;
-import io.aeron.archive.Archiver;
-import io.aeron.archive.ArchiverThreadingMode;
+import io.aeron.archive.Archive;
+import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.NoOpRecordingEventsListener;
 import io.aeron.archive.TestUtil;
 import io.aeron.archive.client.ArchiveProxy;
@@ -44,8 +44,8 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.archive.ArchiverSystemTest.recordingUri;
-import static io.aeron.archive.ArchiverSystemTest.startChannelDrainingSubscription;
+import static io.aeron.archive.ArchiveSystemTest.recordingUri;
+import static io.aeron.archive.ArchiveSystemTest.startChannelDrainingSubscription;
 import static io.aeron.archive.TestUtil.*;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.core.Is.is;
@@ -76,7 +76,7 @@ public class ArchiveReplayLoadTest
     public final TestWatcher testWatcher = TestUtil.newWatcher(ArchiveReplayLoadTest.class, seed);
 
     private Aeron aeron;
-    private Archiver archiver;
+    private Archive archive;
     private MediaDriver driver;
     private final long recordingId = 0;
     private long remaining;
@@ -106,15 +106,15 @@ public class ArchiveReplayLoadTest
 
         driver = MediaDriver.launch(driverCtx);
 
-        final Archiver.Context archiverCtx = new Archiver.Context()
+        final Archive.Context archiverCtx = new Archive.Context()
             .archiveDir(TestUtil.makeTempDir())
             .fileSyncLevel(0)
-            .threadingMode(ArchiverThreadingMode.DEDICATED)
+            .threadingMode(ArchiveThreadingMode.DEDICATED)
             .countersManager(driverCtx.countersManager())
             .errorHandler(driverCtx.errorHandler());
 
-        archiver = Archiver.launch(archiverCtx);
-        println("Archiver started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
+        archive = Archive.launch(archiverCtx);
+        println("Archive started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
         aeron = Aeron.connect();
     }
 
@@ -122,10 +122,10 @@ public class ArchiveReplayLoadTest
     public void after() throws Exception
     {
         CloseHelper.close(aeron);
-        CloseHelper.close(archiver);
+        CloseHelper.close(archive);
         CloseHelper.close(driver);
 
-        archiver.context().deleteArchiveDirectory();
+        archive.context().deleteArchiveDirectory();
         driver.context().deleteAeronDirectory();
     }
 
@@ -133,9 +133,9 @@ public class ArchiveReplayLoadTest
     public void replay() throws IOException, InterruptedException
     {
         try (Publication controlRequest = aeron.addPublication(
-                archiver.context().controlChannel(), archiver.context().controlStreamId());
+            archive.context().controlChannel(), archive.context().controlStreamId());
              Subscription recordingEvents = aeron.addSubscription(
-                archiver.context().recordingEventsChannel(), archiver.context().recordingEventsStreamId()))
+                 archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlRequest);
 

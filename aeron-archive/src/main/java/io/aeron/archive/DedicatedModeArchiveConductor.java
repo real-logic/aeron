@@ -31,7 +31,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
     private AgentRunner replayerAgentRunner;
     private AgentRunner recorderAgentRunner;
 
-    DedicatedModeArchiveConductor(final Aeron aeron, final Archiver.Context ctx)
+    DedicatedModeArchiveConductor(final Aeron aeron, final Archive.Context ctx)
     {
         super(aeron, ctx);
 

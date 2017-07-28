@@ -30,11 +30,11 @@ Archive communicates via the following interfaces:
  notification messages specified in the codec.
  
  - **Requests channel:** this allows clients to initiate replay or queries
- interactions with the archiver. Requests have a correlationId sent
+ interactions with the archive. Requests have a correlationId sent
  on the initiating request. The `correlationId` is expected to be managed by
  the clients and is offered as a means for clients to track multiple
  concurrent requests. A request will typically involve the
- archiver sending data back on the reply channel specified by the client 
+ archive sending data back on the reply channel specified by the client 
  on the `ConnectRequest` message.
 
 A control session can be established with the Archive. Operations happen within

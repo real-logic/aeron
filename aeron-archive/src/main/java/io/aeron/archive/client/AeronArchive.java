@@ -227,26 +227,6 @@ public final class AeronArchive implements AutoCloseable
         public static final int CONTROL_STREAM_ID_DEFAULT = 0;
 
         /**
-         * Channel for sending recording control messages to an archive.
-         */
-        public static final String RECORDING_CONTROL_CHANNEL_PROP_NAME = "aeron.archive.recording.control.channel";
-
-        /**
-         * Default to ipc.
-         */
-        public static final String RECORDING_CONTROL_CHANNEL_DEFAULT = "aeron:ipc";
-
-        /**
-         * Stream id within a channel for sending control messages to an archive.
-         */
-        public static final String RECORDING_CONTROL_STREAM_ID_PROP_NAME = "aeron.archive.recording.control.stream.id";
-
-        /**
-         * Default to stream id of 0.
-         */
-        public static final int RECORDING_CONTROL_STREAM_ID_DEFAULT = 0;
-
-        /**
          * Channel for receiving control response messages from an archive.
          */
         public static final String CONTROL_RESPONSE_CHANNEL_PROP_NAME = "aeron.archive.control.response.channel";
@@ -318,30 +298,6 @@ public final class AeronArchive implements AutoCloseable
         public static int controlStreamId()
         {
             return Integer.getInteger(CONTROL_STREAM_ID_PROP_NAME, CONTROL_STREAM_ID_DEFAULT);
-        }
-
-        /**
-         * The value {@link #RECORDING_CONTROL_CHANNEL_DEFAULT} or system property
-         * {@link #RECORDING_CONTROL_CHANNEL_PROP_NAME} if set.
-         *
-         * @return {@link #RECORDING_CONTROL_CHANNEL_DEFAULT} or system property
-         * {@link #RECORDING_CONTROL_CHANNEL_PROP_NAME} if set.
-         */
-        public static String recordingControlChannel()
-        {
-            return System.getProperty(RECORDING_CONTROL_CHANNEL_PROP_NAME, RECORDING_CONTROL_CHANNEL_DEFAULT);
-        }
-
-        /**
-         * The value {@link #RECORDING_CONTROL_STREAM_ID_DEFAULT} or system property
-         * {@link #RECORDING_CONTROL_STREAM_ID_DEFAULT} if set.
-         *
-         * @return {@link #RECORDING_CONTROL_STREAM_ID_DEFAULT} or system property
-         * {@link #RECORDING_CONTROL_STREAM_ID_DEFAULT} if set.
-         */
-        public static int recordingControlStreamId()
-        {
-            return Integer.getInteger(RECORDING_CONTROL_STREAM_ID_PROP_NAME, RECORDING_CONTROL_STREAM_ID_DEFAULT);
         }
 
         /**

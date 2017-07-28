@@ -191,7 +191,7 @@ public class ControlResponsePoller
         return recordingDescriptorDecoder;
     }
 
-    public RecordingUnknownResponseDecoder recordingNotFoundResponseDecoder()
+    public RecordingUnknownResponseDecoder recordingUnknownResponseDecoder()
     {
         return recordingUnknownResponseDecoder;
     }

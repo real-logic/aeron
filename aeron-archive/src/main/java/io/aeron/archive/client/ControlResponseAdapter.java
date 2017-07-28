@@ -66,6 +66,33 @@ public class ControlResponseAdapter
         return subscription.poll(fragmentAssembler, fragmentLimit);
     }
 
+    /**
+     * Dispatch a descriptor message to a consumer by reading the fields in the correct order.
+     *
+     * @param decoder  which wraps the encoded message ready for reading.
+     * @param consumer to which the decoded fields should be passed.
+     */
+    public static void dispatchDescriptor(
+        final RecordingDescriptorDecoder decoder, final RecordingDescriptorConsumer consumer)
+    {
+        consumer.onRecordingDescriptor(
+            decoder.correlationId(),
+            decoder.recordingId(),
+            decoder.startTimestamp(),
+            decoder.stopTimestamp(),
+            decoder.startPosition(),
+            decoder.stopPosition(),
+            decoder.initialTermId(),
+            decoder.segmentFileLength(),
+            decoder.termBufferLength(),
+            decoder.mtuLength(),
+            decoder.sessionId(),
+            decoder.streamId(),
+            decoder.strippedChannel(),
+            decoder.originalChannel(),
+            decoder.sourceIdentity());
+    }
+
     private void onFragment(
         final DirectBuffer buffer,
         final int offset,
@@ -130,22 +157,7 @@ public class ControlResponseAdapter
             messageHeaderDecoder.blockLength(),
             messageHeaderDecoder.version());
 
-        listener.onRecordingDescriptor(
-            recordingDescriptorDecoder.correlationId(),
-            recordingDescriptorDecoder.recordingId(),
-            recordingDescriptorDecoder.startTimestamp(),
-            recordingDescriptorDecoder.stopTimestamp(),
-            recordingDescriptorDecoder.startPosition(),
-            recordingDescriptorDecoder.stopPosition(),
-            recordingDescriptorDecoder.initialTermId(),
-            recordingDescriptorDecoder.segmentFileLength(),
-            recordingDescriptorDecoder.termBufferLength(),
-            recordingDescriptorDecoder.mtuLength(),
-            recordingDescriptorDecoder.sessionId(),
-            recordingDescriptorDecoder.streamId(),
-            recordingDescriptorDecoder.strippedChannel(),
-            recordingDescriptorDecoder.originalChannel(),
-            recordingDescriptorDecoder.sourceIdentity());
+        dispatchDescriptor(recordingDescriptorDecoder, listener);
     }
 
     private void handleReplayStarted(

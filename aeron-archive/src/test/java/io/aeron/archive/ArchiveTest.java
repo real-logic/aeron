@@ -23,12 +23,15 @@ import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
+import org.agrona.collections.MutableLong;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
+@Ignore
 public class ArchiveTest
 {
     private static final int FRAGMENT_LIMIT = 10;
@@ -97,6 +100,40 @@ public class ArchiveTest
 
             bytesPublished = publication.position();
         }
+
+        final MutableLong foundRecordingId = new MutableLong();
+        final int recordingsFound = archiveClient.listRecordingsForUri(
+            0L,
+            10,
+            CHANNEL,
+            STREAM_ID,
+            (
+                correlationId,
+                recordingId,
+                startTimestamp,
+                stopTimestamp,
+                startPosition,
+                stopPosition,
+                initialTermId,
+                segmentFileLength,
+                termBufferLength,
+                mtuLength,
+                sessionId,
+                streamId,
+                strippedChannel,
+                originalChannel,
+                sourceIdentity
+            ) ->
+            {
+                foundRecordingId.value = recordingId;
+
+                assertEquals(0L, startPosition);
+                assertEquals(bytesPublished, stopPosition);
+                assertEquals(STREAM_ID, streamId);
+                assertEquals(CHANNEL, originalChannel);
+            });
+
+        assertEquals(1, recordingsFound);
     }
 
     private static void offer(final Publication publication, final int count, final String prefix)

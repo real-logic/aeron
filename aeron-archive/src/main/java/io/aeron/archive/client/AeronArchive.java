@@ -20,6 +20,8 @@ import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.ControlResponseDecoder;
+import io.aeron.archive.codecs.RecordingDescriptorDecoder;
+import io.aeron.archive.codecs.RecordingUnknownResponseDecoder;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
@@ -157,6 +159,58 @@ public final class AeronArchive implements AutoCloseable
         pollForResponse(correlationId, ControlResponseDecoder.class);
     }
 
+    /**
+     * List all recording descriptors from a recording id with a limit of record count.
+     * <p>
+     * If the recording id is greater than the largest known id then nothing is returned.
+     *
+     * @param fromRecordingId at which to begin the listing.
+     * @param recordCount     to limit for each query.
+     * @param consumer        to which the descriptors are dispatched.
+     * @return the number of descriptors found and consumed.
+     */
+    public int listRecordings(
+        final long fromRecordingId, final int recordCount, final RecordingDescriptorConsumer consumer)
+    {
+        final long correlationId = aeron.nextCorrelationId();
+
+        if (!archiveProxy.listRecordings(fromRecordingId, recordCount, correlationId))
+        {
+            throw new IllegalStateException("Failed to send list recordings request");
+        }
+
+        return pollForDescriptors(correlationId, recordCount, consumer);
+    }
+
+    /**
+     * List recording descriptors from a recording id with a limit of record count for a given channel and stream id.
+     * <p>
+     * If the recording id is greater than the largest known id then nothing is returned.
+     *
+     * @param fromRecordingId at which to begin the listing.
+     * @param recordCount     to limit for each query.
+     * @param channel         to match.
+     * @param streamId        to match.
+     * @param consumer        to which the descriptors are dispatched.
+     * @return the number of descriptors found and consumed.
+     */
+    public int listRecordingsForUri(
+        final long fromRecordingId,
+        final int recordCount,
+        final String channel,
+        final int streamId,
+        final RecordingDescriptorConsumer consumer)
+    {
+        final long correlationId = aeron.nextCorrelationId();
+
+        if (!archiveProxy.listRecordingsForUri(fromRecordingId, recordCount, channel, streamId, correlationId))
+        {
+            throw new IllegalStateException("Failed to send list recordings request");
+        }
+
+        return pollForDescriptors(correlationId, recordCount, consumer);
+    }
+
     private void pollForResponse(final long expectedCorrelationId, final Class expectedMessage)
     {
         final long deadline = System.nanoTime() + messageTimeoutNs;
@@ -189,6 +243,64 @@ public final class AeronArchive implements AutoCloseable
                 break;
             }
         }
+    }
+
+    private int pollForDescriptors(
+        final long expectedCorrelationId, final int recordCount, final RecordingDescriptorConsumer consumer)
+    {
+        int count = 0;
+        final long deadline = System.nanoTime() + messageTimeoutNs;
+        final ControlResponsePoller poller = this.controlResponsePoller;
+        idleStrategy.reset();
+
+        while (true)
+        {
+            while (poller.poll() <= 0 && !poller.isPollComplete())
+            {
+                if (System.nanoTime() > deadline)
+                {
+                    throw new TimeoutException(
+                        "Waiting for recording descriptors correlationId=" + expectedCorrelationId);
+                }
+
+                idleStrategy.idle();
+            }
+
+            if (poller.correlationId() == expectedCorrelationId)
+            {
+                final int templateId = poller.templateId();
+                System.out.println("templateId = " + templateId);
+
+                if (templateId == RecordingDescriptorDecoder.TEMPLATE_ID)
+                {
+                    ControlResponseAdapter.dispatchDescriptor(poller.recordingDescriptorDecoder(), consumer);
+
+                    if (++count >= recordCount)
+                    {
+                        break;
+                    }
+                }
+                else if (templateId == RecordingUnknownResponseDecoder.TEMPLATE_ID)
+                {
+                    final long maxId = poller.recordingUnknownResponseDecoder().maxRecordingId();
+                    System.out.println("maxId = " + maxId);
+                    break;
+                }
+                else if (templateId == ControlResponseDecoder.TEMPLATE_ID &&
+                    poller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
+                {
+                    throw new IllegalStateException(
+                        "Response correlationId=" + expectedCorrelationId +
+                            " error: " + poller.controlResponseDecoder().errorMessage());
+                }
+                else
+                {
+                    throw new IllegalStateException("Unknown response: templateId=" + templateId);
+                }
+            }
+        }
+
+        return count;
     }
 
     /**

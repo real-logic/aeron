@@ -376,8 +376,7 @@ int aeron_network_publication_send_data(
         publication->track_sender_limits = true;
         aeron_counter_set_ordered(publication->snd_pos_position.value_addr, highest_pos);
     }
-
-    if (available_window <= 0)
+    else if (publication->track_sender_limits && available_window <= 0)
     {
         aeron_counter_ordered_increment(publication->sender_flow_control_limits_counter, 1);
         publication->track_sender_limits = false;

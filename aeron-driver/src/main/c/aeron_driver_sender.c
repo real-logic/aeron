@@ -271,7 +271,7 @@ int aeron_driver_sender_do_send(aeron_driver_sender_t *sender, int64_t now_ns)
     int bytes_sent = 0;
     aeron_driver_sender_network_publication_entry_t *publications = sender->network_publicaitons.array;
     size_t length = sender->network_publicaitons.length;
-    size_t starting_index = sender->round_robin_index;
+    size_t starting_index = sender->round_robin_index++;
 
     if (starting_index >= length)
     {

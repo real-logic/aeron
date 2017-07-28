@@ -31,6 +31,7 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.ArchiveUtil.segmentFileName;
 import static io.aeron.archive.Catalog.NULL_TIME;
+import static io.aeron.archive.Catalog.PAGE_SIZE;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -44,7 +45,8 @@ import static org.mockito.Mockito.when;
 
 public class CatalogTest
 {
-    public static final int SEGMENT_FILE_SIZE = 4096;
+    private static final int TERM_BUFFER_LENGTH = 2 * Catalog.PAGE_SIZE;
+    private static final int SEGMENT_FILE_SIZE = 2 * TERM_BUFFER_LENGTH;
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final File archiveDir = TestUtil.makeTempDir();
@@ -59,11 +61,11 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
             recordingOneId = catalog.addNewRecording(
-                0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channelG", "channelG?tag=f", "sourceA");
+                0L, 0L, 0, SEGMENT_FILE_SIZE, TERM_BUFFER_LENGTH, 1024, 6, 1, "channelG", "channelG?tag=f", "sourceA");
             recordingTwoId = catalog.addNewRecording(
-                0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 7, 2, "channelH", "channelH?tag=f", "sourceV");
+                0L, 0L, 0, SEGMENT_FILE_SIZE, TERM_BUFFER_LENGTH, 1024, 7, 2, "channelH", "channelH?tag=f", "sourceV");
             recordingThreeId = catalog.addNewRecording(
-                0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 8, 3, "channelK", "channelK?tag=f", "sourceB");
+                0L, 0L, 0, SEGMENT_FILE_SIZE, TERM_BUFFER_LENGTH, 1024, 8, 3, "channelK", "channelK?tag=f", "sourceB");
         }
     }
 
@@ -115,7 +117,7 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
             newRecordingId = catalog.addNewRecording(
-                0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 9, 4, "channelJ", "channelJ?tag=f", "sourceN");
+                0L, 0L, 0, SEGMENT_FILE_SIZE, TERM_BUFFER_LENGTH, 1024, 9, 4, "channelJ", "channelJ?tag=f", "sourceN");
         }
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
@@ -170,14 +172,13 @@ public class CatalogTest
     }
 
     @Test
-    public void shouldFixTimestampAndPositionAfterFailure() throws Exception
+    public void shouldFixTimestampAndPositionAfterFailureSamePage() throws Exception
     {
         final long newRecordingId = newRecording();
 
         final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
-
             final ByteBuffer bb = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
             final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
             flyweight.frameLength(1024);
@@ -208,7 +209,50 @@ public class CatalogTest
                 (e, decoder) ->
                 {
                     assertThat(decoder.stopTimestamp(), is(42L));
-                    assertThat(decoder.stopPosition(), is(1024L));
+                    assertThat(decoder.stopPosition(), is(1024L + 128L));
+                });
+        }
+    }
+
+    @Test
+    public void shouldFixTimestampAndPositionAfterFailurePageStraddle() throws Exception
+    {
+        final long newRecordingId = newRecording();
+
+        final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));
+        try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
+        {
+            final ByteBuffer bb = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
+            final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
+            flyweight.frameLength(PAGE_SIZE - 32);
+            log.write(bb);
+            bb.clear();
+            flyweight.frameLength(128);
+            log.write(bb, PAGE_SIZE - 32);
+            bb.clear();
+            flyweight.frameLength(0);
+            log.write(bb, PAGE_SIZE - 32 + 128);
+        }
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
+        {
+            catalog.forEntry(newRecordingId,
+                (e, decoder) ->
+                {
+                    assertThat(decoder.stopTimestamp(), is(NULL_TIME));
+                    assertThat(decoder.stopPosition(), is(decoder.startPosition()));
+                });
+        }
+
+        when(clock.time()).thenReturn(42L);
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        {
+            catalog.forEntry(newRecordingId,
+                (e, decoder) ->
+                {
+                    assertThat(decoder.stopTimestamp(), is(42L));
+                    assertThat(decoder.stopPosition(), is((long)PAGE_SIZE - 32));
                 });
         }
     }
@@ -223,7 +267,7 @@ public class CatalogTest
                 0L,
                 0,
                 SEGMENT_FILE_SIZE,
-                4096,
+                TERM_BUFFER_LENGTH,
                 1024,
                 6,
                 1,

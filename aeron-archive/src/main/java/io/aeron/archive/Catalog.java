@@ -57,6 +57,7 @@ class Catalog implements AutoCloseable
 {
     private static final String CATALOG_INDEX_FILE_NAME = "archive.catalog";
 
+    static final int PAGE_SIZE = 4096;
     static final long NULL_TIME = -1L;
     static final long NULL_POSITION = -1;
     static final int RECORD_LENGTH = 4096;
@@ -360,6 +361,12 @@ class Catalog implements AutoCloseable
                     while (nextFragmentSegmentOffset != segmentFileLength);
                     // since we know descriptor buffers are forced on file rollover we don't need to handle rollover
                     // beyond segment boundary (see RecordingWriter#onFileRollover)
+
+                    if (nextFragmentSegmentOffset / PAGE_SIZE == lastFragmentSegmentOffset / PAGE_SIZE)
+                    {
+                        // if fragment does not straddle page boundaries we need not drop the last fragment
+                        lastFragmentSegmentOffset = nextFragmentSegmentOffset;
+                    }
 
                     if (lastFragmentSegmentOffset != stoppedSegmentOffset)
                     {

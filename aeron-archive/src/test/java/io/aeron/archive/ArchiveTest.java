@@ -17,6 +17,9 @@ package io.aeron.archive;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ControlResponsePoller;
+import io.aeron.archive.codecs.ReplayAbortedDecoder;
+import io.aeron.archive.codecs.ReplayStartedDecoder;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
@@ -30,13 +33,14 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 @Ignore
 public class ArchiveTest
 {
-    private static final int FRAGMENT_LIMIT = 10;
+    private static final int FRAGMENT_LIMIT = 1;
 
     private static final int RECORDING_STREAM_ID = 33;
     private static final String RECORDING_CHANNEL = new ChannelUriStringBuilder()
@@ -122,6 +126,30 @@ public class ArchiveTest
             consume(subscription, messageCount, messagePrefix);
             assertEquals(length, subscription.getImage(0).position());
         }
+
+        try (Subscription subscription = archiveClient.replay(
+            recordingId, fromPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
+        {
+            consume(subscription, messageCount / 2, messagePrefix);
+            assertEquals(length / 2, subscription.getImage(0).position());
+
+            final ControlResponsePoller poller = archiveClient.controlResponsePoller();
+            while (poller.poll() == 0 && !poller.isPollComplete())
+            {
+                Thread.yield();
+            }
+
+            assertEquals(ReplayStartedDecoder.TEMPLATE_ID, poller.templateId());
+            final long replayId = poller.replayStartedDecoder().replayId();
+
+            archiveClient.abortReplay(replayId);
+            while (poller.poll() == 0 && !poller.isPollComplete())
+            {
+                Thread.yield();
+            }
+
+            assertEquals(ReplayAbortedDecoder.TEMPLATE_ID, poller.templateId());
+        }
     }
 
     private long findRecordingId(final String expectedChannel, final int expectedStreamId, final long expectedPosition)
@@ -192,11 +220,14 @@ public class ArchiveTest
                 received.value++;
             });
 
-        while (received.value < count && subscription.poll(fragmentHandler, FRAGMENT_LIMIT) == 0)
+        while (received.value < count)
         {
-            Thread.yield();
+            if (0 == subscription.poll(fragmentHandler, FRAGMENT_LIMIT))
+            {
+                Thread.yield();
+            }
         }
 
-        assertEquals(count, received.get());
+        assertThat(received.get(), is(count));
     }
 }

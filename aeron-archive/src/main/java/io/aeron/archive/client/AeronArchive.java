@@ -105,6 +105,26 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
+     * The {@link ArchiveProxy} for send asynchronous messages to the connected archive.
+     *
+     * @return the {@link ArchiveProxy} for send asynchronous messages to the connected archive.
+     */
+    public ArchiveProxy archiveProxy()
+    {
+        return archiveProxy;
+    }
+
+    /**
+     * Get the {@link ControlResponsePoller} for polling additional events on the control channel.
+     *
+     * @return the {@link ControlResponsePoller} for polling additional events on the control channel.
+     */
+    public ControlResponsePoller controlResponsePoller()
+    {
+        return controlResponsePoller;
+    }
+
+    /**
      * Add a {@link Publication} and set it up to be recorded.
      *
      * @param channel  for the publication.
@@ -203,7 +223,7 @@ public final class AeronArchive implements AutoCloseable
         {
             if (!archiveProxy.replay(recordingId, position, length, replayChannel, replayStreamId, correlationId))
             {
-                throw new IllegalStateException("Failed to send stop recording request");
+                throw new IllegalStateException("Failed to send replay request");
             }
 
             pollForResponse(correlationId, ControlResponseDecoder.class);
@@ -215,6 +235,23 @@ public final class AeronArchive implements AutoCloseable
         }
 
         return replaySubscription;
+    }
+
+    /**
+     * Abort an active replay of a recording.
+     *
+     * @param replayId to be aborted.
+     */
+    public void abortReplay(final long replayId)
+    {
+        final long correlationId = aeron.nextCorrelationId();
+
+        if (!archiveProxy.abortReplay(replayId, correlationId))
+        {
+            throw new IllegalStateException("Failed to send abort replay request");
+        }
+
+        pollForResponse(correlationId, ControlResponseDecoder.class);
     }
 
     /**
@@ -293,8 +330,8 @@ public final class AeronArchive implements AutoCloseable
                 if (poller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
                     poller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
                 {
-                    final String error = poller.controlResponseDecoder().errorMessage();
-                    throw new IllegalStateException("correlationId=" + expectedCorrelationId + " error: " + error);
+                    final String message = poller.controlResponseDecoder().errorMessage();
+                    throw new IllegalStateException("correlationId=" + expectedCorrelationId + " error: " + message);
                 }
 
                 break;
@@ -343,8 +380,8 @@ public final class AeronArchive implements AutoCloseable
                 else if (templateId == ControlResponseDecoder.TEMPLATE_ID &&
                     poller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
                 {
-                    final String error = poller.controlResponseDecoder().errorMessage();
-                    throw new IllegalStateException("correlationId=" + expectedCorrelationId + " error: " + error);
+                    final String message = poller.controlResponseDecoder().errorMessage();
+                    throw new IllegalStateException("correlationId=" + expectedCorrelationId + " error: " + message);
                 }
                 else
                 {

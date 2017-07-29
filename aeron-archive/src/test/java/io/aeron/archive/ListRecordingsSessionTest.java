@@ -96,7 +96,7 @@ public class ListRecordingsSessionTest
             (invocation) ->
             {
                 final UnsafeBuffer b = invocation.getArgument(1);
-                recordingDescriptorDecoder.wrap(b, Catalog.CATALOG_FRAME_LENGTH, BLOCK_LENGTH, SCHEMA_VERSION);
+                recordingDescriptorDecoder.wrap(b, Catalog.DESCRIPTOR_HEADER_LENGTH, BLOCK_LENGTH, SCHEMA_VERSION);
                 final int i = counter.intValue();
                 assertThat(recordingDescriptorDecoder.recordingId(), is(recordingIds[i]));
                 counter.set(i + 1);

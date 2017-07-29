@@ -89,11 +89,11 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         final AtomicCounter stopPosition)
     {
         this.descriptorBuffer = descriptorBuffer;
-        descriptorEncoder = new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH);
+        descriptorEncoder = new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH);
         this.stopPosition = stopPosition;
         final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder().wrap(
             descriptorBuffer,
-            Catalog.CATALOG_FRAME_LENGTH,
+            Catalog.DESCRIPTOR_HEADER_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
 

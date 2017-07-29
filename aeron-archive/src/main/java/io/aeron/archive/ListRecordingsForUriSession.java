@@ -78,7 +78,7 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
 
             decoder.wrap(
                 descriptorBuffer,
-                Catalog.CATALOG_FRAME_LENGTH,
+                Catalog.DESCRIPTOR_HEADER_LENGTH,
                 RecordingDescriptorDecoder.BLOCK_LENGTH,
                 RecordingDescriptorDecoder.SCHEMA_VERSION);
 

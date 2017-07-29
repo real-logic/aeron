@@ -164,7 +164,7 @@ public class TestUtil
     {
         final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder().wrap(
             descriptorBuffer,
-            Catalog.CATALOG_FRAME_LENGTH,
+            Catalog.DESCRIPTOR_HEADER_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
 

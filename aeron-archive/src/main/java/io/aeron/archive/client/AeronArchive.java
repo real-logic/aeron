@@ -18,6 +18,7 @@ package io.aeron.archive.client;
 import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
+import io.aeron.Subscription;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.ControlResponseDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
@@ -141,7 +142,7 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Start recording a channel and stream.
+     * Start recording a channel and stream pairing.
      *
      * @param channel  to be recorded.
      * @param streamId to be recorded.
@@ -157,6 +158,63 @@ public final class AeronArchive implements AutoCloseable
         }
 
         pollForResponse(correlationId, ControlResponseDecoder.class);
+    }
+
+    /**
+     * Stop recording for a channel and stream pairing.
+     *
+     * @param channel  to stop recording for.
+     * @param streamId to stop recording for.
+     */
+    public void stopRecording(final String channel, final int streamId)
+    {
+        final String recordingChannel = channel.startsWith(IPC_CHANNEL) ? channel : SPY_PREFIX + channel;
+        final long correlationId = aeron.nextCorrelationId();
+
+        if (!archiveProxy.stopRecording(recordingChannel, streamId, correlationId))
+        {
+            throw new IllegalStateException("Failed to send stop recording request");
+        }
+
+        pollForResponse(correlationId, ControlResponseDecoder.class);
+    }
+
+    /**
+     * Replay a length of a recording from a position.
+     *
+     * @param recordingId    to be replayed.
+     * @param position       from which the replay should be started.
+     * @param length         of the stream to be replayed.
+     * @param replayChannel  to which the replay should be sent.
+     * @param replayStreamId to which the replay should be sent.
+     * @return the {@link Subscription} for consuming the replay.
+     */
+    public Subscription replay(
+        final long recordingId,
+        final long position,
+        final long length,
+        final String replayChannel,
+        final int replayStreamId)
+    {
+        final long correlationId = aeron.nextCorrelationId();
+        final Subscription replaySubscription = aeron.addSubscription(replayChannel, replayStreamId);
+
+        try
+        {
+            if (!archiveProxy.replay(recordingId, position, length, replayChannel, replayStreamId, correlationId))
+            {
+                throw new IllegalStateException("Failed to send stop recording request");
+            }
+
+            pollForResponse(correlationId, ControlResponseDecoder.class);
+        }
+        catch (final Exception ex)
+        {
+            replaySubscription.close();
+            throw ex;
+        }
+
+        return replaySubscription;
     }
 
     /**
@@ -214,7 +272,7 @@ public final class AeronArchive implements AutoCloseable
     private void pollForResponse(final long expectedCorrelationId, final Class expectedMessage)
     {
         final long deadline = System.nanoTime() + messageTimeoutNs;
-        final ControlResponsePoller poller = this.controlResponsePoller;
+        final ControlResponsePoller poller = controlResponsePoller;
         idleStrategy.reset();
 
         while (true)
@@ -235,9 +293,8 @@ public final class AeronArchive implements AutoCloseable
                 if (poller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
                     poller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
                 {
-                    throw new IllegalStateException(
-                        "Response correlationId=" + expectedCorrelationId +
-                            " error: " + poller.controlResponseDecoder().errorMessage());
+                    final String error = poller.controlResponseDecoder().errorMessage();
+                    throw new IllegalStateException("correlationId=" + expectedCorrelationId + " error: " + error);
                 }
 
                 break;
@@ -250,7 +307,7 @@ public final class AeronArchive implements AutoCloseable
     {
         int count = 0;
         final long deadline = System.nanoTime() + messageTimeoutNs;
-        final ControlResponsePoller poller = this.controlResponsePoller;
+        final ControlResponsePoller poller = controlResponsePoller;
         idleStrategy.reset();
 
         while (true)
@@ -286,9 +343,8 @@ public final class AeronArchive implements AutoCloseable
                 else if (templateId == ControlResponseDecoder.TEMPLATE_ID &&
                     poller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
                 {
-                    throw new IllegalStateException(
-                        "Response correlationId=" + expectedCorrelationId +
-                            " error: " + poller.controlResponseDecoder().errorMessage());
+                    final String error = poller.controlResponseDecoder().errorMessage();
+                    throw new IllegalStateException("correlationId=" + expectedCorrelationId + " error: " + error);
                 }
                 else
                 {

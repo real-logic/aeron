@@ -29,16 +29,26 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 @Ignore
 public class ArchiveTest
 {
     private static final int FRAGMENT_LIMIT = 10;
-    private static final int STREAM_ID = 33;
-    private static final String CHANNEL = new ChannelUriStringBuilder()
+
+    private static final int RECORDING_STREAM_ID = 33;
+    private static final String RECORDING_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
-        .endpoint("127.0.0.1:7777")
+        .endpoint("localhost:3333")
+        .termLength(64 * 1024)
+        .build();
+
+    private static final int REPLAY_STREAM_ID = 66;
+    private static final String REPLAY_CHANNEL = new ChannelUriStringBuilder()
+        .media("udp")
+        .endpoint("localhost:6666")
         .termLength(64 * 1024)
         .build();
 
@@ -90,23 +100,37 @@ public class ArchiveTest
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
-        final long bytesPublished;
+        final long length;
 
-        try (Publication publication = archiveClient.addRecordedPublication(CHANNEL, STREAM_ID);
-             Subscription subscription = aeronClient.addSubscription(CHANNEL, STREAM_ID))
+        try (Publication publication = archiveClient.addRecordedPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
+             Subscription subscription = aeronClient.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
         {
             offer(publication, messageCount, messagePrefix);
             consume(subscription, messageCount, messagePrefix);
 
-            bytesPublished = publication.position();
+            length = publication.position();
         }
 
+        archiveClient.stopRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID);
+
+        final long recordingId = findRecordingId(RECORDING_CHANNEL, RECORDING_STREAM_ID, length);
+        final long fromPosition = 0L;
+
+        try (Subscription subscription = archiveClient.replay(
+            recordingId, fromPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
+        {
+            consume(subscription, messageCount, messagePrefix);
+            assertEquals(length, subscription.getImage(0).position());
+        }
+    }
+
+    private long findRecordingId(final String expectedChannel, final int expectedStreamId, final long expectedPosition)
+    {
         final MutableLong foundRecordingId = new MutableLong();
-        final int recordingsFound = archiveClient.listRecordingsForUri(
+
+        final int recordingsFound = archiveClient.listRecordings(
             0L,
             10,
-            CHANNEL,
-            STREAM_ID,
             (
                 correlationId,
                 recordingId,
@@ -125,15 +149,17 @@ public class ArchiveTest
                 sourceIdentity
             ) ->
             {
-                foundRecordingId.value = recordingId;
+                foundRecordingId.set(recordingId);
 
                 assertEquals(0L, startPosition);
-                assertEquals(bytesPublished, stopPosition);
-                assertEquals(STREAM_ID, streamId);
-                assertEquals(CHANNEL, originalChannel);
+                assertEquals(expectedPosition, stopPosition);
+                assertEquals(expectedStreamId, streamId);
+                //assertEquals(expectedChannel, originalChannel);
             });
 
-        assertEquals(1, recordingsFound);
+        assertThat(recordingsFound, greaterThan(0));
+
+        return foundRecordingId.get();
     }
 
     private static void offer(final Publication publication, final int count, final String prefix)
@@ -171,6 +197,6 @@ public class ArchiveTest
             Thread.yield();
         }
 
-        assertEquals(count, received.value);
+        assertEquals(count, received.get());
     }
 }

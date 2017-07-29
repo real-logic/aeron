@@ -91,7 +91,7 @@ inline size_t aeron_logbuffer_index_by_term(int32_t initial_term_id, int32_t act
 inline int64_t aeron_logbuffer_compute_position(
     int32_t active_term_id, int32_t term_offset, size_t position_bits_to_shift, int32_t initial_term_id)
 {
-    int32_t term_count = active_term_id - initial_term_id;
+    int64_t term_count = active_term_id - initial_term_id;
 
     return (term_count << position_bits_to_shift) + term_offset;
 }

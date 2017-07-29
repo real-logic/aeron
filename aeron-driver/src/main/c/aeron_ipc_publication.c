@@ -194,11 +194,11 @@ void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, in
 {
     int64_t cleaning_position = publication->conductor_fields.cleaning_position;
     size_t dirty_index = aeron_logbuffer_index_by_position(min_sub_pos, publication->position_bits_to_shift);
-    size_t bytes_to_clean = (size_t)(min_sub_pos - cleaning_position);
-    size_t term_length = publication->mapped_raw_log.term_length;
+    int32_t bytes_to_clean = (int32_t)(min_sub_pos - cleaning_position);
+    int32_t term_length = (int32_t)publication->mapped_raw_log.term_length;
     int32_t term_offset = (int32_t)(cleaning_position & (term_length - 1));
-    size_t bytes_left_in_term = term_length - term_offset;
-    size_t length = bytes_to_clean < bytes_left_in_term ? bytes_to_clean : bytes_left_in_term;
+    int32_t bytes_left_in_term = term_length - term_offset;
+    int32_t length = bytes_to_clean < bytes_left_in_term ? bytes_to_clean : bytes_left_in_term;
 
     if (0 < length)
     {

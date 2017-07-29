@@ -2,8 +2,6 @@ package io.aeron.archive;
 
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorEncoder;
-import io.aeron.logbuffer.FrameDescriptor;
-import org.agrona.BufferUtil;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -18,13 +16,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class RecordingWriterTest
 {
@@ -83,13 +81,13 @@ public class RecordingWriterTest
         when(epochClock.time()).thenReturn(42L);
 
         final UnsafeBuffer descriptorBuffer =
-            new UnsafeBuffer(BufferUtil.allocateDirectAligned(Catalog.RECORD_LENGTH, FrameDescriptor.FRAME_ALIGNMENT));
+            new UnsafeBuffer(allocateDirectAligned(Catalog.DEFAULT_RECORD_LENGTH, FRAME_ALIGNMENT));
         final RecordingDescriptorEncoder descriptorEncoder = new RecordingDescriptorEncoder().wrap(
             descriptorBuffer,
-            Catalog.CATALOG_FRAME_LENGTH);
+            Catalog.DESCRIPTOR_HEADER_LENGTH);
         final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder().wrap(
             descriptorBuffer,
-            Catalog.CATALOG_FRAME_LENGTH,
+            Catalog.DESCRIPTOR_HEADER_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
         Catalog.initDescriptor(

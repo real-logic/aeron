@@ -33,7 +33,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import static io.aeron.archive.Catalog.RECORD_LENGTH;
 import static io.aeron.archive.TestUtil.makeTempDir;
 import static io.aeron.archive.TestUtil.newRecordingFragmentReader;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -71,7 +70,7 @@ public class ReplaySessionTest
         mock(ArchiveConductor.ReplayPublicationSupplier.class);
     private final AtomicCounter position = mock(AtomicCounter.class);
     private final UnsafeBuffer descriptorBuffer =
-        new UnsafeBuffer(allocateDirectAligned(RECORD_LENGTH, FRAME_ALIGNMENT));
+        new UnsafeBuffer(allocateDirectAligned(Catalog.DEFAULT_RECORD_LENGTH, FRAME_ALIGNMENT));
 
     private int messageCounter = 0;
 
@@ -99,7 +98,7 @@ public class ReplaySessionTest
             .epochClock(epochClock);
 
         Catalog.initDescriptor(
-            new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH),
+            new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH),
             RECORDING_ID,
             START_TIMESTAMP,
             START_POSITION,
@@ -401,7 +400,7 @@ public class ReplaySessionTest
 
         final int recordingId = RECORDING_ID + 1;
         Catalog.initDescriptor(
-            new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH),
+            new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH),
             recordingId,
             START_TIMESTAMP,
             START_POSITION,

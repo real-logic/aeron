@@ -98,7 +98,7 @@ public class CatalogTest
         assertTrue(catalog.wrapDescriptor(id, unsafeBuffer));
         recordingDescriptorDecoder.wrap(
             unsafeBuffer,
-            Catalog.CATALOG_FRAME_LENGTH,
+            Catalog.DESCRIPTOR_HEADER_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
 

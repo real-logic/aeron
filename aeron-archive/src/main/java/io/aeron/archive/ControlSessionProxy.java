@@ -116,7 +116,7 @@ class ControlSessionProxy
         final UnsafeBuffer descriptorBuffer,
         final Publication controlPublication)
     {
-        final int offset = Catalog.CATALOG_FRAME_LENGTH - HEADER_LENGTH;
+        final int offset = Catalog.DESCRIPTOR_HEADER_LENGTH - HEADER_LENGTH;
         final int length = descriptorBuffer.getInt(0) + HEADER_LENGTH;
 
         recordingDescriptorEncoder

@@ -33,12 +33,13 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.io.File;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.ArchiveUtil.segmentFileName;
 import static io.aeron.archive.TestUtil.newRecordingFragmentReader;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.nio.file.StandardOpenOption.*;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -75,7 +76,8 @@ public class RecordingSessionTest
     private EpochClock epochClock = Mockito.mock(EpochClock.class);
     private RecordingDescriptorDecoder descriptorDecoder;
     private RecordingWriter.Context context;
-    private UnsafeBuffer descriptorBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(Catalog.RECORD_LENGTH));
+    private UnsafeBuffer descriptorBuffer =
+        new UnsafeBuffer(allocateDirectAligned(Catalog.DEFAULT_RECORD_LENGTH, FRAME_ALIGNMENT));
 
     private long positionLong;
 
@@ -114,12 +116,12 @@ public class RecordingSessionTest
 
         descriptorDecoder = new RecordingDescriptorDecoder().wrap(
             descriptorBuffer,
-            Catalog.CATALOG_FRAME_LENGTH,
+            Catalog.DESCRIPTOR_HEADER_LENGTH,
             RecordingDescriptorDecoder.BLOCK_LENGTH,
             RecordingDescriptorDecoder.SCHEMA_VERSION);
 
         Catalog.initDescriptor(
-            new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.CATALOG_FRAME_LENGTH),
+            new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH),
             RECORDING_ID,
             START_TIMESTAMP,
             START_POSITION,

@@ -179,7 +179,7 @@ public class ArchiveProxy
      * @param correlationId for this request.
      * @return true if successfully offered otherwise false.
      */
-    public boolean abortReplay(final int replayId, final long correlationId)
+    public boolean abortReplay(final long replayId, final long correlationId)
     {
         abortReplayRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)

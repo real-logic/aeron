@@ -394,7 +394,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             controlSessionProxy.sendResponse(
                 correlationId,
                 ControlResponseCode.REPLAY_UNKNOWN,
-                null,
+                "Failed to abort replayId:" + replayId,
                 controlPublication);
         }
     }

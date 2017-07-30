@@ -17,7 +17,6 @@ package io.aeron.archive;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.ControlResponsePoller;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
@@ -51,7 +50,6 @@ public class ArchiveTest
     private static final String REPLAY_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
         .endpoint("localhost:6666")
-        .termLength(64 * 1024)
         .build();
 
     private MediaDriver driver;
@@ -130,12 +128,6 @@ public class ArchiveTest
         {
             consume(subscription, messageCount / 2, messagePrefix);
             assertEquals(length / 2, subscription.getImage(0).position());
-
-            final ControlResponsePoller poller = archiveClient.controlResponsePoller();
-            while (poller.poll() == 0 && !poller.isPollComplete())
-            {
-                Thread.yield();
-            }
         }
     }
 

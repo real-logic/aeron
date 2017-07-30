@@ -70,12 +70,12 @@ public class ArchiveTest
 
         archive = Archive.launch(
             new Archive.Context()
-                .fileSyncLevel(0)
-                .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
                 .archiveDir(TestUtil.makeTempDir())
+                .fileSyncLevel(0)
                 .threadingMode(ArchiveThreadingMode.SHARED)
-                .countersManager(driver.context().countersManager())
-                .errorHandler(driver.context().errorHandler()));
+                .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
+                .errorHandler(driver.context().errorHandler())
+                .countersManager(driver.context().countersManager()));
 
         aeronClient = Aeron.connect();
 

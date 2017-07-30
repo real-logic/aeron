@@ -40,11 +40,6 @@ class DedicatedModeSessionWorker<T extends Session> extends SessionWorker<T>
         send(() -> super.addSession(session));
     }
 
-    protected void abortSession(final T session)
-    {
-        send(() -> super.abortSession(session));
-    }
-
     protected void preSessionsClose()
     {
         commandQueue.drain(Runnable::run);

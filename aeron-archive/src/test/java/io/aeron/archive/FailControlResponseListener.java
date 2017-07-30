@@ -22,7 +22,8 @@ import static org.junit.Assert.fail;
 
 public class FailControlResponseListener implements ControlResponseListener
 {
-    public void onResponse(final long correlationId, final ControlResponseCode code, final String errorMessage)
+    public void onResponse(
+        final long correlationId, final long relevantId, final ControlResponseCode code, final String errorMessage)
     {
         fail();
     }
@@ -43,11 +44,6 @@ public class FailControlResponseListener implements ControlResponseListener
         final String strippedChannel,
         final String originalChannel,
         final String sourceIdentity)
-    {
-        fail();
-    }
-
-    public void onUnknownRecording(final long correlationId, final long recordingId, final long maxRecordingId)
     {
         fail();
     }

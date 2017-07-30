@@ -119,9 +119,4 @@ class SessionWorker<T extends Session> implements Agent
         sessions.add(session);
         postSessionAdd(session);
     }
-
-    protected void abortSession(final T session)
-    {
-        session.abort();
-    }
 }

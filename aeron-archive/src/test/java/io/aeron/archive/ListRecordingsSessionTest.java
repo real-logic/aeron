@@ -105,7 +105,7 @@ public class ListRecordingsSessionTest
     }
 
     @Test
-    public void shouldSend2DescriptorsAndError()
+    public void shouldSendTwoDescriptorsThenRecordingUnknown()
     {
         final ListRecordingsSession session = new ListRecordingsSession(
             correlationId,
@@ -122,11 +122,11 @@ public class ListRecordingsSessionTest
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
         session.doWork();
         verify(controlSessionProxy, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
-        verify(controlSessionProxy).sendDescriptorUnknown(eq(correlationId), eq(3L), eq(3L), eq(controlPublication));
+        verify(controlSessionProxy).sendRecordingUnknown(eq(correlationId), eq(3L), eq(controlPublication));
     }
 
     @Test
-    public void shouldSendUnknownOnFirst()
+    public void shouldSendRecordingUnknownOnFirst()
     {
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
 
@@ -143,6 +143,6 @@ public class ListRecordingsSessionTest
         session.doWork();
 
         verify(controlSessionProxy, never()).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
-        verify(controlSessionProxy).sendDescriptorUnknown(eq(correlationId), eq(3L), eq(3L), eq(controlPublication));
+        verify(controlSessionProxy).sendRecordingUnknown(eq(correlationId), eq(3L), eq(controlPublication));
     }
 }

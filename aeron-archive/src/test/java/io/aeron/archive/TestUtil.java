@@ -83,7 +83,10 @@ public class TestUtil
             new FailControlResponseListener()
             {
                 public void onResponse(
-                    final long correlationId, final ControlResponseCode code, final String errorMessage)
+                    final long correlationId,
+                    final long relevantId,
+                    final ControlResponseCode code,
+                    final String errorMessage)
                 {
                     assertThat("Error message: " + errorMessage, code, is(ControlResponseCode.OK));
                     assertThat(errorMessage, isEmptyOrNullString());
@@ -102,8 +105,11 @@ public class TestUtil
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
             {
-                public void onUnknownRecording(
-                    final long correlationId, final long recordingId, final long maxRecordingId)
+                public void onResponse(
+                    final long correlationId,
+                    final long relevantId,
+                    final ControlResponseCode code,
+                    final String errorMessage)
                 {
                     assertThat(correlationId, is(expectedCorrelationId));
                 }

@@ -29,8 +29,6 @@ public class ControlResponseAdapter
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
-    private final RecordingUnknownResponseDecoder recordingUnknownResponseDecoder =
-        new RecordingUnknownResponseDecoder();
 
     private final int fragmentLimit;
     private final ControlResponseListener listener;
@@ -110,10 +108,6 @@ public class ControlResponseAdapter
                 handleRecordingDescriptor(listener, buffer, offset);
                 break;
 
-            case RecordingUnknownResponseDecoder.TEMPLATE_ID:
-                handleRecordingUnknownResponse(listener, buffer, offset);
-                break;
-
             default:
                 throw new IllegalStateException("Unknown templateId: " + templateId);
         }
@@ -132,6 +126,7 @@ public class ControlResponseAdapter
 
         listener.onResponse(
             controlResponseDecoder.correlationId(),
+            controlResponseDecoder.relevantId(),
             controlResponseDecoder.code(),
             controlResponseDecoder.errorMessage());
     }
@@ -148,22 +143,5 @@ public class ControlResponseAdapter
             messageHeaderDecoder.version());
 
         dispatchDescriptor(recordingDescriptorDecoder, listener);
-    }
-
-    private void handleRecordingUnknownResponse(
-        final ControlResponseListener controlResponseListener,
-        final DirectBuffer buffer,
-        final int offset)
-    {
-        recordingUnknownResponseDecoder.wrap(
-            buffer,
-            offset + MessageHeaderEncoder.ENCODED_LENGTH,
-            messageHeaderDecoder.blockLength(),
-            messageHeaderDecoder.version());
-
-        controlResponseListener.onUnknownRecording(
-            recordingUnknownResponseDecoder.correlationId(),
-            recordingUnknownResponseDecoder.recordingId(),
-            recordingUnknownResponseDecoder.maxRecordingId());
     }
 }

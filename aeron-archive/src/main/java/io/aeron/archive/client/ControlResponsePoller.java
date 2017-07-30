@@ -29,8 +29,6 @@ public class ControlResponsePoller
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
-    private final RecordingUnknownResponseDecoder recordingUnknownResponseDecoder =
-        new RecordingUnknownResponseDecoder();
 
     private final int fragmentLimit;
     private final Subscription subscription;
@@ -125,16 +123,6 @@ public class ControlResponsePoller
                 correlationId = recordingDescriptorDecoder.correlationId();
                 break;
 
-            case RecordingUnknownResponseDecoder.TEMPLATE_ID:
-                recordingUnknownResponseDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderEncoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                correlationId = recordingUnknownResponseDecoder.correlationId();
-                break;
-
             default:
                 throw new IllegalStateException("Unknown templateId: " + templateId);
         }
@@ -157,10 +145,5 @@ public class ControlResponsePoller
     public RecordingDescriptorDecoder recordingDescriptorDecoder()
     {
         return recordingDescriptorDecoder;
-    }
-
-    public RecordingUnknownResponseDecoder recordingUnknownResponseDecoder()
-    {
-        return recordingUnknownResponseDecoder;
     }
 }

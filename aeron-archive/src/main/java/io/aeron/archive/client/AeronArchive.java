@@ -22,7 +22,6 @@ import io.aeron.Subscription;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.ControlResponseDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
-import io.aeron.archive.codecs.RecordingUnknownResponseDecoder;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
@@ -31,13 +30,14 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.CommonContext.SPY_PREFIX;
+import static io.aeron.archive.client.ControlResponseAdapter.dispatchDescriptor;
 
 /**
  * Client for interacting with a local or remote Aeron Archive that records and replays message streams.
  * <p>
  * This client provides a simple interaction model which is mostly synchronous and may not be optimal.
  * The underlying components such as the {@link ArchiveProxy} and the {@link ControlResponsePoller} may be used
- * directly is a more asynchronous pattern of interaction is required.
+ * directly if a more asynchronous pattern of interaction is required.
  */
 public final class AeronArchive implements AutoCloseable
 {
@@ -299,16 +299,30 @@ public final class AeronArchive implements AutoCloseable
                 idleStrategy.idle();
             }
 
-            if (poller.correlationId() == expectedCorrelationId)
+            if (poller.correlationId() != expectedCorrelationId)
             {
-                if (poller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
-                    poller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
-                {
-                    final String message = poller.controlResponseDecoder().errorMessage();
-                    throw new IllegalStateException("correlationId=" + expectedCorrelationId + " error: " + message);
-                }
+                continue;
+            }
 
-                break;
+            if (poller.templateId() == ControlResponseDecoder.TEMPLATE_ID)
+            {
+                final ControlResponseCode code = poller.controlResponseDecoder().code();
+                switch (code)
+                {
+                    case OK:
+                        return;
+
+                    case ERROR:
+                        throw new IllegalStateException("correlationId=" + expectedCorrelationId +
+                            " error: " + poller.controlResponseDecoder().errorMessage());
+
+                    default:
+                        throw new IllegalStateException("Unexpected code: " + code);
+                }
+            }
+            else
+            {
+                throw new IllegalStateException("Unknown response: templateId=" + poller.templateId());
             }
         }
     }
@@ -334,37 +348,40 @@ public final class AeronArchive implements AutoCloseable
                 idleStrategy.idle();
             }
 
-            if (poller.correlationId() == expectedCorrelationId)
+            if (poller.correlationId() != expectedCorrelationId)
             {
-                final int templateId = poller.templateId();
+                continue;
+            }
 
-                if (templateId == RecordingDescriptorDecoder.TEMPLATE_ID)
-                {
-                    ControlResponseAdapter.dispatchDescriptor(poller.recordingDescriptorDecoder(), consumer);
-
+            switch (poller.templateId())
+            {
+                case RecordingDescriptorDecoder.TEMPLATE_ID:
+                    dispatchDescriptor(poller.recordingDescriptorDecoder(), consumer);
                     if (++count >= recordCount)
                     {
-                        break;
+                        return count;
                     }
-                }
-                else if (templateId == RecordingUnknownResponseDecoder.TEMPLATE_ID)
-                {
                     break;
-                }
-                else if (templateId == ControlResponseDecoder.TEMPLATE_ID &&
-                    poller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
-                {
-                    final String message = poller.controlResponseDecoder().errorMessage();
-                    throw new IllegalStateException("correlationId=" + expectedCorrelationId + " error: " + message);
-                }
-                else
-                {
-                    throw new IllegalStateException("Unknown response: templateId=" + templateId);
-                }
+
+                case ControlResponseDecoder.TEMPLATE_ID:
+                    final ControlResponseCode code = poller.controlResponseDecoder().code();
+                    switch (code)
+                    {
+                        case RECORDING_UNKNOWN:
+                            return count;
+
+                        case ERROR:
+                            throw new IllegalStateException("correlationId=" + expectedCorrelationId +
+                                " error: " + poller.controlResponseDecoder().errorMessage());
+
+                        default:
+                            throw new IllegalStateException("Unexpected code: " + code);
+                    }
+
+                default:
+                    throw new IllegalStateException("Unknown response: templateId=" + poller.templateId());
             }
         }
-
-        return count;
     }
 
     /**

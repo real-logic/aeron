@@ -25,7 +25,6 @@ public class ListRecordingsForUriSessionTest
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
-    private long[] recordingIds = new long[5];
     private long[] matchingRecordingIds = new long[3];
     private final File archiveDir = TestUtil.makeTempDir();
     private final EpochClock clock = mock(EpochClock.class);
@@ -40,15 +39,15 @@ public class ListRecordingsForUriSessionTest
     public void before() throws Exception
     {
         catalog = new Catalog(archiveDir, null, 0, clock);
-        matchingRecordingIds[0] = recordingIds[0] = catalog.addNewRecording(
+        matchingRecordingIds[0] = catalog.addNewRecording(
             0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channel", "channelA?tag=f", "sourceA");
-        recordingIds[1] = catalog.addNewRecording(
+        catalog.addNewRecording(
             0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 7, 1, "channelA", "channel?tag=f", "sourceV");
-        matchingRecordingIds[1] = recordingIds[2] = catalog.addNewRecording(
+        matchingRecordingIds[1] = catalog.addNewRecording(
             0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 8, 1, "channel", "channel?tag=f", "sourceB");
-        recordingIds[3] = catalog.addNewRecording(
+        catalog.addNewRecording(
             0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 8, 1, "channelB", "channelB?tag=f", "sourceB");
-        matchingRecordingIds[2] = recordingIds[4] = catalog.addNewRecording(
+        matchingRecordingIds[2] = catalog.addNewRecording(
             0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 8, 1, "channel", "channel?tag=f", "sourceB");
     }
 
@@ -154,7 +153,7 @@ public class ListRecordingsForUriSessionTest
     }
 
     @Test
-    public void shouldSend2DescriptorsAndDescriptorNotFound()
+    public void shouldSend2DescriptorsAndRecordingUnknown()
     {
         final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
             correlationId,
@@ -174,12 +173,12 @@ public class ListRecordingsForUriSessionTest
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
         session.doWork();
         verify(controlSessionProxy, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
-        verify(controlSessionProxy).sendDescriptorUnknown(eq(correlationId), eq(5L), eq(5L), eq(controlPublication));
+        verify(controlSessionProxy).sendRecordingUnknown(eq(correlationId), eq(5L), eq(controlPublication));
         verifyNoMoreInteractions(controlSessionProxy);
     }
 
     @Test
-    public void shouldSendDescriptorNotFound()
+    public void shouldSendRecordingUnknown()
     {
         final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
             correlationId,
@@ -199,7 +198,7 @@ public class ListRecordingsForUriSessionTest
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
         session.doWork();
         verify(controlSessionProxy, never()).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
-        verify(controlSessionProxy).sendDescriptorUnknown(eq(correlationId), eq(5L), eq(5L), eq(controlPublication));
+        verify(controlSessionProxy).sendRecordingUnknown(eq(correlationId), eq(5L), eq(controlPublication));
         verifyNoMoreInteractions(controlSessionProxy);
     }
 
@@ -224,7 +223,7 @@ public class ListRecordingsForUriSessionTest
         session.doWork();
 
         verify(controlSessionProxy, never()).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
-        verify(controlSessionProxy).sendDescriptorUnknown(eq(correlationId), eq(5L), eq(5L), eq(controlPublication));
+        verify(controlSessionProxy).sendRecordingUnknown(eq(correlationId), eq(5L), eq(controlPublication));
         verifyNoMoreInteractions(controlSessionProxy);
     }
 }

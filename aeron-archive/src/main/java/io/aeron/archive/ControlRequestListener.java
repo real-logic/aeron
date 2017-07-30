@@ -23,8 +23,6 @@ interface ControlRequestListener
 
     void onStartRecording(long correlationId, String channel, int streamId);
 
-    void onAbortReplay(long correlationId, long replayId);
-
     void onStartReplay(
         long correlationId,
         int replayStreamId,

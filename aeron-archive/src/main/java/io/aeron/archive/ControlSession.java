@@ -182,12 +182,6 @@ class ControlSession implements Session, ControlRequestListener
         }
     }
 
-    public void onAbortReplay(final long correlationId, final long replayId)
-    {
-        validateActive();
-        conductor.stopReplay(correlationId, controlPublication, replayId);
-    }
-
     public void onStartReplay(
         final long correlationId,
         final int replayStreamId,

@@ -381,24 +381,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             recordingDescriptorDecoder);
     }
 
-    void stopReplay(final long correlationId, final Publication controlPublication, final long replayId)
-    {
-        final ReplaySession session = replaySessionByIdMap.remove(replayId);
-        if (session != null)
-        {
-            replayer.abortSession(session);
-            controlSessionProxy.sendOkResponse(correlationId, controlPublication);
-        }
-        else
-        {
-            controlSessionProxy.sendResponse(
-                correlationId,
-                ControlResponseCode.REPLAY_UNKNOWN,
-                "Failed to abort replayId:" + replayId,
-                controlPublication);
-        }
-    }
-
     void startReplay(
         final long correlationId,
         final Publication controlPublication,

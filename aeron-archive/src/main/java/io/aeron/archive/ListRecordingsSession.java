@@ -47,11 +47,7 @@ class ListRecordingsSession extends AbstractListRecordingsSession
         {
             if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
             {
-                proxy.sendDescriptorUnknown(
-                    correlationId,
-                    recordingId,
-                    catalog.nextRecordingId(),
-                    controlPublication);
+                proxy.sendRecordingUnknown(correlationId, recordingId, controlPublication);
 
                 isDone = true;
                 break;

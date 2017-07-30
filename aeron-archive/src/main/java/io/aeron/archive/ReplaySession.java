@@ -59,7 +59,7 @@ class ReplaySession implements Session
         INIT, REPLAY, INACTIVE, CLOSED
     }
 
-    static final long LINGER_LENGTH_MS = 1000;
+    static final long CONNECT_TIMEOUT_MS = 5000;
     private static final int REPLAY_BATCH_SIZE = Archive.Configuration.replayBatchSize();
 
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
@@ -75,7 +75,7 @@ class ReplaySession implements Session
 
     private ControlSessionProxy threadLocalControlSessionProxy;
     private State state = State.INIT;
-    private long lingerSinceMs;
+    private long connectDeadlineMs;
 
     ReplaySession(
         final long replayPosition,
@@ -97,7 +97,7 @@ class ReplaySession implements Session
         this.replaySessionId = replaySessionId;
         this.correlationId = correlationId;
         this.epochClock = epochClock;
-        this.lingerSinceMs = epochClock.time();
+        this.connectDeadlineMs = epochClock.time() + CONNECT_TIMEOUT_MS;
 
         final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder().wrap(
             descriptorBuffer,
@@ -285,16 +285,11 @@ class ReplaySession implements Session
         return result;
     }
 
-    private boolean hasLingered()
-    {
-        return epochClock.time() - LINGER_LENGTH_MS > lingerSinceMs;
-    }
-
     private int init()
     {
         if (!replayPublication.isConnected())
         {
-            if (hasLingered())
+            if (epochClock.time() > connectDeadlineMs)
             {
                 return closeOnError(null, "No connection established for replay");
             }

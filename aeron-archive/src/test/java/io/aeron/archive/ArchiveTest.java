@@ -26,7 +26,6 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.greaterThan;
@@ -34,10 +33,9 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-@Ignore
 public class ArchiveTest
 {
-    private static final int FRAGMENT_LIMIT = 1;
+    private static final int FRAGMENT_LIMIT = 10;
 
     private static final int RECORDING_STREAM_ID = 33;
     private static final String RECORDING_CHANNEL = new ChannelUriStringBuilder()
@@ -121,13 +119,6 @@ public class ArchiveTest
         {
             consume(subscription, messageCount, messagePrefix);
             assertEquals(length, subscription.getImage(0).position());
-        }
-
-        try (Subscription subscription = archiveClient.replay(
-            recordingId, fromPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
-        {
-            consume(subscription, messageCount / 2, messagePrefix);
-            assertEquals(length / 2, subscription.getImage(0).position());
         }
     }
 

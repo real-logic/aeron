@@ -355,7 +355,7 @@ public class ReplaySessionTest
     }
 
     @Test
-    public void shouldGiveUpIfPublishersAreNotConnectedAfterOneSecond()
+    public void shouldGiveUpIfPublishersAreNotConnectedAfterTimeout()
     {
         final long length = 1024L;
         final long correlationId = 1L;
@@ -373,7 +373,7 @@ public class ReplaySessionTest
 
         replaySession.doWork();
 
-        when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
+        when(epochClock.time()).thenReturn(ReplaySession.CONNECT_TIMEOUT_MS + TIME + 1L);
         replaySession.doWork();
         assertTrue(replaySession.isDone());
         replaySession.close();

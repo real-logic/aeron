@@ -217,24 +217,15 @@ public final class AeronArchive implements AutoCloseable
         final int replayStreamId)
     {
         final long correlationId = aeron.nextCorrelationId();
-        final Subscription replaySubscription = aeron.addSubscription(replayChannel, replayStreamId);
 
-        try
+        if (!archiveProxy.replay(recordingId, position, length, replayChannel, replayStreamId, correlationId))
         {
-            if (!archiveProxy.replay(recordingId, position, length, replayChannel, replayStreamId, correlationId))
-            {
-                throw new IllegalStateException("Failed to send replay request");
-            }
-
-            pollForResponse(correlationId, ControlResponseDecoder.class);
-        }
-        catch (final Exception ex)
-        {
-            replaySubscription.close();
-            throw ex;
+            throw new IllegalStateException("Failed to send replay request");
         }
 
-        return replaySubscription;
+        pollForResponse(correlationId, ControlResponseDecoder.class);
+
+        return aeron.addSubscription(replayChannel, replayStreamId);
     }
 
     /**

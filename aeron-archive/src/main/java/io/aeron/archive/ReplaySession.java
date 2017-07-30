@@ -33,7 +33,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
 
-import static io.aeron.archive.RecordingFragmentReader.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.frameFlags;
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
 import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
@@ -57,7 +56,7 @@ class ReplaySession implements Session
 {
     enum State
     {
-        INIT, REPLAY, LINGER, INACTIVE, CLOSED
+        INIT, REPLAY, INACTIVE, CLOSED
     }
 
     static final long LINGER_LENGTH_MS = 1000;
@@ -197,25 +196,12 @@ class ReplaySession implements Session
         {
             workDone += init();
         }
-        else if (state == State.LINGER)
-        {
-            workDone += linger();
-        }
 
         return workDone;
     }
 
     public void abort()
     {
-        if (controlPublication.isConnected())
-        {
-            threadLocalControlSessionProxy.sendReplayAborted(
-                correlationId,
-                replaySessionId,
-                replayPublication == null ? NULL_POSITION : replayPublication.position(),
-                controlPublication);
-        }
-
         state = State.INACTIVE;
     }
 
@@ -241,8 +227,7 @@ class ReplaySession implements Session
             final int polled = cursor.controlledPoll(fragmentPoller, REPLAY_BATCH_SIZE);
             if (cursor.isDone())
             {
-                lingerSinceMs = epochClock.time();
-                state = State.LINGER;
+                state = State.INACTIVE;
             }
 
             return polled;
@@ -300,16 +285,6 @@ class ReplaySession implements Session
         return result;
     }
 
-    private int linger()
-    {
-        if (hasLingered() || !replayPublication.isConnected())
-        {
-            state = State.INACTIVE;
-        }
-
-        return 0;
-    }
-
     private boolean hasLingered()
     {
         return epochClock.time() - LINGER_LENGTH_MS > lingerSinceMs;
@@ -327,7 +302,6 @@ class ReplaySession implements Session
             return 0;
         }
 
-        threadLocalControlSessionProxy.sendReplayStarted(correlationId, replaySessionId, controlPublication);
         state = State.REPLAY;
 
         return 1;

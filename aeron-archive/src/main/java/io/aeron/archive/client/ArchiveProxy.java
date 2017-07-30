@@ -43,7 +43,6 @@ public class ArchiveProxy
     private final ConnectRequestEncoder connectRequestEncoder = new ConnectRequestEncoder();
     private final StartRecordingRequestEncoder startRecordingRequestEncoder = new StartRecordingRequestEncoder();
     private final ReplayRequestEncoder replayRequestEncoder = new ReplayRequestEncoder();
-    private final AbortReplayRequestEncoder abortReplayRequestEncoder = new AbortReplayRequestEncoder();
     private final StopRecordingRequestEncoder stopRecordingRequestEncoder = new StopRecordingRequestEncoder();
     private final ListRecordingsRequestEncoder listRecordingsRequestEncoder = new ListRecordingsRequestEncoder();
     private final ListRecordingsForUriRequestEncoder listRecordingsForUriRequestEncoder =
@@ -170,23 +169,6 @@ public class ArchiveProxy
             .replayChannel(replayChannel);
 
         return offer(replayRequestEncoder.encodedLength());
-    }
-
-    /**
-     * Abort an active replay.
-     *
-     * @param replayId      to be aborted.
-     * @param correlationId for this request.
-     * @return true if successfully offered otherwise false.
-     */
-    public boolean abortReplay(final long replayId, final long correlationId)
-    {
-        abortReplayRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-            .correlationId(correlationId)
-            .replayId(replayId);
-
-        return offer(abortReplayRequestEncoder.encodedLength());
     }
 
     /**

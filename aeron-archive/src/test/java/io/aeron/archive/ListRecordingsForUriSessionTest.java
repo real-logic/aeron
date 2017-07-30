@@ -18,8 +18,6 @@ import static io.aeron.archive.codecs.RecordingDescriptorDecoder.BLOCK_LENGTH;
 import static io.aeron.archive.codecs.RecordingDescriptorDecoder.SCHEMA_VERSION;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 public class ListRecordingsForUriSessionTest

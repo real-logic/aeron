@@ -18,8 +18,6 @@ package io.aeron.archive;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ControlResponsePoller;
-import io.aeron.archive.codecs.ReplayAbortedDecoder;
-import io.aeron.archive.codecs.ReplayStartedDecoder;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
@@ -138,17 +136,6 @@ public class ArchiveTest
             {
                 Thread.yield();
             }
-
-            assertEquals(ReplayStartedDecoder.TEMPLATE_ID, poller.templateId());
-            final long replayId = poller.replayStartedDecoder().replayId();
-
-            archiveClient.abortReplay(replayId);
-            while (poller.poll() == 0 && !poller.isPollComplete())
-            {
-                Thread.yield();
-            }
-
-            assertEquals(ReplayAbortedDecoder.TEMPLATE_ID, poller.templateId());
         }
     }
 

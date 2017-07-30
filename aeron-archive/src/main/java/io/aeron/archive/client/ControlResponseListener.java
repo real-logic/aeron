@@ -32,22 +32,6 @@ public interface ControlResponseListener extends RecordingDescriptorConsumer
     void onResponse(long correlationId, ControlResponseCode code, String errorMessage);
 
     /**
-     * Notifies the successful start of a recording replay.
-     *
-     * @param correlationId of the associated request to start a replay.
-     * @param replayId      for the recording that is being replayed.
-     */
-    void onReplayStarted(long correlationId, long replayId);
-
-    /**
-     * Notifies the successful abort of recording replay.
-     *
-     * @param correlationId for the associated request to abort the replay.
-     * @param stopPosition   reached for the replay.
-     */
-    void onReplayAborted(long correlationId, long stopPosition);
-
-    /**
      * Notifies that the request for a recording descriptor of given id is not found
      *
      * @param correlationId  of the associated request to replay a recording.

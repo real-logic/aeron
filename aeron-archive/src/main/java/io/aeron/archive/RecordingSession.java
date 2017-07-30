@@ -160,9 +160,4 @@ class RecordingSession implements Session
 
         return workCount;
     }
-
-    long stopPosition()
-    {
-        return recordingWriter != null ? recordingWriter.stopPosition() : Catalog.NULL_POSITION;
-    }
 }

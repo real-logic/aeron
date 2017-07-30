@@ -28,8 +28,6 @@ public class ControlResponsePoller
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
-    private final ReplayStartedDecoder replayStartedDecoder = new ReplayStartedDecoder();
-    private final ReplayAbortedDecoder replayAbortedDecoder = new ReplayAbortedDecoder();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final RecordingUnknownResponseDecoder recordingUnknownResponseDecoder =
         new RecordingUnknownResponseDecoder();
@@ -127,26 +125,6 @@ public class ControlResponsePoller
                 correlationId = recordingDescriptorDecoder.correlationId();
                 break;
 
-            case ReplayStartedDecoder.TEMPLATE_ID:
-                replayStartedDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderEncoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                correlationId = replayStartedDecoder.correlationId();
-                break;
-
-            case ReplayAbortedDecoder.TEMPLATE_ID:
-                replayAbortedDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderEncoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                correlationId = replayAbortedDecoder.correlationId();
-                break;
-
             case RecordingUnknownResponseDecoder.TEMPLATE_ID:
                 recordingUnknownResponseDecoder.wrap(
                     buffer,
@@ -174,16 +152,6 @@ public class ControlResponsePoller
     public ControlResponseDecoder controlResponseDecoder()
     {
         return controlResponseDecoder;
-    }
-
-    public ReplayStartedDecoder replayStartedDecoder()
-    {
-        return replayStartedDecoder;
-    }
-
-    public ReplayAbortedDecoder replayAbortedDecoder()
-    {
-        return replayAbortedDecoder;
     }
 
     public RecordingDescriptorDecoder recordingDescriptorDecoder()

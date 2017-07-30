@@ -41,9 +41,6 @@ import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 public class RecordingSessionTest
@@ -63,7 +60,7 @@ public class RecordingSessionTest
     private static final long START_POSITION = TERM_OFFSET;
     private static final int INITIAL_TERM_ID = 0;
     public static final long START_TIMESTAMP = 0L;
-    public static final long STOP_TIMSTAMP = 128L;
+    public static final long STOP_TIMESTAMP = 128L;
 
     private final RecordingEventsProxy recordingEventsProxy = mock(RecordingEventsProxy.class);
     private final AtomicCounter position = mock(AtomicCounter.class);
@@ -209,12 +206,12 @@ public class RecordingSessionTest
         assertEquals("Expect no work", 0, session.doWork());
 
         when(image.isClosed()).thenReturn(true);
-        when(epochClock.time()).thenReturn(STOP_TIMSTAMP);
+        when(epochClock.time()).thenReturn(STOP_TIMESTAMP);
         session.doWork();
         assertTrue(session.isDone());
         session.close();
 
-        assertEquals(STOP_TIMSTAMP, descriptorDecoder.stopTimestamp());
+        assertEquals(STOP_TIMESTAMP, descriptorDecoder.stopTimestamp());
     }
 
     private Subscription mockSubscription(final String channel, final int streamId)

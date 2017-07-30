@@ -28,8 +28,6 @@ public class ControlResponseAdapter
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
-    private final ReplayStartedDecoder replayStartedDecoder = new ReplayStartedDecoder();
-    private final ReplayAbortedDecoder replayAbortedDecoder = new ReplayAbortedDecoder();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final RecordingUnknownResponseDecoder recordingUnknownResponseDecoder =
         new RecordingUnknownResponseDecoder();
@@ -112,14 +110,6 @@ public class ControlResponseAdapter
                 handleRecordingDescriptor(listener, buffer, offset);
                 break;
 
-            case ReplayStartedDecoder.TEMPLATE_ID:
-                handleReplayStarted(listener, buffer, offset);
-                break;
-
-            case ReplayAbortedDecoder.TEMPLATE_ID:
-                handleReplayAborted(listener, buffer, offset);
-                break;
-
             case RecordingUnknownResponseDecoder.TEMPLATE_ID:
                 handleRecordingUnknownResponse(listener, buffer, offset);
                 break;
@@ -158,38 +148,6 @@ public class ControlResponseAdapter
             messageHeaderDecoder.version());
 
         dispatchDescriptor(recordingDescriptorDecoder, listener);
-    }
-
-    private void handleReplayStarted(
-        final ControlResponseListener listener,
-        final DirectBuffer buffer,
-        final int offset)
-    {
-        replayStartedDecoder.wrap(
-            buffer,
-            offset + MessageHeaderEncoder.ENCODED_LENGTH,
-            messageHeaderDecoder.blockLength(),
-            messageHeaderDecoder.version());
-
-        listener.onReplayStarted(
-            replayStartedDecoder.correlationId(),
-            replayStartedDecoder.replayId());
-    }
-
-    private void handleReplayAborted(
-        final ControlResponseListener listener,
-        final DirectBuffer buffer,
-        final int offset)
-    {
-        replayAbortedDecoder.wrap(
-            buffer,
-            offset + MessageHeaderEncoder.ENCODED_LENGTH,
-            messageHeaderDecoder.blockLength(),
-            messageHeaderDecoder.version());
-
-        listener.onReplayAborted(
-            replayAbortedDecoder.correlationId(),
-            replayAbortedDecoder.stopPosition());
     }
 
     private void handleRecordingUnknownResponse(

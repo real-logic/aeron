@@ -27,16 +27,6 @@ public class FailControlResponseListener implements ControlResponseListener
         fail();
     }
 
-    public void onReplayStarted(final long correlationId, final long replayId)
-    {
-        fail();
-    }
-
-    public void onReplayAborted(final long correlationId, final long stopPosition)
-    {
-        fail();
-    }
-
     public void onRecordingDescriptor(
         final long correlationId,
         final long recordingId,

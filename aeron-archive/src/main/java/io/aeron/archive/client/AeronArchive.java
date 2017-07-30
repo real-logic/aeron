@@ -238,23 +238,6 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Abort an active replay of a recording.
-     *
-     * @param replayId to be aborted.
-     */
-    public void abortReplay(final long replayId)
-    {
-        final long correlationId = aeron.nextCorrelationId();
-
-        if (!archiveProxy.abortReplay(replayId, correlationId))
-        {
-            throw new IllegalStateException("Failed to send abort replay request");
-        }
-
-        pollForResponse(correlationId, ControlResponseDecoder.class);
-    }
-
-    /**
      * List all recording descriptors from a recording id with a limit of record count.
      * <p>
      * If the recording id is greater than the largest known id then nothing is returned.

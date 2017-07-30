@@ -24,7 +24,6 @@ class ControlRequestAdapter implements FragmentHandler
     private final ControlRequestListener listener;
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ReplayRequestDecoder replayRequestDecoder = new ReplayRequestDecoder();
-    private final AbortReplayRequestDecoder abortReplayRequestDecoder = new AbortReplayRequestDecoder();
     private final StartRecordingRequestDecoder startRecordingRequestDecoder = new StartRecordingRequestDecoder();
     private final StopRecordingRequestDecoder stopRecordingRequestDecoder = new StopRecordingRequestDecoder();
     private final ListRecordingsRequestDecoder listRecordingsRequestDecoder = new ListRecordingsRequestDecoder();
@@ -98,18 +97,6 @@ class ControlRequestAdapter implements FragmentHandler
                     stopRecordingRequestDecoder.channel(),
                     stopRecordingRequestDecoder.streamId()
                 );
-                break;
-
-            case AbortReplayRequestDecoder.TEMPLATE_ID:
-                abortReplayRequestDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    headerDecoder.blockLength(),
-                    headerDecoder.version());
-
-                listener.onAbortReplay(
-                    abortReplayRequestDecoder.correlationId(),
-                    abortReplayRequestDecoder.replayId());
                 break;
 
             case ListRecordingsRequestDecoder.TEMPLATE_ID:

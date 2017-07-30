@@ -42,8 +42,6 @@ import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 public class ReplaySessionTest
@@ -247,10 +245,6 @@ public class ReplaySessionTest
 
         validateFrame(termBuffer, 0, FrameDescriptor.UNFRAGMENTED);
 
-        assertFalse(replaySession.isDone());
-
-        when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
-        replaySession.doWork();
         assertTrue(replaySession.isDone());
         replaySession.close();
     }
@@ -324,10 +318,6 @@ public class ReplaySessionTest
         validateFrame(termBuffer, 2, FrameDescriptor.END_FRAG_FLAG);
 
         verify(mockReplayPub).appendPadding(FRAME_LENGTH - HEADER_LENGTH);
-        assertFalse(replaySession.isDone());
-
-        when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
-        replaySession.doWork();
         assertTrue(replaySession.isDone());
         replaySession.close();
     }
@@ -362,9 +352,6 @@ public class ReplaySessionTest
         replaySession.doWork();
         assertTrue(replaySession.isDone());
         replaySession.close();
-
-        verify(proxy, times(1))
-            .sendReplayAborted(correlationId, REPLAY_SESSION_ID, mockReplayPub.position(), mockControlPub);
     }
 
     @Test
@@ -481,10 +468,6 @@ public class ReplaySessionTest
         validateFrame(termBuffer, 2, FrameDescriptor.END_FRAG_FLAG);
         verify(mockReplayPub).appendPadding(FRAME_LENGTH - HEADER_LENGTH);
 
-        assertFalse(replaySession.isDone());
-
-        when(epochClock.time()).thenReturn(ReplaySession.LINGER_LENGTH_MS + TIME + 1L);
-        replaySession.doWork();
         assertTrue(replaySession.isDone());
         replaySession.close();
     }

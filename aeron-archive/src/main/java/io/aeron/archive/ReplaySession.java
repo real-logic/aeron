@@ -113,19 +113,20 @@ class ReplaySession implements Session
 
         if (replayPosition - startPosition < 0)
         {
-            closeOnError(null, "Requested replay start position(=" + replayPosition +
-                ") is before recording start position(=" + startPosition + ")");
+            final String errorMessage = "Requested replay start position(=" + replayPosition +
+                ") is before recording start position(=" + startPosition + ")";
+            closeOnError(new IllegalArgumentException(errorMessage), errorMessage);
             cursor = null;
             replayPublication = null;
-
             return;
         }
 
         final long stopPosition = descriptorDecoder.stopPosition();
         if (replayPosition - stopPosition >= 0)
         {
-            closeOnError(null, "Requested replay start position(=" + replayPosition +
-                ") is after recording stop position(=" + stopPosition + ")");
+            final String errorMessage = "Requested replay start position(=" + replayPosition +
+                ") is after recording stop position(=" + stopPosition + ")";
+            closeOnError(new IllegalArgumentException(errorMessage), errorMessage);
             cursor = null;
             replayPublication = null;
 
@@ -168,6 +169,7 @@ class ReplaySession implements Session
         }
 
         this.replayPublication = replayPublication;
+        threadLocalControlSessionProxy.sendOkResponse(correlationId, controlPublication);
     }
 
     public void close()
@@ -325,7 +327,7 @@ class ReplaySession implements Session
             return 0;
         }
 
-        threadLocalControlSessionProxy.sendOkResponse(correlationId, controlPublication);
+        threadLocalControlSessionProxy.sendReplayStarted(correlationId, replaySessionId, controlPublication);
         state = State.REPLAY;
 
         return 1;

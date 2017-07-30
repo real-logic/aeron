@@ -97,6 +97,23 @@ public class TestUtil
         waitFor(() -> controlResponseAdapter.poll() != 0);
     }
 
+    public static void waitForReplayStarted(final Subscription controlResponse, final long expectedCorrelationId)
+    {
+        final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
+            new FailControlResponseListener()
+            {
+                public void onReplayStarted(final long correlationId, final long replayId)
+                {
+                    assertThat(correlationId, is(expectedCorrelationId));
+                }
+            },
+            controlResponse,
+            1
+        );
+
+        waitFor(() -> controlResponseAdapter.poll() != 0);
+    }
+
     static void waitForNotFound(final Subscription controlResponse, final long expectedCorrelationId)
     {
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(

@@ -31,6 +31,7 @@ class ControlSessionProxy
     private final ControlResponseEncoder responseEncoder = new ControlResponseEncoder();
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
     private final ReplayAbortedEncoder replayAbortedEncoder = new ReplayAbortedEncoder();
+    private final ReplayStartedEncoder replayStartedEncoder = new ReplayStartedEncoder();
     private final RecordingUnknownResponseEncoder recordingUnknownResponseEncoder =
         new RecordingUnknownResponseEncoder();
 
@@ -141,5 +142,18 @@ class ControlSessionProxy
             .stopPosition(stopPosition);
 
         send(controlPublication, HEADER_LENGTH + replayAbortedEncoder.encodedLength());
+    }
+
+    void sendReplayStarted(
+        final long correlationId,
+        final long replaySessionId,
+        final Publication controlPublication)
+    {
+        replayStartedEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId)
+            .replayId(replaySessionId);
+
+        send(controlPublication, HEADER_LENGTH + replayStartedEncoder.encodedLength());
     }
 }

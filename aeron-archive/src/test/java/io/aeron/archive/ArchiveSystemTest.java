@@ -601,7 +601,6 @@ public class ArchiveSystemTest
                 replayCorrelationId));
 
             waitForOk(controlResponse, replayCorrelationId);
-//            waitForReplayStarted(controlResponse, replayCorrelationId);
             awaitSubscriptionIsConnected(replay);
             final Image image = replay.images().get(0);
             assertThat(image.initialTermId(), is(initialTermId));
@@ -777,7 +776,6 @@ public class ArchiveSystemTest
                     replayCorrelationId));
 
                 waitForOk(controlResponse, replayCorrelationId);
-//                waitForReplayStarted(controlResponse, replayCorrelationId);
 
                 awaitSubscriptionIsConnected(replay);
                 final Image image = replay.images().get(0);

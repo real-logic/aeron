@@ -26,6 +26,10 @@
             <validValue name="ERROR">1</validValue>
             <validValue name="RECORDING_UNKNOWN">2</validValue>
         </enum>
+        <enum name="SourceLocation" encodingType="uint8">
+            <validValue name="LOCAL">0</validValue>
+            <validValue name="REMOTE">1</validValue>
+        </enum>
         <type name="time_t" primitiveType="int64" description="Unix epoch time"/>
     </types>
 
@@ -39,22 +43,23 @@
     <sbe:message name="ControlResponse"
                  id="2"
                  description="Generic response to a control request. Error message will be empty if code is OK.">
-        <field name="correlationId"      id="1" type="int64"
+        <field name="correlationId"      id="1" type="int64"               offset="0"
                description="Request correlation id with which this response is associated"/>
-        <field name="relevantId"         id="2" type="int64"
+        <field name="relevantId"         id="2" type="int64"               offset="8"
                description="Relevant identity of requested object, e.g. recordingId if RECORDING_UNKNOWN"/>
-        <field name="code"               id="3" type="ControlResponseCode"
+        <field name="code"               id="3" type="ControlResponseCode" offset="16"
                description="code type of the response"/>
-        <data  name="errorMessage"       id="4" type="varAsciiEncoding"
+        <data  name="errorMessage"       id="4" type="varAsciiEncoding"    offset="20"
                description="Detailed error message which is valid in the case of ERROR code"/>
     </sbe:message>
 
     <sbe:message name="StartRecordingRequest"
                  id="3"
                  description="Request a channel:stream be recorded">
-        <field name="correlationId"      id="1" type="int64"/>
-        <field name="streamId"           id="2" type="int32"/>
-        <data  name="channel"            id="3" type="varAsciiEncoding"/>
+        <field name="correlationId"      id="1" type="int64"               offset="0"/>
+        <field name="streamId"           id="2" type="int32"               offset="8"/>
+        <field name="sourceLocation"     id="3" type="SourceLocation"      offset="12"/>
+        <data  name="channel"            id="4" type="varAsciiEncoding"    offset="16"/>
     </sbe:message>
 
     <sbe:message name="StopRecordingRequest"
@@ -97,20 +102,16 @@
     <sbe:message name="CatalogHeader"
                  id="9"
                  description="Used as first element in Catalog to set the version and length of entries">
-        <field name="version" id="1" type="int32"/>
-        <field name="entryLength" id="2" type="int8"/>
+        <field name="version"            id="1" type="int32"/>
+        <field name="entryLength"        id="2" type="int8"/>
     </sbe:message>
 
     <sbe:message name="RecordingDescriptorHeader"
                  id="10"
                  description="For use in the catalog to describe the recording descriptor entry">
-        <field name="length" id="1" type="int32"/>
-        <field name="valid" id="2" type="int8"/>
-        <field name="reserved1" id="3" type="int8"/>
-        <field name="reserved2" id="4" type="int16"/>
-        <field name="reserved3" id="3" type="int64"/>
-        <field name="reserved4" id="4" type="int64"/>
-        <field name="reserved5" id="5" type="int64"/>
+        <field name="length"             id="1" type="int32"/>
+        <field name="valid"              id="2" type="int8"/>
+        <field name="reserved"           id="3" type="int8" offset="31"/>
     </sbe:message>
 
     <sbe:message name="RecordingDescriptor"

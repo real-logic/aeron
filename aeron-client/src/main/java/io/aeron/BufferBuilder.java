@@ -38,7 +38,7 @@ public class BufferBuilder
     public static final int MAX_CAPACITY = Integer.MAX_VALUE - 8;
 
     /**
-     * Initial minimum capacity for the internal buffer when used.
+     * Initial minimum capacity for the internal buffer when used, zero if not used.
      */
     public static final int MIN_ALLOCATED_CAPACITY = 4096;
 

@@ -137,13 +137,11 @@ class ControlSession implements Session, ControlRequestListener
 
     public void onStopRecording(final long correlationId, final String channel, final int streamId)
     {
-        validateActive();
         conductor.stopRecording(correlationId, controlPublication, channel, streamId);
     }
 
     public void onStartRecording(final long correlationId, final String channel, final int streamId)
     {
-        validateActive();
         conductor.startRecordingSubscription(correlationId, controlPublication, channel, streamId);
     }
 
@@ -173,8 +171,6 @@ class ControlSession implements Session, ControlRequestListener
 
     public void onListRecordings(final long correlationId, final long fromRecordingId, final int recordCount)
     {
-        validateActive();
-
         final ListRecordingsSession listRecordingsSession = conductor.newListRecordingsSession(
             correlationId,
             controlPublication,
@@ -198,8 +194,6 @@ class ControlSession implements Session, ControlRequestListener
         final long position,
         final long length)
     {
-        validateActive();
-
         conductor.startReplay(
             correlationId,
             controlPublication,
@@ -220,14 +214,6 @@ class ControlSession implements Session, ControlRequestListener
         if (!isDone() && listRecordingsSessions.size() != 0)
         {
             conductor.addSession(listRecordingsSessions.peek());
-        }
-    }
-
-    private void validateActive()
-    {
-        if (state != State.ACTIVE)
-        {
-            throw new IllegalStateException();
         }
     }
 }

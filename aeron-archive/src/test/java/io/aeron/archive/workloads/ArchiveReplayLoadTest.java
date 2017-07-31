@@ -262,7 +262,7 @@ public class ArchiveReplayLoadTest
             fragmentCount = 0;
             remaining = totalDataLength;
 
-            while (fragmentCount < messageCount && remaining > 0 && !replay.isClosed() && !replay.hasNoImages())
+            while (remaining > 0)
             {
                 replay.poll(validateFragmentHandler, 128);
             }

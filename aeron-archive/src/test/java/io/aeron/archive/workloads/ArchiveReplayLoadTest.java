@@ -25,6 +25,7 @@ import io.aeron.archive.NoOpRecordingEventsListener;
 import io.aeron.archive.TestUtil;
 import io.aeron.archive.client.ArchiveProxy;
 import io.aeron.archive.client.RecordingEventsAdapter;
+import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
@@ -44,7 +45,6 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.archive.ArchiveSystemTest.recordingUri;
 import static io.aeron.archive.ArchiveSystemTest.startChannelDrainingSubscription;
 import static io.aeron.archive.TestUtil.*;
 import static junit.framework.TestCase.assertTrue;
@@ -149,8 +149,9 @@ public class ArchiveReplayLoadTest
             println("Client connected");
 
             final long startRecordingCorrelationId = this.correlationId++;
-            final String recordingUri = recordingUri(PUBLISH_URI);
-            waitFor(() -> archiveProxy.startRecording(recordingUri, PUBLISH_STREAM_ID, startRecordingCorrelationId));
+            final String recordingUri = PUBLISH_URI;
+            waitFor(() -> archiveProxy.startRecording(
+                recordingUri, PUBLISH_STREAM_ID, SourceLocation.LOCAL, startRecordingCorrelationId));
             println("Recording requested");
             waitForOk(controlResponse, startRecordingCorrelationId);
 

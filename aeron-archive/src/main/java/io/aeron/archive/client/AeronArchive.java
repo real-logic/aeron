@@ -22,14 +22,13 @@ import io.aeron.Subscription;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.ControlResponseDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
+import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.CommonContext.IPC_CHANNEL;
-import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.archive.client.ControlResponseAdapter.dispatchDescriptor;
 
 /**
@@ -133,7 +132,7 @@ public final class AeronArchive implements AutoCloseable
      */
     public Publication addRecordedPublication(final String channel, final int streamId)
     {
-        startRecording(channel, streamId);
+        startRecording(channel, streamId, SourceLocation.LOCAL);
 
         final Publication publication = aeron.addPublication(channel, streamId);
         if (!publication.isOriginal())
@@ -156,7 +155,7 @@ public final class AeronArchive implements AutoCloseable
      */
     public ExclusivePublication addRecordedExclusivePublication(final String channel, final int streamId)
     {
-        startRecording(channel, streamId);
+        startRecording(channel, streamId, SourceLocation.LOCAL);
 
         return aeron.addExclusivePublication(channel, streamId);
     }
@@ -164,15 +163,15 @@ public final class AeronArchive implements AutoCloseable
     /**
      * Start recording a channel and stream pairing.
      *
-     * @param channel  to be recorded.
-     * @param streamId to be recorded.
+     * @param channel        to be recorded.
+     * @param streamId       to be recorded.
+     * @param sourceLocation of the publication to be recorded.
      */
-    public void startRecording(final String channel, final int streamId)
+    public void startRecording(final String channel, final int streamId, final SourceLocation sourceLocation)
     {
-        final String recordingChannel = channel.startsWith(IPC_CHANNEL) ? channel : SPY_PREFIX + channel;
         final long correlationId = aeron.nextCorrelationId();
 
-        if (!archiveProxy.startRecording(recordingChannel, streamId, correlationId))
+        if (!archiveProxy.startRecording(channel, streamId, sourceLocation, correlationId))
         {
             throw new IllegalStateException("Failed to send start recording request");
         }
@@ -188,10 +187,9 @@ public final class AeronArchive implements AutoCloseable
      */
     public void stopRecording(final String channel, final int streamId)
     {
-        final String recordingChannel = channel.startsWith(IPC_CHANNEL) ? channel : SPY_PREFIX + channel;
         final long correlationId = aeron.nextCorrelationId();
 
-        if (!archiveProxy.stopRecording(recordingChannel, streamId, correlationId))
+        if (!archiveProxy.stopRecording(channel, streamId, correlationId))
         {
             throw new IllegalStateException("Failed to send stop recording request");
         }

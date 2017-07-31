@@ -15,13 +15,15 @@
  */
 package io.aeron.archive;
 
+import io.aeron.archive.codecs.SourceLocation;
+
 interface ControlRequestListener
 {
     void onConnect(String channel, int streamId);
 
     void onStopRecording(long correlationId, String channel, int streamId);
 
-    void onStartRecording(long correlationId, String channel, int streamId);
+    void onStartRecording(long correlationId, String channel, int streamId, SourceLocation sourceLocation);
 
     void onStartReplay(
         long correlationId,

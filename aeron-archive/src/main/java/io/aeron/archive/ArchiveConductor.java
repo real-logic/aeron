@@ -18,6 +18,7 @@ package io.aeron.archive;
 import io.aeron.*;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
+import io.aeron.archive.codecs.SourceLocation;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.collections.IntArrayList;
@@ -213,6 +214,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         {
             final String key = makeKey(streamId, strippedChannelBuilder(channel).build());
             final Subscription oldSubscription = subscriptionMap.remove(key);
+
             if (oldSubscription != null)
             {
                 oldSubscription.close();
@@ -239,7 +241,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final long correlationId,
         final Publication controlPublication,
         final String originalChannel,
-        final int streamId)
+        final int streamId,
+        final SourceLocation sourceLocation)
     {
         // note that since a subscription may trigger multiple images, and therefore multiple recordings this is a soft
         // limit.
@@ -256,26 +259,19 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         try
         {
-            if (!originalChannel.startsWith(SPY_PREFIX) && !originalChannel.contains("aeron:ipc"))
-            {
-                controlSessionProxy.sendResponse(
-                    correlationId,
-                    ControlResponseCode.ERROR,
-                    "Only IPC and spy subscriptions are supported.",
-                    controlPublication);
-
-                return;
-            }
-
             final String strippedChannel = strippedChannelBuilder(originalChannel).build();
             final String key = makeKey(streamId, strippedChannel);
             final Subscription oldSubscription = subscriptionMap.get(key);
+
             if (oldSubscription == null)
             {
+                final String channel = originalChannel.contains("udp") && sourceLocation == SourceLocation.LOCAL ?
+                    SPY_PREFIX + strippedChannel : strippedChannel;
+
                 final Subscription subscription = aeron.addSubscription(
-                    strippedChannel,
+                    channel,
                     streamId,
-                    (image) -> startImageRecording(originalChannel, image),
+                    (image) -> startImageRecording(strippedChannel, originalChannel, image),
                     null);
 
                 subscriptionMap.put(key, subscription);
@@ -311,23 +307,16 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         try
         {
-            if (!originalChannel.startsWith(SPY_PREFIX) && !originalChannel.contains("aeron:ipc"))
-            {
-                errorHandler.onError(new IllegalArgumentException("Only IPC and spy subscriptions are supported." +
-                    "Not recording: " + originalChannel + " : " + streamId));
-
-                return;
-            }
-
             final String strippedChannel = strippedChannelBuilder(originalChannel).build();
             final String key = makeKey(streamId, strippedChannel);
             final Subscription oldSubscription = subscriptionMap.get(key);
+
             if (oldSubscription == null)
             {
                 final Subscription subscription = aeron.addSubscription(
                     strippedChannel,
                     streamId,
-                    (image) -> startImageRecording(originalChannel, image),
+                    (image) -> startImageRecording(strippedChannel, originalChannel, image),
                     null);
 
                 subscriptionMap.put(key, subscription);
@@ -461,7 +450,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final ChannelUri channelUri = ChannelUri.parse(channel);
         channelBuilder
             .clear()
-            .prefix(channelUri.prefix())
             .media(channelUri.media())
             .endpoint(channelUri.get(CommonContext.ENDPOINT_PARAM_NAME))
             .networkInterface(channelUri.get(CommonContext.INTERFACE_PARAM_NAME))
@@ -470,7 +458,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         return channelBuilder;
     }
 
-    private void startImageRecording(final String originalChannel, final Image image)
+    private void startImageRecording(final String strippedChannel, final String originalChannel, final Image image)
     {
         if (recordingSessionByIdMap.size() >= 2 * maxConcurrentRecordings)
         {
@@ -481,7 +469,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final Subscription subscription = image.subscription();
         final int sessionId = image.sessionId();
         final int streamId = subscription.streamId();
-        final String channel = subscription.channel();
         final String sourceIdentity = image.sourceIdentity();
         final int termBufferLength = image.termBufferLength();
         final int mtuLength = image.mtuLength();
@@ -497,12 +484,12 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             mtuLength,
             sessionId,
             streamId,
-            channel,
+            strippedChannel,
             originalChannel,
             sourceIdentity);
 
         final AtomicCounter position =
-            recordingPositionsManager.newCounter(makeKey(streamId, channel) + ":" + recordingId);
+            recordingPositionsManager.newCounter(makeKey(streamId, strippedChannel) + ":" + recordingId);
         final RecordingSession session = new RecordingSession(
             recordingId,
             catalog.wrapDescriptor(recordingId),

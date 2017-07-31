@@ -102,17 +102,23 @@ public class ArchiveProxy
     /**
      * Start recording streams for a given channel and stream id pairing.
      *
-     * @param channel       to be recorded.
-     * @param streamId      to be recorded.
-     * @param correlationId for this request.
+     * @param channel        to be recorded.
+     * @param streamId       to be recorded.
+     * @param sourceLocation of the publication to be recorded.
+     * @param correlationId  for this request.
      * @return true if successfully offered otherwise false.
      */
-    public boolean startRecording(final String channel, final int streamId, final long correlationId)
+    public boolean startRecording(
+        final String channel,
+        final int streamId,
+        final SourceLocation sourceLocation,
+        final long correlationId)
     {
         startRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
             .streamId(streamId)
+            .sourceLocation(sourceLocation)
             .channel(channel);
 
         return offer(startRecordingRequestEncoder.encodedLength());

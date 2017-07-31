@@ -18,6 +18,7 @@ package io.aeron.archive;
 import io.aeron.Image;
 import io.aeron.ImageFragmentAssembler;
 import io.aeron.Publication;
+import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
@@ -142,9 +143,10 @@ class ControlSession implements Session, ControlRequestListener
         conductor.stopRecording(correlationId, controlPublication, channel, streamId);
     }
 
-    public void onStartRecording(final long correlationId, final String channel, final int streamId)
+    public void onStartRecording(
+        final long correlationId, final String channel, final int streamId, final SourceLocation sourceLocation)
     {
-        conductor.startRecordingSubscription(correlationId, controlPublication, channel, streamId);
+        conductor.startRecordingSubscription(correlationId, controlPublication, channel, streamId, sourceLocation);
     }
 
     public void onListRecordingsForUri(

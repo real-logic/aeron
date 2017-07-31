@@ -82,7 +82,8 @@ class ControlRequestAdapter implements FragmentHandler
                 listener.onStartRecording(
                     startRecordingRequestDecoder.correlationId(),
                     startRecordingRequestDecoder.channel(),
-                    startRecordingRequestDecoder.streamId());
+                    startRecordingRequestDecoder.streamId(),
+                    startRecordingRequestDecoder.sourceLocation());
                 break;
 
             case StopRecordingRequestDecoder.TEMPLATE_ID:

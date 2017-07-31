@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.ArchiveProxy;
 import io.aeron.archive.client.ControlResponseAdapter;
 import io.aeron.archive.client.RecordingEventsAdapter;
+import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FrameDescriptor;
@@ -37,7 +38,6 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.LockSupport;
 
-import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.archive.TestUtil.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
@@ -327,7 +327,7 @@ public class ArchiveSystemTest
         println("Request stop recording");
         final long requestStopCorrelationId = this.correlationId++;
         waitFor(() -> archiveProxy.stopRecording(
-            recordingUri(publishUri),
+            publishUri,
             PUBLISH_STREAM_ID,
             requestStopCorrelationId));
         waitForOk(controlResponse, requestStopCorrelationId);
@@ -377,25 +377,14 @@ public class ArchiveSystemTest
         verifyEmptyDescriptorList(archiveProxy);
         final long startRecordingCorrelationId = this.correlationId++;
         waitFor(() -> archiveProxy.startRecording(
-            recordingUri(publishUri),
+            publishUri,
             PUBLISH_STREAM_ID,
+            SourceLocation.LOCAL,
             startRecordingCorrelationId));
         println("Recording requested");
         waitForOk(controlResponse, startRecordingCorrelationId);
 
         startChannelDrainingSubscription(aeron, this.publishUri, PUBLISH_STREAM_ID);
-    }
-
-    public static String recordingUri(final String channel)
-    {
-        if (channel.contains("ipc"))
-        {
-            return channel;
-        }
-        else
-        {
-            return SPY_PREFIX + channel;
-        }
     }
 
     public static void startChannelDrainingSubscription(final Aeron aeron, final String channel, final int streamId)
@@ -405,28 +394,29 @@ public class ArchiveSystemTest
             return;
         }
 
-        final Thread t = new Thread(() ->
-        {
-            try (Subscription subscription = aeron.addSubscription(channel, streamId))
+        final Thread t = new Thread(
+            () ->
             {
-                while (subscription.imageCount() == 0)
+                try (Subscription subscription = aeron.addSubscription(channel, streamId))
                 {
-                    LockSupport.parkNanos(1);
-                }
-
-                while (!subscription.isClosed())
-                {
-                    if (0 == subscription.poll((buffer1, offset, length, header) -> {}, Integer.MAX_VALUE))
+                    while (subscription.imageCount() == 0)
                     {
                         LockSupport.parkNanos(1);
                     }
+
+                    while (!subscription.isClosed())
+                    {
+                        if (0 == subscription.poll((buffer1, offset, length, header) -> {}, Integer.MAX_VALUE))
+                        {
+                            LockSupport.parkNanos(1);
+                        }
+                    }
                 }
-            }
-            catch (final Exception e)
-            {
-                e.printStackTrace();
-            }
-        });
+                catch (final Exception ex)
+                {
+                    ex.printStackTrace();
+                }
+            });
 
         t.setDaemon(true);
         t.setName("eager-subscriber");
@@ -471,7 +461,7 @@ public class ArchiveSystemTest
                     assertThat(termBufferLength, is(publicationTermBufferLength));
                     assertThat(streamId, is(PUBLISH_STREAM_ID));
                     assertThat(correlationId, is(requestRecordingsCorrelationId));
-                    assertThat(originalChannel, is(recordingUri(publishUri)));
+                    assertThat(originalChannel, is(publishUri));
                 }
 
             },

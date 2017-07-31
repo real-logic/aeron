@@ -126,9 +126,11 @@ public class ArchiveTest
     {
         final MutableLong foundRecordingId = new MutableLong();
 
-        final int recordingsFound = archiveClient.listRecordings(
+        final int recordingsFound = archiveClient.listRecordingsForUri(
             0L,
             10,
+            expectedChannel,
+            expectedStreamId,
             (
                 correlationId,
                 recordingId,
@@ -152,7 +154,7 @@ public class ArchiveTest
                 assertEquals(0L, startPosition);
                 assertEquals(expectedPosition, stopPosition);
                 assertEquals(expectedStreamId, streamId);
-                //assertEquals(expectedChannel, originalChannel);
+                assertEquals(expectedChannel, originalChannel);
             });
 
         assertThat(recordingsFound, greaterThan(0));

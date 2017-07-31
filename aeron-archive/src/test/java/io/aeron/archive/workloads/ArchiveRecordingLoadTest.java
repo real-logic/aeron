@@ -25,6 +25,7 @@ import io.aeron.archive.FailRecordingEventsListener;
 import io.aeron.archive.TestUtil;
 import io.aeron.archive.client.ArchiveProxy;
 import io.aeron.archive.client.RecordingEventsAdapter;
+import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FrameDescriptor;
@@ -42,7 +43,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
-import static io.aeron.archive.ArchiveSystemTest.recordingUri;
 import static io.aeron.archive.ArchiveSystemTest.startChannelDrainingSubscription;
 import static io.aeron.archive.TestUtil.*;
 import static io.aeron.archive.workloads.ArchiveReplayLoadTest.CONTROL_STREAM_ID;
@@ -144,12 +144,13 @@ public class ArchiveRecordingLoadTest
             long start;
             final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
             startChannelDrainingSubscription(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
-            final String channel = recordingUri(PUBLISH_URI);
+            final String channel = PUBLISH_URI;
 
             while (System.currentTimeMillis() < duration)
             {
                 final long startRecordingCorrelationId = this.correlationId++;
-                waitFor(() -> archiveProxy.startRecording(channel, PUBLISH_STREAM_ID, startRecordingCorrelationId));
+                waitFor(() -> archiveProxy.startRecording(
+                    channel, PUBLISH_STREAM_ID, SourceLocation.LOCAL, startRecordingCorrelationId));
                 waitForOk(controlResponse, startRecordingCorrelationId);
                 println("Recording requested");
 

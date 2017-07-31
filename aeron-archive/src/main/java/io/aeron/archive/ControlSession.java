@@ -16,7 +16,9 @@
 package io.aeron.archive;
 
 import io.aeron.Image;
+import io.aeron.ImageFragmentAssembler;
 import io.aeron.Publication;
+import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.EpochClock;
@@ -37,7 +39,7 @@ class ControlSession implements Session, ControlRequestListener
     private final Image image;
     private final ArchiveConductor conductor;
     private final EpochClock epochClock;
-    private final ControlRequestAdapter adapter = new ControlRequestAdapter(this);
+    private final FragmentHandler adapter = new ImageFragmentAssembler(new ControlRequestAdapter(this));
     private Publication controlPublication;
     private State state = State.INIT;
     private long connectDeadlineMs;

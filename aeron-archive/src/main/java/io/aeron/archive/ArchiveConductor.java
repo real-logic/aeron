@@ -21,7 +21,6 @@ import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
-import org.agrona.collections.IntArrayList;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
@@ -35,7 +34,6 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -155,14 +153,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         replayer = constructReplayer();
         recorder = constructRecorder();
-
-        final List<String> presetChannels = ctx.presetRecordingChannels();
-        final IntArrayList presetStreamIds = ctx.presetRecordingStreamIds();
-
-        for (int i = 0, size = presetChannels.size(); i < size; i++)
-        {
-            internalStartRecordingSubscription(presetChannels.get(i), presetStreamIds.get(i));
-        }
     }
 
     protected abstract SessionWorker<RecordingSession> constructRecorder();
@@ -291,41 +281,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             errorHandler.onError(ex);
             controlSessionProxy.sendResponse(
                 correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlPublication);
-        }
-    }
-
-    private void internalStartRecordingSubscription(final String originalChannel, final int streamId)
-    {
-        // note that since a subscription may trigger multiple images, and therefore multiple recordings this is a soft
-        // limit.
-        if (recordingSessionByIdMap.size() >= maxConcurrentRecordings)
-        {
-            errorHandler.onError(new IllegalArgumentException("Max concurrent recordings reached: " +
-                maxConcurrentRecordings + ". Not recording: " + originalChannel + " : " + streamId));
-            return;
-        }
-
-        try
-        {
-            final String strippedChannel = strippedChannelBuilder(originalChannel).build();
-            final String key = makeKey(streamId, strippedChannel);
-            final Subscription oldSubscription = subscriptionMap.get(key);
-
-            if (oldSubscription == null)
-            {
-                final Subscription subscription = aeron.addSubscription(
-                    strippedChannel,
-                    streamId,
-                    (image) -> startImageRecording(strippedChannel, originalChannel, image),
-                    null);
-
-                subscriptionMap.put(key, subscription);
-            }
-        }
-        catch (final Exception ex)
-        {
-            errorHandler.onError(new IllegalArgumentException("Error while creating recording subscription." +
-                "Not recording: " + originalChannel + " : " + streamId, ex));
         }
     }
 

@@ -21,24 +21,18 @@ import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
-import org.agrona.collections.IntArrayList;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.StatusIndicator;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
- * The Aeron Archive is run with an embedded media driver and allows for the archival of 'local'
- * {@link io.aeron.Publication}s (ipc or spy subscriptions only).
+ * The Aeron Archive is run with an embedded media driver and allows for the archival of {@link io.aeron.Publication}s.
  */
 public final class Archive implements AutoCloseable
 {
@@ -172,7 +166,6 @@ public final class Archive implements AutoCloseable
         public static final int REPLAY_BATCH_SIZE_DEFAULT = 8;
 
         private static final String CONTROLLABLE_IDLE_STRATEGY = "org.agrona.concurrent.ControllableIdleStrategy";
-        private static final String PRESET_RECORDINGS_FILE_PROP_NAME = "aeron.archive.preset.recordings.file";
 
 
         public static String archiveDirName()
@@ -243,11 +236,6 @@ public final class Archive implements AutoCloseable
             return Integer.getInteger(MAX_CONCURRENT_REPLAYS_PROP_NAME, MAX_CONCURRENT_REPLAYS_DEFAULT);
         }
 
-        public static String presetRecordingFileName()
-        {
-            return System.getProperty(PRESET_RECORDINGS_FILE_PROP_NAME);
-        }
-
         public static int replayBatchSize()
         {
             return Integer.getInteger(REPLAY_BATCH_SIZE_PROP_NAME, REPLAY_BATCH_SIZE_DEFAULT);
@@ -257,8 +245,6 @@ public final class Archive implements AutoCloseable
     public static class Context
     {
         private final Aeron.Context clientContext;
-        private final List<String> presetRecordingChannels = new ArrayList<>();
-        private final IntArrayList presetRecordingStreamIds = new IntArrayList();
 
         private File archiveDir;
 
@@ -285,7 +271,6 @@ public final class Archive implements AutoCloseable
         private AgentInvoker mediaDriverAgentInvoker;
         private int maxConcurrentRecordings;
         private int maxConcurrentReplays;
-        private String presetRecordingFileName;
 
         public Context()
         {
@@ -308,7 +293,6 @@ public final class Archive implements AutoCloseable
             threadingMode(Configuration.threadingMode());
             maxConcurrentRecordings(Configuration.maxConcurrentRecordings());
             maxConcurrentReplays(Configuration.maxConcurrentReplays());
-            presetRecordingFileName(Configuration.presetRecordingFileName());
         }
 
         void conclude()
@@ -343,26 +327,6 @@ public final class Archive implements AutoCloseable
             if (null == epochClock)
             {
                 epochClock = new SystemEpochClock();
-            }
-
-            if (presetRecordingFileName != null)
-            {
-                try (BufferedReader reader = new BufferedReader(new FileReader(new File(presetRecordingFileName))))
-                {
-                    String line;
-                    while ((line = reader.readLine()) != null)
-                    {
-                        final int splitIndex = line.lastIndexOf(' ');
-                        final String channel = line.substring(0, splitIndex);
-                        final int streamId = Integer.valueOf(line.substring(splitIndex + 1));
-                        presetRecordingChannels.add(channel);
-                        presetRecordingStreamIds.add(streamId);
-                    }
-                }
-                catch (final Exception e)
-                {
-                    LangUtil.rethrowUnchecked(e);
-                }
             }
         }
 
@@ -733,32 +697,6 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * A file with recording presets to be subscribed to by the Archive on startup. The file is expected to follow
-         * the format:
-         * <pre>
-         *     channel streamId
-         * </pre>
-         *
-         * @param presetRecordingFileName preset recordings file to be loaded
-         * @return this for a fluent API
-         */
-        public Context presetRecordingFileName(final String presetRecordingFileName)
-        {
-            this.presetRecordingFileName = presetRecordingFileName;
-            return this;
-        }
-
-        /**
-         * Get the preset recording file name.
-         *
-         * @return the preset recording file name
-         */
-        public String presetRecordingFileName()
-        {
-            return presetRecordingFileName;
-        }
-
-        /**
          * Delete the archive directory if the {@link #archiveDir()} value is not null.
          */
         public void deleteArchiveDirectory()
@@ -767,16 +705,6 @@ public final class Archive implements AutoCloseable
             {
                 IoUtil.delete(archiveDir, false);
             }
-        }
-
-        List<String> presetRecordingChannels()
-        {
-            return presetRecordingChannels;
-        }
-
-        IntArrayList presetRecordingStreamIds()
-        {
-            return presetRecordingStreamIds;
         }
     }
 }

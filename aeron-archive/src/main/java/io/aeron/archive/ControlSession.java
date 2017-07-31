@@ -25,12 +25,14 @@ import java.util.ArrayDeque;
 
 class ControlSession implements Session, ControlRequestListener
 {
+    private static final int FRAGMENT_LIMIT = 16;
+
     enum State
     {
         INIT, ACTIVE, INACTIVE, CLOSED
     }
 
-    private static final long CONTROL_TIMEOUT_MS = 1000L;
+    private static final long CONNECT_TIMEOUT_MS = 5000L;
 
     private final Image image;
     private final ArchiveConductor conductor;
@@ -38,7 +40,7 @@ class ControlSession implements Session, ControlRequestListener
     private final ControlRequestAdapter adapter = new ControlRequestAdapter(this);
     private Publication controlPublication;
     private State state = State.INIT;
-    private long timeConnectedMs;
+    private long connectDeadlineMs;
     private ArrayDeque<AbstractListRecordingsSession> listRecordingsSessions = new ArrayDeque<>();
 
     ControlSession(final Image image, final ArchiveConductor conductor, final EpochClock epochClock)
@@ -65,11 +67,14 @@ class ControlSession implements Session, ControlRequestListener
 
     public int doWork()
     {
+        int workCount = 0;
+
         if (state == State.INIT)
         {
-            return waitForConnection();
+            workCount += waitForConnection();
         }
-        else if (state == State.ACTIVE)
+
+        if (state == State.ACTIVE)
         {
             if (image.isClosed() || !controlPublication.isConnected())
             {
@@ -77,21 +82,23 @@ class ControlSession implements Session, ControlRequestListener
             }
             else
             {
-                return image.poll(adapter, 16);
+                workCount += image.poll(adapter, FRAGMENT_LIMIT);
             }
         }
 
-        return 0;
+        return workCount;
     }
 
     public void close()
     {
-        CloseHelper.quietClose(controlPublication);
         state = State.CLOSED;
+        CloseHelper.quietClose(controlPublication);
     }
 
     private int waitForConnection()
     {
+        int workCount = 0;
+
         if (controlPublication == null)
         {
             try
@@ -107,13 +114,14 @@ class ControlSession implements Session, ControlRequestListener
         else if (controlPublication.isConnected())
         {
             state = State.ACTIVE;
+            workCount += 1;
         }
-        else if (timeConnectedMs + CONTROL_TIMEOUT_MS < epochClock.time())
+        else if (epochClock.time() > connectDeadlineMs)
         {
             state = State.INACTIVE;
         }
 
-        return 0;
+        return workCount;
     }
 
     public void onConnect(final String channel, final int streamId)
@@ -124,7 +132,7 @@ class ControlSession implements Session, ControlRequestListener
         }
 
         controlPublication = conductor.newControlPublication(channel, streamId);
-        timeConnectedMs = epochClock.time();
+        connectDeadlineMs = epochClock.time() + CONNECT_TIMEOUT_MS;
     }
 
     public void onStopRecording(final long correlationId, final String channel, final int streamId)

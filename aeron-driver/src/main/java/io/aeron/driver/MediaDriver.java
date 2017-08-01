@@ -1248,7 +1248,7 @@ public final class MediaDriver implements AutoCloseable
             return mtuLength;
         }
 
-        public CommonContext mtuLength(final int mtuLength)
+        public Context mtuLength(final int mtuLength)
         {
             Configuration.validateMtuLength(mtuLength);
             this.mtuLength = mtuLength;
@@ -1260,7 +1260,7 @@ public final class MediaDriver implements AutoCloseable
             return ipcMtuLength;
         }
 
-        public CommonContext ipcMtuLength(final int ipcMtuLength)
+        public Context ipcMtuLength(final int ipcMtuLength)
         {
             Configuration.validateMtuLength(ipcMtuLength);
             this.ipcMtuLength = ipcMtuLength;

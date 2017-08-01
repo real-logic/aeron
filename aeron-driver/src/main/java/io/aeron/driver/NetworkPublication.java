@@ -581,13 +581,13 @@ public class NetworkPublication
         }
     }
 
-    private boolean spiesNotBehindSender(final DriverConductor conductor, final long senderPosition)
+    private boolean spiesFinishedConsuming(final DriverConductor conductor, final long eosPosition)
     {
         if (spyPositions.length > 0)
         {
             for (final ReadablePosition spyPosition : spyPositions)
             {
-                if (spyPosition.getVolatile() < senderPosition)
+                if (spyPosition.getVolatile() < eosPosition)
                 {
                     return false;
                 }
@@ -635,7 +635,7 @@ public class NetworkPublication
                         break;
                     }
 
-                    if (spiesNotBehindSender(conductor, senderPosition))
+                    if (spiesFinishedConsuming(conductor, senderPosition))
                     {
                         isComplete = true;
                         timeOfLastActivityNs = timeNs;

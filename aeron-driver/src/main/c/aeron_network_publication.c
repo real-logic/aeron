@@ -637,7 +637,8 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
 void aeron_network_publication_check_for_blocked_publisher(
     aeron_network_publication_t *publication, int64_t now_ns, int64_t snd_pos)
 {
-    if (snd_pos == publication->conductor_fields.last_snd_pos && aeron_network_publication_producer_position(publication) > snd_pos)
+    if (snd_pos == publication->conductor_fields.last_snd_pos &&
+        aeron_network_publication_producer_position(publication) > snd_pos)
     {
         if (now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->unblock_timeout_ns))
         {
@@ -676,7 +677,7 @@ void aeron_network_publication_decref(void *clientd)
     }
 }
 
-bool aeron_network_publication_spies_not_behind_sender(
+bool aeron_network_publication_spies_finished_consuming(
     aeron_network_publication_t *publication, aeron_driver_conductor_t *conductor, int64_t snd_pos)
 {
     if (publication->conductor_fields.subscribeable.length > 0)
@@ -709,6 +710,19 @@ bool aeron_network_publication_spies_not_behind_sender(
 void aeron_network_publication_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication, int64_t now_ns, int64_t now_ms)
 {
+    bool is_connected;
+    AERON_GET_VOLATILE(is_connected, publication->is_connected);
+    if (is_connected)
+    {
+        int64_t time_of_last_status_message;
+        AERON_GET_VOLATILE(time_of_last_status_message, publication->log_meta_data->time_of_last_status_message);
+        if (now_ms > (time_of_last_status_message + AERON_NETWORK_PUBLICATION_CONNECTION_TIMEOUT_MS))
+        {
+            AERON_PUT_ORDERED(publication->is_connected, false);
+
+        }
+    }
+
     switch (publication->conductor_fields.status)
     {
         case AERON_NETWORK_PUBLICATION_STATUS_ACTIVE:
@@ -716,18 +730,6 @@ void aeron_network_publication_on_time_event(
             aeron_network_publication_check_for_blocked_publisher(
                 publication, now_ns, aeron_counter_get_volatile(publication->snd_pos_position.value_addr));
 
-            bool is_connected;
-            AERON_GET_VOLATILE(is_connected, publication->is_connected);
-            if (is_connected)
-            {
-                int64_t time_of_last_status_message;
-                AERON_GET_VOLATILE(time_of_last_status_message, publication->log_meta_data->time_of_last_status_message);
-                if (now_ms > (time_of_last_status_message + AERON_NETWORK_PUBLICATION_CONNECTION_TIMEOUT_MS))
-                {
-                    AERON_PUT_ORDERED(publication->is_connected, false);
-
-                }
-            }
             break;
         }
 
@@ -736,7 +738,26 @@ void aeron_network_publication_on_time_event(
             const int64_t snd_pos = aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
             if (snd_pos == publication->conductor_fields.last_snd_pos)
             {
-                if (aeron_network_publication_spies_not_behind_sender(publication, conductor, snd_pos))
+                if (aeron_network_publication_producer_position(publication) > snd_pos)
+                {
+                    if (aeron_logbuffer_unblocker_unblock(
+                        publication->mapped_raw_log.term_buffers,
+                        publication->log_meta_data,
+                        snd_pos))
+                    {
+                        aeron_counter_ordered_increment(publication->unblocked_publications_counter, 1);
+                        publication->conductor_fields.time_of_last_activity_ns = now_ns;
+                        break;
+                    }
+
+                    AERON_GET_VOLATILE(is_connected, publication->is_connected);
+                    if (is_connected)
+                    {
+                        break;
+                    }
+                }
+
+                if (aeron_network_publication_spies_finished_consuming(publication, conductor, snd_pos))
                 {
                     AERON_PUT_ORDERED(publication->is_complete, true);
                     publication->conductor_fields.time_of_last_activity_ns = now_ns;

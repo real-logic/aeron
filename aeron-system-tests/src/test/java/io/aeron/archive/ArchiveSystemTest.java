@@ -136,8 +136,6 @@ public class ArchiveSystemTest
             .errorHandler(driverCtx.errorHandler());
 
         archive = Archive.launch(archiverCtx);
-
-        TestUtil.println("Archive started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
         publishingClient = Aeron.connect();
     }
 
@@ -177,7 +175,7 @@ public class ArchiveSystemTest
             final ExclusivePublication recordedPublication =
                 publishingClient.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
 
-            TestUtil.waitFor(recordedPublication::isConnected);
+            waitFor(recordedPublication::isConnected);
 
             final int sessionId = recordedPublication.sessionId();
             final int termBufferLength = recordedPublication.termBufferLength();
@@ -216,7 +214,7 @@ public class ArchiveSystemTest
             final ExclusivePublication recordedPublication =
                 publishingClient.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
 
-            TestUtil.waitFor(recordedPublication::isConnected);
+            waitFor(recordedPublication::isConnected);
 
             final int sessionId = recordedPublication.sessionId();
             final int termBufferLength = recordedPublication.termBufferLength();
@@ -257,7 +255,7 @@ public class ArchiveSystemTest
             prePublicationActionsAndVerifications(publishingClient, archiveProxy, controlPublication, recordingEvents);
 
             final Publication recordedPublication = publishingClient.addPublication(publishUri, PUBLISH_STREAM_ID);
-            TestUtil.awaitPublicationIsConnected(recordedPublication);
+            awaitPublicationIsConnected(recordedPublication);
 
             final int sessionId = recordedPublication.sessionId();
             final int termBufferLength = recordedPublication.termBufferLength();
@@ -301,13 +299,12 @@ public class ArchiveSystemTest
                     assertThat(streamId0, is(PUBLISH_STREAM_ID));
                     assertThat(sessionId0, is(sessionId));
                     assertThat(startPosition0, is(startPosition));
-                    TestUtil.println("Recording started. sourceIdentity: " + sourceIdentity);
                 }
             },
             recordingEvents,
             1);
 
-        TestUtil.waitFor(() -> recordingEventsAdapter.poll() != 0);
+        waitFor(() -> recordingEventsAdapter.poll() != 0);
 
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
     }
@@ -323,15 +320,13 @@ public class ArchiveSystemTest
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
 
         assertNull(trackerError);
-        TestUtil.println("All data arrived");
 
-        TestUtil.println("Request stop recording");
         final long requestStopCorrelationId = this.correlationId++;
-        TestUtil.waitFor(() -> archiveProxy.stopRecording(
+        waitFor(() -> archiveProxy.stopRecording(
             publishUri,
             PUBLISH_STREAM_ID,
             requestStopCorrelationId));
-        TestUtil.waitForOk(controlResponse, requestStopCorrelationId);
+        waitForOk(controlResponse, requestStopCorrelationId);
 
         final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new FailRecordingEventsListener()
@@ -344,12 +339,10 @@ public class ArchiveSystemTest
             recordingEvents,
             1);
 
-        TestUtil.waitFor(() -> recordingEventsAdapter.poll() != 0);
+        waitFor(() -> recordingEventsAdapter.poll() != 0);
 
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
 
-        TestUtil.println("Recording id: " + recordingId);
-        TestUtil.println("Meta data file printout: ");
         validateArchiveFile(messageCount, recordingId);
 
         validateReplay(
@@ -366,24 +359,22 @@ public class ArchiveSystemTest
         final Publication controlPublication,
         final Subscription recordingEvents)
     {
-        TestUtil.awaitPublicationIsConnected(controlPublication);
-        TestUtil.awaitSubscriptionIsConnected(recordingEvents);
-        TestUtil.println("Archive service connected");
+        awaitPublicationIsConnected(controlPublication);
+        awaitSubscriptionIsConnected(recordingEvents);
 
         controlResponse = publishingClient.addSubscription(CONTROL_URI, CONTROL_STREAM_ID);
         assertTrue(archiveProxy.connect(CONTROL_URI, CONTROL_STREAM_ID));
-        TestUtil.awaitSubscriptionIsConnected(controlResponse);
-        TestUtil.println("Client connected");
+        awaitSubscriptionIsConnected(controlResponse);
 
         verifyEmptyDescriptorList(archiveProxy);
         final long startRecordingCorrelationId = this.correlationId++;
-        TestUtil.waitFor(() -> archiveProxy.startRecording(
+        waitFor(() -> archiveProxy.startRecording(
             publishUri,
             PUBLISH_STREAM_ID,
             SourceLocation.LOCAL,
             startRecordingCorrelationId));
-        TestUtil.println("Recording requested");
-        TestUtil.waitForOk(controlResponse, startRecordingCorrelationId);
+
+        waitForOk(controlResponse, startRecordingCorrelationId);
 
         startChannelDrainingSubscription(aeron, this.publishUri, PUBLISH_STREAM_ID);
     }
@@ -392,7 +383,7 @@ public class ArchiveSystemTest
     {
         final long requestRecordingsCorrelationId = this.correlationId++;
         client.listRecordings(0, 100, requestRecordingsCorrelationId);
-        TestUtil.waitForNotFound(controlResponse, requestRecordingsCorrelationId);
+        waitForNotFound(controlResponse, requestRecordingsCorrelationId);
     }
 
     private void verifyDescriptorListOngoingArchive(
@@ -400,7 +391,6 @@ public class ArchiveSystemTest
     {
         final long requestRecordingsCorrelationId = this.correlationId++;
         archiveProxy.listRecordings(recordingId, 1, requestRecordingsCorrelationId);
-        TestUtil.println("Await result");
 
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
@@ -434,7 +424,7 @@ public class ArchiveSystemTest
             1
         );
 
-        TestUtil.waitFor(() -> controlResponseAdapter.poll() != 0);
+        waitFor(() -> controlResponseAdapter.poll() != 0);
     }
 
     private int prepAndSendMessages(final Subscription recordingEvents, final Publication publication)
@@ -484,8 +474,6 @@ public class ArchiveSystemTest
             totalDataLength += BitUtil.align(fragmentLength[i], FrameDescriptor.FRAME_ALIGNMENT);
         }
 
-        TestUtil.printf("Sending %d messages, total length=%d %n", messageCount, totalDataLength);
-
         trackRecordingProgress(recordingEvents, waitForData);
     }
 
@@ -503,8 +491,7 @@ public class ArchiveSystemTest
         {
             final int dataLength = fragmentLength[i] - HEADER_LENGTH;
             buffer.putInt(0, i);
-            TestUtil.printf("Sending: index=%d length=%d %n", i, dataLength);
-            TestUtil.offer(publication, buffer, dataLength);
+            offer(publication, buffer, dataLength);
         }
 
         final long position = publication.position();
@@ -527,8 +514,7 @@ public class ArchiveSystemTest
         {
             final int dataLength = fragmentLength[i] - HEADER_LENGTH;
             buffer.putInt(0, i);
-            TestUtil.printf("Sending: index=%d length=%d %n", i, dataLength);
-            TestUtil.offer(publication, buffer, dataLength);
+            offer(publication, buffer, dataLength);
         }
 
         final long position = publication.position();
@@ -547,7 +533,7 @@ public class ArchiveSystemTest
         {
             final long replayCorrelationId = correlationId++;
 
-            TestUtil.waitFor(() -> archiveProxy.replay(
+            waitFor(() -> archiveProxy.replay(
                 recordingId,
                 startPosition,
                 totalRecordingLength,
@@ -555,8 +541,8 @@ public class ArchiveSystemTest
                 REPLAY_STREAM_ID,
                 replayCorrelationId));
 
-            TestUtil.waitForOk(controlResponse, replayCorrelationId);
-            TestUtil.awaitSubscriptionIsConnected(replay);
+            waitForOk(controlResponse, replayCorrelationId);
+            awaitSubscriptionIsConnected(replay);
             final Image image = replay.images().get(0);
             assertThat(image.initialTermId(), is(initialTermId));
             assertThat(image.mtuLength(), is(maxPayloadLength + HEADER_LENGTH));
@@ -568,8 +554,7 @@ public class ArchiveSystemTest
 
             while (remaining > 0)
             {
-                TestUtil.printf("Fragment [%d of %d]%n", fragmentCount + 1, fragmentLength.length);
-                TestUtil.poll(replay, this::validateFragment2);
+                poll(replay, this::validateFragment2);
             }
 
             assertThat(fragmentCount, is(messageCount));
@@ -634,7 +619,6 @@ public class ArchiveSystemTest
         assertThat(buffer.getByte(offset + 4), is((byte)'z'));
         remaining -= BitUtil.align(fragmentLength[fragmentCount], FrameDescriptor.FRAME_ALIGNMENT);
         fragmentCount++;
-        TestUtil.printf("Fragment2: offset=%d length=%d %n", offset, length);
     }
 
     private void trackRecordingProgress(final Subscription recordingEvents, final CountDownLatch waitForData)
@@ -649,7 +633,6 @@ public class ArchiveSystemTest
                 {
                     assertThat(recordingId0, is(recordingId));
                     recorded = position - startPosition;
-                    TestUtil.printf("a=%d total=%d %n", recorded, totalRecordingLength);
                 }
             },
             recordingEvents,
@@ -680,7 +663,6 @@ public class ArchiveSystemTest
                             final long deltaBytes = remaining - startBytes;
                             startBytes = remaining;
                             final double rate = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
-                            TestUtil.printf("Archive reported rate: %f MB/s %n", rate);
                         }
                     }
                     final long end = System.currentTimeMillis();
@@ -688,7 +670,6 @@ public class ArchiveSystemTest
 
                     final long deltaBytes = remaining - startBytes;
                     final double rate = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
-                    TestUtil.printf("Archive reported rate: %f MB/s %n", rate);
                 }
                 catch (final Throwable throwable)
                 {
@@ -723,7 +704,7 @@ public class ArchiveSystemTest
             {
                 final long replayCorrelationId = correlationId++;
 
-                TestUtil.waitFor(() -> archiveProxy.replay(
+                waitFor(() -> archiveProxy.replay(
                     recordingId,
                     this.startPosition,
                     Long.MAX_VALUE,
@@ -731,9 +712,9 @@ public class ArchiveSystemTest
                     REPLAY_STREAM_ID,
                     replayCorrelationId));
 
-                TestUtil.waitForOk(controlResponse, replayCorrelationId);
+                waitForOk(controlResponse, replayCorrelationId);
 
-                TestUtil.awaitSubscriptionIsConnected(replay);
+                awaitSubscriptionIsConnected(replay);
                 final Image image = replay.images().get(0);
                 assertThat(image.initialTermId(), is(initialTermId));
                 assertThat(image.mtuLength(), is(maxPayloadLength + HEADER_LENGTH));
@@ -745,8 +726,7 @@ public class ArchiveSystemTest
 
                 while (fragmentCount < messageCount)
                 {
-                    TestUtil.printf("Fragment [%d of %d]%n", fragmentCount + 1, fragmentLength.length);
-                    TestUtil.poll(replay, this::validateFragment2);
+                    poll(replay, this::validateFragment2);
                 }
                 waitForData.countDown();
             }

@@ -19,6 +19,8 @@ import io.aeron.Publication;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
+
 class ListRecordingsForUriSession extends AbstractListRecordingsSession
 {
     private static final int MAX_SCANS_PER_WORK_CYCLE = 16;
@@ -72,13 +74,11 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
             recordingId++;
             recordsScanned++;
 
-            decoder.wrap(
-                descriptorBuffer,
-                Catalog.DESCRIPTOR_HEADER_LENGTH,
-                RecordingDescriptorDecoder.BLOCK_LENGTH,
-                RecordingDescriptorDecoder.SCHEMA_VERSION);
+            wrapDescriptorDecoder(decoder, descriptorBuffer);
 
-            if (decoder.streamId() == streamId && decoder.strippedChannel().equals(channel))
+            if (decoder.streamId() == streamId &&
+                decoder.strippedChannel().equals(channel) &&
+                isDescriptorValid(descriptorBuffer))
             {
                 bytesSent += proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
 

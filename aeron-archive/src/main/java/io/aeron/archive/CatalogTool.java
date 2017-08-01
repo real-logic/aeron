@@ -2,6 +2,8 @@ package io.aeron.archive;
 
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorEncoder;
+import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
+import io.aeron.archive.codecs.RecordingDescriptorHeaderEncoder;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
@@ -13,6 +15,8 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.ArchiveUtil.RECORDING_SEGMENT_POSTFIX;
 import static io.aeron.archive.ArchiveUtil.segmentFileName;
+import static io.aeron.archive.Catalog.INVALID;
+import static io.aeron.archive.Catalog.VALID;
 import static java.nio.file.StandardOpenOption.READ;
 
 public class CatalogTool
@@ -43,14 +47,14 @@ public class CatalogTool
         {
             try (Catalog catalog = openCatalog())
             {
-                catalog.forEach((e, d) -> System.out.println(d));
+                catalog.forEach((he, hd, e, d) -> System.out.println(d));
             }
         }
         else if (args.length == 3 && args[1].equals("describe"))
         {
             try (Catalog catalog = openCatalog())
             {
-                catalog.forEntry(Long.valueOf(args[2]), (e, d) -> System.out.println(d));
+                catalog.forEntry((he, hd, e, d) -> System.out.println(d), Long.valueOf(args[2]));
             }
         }
         else if (args.length == 2 && args[1].equals("verify"))
@@ -64,7 +68,7 @@ public class CatalogTool
         {
             try (Catalog catalog = openCatalog())
             {
-                catalog.forEntry(Long.valueOf(args[2]), CatalogTool::verify);
+                catalog.forEntry(CatalogTool::verify, Long.valueOf(args[2]));
             }
         }
         // TODO: add a manual override tool to force mark entries as unusable
@@ -75,7 +79,11 @@ public class CatalogTool
         return new Catalog(archiveDir, null, 0, System::currentTimeMillis, false);
     }
 
-    private static void verify(final RecordingDescriptorEncoder encoder, final RecordingDescriptorDecoder decoder)
+    private static void verify(
+        final RecordingDescriptorHeaderEncoder headerEncoder,
+        final RecordingDescriptorHeaderDecoder headerDecoder,
+        final RecordingDescriptorEncoder encoder,
+        final RecordingDescriptorDecoder decoder)
     {
         final long recordingId = decoder.recordingId();
         final int segmentFileLength = decoder.segmentFileLength();
@@ -103,7 +111,7 @@ public class CatalogTool
             {
                 System.err.println("(recordingId=" + recordingId + ") ERR: malformed recording filename:" + fileName);
                 ex.printStackTrace(System.err);
-
+                headerEncoder.valid(INVALID);
                 return;
             }
         }
@@ -113,21 +121,24 @@ public class CatalogTool
             if (!filesFound[i])
             {
                 System.err.println("(recordingId=" + recordingId + ") ERR: missing recording file :" + i);
+                headerEncoder.valid(INVALID);
                 return;
             }
         }
 
-        // TODO: mark entries as 'unusable' on error, and revert that status when confirmed usable again
         if (verifyFirstFile(recordingId, decoder, startSegmentOffset))
         {
+            headerEncoder.valid(INVALID);
             return;
         }
 
         if (verifyLastFile(recordingId, recordingFileCount, endSegmentOffset))
         {
+            headerEncoder.valid(INVALID);
             return;
         }
 
+        headerEncoder.valid(VALID);
         System.out.println("(recordingId=" + recordingId + ") OK");
     }
 
@@ -145,6 +156,7 @@ public class CatalogTool
                 if (lastFile.read(TEMP_BUFFER, position) != DataHeaderFlyweight.HEADER_LENGTH)
                 {
                     System.err.println("(recordingId=" + recordingId + ") ERR: failed to read fragment header.");
+                    return true;
                 }
                 position += BitUtil.align(HEADER_FLYWEIGHT.frameLength(), FrameDescriptor.FRAME_ALIGNMENT);
             }

@@ -13,8 +13,7 @@ import org.junit.Test;
 
 import java.io.File;
 
-import static io.aeron.archive.codecs.RecordingDescriptorDecoder.BLOCK_LENGTH;
-import static io.aeron.archive.codecs.RecordingDescriptorDecoder.SCHEMA_VERSION;
+import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
@@ -94,7 +93,7 @@ public class ListRecordingsSessionTest
             (invocation) ->
             {
                 final UnsafeBuffer b = invocation.getArgument(1);
-                recordingDescriptorDecoder.wrap(b, Catalog.DESCRIPTOR_HEADER_LENGTH, BLOCK_LENGTH, SCHEMA_VERSION);
+                wrapDescriptorDecoder(recordingDescriptorDecoder, b);
                 final int i = counter.intValue();
                 assertThat(recordingDescriptorDecoder.recordingId(), is(recordingIds[i]));
                 counter.set(i + 1);

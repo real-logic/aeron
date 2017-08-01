@@ -53,14 +53,18 @@ class ListRecordingsSession extends AbstractListRecordingsSession
                 break;
             }
 
-            sentBytes += proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
-
-            if (++recordingId >= limitId)
+            if (isDescriptorValid(descriptorBuffer))
             {
-                isDone = true;
+                sentBytes += proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
             }
+
+            ++recordingId;
         }
 
+        if (recordingId >= limitId)
+        {
+            isDone = true;
+        }
         return sentBytes;
     }
 }

@@ -15,10 +15,7 @@
  */
 package io.aeron.archive;
 
-import io.aeron.archive.codecs.RecordingDescriptorDecoder;
-import io.aeron.archive.codecs.RecordingDescriptorEncoder;
-import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
-import io.aeron.archive.codecs.RecordingDescriptorHeaderEncoder;
+import io.aeron.archive.codecs.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
@@ -30,7 +27,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.function.BiConsumer;
 
 import static io.aeron.archive.ArchiveUtil.segmentFileName;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -54,25 +50,43 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
  * </pre>
  * <p>
  */
-// TODO: use space in the frame to mark an entry as unusable(by the CatalogTool).
 class Catalog implements AutoCloseable
 {
+
+    public static final int DESCRIPTOR_BLOCK_LENGTH = RecordingDescriptorDecoder.BLOCK_LENGTH;
+
+    @FunctionalInterface
+    interface CatalogEntryProcessor
+    {
+        void accept(
+            RecordingDescriptorHeaderEncoder headerEncoder,
+            RecordingDescriptorHeaderDecoder headerDecoder,
+            RecordingDescriptorEncoder descriptorEncoder,
+            RecordingDescriptorDecoder descriptorDecoder
+        );
+    }
+
     static final int PAGE_SIZE = 4096;
     static final long NULL_TIME = -1L;
     static final long NULL_POSITION = -1;
     static final int NULL_RECORD_ID = -1;
 
     static final int DEFAULT_RECORD_LENGTH = 1024;
-    static final byte VALID = (byte) 0;
+    static final byte VALID = (byte) 1;
+    static final byte INVALID = (byte) 0;
     static final int DESCRIPTOR_HEADER_LENGTH = RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
     static final int SCHEMA_VERSION = RecordingDescriptorHeaderDecoder.SCHEMA_VERSION;
     private static final String CATALOG_FILE_NAME = "archive.catalog";
 
-    private final RecordingDescriptorEncoder descriptorEncoder = new RecordingDescriptorEncoder();
-    private final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
+    private final CatalogHeaderDecoder catalogHeaderDecoder = new CatalogHeaderDecoder();
+    private final CatalogHeaderEncoder catalogHeaderEncoder = new CatalogHeaderEncoder();
 
     private final RecordingDescriptorHeaderDecoder descriptorHeaderDecoder = new RecordingDescriptorHeaderDecoder();
     private final RecordingDescriptorHeaderEncoder descriptorHeaderEncoder = new RecordingDescriptorHeaderEncoder();
+
+    private final RecordingDescriptorEncoder descriptorEncoder = new RecordingDescriptorEncoder();
+    private final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
+
     private final UnsafeBuffer indexUBuffer;
     private final MappedByteBuffer indexMappedBBuffer;
 
@@ -200,29 +214,20 @@ class Catalog implements AutoCloseable
 
     boolean wrapDescriptor(final long recordingId, final UnsafeBuffer buffer)
     {
-        if (recordingId < 0 || recordingId >= nextRecordingId)
+        if (recordingId < 0 || recordingId >= maxRecordingId)
         {
             return false;
         }
 
         buffer.wrap(indexMappedBBuffer, (int) (recordingId * recordLength), recordLength);
-
-        return true;
+        descriptorHeaderDecoder.wrap(buffer, 0, DESCRIPTOR_HEADER_LENGTH, SCHEMA_VERSION);
+        return descriptorHeaderDecoder.length() != 0;
     }
 
     UnsafeBuffer wrapDescriptor(final long recordingId)
     {
-        if (recordingId < 0 || recordingId >= nextRecordingId)
-        {
-            return null;
-        }
-
-        return new UnsafeBuffer(indexMappedBBuffer, (int) (recordingId * recordLength), recordLength);
-    }
-
-    long nextRecordingId()
-    {
-        return nextRecordingId;
+        final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
+        return wrapDescriptor(recordingId, unsafeBuffer) ? unsafeBuffer : null;
     }
 
     /**
@@ -234,7 +239,7 @@ class Catalog implements AutoCloseable
     {
         if (fixOnRefresh)
         {
-            forEach(this::refreshAndFixDescriptor, 0, maxCatalogSize / recordLength);
+            forEach(this::refreshAndFixDescriptor);
         }
         else
         {
@@ -257,68 +262,41 @@ class Catalog implements AutoCloseable
         }
     }
 
-    void forEach(final BiConsumer<RecordingDescriptorEncoder, RecordingDescriptorDecoder> consumer)
+    void forEach(final CatalogEntryProcessor consumer)
     {
-        forEach(consumer, 0, nextRecordingId);
-    }
-
-    void forEach(
-        final BiConsumer<RecordingDescriptorEncoder, RecordingDescriptorDecoder> consumer,
-        final long fromId,
-        final long toId)
-    {
-        long nextRecordingId = fromId;
-        while (nextRecordingId < toId && consumeDescriptor(nextRecordingId, consumer))
+        long recordingId = (long) 0;
+        while (recordingId < (long) maxRecordingId && wrapDescriptor(recordingId, indexUBuffer))
         {
-            ++nextRecordingId;
+            descriptorHeaderDecoder.wrap(indexUBuffer, 0, DESCRIPTOR_HEADER_LENGTH, SCHEMA_VERSION);
+            descriptorHeaderEncoder.wrap(indexUBuffer, 0);
+            wrapDescriptorDecoder(descriptorDecoder, indexUBuffer);
+            descriptorEncoder.wrap(indexUBuffer, DESCRIPTOR_HEADER_LENGTH);
+            consumer.accept(descriptorHeaderEncoder, descriptorHeaderDecoder, descriptorEncoder, descriptorDecoder);
+            ++recordingId;
         }
     }
 
-    void forEntry(
-        final long recordingId, final BiConsumer<RecordingDescriptorEncoder, RecordingDescriptorDecoder> consumer)
+    boolean forEntry(final CatalogEntryProcessor consumer, final long recordingId)
     {
-        if (recordingId < 0 || recordingId >= nextRecordingId)
+        if (wrapDescriptor(recordingId, indexUBuffer))
         {
-            throw new IllegalArgumentException("recordingId:" + recordingId + " unknown.");
+            descriptorHeaderDecoder.wrap(indexUBuffer, 0, DESCRIPTOR_HEADER_LENGTH, SCHEMA_VERSION);
+            descriptorHeaderEncoder.wrap(indexUBuffer, 0);
+            wrapDescriptorDecoder(descriptorDecoder, indexUBuffer);
+            descriptorEncoder.wrap(indexUBuffer, DESCRIPTOR_HEADER_LENGTH);
+            consumer.accept(descriptorHeaderEncoder, descriptorHeaderDecoder, descriptorEncoder, descriptorDecoder);
+            return true;
         }
-
-        if (!consumeDescriptor(recordingId, consumer))
-        {
-            throw new IllegalArgumentException("recordingId:" + recordingId + " not valid.");
-        }
-    }
-
-    private boolean consumeDescriptor(
-        final long recordingId, final BiConsumer<RecordingDescriptorEncoder, RecordingDescriptorDecoder> consumer)
-    {
-        final int offset = (int) (recordingId * recordLength);
-        if (offset >= maxCatalogSize)
-        {
-            return false;
-        }
-
-        indexUBuffer.wrap(indexMappedBBuffer, offset, recordLength);
-        descriptorHeaderDecoder.wrap(indexUBuffer, 0, DESCRIPTOR_HEADER_LENGTH, SCHEMA_VERSION);
-        if (descriptorHeaderDecoder.length() == 0 || descriptorHeaderDecoder.valid() != VALID)
-        {
-            return false;
-        }
-
-        descriptorDecoder.wrap(
-            indexUBuffer,
-            DESCRIPTOR_HEADER_LENGTH,
-            RecordingDescriptorDecoder.BLOCK_LENGTH,
-            RecordingDescriptorDecoder.SCHEMA_VERSION);
-        descriptorEncoder.wrap(indexUBuffer, DESCRIPTOR_HEADER_LENGTH);
-        consumer.accept(descriptorEncoder, descriptorDecoder);
-
-        return true;
+        return false;
     }
 
     private void refreshAndFixDescriptor(
-        final RecordingDescriptorEncoder encoder, final RecordingDescriptorDecoder decoder)
+        final RecordingDescriptorHeaderEncoder unused,
+        final RecordingDescriptorHeaderDecoder headerDecoder,
+        final RecordingDescriptorEncoder encoder,
+        final RecordingDescriptorDecoder decoder)
     {
-        if (decoder.stopTimestamp() == NULL_TIME)
+        if (headerDecoder.valid() == VALID && decoder.stopTimestamp() == NULL_TIME)
         {
             final long stopPosition = decoder.stopPosition();
             final long recordingLength = stopPosition - decoder.startPosition();
@@ -431,5 +409,14 @@ class Catalog implements AutoCloseable
             .strippedChannel(strippedChannel)
             .originalChannel(originalChannel)
             .sourceIdentity(sourceIdentity);
+    }
+
+    static void wrapDescriptorDecoder(final RecordingDescriptorDecoder decoder, final UnsafeBuffer descriptorBuffer)
+    {
+        decoder.wrap(
+            descriptorBuffer,
+            DESCRIPTOR_HEADER_LENGTH,
+            DESCRIPTOR_BLOCK_LENGTH,
+            SCHEMA_VERSION);
     }
 }

@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
 
+import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 import static io.aeron.logbuffer.FrameDescriptor.frameFlags;
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
 import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
@@ -99,11 +100,8 @@ class ReplaySession implements Session
         this.epochClock = epochClock;
         this.connectDeadlineMs = epochClock.time() + CONNECT_TIMEOUT_MS;
 
-        final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder().wrap(
-            descriptorBuffer,
-            Catalog.DESCRIPTOR_HEADER_LENGTH,
-            RecordingDescriptorDecoder.BLOCK_LENGTH,
-            RecordingDescriptorDecoder.SCHEMA_VERSION);
+        final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
+        wrapDescriptorDecoder(descriptorDecoder, descriptorBuffer);
 
         final long startPosition = descriptorDecoder.startPosition();
         final int mtuLength = descriptorDecoder.mtuLength();

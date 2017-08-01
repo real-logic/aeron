@@ -32,11 +32,10 @@ import java.nio.channels.FileChannel;
 import static io.aeron.archive.ArchiveUtil.segmentFileName;
 import static io.aeron.archive.Catalog.NULL_TIME;
 import static io.aeron.archive.Catalog.PAGE_SIZE;
+import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
+import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
@@ -96,11 +95,8 @@ public class CatalogTest
         throws IOException
     {
         assertTrue(catalog.wrapDescriptor(id, unsafeBuffer));
-        recordingDescriptorDecoder.wrap(
-            unsafeBuffer,
-            Catalog.DESCRIPTOR_HEADER_LENGTH,
-            RecordingDescriptorDecoder.BLOCK_LENGTH,
-            RecordingDescriptorDecoder.SCHEMA_VERSION);
+
+        wrapDescriptorDecoder(recordingDescriptorDecoder, unsafeBuffer);
 
         assertEquals(id, recordingDescriptorDecoder.recordingId());
         assertEquals(sessionId, recordingDescriptorDecoder.sessionId());
@@ -144,14 +140,16 @@ public class CatalogTest
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
         {
-            catalog.forEntry(newRecordingId, (e, decoder) -> assertThat(decoder.stopTimestamp(), is(NULL_TIME)));
+            catalog.forEntry(
+                (he, hd, e, decoder) -> assertThat(decoder.stopTimestamp(), is(NULL_TIME)), newRecordingId);
         }
 
         when(clock.time()).thenReturn(42L);
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
-            catalog.forEntry(newRecordingId, (e, decoder) -> assertThat(decoder.stopTimestamp(), is(42L)));
+            catalog.forEntry(
+                (he, hd, e, decoder) -> assertThat(decoder.stopTimestamp(), is(42L)), newRecordingId);
         }
     }
 
@@ -163,7 +161,7 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
         {
             catalog.forEntry(
-                newRecordingId, (encoder, decoder) -> encoder.stopPosition(decoder.startPosition() + 1024));
+                (he, hd, encoder, decoder) -> encoder.stopPosition(decoder.startPosition() + 1024), newRecordingId);
         }
 
         when(clock.time()).thenReturn(42L);
@@ -193,24 +191,26 @@ public class CatalogTest
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
         {
-            catalog.forEntry(newRecordingId,
-                (e, decoder) ->
+            catalog.forEntry(
+                (he, hd, e, decoder) ->
                 {
                     assertThat(decoder.stopTimestamp(), is(NULL_TIME));
                     assertThat(decoder.stopPosition(), is(decoder.startPosition()));
-                });
+                },
+                newRecordingId);
         }
 
         when(clock.time()).thenReturn(42L);
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
-            catalog.forEntry(newRecordingId,
-                (e, decoder) ->
+            catalog.forEntry(
+                (he, hd, e, decoder) ->
                 {
                     assertThat(decoder.stopTimestamp(), is(42L));
                     assertThat(decoder.stopPosition(), is(1024L + 128L));
-                });
+                },
+                newRecordingId);
         }
     }
 
@@ -236,24 +236,26 @@ public class CatalogTest
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
         {
-            catalog.forEntry(newRecordingId,
-                (e, decoder) ->
+            catalog.forEntry(
+                (he, hd, e, decoder) ->
                 {
                     assertThat(decoder.stopTimestamp(), is(NULL_TIME));
                     assertThat(decoder.stopPosition(), is(decoder.startPosition()));
-                });
+                },
+                newRecordingId);
         }
 
         when(clock.time()).thenReturn(42L);
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
-            catalog.forEntry(newRecordingId,
-                (e, decoder) ->
+            assertTrue(catalog.forEntry(
+                (he, hd, e, decoder) ->
                 {
                     assertThat(decoder.stopTimestamp(), is(42L));
                     assertThat(decoder.stopPosition(), is((long)PAGE_SIZE - 32));
-                });
+                },
+                newRecordingId));
         }
     }
 
@@ -304,23 +306,25 @@ public class CatalogTest
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
         {
-            catalog.forEntry(newRecordingId,
-                (e, decoder) ->
+            catalog.forEntry(
+                (he, hd, e, decoder) ->
                 {
                     assertThat(decoder.stopTimestamp(), is(NULL_TIME));
                     assertThat(decoder.stopPosition(), is(decoder.startPosition()));
-                });
+                },
+                newRecordingId);
         }
 
         when(clock.time()).thenReturn(42L);
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
-            catalog.forEntry(newRecordingId,
-                (e, decoder) ->
+            catalog.forEntry(
+                (he, hd, e, decoder) ->
                 {
                     assertThat(decoder.stopTimestamp(), is(42L));
                     assertThat(decoder.stopPosition(), is(expectedLastFrame));
-                });
+                },
+                newRecordingId);
         }
     }
 }

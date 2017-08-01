@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
+import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -168,11 +169,8 @@ public class TestUtil
         final UnsafeBuffer descriptorBuffer, final File archiveDir)
         throws IOException
     {
-        final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder().wrap(
-            descriptorBuffer,
-            Catalog.DESCRIPTOR_HEADER_LENGTH,
-            RecordingDescriptorDecoder.BLOCK_LENGTH,
-            RecordingDescriptorDecoder.SCHEMA_VERSION);
+        final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
+        wrapDescriptorDecoder(descriptorDecoder, descriptorBuffer);
 
         return new RecordingFragmentReader(
             descriptorDecoder,

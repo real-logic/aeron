@@ -16,10 +16,16 @@
 package io.aeron.archive;
 
 import io.aeron.Publication;
+import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
+
+import static io.aeron.archive.Catalog.VALID;
+import static io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
+import static io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder.SCHEMA_VERSION;
 
 abstract class AbstractListRecordingsSession implements Session
 {
+    private final RecordingDescriptorHeaderDecoder headerDecoder = new RecordingDescriptorHeaderDecoder();
     private final ControlSession controlSession;
     protected final UnsafeBuffer descriptorBuffer;
     protected final Publication controlPublication;
@@ -71,10 +77,15 @@ abstract class AbstractListRecordingsSession implements Session
         return workCount;
     }
 
-    protected abstract int sendDescriptors();
-
     public void close()
     {
         controlSession.onListRecordingSessionClosed(this);
     }
+
+    protected boolean isDescriptorValid(final UnsafeBuffer buffer)
+    {
+        return headerDecoder.wrap(buffer, 0, BLOCK_LENGTH, SCHEMA_VERSION).valid() == VALID;
+    }
+
+    protected abstract int sendDescriptors();
 }

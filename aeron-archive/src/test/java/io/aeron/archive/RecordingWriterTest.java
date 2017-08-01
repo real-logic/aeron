@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
+import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.Assert.assertEquals;
@@ -82,11 +83,9 @@ public class RecordingWriterTest
         final RecordingDescriptorEncoder descriptorEncoder = new RecordingDescriptorEncoder().wrap(
             descriptorBuffer,
             Catalog.DESCRIPTOR_HEADER_LENGTH);
-        final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder().wrap(
-            descriptorBuffer,
-            Catalog.DESCRIPTOR_HEADER_LENGTH,
-            RecordingDescriptorDecoder.BLOCK_LENGTH,
-            RecordingDescriptorDecoder.SCHEMA_VERSION);
+        final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
+        wrapDescriptorDecoder(descriptorDecoder, descriptorBuffer);
+
         Catalog.initDescriptor(
             descriptorEncoder,
             RECORDING_ID,

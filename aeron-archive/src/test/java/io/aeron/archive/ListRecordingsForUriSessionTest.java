@@ -14,8 +14,8 @@ import org.mockito.stubbing.Answer;
 
 import java.io.File;
 
+import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 import static io.aeron.archive.codecs.RecordingDescriptorDecoder.BLOCK_LENGTH;
-import static io.aeron.archive.codecs.RecordingDescriptorDecoder.SCHEMA_VERSION;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
@@ -144,7 +144,8 @@ public class ListRecordingsForUriSessionTest
         return (invocation) ->
         {
             final UnsafeBuffer b = invocation.getArgument(1);
-            recordingDescriptorDecoder.wrap(b, Catalog.DESCRIPTOR_HEADER_LENGTH, BLOCK_LENGTH, SCHEMA_VERSION);
+            wrapDescriptorDecoder(recordingDescriptorDecoder, b);
+
             final int i = counter.intValue();
             assertThat(recordingDescriptorDecoder.recordingId(), is(matchingRecordingIds[i]));
             counter.set(i + 1);

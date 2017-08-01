@@ -36,6 +36,7 @@ import java.io.File;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.ArchiveUtil.segmentFileName;
+import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 import static io.aeron.archive.TestUtil.newRecordingFragmentReader;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.nio.file.StandardOpenOption.*;
@@ -111,11 +112,8 @@ public class RecordingSessionTest
             .archiveDir(tempDirForTest)
             .epochClock(epochClock);
 
-        descriptorDecoder = new RecordingDescriptorDecoder().wrap(
-            descriptorBuffer,
-            Catalog.DESCRIPTOR_HEADER_LENGTH,
-            RecordingDescriptorDecoder.BLOCK_LENGTH,
-            RecordingDescriptorDecoder.SCHEMA_VERSION);
+        descriptorDecoder = new RecordingDescriptorDecoder();
+        wrapDescriptorDecoder(descriptorDecoder, descriptorBuffer);
 
         Catalog.initDescriptor(
             new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH),

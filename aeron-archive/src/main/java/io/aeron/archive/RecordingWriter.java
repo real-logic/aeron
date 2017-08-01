@@ -36,6 +36,7 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.ArchiveUtil.recordingOffset;
 import static io.aeron.archive.ArchiveUtil.segmentFileName;
+import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 
 /**
  * Responsible for writing out a recording into the file system. A recording has descriptor file and a set of data files
@@ -91,11 +92,8 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         this.descriptorBuffer = descriptorBuffer;
         descriptorEncoder = new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH);
         this.stopPosition = stopPosition;
-        final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder().wrap(
-            descriptorBuffer,
-            Catalog.DESCRIPTOR_HEADER_LENGTH,
-            RecordingDescriptorDecoder.BLOCK_LENGTH,
-            RecordingDescriptorDecoder.SCHEMA_VERSION);
+        final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
+        wrapDescriptorDecoder(descriptorDecoder, descriptorBuffer);
 
         final int termBufferLength = descriptorDecoder.termBufferLength();
 

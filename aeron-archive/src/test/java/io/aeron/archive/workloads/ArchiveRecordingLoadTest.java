@@ -15,10 +15,7 @@
  */
 package io.aeron.archive.workloads;
 
-import io.aeron.Aeron;
-import io.aeron.ExclusivePublication;
-import io.aeron.Publication;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.FailRecordingEventsListener;
@@ -55,7 +52,12 @@ import static org.junit.Assert.fail;
 @Ignore
 public class ArchiveRecordingLoadTest
 {
-    private static final String PUBLISH_URI = "aeron:ipc";
+    private static final String PUBLISH_URI = new ChannelUriStringBuilder()
+        .media("ipc")
+        .mtu(16 * 1024)
+        .termLength(128 * 1024 * 1024)
+        .build();
+
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
@@ -88,7 +90,6 @@ public class ArchiveRecordingLoadTest
         rnd.setSeed(seed);
 
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .termBufferSparseFile(false)
             .threadingMode(ThreadingMode.DEDICATED)
             .useConcurrentCounterManager(true)
             .errorHandler(Throwable::printStackTrace)

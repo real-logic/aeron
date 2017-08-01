@@ -605,13 +605,17 @@ public class NetworkPublication
         return true;
     }
 
-    public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
+    private void updateConnectedStatus(final long timeMs)
     {
-        if (isConnected &&
-            timeMs > (timeOfLastStatusMessage(metaDataBuffer) + PUBLICATION_CONNECTION_TIMEOUT_MS))
+        if (isConnected && timeMs > (timeOfLastStatusMessage(metaDataBuffer) + PUBLICATION_CONNECTION_TIMEOUT_MS))
         {
             isConnected = false;
         }
+    }
+
+    public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
+    {
+        updateConnectedStatus(timeMs);
 
         switch (status)
         {

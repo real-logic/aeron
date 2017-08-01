@@ -280,7 +280,10 @@ project(':aeron-samples') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        compile project(':aeron-client'), project(':aeron-driver'), 'org.hdrhistogram:HdrHistogram:2.1.9'
+        compile project(':aeron-client'),
+                project(':aeron-driver'),
+                project(':aeron-archive'),
+                'org.hdrhistogram:HdrHistogram:2.1.9'
     }
 
     shadowJar {
@@ -325,8 +328,11 @@ project(':aeron-samples') {
 
 project(':aeron-system-tests') {
     dependencies {
-        compile project(':aeron-client'), project(':aeron-driver')
+        compile project(':aeron-client'),
+                project(':aeron-driver'),
+                project(':aeron-archive')
         testCompile project(path: ':aeron-client', configuration: 'tests')
+        testCompile project(path: ':aeron-archive', configuration: 'tests')
         testCompile project(':aeron-agent')
     }
 
@@ -554,7 +560,10 @@ project(':aeron-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        compile project(':aeron-client'), project(':aeron-driver'), project(':aeron-samples')
+        compile project(':aeron-client'),
+                project(':aeron-driver'),
+                project(':aeron-archive'),
+                project(':aeron-samples')
     }
 
     shadowJar {
@@ -610,12 +619,14 @@ project(':aeron-all') {
         classifier = 'sources'
         from project(':aeron-client').sourceSets.main.allSource
         from project(':aeron-driver').sourceSets.main.allSource
+        from project(':aeron-archive').sourceSets.main.allSource
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {
         classifier = 'javadoc'
         from project(':aeron-client').javadoc.destinationDir
         from project(':aeron-driver').javadoc.destinationDir
+        from project(':aeron-archive').javadoc.destinationDir
     }
 
     shadowJar {

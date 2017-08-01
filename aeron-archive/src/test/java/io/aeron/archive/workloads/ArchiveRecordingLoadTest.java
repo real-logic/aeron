@@ -43,7 +43,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
-import static io.aeron.archive.ArchiveSystemTest.startChannelDrainingSubscription;
 import static io.aeron.archive.TestUtil.*;
 import static io.aeron.archive.workloads.ArchiveReplayLoadTest.CONTROL_STREAM_ID;
 import static io.aeron.archive.workloads.ArchiveReplayLoadTest.CONTROL_URI;

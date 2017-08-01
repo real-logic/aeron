@@ -45,7 +45,6 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.archive.ArchiveSystemTest.startChannelDrainingSubscription;
 import static io.aeron.archive.TestUtil.*;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.core.Is.is;

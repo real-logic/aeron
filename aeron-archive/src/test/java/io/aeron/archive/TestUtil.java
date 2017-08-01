@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.Subscription;
@@ -190,4 +191,41 @@ public class TestUtil
             }
         };
     }
+
+    public static void startChannelDrainingSubscription(final Aeron aeron, final String channel, final int streamId)
+    {
+        if (channel.contains("ipc"))
+        {
+            return;
+        }
+
+        final Thread t = new Thread(
+            () ->
+            {
+                try (Subscription subscription = aeron.addSubscription(channel, streamId))
+                {
+                    while (subscription.imageCount() == 0)
+                    {
+                        LockSupport.parkNanos(1);
+                    }
+
+                    while (!subscription.isClosed())
+                    {
+                        if (0 == subscription.poll((buffer1, offset, length, header) -> {}, Integer.MAX_VALUE))
+                        {
+                            LockSupport.parkNanos(1);
+                        }
+                    }
+                }
+                catch (final Exception ex)
+                {
+                    ex.printStackTrace();
+                }
+            });
+
+        t.setDaemon(true);
+        t.setName("eager-subscriber");
+        t.start();
+    }
+
 }

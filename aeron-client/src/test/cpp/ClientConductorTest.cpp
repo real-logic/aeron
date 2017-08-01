@@ -602,6 +602,8 @@ TEST_F(ClientConductorTest, shouldCallOnNewSubAfterOperationSuccess)
         .Times(1);
 
     m_conductor.onOperationSuccess(id);
+    std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+    ASSERT_TRUE(sub != nullptr);
 }
 
 TEST_F(ClientConductorTest, shouldCallNewConnectionAfterOnNewConnection)

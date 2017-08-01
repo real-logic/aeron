@@ -299,6 +299,11 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, struct Im
 
         lingerAllResources(m_epochClock(), imageList);
     }
+    else if (nullptr != imageList)
+    {
+        delete[] imageList->m_images;
+        delete imageList;
+    }
 }
 
 void ClientConductor::addDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel)

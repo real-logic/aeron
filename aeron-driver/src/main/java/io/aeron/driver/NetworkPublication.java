@@ -623,9 +623,12 @@ public class NetworkPublication
                 final long senderPosition = this.senderPosition.getVolatile();
                 if (senderPosition == lastSenderPosition)
                 {
-                    if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition))
+                    if (producerPosition() > senderPosition &&
+                        LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition))
                     {
                         unblockedPublications.orderedIncrement();
+                        timeOfLastActivityNs = timeNs;
+                        break;
                     }
 
                     if (spiesNotBehindSender(conductor, senderPosition))
@@ -648,9 +651,6 @@ public class NetworkPublication
                     conductor.cleanupPublication(NetworkPublication.this);
                     status = Status.CLOSING;
                 }
-                break;
-
-            case CLOSING:
                 break;
         }
     }

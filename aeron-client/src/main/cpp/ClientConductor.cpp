@@ -32,7 +32,8 @@ ClientConductor::~ClientConductor()
     std::for_each(m_lingeringImageLists.begin(), m_lingeringImageLists.end(),
         [](ImageListLingerDefn & entry)
         {
-            delete[] entry.m_imageList;
+            delete[] entry.m_imageList->m_images;
+            delete entry.m_imageList;
             entry.m_imageList = nullptr;
         });
 }
@@ -512,12 +513,13 @@ void ClientConductor::onUnavailableImage(
 
                 if (nullptr != subscription)
                 {
-                    struct ImageList *oldImageList = subscription->removeImage(correlationId);
+                    std::pair<struct ImageList *,int> result = subscription->removeImage(correlationId);
+                    struct ImageList *oldImageList = result.first;
+                    const int index = result.second;
 
                     if (nullptr != oldImageList)
                     {
                         Image* oldArray = oldImageList->m_images;
-                        const std::size_t index = oldImageList->m_length;
 
                         lingerResource(now, oldArray[index].logBuffers());
                         lingerResource(now, oldImageList);
@@ -593,7 +595,8 @@ void ClientConductor::onCheckManagedResources(long long now)
         {
             if (now > (entry.m_timeOfLastStatusChange + m_resourceLingerTimeoutMs))
             {
-                delete[] entry.m_imageList;
+                delete[] entry.m_imageList->m_images;
+                delete entry.m_imageList;
                 entry.m_imageList = nullptr;
                 return true;
             }

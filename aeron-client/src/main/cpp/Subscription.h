@@ -340,7 +340,7 @@ public:
         return oldImageList;
     }
 
-    struct ImageList *removeImage(std::int64_t correlationId)
+    std::pair<struct ImageList *, int> removeImage(std::int64_t correlationId)
     {
         struct ImageList *oldImageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
         Image * oldArray = oldImageList->m_images;
@@ -373,7 +373,9 @@ public:
             std::atomic_store_explicit(&m_imageList, newImageList, std::memory_order_release);
         }
 
-        return (-1 != index) ? oldImageList : nullptr;
+        return std::pair<struct ImageList *,int>(
+                (-1 != index) ? oldImageList : nullptr,
+                index);
     }
 
     struct ImageList *removeAndCloseAllImages()

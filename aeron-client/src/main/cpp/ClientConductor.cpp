@@ -29,11 +29,11 @@ ClientConductor::~ClientConductor()
             entry.m_subscriptionCache.reset();
         });
 
-    std::for_each(m_lingeringImageArrays.begin(), m_lingeringImageArrays.end(),
-        [](ImageArrayLingerDefn & entry)
+    std::for_each(m_lingeringImageLists.begin(), m_lingeringImageLists.end(),
+        [](ImageListLingerDefn & entry)
         {
-            delete[] entry.m_array;
-            entry.m_array = nullptr;
+            delete[] entry.m_imageList;
+            entry.m_imageList = nullptr;
         });
 }
 
@@ -273,7 +273,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
     return sub;
 }
 
-void ClientConductor::releaseSubscription(std::int64_t registrationId, Image *images, int imagesLength)
+void ClientConductor::releaseSubscription(std::int64_t registrationId, struct ImageList *imageList)
 {
     verifyDriverIsActiveViaErrorHandler();
 
@@ -289,14 +289,14 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, Image *im
     {
         m_driverProxy.removeSubscription((*it).m_registrationId);
 
-        for (int i = 0; i < imagesLength; i++)
+        for (std::size_t i = 0; i < imageList->m_length; i++)
         {
-            (*it).m_onUnavailableImageHandler(images[i]);
+            (*it).m_onUnavailableImageHandler(imageList->m_images[i]);
         }
 
         m_subscriptions.erase(it);
 
-        lingerResources(m_epochClock(), images, imagesLength);
+        lingerAllResources(m_epochClock(), imageList);
     }
 }
 
@@ -485,11 +485,11 @@ void ClientConductor::onAvailableImage(
 
                     entry.m_onAvailableImageHandler(image);
 
-                    Image* oldArray = subscription->addImage(image);
+                    struct ImageList *oldImageList = subscription->addImage(image);
 
-                    if (nullptr != oldArray)
+                    if (nullptr != oldImageList)
                     {
-                        lingerResource(m_epochClock(), oldArray);
+                        lingerResource(m_epochClock(), oldImageList);
                     }
                 }
             }
@@ -512,14 +512,15 @@ void ClientConductor::onUnavailableImage(
 
                 if (nullptr != subscription)
                 {
-                    std::pair<Image*, int> result = subscription->removeImage(correlationId);
-                    Image* oldArray = result.first;
-                    const int index = result.second;
+                    struct ImageList *oldImageList = subscription->removeImage(correlationId);
 
-                    if (nullptr != oldArray)
+                    if (nullptr != oldImageList)
                     {
+                        Image* oldArray = oldImageList->m_images;
+                        const std::size_t index = oldImageList->m_length;
+
                         lingerResource(now, oldArray[index].logBuffers());
-                        lingerResource(now, oldArray);
+                        lingerResource(now, oldImageList);
                         entry.m_onUnavailableImageHandler(oldArray[index]);
                     }
                 }
@@ -564,11 +565,7 @@ void ClientConductor::onInterServiceTimeout(long long now)
 
             if (nullptr != sub)
             {
-                std::pair<Image *, int> removeResult = sub->removeAndCloseAllImages();
-                Image* images = removeResult.first;
-                const int imagesLength = removeResult.second;
-
-                lingerResources(now, images, imagesLength);
+                lingerAllResources(now, sub->removeAndCloseAllImages());
             }
         });
 
@@ -591,25 +588,25 @@ void ClientConductor::onCheckManagedResources(long long now)
     m_lingeringLogBuffers.erase(logIt, m_lingeringLogBuffers.end());
 
     // check old arrays
-    auto arrayIt = std::remove_if(m_lingeringImageArrays.begin(), m_lingeringImageArrays.end(),
-        [now, this](ImageArrayLingerDefn & entry)
+    auto arrayIt = std::remove_if(m_lingeringImageLists.begin(), m_lingeringImageLists.end(),
+        [now, this](ImageListLingerDefn & entry)
         {
             if (now > (entry.m_timeOfLastStatusChange + m_resourceLingerTimeoutMs))
             {
-                delete[] entry.m_array;
-                entry.m_array = nullptr;
+                delete[] entry.m_imageList;
+                entry.m_imageList = nullptr;
                 return true;
             }
 
             return false;
         });
 
-    m_lingeringImageArrays.erase(arrayIt, m_lingeringImageArrays.end());
+    m_lingeringImageLists.erase(arrayIt, m_lingeringImageLists.end());
 }
 
-void ClientConductor::lingerResource(long long now, Image* array)
+void ClientConductor::lingerResource(long long now, struct ImageList *imageList)
 {
-    m_lingeringImageArrays.emplace_back(now, array);
+    m_lingeringImageLists.emplace_back(now, imageList);
 }
 
 void ClientConductor::lingerResource(long long now, std::shared_ptr<LogBuffers> logBuffers)
@@ -617,16 +614,16 @@ void ClientConductor::lingerResource(long long now, std::shared_ptr<LogBuffers> 
     m_lingeringLogBuffers.emplace_back(now, logBuffers);
 }
 
-void ClientConductor::lingerResources(long long now, Image* images, int imagesLength)
+void ClientConductor::lingerAllResources(long long now, struct ImageList *imageList)
 {
-    for (int i = 0; i < imagesLength; i++)
+    if (nullptr != imageList)
     {
-        lingerResource(now, images[i].logBuffers());
-    }
+        for (std::size_t i = 0; i < imageList->m_length; i++)
+        {
+            lingerResource(now, imageList->m_images[i].logBuffers());
+        }
 
-    if (nullptr != images)
-    {
-        lingerResource(now, images);
+        lingerResource(now, imageList);
     }
 }
 

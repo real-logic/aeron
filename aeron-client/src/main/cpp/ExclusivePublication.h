@@ -186,7 +186,7 @@ public:
      */
     inline bool isClosed() const
     {
-        return std::atomic_load_explicit(&m_isClosed, std::memory_order_relaxed);
+        return std::atomic_load_explicit(&m_isClosed, std::memory_order_acquire);
     }
 
     /**
@@ -387,7 +387,7 @@ public:
     /// @cond HIDDEN_SYMBOLS
     inline void close()
     {
-        std::atomic_store_explicit(&m_isClosed, true, std::memory_order_relaxed);
+        std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
     }
     /// @endcond
 

@@ -580,7 +580,7 @@ TEST_F(ClientConductorTest, shouldExceptionWhenReleaseSubscriptionAfterDriverIna
 
     ASSERT_NO_THROW(
     {
-        m_conductor.releaseSubscription(100, nullptr, 0);
+        m_conductor.releaseSubscription(100, nullptr);
     });
 }
 
@@ -704,7 +704,7 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfNoOperationSuccess)
     m_conductor.onUnavailableImage(STREAM_ID, correlationId);
 }
 
-TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfUinterestingConnectionCorrelationId)
+TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfUninterestingConnectionCorrelationId)
 {
     std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;

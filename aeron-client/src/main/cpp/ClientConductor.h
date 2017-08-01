@@ -110,7 +110,7 @@ public:
         const on_available_image_t &onAvailableImageHandler,
         const on_unavailable_image_t &onUnavailableImageHandler);
     std::shared_ptr<Subscription> findSubscription(std::int64_t registrationId);
-    void releaseSubscription(std::int64_t registrationId, Image *images, int imagesLength);
+    void releaseSubscription(std::int64_t registrationId, struct ImageList *imageList);
 
     void onNewPublication(
         std::int32_t streamId,
@@ -161,9 +161,9 @@ public:
 protected:
     void onCheckManagedResources(long long now);
 
-    void lingerResource(long long now, Image * array);
+    void lingerResource(long long now, struct ImageList *imageList);
     void lingerResource(long long now, std::shared_ptr<LogBuffers> logBuffers);
-    void lingerResources(long long now, Image *images, int connectionsLength);
+    void lingerAllResources(long long now, struct ImageList *imageList);
 
 private:
     enum class RegistrationStatus
@@ -246,13 +246,13 @@ private:
         }
     };
 
-    struct ImageArrayLingerDefn
+    struct ImageListLingerDefn
     {
         long long m_timeOfLastStatusChange;
-        Image * m_array;
+        struct ImageList *m_imageList;
 
-        ImageArrayLingerDefn(long long now, Image *array) :
-            m_timeOfLastStatusChange(now), m_array(array)
+        ImageListLingerDefn(long long now, struct ImageList *imageList) :
+            m_timeOfLastStatusChange(now), m_imageList(imageList)
         {
         }
     };
@@ -275,7 +275,7 @@ private:
     std::vector<SubscriptionStateDefn> m_subscriptions;
 
     std::vector<LogBuffersLingerDefn> m_lingeringLogBuffers;
-    std::vector<ImageArrayLingerDefn> m_lingeringImageArrays;
+    std::vector<ImageListLingerDefn> m_lingeringImageLists;
 
     DriverProxy& m_driverProxy;
     DriverListenerAdapter<ClientConductor> m_driverListenerAdapter;

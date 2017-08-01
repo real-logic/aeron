@@ -25,8 +25,7 @@ Subscription::Subscription(
     m_channel(channel),
     m_registrationId(registrationId),
     m_streamId(streamId),
-    m_images(nullptr),
-    m_imagesLength(0),
+    m_imageList(new struct ImageList(new Image[0], 0)),
     m_isClosed(false)
 {
 
@@ -34,7 +33,7 @@ Subscription::Subscription(
 
 Subscription::~Subscription()
 {
-    m_conductor.releaseSubscription(m_registrationId, m_images, m_imagesLength);
+    m_conductor.releaseSubscription(m_registrationId, std::atomic_load_explicit(&m_imageList, std::memory_order_acquire));
 }
 
 }

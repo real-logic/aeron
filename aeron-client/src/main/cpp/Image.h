@@ -536,6 +536,18 @@ private:
     bool m_isEos;
 };
 
+struct ImageList
+{
+    Image *m_images;
+    std::size_t m_length;
+
+    ImageList(Image *images, std::size_t length) :
+        m_images(images),
+        m_length(length)
+    {
+    }
+};
+
 }
 
 #endif //AERON_IMAGE_H

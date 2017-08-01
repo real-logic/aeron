@@ -627,12 +627,19 @@ public class NetworkPublication
                 final long senderPosition = this.senderPosition.getVolatile();
                 if (senderPosition == lastSenderPosition)
                 {
-                    if (producerPosition() > senderPosition &&
-                        LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition))
+                    if (producerPosition() > senderPosition)
                     {
-                        unblockedPublications.orderedIncrement();
-                        timeOfLastActivityNs = timeNs;
-                        break;
+                        if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition))
+                        {
+                            unblockedPublications.orderedIncrement();
+                            timeOfLastActivityNs = timeNs;
+                            break;
+                        }
+
+                        if (isConnected)
+                        {
+                            break;
+                        }
                     }
 
                     if (spiesFinishedConsuming(conductor, senderPosition))
@@ -658,7 +665,6 @@ public class NetworkPublication
                 break;
         }
     }
-
 
     public boolean hasReachedEndOfLife()
     {

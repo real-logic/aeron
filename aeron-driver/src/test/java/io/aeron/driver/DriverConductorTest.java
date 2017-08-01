@@ -47,6 +47,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
+import static io.aeron.Aeron.PUBLICATION_CONNECTION_TIMEOUT_MS;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
@@ -86,6 +87,8 @@ public class DriverConductorTest
     private final ReceiverProxy receiverProxy = mock(ReceiverProxy.class);
     private final DriverConductorProxy driverConductorProxy = mock(DriverConductorProxy.class);
 
+    private long currentTimeMs;
+    private EpochClock epochClock = () -> currentTimeMs;
     private long currentTimeNs;
     private NanoClock nanoClock = () -> currentTimeNs;
 
@@ -132,6 +135,7 @@ public class DriverConductorTest
             .errorLog(mockErrorLog)
             .rawLogBuffersFactory(mockRawLogFactory)
             .countersManager(countersManager)
+            .epochClock(epochClock)
             .nanoClock(nanoClock)
             .sendChannelEndpointSupplier(Configuration.sendChannelEndpointSupplier())
             .receiveChannelEndpointSupplier(Configuration.receiveChannelEndpointSupplier())
@@ -145,7 +149,6 @@ public class DriverConductorTest
         ctx.systemCounters(mockSystemCounters);
         when(mockSystemCounters.get(any())).thenReturn(mockErrorCounter);
 
-        ctx.epochClock(new SystemEpochClock());
         ctx.receiverProxy(receiverProxy);
         ctx.senderProxy(senderProxy);
         ctx.driverConductorProxy(driverConductorProxy);
@@ -495,7 +498,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldTimeoutPublicationWithNoKeepaliveButNotFlushed() throws Exception
+    public void shouldTimeoutPublicationWithNoKeepaliveButNotDrained() throws Exception
     {
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
 
@@ -523,8 +526,20 @@ public class DriverConductorTest
 
         appender.appendUnfragmentedMessage(headerWriter, srcBuffer, 0, 256, null);
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        assertThat(publication.status(), is(NetworkPublication.Status.ACTIVE));
 
+        driverConductor.doWork();
+        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+
+        assertThat(publication.status(), is(NetworkPublication.Status.DRAINING));
+
+        currentTimeMs += PUBLICATION_CONNECTION_TIMEOUT_MS + 1;
+        currentTimeNs += HEARTBEAT_TIMEOUT_NS;
+        driverConductor.doWork();
+        assertThat(publication.status(), is(NetworkPublication.Status.LINGER));
+
+        currentTimeNs += HEARTBEAT_TIMEOUT_NS + PUBLICATION_LINGER_NS;
+        driverConductor.doWork();
         assertThat(publication.status(), is(NetworkPublication.Status.CLOSING));
 
         verify(senderProxy).removeNetworkPublication(eq(publication));
@@ -1175,7 +1190,7 @@ public class DriverConductorTest
     {
         while (!condition.getAsBoolean())
         {
-            currentTimeNs += TimeUnit.MILLISECONDS.toNanos(10);
+            currentTimeNs += TimeUnit.MILLISECONDS.toNanos(16);
             driverConductor.doWork();
         }
     }

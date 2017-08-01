@@ -15,8 +15,6 @@
  */
 package io.aeron.samples;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * Configuration used for samples all in one place.
  */
@@ -63,7 +61,7 @@ public class SampleConfiguration
         STREAM_ID = Integer.getInteger(STREAM_ID_PROP, 10);
         PING_CHANNEL = System.getProperty(PING_CHANNEL_PROP, "aeron:udp?endpoint=localhost:40123");
         PONG_CHANNEL = System.getProperty(PONG_CHANNEL_PROP, "aeron:udp?endpoint=localhost:40124");
-        LINGER_TIMEOUT_MS = Long.getLong(LINGER_TIMEOUT_MS_PROP, TimeUnit.SECONDS.toMillis(5));
+        LINGER_TIMEOUT_MS = Long.getLong(LINGER_TIMEOUT_MS_PROP, 0);
         PING_STREAM_ID = Integer.getInteger(PING_STREAM_ID_PROP, 10);
         PONG_STREAM_ID = Integer.getInteger(PONG_STREAM_ID_PROP, 10);
         FRAGMENT_COUNT_LIMIT = Integer.getInteger(FRAME_COUNT_LIMIT_PROP, 20);

@@ -607,22 +607,27 @@ public class NetworkPublication
 
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
+        if (isConnected &&
+            timeMs > (timeOfLastStatusMessage(metaDataBuffer) + PUBLICATION_CONNECTION_TIMEOUT_MS))
+        {
+            isConnected = false;
+        }
+
         switch (status)
         {
             case ACTIVE:
                 checkForBlockedPublisher(timeNs, senderPosition.getVolatile());
-
-                if (isConnected &&
-                    timeMs > (timeOfLastStatusMessage(metaDataBuffer) + PUBLICATION_CONNECTION_TIMEOUT_MS))
-                {
-                    isConnected = false;
-                }
                 break;
 
             case DRAINING:
                 final long senderPosition = this.senderPosition.getVolatile();
                 if (senderPosition == lastSenderPosition)
                 {
+                    if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition))
+                    {
+                        unblockedPublications.orderedIncrement();
+                    }
+
                     if (spiesNotBehindSender(conductor, senderPosition))
                     {
                         isComplete = true;

@@ -81,12 +81,13 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
                 isDescriptorValid(descriptorBuffer))
             {
                 bytesSent += proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
-
-                if (++sent >= count)
-                {
-                    isDone = true;
-                }
+                ++sent;
             }
+        }
+
+        if (sent >= count)
+        {
+            isDone = true;
         }
 
         return bytesSent;

@@ -65,6 +65,7 @@ class ListRecordingsSession extends AbstractListRecordingsSession
         {
             isDone = true;
         }
+
         return sentBytes;
     }
 }

@@ -37,7 +37,7 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
 
 /**
  * Catalog for the archive keeps details of recorded images, past and present, and used for browsing.
- * The format is simple, allocating a fixed 4KB record for each record descriptor. This allows offset
+ * The format is simple, allocating a fixed 1KB record for each record descriptor. This allows offset
  * based look up of a descriptor in the file.
  * <p>
  * Catalog file format:
@@ -59,18 +59,17 @@ class Catalog implements AutoCloseable
             RecordingDescriptorHeaderEncoder headerEncoder,
             RecordingDescriptorHeaderDecoder headerDecoder,
             RecordingDescriptorEncoder descriptorEncoder,
-            RecordingDescriptorDecoder descriptorDecoder
-        );
+            RecordingDescriptorDecoder descriptorDecoder);
     }
 
-    static final int PAGE_SIZE = 4096;
     static final long NULL_TIME = -1L;
     static final long NULL_POSITION = -1;
+    static final int PAGE_SIZE = 4096;
     static final int NULL_RECORD_ID = -1;
 
     static final int DEFAULT_RECORD_LENGTH = 1024;
-    static final byte VALID = (byte) 1;
-    static final byte INVALID = (byte) 0;
+    static final byte VALID = 1;
+    static final byte INVALID = 0;
     static final int DESCRIPTOR_HEADER_LENGTH = RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
 
     private static final int SCHEMA_VERSION = RecordingDescriptorHeaderDecoder.SCHEMA_VERSION;
@@ -132,13 +131,13 @@ class Catalog implements AutoCloseable
             throw new RuntimeException(ex);
         }
 
-
         try
         {
             if (indexPreExists)
             {
                 final CatalogHeaderDecoder catalogHeaderDecoder = new CatalogHeaderDecoder()
                     .wrap(indexUBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, SCHEMA_VERSION);
+
                 if (catalogHeaderDecoder.version() != SCHEMA_VERSION)
                 {
                     throw new IllegalArgumentException("Catalog file version" + catalogHeaderDecoder.version() +
@@ -152,11 +151,14 @@ class Catalog implements AutoCloseable
                     .wrap(indexUBuffer, 0)
                     .version(SCHEMA_VERSION)
                     .entryLength(DEFAULT_RECORD_LENGTH);
+
                 recordLength = DEFAULT_RECORD_LENGTH;
             }
+
             maxDescriptorStringsCombinedLength =
                 recordLength - (DESCRIPTOR_HEADER_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 12);
             maxRecordingId = (Integer.MAX_VALUE - (2 * recordLength - 1)) / recordLength;
+
             refreshCatalog(fixOnRefresh);
         }
         catch (final Throwable ex)
@@ -189,8 +191,8 @@ class Catalog implements AutoCloseable
             throw new IllegalStateException("Catalog is full, max recordings reached: " + maxRecordingId);
         }
 
-        if (strippedChannel.length() + sourceIdentity.length() + originalChannel.length() >
-            maxDescriptorStringsCombinedLength)
+        final int combinedStringsLen = strippedChannel.length() + sourceIdentity.length() + originalChannel.length();
+        if (combinedStringsLen > maxDescriptorStringsCombinedLength)
         {
             throw new IllegalArgumentException("Combined length of channel:'" + strippedChannel +
                 "' and sourceIdentity:'" + sourceIdentity +
@@ -200,8 +202,9 @@ class Catalog implements AutoCloseable
 
         final long newRecordingId = nextRecordingId;
 
-        indexUBuffer.wrap(indexMappedBBuffer, recodringDescriptorOffset(newRecordingId), recordLength);
+        indexUBuffer.wrap(indexMappedBBuffer, recodingDescriptorOffset(newRecordingId), recordLength);
         descriptorEncoder.wrap(indexUBuffer, DESCRIPTOR_HEADER_LENGTH);
+
         initDescriptor(
             descriptorEncoder,
             newRecordingId,
@@ -216,10 +219,12 @@ class Catalog implements AutoCloseable
             strippedChannel,
             originalChannel,
             sourceIdentity);
+
         descriptorHeaderEncoder.wrap(indexUBuffer, 0);
         descriptorHeaderEncoder
             .length(descriptorEncoder.encodedLength())
             .valid(VALID);
+
         nextRecordingId++;
 
         if (fileSyncLevel > 0)
@@ -230,9 +235,9 @@ class Catalog implements AutoCloseable
         return newRecordingId;
     }
 
-    private int recodringDescriptorOffset(final long newRecordingId)
+    private int recodingDescriptorOffset(final long newRecordingId)
     {
-        return (int) (newRecordingId * recordLength) + recordLength;
+        return (int)(newRecordingId * recordLength) + recordLength;
     }
 
     boolean wrapDescriptor(final long recordingId, final UnsafeBuffer buffer)
@@ -242,8 +247,9 @@ class Catalog implements AutoCloseable
             return false;
         }
 
-        buffer.wrap(indexMappedBBuffer, recodringDescriptorOffset(recordingId), recordLength);
+        buffer.wrap(indexMappedBBuffer, recodingDescriptorOffset(recordingId), recordLength);
         descriptorHeaderDecoder.wrap(buffer, 0, DESCRIPTOR_HEADER_LENGTH, SCHEMA_VERSION);
+
         return descriptorHeaderDecoder.length() != 0;
     }
 
@@ -266,14 +272,14 @@ class Catalog implements AutoCloseable
         }
         else
         {
-            forEach(((he, hd, de, dd) -> nextRecordingId++));
+            forEach(((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) -> nextRecordingId++));
         }
     }
 
     void forEach(final CatalogEntryProcessor consumer)
     {
-        long recordingId = (long) 0;
-        while (recordingId < (long) maxRecordingId && wrapDescriptor(recordingId, indexUBuffer))
+        long recordingId = 0L;
+        while (recordingId < maxRecordingId && wrapDescriptor(recordingId, indexUBuffer))
         {
             descriptorHeaderDecoder.wrap(indexUBuffer, 0, DESCRIPTOR_HEADER_LENGTH, SCHEMA_VERSION);
             descriptorHeaderEncoder.wrap(indexUBuffer, 0);
@@ -293,13 +299,15 @@ class Catalog implements AutoCloseable
             wrapDescriptorDecoder(descriptorDecoder, indexUBuffer);
             descriptorEncoder.wrap(indexUBuffer, DESCRIPTOR_HEADER_LENGTH);
             consumer.accept(descriptorHeaderEncoder, descriptorHeaderDecoder, descriptorEncoder, descriptorDecoder);
+
             return true;
         }
+
         return false;
     }
 
     private void refreshAndFixDescriptor(
-        final RecordingDescriptorHeaderEncoder unused,
+        @SuppressWarnings("unused") final RecordingDescriptorHeaderEncoder unused,
         final RecordingDescriptorHeaderDecoder headerDecoder,
         final RecordingDescriptorEncoder encoder,
         final RecordingDescriptorDecoder decoder)
@@ -309,7 +317,7 @@ class Catalog implements AutoCloseable
             final long stopPosition = decoder.stopPosition();
             final long recordingLength = stopPosition - decoder.startPosition();
             final int segmentFileLength = decoder.segmentFileLength();
-            final int segmentIndex = (int) (recordingLength / segmentFileLength);
+            final int segmentIndex = (int)(recordingLength / segmentFileLength);
             final long stoppedSegmentOffset =
                 ((decoder.startPosition() % decoder.termBufferLength()) + recordingLength) % segmentFileLength;
 
@@ -368,7 +376,7 @@ class Catalog implements AutoCloseable
             // since we know descriptor buffers are forced on file rollover we don't need to handle rollover
             // beyond segment boundary (see RecordingWriter#onFileRollover)
 
-            if (nextFragmentSegmentOffset / PAGE_SIZE == lastFragmentSegmentOffset / PAGE_SIZE)
+            if ((nextFragmentSegmentOffset / PAGE_SIZE) == (lastFragmentSegmentOffset / PAGE_SIZE))
             {
                 // if fragment does not straddle page boundaries we need not drop the last fragment
                 lastFragmentSegmentOffset = nextFragmentSegmentOffset;

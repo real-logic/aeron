@@ -186,7 +186,7 @@ public class ArchiveReplayLoadTest
 
     private void printScore(final int i, final long time)
     {
-        final double rate = (totalRecordingLength * 1000.0 / time) / MEGABYTE;
+        final double rate = (totalRecordingLength * 1000.0d / time) / MEGABYTE;
         final double receivedMb = totalRecordingLength / MEGABYTE;
         System.out.printf("%d : received %.02f MB, replayed @ %.02f MB/s %n", i, receivedMb, rate);
     }
@@ -194,11 +194,13 @@ public class ArchiveReplayLoadTest
     private int prepAndSendMessages(final Subscription recordingEvents, final Publication publication)
         throws InterruptedException
     {
-        final CountDownLatch waitForData = new CountDownLatch(1);
         System.out.printf("Sending %,d messages%n", MESSAGE_COUNT);
+
+        final CountDownLatch waitForData = new CountDownLatch(1);
 
         trackRecordingProgress(recordingEvents, waitForData);
         publishDataToRecorded(publication, MESSAGE_COUNT);
+
         waitForData.await();
 
         return MESSAGE_COUNT;
@@ -217,9 +219,11 @@ public class ArchiveReplayLoadTest
         for (int i = 0; i < messageCount; i++)
         {
             final int messageLength = 64 + rnd.nextInt(MAX_FRAGMENT_SIZE - 64);
+
             totalPayloadLength += messageLength;
             buffer.putInt(0, i);
             buffer.putInt(messageLength - 4, i);
+
             offer(publication, buffer, messageLength);
         }
 
@@ -227,11 +231,13 @@ public class ArchiveReplayLoadTest
             publication.position(), positionBitsToShift);
         final int termIdFromPosition = LogBufferDescriptor.computeTermIdFromPosition(
             publication.position(), positionBitsToShift, publication.initialTermId());
+
         totalRecordingLength =
             (termIdFromPosition - publication.initialTermId()) * publication.termBufferLength() +
                 (lastTermOffset - initialTermOffset);
 
         assertThat(publication.position() - startPosition, is(totalRecordingLength));
+
         lastTermId = termIdFromPosition;
     }
 

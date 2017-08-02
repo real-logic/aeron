@@ -33,7 +33,6 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -86,8 +85,7 @@ public class ArchiveReplayLoadTest
     private final long recordingId = 0;
     private long remaining;
     private int fragmentCount;
-    private int[] fragmentLength;
-    private long totalDataLength;
+    private long totalPayloadLength;
     private long totalRecordingLength;
     private long recorded;
     private volatile int lastTermId = -1;
@@ -196,23 +194,14 @@ public class ArchiveReplayLoadTest
     private int prepAndSendMessages(final Subscription recordingEvents, final Publication publication)
         throws InterruptedException
     {
-        final int messageCount = MESSAGE_COUNT;
-        fragmentLength = new int[messageCount];
-        for (int i = 0; i < messageCount; i++)
-        {
-            final int messageLength = 64 + rnd.nextInt(MAX_FRAGMENT_SIZE - 64) - DataHeaderFlyweight.HEADER_LENGTH;
-            fragmentLength[i] = messageLength + DataHeaderFlyweight.HEADER_LENGTH;
-            totalDataLength += fragmentLength[i];
-        }
-
         final CountDownLatch waitForData = new CountDownLatch(1);
-        System.out.printf("Sending %,d messages with a total length of %,d bytes %n", messageCount, totalDataLength);
+        System.out.printf("Sending %,d messages%n", MESSAGE_COUNT);
 
         trackRecordingProgress(recordingEvents, waitForData);
-        publishDataToRecorded(publication, messageCount);
+        publishDataToRecorded(publication, MESSAGE_COUNT);
         waitForData.await();
 
-        return messageCount;
+        return MESSAGE_COUNT;
     }
 
     private void publishDataToRecorded(final Publication publication, final int messageCount)
@@ -227,10 +216,11 @@ public class ArchiveReplayLoadTest
 
         for (int i = 0; i < messageCount; i++)
         {
-            final int dataLength = fragmentLength[i] - DataHeaderFlyweight.HEADER_LENGTH;
+            final int messageLength = 64 + rnd.nextInt(MAX_FRAGMENT_SIZE - 64);
+            totalPayloadLength += messageLength;
             buffer.putInt(0, i);
-            printf("Sending: index=%d length=%d %n", i, dataLength);
-            offer(publication, buffer, dataLength);
+            buffer.putInt(messageLength - 4, i);
+            offer(publication, buffer, messageLength);
         }
 
         final int lastTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(
@@ -264,7 +254,7 @@ public class ArchiveReplayLoadTest
             awaitSubscriptionIsConnected(replay);
 
             fragmentCount = 0;
-            remaining = totalDataLength;
+            remaining = totalPayloadLength;
 
             while (remaining > 0)
             {
@@ -287,10 +277,11 @@ public class ArchiveReplayLoadTest
         final int length,
         @SuppressWarnings("unused") final Header header)
     {
-        assertThat(length, is(fragmentLength[fragmentCount] - DataHeaderFlyweight.HEADER_LENGTH));
         assertThat(buffer.getInt(offset), is(fragmentCount));
+        assertThat(buffer.getInt(offset + (length - 4)), is(fragmentCount));
         assertThat(buffer.getByte(offset + 4), is((byte)'z'));
-        remaining -= fragmentLength[fragmentCount];
+
+        remaining -= length;
         fragmentCount++;
     }
 

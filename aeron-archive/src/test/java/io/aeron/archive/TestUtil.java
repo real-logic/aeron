@@ -130,12 +130,40 @@ public class TestUtil
 
     public static void offer(final Publication publication, final UnsafeBuffer buffer, final int length)
     {
-        waitFor(() -> publication.offer(buffer, 0, length) > 0);
+        waitFor(
+            () ->
+            {
+                final long result = publication.offer(buffer, 0, length);
+                if (result > 0)
+                {
+                    return true;
+                }
+                else if (result == Publication.ADMIN_ACTION || result == Publication.BACK_PRESSURED)
+                {
+                    return false;
+                }
+
+                throw new IllegalStateException("Unexpected return code: " + result);
+            });
     }
 
     static void offer(final ExclusivePublication publication, final UnsafeBuffer buffer, final int length)
     {
-        waitFor(() -> publication.offer(buffer, 0, length) > 0);
+        waitFor(
+            () ->
+            {
+                final long result = publication.offer(buffer, 0, length);
+                if (result > 0)
+                {
+                    return true;
+                }
+                else if (result == Publication.ADMIN_ACTION || result == Publication.BACK_PRESSURED)
+                {
+                    return false;
+                }
+
+                throw new IllegalStateException("Unexpected return code: " + result);
+            });
     }
 
     public static void waitFor(final BooleanSupplier conditionSupplier)

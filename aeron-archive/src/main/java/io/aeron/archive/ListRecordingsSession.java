@@ -41,9 +41,9 @@ class ListRecordingsSession extends AbstractListRecordingsSession
 
     protected int sendDescriptors()
     {
-        int sentBytes = 0;
+        int totalBytesSent = 0;
 
-        while (recordingId < limitId && sentBytes < controlPublication.maxPayloadLength())
+        while (recordingId < limitId && totalBytesSent < controlPublication.maxPayloadLength())
         {
             if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
             {
@@ -55,7 +55,12 @@ class ListRecordingsSession extends AbstractListRecordingsSession
 
             if (isDescriptorValid(descriptorBuffer))
             {
-                sentBytes += proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
+                final int bytesSent = proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
+                if (bytesSent == 0)
+                {
+                    break;
+                }
+                totalBytesSent += bytesSent;
             }
 
             ++recordingId;
@@ -66,6 +71,6 @@ class ListRecordingsSession extends AbstractListRecordingsSession
             isDone = true;
         }
 
-        return sentBytes;
+        return totalBytesSent;
     }
 }

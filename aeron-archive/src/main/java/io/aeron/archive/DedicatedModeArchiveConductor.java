@@ -60,7 +60,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             errorHandler,
             ctx.errorCounter(),
             closeQueue,
-            new ControlSessionProxy(ctx.idleStrategy()));
+            new ControlSessionProxy());
     }
 
     protected int preWork()

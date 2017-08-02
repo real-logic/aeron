@@ -16,33 +16,57 @@
 package io.aeron.archive;
 
 import io.aeron.Publication;
-import io.aeron.archive.codecs.*;
-import org.agrona.*;
-import org.agrona.concurrent.*;
+import io.aeron.archive.codecs.ControlResponseCode;
+import io.aeron.archive.codecs.ControlResponseEncoder;
+import io.aeron.archive.codecs.MessageHeaderEncoder;
+import io.aeron.archive.codecs.RecordingDescriptorEncoder;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableDirectByteBuffer;
+import org.agrona.Strings;
+import org.agrona.concurrent.UnsafeBuffer;
 
 class ControlSessionProxy
 {
     private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
-    private final IdleStrategy idleStrategy;
     private final ExpandableDirectByteBuffer buffer = new ExpandableDirectByteBuffer(2048);
 
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ControlResponseEncoder responseEncoder = new ControlResponseEncoder();
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
 
-    ControlSessionProxy(final IdleStrategy idleStrategy)
+    boolean sendOkResponse(final long correlationId, final Publication controlPublication)
     {
-        this.idleStrategy = idleStrategy;
+        return sendResponse(correlationId, ControlResponseCode.OK, null, controlPublication);
     }
 
-    void sendOkResponse(final long correlationId, final Publication controlPublication)
+    boolean sendRecordingUnknown(final long correlationId, final long recordingId, final Publication controlPublication)
     {
-        sendResponse(correlationId, ControlResponseCode.OK, null, controlPublication);
+        return sendResponse(
+            correlationId,
+            recordingId,
+            ControlResponseCode.RECORDING_UNKNOWN,
+            null,
+            controlPublication);
     }
 
-    void sendResponse(
+    boolean sendResponse(
         final long correlationId,
+        final ControlResponseCode code,
+        final String errorMessage,
+        final Publication controlPublication)
+    {
+        return sendResponse(
+            correlationId,
+            0,
+            code,
+            errorMessage,
+            controlPublication);
+    }
+
+    private boolean sendResponse(
+        final long correlationId,
+        final long relevantId,
         final ControlResponseCode code,
         final String errorMessage,
         final Publication controlPublication)
@@ -50,6 +74,7 @@ class ControlSessionProxy
         responseEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
+            .relevantId(relevantId)
             .code(code);
 
         if (!Strings.isEmpty(errorMessage))
@@ -61,48 +86,7 @@ class ControlSessionProxy
             responseEncoder.putErrorMessage(EMPTY_BYTE_ARRAY, 0, 0);
         }
 
-        send(controlPublication, HEADER_LENGTH + responseEncoder.encodedLength());
-    }
-
-    private void send(final Publication controlPublication, final int length)
-    {
-        send(controlPublication, buffer, 0, length);
-    }
-
-    private void send(
-        final Publication controlPublication,
-        final DirectBuffer buffer,
-        final int offset,
-        final int length)
-    {
-        // TODO: handle dead/slow subscriber, this is not an acceptable place to get stuck
-        while (true)
-        {
-            final long result = controlPublication.offer(buffer, offset, length);
-            if (result > 0)
-            {
-                idleStrategy.reset();
-                break;
-            }
-
-            if (result == Publication.NOT_CONNECTED || result == Publication.CLOSED)
-            {
-                throw new IllegalStateException("Response channel is down: " + controlPublication);
-            }
-
-            idleStrategy.idle();
-        }
-    }
-
-    void sendRecordingUnknown(final long correlationId, final long recordingId, final Publication controlPublication)
-    {
-        responseEncoder.wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-            .correlationId(correlationId)
-            .relevantId(recordingId)
-            .code(ControlResponseCode.RECORDING_UNKNOWN)
-            .putErrorMessage(EMPTY_BYTE_ARRAY, 0, 0);
-
-        send(controlPublication, HEADER_LENGTH + responseEncoder.encodedLength());
+        return send(controlPublication, HEADER_LENGTH + responseEncoder.encodedLength());
     }
 
     int sendDescriptor(
@@ -117,8 +101,41 @@ class ControlSessionProxy
             .wrapAndApplyHeader(descriptorBuffer, offset, messageHeaderEncoder)
             .correlationId(correlationId);
 
-        send(controlPublication, descriptorBuffer, offset, length);
+        if (send(controlPublication, descriptorBuffer, offset, length))
+        {
+            return length;
+        }
+        else
+        {
+            return 0;
+        }
+    }
 
-        return length;
+    private boolean send(final Publication controlPublication, final int length)
+    {
+        return send(controlPublication, buffer, 0, length);
+    }
+
+    private boolean send(
+        final Publication controlPublication,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
+    {
+
+        for (int i = 0; i < 3; i++)
+        {
+            final long result = controlPublication.offer(buffer, offset, length);
+            if (result > 0)
+            {
+                return true;
+            }
+
+            if (result == Publication.NOT_CONNECTED || result == Publication.CLOSED)
+            {
+                throw new IllegalStateException("Response channel is down: " + controlPublication);
+            }
+        }
+        return false;
     }
 }

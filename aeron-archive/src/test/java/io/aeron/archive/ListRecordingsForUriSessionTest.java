@@ -77,6 +77,9 @@ public class ListRecordingsForUriSessionTest
         session.doWork();
         assertThat(session.isDone(), is(false));
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
+        final MutableLong counter = new MutableLong(0);
+        when(controlSessionProxy.sendDescriptor(eq(correlationId), any(), eq(controlPublication)))
+            .then(verifySendDescriptor(counter));
         session.doWork();
         verify(controlSessionProxy, times(3)).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
         verifyNoMoreInteractions(controlSessionProxy);
@@ -102,6 +105,39 @@ public class ListRecordingsForUriSessionTest
         session.doWork();
         assertThat(session.isDone(), is(false));
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
+        final MutableLong counter = new MutableLong(fromRecordingId);
+        when(controlSessionProxy.sendDescriptor(eq(correlationId), any(), eq(controlPublication)))
+            .then(verifySendDescriptor(counter));
+        session.doWork();
+        verify(controlSessionProxy, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
+        verifyNoMoreInteractions(controlSessionProxy);
+    }
+
+    @Test
+    public void shouldResendDescriptorWhenSendFails()
+    {
+        final long fromRecordingId = 1;
+        final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
+            correlationId,
+            controlPublication,
+            fromRecordingId,
+            1,
+            "channel",
+            1,
+            catalog,
+            controlSessionProxy,
+            controlSession,
+            descriptorBuffer,
+            recordingDescriptorDecoder);
+
+        session.doWork();
+        assertThat(session.isDone(), is(false));
+        when(controlPublication.maxPayloadLength()).thenReturn(8096);
+
+        when(controlSessionProxy.sendDescriptor(eq(correlationId), any(), eq(controlPublication))).thenReturn(0);
+        session.doWork();
+        verify(controlSessionProxy, times(1)).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
+
         final MutableLong counter = new MutableLong(fromRecordingId);
         when(controlSessionProxy.sendDescriptor(eq(correlationId), any(), eq(controlPublication)))
             .then(verifySendDescriptor(counter));
@@ -139,20 +175,6 @@ public class ListRecordingsForUriSessionTest
         verifyNoMoreInteractions(controlSessionProxy);
     }
 
-    private Answer<Object> verifySendDescriptor(final MutableLong counter)
-    {
-        return (invocation) ->
-        {
-            final UnsafeBuffer b = invocation.getArgument(1);
-            wrapDescriptorDecoder(recordingDescriptorDecoder, b);
-
-            final int i = counter.intValue();
-            assertThat(recordingDescriptorDecoder.recordingId(), is(matchingRecordingIds[i]));
-            counter.set(i + 1);
-            return b.getInt(0);
-        };
-    }
-
     @Test
     public void shouldSend2DescriptorsAndRecordingUnknown()
     {
@@ -172,6 +194,9 @@ public class ListRecordingsForUriSessionTest
         session.doWork();
         assertThat(session.isDone(), is(false));
         when(controlPublication.maxPayloadLength()).thenReturn(8096);
+        final MutableLong counter = new MutableLong(1);
+        when(controlSessionProxy.sendDescriptor(eq(correlationId), any(), eq(controlPublication)))
+            .then(verifySendDescriptor(counter));
         session.doWork();
         verify(controlSessionProxy, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
         verify(controlSessionProxy).sendRecordingUnknown(eq(correlationId), eq(5L), eq(controlPublication));
@@ -226,5 +251,19 @@ public class ListRecordingsForUriSessionTest
         verify(controlSessionProxy, never()).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
         verify(controlSessionProxy).sendRecordingUnknown(eq(correlationId), eq(5L), eq(controlPublication));
         verifyNoMoreInteractions(controlSessionProxy);
+    }
+
+    private Answer<Object> verifySendDescriptor(final MutableLong counter)
+    {
+        return (invocation) ->
+        {
+            final UnsafeBuffer b = invocation.getArgument(1);
+            wrapDescriptorDecoder(recordingDescriptorDecoder, b);
+
+            final int i = counter.intValue();
+            assertThat(recordingDescriptorDecoder.recordingId(), is(matchingRecordingIds[i]));
+            counter.set(i + 1);
+            return b.getInt(0);
+        };
     }
 }

@@ -102,7 +102,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final int fileSyncLevel = ctx.fileSyncLevel();
         archiveDirChannel = getDirectoryChannel(archiveDir, fileSyncLevel);
 
-        controlSessionProxy = new ControlSessionProxy(ctx.idleStrategy());
+        controlSessionProxy = new ControlSessionProxy();
 
         controlSubscription = aeron.addSubscription(
             ctx.controlChannel(),

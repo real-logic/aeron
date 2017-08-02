@@ -202,7 +202,7 @@ class Catalog implements AutoCloseable
 
         final long newRecordingId = nextRecordingId;
 
-        indexUBuffer.wrap(indexMappedBBuffer, recodingDescriptorOffset(newRecordingId), recordLength);
+        indexUBuffer.wrap(indexMappedBBuffer, recordingDescriptorOffset(newRecordingId), recordLength);
         descriptorEncoder.wrap(indexUBuffer, DESCRIPTOR_HEADER_LENGTH);
 
         initDescriptor(
@@ -235,7 +235,7 @@ class Catalog implements AutoCloseable
         return newRecordingId;
     }
 
-    private int recodingDescriptorOffset(final long newRecordingId)
+    private int recordingDescriptorOffset(final long newRecordingId)
     {
         return (int)(newRecordingId * recordLength) + recordLength;
     }
@@ -247,7 +247,7 @@ class Catalog implements AutoCloseable
             return false;
         }
 
-        buffer.wrap(indexMappedBBuffer, recodingDescriptorOffset(recordingId), recordLength);
+        buffer.wrap(indexMappedBBuffer, recordingDescriptorOffset(recordingId), recordLength);
         descriptorHeaderDecoder.wrap(buffer, 0, DESCRIPTOR_HEADER_LENGTH, SCHEMA_VERSION);
 
         return descriptorHeaderDecoder.length() != 0;

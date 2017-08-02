@@ -103,7 +103,7 @@
                  id="9"
                  description="Used as first element in Catalog to set the version and length of entries">
         <field name="version"            id="1" type="int32"/>
-        <field name="entryLength" id="2" type="int32"/>
+        <field name="entryLength"        id="2" type="int32"/>
     </sbe:message>
 
     <sbe:message name="RecordingDescriptorHeader"

@@ -45,6 +45,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.TestUtil.*;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static junit.framework.TestCase.assertTrue;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.core.Is.is;
@@ -212,15 +213,14 @@ public class ArchiveReplayLoadTest
             startPosition, positionBitsToShift);
 
         buffer.setMemory(0, 1024, (byte)'z');
-        buffer.putStringAscii(32, "TEST");
 
         for (int i = 0; i < messageCount; i++)
         {
-            final int messageLength = 64 + rnd.nextInt(MAX_FRAGMENT_SIZE - 64);
+            final int messageLength = 64 + (rnd.nextInt((MAX_FRAGMENT_SIZE - 64) / 4) * 4);
 
             totalPayloadLength += messageLength;
-            buffer.putInt(0, i);
-            buffer.putInt(messageLength - 4, i);
+            buffer.putInt(0, i, LITTLE_ENDIAN);
+            buffer.putInt(messageLength - 4, i, LITTLE_ENDIAN);
 
             offer(publication, buffer, messageLength);
         }
@@ -281,8 +281,8 @@ public class ArchiveReplayLoadTest
         final int length,
         @SuppressWarnings("unused") final Header header)
     {
-        assertThat(buffer.getInt(offset), is(fragmentCount));
-        assertThat(buffer.getInt(offset + (length - 4)), is(fragmentCount));
+        assertThat(buffer.getInt(offset, LITTLE_ENDIAN), is(fragmentCount));
+        assertThat(buffer.getInt(offset + (length - 4), LITTLE_ENDIAN), is(fragmentCount));
         assertThat(buffer.getByte(offset + 4), is((byte)'z'));
 
         remaining -= length;

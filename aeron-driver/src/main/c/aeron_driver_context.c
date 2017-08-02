@@ -129,6 +129,8 @@ uint64_t aeron_config_parse_uint64(const char *str, uint64_t def, uint64_t min, 
     return result;
 }
 
+#define AERON_CONFIG_GETENV_OR_DEFAULT(e,d) ((NULL == getenv(e)) ? (d) : getenv(e))
+
 static void aeron_driver_conductor_to_driver_interceptor_null(
     int32_t msg_type_id, const void *message, size_t length, void *clientd)
 {
@@ -444,15 +446,29 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->epoch_clock = aeron_epochclock;
 
     _context->conductor_idle_strategy_func =
-        aeron_idle_strategy_load("yielding", &_context->conductor_idle_strategy_state);
+        aeron_idle_strategy_load(
+            AERON_CONFIG_GETENV_OR_DEFAULT(AERON_CONDUCTOR_IDLE_STRATEGY_ENV_VAR, "yielding"),
+            &_context->conductor_idle_strategy_state);
+
     _context->shared_idle_strategy_func =
-        aeron_idle_strategy_load("yielding", &_context->shared_idle_strategy_state);
+        aeron_idle_strategy_load(
+            AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SHARED_IDLE_STRATEGY_ENV_VAR, "yielding"),
+            &_context->shared_idle_strategy_state);
+
     _context->shared_network_idle_strategy_func =
-        aeron_idle_strategy_load("yielding", &_context->shared_network_idle_strategy_state);
+        aeron_idle_strategy_load(
+            AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SHAREDNETWORK_IDLE_STRATEGY_ENV_VAR, "yielding"),
+            &_context->shared_network_idle_strategy_state);
+
     _context->sender_idle_strategy_func =
-        aeron_idle_strategy_load("noop", &_context->sender_idle_strategy_state);
+        aeron_idle_strategy_load(
+            AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SENDER_IDLE_STRATEGY_ENV_VAR, "noop"),
+            &_context->sender_idle_strategy_state);
+
     _context->receiver_idle_strategy_func =
-        aeron_idle_strategy_load("noop", &_context->receiver_idle_strategy_state);
+        aeron_idle_strategy_load(
+            AERON_CONFIG_GETENV_OR_DEFAULT(AERON_RECEIVER_IDLE_STRATEGY_ENV_VAR, "noop"),
+            &_context->receiver_idle_strategy_state);
 
     _context->usable_fs_space_func = aeron_usable_fs_space;
     _context->map_raw_log_func = aeron_map_raw_log;

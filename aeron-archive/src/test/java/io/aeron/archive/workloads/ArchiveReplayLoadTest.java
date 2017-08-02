@@ -34,7 +34,6 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -48,6 +47,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.TestUtil.*;
 import static junit.framework.TestCase.assertTrue;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -73,8 +73,7 @@ public class ArchiveReplayLoadTest
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
     private static final int MESSAGE_COUNT = 2000000;
-    private final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(
-        4096, FrameDescriptor.FRAME_ALIGNMENT));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT));
     private final Random rnd = new Random();
     private final long seed = System.nanoTime();
 
@@ -119,7 +118,6 @@ public class ArchiveReplayLoadTest
             .errorHandler(driverCtx.errorHandler());
 
         archive = Archive.launch(archiverCtx);
-        println("Archive started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
         aeron = Aeron.connect();
     }
 
@@ -138,9 +136,9 @@ public class ArchiveReplayLoadTest
     public void replay() throws IOException, InterruptedException
     {
         try (Publication controlRequest = aeron.addPublication(
-            archive.context().controlChannel(), archive.context().controlStreamId());
+                archive.context().controlChannel(), archive.context().controlStreamId());
              Subscription recordingEvents = aeron.addSubscription(
-                 archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
+                archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlRequest);
 

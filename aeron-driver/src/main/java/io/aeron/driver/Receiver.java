@@ -72,17 +72,17 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         for (int lastIndex = publicationImages.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final PublicationImage image = publicationImages.get(i);
-            if (!image.checkForActivity(nowNs))
-            {
-                image.removeFromDispatcher();
-                ArrayListUtil.fastUnorderedRemove(publicationImages, i, lastIndex);
-                lastIndex--;
-            }
-            else
+            if (image.checkForActivity(nowNs))
             {
                 workCount += image.sendPendingStatusMessage();
                 workCount += image.processPendingLoss();
                 workCount += image.initiateAnyRttMeasurements(nowNs);
+            }
+            else
+            {
+                image.removeFromDispatcher();
+                ArrayListUtil.fastUnorderedRemove(publicationImages, i, lastIndex);
+                lastIndex--;
             }
         }
 

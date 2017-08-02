@@ -509,14 +509,14 @@ public class PublicationImage
      */
     boolean checkForActivity(final long nowNs)
     {
-        boolean activity = true;
+        boolean isActive = true;
 
         if (nowNs > (lastPacketTimestampNs + imageLivenessTimeoutNs))
         {
-            activity = false;
+            isActive = false;
         }
 
-        return activity;
+        return isActive;
     }
 
     /**
@@ -716,9 +716,8 @@ public class PublicationImage
 
     private boolean isEndOfStream(final UnsafeBuffer packet)
     {
-        return
-            (DataHeaderFlyweight.BEGIN_END_AND_EOS_FLAGS ==
-                (packet.getByte(HeaderFlyweight.FLAGS_FIELD_OFFSET) & 0xFF));
+        return DataHeaderFlyweight.BEGIN_END_AND_EOS_FLAGS ==
+                (packet.getByte(HeaderFlyweight.FLAGS_FIELD_OFFSET) & 0xFF);
     }
 
     private void hwmCandidate(final long proposedPosition)

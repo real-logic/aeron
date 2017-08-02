@@ -125,9 +125,9 @@ public class ArchiveRecordingLoadTest
     public void archive() throws IOException, InterruptedException
     {
         try (Publication controlRequest = aeron.addPublication(
-            archive.context().controlChannel(), archive.context().controlStreamId());
+                archive.context().controlChannel(), archive.context().controlStreamId());
              Subscription recordingEvents = aeron.addSubscription(
-                 archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
+                archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlRequest);
             initRecordingStartIndicator(recordingEvents);
@@ -143,6 +143,7 @@ public class ArchiveRecordingLoadTest
 
             long start;
             final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
+
             startChannelDrainingSubscription(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
             final String channel = PUBLISH_URI;
 

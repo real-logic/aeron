@@ -232,7 +232,7 @@ public class TestUtil
             {
                 try (Subscription subscription = aeron.addSubscription(channel, streamId))
                 {
-                    while (subscription.imageCount() == 0)
+                    while (subscription.hasNoImages())
                     {
                         LockSupport.parkNanos(1);
                     }
@@ -255,5 +255,4 @@ public class TestUtil
         t.setName("eager-subscriber");
         t.start();
     }
-
 }

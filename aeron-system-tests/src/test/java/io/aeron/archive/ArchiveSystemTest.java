@@ -47,8 +47,6 @@ import static org.junit.Assert.*;
 
 public class ArchiveSystemTest
 {
-    private static final double MEGABYTE = 1024.0d * 1024.0d;
-
     private static final String CONTROL_URI = "aeron:udp?endpoint=127.0.0.1:54327";
     private static final int CONTROL_STREAM_ID = 100;
     private static final String REPLAY_URI = "aeron:ipc";
@@ -164,9 +162,9 @@ public class ArchiveSystemTest
     public void recordAndReplayExclusivePublication() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
-            archive.context().controlChannel(), archive.context().controlStreamId());
+                archive.context().controlChannel(), archive.context().controlStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
-                 archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
+                archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
@@ -203,9 +201,9 @@ public class ArchiveSystemTest
     public void replayExclusivePublicationWhileRecording() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
-            archive.context().controlChannel(), archive.context().controlStreamId());
+                archive.context().controlChannel(), archive.context().controlStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
-                 archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
+                archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
@@ -246,9 +244,9 @@ public class ArchiveSystemTest
     public void recordAndReplayRegularPublication() throws IOException, InterruptedException
     {
         try (Publication controlPublication = publishingClient.addPublication(
-            archive.context().controlChannel(), archive.context().controlStreamId());
+                archive.context().controlChannel(), archive.context().controlStreamId());
              Subscription recordingEvents = publishingClient.addSubscription(
-                 archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
+                archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
@@ -376,7 +374,7 @@ public class ArchiveSystemTest
 
         waitForOk(controlResponse, startRecordingCorrelationId);
 
-        startChannelDrainingSubscription(aeron, this.publishUri, PUBLISH_STREAM_ID);
+        startChannelDrainingSubscription(aeron, publishUri, PUBLISH_STREAM_ID);
     }
 
     private void verifyEmptyDescriptorList(final ArchiveProxy client)
@@ -644,32 +642,14 @@ public class ArchiveSystemTest
                 try
                 {
                     recorded = 0;
-                    long start = System.currentTimeMillis();
-                    long startBytes = remaining;
 
                     while (stopPosition == -1 || recorded < totalRecordingLength)
                     {
                         if (recordingEventsAdapter.poll() == 0)
                         {
                             LockSupport.parkNanos(1);
-                            continue;
-                        }
-
-                        final long end = System.currentTimeMillis();
-                        final long deltaTime = end - start;
-                        if (deltaTime > TestUtil.TIMEOUT_MS)
-                        {
-                            start = end;
-                            final long deltaBytes = remaining - startBytes;
-                            startBytes = remaining;
-                            final double rate = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
                         }
                     }
-                    final long end = System.currentTimeMillis();
-                    final long deltaTime = end - start;
-
-                    final long deltaBytes = remaining - startBytes;
-                    final double rate = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
                 }
                 catch (final Throwable throwable)
                 {
@@ -728,6 +708,7 @@ public class ArchiveSystemTest
                 {
                     poll(replay, this::validateFragment2);
                 }
+
                 waitForData.countDown();
             }
         });

@@ -270,7 +270,12 @@ public class ArchiveReplayLoadTest
 
             while (remaining > 0)
             {
-                replay.poll(validateFragmentHandler, 128);
+                int numFragments = replay.poll(validateFragmentHandler, 128);
+                if (0 == numFragments && remaining > 0 && replay.hasNoImages())
+                {
+                    System.err.println("Unexpected close of image");
+                    break;
+                }
             }
 
             assertThat(fragmentCount, is(messageCount));

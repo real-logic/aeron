@@ -286,7 +286,7 @@ public class NetworkPublication
             {
                 offset += bytesSent;
 
-                final long scanOutcome = scanForAvailability(termBuffer, offset, mtuLength);
+                final long scanOutcome = scanForAvailability(termBuffer, offset, Math.min(mtuLength, remainingBytes));
                 final int available = available(scanOutcome);
                 if (available <= 0)
                 {

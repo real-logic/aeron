@@ -58,8 +58,6 @@ public class ArchiveReplayLoadTest
     static final int CONTROL_STREAM_ID = 100;
     static final int TEST_DURATION_SEC = 30;
 
-    private static final int TIMEOUT_MS = 5000;
-
     private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
 
     private static final String PUBLISH_URI = new ChannelUriStringBuilder()
@@ -315,28 +313,17 @@ public class ArchiveReplayLoadTest
                 try
                 {
                     recorded = 0;
-                    long start = System.currentTimeMillis();
-                    long startBytes = remaining;
+                    final long start = System.currentTimeMillis();
+                    final long startBytes = remaining;
 
-                    while (lastTermId == -1 || recorded < totalRecordingLength)
+                    while (lastTermId == -1)
                     {
                         TestUtil.waitFor(() -> recordingEventsAdapter.poll() != 0);
-
-                        final long end = System.currentTimeMillis();
-                        final long deltaTime = end - start;
-                        if (deltaTime > TIMEOUT_MS)
-                        {
-                            start = end;
-                            final long deltaBytes = remaining - startBytes;
-                            startBytes = remaining;
-                            final double rate = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
-                            printf("Archive reported rate: %.02f MB/s %n", rate);
-                        }
                     }
 
                     final long deltaTime = System.currentTimeMillis() - start;
                     final long deltaBytes = remaining - startBytes;
-                    final double rate = ((deltaBytes * 1000.0) / deltaTime) / MEGABYTE;
+                    final double rate = ((deltaBytes * 1000.0d) / deltaTime) / MEGABYTE;
                     printf("Archive reported rate: %.02f MB/s %n", rate);
                 }
                 catch (final Throwable throwable)

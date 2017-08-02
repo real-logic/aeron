@@ -165,6 +165,7 @@ public class ArchiveReplayLoadTest
             startChannelDrainingSubscription(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
 
             final int messageCount = prepAndSendMessages(recordingEvents, publication);
+            publication.close();
 
             assertNull(trackerError);
             println("All data arrived");

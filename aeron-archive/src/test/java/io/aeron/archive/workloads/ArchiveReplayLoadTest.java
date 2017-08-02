@@ -55,16 +55,16 @@ import static org.junit.Assert.assertThat;
 @Ignore
 public class ArchiveReplayLoadTest
 {
-    static final String CONTROL_URI = "aeron:udp?endpoint=127.0.0.1:54327";
+    static final String CONTROL_URI = "aeron:udp?endpoint=localhost:54327";
     static final int CONTROL_STREAM_ID = 100;
-    static final int TEST_DURATION_SEC = 20;
 
-    private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
+    private static final int TEST_DURATION_SEC = 20;
+    private static final String REPLAY_URI = "aeron:udp?endpoint=localhost:54326";
 
     private static final String PUBLISH_URI = new ChannelUriStringBuilder()
         .media("ipc")
         .mtu(16 * 1024)
-        .termLength(32 * 1024 * 1024)
+        .termLength(64 * 1024 * 1024)
         .build();
 
     private static final int PUBLISH_STREAM_ID = 1;

@@ -41,9 +41,6 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
 import static io.aeron.archive.TestUtil.*;
-import static io.aeron.archive.workloads.ArchiveReplayLoadTest.CONTROL_STREAM_ID;
-import static io.aeron.archive.workloads.ArchiveReplayLoadTest.CONTROL_URI;
-import static io.aeron.archive.workloads.ArchiveReplayLoadTest.TEST_DURATION_SEC;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -52,6 +49,9 @@ import static org.junit.Assert.fail;
 @Ignore
 public class ArchiveRecordingLoadTest
 {
+    private static final String CONTROL_URI = "aeron:udp?endpoint=localhost:54327";
+    private static final int CONTROL_STREAM_ID = 100;
+
     private static final String PUBLISH_URI = new ChannelUriStringBuilder()
         .media("ipc")
         .mtu(16 * 1024)

@@ -193,7 +193,7 @@ int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication)
 void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, int64_t min_sub_pos)
 {
     int64_t cleaning_position = publication->conductor_fields.cleaning_position;
-    size_t dirty_index = aeron_logbuffer_index_by_position(min_sub_pos, publication->position_bits_to_shift);
+    size_t dirty_index = aeron_logbuffer_index_by_position(cleaning_position, publication->position_bits_to_shift);
     int32_t bytes_to_clean = (int32_t)(min_sub_pos - cleaning_position);
     int32_t term_length = (int32_t)publication->mapped_raw_log.term_length;
     int32_t term_offset = (int32_t)(cleaning_position & (term_length - 1));
@@ -203,7 +203,7 @@ void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, in
     if (0 < length)
     {
         memset(publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset, 0, length);
-        publication->conductor_fields.cleaning_position = min_sub_pos;
+        publication->conductor_fields.cleaning_position = cleaning_position + length;
     }
 }
 

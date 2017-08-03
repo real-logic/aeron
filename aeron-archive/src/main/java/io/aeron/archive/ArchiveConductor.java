@@ -191,7 +191,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
      */
     private void onAvailableControlImage(final Image image)
     {
-        addSession(new ControlSession(image, this, epochClock));
+        addSession(new ControlSession(image, this, epochClock, controlSessionProxy));
     }
 
     void stopRecording(

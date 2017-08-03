@@ -56,6 +56,7 @@ class ListRecordingsSession extends AbstractListRecordingsSession
                 final int bytesSent = controlSession.sendDescriptor(correlationId, descriptorBuffer, proxy);
                 if (bytesSent == 0)
                 {
+                    isDone = controlSession.isDone();
                     break;
                 }
                 totalBytesSent += bytesSent;

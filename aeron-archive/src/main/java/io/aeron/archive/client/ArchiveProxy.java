@@ -29,7 +29,7 @@ import static io.aeron.archive.client.AeronArchive.Configuration.MESSAGE_TIMEOUT
 public class ArchiveProxy
 {
     /**
-     * Default maximum number of retry attempts to be made at offering request messages.
+     * Default maximum number of retry attempts to be made at offering requests.
      */
     public static final int DEFAULT_MAX_RETRY_ATTEMPTS = 3;
 

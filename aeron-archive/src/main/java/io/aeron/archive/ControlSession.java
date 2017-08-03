@@ -49,6 +49,7 @@ class ControlSession implements Session, ControlRequestListener
     }
 
     static final long TIMEOUT_MS = 5000L;
+    private static final int NO_ACTIVE_DEADLINE = -1;
     private static final int FRAGMENT_LIMIT = 16;
 
     private final Image image;
@@ -56,7 +57,7 @@ class ControlSession implements Session, ControlRequestListener
     private final EpochClock epochClock;
     private final FragmentHandler adapter = new ImageFragmentAssembler(new ControlRequestAdapter(this));
     private ArrayDeque<AbstractListRecordingsSession> listRecordingsSessions = new ArrayDeque<>();
-    private ManyToOneConcurrentLinkedQueue<Supplier<Boolean>> responseQueue = new ManyToOneConcurrentLinkedQueue<>();
+    private ManyToOneConcurrentLinkedQueue<Supplier<Boolean>> queuedResponses = new ManyToOneConcurrentLinkedQueue<>();
     private final ControlResponseProxy controlResponseProxy;
     private Publication controlPublication;
     private State state = State.INIT;
@@ -268,19 +269,19 @@ class ControlSession implements Session, ControlRequestListener
         }
         else
         {
-            if (responseQueue.isEmpty())
+            if (queuedResponses.isEmpty())
             {
                 workCount += image.poll(adapter, FRAGMENT_LIMIT);
             }
             else
             {
-                if (resend())
+                if (resend(queuedResponses))
                 {
-                    responseQueue.poll();
-                    timeoutDeadlineMs = -1;
+                    queuedResponses.poll();
+                    timeoutDeadlineMs = NO_ACTIVE_DEADLINE;
                     workCount++;
                 }
-                else if (timeoutDeadlineMs == -1)
+                else if (timeoutDeadlineMs == NO_ACTIVE_DEADLINE)
                 {
                     timeoutDeadlineMs = epochClock.time() + TIMEOUT_MS;
                 }
@@ -294,7 +295,7 @@ class ControlSession implements Session, ControlRequestListener
         return workCount;
     }
 
-    private Boolean resend()
+    private static boolean resend(final ManyToOneConcurrentLinkedQueue<Supplier<Boolean>> responseQueue)
     {
         return responseQueue.peek().get();
     }
@@ -305,7 +306,7 @@ class ControlSession implements Session, ControlRequestListener
 
         if (controlPublication == null)
         {
-            if (timeoutDeadlineMs == -1)
+            if (timeoutDeadlineMs == NO_ACTIVE_DEADLINE)
             {
                 timeoutDeadlineMs = epochClock.time() + TIMEOUT_MS;
             }
@@ -322,7 +323,7 @@ class ControlSession implements Session, ControlRequestListener
         }
         else if (controlPublication.isConnected())
         {
-            timeoutDeadlineMs = -1;
+            timeoutDeadlineMs = NO_ACTIVE_DEADLINE;
             state = State.ACTIVE;
             workCount += 1;
         }
@@ -337,13 +338,13 @@ class ControlSession implements Session, ControlRequestListener
 
     private boolean hasGoneInactive()
     {
-        return timeoutDeadlineMs != -1 && epochClock.time() > timeoutDeadlineMs;
+        return timeoutDeadlineMs != NO_ACTIVE_DEADLINE && epochClock.time() > timeoutDeadlineMs;
     }
 
     private void queueResponse(
         final long correlationId, final long relevantId, final ControlResponseCode code, final String message)
     {
-        responseQueue.offer(
+        queuedResponses.offer(
             () -> controlResponseProxy.sendResponse(correlationId, relevantId, code, message, controlPublication));
     }
 }

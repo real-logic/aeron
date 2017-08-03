@@ -85,7 +85,7 @@ public class BasicArchiveTest
     @After
     public void after() throws Exception
     {
-        CloseHelper.close(aeron);
+        CloseHelper.close(aeronArchive);
         CloseHelper.close(archive);
         CloseHelper.close(driver);
 

@@ -26,9 +26,7 @@ import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FrameDescriptor;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
@@ -41,7 +39,9 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
 import static io.aeron.archive.TestUtil.*;
+import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static junit.framework.TestCase.assertTrue;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -63,8 +63,7 @@ public class ArchiveRecordingLoadTest
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
     private static final int MESSAGE_COUNT = 2000000;
-    private final UnsafeBuffer buffer =
-        new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT));
     private final Random rnd = new Random();
     private final long seed = System.nanoTime();
 
@@ -130,14 +129,14 @@ public class ArchiveRecordingLoadTest
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlRequest);
             initRecordingStartIndicator(recordingEvents);
             initRecordingEndIndicator(recordingEvents);
-            TestUtil.awaitPublicationIsConnected(controlRequest);
-            TestUtil.awaitSubscriptionIsConnected(recordingEvents);
+            TestUtil.awaitPublicationConnected(controlRequest);
+            TestUtil.awaitSubscriptionConnected(recordingEvents);
             println("Archive service connected");
 
             final Subscription controlResponse = aeron.addSubscription(
                 CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
             assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID));
-            TestUtil.awaitSubscriptionIsConnected(controlResponse);
+            TestUtil.awaitSubscriptionConnected(controlResponse);
             println("Client connected");
 
             long start;
@@ -149,15 +148,15 @@ public class ArchiveRecordingLoadTest
             while (System.currentTimeMillis() < duration)
             {
                 final long startRecordingCorrelationId = this.correlationId++;
-                waitFor(() -> archiveProxy.startRecording(
+                await(() -> archiveProxy.startRecording(
                     channel, PUBLISH_STREAM_ID, SourceLocation.LOCAL, startRecordingCorrelationId));
-                waitForOk(controlResponse, startRecordingCorrelationId);
+                awaitOk(controlResponse, startRecordingCorrelationId);
                 println("Recording requested");
 
                 try (ExclusivePublication publication = aeron.addExclusivePublication(PUBLISH_URI, PUBLISH_STREAM_ID))
                 {
-                    awaitPublicationIsConnected(publication);
-                    waitFor(recordingStartedIndicator);
+                    awaitPublicationConnected(publication);
+                    await(recordingStartedIndicator);
 
                     start = System.currentTimeMillis();
 
@@ -166,7 +165,7 @@ public class ArchiveRecordingLoadTest
 
                 while (!doneRecording)
                 {
-                    waitFor(recordingEndIndicator);
+                    await(recordingEndIndicator);
                 }
 
                 doneRecording = false;
@@ -175,8 +174,8 @@ public class ArchiveRecordingLoadTest
                 printScore(System.currentTimeMillis() - start);
 
                 final long stopRecordingCorrelationId = this.correlationId++;
-                waitFor(() -> archiveProxy.stopRecording(channel, PUBLISH_STREAM_ID, stopRecordingCorrelationId));
-                waitForOk(controlResponse, stopRecordingCorrelationId);
+                await(() -> archiveProxy.stopRecording(channel, PUBLISH_STREAM_ID, stopRecordingCorrelationId));
+                awaitOk(controlResponse, stopRecordingCorrelationId);
             }
 
             println("All data arrived");
@@ -256,15 +255,16 @@ public class ArchiveRecordingLoadTest
 
     private void publishDataToBeRecorded(final ExclusivePublication publication, final int messageCount)
     {
-        final int positionBitsToShift = Integer.numberOfTrailingZeros(publication.termBufferLength());
+        final int termLength = publication.termBufferLength();
+        final int positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
 
         buffer.setMemory(0, 1024, (byte)'z');
         buffer.putStringAscii(32, "TEST");
+
+        final int initialTermId = publication.initialTermId();
         final long startPosition = publication.position();
-        final int startTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(
-            startPosition, positionBitsToShift);
-        final int startTermIdFromPosition = LogBufferDescriptor.computeTermIdFromPosition(
-            startPosition, positionBitsToShift, publication.initialTermId());
+        final int startTermOffset = computeTermOffsetFromPosition(startPosition, positionBitsToShift);
+        final int startTermId = computeTermIdFromPosition(startPosition, positionBitsToShift, initialTermId);
 
         for (int i = 0; i < messageCount; i++)
         {
@@ -274,12 +274,9 @@ public class ArchiveRecordingLoadTest
         }
 
         final long position = publication.position();
-        final int lastTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(position, positionBitsToShift);
-        final int lastTermIdFromPosition = LogBufferDescriptor.computeTermIdFromPosition(
-            position, positionBitsToShift, publication.initialTermId());
-        totalRecordingLength =
-            (lastTermIdFromPosition - startTermIdFromPosition) * publication.termBufferLength() +
-                (lastTermOffset - startTermOffset);
+        final int lastTermOffset = computeTermOffsetFromPosition(position, positionBitsToShift);
+        final int lastTermId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
+        totalRecordingLength = (lastTermId - startTermId) * termLength + (lastTermOffset - startTermOffset);
 
         assertThat(position - startPosition, is(totalRecordingLength));
     }

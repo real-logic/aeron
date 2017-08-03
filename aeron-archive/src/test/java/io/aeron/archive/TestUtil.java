@@ -79,7 +79,7 @@ public class TestUtil
         }
     }
 
-    public static void waitForOk(final Subscription controlResponse, final long expectedCorrelationId)
+    public static void awaitOk(final Subscription controlResponse, final long expectedCorrelationId)
     {
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
@@ -99,10 +99,10 @@ public class TestUtil
             1
         );
 
-        waitFor(() -> controlResponseAdapter.poll() != 0);
+        await(() -> controlResponseAdapter.poll() != 0);
     }
 
-    static void waitForNotFound(final Subscription controlResponse, final long expectedCorrelationId)
+    static void awaitResponse(final Subscription controlResponse, final long expectedCorrelationId)
     {
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
@@ -120,17 +120,17 @@ public class TestUtil
             1
         );
 
-        waitFor(() -> controlResponseAdapter.poll() != 0);
+        await(() -> controlResponseAdapter.poll() != 0);
     }
 
     static void poll(final Subscription subscription, final FragmentHandler handler)
     {
-        waitFor(() -> subscription.poll(handler, 1) > 0);
+        await(() -> subscription.poll(handler, 1) > 0);
     }
 
     public static void offer(final Publication publication, final UnsafeBuffer buffer, final int length)
     {
-        waitFor(
+        await(
             () ->
             {
                 final long result = publication.offer(buffer, 0, length);
@@ -149,7 +149,7 @@ public class TestUtil
 
     static void offer(final ExclusivePublication publication, final UnsafeBuffer buffer, final int length)
     {
-        waitFor(
+        await(
             () ->
             {
                 final long result = publication.offer(buffer, 0, length);
@@ -166,7 +166,7 @@ public class TestUtil
             });
     }
 
-    public static void waitFor(final BooleanSupplier conditionSupplier)
+    public static void await(final BooleanSupplier conditionSupplier)
     {
         final long deadlineMs = System.currentTimeMillis() + TIMEOUT_MS;
         while (!conditionSupplier.getAsBoolean())
@@ -179,19 +179,19 @@ public class TestUtil
         }
     }
 
-    public static void awaitSubscriptionIsConnected(final Subscription subscription)
+    public static void awaitSubscriptionConnected(final Subscription subscription)
     {
-        waitFor(() -> subscription.imageCount() > 0);
+        await(() -> subscription.imageCount() > 0);
     }
 
-    public static void awaitPublicationIsConnected(final Publication publication)
+    public static void awaitPublicationConnected(final Publication publication)
     {
-        waitFor(publication::isConnected);
+        await(publication::isConnected);
     }
 
-    public static void awaitPublicationIsConnected(final ExclusivePublication publication)
+    public static void awaitPublicationConnected(final ExclusivePublication publication)
     {
-        waitFor(publication::isConnected);
+        await(publication::isConnected);
     }
 
     static RecordingFragmentReader newRecordingFragmentReader(

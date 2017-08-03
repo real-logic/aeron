@@ -31,7 +31,6 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -44,12 +43,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.TestUtil.*;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static junit.framework.TestCase.assertTrue;
+import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static org.agrona.BufferUtil.allocateDirectAligned;
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 @Ignore
 public class ArchiveReplayLoadTest
@@ -137,25 +137,25 @@ public class ArchiveReplayLoadTest
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlRequest);
 
-            awaitPublicationIsConnected(controlRequest);
-            awaitSubscriptionIsConnected(recordingEvents);
+            awaitPublicationConnected(controlRequest);
+            awaitSubscriptionConnected(recordingEvents);
             println("Archive service connected");
 
             final Subscription controlResponse = aeronClient.addSubscription(
                 CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
             assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID));
-            awaitSubscriptionIsConnected(controlResponse);
+            awaitSubscriptionConnected(controlResponse);
             println("Client connected");
 
             final long startRecordingCorrelationId = this.correlationId++;
             final String recordingUri = PUBLISH_URI;
-            waitFor(() -> archiveProxy.startRecording(
+            await(() -> archiveProxy.startRecording(
                 recordingUri, PUBLISH_STREAM_ID, SourceLocation.LOCAL, startRecordingCorrelationId));
             println("Recording requested");
-            waitForOk(controlResponse, startRecordingCorrelationId);
+            awaitOk(controlResponse, startRecordingCorrelationId);
 
             final Publication publication = aeronClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
-            awaitPublicationIsConnected(publication);
+            awaitPublicationConnected(publication);
             startDrainingSubscriber(aeronClient, PUBLISH_URI, PUBLISH_STREAM_ID);
 
             final int messageCount = prepAndSendMessages(recordingEvents, publication);
@@ -166,8 +166,8 @@ public class ArchiveReplayLoadTest
 
             println("Request stop recording");
             final long requestStopCorrelationId = this.correlationId++;
-            waitFor(() -> archiveProxy.stopRecording(recordingUri, PUBLISH_STREAM_ID, requestStopCorrelationId));
-            waitForOk(controlResponse, requestStopCorrelationId);
+            await(() -> archiveProxy.stopRecording(recordingUri, PUBLISH_STREAM_ID, requestStopCorrelationId));
+            awaitOk(controlResponse, requestStopCorrelationId);
 
             final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
             int i = 0;
@@ -206,10 +206,11 @@ public class ArchiveReplayLoadTest
 
     private void publishDataToRecorded(final Publication publication, final int messageCount)
     {
-        final int positionBitsToShift = Integer.numberOfTrailingZeros(publication.termBufferLength());
         startPosition = publication.position();
-        final int initialTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(
-            startPosition, positionBitsToShift);
+
+        final int termLength = publication.termBufferLength();
+        final int positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+        final int initialTermOffset = computeTermOffsetFromPosition(startPosition, positionBitsToShift);
 
         buffer.setMemory(0, 1024, (byte)'z');
 
@@ -224,18 +225,16 @@ public class ArchiveReplayLoadTest
             offer(publication, buffer, messageLength);
         }
 
-        final int lastTermOffset = LogBufferDescriptor.computeTermOffsetFromPosition(
-            publication.position(), positionBitsToShift);
-        final int termIdFromPosition = LogBufferDescriptor.computeTermIdFromPosition(
-            publication.position(), positionBitsToShift, publication.initialTermId());
+        final int initialTermId = publication.initialTermId();
+        final long finalPosition = publication.position();
+        final int termOffset = computeTermOffsetFromPosition(finalPosition, positionBitsToShift);
+        final int termId = computeTermIdFromPosition(finalPosition, positionBitsToShift, initialTermId);
 
-        totalRecordingLength =
-            (termIdFromPosition - publication.initialTermId()) * publication.termBufferLength() +
-                (lastTermOffset - initialTermOffset);
+        totalRecordingLength = (termId - initialTermId) * termLength + (termOffset - initialTermOffset);
 
-        assertThat(publication.position() - startPosition, is(totalRecordingLength));
+        assertThat(finalPosition - startPosition, is(totalRecordingLength));
 
-        lastTermId = termIdFromPosition;
+        lastTermId = termId;
     }
 
     private void validateReplay(final ArchiveProxy archiveProxy, final int messageCount)
@@ -246,7 +245,7 @@ public class ArchiveReplayLoadTest
         {
             final long correlationId = this.correlationId++;
 
-            TestUtil.waitFor(() -> archiveProxy.replay(
+            TestUtil.await(() -> archiveProxy.replay(
                 recordingId,
                 startPosition,
                 totalRecordingLength,
@@ -254,7 +253,7 @@ public class ArchiveReplayLoadTest
                 replayStreamId,
                 correlationId));
 
-            awaitSubscriptionIsConnected(replay);
+            awaitSubscriptionConnected(replay);
 
             fragmentCount = 0;
             remaining = totalPayloadLength;
@@ -317,7 +316,7 @@ public class ArchiveReplayLoadTest
 
                     while (lastTermId == -1)
                     {
-                        TestUtil.waitFor(() -> recordingEventsAdapter.poll() != 0);
+                        TestUtil.await(() -> recordingEventsAdapter.poll() != 0);
                     }
 
                     final long deltaTime = System.currentTimeMillis() - start;

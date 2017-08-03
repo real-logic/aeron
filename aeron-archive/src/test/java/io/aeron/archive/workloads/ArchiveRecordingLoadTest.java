@@ -283,10 +283,10 @@ public class ArchiveRecordingLoadTest
 
     private void offer(final ExclusivePublication publication, final UnsafeBuffer buffer, final int length)
     {
-        final long limit = System.currentTimeMillis() + TestUtil.TIMEOUT_MS;
         if (publication.offer(buffer, 0, length) < 0)
         {
-            slowOffer(publication, buffer, length, limit);
+            final long deadlineNs = System.currentTimeMillis() + TestUtil.TIMEOUT_MS;
+            slowOffer(publication, buffer, length, deadlineNs);
         }
     }
 
@@ -294,9 +294,9 @@ public class ArchiveRecordingLoadTest
         final ExclusivePublication publication,
         final UnsafeBuffer buffer,
         final int length,
-        final long limit)
+        final long deadlineNs)
     {
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 3; i++)
         {
             if (publication.offer(buffer, 0, length) > 0)
             {
@@ -317,7 +317,7 @@ public class ArchiveRecordingLoadTest
         while (publication.offer(buffer, 0, length) < 0)
         {
             LockSupport.parkNanos(TIMEOUT_MS);
-            if (limit < System.currentTimeMillis())
+            if (System.currentTimeMillis() > deadlineNs)
             {
                 fail("Offer has timed out");
             }

@@ -60,7 +60,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             errorHandler,
             ctx.errorCounter(),
             closeQueue,
-            new ControlSessionProxy());
+            new ControlResponseProxy());
     }
 
     protected int preWork()
@@ -115,7 +115,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             } else if (session instanceof ReplaySession)
             {
                 final ReplaySession replaySession = (ReplaySession) session;
-                replaySession.setThreadLocalControlSessionProxy(controlSessionProxy);
+                replaySession.setThreadLocalControlResponseProxy(controlResponseProxy);
                 closeReplaySession(replaySession);
             } else
             {
@@ -148,13 +148,13 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
     private static class DedicatedModeReplayer extends DedicatedModeSessionWorker<ReplaySession>
     {
         private final ManyToOneConcurrentArrayQueue<Session> closeQueue;
-        private final ControlSessionProxy proxy;
+        private final ControlResponseProxy proxy;
 
         DedicatedModeReplayer(
             final ErrorHandler errorHandler,
             final AtomicCounter errorCounter,
             final ManyToOneConcurrentArrayQueue<Session> closeQueue,
-            final ControlSessionProxy proxy)
+            final ControlResponseProxy proxy)
         {
             super("archive-replayer", errorHandler, errorCounter);
             this.closeQueue = closeQueue;
@@ -163,7 +163,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
 
         protected void postSessionAdd(final ReplaySession session)
         {
-            session.setThreadLocalControlSessionProxy(proxy);
+            session.setThreadLocalControlResponseProxy(proxy);
         }
 
         protected void closeSession(final ReplaySession session)

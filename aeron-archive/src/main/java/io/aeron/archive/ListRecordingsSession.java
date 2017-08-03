@@ -27,7 +27,7 @@ class ListRecordingsSession extends AbstractListRecordingsSession
         final long fromRecordingId,
         final int count,
         final Catalog catalog,
-        final ControlSessionProxy proxy,
+        final ControlResponseProxy proxy,
         final ControlSession controlSession,
         final UnsafeBuffer descriptorBuffer)
     {

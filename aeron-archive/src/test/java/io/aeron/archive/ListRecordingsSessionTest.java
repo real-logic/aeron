@@ -28,7 +28,7 @@ public class ListRecordingsSessionTest
 
     private Catalog catalog;
     private final long correlationId = 1;
-    private final ControlSessionProxy controlSessionProxy = mock(ControlSessionProxy.class);
+    private final ControlResponseProxy controlResponseProxy = mock(ControlResponseProxy.class);
     private final ControlSession controlSession = mock(ControlSession.class);
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
 
@@ -59,17 +59,17 @@ public class ListRecordingsSessionTest
             0,
             3,
             catalog,
-            controlSessionProxy,
+            controlResponseProxy,
             controlSession,
             descriptorBuffer);
         session.doWork();
         assertThat(session.isDone(), is(false));
         when(controlSession.maxPayloadLength()).thenReturn(8096);
         final MutableLong counter = new MutableLong(0);
-        when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy)))
+        when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy)))
             .then(verifySendDescriptor(counter));
         session.doWork();
-        verify(controlSession, times(3)).sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy));
+        verify(controlSession, times(3)).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
     }
 
     @Test
@@ -81,7 +81,7 @@ public class ListRecordingsSessionTest
             fromId,
             2,
             catalog,
-            controlSessionProxy,
+            controlResponseProxy,
             controlSession,
             descriptorBuffer);
 
@@ -89,10 +89,10 @@ public class ListRecordingsSessionTest
         assertThat(session.isDone(), is(false));
         when(controlSession.maxPayloadLength()).thenReturn(8096);
         final MutableLong counter = new MutableLong(fromId);
-        when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy)))
+        when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy)))
             .then(verifySendDescriptor(counter));
         session.doWork();
-        verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy));
+        verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
     }
 
     @Test
@@ -104,7 +104,7 @@ public class ListRecordingsSessionTest
             fromRecordingId,
             1,
             catalog,
-            controlSessionProxy,
+            controlResponseProxy,
             controlSession,
             descriptorBuffer);
 
@@ -112,15 +112,15 @@ public class ListRecordingsSessionTest
         assertThat(session.isDone(), is(false));
         when(controlSession.maxPayloadLength()).thenReturn(8096);
 
-        when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy))).thenReturn(0);
+        when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy))).thenReturn(0);
         session.doWork();
-        verify(controlSession, times(1)).sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy));
+        verify(controlSession, times(1)).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
 
         final MutableLong counter = new MutableLong(fromRecordingId);
-        when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy)))
+        when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy)))
             .then(verifySendDescriptor(counter));
         session.doWork();
-        verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy));
+        verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
     }
 
     @Test
@@ -131,7 +131,7 @@ public class ListRecordingsSessionTest
             1,
             3,
             catalog,
-            controlSessionProxy,
+            controlResponseProxy,
             controlSession,
             descriptorBuffer);
 
@@ -139,11 +139,11 @@ public class ListRecordingsSessionTest
         assertThat(session.isDone(), is(false));
         when(controlSession.maxPayloadLength()).thenReturn(8096);
         final MutableLong counter = new MutableLong(1);
-        when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy)))
+        when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy)))
             .then(verifySendDescriptor(counter));
         session.doWork();
-        verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy));
-        verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(3L), eq(controlSessionProxy));
+        verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
+        verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(3L), eq(controlResponseProxy));
     }
 
     @Test
@@ -156,14 +156,14 @@ public class ListRecordingsSessionTest
             3,
             3,
             catalog,
-            controlSessionProxy,
+            controlResponseProxy,
             controlSession,
             descriptorBuffer);
 
         session.doWork();
 
-        verify(controlSession, never()).sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy));
-        verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(3L), eq(controlSessionProxy));
+        verify(controlSession, never()).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
+        verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(3L), eq(controlResponseProxy));
     }
 
 

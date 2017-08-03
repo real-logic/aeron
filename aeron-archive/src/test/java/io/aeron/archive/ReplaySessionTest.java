@@ -72,7 +72,7 @@ public class ReplaySessionTest
     private int messageCounter = 0;
 
     private File archiveDir = makeTempDir();
-    private ControlSessionProxy proxy = mock(ControlSessionProxy.class);
+    private ControlResponseProxy proxy = mock(ControlResponseProxy.class);
     private EpochClock epochClock = mock(EpochClock.class);
     private RecordingWriter.Context context;
     private long positionLong;

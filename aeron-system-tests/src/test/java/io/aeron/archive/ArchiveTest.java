@@ -83,7 +83,7 @@ public class ArchiveTest
     private final long seed = System.nanoTime();
 
     @Rule
-    public final TestWatcher testWatcher = TestUtil.newWatcher(ArchiveTest.class, seed);
+    public final TestWatcher testWatcher = TestUtil.newWatcher(this.getClass(), seed);
 
     private String publishUri;
     private Aeron publishingClient;

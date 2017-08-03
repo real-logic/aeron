@@ -49,8 +49,8 @@ import static org.junit.Assert.fail;
 @Ignore
 public class ArchiveRecordingLoadTest
 {
-    private static final String CONTROL_URI = "aeron:udp?endpoint=localhost:54327";
-    private static final int CONTROL_STREAM_ID = 100;
+    private static final String CONTROL_RESPONSE_URI = "aeron:udp?endpoint=localhost:54327";
+    private static final int CONTROL_RESPONSE_STREAM_ID = 100;
 
     private static final String PUBLISH_URI = new ChannelUriStringBuilder()
         .media("ipc")
@@ -69,7 +69,7 @@ public class ArchiveRecordingLoadTest
     private final long seed = System.nanoTime();
 
     @Rule
-    public final TestWatcher testWatcher = TestUtil.newWatcher(ArchiveRecordingLoadTest.class, seed);
+    public final TestWatcher testWatcher = TestUtil.newWatcher(this.getClass(), seed);
 
     private Aeron aeron;
     private Archive archive;
@@ -90,23 +90,20 @@ public class ArchiveRecordingLoadTest
     {
         rnd.setSeed(seed);
 
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .threadingMode(ThreadingMode.DEDICATED)
-            .useConcurrentCounterManager(true)
-            .errorHandler(Throwable::printStackTrace)
-            .dirsDeleteOnStart(true);
+        driver = MediaDriver.launch(
+            new MediaDriver.Context()
+                .threadingMode(ThreadingMode.DEDICATED)
+                .useConcurrentCounterManager(true)
+                .errorHandler(Throwable::printStackTrace)
+                .dirsDeleteOnStart(true));
 
-        driver = MediaDriver.launch(driverCtx);
-
-        final Archive.Context archiverCtx = new Archive.Context()
-            .fileSyncLevel(2)
-            .archiveDir(TestUtil.makeTempDir())
-            .threadingMode(ArchiveThreadingMode.DEDICATED)
-            .countersManager(driverCtx.countersManager())
-            .errorHandler(driverCtx.errorHandler());
-
-        archive = Archive.launch(archiverCtx);
-        println("Archive started, dir: " + archiverCtx.archiveDir().getAbsolutePath());
+        archive = Archive.launch(
+            new Archive.Context()
+                .fileSyncLevel(2)
+                .archiveDir(TestUtil.makeTempDir())
+                .threadingMode(ArchiveThreadingMode.DEDICATED)
+                .countersManager(driver.context().countersManager())
+                .errorHandler(driver.context().errorHandler()));
 
         aeron = Aeron.connect();
     }
@@ -137,8 +134,9 @@ public class ArchiveRecordingLoadTest
             TestUtil.awaitSubscriptionIsConnected(recordingEvents);
             println("Archive service connected");
 
-            final Subscription controlResponse = aeron.addSubscription(CONTROL_URI, CONTROL_STREAM_ID);
-            assertTrue(archiveProxy.connect(CONTROL_URI, CONTROL_STREAM_ID));
+            final Subscription controlResponse = aeron.addSubscription(
+                CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
+            assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID));
             TestUtil.awaitSubscriptionIsConnected(controlResponse);
             println("Client connected");
 

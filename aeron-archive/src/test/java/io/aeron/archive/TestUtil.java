@@ -179,17 +179,17 @@ public class TestUtil
         }
     }
 
-    public static void awaitSubscriptionConnected(final Subscription subscription)
+    public static void awaitConnected(final Subscription subscription)
     {
         await(() -> subscription.imageCount() > 0);
     }
 
-    public static void awaitPublicationConnected(final Publication publication)
+    public static void awaitConnected(final Publication publication)
     {
         await(publication::isConnected);
     }
 
-    public static void awaitPublicationConnected(final ExclusivePublication publication)
+    public static void awaitConnected(final ExclusivePublication publication)
     {
         await(publication::isConnected);
     }

@@ -129,14 +129,14 @@ public class ArchiveRecordingLoadTest
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlRequest);
             initRecordingStartIndicator(recordingEvents);
             initRecordingEndIndicator(recordingEvents);
-            TestUtil.awaitPublicationConnected(controlRequest);
-            TestUtil.awaitSubscriptionConnected(recordingEvents);
+            awaitConnected(controlRequest);
+            awaitConnected(recordingEvents);
             println("Archive service connected");
 
             final Subscription controlResponse = aeron.addSubscription(
                 CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
             assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID));
-            TestUtil.awaitSubscriptionConnected(controlResponse);
+            awaitConnected(controlResponse);
             println("Client connected");
 
             long start;
@@ -155,7 +155,7 @@ public class ArchiveRecordingLoadTest
 
                 try (ExclusivePublication publication = aeron.addExclusivePublication(PUBLISH_URI, PUBLISH_STREAM_ID))
                 {
-                    awaitPublicationConnected(publication);
+                    awaitConnected(publication);
                     await(recordingStartedIndicator);
 
                     start = System.currentTimeMillis();

@@ -137,14 +137,14 @@ public class ArchiveReplayLoadTest
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlRequest);
 
-            awaitPublicationConnected(controlRequest);
-            awaitSubscriptionConnected(recordingEvents);
+            awaitConnected(controlRequest);
+            awaitConnected(recordingEvents);
             println("Archive service connected");
 
             final Subscription controlResponse = aeronClient.addSubscription(
                 CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
             assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID));
-            awaitSubscriptionConnected(controlResponse);
+            awaitConnected(controlResponse);
             println("Client connected");
 
             final long startRecordingCorrelationId = this.correlationId++;
@@ -155,7 +155,7 @@ public class ArchiveReplayLoadTest
             awaitOk(controlResponse, startRecordingCorrelationId);
 
             final Publication publication = aeronClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
-            awaitPublicationConnected(publication);
+            awaitConnected(publication);
             startDrainingSubscriber(aeronClient, PUBLISH_URI, PUBLISH_STREAM_ID);
 
             final int messageCount = prepAndSendMessages(recordingEvents, publication);
@@ -253,7 +253,7 @@ public class ArchiveReplayLoadTest
                 replayStreamId,
                 correlationId));
 
-            awaitSubscriptionConnected(replay);
+            awaitConnected(replay);
 
             fragmentCount = 0;
             remaining = totalPayloadLength;

@@ -16,7 +16,6 @@
 package io.aeron.archive;
 
 import io.aeron.ExclusivePublication;
-import io.aeron.Publication;
 import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
@@ -63,7 +62,7 @@ public class ReplaySessionTest
     private static final long START_TIMESTAMP = 0L;
 
     private final ExclusivePublication mockReplayPub = mock(ExclusivePublication.class);
-    private final Publication mockControlPub = mock(Publication.class);
+    private final ControlSession mockControlSession = mock(ControlSession.class);
     private final ArchiveConductor.ReplayPublicationSupplier mockReplyPubSupplier =
         mock(ArchiveConductor.ReplayPublicationSupplier.class);
     private final AtomicCounter position = mock(AtomicCounter.class);
@@ -210,11 +209,8 @@ public class ReplaySessionTest
             FRAME_LENGTH,
             correlationId,
             mockReplayPub,
-            mockControlPub,
+            mockControlSession,
             mockReplyPubSupplier);
-
-        when(mockControlPub.isClosed()).thenReturn(false);
-        when(mockControlPub.isConnected()).thenReturn(true);
 
         when(mockReplayPub.isClosed()).thenReturn(false);
         when(mockReplayPub.isConnected()).thenReturn(false);
@@ -224,12 +220,11 @@ public class ReplaySessionTest
         assertEquals(replaySession.state(), ReplaySession.State.INIT);
 
         when(mockReplayPub.isConnected()).thenReturn(true);
-        when(mockControlPub.isConnected()).thenReturn(true);
 
         replaySession.doWork();
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        verify(proxy, times(1)).sendOkResponse(correlationId, mockControlPub);
+        verify(mockControlSession, times(1)).sendOkResponse(correlationId, proxy);
         verify(mockReplyPubSupplier).newReplayPublication(
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
@@ -257,7 +252,7 @@ public class ReplaySessionTest
             RECORDING_POSITION + 1,
             (long)FRAME_LENGTH,
             mockReplyPubSupplier,
-            mockControlPub,
+            mockControlSession,
             archiveDir,
             proxy,
             REPLAY_SESSION_ID,
@@ -279,11 +274,8 @@ public class ReplaySessionTest
             length,
             correlationId,
             mockReplayPub,
-            mockControlPub,
+            mockControlSession,
             mockReplyPubSupplier);
-
-        when(mockControlPub.isClosed()).thenReturn(false);
-        when(mockControlPub.isConnected()).thenReturn(true);
 
         when(mockReplayPub.isClosed()).thenReturn(false);
         when(mockReplayPub.isConnected()).thenReturn(false);
@@ -293,12 +285,11 @@ public class ReplaySessionTest
         assertEquals(replaySession.state(), ReplaySession.State.INIT);
 
         when(mockReplayPub.isConnected()).thenReturn(true);
-        when(mockControlPub.isConnected()).thenReturn(true);
 
         replaySession.doWork();
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        verify(proxy, times(1)).sendOkResponse(correlationId, mockControlPub);
+        verify(mockControlSession, times(1)).sendOkResponse(correlationId, proxy);
         verify(mockReplyPubSupplier).newReplayPublication(
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
@@ -333,17 +324,15 @@ public class ReplaySessionTest
             length,
             correlationId,
             mockReplayPub,
-            mockControlPub,
+            mockControlSession,
             mockReplyPubSupplier);
 
-        when(mockControlPub.isClosed()).thenReturn(false);
         when(mockReplayPub.isClosed()).thenReturn(false);
         when(mockReplayPub.isConnected()).thenReturn(true);
-        when(mockControlPub.isConnected()).thenReturn(true);
 
         replaySession.doWork();
 
-        verify(proxy, times(1)).sendOkResponse(correlationId, mockControlPub);
+        verify(mockControlSession, times(1)).sendOkResponse(correlationId, proxy);
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
         replaySession.abort();
@@ -364,11 +353,10 @@ public class ReplaySessionTest
             length,
             correlationId,
             mockReplayPub,
-            mockControlPub,
+            mockControlSession,
             mockReplyPubSupplier);
 
         when(mockReplayPub.isClosed()).thenReturn(false);
-        when(mockControlPub.isClosed()).thenReturn(false);
         when(mockReplayPub.isConnected()).thenReturn(false);
 
         replaySession.doWork();
@@ -422,11 +410,8 @@ public class ReplaySessionTest
                 length,
                 correlationId,
                 mockReplayPub,
-                mockControlPub,
+                mockControlSession,
                 mockReplyPubSupplier);
-
-            when(mockControlPub.isClosed()).thenReturn(false);
-            when(mockControlPub.isConnected()).thenReturn(true);
 
             when(mockReplayPub.isClosed()).thenReturn(false);
             when(mockReplayPub.isConnected()).thenReturn(false);
@@ -436,12 +421,11 @@ public class ReplaySessionTest
             assertEquals(replaySession.state(), ReplaySession.State.INIT);
 
             when(mockReplayPub.isConnected()).thenReturn(true);
-            when(mockControlPub.isConnected()).thenReturn(true);
 
             replaySession.doWork();
             assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-            verify(proxy, times(1)).sendOkResponse(correlationId, mockControlPub);
+            verify(mockControlSession, times(1)).sendOkResponse(correlationId, proxy);
             verify(mockReplyPubSupplier).newReplayPublication(
                 REPLAY_CHANNEL,
                 REPLAY_STREAM_ID,
@@ -531,7 +515,7 @@ public class ReplaySessionTest
         final long length,
         final long correlationId,
         final ExclusivePublication replay,
-        final Publication control,
+        final ControlSession control,
         final ArchiveConductor.ReplayPublicationSupplier conductor)
     {
         when(conductor.newReplayPublication(
@@ -554,7 +538,8 @@ public class ReplaySessionTest
             epochClock,
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
-            descriptorBuffer, position);
+            descriptorBuffer,
+            position);
     }
 
     private void validateFrame(final UnsafeBuffer buffer, final int message, final byte flags)

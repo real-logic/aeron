@@ -196,7 +196,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     void stopRecording(
         final long correlationId,
-        final Publication controlPublication,
+        final ControlSession controlSession,
         final String channel,
         final int streamId)
     {
@@ -208,28 +208,28 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             if (oldSubscription != null)
             {
                 oldSubscription.close();
-                controlSessionProxy.sendOkResponse(correlationId, controlPublication);
+                controlSession.sendOkResponse(correlationId, controlSessionProxy);
             }
             else
             {
-                controlSessionProxy.sendResponse(
+                controlSession.sendResponse(
                     correlationId,
                     ControlResponseCode.ERROR,
                     "No recording subscription found for: " + key,
-                    controlPublication);
+                    controlSessionProxy);
             }
         }
         catch (final Exception ex)
         {
             errorHandler.onError(ex);
-            controlSessionProxy.sendResponse(
-                correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlPublication);
+            controlSession.sendResponse(
+                correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlSessionProxy);
         }
     }
 
     void startRecordingSubscription(
         final long correlationId,
-        final Publication controlPublication,
+        final ControlSession controlSession,
         final String originalChannel,
         final int streamId,
         final SourceLocation sourceLocation)
@@ -238,11 +238,11 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         // limit.
         if (recordingSessionByIdMap.size() >= maxConcurrentRecordings)
         {
-            controlSessionProxy.sendResponse(
+            controlSession.sendResponse(
                 correlationId,
                 ControlResponseCode.ERROR,
                 "Max concurrent recordings reached: " + maxConcurrentRecordings,
-                controlPublication);
+                controlSessionProxy);
 
             return;
         }
@@ -265,35 +265,33 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                     null);
 
                 subscriptionMap.put(key, subscription);
-                controlSessionProxy.sendOkResponse(correlationId, controlPublication);
+                controlSession.sendOkResponse(correlationId, controlSessionProxy);
             }
             else
             {
-                controlSessionProxy.sendResponse(
+                controlSession.sendResponse(
                     correlationId,
                     ControlResponseCode.ERROR,
                     "Recording already setup for subscription: " + key,
-                    controlPublication);
+                    controlSessionProxy);
             }
         }
         catch (final Exception ex)
         {
             errorHandler.onError(ex);
-            controlSessionProxy.sendResponse(
-                correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlPublication);
+            controlSession.sendResponse(
+                correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlSessionProxy);
         }
     }
 
     ListRecordingsSession newListRecordingsSession(
         final long correlationId,
-        final Publication controlPublication,
         final long fromId,
         final int count,
         final ControlSession controlSession)
     {
         return new ListRecordingsSession(
             correlationId,
-            controlPublication,
             fromId,
             count,
             catalog,
@@ -304,7 +302,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     ListRecordingsForUriSession newListRecordingsForUriSession(
         final long correlationId,
-        final Publication controlPublication,
         final long fromRecordingId,
         final int count,
         final String channel,
@@ -313,7 +310,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         return new ListRecordingsForUriSession(
             correlationId,
-            controlPublication,
             fromRecordingId,
             count,
             channel,
@@ -327,7 +323,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     void startReplay(
         final long correlationId,
-        final Publication controlPublication,
+        final ControlSession controlSession,
         final int replayStreamId,
         final String replayChannel,
         final long recordingId,
@@ -336,11 +332,11 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         if (replaySessionByIdMap.size() >= maxConcurrentReplays)
         {
-            controlSessionProxy.sendResponse(
+            controlSession.sendResponse(
                 correlationId,
                 ControlResponseCode.ERROR,
                 "Max concurrent replays reached: " + maxConcurrentReplays,
-                controlPublication);
+                controlSessionProxy);
 
             return;
         }
@@ -348,11 +344,11 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final UnsafeBuffer descriptorBuffer = catalog.wrapDescriptor(recordingId);
         if (descriptorBuffer == null)
         {
-            controlSessionProxy.sendResponse(
+            controlSession.sendResponse(
                 correlationId,
                 ControlResponseCode.ERROR,
                 "Unknown recording : " + recordingId,
-                controlPublication);
+                controlSessionProxy);
 
             return;
         }
@@ -363,7 +359,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             position,
             length,
             newReplayPublication,
-            controlPublication,
+            controlSession,
             archiveDir,
             controlSessionProxy,
             newId,

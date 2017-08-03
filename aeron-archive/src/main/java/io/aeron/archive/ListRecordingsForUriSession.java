@@ -15,7 +15,6 @@
  */
 package io.aeron.archive;
 
-import io.aeron.Publication;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -34,7 +33,6 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
 
     ListRecordingsForUriSession(
         final long correlationId,
-        final Publication controlPublication,
         final long fromRecordingId,
         final int count,
         final String channel,
@@ -45,7 +43,7 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
         final UnsafeBuffer descriptorBuffer,
         final RecordingDescriptorDecoder recordingDescriptorDecoder)
     {
-        super(correlationId, controlPublication, catalog, proxy, controlSession, descriptorBuffer);
+        super(correlationId, catalog, proxy, controlSession, descriptorBuffer);
 
         this.recordingId = fromRecordingId;
         this.count = count;
@@ -60,12 +58,12 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
         int recordsScanned = 0;
 
         while (sent < count &&
-               totalBytesSent < controlPublication.maxPayloadLength() &&
+               totalBytesSent < controlSession.maxPayloadLength() &&
                recordsScanned < MAX_SCANS_PER_WORK_CYCLE)
         {
             if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
             {
-                proxy.sendRecordingUnknown(correlationId, recordingId, controlPublication);
+                controlSession.sendRecordingUnknown(correlationId, recordingId, proxy);
 
                 isDone = true;
                 break;
@@ -78,7 +76,7 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
                 decoder.strippedChannel().equals(channel) &&
                 isDescriptorValid(descriptorBuffer))
             {
-                final int bytesSent = proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
+                final int bytesSent = controlSession.sendDescriptor(correlationId, descriptorBuffer, proxy);
                 if (bytesSent == 0)
                 {
                     break;

@@ -15,7 +15,6 @@
  */
 package io.aeron.archive;
 
-import io.aeron.Publication;
 import org.agrona.concurrent.UnsafeBuffer;
 
 class ListRecordingsSession extends AbstractListRecordingsSession
@@ -25,7 +24,6 @@ class ListRecordingsSession extends AbstractListRecordingsSession
 
     ListRecordingsSession(
         final long correlationId,
-        final Publication controlPublication,
         final long fromRecordingId,
         final int count,
         final Catalog catalog,
@@ -33,7 +31,7 @@ class ListRecordingsSession extends AbstractListRecordingsSession
         final ControlSession controlSession,
         final UnsafeBuffer descriptorBuffer)
     {
-        super(correlationId, controlPublication, catalog, proxy, controlSession, descriptorBuffer);
+        super(correlationId, catalog, proxy, controlSession, descriptorBuffer);
 
         recordingId = fromRecordingId;
         limitId = fromRecordingId + count;
@@ -43,11 +41,11 @@ class ListRecordingsSession extends AbstractListRecordingsSession
     {
         int totalBytesSent = 0;
 
-        while (recordingId < limitId && totalBytesSent < controlPublication.maxPayloadLength())
+        while (recordingId < limitId && totalBytesSent < controlSession.maxPayloadLength())
         {
             if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
             {
-                proxy.sendRecordingUnknown(correlationId, recordingId, controlPublication);
+                controlSession.sendRecordingUnknown(correlationId, recordingId, proxy);
 
                 isDone = true;
                 break;
@@ -55,7 +53,7 @@ class ListRecordingsSession extends AbstractListRecordingsSession
 
             if (isDescriptorValid(descriptorBuffer))
             {
-                final int bytesSent = proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
+                final int bytesSent = controlSession.sendDescriptor(correlationId, descriptorBuffer, proxy);
                 if (bytesSent == 0)
                 {
                     break;

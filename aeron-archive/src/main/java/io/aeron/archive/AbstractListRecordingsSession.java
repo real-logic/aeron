@@ -15,7 +15,6 @@
  */
 package io.aeron.archive;
 
-import io.aeron.Publication;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -26,24 +25,21 @@ import static io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder.SCHEMA_VE
 abstract class AbstractListRecordingsSession implements Session
 {
     private final RecordingDescriptorHeaderDecoder headerDecoder = new RecordingDescriptorHeaderDecoder();
-    private final ControlSession controlSession;
     protected final UnsafeBuffer descriptorBuffer;
-    protected final Publication controlPublication;
     protected final Catalog catalog;
+    protected final ControlSession controlSession;
     protected final ControlSessionProxy proxy;
     protected final long correlationId;
     protected boolean isDone = false;
 
     AbstractListRecordingsSession(
         final long correlationId,
-        final Publication controlPublication,
         final Catalog catalog,
         final ControlSessionProxy proxy,
         final ControlSession controlSession,
         final UnsafeBuffer descriptorBuffer)
     {
         this.correlationId = correlationId;
-        this.controlPublication = controlPublication;
         this.controlSession = controlSession;
         this.catalog = catalog;
         this.proxy = proxy;

@@ -68,7 +68,7 @@ class ReplaySession implements Session
 
     private final long replaySessionId;
     private final long correlationId;
-    private final Publication controlPublication;
+    private final ControlSession controlSession;
     private final EpochClock epochClock;
 
     private final ExclusivePublication replayPublication;
@@ -82,7 +82,7 @@ class ReplaySession implements Session
         final long replayPosition,
         final long replayLength,
         final ReplayPublicationSupplier supplier,
-        final Publication controlPublication,
+        final ControlSession controlSession,
         final File archiveDir,
         final ControlSessionProxy threadLocalControlSessionProxy,
         final long replaySessionId,
@@ -93,7 +93,7 @@ class ReplaySession implements Session
         final UnsafeBuffer descriptorBuffer,
         final AtomicCounter recordingPosition)
     {
-        this.controlPublication = controlPublication;
+        this.controlSession = controlSession;
         this.threadLocalControlSessionProxy = threadLocalControlSessionProxy;
         this.replaySessionId = replaySessionId;
         this.correlationId = correlationId;
@@ -166,7 +166,7 @@ class ReplaySession implements Session
         }
 
         this.replayPublication = replayPublication;
-        threadLocalControlSessionProxy.sendOkResponse(correlationId, controlPublication);
+        controlSession.sendOkResponse(correlationId, threadLocalControlSessionProxy);
     }
 
     public void close()
@@ -303,13 +303,13 @@ class ReplaySession implements Session
     private int closeOnError(final Throwable ex, final String errorMessage)
     {
         state = State.INACTIVE;
-        if (controlPublication.isConnected())
+        if (!controlSession.isDone())
         {
-            threadLocalControlSessionProxy.sendResponse(
+            controlSession.sendResponse(
                 correlationId,
                 ControlResponseCode.ERROR,
                 errorMessage,
-                controlPublication);
+                threadLocalControlSessionProxy);
         }
 
         if (ex != null)

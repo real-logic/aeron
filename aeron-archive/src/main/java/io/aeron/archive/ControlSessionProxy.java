@@ -35,36 +35,29 @@ class ControlSessionProxy
     private final ControlResponseEncoder responseEncoder = new ControlResponseEncoder();
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
 
-    boolean sendOkResponse(final long correlationId, final Publication controlPublication)
+    int sendDescriptor(
+        final long correlationId,
+        final UnsafeBuffer descriptorBuffer,
+        final Publication controlPublication)
     {
-        return sendResponse(correlationId, ControlResponseCode.OK, null, controlPublication);
-    }
+        final int offset = Catalog.DESCRIPTOR_HEADER_LENGTH - HEADER_LENGTH;
+        final int length = descriptorBuffer.getInt(0) + HEADER_LENGTH;
 
-    boolean sendRecordingUnknown(final long correlationId, final long recordingId, final Publication controlPublication)
-    {
-        return sendResponse(
-            correlationId,
-            recordingId,
-            ControlResponseCode.RECORDING_UNKNOWN,
-            null,
-            controlPublication);
+        recordingDescriptorEncoder
+            .wrapAndApplyHeader(descriptorBuffer, offset, messageHeaderEncoder)
+            .correlationId(correlationId);
+
+        if (send(controlPublication, descriptorBuffer, offset, length))
+        {
+            return length;
+        }
+        else
+        {
+            return 0;
+        }
     }
 
     boolean sendResponse(
-        final long correlationId,
-        final ControlResponseCode code,
-        final String errorMessage,
-        final Publication controlPublication)
-    {
-        return sendResponse(
-            correlationId,
-            0,
-            code,
-            errorMessage,
-            controlPublication);
-    }
-
-    private boolean sendResponse(
         final long correlationId,
         final long relevantId,
         final ControlResponseCode code,
@@ -87,28 +80,6 @@ class ControlSessionProxy
         }
 
         return send(controlPublication, HEADER_LENGTH + responseEncoder.encodedLength());
-    }
-
-    int sendDescriptor(
-        final long correlationId,
-        final UnsafeBuffer descriptorBuffer,
-        final Publication controlPublication)
-    {
-        final int offset = Catalog.DESCRIPTOR_HEADER_LENGTH - HEADER_LENGTH;
-        final int length = descriptorBuffer.getInt(0) + HEADER_LENGTH;
-
-        recordingDescriptorEncoder
-            .wrapAndApplyHeader(descriptorBuffer, offset, messageHeaderEncoder)
-            .correlationId(correlationId);
-
-        if (send(controlPublication, descriptorBuffer, offset, length))
-        {
-            return length;
-        }
-        else
-        {
-            return 0;
-        }
     }
 
     private boolean send(final Publication controlPublication, final int length)

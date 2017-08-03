@@ -1,6 +1,5 @@
 package io.aeron.archive;
 
-import io.aeron.Publication;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
@@ -31,7 +30,6 @@ public class ListRecordingsForUriSessionTest
 
     private Catalog catalog;
     private final long correlationId = 1;
-    private final Publication controlPublication = mock(Publication.class);
     private final ControlSessionProxy controlSessionProxy = mock(ControlSessionProxy.class);
     private final ControlSession controlSession = mock(ControlSession.class);
 
@@ -63,7 +61,6 @@ public class ListRecordingsForUriSessionTest
     {
         final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
             correlationId,
-            controlPublication,
             0,
             3,
             "channel",
@@ -76,13 +73,12 @@ public class ListRecordingsForUriSessionTest
 
         session.doWork();
         assertThat(session.isDone(), is(false));
-        when(controlPublication.maxPayloadLength()).thenReturn(8096);
+        when(controlSession.maxPayloadLength()).thenReturn(8096);
         final MutableLong counter = new MutableLong(0);
-        when(controlSessionProxy.sendDescriptor(eq(correlationId), any(), eq(controlPublication)))
+        when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy)))
             .then(verifySendDescriptor(counter));
         session.doWork();
-        verify(controlSessionProxy, times(3)).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
-        verifyNoMoreInteractions(controlSessionProxy);
+        verify(controlSession, times(3)).sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy));
     }
 
     @Test
@@ -91,7 +87,6 @@ public class ListRecordingsForUriSessionTest
         final long fromRecordingId = 1;
         final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
             correlationId,
-            controlPublication,
             fromRecordingId,
             2,
             "channel",
@@ -104,13 +99,12 @@ public class ListRecordingsForUriSessionTest
 
         session.doWork();
         assertThat(session.isDone(), is(false));
-        when(controlPublication.maxPayloadLength()).thenReturn(8096);
+        when(controlSession.maxPayloadLength()).thenReturn(8096);
         final MutableLong counter = new MutableLong(fromRecordingId);
-        when(controlSessionProxy.sendDescriptor(eq(correlationId), any(), eq(controlPublication)))
+        when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy)))
             .then(verifySendDescriptor(counter));
         session.doWork();
-        verify(controlSessionProxy, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
-        verifyNoMoreInteractions(controlSessionProxy);
+        verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy));
     }
 
     @Test
@@ -119,7 +113,6 @@ public class ListRecordingsForUriSessionTest
         final long fromRecordingId = 1;
         final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
             correlationId,
-            controlPublication,
             fromRecordingId,
             1,
             "channel",
@@ -132,27 +125,25 @@ public class ListRecordingsForUriSessionTest
 
         session.doWork();
         assertThat(session.isDone(), is(false));
-        when(controlPublication.maxPayloadLength()).thenReturn(8096);
+        when(controlSession.maxPayloadLength()).thenReturn(8096);
 
-        when(controlSessionProxy.sendDescriptor(eq(correlationId), any(), eq(controlPublication))).thenReturn(0);
+        when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy))).thenReturn(0);
         session.doWork();
-        verify(controlSessionProxy, times(1)).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
+        verify(controlSession, times(1)).sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy));
 
         final MutableLong counter = new MutableLong(fromRecordingId);
-        when(controlSessionProxy.sendDescriptor(eq(correlationId), any(), eq(controlPublication)))
+        when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy)))
             .then(verifySendDescriptor(counter));
         session.doWork();
-        verify(controlSessionProxy, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
-        verifyNoMoreInteractions(controlSessionProxy);
+        verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy));
     }
 
     @Test
     public void shouldLimitSendingToSingleMtu()
     {
-        when(controlPublication.maxPayloadLength()).thenReturn(BLOCK_LENGTH);
+        when(controlSession.maxPayloadLength()).thenReturn(BLOCK_LENGTH);
         final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
             correlationId,
-            controlPublication,
             0,
             3,
             "channel",
@@ -164,15 +155,15 @@ public class ListRecordingsForUriSessionTest
             recordingDescriptorDecoder);
 
         final MutableLong counter = new MutableLong(0);
-        when(controlSessionProxy.sendDescriptor(eq(correlationId), any(), eq(controlPublication)))
+        when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy)))
             .then(verifySendDescriptor(counter));
         session.doWork();
-        verify(controlSessionProxy).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
+        verify(controlSession).sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy));
         session.doWork();
-        verify(controlSessionProxy, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
+        verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy));
         session.doWork();
-        verify(controlSessionProxy, times(3)).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
-        verifyNoMoreInteractions(controlSessionProxy);
+        verify(controlSession, times(3)).sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy));
+
     }
 
     @Test
@@ -180,7 +171,6 @@ public class ListRecordingsForUriSessionTest
     {
         final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
             correlationId,
-            controlPublication,
             1,
             5,
             "channel",
@@ -193,14 +183,13 @@ public class ListRecordingsForUriSessionTest
 
         session.doWork();
         assertThat(session.isDone(), is(false));
-        when(controlPublication.maxPayloadLength()).thenReturn(8096);
+        when(controlSession.maxPayloadLength()).thenReturn(8096);
         final MutableLong counter = new MutableLong(1);
-        when(controlSessionProxy.sendDescriptor(eq(correlationId), any(), eq(controlPublication)))
+        when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy)))
             .then(verifySendDescriptor(counter));
         session.doWork();
-        verify(controlSessionProxy, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
-        verify(controlSessionProxy).sendRecordingUnknown(eq(correlationId), eq(5L), eq(controlPublication));
-        verifyNoMoreInteractions(controlSessionProxy);
+        verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy));
+        verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(5L), eq(controlSessionProxy));
     }
 
     @Test
@@ -208,7 +197,6 @@ public class ListRecordingsForUriSessionTest
     {
         final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
             correlationId,
-            controlPublication,
             1,
             3,
             "notchannel",
@@ -221,21 +209,19 @@ public class ListRecordingsForUriSessionTest
 
         session.doWork();
         assertThat(session.isDone(), is(false));
-        when(controlPublication.maxPayloadLength()).thenReturn(8096);
+        when(controlSession.maxPayloadLength()).thenReturn(8096);
         session.doWork();
-        verify(controlSessionProxy, never()).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
-        verify(controlSessionProxy).sendRecordingUnknown(eq(correlationId), eq(5L), eq(controlPublication));
-        verifyNoMoreInteractions(controlSessionProxy);
+        verify(controlSession, never()).sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy));
+        verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(5L), eq(controlSessionProxy));
     }
 
     @Test
     public void shouldSendUnknownOnFirst()
     {
-        when(controlPublication.maxPayloadLength()).thenReturn(4096 - 32);
+        when(controlSession.maxPayloadLength()).thenReturn(4096 - 32);
 
         final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
             correlationId,
-            controlPublication,
             5,
             3,
             "channel",
@@ -248,9 +234,8 @@ public class ListRecordingsForUriSessionTest
 
         session.doWork();
 
-        verify(controlSessionProxy, never()).sendDescriptor(eq(correlationId), any(), eq(controlPublication));
-        verify(controlSessionProxy).sendRecordingUnknown(eq(correlationId), eq(5L), eq(controlPublication));
-        verifyNoMoreInteractions(controlSessionProxy);
+        verify(controlSession, never()).sendDescriptor(eq(correlationId), any(), eq(controlSessionProxy));
+        verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(5L), eq(controlSessionProxy));
     }
 
     private Answer<Object> verifySendDescriptor(final MutableLong counter)

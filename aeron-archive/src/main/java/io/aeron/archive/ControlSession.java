@@ -18,11 +18,13 @@ package io.aeron.archive;
 import io.aeron.Image;
 import io.aeron.ImageFragmentAssembler;
 import io.aeron.Publication;
+import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.util.ArrayDeque;
 
@@ -140,13 +142,13 @@ class ControlSession implements Session, ControlRequestListener
 
     public void onStopRecording(final long correlationId, final String channel, final int streamId)
     {
-        conductor.stopRecording(correlationId, controlPublication, channel, streamId);
+        conductor.stopRecording(correlationId, this, channel, streamId);
     }
 
     public void onStartRecording(
         final long correlationId, final String channel, final int streamId, final SourceLocation sourceLocation)
     {
-        conductor.startRecordingSubscription(correlationId, controlPublication, channel, streamId, sourceLocation);
+        conductor.startRecordingSubscription(correlationId, this, channel, streamId, sourceLocation);
     }
 
     public void onListRecordingsForUri(
@@ -158,7 +160,6 @@ class ControlSession implements Session, ControlRequestListener
     {
         final ListRecordingsForUriSession listRecordingsSession = conductor.newListRecordingsForUriSession(
             correlationId,
-            controlPublication,
             fromRecordingId,
             recordCount,
             conductor.strippedChannelBuilder(channel).build(),
@@ -177,7 +178,6 @@ class ControlSession implements Session, ControlRequestListener
     {
         final ListRecordingsSession listRecordingsSession = conductor.newListRecordingsSession(
             correlationId,
-            controlPublication,
             fromRecordingId,
             recordCount,
             this);
@@ -200,7 +200,7 @@ class ControlSession implements Session, ControlRequestListener
     {
         conductor.startReplay(
             correlationId,
-            controlPublication,
+            this,
             replayStreamId,
             replayChannel,
             recordingId,
@@ -219,5 +219,52 @@ class ControlSession implements Session, ControlRequestListener
         {
             conductor.addSession(listRecordingsSessions.peek());
         }
+    }
+
+    boolean sendOkResponse(final long correlationId, final ControlSessionProxy proxy)
+    {
+        return proxy.sendResponse(
+            correlationId,
+            0,
+            ControlResponseCode.OK,
+            null,
+            controlPublication);
+    }
+
+    boolean sendRecordingUnknown(final long correlationId, final long recordingId, final ControlSessionProxy proxy)
+    {
+        return proxy.sendResponse(
+            correlationId,
+            recordingId,
+            ControlResponseCode.RECORDING_UNKNOWN,
+            null,
+            controlPublication);
+    }
+
+    boolean sendResponse(
+        final long correlationId,
+        final ControlResponseCode code,
+        final String errorMessage,
+        final ControlSessionProxy proxy)
+    {
+        return proxy.sendResponse(
+            correlationId,
+            0,
+            code,
+            errorMessage,
+            controlPublication);
+    }
+
+    int sendDescriptor(
+        final long correlationId,
+        final UnsafeBuffer descriptorBuffer,
+        final ControlSessionProxy proxy)
+    {
+        return proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
+    }
+
+    int maxPayloadLength()
+    {
+        return controlPublication.maxPayloadLength();
     }
 }

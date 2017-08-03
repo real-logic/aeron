@@ -31,19 +31,19 @@ public class ControlSessionTest
     public void shouldSequenceListRecordingsProcessing() throws Exception
     {
         final ListRecordingsSession mockListRecordingSession1 = mock(ListRecordingsSession.class);
-        when(mockConductor.newListRecordingsSession(1, mockControlPublication, 2, 3, session))
+        when(mockConductor.newListRecordingsSession(1, 2, 3, session))
             .thenReturn(mockListRecordingSession1);
 
         session.onListRecordings(1, 2, 3);
-        verify(mockConductor).newListRecordingsSession(1, mockControlPublication, 2, 3, session);
+        verify(mockConductor).newListRecordingsSession(1,  2, 3, session);
         verify(mockConductor).addSession(mockListRecordingSession1);
 
         final ListRecordingsSession mockListRecordingSession2 = mock(ListRecordingsSession.class);
-        when(mockConductor.newListRecordingsSession(2, mockControlPublication, 3, 4, session))
+        when(mockConductor.newListRecordingsSession(2,  3, 4, session))
             .thenReturn(mockListRecordingSession2);
 
         session.onListRecordings(2, 3, 4);
-        verify(mockConductor).newListRecordingsSession(2, mockControlPublication, 3, 4, session);
+        verify(mockConductor).newListRecordingsSession(2,  3, 4, session);
         verify(mockConductor, never()).addSession(mockListRecordingSession2);
 
         session.onListRecordingSessionClosed(mockListRecordingSession1);

@@ -33,7 +33,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-public class ArchiveTest
+public class BasicArchiveTest
 {
     private static final int FRAGMENT_LIMIT = 10;
 

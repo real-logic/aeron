@@ -32,9 +32,13 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.LockSupport;
@@ -42,11 +46,29 @@ import java.util.concurrent.locks.LockSupport;
 import static io.aeron.archive.TestUtil.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
-public class ArchiveSystemTest
+@RunWith(value = Parameterized.class)
+public class ArchiveTest
 {
+    @Parameterized.Parameter
+    public ThreadingMode threadingMode;
+
+    @Parameterized.Parameter(value = 1)
+    public ArchiveThreadingMode archiveThreadingMode;
+
+    @Parameterized.Parameters
+    public static Collection<Object[]> data()
+    {
+        return Arrays.asList(new Object[][]
+            {
+                { ThreadingMode.INVOKER, ArchiveThreadingMode.SHARED },
+                { ThreadingMode.DEDICATED, ArchiveThreadingMode.DEDICATED },
+            });
+    }
+
     private static final String CONTROL_URI = "aeron:udp?endpoint=127.0.0.1:54327";
     private static final int CONTROL_STREAM_ID = 100;
     private static final String REPLAY_URI = "aeron:ipc";
@@ -56,13 +78,12 @@ public class ArchiveSystemTest
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final int REPLAY_STREAM_ID = 101;
 
-    private final UnsafeBuffer buffer =
-        new UnsafeBuffer(BufferUtil.allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT));
     private final Random rnd = new Random();
     private final long seed = System.nanoTime();
 
     @Rule
-    public final TestWatcher testWatcher = TestUtil.newWatcher(ArchiveSystemTest.class, seed);
+    public final TestWatcher testWatcher = TestUtil.newWatcher(ArchiveTest.class, seed);
 
     private String publishUri;
     private Aeron publishingClient;
@@ -117,7 +138,7 @@ public class ArchiveSystemTest
 
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .termBufferSparseFile(true)
-            .threadingMode(driverThreadingMode())
+            .threadingMode(threadingMode)
             .errorHandler(Throwable::printStackTrace)
             .dirsDeleteOnStart(true)
             .useConcurrentCounterManager(true);
@@ -129,7 +150,7 @@ public class ArchiveSystemTest
             .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
             .archiveDir(TestUtil.makeTempDir())
             .segmentFileLength(termLength << rnd.nextInt(4))
-            .threadingMode(archiverThreadingMode())
+            .threadingMode(archiveThreadingMode)
             .countersManager(driverCtx.countersManager())
             .errorHandler(driverCtx.errorHandler());
 
@@ -146,16 +167,6 @@ public class ArchiveSystemTest
 
         archive.context().deleteArchiveDirectory();
         driver.context().deleteAeronDirectory();
-    }
-
-    ArchiveThreadingMode archiverThreadingMode()
-    {
-        return ArchiveThreadingMode.SHARED;
-    }
-
-    ThreadingMode driverThreadingMode()
-    {
-        return ThreadingMode.INVOKER;
     }
 
     @Test(timeout = 10000)
@@ -410,7 +421,7 @@ public class ArchiveSystemTest
                     final String originalChannel,
                     final String sourceIdentity)
                 {
-                    assertThat(recordingId, is(ArchiveSystemTest.this.recordingId));
+                    assertThat(recordingId, is(ArchiveTest.this.recordingId));
                     assertThat(termBufferLength, is(publicationTermBufferLength));
                     assertThat(streamId, is(PUBLISH_STREAM_ID));
                     assertThat(correlationId, is(requestRecordingsCorrelationId));

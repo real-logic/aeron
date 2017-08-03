@@ -20,18 +20,29 @@ import java.util.function.IntConsumer;
 
 public class SystemTestHelper
 {
+    /**
+     * Execute a task until a condition is satisfied, or a maximum number of iterations, or a timeout is reached.
+     *
+     * @param condition         keep executing while true.
+     * @param iterationConsumer to be invoked with the iteration count.
+     * @param maxIterations     to be executed.
+     * @param timeoutNs         to stay within.
+     */
     public static void executeUntil(
-        final BooleanSupplier condition, final IntConsumer consumer, final int maxIterations, final long timeout)
+        final BooleanSupplier condition,
+        final IntConsumer iterationConsumer,
+        final int maxIterations,
+        final long timeoutNs)
     {
-        final long start = System.nanoTime();
-        long end;
-        int iteration = 0;
+        final long startNs = System.nanoTime();
+        long nowNs;
+        int i = 0;
 
         do
         {
-            consumer.accept(iteration);
-            end = System.nanoTime();
+            iterationConsumer.accept(i);
+            nowNs = System.nanoTime();
         }
-        while (!condition.getAsBoolean() && ((end - start) < timeout) && iteration++ < maxIterations);
+        while (!condition.getAsBoolean() && ((nowNs - startNs) < timeoutNs) && i++ < maxIterations);
     }
 }

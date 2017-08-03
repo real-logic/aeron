@@ -15,19 +15,20 @@
  */
 package io.aeron;
 
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.MutableInteger;
 import org.junit.After;
 import org.junit.Test;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
-import org.agrona.concurrent.UnsafeBuffer;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -42,64 +43,52 @@ public class StopStartSecondSubscriberTest
     private static final int STREAM_ID1 = 1;
     private static final int STREAM_ID2 = 2;
 
-    private MediaDriver driver1;
-    private MediaDriver driver2;
-    private Aeron publishingClient1;
-    private Aeron subscribingClient1;
-    private Aeron publishingClient2;
-    private Aeron subscribingClient2;
-    private Subscription subscription1;
-    private Publication publication1;
-    private Subscription subscription2;
-    private Publication publication2;
+    private MediaDriver driverOne;
+    private MediaDriver driverTwo;
+    private Aeron publisherOne;
+    private Aeron subscriberOne;
+    private Aeron publisherTwo;
+    private Aeron subscriberTwo;
+    private Subscription subscriptionOne;
+    private Publication publicationOne;
+    private Subscription subscriptionTwo;
+    private Publication publicationTwo;
 
-    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[8192]);
-    private final AtomicInteger subscriber1Count = new AtomicInteger();
-    private final FragmentHandler fragmentHandler1 =
-        (buffer, offset, length, header) -> subscriber1Count.getAndIncrement();
-    private final AtomicInteger subscriber2Count = new AtomicInteger();
-    private final FragmentHandler fragmentHandler2 =
-        (buffer, offset, length, header) -> subscriber2Count.getAndIncrement();
+    private final MutableDirectBuffer buffer = new ExpandableArrayBuffer();
+    private final MutableInteger subOneCount = new MutableInteger();
+    private final FragmentHandler fragmentHandlerOne = (buffer, offset, length, header) -> subOneCount.value++;
+    private final MutableInteger subTwoCount = new MutableInteger();
+    private final FragmentHandler fragmentHandlerTwo = (buffer, offset, length, header) -> subTwoCount.value++;
 
-    private void launch(final String channel1, final int stream1, final String channel2, final int stream2)
+    private void launch(final String channelOne, final int streamOne, final String channelTwo, final int streamTwo)
     {
-        driver1 = MediaDriver.launchEmbedded();
-        driver2 = MediaDriver.launchEmbedded();
+        driverOne = MediaDriver.launchEmbedded(new MediaDriver.Context().termBufferSparseFile(true));
+        driverTwo = MediaDriver.launchEmbedded(new MediaDriver.Context().termBufferSparseFile(true));
 
-        final Aeron.Context publishingAeronContext1 = new Aeron.Context();
-        final Aeron.Context subscribingAeronContext1 = new Aeron.Context();
-        final Aeron.Context publishingAeronContext2 = new Aeron.Context();
-        final Aeron.Context subscribingAeronContext2 = new Aeron.Context();
+        publisherOne = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverOne.aeronDirectoryName()));
+        subscriberOne = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverTwo.aeronDirectoryName()));
+        publisherTwo = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverOne.aeronDirectoryName()));
+        subscriberTwo = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverTwo.aeronDirectoryName()));
 
-        publishingAeronContext1.aeronDirectoryName(driver1.aeronDirectoryName());
-        publishingAeronContext2.aeronDirectoryName(driver1.aeronDirectoryName());
-        subscribingAeronContext1.aeronDirectoryName(driver2.aeronDirectoryName());
-        subscribingAeronContext2.aeronDirectoryName(driver2.aeronDirectoryName());
-
-        publishingClient1 = Aeron.connect(publishingAeronContext1);
-        subscribingClient1 = Aeron.connect(subscribingAeronContext1);
-        publishingClient2 = Aeron.connect(publishingAeronContext2);
-        subscribingClient2 = Aeron.connect(subscribingAeronContext2);
-
-        publication1 = publishingClient1.addPublication(channel1, stream1);
-        subscription1 = subscribingClient1.addSubscription(channel1, stream1);
-        publication2 = publishingClient2.addPublication(channel2, stream2);
-        subscription2 = subscribingClient2.addSubscription(channel2, stream2);
+        publicationOne = publisherOne.addPublication(channelOne, streamOne);
+        subscriptionOne = subscriberOne.addSubscription(channelOne, streamOne);
+        publicationTwo = publisherTwo.addPublication(channelTwo, streamTwo);
+        subscriptionTwo = subscriberTwo.addSubscription(channelTwo, streamTwo);
     }
 
     @After
     public void closeEverything()
     {
-        subscribingClient1.close();
-        publishingClient1.close();
-        subscribingClient2.close();
-        publishingClient2.close();
+        subscriberOne.close();
+        publisherOne.close();
+        subscriberTwo.close();
+        publisherTwo.close();
 
-        driver1.close();
-        driver2.close();
+        driverOne.close();
+        driverTwo.close();
 
-        driver1.context().deleteAeronDirectory();
-        driver2.context().deleteAeronDirectory();
+        driverOne.context().deleteAeronDirectory();
+        driverTwo.context().deleteAeronDirectory();
     }
 
     @Test(timeout = 10000)
@@ -117,32 +106,32 @@ public class StopStartSecondSubscriberTest
 
         final int numMessagesPerPublication = 1;
 
-        while (publication1.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
+        while (publicationOne.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
             Thread.yield();
         }
 
-        while (publication2.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
+        while (publicationTwo.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
             Thread.yield();
         }
 
-        final AtomicInteger fragmentsRead1 = new AtomicInteger();
-        final AtomicInteger fragmentsRead2 = new AtomicInteger();
+        final MutableInteger fragmentsRead1 = new MutableInteger();
+        final MutableInteger fragmentsRead2 = new MutableInteger();
         SystemTestHelper.executeUntil(
             () -> fragmentsRead1.get() >= numMessagesPerPublication &&
                 fragmentsRead2.get() >= numMessagesPerPublication,
             (i) ->
             {
-                fragmentsRead1.addAndGet(subscription1.poll(fragmentHandler1, 10));
-                fragmentsRead2.addAndGet(subscription2.poll(fragmentHandler2, 10));
+                fragmentsRead1.value += subscriptionOne.poll(fragmentHandlerOne, 10);
+                fragmentsRead2.value += subscriptionTwo.poll(fragmentHandlerTwo, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(9900));
 
-        assertEquals(numMessagesPerPublication, subscriber1Count.get());
-        assertEquals(numMessagesPerPublication, subscriber2Count.get());
+        assertEquals(numMessagesPerPublication, subOneCount.get());
+        assertEquals(numMessagesPerPublication, subTwoCount.get());
     }
 
     @Test(timeout = 10000)
@@ -181,55 +170,52 @@ public class StopStartSecondSubscriberTest
     }
 
     private void shouldReceiveMessagesAfterStopStart(
-        final String channel1, final int stream1, final String channel2, final int stream2)
+        final String channelOne, final int streamOne, final String channelTwo, final int streamTwo)
     {
         final ExecutorService executor = Executors.newFixedThreadPool(2);
         final int numMessages = 1;
-        final AtomicInteger subscriber2AfterRestartCount = new AtomicInteger();
+        final MutableInteger subscriber2AfterRestartCount = new MutableInteger();
         final AtomicBoolean running = new AtomicBoolean(true);
 
         final FragmentHandler fragmentHandler2b =
-            (buffer, offset, length, header) -> subscriber2AfterRestartCount.incrementAndGet();
+            (buffer, offset, length, header) -> subscriber2AfterRestartCount.value++;
 
-        launch(channel1, stream1, channel2, stream2);
+        launch(channelOne, streamOne, channelTwo, streamTwo);
 
         buffer.putInt(0, 1);
 
-        executor.execute(() -> doPublisherWork(publication1, running));
-        executor.execute(() -> doPublisherWork(publication2, running));
+        executor.execute(() -> doPublisherWork(publicationOne, running));
+        executor.execute(() -> doPublisherWork(publicationTwo, running));
 
-        final AtomicInteger fragmentsRead1 = new AtomicInteger();
-        final AtomicInteger fragmentsRead2 = new AtomicInteger();
+        final MutableInteger fragmentsReadOne = new MutableInteger();
+        final MutableInteger fragmentsReadTwo = new MutableInteger();
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead1.get() >= numMessages && fragmentsRead2.get() >= numMessages,
+            () -> fragmentsReadOne.get() >= numMessages && fragmentsReadTwo.get() >= numMessages,
             (i) ->
             {
-                fragmentsRead1.addAndGet(subscription1.poll(fragmentHandler1, 1));
-                fragmentsRead2.addAndGet(subscription2.poll(fragmentHandler2, 1));
+                fragmentsReadOne.value += subscriptionOne.poll(fragmentHandlerOne, 1);
+                fragmentsReadTwo.value += subscriptionTwo.poll(fragmentHandlerTwo, 1);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(4900));
 
-        assertTrue(subscriber1Count.get() >= numMessages);
-        assertTrue(subscriber2Count.get() >= numMessages);
+        assertTrue(subOneCount.get() >= numMessages);
+        assertTrue(subTwoCount.get() >= numMessages);
 
-        // Stop the second subscriber
-        subscription2.close();
+        subscriptionTwo.close();
 
-        // Zero out the counters
-        fragmentsRead1.set(0);
-        fragmentsRead2.set(0);
+        fragmentsReadOne.set(0);
+        fragmentsReadTwo.set(0);
 
-        // Start the second subscriber again
-        subscription2 = subscribingClient2.addSubscription(channel2, stream2);
+        subscriptionTwo = subscriberTwo.addSubscription(channelTwo, streamTwo);
 
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead1.get() >= numMessages && fragmentsRead2.get() >= numMessages,
+            () -> fragmentsReadOne.get() >= numMessages && fragmentsReadTwo.get() >= numMessages,
             (i) ->
             {
-                fragmentsRead1.addAndGet(subscription1.poll(fragmentHandler1, 1));
-                fragmentsRead2.addAndGet(subscription2.poll(fragmentHandler2b, 1));
+                fragmentsReadOne.value += subscriptionOne.poll(fragmentHandlerOne, 1);
+                fragmentsReadTwo.value += subscriptionTwo.poll(fragmentHandler2b, 1);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -237,11 +223,11 @@ public class StopStartSecondSubscriberTest
 
         running.set(false);
 
-        assertTrue("Expecting subscriber1 to receive messages the entire time",
-            subscriber1Count.get() >= numMessages * 2);
-        assertTrue("Expecting subscriber2 to receive messages before being stopped and started",
-            subscriber2Count.get() >= numMessages);
-        assertTrue("Expecting subscriber2 to receive messages after being stopped and started",
+        assertTrue("Expecting subscriberOne to receive messages the entire time",
+            subOneCount.get() >= numMessages * 2);
+        assertTrue("Expecting subscriberTwo to receive messages before being stopped and started",
+            subTwoCount.get() >= numMessages);
+        assertTrue("Expecting subscriberTwo to receive messages after being stopped and started",
             subscriber2AfterRestartCount.get() >= numMessages);
 
         executor.shutdown();

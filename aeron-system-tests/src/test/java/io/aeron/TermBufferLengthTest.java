@@ -45,9 +45,9 @@ public class TermBufferLengthTest
     @Test(timeout = 10000)
     public void shouldHaveCorrectTermBufferLength(final String channel) throws Exception
     {
-        final MediaDriver.Context ctx = new MediaDriver.Context();
-        ctx.publicationTermBufferLength(TEST_TERM_LENGTH * 2);
-        ctx.ipcTermBufferLength(TEST_TERM_LENGTH * 2);
+        final MediaDriver.Context ctx = new MediaDriver.Context()
+            .publicationTermBufferLength(TEST_TERM_LENGTH * 2)
+            .ipcTermBufferLength(TEST_TERM_LENGTH * 2);
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
              Aeron aeron = Aeron.connect();

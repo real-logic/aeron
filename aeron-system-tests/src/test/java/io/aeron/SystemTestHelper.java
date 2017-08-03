@@ -21,7 +21,7 @@ import java.util.function.IntConsumer;
 public class SystemTestHelper
 {
     public static void executeUntil(
-        final BooleanSupplier condition, final IntConsumer body, final int maxIterations, final long timeout)
+        final BooleanSupplier condition, final IntConsumer consumer, final int maxIterations, final long timeout)
     {
         final long start = System.nanoTime();
         long end;
@@ -29,7 +29,7 @@ public class SystemTestHelper
 
         do
         {
-            body.accept(iteration);
+            consumer.accept(iteration);
             end = System.nanoTime();
         }
         while (!condition.getAsBoolean() && ((end - start) < timeout) && iteration++ < maxIterations);

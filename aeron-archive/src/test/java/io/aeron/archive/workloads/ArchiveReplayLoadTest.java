@@ -77,7 +77,7 @@ public class ArchiveReplayLoadTest
     @Rule
     public final TestWatcher testWatcher = TestUtil.newWatcher(this.getClass(), seed);
 
-    private Aeron aeronClient;
+    private Aeron aeron;
     private Archive archive;
     private MediaDriver driver;
     private final long recordingId = 0;
@@ -113,13 +113,13 @@ public class ArchiveReplayLoadTest
                 .countersManager(driver.context().countersManager())
                 .errorHandler(driver.context().errorHandler()));
 
-        aeronClient = Aeron.connect();
+        aeron = Aeron.connect();
     }
 
     @After
     public void after() throws Exception
     {
-        CloseHelper.close(aeronClient);
+        CloseHelper.close(aeron);
         CloseHelper.close(archive);
         CloseHelper.close(driver);
 
@@ -130,9 +130,9 @@ public class ArchiveReplayLoadTest
     @Test(timeout = 180000)
     public void replay() throws IOException, InterruptedException
     {
-        try (Publication controlRequest = aeronClient.addPublication(
+        try (Publication controlRequest = aeron.addPublication(
                 archive.context().controlChannel(), archive.context().controlStreamId());
-             Subscription recordingEvents = aeronClient.addSubscription(
+             Subscription recordingEvents = aeron.addSubscription(
                 archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlRequest);
@@ -141,7 +141,7 @@ public class ArchiveReplayLoadTest
             awaitConnected(recordingEvents);
             println("Archive service connected");
 
-            final Subscription controlResponse = aeronClient.addSubscription(
+            final Subscription controlResponse = aeron.addSubscription(
                 CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
             assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID));
             awaitConnected(controlResponse);
@@ -154,9 +154,9 @@ public class ArchiveReplayLoadTest
             println("Recording requested");
             awaitOk(controlResponse, startRecordingCorrelationId);
 
-            final Publication publication = aeronClient.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
+            final Publication publication = aeron.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
             awaitConnected(publication);
-            startDrainingSubscriber(aeronClient, PUBLISH_URI, PUBLISH_STREAM_ID);
+            startDrainingSubscriber(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
 
             final int messageCount = prepAndSendMessages(recordingEvents, publication);
             publication.close();
@@ -241,7 +241,7 @@ public class ArchiveReplayLoadTest
     {
         final int replayStreamId = (int)correlationId;
 
-        try (Subscription replay = aeronClient.addSubscription(REPLAY_URI, replayStreamId))
+        try (Subscription replay = aeron.addSubscription(REPLAY_URI, replayStreamId))
         {
             final long correlationId = this.correlationId++;
 

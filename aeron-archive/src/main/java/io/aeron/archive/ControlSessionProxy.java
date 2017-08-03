@@ -47,14 +47,7 @@ class ControlSessionProxy
             .wrapAndApplyHeader(descriptorBuffer, offset, messageHeaderEncoder)
             .correlationId(correlationId);
 
-        if (send(controlPublication, descriptorBuffer, offset, length))
-        {
-            return length;
-        }
-        else
-        {
-            return 0;
-        }
+        return send(controlPublication, descriptorBuffer, offset, length) ? length : 0;
     }
 
     boolean sendResponse(
@@ -79,12 +72,7 @@ class ControlSessionProxy
             responseEncoder.putErrorMessage(EMPTY_BYTE_ARRAY, 0, 0);
         }
 
-        return send(controlPublication, HEADER_LENGTH + responseEncoder.encodedLength());
-    }
-
-    private boolean send(final Publication controlPublication, final int length)
-    {
-        return send(controlPublication, buffer, 0, length);
+        return send(controlPublication, buffer, 0, HEADER_LENGTH + responseEncoder.encodedLength());
     }
 
     private boolean send(
@@ -93,7 +81,6 @@ class ControlSessionProxy
         final int offset,
         final int length)
     {
-
         for (int i = 0; i < 3; i++)
         {
             final long result = controlPublication.offer(buffer, offset, length);
@@ -107,6 +94,7 @@ class ControlSessionProxy
                 throw new IllegalStateException("Response channel is down: " + controlPublication);
             }
         }
+
         return false;
     }
 }

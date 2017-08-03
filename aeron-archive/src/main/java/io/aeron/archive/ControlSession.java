@@ -43,23 +43,20 @@ import static io.aeron.archive.codecs.ControlResponseCode.RECORDING_UNKNOWN;
  */
 class ControlSession implements Session, ControlRequestListener
 {
-    private static final int FRAGMENT_LIMIT = 16;
-
     enum State
     {
         INIT, ACTIVE, INACTIVE, CLOSED
     }
 
     static final long TIMEOUT_MS = 5000L;
+    private static final int FRAGMENT_LIMIT = 16;
 
     private final Image image;
     private final ArchiveConductor conductor;
     private final EpochClock epochClock;
     private final FragmentHandler adapter = new ImageFragmentAssembler(new ControlRequestAdapter(this));
     private ArrayDeque<AbstractListRecordingsSession> listRecordingsSessions = new ArrayDeque<>();
-    // This is very unlikely to be used and when used is bound by max concurrent replay/record sessions
-    private ManyToOneConcurrentLinkedQueue<Supplier<Boolean>> parkedSends =
-        new ManyToOneConcurrentLinkedQueue<>();
+    private ManyToOneConcurrentLinkedQueue<Supplier<Boolean>> responseQueue = new ManyToOneConcurrentLinkedQueue<>();
     private final ControlSessionProxy controlSessionProxy;
     private Publication controlPublication;
     private State state = State.INIT;
@@ -87,6 +84,12 @@ class ControlSession implements Session, ControlRequestListener
         state = State.INACTIVE;
     }
 
+    public void close()
+    {
+        state = State.CLOSED;
+        CloseHelper.quietClose(controlPublication);
+    }
+
     public boolean isDone()
     {
         return state == State.INACTIVE;
@@ -103,92 +106,10 @@ class ControlSession implements Session, ControlRequestListener
 
         if (state == State.ACTIVE)
         {
-            workCount = sendParkedOrPollForRequests();
+            workCount = sendQueuedResponsesOrPollForRequests();
         }
 
         return workCount;
-    }
-
-    private int sendParkedOrPollForRequests()
-    {
-        int workCount = 0;
-        if (image.isClosed() || !controlPublication.isConnected())
-        {
-            state = State.INACTIVE;
-        }
-        else
-        {
-            if (parkedSends.isEmpty())
-            {
-                workCount += image.poll(adapter, FRAGMENT_LIMIT);
-            }
-            else
-            {
-                // try to send again, and remove the send if successful
-                if (parkedSends.peek().get())
-                {
-                    parkedSends.poll();
-                    timeoutDeadlineMs = -1;
-                    workCount++;
-                }
-                else if (timeoutDeadlineMs == -1)
-                {
-                    timeoutDeadlineMs = epochClock.time() + TIMEOUT_MS;
-                }
-                else if (isTimedOut())
-                {
-                    state = State.INACTIVE;
-                }
-            }
-        }
-        return workCount;
-    }
-
-    public void close()
-    {
-        state = State.CLOSED;
-        CloseHelper.quietClose(controlPublication);
-    }
-
-    private int waitForConnection()
-    {
-        int workCount = 0;
-
-        if (controlPublication == null)
-        {
-            if (timeoutDeadlineMs == -1)
-            {
-                timeoutDeadlineMs = epochClock.time() + TIMEOUT_MS;
-            }
-
-            try
-            {
-                image.poll(adapter, 1);
-            }
-            catch (final Exception ex)
-            {
-                state = State.INACTIVE;
-                LangUtil.rethrowUnchecked(ex);
-            }
-        }
-        else if (controlPublication.isConnected())
-        {
-            timeoutDeadlineMs = -1;
-            state = State.ACTIVE;
-            workCount += 1;
-        }
-
-        if (isTimedOut())
-        {
-            state = State.INACTIVE;
-        }
-
-        return workCount;
-    }
-
-    private boolean isTimedOut()
-    {
-        return timeoutDeadlineMs != -1 && epochClock.time() > timeoutDeadlineMs;
     }
 
     public void onConnect(final String channel, final int streamId)
@@ -290,7 +211,7 @@ class ControlSession implements Session, ControlRequestListener
     {
         if (!proxy.sendResponse(correlationId, 0, OK, null, controlPublication))
         {
-            parkSendResponse(correlationId, 0, OK, null);
+            queueResponse(correlationId, 0, OK, null);
         }
     }
 
@@ -302,9 +223,8 @@ class ControlSession implements Session, ControlRequestListener
     {
         if (!proxy.sendResponse(correlationId, recordingId, RECORDING_UNKNOWN, null, controlPublication))
         {
-            parkSendResponse(correlationId, recordingId, RECORDING_UNKNOWN, null);
+            queueResponse(correlationId, recordingId, RECORDING_UNKNOWN, null);
         }
-
     }
 
     /**
@@ -319,13 +239,12 @@ class ControlSession implements Session, ControlRequestListener
     {
         if (!proxy.sendResponse(correlationId, 0, code, errorMessage, controlPublication))
         {
-            parkSendResponse(correlationId, 0, code, errorMessage);
+            queueResponse(correlationId, 0, code, errorMessage);
         }
     }
 
     /**
-     * Send a descriptor, return the number of bytes sent or 0 if failed to send. This method
-     * is thread safe.
+     * Send a descriptor, return the number of bytes sent or 0 if failed to send. This method is thread safe.
      */
     int sendDescriptor(
         final long correlationId,
@@ -340,13 +259,91 @@ class ControlSession implements Session, ControlRequestListener
         return controlPublication.maxPayloadLength();
     }
 
-    private void parkSendResponse(
-        final long correlationId,
-        final long relevantId,
-        final ControlResponseCode code,
-        final String message)
+    private int sendQueuedResponsesOrPollForRequests()
     {
-        parkedSends.offer(
+        int workCount = 0;
+        if (image.isClosed() || !controlPublication.isConnected())
+        {
+            state = State.INACTIVE;
+        }
+        else
+        {
+            if (responseQueue.isEmpty())
+            {
+                workCount += image.poll(adapter, FRAGMENT_LIMIT);
+            }
+            else
+            {
+                if (resend())
+                {
+                    responseQueue.poll();
+                    timeoutDeadlineMs = -1;
+                    workCount++;
+                }
+                else if (timeoutDeadlineMs == -1)
+                {
+                    timeoutDeadlineMs = epochClock.time() + TIMEOUT_MS;
+                }
+                else if (hasGoneInactive())
+                {
+                    state = State.INACTIVE;
+                }
+            }
+        }
+
+        return workCount;
+    }
+
+    private Boolean resend()
+    {
+        return responseQueue.peek().get();
+    }
+
+    private int waitForConnection()
+    {
+        int workCount = 0;
+
+        if (controlPublication == null)
+        {
+            if (timeoutDeadlineMs == -1)
+            {
+                timeoutDeadlineMs = epochClock.time() + TIMEOUT_MS;
+            }
+
+            try
+            {
+                image.poll(adapter, 1);
+            }
+            catch (final Exception ex)
+            {
+                state = State.INACTIVE;
+                LangUtil.rethrowUnchecked(ex);
+            }
+        }
+        else if (controlPublication.isConnected())
+        {
+            timeoutDeadlineMs = -1;
+            state = State.ACTIVE;
+            workCount += 1;
+        }
+
+        if (hasGoneInactive())
+        {
+            state = State.INACTIVE;
+        }
+
+        return workCount;
+    }
+
+    private boolean hasGoneInactive()
+    {
+        return timeoutDeadlineMs != -1 && epochClock.time() > timeoutDeadlineMs;
+    }
+
+    private void queueResponse(
+        final long correlationId, final long relevantId, final ControlResponseCode code, final String message)
+    {
+        responseQueue.offer(
             () -> controlSessionProxy.sendResponse(correlationId, relevantId, code, message, controlPublication));
     }
 }

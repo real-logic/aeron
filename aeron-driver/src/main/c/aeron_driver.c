@@ -457,6 +457,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     if (aeron_driver_ensure_dir_is_recreated(_driver) < 0)
     {
+        aeron_set_err(EINVAL, "could not recreate aeron dir %s", _driver->context->aeron_dir);
         return -1;
     }
 

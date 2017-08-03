@@ -17,6 +17,11 @@
 #ifndef AERON_AERONMD_H
 #define AERON_AERONMD_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -87,5 +92,9 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, a
 
 int aeron_errcode();
 const char *aeron_errmsg();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //AERON_AERONMD_H

@@ -67,8 +67,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final FileChannel archiveDirChannel;
     private final RecordingWriter.Context recordingCtx;
 
-    private final Subscription controlSubscription;
-
     private final Catalog catalog;
     private final RecordingEventsProxy recordingEventsProxy;
     private final int maxConcurrentRecordings;
@@ -78,7 +76,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final MappedByteBuffer countersMappedBBuffer;
 
     protected final Archive.Context ctx;
-    protected final ControlSessionProxy controlSessionProxy;
+    protected final ControlResponseProxy controlResponseProxy;
     protected SessionWorker<ReplaySession> replayer;
     protected SessionWorker<RecordingSession> recorder;
 
@@ -92,7 +90,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         this.ctx = ctx;
 
         aeronClientAgentInvoker = aeron.conductorAgentInvoker();
-        Objects.requireNonNull(aeronClientAgentInvoker, "An aeron invoker should be present in the archive context");
+        Objects.requireNonNull(aeronClientAgentInvoker, "An aeron invoker should be present in the context");
 
         maxConcurrentRecordings = ctx.maxConcurrentRecordings();
         maxConcurrentReplays = ctx.maxConcurrentReplays();
@@ -100,19 +98,14 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         driverAgentInvoker = ctx.mediaDriverAgentInvoker();
         archiveDir = ctx.archiveDir();
         final int fileSyncLevel = ctx.fileSyncLevel();
-        archiveDirChannel = getDirectoryChannel(archiveDir, fileSyncLevel);
+        archiveDirChannel = channelForDirectorySync(archiveDir, fileSyncLevel);
 
-        controlSessionProxy = new ControlSessionProxy();
+        controlResponseProxy = new ControlResponseProxy();
 
-        controlSubscription = aeron.addSubscription(
-            ctx.controlChannel(),
-            ctx.controlStreamId(),
-            this::onAvailableControlImage,
-            null);
+        aeron.addSubscription(ctx.controlChannel(), ctx.controlStreamId(), this::onControlConnection, null);
 
-        final Publication notificationPublication = aeron.addPublication(
-            ctx.recordingEventsChannel(), ctx.recordingEventsStreamId());
-        recordingEventsProxy = new RecordingEventsProxy(ctx.idleStrategy(), notificationPublication);
+        recordingEventsProxy = new RecordingEventsProxy(
+            ctx.idleStrategy(), aeron.addPublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId()));
 
         catalog = new Catalog(archiveDir, archiveDirChannel, fileSyncLevel, epochClock);
 
@@ -179,19 +172,19 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     protected int preWork()
     {
-        int workDone = null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
-        workDone += aeronClientAgentInvoker.invoke();
+        int workCount = null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
+        workCount += aeronClientAgentInvoker.invoke();
 
-        return workDone;
+        return workCount;
     }
 
     /**
      * Note: this is only a thread safe interaction because we are running the aeron client as an invoked agent so the
      * available image notifications are run from this agent thread.
      */
-    private void onAvailableControlImage(final Image image)
+    private void onControlConnection(final Image image)
     {
-        addSession(new ControlSession(image, this, epochClock, controlSessionProxy));
+        addSession(new ControlSession(image, this, epochClock, controlResponseProxy));
     }
 
     void stopRecording(
@@ -208,7 +201,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             if (oldSubscription != null)
             {
                 oldSubscription.close();
-                controlSession.sendOkResponse(correlationId, controlSessionProxy);
+                controlSession.sendOkResponse(correlationId, controlResponseProxy);
             }
             else
             {
@@ -216,14 +209,14 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                     correlationId,
                     ControlResponseCode.ERROR,
                     "No recording subscription found for: " + key,
-                    controlSessionProxy);
+                    controlResponseProxy);
             }
         }
         catch (final Exception ex)
         {
             errorHandler.onError(ex);
             controlSession.sendResponse(
-                correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlSessionProxy);
+                correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlResponseProxy);
         }
     }
 
@@ -242,7 +235,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 correlationId,
                 ControlResponseCode.ERROR,
                 "Max concurrent recordings reached: " + maxConcurrentRecordings,
-                controlSessionProxy);
+                controlResponseProxy);
 
             return;
         }
@@ -265,7 +258,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                     null);
 
                 subscriptionMap.put(key, subscription);
-                controlSession.sendOkResponse(correlationId, controlSessionProxy);
+                controlSession.sendOkResponse(correlationId, controlResponseProxy);
             }
             else
             {
@@ -273,14 +266,14 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                     correlationId,
                     ControlResponseCode.ERROR,
                     "Recording already setup for subscription: " + key,
-                    controlSessionProxy);
+                    controlResponseProxy);
             }
         }
         catch (final Exception ex)
         {
             errorHandler.onError(ex);
             controlSession.sendResponse(
-                correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlSessionProxy);
+                correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlResponseProxy);
         }
     }
 
@@ -295,7 +288,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             fromId,
             count,
             catalog,
-            controlSessionProxy,
+            controlResponseProxy,
             controlSession,
             descriptorBuffer);
     }
@@ -315,7 +308,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             channel,
             streamId,
             catalog,
-            controlSessionProxy,
+            controlResponseProxy,
             controlSession,
             descriptorBuffer,
             recordingDescriptorDecoder);
@@ -336,7 +329,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 correlationId,
                 ControlResponseCode.ERROR,
                 "Max concurrent replays reached: " + maxConcurrentReplays,
-                controlSessionProxy);
+                controlResponseProxy);
 
             return;
         }
@@ -348,7 +341,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 correlationId,
                 ControlResponseCode.ERROR,
                 "Unknown recording : " + recordingId,
-                controlSessionProxy);
+                controlResponseProxy);
 
             return;
         }
@@ -361,7 +354,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             newReplayPublication,
             controlSession,
             archiveDir,
-            controlSessionProxy,
+            controlResponseProxy,
             newId,
             correlationId,
             epochClock,
@@ -439,8 +432,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             originalChannel,
             sourceIdentity);
 
-        final AtomicCounter position =
-            recordingPositionsManager.newCounter(makeKey(streamId, strippedChannel) + ":" + recordingId);
+        final AtomicCounter position = recordingPositionsManager.newCounter(
+            makeKey(streamId, strippedChannel) + ":" + recordingId);
         final RecordingSession session = new RecordingSession(
             recordingId,
             catalog.wrapDescriptor(recordingId),
@@ -492,8 +485,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         recordingSessionByIdMap.remove(session.sessionId());
         closeSession(session);
-        final AtomicCounter position = recordingPositionByIdMap.remove(session.sessionId());
-        position.close();
+        recordingPositionByIdMap.remove(session.sessionId()).close();
     }
 
     void closeReplaySession(final ReplaySession session)
@@ -502,21 +494,19 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         closeSession(session);
     }
 
-    private static FileChannel getDirectoryChannel(final File directory, final int fileSyncLevel)
+    private static FileChannel channelForDirectorySync(final File directory, final int fileSyncLevel)
     {
-        FileChannel dirChannel = null;
         if (fileSyncLevel > 0)
         {
             try
             {
-                dirChannel = FileChannel.open(directory.toPath());
+                return FileChannel.open(directory.toPath());
             }
             catch (final IOException ignore)
             {
-                // If directories cannot be opened then we ignore.
             }
         }
 
-        return dirChannel;
+        return null;
     }
 }

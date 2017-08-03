@@ -15,7 +15,7 @@ public class ControlSessionTest
     private final ArchiveConductor mockConductor = mock(ArchiveConductor.class);
     private final EpochClock mockEpochClock = mock(EpochClock.class);
     private final Publication mockControlPublication = mock(Publication.class);
-    private final ControlSessionProxy mockProxy = mock(ControlSessionProxy.class);
+    private final ControlResponseProxy mockProxy = mock(ControlResponseProxy.class);
     private ControlSession session;
 
     @Before

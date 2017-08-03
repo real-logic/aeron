@@ -57,7 +57,7 @@ class ControlSession implements Session, ControlRequestListener
     private final FragmentHandler adapter = new ImageFragmentAssembler(new ControlRequestAdapter(this));
     private ArrayDeque<AbstractListRecordingsSession> listRecordingsSessions = new ArrayDeque<>();
     private ManyToOneConcurrentLinkedQueue<Supplier<Boolean>> responseQueue = new ManyToOneConcurrentLinkedQueue<>();
-    private final ControlSessionProxy controlSessionProxy;
+    private final ControlResponseProxy controlResponseProxy;
     private Publication controlPublication;
     private State state = State.INIT;
     private long timeoutDeadlineMs = -1;
@@ -66,12 +66,12 @@ class ControlSession implements Session, ControlRequestListener
         final Image image,
         final ArchiveConductor conductor,
         final EpochClock epochClock,
-        final ControlSessionProxy controlSessionProxy)
+        final ControlResponseProxy controlResponseProxy)
     {
         this.image = image;
         this.conductor = conductor;
         this.epochClock = epochClock;
-        this.controlSessionProxy = controlSessionProxy;
+        this.controlResponseProxy = controlResponseProxy;
     }
 
     public long sessionId()
@@ -207,7 +207,7 @@ class ControlSession implements Session, ControlRequestListener
      * Send a response, or if the publication cannot handle it queue up the sending of a response. This method
      * is thread safe.
      */
-    void sendOkResponse(final long correlationId, final ControlSessionProxy proxy)
+    void sendOkResponse(final long correlationId, final ControlResponseProxy proxy)
     {
         if (!proxy.sendResponse(correlationId, 0, OK, null, controlPublication))
         {
@@ -219,7 +219,7 @@ class ControlSession implements Session, ControlRequestListener
      * Send a response, or if the publication cannot handle it queue up the sending of a response. This method
      * is thread safe.
      */
-    void sendRecordingUnknown(final long correlationId, final long recordingId, final ControlSessionProxy proxy)
+    void sendRecordingUnknown(final long correlationId, final long recordingId, final ControlResponseProxy proxy)
     {
         if (!proxy.sendResponse(correlationId, recordingId, RECORDING_UNKNOWN, null, controlPublication))
         {
@@ -235,7 +235,7 @@ class ControlSession implements Session, ControlRequestListener
         final long correlationId,
         final ControlResponseCode code,
         final String errorMessage,
-        final ControlSessionProxy proxy)
+        final ControlResponseProxy proxy)
     {
         if (!proxy.sendResponse(correlationId, 0, code, errorMessage, controlPublication))
         {
@@ -249,7 +249,7 @@ class ControlSession implements Session, ControlRequestListener
     int sendDescriptor(
         final long correlationId,
         final UnsafeBuffer descriptorBuffer,
-        final ControlSessionProxy proxy)
+        final ControlResponseProxy proxy)
     {
         return proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
     }
@@ -344,6 +344,6 @@ class ControlSession implements Session, ControlRequestListener
         final long correlationId, final long relevantId, final ControlResponseCode code, final String message)
     {
         responseQueue.offer(
-            () -> controlSessionProxy.sendResponse(correlationId, relevantId, code, message, controlPublication));
+            () -> controlResponseProxy.sendResponse(correlationId, relevantId, code, message, controlPublication));
     }
 }

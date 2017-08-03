@@ -28,14 +28,14 @@ abstract class AbstractListRecordingsSession implements Session
     protected final UnsafeBuffer descriptorBuffer;
     protected final Catalog catalog;
     protected final ControlSession controlSession;
-    protected final ControlSessionProxy proxy;
+    protected final ControlResponseProxy proxy;
     protected final long correlationId;
     protected boolean isDone = false;
 
     AbstractListRecordingsSession(
         final long correlationId,
         final Catalog catalog,
-        final ControlSessionProxy proxy,
+        final ControlResponseProxy proxy,
         final ControlSession controlSession,
         final UnsafeBuffer descriptorBuffer)
     {

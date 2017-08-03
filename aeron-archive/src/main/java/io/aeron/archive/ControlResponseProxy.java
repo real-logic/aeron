@@ -25,7 +25,7 @@ import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.Strings;
 import org.agrona.concurrent.UnsafeBuffer;
 
-class ControlSessionProxy
+class ControlResponseProxy
 {
     private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];

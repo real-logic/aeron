@@ -74,7 +74,7 @@ class ReplaySession implements Session
     private final ExclusivePublication replayPublication;
     private final RecordingFragmentReader cursor;
 
-    private ControlSessionProxy threadLocalControlSessionProxy;
+    private ControlResponseProxy threadLocalControlResponseProxy;
     private State state = State.INIT;
     private long connectDeadlineMs;
 
@@ -84,7 +84,7 @@ class ReplaySession implements Session
         final ReplayPublicationSupplier supplier,
         final ControlSession controlSession,
         final File archiveDir,
-        final ControlSessionProxy threadLocalControlSessionProxy,
+        final ControlResponseProxy threadLocalControlResponseProxy,
         final long replaySessionId,
         final long correlationId,
         final EpochClock epochClock,
@@ -94,7 +94,7 @@ class ReplaySession implements Session
         final AtomicCounter recordingPosition)
     {
         this.controlSession = controlSession;
-        this.threadLocalControlSessionProxy = threadLocalControlSessionProxy;
+        this.threadLocalControlResponseProxy = threadLocalControlResponseProxy;
         this.replaySessionId = replaySessionId;
         this.correlationId = correlationId;
         this.epochClock = epochClock;
@@ -166,7 +166,7 @@ class ReplaySession implements Session
         }
 
         this.replayPublication = replayPublication;
-        controlSession.sendOkResponse(correlationId, threadLocalControlSessionProxy);
+        controlSession.sendOkResponse(correlationId, threadLocalControlResponseProxy);
     }
 
     public void close()
@@ -213,9 +213,9 @@ class ReplaySession implements Session
         return state;
     }
 
-    void setThreadLocalControlSessionProxy(final ControlSessionProxy proxy)
+    void setThreadLocalControlResponseProxy(final ControlResponseProxy proxy)
     {
-        threadLocalControlSessionProxy = proxy;
+        threadLocalControlResponseProxy = proxy;
     }
 
     private int replay()
@@ -309,7 +309,7 @@ class ReplaySession implements Session
                 correlationId,
                 ControlResponseCode.ERROR,
                 errorMessage,
-                threadLocalControlSessionProxy);
+                threadLocalControlResponseProxy);
         }
 
         if (ex != null)

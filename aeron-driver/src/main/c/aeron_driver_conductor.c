@@ -632,7 +632,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                         &pub_lmt_position,
                         initial_term_id,
                         conductor->context->ipc_term_buffer_length,
-                        conductor->context->mtu_length,
+                        conductor->context->ipc_mtu_length,
                         is_exclusive,
                         &conductor->system_counters) >= 0)
                 {

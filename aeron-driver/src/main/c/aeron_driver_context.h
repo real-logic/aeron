@@ -90,6 +90,7 @@ typedef struct aeron_driver_context_stct
     size_t term_buffer_length;              /* aeron.term.buffer.length = 16 * 1024 * 1024 */
     size_t ipc_term_buffer_length;          /* aeron.ipc.term.buffer.length = 64 * 1024 * 1024 */
     size_t mtu_length;                      /* aeron.mtu.length = 4096 */
+    size_t ipc_mtu_length;                  /* aeron.ipc.mtu.length = 4096 */
     size_t ipc_publication_window_length;   /* aeron.ipc.publication.term.window.length = 0 */
     size_t publication_window_length;       /* aeron.publication.term.window.length = 0 */
     size_t socket_rcvbuf;                   /* aeron.socket.so_rcvbuf = 128 * 1024 */

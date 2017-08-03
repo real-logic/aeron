@@ -223,6 +223,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->term_buffer_length = 16 * 1024 * 1024;
     _context->ipc_term_buffer_length = 64 * 1024 * 1024;
     _context->mtu_length = 4096;
+    _context->ipc_mtu_length = 4096;
     _context->ipc_publication_window_length = 0;
     _context->publication_window_length = 0;
     _context->publication_linger_timeout_ns = 5 * 1000 * 1000 * 1000L;
@@ -356,6 +357,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         aeron_config_parse_uint64(
             getenv(AERON_MTU_LENGTH_ENV_VAR),
             _context->mtu_length,
+            AERON_DATA_HEADER_LENGTH,
+            AERON_MAX_UDP_PAYLOAD_LENGTH);
+
+    _context->ipc_mtu_length =
+        aeron_config_parse_uint64(
+            getenv(AERON_IPC_MTU_LENGTH_ENV_VAR),
+            _context->ipc_mtu_length,
             AERON_DATA_HEADER_LENGTH,
             AERON_MAX_UDP_PAYLOAD_LENGTH);
 

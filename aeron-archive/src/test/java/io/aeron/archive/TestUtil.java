@@ -213,6 +213,7 @@ public class TestUtil
     {
         return new TestWatcher()
         {
+            @SuppressWarnings("unused")
             protected void failed(final Throwable t, final Description description)
             {
                 System.err.println(clazz.getName() + " failed with random seed: " + seed);

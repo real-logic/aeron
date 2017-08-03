@@ -374,7 +374,7 @@ public class ArchiveSystemTest
 
         waitForOk(controlResponse, startRecordingCorrelationId);
 
-        startChannelDrainingSubscription(aeron, publishUri, PUBLISH_STREAM_ID);
+        startDrainingSubscriber(aeron, publishUri, PUBLISH_STREAM_ID);
     }
 
     private void verifyEmptyDescriptorList(final ArchiveProxy client)

@@ -220,39 +220,52 @@ public class TestUtil
         };
     }
 
-    public static void startChannelDrainingSubscription(final Aeron aeron, final String channel, final int streamId)
+    /**
+     * Create a {@link Subscription} and register a callback handler that will create a thread and drain the
+     * first available {@link io.aeron.Image} then terminate and close.
+     * <p>
+     * This is useful for draining a {@link Publication}. In the case of an IPC channel then no action is taken.
+     *
+     * @param aeron    client to create the subscription with.
+     * @param channel  for the subscription.
+     * @param streamId for the subscription.
+     */
+    public static void startDrainingSubscriber(final Aeron aeron, final String channel, final int streamId)
     {
         if (channel.contains("ipc"))
         {
             return;
         }
 
-        final Thread t = new Thread(
-            () ->
+        aeron.addSubscription(
+            channel,
+            streamId,
+            (image) ->
             {
-                try (Subscription subscription = aeron.addSubscription(channel, streamId))
-                {
-                    while (subscription.hasNoImages())
+                final Thread t = new Thread(
+                    () ->
                     {
-                        LockSupport.parkNanos(1);
-                    }
-
-                    while (!subscription.isClosed())
-                    {
-                        if (0 == subscription.poll((buffer1, offset, length, header) -> {}, Integer.MAX_VALUE))
+                        while (true)
                         {
-                            LockSupport.parkNanos(1);
-                        }
-                    }
-                }
-                catch (final Exception ex)
-                {
-                    ex.printStackTrace();
-                }
-            });
+                            final int fragments = image.poll((buffer, offset, length, header) -> {}, 16);
+                            if (0 == fragments)
+                            {
+                                if (image.isEndOfStream() || image.isClosed())
+                                {
+                                    break;
+                                }
 
-        t.setDaemon(true);
-        t.setName("eager-subscriber");
-        t.start();
+                                LockSupport.parkNanos(1);
+                            }
+                        }
+
+                        image.subscription().close();
+                    });
+
+                t.setDaemon(true);
+                t.setName("eager-subscriber");
+                t.start();
+            },
+            null);
     }
 }

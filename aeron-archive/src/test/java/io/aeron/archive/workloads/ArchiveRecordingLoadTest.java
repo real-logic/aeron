@@ -145,7 +145,7 @@ public class ArchiveRecordingLoadTest
             long start;
             final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
 
-            startChannelDrainingSubscription(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
+            startDrainingSubscriber(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
             final String channel = PUBLISH_URI;
 
             while (System.currentTimeMillis() < duration)

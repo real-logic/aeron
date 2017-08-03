@@ -157,7 +157,7 @@ public class ArchiveReplayLoadTest
 
             final Publication publication = aeron.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
             awaitPublicationIsConnected(publication);
-            startChannelDrainingSubscription(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
+            startDrainingSubscriber(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
 
             final int messageCount = prepAndSendMessages(recordingEvents, publication);
             publication.close();

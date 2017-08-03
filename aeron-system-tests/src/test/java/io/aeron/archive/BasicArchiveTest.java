@@ -52,8 +52,8 @@ public class BasicArchiveTest
 
     private MediaDriver driver;
     private Archive archive;
-    private Aeron aeronClient;
-    private AeronArchive archiveClient;
+    private Aeron aeron;
+    private AeronArchive aeronArchive;
 
     @Before
     public void before() throws Exception
@@ -75,17 +75,17 @@ public class BasicArchiveTest
                 .errorHandler(driver.context().errorHandler())
                 .countersManager(driver.context().countersManager()));
 
-        aeronClient = Aeron.connect();
+        aeron = Aeron.connect();
 
-        archiveClient = AeronArchive.connect(
+        aeronArchive = AeronArchive.connect(
             new AeronArchive.Context()
-                .aeron(aeronClient));
+                .aeron(aeron));
     }
 
     @After
     public void after() throws Exception
     {
-        CloseHelper.close(aeronClient);
+        CloseHelper.close(aeron);
         CloseHelper.close(archive);
         CloseHelper.close(driver);
 
@@ -100,8 +100,8 @@ public class BasicArchiveTest
         final int messageCount = 10;
         final long length;
 
-        try (Publication publication = archiveClient.addRecordedPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
-             Subscription subscription = aeronClient.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
+        try (Publication publication = aeronArchive.addRecordedPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
+             Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
         {
             offer(publication, messageCount, messagePrefix);
             consume(subscription, messageCount, messagePrefix);
@@ -109,12 +109,12 @@ public class BasicArchiveTest
             length = publication.position();
         }
 
-        archiveClient.stopRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID);
+        aeronArchive.stopRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID);
 
         final long recordingId = findRecordingId(RECORDING_CHANNEL, RECORDING_STREAM_ID, length);
         final long fromPosition = 0L;
 
-        try (Subscription subscription = archiveClient.replay(
+        try (Subscription subscription = aeronArchive.replay(
             recordingId, fromPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
         {
             consume(subscription, messageCount, messagePrefix);
@@ -126,7 +126,7 @@ public class BasicArchiveTest
     {
         final MutableLong foundRecordingId = new MutableLong();
 
-        final int recordingsFound = archiveClient.listRecordingsForUri(
+        final int recordingsFound = aeronArchive.listRecordingsForUri(
             0L,
             10,
             expectedChannel,

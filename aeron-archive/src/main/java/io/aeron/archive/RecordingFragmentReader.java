@@ -127,7 +127,7 @@ class RecordingFragmentReader implements AutoCloseable
 
     public void close()
     {
-        closeRecordingFile();
+        closeRecordingSegment();
     }
 
     boolean isDone()
@@ -250,7 +250,7 @@ class RecordingFragmentReader implements AutoCloseable
 
         if (termStartSegmentOffset == segmentFileLength)
         {
-            closeRecordingFile();
+            closeRecordingSegment();
             segmentFileIndex++;
             if (!openRecordingSegment())
             {
@@ -264,7 +264,7 @@ class RecordingFragmentReader implements AutoCloseable
         termBuffer.wrap(mappedSegmentBuffer, termStartSegmentOffset, termBufferLength);
     }
 
-    private void closeRecordingFile()
+    private void closeRecordingSegment()
     {
         IoUtil.unmap(mappedSegmentBuffer);
     }

@@ -88,6 +88,6 @@ int aeron_uri_parse(const char *uri, aeron_uri_t *params);
 
 uint8_t aeron_uri_multicast_ttl(aeron_uri_t *uri);
 
-const char *aeron_uri_find_udp_param_value(aeron_uri_t *uri, const char *key);
+const char *aeron_uri_find_param_value(aeron_uri_params_t *uri_params, const char *key);
 
 #endif //AERON_AERON_URI_H

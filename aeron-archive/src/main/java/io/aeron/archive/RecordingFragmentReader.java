@@ -59,11 +59,8 @@ class RecordingFragmentReader implements AutoCloseable
 
     private long fromPosition;
     private final AtomicCounter recordingPosition;
-
     private final RecordingDescriptorDecoder descriptorDecoder;
-
     private MappedByteBuffer mappedSegmentBuffer;
-
     private UnsafeBuffer termBuffer = null;
 
     private int segmentFileIndex;

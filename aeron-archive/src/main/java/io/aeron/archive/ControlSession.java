@@ -275,7 +275,7 @@ class ControlSession implements Session, ControlRequestListener
             }
             else
             {
-                if (resend(queuedResponses))
+                if (sendFirst(queuedResponses))
                 {
                     queuedResponses.poll();
                     timeoutDeadlineMs = NO_ACTIVE_DEADLINE;
@@ -295,7 +295,7 @@ class ControlSession implements Session, ControlRequestListener
         return workCount;
     }
 
-    private static boolean resend(final ManyToOneConcurrentLinkedQueue<Supplier<Boolean>> responseQueue)
+    private static boolean sendFirst(final ManyToOneConcurrentLinkedQueue<Supplier<Boolean>> responseQueue)
     {
         return responseQueue.peek().get();
     }

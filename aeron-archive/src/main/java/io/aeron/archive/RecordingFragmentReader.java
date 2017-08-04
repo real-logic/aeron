@@ -53,8 +53,8 @@ class RecordingFragmentReader implements AutoCloseable
     private final File archiveDir;
     private final long recordingId;
     private final long startPosition;
-    private final int segmentFileLength;
-    private final int termBufferLength;
+    private final int segmentLength;
+    private final int termLength;
 
     private long fromPosition;
     private final AtomicCounter recordingPosition;
@@ -80,8 +80,8 @@ class RecordingFragmentReader implements AutoCloseable
     {
         this.descriptorDecoder = descriptorDecoder;
         stopPosition = descriptorDecoder.stopPosition();
-        termBufferLength = descriptorDecoder.termBufferLength();
-        segmentFileLength = descriptorDecoder.segmentFileLength();
+        termLength = descriptorDecoder.termBufferLength();
+        segmentLength = descriptorDecoder.segmentFileLength();
         startPosition = descriptorDecoder.startPosition();
 
         recordingId = descriptorDecoder.recordingId();
@@ -92,20 +92,20 @@ class RecordingFragmentReader implements AutoCloseable
         final long maxLength = recordingPosition == null ? stopPosition - fromPosition : Long.MAX_VALUE;
         final long replayLength = length == NULL_LENGTH ? maxLength : Math.min(length, maxLength);
 
-        segmentFileIndex = segmentFileIndex(startPosition, fromPosition, segmentFileLength);
+        segmentFileIndex = segmentFileIndex(startPosition, fromPosition, segmentLength);
 
         if (!openRecordingSegment())
         {
             throw new IllegalStateException("First file must be available");
         }
 
-        final long termStartPosition = (startPosition / termBufferLength) * termBufferLength;
-        final long fromSegmentOffset = (fromPosition - termStartPosition) & (segmentFileLength - 1);
-        final int termMask = termBufferLength - 1;
+        final long termStartPosition = (startPosition / termLength) * termLength;
+        final long fromSegmentOffset = (fromPosition - termStartPosition) & (segmentLength - 1);
+        final int termMask = termLength - 1;
         final int fromTermStartSegmentOffset = (int)(fromSegmentOffset - (fromSegmentOffset & termMask));
         final int fromTermOffset = (int)(fromSegmentOffset & termMask);
 
-        termBuffer = new UnsafeBuffer(mappedSegmentBuffer, fromTermStartSegmentOffset, termBufferLength);
+        termBuffer = new UnsafeBuffer(mappedSegmentBuffer, fromTermStartSegmentOffset, termLength);
         termStartSegmentOffset = fromTermStartSegmentOffset;
         termOffset = fromTermOffset;
         final DataHeaderFlyweight flyweight = new DataHeaderFlyweight();
@@ -150,7 +150,7 @@ class RecordingFragmentReader implements AutoCloseable
 
         while ((stopPosition - replayPosition) > 0 && polled < fragmentLimit)
         {
-            if (termOffset == termBufferLength)
+            if (termOffset == termLength)
             {
                 termOffset = 0;
                 nextTerm();
@@ -233,9 +233,9 @@ class RecordingFragmentReader implements AutoCloseable
 
     private void nextTerm() throws IOException
     {
-        termStartSegmentOffset += termBufferLength;
+        termStartSegmentOffset += termLength;
 
-        if (termStartSegmentOffset == segmentFileLength)
+        if (termStartSegmentOffset == segmentLength)
         {
             closeRecordingSegment();
             segmentFileIndex++;
@@ -248,7 +248,7 @@ class RecordingFragmentReader implements AutoCloseable
             termStartSegmentOffset = 0;
         }
 
-        termBuffer.wrap(mappedSegmentBuffer, termStartSegmentOffset, termBufferLength);
+        termBuffer.wrap(mappedSegmentBuffer, termStartSegmentOffset, termLength);
     }
 
     private void closeRecordingSegment()
@@ -264,7 +264,7 @@ class RecordingFragmentReader implements AutoCloseable
 
         if (!segmentFile.exists())
         {
-            final int lastSegmentIndex = segmentFileIndex(startPosition, stopPosition, segmentFileLength);
+            final int lastSegmentIndex = segmentFileIndex(startPosition, stopPosition, segmentLength);
             if (lastSegmentIndex > segmentFileIndex)
             {
                 throw new IllegalStateException("Recording segment not found. Segment index=" + segmentFileIndex +
@@ -276,7 +276,7 @@ class RecordingFragmentReader implements AutoCloseable
 
         try (FileChannel channel = FileChannel.open(segmentFile.toPath(), READ))
         {
-            mappedSegmentBuffer = channel.map(READ_ONLY, 0, segmentFileLength);
+            mappedSegmentBuffer = channel.map(READ_ONLY, 0, segmentLength);
         }
 
         return true;

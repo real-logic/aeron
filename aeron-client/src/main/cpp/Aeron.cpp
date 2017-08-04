@@ -107,7 +107,7 @@ inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
 
         std::int32_t cncVersion = 0;
 
-        while (0 == (cncVersion = CncFileDescriptor::cncVersion(cncBuffer)))
+        while (0 == (cncVersion = CncFileDescriptor::cncVersionVolatile(cncBuffer)))
         {
             if (currentTimeMillis() > (startMs + context.m_mediaDriverTimeout))
             {

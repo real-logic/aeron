@@ -92,7 +92,7 @@ int main (int argc, char** argv)
         MemoryMappedFile::ptr_t cncFile =
             MemoryMappedFile::mapExisting((settings.basePath + "/" + CncFileDescriptor::CNC_FILE).c_str());
 
-        const std::int32_t cncVersion = CncFileDescriptor::cncVersion(cncFile);
+        const std::int32_t cncVersion = CncFileDescriptor::cncVersionVolatile(cncFile);
 
         if (cncVersion != CncFileDescriptor::CNC_VERSION)
         {

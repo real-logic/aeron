@@ -968,7 +968,7 @@ public final class Aeron implements AutoCloseable
                 cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
 
                 int cncVersion;
-                while (0 == (cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0))))
+                while (0 == (cncVersion = cncMetaDataBuffer.getIntVolatile(CncFileDescriptor.cncVersionOffset(0))))
                 {
                     if (epochClock.time() > (startTimeMs + driverTimeoutMs()))
                     {

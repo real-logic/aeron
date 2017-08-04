@@ -15,6 +15,7 @@
  */
 package io.aeron;
 
+import io.aeron.exceptions.DriverTimeoutException;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.AtomicBuffer;
@@ -30,6 +31,7 @@ import java.util.Date;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import static io.aeron.Aeron.sleep;
 import static io.aeron.CncFileDescriptor.CNC_VERSION;
 import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
@@ -427,7 +429,8 @@ public class CommonContext implements AutoCloseable
     }
 
     /**
-     * Is a media driver active in the current mapped CnC buffer?
+     * Is a media driver active in the current mapped CnC buffer? If the driver is mid start then it will wait for
+     * up to the driverTimeoutMs by checking for the cncVersion being set.
      *
      * @param driverTimeoutMs for the driver liveness check.
      * @param logProgress     for feedback as liveness checked.
@@ -443,7 +446,18 @@ public class CommonContext implements AutoCloseable
         }
 
         final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-        final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
+
+        final long startTimeMs = System.currentTimeMillis();
+        int cncVersion;
+        while (0 == (cncVersion = cncMetaDataBuffer.getIntVolatile(CncFileDescriptor.cncVersionOffset(0))))
+        {
+            if (System.currentTimeMillis() > (startTimeMs + driverTimeoutMs))
+            {
+                throw new DriverTimeoutException("CnC file is created but not initialised.");
+            }
+
+            sleep(1);
+        }
 
         if (CNC_VERSION != cncVersion)
         {

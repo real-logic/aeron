@@ -40,7 +40,7 @@ class RecordingFragmentReader implements AutoCloseable
     interface SimplifiedControlledPoll
     {
         /**
-         * Called by the {@link RecordingFragmentReader}. Implementors need to process DATA and PAD fragments.
+         * Called by the {@link RecordingFragmentReader}. Implementors need to process DATA and PADDING fragments.
          *
          * @return true if fragment processed, false to abort.
          */
@@ -83,23 +83,23 @@ class RecordingFragmentReader implements AutoCloseable
         final AtomicCounter recordingPosition) throws IOException
     {
         this.descriptorDecoder = descriptorDecoder;
-        this.mtuLength = descriptorDecoder.mtuLength();
-        this.stopPosition = descriptorDecoder.stopPosition();
-        this.termBufferLength = descriptorDecoder.termBufferLength();
-        this.segmentFileLength = descriptorDecoder.segmentFileLength();
+        mtuLength = descriptorDecoder.mtuLength();
+        stopPosition = descriptorDecoder.stopPosition();
+        termBufferLength = descriptorDecoder.termBufferLength();
+        segmentFileLength = descriptorDecoder.segmentFileLength();
         startPosition = descriptorDecoder.startPosition();
 
-        this.recordingId = descriptorDecoder.recordingId();
+        recordingId = descriptorDecoder.recordingId();
         this.archiveDir = archiveDir;
 
-        this.fromPosition = position == NULL_POSITION ? startPosition : position;
+        fromPosition = position == NULL_POSITION ? startPosition : position;
         this.recordingPosition = recordingPosition;
         final long maxLength = recordingPosition == null ? stopPosition - fromPosition : Long.MAX_VALUE;
         final long replayLength = length == NULL_LENGTH ? maxLength : Math.min(length, maxLength);
 
         segmentFileIndex = segmentFileIndex(startPosition, fromPosition, segmentFileLength);
 
-        if (!openRecordingFile())
+        if (!openRecordingSegment())
         {
             throw new IllegalStateException("First file must be available");
         }
@@ -107,8 +107,8 @@ class RecordingFragmentReader implements AutoCloseable
         final long termStartPosition = (startPosition / termBufferLength) * termBufferLength;
         final long fromSegmentOffset = (fromPosition - termStartPosition) & (segmentFileLength - 1);
         final int termMask = termBufferLength - 1;
-        final int fromTermStartSegmentOffset = (int) (fromSegmentOffset - (fromSegmentOffset & termMask));
-        final int fromTermOffset = (int) (fromSegmentOffset & termMask);
+        final int fromTermStartSegmentOffset = (int)(fromSegmentOffset - (fromSegmentOffset & termMask));
+        final int fromTermOffset = (int)(fromSegmentOffset & termMask);
 
         termBuffer = new UnsafeBuffer(mappedSegmentBuffer, fromTermStartSegmentOffset, termBufferLength);
         termStartSegmentOffset = fromTermStartSegmentOffset;
@@ -124,8 +124,8 @@ class RecordingFragmentReader implements AutoCloseable
             throw new IllegalArgumentException("fromPosition:" + fromPosition + " is not aligned to fragment");
         }
 
-        replayPosition = this.fromPosition;
-        replayLimit = this.fromPosition + replayLength;
+        replayPosition = fromPosition;
+        replayLimit = fromPosition + replayLength;
     }
 
     public void close()
@@ -205,8 +205,8 @@ class RecordingFragmentReader implements AutoCloseable
     private boolean newDataUnavailable()
     {
         return recordingPosition != null &&
-            replayPosition == this.stopPosition &&
-            !refreshStopPositionAndLimit(replayPosition, this.stopPosition);
+            replayPosition == stopPosition &&
+            !refreshStopPositionAndLimit(replayPosition, stopPosition);
     }
 
     private boolean refreshStopPositionAndLimit(final long replayPosition, final long oldStopPosition)
@@ -215,9 +215,9 @@ class RecordingFragmentReader implements AutoCloseable
         final long recordingPosition = this.recordingPosition.get();
         final long newStopPosition = this.recordingPosition.isClosed() ? descriptorStopPosition() : recordingPosition;
 
-        if (stopTimestamp != Catalog.NULL_TIME && (newStopPosition - this.replayLimit) < 0)
+        if (stopTimestamp != Catalog.NULL_TIME && (newStopPosition - replayLimit) < 0)
         {
-            this.replayLimit = newStopPosition;
+            replayLimit = newStopPosition;
         }
 
         if ((replayLimit - replayPosition) <= 0)
@@ -228,7 +228,7 @@ class RecordingFragmentReader implements AutoCloseable
 
         if (newStopPosition != oldStopPosition)
         {
-            this.stopPosition = newStopPosition;
+            stopPosition = newStopPosition;
             return true;
         }
 
@@ -255,7 +255,7 @@ class RecordingFragmentReader implements AutoCloseable
         {
             closeRecordingFile();
             segmentFileIndex++;
-            if (!openRecordingFile())
+            if (!openRecordingSegment())
             {
                 throw new IllegalStateException("Failed to open segment file: " +
                     segmentFileName(recordingId, segmentFileIndex));
@@ -272,27 +272,27 @@ class RecordingFragmentReader implements AutoCloseable
         IoUtil.unmap(mappedSegmentBuffer);
     }
 
-    private boolean openRecordingFile() throws IOException
+    private boolean openRecordingSegment() throws IOException
     {
-        final String recordingDataFileName = segmentFileName(recordingId, segmentFileIndex);
-        final File recordingDataFile = new File(archiveDir, recordingDataFileName);
+        final String segmentFileName = segmentFileName(recordingId, segmentFileIndex);
+        final File segmentFile = new File(archiveDir, segmentFileName);
         final long stopPosition = descriptorStopPosition();
 
-        if (!recordingDataFile.exists())
+        if (!segmentFile.exists())
         {
-            final int lastSegment = segmentFileIndex(startPosition, stopPosition, segmentFileLength);
-            if (lastSegment > segmentFileIndex)
+            final int lastSegmentIndex = segmentFileIndex(startPosition, stopPosition, segmentFileLength);
+            if (lastSegmentIndex > segmentFileIndex)
             {
                 throw new IllegalStateException("Recording segment not found. Segment index=" + segmentFileIndex +
-                    ", last segment index=" + lastSegment);
+                    ", last segment index=" + lastSegmentIndex);
             }
 
             return false;
         }
 
-        try (FileChannel fileChannel = FileChannel.open(recordingDataFile.toPath(), READ))
+        try (FileChannel channel = FileChannel.open(segmentFile.toPath(), READ))
         {
-            mappedSegmentBuffer = fileChannel.map(READ_ONLY, 0, segmentFileLength);
+            mappedSegmentBuffer = channel.map(READ_ONLY, 0, segmentFileLength);
         }
 
         return true;

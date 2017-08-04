@@ -149,6 +149,13 @@ aeron_driver_context_t;
 
 void aeron_driver_fill_cnc_metadata(aeron_driver_context_t *context);
 
+inline int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata)
+{
+    int32_t cnc_version;
+    AERON_GET_VOLATILE(cnc_version, metadata->cnc_version);
+    return cnc_version;
+}
+
 inline uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata)
 {
     return (uint8_t *)metadata + AERON_CNC_VERSION_AND_META_DATA_LENGTH;

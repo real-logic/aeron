@@ -21,6 +21,7 @@
 
 #include <string.h>
 #include <sys/socket.h>
+#include <uri/aeron_uri.h>
 #include "aeron_driver_sender.h"
 #include "util/aeron_netutil.h"
 #include "aeron_driver_context.h"
@@ -53,7 +54,8 @@ int aeron_send_channel_endpoint_create(
     _endpoint->destination_tracker = NULL;
     if (channel->explicit_control)
     {
-        const char *control_mode = aeron_uri_find_udp_param_value(&channel->uri, AERON_UDP_CHANNEL_CONTROL_MODE_KEY);
+        const char *control_mode =
+            aeron_uri_find_param_value(&channel->uri.params.udp.additional_params, AERON_UDP_CHANNEL_CONTROL_MODE_KEY);
         int64_t destination_timeout_ns = AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS;
 
         if (NULL != control_mode &&

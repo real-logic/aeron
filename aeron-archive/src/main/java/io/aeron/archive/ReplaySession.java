@@ -46,7 +46,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * <ul>
  * <li>Validate request parameters and respond with appropriate error if unable to replay </li>
  * <li>Wait for replay subscription to connect to the requested replay publication. If no subscription appears within
- * LINGER_LENGTH_MS the session will terminate and respond will error.</li>
+ * {@link #CONNECT_TIMEOUT_MS} the session will terminate and respond will error.</li>
  * <li>Once the replay publication is connected send an OK response to control client</li>
  * <li>Stream recorded data into the replayPublication {@link ExclusivePublication}</li>
  * <li>If the replay is aborted part way through, send a ReplayAborted message and terminate.</li>
@@ -60,7 +60,11 @@ class ReplaySession implements Session
         INIT, REPLAY, INACTIVE, CLOSED
     }
 
+    /**
+     * Timeout within which a replay connection needs to be established.
+     */
     static final long CONNECT_TIMEOUT_MS = 5000;
+
     private static final int REPLAY_BATCH_SIZE = Archive.Configuration.replayBatchSize();
 
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();

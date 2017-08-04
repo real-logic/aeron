@@ -55,7 +55,6 @@ class RecordingFragmentReader implements AutoCloseable
     private final long startPosition;
     private final int segmentFileLength;
     private final int termBufferLength;
-    private final int mtuLength;
 
     private long fromPosition;
     private final AtomicCounter recordingPosition;
@@ -80,7 +79,6 @@ class RecordingFragmentReader implements AutoCloseable
         final AtomicCounter recordingPosition) throws IOException
     {
         this.descriptorDecoder = descriptorDecoder;
-        mtuLength = descriptorDecoder.mtuLength();
         stopPosition = descriptorDecoder.stopPosition();
         termBufferLength = descriptorDecoder.termBufferLength();
         segmentFileLength = descriptorDecoder.segmentFileLength();
@@ -143,12 +141,7 @@ class RecordingFragmentReader implements AutoCloseable
     int controlledPoll(final SimplifiedControlledPoll fragmentHandler, final int fragmentLimit)
         throws IOException
     {
-        if (isDone())
-        {
-            return 0;
-        }
-
-        if (newDataUnavailable())
+        if (isDone() || noAvailableData())
         {
             return 0;
         }
@@ -166,12 +159,6 @@ class RecordingFragmentReader implements AutoCloseable
 
             final int frameOffset = termOffset;
             final int frameLength = FrameDescriptor.frameLength(termBuffer, frameOffset);
-
-            if (frameLength < DataHeaderFlyweight.HEADER_LENGTH || frameLength > mtuLength)
-            {
-                throw new IllegalStateException("Unexpected frameLength: " + frameLength);
-            }
-
             final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
 
             replayPosition += alignedLength;
@@ -199,7 +186,7 @@ class RecordingFragmentReader implements AutoCloseable
         return polled;
     }
 
-    private boolean newDataUnavailable()
+    private boolean noAvailableData()
     {
         return recordingPosition != null &&
             replayPosition == stopPosition &&

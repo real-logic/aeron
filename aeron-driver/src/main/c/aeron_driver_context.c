@@ -625,6 +625,7 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, a
 }
 
 extern int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata);
+extern void aeron_cnc_version_signal_cnc_ready(aeron_cnc_metadata_t *metadata, int32_t cnc_version);
 extern uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata);
 extern uint8_t *aeron_cnc_to_clients_buffer(aeron_cnc_metadata_t *metadata);
 extern uint8_t *aeron_cnc_counters_metadata_buffer(aeron_cnc_metadata_t *metadata);

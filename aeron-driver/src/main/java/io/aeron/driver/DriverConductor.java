@@ -116,8 +116,6 @@ public class DriverConductor implements Agent
             this);
 
         timeInMs = epochClock.time();
-        toDriverCommands.consumerHeartbeatTime(timeInMs);
-
         final long nowNs = nanoClock.nanoTime();
         timeOfLastTimeoutCheckNs = nowNs;
         timeOfLastToDriverPositionChangeNs = nowNs;

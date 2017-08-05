@@ -153,6 +153,10 @@ public class CncFileDescriptor
         cncMetaDataBuffer.putInt(countersValuesBufferLengthOffset(0), counterValuesBufferLength);
         cncMetaDataBuffer.putInt(errorLogBufferLengthOffset(0), errorLogBufferLength);
         cncMetaDataBuffer.putLong(clientLivenessTimeoutOffset(0), clientLivenessTimeout);
+    }
+
+    public static void signalCncReady(final UnsafeBuffer cncMetaDataBuffer)
+    {
         cncMetaDataBuffer.putIntVolatile(cncVersionOffset(0), CNC_VERSION);
     }
 

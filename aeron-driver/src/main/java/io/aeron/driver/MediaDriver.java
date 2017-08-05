@@ -165,9 +165,9 @@ public final class MediaDriver implements AutoCloseable
             .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
             .conclude();
 
+        final DriverConductor conductor = new DriverConductor(ctx);
         final Receiver receiver = new Receiver(ctx);
         final Sender sender = new Sender(ctx);
-        final DriverConductor conductor = new DriverConductor(ctx);
 
         ctx.receiverProxy().receiver(receiver);
         ctx.senderProxy().sender(sender);
@@ -636,6 +636,9 @@ public final class MediaDriver implements AutoCloseable
                 }
 
                 concludeIdleStrategies();
+
+                toDriverCommands.consumerHeartbeatTime(epochClock.time());
+                CncFileDescriptor.signalCncReady(cncMetaDataBuffer);
             }
             catch (final Exception ex)
             {

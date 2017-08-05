@@ -51,7 +51,7 @@ public class ControlResponsePoller
     }
 
     /**
-     * Poll for recording events and dispatch them to the {@link RecordingEventsListener} for this instance.
+     * Poll for recording events.
      *
      * @return the number of fragments read during the operation. Zero if no events are available.
      */

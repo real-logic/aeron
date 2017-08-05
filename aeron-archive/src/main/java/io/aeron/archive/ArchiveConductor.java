@@ -36,6 +36,7 @@ import java.nio.channels.FileChannel.MapMode;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static java.nio.file.StandardOpenOption.*;
@@ -80,7 +81,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     protected SessionWorker<ReplaySession> replayer;
     protected SessionWorker<RecordingSession> recorder;
 
-    private int replaySessionId;
+    private long replaySessionId = ThreadLocalRandom.current().nextInt();
+    private long controlSessionId = ThreadLocalRandom.current().nextInt();
 
     ArchiveConductor(final Aeron aeron, final Archive.Context ctx)
     {
@@ -184,7 +186,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
      */
     private void onControlConnection(final Image image)
     {
-        addSession(new ControlSession(image, this, epochClock, controlResponseProxy));
+        addSession(new ImageControlSession(image, this));
     }
 
     void stopRecording(
@@ -346,7 +348,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             return;
         }
 
-        final int newId = replaySessionId++;
+        final long newId = replaySessionId++;
         final AtomicCounter recordingPosition = recordingPositionByIdMap.get(recordingId);
         final ReplaySession replaySession = new ReplaySession(
             position,
@@ -367,7 +369,11 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         replayer.addSession(replaySession);
     }
 
-    Publication newControlPublication(final String channel, final int streamId)
+    ControlSession newControlSession(
+        final long correlationId,
+        final String channel,
+        final int streamId,
+        final ImageControlSession parent)
     {
         final String controlChannel;
         if (!channel.contains(CommonContext.TERM_LENGTH_PARAM_NAME))
@@ -380,8 +386,18 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         {
             controlChannel = channel;
         }
+        final Publication publication = aeron.addPublication(controlChannel, streamId);
 
-        return aeron.addPublication(controlChannel, streamId);
+        final ControlSession controlSession = new ControlSession(
+            controlSessionId++,
+            correlationId,
+            parent,
+            publication,
+            this,
+            epochClock,
+            controlResponseProxy);
+        addSession(controlSession);
+        return controlSession;
     }
 
     private static String makeKey(final int streamId, final String minimalChannel)

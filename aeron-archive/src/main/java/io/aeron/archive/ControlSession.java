@@ -15,14 +15,10 @@
  */
 package io.aeron.archive;
 
-import io.aeron.Image;
-import io.aeron.ImageFragmentAssembler;
 import io.aeron.Publication;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.SourceLocation;
-import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.CloseHelper;
-import org.agrona.LangUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -30,8 +26,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.util.ArrayDeque;
 import java.util.function.Supplier;
 
-import static io.aeron.archive.codecs.ControlResponseCode.OK;
-import static io.aeron.archive.codecs.ControlResponseCode.RECORDING_UNKNOWN;
+import static io.aeron.archive.codecs.ControlResponseCode.*;
 
 /**
  * Control sessions are interacted with from both the {@link ArchiveConductor} and the replay/record
@@ -41,7 +36,7 @@ import static io.aeron.archive.codecs.ControlResponseCode.RECORDING_UNKNOWN;
  * share the sessions request/reply channels. The relationship does not imply a lifecycle dependency however. A
  * {@link RecordingSession}/{@link ReplaySession} can outlive their 'parent' {@link ControlSession}.
  */
-class ControlSession implements Session, ControlRequestListener
+class ControlSession implements Session
 {
     enum State
     {
@@ -50,26 +45,33 @@ class ControlSession implements Session, ControlRequestListener
 
     static final long TIMEOUT_MS = 5000L;
     private static final int NO_ACTIVE_DEADLINE = -1;
-    private static final int FRAGMENT_LIMIT = 16;
 
-    private final Image image;
     private final ArchiveConductor conductor;
     private final EpochClock epochClock;
-    private final FragmentHandler adapter = new ImageFragmentAssembler(new ControlRequestAdapter(this));
-    private ArrayDeque<AbstractListRecordingsSession> listRecordingsSessions = new ArrayDeque<>();
-    private ManyToOneConcurrentLinkedQueue<Supplier<Boolean>> queuedResponses = new ManyToOneConcurrentLinkedQueue<>();
+    private final ArrayDeque<AbstractListRecordingsSession> listRecordingsSessions = new ArrayDeque<>();
+    private final ManyToOneConcurrentLinkedQueue<Supplier<Boolean>> queuedResponses =
+        new ManyToOneConcurrentLinkedQueue<>();
     private final ControlResponseProxy controlResponseProxy;
-    private Publication controlPublication;
+    private final long controlSessionId;
+    private final long correlationId;
+    private final ImageControlSession parent;
+    private final Publication controlPublication;
     private State state = State.INIT;
     private long timeoutDeadlineMs = -1;
 
     ControlSession(
-        final Image image,
+        final long controlSessionId,
+        final long correlationId,
+        final ImageControlSession parent,
+        final Publication controlPublication,
         final ArchiveConductor conductor,
         final EpochClock epochClock,
         final ControlResponseProxy controlResponseProxy)
     {
-        this.image = image;
+        this.controlSessionId = controlSessionId;
+        this.correlationId = correlationId;
+        this.parent = parent;
+        this.controlPublication = controlPublication;
         this.conductor = conductor;
         this.epochClock = epochClock;
         this.controlResponseProxy = controlResponseProxy;
@@ -77,7 +79,7 @@ class ControlSession implements Session, ControlRequestListener
 
     public long sessionId()
     {
-        return image.correlationId();
+        return controlSessionId;
     }
 
     public void abort()
@@ -89,6 +91,7 @@ class ControlSession implements Session, ControlRequestListener
     {
         state = State.CLOSED;
         CloseHelper.quietClose(controlPublication);
+        parent.notifyControlSessionClosed(this);
     }
 
     public boolean isDone()
@@ -111,16 +114,6 @@ class ControlSession implements Session, ControlRequestListener
         }
 
         return workCount;
-    }
-
-    public void onConnect(final String channel, final int streamId)
-    {
-        if (state != State.INIT)
-        {
-            throw new IllegalStateException();
-        }
-
-        controlPublication = conductor.newControlPublication(channel, streamId);
     }
 
     public void onStopRecording(final long correlationId, final String channel, final int streamId)
@@ -210,7 +203,7 @@ class ControlSession implements Session, ControlRequestListener
      */
     void sendOkResponse(final long correlationId, final ControlResponseProxy proxy)
     {
-        if (!proxy.sendResponse(correlationId, 0, OK, null, controlPublication))
+        if (!proxy.sendResponse(controlSessionId, correlationId, 0, OK, null, controlPublication))
         {
             queueResponse(correlationId, 0, OK, null);
         }
@@ -222,7 +215,13 @@ class ControlSession implements Session, ControlRequestListener
      */
     void sendRecordingUnknown(final long correlationId, final long recordingId, final ControlResponseProxy proxy)
     {
-        if (!proxy.sendResponse(correlationId, recordingId, RECORDING_UNKNOWN, null, controlPublication))
+        if (!proxy.sendResponse(
+            controlSessionId,
+            correlationId,
+            recordingId,
+            RECORDING_UNKNOWN,
+            null,
+            controlPublication))
         {
             queueResponse(correlationId, recordingId, RECORDING_UNKNOWN, null);
         }
@@ -238,9 +237,23 @@ class ControlSession implements Session, ControlRequestListener
         final String errorMessage,
         final ControlResponseProxy proxy)
     {
-        if (!proxy.sendResponse(correlationId, 0, code, errorMessage, controlPublication))
+        if (!proxy.sendResponse(controlSessionId, correlationId, 0, code, errorMessage, controlPublication))
         {
             queueResponse(correlationId, 0, code, errorMessage);
+        }
+    }
+
+    private void sendConnectResponse()
+    {
+        if (!controlResponseProxy.sendResponse(
+            controlSessionId,
+            correlationId,
+            controlSessionId,
+            CONNECTED,
+            null,
+            controlPublication))
+        {
+            queueResponse(correlationId, controlSessionId, CONNECTED, null);
         }
     }
 
@@ -252,7 +265,7 @@ class ControlSession implements Session, ControlRequestListener
         final UnsafeBuffer descriptorBuffer,
         final ControlResponseProxy proxy)
     {
-        return proxy.sendDescriptor(correlationId, descriptorBuffer, controlPublication);
+        return proxy.sendDescriptor(controlSessionId, correlationId, descriptorBuffer, controlPublication);
     }
 
     int maxPayloadLength()
@@ -263,17 +276,13 @@ class ControlSession implements Session, ControlRequestListener
     private int sendQueuedResponsesOrPollForRequests()
     {
         int workCount = 0;
-        if (image.isClosed() || !controlPublication.isConnected())
+        if (!controlPublication.isConnected())
         {
             state = State.INACTIVE;
         }
         else
         {
-            if (queuedResponses.isEmpty())
-            {
-                workCount += image.poll(adapter, FRAGMENT_LIMIT);
-            }
-            else
+            if (!queuedResponses.isEmpty())
             {
                 if (sendFirst(queuedResponses))
                 {
@@ -303,32 +312,18 @@ class ControlSession implements Session, ControlRequestListener
     private int waitForConnection()
     {
         int workCount = 0;
-
-        if (controlPublication == null)
+        if (timeoutDeadlineMs == NO_ACTIVE_DEADLINE)
         {
-            if (timeoutDeadlineMs == NO_ACTIVE_DEADLINE)
-            {
-                timeoutDeadlineMs = epochClock.time() + TIMEOUT_MS;
-            }
-
-            try
-            {
-                image.poll(adapter, 1);
-            }
-            catch (final Exception ex)
-            {
-                state = State.INACTIVE;
-                LangUtil.rethrowUnchecked(ex);
-            }
+            timeoutDeadlineMs = epochClock.time() + TIMEOUT_MS;
         }
         else if (controlPublication.isConnected())
         {
             timeoutDeadlineMs = NO_ACTIVE_DEADLINE;
             state = State.ACTIVE;
+            sendConnectResponse();
             workCount += 1;
         }
-
-        if (hasGoneInactive())
+        else if (hasGoneInactive())
         {
             state = State.INACTIVE;
         }
@@ -345,6 +340,12 @@ class ControlSession implements Session, ControlRequestListener
         final long correlationId, final long relevantId, final ControlResponseCode code, final String message)
     {
         queuedResponses.offer(
-            () -> controlResponseProxy.sendResponse(correlationId, relevantId, code, message, controlPublication));
+            () -> controlResponseProxy.sendResponse(
+                controlSessionId,
+                correlationId,
+                relevantId,
+                code,
+                message,
+                controlPublication));
     }
 }

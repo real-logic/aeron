@@ -87,12 +87,14 @@ public class ArchiveProxy
      *
      * @param responseChannel  for the control message responses.
      * @param responseStreamId for the control message responses.
+     * @param correlationId    for this request.
      * @return true if successfully offered otherwise false.
      */
-    public boolean connect(final String responseChannel, final int responseStreamId)
+    public boolean connect(final String responseChannel, final int responseStreamId, final long correlationId)
     {
         connectRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId)
             .responseStreamId(responseStreamId)
             .responseChannel(responseChannel);
 
@@ -102,20 +104,23 @@ public class ArchiveProxy
     /**
      * Start recording streams for a given channel and stream id pairing.
      *
-     * @param channel        to be recorded.
-     * @param streamId       to be recorded.
-     * @param sourceLocation of the publication to be recorded.
-     * @param correlationId  for this request.
+     * @param channel           to be recorded.
+     * @param streamId          to be recorded.
+     * @param sourceLocation    of the publication to be recorded.
+     * @param correlationId     for this request.
+     * @param controlSessionId  for this request.
      * @return true if successfully offered otherwise false.
      */
     public boolean startRecording(
         final String channel,
         final int streamId,
         final SourceLocation sourceLocation,
-        final long correlationId)
+        final long correlationId,
+        final long controlSessionId)
     {
         startRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .streamId(streamId)
             .sourceLocation(sourceLocation)
@@ -130,15 +135,18 @@ public class ArchiveProxy
      * @param channel       to be stopped.
      * @param streamId      to be stopped.
      * @param correlationId for this request.
+     * @param controlSessionId  for this request.
      * @return true if successfully offered otherwise false.
      */
     public boolean stopRecording(
         final String channel,
         final int streamId,
-        final long correlationId)
+        final long correlationId,
+        final long controlSessionId)
     {
         stopRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .streamId(streamId)
             .channel(channel);
@@ -155,6 +163,7 @@ public class ArchiveProxy
      * @param replayChannel  to which the replay should be sent.
      * @param replayStreamId to which the replay should be sent.
      * @param correlationId  for this request.
+     * @param controlSessionId  for this request.
      * @return true if successfully offered otherwise false.
      */
     public boolean replay(
@@ -163,10 +172,12 @@ public class ArchiveProxy
         final long length,
         final String replayChannel,
         final int replayStreamId,
-        final long correlationId)
+        final long correlationId,
+        final long controlSessionId)
     {
         replayRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId)
             .position(position)
@@ -183,12 +194,18 @@ public class ArchiveProxy
      * @param fromRecordingId at which to begin listing.
      * @param recordCount     for the number of descriptors to be listed.
      * @param correlationId   for this request.
+     * @param controlSessionId  for this request.
      * @return true if successfully offered otherwise false.
      */
-    public boolean listRecordings(final long fromRecordingId, final int recordCount, final long correlationId)
+    public boolean listRecordings(
+        final long fromRecordingId,
+        final int recordCount,
+        final long correlationId,
+        final long controlSessionId)
     {
         listRecordingsRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .fromRecordingId(fromRecordingId)
             .recordCount(recordCount);
@@ -204,6 +221,7 @@ public class ArchiveProxy
      * @param channel         to match recordings on.
      * @param streamId        to match recordings on.
      * @param correlationId   for this request.
+     * @param controlSessionId  for this request.
      * @return true if successfully offered otherwise false.
      */
     public boolean listRecordingsForUri(
@@ -211,10 +229,12 @@ public class ArchiveProxy
         final int recordCount,
         final String channel,
         final int streamId,
-        final long correlationId)
+        final long correlationId,
+        final long controlSessionId)
     {
         listRecordingsForUriRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .fromRecordingId(fromRecordingId)
             .recordCount(recordCount)

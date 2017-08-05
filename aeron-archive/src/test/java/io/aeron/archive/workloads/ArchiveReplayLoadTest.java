@@ -43,13 +43,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.TestUtil.*;
-import static io.aeron.logbuffer.LogBufferDescriptor.*;
-import static org.agrona.BufferUtil.allocateDirectAligned;
+import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
+import static io.aeron.logbuffer.LogBufferDescriptor.computeTermOffsetFromPosition;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static junit.framework.TestCase.assertTrue;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 @Ignore
 public class ArchiveReplayLoadTest
@@ -92,6 +93,7 @@ public class ArchiveReplayLoadTest
     private long correlationId;
     private long startPosition;
     private FragmentHandler validateFragmentHandler = this::validateFragment;
+    private long controlSessionId;
 
     @Before
     public void before() throws Exception
@@ -143,14 +145,16 @@ public class ArchiveReplayLoadTest
 
             final Subscription controlResponse = aeron.addSubscription(
                 CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
-            assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID));
+            final long connectCorrelationId = this.correlationId++;
+            assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID, connectCorrelationId));
             awaitConnected(controlResponse);
+            awaitConnectedReply(controlResponse, connectCorrelationId, l -> this.controlSessionId = l);
             println("Client connected");
 
             final long startRecordingCorrelationId = this.correlationId++;
             final String recordingUri = PUBLISH_URI;
             await(() -> archiveProxy.startRecording(
-                recordingUri, PUBLISH_STREAM_ID, SourceLocation.LOCAL, startRecordingCorrelationId));
+                recordingUri, PUBLISH_STREAM_ID, SourceLocation.LOCAL, startRecordingCorrelationId, controlSessionId));
             println("Recording requested");
             awaitOk(controlResponse, startRecordingCorrelationId);
 
@@ -166,7 +170,11 @@ public class ArchiveReplayLoadTest
 
             println("Request stop recording");
             final long requestStopCorrelationId = this.correlationId++;
-            await(() -> archiveProxy.stopRecording(recordingUri, PUBLISH_STREAM_ID, requestStopCorrelationId));
+            await(() -> archiveProxy.stopRecording(
+                recordingUri,
+                PUBLISH_STREAM_ID,
+                requestStopCorrelationId,
+                controlSessionId));
             awaitOk(controlResponse, requestStopCorrelationId);
 
             final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
@@ -251,7 +259,8 @@ public class ArchiveReplayLoadTest
                 totalRecordingLength,
                 REPLAY_URI,
                 replayStreamId,
-                correlationId));
+                correlationId,
+                controlSessionId));
 
             awaitConnected(replay);
 

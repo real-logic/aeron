@@ -36,6 +36,7 @@ class ControlResponseProxy
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
 
     int sendDescriptor(
+        final long controlSessionId,
         final long correlationId,
         final UnsafeBuffer descriptorBuffer,
         final Publication controlPublication)
@@ -45,12 +46,14 @@ class ControlResponseProxy
 
         recordingDescriptorEncoder
             .wrapAndApplyHeader(descriptorBuffer, offset, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
             .correlationId(correlationId);
 
         return send(controlPublication, descriptorBuffer, offset, length) ? length : 0;
     }
 
     boolean sendResponse(
+        final long controlSessionId,
         final long correlationId,
         final long relevantId,
         final ControlResponseCode code,
@@ -59,6 +62,7 @@ class ControlResponseProxy
     {
         responseEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .relevantId(relevantId)
             .code(code);

@@ -1,6 +1,5 @@
 package io.aeron.archive;
 
-import io.aeron.Image;
 import io.aeron.Publication;
 import org.agrona.concurrent.EpochClock;
 import org.junit.Before;
@@ -11,7 +10,7 @@ import static org.mockito.Mockito.*;
 
 public class ControlSessionTest
 {
-    private final Image mockImage = mock(Image.class);
+    private final ImageControlSession mockParent = mock(ImageControlSession.class);
     private final ArchiveConductor mockConductor = mock(ArchiveConductor.class);
     private final EpochClock mockEpochClock = mock(EpochClock.class);
     private final Publication mockControlPublication = mock(Publication.class);
@@ -21,7 +20,14 @@ public class ControlSessionTest
     @Before
     public void before() throws Exception
     {
-        session = new ControlSession(mockImage, mockConductor, mockEpochClock, mockProxy);
+        session = new ControlSession(
+            1,
+            2,
+            mockParent,
+            mockControlPublication,
+            mockConductor,
+            mockEpochClock,
+            mockProxy);
     }
 
     @Test
@@ -29,13 +35,6 @@ public class ControlSessionTest
     {
         when(mockControlPublication.isClosed()).thenReturn(false);
         when(mockControlPublication.isConnected()).thenReturn(true);
-        when(mockConductor.newControlPublication("mock", 42)).thenReturn(mockControlPublication);
-        when(mockImage.poll(any(), anyInt())).then(
-            invocation ->
-            {
-                session.onConnect("mock", 42);
-                return null;
-            });
         session.doWork();
 
         final ListRecordingsSession mockListRecordingSession1 = mock(ListRecordingsSession.class);
@@ -60,30 +59,12 @@ public class ControlSessionTest
     }
 
     @Test
-    public void shouldTimeoutIfNoOnConnectEvent()
-    {
-        when(mockEpochClock.time()).thenReturn(0L);
-        session.doWork();
-        verify(mockEpochClock, times(2)).time();
-
-        when(mockEpochClock.time()).thenReturn(ControlSession.TIMEOUT_MS + 1L);
-        session.doWork();
-        assertTrue(session.isDone());
-    }
-
-    @Test
     public void shouldTimeoutIfConnectSentButPublicationNotConnected()
     {
         when(mockEpochClock.time()).thenReturn(0L);
         when(mockControlPublication.isClosed()).thenReturn(false);
         when(mockControlPublication.isConnected()).thenReturn(false);
-        when(mockConductor.newControlPublication("mock", 42)).thenReturn(mockControlPublication);
-        when(mockImage.poll(any(), anyInt())).then(
-            invocation ->
-            {
-                session.onConnect("mock", 42);
-                return null;
-            });
+
         session.doWork();
 
         when(mockEpochClock.time()).thenReturn(ControlSession.TIMEOUT_MS + 1L);
@@ -97,13 +78,7 @@ public class ControlSessionTest
         when(mockEpochClock.time()).thenReturn(0L);
         when(mockControlPublication.isClosed()).thenReturn(false);
         when(mockControlPublication.isConnected()).thenReturn(true);
-        when(mockConductor.newControlPublication("mock", 42)).thenReturn(mockControlPublication);
-        when(mockImage.poll(any(), anyInt())).then(
-            invocation ->
-            {
-                session.onConnect("mock", 42);
-                return null;
-            });
+
         session.doWork();
         session.sendOkResponse(1L, mockProxy);
         session.doWork();

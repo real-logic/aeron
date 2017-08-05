@@ -25,10 +25,16 @@ public interface ControlResponseListener extends RecordingDescriptorConsumer
     /**
      * An event has been received from the Archive in response to a request with a given correlation id.
      *
-     * @param correlationId of the associated request.
-     * @param relevantId    of the object to which the response applies.
-     * @param code          for the response status.
-     * @param errorMessage  when is set if the response code is not OK.
+     * @param controlSessionId of the originating session.
+     * @param correlationId    of the associated request.
+     * @param relevantId       of the object to which the response applies.
+     * @param code             for the response status.
+     * @param errorMessage     when is set if the response code is not OK.
      */
-    void onResponse(long correlationId, long relevantId, ControlResponseCode code, String errorMessage);
+    void onResponse(
+        long controlSessionId,
+        long correlationId,
+        long relevantId,
+        ControlResponseCode code,
+        String errorMessage);
 }

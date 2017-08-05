@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
@@ -79,12 +80,40 @@ public class TestUtil
         }
     }
 
+    public static void awaitConnectedReply(
+        final Subscription controlResponse,
+        final long expectedCorrelationId,
+        final Consumer<Long> receiveSessionId)
+    {
+        final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
+            new FailControlResponseListener()
+            {
+                public void onResponse(
+                    final long controlSessionId,
+                    final long correlationId,
+                    final long relevantId,
+                    final ControlResponseCode code,
+                    final String errorMessage)
+                {
+                    assertThat("Error message: " + errorMessage, code, is(ControlResponseCode.CONNECTED));
+                    receiveSessionId.accept(controlSessionId);
+                    assertThat(correlationId, is(expectedCorrelationId));
+                }
+            },
+            controlResponse,
+            1
+        );
+
+        await(() -> controlResponseAdapter.poll() != 0);
+    }
+
     public static void awaitOk(final Subscription controlResponse, final long expectedCorrelationId)
     {
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
             {
                 public void onResponse(
+                    final long controlSessionId,
                     final long correlationId,
                     final long relevantId,
                     final ControlResponseCode code,
@@ -108,6 +137,7 @@ public class TestUtil
             new FailControlResponseListener()
             {
                 public void onResponse(
+                    final long controlSessionId,
                     final long correlationId,
                     final long relevantId,
                     final ControlResponseCode code,

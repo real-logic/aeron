@@ -52,6 +52,7 @@ class ControlRequestAdapter implements FragmentHandler
                     headerDecoder.version());
 
                 listener.onConnect(
+                    connectRequestDecoder.correlationId(),
                     connectRequestDecoder.responseChannel(),
                     connectRequestDecoder.responseStreamId());
                 break;
@@ -64,6 +65,7 @@ class ControlRequestAdapter implements FragmentHandler
                     headerDecoder.version());
 
                 listener.onStartReplay(
+                    replayRequestDecoder.controlSessionId(),
                     replayRequestDecoder.correlationId(),
                     replayRequestDecoder.replayStreamId(),
                     replayRequestDecoder.replayChannel(),
@@ -80,6 +82,7 @@ class ControlRequestAdapter implements FragmentHandler
                     headerDecoder.version());
 
                 listener.onStartRecording(
+                    startRecordingRequestDecoder.controlSessionId(),
                     startRecordingRequestDecoder.correlationId(),
                     startRecordingRequestDecoder.channel(),
                     startRecordingRequestDecoder.streamId(),
@@ -94,6 +97,7 @@ class ControlRequestAdapter implements FragmentHandler
                     headerDecoder.version());
 
                 listener.onStopRecording(
+                    stopRecordingRequestDecoder.controlSessionId(),
                     stopRecordingRequestDecoder.correlationId(),
                     stopRecordingRequestDecoder.channel(),
                     stopRecordingRequestDecoder.streamId()
@@ -108,6 +112,7 @@ class ControlRequestAdapter implements FragmentHandler
                     headerDecoder.version());
 
                 listener.onListRecordings(
+                    listRecordingsRequestDecoder.controlSessionId(),
                     listRecordingsRequestDecoder.correlationId(),
                     listRecordingsRequestDecoder.fromRecordingId(),
                     listRecordingsRequestDecoder.recordCount());
@@ -121,6 +126,7 @@ class ControlRequestAdapter implements FragmentHandler
                     headerDecoder.version());
 
                 listener.onListRecordingsForUri(
+                    listRecordingsForUriRequestDecoder.controlSessionId(),
                     listRecordingsForUriRequestDecoder.correlationId(),
                     listRecordingsForUriRequestDecoder.fromRecordingId(),
                     listRecordingsForUriRequestDecoder.recordCount(),

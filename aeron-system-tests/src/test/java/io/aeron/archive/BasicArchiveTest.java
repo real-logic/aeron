@@ -132,6 +132,7 @@ public class BasicArchiveTest
             expectedChannel,
             expectedStreamId,
             (
+                controlSessionId,
                 correlationId,
                 recordingId,
                 startTimestamp,

@@ -19,13 +19,19 @@ import io.aeron.archive.codecs.SourceLocation;
 
 interface ControlRequestListener
 {
-    void onConnect(String channel, int streamId);
+    void onConnect(long correlationId, String channel, int streamId);
 
-    void onStopRecording(long correlationId, String channel, int streamId);
+    void onStopRecording(long controlSessionId, long correlationId, String channel, int streamId);
 
-    void onStartRecording(long correlationId, String channel, int streamId, SourceLocation sourceLocation);
+    void onStartRecording(
+        long controlSessionId,
+        long correlationId,
+        String channel,
+        int streamId,
+        SourceLocation sourceLocation);
 
     void onStartReplay(
+        long controlSessionId,
         long correlationId,
         int replayStreamId,
         String replayChannel,
@@ -33,9 +39,10 @@ interface ControlRequestListener
         long position,
         long length);
 
-    void onListRecordings(long correlationId, long fromRecordingId, int recordCount);
+    void onListRecordings(long controlSessionId, long correlationId, long fromRecordingId, int recordCount);
 
     void onListRecordingsForUri(
+        long controlSessionId,
         long correlationId,
         long fromRecordingId,
         int recordCount,

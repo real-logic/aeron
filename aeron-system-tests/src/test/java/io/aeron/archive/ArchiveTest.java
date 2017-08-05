@@ -25,7 +25,9 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.*;
+import org.agrona.BitUtil;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
@@ -58,6 +60,7 @@ public class ArchiveTest
 
     @Parameterized.Parameter(value = 1)
     public ArchiveThreadingMode archiveThreadingMode;
+    private long controlSessionId;
 
     @Parameterized.Parameters
     public static Collection<Object[]> data()
@@ -334,7 +337,8 @@ public class ArchiveTest
         TestUtil.await(() -> archiveProxy.stopRecording(
             publishUri,
             PUBLISH_STREAM_ID,
-            requestStopCorrelationId));
+            requestStopCorrelationId,
+            controlSessionId));
         awaitOk(controlResponse, requestStopCorrelationId);
 
         final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
@@ -372,16 +376,18 @@ public class ArchiveTest
         awaitConnected(recordingEvents);
 
         controlResponse = publishingClient.addSubscription(CONTROL_URI, CONTROL_STREAM_ID);
-        assertTrue(archiveProxy.connect(CONTROL_URI, CONTROL_STREAM_ID));
+        final long connectCorrelationId = this.correlationId++;
+        assertTrue(archiveProxy.connect(CONTROL_URI, CONTROL_STREAM_ID, connectCorrelationId));
         awaitConnected(controlResponse);
-
+        awaitConnectedReply(controlResponse, connectCorrelationId, l -> this.controlSessionId = l);
         verifyEmptyDescriptorList(archiveProxy);
         final long startRecordingCorrelationId = this.correlationId++;
         TestUtil.await(() -> archiveProxy.startRecording(
             publishUri,
             PUBLISH_STREAM_ID,
             SourceLocation.LOCAL,
-            startRecordingCorrelationId));
+            startRecordingCorrelationId,
+            controlSessionId));
 
         awaitOk(controlResponse, startRecordingCorrelationId);
 
@@ -391,7 +397,7 @@ public class ArchiveTest
     private void verifyEmptyDescriptorList(final ArchiveProxy client)
     {
         final long requestRecordingsCorrelationId = this.correlationId++;
-        client.listRecordings(0, 100, requestRecordingsCorrelationId);
+        client.listRecordings(0, 100, requestRecordingsCorrelationId, controlSessionId);
         awaitResponse(controlResponse, requestRecordingsCorrelationId);
     }
 
@@ -399,12 +405,13 @@ public class ArchiveTest
         final ArchiveProxy archiveProxy, final int publicationTermBufferLength)
     {
         final long requestRecordingsCorrelationId = this.correlationId++;
-        archiveProxy.listRecordings(recordingId, 1, requestRecordingsCorrelationId);
+        archiveProxy.listRecordings(recordingId, 1, requestRecordingsCorrelationId, controlSessionId);
 
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
             {
                 public void onRecordingDescriptor(
+                    final long controlSessionId,
                     final long correlationId,
                     final long recordingId,
                     final long startTimestamp,
@@ -548,7 +555,8 @@ public class ArchiveTest
                 totalRecordingLength,
                 REPLAY_URI,
                 REPLAY_STREAM_ID,
-                replayCorrelationId));
+                replayCorrelationId,
+                controlSessionId));
 
             awaitOk(controlResponse, replayCorrelationId);
             awaitConnected(replay);
@@ -701,7 +709,8 @@ public class ArchiveTest
                     Long.MAX_VALUE,
                     REPLAY_URI,
                     REPLAY_STREAM_ID,
-                    replayCorrelationId));
+                    replayCorrelationId,
+                    controlSessionId));
 
                 awaitOk(controlResponse, replayCorrelationId);
 

@@ -23,12 +23,17 @@ import static org.junit.Assert.fail;
 public class FailControlResponseListener implements ControlResponseListener
 {
     public void onResponse(
-        final long correlationId, final long relevantId, final ControlResponseCode code, final String errorMessage)
+        final long controlSessionId,
+        final long correlationId,
+        final long relevantId,
+        final ControlResponseCode code,
+        final String errorMessage)
     {
         fail();
     }
 
     public void onRecordingDescriptor(
+        final long controlSessionId,
         final long correlationId,
         final long recordingId,
         final long startTimestamp,

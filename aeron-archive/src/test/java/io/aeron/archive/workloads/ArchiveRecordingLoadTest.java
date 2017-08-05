@@ -39,7 +39,8 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
 import static io.aeron.archive.TestUtil.*;
-import static io.aeron.logbuffer.LogBufferDescriptor.*;
+import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
+import static io.aeron.logbuffer.LogBufferDescriptor.computeTermOffsetFromPosition;
 import static junit.framework.TestCase.assertTrue;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.core.Is.is;
@@ -83,6 +84,7 @@ public class ArchiveRecordingLoadTest
     private long correlationId;
     private BooleanSupplier recordingStartedIndicator;
     private BooleanSupplier recordingEndIndicator;
+    private long controlSessionId;
 
     @Before
     public void before() throws Exception
@@ -135,8 +137,10 @@ public class ArchiveRecordingLoadTest
 
             final Subscription controlResponse = aeron.addSubscription(
                 CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
-            assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID));
+            final long connectCorrelationId = this.correlationId++;
+            assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID, connectCorrelationId));
             awaitConnected(controlResponse);
+            awaitConnectedReply(controlResponse, connectCorrelationId, l -> this.controlSessionId = l);
             println("Client connected");
 
             long start;
@@ -149,7 +153,7 @@ public class ArchiveRecordingLoadTest
             {
                 final long startRecordingCorrelationId = this.correlationId++;
                 await(() -> archiveProxy.startRecording(
-                    channel, PUBLISH_STREAM_ID, SourceLocation.LOCAL, startRecordingCorrelationId));
+                    channel, PUBLISH_STREAM_ID, SourceLocation.LOCAL, startRecordingCorrelationId, controlSessionId));
                 awaitOk(controlResponse, startRecordingCorrelationId);
                 println("Recording requested");
 
@@ -174,7 +178,11 @@ public class ArchiveRecordingLoadTest
                 printScore(System.currentTimeMillis() - start);
 
                 final long stopRecordingCorrelationId = this.correlationId++;
-                await(() -> archiveProxy.stopRecording(channel, PUBLISH_STREAM_ID, stopRecordingCorrelationId));
+                await(() -> archiveProxy.stopRecording(
+                    channel,
+                    PUBLISH_STREAM_ID,
+                    stopRecordingCorrelationId,
+                    controlSessionId));
                 awaitOk(controlResponse, stopRecordingCorrelationId);
             }
 

@@ -17,7 +17,10 @@ package io.aeron.archive.client;
 
 import io.aeron.FragmentAssembler;
 import io.aeron.Subscription;
-import io.aeron.archive.codecs.*;
+import io.aeron.archive.codecs.ControlResponseDecoder;
+import io.aeron.archive.codecs.MessageHeaderDecoder;
+import io.aeron.archive.codecs.MessageHeaderEncoder;
+import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
@@ -72,6 +75,7 @@ public class ControlResponseAdapter
         final RecordingDescriptorDecoder decoder, final RecordingDescriptorConsumer consumer)
     {
         consumer.onRecordingDescriptor(
+            decoder.controlSessionId(),
             decoder.correlationId(),
             decoder.recordingId(),
             decoder.startTimestamp(),
@@ -125,6 +129,7 @@ public class ControlResponseAdapter
             messageHeaderDecoder.version());
 
         listener.onResponse(
+            controlResponseDecoder.controlSessionId(),
             controlResponseDecoder.correlationId(),
             controlResponseDecoder.relevantId(),
             controlResponseDecoder.code(),

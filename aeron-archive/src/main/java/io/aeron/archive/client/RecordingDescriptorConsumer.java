@@ -24,6 +24,7 @@ public interface RecordingDescriptorConsumer
     /**
      * A recording descriptor returned as a result of requesting a listing of recordings.
      *
+     * @param controlSessionId  of the originating session requesting to list recordings.
      * @param correlationId     of the associated request to list recordings.
      * @param recordingId       of this recording descriptor.
      * @param startTimestamp    for the recording.
@@ -41,6 +42,7 @@ public interface RecordingDescriptorConsumer
      * @param sourceIdentity    for the recorded publication.
      */
     void onRecordingDescriptor(
+        long controlSessionId,
         long correlationId,
         long recordingId,
         long startTimestamp,

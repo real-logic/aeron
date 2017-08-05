@@ -10,7 +10,7 @@ import static org.mockito.Mockito.*;
 
 public class ControlSessionTest
 {
-    private final ImageControlSession mockParent = mock(ImageControlSession.class);
+    private final MultiplexControlSession mockParent = mock(MultiplexControlSession.class);
     private final ArchiveConductor mockConductor = mock(ArchiveConductor.class);
     private final EpochClock mockEpochClock = mock(EpochClock.class);
     private final Publication mockControlPublication = mock(Publication.class);

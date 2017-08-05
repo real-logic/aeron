@@ -21,7 +21,7 @@ import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.collections.Long2ObjectHashMap;
 
-class ImageControlSession implements Session, ControlRequestListener
+class MultiplexControlSession implements Session, ControlRequestListener
 {
     enum State
     {
@@ -37,7 +37,7 @@ class ImageControlSession implements Session, ControlRequestListener
 
     private State state = State.ACTIVE;
 
-    ImageControlSession(final Image image, final ArchiveConductor conductor)
+    MultiplexControlSession(final Image image, final ArchiveConductor conductor)
     {
         this.image = image;
         this.conductor = conductor;
@@ -97,7 +97,7 @@ class ImageControlSession implements Session, ControlRequestListener
         final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
         if (controlSession == null)
         {
-            throw new IllegalArgumentException("Unknown controlSessionId:" + controlSessionId);
+            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
         }
         controlSession.onStopRecording(correlationId, channel, streamId);
     }
@@ -112,7 +112,7 @@ class ImageControlSession implements Session, ControlRequestListener
         final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
         if (controlSession == null)
         {
-            throw new IllegalArgumentException("Unknown controlSessionId:" + controlSessionId);
+            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
         }
         controlSession.onStartRecording(correlationId, channel, streamId, sourceLocation);
     }
@@ -128,7 +128,7 @@ class ImageControlSession implements Session, ControlRequestListener
         final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
         if (controlSession == null)
         {
-            throw new IllegalArgumentException("Unknown controlSessionId:" + controlSessionId);
+            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
         }
         controlSession.onListRecordingsForUri(correlationId, fromRecordingId, recordCount, channel, streamId);
     }
@@ -142,7 +142,7 @@ class ImageControlSession implements Session, ControlRequestListener
         final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
         if (controlSession == null)
         {
-            throw new IllegalArgumentException("Unknown controlSessionId:" + controlSessionId);
+            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
         }
         controlSession.onListRecordings(correlationId, fromRecordingId, recordCount);
     }
@@ -159,7 +159,7 @@ class ImageControlSession implements Session, ControlRequestListener
         final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
         if (controlSession == null)
         {
-            throw new IllegalArgumentException("Unknown controlSessionId:" + controlSessionId);
+            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
         }
         controlSession.onStartReplay(correlationId, replayStreamId, replayChannel, recordingId, position, length);
     }

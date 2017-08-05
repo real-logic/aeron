@@ -186,7 +186,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
      */
     private void onControlConnection(final Image image)
     {
-        addSession(new ImageControlSession(image, this));
+        addSession(new MultiplexControlSession(image, this));
     }
 
     void stopRecording(
@@ -373,7 +373,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final long correlationId,
         final String channel,
         final int streamId,
-        final ImageControlSession parent)
+        final MultiplexControlSession parent)
     {
         final String controlChannel;
         if (!channel.contains(CommonContext.TERM_LENGTH_PARAM_NAME))
@@ -397,6 +397,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             epochClock,
             controlResponseProxy);
         addSession(controlSession);
+
         return controlSession;
     }
 
@@ -450,6 +451,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         final AtomicCounter position = recordingPositionsManager.newCounter(
             makeKey(streamId, strippedChannel) + ":" + recordingId);
+
         final RecordingSession session = new RecordingSession(
             recordingId,
             catalog.wrapDescriptor(recordingId),

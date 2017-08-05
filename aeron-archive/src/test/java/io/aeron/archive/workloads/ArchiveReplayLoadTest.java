@@ -23,7 +23,7 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.NoOpRecordingEventsListener;
 import io.aeron.archive.TestUtil;
-import io.aeron.archive.client.ArchiveProxy;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingEventsAdapter;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
@@ -46,7 +46,6 @@ import static io.aeron.archive.TestUtil.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeTermOffsetFromPosition;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static junit.framework.TestCase.assertTrue;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNull;
@@ -71,6 +70,7 @@ public class ArchiveReplayLoadTest
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
     private static final int MESSAGE_COUNT = 2000000;
+    private static final int RECORDING_ID = 0; // We will only have one recording in a new archive
     private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT));
     private final Random rnd = new Random();
     private final long seed = System.nanoTime();
@@ -81,6 +81,7 @@ public class ArchiveReplayLoadTest
     private Aeron aeron;
     private Archive archive;
     private MediaDriver driver;
+    private AeronArchive aeronArchive;
     private final long recordingId = 0;
     private long remaining;
     private int fragmentCount;
@@ -90,10 +91,8 @@ public class ArchiveReplayLoadTest
     private volatile int lastTermId = -1;
     private Throwable trackerError;
 
-    private long correlationId;
     private long startPosition;
-    private FragmentHandler validateFragmentHandler = this::validateFragment;
-    private long controlSessionId;
+    private FragmentHandler validatingFragmentHandler = this::validateFragment;
 
     @Before
     public void before() throws Exception
@@ -116,12 +115,18 @@ public class ArchiveReplayLoadTest
                 .errorHandler(driver.context().errorHandler()));
 
         aeron = Aeron.connect();
+
+        aeronArchive = AeronArchive.connect(
+            new AeronArchive.Context()
+                .controlResponseChannel(CONTROL_RESPONSE_URI)
+                .controlResponseStreamId(CONTROL_RESPONSE_STREAM_ID)
+                .aeron(aeron));
     }
 
     @After
     public void after() throws Exception
     {
-        CloseHelper.close(aeron);
+        CloseHelper.close(aeronArchive);
         CloseHelper.close(archive);
         CloseHelper.close(driver);
 
@@ -129,64 +134,37 @@ public class ArchiveReplayLoadTest
         driver.context().deleteAeronDirectory();
     }
 
-    @Test(timeout = 180000)
+    @Test(timeout = 60_000)
     public void replay() throws IOException, InterruptedException
     {
-        try (Publication controlRequest = aeron.addPublication(
-                archive.context().controlChannel(), archive.context().controlStreamId());
-             Subscription recordingEvents = aeron.addSubscription(
+        try (Subscription recordingEvents = aeron.addSubscription(
                 archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
         {
-            final ArchiveProxy archiveProxy = new ArchiveProxy(controlRequest);
-
-            awaitConnected(controlRequest);
             awaitConnected(recordingEvents);
-            println("Archive service connected");
 
-            final Subscription controlResponse = aeron.addSubscription(
-                CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
-            final long connectCorrelationId = this.correlationId++;
-            assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID, connectCorrelationId));
-            awaitConnected(controlResponse);
-            awaitConnectedReply(controlResponse, connectCorrelationId, l -> this.controlSessionId = l);
-            println("Client connected");
-
-            final long startRecordingCorrelationId = this.correlationId++;
-            final String recordingUri = PUBLISH_URI;
-            await(() -> archiveProxy.startRecording(
-                recordingUri, PUBLISH_STREAM_ID, SourceLocation.LOCAL, startRecordingCorrelationId, controlSessionId));
-            println("Recording requested");
-            awaitOk(controlResponse, startRecordingCorrelationId);
+            aeronArchive.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, SourceLocation.LOCAL);
 
             final Publication publication = aeron.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
-            awaitConnected(publication);
             startDrainingSubscriber(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
+            awaitConnected(publication);
 
-            final int messageCount = prepAndSendMessages(recordingEvents, publication);
+            prepAndSendMessages(recordingEvents, publication);
             publication.close();
 
             assertNull(trackerError);
-            println("All data arrived");
 
-            println("Request stop recording");
-            final long requestStopCorrelationId = this.correlationId++;
-            await(() -> archiveProxy.stopRecording(
-                recordingUri,
-                PUBLISH_STREAM_ID,
-                requestStopCorrelationId,
-                controlSessionId));
-            awaitOk(controlResponse, requestStopCorrelationId);
+            aeronArchive.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID);
+        }
 
-            final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
-            int i = 0;
+        final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
+        int i = 0;
 
-            while (System.currentTimeMillis() < duration)
-            {
-                final long start = System.currentTimeMillis();
-                validateReplay(archiveProxy, messageCount);
+        while (System.currentTimeMillis() < duration)
+        {
+            final long start = System.currentTimeMillis();
+            replay(i);
 
-                printScore(++i, System.currentTimeMillis() - start);
-            }
+            printScore(++i, System.currentTimeMillis() - start);
         }
     }
 
@@ -197,7 +175,7 @@ public class ArchiveReplayLoadTest
         System.out.printf("%d : received %.02f MB, replayed @ %.02f MB/s %n", i, receivedMb, rate);
     }
 
-    private int prepAndSendMessages(final Subscription recordingEvents, final Publication publication)
+    private void prepAndSendMessages(final Subscription recordingEvents, final Publication publication)
         throws InterruptedException
     {
         System.out.printf("Sending %,d messages%n", MESSAGE_COUNT);
@@ -208,8 +186,6 @@ public class ArchiveReplayLoadTest
         publishDataToRecorded(publication, MESSAGE_COUNT);
 
         waitForData.await();
-
-        return MESSAGE_COUNT;
     }
 
     private void publishDataToRecorded(final Publication publication, final int messageCount)
@@ -245,23 +221,11 @@ public class ArchiveReplayLoadTest
         lastTermId = termId;
     }
 
-    private void validateReplay(final ArchiveProxy archiveProxy, final int messageCount)
+    private void replay(final int iteration)
     {
-        final int replayStreamId = (int)correlationId;
-
-        try (Subscription replay = aeron.addSubscription(REPLAY_URI, replayStreamId))
+        try (Subscription replay = aeronArchive.replay(
+            RECORDING_ID, startPosition, totalRecordingLength, REPLAY_URI, iteration))
         {
-            final long correlationId = this.correlationId++;
-
-            TestUtil.await(() -> archiveProxy.replay(
-                recordingId,
-                startPosition,
-                totalRecordingLength,
-                REPLAY_URI,
-                replayStreamId,
-                correlationId,
-                controlSessionId));
-
             awaitConnected(replay);
 
             fragmentCount = 0;
@@ -269,7 +233,7 @@ public class ArchiveReplayLoadTest
 
             while (remaining > 0)
             {
-                final int fragments = replay.poll(validateFragmentHandler, 128);
+                final int fragments = replay.poll(validatingFragmentHandler, 128);
                 if (0 == fragments && replay.hasNoImages() && remaining > 0)
                 {
                     System.err.println("Unexpected close of image: remaining=" + remaining);
@@ -277,7 +241,7 @@ public class ArchiveReplayLoadTest
                 }
             }
 
-            assertThat(fragmentCount, is(messageCount));
+            assertThat(fragmentCount, is(MESSAGE_COUNT));
             assertThat(remaining, is(0L));
         }
     }

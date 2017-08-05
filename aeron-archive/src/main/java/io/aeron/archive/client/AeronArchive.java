@@ -74,7 +74,6 @@ public final class AeronArchive implements AutoCloseable
                 aeron.addSubscription(context.controlResponseChannel(), context.controlResponseStreamId()),
                 RESPONSE_FRAGMENT_LIMIT);
             controlSessionId = pollForConnected(correlationId);
-
         }
         catch (final Exception ex)
         {
@@ -310,8 +309,7 @@ public final class AeronArchive implements AutoCloseable
             {
                 if (System.nanoTime() > deadline)
                 {
-                    throw new TimeoutException(
-                        "Waiting for correlationId=" + expectedCorrelationId + " ControlResponse");
+                    throw new TimeoutException("Waiting for correlationId=" + expectedCorrelationId);
                 }
 
                 idleStrategy.idle();
@@ -326,12 +324,14 @@ public final class AeronArchive implements AutoCloseable
             {
                 throw new IllegalStateException("Unknown response: templateId=" + poller.templateId());
             }
+
             final ControlResponseCode code = poller.controlResponseDecoder().code();
             if (code != ControlResponseCode.CONNECTED)
             {
                 throw new IllegalStateException("Unexpected response code:" + code);
             }
-            return poller.controlResponseDecoder().controlSessionId();
+
+            return poller.controlSessionId();
         }
     }
 
@@ -347,14 +347,13 @@ public final class AeronArchive implements AutoCloseable
             {
                 if (System.nanoTime() > deadline)
                 {
-                    throw new TimeoutException(
-                        "Waiting for correlationId=" + expectedCorrelationId + " ControlResponse");
+                    throw new TimeoutException("Waiting for correlationId=" + expectedCorrelationId);
                 }
 
                 idleStrategy.idle();
             }
 
-            if (poller.correlationId() != expectedCorrelationId)
+            if (poller.controlSessionId() != controlSessionId || poller.correlationId() != expectedCorrelationId)
             {
                 continue;
             }
@@ -404,7 +403,7 @@ public final class AeronArchive implements AutoCloseable
                 idleStrategy.idle();
             }
 
-            if (poller.correlationId() != expectedCorrelationId)
+            if (poller.controlSessionId() != controlSessionId || poller.correlationId() != expectedCorrelationId)
             {
                 continue;
             }

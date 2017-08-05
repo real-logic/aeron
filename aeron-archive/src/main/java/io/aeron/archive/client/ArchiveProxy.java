@@ -104,11 +104,11 @@ public class ArchiveProxy
     /**
      * Start recording streams for a given channel and stream id pairing.
      *
-     * @param channel           to be recorded.
-     * @param streamId          to be recorded.
-     * @param sourceLocation    of the publication to be recorded.
-     * @param correlationId     for this request.
-     * @param controlSessionId  for this request.
+     * @param channel          to be recorded.
+     * @param streamId         to be recorded.
+     * @param sourceLocation   of the publication to be recorded.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
      * @return true if successfully offered otherwise false.
      */
     public boolean startRecording(
@@ -132,10 +132,10 @@ public class ArchiveProxy
     /**
      * Stop an active recording.
      *
-     * @param channel       to be stopped.
-     * @param streamId      to be stopped.
-     * @param correlationId for this request.
-     * @param controlSessionId  for this request.
+     * @param channel          to be stopped.
+     * @param streamId         to be stopped.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
      * @return true if successfully offered otherwise false.
      */
     public boolean stopRecording(
@@ -157,13 +157,13 @@ public class ArchiveProxy
     /**
      * Replay a recording from a given position.
      *
-     * @param recordingId    to be replayed.
-     * @param position       from which the replay should be started.
-     * @param length         of the stream to be replayed.
-     * @param replayChannel  to which the replay should be sent.
-     * @param replayStreamId to which the replay should be sent.
-     * @param correlationId  for this request.
-     * @param controlSessionId  for this request.
+     * @param recordingId      to be replayed.
+     * @param position         from which the replay should be started.
+     * @param length           of the stream to be replayed.
+     * @param replayChannel    to which the replay should be sent.
+     * @param replayStreamId   to which the replay should be sent.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
      * @return true if successfully offered otherwise false.
      */
     public boolean replay(
@@ -191,10 +191,10 @@ public class ArchiveProxy
     /**
      * List a range of recording descriptors.
      *
-     * @param fromRecordingId at which to begin listing.
-     * @param recordCount     for the number of descriptors to be listed.
-     * @param correlationId   for this request.
-     * @param controlSessionId  for this request.
+     * @param fromRecordingId  at which to begin listing.
+     * @param recordCount      for the number of descriptors to be listed.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
      * @return true if successfully offered otherwise false.
      */
     public boolean listRecordings(
@@ -216,12 +216,12 @@ public class ArchiveProxy
     /**
      * List a range of recording descriptors which match a channel and stream id.
      *
-     * @param fromRecordingId at which to begin listing.
-     * @param recordCount     for the number of descriptors to be listed.
-     * @param channel         to match recordings on.
-     * @param streamId        to match recordings on.
-     * @param correlationId   for this request.
-     * @param controlSessionId  for this request.
+     * @param fromRecordingId  at which to begin listing.
+     * @param recordCount      for the number of descriptors to be listed.
+     * @param channel          to match recordings on.
+     * @param streamId         to match recordings on.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
      * @return true if successfully offered otherwise false.
      */
     public boolean listRecordingsForUri(

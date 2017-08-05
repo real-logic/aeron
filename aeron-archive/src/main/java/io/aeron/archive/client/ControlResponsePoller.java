@@ -22,7 +22,7 @@ import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
 /**
- * Encapsulate the polling, decoding, and dispatching of archive control protocol response messages.
+ * Encapsulate the polling and decoding of archive control protocol response messages.
  */
 public class ControlResponsePoller
 {
@@ -33,6 +33,7 @@ public class ControlResponsePoller
     private final int fragmentLimit;
     private final Subscription subscription;
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this::onFragment);
+    private long controlSessionId = -1;
     private long correlationId = -1;
     private int templateId = -1;
     private boolean pollComplete = false;
@@ -56,14 +57,26 @@ public class ControlResponsePoller
      */
     public int poll()
     {
+        controlSessionId = -1;
         correlationId = -1;
+        templateId = -1;
         pollComplete = false;
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
     }
 
     /**
-     * Correlation id of the last polled message or -1 if unrecognised template.
+     * Control session id of the last polled message or -1 if poll returned nothing.
+     *
+     * @return correlation id of the last polled message or -1 if unrecognised template.
+     */
+    public long controlSessionId()
+    {
+        return controlSessionId;
+    }
+
+    /**
+     * Correlation id of the last polled message or -1 if poll returned nothing.
      *
      * @return correlation id of the last polled message or -1 if unrecognised template.
      */
@@ -110,6 +123,7 @@ public class ControlResponsePoller
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
+                controlSessionId = controlResponseDecoder.controlSessionId();
                 correlationId = controlResponseDecoder.correlationId();
                 break;
 
@@ -120,6 +134,7 @@ public class ControlResponsePoller
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
+                controlSessionId = recordingDescriptorDecoder.controlSessionId();
                 correlationId = recordingDescriptorDecoder.correlationId();
                 break;
 

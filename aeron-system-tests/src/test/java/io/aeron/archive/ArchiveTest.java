@@ -333,7 +333,7 @@ public class ArchiveTest
 
         assertNull(trackerError);
 
-        final long requestStopCorrelationId = this.correlationId++;
+        final long requestStopCorrelationId = correlationId++;
         TestUtil.await(() -> archiveProxy.stopRecording(
             publishUri,
             PUBLISH_STREAM_ID,
@@ -376,12 +376,13 @@ public class ArchiveTest
         awaitConnected(recordingEvents);
 
         controlResponse = publishingClient.addSubscription(CONTROL_URI, CONTROL_STREAM_ID);
-        final long connectCorrelationId = this.correlationId++;
+        final long connectCorrelationId = correlationId++;
         assertTrue(archiveProxy.connect(CONTROL_URI, CONTROL_STREAM_ID, connectCorrelationId));
         awaitConnected(controlResponse);
-        awaitConnectedReply(controlResponse, connectCorrelationId, l -> this.controlSessionId = l);
+        awaitConnectedReply(controlResponse, connectCorrelationId, (sessionId) -> controlSessionId = sessionId);
         verifyEmptyDescriptorList(archiveProxy);
-        final long startRecordingCorrelationId = this.correlationId++;
+
+        final long startRecordingCorrelationId = correlationId++;
         TestUtil.await(() -> archiveProxy.startRecording(
             publishUri,
             PUBLISH_STREAM_ID,
@@ -471,9 +472,9 @@ public class ArchiveTest
         {
             waitForData.await();
         }
-        catch (final InterruptedException e)
+        catch (final InterruptedException ex)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException(ex);
         }
     }
 

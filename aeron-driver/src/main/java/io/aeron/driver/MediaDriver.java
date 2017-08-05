@@ -419,11 +419,11 @@ public final class MediaDriver implements AutoCloseable
 
             if (!ctx.dirsDeleteOnStart())
             {
-                final Consumer<String> logProgress = ctx.warnIfDirectoriesExist() ? System.err::println : (s) -> {};
-                final MappedByteBuffer cncByteBuffer = ctx.mapExistingCncFile(logProgress);
+                final Consumer<String> logger = ctx.warnIfDirectoriesExist() ? System.err::println : (s) -> {};
+                final MappedByteBuffer cncByteBuffer = ctx.mapExistingCncFile(logger);
                 try
                 {
-                    if (CommonContext.isDriverActive(ctx.driverTimeoutMs(), logProgress, cncByteBuffer))
+                    if (CommonContext.isDriverActive(ctx.driverTimeoutMs(), logger, cncByteBuffer))
                     {
                         throw new ActiveDriverException("Active driver detected");
                     }

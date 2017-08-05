@@ -456,6 +456,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             recordingId,
             catalog.wrapDescriptor(recordingId),
             recordingEventsProxy,
+            strippedChannel,
             image,
             position,
             recordingCtx);

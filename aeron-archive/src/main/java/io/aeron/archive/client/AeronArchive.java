@@ -40,7 +40,7 @@ import static io.aeron.archive.client.ControlResponseAdapter.dispatchDescriptor;
  */
 public final class AeronArchive implements AutoCloseable
 {
-    private static final int RESPONSE_FRAGMENT_LIMIT = 10;
+    private static final int RESPONSE_FRAGMENT_LIMIT = 4;
 
     private final long messageTimeoutNs;
     private final Context context;

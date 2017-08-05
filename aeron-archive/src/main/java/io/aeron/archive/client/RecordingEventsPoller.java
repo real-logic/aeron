@@ -25,33 +25,26 @@ import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
 /**
- * Encapsulate the polling, decoding, and dispatching of recording events.
+ * Encapsulate the polling and decoding of recording events.
  */
-public class RecordingEventsAdapter implements FragmentHandler
+public class RecordingEventsPoller implements FragmentHandler
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final RecordingStartedDecoder recordingStartedDecoder = new RecordingStartedDecoder();
     private final RecordingProgressDecoder recordingProgressDecoder = new RecordingProgressDecoder();
     private final RecordingStoppedDecoder recordingStoppedDecoder = new RecordingStoppedDecoder();
 
-    private final int fragmentLimit;
-    private final RecordingEventsListener listener;
     private final Subscription subscription;
+    private int templateId;
+    private boolean pollComplete;
 
     /**
      * Create a poller for a given subscription to an archive for recording events.
      *
-     * @param listener      to which events are dispatched.
      * @param subscription  to poll for new events.
-     * @param fragmentLimit to apply for each polling operation.
      */
-    public RecordingEventsAdapter(
-        final RecordingEventsListener listener,
-        final Subscription subscription,
-        final int fragmentLimit)
+    public RecordingEventsPoller(final Subscription subscription)
     {
-        this.fragmentLimit = fragmentLimit;
-        this.listener = listener;
         this.subscription = subscription;
     }
 
@@ -62,14 +55,37 @@ public class RecordingEventsAdapter implements FragmentHandler
      */
     public int poll()
     {
-        return subscription.poll(this, fragmentLimit);
+        templateId = -1;
+        pollComplete = false;
+
+        return subscription.poll(this, 1);
+    }
+
+    /**
+     * Has the last polling action received a complete message?
+     *
+     * @return true of the last polling action received a complete message?
+     */
+    public boolean isPollComplete()
+    {
+        return pollComplete;
+    }
+
+    /**
+     * Get the template id of the last received message.
+     *
+     * @return the template id of the last received message.
+     */
+    public int templateId()
+    {
+        return templateId;
     }
 
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
-        final int templateId = messageHeaderDecoder.templateId();
+        templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
             case RecordingStartedDecoder.TEMPLATE_ID:
@@ -78,14 +94,6 @@ public class RecordingEventsAdapter implements FragmentHandler
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
-
-                listener.onStart(
-                    recordingStartedDecoder.recordingId(),
-                    recordingStartedDecoder.startPosition(),
-                    recordingStartedDecoder.sessionId(),
-                    recordingStartedDecoder.streamId(),
-                    recordingStartedDecoder.channel(),
-                    recordingStartedDecoder.sourceIdentity());
                 break;
 
             case RecordingProgressDecoder.TEMPLATE_ID:
@@ -94,11 +102,6 @@ public class RecordingEventsAdapter implements FragmentHandler
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
-
-                listener.onProgress(
-                    recordingProgressDecoder.recordingId(),
-                    recordingProgressDecoder.startPosition(),
-                    recordingProgressDecoder.position());
                 break;
 
             case RecordingStoppedDecoder.TEMPLATE_ID:
@@ -107,15 +110,32 @@ public class RecordingEventsAdapter implements FragmentHandler
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
-
-                listener.onStop(
-                    recordingStoppedDecoder.recordingId(),
-                    recordingStoppedDecoder.startPosition(),
-                    recordingStoppedDecoder.stopPosition());
                 break;
 
             default:
                 throw new IllegalStateException("Unknown templateId: " + templateId);
         }
+
+        pollComplete = true;
+    }
+
+    public MessageHeaderDecoder messageHeaderDecoder()
+    {
+        return messageHeaderDecoder;
+    }
+
+    public RecordingStartedDecoder recordingStartedDecoder()
+    {
+        return recordingStartedDecoder;
+    }
+
+    public RecordingProgressDecoder recordingProgressDecoder()
+    {
+        return recordingProgressDecoder;
+    }
+
+    public RecordingStoppedDecoder recordingStoppedDecoder()
+    {
+        return recordingStoppedDecoder;
     }
 }

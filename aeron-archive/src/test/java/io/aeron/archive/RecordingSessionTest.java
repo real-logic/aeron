@@ -144,7 +144,7 @@ public class RecordingSessionTest
     public void shouldRecordFragmentsFromImage() throws Exception
     {
         final RecordingSession session = new RecordingSession(
-            RECORDING_ID, descriptorBuffer, recordingEventsProxy, image, position, context);
+            RECORDING_ID, descriptorBuffer, recordingEventsProxy, CHANNEL, image, position, context);
 
         assertEquals(RECORDING_ID, session.sessionId());
 

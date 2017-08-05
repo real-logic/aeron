@@ -21,11 +21,10 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
-import io.aeron.archive.NoOpRecordingEventsListener;
 import io.aeron.archive.TestUtil;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.RecordingEventsAdapter;
-import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.archive.client.RecordingEventsPoller;
+import io.aeron.archive.codecs.*;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
@@ -33,7 +32,7 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 import org.junit.*;
 import org.junit.rules.TestWatcher;
 
@@ -48,14 +47,13 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computeTermOffsetFromPositi
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
 @Ignore
 public class ArchiveReplayLoadTest
 {
-    static final String CONTROL_RESPONSE_URI = "aeron:udp?endpoint=localhost:54327";
-    static final int CONTROL_RESPONSE_STREAM_ID = 100;
+    private static final String CONTROL_RESPONSE_URI = "aeron:udp?endpoint=localhost:54327";
+    private static final int CONTROL_RESPONSE_STREAM_ID = 100;
 
     private static final int TEST_DURATION_SEC = 20;
     private static final String REPLAY_URI = "aeron:udp?endpoint=localhost:54326";
@@ -70,7 +68,6 @@ public class ArchiveReplayLoadTest
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
     private static final int MESSAGE_COUNT = 2000000;
-    private static final int RECORDING_ID = 0; // We will only have one recording in a new archive
     private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT));
     private final Random rnd = new Random();
     private final long seed = System.nanoTime();
@@ -82,13 +79,12 @@ public class ArchiveReplayLoadTest
     private Archive archive;
     private MediaDriver driver;
     private AeronArchive aeronArchive;
-    private final long recordingId = 0;
+    private long recordingId = -1L;
     private long remaining;
     private int fragmentCount;
     private long totalPayloadLength;
-    private long totalRecordingLength;
-    private long recorded;
-    private volatile int lastTermId = -1;
+    private long expectedRecordingLength;
+    private long recordedLength = 0;
     private Throwable trackerError;
 
     private long startPosition;
@@ -137,23 +133,24 @@ public class ArchiveReplayLoadTest
     @Test(timeout = 60_000)
     public void replay() throws IOException, InterruptedException
     {
-        try (Subscription recordingEvents = aeron.addSubscription(
+        try (Publication publication = aeron.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
+             Subscription recordingEvents = aeron.addSubscription(
                 archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
         {
             awaitConnected(recordingEvents);
-
             aeronArchive.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, SourceLocation.LOCAL);
 
-            final Publication publication = aeron.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
             startDrainingSubscriber(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
             awaitConnected(publication);
 
-            prepAndSendMessages(recordingEvents, publication);
-            publication.close();
-
+            final CountDownLatch recordingStopped = prepAndSendMessages(recordingEvents, publication);
             assertNull(trackerError);
 
             aeronArchive.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID);
+            recordingStopped.await();
+
+            assertNotEquals(-1L, recordingId);
+            assertEquals(expectedRecordingLength, recordedLength);
         }
 
         final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
@@ -170,22 +167,21 @@ public class ArchiveReplayLoadTest
 
     private void printScore(final int i, final long time)
     {
-        final double rate = (totalRecordingLength * 1000.0d / time) / MEGABYTE;
-        final double receivedMb = totalRecordingLength / MEGABYTE;
+        final double rate = (expectedRecordingLength * 1000.0d / time) / MEGABYTE;
+        final double receivedMb = expectedRecordingLength / MEGABYTE;
         System.out.printf("%d : received %.02f MB, replayed @ %.02f MB/s %n", i, receivedMb, rate);
     }
 
-    private void prepAndSendMessages(final Subscription recordingEvents, final Publication publication)
-        throws InterruptedException
+    private CountDownLatch prepAndSendMessages(final Subscription recordingEvents, final Publication publication)
     {
         System.out.printf("Sending %,d messages%n", MESSAGE_COUNT);
 
-        final CountDownLatch waitForData = new CountDownLatch(1);
+        final CountDownLatch recordingStopped = new CountDownLatch(1);
 
-        trackRecordingProgress(recordingEvents, waitForData);
+        trackRecordingProgress(recordingEvents, recordingStopped);
         publishDataToRecorded(publication, MESSAGE_COUNT);
 
-        waitForData.await();
+        return recordingStopped;
     }
 
     private void publishDataToRecorded(final Publication publication, final int messageCount)
@@ -214,17 +210,15 @@ public class ArchiveReplayLoadTest
         final int termOffset = computeTermOffsetFromPosition(finalPosition, positionBitsToShift);
         final int termId = computeTermIdFromPosition(finalPosition, positionBitsToShift, initialTermId);
 
-        totalRecordingLength = (termId - initialTermId) * termLength + (termOffset - initialTermOffset);
+        expectedRecordingLength = (termId - initialTermId) * termLength + (termOffset - initialTermOffset);
 
-        assertThat(finalPosition - startPosition, is(totalRecordingLength));
-
-        lastTermId = termId;
+        assertThat(finalPosition - startPosition, is(expectedRecordingLength));
     }
 
     private void replay(final int iteration)
     {
         try (Subscription replay = aeronArchive.replay(
-            RECORDING_ID, startPosition, totalRecordingLength, REPLAY_URI, iteration))
+            recordingId, startPosition, expectedRecordingLength, REPLAY_URI, iteration))
         {
             awaitConnected(replay);
 
@@ -260,49 +254,60 @@ public class ArchiveReplayLoadTest
         fragmentCount++;
     }
 
-    private void trackRecordingProgress(final Subscription recordingEvents, final CountDownLatch waitForData)
+    private void trackRecordingProgress(final Subscription recordingEvents, final CountDownLatch recordingStopped)
     {
-        final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
-            new NoOpRecordingEventsListener()
-            {
-                public void onProgress(
-                    final long recordingId0,
-                    final long startPosition,
-                    final long position)
-                {
-                    assertThat(recordingId0, is(recordingId));
-                    recorded = position - startPosition;
-                    printf("a=%d total=%d %n", recorded, totalRecordingLength);
-                }
-            },
-            recordingEvents,
-            1);
-
         final Thread t = new Thread(
             () ->
             {
                 try
                 {
-                    recorded = 0;
-                    final long start = System.currentTimeMillis();
-                    final long startBytes = remaining;
+                    final IdleStrategy idleStrategy = new SleepingMillisIdleStrategy(1);
+                    final RecordingEventsPoller poller = new RecordingEventsPoller(recordingEvents);
 
-                    while (lastTermId == -1)
+                    boolean running = true;
+                    while (running)
                     {
-                        TestUtil.await(() -> recordingEventsAdapter.poll() != 0);
-                    }
+                        idleStrategy.reset();
 
-                    final long deltaTime = System.currentTimeMillis() - start;
-                    final long deltaBytes = remaining - startBytes;
-                    final double rate = ((deltaBytes * 1000.0d) / deltaTime) / MEGABYTE;
-                    printf("Archive reported rate: %.02f MB/s %n", rate);
+                        while (poller.poll() <= 0 && !poller.isPollComplete())
+                        {
+                            idleStrategy.idle();
+                        }
+
+                        switch (poller.templateId())
+                        {
+                            case RecordingStartedDecoder.TEMPLATE_ID:
+                                recordingId = poller.recordingStartedDecoder().recordingId();
+                                printf("Recording started %d %n", recordingId);
+                                break;
+
+                            case RecordingProgressDecoder.TEMPLATE_ID:
+                            {
+                                final RecordingProgressDecoder decoder = poller.recordingProgressDecoder();
+                                recordedLength = decoder.position() - decoder.startPosition();
+                                printf("Recording progress %d %n", recordedLength);
+                                break;
+                            }
+
+                            case RecordingStoppedDecoder.TEMPLATE_ID:
+                            {
+                                final RecordingStoppedDecoder decoder = poller.recordingStoppedDecoder();
+                                recordedLength = decoder.stopPosition() - decoder.startPosition();
+                                running = false;
+                                printf("Recording stopped %d %n", decoder.recordingId());
+                                break;
+                            }
+                        }
+                    }
                 }
                 catch (final Throwable throwable)
                 {
                     trackerError = throwable;
                 }
-
-                waitForData.countDown();
+                finally
+                {
+                    recordingStopped.countDown();
+                }
             });
 
         t.setDaemon(true);

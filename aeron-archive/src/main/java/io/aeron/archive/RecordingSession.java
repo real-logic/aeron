@@ -36,6 +36,7 @@ class RecordingSession implements Session
     private final long recordingId;
     private final UnsafeBuffer descriptorBuffer;
     private final RecordingEventsProxy recordingEventsProxy;
+    private final String strippedChannel;
     private final Image image;
     private final AtomicCounter position;
     private final RecordingWriter.Context context;
@@ -47,6 +48,7 @@ class RecordingSession implements Session
         final long recordingId,
         final UnsafeBuffer descriptorBuffer,
         final RecordingEventsProxy recordingEventsProxy,
+        final String strippedChannel,
         final Image image,
         final AtomicCounter position,
         final Context context)
@@ -54,6 +56,7 @@ class RecordingSession implements Session
         this.recordingId = recordingId;
         this.descriptorBuffer = descriptorBuffer;
         this.recordingEventsProxy = recordingEventsProxy;
+        this.strippedChannel = strippedChannel;
         this.image = image;
         this.position = position;
         this.context = context;
@@ -96,7 +99,6 @@ class RecordingSession implements Session
         final Subscription subscription = image.subscription();
         final int sessionId = image.sessionId();
         final int streamId = subscription.streamId();
-        final String channel = subscription.channel();
         final String sourceIdentity = image.sourceIdentity();
         final long startPosition = image.joinPosition();
 
@@ -117,7 +119,7 @@ class RecordingSession implements Session
             startPosition,
             sessionId,
             streamId,
-            channel,
+            strippedChannel,
             sourceIdentity);
 
         this.recordingWriter = recordingWriter;

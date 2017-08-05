@@ -21,7 +21,7 @@ import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.collections.Long2ObjectHashMap;
 
-class MultiplexControlSession implements Session, ControlRequestListener
+class ControlSessionDemuxer implements Session, ControlRequestListener
 {
     enum State
     {
@@ -37,7 +37,7 @@ class MultiplexControlSession implements Session, ControlRequestListener
 
     private State state = State.ACTIVE;
 
-    MultiplexControlSession(final Image image, final ArchiveConductor conductor)
+    ControlSessionDemuxer(final Image image, final ArchiveConductor conductor)
     {
         this.image = image;
         this.conductor = conductor;
@@ -99,6 +99,7 @@ class MultiplexControlSession implements Session, ControlRequestListener
         {
             throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
         }
+
         controlSession.onStopRecording(correlationId, channel, streamId);
     }
 
@@ -130,6 +131,7 @@ class MultiplexControlSession implements Session, ControlRequestListener
         {
             throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
         }
+
         controlSession.onListRecordingsForUri(correlationId, fromRecordingId, recordCount, channel, streamId);
     }
 
@@ -144,6 +146,7 @@ class MultiplexControlSession implements Session, ControlRequestListener
         {
             throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
         }
+
         controlSession.onListRecordings(correlationId, fromRecordingId, recordCount);
     }
 
@@ -161,6 +164,7 @@ class MultiplexControlSession implements Session, ControlRequestListener
         {
             throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
         }
+
         controlSession.onStartReplay(correlationId, replayStreamId, replayChannel, recordingId, position, length);
     }
 

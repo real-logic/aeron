@@ -545,14 +545,22 @@ bool aeron_is_driver_active_with_cnc(
 {
     char buffer[AERON_MAX_PATH];
     aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)cnc_mmap->addr;
+    int32_t cnc_version;
 
-    if (AERON_CNC_VERSION != metadata->cnc_version)
+    while (0 == (cnc_version = aeron_cnc_version_volatile(metadata)))
     {
-        snprintf(
-            buffer,
-            sizeof(buffer) - 1,
-            "ERROR: aeron cnc file version not understood: version=%d",
-            metadata->cnc_version);
+        if (aeron_epochclock() > (now + timeout))
+        {
+            snprintf(buffer, sizeof(buffer) - 1, "ERROR: aeron cnc file version 0 for timeout");
+            return false;
+        }
+
+        usleep(1000);
+    }
+
+    if (AERON_CNC_VERSION != cnc_version)
+    {
+        snprintf(buffer, sizeof(buffer) - 1, "ERROR: aeron cnc file version not understood: version=%d", cnc_version);
         log_func(buffer);
     }
     else
@@ -562,8 +570,7 @@ bool aeron_is_driver_active_with_cnc(
         if (aeron_mpsc_rb_init(
             &rb, aeron_cnc_to_driver_buffer(metadata), (size_t)metadata->to_driver_buffer_length) != 0)
         {
-            snprintf(
-                buffer, sizeof(buffer) - 1, "ERROR: aeron cnc file could not init to-driver buffer");
+            snprintf(buffer, sizeof(buffer) - 1, "ERROR: aeron cnc file could not init to-driver buffer");
             log_func(buffer);
         }
         else
@@ -572,8 +579,7 @@ bool aeron_is_driver_active_with_cnc(
 
             int64_t diff = now - timestamp;
 
-            snprintf(
-                buffer, sizeof(buffer) - 1, "INFO: Aeron toDriver consumer heartbeat is %" PRId64 " ms old", diff);
+            snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron toDriver consumer heartbeat is %" PRId64 " ms old", diff);
             log_func(buffer);
 
             if (diff <= timeout)
@@ -618,6 +624,7 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, a
     return result;
 }
 
+extern int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata);
 extern uint8_t *aeron_cnc_to_driver_buffer(aeron_cnc_metadata_t *metadata);
 extern uint8_t *aeron_cnc_to_clients_buffer(aeron_cnc_metadata_t *metadata);
 extern uint8_t *aeron_cnc_counters_metadata_buffer(aeron_cnc_metadata_t *metadata);

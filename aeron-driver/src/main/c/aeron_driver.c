@@ -233,8 +233,6 @@ void aeron_driver_fill_cnc_metadata(aeron_driver_context_t *context)
     metadata->error_log_buffer_length = (int32_t)context->error_buffer_length;
     metadata->client_liveness_timeout = (int64_t)context->client_liveness_timeout_ns;
 
-    AERON_PUT_ORDERED(metadata->cnc_version, AERON_CNC_VERSION);
-
     context->to_driver_buffer = aeron_cnc_to_driver_buffer(metadata);
     context->to_clients_buffer = aeron_cnc_to_clients_buffer(metadata);
     context->counters_values_buffer = aeron_cnc_counters_values_buffer(metadata);
@@ -495,6 +493,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     _driver->context->receiver_proxy = &_driver->receiver.receiver_proxy;
 
     aeron_mpsc_rb_consumer_heartbeat_time(&_driver->conductor.to_driver_commands, aeron_epochclock());
+    aeron_cnc_version_signal_cnc_ready((aeron_cnc_metadata_t *)context->cnc_map.addr, AERON_CNC_VERSION);
 
     switch (_driver->context->threading_mode)
     {

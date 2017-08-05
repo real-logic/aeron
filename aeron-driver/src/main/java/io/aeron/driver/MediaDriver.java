@@ -165,9 +165,9 @@ public final class MediaDriver implements AutoCloseable
             .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
             .conclude();
 
+        final DriverConductor conductor = new DriverConductor(ctx);
         final Receiver receiver = new Receiver(ctx);
         final Sender sender = new Sender(ctx);
-        final DriverConductor conductor = new DriverConductor(ctx);
 
         ctx.receiverProxy().receiver(receiver);
         ctx.senderProxy().sender(sender);
@@ -419,11 +419,11 @@ public final class MediaDriver implements AutoCloseable
 
             if (!ctx.dirsDeleteOnStart())
             {
-                final Consumer<String> logProgress = ctx.warnIfDirectoriesExist() ? System.err::println : (s) -> {};
-                final MappedByteBuffer cncByteBuffer = ctx.mapExistingCncFile(logProgress);
+                final Consumer<String> logger = ctx.warnIfDirectoriesExist() ? System.err::println : (s) -> {};
+                final MappedByteBuffer cncByteBuffer = ctx.mapExistingCncFile(logger);
                 try
                 {
-                    if (CommonContext.isDriverActive(ctx.driverTimeoutMs(), logProgress, cncByteBuffer))
+                    if (CommonContext.isDriverActive(ctx.driverTimeoutMs(), logger, cncByteBuffer))
                     {
                         throw new ActiveDriverException("Active driver detected");
                     }
@@ -636,6 +636,9 @@ public final class MediaDriver implements AutoCloseable
                 }
 
                 concludeIdleStrategies();
+
+                toDriverCommands.consumerHeartbeatTime(epochClock.time());
+                CncFileDescriptor.signalCncReady(cncMetaDataBuffer);
             }
             catch (final Exception ex)
             {

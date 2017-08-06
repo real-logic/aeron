@@ -20,7 +20,7 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.FailRecordingEventsListener;
 import io.aeron.archive.TestUtil;
-import io.aeron.archive.client.ArchiveProxy;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingEventsAdapter;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
@@ -41,7 +41,6 @@ import java.util.function.BooleanSupplier;
 import static io.aeron.archive.TestUtil.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeTermOffsetFromPosition;
-import static junit.framework.TestCase.assertTrue;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -74,17 +73,16 @@ public class ArchiveRecordingLoadTest
     private Aeron aeron;
     private Archive archive;
     private MediaDriver driver;
+    private AeronArchive aeronArchive;
     private long recordingId;
     private int[] fragmentLength;
     private long totalDataLength;
-    private long totalRecordingLength;
-    private long recorded;
+    private long expectedRecordingLength;
+    private long recordedLength;
     private boolean doneRecording;
 
-    private long correlationId;
     private BooleanSupplier recordingStartedIndicator;
     private BooleanSupplier recordingEndIndicator;
-    private long controlSessionId;
 
     @Before
     public void before() throws Exception
@@ -107,12 +105,18 @@ public class ArchiveRecordingLoadTest
                 .errorHandler(driver.context().errorHandler()));
 
         aeron = Aeron.connect();
+
+        aeronArchive = AeronArchive.connect(
+            new AeronArchive.Context()
+                .controlResponseChannel(CONTROL_RESPONSE_URI)
+                .controlResponseStreamId(CONTROL_RESPONSE_STREAM_ID)
+                .aeron(aeron));
     }
 
     @After
     public void after() throws Exception
     {
-        CloseHelper.quietClose(aeron);
+        CloseHelper.quietClose(aeronArchive);
         CloseHelper.quietClose(archive);
         CloseHelper.quietClose(driver);
 
@@ -123,39 +127,20 @@ public class ArchiveRecordingLoadTest
     @Test
     public void archive() throws IOException, InterruptedException
     {
-        try (Publication controlRequest = aeron.addPublication(
-                archive.context().controlChannel(), archive.context().controlStreamId());
-             Subscription recordingEvents = aeron.addSubscription(
+        try (Subscription recordingEvents = aeron.addSubscription(
                 archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
         {
-            final ArchiveProxy archiveProxy = new ArchiveProxy(controlRequest);
             initRecordingStartIndicator(recordingEvents);
             initRecordingEndIndicator(recordingEvents);
-            awaitConnected(controlRequest);
             awaitConnected(recordingEvents);
-            println("Archive service connected");
-
-            final Subscription controlResponse = aeron.addSubscription(
-                CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
-            final long connectCorrelationId = this.correlationId++;
-            assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID, connectCorrelationId));
-            awaitConnected(controlResponse);
-            awaitConnectedReply(controlResponse, connectCorrelationId, l -> this.controlSessionId = l);
-            println("Client connected");
 
             long start;
             final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
 
-            startDrainingSubscriber(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
-            final String channel = PUBLISH_URI;
-
             while (System.currentTimeMillis() < duration)
             {
-                final long startRecordingCorrelationId = this.correlationId++;
-                await(() -> archiveProxy.startRecording(
-                    channel, PUBLISH_STREAM_ID, SourceLocation.LOCAL, startRecordingCorrelationId, controlSessionId));
-                awaitOk(controlResponse, startRecordingCorrelationId);
-                println("Recording requested");
+                startDrainingSubscriber(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
+                aeronArchive.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, SourceLocation.LOCAL);
 
                 try (ExclusivePublication publication = aeron.addExclusivePublication(PUBLISH_URI, PUBLISH_STREAM_ID))
                 {
@@ -173,27 +158,19 @@ public class ArchiveRecordingLoadTest
                 }
 
                 doneRecording = false;
-                assertThat(totalRecordingLength, is(recorded));
+                assertThat(expectedRecordingLength, is(recordedLength));
 
                 printScore(System.currentTimeMillis() - start);
 
-                final long stopRecordingCorrelationId = this.correlationId++;
-                await(() -> archiveProxy.stopRecording(
-                    channel,
-                    PUBLISH_STREAM_ID,
-                    stopRecordingCorrelationId,
-                    controlSessionId));
-                awaitOk(controlResponse, stopRecordingCorrelationId);
+                aeronArchive.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID);
             }
-
-            println("All data arrived");
         }
     }
 
     private void printScore(final long time)
     {
-        final double rate = (totalRecordingLength * 1000.0 / time) / MEGABYTE;
-        final double recordedMb = totalRecordingLength / MEGABYTE;
+        final double rate = (expectedRecordingLength * 1000.0 / time) / MEGABYTE;
+        final double recordedMb = expectedRecordingLength / MEGABYTE;
         System.out.printf("%d : sent %.02f MB, recorded @ %.02f MB/s %n", recordingId, recordedMb, rate);
     }
 
@@ -231,12 +208,13 @@ public class ArchiveRecordingLoadTest
                     final long position)
                 {
                     assertThat(recordingId0, is(recordingId));
-                    recorded = position - startPosition;
+                    recordedLength = position - startPosition;
                 }
 
                 public void onStop(final long recordingId0, final long startPosition, final long stopPosition)
                 {
                     doneRecording = true;
+                    recordedLength = stopPosition - startPosition;
                     assertThat(recordingId0, is(recordingId));
                 }
             },
@@ -284,9 +262,9 @@ public class ArchiveRecordingLoadTest
         final long position = publication.position();
         final int lastTermOffset = computeTermOffsetFromPosition(position, positionBitsToShift);
         final int lastTermId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
-        totalRecordingLength = ((lastTermId - startTermId) * (long)termLength) + (lastTermOffset - startTermOffset);
+        expectedRecordingLength = ((lastTermId - startTermId) * (long)termLength) + (lastTermOffset - startTermOffset);
 
-        assertThat(position - startPosition, is(totalRecordingLength));
+        assertThat(position - startPosition, is(expectedRecordingLength));
     }
 
     private void offer(final ExclusivePublication publication, final UnsafeBuffer buffer, final int length)

@@ -284,7 +284,7 @@ public class ArchiveRecordingLoadTest
         final long position = publication.position();
         final int lastTermOffset = computeTermOffsetFromPosition(position, positionBitsToShift);
         final int lastTermId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
-        totalRecordingLength = (lastTermId - startTermId) * termLength + (lastTermOffset - startTermOffset);
+        totalRecordingLength = ((lastTermId - startTermId) * (long)termLength) + (lastTermOffset - startTermOffset);
 
         assertThat(position - startPosition, is(totalRecordingLength));
     }

@@ -210,7 +210,7 @@ public class ArchiveReplayLoadTest
         final int termOffset = computeTermOffsetFromPosition(finalPosition, positionBitsToShift);
         final int termId = computeTermIdFromPosition(finalPosition, positionBitsToShift, initialTermId);
 
-        expectedRecordingLength = (termId - initialTermId) * termLength + (termOffset - initialTermOffset);
+        expectedRecordingLength = ((termId - initialTermId) * (long)termLength) + (termOffset - initialTermOffset);
 
         assertThat(finalPosition - startPosition, is(expectedRecordingLength));
     }

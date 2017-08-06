@@ -449,8 +449,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             originalChannel,
             sourceIdentity);
 
-        final AtomicCounter position = recordingPositionsManager.newCounter(
-            makeKey(streamId, strippedChannel) + ":" + recordingId);
+        final String label = "rec-pos: " + recordingId + ' ' + sessionId + ' ' + streamId + ' ' + strippedChannel;
+        final AtomicCounter position = recordingPositionsManager.newCounter(label);
 
         final RecordingSession session = new RecordingSession(
             recordingId,

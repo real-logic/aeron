@@ -134,7 +134,6 @@ public class ArchiveRecordingLoadTest
             initRecordingEndIndicator(recordingEvents);
             awaitConnected(recordingEvents);
 
-            long start;
             final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
 
             while (System.currentTimeMillis() < duration)
@@ -142,11 +141,13 @@ public class ArchiveRecordingLoadTest
                 startDrainingSubscriber(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
                 aeronArchive.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, SourceLocation.LOCAL);
 
+                long start;
                 try (ExclusivePublication publication = aeron.addExclusivePublication(PUBLISH_URI, PUBLISH_STREAM_ID))
                 {
                     awaitConnected(publication);
                     await(recordingStartedIndicator);
 
+                    doneRecording = false;
                     start = System.currentTimeMillis();
 
                     prepAndSendMessages(publication);
@@ -157,10 +158,8 @@ public class ArchiveRecordingLoadTest
                     await(recordingEndIndicator);
                 }
 
-                doneRecording = false;
-                assertThat(expectedRecordingLength, is(recordedLength));
-
                 printScore(System.currentTimeMillis() - start);
+                assertThat(expectedRecordingLength, is(recordedLength));
 
                 aeronArchive.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID);
             }
@@ -169,7 +168,7 @@ public class ArchiveRecordingLoadTest
 
     private void printScore(final long time)
     {
-        final double rate = (expectedRecordingLength * 1000.0 / time) / MEGABYTE;
+        final double rate = (expectedRecordingLength * 1000.0d / time) / MEGABYTE;
         final double recordedMb = expectedRecordingLength / MEGABYTE;
         System.out.printf("%d : sent %.02f MB, recorded @ %.02f MB/s %n", recordingId, recordedMb, rate);
     }
@@ -241,12 +240,10 @@ public class ArchiveRecordingLoadTest
 
     private void publishDataToBeRecorded(final ExclusivePublication publication, final int messageCount)
     {
+        buffer.setMemory(0, 1024, (byte)'z');
+
         final int termLength = publication.termBufferLength();
         final int positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
-
-        buffer.setMemory(0, 1024, (byte)'z');
-        buffer.putStringAscii(32, "TEST");
-
         final int initialTermId = publication.initialTermId();
         final long startPosition = publication.position();
         final int startTermOffset = computeTermOffsetFromPosition(startPosition, positionBitsToShift);

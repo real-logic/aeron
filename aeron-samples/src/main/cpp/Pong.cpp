@@ -143,12 +143,15 @@ int main(int argc, char **argv)
             pongPublication = aeron.findPublication(publicationId);
         }
 
+        Publication &pongPublicationRef = *pongPublication;
+        Subscription &pingSubscriptionRef = *pingSubscription;
+
         BusySpinIdleStrategy idleStrategy;
         BusySpinIdleStrategy pingHandlerIdleStrategy;
         FragmentAssembler fragmentAssembler(
             [&](AtomicBuffer& buffer, index_t offset, index_t length, const Header& header)
             {
-                while (pongPublication->offer(buffer, offset, length) < 0L)
+                while (pongPublicationRef.offer(buffer, offset, length) < 0L)
                 {
                     pingHandlerIdleStrategy.idle(0);
                 }
@@ -158,7 +161,7 @@ int main(int argc, char **argv)
 
         while (running)
         {
-            const int fragmentsRead = pingSubscription->poll(handler, settings.fragmentCountLimit);
+            const int fragmentsRead = pingSubscriptionRef.poll(handler, settings.fragmentCountLimit);
 
             idleStrategy.idle(fragmentsRead);
         }

@@ -54,7 +54,7 @@ class ControlSession implements Session
     private final ControlResponseProxy controlResponseProxy;
     private final long controlSessionId;
     private final long correlationId;
-    private final MultiplexControlSession parent;
+    private final ControlSessionDemuxer demuxer;
     private final Publication controlPublication;
     private State state = State.INIT;
     private long timeoutDeadlineMs = -1;
@@ -62,7 +62,7 @@ class ControlSession implements Session
     ControlSession(
         final long controlSessionId,
         final long correlationId,
-        final MultiplexControlSession parent,
+        final ControlSessionDemuxer demuxer,
         final Publication controlPublication,
         final ArchiveConductor conductor,
         final EpochClock epochClock,
@@ -70,7 +70,7 @@ class ControlSession implements Session
     {
         this.controlSessionId = controlSessionId;
         this.correlationId = correlationId;
-        this.parent = parent;
+        this.demuxer = demuxer;
         this.controlPublication = controlPublication;
         this.conductor = conductor;
         this.epochClock = epochClock;
@@ -91,7 +91,7 @@ class ControlSession implements Session
     {
         state = State.CLOSED;
         CloseHelper.quietClose(controlPublication);
-        parent.notifyControlSessionClosed(this);
+        demuxer.notifyControlSessionClosed(this);
     }
 
     public boolean isDone()

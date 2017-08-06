@@ -16,7 +16,6 @@
 package io.aeron.archive;
 
 import io.aeron.*;
-import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import org.agrona.CloseHelper;
@@ -39,6 +38,7 @@ import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.CommonContext.SPY_PREFIX;
+import static io.aeron.archive.codecs.ControlResponseCode.ERROR;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.concurrent.status.CountersReader.COUNTER_LENGTH;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
@@ -116,7 +116,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         try (FileChannel channel = FileChannel.open(countersFile.toPath(), CREATE, READ, WRITE, SPARSE))
         {
-            final int maxPositionCounters = this.maxConcurrentRecordings * 2;
+            final int maxPositionCounters = maxConcurrentRecordings * 2;
             countersMappedBBuffer = channel.map(
                 MapMode.READ_WRITE, 0, maxPositionCounters * (METADATA_LENGTH + COUNTER_LENGTH));
             final UnsafeBuffer countersMetaBuffer =
@@ -186,7 +186,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
      */
     private void onControlConnection(final Image image)
     {
-        addSession(new MultiplexControlSession(image, this));
+        addSession(new ControlSessionDemuxer(image, this));
     }
 
     void stopRecording(
@@ -209,7 +209,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             {
                 controlSession.sendResponse(
                     correlationId,
-                    ControlResponseCode.ERROR,
+                    ERROR,
                     "No recording subscription found for: " + key,
                     controlResponseProxy);
             }
@@ -218,7 +218,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         {
             errorHandler.onError(ex);
             controlSession.sendResponse(
-                correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlResponseProxy);
+                correlationId, ERROR, ex.getMessage(), controlResponseProxy);
         }
     }
 
@@ -235,7 +235,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         {
             controlSession.sendResponse(
                 correlationId,
-                ControlResponseCode.ERROR,
+                ERROR,
                 "Max concurrent recordings reached: " + maxConcurrentRecordings,
                 controlResponseProxy);
 
@@ -266,7 +266,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             {
                 controlSession.sendResponse(
                     correlationId,
-                    ControlResponseCode.ERROR,
+                    ERROR,
                     "Recording already setup for subscription: " + key,
                     controlResponseProxy);
             }
@@ -274,8 +274,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         catch (final Exception ex)
         {
             errorHandler.onError(ex);
-            controlSession.sendResponse(
-                correlationId, ControlResponseCode.ERROR, ex.getMessage(), controlResponseProxy);
+            controlSession.sendResponse(correlationId, ERROR, ex.getMessage(), controlResponseProxy);
         }
     }
 
@@ -329,7 +328,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         {
             controlSession.sendResponse(
                 correlationId,
-                ControlResponseCode.ERROR,
+                ERROR,
                 "Max concurrent replays reached: " + maxConcurrentReplays,
                 controlResponseProxy);
 
@@ -341,7 +340,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         {
             controlSession.sendResponse(
                 correlationId,
-                ControlResponseCode.ERROR,
+                ERROR,
                 "Unknown recording : " + recordingId,
                 controlResponseProxy);
 
@@ -373,7 +372,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final long correlationId,
         final String channel,
         final int streamId,
-        final MultiplexControlSession parent)
+        final ControlSessionDemuxer demuxer)
     {
         final String controlChannel;
         if (!channel.contains(CommonContext.TERM_LENGTH_PARAM_NAME))
@@ -386,12 +385,13 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         {
             controlChannel = channel;
         }
+
         final Publication publication = aeron.addPublication(controlChannel, streamId);
 
         final ControlSession controlSession = new ControlSession(
             controlSessionId++,
             correlationId,
-            parent,
+            demuxer,
             publication,
             this,
             epochClock,
@@ -401,9 +401,9 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         return controlSession;
     }
 
-    private static String makeKey(final int streamId, final String minimalChannel)
+    private static String makeKey(final int streamId, final String strippedChannel)
     {
-        return streamId + ':' + minimalChannel;
+        return streamId + ':' + strippedChannel;
     }
 
     ChannelUriStringBuilder strippedChannelBuilder(final String channel)

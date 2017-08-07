@@ -92,7 +92,7 @@ public class ArchiveReplayLoadTest
     private long remaining;
     private int fragmentCount;
     private long totalPayloadLength;
-    private long expectedRecordingLength;
+    private volatile long expectedRecordingLength;
     private long recordedLength = 0;
     private Throwable trackerError;
 
@@ -156,8 +156,8 @@ public class ArchiveReplayLoadTest
 
             assertNull(trackerError);
 
-            aeronArchive.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID);
             recordingStopped.await();
+            aeronArchive.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID);
 
             assertNull(trackerError);
             assertNotEquals(-1L, recordingId);
@@ -198,11 +198,6 @@ public class ArchiveReplayLoadTest
     private void publishDataToRecorded(final Publication publication, final int messageCount)
     {
         startPosition = publication.position();
-
-        final int termLength = publication.termBufferLength();
-        final int positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
-        final int initialTermOffset = computeTermOffsetFromPosition(startPosition, positionBitsToShift);
-
         buffer.setMemory(0, 1024, (byte)'z');
 
         for (int i = 0; i < messageCount; i++)
@@ -216,14 +211,7 @@ public class ArchiveReplayLoadTest
             offer(publication, buffer, messageLength);
         }
 
-        final int initialTermId = publication.initialTermId();
-        final long finalPosition = publication.position();
-        final int termOffset = computeTermOffsetFromPosition(finalPosition, positionBitsToShift);
-        final int termId = computeTermIdFromPosition(finalPosition, positionBitsToShift, initialTermId);
-
-        expectedRecordingLength = ((termId - initialTermId) * (long)termLength) + (termOffset - initialTermOffset);
-
-        assertThat(finalPosition - startPosition, is(expectedRecordingLength));
+        expectedRecordingLength = publication.position() - startPosition;
     }
 
     private void replay(final int iteration)
@@ -272,11 +260,11 @@ public class ArchiveReplayLoadTest
             {
                 try
                 {
+                    recordedLength = 0;
                     final IdleStrategy idleStrategy = new SleepingMillisIdleStrategy(1);
                     final RecordingEventsPoller poller = new RecordingEventsPoller(recordingEvents);
 
-                    boolean running = true;
-                    while (running)
+                    while (0 == expectedRecordingLength || recordedLength < expectedRecordingLength)
                     {
                         idleStrategy.reset();
 
@@ -301,17 +289,6 @@ public class ArchiveReplayLoadTest
                                 final RecordingProgressDecoder decoder = poller.recordingProgressDecoder();
                                 recordedLength = decoder.position() - decoder.startPosition();
                                 printf("Recording progress %d %n", recordedLength);
-                                break;
-                            }
-
-                            case RecordingStoppedDecoder.TEMPLATE_ID:
-                            {
-                                final RecordingStoppedDecoder decoder = poller.recordingStoppedDecoder();
-                                recordedLength = decoder.stopPosition() - decoder.startPosition();
-                                running = false;
-                                System.out.printf(
-                                    "Recording stopped id=%d length=%,d%n", decoder.recordingId(), recordedLength);
-                                System.out.flush();
                                 break;
                             }
                         }

@@ -34,7 +34,7 @@ class RecordingSession implements Session
     }
 
     private final long recordingId;
-    private final int pollBlockLength;
+    private final int blockLengthLimit;
     private final UnsafeBuffer descriptorBuffer;
     private final RecordingEventsProxy recordingEventsProxy;
     private final String strippedChannel;
@@ -62,7 +62,7 @@ class RecordingSession implements Session
         this.position = position;
         this.context = context;
 
-        pollBlockLength = Math.min(image.termBufferLength(), 16 * 1204 * 1024);
+        blockLengthLimit = Math.min(image.termBufferLength(), 16 * 1204 * 1024);
     }
 
     public boolean isDone()
@@ -147,7 +147,7 @@ class RecordingSession implements Session
         int workCount = 1;
         try
         {
-            workCount = image.rawPoll(recordingWriter, pollBlockLength);
+            workCount = image.rawPoll(recordingWriter, blockLengthLimit);
             if (workCount != 0)
             {
                 recordingEventsProxy.progress(

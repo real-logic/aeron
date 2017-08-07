@@ -251,14 +251,13 @@ public final class AeronArchive implements AutoCloseable
     /**
      * Replay a length of a recording from a position.
      *
-     * @param recordingId    to be replayed.
-     * @param position       from which the replay should be started.
-     * @param length         of the stream to be replayed.
-     * @param replayChannel  to which the replay should be sent.
-     * @param replayStreamId to which the replay should be sent.
-     * @param availableImageHandler to be called when the replay image becomes available.
+     * @param recordingId             to be replayed.
+     * @param position                from which the replay should be started.
+     * @param length                  of the stream to be replayed.
+     * @param replayChannel           to which the replay should be sent.
+     * @param replayStreamId          to which the replay should be sent.
+     * @param availableImageHandler   to be called when the replay image becomes available.
      * @param unavailableImageHandler to be called when the replay image goes unavailable.
-     *
      * @return the {@link Subscription} for consuming the replay.
      */
     public Subscription replay(

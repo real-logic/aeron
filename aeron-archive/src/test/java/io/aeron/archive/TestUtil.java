@@ -24,9 +24,9 @@ import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.hamcrest.Description;
 import org.junit.Assert;
 import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 import java.io.File;
 import java.io.IOException;
@@ -243,7 +243,6 @@ public class TestUtil
     {
         return new TestWatcher()
         {
-            @SuppressWarnings("unused")
             protected void failed(final Throwable t, final Description description)
             {
                 System.err.println(clazz.getName() + " failed with random seed: " + seed);

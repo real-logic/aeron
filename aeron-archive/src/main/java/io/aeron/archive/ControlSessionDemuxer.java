@@ -88,7 +88,7 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         controlSessionByIdMap.put(session.sessionId(), session);
     }
 
-    public void onClose(final long controlSessionId)
+    public void onCloseSession(final long controlSessionId)
     {
         final ControlSession session = controlSessionByIdMap.get(controlSessionId);
         if (null != session)

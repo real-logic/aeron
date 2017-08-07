@@ -59,7 +59,7 @@
         <data  name="responseChannel"    id="3" type="varAsciiEncoding"/>
     </sbe:message>
 
-    <sbe:message name="CloseRequest"
+    <sbe:message name="CloseSessionRequest"
                  id="3"
                  description="Close an existing control session">
         <field name="controlSessionId"   id="1" type="int64"/>

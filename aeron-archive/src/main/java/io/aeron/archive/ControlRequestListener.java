@@ -24,7 +24,7 @@ interface ControlRequestListener
 {
     void onConnect(long correlationId, String channel, int streamId);
 
-    void onClose(long controlSessionId);
+    void onCloseSession(long controlSessionId);
 
     void onStartRecording(
         long controlSessionId,

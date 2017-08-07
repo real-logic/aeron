@@ -88,7 +88,7 @@ public final class AeronArchive implements AutoCloseable
      */
     public void close()
     {
-        archiveProxy.close(controlSessionId);
+        archiveProxy.closeSession(controlSessionId);
 
         if (!context.ownsAeronClient())
         {

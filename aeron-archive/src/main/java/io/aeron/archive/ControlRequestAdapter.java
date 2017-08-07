@@ -24,7 +24,7 @@ class ControlRequestAdapter implements FragmentHandler
     private final ControlRequestListener listener;
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ConnectRequestDecoder connectRequestDecoder = new ConnectRequestDecoder();
-    private final CloseRequestDecoder closeRequestDecoder = new CloseRequestDecoder();
+    private final CloseSessionRequestDecoder closeSessionRequestDecoder = new CloseSessionRequestDecoder();
     private final StartRecordingRequestDecoder startRecordingRequestDecoder = new StartRecordingRequestDecoder();
     private final StopRecordingRequestDecoder stopRecordingRequestDecoder = new StopRecordingRequestDecoder();
     private final ReplayRequestDecoder replayRequestDecoder = new ReplayRequestDecoder();
@@ -58,14 +58,14 @@ class ControlRequestAdapter implements FragmentHandler
                     connectRequestDecoder.responseStreamId());
                 break;
 
-            case CloseRequestDecoder.TEMPLATE_ID:
-                closeRequestDecoder.wrap(
+            case CloseSessionRequestDecoder.TEMPLATE_ID:
+                closeSessionRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     headerDecoder.blockLength(),
                     headerDecoder.version());
 
-                listener.onClose(closeRequestDecoder.controlSessionId());
+                listener.onCloseSession(closeSessionRequestDecoder.controlSessionId());
                 break;
 
             case StartRecordingRequestDecoder.TEMPLATE_ID:

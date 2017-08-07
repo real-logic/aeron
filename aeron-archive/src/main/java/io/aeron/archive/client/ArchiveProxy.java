@@ -41,7 +41,7 @@ public class ArchiveProxy
     private final Publication publication;
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ConnectRequestEncoder connectRequestEncoder = new ConnectRequestEncoder();
-    private final CloseRequestEncoder closeRequestEncoder = new CloseRequestEncoder();
+    private final CloseSessionRequestEncoder closeSessionRequestEncoder = new CloseSessionRequestEncoder();
     private final StartRecordingRequestEncoder startRecordingRequestEncoder = new StartRecordingRequestEncoder();
     private final ReplayRequestEncoder replayRequestEncoder = new ReplayRequestEncoder();
     private final StopRecordingRequestEncoder stopRecordingRequestEncoder = new StopRecordingRequestEncoder();
@@ -118,13 +118,13 @@ public class ArchiveProxy
      * @param controlSessionId with the archive.
      * @return true if successfully offered otherwise false.
      */
-    public boolean close(final long controlSessionId)
+    public boolean closeSession(final long controlSessionId)
     {
-        closeRequestEncoder
+        closeSessionRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId);
 
-        return offer(closeRequestEncoder.encodedLength());
+        return offer(closeSessionRequestEncoder.encodedLength());
     }
 
     /**

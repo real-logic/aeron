@@ -61,7 +61,7 @@ public class ArchiveReplayLoadTest
     private static final String PUBLISH_URI = new ChannelUriStringBuilder()
         .media("ipc")
         .mtu(16 * 1024)
-        .termLength(64 * 1024 * 1024)
+        .termLength(32 * 1024 * 1024)
         .build();
 
     private static final int PUBLISH_STREAM_ID = 1;
@@ -135,7 +135,7 @@ public class ArchiveReplayLoadTest
     {
         try (Publication publication = aeron.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
              Subscription recordingEvents = aeron.addSubscription(
-                archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
+                 archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
         {
             awaitConnected(recordingEvents);
             aeronArchive.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, SourceLocation.LOCAL);
@@ -144,11 +144,13 @@ public class ArchiveReplayLoadTest
             awaitConnected(publication);
 
             final CountDownLatch recordingStopped = prepAndSendMessages(recordingEvents, publication);
+
             assertNull(trackerError);
 
             aeronArchive.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID);
             recordingStopped.await();
 
+            assertNull(trackerError);
             assertNotEquals(-1L, recordingId);
             assertEquals(expectedRecordingLength, recordedLength);
         }
@@ -277,9 +279,13 @@ public class ArchiveReplayLoadTest
                         switch (poller.templateId())
                         {
                             case RecordingStartedDecoder.TEMPLATE_ID:
-                                recordingId = poller.recordingStartedDecoder().recordingId();
+                            {
+                                final RecordingStartedDecoder decoder = poller.recordingStartedDecoder();
+                                recordingId = decoder.recordingId();
+                                assertEquals(0L, decoder.startPosition());
                                 printf("Recording started %d %n", recordingId);
                                 break;
+                            }
 
                             case RecordingProgressDecoder.TEMPLATE_ID:
                             {
@@ -294,7 +300,9 @@ public class ArchiveReplayLoadTest
                                 final RecordingStoppedDecoder decoder = poller.recordingStoppedDecoder();
                                 recordedLength = decoder.stopPosition() - decoder.startPosition();
                                 running = false;
-                                printf("Recording stopped %d %n", decoder.recordingId());
+                                System.out.printf(
+                                    "Recording stopped id=%d length=%d%n", decoder.recordingId(), recordedLength);
+                                System.out.flush();
                                 break;
                             }
                         }

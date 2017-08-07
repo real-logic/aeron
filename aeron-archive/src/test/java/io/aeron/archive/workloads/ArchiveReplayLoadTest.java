@@ -25,6 +25,7 @@ import io.aeron.archive.TestUtil;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingEventsPoller;
 import io.aeron.archive.codecs.*;
+import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
@@ -61,13 +62,21 @@ public class ArchiveReplayLoadTest
     private static final String PUBLISH_URI = new ChannelUriStringBuilder()
         .media("ipc")
         .mtu(16 * 1024)
-        .termLength(32 * 1024 * 1024)
+        .termLength(64 * 1024 * 1024)
         .build();
 
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
     private static final int MESSAGE_COUNT = 2000000;
+
+    static
+    {
+        System.setProperty(Configuration.SOCKET_RCVBUF_LENGTH_PROP_NAME, Integer.toString(2 * 1024 * 1024));
+        System.setProperty(Configuration.SOCKET_SNDBUF_LENGTH_PROP_NAME, Integer.toString(2 * 1024 * 1024));
+        System.setProperty(Configuration.INITIAL_WINDOW_LENGTH_PROP_NAME, Integer.toString(2 * 1024 * 1024));
+    }
+
     private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT));
     private final Random rnd = new Random();
     private final long seed = System.nanoTime();

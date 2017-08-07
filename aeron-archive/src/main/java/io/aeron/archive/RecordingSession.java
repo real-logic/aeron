@@ -34,6 +34,7 @@ class RecordingSession implements Session
     }
 
     private final long recordingId;
+    private final int pollBlockLength;
     private final UnsafeBuffer descriptorBuffer;
     private final RecordingEventsProxy recordingEventsProxy;
     private final String strippedChannel;
@@ -60,6 +61,8 @@ class RecordingSession implements Session
         this.image = image;
         this.position = position;
         this.context = context;
+
+        pollBlockLength = Math.min(image.termBufferLength(), 16 * 1204 * 1024);
     }
 
     public boolean isDone()
@@ -123,16 +126,20 @@ class RecordingSession implements Session
             sourceIdentity);
 
         this.recordingWriter = recordingWriter;
-        this.state = State.RECORDING;
+        state = State.RECORDING;
 
         return 1;
     }
 
     public void close()
     {
+        final long startPosition = recordingWriter.startPosition();
+        final long stopPosition = recordingWriter.stopPosition();
+
         state = State.CLOSED;
         CloseHelper.quietClose(recordingWriter);
-        recordingEventsProxy.stopped(recordingId, recordingWriter.startPosition(), recordingWriter.stopPosition());
+
+        recordingEventsProxy.stopped(recordingId, startPosition, stopPosition);
     }
 
     private int record()
@@ -140,7 +147,7 @@ class RecordingSession implements Session
         int workCount = 1;
         try
         {
-            workCount = image.rawPoll(recordingWriter, recordingWriter.segmentFileLength());
+            workCount = image.rawPoll(recordingWriter, pollBlockLength);
             if (workCount != 0)
             {
                 recordingEventsProxy.progress(

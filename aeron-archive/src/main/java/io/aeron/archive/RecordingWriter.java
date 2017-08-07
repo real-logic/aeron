@@ -34,7 +34,6 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archive.ArchiveUtil.recordingOffset;
 import static io.aeron.archive.ArchiveUtil.segmentFileName;
 import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 
@@ -53,16 +52,10 @@ import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
  */
 class RecordingWriter implements AutoCloseable, RawBlockHandler
 {
-    private static final boolean POSITION_CHECKS =
-        !Boolean.getBoolean("aeron.archive.recorder.position.checks.off");
-
     private static final int NULL_SEGMENT_POSITION = -1;
 
     private final boolean forceWrites;
     private final boolean forceMetadata;
-    private final int initialRecordingTermId;
-    private final int termBufferLength;
-    private final int termsMask;
     private final long recordingId;
 
     private final FileChannel archiveDirChannel;
@@ -82,7 +75,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     private int segmentIndex = 0;
     private FileChannel recordingFileChannel;
 
-    private boolean closed = false;
+    private boolean isClosed = false;
 
     RecordingWriter(
         final Context context,
@@ -104,13 +97,11 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         this.forceWrites = context.fileSyncLevel > 0;
         this.forceMetadata = context.fileSyncLevel > 1;
 
-        this.termBufferLength = termBufferLength;
         this.recordingId = descriptorDecoder.recordingId();
         this.startPosition = descriptorDecoder.startPosition();
-        this.initialRecordingTermId = (int) (descriptorDecoder.initialTermId() + (startPosition / termBufferLength));
         this.stopPosition.setOrdered(startPosition);
 
-        this.termsMask = (segmentFileLength / this.termBufferLength) - 1;
+        final int termsMask = (segmentFileLength / termBufferLength) - 1;
         if (((termsMask + 1) & termsMask) != 0)
         {
             throw new IllegalArgumentException(
@@ -140,14 +131,12 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
                 onFileRollOver();
             }
 
-            validateWritePreConditions(termId, termOffset, blockLength);
-
             long written = 0;
             do
             {
-                written += transferTo(fileChannel, fileOffset + written, (int) (blockLength - written));
+                written += transferTo(fileChannel, fileOffset + written, (int)(blockLength - written));
             }
-            while (written != blockLength);
+            while (written < blockLength);
 
             if (forceWrites)
             {
@@ -155,13 +144,12 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             }
 
             afterWrite(blockLength);
-            validateWritePostConditions();
         }
-        catch (final ClosedByInterruptException e)
+        catch (final ClosedByInterruptException ex)
         {
             Thread.interrupted();
             close();
-            throw new IllegalStateException("Image file channel has been closed by interrupt, recording aborted.", e);
+            throw new IllegalStateException("Image file channel has been closed by interrupt, recording aborted.", ex);
         }
         catch (final Exception ex)
         {
@@ -172,12 +160,12 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     public void close()
     {
-        if (closed)
+        if (isClosed)
         {
             return;
         }
 
-        closed = true;
+        isClosed = true;
 
         if (descriptorBuffer != null)
         {
@@ -186,10 +174,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             UnsafeAccess.UNSAFE.storeFence();
         }
 
-        if (recordingFileChannel != null)
-        {
-            CloseHelper.close(recordingFileChannel);
-        }
+        CloseHelper.close(recordingFileChannel);
     }
 
     /**
@@ -207,12 +192,11 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             {
                 onFirstWrite(termOffset);
             }
+
             if (segmentFileLength == segmentPosition)
             {
                 onFileRollOver();
             }
-
-            validateWritePreConditions(header.termId(), termOffset, alignedLength);
 
             final ByteBuffer src = buffer.byteBuffer().duplicate();
             src.position(termOffset).limit(termOffset + frameLength);
@@ -230,7 +214,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             }
 
             afterWrite(alignedLength);
-            validateWritePostConditions();
         }
         catch (final Exception ex)
         {
@@ -305,7 +288,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     boolean isClosed()
     {
-        return closed;
+        return isClosed;
     }
 
     private void onFileRollOver()
@@ -313,8 +296,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         CloseHelper.close(recordingFileChannel);
         segmentPosition = 0;
         segmentIndex++;
-        // Forcing the descriptor on file rollover simplifies assumptions on recovery and is low overhead. If this
-        // changes we need to change the Catalog#refreshCatalog logic to match.
+
         forceMappedBuffer(descriptorBuffer.byteBuffer());
         newRecordingSegmentFile();
     }
@@ -327,18 +309,15 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             {
                 ((MappedByteBuffer)byteBuffer).force();
             }
-            catch (final UnsupportedOperationException e)
+            catch (final UnsupportedOperationException ignore)
             {
-                // Due to inexplicable idiocy, DirectByteBuffer extends MappedByteBuffer and not the other way around,
-                // so this can happen. Ignore the exception.
+                // Due to inexplicable idiocy, DirectByteBuffer extends MappedByteBuffer and not the other way around.
             }
         }
     }
 
     private void onFirstWrite(final int termOffset) throws IOException
     {
-        validateStartTermOffset(termOffset);
-
         segmentPosition = termOffset;
         newRecordingSegmentFile();
 
@@ -354,64 +333,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         final long newPosition = stopPosition.getWeak() + blockLength;
         descriptorEncoder.stopPosition(newPosition);
         stopPosition.setOrdered(newPosition);
-    }
-
-    private void validateStartTermOffset(final int termOffset)
-    {
-        if (POSITION_CHECKS)
-        {
-            final int expectedStartTermOffset = (int)(startPosition & (termBufferLength - 1));
-            if (expectedStartTermOffset != termOffset)
-            {
-                throw new IllegalStateException();
-            }
-        }
-    }
-
-    private void validateWritePreConditions(
-        final int termId,
-        final int termOffset,
-        final int blockLength) throws IOException
-    {
-        if (POSITION_CHECKS)
-        {
-            if ((termOffset + blockLength) > termBufferLength)
-            {
-                throw new IllegalStateException("termOffset(=" + termOffset +
-                    ") + blockLength(=" + blockLength +
-                    ") > termBufferLength(=" + termBufferLength + ")");
-            }
-
-            if (recordingFileChannel.position() != segmentPosition)
-            {
-                throw new IllegalStateException("Expected recordingFileChannel.position(): " +
-                    recordingFileChannel.position() + " to match segmentPosition: " + segmentPosition);
-            }
-
-            final int recordingOffset = recordingOffset(
-                termOffset,
-                termId,
-                initialRecordingTermId,
-                termsMask,
-                termBufferLength);
-
-            if (recordingOffset != segmentPosition)
-            {
-                throw new IllegalStateException("Expected recordingOffset:" +
-                    recordingOffset + " to match segmentPosition: " + segmentPosition);
-            }
-        }
-    }
-
-    private void validateWritePostConditions() throws IOException
-    {
-        if (POSITION_CHECKS)
-        {
-            if (recordingFileChannel.position() != segmentPosition)
-            {
-                throw new IllegalStateException();
-            }
-        }
     }
 
     static class Context

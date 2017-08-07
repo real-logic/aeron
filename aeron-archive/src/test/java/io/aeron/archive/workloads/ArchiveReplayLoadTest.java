@@ -43,8 +43,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.TestUtil.*;
-import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
-import static io.aeron.logbuffer.LogBufferDescriptor.computeTermOffsetFromPosition;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.core.Is.is;

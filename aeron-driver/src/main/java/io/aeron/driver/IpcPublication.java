@@ -100,6 +100,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         lastConsumerPosition = consumerPosition;
         cleanPosition = consumerPosition;
         timeOfLastConsumerPositionUpdateNs = nowNs;
+        timeOfLastStatusChangeNs = nowNs;
     }
 
     public int sessionId()

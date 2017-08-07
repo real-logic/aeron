@@ -38,7 +38,7 @@ public class ArchiveProxy
     private final IdleStrategy retryIdleStrategy;
 
     private final ExpandableDirectByteBuffer buffer = new ExpandableDirectByteBuffer(1024);
-    private final Publication controlRequest;
+    private final Publication publication;
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ConnectRequestEncoder connectRequestEncoder = new ConnectRequestEncoder();
     private final StartRecordingRequestEncoder startRecordingRequestEncoder = new StartRecordingRequestEncoder();
@@ -55,31 +55,41 @@ public class ArchiveProxy
      * with a defaults of {@link AeronArchive.Configuration#MESSAGE_TIMEOUT_DEFAULT_NS} and
      * {@link #DEFAULT_MAX_RETRY_ATTEMPTS}.
      *
-     * @param controlRequest publication for sending control messages to an archive.
+     * @param publication publication for sending control messages to an archive.
      */
-    public ArchiveProxy(final Publication controlRequest)
+    public ArchiveProxy(final Publication publication)
     {
-        this(controlRequest, new YieldingIdleStrategy(), MESSAGE_TIMEOUT_DEFAULT_NS, DEFAULT_MAX_RETRY_ATTEMPTS);
+        this(publication, new YieldingIdleStrategy(), MESSAGE_TIMEOUT_DEFAULT_NS, DEFAULT_MAX_RETRY_ATTEMPTS);
     }
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
      *
-     * @param controlRequest    publication for sending control messages to an archive.
+     * @param publication       publication for sending control messages to an archive.
      * @param retryIdleStrategy for what should happen between retry attempts at offering messages.
      * @param connectTimeoutNs  for for connection requests.
      * @param maxRetryAttempts  for offering control messages before giving up.
      */
     public ArchiveProxy(
-        final Publication controlRequest,
+        final Publication publication,
         final IdleStrategy retryIdleStrategy,
         final long connectTimeoutNs,
         final int maxRetryAttempts)
     {
-        this.controlRequest = controlRequest;
+        this.publication = publication;
         this.retryIdleStrategy = retryIdleStrategy;
         this.connectTimeoutNs = connectTimeoutNs;
         this.maxRetryAttempts = maxRetryAttempts;
+    }
+
+    /**
+     * Get the {@link Publication} used for sending control messages.
+     *
+     * @return the {@link Publication} used for sending control messages.
+     */
+    public Publication publication()
+    {
+        return publication;
     }
 
     /**
@@ -252,7 +262,7 @@ public class ArchiveProxy
         while (true)
         {
             final long result;
-            if ((result = controlRequest.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length)) > 0)
+            if ((result = publication.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length)) > 0)
             {
                 return true;
             }
@@ -278,7 +288,7 @@ public class ArchiveProxy
         final long timeoutNs = System.nanoTime() + connectTimeoutNs;
         while (true)
         {
-            if (controlRequest.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length) > 0)
+            if (publication.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length) > 0)
             {
                 return true;
             }

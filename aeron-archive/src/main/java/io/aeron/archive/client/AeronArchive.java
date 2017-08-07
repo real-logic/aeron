@@ -55,6 +55,7 @@ public final class AeronArchive implements AutoCloseable
         try
         {
             context.conclude();
+
             this.context = context;
             aeron = context.aeron();
             idleStrategy = context.idleStrategy();
@@ -63,9 +64,7 @@ public final class AeronArchive implements AutoCloseable
             archiveProxy = context.archiveProxy();
             final long correlationId = aeron.nextCorrelationId();
             if (!archiveProxy.connect(
-                context.controlResponseChannel(),
-                context.controlResponseStreamId(),
-                correlationId))
+                context.controlResponseChannel(), context.controlResponseStreamId(), correlationId))
             {
                 throw new IllegalStateException("Cannot connect to aeron archive: " + context.controlRequestChannel());
             }
@@ -73,6 +72,7 @@ public final class AeronArchive implements AutoCloseable
             controlResponsePoller = new ControlResponsePoller(
                 aeron.addSubscription(context.controlResponseChannel(), context.controlResponseStreamId()),
                 RESPONSE_FRAGMENT_LIMIT);
+
             controlSessionId = pollForConnected(correlationId);
         }
         catch (final Exception ex)
@@ -84,6 +84,19 @@ public final class AeronArchive implements AutoCloseable
 
     public void close()
     {
+        if (!context.ownsAeronClient())
+        {
+            if (null != controlResponsePoller)
+            {
+                controlResponsePoller.subscription().close();
+            }
+
+            if (null != archiveProxy)
+            {
+                archiveProxy.publication().close();
+            }
+        }
+
         context.close();
     }
 
@@ -610,6 +623,7 @@ public final class AeronArchive implements AutoCloseable
         private Aeron aeron;
         private ArchiveProxy archiveProxy;
         private IdleStrategy idleStrategy;
+        private boolean ownsAeronClient = true;
 
         /**
          * Conclude configuration by setting up defaults when specifics are not provided.
@@ -749,7 +763,7 @@ public final class AeronArchive implements AutoCloseable
         /**
          * {@link Aeron} client for communicating with the local Media Driver.
          * <p>
-         * This client will be closed when the {@link #close()} method is called.
+         * This client will be closed when the {@link #close()} method is called if {@link #ownsAeronClient()} is true.
          *
          * @param aeron client for communicating with the local Media Driver.
          * @return this for a fluent API.
@@ -819,11 +833,38 @@ public final class AeronArchive implements AutoCloseable
         }
 
         /**
+         * Does this context own the {@link #aeron()} client and this takes responsibility for closing it?
+         *
+         * @param ownsAeronClient does this context own the {@link #aeron()} client.
+         * @return this for a fluent API.
+         */
+        public Context ownsAeronClient(final boolean ownsAeronClient)
+        {
+            this.ownsAeronClient = ownsAeronClient;
+            return this;
+        }
+
+        /**
+         * Does this context own the {@link #aeron()} client and this takes responsibility for closing it?
+         *
+         * @return does this context own the {@link #aeron()} client and this takes responsibility for closing it?
+         */
+        public boolean ownsAeronClient()
+        {
+            return ownsAeronClient;
+        }
+
+        /**
          * Close the context and free applicable resources.
+         * <p>
+         * If the {@link #ownsAeronClient()} is true then the {@link #aeron()} client will be closed.
          */
         public void close()
         {
-            aeron.close();
+            if (ownsAeronClient)
+            {
+                aeron.close();
+            }
         }
     }
 }

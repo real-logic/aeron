@@ -51,6 +51,16 @@ public class ControlResponsePoller
     }
 
     /**
+     * Get the {@link Subscription} used for polling responses.
+     *
+     * @return the {@link Subscription} used for polling responses.
+     */
+    public Subscription subscription()
+    {
+        return subscription;
+    }
+
+    /**
      * Poll for recording events.
      *
      * @return the number of fragments read during the operation. Zero if no events are available.

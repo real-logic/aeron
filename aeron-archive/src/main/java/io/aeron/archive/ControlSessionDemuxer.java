@@ -93,7 +93,7 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final ControlSession session = controlSessionByIdMap.get(controlSessionId);
         if (null != session)
         {
-            session.close();
+            session.abort();
         }
     }
 
@@ -109,6 +109,7 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         {
             throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
         }
+
         controlSession.onStartRecording(correlationId, channel, streamId, sourceLocation);
     }
 

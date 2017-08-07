@@ -238,11 +238,7 @@ public class ArchiveReplayLoadTest
         }
     }
 
-    private void validateFragment(
-        final DirectBuffer buffer,
-        final int offset,
-        final int length,
-        @SuppressWarnings("unused") final Header header)
+    private void validateFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         assertThat(buffer.getInt(offset, LITTLE_ENDIAN), is(fragmentCount));
         assertThat(buffer.getInt(offset + (length - 4), LITTLE_ENDIAN), is(fragmentCount));

@@ -301,7 +301,7 @@ public class ArchiveReplayLoadTest
                                 recordedLength = decoder.stopPosition() - decoder.startPosition();
                                 running = false;
                                 System.out.printf(
-                                    "Recording stopped id=%d length=%d%n", decoder.recordingId(), recordedLength);
+                                    "Recording stopped id=%d length=%,d%n", decoder.recordingId(), recordedLength);
                                 System.out.flush();
                                 break;
                             }

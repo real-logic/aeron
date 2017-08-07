@@ -153,7 +153,9 @@ public class ExclusivePublication implements AutoCloseable
     }
 
     /**
-     * The maximum possible position this stream can reach due to it term buffer length.
+     * The maximum possible position this stream can reach due to its term buffer length.
+     * <p>
+     * Maximum possible position is term-length times 2^31 in bytes.
      *
      * @return the maximum possible position this stream can reach due to it term buffer length.
      */

@@ -54,7 +54,7 @@ public class ArchiveReplayLoadTest
     private static final String CONTROL_RESPONSE_URI = "aeron:udp?endpoint=localhost:54327";
     private static final int CONTROL_RESPONSE_STREAM_ID = 100;
 
-    private static final int TEST_DURATION_SEC = 20;
+    private static final int TEST_DURATION_SEC = 30;
     private static final String REPLAY_URI = "aeron:udp?endpoint=localhost:54326";
 
     private static final String PUBLISH_URI = new ChannelUriStringBuilder()
@@ -86,15 +86,15 @@ public class ArchiveReplayLoadTest
     private Archive archive;
     private MediaDriver driver;
     private AeronArchive aeronArchive;
+    private long startPosition;
     private long recordingId = -1L;
-    private long remaining;
-    private int fragmentCount;
     private long totalPayloadLength;
     private volatile long expectedRecordingLength;
     private long recordedLength = 0;
     private Throwable trackerError;
-
-    private long startPosition;
+    private long receivedPosition = 0;
+    private long remaining;
+    private int fragmentCount;
     private FragmentHandler validatingFragmentHandler = this::validateFragment;
 
     @Before
@@ -228,6 +228,7 @@ public class ArchiveReplayLoadTest
                 if (0 == fragments && replay.hasNoImages() && remaining > 0)
                 {
                     System.err.println("Unexpected close of image: remaining=" + remaining);
+                    System.err.println("Image position=" + receivedPosition + " expected=" + expectedRecordingLength);
                     break;
                 }
             }
@@ -249,6 +250,7 @@ public class ArchiveReplayLoadTest
 
         remaining -= length;
         fragmentCount++;
+        receivedPosition = header.position();
     }
 
     private void trackRecordingProgress(final Subscription recordingEvents, final CountDownLatch recordingStopped)

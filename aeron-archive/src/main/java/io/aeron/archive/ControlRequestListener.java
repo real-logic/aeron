@@ -17,11 +17,14 @@ package io.aeron.archive;
 
 import io.aeron.archive.codecs.SourceLocation;
 
+/**
+ * Listener to control request messages from archive clients.
+ */
 interface ControlRequestListener
 {
     void onConnect(long correlationId, String channel, int streamId);
 
-    void onStopRecording(long controlSessionId, long correlationId, String channel, int streamId);
+    void onClose(long controlSessionId);
 
     void onStartRecording(
         long controlSessionId,
@@ -29,6 +32,8 @@ interface ControlRequestListener
         String channel,
         int streamId,
         SourceLocation sourceLocation);
+
+    void onStopRecording(long controlSessionId, long correlationId, String channel, int streamId);
 
     void onStartReplay(
         long controlSessionId,

@@ -23,13 +23,14 @@ class ControlRequestAdapter implements FragmentHandler
 {
     private final ControlRequestListener listener;
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    private final ReplayRequestDecoder replayRequestDecoder = new ReplayRequestDecoder();
+    private final ConnectRequestDecoder connectRequestDecoder = new ConnectRequestDecoder();
+    private final CloseRequestDecoder closeRequestDecoder = new CloseRequestDecoder();
     private final StartRecordingRequestDecoder startRecordingRequestDecoder = new StartRecordingRequestDecoder();
     private final StopRecordingRequestDecoder stopRecordingRequestDecoder = new StopRecordingRequestDecoder();
+    private final ReplayRequestDecoder replayRequestDecoder = new ReplayRequestDecoder();
     private final ListRecordingsRequestDecoder listRecordingsRequestDecoder = new ListRecordingsRequestDecoder();
     private final ListRecordingsForUriRequestDecoder listRecordingsForUriRequestDecoder =
         new ListRecordingsForUriRequestDecoder();
-    private final ConnectRequestDecoder connectRequestDecoder = new ConnectRequestDecoder();
 
     ControlRequestAdapter(final ControlRequestListener listener)
     {
@@ -57,21 +58,14 @@ class ControlRequestAdapter implements FragmentHandler
                     connectRequestDecoder.responseStreamId());
                 break;
 
-            case ReplayRequestDecoder.TEMPLATE_ID:
-                replayRequestDecoder.wrap(
+            case CloseRequestDecoder.TEMPLATE_ID:
+                closeRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     headerDecoder.blockLength(),
                     headerDecoder.version());
 
-                listener.onStartReplay(
-                    replayRequestDecoder.controlSessionId(),
-                    replayRequestDecoder.correlationId(),
-                    replayRequestDecoder.replayStreamId(),
-                    replayRequestDecoder.replayChannel(),
-                    replayRequestDecoder.recordingId(),
-                    replayRequestDecoder.position(),
-                    replayRequestDecoder.length());
+                listener.onClose(closeRequestDecoder.controlSessionId());
                 break;
 
             case StartRecordingRequestDecoder.TEMPLATE_ID:
@@ -102,6 +96,23 @@ class ControlRequestAdapter implements FragmentHandler
                     stopRecordingRequestDecoder.channel(),
                     stopRecordingRequestDecoder.streamId()
                 );
+                break;
+
+            case ReplayRequestDecoder.TEMPLATE_ID:
+                replayRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                listener.onStartReplay(
+                    replayRequestDecoder.controlSessionId(),
+                    replayRequestDecoder.correlationId(),
+                    replayRequestDecoder.replayStreamId(),
+                    replayRequestDecoder.replayChannel(),
+                    replayRequestDecoder.recordingId(),
+                    replayRequestDecoder.position(),
+                    replayRequestDecoder.length());
                 break;
 
             case ListRecordingsRequestDecoder.TEMPLATE_ID:

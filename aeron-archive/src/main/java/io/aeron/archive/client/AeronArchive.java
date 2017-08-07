@@ -82,19 +82,18 @@ public final class AeronArchive implements AutoCloseable
         }
     }
 
+    /**
+     * Notify the archive that this control session is closed so it can promptly release resources then close the
+     * local resources associated with the client.
+     */
     public void close()
     {
+        archiveProxy.close(controlSessionId);
+
         if (!context.ownsAeronClient())
         {
-            if (null != controlResponsePoller)
-            {
-                controlResponsePoller.subscription().close();
-            }
-
-            if (null != archiveProxy)
-            {
-                archiveProxy.publication().close();
-            }
+            controlResponsePoller.subscription().close();
+            archiveProxy.publication().close();
         }
 
         context.close();

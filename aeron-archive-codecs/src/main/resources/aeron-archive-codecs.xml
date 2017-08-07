@@ -36,16 +36,8 @@
 
     <!-- Control Protocol Messages -->
 
-    <sbe:message name="ConnectRequest"
-                 id="1"
-                 description="Request a connection to the archive and provide response stream details">
-        <field name="correlationId"      id="1" type="int64"/>
-        <field name="responseStreamId"   id="2" type="int32"/>
-        <data  name="responseChannel"    id="3" type="varAsciiEncoding"/>
-    </sbe:message>
-
     <sbe:message name="ControlResponse"
-                 id="2"
+                 id="1"
                  description="Generic response to a control request. Error message will be empty if code is OK.">
         <field name="controlSessionId"   id="1" type="int64"
                description="Session id for a multiplexed session over a shared connection, i.e. same Image."/>
@@ -59,8 +51,22 @@
                description="Detailed error message which is valid in the case of ERROR code"/>
     </sbe:message>
 
-    <sbe:message name="StartRecordingRequest"
+    <sbe:message name="ConnectRequest"
+                 id="2"
+                 description="Request a connection to the archive and provide response stream details">
+        <field name="correlationId"      id="1" type="int64"/>
+        <field name="responseStreamId"   id="2" type="int32"/>
+        <data  name="responseChannel"    id="3" type="varAsciiEncoding"/>
+    </sbe:message>
+
+    <sbe:message name="CloseRequest"
                  id="3"
+                 description="Close an existing control session">
+        <field name="controlSessionId"   id="1" type="int64"/>
+    </sbe:message>
+
+    <sbe:message name="StartRecordingRequest"
+                 id="4"
                  description="Request a channel:stream be recorded">
         <field name="controlSessionId"   id="1" type="int64"/>
         <field name="correlationId"      id="2" type="int64"/>
@@ -70,7 +76,7 @@
     </sbe:message>
 
     <sbe:message name="StopRecordingRequest"
-                 id="4"
+                 id="5"
                  description="Request a channel:stream stop recording">
         <field name="controlSessionId"   id="1" type="int64"/>
         <field name="correlationId"      id="2" type="int64"/>
@@ -79,7 +85,7 @@
     </sbe:message>
 
     <sbe:message name="ReplayRequest"
-                 id="5"
+                 id="6"
                  description="Replay recording range request">
         <field name="controlSessionId"   id="1" type="int64"/>
         <field name="correlationId"      id="2" type="int64"/>
@@ -91,7 +97,7 @@
     </sbe:message>
 
     <sbe:message name="ListRecordingsRequest"
-                 id="6"
+                 id="7"
                  description="Request a range of recording descriptors">
         <field name="controlSessionId"   id="1" type="int64"/>
         <field name="correlationId"      id="2" type="int64"/>
@@ -100,7 +106,7 @@
     </sbe:message>
 
     <sbe:message name="ListRecordingsForUriRequest"
-                 id="7"
+                 id="8"
                  description="Request a range of recording descriptors">
         <field name="controlSessionId"   id="1" type="int64"/>
         <field name="correlationId"      id="2" type="int64"/>

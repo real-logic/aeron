@@ -29,20 +29,20 @@ interface ControlRequestListener
     void onStartRecording(
         long controlSessionId,
         long correlationId,
-        String channel,
         int streamId,
+        String channel,
         SourceLocation sourceLocation);
 
-    void onStopRecording(long controlSessionId, long correlationId, String channel, int streamId);
+    void onStopRecording(long controlSessionId, long correlationId, int streamId, String channel);
 
     void onStartReplay(
         long controlSessionId,
         long correlationId,
-        int replayStreamId,
-        String replayChannel,
         long recordingId,
         long position,
-        long length);
+        long length,
+        int replayStreamId,
+        String replayChannel);
 
     void onListRecordings(long controlSessionId, long correlationId, long fromRecordingId, int recordCount);
 
@@ -51,6 +51,6 @@ interface ControlRequestListener
         long correlationId,
         long fromRecordingId,
         int recordCount,
-        String channel,
-        int streamId);
+        int streamId,
+        String channel);
 }

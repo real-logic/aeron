@@ -192,8 +192,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     void stopRecording(
         final long correlationId,
         final ControlSession controlSession,
-        final String channel,
-        final int streamId)
+        final int streamId,
+        final String channel)
     {
         try
         {
@@ -225,8 +225,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     void startRecordingSubscription(
         final long correlationId,
         final ControlSession controlSession,
-        final String originalChannel,
         final int streamId,
+        final String originalChannel,
         final SourceLocation sourceLocation)
     {
         // note that since a subscription may trigger multiple images, and therefore multiple recordings this is a soft
@@ -298,8 +298,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final long correlationId,
         final long fromRecordingId,
         final int count,
-        final String channel,
         final int streamId,
+        final String channel,
         final ControlSession controlSession)
     {
         return new ListRecordingsForUriSession(
@@ -318,11 +318,11 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     void startReplay(
         final long correlationId,
         final ControlSession controlSession,
-        final int replayStreamId,
-        final String replayChannel,
         final long recordingId,
         final long position,
-        final long length)
+        final long length,
+        final int replayStreamId,
+        final String replayChannel)
     {
         if (replaySessionByIdMap.size() >= maxConcurrentReplays)
         {
@@ -370,8 +370,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     ControlSession newControlSession(
         final long correlationId,
-        final String channel,
         final int streamId,
+        final String channel,
         final ControlSessionDemuxer demuxer)
     {
         final String controlChannel;

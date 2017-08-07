@@ -78,8 +78,8 @@ class ControlRequestAdapter implements FragmentHandler
                 listener.onStartRecording(
                     startRecordingRequestDecoder.controlSessionId(),
                     startRecordingRequestDecoder.correlationId(),
-                    startRecordingRequestDecoder.channel(),
                     startRecordingRequestDecoder.streamId(),
+                    startRecordingRequestDecoder.channel(),
                     startRecordingRequestDecoder.sourceLocation());
                 break;
 
@@ -93,9 +93,8 @@ class ControlRequestAdapter implements FragmentHandler
                 listener.onStopRecording(
                     stopRecordingRequestDecoder.controlSessionId(),
                     stopRecordingRequestDecoder.correlationId(),
-                    stopRecordingRequestDecoder.channel(),
-                    stopRecordingRequestDecoder.streamId()
-                );
+                    stopRecordingRequestDecoder.streamId(),
+                    stopRecordingRequestDecoder.channel());
                 break;
 
             case ReplayRequestDecoder.TEMPLATE_ID:
@@ -108,11 +107,11 @@ class ControlRequestAdapter implements FragmentHandler
                 listener.onStartReplay(
                     replayRequestDecoder.controlSessionId(),
                     replayRequestDecoder.correlationId(),
-                    replayRequestDecoder.replayStreamId(),
-                    replayRequestDecoder.replayChannel(),
                     replayRequestDecoder.recordingId(),
                     replayRequestDecoder.position(),
-                    replayRequestDecoder.length());
+                    replayRequestDecoder.length(),
+                    replayRequestDecoder.replayStreamId(),
+                    replayRequestDecoder.replayChannel());
                 break;
 
             case ListRecordingsRequestDecoder.TEMPLATE_ID:
@@ -141,8 +140,8 @@ class ControlRequestAdapter implements FragmentHandler
                     listRecordingsForUriRequestDecoder.correlationId(),
                     listRecordingsForUriRequestDecoder.fromRecordingId(),
                     listRecordingsForUriRequestDecoder.recordCount(),
-                    listRecordingsForUriRequestDecoder.channel(),
-                    listRecordingsForUriRequestDecoder.streamId());
+                    listRecordingsForUriRequestDecoder.streamId(),
+                    listRecordingsForUriRequestDecoder.channel());
                 break;
 
             default:

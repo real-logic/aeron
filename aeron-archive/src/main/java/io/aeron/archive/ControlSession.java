@@ -116,30 +116,30 @@ class ControlSession implements Session
         return workCount;
     }
 
-    public void onStopRecording(final long correlationId, final String channel, final int streamId)
+    public void onStopRecording(final long correlationId, final int streamId, final String channel)
     {
-        conductor.stopRecording(correlationId, this, channel, streamId);
+        conductor.stopRecording(correlationId, this, streamId, channel);
     }
 
     public void onStartRecording(
         final long correlationId, final String channel, final int streamId, final SourceLocation sourceLocation)
     {
-        conductor.startRecordingSubscription(correlationId, this, channel, streamId, sourceLocation);
+        conductor.startRecordingSubscription(correlationId, this, streamId, channel, sourceLocation);
     }
 
     public void onListRecordingsForUri(
         final long correlationId,
         final long fromRecordingId,
         final int recordCount,
-        final String channel,
-        final int streamId)
+        final int streamId,
+        final String channel)
     {
         final ListRecordingsForUriSession listRecordingsSession = conductor.newListRecordingsForUriSession(
             correlationId,
             fromRecordingId,
             recordCount,
-            conductor.strippedChannelBuilder(channel).build(),
             streamId,
+            conductor.strippedChannelBuilder(channel).build(),
             this);
 
         listRecordingsSessions.add(listRecordingsSession);
@@ -168,20 +168,21 @@ class ControlSession implements Session
 
     public void onStartReplay(
         final long correlationId,
-        final int replayStreamId,
-        final String replayChannel,
         final long recordingId,
         final long position,
-        final long length)
+        final long length,
+        final int replayStreamId,
+        final String replayChannel)
     {
         conductor.startReplay(
             correlationId,
             this,
-            replayStreamId,
-            replayChannel,
             recordingId,
             position,
-            length);
+            length,
+            replayStreamId,
+            replayChannel
+        );
     }
 
     void onListRecordingSessionClosed(final AbstractListRecordingsSession listRecordingsSession)

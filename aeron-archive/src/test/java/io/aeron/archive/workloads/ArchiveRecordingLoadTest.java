@@ -141,7 +141,7 @@ public class ArchiveRecordingLoadTest
                 startDrainingSubscriber(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
                 aeronArchive.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, SourceLocation.LOCAL);
 
-                long start;
+                final long start;
                 try (ExclusivePublication publication = aeron.addExclusivePublication(PUBLISH_URI, PUBLISH_STREAM_ID))
                 {
                     awaitConnected(publication);

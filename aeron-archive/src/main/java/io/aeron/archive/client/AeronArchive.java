@@ -15,10 +15,7 @@
  */
 package io.aeron.archive.client;
 
-import io.aeron.Aeron;
-import io.aeron.ExclusivePublication;
-import io.aeron.Publication;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.ControlResponseDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
@@ -249,6 +246,47 @@ public final class AeronArchive implements AutoCloseable
         pollForResponse(correlationId);
 
         return aeron.addSubscription(replayChannel, replayStreamId);
+    }
+
+    /**
+     * Replay a length of a recording from a position.
+     *
+     * @param recordingId    to be replayed.
+     * @param position       from which the replay should be started.
+     * @param length         of the stream to be replayed.
+     * @param replayChannel  to which the replay should be sent.
+     * @param replayStreamId to which the replay should be sent.
+     * @param availableImageHandler to be called when the replay image becomes available.
+     * @param unavailableImageHandler to be called when the replay image goes unavailable.
+     *
+     * @return the {@link Subscription} for consuming the replay.
+     */
+    public Subscription replay(
+        final long recordingId,
+        final long position,
+        final long length,
+        final String replayChannel,
+        final int replayStreamId,
+        final AvailableImageHandler availableImageHandler,
+        final UnavailableImageHandler unavailableImageHandler)
+    {
+        final long correlationId = aeron.nextCorrelationId();
+
+        if (!archiveProxy.replay(
+            recordingId,
+            position,
+            length,
+            replayChannel,
+            replayStreamId,
+            correlationId,
+            controlSessionId))
+        {
+            throw new IllegalStateException("Failed to send replay request");
+        }
+
+        pollForResponse(correlationId);
+
+        return aeron.addSubscription(replayChannel, replayStreamId, availableImageHandler, unavailableImageHandler);
     }
 
     /**

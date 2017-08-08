@@ -58,7 +58,7 @@ public class ArchiveReplayLoadTest
     private static final String CONTROL_RESPONSE_URI = "aeron:udp?endpoint=localhost:54327";
     private static final int CONTROL_RESPONSE_STREAM_ID = 100;
 
-    private static final int TEST_DURATION_SEC = 120;
+    private static final int TEST_DURATION_SEC = 30;
     private static final String REPLAY_URI = "aeron:udp?endpoint=localhost:54326";
 
     private static final String PUBLISH_URI = new ChannelUriStringBuilder()
@@ -221,7 +221,10 @@ public class ArchiveReplayLoadTest
         try (Subscription replay = aeronArchive.replay(
             recordingId, startPosition, expectedRecordingLength, REPLAY_URI, iteration))
         {
-            awaitConnected(replay);
+            while (replay.hasNoImages())
+            {
+                Thread.yield();
+            }
 
             fragmentCount = 0;
             remaining = totalPayloadLength;

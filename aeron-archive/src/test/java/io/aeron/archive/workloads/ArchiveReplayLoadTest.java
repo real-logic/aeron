@@ -24,7 +24,9 @@ import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.TestUtil;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingEventsPoller;
-import io.aeron.archive.codecs.*;
+import io.aeron.archive.codecs.RecordingProgressDecoder;
+import io.aeron.archive.codecs.RecordingStartedDecoder;
+import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -33,7 +35,9 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.SleepingMillisIdleStrategy;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 import org.junit.rules.TestWatcher;
 
@@ -240,9 +244,10 @@ public class ArchiveReplayLoadTest
 
     private void validateFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
-        assertThat(buffer.getInt(offset, LITTLE_ENDIAN), is(fragmentCount));
-        assertThat(buffer.getInt(offset + (length - 4), LITTLE_ENDIAN), is(fragmentCount));
-        assertThat(buffer.getByte(offset + 4), is((byte)'z'));
+        // use this primitive comparison method to avoid allocation (which the assertThat(..., is(...))) causes
+        assertTrue(fragmentCount == buffer.getInt(offset, LITTLE_ENDIAN));
+        assertTrue(fragmentCount == buffer.getInt(offset + (length - 4), LITTLE_ENDIAN));
+        assertTrue(buffer.getByte(offset + 4) == (byte)'z');
 
         remaining -= length;
         fragmentCount++;

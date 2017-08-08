@@ -58,7 +58,7 @@ public class ArchiveRecordingLoadTest
         .termLength(32 * 1024 * 1024)
         .build();
 
-    private static final int TEST_DURATION_SEC = 20;
+    private static final int TEST_DURATION_SEC = 30;
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;

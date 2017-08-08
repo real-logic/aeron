@@ -593,7 +593,7 @@ public class NetworkPublication
                 }
             }
 
-            conductor.cleanupSpies(NetworkPublication.this);
+            conductor.cleanupSpies(this);
             for (final ReadablePosition position : spyPositions)
             {
                 position.close();
@@ -620,7 +620,7 @@ public class NetworkPublication
         switch (status)
         {
             case ACTIVE:
-                checkForBlockedPublisher(timeNs, senderPosition.getVolatile());
+                checkForBlockedPublisher(timeNs, consumerPosition());
                 break;
 
             case DRAINING:
@@ -653,7 +653,7 @@ public class NetworkPublication
             case LINGER:
                 if (timeNs > (timeOfLastActivityNs + PUBLICATION_LINGER_NS))
                 {
-                    conductor.cleanupPublication(NetworkPublication.this);
+                    conductor.cleanupPublication(this);
                     status = Status.CLOSING;
                 }
                 break;

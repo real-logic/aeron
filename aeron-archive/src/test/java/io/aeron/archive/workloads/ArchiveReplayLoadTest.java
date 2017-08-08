@@ -70,7 +70,7 @@ public class ArchiveReplayLoadTest
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
-    private static final int MESSAGE_COUNT = 2000000;
+    private static final int MESSAGE_COUNT = 5_000_000;
 
     static
     {

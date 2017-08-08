@@ -103,7 +103,7 @@ public class NetworkPublication
     private final boolean isExclusive;
     private volatile boolean isConnected;
     private volatile boolean hasSenderReleased;
-    private volatile boolean isComplete;
+    private volatile boolean isEndOfStream;
     private Status status = Status.ACTIVE;
 
     private final UnsafeBuffer[] termBuffers;
@@ -521,7 +521,7 @@ public class NetworkPublication
                 .termId(activeTermId)
                 .termOffset(termOffset);
 
-            if (isComplete)
+            if (isEndOfStream)
             {
                 heartbeatDataHeader.flags((byte)DataHeaderFlyweight.BEGIN_END_AND_EOS_FLAGS);
             }
@@ -624,35 +624,29 @@ public class NetworkPublication
                 break;
 
             case DRAINING:
-                final long senderPosition = this.senderPosition.getVolatile();
-                if (senderPosition == lastSenderPosition)
+                if (producerPosition() > consumerPosition())
                 {
-                    if (producerPosition() > senderPosition)
+                    if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, consumerPosition()))
                     {
-                        if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition))
-                        {
-                            unblockedPublications.orderedIncrement();
-                            timeOfLastActivityNs = timeNs;
-                            break;
-                        }
-
-                        if (isConnected)
-                        {
-                            break;
-                        }
+                        unblockedPublications.orderedIncrement();
+                        timeOfLastActivityNs = timeNs;
+                        break;
                     }
 
-                    if (spiesFinishedConsuming(conductor, senderPosition))
+                    if (isConnected)
                     {
-                        isComplete = true;
-                        timeOfLastActivityNs = timeNs;
-                        status = Status.LINGER;
+                        break;
                     }
                 }
                 else
                 {
-                    lastSenderPosition = senderPosition;
+                    isEndOfStream = true;
+                }
+
+                if (spiesFinishedConsuming(conductor, consumerPosition()))
+                {
                     timeOfLastActivityNs = timeNs;
+                    status = Status.LINGER;
                 }
                 break;
 
@@ -694,6 +688,10 @@ public class NetworkPublication
             status = Status.DRAINING;
             channelEndpoint.decRef();
             timeOfLastActivityNs = nanoClock.nanoTime();
+            if (consumerPosition() >= producerPosition())
+            {
+                isEndOfStream = true;
+            }
         }
 
         return count;

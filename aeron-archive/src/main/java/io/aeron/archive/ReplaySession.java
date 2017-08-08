@@ -57,13 +57,14 @@ class ReplaySession implements Session
 {
     enum State
     {
-        INIT, REPLAY, INACTIVE, CLOSED
+        INIT, REPLAY, LINGER, INACTIVE, CLOSED
     }
 
     /**
      * Timeout within which a replay connection needs to be established.
      */
     static final long CONNECT_TIMEOUT_MS = 5000;
+    static final long LINGER_TIMEOUT_MS = Long.getLong("io.aeron.archive.replay.linger.ms", 0);
 
     private static final int REPLAY_BATCH_SIZE = Archive.Configuration.replayBatchSize();
 
@@ -81,6 +82,7 @@ class ReplaySession implements Session
     private ControlResponseProxy threadLocalControlResponseProxy;
     private State state = State.INIT;
     private long connectDeadlineMs;
+    private long lingerDeadlineMs;
 
     ReplaySession(
         final long replayPosition,
@@ -175,6 +177,7 @@ class ReplaySession implements Session
 
     public void close()
     {
+        System.out.println(epochClock.time() + " | closed replay");
         state = State.CLOSED;
 
         CloseHelper.quietClose(replayPublication);
@@ -197,6 +200,13 @@ class ReplaySession implements Session
         else if (state == State.INIT)
         {
             workDone += init();
+        }
+        else if (state == State.LINGER)
+        {
+            if (epochClock.time() > lingerDeadlineMs)
+            {
+                state = State.INACTIVE;
+            }
         }
 
         return workDone;
@@ -229,7 +239,15 @@ class ReplaySession implements Session
             final int polled = cursor.controlledPoll(fragmentPoller, REPLAY_BATCH_SIZE);
             if (cursor.isDone())
             {
-                state = State.INACTIVE;
+                if (LINGER_TIMEOUT_MS > 0L)
+                {
+                    state = State.LINGER;
+                    lingerDeadlineMs = epochClock.time() + LINGER_TIMEOUT_MS;
+                }
+                else
+                {
+                    state = State.INACTIVE;
+                }
             }
 
             return polled;

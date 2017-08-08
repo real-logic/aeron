@@ -59,7 +59,6 @@ public class DriverConductor implements Agent
     private long timeOfLastToDriverPositionChangeNs;
     private long timeOfLastTimeoutCheckNs;
     private long lastConsumerCommandPosition;
-    private volatile long timeInMs;
     private int nextSessionId = BitUtil.generateRandomisedId();
 
     private final NetworkPublicationThreadLocals networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
@@ -82,7 +81,6 @@ public class DriverConductor implements Agent
 
     private final EpochClock epochClock;
     private final NanoClock nanoClock;
-    private final EpochClock cachedEpochClock = () -> timeInMs;
 
     private final Consumer<DriverConductorCmd> onDriverConductorCmdFunc = this::onDriverConductorCmd;
 
@@ -115,7 +113,6 @@ public class DriverConductor implements Agent
             clientProxy,
             this);
 
-        timeInMs = epochClock.time();
         final long nowNs = nanoClock.nanoTime();
         timeOfLastTimeoutCheckNs = nowNs;
         timeOfLastToDriverPositionChangeNs = nowNs;
@@ -611,7 +608,6 @@ public class DriverConductor implements Agent
     private void onHeartbeatCheckTimeouts(final long nowNs)
     {
         final long nowMs = epochClock.time();
-        timeInMs = nowMs;
         toDriverCommands.consumerHeartbeatTime(nowMs);
 
         onCheckManagedResources(clients, nowNs, nowMs);
@@ -733,7 +729,7 @@ public class DriverConductor implements Agent
             registrationId,
             channelEndpoint,
             nanoClock,
-            cachedEpochClock,
+            epochClock,
             newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId, params),
             PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, channel),
             senderPosition,

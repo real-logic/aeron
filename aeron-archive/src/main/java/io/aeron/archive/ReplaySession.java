@@ -179,8 +179,8 @@ class ReplaySession implements Session
     {
         state = State.CLOSED;
 
-        CloseHelper.quietClose(replayPublication);
         CloseHelper.quietClose(cursor);
+        CloseHelper.quietClose(replayPublication);
     }
 
     public long sessionId()

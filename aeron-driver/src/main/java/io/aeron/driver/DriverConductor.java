@@ -962,7 +962,7 @@ public class DriverConductor implements Agent
 
     private void linkSpy(final NetworkPublication publication, final SubscriptionLink subscription)
     {
-        final long joinPosition = publication.spyJoinPosition();
+        final long joinPosition = publication.consumerPosition();
         final long registrationId = subscription.registrationId();
         final int streamId = publication.streamId();
         final int sessionId = publication.sessionId();

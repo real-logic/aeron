@@ -426,18 +426,6 @@ public class NetworkPublication
         return spyPositions.length > 0;
     }
 
-    long spyJoinPosition()
-    {
-        long maxSpyPosition = producerPosition();
-
-        for (final ReadablePosition spyPosition : spyPositions)
-        {
-            maxSpyPosition = Math.max(maxSpyPosition, spyPosition.getVolatile());
-        }
-
-        return maxSpyPosition;
-    }
-
     private int sendData(final long nowNs, final long senderPosition, final int termOffset)
     {
         int bytesSent = 0;

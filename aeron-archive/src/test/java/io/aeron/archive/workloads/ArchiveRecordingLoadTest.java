@@ -134,9 +134,9 @@ public class ArchiveRecordingLoadTest
             initRecordingEndIndicator(recordingEvents);
             awaitConnected(recordingEvents);
 
-            final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
+            final long deadlineMs = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
 
-            while (System.currentTimeMillis() < duration)
+            while (System.currentTimeMillis() < deadlineMs)
             {
                 startDrainingSubscriber(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
                 aeronArchive.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, SourceLocation.LOCAL);

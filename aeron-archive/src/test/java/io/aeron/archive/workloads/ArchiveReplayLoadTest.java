@@ -58,7 +58,7 @@ public class ArchiveReplayLoadTest
     private static final String CONTROL_RESPONSE_URI = "aeron:udp?endpoint=localhost:54327";
     private static final int CONTROL_RESPONSE_STREAM_ID = 100;
 
-    private static final int TEST_DURATION_SEC = 30;
+    private static final int TEST_DURATION_SEC = 120;
     private static final String REPLAY_URI = "aeron:udp?endpoint=localhost:54326";
 
     private static final String PUBLISH_URI = new ChannelUriStringBuilder()
@@ -141,7 +141,7 @@ public class ArchiveReplayLoadTest
         driver.context().deleteAeronDirectory();
     }
 
-    @Test(timeout = 60_000)
+    @Test(timeout = TEST_DURATION_SEC * 2000)
     public void replay() throws IOException, InterruptedException
     {
         try (Publication publication = aeron.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
@@ -166,10 +166,10 @@ public class ArchiveReplayLoadTest
             assertEquals(expectedRecordingLength, recordedLength);
         }
 
-        final long duration = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
+        final long deadlineMs = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
         int i = 0;
 
-        while (System.currentTimeMillis() < duration)
+        while (System.currentTimeMillis() < deadlineMs)
         {
             final long start = System.currentTimeMillis();
             replay(i);

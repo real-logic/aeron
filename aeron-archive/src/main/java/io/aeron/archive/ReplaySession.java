@@ -177,7 +177,6 @@ class ReplaySession implements Session
 
     public void close()
     {
-        System.out.println(epochClock.time() + " | closed replay");
         state = State.CLOSED;
 
         CloseHelper.quietClose(replayPublication);

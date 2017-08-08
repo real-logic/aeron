@@ -287,7 +287,12 @@ public class ArchiveReplayLoadTest
                             {
                                 final RecordingStartedDecoder decoder = poller.recordingStartedDecoder();
                                 recordingId = decoder.recordingId();
-                                assertEquals(0L, decoder.startPosition());
+
+                                if (0L != decoder.startPosition())
+                                {
+                                    throw new IllegalStateException("expected=0 actual=" + decoder.startPosition());
+                                }
+
                                 printf("Recording started %d %n", recordingId);
                                 break;
                             }

@@ -244,10 +244,17 @@ public class ArchiveReplayLoadTest
 
     private void validateFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
-        // use this primitive comparison method to avoid allocation (which the assertThat(..., is(...))) causes
-        assertTrue(fragmentCount == buffer.getInt(offset, LITTLE_ENDIAN));
-        assertTrue(fragmentCount == buffer.getInt(offset + (length - 4), LITTLE_ENDIAN));
-        assertTrue(buffer.getByte(offset + 4) == (byte)'z');
+        int actual = buffer.getInt(offset, LITTLE_ENDIAN);
+        if (fragmentCount != actual)
+        {
+            throw new IllegalStateException("expected=" + fragmentCount + " actual=" + actual);
+        }
+
+        actual = buffer.getInt(offset + (length - 4), LITTLE_ENDIAN);
+        if (fragmentCount != actual)
+        {
+            throw new IllegalStateException("expected=" + fragmentCount + " actual=" + actual);
+        }
 
         remaining -= length;
         fragmentCount++;

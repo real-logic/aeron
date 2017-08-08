@@ -187,7 +187,11 @@ public class ArchiveRecordingLoadTest
                     final String sourceIdentity)
                 {
                     recordingId = recordingId0;
-                    assertThat(streamId, is(PUBLISH_STREAM_ID));
+
+                    if (streamId != PUBLISH_STREAM_ID)
+                    {
+                        throw new IllegalStateException("expected=" + PUBLISH_STREAM_ID + " actual=" + streamId);
+                    }
                 }
             },
             recordingEvents,
@@ -206,7 +210,11 @@ public class ArchiveRecordingLoadTest
                     final long startPosition,
                     final long position)
                 {
-                    assertThat(recordingId0, is(recordingId));
+                    if (recordingId0 != recordingId)
+                    {
+                        throw new IllegalStateException("expected=" + recordingId + " actual=" + recordingId0);
+                    }
+
                     recordedLength = position - startPosition;
                 }
 
@@ -214,7 +222,11 @@ public class ArchiveRecordingLoadTest
                 {
                     doneRecording = true;
                     recordedLength = stopPosition - startPosition;
-                    assertThat(recordingId0, is(recordingId));
+
+                    if (recordingId0 != recordingId)
+                    {
+                        throw new IllegalStateException("expected=" + recordingId + " actual=" + recordingId0);
+                    }
                 }
             },
             recordingEvents,

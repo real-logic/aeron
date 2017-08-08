@@ -24,7 +24,6 @@ import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Assert;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
@@ -35,9 +34,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
-import static org.hamcrest.Matchers.isEmptyOrNullString;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class TestUtil
@@ -58,8 +54,15 @@ public class TestUtil
             throw new RuntimeException(ex);
         }
 
-        Assert.assertTrue(tempDirForTest.delete());
-        Assert.assertTrue(tempDirForTest.mkdir());
+        if (!tempDirForTest.delete())
+        {
+            throw new IllegalStateException("Failed to delete: " + tempDirForTest);
+        }
+
+        if (!tempDirForTest.mkdir())
+        {
+            throw new IllegalStateException("Failed to create: " + tempDirForTest);
+        }
 
         return tempDirForTest;
     }
@@ -69,14 +72,6 @@ public class TestUtil
         if (DEBUG)
         {
             System.out.printf(s, args);
-        }
-    }
-
-    public static void println(final String s)
-    {
-        if (DEBUG)
-        {
-            System.out.println(s);
         }
     }
 
@@ -95,9 +90,19 @@ public class TestUtil
                     final ControlResponseCode code,
                     final String errorMessage)
                 {
-                    assertThat("Error message: " + errorMessage, code, is(ControlResponseCode.CONNECTED));
+                    if (ControlResponseCode.CONNECTED != code)
+                    {
+                        throw new IllegalStateException(
+                            "expected=" + ControlResponseCode.CONNECTED + " actual=" + code);
+                    }
+
+                    if (correlationId != expectedCorrelationId)
+                    {
+                        throw new IllegalStateException(
+                            "expected=" + expectedCorrelationId + " actual=" + correlationId);
+                    }
+
                     receiveSessionId.accept(controlSessionId);
-                    assertThat(correlationId, is(expectedCorrelationId));
                 }
             },
             controlResponse,
@@ -119,9 +124,18 @@ public class TestUtil
                     final ControlResponseCode code,
                     final String errorMessage)
                 {
-                    assertThat("Error message: " + errorMessage, code, is(ControlResponseCode.OK));
-                    assertThat(errorMessage, isEmptyOrNullString());
-                    assertThat(correlationId, is(expectedCorrelationId));
+                    if (ControlResponseCode.OK != code)
+                    {
+                        System.out.println(errorMessage);
+                        throw new IllegalStateException(
+                            "expected=" + ControlResponseCode.OK + " actual=" + code);
+                    }
+
+                    if (correlationId != expectedCorrelationId)
+                    {
+                        throw new IllegalStateException(
+                            "expected=" + expectedCorrelationId + " actual=" + correlationId);
+                    }
                 }
             },
             controlResponse,
@@ -143,7 +157,11 @@ public class TestUtil
                     final ControlResponseCode code,
                     final String errorMessage)
                 {
-                    assertThat(correlationId, is(expectedCorrelationId));
+                    if (correlationId != expectedCorrelationId)
+                    {
+                        throw new IllegalStateException(
+                            "expected=" + expectedCorrelationId + " actual=" + correlationId);
+                    }
                 }
             },
             controlResponse,

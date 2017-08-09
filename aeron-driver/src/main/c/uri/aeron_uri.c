@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include "uri/aeron_uri.h"
 #include "util/aeron_arrayutil.h"
-#include "aeron_uri.h"
+#include "aeron_driver_context.h"
 
 typedef enum aeron_uri_parser_state_enum
 {
@@ -248,4 +248,52 @@ const char *aeron_uri_find_param_value(aeron_uri_params_t *uri_params, const cha
     }
 
     return NULL;
+}
+
+int aeron_uri_publication_params(
+    aeron_uri_type_t type,
+    aeron_uri_params_t *uri_params,
+    aeron_uri_publication_params_t *params,
+    aeron_driver_context_t *context,
+    bool is_exclusive)
+{
+    params->term_length = AERON_URI_IPC == type ? context->ipc_term_buffer_length : context->term_buffer_length;
+    params->mtu_length = AERON_URI_IPC == type ? context->ipc_mtu_length : context->mtu_length;
+    params->initial_term_id = 0;
+    params->term_offset = 0;
+    params->term_id = 0;
+
+    const char *value_str;
+
+    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_TERM_LENGTH_KEY)) != NULL)
+    {
+        uint64_t value = strtoull(value_str, NULL, 0);
+
+        if (0 == value && EINVAL == errno)
+        {
+            return -1;
+        }
+    }
+
+    return -1;
+}
+
+int aeron_udp_channel_subscription_params(
+    aeron_uri_params_t *uri_params,
+    aeron_udp_channel_subscription_params_t *params,
+    aeron_driver_context_t *context)
+{
+    params->reliable = true;
+
+    const char *value_str;
+
+    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_UDP_CHANNEL_RELIABLE_STREAM_KEY)) != NULL)
+    {
+        if (strncmp("false", value_str, strlen("false")) == 0)
+        {
+            params->reliable = false;
+        }
+    }
+
+    return 0;
 }

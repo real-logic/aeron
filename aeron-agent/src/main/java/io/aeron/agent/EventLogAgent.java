@@ -134,7 +134,7 @@ public class EventLogAgent
                         .on(named("cleanupPublication")))
                     .visit(to(CleanupInterceptor.DriverConductorInterceptor.CleanupSubscriptionLink.class)
                         .on(named("cleanupSubscriptionLink"))))
-            .type(nameEndsWith("DriverAdapter"))
+            .type(nameEndsWith("ClientRequestAdapter"))
             .transform((builder, typeDescription, classLoader, javaModule) ->
                 builder
                     .visit(to(CmdInterceptor.class).on(named("onMessage"))))

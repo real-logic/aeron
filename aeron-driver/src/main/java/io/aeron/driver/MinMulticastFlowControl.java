@@ -87,7 +87,8 @@ public class MinMulticastFlowControl implements FlowControl
 
         if (!isExisting)
         {
-            receiverList.add(new Receiver(position + windowLength, nowNs, receiverId, receiverAddress));
+            receiverList.add(
+                new Receiver(position, position + windowLength, nowNs, receiverId, receiverAddress));
             minPosition = Math.min(minPosition, position + windowLength);
         }
 
@@ -126,19 +127,42 @@ public class MinMulticastFlowControl implements FlowControl
         return receiverList.size() > 0 ? minPosition : senderLimit;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public boolean shouldLinger(final long nowNs, final long producerPosition)
+    {
+        final ArrayList<Receiver> receiverList = this.receiverList;
+
+        for (int i = 0, size = receiverList.size(); i < size; i++)
+        {
+            final Receiver receiver = receiverList.get(i);
+
+            if (receiver.lastPosition < producerPosition)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     static class Receiver
     {
+        long lastPosition;
         long lastPositionPlusWindow;
         long timeOfLastStatusMessage;
         long receiverId;
         InetSocketAddress address;
 
         Receiver(
+            final long lastPosition,
             final long lastPositionPlusWindow,
             final long now,
             final long receiverId,
             final InetSocketAddress receiverAddress)
         {
+            this.lastPosition = lastPosition;
             this.lastPositionPlusWindow = lastPositionPlusWindow;
             this.timeOfLastStatusMessage = now;
             this.receiverId = receiverId;

@@ -65,7 +65,8 @@ public class ArchiveTest
     @Parameterized.Parameters
     public static Collection<Object[]> data()
     {
-        return Arrays.asList(new Object[][]
+        return Arrays.asList(
+            new Object[][]
             {
                 { ThreadingMode.INVOKER, ArchiveThreadingMode.SHARED },
                 { ThreadingMode.DEDICATED, ArchiveThreadingMode.DEDICATED },
@@ -94,8 +95,8 @@ public class ArchiveTest
     private MediaDriver driver;
     private long recordingId;
     private long remaining;
-    private int fragmentCount;
-    private int[] fragmentLength;
+    private int messageCount;
+    private int[] messageLengths;
     private long totalDataLength;
     private long totalRecordingLength;
     private volatile long recorded;
@@ -240,7 +241,7 @@ public class ArchiveTest
 
             final int messageCount = MESSAGE_COUNT;
             final CountDownLatch waitForData = new CountDownLatch(2);
-            prepFragmentsAndListener(recordingEvents, messageCount, waitForData);
+            prepMessagesAndListener(recordingEvents, messageCount, waitForData);
             validateActiveRecordingReplay(
                 archiveProxy,
                 termBufferLength,
@@ -339,6 +340,7 @@ public class ArchiveTest
             PUBLISH_STREAM_ID,
             requestStopCorrelationId,
             controlSessionId));
+
         awaitOk(controlResponse, requestStopCorrelationId);
 
         final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
@@ -448,7 +450,7 @@ public class ArchiveTest
     {
         final int messageCount = MESSAGE_COUNT;
         final CountDownLatch waitForData = new CountDownLatch(1);
-        prepFragmentsAndListener(recordingEvents, messageCount, waitForData);
+        prepMessagesAndListener(recordingEvents, messageCount, waitForData);
         publishDataToRecorded(publication, messageCount);
         await(waitForData);
 
@@ -459,7 +461,7 @@ public class ArchiveTest
     {
         final int messageCount = MESSAGE_COUNT;
         final CountDownLatch waitForData = new CountDownLatch(1);
-        prepFragmentsAndListener(recordingEvents, messageCount, waitForData);
+        prepMessagesAndListener(recordingEvents, messageCount, waitForData);
         publishDataToRecorded(publication, messageCount);
         await(waitForData);
 
@@ -478,17 +480,17 @@ public class ArchiveTest
         }
     }
 
-    private void prepFragmentsAndListener(
+    private void prepMessagesAndListener(
         final Subscription recordingEvents,
         final int messageCount,
         final CountDownLatch waitForData)
     {
-        fragmentLength = new int[messageCount];
+        messageLengths = new int[messageCount];
         for (int i = 0; i < messageCount; i++)
         {
             final int messageLength = 64 + rnd.nextInt(MAX_FRAGMENT_SIZE - 64) - HEADER_LENGTH;
-            fragmentLength[i] = messageLength + HEADER_LENGTH;
-            totalDataLength += BitUtil.align(fragmentLength[i], FrameDescriptor.FRAME_ALIGNMENT);
+            messageLengths[i] = messageLength + HEADER_LENGTH;
+            totalDataLength += BitUtil.align(messageLengths[i], FrameDescriptor.FRAME_ALIGNMENT);
         }
 
         trackRecordingProgress(recordingEvents, waitForData);
@@ -499,14 +501,14 @@ public class ArchiveTest
         startPosition = publication.position();
 
         publicationInitialTermId = publication.initialTermId();
-        publicationStartTermId = (int) (publicationInitialTermId + (startPosition / publication.termBufferLength()));
-        publicationStartTermOffset = (int) (startPosition % publication.termBufferLength());
+        publicationStartTermId = (int)(publicationInitialTermId + (startPosition / publication.termBufferLength()));
+        publicationStartTermOffset = (int)(startPosition % publication.termBufferLength());
         buffer.setMemory(0, 1024, (byte)'z');
         buffer.putStringAscii(32, "TEST");
 
         for (int i = 0; i < messageCount; i++)
         {
-            final int dataLength = fragmentLength[i] - HEADER_LENGTH;
+            final int dataLength = messageLengths[i] - HEADER_LENGTH;
             buffer.putInt(0, i);
             offer(publication, buffer, dataLength);
         }
@@ -521,15 +523,15 @@ public class ArchiveTest
         startPosition = publication.position();
 
         publicationInitialTermId = publication.initialTermId();
-        publicationStartTermId = (int) (publicationInitialTermId + (startPosition / publication.termBufferLength()));
-        publicationStartTermOffset = (int) (startPosition % publication.termBufferLength());
+        publicationStartTermId = (int)(publicationInitialTermId + (startPosition / publication.termBufferLength()));
+        publicationStartTermOffset = (int)(startPosition % publication.termBufferLength());
 
         buffer.setMemory(0, 1024, (byte)'z');
         buffer.putStringAscii(32, "TEST");
 
         for (int i = 0; i < messageCount; i++)
         {
-            final int dataLength = fragmentLength[i] - HEADER_LENGTH;
+            final int dataLength = messageLengths[i] - HEADER_LENGTH;
             buffer.putInt(0, i);
             offer(publication, buffer, dataLength);
         }
@@ -567,7 +569,7 @@ public class ArchiveTest
             assertThat(image.termBufferLength(), is(termBufferLength));
             assertThat(image.position(), is(startPosition));
 
-            fragmentCount = 0;
+            this.messageCount = 0;
             remaining = totalDataLength;
 
             while (remaining > 0)
@@ -575,7 +577,7 @@ public class ArchiveTest
                 poll(replay, this::validateFragment2);
             }
 
-            assertThat(fragmentCount, is(messageCount));
+            assertThat(this.messageCount, is(messageCount));
             assertThat(remaining, is(0L));
         }
     }
@@ -585,10 +587,10 @@ public class ArchiveTest
         remaining = totalDataLength;
         final File archiveDir = archive.context().archiveDir();
         try (Catalog catalog = new Catalog(archiveDir, null, 0, System::currentTimeMillis);
-             RecordingFragmentReader archiveDataFileReader =
-                 newRecordingFragmentReader(catalog.wrapDescriptor(recordingId), archiveDir))
+             RecordingFragmentReader archiveDataFileReader = newRecordingFragmentReader(
+                 catalog.wrapDescriptor(recordingId), archiveDir))
         {
-            fragmentCount = 0;
+            this.messageCount = 0;
             remaining = totalDataLength;
             while (!archiveDataFileReader.isDone())
             {
@@ -596,7 +598,7 @@ public class ArchiveTest
             }
 
             assertThat(remaining, is(0L));
-            assertThat(fragmentCount, is(messageCount));
+            assertThat(this.messageCount, is(messageCount));
         }
     }
 
@@ -610,18 +612,18 @@ public class ArchiveTest
             return true;
         }
 
-        final int expectedLength = fragmentLength[fragmentCount] - HEADER_LENGTH;
-        assertThat("on fragment[" + fragmentCount + "]", length, is(expectedLength));
-        assertThat(buffer.getInt(offset), is(fragmentCount));
+        final int expectedLength = messageLengths[messageCount] - HEADER_LENGTH;
+        assertThat("on fragment[" + messageCount + "]", length, is(expectedLength));
+        assertThat(buffer.getInt(offset), is(messageCount));
         assertThat(buffer.getByte(offset + 4), is((byte)'z'));
 
-        if (fragmentCount == 0)
+        if (messageCount == 0)
         {
             assertThat(headerFlyweight.termId(), is(this.publicationStartTermId));
             assertThat(headerFlyweight.termOffset(), is(this.publicationStartTermOffset));
         }
-        remaining -= BitUtil.align(fragmentLength[fragmentCount], FrameDescriptor.FRAME_ALIGNMENT);
-        fragmentCount++;
+        remaining -= BitUtil.align(messageLengths[messageCount], FrameDescriptor.FRAME_ALIGNMENT);
+        messageCount++;
 
         return true;
     }
@@ -632,11 +634,11 @@ public class ArchiveTest
         final int length,
         @SuppressWarnings("unused") final Header header)
     {
-        assertThat(length, is(fragmentLength[fragmentCount] - HEADER_LENGTH));
-        assertThat(buffer.getInt(offset), is(fragmentCount));
+        assertThat(length, is(messageLengths[messageCount] - HEADER_LENGTH));
+        assertThat(buffer.getInt(offset), is(messageCount));
         assertThat(buffer.getByte(offset + 4), is((byte)'z'));
-        remaining -= BitUtil.align(fragmentLength[fragmentCount], FrameDescriptor.FRAME_ALIGNMENT);
-        fragmentCount++;
+        remaining -= BitUtil.align(messageLengths[messageCount], FrameDescriptor.FRAME_ALIGNMENT);
+        messageCount++;
     }
 
     private void trackRecordingProgress(final Subscription recordingEvents, final CountDownLatch waitForData)
@@ -692,48 +694,49 @@ public class ArchiveTest
         final int messageCount,
         final CountDownLatch waitForData)
     {
-        Thread t = new Thread(() ->
-        {
-            do
+        Thread t = new Thread(
+            () ->
             {
-                LockSupport.parkNanos(1000000);
-            }
-            while (recorded == 0);
-
-            try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
-            {
-                final long replayCorrelationId = correlationId++;
-
-                TestUtil.await(() -> archiveProxy.replay(
-                    recordingId,
-                    this.startPosition,
-                    Long.MAX_VALUE,
-                    REPLAY_URI,
-                    REPLAY_STREAM_ID,
-                    replayCorrelationId,
-                    controlSessionId));
-
-                awaitOk(controlResponse, replayCorrelationId);
-
-                awaitConnected(replay);
-
-                final Image image = replay.images().get(0);
-                assertThat(image.initialTermId(), is(initialTermId));
-                assertThat(image.mtuLength(), is(maxPayloadLength + HEADER_LENGTH));
-                assertThat(image.termBufferLength(), is(termBufferLength));
-                assertThat(image.position(), is(this.startPosition));
-
-                fragmentCount = 0;
-                remaining = totalDataLength;
-
-                while (fragmentCount < messageCount)
+                do
                 {
-                    poll(replay, this::validateFragment2);
+                    LockSupport.parkNanos(1000000);
                 }
+                while (recorded == 0);
 
-                waitForData.countDown();
-            }
-        });
+                try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
+                {
+                    final long replayCorrelationId = correlationId++;
+
+                    TestUtil.await(() -> archiveProxy.replay(
+                        recordingId,
+                        this.startPosition,
+                        Long.MAX_VALUE,
+                        REPLAY_URI,
+                        REPLAY_STREAM_ID,
+                        replayCorrelationId,
+                        controlSessionId));
+
+                    awaitOk(controlResponse, replayCorrelationId);
+
+                    awaitConnected(replay);
+
+                    final Image image = replay.images().get(0);
+                    assertThat(image.initialTermId(), is(initialTermId));
+                    assertThat(image.mtuLength(), is(maxPayloadLength + HEADER_LENGTH));
+                    assertThat(image.termBufferLength(), is(termBufferLength));
+                    assertThat(image.position(), is(this.startPosition));
+
+                    this.messageCount = 0;
+                    remaining = totalDataLength;
+
+                    while (this.messageCount < messageCount)
+                    {
+                        poll(replay, this::validateFragment2);
+                    }
+
+                    waitForData.countDown();
+                }
+            });
 
         t.setName("replay-consumer");
         t.setDaemon(true);

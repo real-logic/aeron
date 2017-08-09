@@ -75,14 +75,14 @@ public class ArchiveRecordingLoadTest
     private MediaDriver driver;
     private AeronArchive aeronArchive;
     private long recordingId;
-    private int[] fragmentLength;
+    private int[] messageLengths;
     private long totalDataLength;
     private long expectedRecordingLength;
     private long recordedLength;
     private boolean doneRecording;
 
-    private BooleanSupplier recordingStartedIndicator;
-    private BooleanSupplier recordingEndIndicator;
+    private BooleanSupplier recordingStarted;
+    private BooleanSupplier recordingEnded;
 
     @Before
     public void before() throws Exception
@@ -145,7 +145,7 @@ public class ArchiveRecordingLoadTest
                 try (ExclusivePublication publication = aeron.addExclusivePublication(PUBLISH_URI, PUBLISH_STREAM_ID))
                 {
                     awaitConnected(publication);
-                    await(recordingStartedIndicator);
+                    await(recordingStarted);
 
                     doneRecording = false;
                     start = System.currentTimeMillis();
@@ -155,7 +155,7 @@ public class ArchiveRecordingLoadTest
 
                 while (!doneRecording)
                 {
-                    await(recordingEndIndicator);
+                    await(recordingEnded);
                 }
 
                 printScore(System.currentTimeMillis() - start);
@@ -197,7 +197,7 @@ public class ArchiveRecordingLoadTest
             recordingEvents,
             1);
 
-        recordingStartedIndicator = () -> recordingEventsAdapter.poll() != 0;
+        recordingStarted = () -> recordingEventsAdapter.poll() != 0;
     }
 
     private void initRecordingEndIndicator(final Subscription recordingEvents)
@@ -232,22 +232,22 @@ public class ArchiveRecordingLoadTest
             recordingEvents,
             1);
 
-        recordingEndIndicator = () -> recordingEventsAdapter.poll() != 0;
+        recordingEnded = () -> recordingEventsAdapter.poll() != 0;
     }
 
     private void prepAndSendMessages(final ExclusivePublication publication)
     {
-        fragmentLength = new int[ArchiveRecordingLoadTest.MESSAGE_COUNT];
-        for (int i = 0; i < ArchiveRecordingLoadTest.MESSAGE_COUNT; i++)
+        messageLengths = new int[MESSAGE_COUNT];
+        for (int i = 0; i < MESSAGE_COUNT; i++)
         {
             final int messageLength = 64 + rnd.nextInt(MAX_FRAGMENT_SIZE - 64) - DataHeaderFlyweight.HEADER_LENGTH;
-            fragmentLength[i] = messageLength + DataHeaderFlyweight.HEADER_LENGTH;
-            totalDataLength += fragmentLength[i];
+            messageLengths[i] = messageLength + DataHeaderFlyweight.HEADER_LENGTH;
+            totalDataLength += messageLengths[i];
         }
 
-        printf("Sending %d messages, total length=%d %n", ArchiveRecordingLoadTest.MESSAGE_COUNT, totalDataLength);
+        printf("Sending %d messages, total length=%d %n", MESSAGE_COUNT, totalDataLength);
 
-        publishDataToBeRecorded(publication, ArchiveRecordingLoadTest.MESSAGE_COUNT);
+        publishDataToBeRecorded(publication, MESSAGE_COUNT);
     }
 
     private void publishDataToBeRecorded(final ExclusivePublication publication, final int messageCount)
@@ -263,7 +263,7 @@ public class ArchiveRecordingLoadTest
 
         for (int i = 0; i < messageCount; i++)
         {
-            final int dataLength = fragmentLength[i] - DataHeaderFlyweight.HEADER_LENGTH;
+            final int dataLength = messageLengths[i] - DataHeaderFlyweight.HEADER_LENGTH;
             buffer.putInt(0, i);
             offer(publication, buffer, dataLength);
         }

@@ -307,7 +307,7 @@ public final class Archive implements AutoCloseable
                 throw new IllegalStateException("Counter manager must be externally supplied");
             }
 
-            errorCounter = countersManager.newCounter("Archive Errors");
+            errorCounter = countersManager.newCounter("Archive errors");
 
             if (null == archiveDir)
             {

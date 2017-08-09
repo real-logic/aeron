@@ -36,6 +36,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.*;
 import org.junit.rules.TestWatcher;
 
@@ -232,9 +233,13 @@ public class ArchiveReplayLoadTest
                 final int fragments = replay.poll(validatingFragmentHandler, 128);
                 if (0 == fragments && replay.hasNoImages() && remaining > 0)
                 {
-                    System.err.println("Unexpected close of image: remaining=" + remaining);
-                    System.err.println("Image position=" + receivedPosition + " expected=" + expectedRecordingLength);
-                    System.err.println("Resulting error: " + aeronArchive.pollForErrorResponse());
+                    System.out.println("Unexpected close of image: remaining=" + remaining);
+                    System.out.println("Image position=" + receivedPosition + " expected=" + expectedRecordingLength);
+                    System.out.println("Resulting error: " + aeronArchive.pollForErrorResponse());
+
+                    final CountersReader countersReader = aeron.countersReader();
+                    countersReader.forEach(
+                        (id, label) -> System.out.println(countersReader.getCounterValue(id) + "\t: " + label));
                     break;
                 }
             }

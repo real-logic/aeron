@@ -139,6 +139,26 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
+     * Poll the response stream once of an error. If another message is present then it will be skipped over
+     * so only call when not expecting another response.
+     *
+     * @return the error String otherwise null if no error is found.
+     */
+    public String pollForErrorResponse()
+    {
+        if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
+        {
+            if (controlResponsePoller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
+                controlResponsePoller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
+            {
+                return controlResponsePoller.controlResponseDecoder().errorMessage();
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Add a {@link Publication} and set it up to be recorded.
      *
      * @param channel  for the publication.

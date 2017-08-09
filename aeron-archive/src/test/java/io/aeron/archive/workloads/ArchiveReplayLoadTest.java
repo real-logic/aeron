@@ -23,7 +23,6 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.TestUtil;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.ControlResponsePoller;
 import io.aeron.archive.client.RecordingEventsPoller;
 import io.aeron.archive.codecs.*;
 import io.aeron.driver.Configuration;
@@ -235,26 +234,13 @@ public class ArchiveReplayLoadTest
                 {
                     System.err.println("Unexpected close of image: remaining=" + remaining);
                     System.err.println("Image position=" + receivedPosition + " expected=" + expectedRecordingLength);
-
-                    pollForError(aeronArchive.controlResponsePoller());
+                    System.err.println("Resulting error: " + aeronArchive.pollForErrorResponse());
                     break;
                 }
             }
 
             assertThat(fragmentCount, is(MESSAGE_COUNT));
             assertThat(remaining, is(0L));
-        }
-    }
-
-    private void pollForError(final ControlResponsePoller controlResponsePoller)
-    {
-        if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
-        {
-            if (controlResponsePoller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
-                controlResponsePoller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
-            {
-                System.out.println(controlResponsePoller.controlResponseDecoder().errorMessage());
-            }
         }
     }
 

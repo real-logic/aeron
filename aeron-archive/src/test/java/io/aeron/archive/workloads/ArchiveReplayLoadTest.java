@@ -181,7 +181,7 @@ public class ArchiveReplayLoadTest
     {
         final double rate = (expectedRecordingLength * 1000.0d / time) / MEGABYTE;
         final double receivedMb = expectedRecordingLength / MEGABYTE;
-        System.out.printf("%d : received %.02f MB, replayed @ %.02f MB/s %n", i, receivedMb, rate);
+        System.out.printf("%d : replayed %.02f MB @ %.02f MB/s %n", i, receivedMb, rate);
     }
 
     private CountDownLatch prepAndSendMessages(final Subscription recordingEvents, final Publication publication)

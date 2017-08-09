@@ -170,7 +170,7 @@ public class ArchiveRecordingLoadTest
     {
         final double rate = (expectedRecordingLength * 1000.0d / time) / MEGABYTE;
         final double recordedMb = expectedRecordingLength / MEGABYTE;
-        System.out.printf("%d : sent %.02f MB, recorded @ %.02f MB/s %n", recordingId, recordedMb, rate);
+        System.out.printf("%d : recorded %.02f MB @ %.02f MB/s %n", recordingId, recordedMb, rate);
     }
 
     private void initRecordingStartIndicator(final Subscription recordingEvents)

@@ -59,4 +59,13 @@ public interface FlowControl
      * @return the position limit to be employed by the sender.
      */
     long onIdle(long nowNs, long senderLimit);
+
+    /**
+     * Should linger the {@link NetworkPublication} given the current producer position and past Status Messages.
+     *
+     * @param nowNs       time in nanoseconds.
+     * @param producerPosition of the publication
+     * @return true to continue to linger or false to not linger
+     */
+    boolean shouldLinger(long nowNs, long producerPosition);
 }

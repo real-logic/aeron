@@ -23,10 +23,9 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.TestUtil;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ControlResponsePoller;
 import io.aeron.archive.client.RecordingEventsPoller;
-import io.aeron.archive.codecs.RecordingProgressDecoder;
-import io.aeron.archive.codecs.RecordingStartedDecoder;
-import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.archive.codecs.*;
 import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -58,19 +57,19 @@ public class ArchiveReplayLoadTest
     private static final String CONTROL_RESPONSE_URI = "aeron:udp?endpoint=localhost:54327";
     private static final int CONTROL_RESPONSE_STREAM_ID = 100;
 
-    private static final int TEST_DURATION_SEC = 30;
+    private static final int TEST_DURATION_SEC = 60;
     private static final String REPLAY_URI = "aeron:udp?endpoint=localhost:54326";
 
     private static final String PUBLISH_URI = new ChannelUriStringBuilder()
         .media("ipc")
         .mtu(16 * 1024)
-        .termLength(64 * 1024 * 1024)
+        .termLength(32 * 1024 * 1024)
         .build();
 
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
-    private static final int MESSAGE_COUNT = 5_000_000;
+    private static final int MESSAGE_COUNT = 2_000_000;
 
     static
     {
@@ -236,12 +235,26 @@ public class ArchiveReplayLoadTest
                 {
                     System.err.println("Unexpected close of image: remaining=" + remaining);
                     System.err.println("Image position=" + receivedPosition + " expected=" + expectedRecordingLength);
+
+                    pollForError(aeronArchive.controlResponsePoller());
                     break;
                 }
             }
 
             assertThat(fragmentCount, is(MESSAGE_COUNT));
             assertThat(remaining, is(0L));
+        }
+    }
+
+    private void pollForError(final ControlResponsePoller controlResponsePoller)
+    {
+        if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
+        {
+            if (controlResponsePoller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
+                controlResponsePoller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
+            {
+                System.out.println(controlResponsePoller.controlResponseDecoder().errorMessage());
+            }
         }
     }
 

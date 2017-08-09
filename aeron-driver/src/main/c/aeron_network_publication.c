@@ -166,7 +166,7 @@ int aeron_network_publication_create(
     _pub->is_exclusive = is_exclusive;
     _pub->should_send_setup_frame = true;
     _pub->is_connected = false;
-    _pub->is_complete = false;
+    _pub->is_end_of_stream = false;
     _pub->track_sender_limits = true;
     _pub->has_sender_released = false;
 
@@ -286,7 +286,7 @@ int aeron_network_publication_heartbeat_message_check(
         data_header->reserved_value = 0l;
 
         bool is_complete;
-        AERON_GET_VOLATILE(is_complete, publication->is_complete);
+        AERON_GET_VOLATILE(is_complete, publication->is_end_of_stream);
         if (is_complete)
         {
             data_header->frame_header.flags =
@@ -673,7 +673,12 @@ void aeron_network_publication_decref(void *clientd)
     if (0 == ref_count)
     {
         publication->conductor_fields.status = AERON_NETWORK_PUBLICATION_STATUS_DRAINING;
-        publication->conductor_fields.managed_resource.time_of_last_status_change = publication->nano_clock();
+        publication->conductor_fields.time_of_last_activity_ns = publication->nano_clock();
+        if (aeron_network_publication_consumer_position(publication) >=
+            aeron_network_publication_producer_position(publication))
+        {
+            AERON_PUT_ORDERED(publication->is_end_of_stream, true);
+        }
     }
 }
 
@@ -728,53 +733,51 @@ void aeron_network_publication_on_time_event(
         case AERON_NETWORK_PUBLICATION_STATUS_ACTIVE:
         {
             aeron_network_publication_check_for_blocked_publisher(
-                publication, now_ns, aeron_counter_get_volatile(publication->snd_pos_position.value_addr));
+                publication, now_ns, aeron_network_publication_consumer_position(publication));
 
             break;
         }
 
         case AERON_NETWORK_PUBLICATION_STATUS_DRAINING:
         {
-            const int64_t snd_pos = aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
-            if (snd_pos == publication->conductor_fields.last_snd_pos)
+            if (aeron_network_publication_producer_position(publication) >
+                aeron_network_publication_consumer_position(publication))
             {
-                if (aeron_network_publication_producer_position(publication) > snd_pos)
+                if (aeron_logbuffer_unblocker_unblock(
+                    publication->mapped_raw_log.term_buffers,
+                    publication->log_meta_data,
+                    aeron_network_publication_consumer_position(publication)))
                 {
-                    if (aeron_logbuffer_unblocker_unblock(
-                        publication->mapped_raw_log.term_buffers,
-                        publication->log_meta_data,
-                        snd_pos))
-                    {
-                        aeron_counter_ordered_increment(publication->unblocked_publications_counter, 1);
-                        publication->conductor_fields.time_of_last_activity_ns = now_ns;
-                        break;
-                    }
-
-                    AERON_GET_VOLATILE(is_connected, publication->is_connected);
-                    if (is_connected)
-                    {
-                        break;
-                    }
+                    aeron_counter_ordered_increment(publication->unblocked_publications_counter, 1);
+                    publication->conductor_fields.time_of_last_activity_ns = now_ns;
+                    break;
                 }
 
-                if (aeron_network_publication_spies_finished_consuming(publication, conductor, snd_pos))
+                AERON_GET_VOLATILE(is_connected, publication->is_connected);
+                if (is_connected)
                 {
-                    AERON_PUT_ORDERED(publication->is_complete, true);
-                    publication->conductor_fields.time_of_last_activity_ns = now_ns;
-                    publication->conductor_fields.status = AERON_NETWORK_PUBLICATION_STATUS_LINGER;
+                    break;
                 }
             }
             else
             {
-                publication->conductor_fields.last_snd_pos = snd_pos;
+                AERON_PUT_ORDERED(publication->is_end_of_stream, true);
+            }
+
+            if (aeron_network_publication_spies_finished_consuming(
+                publication, conductor, aeron_network_publication_consumer_position(publication)))
+            {
                 publication->conductor_fields.time_of_last_activity_ns = now_ns;
+                publication->conductor_fields.status = AERON_NETWORK_PUBLICATION_STATUS_LINGER;
             }
             break;
         }
 
         case AERON_NETWORK_PUBLICATION_STATUS_LINGER:
         {
-            if (now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->linger_timeout_ns))
+            if (!publication->flow_control->should_linger(
+                publication->flow_control->state, now_ns, aeron_network_publication_producer_position(publication)) ||
+                (now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->linger_timeout_ns)))
             {
                 aeron_driver_conductor_cleanup_network_publication(conductor, publication);
                 publication->conductor_fields.status = AERON_NETWORK_PUBLICATION_STATUS_CLOSING;
@@ -788,7 +791,7 @@ void aeron_network_publication_on_time_event(
 }
 
 extern int64_t aeron_network_publication_producer_position(aeron_network_publication_t *publication);
-extern int64_t aeron_network_publication_spy_join_position(aeron_network_publication_t *publication);
+extern int64_t aeron_network_publication_consumer_position(aeron_network_publication_t *publication);
 extern void aeron_network_publication_trigger_send_setup_frame(aeron_network_publication_t *publication);
 extern void aeron_network_publication_sender_release(aeron_network_publication_t *publication);
 extern bool aeron_network_publication_has_sender_released(aeron_network_publication_t *publication);

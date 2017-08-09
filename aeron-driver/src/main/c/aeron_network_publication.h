@@ -89,7 +89,7 @@ typedef struct aeron_network_publication_stct
     bool is_exclusive;
     bool should_send_setup_frame;
     bool is_connected;
-    bool is_complete;
+    bool is_end_of_stream;
     bool track_sender_limits;
     bool has_sender_released;
     aeron_map_raw_log_close_func_t map_raw_log_close_func;
@@ -160,18 +160,9 @@ inline int64_t aeron_network_publication_producer_position(aeron_network_publica
         publication->initial_term_id);
 }
 
-inline int64_t aeron_network_publication_spy_join_position(aeron_network_publication_t *publication)
+inline int64_t aeron_network_publication_consumer_position(aeron_network_publication_t *publication)
 {
-    int64_t max_spy_position = aeron_network_publication_producer_position(publication);
-
-    for (size_t i = 0, length = publication->conductor_fields.subscribeable.length; i < length; i++)
-    {
-        int64_t position = aeron_counter_get_volatile(publication->conductor_fields.subscribeable.array[i].value_addr);
-
-        max_spy_position = position > max_spy_position ? position : max_spy_position;
-    }
-
-    return max_spy_position;
+    return aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
 }
 
 inline void aeron_network_publication_trigger_send_setup_frame(aeron_network_publication_t *publication)

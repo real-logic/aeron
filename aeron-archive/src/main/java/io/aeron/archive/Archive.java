@@ -306,7 +306,8 @@ public final class Archive implements AutoCloseable
             {
                 throw new IllegalStateException("Counter manager must be externally supplied");
             }
-            errorCounter = countersManager.newCounter("archive-errors");
+
+            errorCounter = countersManager.newCounter("Archive Errors");
 
             if (null == archiveDir)
             {
@@ -496,6 +497,7 @@ public final class Archive implements AutoCloseable
 
         /**
          * Get the file length used for recording data segment files.
+         *
          * @return the file length used for recording data segment files
          */
         int segmentFileLength()
@@ -518,9 +520,9 @@ public final class Archive implements AutoCloseable
         /**
          * Get level at which files should be sync'ed to disk.
          * <ul>
-         *     <li>0 - normal writes.</li>
-         *     <li>1 - sync file data.</li>
-         *     <li>2 - sync file data + metadata.</li>
+         * <li>0 - normal writes.</li>
+         * <li>1 - sync file data.</li>
+         * <li>2 - sync file data + metadata.</li>
          * </ul>
          *
          * @return the level to be applied for file write.
@@ -533,9 +535,9 @@ public final class Archive implements AutoCloseable
         /**
          * Set level at which files should be sync'ed to disk.
          * <ul>
-         *     <li>0 - normal writes.</li>
-         *     <li>1 - sync file data.</li>
-         *     <li>2 - sync file data + metadata.</li>
+         * <li>0 - normal writes.</li>
+         * <li>1 - sync file data.</li>
+         * <li>2 - sync file data + metadata.</li>
          * </ul>
          *
          * @param syncLevel to be applied for file writes.

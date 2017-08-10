@@ -46,10 +46,10 @@ public interface FlowControl
     /**
      * Initialize the flow control strategy
      *
-     * @param initialTermId      for the term buffers
-     * @param termBufferCapacity to use as the length of each term buffer
+     * @param initialTermId    for the term buffers
+     * @param termBufferLength to use as the length of each term buffer
      */
-    void initialize(int initialTermId, int termBufferCapacity);
+    void initialize(int initialTermId, int termBufferLength);
 
     /**
      * Perform any maintenance needed by the flow control strategy and return current position
@@ -61,9 +61,9 @@ public interface FlowControl
     long onIdle(long nowNs, long senderLimit);
 
     /**
-     * Should linger the {@link NetworkPublication} given the current producer position and past Status Messages.
+     * Should the {@link NetworkPublication} linger given the current producer position and received Status Messages.
      *
-     * @param nowNs       time in nanoseconds.
+     * @param nowNs            time in nanoseconds.
      * @param producerPosition of the publication
      * @return true to continue to linger or false to not linger
      */

@@ -64,7 +64,7 @@ public class MaxMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public void initialize(final int initialTermId, final int termBufferCapacity)
+    public void initialize(final int initialTermId, final int termBufferLength)
     {
     }
 
@@ -81,7 +81,6 @@ public class MaxMulticastFlowControl implements FlowControl
      */
     public boolean shouldLinger(final long nowNs, final long producerPosition)
     {
-        return (lastPosition < producerPosition) &&
-            (nowNs < (timeOfLastStatusMessage + RECEIVER_TIMEOUT_NS));
+        return (lastPosition < producerPosition) && (nowNs < (timeOfLastStatusMessage + RECEIVER_TIMEOUT_NS));
     }
 }

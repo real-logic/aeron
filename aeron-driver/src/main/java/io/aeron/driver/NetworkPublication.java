@@ -612,9 +612,10 @@ public class NetworkPublication
                 break;
 
             case DRAINING:
-                if (producerPosition() > consumerPosition())
+                final long consumerPosition = consumerPosition();
+                if (producerPosition() > consumerPosition)
                 {
-                    if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, consumerPosition()))
+                    if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, consumerPosition))
                     {
                         unblockedPublications.orderedIncrement();
                         timeOfLastActivityNs = timeNs;
@@ -631,7 +632,7 @@ public class NetworkPublication
                     isEndOfStream = true;
                 }
 
-                if (spiesFinishedConsuming(conductor, consumerPosition()))
+                if (spiesFinishedConsuming(conductor, consumerPosition))
                 {
                     timeOfLastActivityNs = timeNs;
                     status = Status.LINGER;
@@ -639,8 +640,8 @@ public class NetworkPublication
                 break;
 
             case LINGER:
-                if (!flowControl.shouldLinger(timeNs, producerPosition())
-                    || timeNs > (timeOfLastActivityNs + PUBLICATION_LINGER_NS))
+                if (!flowControl.shouldLinger(timeNs, producerPosition()) ||
+                    timeNs > (timeOfLastActivityNs + PUBLICATION_LINGER_NS))
                 {
                     conductor.cleanupPublication(this);
                     status = Status.CLOSING;

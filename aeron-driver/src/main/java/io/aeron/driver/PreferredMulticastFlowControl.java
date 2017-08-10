@@ -116,7 +116,7 @@ public class PreferredMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public void initialize(final int initialTermId, final int termBufferCapacity)
+    public void initialize(final int initialTermId, final int termBufferLength)
     {
     }
 

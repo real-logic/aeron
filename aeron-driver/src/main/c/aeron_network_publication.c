@@ -264,7 +264,11 @@ int aeron_network_publication_setup_message_check(
 }
 
 int aeron_network_publication_heartbeat_message_check(
-    aeron_network_publication_t *publication, int64_t now_ns, int32_t active_term_id, int32_t term_offset)
+    aeron_network_publication_t *publication,
+    int64_t now_ns,
+    int32_t active_term_id,
+    int32_t term_offset,
+    bool is_end_of_stream)
 {
     int bytes_sent = 0;
 
@@ -285,9 +289,7 @@ int aeron_network_publication_heartbeat_message_check(
         data_header->term_id = active_term_id;
         data_header->reserved_value = 0l;
 
-        bool is_complete;
-        AERON_GET_VOLATILE(is_complete, publication->is_end_of_stream);
-        if (is_complete)
+        if (is_end_of_stream)
         {
             data_header->frame_header.flags =
                 AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG | AERON_DATA_HEADER_EOS_FLAG;
@@ -409,7 +411,12 @@ int aeron_network_publication_send(aeron_network_publication_t *publication, int
 
     if (0 == bytes_sent)
     {
-        bytes_sent = aeron_network_publication_heartbeat_message_check(publication, now_ns, active_term_id, term_offset);
+        bool is_end_of_stream;
+        AERON_GET_VOLATILE(is_end_of_stream, publication->is_end_of_stream);
+
+        bytes_sent =
+            aeron_network_publication_heartbeat_message_check(
+                publication, now_ns, active_term_id, term_offset, is_end_of_stream);
         if (bytes_sent < 0)
         {
             return -1;
@@ -417,7 +424,12 @@ int aeron_network_publication_send(aeron_network_publication_t *publication, int
 
         int64_t snd_lmt = aeron_counter_get(publication->snd_lmt_position.value_addr);
         int64_t flow_control_position =
-            publication->flow_control->on_idle(publication->flow_control->state, now_ns, snd_lmt);
+            publication->flow_control->on_idle(
+                publication->flow_control->state,
+                now_ns,
+                snd_lmt,
+                aeron_counter_get(publication->snd_pos_position.value_addr),
+                is_end_of_stream);
         aeron_counter_set_ordered(publication->snd_lmt_position.value_addr, flow_control_position);
     }
 
@@ -775,8 +787,7 @@ void aeron_network_publication_on_time_event(
 
         case AERON_NETWORK_PUBLICATION_STATUS_LINGER:
         {
-            if (!publication->flow_control->should_linger(
-                publication->flow_control->state, now_ns, aeron_network_publication_producer_position(publication)) ||
+            if (!publication->flow_control->should_linger(publication->flow_control->state, now_ns) ||
                 (now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->linger_timeout_ns)))
             {
                 aeron_driver_conductor_cleanup_network_publication(conductor, publication);

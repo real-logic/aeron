@@ -43,14 +43,28 @@ typedef struct aeron_max_flow_control_strategy_state_stct
 {
     int64_t last_position;
     int64_t time_of_last_status_message;
+    bool should_linger;
 }
 aeron_max_flow_control_strategy_state_t;
 
 int64_t aeron_max_flow_control_strategy_on_idle(
     void *state,
     int64_t now_ns,
-    int64_t snd_lmt)
+    int64_t snd_lmt,
+    int64_t snd_pos,
+    bool is_end_of_stream)
 {
+    aeron_max_flow_control_strategy_state_t *strategy_state = (aeron_max_flow_control_strategy_state_t *)state;
+
+    if (is_end_of_stream && strategy_state->should_linger)
+    {
+        if (strategy_state->last_position >= snd_pos ||
+            now_ns > (strategy_state->time_of_last_status_message + AERON_MAX_FLOW_CONTROL_STRATEGY_RECEIVER_TIMEOUT_NS))
+        {
+            AERON_PUT_ORDERED(strategy_state->should_linger, false);
+        }
+    }
+
     return snd_lmt;
 }
 
@@ -82,13 +96,14 @@ int64_t aeron_max_flow_control_strategy_on_sm(
 
 bool aeron_max_flow_control_strategy_should_linger(
     void *state,
-    int64_t now_ns,
-    int64_t producer_position)
+    int64_t now_ns)
 {
     aeron_max_flow_control_strategy_state_t *strategy_state = (aeron_max_flow_control_strategy_state_t *)state;
 
-    return (strategy_state->last_position < producer_position) &&
-        (now_ns < (strategy_state->time_of_last_status_message + AERON_MAX_FLOW_CONTROL_STRATEGY_RECEIVER_TIMEOUT_NS));
+    bool should_linger;
+    AERON_GET_VOLATILE(should_linger, strategy_state->should_linger);
+
+    return should_linger;
 }
 
 int aeron_max_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy)
@@ -122,6 +137,7 @@ int aeron_max_multicast_flow_control_strategy_supplier(
     aeron_max_flow_control_strategy_state_t *state = (aeron_max_flow_control_strategy_state_t *)_strategy->state;
     state->last_position = 0;
     state->time_of_last_status_message = 0;
+    state->should_linger = true;
 
     *strategy = _strategy;
     return 0;

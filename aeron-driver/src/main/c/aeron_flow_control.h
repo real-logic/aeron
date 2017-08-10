@@ -27,7 +27,9 @@ typedef struct aeron_flow_control_strategy_stct aeron_flow_control_strategy_t;
 typedef int64_t (*aeron_flow_control_strategy_on_idle_func_t)(
     void *state,
     int64_t now_ns,
-    int64_t snd_lmt);
+    int64_t snd_lmt,
+    int64_t snd_pos,
+    bool is_end_of_stream);
 
 typedef int64_t (*aeron_flow_control_strategy_on_sm_func_t)(
     void *state,
@@ -41,8 +43,7 @@ typedef int64_t (*aeron_flow_control_strategy_on_sm_func_t)(
 
 typedef bool (*aeron_flow_control_strategy_should_linger_func_t)(
     void *state,
-    int64_t now_ns,
-    int64_t producer_position);
+    int64_t now_ns);
 
 typedef int (*aeron_flow_control_strategy_fini_func_t)(
     aeron_flow_control_strategy_t *strategy);

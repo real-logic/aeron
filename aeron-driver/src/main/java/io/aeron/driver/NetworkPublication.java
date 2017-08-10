@@ -244,8 +244,11 @@ public class NetworkPublication
 
         if (0 == bytesSent)
         {
-            bytesSent = heartbeatMessageCheck(nowNs, activeTermId, termOffset);
-            senderLimit.setOrdered(flowControl.onIdle(nowNs, senderLimit.get()));
+            final boolean isEndOfStream = this.isEndOfStream;
+
+            bytesSent = heartbeatMessageCheck(nowNs, activeTermId, termOffset, isEndOfStream);
+            senderLimit.setOrdered(
+                flowControl.onIdle(nowNs, senderLimit.get(), this.senderPosition.get(), isEndOfStream));
         }
 
         retransmitHandler.processTimeouts(nowNs, this);
@@ -496,7 +499,8 @@ public class NetworkPublication
         }
     }
 
-    private int heartbeatMessageCheck(final long nowNs, final int activeTermId, final int termOffset)
+    private int heartbeatMessageCheck(
+        final long nowNs, final int activeTermId, final int termOffset, final boolean isEndOfStream)
     {
         int bytesSent = 0;
 
@@ -640,8 +644,7 @@ public class NetworkPublication
                 break;
 
             case LINGER:
-                if (!flowControl.shouldLinger(timeNs, producerPosition()) ||
-                    timeNs > (timeOfLastActivityNs + PUBLICATION_LINGER_NS))
+                if (!flowControl.shouldLinger(timeNs) || timeNs > (timeOfLastActivityNs + PUBLICATION_LINGER_NS))
                 {
                     conductor.cleanupPublication(this);
                     status = Status.CLOSING;

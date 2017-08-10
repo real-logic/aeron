@@ -38,6 +38,8 @@ public class UnicastFlowControl implements FlowControl
     private long lastPosition = 0;
     private long timeOfLastStatusMessage = 0;
 
+    private volatile boolean shouldLinger = true;
+
     /**
      * {@inheritDoc}
      */
@@ -71,16 +73,24 @@ public class UnicastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public long onIdle(final long nowNs, final long senderLimit)
+    public long onIdle(final long nowNs, final long senderLimit, final long senderPosition, final boolean isEndOfStream)
     {
+        if (isEndOfStream && shouldLinger)
+        {
+            if (lastPosition >= senderPosition || nowNs > (timeOfLastStatusMessage + RECEIVER_TIMEOUT_NS))
+            {
+                shouldLinger = false;
+            }
+        }
+
         return senderLimit;
     }
 
     /**
      * {@inheritDoc}
      */
-    public boolean shouldLinger(final long nowNs, final long producerPosition)
+    public boolean shouldLinger(final long nowNs)
     {
-        return (lastPosition < producerPosition) && (nowNs < (timeOfLastStatusMessage + RECEIVER_TIMEOUT_NS));
+        return shouldLinger;
     }
 }

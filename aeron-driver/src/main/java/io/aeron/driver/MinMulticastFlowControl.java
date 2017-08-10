@@ -48,6 +48,8 @@ public class MinMulticastFlowControl implements FlowControl
 
     private final ArrayList<Receiver> receiverList = new ArrayList<>();
 
+    private volatile boolean shouldLinger = true;
+
     /**
      * {@inheritDoc}
      */
@@ -105,9 +107,10 @@ public class MinMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public long onIdle(final long nowNs, final long senderLimit)
+    public long onIdle(final long nowNs, final long senderLimit, final long senderPosition, final boolean isEndOfStream)
     {
         long minPosition = Long.MAX_VALUE;
+        long minLimitPosition = Long.MAX_VALUE;
         final ArrayList<Receiver> receiverList = this.receiverList;
 
         for (int lastIndex = receiverList.size() - 1, i = lastIndex; i >= 0; i--)
@@ -120,31 +123,28 @@ public class MinMulticastFlowControl implements FlowControl
             }
             else
             {
-                minPosition = Math.min(minPosition, receiver.lastPositionPlusWindow);
+                minPosition = Math.min(minPosition, receiver.lastPosition);
+                minLimitPosition = Math.min(minLimitPosition, receiver.lastPositionPlusWindow);
             }
         }
 
-        return receiverList.size() > 0 ? minPosition : senderLimit;
+        if (isEndOfStream && shouldLinger)
+        {
+            if (0 == receiverList.size() || minPosition >= senderPosition)
+            {
+                shouldLinger = false;
+            }
+        }
+
+        return receiverList.size() > 0 ? minLimitPosition : senderLimit;
     }
 
     /**
      * {@inheritDoc}
      */
-    public boolean shouldLinger(final long nowNs, final long producerPosition)
+    public boolean shouldLinger(final long nowNs)
     {
-        final ArrayList<Receiver> receiverList = this.receiverList;
-
-        for (int i = 0, size = receiverList.size(); i < size; i++)
-        {
-            final Receiver receiver = receiverList.get(i);
-
-            if (receiver.lastPosition < producerPosition)
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return shouldLinger;
     }
 
     static class Receiver

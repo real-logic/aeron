@@ -54,18 +54,19 @@ public interface FlowControl
     /**
      * Perform any maintenance needed by the flow control strategy and return current position
      *
-     * @param nowNs       time in nanoseconds.
-     * @param senderLimit for the current sender position.
+     * @param nowNs          time in nanoseconds.
+     * @param senderLimit    for the current sender position.
+     * @param senderPosition for the current
+     * @param isEndOfStream  for the current sender.
      * @return the position limit to be employed by the sender.
      */
-    long onIdle(long nowNs, long senderLimit);
+    long onIdle(long nowNs, long senderLimit, long senderPosition, boolean isEndOfStream);
 
     /**
-     * Should the {@link NetworkPublication} linger given the current producer position and received Status Messages.
+     * Called from the {@link DriverConductor} to check should the {@link NetworkPublication} linger or not.
      *
-     * @param nowNs            time in nanoseconds.
-     * @param producerPosition of the publication
+     * @param nowNs time in nanoseconds.
      * @return true to continue to linger or false to not linger
      */
-    boolean shouldLinger(long nowNs, long producerPosition);
+    boolean shouldLinger(long nowNs);
 }

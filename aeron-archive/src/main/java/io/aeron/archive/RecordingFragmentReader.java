@@ -179,6 +179,7 @@ class RecordingFragmentReader implements AutoCloseable
             if ((replayLimit - replayPosition) <= 0)
             {
                 isDone = true;
+                closeRecordingSegment();
                 break;
             }
         }
@@ -253,7 +254,12 @@ class RecordingFragmentReader implements AutoCloseable
 
     private void closeRecordingSegment()
     {
-        IoUtil.unmap(mappedSegmentBuffer);
+        if (null != mappedSegmentBuffer)
+        {
+            IoUtil.unmap(mappedSegmentBuffer);
+        }
+
+        mappedSegmentBuffer = null;
     }
 
     private boolean openRecordingSegment() throws IOException

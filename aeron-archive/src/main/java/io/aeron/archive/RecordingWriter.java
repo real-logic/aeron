@@ -77,10 +77,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     private boolean isClosed = false;
 
-    RecordingWriter(
-        final Context context,
-        final UnsafeBuffer descriptorBuffer,
-        final AtomicCounter stopPosition)
+    RecordingWriter(final Context context, final UnsafeBuffer descriptorBuffer, final AtomicCounter stopPosition)
     {
         this.descriptorBuffer = descriptorBuffer;
         descriptorEncoder = new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH);
@@ -242,16 +239,15 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         return stopPosition.getWeak();
     }
 
-    private int writeData(final ByteBuffer buffer, final int position, final FileChannel fileChannel) throws IOException
+    private int writeData(final ByteBuffer buffer, final int position, final FileChannel fileChannel)
+        throws IOException
     {
         return fileChannel.write(buffer, position);
     }
 
     // extend for testing
-    long transferTo(
-        final FileChannel fromFileChannel,
-        final long fileOffset,
-        final int blockLength) throws IOException
+    long transferTo(final FileChannel fromFileChannel, final long fileOffset, final int blockLength)
+        throws IOException
     {
         return fromFileChannel.transferTo(fileOffset, blockLength, recordingFileChannel);
     }

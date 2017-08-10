@@ -63,13 +63,13 @@ public class ArchiveReplayLoadTest
     private static final String PUBLISH_URI = new ChannelUriStringBuilder()
         .media("ipc")
         .mtu(16 * 1024)
-        .termLength(32 * 1024 * 1024)
+        .termLength(8 * 1024 * 1024)
         .build();
 
     private static final int PUBLISH_STREAM_ID = 1;
     private static final int MAX_FRAGMENT_SIZE = 1024;
     private static final double MEGABYTE = 1024.0d * 1024.0d;
-    private static final int MESSAGE_COUNT = 2_000_000;
+    private static final int MESSAGE_COUNT = 1_500_000;
 
     static
     {

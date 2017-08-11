@@ -293,7 +293,7 @@ public class CatalogTest
 
             final ByteBuffer bb = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
             final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
-            flyweight.frameLength((int) expectedLastFrame);
+            flyweight.frameLength((int)expectedLastFrame);
             log.write(bb);
             bb.clear();
             flyweight.frameLength(128);

@@ -13,7 +13,6 @@
  * limitations under the License.
  *
  */
-
 package io.aeron.archive;
 
 import io.aeron.Aeron;
@@ -100,6 +99,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         {
             System.err.println("ERR: Close queue not empty");
         }
+
         super.postSessionsClose();
     }
 
@@ -112,12 +112,14 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             if (session instanceof RecordingSession)
             {
                 closeRecordingSession((RecordingSession) session);
-            } else if (session instanceof ReplaySession)
+            }
+            else if (session instanceof ReplaySession)
             {
                 final ReplaySession replaySession = (ReplaySession) session;
                 replaySession.setThreadLocalControlResponseProxy(controlResponseProxy);
                 closeReplaySession(replaySession);
-            } else
+            }
+            else
             {
                 closeSession(session);
             }
@@ -126,7 +128,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         return i;
     }
 
-    private static class DedicatedModeRecorder extends DedicatedModeSessionWorker<RecordingSession>
+    static class DedicatedModeRecorder extends DedicatedModeSessionWorker<RecordingSession>
     {
         private final ManyToOneConcurrentArrayQueue<Session> closeQueue;
 
@@ -145,7 +147,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         }
     }
 
-    private static class DedicatedModeReplayer extends DedicatedModeSessionWorker<ReplaySession>
+    static class DedicatedModeReplayer extends DedicatedModeSessionWorker<ReplaySession>
     {
         private final ManyToOneConcurrentArrayQueue<Session> closeQueue;
         private final ControlResponseProxy proxy;

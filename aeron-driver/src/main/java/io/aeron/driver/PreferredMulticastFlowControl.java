@@ -75,7 +75,7 @@ public class PreferredMulticastFlowControl implements FlowControl
         final long senderLimit,
         final int initialTermId,
         final int positionBitsToShift,
-        final long nowNs)
+        final long timeNs)
     {
         final long position = computePosition(
             flyweight.consumptionTermId(),
@@ -86,6 +86,7 @@ public class PreferredMulticastFlowControl implements FlowControl
         final long windowLength = flyweight.receiverWindowLength();
         final long receiverId = flyweight.receiverId();
         final boolean isFromPreferred = isFromPreferred(flyweight);
+        final long lastPositionPlusWindow = position + windowLength;
         boolean isExisting = false;
         long minPosition = Long.MAX_VALUE;
 
@@ -96,8 +97,8 @@ public class PreferredMulticastFlowControl implements FlowControl
             if (isFromPreferred && receiverId == receiver.receiverId)
             {
                 receiver.lastPosition = Math.max(position, receiver.lastPosition);
-                receiver.lastPositionPlusWindow = position + windowLength;
-                receiver.timeOfLastStatusMessage = nowNs;
+                receiver.lastPositionPlusWindow = lastPositionPlusWindow;
+                receiver.timeOfLastStatusMessageNs = timeNs;
                 isExisting = true;
             }
 
@@ -106,14 +107,13 @@ public class PreferredMulticastFlowControl implements FlowControl
 
         if (isFromPreferred && !isExisting)
         {
-            receiverList.add(
-                new Receiver(position, position + windowLength, nowNs, receiverId, receiverAddress));
-            minPosition = Math.min(minPosition, position + windowLength);
+            receiverList.add(new Receiver(position, lastPositionPlusWindow, timeNs, receiverId, receiverAddress));
+            minPosition = Math.min(minPosition, lastPositionPlusWindow);
         }
 
         return receiverList.size() > 0 ?
             Math.max(senderLimit, minPosition) :
-            Math.max(senderLimit, position + windowLength);
+            Math.max(senderLimit, lastPositionPlusWindow);
     }
 
     /**
@@ -126,7 +126,8 @@ public class PreferredMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public long onIdle(final long nowNs, final long senderLimit, final long senderPosition, final boolean isEndOfStream)
+    public long onIdle(
+        final long timeNs, final long senderLimit, final long senderPosition, final boolean isEndOfStream)
     {
         long minPosition = Long.MAX_VALUE;
         long minLimitPosition = Long.MAX_VALUE;
@@ -135,7 +136,7 @@ public class PreferredMulticastFlowControl implements FlowControl
         for (int lastIndex = receiverList.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final Receiver receiver = receiverList.get(i);
-            if (nowNs > (receiver.timeOfLastStatusMessage + RECEIVER_TIMEOUT))
+            if (timeNs > (receiver.timeOfLastStatusMessageNs + RECEIVER_TIMEOUT))
             {
                 ArrayListUtil.fastUnorderedRemove(receiverList, i, lastIndex);
                 lastIndex--;
@@ -161,7 +162,7 @@ public class PreferredMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public boolean shouldLinger(final long nowNs)
+    public boolean shouldLinger(final long timeNs)
     {
         return shouldLinger;
     }
@@ -190,20 +191,20 @@ public class PreferredMulticastFlowControl implements FlowControl
     {
         long lastPosition;
         long lastPositionPlusWindow;
-        long timeOfLastStatusMessage;
+        long timeOfLastStatusMessageNs;
         long receiverId;
         InetSocketAddress address;
 
         Receiver(
             final long lastPosition,
             final long lastPositionPlusWindow,
-            final long now,
+            final long timeNs,
             final long receiverId,
             final InetSocketAddress receiverAddress)
         {
             this.lastPosition = lastPosition;
             this.lastPositionPlusWindow = lastPositionPlusWindow;
-            this.timeOfLastStatusMessage = now;
+            this.timeOfLastStatusMessageNs = timeNs;
             this.receiverId = receiverId;
             this.address = receiverAddress;
         }

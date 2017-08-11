@@ -43,13 +43,20 @@ public class MaxMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
+    public void initialize(final int initialTermId, final int termBufferLength)
+    {
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public long onStatusMessage(
         final StatusMessageFlyweight flyweight,
         final InetSocketAddress receiverAddress,
         final long senderLimit,
         final int initialTermId,
         final int positionBitsToShift,
-        final long nowNs)
+        final long timeNs)
     {
         final long position = computePosition(
             flyweight.consumptionTermId(),
@@ -58,7 +65,7 @@ public class MaxMulticastFlowControl implements FlowControl
             initialTermId);
 
         lastPosition = Math.max(lastPosition, position);
-        timeOfLastStatusMessage = nowNs;
+        timeOfLastStatusMessage = timeNs;
 
         return Math.max(senderLimit, position + flyweight.receiverWindowLength());
     }
@@ -66,18 +73,12 @@ public class MaxMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public void initialize(final int initialTermId, final int termBufferLength)
-    {
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public long onIdle(final long nowNs, final long senderLimit, final long senderPosition, final boolean isEndOfStream)
+    public long onIdle(
+        final long timeNs, final long senderLimit, final long senderPosition, final boolean isEndOfStream)
     {
         if (isEndOfStream && shouldLinger)
         {
-            if (lastPosition >= senderPosition || nowNs > (timeOfLastStatusMessage + RECEIVER_TIMEOUT_NS))
+            if (lastPosition >= senderPosition || timeNs > (timeOfLastStatusMessage + RECEIVER_TIMEOUT_NS))
             {
                 shouldLinger = false;
             }
@@ -89,7 +90,7 @@ public class MaxMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public boolean shouldLinger(final long nowNs)
+    public boolean shouldLinger(final long timeNs)
     {
         return shouldLinger;
     }

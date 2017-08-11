@@ -53,13 +53,20 @@ public class MinMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
+    public void initialize(final int initialTermId, final int termBufferLength)
+    {
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public long onStatusMessage(
         final StatusMessageFlyweight flyweight,
         final InetSocketAddress receiverAddress,
         final long senderLimit,
         final int initialTermId,
         final int positionBitsToShift,
-        final long nowNs)
+        final long timeNs)
     {
         final long position = computePosition(
             flyweight.consumptionTermId(),
@@ -81,7 +88,7 @@ public class MinMulticastFlowControl implements FlowControl
             {
                 receiver.lastPosition = Math.max(position, receiver.lastPosition);
                 receiver.lastPositionPlusWindow = position + windowLength;
-                receiver.timeOfLastStatusMessage = nowNs;
+                receiver.timeOfLastStatusMessageNs = timeNs;
                 isExisting = true;
             }
 
@@ -90,8 +97,8 @@ public class MinMulticastFlowControl implements FlowControl
 
         if (!isExisting)
         {
-            receiverList.add(
-                new Receiver(position, position + windowLength, nowNs, receiverId, receiverAddress));
+            receiverList.add(new Receiver(
+                position, position + windowLength, timeNs, receiverId, receiverAddress));
             minPosition = Math.min(minPosition, position + windowLength);
         }
 
@@ -101,14 +108,8 @@ public class MinMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public void initialize(final int initialTermId, final int termBufferLength)
-    {
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public long onIdle(final long nowNs, final long senderLimit, final long senderPosition, final boolean isEndOfStream)
+    public long onIdle(
+        final long timeNs, final long senderLimit, final long senderPosition, final boolean isEndOfStream)
     {
         long minPosition = Long.MAX_VALUE;
         long minLimitPosition = Long.MAX_VALUE;
@@ -117,7 +118,7 @@ public class MinMulticastFlowControl implements FlowControl
         for (int lastIndex = receiverList.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final Receiver receiver = receiverList.get(i);
-            if (nowNs > (receiver.timeOfLastStatusMessage + RECEIVER_TIMEOUT))
+            if (timeNs > (receiver.timeOfLastStatusMessageNs + RECEIVER_TIMEOUT))
             {
                 ArrayListUtil.fastUnorderedRemove(receiverList, i, lastIndex);
                 lastIndex--;
@@ -143,7 +144,7 @@ public class MinMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public boolean shouldLinger(final long nowNs)
+    public boolean shouldLinger(final long timeNs)
     {
         return shouldLinger;
     }
@@ -152,20 +153,20 @@ public class MinMulticastFlowControl implements FlowControl
     {
         long lastPosition;
         long lastPositionPlusWindow;
-        long timeOfLastStatusMessage;
+        long timeOfLastStatusMessageNs;
         long receiverId;
         InetSocketAddress address;
 
         Receiver(
             final long lastPosition,
             final long lastPositionPlusWindow,
-            final long now,
+            final long timeNs,
             final long receiverId,
             final InetSocketAddress receiverAddress)
         {
             this.lastPosition = lastPosition;
             this.lastPositionPlusWindow = lastPositionPlusWindow;
-            this.timeOfLastStatusMessage = now;
+            this.timeOfLastStatusMessageNs = timeNs;
             this.receiverId = receiverId;
             this.address = receiverAddress;
         }

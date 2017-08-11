@@ -32,7 +32,7 @@ public interface FlowControl
      * @param senderLimit         the current sender position limit.
      * @param initialTermId       for the term buffers.
      * @param positionBitsToShift in use for the length of each term buffer.
-     * @param nowNs               current nano clock time (in nanoseconds). {@link System#nanoTime()}
+     * @param timeNs              current time (in nanoseconds). {@link System#nanoTime()}
      * @return the new position limit to be employed by the sender.
      */
     long onStatusMessage(
@@ -41,7 +41,7 @@ public interface FlowControl
         long senderLimit,
         int initialTermId,
         int positionBitsToShift,
-        long nowNs);
+        long timeNs);
 
     /**
      * Initialize the flow control strategy
@@ -54,19 +54,19 @@ public interface FlowControl
     /**
      * Perform any maintenance needed by the flow control strategy and return current position
      *
-     * @param nowNs          time in nanoseconds.
+     * @param timeNs         current time in nanoseconds.
      * @param senderLimit    for the current sender position.
      * @param senderPosition for the current
      * @param isEndOfStream  for the current sender.
      * @return the position limit to be employed by the sender.
      */
-    long onIdle(long nowNs, long senderLimit, long senderPosition, boolean isEndOfStream);
+    long onIdle(long timeNs, long senderLimit, long senderPosition, boolean isEndOfStream);
 
     /**
      * Called from the {@link DriverConductor} to check should the {@link NetworkPublication} linger or not.
      *
-     * @param nowNs time in nanoseconds.
+     * @param timeNs current time in nanoseconds.
      * @return true to continue to linger or false to not linger
      */
-    boolean shouldLinger(long nowNs);
+    boolean shouldLinger(long timeNs);
 }

@@ -78,7 +78,7 @@
         </module>
 
         <module name="NoWhitespaceAfter">
-            <property name="tokens" value="INC, DEC, UNARY_MINUS, UNARY_PLUS, BNOT, LNOT, DOT, TYPECAST, ARRAY_DECLARATOR, INDEX_OP, LITERAL_SYNCHRONIZED, METHOD_REF"/>
+            <property name="tokens" value="INC, DEC, UNARY_MINUS, UNARY_PLUS, BNOT, LNOT, DOT, TYPECAST, ARRAY_DECLARATOR, INDEX_OP, METHOD_REF"/>
             <property name="allowLineBreaks" value="false"/>
         </module>
 

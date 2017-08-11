@@ -19,7 +19,6 @@ import io.aeron.*;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import org.agrona.CloseHelper;
-import org.agrona.IoUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
@@ -29,9 +28,7 @@ import org.agrona.concurrent.status.CountersManager;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileChannel.MapMode;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -39,9 +36,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.archive.codecs.ControlResponseCode.ERROR;
-import static java.nio.file.StandardOpenOption.*;
-import static org.agrona.concurrent.status.CountersReader.COUNTER_LENGTH;
-import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 abstract class ArchiveConductor extends SessionWorker<Session>
 {
@@ -49,7 +43,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
      * Low term length for control channel reflects expected low bandwidth usage.
      */
     private static final int DEFAULT_CONTROL_TERM_LENGTH = 64 * 1024;
-    private static final String POSITIONS_FILE_NAME = "archive.positions";
 
     private final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder();
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
@@ -72,9 +65,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final RecordingEventsProxy recordingEventsProxy;
     private final int maxConcurrentRecordings;
     private final int maxConcurrentReplays;
-
-    private final CountersManager recordingPositionsManager;
-    private final MappedByteBuffer countersMappedBBuffer;
+    private final CountersManager countersManager;
 
     protected final Archive.Context ctx;
     protected final ControlResponseProxy controlResponseProxy;
@@ -110,31 +101,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             ctx.idleStrategy(), aeron.addPublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId()));
 
         catalog = new Catalog(archiveDir, archiveDirChannel, fileSyncLevel, epochClock);
-
-        final File countersFile = new File(archiveDir, POSITIONS_FILE_NAME);
-        final boolean filePreExists = countersFile.exists();
-
-        try (FileChannel channel = FileChannel.open(countersFile.toPath(), CREATE, READ, WRITE, SPARSE))
-        {
-            final int maxPositionCounters = maxConcurrentRecordings * 2;
-            countersMappedBBuffer = channel.map(
-                MapMode.READ_WRITE, 0, maxPositionCounters * (METADATA_LENGTH + COUNTER_LENGTH));
-            final UnsafeBuffer countersMetaBuffer =
-                new UnsafeBuffer(countersMappedBBuffer, 0, maxPositionCounters * METADATA_LENGTH);
-            final UnsafeBuffer countersValuesBuffer = new UnsafeBuffer(
-                countersMappedBBuffer,
-                maxPositionCounters * METADATA_LENGTH,
-                maxPositionCounters * COUNTER_LENGTH);
-            recordingPositionsManager = new CountersManager(countersMetaBuffer, countersValuesBuffer);
-            if (!filePreExists && archiveDirChannel != null && fileSyncLevel > 0)
-            {
-                archiveDirChannel.force(fileSyncLevel > 1);
-            }
-        }
-        catch (final IOException ex)
-        {
-            throw new RuntimeException(ex);
-        }
+        countersManager = ctx.countersManager();
 
         recordingCtx = new RecordingWriter.Context()
             .archiveDirChannel(archiveDirChannel)
@@ -169,12 +136,13 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         CloseHelper.quietClose(aeronClientAgentInvoker);
         CloseHelper.quietClose(driverAgentInvoker);
         CloseHelper.quietClose(catalog);
-        IoUtil.unmap(countersMappedBBuffer);
     }
 
     protected int preWork()
     {
-        int workCount = null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
+        int workCount = 0;
+
+        workCount += null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
         workCount += aeronClientAgentInvoker.invoke();
 
         return workCount;
@@ -217,8 +185,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         catch (final Exception ex)
         {
             errorHandler.onError(ex);
-            controlSession.sendResponse(
-                correlationId, ERROR, ex.getMessage(), controlResponseProxy);
+            controlSession.sendResponse(correlationId, ERROR, ex.getMessage(), controlResponseProxy);
         }
     }
 
@@ -450,7 +417,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             sourceIdentity);
 
         final String label = "rec-pos: " + recordingId + ' ' + sessionId + ' ' + streamId + ' ' + strippedChannel;
-        final AtomicCounter position = recordingPositionsManager.newCounter(label);
+        final AtomicCounter position = countersManager.newCounter(label);
 
         final RecordingSession session = new RecordingSession(
             recordingId,

@@ -95,6 +95,7 @@ public class PreferredMulticastFlowControl implements FlowControl
             final Receiver receiver = receiverList.get(i);
             if (isFromPreferred && receiverId == receiver.receiverId)
             {
+                receiver.lastPosition = Math.max(position, receiver.lastPosition);
                 receiver.lastPositionPlusWindow = position + windowLength;
                 receiver.timeOfLastStatusMessage = nowNs;
                 isExisting = true;

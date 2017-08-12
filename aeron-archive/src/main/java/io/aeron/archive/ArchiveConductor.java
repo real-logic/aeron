@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.*;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import org.agrona.CloseHelper;
@@ -39,15 +40,8 @@ import static io.aeron.archive.codecs.ControlResponseCode.ERROR;
 
 abstract class ArchiveConductor extends SessionWorker<Session>
 {
-    /**
-     * Low term length for control channel reflects expected low bandwidth usage.
-     */
-    private static final int DEFAULT_CONTROL_TERM_LENGTH = 64 * 1024;
-
-    /**
-     * MTU to reflect default control term length.
-     */
-    private static final int DEFAULT_CONTROL_MTU = 4 * 1024;
+    private static final int CONTROL_TERM_LENGTH = AeronArchive.Configuration.controlTermBufferLength();
+    private static final int CONTROL_MTU = AeronArchive.Configuration.controlMtuLength();
 
     private final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder();
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
@@ -350,8 +344,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         if (!channel.contains(CommonContext.TERM_LENGTH_PARAM_NAME))
         {
             controlChannel = strippedChannelBuilder(channel)
-                .termLength(DEFAULT_CONTROL_TERM_LENGTH)
-                .mtu(DEFAULT_CONTROL_MTU)
+                .termLength(CONTROL_TERM_LENGTH)
+                .mtu(CONTROL_MTU)
                 .build();
         }
         else

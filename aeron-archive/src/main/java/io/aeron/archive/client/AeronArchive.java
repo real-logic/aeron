@@ -584,6 +584,26 @@ public final class AeronArchive implements AutoCloseable
         public static final int RECORDING_EVENTS_STREAM_ID_DEFAULT = 0;
 
         /**
+         * Term length for control streams.
+         */
+        private static final String CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME = "aeron.archive.control.term.buffer.length";
+
+        /**
+         * Low term length for control channel reflects expected low bandwidth usage.
+         */
+        private static final int CONTROL_TERM_BUFFER_LENGTH_DEFAULT = 64 * 1024;
+
+        /**
+         * Term length for control streams.
+         */
+        private static final String CONTROL_MTU_LENGTH_PARAM_NAME = "aeron.archive.control.mtu.length";
+
+        /**
+         * MTU to reflect default control term length.
+         */
+        private static final int CONTROL_MTU_LENGTH_DEFAULT = 4 * 1024;
+
+        /**
          * The timeout in nanoseconds to wait for a message.
          *
          * @return timeout in nanoseconds to wait for a message.
@@ -591,6 +611,26 @@ public final class AeronArchive implements AutoCloseable
         public static long messageTimeoutNs()
         {
             return Long.getLong(MESSAGE_TIMEOUT_PROP_NAME, MESSAGE_TIMEOUT_DEFAULT_NS);
+        }
+
+        /**
+         * Term buffer length to be used for control request and response streams.
+         *
+         * @return term buffer length to be used for control request and response streams.
+         */
+        public static int controlTermBufferLength()
+        {
+            return Integer.getInteger(CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME, CONTROL_TERM_BUFFER_LENGTH_DEFAULT);
+        }
+
+        /**
+         * MTU length to be used for control request and response streams.
+         *
+         * @return MTU length to be used for control request and response streams.
+         */
+        public static int controlMtuLength()
+        {
+            return Integer.getInteger(CONTROL_MTU_LENGTH_PARAM_NAME, CONTROL_MTU_LENGTH_DEFAULT);
         }
 
         /**

@@ -21,20 +21,20 @@ import io.aeron.driver.ThreadingMode;
 import static io.aeron.driver.MediaDriver.loadPropertiesFiles;
 
 /**
- * Lightweight archiving media driver which uses only one thread in total for the archive and media driver combined.
+ * Lightweight archiving media driver which uses only one thread in total for the {@link Archive} and
+ * {@link MediaDriver} combined.
  */
 public class LightweightArchivingMediaDriver
 {
     /**
      * Start an {@link ArchiveConductor} as a stand-alone process, with a {@link MediaDriver}.
      *
-     * @param args command line arguments
-     * @throws Exception if an error occurs
+     * @param args command line argument which is a list for properties files as URLs or filenames.
      */
-    public static void main(final String[] args) throws Exception
+    public static void main(final String[] args)
     {
         loadPropertiesFiles(args);
 
-        ArchivingMediaDriver.launchDriverAndArchiver(ThreadingMode.INVOKER, ArchiveThreadingMode.SHARED);
+        ArchivingMediaDriver.launch(ThreadingMode.INVOKER, ArchiveThreadingMode.SHARED);
     }
 }

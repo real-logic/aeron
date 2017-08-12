@@ -32,7 +32,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
- * The Aeron Archive is run with an embedded media driver and allows for the archival of {@link io.aeron.Publication}s.
+ * The Aeron Archive which allows for the archival of {@link io.aeron.Publication}s and
+ * {@link io.aeron.ExclusivePublication}s. It expects to be launched in the same process as a Java
+ * {@link io.aeron.driver.MediaDriver}.
  */
 public final class Archive implements AutoCloseable
 {
@@ -85,6 +87,7 @@ public final class Archive implements AutoCloseable
                     ctx.errorHandler(),
                     ctx.errorCounter(),
                     archiveConductor);
+                break;
         }
     }
 
@@ -98,7 +101,7 @@ public final class Archive implements AutoCloseable
         return ctx;
     }
 
-    public void close() throws Exception
+    public void close()
     {
         CloseHelper.close(conductorInvoker);
         CloseHelper.close(conductorRunner);

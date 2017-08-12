@@ -29,35 +29,39 @@ public class ArchivingMediaDriver
     /**
      * Start an {@link ArchiveConductor} as a stand-alone process, with a {@link MediaDriver}.
      *
-     * @param args command line arguments
-     * @throws Exception if an error occurs
+     * @param args command line argument which is a list for properties files as URLs or filenames.
      */
-    @SuppressWarnings("unused")
-    public static void main(final String[] args) throws Exception
+    public static void main(final String[] args)
     {
         loadPropertiesFiles(args);
 
-        launchDriverAndArchiver(ThreadingMode.DEDICATED, ArchiveThreadingMode.DEDICATED);
+        launch(ThreadingMode.DEDICATED, ArchiveThreadingMode.DEDICATED);
     }
 
-    static void launchDriverAndArchiver(
+    /**
+     * Launch an {@link Archive} with embedded {@link MediaDriver} and await a shutdown signal.
+     *
+     * @param mediaDriverThreadingMode for the {@link MediaDriver}
+     * @param archiveThreadingMode     for the {@link Archive}
+     */
+    public static void launch(
         final ThreadingMode mediaDriverThreadingMode,
-        final ArchiveThreadingMode archiveThreadingMode) throws Exception
+        final ArchiveThreadingMode archiveThreadingMode)
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .threadingMode(mediaDriverThreadingMode)
             .useConcurrentCounterManager(mediaDriverThreadingMode != ThreadingMode.INVOKER);
         final MediaDriver mediaDriver = MediaDriver.launch(driverCtx);
 
-        final Archive.Context archiverCtx = new Archive.Context()
+        final Archive.Context archiveCtx = new Archive.Context()
             .mediaDriverAgentInvoker(mediaDriver.sharedAgentInvoker())
             .threadingMode(archiveThreadingMode);
 
-        archiverCtx
+        archiveCtx
             .countersManager(driverCtx.countersManager())
             .errorHandler(driverCtx.errorHandler());
 
-        final Archive archive = Archive.launch(archiverCtx);
+        final Archive archive = Archive.launch(archiveCtx);
 
         new ShutdownSignalBarrier().await();
         System.out.println("Shutdown Archive...");

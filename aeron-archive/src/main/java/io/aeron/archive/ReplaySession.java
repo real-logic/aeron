@@ -50,21 +50,19 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * <li>Once the replay publication is connected send an OK response to control client</li>
  * <li>Stream recorded data into the replayPublication {@link ExclusivePublication}</li>
  * <li>If the replay is aborted part way through, send a ReplayAborted message and terminate.</li>
- * <li>Once replay is terminated the publication kept open for LINGER_LENGTH_MS then the session is closed.</li>
  * </ul>
  */
 class ReplaySession implements Session
 {
     enum State
     {
-        INIT, REPLAY, LINGER, INACTIVE, CLOSED
+        INIT, REPLAY, INACTIVE, CLOSED
     }
 
     /**
      * Timeout within which a replay connection needs to be established.
      */
     static final long CONNECT_TIMEOUT_MS = 5000;
-    static final long LINGER_TIMEOUT_MS = Long.getLong("io.aeron.archive.replay.linger.ms", 0);
 
     private static final int REPLAY_BATCH_SIZE = Archive.Configuration.replayBatchSize();
 
@@ -82,7 +80,6 @@ class ReplaySession implements Session
     private ControlResponseProxy threadLocalControlResponseProxy;
     private State state = State.INIT;
     private long connectDeadlineMs;
-    private long lingerDeadlineMs;
 
     ReplaySession(
         final long replayPosition,
@@ -200,13 +197,6 @@ class ReplaySession implements Session
         {
             workDone += init();
         }
-        else if (state == State.LINGER)
-        {
-            if (epochClock.time() > lingerDeadlineMs)
-            {
-                state = State.INACTIVE;
-            }
-        }
 
         return workDone;
     }
@@ -238,15 +228,7 @@ class ReplaySession implements Session
             final int polled = cursor.controlledPoll(fragmentPoller, REPLAY_BATCH_SIZE);
             if (cursor.isDone())
             {
-                if (LINGER_TIMEOUT_MS > 0L)
-                {
-                    state = State.LINGER;
-                    lingerDeadlineMs = epochClock.time() + LINGER_TIMEOUT_MS;
-                }
-                else
-                {
-                    state = State.INACTIVE;
-                }
+                state = State.INACTIVE;
             }
 
             return polled;

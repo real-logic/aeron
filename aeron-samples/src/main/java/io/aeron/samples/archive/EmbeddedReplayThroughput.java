@@ -173,14 +173,13 @@ public class EmbeddedReplayThroughput implements AutoCloseable
             }
 
             messageCount = 0;
-            final Image image = replaySubscription.getImage(0);
 
             while (messageCount < NUMBER_OF_MESSAGES)
             {
-                final int fragments = image.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
+                final int fragments = replaySubscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
                 if (0 == fragments)
                 {
-                    if (image.isClosed())
+                    if (replaySubscription.hasNoImages())
                     {
                         System.out.println("Unexpected end of stream at message count: " + messageCount);
                         break;

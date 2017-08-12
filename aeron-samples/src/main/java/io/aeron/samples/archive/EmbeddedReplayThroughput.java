@@ -50,7 +50,6 @@ public class EmbeddedReplayThroughput implements AutoCloseable
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
     private static final FragmentHandler NOOP_FRAGMENT_HANDLER = (buffer, offset, length, header) -> {};
 
-
     private MediaDriver driver;
     private Archive archive;
     private Aeron aeron;
@@ -75,7 +74,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
 
             do
             {
-                System.out.println("Replaying " + NUMBER_OF_MESSAGES + " messages");
+                System.out.printf("Replaying %,d messages%n", NUMBER_OF_MESSAGES);
                 final long start = System.currentTimeMillis();
 
                 test.replayRecording(recordingLength, recordingId);

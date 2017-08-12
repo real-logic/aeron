@@ -68,7 +68,7 @@ class PublicationParams
         if (params.mtuLength > maxMessageLength)
         {
             throw new IllegalStateException("MTU greater than max message length for term length: mtu=" +
-                params.mtuLength + " maxMessageLength=" + maxMessageLength);
+                params.mtuLength + " maxMessageLength=" + maxMessageLength + " termLength=" + termLength);
         }
     }
 

@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import org.agrona.concurrent.UnsafeBuffer;
 
+@FunctionalInterface
 interface SimplifiedControlledFragmentHandler
 {
     /**

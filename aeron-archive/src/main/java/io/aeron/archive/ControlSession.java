@@ -181,8 +181,7 @@ class ControlSession implements Session
             position,
             length,
             replayStreamId,
-            replayChannel
-        );
+            replayChannel);
     }
 
     void onListRecordingSessionClosed(final AbstractListRecordingsSession listRecordingsSession)

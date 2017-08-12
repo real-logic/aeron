@@ -186,18 +186,20 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
 
     public int doWork()
     {
-        int workDone = 0;
+        int workCount = 0;
 
-        if (state == State.REPLAY)
+        switch (state)
         {
-            workDone += replay();
-        }
-        else if (state == State.INIT)
-        {
-            workDone += init();
+            case INIT:
+                workCount += init();
+                break;
+
+            case REPLAY:
+                workCount += replay();
+                break;
         }
 
-        return workDone;
+        return workCount;
     }
 
     public void abort()
@@ -313,6 +315,8 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
                 errorMessage,
                 threadLocalControlResponseProxy);
         }
+
+        cursor.close();
 
         if (ex != null)
         {

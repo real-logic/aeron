@@ -79,14 +79,19 @@ class RecordingSession implements Session
     {
         int workDone = 0;
 
-        if (state == State.INIT)
+        switch (state)
         {
-            workDone += init();
-        }
+            case INIT:
+                workDone += init();
+                break;
 
-        if (state == State.RECORDING)
-        {
-            workDone += record();
+            case RECORDING:
+                workDone += record();
+                break;
+
+            case INACTIVE:
+                recordingWriter.close();
+                break;
         }
 
         return workDone;

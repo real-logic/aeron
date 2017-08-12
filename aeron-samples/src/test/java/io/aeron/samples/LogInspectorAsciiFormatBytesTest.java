@@ -54,23 +54,14 @@ public class LogInspectorAsciiFormatBytesTest
             });
     }
 
-    @Test
-    public void shouldFormatBytesToAscii()
-    {
-        System.setProperty(FORMAT_KEY, "ascii");
-        final char[] formattedBytes = LogInspector.formatBytes(new UnsafeBuffer(new byte[]{ buffer }), 0, 1);
-
-        Assert.assertEquals(expected, formattedBytes[0]);
-    }
-
     @Before
-    public void setUp()
+    public void before()
     {
         originalDataFormatProperty = System.getProperty(FORMAT_KEY);
     }
 
     @After
-    public void tearDown()
+    public void after()
     {
         if (null == originalDataFormatProperty)
         {
@@ -80,5 +71,14 @@ public class LogInspectorAsciiFormatBytesTest
         {
             System.setProperty(FORMAT_KEY, originalDataFormatProperty);
         }
+    }
+
+    @Test
+    public void shouldFormatBytesToAscii()
+    {
+        System.setProperty(FORMAT_KEY, "ascii");
+        final char[] formattedBytes = LogInspector.formatBytes(new UnsafeBuffer(new byte[]{ buffer }), 0, 1);
+
+        Assert.assertEquals(expected, formattedBytes[0]);
     }
 }

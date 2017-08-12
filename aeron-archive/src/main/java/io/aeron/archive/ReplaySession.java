@@ -66,19 +66,16 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
 
     private static final int REPLAY_BATCH_SIZE = Archive.Configuration.replayBatchSize();
 
-    private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
-
+    private long connectDeadlineMs;
     private final long replaySessionId;
     private final long correlationId;
-    private final ControlSession controlSession;
-    private final EpochClock epochClock;
-
+    private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
     private final ExclusivePublication replayPublication;
     private final RecordingFragmentReader cursor;
-
     private ControlResponseProxy threadLocalControlResponseProxy;
+    private final ControlSession controlSession;
+    private final EpochClock epochClock;
     private State state = State.INIT;
-    private long connectDeadlineMs;
 
     ReplaySession(
         final long replayPosition,
@@ -307,6 +304,8 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
     private int closeOnError(final Throwable ex, final String errorMessage)
     {
         state = State.INACTIVE;
+        cursor.close();
+
         if (!controlSession.isDone())
         {
             controlSession.sendResponse(
@@ -315,8 +314,6 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
                 errorMessage,
                 threadLocalControlResponseProxy);
         }
-
-        cursor.close();
 
         if (ex != null)
         {

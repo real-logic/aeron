@@ -44,6 +44,11 @@ abstract class ArchiveConductor extends SessionWorker<Session>
      */
     private static final int DEFAULT_CONTROL_TERM_LENGTH = 64 * 1024;
 
+    /**
+     * MTU to reflect default control term length.
+     */
+    private static final int DEFAULT_CONTROL_MTU = 4 * 1024;
+
     private final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder();
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
@@ -346,6 +351,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         {
             controlChannel = strippedChannelBuilder(channel)
                 .termLength(DEFAULT_CONTROL_TERM_LENGTH)
+                .mtu(DEFAULT_CONTROL_MTU)
                 .build();
         }
         else

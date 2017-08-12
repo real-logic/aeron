@@ -37,16 +37,6 @@ import static java.nio.file.StandardOpenOption.READ;
 
 class RecordingFragmentReader implements AutoCloseable
 {
-    interface SimplifiedControlledPoll
-    {
-        /**
-         * Called by the {@link RecordingFragmentReader}. Implementors need to process DATA and PADDING fragments.
-         *
-         * @return true if fragment processed, false to abort.
-         */
-        boolean onFragment(UnsafeBuffer fragmentBuffer, int fragmentOffset, int fragmentLength);
-    }
-
     static final long NULL_POSITION = -1;
     static final long NULL_LENGTH = -1;
 
@@ -138,7 +128,7 @@ class RecordingFragmentReader implements AutoCloseable
         return fromPosition;
     }
 
-    int controlledPoll(final SimplifiedControlledPoll fragmentHandler, final int fragmentLimit)
+    int controlledPoll(final SimplifiedControlledFragmentHandler fragmentHandler, final int fragmentLimit)
         throws IOException
     {
         if (isDone() || noAvailableData())

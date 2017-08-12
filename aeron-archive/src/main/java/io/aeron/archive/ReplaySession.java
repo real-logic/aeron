@@ -52,7 +52,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * <li>If the replay is aborted part way through, send a ReplayAborted message and terminate.</li>
  * </ul>
  */
-class ReplaySession implements Session
+class ReplaySession implements Session, SimplifiedControlledFragmentHandler
 {
     enum State
     {
@@ -67,7 +67,6 @@ class ReplaySession implements Session
     private static final int REPLAY_BATCH_SIZE = Archive.Configuration.replayBatchSize();
 
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
-    private final RecordingFragmentReader.SimplifiedControlledPoll fragmentPoller = this::onFragment;
 
     private final long replaySessionId;
     private final long correlationId;
@@ -211,35 +210,7 @@ class ReplaySession implements Session
         return state == State.INACTIVE;
     }
 
-    State state()
-    {
-        return state;
-    }
-
-    void setThreadLocalControlResponseProxy(final ControlResponseProxy proxy)
-    {
-        threadLocalControlResponseProxy = proxy;
-    }
-
-    private int replay()
-    {
-        try
-        {
-            final int polled = cursor.controlledPoll(fragmentPoller, REPLAY_BATCH_SIZE);
-            if (cursor.isDone())
-            {
-                state = State.INACTIVE;
-            }
-
-            return polled;
-        }
-        catch (final Exception ex)
-        {
-            return closeOnError(ex, "Cursor read failed");
-        }
-    }
-
-    private boolean onFragment(final UnsafeBuffer termBuffer, final int offset, final int length)
+    public boolean onFragment(final UnsafeBuffer termBuffer, final int offset, final int length)
     {
         if (isDone())
         {
@@ -263,6 +234,34 @@ class ReplaySession implements Session
         }
 
         return false;
+    }
+
+    State state()
+    {
+        return state;
+    }
+
+    void setThreadLocalControlResponseProxy(final ControlResponseProxy proxy)
+    {
+        threadLocalControlResponseProxy = proxy;
+    }
+
+    private int replay()
+    {
+        try
+        {
+            final int polled = cursor.controlledPoll(this, REPLAY_BATCH_SIZE);
+            if (cursor.isDone())
+            {
+                state = State.INACTIVE;
+            }
+
+            return polled;
+        }
+        catch (final Exception ex)
+        {
+            return closeOnError(ex, "Cursor read failed");
+        }
     }
 
     private long replayFrame(final UnsafeBuffer termBuffer, final int offset, final int length, final int frameOffset)

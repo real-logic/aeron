@@ -67,6 +67,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
             do
             {
                 test.streamMessages();
+                Thread.sleep(10);
             }
             while (barrier.await());
 
@@ -129,7 +130,6 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
         final String channel,
         final String sourceIdentity)
     {
-        recordingStartTimeMs = System.currentTimeMillis();
         System.out.println("Recording started for id: " + recordingId);
     }
 
@@ -154,10 +154,11 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
 
     private void streamMessages()
     {
-        stopPosition = -1L;
-
         try (ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
         {
+            stopPosition = -1L;
+            recordingStartTimeMs = System.currentTimeMillis();
+
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
                 buffer.putInt(0, i);

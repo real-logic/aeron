@@ -716,6 +716,8 @@ public final class AeronArchive implements AutoCloseable
         private int controlRequestStreamId = Configuration.controlStreamId();
         private String controlResponseChannel = Configuration.controlResponseChannel();
         private int controlResponseStreamId = Configuration.controlResponseStreamId();
+        private int controlTermBufferLength = Configuration.controlTermBufferLength();
+        private int controlMtuLength = Configuration.controlMtuLength();
         private Aeron aeron;
         private ArchiveProxy archiveProxy;
         private IdleStrategy idleStrategy;
@@ -735,6 +737,18 @@ public final class AeronArchive implements AutoCloseable
             {
                 idleStrategy = new BackoffIdleStrategy(1, 10, 1, 1);
             }
+
+            final ChannelUri controlChannel = ChannelUri.parse(controlRequestChannel);
+
+            controlRequestChannel = new ChannelUriStringBuilder()
+                .media(controlChannel.media())
+                .endpoint(controlChannel.get(CommonContext.ENDPOINT_PARAM_NAME))
+                .networkInterface(controlChannel.get(CommonContext.INTERFACE_PARAM_NAME))
+                .controlEndpoint(controlChannel.get(CommonContext.MDC_CONTROL_PARAM_NAME))
+                .termLength(controlTermBufferLength)
+                .mtu(controlMtuLength)
+                .validate()
+                .build();
 
             if (null == archiveProxy)
             {
@@ -854,6 +868,50 @@ public final class AeronArchive implements AutoCloseable
         public int controlResponseStreamId()
         {
             return controlResponseStreamId;
+        }
+
+        /**
+         * Set the term buffer length for the control stream.
+         *
+         * @param controlTermBufferLength for the control stream.
+         * @return this for a fluent API.
+         */
+        public Context controlTermBufferLength(final int controlTermBufferLength)
+        {
+            this.controlTermBufferLength = controlTermBufferLength;
+            return this;
+        }
+
+        /**
+         * Get the term buffer length for the control steam.
+         *
+         * @return the term buffer length for the control steam.
+         */
+        public int controlTermBufferLength()
+        {
+            return controlTermBufferLength;
+        }
+
+        /**
+         * Set the MTU length for the control stream.
+         *
+         * @param controlMtuLength for the control stream.
+         * @return this for a fluent API.
+         */
+        public Context controlMtuLength(final int controlMtuLength)
+        {
+            this.controlMtuLength = controlMtuLength;
+            return this;
+        }
+
+        /**
+         * Get the MTU length for the control steam.
+         *
+         * @return the MTU length for the control steam.
+         */
+        public int controlMtuLength()
+        {
+            return controlMtuLength;
         }
 
         /**

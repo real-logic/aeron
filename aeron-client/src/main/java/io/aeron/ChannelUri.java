@@ -140,6 +140,18 @@ public class ChannelUri
     }
 
     /**
+     * Put a key and value pair in the map of params.
+     *
+     * @param key   of the param to be put.
+     * @param value of the param to be put.
+     * @return the existing value otherwise null.
+     */
+    public String put(final String key, final String value)
+    {
+        return params.put(key, value);
+    }
+
+    /**
      * Does the URI contain a value for the given key.
      *
      * @param key to be lookup.

@@ -739,16 +739,9 @@ public final class AeronArchive implements AutoCloseable
             }
 
             final ChannelUri controlChannel = ChannelUri.parse(controlRequestChannel);
-
-            controlRequestChannel = new ChannelUriStringBuilder()
-                .media(controlChannel.media())
-                .endpoint(controlChannel.get(CommonContext.ENDPOINT_PARAM_NAME))
-                .networkInterface(controlChannel.get(CommonContext.INTERFACE_PARAM_NAME))
-                .controlEndpoint(controlChannel.get(CommonContext.MDC_CONTROL_PARAM_NAME))
-                .termLength(controlTermBufferLength)
-                .mtu(controlMtuLength)
-                .validate()
-                .build();
+            controlChannel.put(CommonContext.TERM_LENGTH_PARAM_NAME, Integer.toString(controlTermBufferLength));
+            controlChannel.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(controlMtuLength));
+            controlRequestChannel = controlChannel.toString();
 
             if (null == archiveProxy)
             {

@@ -31,15 +31,11 @@ import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 
-import java.io.File;
-import java.io.IOException;
-
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 
 public class EmbeddedReplayThroughput implements AutoCloseable
 {
-    private static final double MEGABYTE = 1024.0d * 1024.0d;
     private static final int REPLAY_STREAM_ID = 101;
     private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
 
@@ -48,7 +44,6 @@ public class EmbeddedReplayThroughput implements AutoCloseable
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
-    private static final FragmentHandler NOOP_FRAGMENT_HANDLER = (buffer, offset, length, header) -> {};
 
     private MediaDriver driver;
     private Archive archive;
@@ -80,8 +75,8 @@ public class EmbeddedReplayThroughput implements AutoCloseable
                 test.replayRecording(recordingLength, recordingId);
 
                 final long durationMs = System.currentTimeMillis() - start;
-                final double dataRate = (recordingLength * 1000.0d / durationMs) / MEGABYTE;
-                final double recordingMb = recordingLength / MEGABYTE;
+                final double dataRate = (recordingLength * 1000.0d / durationMs) / TestUtil.MEGABYTE;
+                final double recordingMb = recordingLength / TestUtil.MEGABYTE;
                 final long msgRate = (NUMBER_OF_MESSAGES / durationMs) * 1000L;
 
                 System.out.println("Performance inclusive of replay request and connection setup:");
@@ -101,7 +96,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
 
         archive = Archive.launch(
             new Archive.Context()
-                .archiveDir(createTempDir())
+                .archiveDir(TestUtil.createTempDir())
                 .fileSyncLevel(0)
                 .threadingMode(ArchiveThreadingMode.DEDICATED)
                 .countersManager(driver.context().countersManager())
@@ -124,6 +119,18 @@ public class EmbeddedReplayThroughput implements AutoCloseable
         driver.context().deleteAeronDirectory();
     }
 
+    @SuppressWarnings("unused")
+    public void onMessage(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    {
+        final int count = buffer.getInt(offset);
+        if (count != messageCount)
+        {
+            throw new IllegalStateException("Invalid message count=" + count + " @ " + messageCount);
+        }
+
+        messageCount++;
+    }
+
     private long makeRecording()
     {
         aeronArchive.startRecording(CHANNEL, STREAM_ID, SourceLocation.LOCAL);
@@ -138,24 +145,23 @@ public class EmbeddedReplayThroughput implements AutoCloseable
 
             final Image image = subscription.getImage(0);
 
-            for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
+            int i = 0;
+            while (i < NUMBER_OF_MESSAGES)
             {
                 buffer.putInt(0, i);
 
-                while (publication.offer(buffer, 0, MESSAGE_LENGTH) < 0)
+                if (publication.offer(buffer, 0, MESSAGE_LENGTH) > 0)
                 {
-                    Thread.yield();
-                    image.poll(NOOP_FRAGMENT_HANDLER, 10);
+                    i++;
                 }
 
-                image.poll(NOOP_FRAGMENT_HANDLER, 10);
+                image.poll(TestUtil.NOOP_FRAGMENT_HANDLER, 10);
             }
 
             final long position = publication.position();
-
             while (image.position() < position)
             {
-                image.poll(NOOP_FRAGMENT_HANDLER, 10);
+                image.poll(TestUtil.NOOP_FRAGMENT_HANDLER, 10);
             }
 
             return position;
@@ -189,18 +195,6 @@ public class EmbeddedReplayThroughput implements AutoCloseable
                 }
             }
         }
-    }
-
-    @SuppressWarnings("unused")
-    public void onMessage(final DirectBuffer buffer, final int offset, final int length, final Header header)
-    {
-        final int count = buffer.getInt(offset);
-        if (count != messageCount)
-        {
-            throw new IllegalStateException("Invalid message count=" + count + " @ " + messageCount);
-        }
-
-        messageCount++;
     }
 
     private long findRecordingId(final String expectedChannel, final int expectedStreamId)
@@ -237,30 +231,5 @@ public class EmbeddedReplayThroughput implements AutoCloseable
         }
 
         return foundRecordingId.get();
-    }
-
-    private File createTempDir()
-    {
-        final File tempDirForTest;
-        try
-        {
-            tempDirForTest = File.createTempFile("archive", "tmp");
-        }
-        catch (final IOException ex)
-        {
-            throw new RuntimeException(ex);
-        }
-
-        if (!tempDirForTest.delete())
-        {
-            throw new IllegalStateException("Failed to delete: " + tempDirForTest);
-        }
-
-        if (!tempDirForTest.mkdir())
-        {
-            throw new IllegalStateException("Failed to create: " + tempDirForTest);
-        }
-
-        return tempDirForTest;
     }
 }

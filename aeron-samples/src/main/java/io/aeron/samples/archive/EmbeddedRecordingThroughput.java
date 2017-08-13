@@ -50,8 +50,8 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
     private final RecordingEventsAdapter recordingEventsAdapter;
     private final Thread recordingEventsThread;
     private final Thread consumerThread;
-    private long recordingStartTimeMs;
-    private volatile long stopPosition = -1;
+    private volatile long recordingStartTimeMs;
+    private volatile long stopPosition;
     private volatile boolean isRunning = true;
 
     public static void main(final String[] args) throws Exception
@@ -130,7 +130,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
         final String sourceIdentity)
     {
         recordingStartTimeMs = System.currentTimeMillis();
-        System.out.println("Recording started...");
+        System.out.println("Recording started for id: " + recordingId);
     }
 
     public void onProgress(final long recordingId, final long startPosition, final long position)
@@ -142,12 +142,14 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
             final double dataRate = (recordingLength * 1000.0d / durationMs) / TestUtil.MEGABYTE;
             final double recordingMb = recordingLength / TestUtil.MEGABYTE;
             final long msgRate = (NUMBER_OF_MESSAGES / durationMs) * 1000L;
+
             System.out.printf("Recorded %.02f MB @ %.02f MB/s - %,d msg/sec%n", recordingMb, dataRate, msgRate);
         }
     }
 
     public void onStop(final long recordingId, final long startPosition, final long stopPosition)
     {
+        // System.out.println("Recording stopped for id: " + recordingId + " @ " + stopPosition);
     }
 
     private void streamMessages()

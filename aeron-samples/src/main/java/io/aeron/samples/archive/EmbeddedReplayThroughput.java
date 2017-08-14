@@ -32,6 +32,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static io.aeron.samples.archive.TestUtil.MEGABYTE;
+import static io.aeron.samples.archive.TestUtil.NOOP_FRAGMENT_HANDLER;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 
 public class EmbeddedReplayThroughput implements AutoCloseable
@@ -75,8 +77,8 @@ public class EmbeddedReplayThroughput implements AutoCloseable
                 test.replayRecording(recordingLength, recordingId);
 
                 final long durationMs = System.currentTimeMillis() - start;
-                final double dataRate = (recordingLength * 1000.0d / durationMs) / TestUtil.MEGABYTE;
-                final double recordingMb = recordingLength / TestUtil.MEGABYTE;
+                final double dataRate = (recordingLength * 1000.0d / durationMs) / MEGABYTE;
+                final double recordingMb = recordingLength / MEGABYTE;
                 final long msgRate = (NUMBER_OF_MESSAGES / durationMs) * 1000L;
 
                 System.out.println("Performance inclusive of replay request and connection setup:");
@@ -155,13 +157,13 @@ public class EmbeddedReplayThroughput implements AutoCloseable
                     i++;
                 }
 
-                image.poll(TestUtil.NOOP_FRAGMENT_HANDLER, 10);
+                image.poll(NOOP_FRAGMENT_HANDLER, 10);
             }
 
             final long position = publication.position();
             while (image.position() < position)
             {
-                image.poll(TestUtil.NOOP_FRAGMENT_HANDLER, 10);
+                image.poll(NOOP_FRAGMENT_HANDLER, 10);
             }
 
             return position;
@@ -170,10 +172,10 @@ public class EmbeddedReplayThroughput implements AutoCloseable
 
     private void replayRecording(final long recordingLength, final long recordingId)
     {
-        try (Subscription replaySubscription = aeronArchive.replay(
+        try (Subscription subscription = aeronArchive.replay(
             recordingId, 0L, recordingLength, REPLAY_URI, REPLAY_STREAM_ID))
         {
-            while (replaySubscription.hasNoImages())
+            while (subscription.hasNoImages())
             {
                 Thread.yield();
             }
@@ -182,10 +184,10 @@ public class EmbeddedReplayThroughput implements AutoCloseable
 
             while (messageCount < NUMBER_OF_MESSAGES)
             {
-                final int fragments = replaySubscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
+                final int fragments = subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
                 if (0 == fragments)
                 {
-                    if (replaySubscription.hasNoImages())
+                    if (subscription.hasNoImages())
                     {
                         System.out.println("Unexpected end of stream at message count: " + messageCount);
                         break;

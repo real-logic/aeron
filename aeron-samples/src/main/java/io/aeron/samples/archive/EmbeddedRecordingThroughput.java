@@ -28,10 +28,14 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.samples.SampleConfiguration;
 import org.agrona.CloseHelper;
+import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static io.aeron.samples.archive.TestUtil.MEGABYTE;
+import static io.aeron.samples.archive.TestUtil.NOOP_FRAGMENT_HANDLER;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 
 public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEventsListener
@@ -47,7 +51,6 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
     private final Aeron aeron;
     private final AeronArchive aeronArchive;
     private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MESSAGE_LENGTH, FRAME_ALIGNMENT));
-    private final RecordingEventsAdapter recordingEventsAdapter;
     private final Thread recordingEventsThread;
     private final Thread consumerThread;
     private volatile long recordingStartTimeMs;
@@ -66,7 +69,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
 
             do
             {
-                test.streamMessages();
+                test.streamMessagesForRecording();
                 Thread.sleep(10);
             }
             while (barrier.await());
@@ -95,13 +98,6 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
         aeronArchive = AeronArchive.connect(
             new AeronArchive.Context()
                 .aeron(aeron));
-
-        recordingEventsAdapter = new RecordingEventsAdapter(
-            this,
-            aeron.addSubscription(
-                AeronArchive.Configuration.recordingEventsChannel(),
-                AeronArchive.Configuration.recordingEventsStreamId()),
-            FRAGMENT_COUNT_LIMIT);
 
         recordingEventsThread = new Thread(this::runRecordingEventPoller);
         recordingEventsThread.setName("recording-events-poller");
@@ -139,8 +135,8 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
         {
             final long durationMs = System.currentTimeMillis() - recordingStartTimeMs;
             final long recordingLength = position - startPosition;
-            final double dataRate = (recordingLength * 1000.0d / durationMs) / TestUtil.MEGABYTE;
-            final double recordingMb = recordingLength / TestUtil.MEGABYTE;
+            final double dataRate = (recordingLength * 1000.0d / durationMs) / MEGABYTE;
+            final double recordingMb = recordingLength / MEGABYTE;
             final long msgRate = (NUMBER_OF_MESSAGES / durationMs) * 1000L;
 
             System.out.printf("Recorded %.02f MB @ %.02f MB/s - %,d msg/sec%n", recordingMb, dataRate, msgRate);
@@ -152,7 +148,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
         // System.out.println("Recording stopped for id: " + recordingId + " @ " + stopPosition);
     }
 
-    private void streamMessages()
+    public void streamMessagesForRecording()
     {
         try (ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
         {
@@ -172,21 +168,31 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
         }
     }
 
-    private void stop() throws InterruptedException
+    public void stop() throws InterruptedException
     {
         isRunning = false;
         recordingEventsThread.join();
         consumerThread.join();
     }
 
+    public void startRecording()
+    {
+        aeronArchive.startRecording(CHANNEL, STREAM_ID, SourceLocation.LOCAL);
+    }
+
     private void runRecordingEventPoller()
     {
-        while (isRunning)
+        try (Subscription subscription = aeron.addSubscription(
+            AeronArchive.Configuration.recordingEventsChannel(),
+            AeronArchive.Configuration.recordingEventsStreamId()))
         {
-            final int fragments = recordingEventsAdapter.poll();
-            if (fragments == 0)
+            final IdleStrategy idleStrategy = new BackoffIdleStrategy(1, 10, 1, 1);
+            final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
+                this, subscription, FRAGMENT_COUNT_LIMIT);
+
+            while (isRunning)
             {
-                Thread.yield();
+                idleStrategy.idle(recordingEventsAdapter.poll());
             }
         }
     }
@@ -195,19 +201,11 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
     {
         try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
+            final IdleStrategy idleStrategy = new BackoffIdleStrategy(1, 10, 1, 1);
             while (isRunning)
             {
-                final int fragments = subscription.poll(TestUtil.NOOP_FRAGMENT_HANDLER, FRAGMENT_COUNT_LIMIT);
-                if (fragments == 0)
-                {
-                    Thread.yield();
-                }
+                idleStrategy.idle(subscription.poll(NOOP_FRAGMENT_HANDLER, FRAGMENT_COUNT_LIMIT));
             }
         }
-    }
-
-    private void startRecording()
-    {
-        aeronArchive.startRecording(CHANNEL, STREAM_ID, SourceLocation.LOCAL);
     }
 }

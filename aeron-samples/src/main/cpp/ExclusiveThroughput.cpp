@@ -185,26 +185,31 @@ int main(int argc, char **argv)
 
         RateReporter rateReporter(std::chrono::seconds(1), printRate);
         FragmentAssembler fragmentAssembler(rateReporterHandler(rateReporter));
-        fragment_handler_t handler = fragmentAssembler.handler();
+        auto handler = fragmentAssembler.handler();
 
         std::shared_ptr<std::thread> rateReporterThread;
 
         ExclusivePublication *publicationPtr = publication.get();
+        Subscription *subscriptionPtr = subscription.get();
 
         if (settings.progress)
         {
             rateReporterThread = std::make_shared<std::thread>([&rateReporter](){ rateReporter.run(); });
         }
 
-        std::thread pollThread([&subscription, &settings, &handler]()
+        std::thread pollThread([&]()
         {
+            while (0 == subscriptionPtr->imageCount())
+            {
+                std::this_thread::yield();
+            }
+
             BusySpinIdleStrategy pollIdleStrategy;
+            Image& image = subscriptionPtr->imageAtIndex(0);
 
             while (isRunning())
             {
-                const int fragmentsRead = subscription->poll(handler, settings.fragmentCountLimit);
-
-                pollIdleStrategy.idle(fragmentsRead);
+                pollIdleStrategy.idle(image.poll(handler, settings.fragmentCountLimit));
             }
         });
 

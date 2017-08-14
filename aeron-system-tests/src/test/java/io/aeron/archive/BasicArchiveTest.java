@@ -118,7 +118,7 @@ public class BasicArchiveTest
             recordingId, fromPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
         {
             consume(subscription, messageCount, messagePrefix);
-            assertEquals(length, subscription.getImage(0).position());
+            assertEquals(length, subscription.imageAtIndex(0).position());
         }
     }
 

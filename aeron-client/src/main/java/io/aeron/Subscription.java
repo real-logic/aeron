@@ -355,7 +355,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
      * @param index in the array
      * @return image at given index
      */
-    public Image getImage(final int index)
+    public Image imageAtIndex(final int index)
     {
         return images[index];
     }

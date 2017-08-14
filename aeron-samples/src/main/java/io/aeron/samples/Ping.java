@@ -118,7 +118,7 @@ public class Ping
             Thread.yield();
         }
 
-        final Image image = subscription.getImage(0);
+        final Image image = subscription.imageAtIndex(0);
 
         for (int i = 0; i < count; i++)
         {

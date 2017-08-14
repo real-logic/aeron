@@ -145,7 +145,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
                 Thread.yield();
             }
 
-            final Image image = subscription.getImage(0);
+            final Image image = subscription.imageAtIndex(0);
 
             int i = 0;
             while (i < NUMBER_OF_MESSAGES)

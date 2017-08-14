@@ -188,7 +188,7 @@ public class EmbeddedIpcThroughput
                 Thread.yield();
             }
 
-            final Image image = subscription.getImage(0);
+            final Image image = subscription.imageAtIndex(0);
 
             long failedPolls = 0;
             long successfulPolls = 0;

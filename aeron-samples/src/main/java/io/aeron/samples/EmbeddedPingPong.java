@@ -169,7 +169,7 @@ public class EmbeddedPingPong
             Thread.yield();
         }
 
-        final Image image = pongSubscription.getImage(0);
+        final Image image = pongSubscription.imageAtIndex(0);
 
         for (int i = 0; i < numMessages; i++)
         {

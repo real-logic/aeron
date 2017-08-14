@@ -687,7 +687,7 @@ public class PubAndSubTest
                 TimeUnit.MILLISECONDS.toNanos(900));
         }
 
-        assertEquals(publication.position(), subscription.getImage(0).position());
+        assertEquals(publication.position(), subscription.imageAtIndex(0).position());
 
         subscription.close();
         stage.set(2);
@@ -698,7 +698,7 @@ public class PubAndSubTest
             Thread.yield();
         }
 
-        assertEquals(publication.position(), subscription.getImage(0).position());
+        assertEquals(publication.position(), subscription.imageAtIndex(0).position());
 
         for (int i = 0; i < numMessagesToSendStageTwo; i++)
         {
@@ -720,7 +720,7 @@ public class PubAndSubTest
                 TimeUnit.MILLISECONDS.toNanos(900));
         }
 
-        assertEquals(publication.position(), subscription.getImage(0).position());
+        assertEquals(publication.position(), subscription.imageAtIndex(0).position());
 
         verify(fragmentHandler, times(numMessagesToSendStageOne + numMessagesToSendStageTwo)).onFragment(
             any(DirectBuffer.class),

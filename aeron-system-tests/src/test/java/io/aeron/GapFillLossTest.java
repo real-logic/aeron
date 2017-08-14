@@ -125,7 +125,7 @@ public class GapFillLossTest
                 idleStrategy.idle();
             }
 
-            final Image image = subscription.getImage(0);
+            final Image image = subscription.imageAtIndex(0);
 
             while (image.position() < FINAL_POSITION.get())
             {

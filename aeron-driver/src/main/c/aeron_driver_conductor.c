@@ -1661,6 +1661,7 @@ int aeron_driver_conductor_on_remove_publication(
 
                 aeron_array_fast_unordered_remove(
                     (uint8_t *)client->publication_links.array, sizeof(aeron_publication_link_t), i, last_index);
+                client->publication_links.length--;
 
                 aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
                 return 0;

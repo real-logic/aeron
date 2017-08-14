@@ -198,6 +198,7 @@ void aeron_network_publication_close(aeron_counters_manager_t *counters_manager,
         }
 
         aeron_free(subscribeable->array);
+        publication->conductor_fields.managed_resource.clientd = NULL;
 
         aeron_retransmit_handler_close(&publication->retransmit_handler);
         publication->map_raw_log_close_func(&publication->mapped_raw_log);

@@ -252,6 +252,27 @@ public:
     }
 
     /**
+     * Get the image at the given index from the images array.
+     *
+     * This is only valid until the image list changes.
+     *
+     * @param index in the array
+     * @return image at given index or exception if out of range.
+     */
+    inline Image& imageAtIndex(size_t index) const
+    {
+        const struct ImageList *imageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
+        Image *images = imageList->m_images;
+
+        if (index >= imageList->m_length)
+        {
+            throw std::out_of_range("image index out of range");
+        }
+
+        return images[index];
+    }
+
+    /**
      * Get a std::vector of active {@link Image}s that match this subscription.
      *
      * @return a std::vector of active {@link Image}s that match this subscription.

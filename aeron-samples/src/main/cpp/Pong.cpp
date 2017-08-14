@@ -151,6 +151,11 @@ int main(int argc, char **argv)
         FragmentAssembler fragmentAssembler(
             [&](AtomicBuffer& buffer, index_t offset, index_t length, const Header& header)
             {
+                if (pongPublicationRef.offer(buffer, offset, length) > 0L)
+                {
+                    return;
+                }
+
                 while (pongPublicationRef.offer(buffer, offset, length) < 0L)
                 {
                     pingHandlerIdleStrategy.idle(0);
@@ -161,9 +166,7 @@ int main(int argc, char **argv)
 
         while (running)
         {
-            const int fragmentsRead = pingSubscriptionRef.poll(handler, settings.fragmentCountLimit);
-
-            idleStrategy.idle(fragmentsRead);
+            idleStrategy.idle(pingSubscriptionRef.poll(handler, settings.fragmentCountLimit));
         }
 
         std::cout << "Shutting down...\n";

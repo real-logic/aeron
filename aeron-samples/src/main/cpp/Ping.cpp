@@ -93,15 +93,14 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
 
 void sendPingAndReceivePong(
     const fragment_handler_t& fragmentHandler,
-    std::shared_ptr<Publication> publication,
-    std::shared_ptr<Subscription> subscription,
+    Publication &publication,
+    Subscription &subscription,
     const Settings& settings)
 {
     std::unique_ptr<std::uint8_t[]> buffer(new std::uint8_t[settings.messageLength]);
     concurrent::AtomicBuffer srcBuffer(buffer.get(), settings.messageLength);
     BusySpinIdleStrategy idleStrategy;
-    Publication &pingPublication = *publication;
-    Image& image = subscription->images()->front();
+    Image& image = subscription.imageAtIndex(0);
 
     for (int i = 0; i < settings.numberOfMessages; i++)
     {
@@ -114,7 +113,7 @@ void sendPingAndReceivePong(
 
             srcBuffer.putBytes(0, (std::uint8_t*)&start, sizeof(steady_clock::time_point));
         }
-        while ((position = pingPublication.offer(srcBuffer, 0, settings.messageLength)) < 0L);
+        while ((position = publication.offer(srcBuffer, 0, settings.messageLength)) < 0L);
 
         do
         {
@@ -225,7 +224,8 @@ int main(int argc, char **argv)
                 << toStringWithCommas(warmupSettings.numberOfWarmupMessages) << " messages of length "
                 << toStringWithCommas(warmupSettings.messageLength) << std::endl;
 
-            sendPingAndReceivePong([](AtomicBuffer&, index_t, index_t, Header&){}, pingPublication, pongSubscription, warmupSettings);
+            sendPingAndReceivePong(
+                [](AtomicBuffer&, index_t, index_t, Header&){}, *pingPublication, *pongSubscription, warmupSettings);
 
             std::int64_t nanoDuration = duration<std::int64_t, std::nano>(steady_clock::now() - start).count();
 
@@ -255,7 +255,7 @@ int main(int argc, char **argv)
                 << toStringWithCommas(settings.numberOfMessages) << " messages of length "
                 << toStringWithCommas(settings.messageLength) << " bytes" << std::endl;
 
-            sendPingAndReceivePong(fragmentAssembler.handler(), pingPublication, pongSubscription, settings);
+            sendPingAndReceivePong(fragmentAssembler.handler(), *pingPublication, *pongSubscription, settings);
 
             hdr_percentiles_print(histogram, stdout, 5, 1000.0, CLASSIC);
             fflush(stdout);

@@ -181,8 +181,6 @@ int main(int argc, char **argv)
             publication = aeron.findExclusivePublication(publicationId);
         }
 
-        BusySpinIdleStrategy offerIdleStrategy;
-
         RateReporter rateReporter(std::chrono::seconds(1), printRate);
         FragmentAssembler fragmentAssembler(rateReporterHandler(rateReporter));
         auto handler = fragmentAssembler.handler();
@@ -197,6 +195,9 @@ int main(int argc, char **argv)
             rateReporterThread = std::make_shared<std::thread>([&rateReporter](){ rateReporter.run(); });
         }
 
+        std::uint64_t failedPolls = 0;
+        std::uint64_t successfulPolls = 0;
+
         std::thread pollThread([&]()
         {
             while (0 == subscriptionPtr->imageCount())
@@ -204,12 +205,18 @@ int main(int argc, char **argv)
                 std::this_thread::yield();
             }
 
-            BusySpinIdleStrategy pollIdleStrategy;
             Image& image = subscriptionPtr->imageAtIndex(0);
 
             while (isRunning())
             {
-                pollIdleStrategy.idle(image.poll(handler, settings.fragmentCountLimit));
+                if (0 == image.poll(handler, settings.fragmentCountLimit))
+                {
+                    ++failedPolls;
+                }
+                else
+                {
+                    ++successfulPolls;
+                }
             }
         });
 
@@ -230,7 +237,6 @@ int main(int argc, char **argv)
                 while (publicationPtr->tryClaim(settings.messageLength, bufferClaim) < 0L)
                 {
                     backPressureCount++;
-                    offerIdleStrategy.idle(0);
                 }
 
                 bufferClaim.buffer().putInt64(bufferClaim.offset(), i);
@@ -242,8 +248,12 @@ int main(int argc, char **argv)
                 rateReporter.report();
             }
 
-            std::cout << "Done streaming. Back pressure ratio ";
+            std::cout << "Done streaming." << std::endl;
+            std::cout << "Publication back pressure ratio ";
             std::cout << ((double)backPressureCount / settings.numberOfMessages) << std::endl;
+
+            std::cout << "Subscription failure ratio ";
+            std::cout << ((double)failedPolls / (failedPolls + successfulPolls)) << std::endl;
 
             if (isRunning() && settings.lingerTimeoutMs > 0)
             {

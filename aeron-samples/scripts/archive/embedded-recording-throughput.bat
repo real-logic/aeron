@@ -16,7 +16,7 @@
 
 @echo off
 "%JAVA_HOME%\bin\java" ^
-    -cp ..\build\libs\samples.jar ^
+    -cp ..\..\build\libs\samples.jar ^
     -Dagrona.disable.bounds.checks=true ^
     -Daeron.sample.messageLength=32 ^
     -Daeron.sample.messages=50000000 ^

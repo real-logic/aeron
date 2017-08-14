@@ -16,7 +16,7 @@
 ##
 
 ${JAVA_HOME}/bin/java \
-    -cp ../build/libs/samples.jar \
+    -cp ../../build/libs/samples.jar \
     -Dagrona.disable.bounds.checks=true \
     -Daeron.sample.messageLength=32 \
     -Daeron.sample.messages=50000000 \
@@ -25,5 +25,4 @@ ${JAVA_HOME}/bin/java \
     -Daeron.socket.so_sndbuf=2097152 \
     -Daeron.socket.so_rcvbuf=2097152 \
     -Daeron.rcv.initial.window.length=2097152 \
-    -Daeron.archive.file.sync.level=0 \
-    io.aeron.samples.archive.EmbeddedRecordingThroughput "$@"
+    io.aeron.samples.archive.EmbeddedReplayThroughput "$@"

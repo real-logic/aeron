@@ -89,7 +89,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
         archive = Archive.launch(
             new Archive.Context()
                 .archiveDir(TestUtil.createTempDir())
-                .threadingMode(ArchiveThreadingMode.DEDICATED)
+                .threadingMode(ArchiveThreadingMode.SHARED)
                 .countersManager(driver.context().countersManager())
                 .errorHandler(driver.context().errorHandler()));
 
@@ -186,7 +186,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
             AeronArchive.Configuration.recordingEventsChannel(),
             AeronArchive.Configuration.recordingEventsStreamId()))
         {
-            final IdleStrategy idleStrategy = new BackoffIdleStrategy(1, 10, 1, 1);
+            final IdleStrategy idleStrategy = new BackoffIdleStrategy(10, 100, 1, 1);
             final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
                 this, subscription, FRAGMENT_COUNT_LIMIT);
 
@@ -201,7 +201,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
     {
         try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
-            final IdleStrategy idleStrategy = new BackoffIdleStrategy(1, 10, 1, 1);
+            final IdleStrategy idleStrategy = new BackoffIdleStrategy(10, 100, 1, 1);
             while (isRunning)
             {
                 idleStrategy.idle(subscription.poll(NOOP_FRAGMENT_HANDLER, FRAGMENT_COUNT_LIMIT));

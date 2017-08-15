@@ -100,7 +100,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
             new Archive.Context()
                 .archiveDir(TestUtil.createTempDir())
                 .fileSyncLevel(0)
-                .threadingMode(ArchiveThreadingMode.DEDICATED)
+                .threadingMode(ArchiveThreadingMode.SHARED)
                 .countersManager(driver.context().countersManager())
                 .errorHandler(driver.context().errorHandler()));
 

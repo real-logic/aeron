@@ -134,10 +134,23 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
     return idle_func;
 }
 
+aeron_agent_on_start_func_t aeron_agent_on_start_load(const char *name)
+{
+    aeron_agent_on_start_func_t func = NULL;
+    if ((func = (aeron_agent_on_start_func_t)dlsym(RTLD_DEFAULT, name)) == NULL)
+    {
+        aeron_set_err(EINVAL, "could not find agent on_start func %s: dlsym - %s", name, dlerror());
+        return NULL;
+    }
+
+    return func;
+}
+
 int aeron_agent_init(
     aeron_agent_runner_t *runner,
     const char *role_name,
     void *state,
+    aeron_agent_on_start_func_t on_start,
     aeron_agent_do_work_func_t do_work,
     aeron_agent_on_close_func_t on_close,
     aeron_idle_strategy_func_t idle_strategy_func,
@@ -152,6 +165,7 @@ int aeron_agent_init(
     }
 
     runner->agent_state = state;
+    runner->on_start = on_start;
     runner->do_work = do_work;
     runner->on_close = on_close;
     if (aeron_alloc((void **)&runner->role_name, role_name_length + 1) < 0)
@@ -174,6 +188,11 @@ int aeron_agent_init(
 static void *agent_main(void *arg)
 {
     aeron_agent_runner_t *runner = (aeron_agent_runner_t *)arg;
+
+    if (NULL != runner->on_start)
+    {
+        runner->on_start(runner->role_name);
+    }
 
     while (atomic_load(&runner->running))
     {

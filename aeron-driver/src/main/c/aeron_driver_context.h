@@ -26,6 +26,7 @@
 #include "concurrent/aeron_mpsc_rb.h"
 #include "aeron_flow_control.h"
 #include "aeron_congestion_control.h"
+#include "aeron_agent.h"
 
 #define AERON_CNC_FILE "cnc.dat"
 #define AERON_LOSS_REPORT_FILE "loss-report.dat"
@@ -115,6 +116,8 @@ typedef struct aeron_driver_context_stct
     aeron_spsc_concurrent_array_queue_t sender_command_queue;
     aeron_spsc_concurrent_array_queue_t receiver_command_queue;
     aeron_mpsc_concurrent_array_queue_t conductor_command_queue;
+
+    aeron_agent_on_start_func_t agent_on_start_func;
 
     aeron_idle_strategy_func_t conductor_idle_strategy_func;
     void *conductor_idle_strategy_state;

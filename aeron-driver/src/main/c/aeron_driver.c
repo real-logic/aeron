@@ -502,6 +502,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 &_driver->runners[AERON_AGENT_RUNNER_SHARED],
                 "[conductor, sender, receiver]",
                 _driver,
+                _driver->context->agent_on_start_func,
                 aeron_driver_shared_do_work,
                 aeron_driver_shared_on_close,
                 _driver->context->shared_idle_strategy_func,
@@ -516,6 +517,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 &_driver->runners[AERON_AGENT_RUNNER_CONDUCTOR],
                 "conductor",
                 &_driver->conductor,
+                _driver->context->agent_on_start_func,
                 aeron_driver_conductor_do_work,
                 aeron_driver_conductor_on_close,
                 _driver->context->conductor_idle_strategy_func,
@@ -528,6 +530,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 &_driver->runners[AERON_AGENT_RUNNER_SHARED_NETWORK],
                 "[sender, receiver]",
                 &_driver,
+                _driver->context->agent_on_start_func,
                 aeron_driver_shared_network_do_work,
                 aeron_driver_shared_network_on_close,
                 _driver->context->shared_network_idle_strategy_func,
@@ -543,6 +546,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 &_driver->runners[AERON_AGENT_RUNNER_CONDUCTOR],
                 "conductor",
                 &_driver->conductor,
+                _driver->context->agent_on_start_func,
                 aeron_driver_conductor_do_work,
                 aeron_driver_conductor_on_close,
                 _driver->context->conductor_idle_strategy_func,
@@ -555,6 +559,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 &_driver->runners[AERON_AGENT_RUNNER_SENDER],
                 "sender",
                 &_driver->sender,
+                _driver->context->agent_on_start_func,
                 aeron_driver_sender_do_work,
                 aeron_driver_sender_on_close,
                 _driver->context->sender_idle_strategy_func,
@@ -567,6 +572,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 &_driver->runners[AERON_AGENT_RUNNER_RECEIVER],
                 "receiver",
                 &_driver->receiver,
+                _driver->context->agent_on_start_func,
                 aeron_driver_receiver_do_work,
                 aeron_driver_receiver_on_close,
                 _driver->context->receiver_idle_strategy_func,
@@ -599,6 +605,11 @@ int aeron_driver_start(aeron_driver_t *driver, bool manual_main_loop)
     }
     else
     {
+        if (NULL != driver->runners[0].on_start)
+        {
+            driver->runners[0].on_start(driver->runners[0].role_name);
+        }
+
         driver->runners[0].state = AERON_AGENT_STATE_MANUAL;
     }
 

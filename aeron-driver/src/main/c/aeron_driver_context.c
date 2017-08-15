@@ -184,6 +184,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         return -1;
     }
 
+    _context->agent_on_start_func = NULL;
+
     if ((_context->unicast_flow_control_supplier_func =
         aeron_flow_control_strategy_supplier_load("aeron_unicast_flow_control_strategy_supplier")) == NULL)
     {
@@ -243,6 +245,14 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     if ((value = getenv(AERON_DIR_ENV_VAR)))
     {
         snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s", value);
+    }
+
+    if ((value = getenv(AERON_AGENT_ON_START_FUNCTION_ENV_VAR)))
+    {
+        if ((_context->agent_on_start_func = aeron_agent_on_start_load(value)) == NULL)
+        {
+            return -1;
+        }
     }
 
     if ((value = getenv(AERON_UNICAST_FLOWCONTROL_SUPPLIER_ENV_VAR)))

@@ -21,8 +21,10 @@
 #include <stddef.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <aeron_alloc.h>
 #include "aeronmd.h"
 #include "util/aeron_bitutil.h"
+#include "concurrent/aeron_atomic.h"
 
 #pragma pack(push)
 #pragma pack(4)
@@ -50,12 +52,17 @@ typedef struct aeron_distinct_observation_stct
 }
 aeron_distinct_observation_t;
 
-typedef struct aeron_distinct_error_log_observations_pimpl_stct aeron_distinct_error_log_observations_pimpl_t;
+typedef struct aeron_distinct_error_log_observation_list_stct
+{
+    uint64_t num_observations;
+    aeron_distinct_observation_t *observations;
+}
+aeron_distinct_error_log_observation_list_t;
 
 typedef struct aeron_distinct_error_log_stct
 {
     uint8_t *buffer;
-    aeron_distinct_error_log_observations_pimpl_t *observations_pimpl;
+    aeron_distinct_error_log_observation_list_t *observation_list;
     size_t buffer_capacity;
     size_t next_offset;
     aeron_clock_func_t clock;
@@ -96,5 +103,38 @@ size_t aeron_error_log_read(
     int64_t since_timestamp);
 
 size_t aeron_distinct_error_log_num_observations(aeron_distinct_error_log_t *log);
+
+inline int aeron_distinct_error_log_observation_list_alloc(
+    aeron_distinct_error_log_observation_list_t **list, uint64_t num_observations)
+{
+    *list = NULL;
+    size_t alloc_length =
+        sizeof(aeron_distinct_error_log_observation_list_t) + (num_observations * sizeof(aeron_distinct_observation_t));
+
+    int result = aeron_alloc((void **)list, alloc_length);
+    if (result >= 0)
+    {
+        (*list)->observations =
+            (aeron_distinct_observation_t *)
+                ((uint8_t *)*list + sizeof(aeron_distinct_error_log_observation_list_t));
+        (*list)->num_observations = num_observations;
+    }
+
+    return result;
+}
+
+inline aeron_distinct_error_log_observation_list_t *aeron_distinct_error_log_observation_list_load(
+    aeron_distinct_error_log_t *log)
+{
+    aeron_distinct_error_log_observation_list_t *list;
+    AERON_GET_VOLATILE(list, log->observation_list);
+    return list;
+}
+
+inline void aeron_distinct_error_log_observation_list_store(
+    aeron_distinct_error_log_t *log, aeron_distinct_error_log_observation_list_t *list)
+{
+    AERON_PUT_ORDERED(log->observation_list, list);
+}
 
 #endif //AERON_AERON_DISTINCT_ERROR_LOG_H

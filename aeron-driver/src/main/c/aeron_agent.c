@@ -179,7 +179,7 @@ int aeron_agent_init(
 
     runner->idle_strategy_state = idle_strategy_state;
     runner->idle_strategy = idle_strategy_func;
-    atomic_init(&runner->running, true);
+    runner->running = true;
     runner->state = AERON_AGENT_STATE_INITED;
 
     return 0;
@@ -194,7 +194,7 @@ static void *agent_main(void *arg)
         runner->on_start(runner->role_name);
     }
 
-    while (atomic_load(&runner->running))
+    while (aeron_agent_is_running(runner))
     {
         runner->idle_strategy(runner->idle_strategy_state, runner->do_work(runner->agent_state));
     }
@@ -244,7 +244,7 @@ int aeron_agent_stop(aeron_agent_runner_t *runner)
         return -1;
     }
 
-    atomic_store(&runner->running, false);
+    AERON_PUT_ORDERED(runner->running, false);
 
     if (AERON_AGENT_STATE_STARTED == runner->state)
     {

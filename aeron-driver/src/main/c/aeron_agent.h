@@ -17,7 +17,6 @@
 #ifndef AERON_AERON_AGENT_H
 #define AERON_AERON_AGENT_H
 
-#include <stdatomic.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -30,6 +29,7 @@ typedef HANDLE aeron_thread_t;
 #endif
 
 #include "aeron_driver_common.h"
+#include "concurrent/aeron_atomic.h"
 
 typedef int (*aeron_agent_do_work_func_t)(void *);
 typedef void (*aeron_agent_on_close_func_t)(void *);
@@ -59,7 +59,7 @@ typedef struct aeron_agent_runner_stct
     aeron_agent_on_close_func_t on_close;
     aeron_idle_strategy_func_t idle_strategy;
     aeron_thread_t thread;
-    atomic_bool running;
+    volatile bool running;
     uint8_t state;
 }
 aeron_agent_runner_t;
@@ -89,7 +89,9 @@ inline int aeron_agent_do_work(aeron_agent_runner_t *runner)
 
 inline bool aeron_agent_is_running(aeron_agent_runner_t *runner)
 {
-    return atomic_load(&runner->running);
+    bool running;
+    AERON_GET_VOLATILE(running, runner->running);
+    return running;
 }
 
 inline void aeron_agent_idle(aeron_agent_runner_t *runner, int work_count)

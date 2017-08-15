@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <stdatomic.h>
 #include <string.h>
 #include "concurrent/aeron_broadcast_transmitter.h"
 #include "aeron_atomic.h"
@@ -39,7 +38,7 @@ int aeron_broadcast_transmitter_init(volatile aeron_broadcast_transmitter_t *tra
 inline static void signal_tail_intent(aeron_broadcast_descriptor_t *descriptor, int64_t new_tail)
 {
     descriptor->tail_intent_counter = new_tail;
-    atomic_thread_fence(memory_order_release);  /* storeFence */
+    aeron_release();  /* storeFence */
 }
 
 inline static void insert_padding_record(aeron_broadcast_record_descriptor_t *record, int32_t length)

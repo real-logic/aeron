@@ -88,11 +88,21 @@ inline bool aeron_cmpxchgu64(volatile uint64_t* destination,  uint64_t expected,
     return (original == expected);
 }
 
+/* loadFence */
 inline void aeron_acquire()
 {
     volatile int64_t* dummy;
     __asm__ volatile("movq 0(%%rsp), %0" : "=r" (dummy) : : "memory");
 }
+
+/* storeFence */
+inline void aeron_release()
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+    volatile int64_t dummy = 0;
+}
+#pragma GCC diagnostic pop
 
 #define AERON_CMPXCHG32(original,dst,expected,desired) \
 do \

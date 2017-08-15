@@ -66,7 +66,6 @@ typedef enum aeron_threading_mode_enum
     AERON_THREADING_MODE_DEDICATED,
     AERON_THREADING_MODE_SHARED_NETWORK,
     AERON_THREADING_MODE_SHARED,
-    AERON_THREADING_MODE_SHARED_MANUAL
 }
 aeron_threading_mode_t;
 

@@ -223,7 +223,7 @@ int main(int argc, char **argv)
         do
         {
             ExclusiveBufferClaim bufferClaim;
-            long backPressureCount = 0;
+            std::uint64_t backPressureCount = 0;
 
             printingActive = true;
 
@@ -236,7 +236,11 @@ int main(int argc, char **argv)
             {
                 while (publicationPtr->tryClaim(settings.messageLength, bufferClaim) < 0L)
                 {
-                    backPressureCount++;
+                    ++backPressureCount;
+                    if (!isRunning())
+                    {
+                        break;
+                    }
                 }
 
                 bufferClaim.buffer().putInt64(bufferClaim.offset(), i);

@@ -82,7 +82,7 @@ private:
     fragment_handler_t m_delegate;
     std::unordered_map<std::int32_t, BufferBuilder> m_builderBySessionIdMap;
 
-    void onFragment(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    inline void onFragment(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
     {
         const std::uint8_t flags = header.flags();
 

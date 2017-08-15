@@ -318,10 +318,17 @@ int main(int argc, char **argv)
                 << toStringWithCommas(settings.numberOfMessages) << " messages of length "
                 << toStringWithCommas(settings.messageLength) << " bytes" << std::endl;
 
+            steady_clock::time_point startRun = steady_clock::now();
             sendPingAndReceivePong(fragmentAssembler.handler(), *pingPublication, *pongSubscription, settings);
+            steady_clock::time_point endRun = steady_clock::now();
 
             hdr_percentiles_print(histogram, stdout, 5, 1000.0, CLASSIC);
             fflush(stdout);
+
+            double runDuration = duration<double>(endRun - startRun).count();
+            std::cout << "Throughput of "
+                << toStringWithCommas(settings.numberOfMessages / runDuration)
+                << " RTTs/sec" << std::endl;
         }
         while (running && continuationBarrier("Execute again?"));
         running = false;

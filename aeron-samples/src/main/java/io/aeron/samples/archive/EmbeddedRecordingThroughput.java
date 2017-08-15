@@ -63,6 +63,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
 
         try (EmbeddedRecordingThroughput test = new EmbeddedRecordingThroughput())
         {
+            Thread.sleep(1000);
             test.startRecording();
 
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");

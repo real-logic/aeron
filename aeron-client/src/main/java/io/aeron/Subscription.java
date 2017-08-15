@@ -327,6 +327,18 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
+     * Get the image at the given index from the images array.
+     *
+     * @param index in the array
+     * @return image at given index
+     * @throws ArrayIndexOutOfBoundsException if the index is not valid.
+     */
+    public Image imageAtIndex(final int index)
+    {
+        return images[index];
+    }
+
+    /**
      * Get a {@link List} of active {@link Image}s that match this subscription.
      *
      * @return an unmodifiable {@link List} of active {@link Image}s that match this subscription.
@@ -339,25 +351,14 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     /**
      * Iterate over the {@link Image}s for this subscription.
      *
-     * @param imageConsumer to handle each {@link Image}.
+     * @param consumer to handle each {@link Image}.
      */
-    public void forEachImage(final Consumer<Image> imageConsumer)
+    public void forEachImage(final Consumer<Image> consumer)
     {
         for (final Image image : images)
         {
-            imageConsumer.accept(image);
+            consumer.accept(image);
         }
-    }
-
-    /**
-     * Get the image at the given index from the images array.
-     *
-     * @param index in the array
-     * @return image at given index
-     */
-    public Image imageAtIndex(final int index)
-    {
-        return images[index];
     }
 
     /**

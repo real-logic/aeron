@@ -41,27 +41,23 @@ public class ArchivingMediaDriver
 
     /**
      * Launch an {@link Archive} with embedded {@link MediaDriver} and await a shutdown signal.
-     *
      */
     public static void launch()
     {
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .useConcurrentCounterManager(Configuration.THREADING_MODE_DEFAULT != ThreadingMode.INVOKER);
-        final MediaDriver mediaDriver = MediaDriver.launch(driverCtx);
+        final boolean useConcurrentCounterManager = Configuration.THREADING_MODE_DEFAULT != ThreadingMode.INVOKER;
 
-        final Archive.Context archiveCtx = new Archive.Context()
-            .mediaDriverAgentInvoker(mediaDriver.sharedAgentInvoker());
+        try (MediaDriver driver = MediaDriver.launch(
+                new MediaDriver.Context()
+                    .useConcurrentCounterManager(useConcurrentCounterManager));
+             Archive ignore = Archive.launch(
+                 new Archive.Context()
+                    .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
+                    .countersManager(driver.context().countersManager())
+                    .errorHandler(driver.context().errorHandler())))
+        {
+            new ShutdownSignalBarrier().await();
 
-        archiveCtx
-            .countersManager(driverCtx.countersManager())
-            .errorHandler(driverCtx.errorHandler());
-
-        final Archive archive = Archive.launch(archiveCtx);
-
-        new ShutdownSignalBarrier().await();
-        System.out.println("Shutdown Archive...");
-
-        archive.close();
-        mediaDriver.close();
+            System.out.println("Shutdown Archive...");
+        }
     }
 }

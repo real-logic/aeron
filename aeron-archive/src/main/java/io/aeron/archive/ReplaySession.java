@@ -304,11 +304,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
     private int closeOnError(final Throwable ex, final String errorMessage)
     {
         state = State.INACTIVE;
-
-        if (null != cursor)
-        {
-            cursor.close();
-        }
+        CloseHelper.close(cursor);
 
         if (!controlSession.isDone())
         {

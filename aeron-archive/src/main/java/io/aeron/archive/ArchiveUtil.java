@@ -28,14 +28,4 @@ class ArchiveUtil
     {
         return (int)((position - startPosition) / segmentFileLength);
     }
-
-    static int recordingOffset(
-        final int termOffset,
-        final int termId,
-        final int initialTermId,
-        final int termsMask,
-        final int termBufferLength)
-    {
-        return ((termId - initialTermId) & termsMask) * termBufferLength + termOffset;
-    }
 }

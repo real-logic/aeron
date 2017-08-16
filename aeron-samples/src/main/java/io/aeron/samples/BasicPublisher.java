@@ -94,6 +94,11 @@ public class BasicPublisher
                         System.out.println("Offer failed publication is closed");
                         break;
                     }
+                    else if (result == Publication.MAX_POSITION_EXCEEDED)
+                    {
+                        System.out.println("Offer failed due to publication reaching max position");
+                        break;
+                    }
                     else
                     {
                         System.out.println("Offer failed due to unknown reason");

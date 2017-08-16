@@ -62,13 +62,14 @@ public class ArchiveTest
     public ArchiveThreadingMode archiveThreadingMode;
     private long controlSessionId;
 
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name = "threading modes:(driver={0} archive={1}")
     public static Collection<Object[]> data()
     {
         return Arrays.asList(
             new Object[][]
             {
                 { ThreadingMode.INVOKER, ArchiveThreadingMode.SHARED },
+                { ThreadingMode.SHARED, ArchiveThreadingMode.SHARED },
                 { ThreadingMode.DEDICATED, ArchiveThreadingMode.DEDICATED },
             });
     }

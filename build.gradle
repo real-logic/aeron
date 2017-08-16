@@ -173,6 +173,7 @@ subprojects {
 }
 
 def agronaVersion = '0.9.7-SNAPSHOT'
+def sbeVersion = '1.7.1-SNAPSHOT'
 
 project(':aeron-client') {
     apply plugin: 'osgi'
@@ -462,10 +463,8 @@ project(':aeron-agent') {
     }
 }
 
-def sbeVersion = '1.7.1-SNAPSHOT'
-
-project(':aeron-archive-codecs') {
-    apply plugin: 'com.github.johnrengelman.shadow'
+project(':aeron-archive') {
+    apply plugin: 'osgi'
 
     configurations{
         codecGeneration
@@ -477,22 +476,24 @@ project(':aeron-archive-codecs') {
     }
 
     dependencies {
-        compile "org.agrona:agrona:${agronaVersion}"
-        testCompile sourceSets.generated.output
+        compile project(':aeron-client')
+        compile project(':aeron-driver')
+        compile files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-all:${sbeVersion}"
     }
 
+    compileJava.dependsOn 'compileGeneratedJava'
     compileGeneratedJava.dependsOn 'generateCodecs'
-    compileGeneratedJava.classpath += sourceSets.main.compileClasspath
+    compileGeneratedJava.classpath += configurations.codecGeneration
 
     task(generateCodecs, type: JavaExec) {
         main = 'uk.co.real_logic.sbe.SbeTool'
         classpath = configurations.codecGeneration
         systemProperties(
-                'sbe.output.dir': generatedDir,
-                'sbe.target.language': 'Java',
-                'sbe.validation.xsd': 'src/main/resources/fpl/sbe.xsd',
-                'sbe.validation.stop.on.error': 'true')
+        'sbe.output.dir': generatedDir,
+        'sbe.target.language': 'Java',
+        'sbe.validation.xsd': 'src/main/resources/fpl/sbe.xsd',
+        'sbe.validation.stop.on.error': 'true')
         args = ['src/main/resources/aeron-archive-codecs.xml']
     }
 
@@ -500,23 +501,6 @@ project(':aeron-archive-codecs') {
         from("$buildDir/classes/generated") {
             include '**/*.class'
         }
-    }
-
-    jar.dependsOn compileGeneratedJava
-}
-
-project(':aeron-archive') {
-    apply plugin: 'com.github.johnrengelman.shadow'
-    apply plugin: 'idea'
-
-    dependencies {
-        compile project(':aeron-client')
-        compile project(':aeron-driver')
-        compile project(':aeron-archive-codecs')
-    }
-
-    shadowJar {
-        archiveName = 'aeron-archive.jar'
     }
 
     uploadArchives {
@@ -552,12 +536,6 @@ project(':aeron-archive') {
     artifacts {
         archives sourcesJar
         archives javadocJar
-    }
-
-    idea {
-        dependencies {
-            compile project(':aeron-archive-codecs').sourceSets.generated.output
-        }
     }
 }
 

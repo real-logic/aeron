@@ -34,7 +34,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archive.ArchiveUtil.segmentFileName;
+import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 
 /**

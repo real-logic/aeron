@@ -35,7 +35,7 @@ import org.mockito.Mockito;
 import java.io.File;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archive.ArchiveUtil.segmentFileName;
+import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 import static io.aeron.archive.TestUtil.newRecordingFragmentReader;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;

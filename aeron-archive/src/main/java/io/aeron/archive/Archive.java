@@ -144,6 +144,8 @@ public final class Archive implements AutoCloseable
         public static final String ARCHIVE_DIR_PROP_NAME = "aeron.archive.dir";
         public static final String ARCHIVE_DIR_DEFAULT = "archive";
 
+        static final String CATALOG_FILE_NAME = "archive.catalog";
+        static final String RECORDING_SEGMENT_POSTFIX = ".rec";
         public static final String SEGMENT_FILE_LENGTH_PROP_NAME = "aeron.archive.segment.file.length";
         public static final int SEGMENT_FILE_LENGTH_DEFAULT = 128 * 1024 * 1024;
 
@@ -154,10 +156,10 @@ public final class Archive implements AutoCloseable
         public static final String ARCHIVER_IDLE_STRATEGY_PROP_NAME = "aeron.archive.idle.strategy";
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 
-        private static final long AGENT_IDLE_MAX_SPINS = 100;
-        private static final long AGENT_IDLE_MAX_YIELDS = 100;
-        private static final long AGENT_IDLE_MIN_PARK_NS = 1;
-        private static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(1000);
+        static final long AGENT_IDLE_MAX_SPINS = 100;
+        static final long AGENT_IDLE_MAX_YIELDS = 100;
+        static final long AGENT_IDLE_MIN_PARK_NS = 1;
+        static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(1000);
 
         public static final String MAX_CONCURRENT_RECORDINGS_PROP_NAME = "aeron.archive.max.concurrent.recordings";
         public static final int MAX_CONCURRENT_RECORDINGS_DEFAULT = 128;
@@ -169,7 +171,6 @@ public final class Archive implements AutoCloseable
         public static final int REPLAY_FRAGMENT_LIMIT_DEFAULT = 16;
 
         private static final String CONTROLLABLE_IDLE_STRATEGY = "org.agrona.concurrent.ControllableIdleStrategy";
-
 
         public static String archiveDirName()
         {
@@ -721,5 +722,15 @@ public final class Archive implements AutoCloseable
                 IoUtil.delete(archiveDir, false);
             }
         }
+    }
+
+    static int segmentFileIndex(final long startPosition, final long position, final int segmentFileLength)
+    {
+        return (int)((position - startPosition) / segmentFileLength);
+    }
+
+    static String segmentFileName(final long recordingId, final int segmentIndex)
+    {
+        return recordingId + "." + segmentIndex + Configuration.RECORDING_SEGMENT_POSTFIX;
     }
 }

@@ -28,7 +28,6 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archive.ArchiveUtil.segmentFileName;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.file.StandardOpenOption.*;
@@ -74,7 +73,6 @@ class Catalog implements AutoCloseable
 
     private static final int SCHEMA_VERSION = RecordingDescriptorHeaderDecoder.SCHEMA_VERSION;
     private static final int DESCRIPTOR_BLOCK_LENGTH = RecordingDescriptorDecoder.BLOCK_LENGTH;
-    private static final String CATALOG_FILE_NAME = "archive.catalog";
 
     private final RecordingDescriptorHeaderDecoder descriptorHeaderDecoder = new RecordingDescriptorHeaderDecoder();
     private final RecordingDescriptorHeaderEncoder descriptorHeaderEncoder = new RecordingDescriptorHeaderEncoder();
@@ -113,7 +111,7 @@ class Catalog implements AutoCloseable
         this.archiveDir = archiveDir;
         this.fileSyncLevel = fileSyncLevel;
         this.epochClock = epochClock;
-        final File indexFile = new File(archiveDir, CATALOG_FILE_NAME);
+        final File indexFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
         final boolean indexPreExists = indexFile.exists();
 
         try (FileChannel channel = FileChannel.open(indexFile.toPath(), CREATE, READ, WRITE, SPARSE))
@@ -321,7 +319,7 @@ class Catalog implements AutoCloseable
             final long stoppedSegmentOffset =
                 ((decoder.startPosition() % decoder.termBufferLength()) + recordingLength) % segmentFileLength;
 
-            final File segmentFile = new File(archiveDir, segmentFileName(decoder.recordingId(), segmentIndex));
+            final File segmentFile = new File(archiveDir, Archive.segmentFileName(decoder.recordingId(), segmentIndex));
             if (!segmentFile.exists())
             {
                 if (recordingLength != 0 || stoppedSegmentOffset != 0)

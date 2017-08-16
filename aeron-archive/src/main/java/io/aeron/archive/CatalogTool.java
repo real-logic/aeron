@@ -13,8 +13,8 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archive.ArchiveUtil.RECORDING_SEGMENT_POSTFIX;
-import static io.aeron.archive.ArchiveUtil.segmentFileName;
+import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_POSTFIX;
+import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.Catalog.INVALID;
 import static io.aeron.archive.Catalog.VALID;
 import static java.nio.file.StandardOpenOption.READ;

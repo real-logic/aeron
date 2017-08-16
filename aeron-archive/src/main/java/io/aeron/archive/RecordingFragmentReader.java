@@ -29,8 +29,7 @@ import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archive.ArchiveUtil.segmentFileName;
-import static io.aeron.archive.ArchiveUtil.segmentFileIndex;
+import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardOpenOption.READ;
@@ -81,7 +80,7 @@ class RecordingFragmentReader implements AutoCloseable
         final long maxLength = recordingPosition == null ? stopPosition - fromPosition : Long.MAX_VALUE;
         final long replayLength = length == NULL_LENGTH ? maxLength : Math.min(length, maxLength);
 
-        segmentFileIndex = segmentFileIndex(startPosition, fromPosition, segmentLength);
+        segmentFileIndex = Archive.segmentFileIndex(startPosition, fromPosition, segmentLength);
 
         if (!openRecordingSegment())
         {
@@ -259,7 +258,7 @@ class RecordingFragmentReader implements AutoCloseable
 
         if (!segmentFile.exists())
         {
-            final int lastSegmentIndex = segmentFileIndex(startPosition, stopPosition, segmentLength);
+            final int lastSegmentIndex = Archive.segmentFileIndex(startPosition, stopPosition, segmentLength);
             if (lastSegmentIndex > segmentFileIndex)
             {
                 throw new IllegalStateException("Recording segment not found. Segment index=" + segmentFileIndex +

@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archive.ArchiveUtil.segmentFileName;
+import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.Catalog.NULL_TIME;
 import static io.aeron.archive.Catalog.PAGE_SIZE;
 import static io.aeron.archive.Catalog.wrapDescriptorDecoder;

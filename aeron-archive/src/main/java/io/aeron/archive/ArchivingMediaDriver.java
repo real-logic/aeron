@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import org.agrona.concurrent.ShutdownSignalBarrier;
@@ -35,27 +36,21 @@ public class ArchivingMediaDriver
     {
         loadPropertiesFiles(args);
 
-        launch(ThreadingMode.DEDICATED, ArchiveThreadingMode.DEDICATED);
+        launch();
     }
 
     /**
      * Launch an {@link Archive} with embedded {@link MediaDriver} and await a shutdown signal.
      *
-     * @param mediaDriverThreadingMode for the {@link MediaDriver}
-     * @param archiveThreadingMode     for the {@link Archive}
      */
-    public static void launch(
-        final ThreadingMode mediaDriverThreadingMode,
-        final ArchiveThreadingMode archiveThreadingMode)
+    public static void launch()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .threadingMode(mediaDriverThreadingMode)
-            .useConcurrentCounterManager(mediaDriverThreadingMode != ThreadingMode.INVOKER);
+            .useConcurrentCounterManager(Configuration.THREADING_MODE_DEFAULT != ThreadingMode.INVOKER);
         final MediaDriver mediaDriver = MediaDriver.launch(driverCtx);
 
         final Archive.Context archiveCtx = new Archive.Context()
-            .mediaDriverAgentInvoker(mediaDriver.sharedAgentInvoker())
-            .threadingMode(archiveThreadingMode);
+            .mediaDriverAgentInvoker(mediaDriver.sharedAgentInvoker());
 
         archiveCtx
             .countersManager(driverCtx.countersManager())

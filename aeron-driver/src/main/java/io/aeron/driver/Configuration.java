@@ -515,7 +515,11 @@ public class Configuration
      * {@link ThreadingMode} to be used by the Aeron {@link MediaDriver}
      */
     public static final String THREADING_MODE_PROP_NAME = "aeron.threading.mode";
-    static final ThreadingMode THREADING_MODE_DEFAULT = ThreadingMode.valueOf(
+
+    /**
+     * {@link ThreadingMode} default used by the media driver unless overridden in context.
+     */
+    public static final ThreadingMode THREADING_MODE_DEFAULT = ThreadingMode.valueOf(
         getProperty(THREADING_MODE_PROP_NAME, DEDICATED.name()));
 
     /**

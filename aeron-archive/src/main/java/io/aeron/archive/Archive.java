@@ -157,7 +157,7 @@ public final class Archive implements AutoCloseable
         private static final long AGENT_IDLE_MAX_SPINS = 100;
         private static final long AGENT_IDLE_MAX_YIELDS = 100;
         private static final long AGENT_IDLE_MIN_PARK_NS = 1;
-        private static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
+        private static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(1000);
 
         public static final String MAX_CONCURRENT_RECORDINGS_PROP_NAME = "aeron.archive.max.concurrent.recordings";
         public static final int MAX_CONCURRENT_RECORDINGS_DEFAULT = 128;
@@ -165,8 +165,8 @@ public final class Archive implements AutoCloseable
         public static final String MAX_CONCURRENT_REPLAYS_PROP_NAME = "aeron.archive.max.concurrent.replays";
         public static final int MAX_CONCURRENT_REPLAYS_DEFAULT = 128;
 
-        public static final String REPLAY_BATCH_SIZE_PROP_NAME = "aeron.archive.replay.batch.size";
-        public static final int REPLAY_BATCH_SIZE_DEFAULT = 8;
+        public static final String REPLAY_FRAGMENT_LIMIT_PROP_NAME = "aeron.archive.replay.fragment.limit";
+        public static final int REPLAY_FRAGMENT_LIMIT_DEFAULT = 16;
 
         private static final String CONTROLLABLE_IDLE_STRATEGY = "org.agrona.concurrent.ControllableIdleStrategy";
 
@@ -239,9 +239,9 @@ public final class Archive implements AutoCloseable
             return Integer.getInteger(MAX_CONCURRENT_REPLAYS_PROP_NAME, MAX_CONCURRENT_REPLAYS_DEFAULT);
         }
 
-        public static int replayBatchSize()
+        public static int replayFragmentLimit()
         {
-            return Integer.getInteger(REPLAY_BATCH_SIZE_PROP_NAME, REPLAY_BATCH_SIZE_DEFAULT);
+            return Integer.getInteger(REPLAY_FRAGMENT_LIMIT_PROP_NAME, REPLAY_FRAGMENT_LIMIT_DEFAULT);
         }
     }
 

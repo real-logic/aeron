@@ -64,7 +64,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
      */
     static final long CONNECT_TIMEOUT_MS = 5000;
 
-    private static final int REPLAY_BATCH_SIZE = Archive.Configuration.replayBatchSize();
+    private static final int REPLAY_FRAGMENT_LIMIT = Archive.Configuration.replayFragmentLimit();
 
     private long connectDeadlineMs;
     private final long replaySessionId;
@@ -249,7 +249,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
     {
         try
         {
-            final int polled = cursor.controlledPoll(this, REPLAY_BATCH_SIZE);
+            final int polled = cursor.controlledPoll(this, REPLAY_FRAGMENT_LIMIT);
             if (cursor.isDone())
             {
                 state = State.INACTIVE;

@@ -85,7 +85,7 @@ class RecordingFragmentReader implements AutoCloseable
 
         if (!openRecordingSegment())
         {
-            throw new IllegalStateException("First file must be available");
+            throw new IllegalStateException("segment file must be available for requested position: " + position);
         }
 
         final long termStartPosition = (startPosition / termLength) * termLength;
@@ -105,7 +105,7 @@ class RecordingFragmentReader implements AutoCloseable
             flyweight.termOffset() != termOffset)
         {
             close();
-            throw new IllegalArgumentException("fromPosition:" + fromPosition + " is not aligned to fragment");
+            throw new IllegalArgumentException("fromPosition is not aligned to fragment: " + fromPosition);
         }
 
         replayPosition = fromPosition;

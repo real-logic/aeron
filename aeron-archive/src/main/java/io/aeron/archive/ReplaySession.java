@@ -30,8 +30,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.Objects;
 
 import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 import static io.aeron.logbuffer.FrameDescriptor.frameFlags;
@@ -77,6 +75,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
     private final EpochClock epochClock;
     private State state = State.INIT;
 
+    @SuppressWarnings("ConstantConditions")
     ReplaySession(
         final long replayPosition,
         final long replayLength,
@@ -109,7 +108,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
 
         if (replayPosition - startPosition < 0)
         {
-            final String errorMessage = "Requested replay start position(=" + replayPosition +
+            final String errorMessage = "requested replay start position(=" + replayPosition +
                 ") is before recording start position(=" + startPosition + ")";
             closeOnError(new IllegalArgumentException(errorMessage), errorMessage);
             cursor = null;
@@ -121,7 +120,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         final long stopPosition = descriptorDecoder.stopPosition();
         if (replayPosition - stopPosition > 0)
         {
-            final String errorMessage = "Requested replay start position(=" + replayPosition +
+            final String errorMessage = "requested replay start position(=" + replayPosition +
                 ") is after recording stop position(=" + stopPosition + ")";
             closeOnError(new IllegalArgumentException(errorMessage), errorMessage);
             cursor = null;
@@ -140,12 +139,11 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
                 replayLength,
                 recordingPosition);
         }
-        catch (final IOException ex)
+        catch (final Exception ex)
         {
-            closeOnError(ex, "Failed to open cursor for a recording");
+            closeOnError(ex, "failed to open cursor on a recording because: " + ex.getMessage());
         }
 
-        Objects.requireNonNull(cursor);
         this.cursor = cursor;
 
         ExclusivePublication replayPublication = null;
@@ -161,8 +159,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         }
         catch (final Exception ex)
         {
-            CloseHelper.quietClose(cursor);
-            closeOnError(ex, "Failed to create replay publication");
+            closeOnError(ex, "failed to create replay publication because: " + ex.getMessage());
         }
 
         this.replayPublication = replayPublication;
@@ -230,7 +227,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         }
         else if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
         {
-            closeOnError(null, "Replay stream has been shutdown mid-replay");
+            closeOnError(null, "replay stream has been shutdown mid-replay");
         }
 
         return false;
@@ -260,7 +257,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         }
         catch (final Exception ex)
         {
-            return closeOnError(ex, "Cursor read failed");
+            return closeOnError(ex, "cursor read failed");
         }
     }
 
@@ -291,7 +288,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         {
             if (epochClock.time() > connectDeadlineMs)
             {
-                return closeOnError(null, "No connection established for replay");
+                return closeOnError(null, "no connection established for replay");
             }
 
             return 0;
@@ -305,7 +302,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
     private int closeOnError(final Throwable ex, final String errorMessage)
     {
         state = State.INACTIVE;
-        CloseHelper.close(cursor);
+        CloseHelper.quietClose(cursor);
 
         if (!controlSession.isDone())
         {

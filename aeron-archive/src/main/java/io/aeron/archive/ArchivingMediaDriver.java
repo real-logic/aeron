@@ -23,12 +23,47 @@ import org.agrona.concurrent.ShutdownSignalBarrier;
 import static io.aeron.driver.MediaDriver.loadPropertiesFiles;
 
 /**
- * Archiving media driver which has dedicated threads for high throughput.
+ * Archiving {@link MediaDriver}.
  */
-public class ArchivingMediaDriver
+public final class ArchivingMediaDriver implements AutoCloseable
 {
+    private final MediaDriver driver;
+    private final Archive archive;
+
+    private ArchivingMediaDriver(final MediaDriver driver, final Archive archive)
+    {
+        this.driver = driver;
+        this.archive = archive;
+    }
+
     /**
-     * Start an {@link ArchiveConductor} as a stand-alone process, with a {@link MediaDriver}.
+     * Get the launched {@link Archive}.
+     *
+     * @return the launched {@link Archive}.
+     */
+    public Archive archive()
+    {
+        return archive;
+    }
+
+    /**
+     * Get the launched {@link MediaDriver}.
+     *
+     * @return the launched {@link MediaDriver}.
+     */
+    public MediaDriver mediaDriver()
+    {
+        return driver;
+    }
+
+    public void close()
+    {
+        archive.close();
+        driver.close();
+    }
+
+    /**
+     * Launch an {@link Archive} with an embedded {@link MediaDriver} and await a shutdown signal.
      *
      * @param args command line argument which is a list for properties files as URLs or filenames.
      */
@@ -36,28 +71,45 @@ public class ArchivingMediaDriver
     {
         loadPropertiesFiles(args);
 
-        launch();
-    }
-
-    /**
-     * Launch an {@link Archive} with embedded {@link MediaDriver} and await a shutdown signal.
-     */
-    public static void launch()
-    {
-        final boolean useConcurrentCounterManager = Configuration.THREADING_MODE_DEFAULT != ThreadingMode.INVOKER;
-
-        try (MediaDriver driver = MediaDriver.launch(
-                new MediaDriver.Context()
-                    .useConcurrentCounterManager(useConcurrentCounterManager));
-             Archive ignore = Archive.launch(
-                 new Archive.Context()
-                    .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
-                    .countersManager(driver.context().countersManager())
-                    .errorHandler(driver.context().errorHandler())))
+        try (ArchivingMediaDriver ignore = launch())
         {
             new ShutdownSignalBarrier().await();
 
             System.out.println("Shutdown Archive...");
         }
+    }
+
+    /**
+     * Launch a new {@link ArchivingMediaDriver} with default contexts.
+     *
+     * @return a new {@link ArchivingMediaDriver} with default contexts.
+     */
+    public static ArchivingMediaDriver launch()
+    {
+        return launch(new MediaDriver.Context(), new Archive.Context());
+    }
+
+    /**
+     * Launch a new {@link ArchivingMediaDriver} with provided contexts.
+     *
+     * @param driverCtx  for configuring the {@link MediaDriver}.
+     * @param archiveCtx for configuring the {@link Archive}.
+     * @return a new {@link ArchivingMediaDriver} with the provided contexts.
+     */
+    public static ArchivingMediaDriver launch(final MediaDriver.Context driverCtx, final Archive.Context archiveCtx)
+    {
+        final boolean useConcurrentCounterManager =
+            driverCtx.threadingMode() != ThreadingMode.INVOKER ||
+                (driverCtx.threadingMode() == null && Configuration.THREADING_MODE_DEFAULT != ThreadingMode.INVOKER);
+
+        final MediaDriver driver = MediaDriver.launch(driverCtx
+            .useConcurrentCounterManager(useConcurrentCounterManager));
+
+        final Archive archive = Archive.launch(archiveCtx
+                .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
+                .countersManager(driver.context().countersManager())
+                .errorHandler(driver.context().errorHandler()));
+
+        return new ArchivingMediaDriver(driver, archive);
     }
 }

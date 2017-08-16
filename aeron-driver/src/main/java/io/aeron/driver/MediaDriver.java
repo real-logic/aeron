@@ -1110,6 +1110,11 @@ public final class MediaDriver implements AutoCloseable
             return driverConductorProxy;
         }
 
+        public ThreadingMode threadingMode()
+        {
+            return threadingMode;
+        }
+
         public IdleStrategy conductorIdleStrategy()
         {
             return conductorIdleStrategy;

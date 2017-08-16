@@ -17,6 +17,7 @@
 
 ${JAVA_HOME}/bin/java \
     -cp ../../build/libs/samples.jar \
+    -XX:BiasedLockingStartupDelay=0 \
     -Dagrona.disable.bounds.checks=true \
     -Daeron.sample.messageLength=32 \
     -Daeron.sample.messages=50000000 \

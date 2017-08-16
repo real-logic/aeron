@@ -62,7 +62,7 @@ public class ArchiveTest
     public ArchiveThreadingMode archiveThreadingMode;
     private long controlSessionId;
 
-    @Parameterized.Parameters(name = "threading modes:(driver={0} archive={1}")
+    @Parameterized.Parameters(name = "threading modes: driver={0} archive={1}")
     public static Collection<Object[]> data()
     {
         return Arrays.asList(

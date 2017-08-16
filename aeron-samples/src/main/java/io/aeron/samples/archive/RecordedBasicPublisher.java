@@ -25,10 +25,9 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Basic Aeron publisher application which is recorded in an archive.
- * This publisher sends a fixed number of fixed-length messages
- * on a channel and stream ID, then lingers to allow any consumers
- * that may have experienced loss a chance to NAK for and recover
- * any missing data.
+ * This publisher sends a fixed number of messages on a channel and stream ID,
+ * then lingers to allow any consumers that may have experienced loss a chance to NAK for
+ * and recover any missing data.
  * <p>
  * The default values for number of messages, channel, and stream ID are
  * defined in {@link SampleConfiguration} and can be overridden by

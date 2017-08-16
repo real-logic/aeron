@@ -26,9 +26,9 @@ import org.agrona.concurrent.SigInt;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * This is a Basic Aeron subscriber application
- * The application subscribes to a default channel and stream ID.  These defaults can
- * be overwritten by changing their value in {@link SampleConfiguration} or by
+ * This is a Basic Aeron subscriber application to a recorded stream.
+ * The application subscribes to a recorded of the default channel and stream ID.
+ * These defaults can be overwritten by changing their value in {@link SampleConfiguration} or by
  * setting their corresponding Java system properties at the command line, e.g.:
  * -Daeron.sample.channel=aeron:udp?endpoint=localhost:5555 -Daeron.sample.streamId=20
  * This application only handles non-fragmented data. A DataHandler method is called
@@ -39,7 +39,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ReplayedBasicSubscriber
 {
     private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
+
+    // use a different stream id to avoid clashes
     private static final int REPLAY_STREAM_ID = SampleConfiguration.STREAM_ID + 1;
+
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
 
@@ -61,10 +64,10 @@ public class ReplayedBasicSubscriber
         try (AeronArchive archive = AeronArchive.connect())
         {
             final long recordingId = findLatestRecording(archive, CHANNEL, STREAM_ID);
-            final long from = 0L;
+            final long position = 0L;
             final long length = Long.MAX_VALUE;
 
-            try (Subscription subscription = archive.replay(recordingId, from, length, CHANNEL, REPLAY_STREAM_ID))
+            try (Subscription subscription = archive.replay(recordingId, position, length, CHANNEL, REPLAY_STREAM_ID))
             {
                 SamplesUtil.subscriberLoop(fragmentHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription);
 

@@ -117,6 +117,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
             return;
         }
 
+        // TODO: need to consider the start and stop states for a replay of a stream that is live recording.
         final long stopPosition = descriptorDecoder.stopPosition();
         if (replayPosition - stopPosition > 0)
         {

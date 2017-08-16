@@ -280,10 +280,10 @@ project(':aeron-samples') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        compile project(':aeron-client'),
-                project(':aeron-driver'),
-                project(':aeron-archive'),
-                'org.hdrhistogram:HdrHistogram:2.1.9'
+        compile project(':aeron-client')
+        compile project(':aeron-driver')
+        compile project(':aeron-archive')
+        compile 'org.hdrhistogram:HdrHistogram:2.1.9'
     }
 
     shadowJar {
@@ -328,9 +328,9 @@ project(':aeron-samples') {
 
 project(':aeron-system-tests') {
     dependencies {
-        compile project(':aeron-client'),
-                project(':aeron-driver'),
-                project(':aeron-archive')
+        compile project(':aeron-client')
+        compile project(':aeron-driver')
+        compile project(':aeron-archive')
         testCompile project(path: ':aeron-client', configuration: 'tests')
         testCompile project(path: ':aeron-archive', configuration: 'tests')
         testCompile project(':aeron-agent')
@@ -383,7 +383,8 @@ project(':aeron-agent') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        compile project(':aeron-client'), project(':aeron-driver')
+        compile project(':aeron-client')
+        compile project(':aeron-driver')
         compile "net.bytebuddy:byte-buddy:1.6.14"
     }
 
@@ -507,7 +508,9 @@ project(':aeron-archive') {
     apply plugin: 'idea'
 
     dependencies {
-        compile project(':aeron-client'), project(':aeron-driver'), project(':aeron-archive-codecs')
+        compile project(':aeron-client')
+        compile project(':aeron-driver')
+        compile project(':aeron-archive-codecs')
     }
 
     shadowJar {
@@ -560,10 +563,10 @@ project(':aeron-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        compile project(':aeron-client'),
-                project(':aeron-driver'),
-                project(':aeron-archive'),
-                project(':aeron-samples')
+        compile project(':aeron-client')
+        compile project(':aeron-driver')
+        compile project(':aeron-archive')
+        compile project(':aeron-samples')
     }
 
     shadowJar {

@@ -176,23 +176,23 @@ public final class Archive implements AutoCloseable
             return System.getProperty(ARCHIVE_DIR_PROP_NAME, ARCHIVE_DIR_DEFAULT);
         }
 
-        private static int segmentFileLength()
+        public static int segmentFileLength()
         {
             return Integer.getInteger(SEGMENT_FILE_LENGTH_PROP_NAME, SEGMENT_FILE_LENGTH_DEFAULT);
         }
 
-        private static int fileSyncLevel()
+        public static int fileSyncLevel()
         {
             return Integer.getInteger(FILE_SYNC_LEVEL_PROP_NAME, FILE_SYNC_LEVEL_DEFAULT);
         }
 
-        private static ArchiveThreadingMode threadingMode()
+        public static ArchiveThreadingMode threadingMode()
         {
             return ArchiveThreadingMode.valueOf(System.getProperty(
                 THREADING_MODE_PROP_NAME, ArchiveThreadingMode.DEDICATED.name()));
         }
 
-        private static Supplier<IdleStrategy> idleStrategySupplier(final StatusIndicator controllableStatus)
+        public static Supplier<IdleStrategy> idleStrategySupplier(final StatusIndicator controllableStatus)
         {
             final String strategyName = System.getProperty(ARCHIVER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
             return () ->
@@ -229,12 +229,12 @@ public final class Archive implements AutoCloseable
             };
         }
 
-        private static int maxConcurrentRecordings()
+        public static int maxConcurrentRecordings()
         {
             return Integer.getInteger(MAX_CONCURRENT_RECORDINGS_PROP_NAME, MAX_CONCURRENT_RECORDINGS_DEFAULT);
         }
 
-        private static int maxConcurrentReplays()
+        public static int maxConcurrentReplays()
         {
             return Integer.getInteger(MAX_CONCURRENT_REPLAYS_PROP_NAME, MAX_CONCURRENT_REPLAYS_DEFAULT);
         }

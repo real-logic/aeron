@@ -478,10 +478,10 @@ project(':aeron-archive-codecs') {
         testCompile sourceSets.generated.output
     }
 
-    compileGeneratedJava.dependsOn 'generateMessages'
+    compileGeneratedJava.dependsOn 'generateCodecs'
     compileGeneratedJava.classpath += sourceSets.main.compileClasspath
 
-    task(generateMessages, type: JavaExec) {
+    task(generateCodecs, type: JavaExec) {
         main = 'uk.co.real_logic.sbe.SbeTool'
         classpath = sourceSets.main.compileClasspath
         systemProperties(

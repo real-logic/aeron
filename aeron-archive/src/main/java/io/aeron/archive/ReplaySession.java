@@ -96,7 +96,6 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         this.replaySessionId = replaySessionId;
         this.correlationId = correlationId;
         this.epochClock = epochClock;
-        this.connectDeadlineMs = epochClock.time() + CONNECT_TIMEOUT_MS;
 
         final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
         wrapDescriptorDecoder(descriptorDecoder, descriptorBuffer);
@@ -163,6 +162,8 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
 
         this.replayPublication = replayPublication;
         controlSession.sendOkResponse(correlationId, threadLocalControlResponseProxy);
+
+        connectDeadlineMs = epochClock.time() + CONNECT_TIMEOUT_MS;
     }
 
     public void close()

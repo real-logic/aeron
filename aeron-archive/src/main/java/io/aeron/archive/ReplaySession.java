@@ -118,7 +118,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         }
 
         final long stopPosition = descriptorDecoder.stopPosition();
-        if (replayPosition - stopPosition >= 0)
+        if (replayPosition - stopPosition > 0)
         {
             final String errorMessage = "Requested replay start position(=" + replayPosition +
                 ") is after recording stop position(=" + stopPosition + ")";

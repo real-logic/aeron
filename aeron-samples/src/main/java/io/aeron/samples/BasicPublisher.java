@@ -119,7 +119,7 @@ public class BasicPublisher
 
             System.out.println("Done sending.");
 
-            if (0 < LINGER_TIMEOUT_MS)
+            if (LINGER_TIMEOUT_MS > 0)
             {
                 System.out.println("Lingering for " + LINGER_TIMEOUT_MS + " milliseconds...");
                 Thread.sleep(LINGER_TIMEOUT_MS);

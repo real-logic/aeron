@@ -115,7 +115,7 @@ public class StreamingPublisher
                 System.out.println(
                     "Done streaming. Back pressure ratio " + ((double)backPressureCount / NUMBER_OF_MESSAGES));
 
-                if (0 < LINGER_TIMEOUT_MS)
+                if (LINGER_TIMEOUT_MS > 0)
                 {
                     System.out.println("Lingering for " + LINGER_TIMEOUT_MS + " milliseconds...");
                     Thread.sleep(LINGER_TIMEOUT_MS);

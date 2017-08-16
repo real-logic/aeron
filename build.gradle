@@ -467,6 +467,10 @@ def sbeVersion = '1.7.1-SNAPSHOT'
 project(':aeron-archive-codecs') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
+    configurations{
+        codecGeneration
+    }
+
     def generatedDir = file("${buildDir}/generated-src")
     sourceSets {
         generated.java.srcDir generatedDir
@@ -474,8 +478,8 @@ project(':aeron-archive-codecs') {
 
     dependencies {
         compile "org.agrona:agrona:${agronaVersion}"
-        compile "uk.co.real-logic:sbe-tool:${sbeVersion}"
         testCompile sourceSets.generated.output
+        codecGeneration "uk.co.real-logic:sbe-all:${sbeVersion}"
     }
 
     compileGeneratedJava.dependsOn 'generateCodecs'
@@ -483,7 +487,7 @@ project(':aeron-archive-codecs') {
 
     task(generateCodecs, type: JavaExec) {
         main = 'uk.co.real_logic.sbe.SbeTool'
-        classpath = sourceSets.main.compileClasspath
+        classpath = configurations.codecGeneration
         systemProperties(
                 'sbe.output.dir': generatedDir,
                 'sbe.target.language': 'Java',

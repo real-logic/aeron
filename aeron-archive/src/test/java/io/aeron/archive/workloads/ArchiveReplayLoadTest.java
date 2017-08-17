@@ -116,7 +116,7 @@ public class ArchiveReplayLoadTest
             new Archive.Context()
                 .archiveDir(TestUtil.makeTempDir())
                 .fileSyncLevel(0)
-                .threadingMode(ArchiveThreadingMode.DEDICATED)
+                .threadingMode(ArchiveThreadingMode.SHARED)
                 .countersManager(driver.context().countersManager())
                 .errorHandler(driver.context().errorHandler()));
 
@@ -174,6 +174,7 @@ public class ArchiveReplayLoadTest
             replay(i);
 
             printScore(++i, System.currentTimeMillis() - start);
+            Thread.sleep(100);
         }
     }
 
@@ -231,16 +232,22 @@ public class ArchiveReplayLoadTest
             while (remaining > 0)
             {
                 final int fragments = replay.poll(validatingFragmentHandler, 128);
-                if (0 == fragments && replay.hasNoImages() && remaining > 0)
+                if (0 == fragments)
                 {
-                    System.out.println("Unexpected close of image: remaining=" + remaining);
-                    System.out.println("Image position=" + receivedPosition + " expected=" + expectedRecordingLength);
-                    System.out.println("Resulting error: " + aeronArchive.pollForErrorResponse());
+                    if (replay.hasNoImages() && remaining > 0)
+                    {
+                        System.out.println("Unexpected close of image: remaining=" + remaining);
+                        System.out.println(
+                            "Image position=" + receivedPosition + " expected=" + expectedRecordingLength);
+                        System.out.println("Resulting error: " + aeronArchive.pollForErrorResponse());
 
-                    final CountersReader countersReader = aeron.countersReader();
-                    countersReader.forEach(
-                        (id, label) -> System.out.println(countersReader.getCounterValue(id) + "\t: " + label));
-                    break;
+                        final CountersReader countersReader = aeron.countersReader();
+                        countersReader.forEach(
+                            (id, label) -> System.out.println(countersReader.getCounterValue(id) + "\t: " + label));
+                        break;
+                    }
+
+                    Thread.yield();
                 }
             }
 

@@ -100,7 +100,7 @@ public class ArchiveRecordingLoadTest
             new Archive.Context()
                 .fileSyncLevel(2)
                 .archiveDir(TestUtil.makeTempDir())
-                .threadingMode(ArchiveThreadingMode.DEDICATED)
+                .threadingMode(ArchiveThreadingMode.SHARED)
                 .countersManager(driver.context().countersManager())
                 .errorHandler(driver.context().errorHandler()));
 
@@ -162,6 +162,7 @@ public class ArchiveRecordingLoadTest
                 assertThat(expectedRecordingLength, is(recordedLength));
 
                 aeronArchive.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID);
+                Thread.sleep(100);
             }
         }
     }

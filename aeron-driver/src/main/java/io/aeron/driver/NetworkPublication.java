@@ -644,7 +644,7 @@ public class NetworkPublication
                 break;
 
             case LINGER:
-                if (!flowControl.shouldLinger(timeNs) || timeNs > (timeOfLastActivityNs + PUBLICATION_LINGER_NS))
+                if (timeNs > (timeOfLastActivityNs + PUBLICATION_LINGER_NS))
                 {
                     conductor.cleanupPublication(this);
                     status = Status.CLOSING;

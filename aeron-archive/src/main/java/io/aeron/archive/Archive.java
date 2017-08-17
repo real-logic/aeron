@@ -47,41 +47,28 @@ public final class Archive implements AutoCloseable
     {
         this.ctx = ctx;
 
-        ctx.aeronContext.driverAgentInvoker(ctx.mediaDriverAgentInvoker());
-        ctx.aeronContext.clientLock(new NoOpLock());
+        ctx.aeronContext
+            .driverAgentInvoker(ctx.mediaDriverAgentInvoker())
+            .clientLock(new NoOpLock());
+
         aeron = Aeron.connect(ctx.aeronContext);
 
         ctx.conclude();
 
-        final ArchiveConductor archiveConductor = ArchiveThreadingMode.DEDICATED == ctx.threadingMode() ?
-            new DedicatedModeArchiveConductor(aeron, ctx) :
-            new SharedModeArchiveConductor(aeron, ctx);
+        final ArchiveConductor conductor =
+            ArchiveThreadingMode.DEDICATED == ctx.threadingMode() ?
+                new DedicatedModeArchiveConductor(aeron, ctx) :
+                new SharedModeArchiveConductor(aeron, ctx);
 
-        switch (ctx.threadingMode())
+        if (ArchiveThreadingMode.INVOKER == ctx.threadingMode())
         {
-            case INVOKER:
-                conductorInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), archiveConductor);
-                conductorRunner = null;
-                break;
-
-            case SHARED:
-                conductorInvoker = null;
-                conductorRunner = new AgentRunner(
-                    ctx.idleStrategy(),
-                    ctx.errorHandler(),
-                    ctx.errorCounter(),
-                    archiveConductor);
-                break;
-
-            default:
-            case DEDICATED:
-                conductorInvoker = null;
-                conductorRunner = new AgentRunner(
-                    ctx.idleStrategy(),
-                    ctx.errorHandler(),
-                    ctx.errorCounter(),
-                    archiveConductor);
-                break;
+            conductorInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), conductor);
+            conductorRunner = null;
+        }
+        else
+        {
+            conductorInvoker = null;
+            conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
         }
     }
 
@@ -104,15 +91,13 @@ public final class Archive implements AutoCloseable
 
     private Archive start()
     {
-        if (ctx.threadingMode() == ArchiveThreadingMode.SHARED ||
-            ctx.threadingMode() == ArchiveThreadingMode.DEDICATED)
-        {
-            AgentRunner.startOnThread(conductorRunner, ctx.threadFactory());
-        }
-
-        if (null != conductorInvoker)
+        if (ArchiveThreadingMode.INVOKER == ctx.threadingMode())
         {
             conductorInvoker.start();
+        }
+        else
+        {
+            AgentRunner.startOnThread(conductorRunner, ctx.threadFactory());
         }
 
         return this;

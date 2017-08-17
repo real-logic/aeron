@@ -48,7 +48,7 @@ public final class Archive implements AutoCloseable
         this.ctx = ctx;
 
         ctx.aeronContext
-            .errorHandler(ctx.errorHandler())
+            .errorHandler(this::onError)
             .driverAgentInvoker(ctx.mediaDriverAgentInvoker())
             .clientLock(new NoOpLock());
 
@@ -71,6 +71,12 @@ public final class Archive implements AutoCloseable
             conductorInvoker = null;
             conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
         }
+    }
+
+    private void onError(final Throwable throwable)
+    {
+        ctx.errorCounter().increment();
+        ctx.errorHandler().onError(throwable);
     }
 
     /**

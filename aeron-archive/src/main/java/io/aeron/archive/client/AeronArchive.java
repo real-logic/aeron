@@ -378,7 +378,7 @@ public final class AeronArchive implements AutoCloseable
             {
                 if (System.nanoTime() > deadline)
                 {
-                    throw new TimeoutException("Waiting for correlationId=" + expectedCorrelationId);
+                    throw new TimeoutException("Waiting for response: correlationId=" + expectedCorrelationId);
                 }
 
                 idleStrategy.idle();
@@ -397,7 +397,7 @@ public final class AeronArchive implements AutoCloseable
             final ControlResponseCode code = poller.controlResponseDecoder().code();
             if (code != ControlResponseCode.CONNECTED)
             {
-                throw new IllegalStateException("Unexpected response code:" + code);
+                throw new IllegalStateException("Unexpected response: code=" + code);
             }
 
             return poller.controlSessionId();
@@ -416,7 +416,7 @@ public final class AeronArchive implements AutoCloseable
             {
                 if (System.nanoTime() > deadline)
                 {
-                    throw new TimeoutException("Waiting for correlationId=" + expectedCorrelationId);
+                    throw new TimeoutException("Waiting for response: correlationId=" + expectedCorrelationId);
                 }
 
                 idleStrategy.idle();
@@ -436,17 +436,16 @@ public final class AeronArchive implements AutoCloseable
                         return;
 
                     case ERROR:
-                        throw new IllegalStateException("correlationId=" + expectedCorrelationId +
+                        throw new IllegalStateException("response for correlationId=" + expectedCorrelationId +
                             " error: " + poller.controlResponseDecoder().errorMessage());
-                    case CONNECTED:
 
                     default:
-                        throw new IllegalStateException("Unexpected code: " + code);
+                        throw new IllegalStateException("Unexpected response code: " + code);
                 }
             }
             else
             {
-                throw new IllegalStateException("Unknown response: templateId=" + poller.templateId());
+                throw new IllegalStateException("Unknown response type: templateId=" + poller.templateId());
             }
         }
     }
@@ -466,7 +465,7 @@ public final class AeronArchive implements AutoCloseable
                 if (System.nanoTime() > deadline)
                 {
                     throw new TimeoutException(
-                        "Waiting for recording descriptors correlationId=" + expectedCorrelationId);
+                        "Waiting for recording descriptors: correlationId=" + expectedCorrelationId);
                 }
 
                 idleStrategy.idle();
@@ -495,11 +494,11 @@ public final class AeronArchive implements AutoCloseable
                             return count;
 
                         case ERROR:
-                            throw new IllegalStateException("correlationId=" + expectedCorrelationId +
+                            throw new IllegalStateException("response for correlationId=" + expectedCorrelationId +
                                 " error: " + poller.controlResponseDecoder().errorMessage());
 
                         default:
-                            throw new IllegalStateException("Unexpected code: " + code);
+                            throw new IllegalStateException("Unexpected response: code=" + code);
                     }
 
                 default:

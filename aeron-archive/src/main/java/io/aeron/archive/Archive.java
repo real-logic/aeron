@@ -47,9 +47,9 @@ public final class Archive implements AutoCloseable
     {
         this.ctx = ctx;
 
-        ctx.clientContext.driverAgentInvoker(ctx.mediaDriverAgentInvoker());
-        ctx.clientContext.clientLock(new NoOpLock());
-        aeron = Aeron.connect(ctx.clientContext);
+        ctx.aeronContext.driverAgentInvoker(ctx.mediaDriverAgentInvoker());
+        ctx.aeronContext.clientLock(new NoOpLock());
+        aeron = Aeron.connect(ctx.aeronContext);
 
         ctx.conclude();
 
@@ -248,7 +248,7 @@ public final class Archive implements AutoCloseable
 
     public static class Context
     {
-        private final Aeron.Context clientContext;
+        private final Aeron.Context aeronContext;
 
         private File archiveDir;
 
@@ -269,7 +269,6 @@ public final class Archive implements AutoCloseable
 
         private ErrorHandler errorHandler;
         private CountersManager countersManager;
-
         private AtomicCounter errorCounter;
 
         private AgentInvoker mediaDriverAgentInvoker;
@@ -281,10 +280,10 @@ public final class Archive implements AutoCloseable
             this(new Aeron.Context());
         }
 
-        public Context(final Aeron.Context clientContext)
+        public Context(final Aeron.Context aeronContext)
         {
-            this.clientContext = clientContext;
-            clientContext.useConductorAgentInvoker(true);
+            this.aeronContext = aeronContext;
+            aeronContext.useConductorAgentInvoker(true);
 
             controlChannel(AeronArchive.Configuration.controlChannel());
             controlStreamId(AeronArchive.Configuration.controlStreamId());
@@ -362,9 +361,9 @@ public final class Archive implements AutoCloseable
          *
          * @return Aeron client context used by the Archive
          */
-        public Aeron.Context clientContext()
+        public Aeron.Context aeronContext()
         {
-            return clientContext;
+            return aeronContext;
         }
 
         /**

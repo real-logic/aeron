@@ -1317,7 +1317,7 @@ public final class MediaDriver implements AutoCloseable
 
         public void close()
         {
-            // do not close the systemsCounters so that all counters are kept as is.
+            // do not close so that contents can be inspected for debugging.
             IoUtil.unmap(cncByteBuffer);
             IoUtil.unmap(lossReportBuffer);
 

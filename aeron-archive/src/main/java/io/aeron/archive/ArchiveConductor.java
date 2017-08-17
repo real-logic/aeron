@@ -53,7 +53,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
 
     private final Aeron aeron;
-    private final AgentInvoker aeronClientAgentInvoker;
+    private final AgentInvoker aeronAgentInvoker;
     private final AgentInvoker driverAgentInvoker;
     private final EpochClock epochClock;
     private final File archiveDir;
@@ -81,8 +81,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         this.aeron = aeron;
         this.ctx = ctx;
 
-        aeronClientAgentInvoker = aeron.conductorAgentInvoker();
-        Objects.requireNonNull(aeronClientAgentInvoker, "An aeron invoker should be present in the context");
+        aeronAgentInvoker = aeron.conductorAgentInvoker();
+        Objects.requireNonNull(aeronAgentInvoker, "An aeron invoker should be present in the context");
 
         maxConcurrentRecordings = ctx.maxConcurrentRecordings();
         maxConcurrentReplays = ctx.maxConcurrentReplays();
@@ -132,7 +132,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     protected void postSessionsClose()
     {
         CloseHelper.quietClose(archiveDirChannel);
-        CloseHelper.quietClose(aeronClientAgentInvoker);
+        CloseHelper.quietClose(aeronAgentInvoker);
         CloseHelper.quietClose(driverAgentInvoker);
         CloseHelper.quietClose(catalog);
     }
@@ -142,7 +142,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         int workCount = 0;
 
         workCount += null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
-        workCount += aeronClientAgentInvoker.invoke();
+        workCount += aeronAgentInvoker.invoke();
 
         return workCount;
     }

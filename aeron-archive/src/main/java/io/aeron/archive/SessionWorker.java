@@ -31,8 +31,8 @@ class SessionWorker<T extends Session> implements Agent
 {
     private final ArrayList<T> sessions = new ArrayList<>();
     private final String roleName;
-    protected final ErrorHandler errorHandler;
     private boolean isClosed = false;
+    protected final ErrorHandler errorHandler;
 
     SessionWorker(final String roleName, final ErrorHandler errorHandler)
     {
@@ -71,6 +71,7 @@ class SessionWorker<T extends Session> implements Agent
         {
             return;
         }
+
         isClosed = true;
 
         preSessionsClose();
@@ -86,9 +87,9 @@ class SessionWorker<T extends Session> implements Agent
             session.abort();
             session.close();
         }
-        catch (final Exception e)
+        catch (final Exception ex)
         {
-            errorHandler.onError(e);
+            errorHandler.onError(ex);
         }
     }
 

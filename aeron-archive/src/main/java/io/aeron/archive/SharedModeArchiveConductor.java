@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.Aeron;
 import org.agrona.CloseHelper;
+import org.agrona.ErrorHandler;
 import org.agrona.concurrent.AgentInvoker;
 
 final class SharedModeArchiveConductor extends ArchiveConductor
@@ -32,21 +33,22 @@ final class SharedModeArchiveConductor extends ArchiveConductor
     public void onStart()
     {
         super.onStart();
-        replayerAgentInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), replayer);
-        recorderAgentInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), recorder);
+
+        replayerAgentInvoker = new AgentInvoker(errorHandler, ctx.errorCounter(), replayer);
+        recorderAgentInvoker = new AgentInvoker(errorHandler, ctx.errorCounter(), recorder);
 
         replayerAgentInvoker.start();
         recorderAgentInvoker.start();
     }
 
-    protected SessionWorker<RecordingSession> constructRecorder()
+    protected SessionWorker<RecordingSession> newRecorder()
     {
-        return new SharedModeRecorder();
+        return new SharedModeRecorder(errorHandler);
     }
 
-    protected SessionWorker<ReplaySession> constructReplayer()
+    protected SessionWorker<ReplaySession> newReplayer()
     {
-        return new SharedModeReplayer();
+        return new SharedModeReplayer(errorHandler);
     }
 
     protected int preWork()
@@ -62,9 +64,9 @@ final class SharedModeArchiveConductor extends ArchiveConductor
 
     private class SharedModeRecorder extends SessionWorker<RecordingSession>
     {
-        SharedModeRecorder()
+        SharedModeRecorder(final ErrorHandler errorHandler)
         {
-            super("archive-recorder", SharedModeArchiveConductor.this.errorHandler);
+            super("archive-recorder", errorHandler);
         }
 
         protected void closeSession(final RecordingSession session)
@@ -75,9 +77,9 @@ final class SharedModeArchiveConductor extends ArchiveConductor
 
     private class SharedModeReplayer extends SessionWorker<ReplaySession>
     {
-        SharedModeReplayer()
+        SharedModeReplayer(final ErrorHandler errorHandler)
         {
-            super("archive-replayer", SharedModeArchiveConductor.this.errorHandler);
+            super("archive-replayer", errorHandler);
         }
 
         protected void closeSession(final ReplaySession session)

@@ -112,13 +112,13 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     public void onStart()
     {
-        replayer = constructReplayer();
-        recorder = constructRecorder();
+        replayer = newReplayer();
+        recorder = newRecorder();
     }
 
-    protected abstract SessionWorker<RecordingSession> constructRecorder();
+    protected abstract SessionWorker<RecordingSession> newRecorder();
 
-    protected abstract SessionWorker<ReplaySession> constructReplayer();
+    protected abstract SessionWorker<ReplaySession> newReplayer();
 
     protected final void preSessionsClose()
     {

@@ -53,15 +53,9 @@ public final class Archive implements AutoCloseable
 
         ctx.conclude();
 
-        final ArchiveConductor archiveConductor;
-        if (ctx.threadingMode() == ArchiveThreadingMode.DEDICATED)
-        {
-            archiveConductor = new DedicatedModeArchiveConductor(aeron, ctx);
-        }
-        else
-        {
-            archiveConductor = new SharedModeArchiveConductor(aeron, ctx);
-        }
+        final ArchiveConductor archiveConductor = ArchiveThreadingMode.DEDICATED == ctx.threadingMode() ?
+            new DedicatedModeArchiveConductor(aeron, ctx) :
+            new SharedModeArchiveConductor(aeron, ctx);
 
         switch (ctx.threadingMode())
         {

@@ -41,19 +41,19 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
     {
         super.onStart();
 
-        recorderAgentRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), recorder);
-        replayerAgentRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), replayer);
+        recorderAgentRunner = new AgentRunner(ctx.idleStrategy(), errorHandler, ctx.errorCounter(), recorder);
+        replayerAgentRunner = new AgentRunner(ctx.idleStrategy(), errorHandler, ctx.errorCounter(), replayer);
 
         AgentRunner.startOnThread(replayerAgentRunner, ctx.threadFactory());
         AgentRunner.startOnThread(recorderAgentRunner, ctx.threadFactory());
     }
 
-    protected SessionWorker<RecordingSession> constructRecorder()
+    protected SessionWorker<RecordingSession> newRecorder()
     {
         return new DedicatedModeRecorder(errorHandler, ctx.errorCounter(), closeQueue);
     }
 
-    protected SessionWorker<ReplaySession> constructReplayer()
+    protected SessionWorker<ReplaySession> newReplayer()
     {
         return new DedicatedModeReplayer(
             errorHandler,
@@ -74,17 +74,18 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         {
             CloseHelper.close(recorderAgentRunner);
         }
-        catch (final Exception e)
+        catch (final Exception ex)
         {
-            errorHandler.onError(e);
+            errorHandler.onError(ex);
         }
+
         try
         {
             CloseHelper.close(replayerAgentRunner);
         }
-        catch (final Exception e)
+        catch (final Exception ex)
         {
-            errorHandler.onError(e);
+            errorHandler.onError(ex);
         }
 
         while (processCloseQueue() > 0 || !closeQueue.isEmpty())

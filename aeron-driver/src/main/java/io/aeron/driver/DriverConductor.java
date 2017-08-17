@@ -108,7 +108,7 @@ public class DriverConductor implements Agent
 
         clientRequestAdapter = new ClientRequestAdapter(
             context.systemCounters().get(ERRORS),
-            ctx.errorLog(),
+            ctx.errorHandler(),
             toDriverCommands,
             clientProxy,
             this);

@@ -17,9 +17,9 @@ package io.aeron.driver;
 
 import io.aeron.command.*;
 import io.aeron.driver.exceptions.ControlProtocolException;
+import org.agrona.ErrorHandler;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.MessageHandler;
-import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -47,17 +47,17 @@ class ClientRequestAdapter implements MessageHandler
     private final RingBuffer toDriverCommands;
     private final ClientProxy clientProxy;
     private final AtomicCounter errors;
-    private final DistinctErrorLog errorLog;
+    private final ErrorHandler errorHandler;
 
     ClientRequestAdapter(
         final AtomicCounter errors,
-        final DistinctErrorLog errorLog,
+        final ErrorHandler errorHandler,
         final RingBuffer toDriverCommands,
         final ClientProxy clientProxy,
         final DriverConductor driverConductor)
     {
         this.errors = errors;
-        this.errorLog = errorLog;
+        this.errorHandler = errorHandler;
         this.toDriverCommands = toDriverCommands;
         this.clientProxy = clientProxy;
         this.conductor = driverConductor;
@@ -205,6 +205,6 @@ class ClientRequestAdapter implements MessageHandler
     private void recordError(final Exception ex)
     {
         errors.increment();
-        errorLog.record(ex);
+        errorHandler.onError(ex);
     }
 }

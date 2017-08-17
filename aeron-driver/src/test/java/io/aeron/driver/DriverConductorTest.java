@@ -28,8 +28,8 @@ import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.TermAppender;
 import io.aeron.protocol.StatusMessageFlyweight;
+import org.agrona.ErrorHandler;
 import org.agrona.concurrent.*;
-import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -80,7 +80,7 @@ public class DriverConductorTest
     private final RingBuffer fromClientCommands = new ManyToOneRingBuffer(new UnsafeBuffer(toDriverBuffer));
     private final ClientProxy mockClientProxy = mock(ClientProxy.class);
 
-    private final DistinctErrorLog mockErrorLog = mock(DistinctErrorLog.class);
+    private final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
     private final AtomicCounter mockErrorCounter = mock(AtomicCounter.class);
 
     private final SenderProxy senderProxy = mock(SenderProxy.class);
@@ -132,7 +132,7 @@ public class DriverConductorTest
             .multicastFlowControlSupplier(Configuration.multicastFlowControlSupplier())
             // TODO: remove
             .driverCommandQueue(new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
-            .errorLog(mockErrorLog)
+            .errorHandler(mockErrorHandler)
             .rawLogBuffersFactory(mockRawLogFactory)
             .countersManager(countersManager)
             .epochClock(epochClock)
@@ -195,10 +195,10 @@ public class DriverConductorTest
         final int termOffset = 64;
         final String params =
             "|mtu=" + mtu +
-            "|term-length=" + termLength +
-            "|init-term-id=" + initialTermId +
-            "|term-id=" + termId +
-            "|term-offset=" + termOffset;
+                "|term-length=" + termLength +
+                "|init-term-id=" + initialTermId +
+                "|term-id=" + termId +
+                "|term-offset=" + termOffset;
 
         when(mockRawLogFactory.newNetworkPublication(anyString(), anyInt(), anyInt(), anyLong(), eq(termLength)))
             .thenReturn(LogBufferHelper.newTestLogBuffers(termLength));
@@ -232,9 +232,9 @@ public class DriverConductorTest
         final int termOffset = 64;
         final String params =
             "?term-length=" + termLength +
-            "|init-term-id=" + initialTermId +
-            "|term-id=" + termId +
-            "|term-offset=" + termOffset;
+                "|init-term-id=" + initialTermId +
+                "|term-id=" + termId +
+                "|term-offset=" + termOffset;
 
         when(mockRawLogFactory.newIpcPublication(anyInt(), anyInt(), anyLong(), eq(termLength)))
             .thenReturn(LogBufferHelper.newTestLogBuffers(termLength));
@@ -401,7 +401,7 @@ public class DriverConductorTest
         inOrder.verifyNoMoreInteractions();
 
         verify(mockErrorCounter).increment();
-        verify(mockErrorLog).record(any(Throwable.class));
+        verify(mockErrorHandler).onError(any(Throwable.class));
     }
 
     @Test
@@ -434,7 +434,7 @@ public class DriverConductorTest
         inOrder.verify(mockClientProxy).onError(anyLong(), eq(UNKNOWN_SUBSCRIPTION), anyString());
         inOrder.verifyNoMoreInteractions();
 
-        verify(mockErrorLog).record(any(Throwable.class));
+        verify(mockErrorHandler).onError(any(Throwable.class));
     }
 
     @Test
@@ -451,7 +451,7 @@ public class DriverConductorTest
         verify(mockClientProxy, never()).operationSucceeded(anyLong());
 
         verify(mockErrorCounter).increment();
-        verify(mockErrorLog).record(any(Throwable.class));
+        verify(mockErrorHandler).onError(any(Throwable.class));
     }
 
     @Test

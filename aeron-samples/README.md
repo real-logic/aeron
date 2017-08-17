@@ -15,7 +15,9 @@ Here is a brief list of the samples and what each tries to do.
 - __BasicPublisher__: Simple publisher that sends a number of messages with a one second pause between them.
 - __RateSubscriber__: Subscriber that prints the rate of reception of messages.
 - __StreamingPublisher__: Publisher that streams out messages as fast as possible, displaying rate of publication.
-- __AeronStat__: Monitoring tool that prints the labels and values of the counters in use by a media driver.
-- __ErrorStat__: Monitoring tool that prints the distinct errors observed by the media driver.
 - __Ping__: Ping side of Ping/Pong latency testing tool.
 - __Pong__: Pong side of Ping/Pong latency testing tool.
+- __AeronStat__: Monitoring tool that prints the labels and values of the counters in use by a media driver.
+- __ErrorStat__: Monitoring tool that prints the distinct errors observed by the media driver.
+- __LossStat__: Monitoring tool that prints a report of loss recorded buy stream.
+- __LogInspector__: Diagnostic tool that prints out the contents of a log buffer for a given stream for debugging.

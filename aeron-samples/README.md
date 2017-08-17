@@ -24,3 +24,15 @@ Here is a brief list of monitoring and diagnostic tools:
 - __ErrorStat__: Monitoring tool that prints the distinct errors observed by the media driver.
 - __LossStat__: Monitoring tool that prints a report of loss recorded buy stream.
 - __LogInspector__: Diagnostic tool that prints out the contents of a log buffer for a given stream for debugging.
+
+Also included is some performance tests that can run all in the same process for convenience or across processes
+for illustration with variants for throughput or latency:
+
+- __embedded__: Tests tend to run in the same process.
+- __media__: Variants for IPC using shared memory or UDP via the network.
+
+## Aeron Archive Samples
+
+In the archive sub-directory, or package, you can find samples for recording and replay of streams from an Archive.
+
+    aeron-samples/scripts/archive/

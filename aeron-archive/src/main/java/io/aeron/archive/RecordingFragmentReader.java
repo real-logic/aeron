@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
+import static io.aeron.archive.Archive.segmentFileIndex;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
@@ -71,16 +72,46 @@ class RecordingFragmentReader implements AutoCloseable
         termLength = descriptorDecoder.termBufferLength();
         segmentLength = descriptorDecoder.segmentFileLength();
         startPosition = descriptorDecoder.startPosition();
-
         recordingId = descriptorDecoder.recordingId();
+
+        if (stopPosition == NULL_POSITION)
+        {
+            if (recordingPosition == null)
+            {
+                throw new IllegalArgumentException(
+                    "Recording descriptor indicates live recording, but recordingPosition" +
+                        " is null. Replay for recording id:" + recordingId);
+            }
+            else if (recordingPosition.isClosed())
+            {
+                // could re-read, to handle race of closing stream while constructing reader, but this is an
+                // unexpected race
+                throw new IllegalStateException("Position closed concurrently to replay construction." +
+                    " Replay for recording id:" + recordingId);
+            }
+            else
+            {
+                stopPosition = recordingPosition.get();
+            }
+        }
+
         this.archiveDir = archiveDir;
 
         fromPosition = position == NULL_POSITION ? startPosition : position;
+        if (fromPosition < 0)
+        {
+            throw new IllegalArgumentException("fromPosition must be positive");
+        }
         this.recordingPosition = recordingPosition;
-        final long maxLength = recordingPosition == null ? stopPosition - fromPosition : Long.MAX_VALUE;
+        final long maxLength = recordingPosition == null ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
         final long replayLength = length == NULL_LENGTH ? maxLength : Math.min(length, maxLength);
 
-        segmentFileIndex = Archive.segmentFileIndex(startPosition, fromPosition, segmentLength);
+        if (replayLength < 0)
+        {
+            throw new IllegalArgumentException("Length must be positive");
+        }
+
+        segmentFileIndex = segmentFileIndex(startPosition, fromPosition, segmentLength);
 
         if (!openRecordingSegment())
         {
@@ -108,6 +139,8 @@ class RecordingFragmentReader implements AutoCloseable
         }
 
         replayPosition = fromPosition;
+
+        // from above restrictions on arguments replay limit is in the range [replayPosition, MAX_LONG]
         replayLimit = fromPosition + replayLength;
     }
 
@@ -164,7 +197,7 @@ class RecordingFragmentReader implements AutoCloseable
 
             polled++;
             // TODO: if length crosses a fragment boundary we will send more than requested, consider under supplying
-            if ((replayLimit - replayPosition) <= 0)
+            if (replayLimit <= replayPosition)
             {
                 isDone = true;
                 closeRecordingSegment();
@@ -184,16 +217,16 @@ class RecordingFragmentReader implements AutoCloseable
 
     private boolean refreshStopPositionAndLimit(final long replayPosition, final long oldStopPosition)
     {
-        final long stopTimestamp = currentRecordingStopTimestamp();
         final long recordingPosition = this.recordingPosition.get();
-        final long newStopPosition = this.recordingPosition.isClosed() ? descriptorStopPosition() : recordingPosition;
+        final boolean positionClosed = this.recordingPosition.isClosed();
+        final long newStopPosition = positionClosed ? descriptorStopPosition() : recordingPosition;
 
-        if (stopTimestamp != Catalog.NULL_TIME && (newStopPosition - replayLimit) < 0)
+        if (positionClosed && newStopPosition < replayLimit)
         {
             replayLimit = newStopPosition;
         }
 
-        if ((replayLimit - replayPosition) <= 0)
+        if (replayLimit <= replayPosition)
         {
             isDone = true;
             return false;
@@ -206,12 +239,6 @@ class RecordingFragmentReader implements AutoCloseable
         }
 
         return false;
-    }
-
-    private long currentRecordingStopTimestamp()
-    {
-        UnsafeAccess.UNSAFE.loadFence();
-        return descriptorDecoder.stopTimestamp();
     }
 
     private long descriptorStopPosition()
@@ -258,7 +285,7 @@ class RecordingFragmentReader implements AutoCloseable
 
         if (!segmentFile.exists())
         {
-            final int lastSegmentIndex = Archive.segmentFileIndex(startPosition, stopPosition, segmentLength);
+            final int lastSegmentIndex = segmentFileIndex(startPosition, stopPosition, segmentLength);
             if (lastSegmentIndex > segmentFileIndex)
             {
                 throw new IllegalStateException("Recording segment not found. Segment index=" + segmentFileIndex +

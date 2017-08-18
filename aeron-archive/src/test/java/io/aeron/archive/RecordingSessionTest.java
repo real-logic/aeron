@@ -150,11 +150,6 @@ public class RecordingSessionTest
 
         session.doWork();
 
-        assertEquals(START_TIMESTAMP, descriptorDecoder.startTimestamp());
-        assertEquals(START_POSITION, descriptorDecoder.startPosition());
-        assertEquals(Catalog.NULL_TIME, descriptorDecoder.stopTimestamp());
-        assertEquals(START_POSITION, descriptorDecoder.stopPosition());
-
         when(image.rawPoll(any(), anyInt())).thenAnswer(
             (invocation) ->
             {
@@ -178,11 +173,11 @@ public class RecordingSessionTest
 
         assertNotEquals("Expect some work", 0, session.doWork());
 
-        assertEquals(Catalog.NULL_TIME, descriptorDecoder.stopTimestamp());
-        assertEquals(START_POSITION + RECORDED_BLOCK_LENGTH, descriptorDecoder.stopPosition());
-
         final File segmentFile = new File(tempDirForTest, segmentFileName(RECORDING_ID, 0));
         assertTrue(segmentFile.exists());
+        new RecordingDescriptorEncoder()
+            .wrap(descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH)
+            .stopPosition(START_POSITION + RECORDED_BLOCK_LENGTH);
 
         try (RecordingFragmentReader reader = newRecordingFragmentReader(descriptorBuffer, tempDirForTest))
         {
@@ -204,12 +199,9 @@ public class RecordingSessionTest
         assertEquals("Expect no work", 0, session.doWork());
 
         when(image.isClosed()).thenReturn(true);
-        when(epochClock.time()).thenReturn(STOP_TIMESTAMP);
         session.doWork();
         assertTrue(session.isDone());
         session.close();
-
-        assertEquals(STOP_TIMESTAMP, descriptorDecoder.stopTimestamp());
     }
 
     private Subscription mockSubscription(final String channel, final int streamId)

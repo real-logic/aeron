@@ -94,8 +94,9 @@ public class ReplaySessionTest
             .archiveDir(archiveDir)
             .epochClock(epochClock);
 
+        final RecordingDescriptorEncoder encoder = new RecordingDescriptorEncoder();
         Catalog.initDescriptor(
-            new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH),
+            encoder.wrap(descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH),
             RECORDING_ID,
             START_TIMESTAMP,
             START_POSITION,
@@ -109,7 +110,6 @@ public class ReplaySessionTest
             "channel",
             "sourceIdentity");
 
-        when(epochClock.time()).thenReturn(TIME);
         try (RecordingWriter writer = new RecordingWriter(context, descriptorBuffer, position))
         {
 
@@ -124,6 +124,8 @@ public class ReplaySessionTest
             recordFragment(writer, buffer, headerFwt, header, 2, FrameDescriptor.END_FRAG_FLAG, HDR_TYPE_DATA);
             recordFragment(writer, buffer, headerFwt, header, 3, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_PAD);
         }
+        encoder.stopPosition(START_POSITION + 4 * FRAME_LENGTH);
+        encoder.stopTimestamp(128);
     }
 
     @After
@@ -374,8 +376,10 @@ public class ReplaySessionTest
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
 
         final int recordingId = RECORDING_ID + 1;
+        final RecordingDescriptorEncoder encoder =
+            new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH);
         Catalog.initDescriptor(
-            new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH),
+            encoder,
             recordingId,
             START_TIMESTAMP,
             START_POSITION,
@@ -447,6 +451,8 @@ public class ReplaySessionTest
             recordFragment(writer, buffer, headerFwt, header, 2, FrameDescriptor.END_FRAG_FLAG, HDR_TYPE_DATA);
             recordFragment(writer, buffer, headerFwt, header, 3, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_PAD);
         }
+        when(position.isClosed()).thenReturn(true);
+        encoder.stopPosition(START_POSITION + FRAME_LENGTH * 4);
         assertNotEquals(0, replaySession.doWork());
 
         validateFrame(termBuffer, 2, FrameDescriptor.END_FRAG_FLAG);

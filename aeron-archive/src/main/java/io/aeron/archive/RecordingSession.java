@@ -23,6 +23,8 @@ import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
+import static io.aeron.archive.Catalog.NULL_POSITION;
+
 /**
  * Consumes an {@link Image} and records data to file using an {@link RecordingWriter}.
  */
@@ -73,6 +75,7 @@ class RecordingSession implements Session
     public void abort()
     {
         this.state = State.INACTIVE;
+        CloseHelper.quietClose(recordingWriter);
     }
 
     public int doWork()
@@ -138,13 +141,23 @@ class RecordingSession implements Session
 
     public void close()
     {
-        final long startPosition = recordingWriter.startPosition();
-        final long stopPosition = recordingWriter.stopPosition();
-
         state = State.CLOSED;
-        CloseHelper.quietClose(recordingWriter);
+        if (recordingWriter != null)
+        {
+            final long startPosition = recordingWriter.startPosition();
+            final long stopPosition = recordingWriter.stopPosition();
+            CloseHelper.quietClose(recordingWriter);
+            recordingEventsProxy.stopped(recordingId, startPosition, stopPosition);
+        }
+        else
+        {
+            recordingEventsProxy.stopped(recordingId, NULL_POSITION, NULL_POSITION);
+        }
+    }
 
-        recordingEventsProxy.stopped(recordingId, startPosition, stopPosition);
+    UnsafeBuffer descriptorBuffer()
+    {
+        return descriptorBuffer;
     }
 
     private int record()
@@ -163,12 +176,12 @@ class RecordingSession implements Session
 
             if (image.isClosed() || recordingWriter.isClosed())
             {
-                state = State.INACTIVE;
+                abort();
             }
         }
         catch (final Exception ex)
         {
-            state = State.INACTIVE;
+            abort();
             LangUtil.rethrowUnchecked(ex);
         }
 

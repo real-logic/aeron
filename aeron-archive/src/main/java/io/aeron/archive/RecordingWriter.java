@@ -16,12 +16,14 @@
 package io.aeron.archive;
 
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
-import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.*;
+import org.agrona.BitUtil;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -30,7 +32,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 
@@ -60,9 +61,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
-    private final EpochClock epochClock;
-    private final UnsafeBuffer descriptorBuffer;
-    private final RecordingDescriptorEncoder descriptorEncoder;
     private final AtomicCounter stopPosition;
     private final int segmentFileLength;
     private final long startPosition;
@@ -79,15 +77,12 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     RecordingWriter(final Context context, final UnsafeBuffer descriptorBuffer, final AtomicCounter stopPosition)
     {
-        this.descriptorBuffer = descriptorBuffer;
-        descriptorEncoder = new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH);
         this.stopPosition = stopPosition;
         final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
         wrapDescriptorDecoder(descriptorDecoder, descriptorBuffer);
 
         final int termBufferLength = descriptorDecoder.termBufferLength();
 
-        this.epochClock = context.epochClock;
         this.archiveDirChannel = context.archiveDirChannel;
         this.archiveDir = context.archiveDir;
         this.segmentFileLength = Math.max(context.segmentFileLength, termBufferLength);
@@ -163,14 +158,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         }
 
         isClosed = true;
-
-        if (descriptorBuffer != null)
-        {
-            UnsafeAccess.UNSAFE.storeFence();
-            descriptorEncoder.stopTimestamp(epochClock.time());
-            UnsafeAccess.UNSAFE.storeFence();
-        }
-
         CloseHelper.close(recordingFileChannel);
     }
 
@@ -293,23 +280,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         segmentPosition = 0;
         segmentIndex++;
 
-        forceMappedBuffer(descriptorBuffer.byteBuffer());
         newRecordingSegmentFile();
-    }
-
-    private void forceMappedBuffer(final ByteBuffer byteBuffer)
-    {
-        if (byteBuffer instanceof MappedByteBuffer)
-        {
-            try
-            {
-                ((MappedByteBuffer)byteBuffer).force();
-            }
-            catch (final UnsupportedOperationException ignore)
-            {
-                // Due to inexplicable idiocy, DirectByteBuffer extends MappedByteBuffer and not the other way around.
-            }
-        }
     }
 
     private void onFirstWrite(final int termOffset) throws IOException
@@ -327,7 +298,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     {
         segmentPosition += blockLength;
         final long newPosition = stopPosition.getWeak() + blockLength;
-        descriptorEncoder.stopPosition(newPosition);
         stopPosition.setOrdered(newPosition);
     }
 

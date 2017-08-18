@@ -18,6 +18,7 @@ package io.aeron.archive;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
+import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.archive.codecs.SourceLocation;
 import org.agrona.CloseHelper;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -51,6 +52,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final ReplayPublicationSupplier newReplayPublication = this::newReplayPublication;
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
+    private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
 
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;
@@ -437,7 +439,11 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         recordingSessionByIdMap.remove(session.sessionId());
         closeSession(session);
-        recordingPositionByIdMap.remove(session.sessionId()).close();
+        final AtomicCounter position = recordingPositionByIdMap.remove(session.sessionId());
+        Catalog.wrapDescriptorEncoder(recordingDescriptorEncoder, session.descriptorBuffer());
+        recordingDescriptorEncoder.stopPosition(position.get());
+        recordingDescriptorEncoder.stopTimestamp(epochClock.time());
+        position.close();
     }
 
     void closeReplaySession(final ReplaySession session)

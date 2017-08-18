@@ -30,9 +30,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.Archive.segmentFileName;
-import static io.aeron.archive.Catalog.NULL_TIME;
-import static io.aeron.archive.Catalog.PAGE_SIZE;
-import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
+import static io.aeron.archive.Catalog.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.file.StandardOpenOption.*;
@@ -153,28 +151,15 @@ public class CatalogTest
         }
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void shouldFailFixOnMissingFile() throws Exception
-    {
-        final long newRecordingId = newRecording();
-
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
-        {
-            catalog.forEntry(
-                (he, hd, encoder, decoder) -> encoder.stopPosition(decoder.startPosition() + 1024), newRecordingId);
-        }
-
-        when(clock.time()).thenReturn(42L);
-
-        new Catalog(archiveDir, null, 0, clock);
-    }
-
     @Test
     public void shouldFixTimestampAndPositionAfterFailureSamePage() throws Exception
     {
         final long newRecordingId = newRecording();
 
-        final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));
+        new File(archiveDir, segmentFileName(newRecordingId, 0)).createNewFile();
+        new File(archiveDir, segmentFileName(newRecordingId, 1)).createNewFile();
+        new File(archiveDir, segmentFileName(newRecordingId, 2)).createNewFile();
+        final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 3));
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
             final ByteBuffer bb = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
@@ -195,7 +180,7 @@ public class CatalogTest
                 (he, hd, e, decoder) ->
                 {
                     assertThat(decoder.stopTimestamp(), is(NULL_TIME));
-                    assertThat(decoder.stopPosition(), is(decoder.startPosition()));
+                    assertThat(decoder.stopPosition(), is(NULL_POSITION));
                 },
                 newRecordingId);
         }
@@ -208,7 +193,7 @@ public class CatalogTest
                 (he, hd, e, decoder) ->
                 {
                     assertThat(decoder.stopTimestamp(), is(42L));
-                    assertThat(decoder.stopPosition(), is(1024L + 128L));
+                    assertThat(decoder.stopPosition(), is(SEGMENT_FILE_SIZE * 3 + 1024L + 128L));
                 },
                 newRecordingId);
         }
@@ -240,7 +225,7 @@ public class CatalogTest
                 (he, hd, e, decoder) ->
                 {
                     assertThat(decoder.stopTimestamp(), is(NULL_TIME));
-                    assertThat(decoder.stopPosition(), is(decoder.startPosition()));
+                    assertThat(decoder.stopPosition(), is(NULL_POSITION));
                 },
                 newRecordingId);
         }
@@ -310,7 +295,7 @@ public class CatalogTest
                 (he, hd, e, decoder) ->
                 {
                     assertThat(decoder.stopTimestamp(), is(NULL_TIME));
-                    assertThat(decoder.stopPosition(), is(decoder.startPosition()));
+                    e.stopPosition(NULL_POSITION);
                 },
                 newRecordingId);
         }

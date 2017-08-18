@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
+import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.file.StandardOpenOption.*;
@@ -310,48 +311,51 @@ class Catalog implements AutoCloseable
         final RecordingDescriptorEncoder encoder,
         final RecordingDescriptorDecoder decoder)
     {
+        final long recordingId = decoder.recordingId();
         if (headerDecoder.valid() == VALID && decoder.stopTimestamp() == NULL_TIME)
         {
-            final long stopPosition = decoder.stopPosition();
-            final long recordingLength = stopPosition - decoder.startPosition();
-            final int segmentFileLength = decoder.segmentFileLength();
-            final int segmentIndex = (int)(recordingLength / segmentFileLength);
-            final long stoppedSegmentOffset =
-                ((decoder.startPosition() % decoder.termBufferLength()) + recordingLength) % segmentFileLength;
 
-            final File segmentFile = new File(archiveDir, Archive.segmentFileName(decoder.recordingId(), segmentIndex));
+            int segmentIndex = 0;
+            File segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentIndex));
+            final long startPosition = decoder.startPosition();
+
             if (!segmentFile.exists())
             {
-                if (recordingLength != 0 || stoppedSegmentOffset != 0)
-                {
-                    throw new IllegalStateException("Failed to open recording: " + segmentFile.getAbsolutePath() +
-                        " - Please use the CatalogTool to fix the archive.");
-                }
+                encoder.stopPosition(startPosition);
             }
             else
             {
-                recoverStopPosition(encoder, segmentFile, segmentFileLength, stopPosition, stoppedSegmentOffset);
+                File nextSegmentFile = new File(archiveDir, segmentFileName(recordingId, segmentIndex + 1));
+                while (nextSegmentFile.exists())
+                {
+                    segmentIndex++;
+                    segmentFile = nextSegmentFile;
+                    nextSegmentFile = new File(archiveDir, segmentFileName(recordingId, segmentIndex + 1));
+                }
+                final int segmentFileLength = decoder.segmentFileLength();
+                final long stopOffset = recoverStopOffset(segmentFile, segmentFileLength);
+                final int termBufferLength = decoder.termBufferLength();
+                final long recordingLength =
+                    (startPosition % termBufferLength) + (segmentIndex * segmentFileLength) + stopOffset;
+                encoder.stopPosition(startPosition + recordingLength);
             }
 
             encoder.stopTimestamp(epochClock.time());
         }
 
-        nextRecordingId = decoder.recordingId() + 1;
+        nextRecordingId = recordingId + 1;
     }
 
-    private void recoverStopPosition(
-        final RecordingDescriptorEncoder encoder,
+    private long recoverStopOffset(
         final File segmentFile,
-        final int segmentFileLength,
-        final long stopPosition,
-        final long stoppedSegmentOffset)
+        final int segmentFileLength)
     {
+        long lastFragmentSegmentOffset = 0;
         try (FileChannel segment = FileChannel.open(segmentFile.toPath(), READ))
         {
             final ByteBuffer headerBB = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
             final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(headerBB);
-            long lastFragmentSegmentOffset = stoppedSegmentOffset;
-            long nextFragmentSegmentOffset = stoppedSegmentOffset;
+            long nextFragmentSegmentOffset = 0;
             do
             {
                 headerBB.clear();
@@ -371,26 +375,17 @@ class Catalog implements AutoCloseable
             }
             while (nextFragmentSegmentOffset != segmentFileLength);
 
-            // since we know descriptor buffers are forced on file rollover we don't need to handle rollover
-            // beyond segment boundary (see RecordingWriter#onFileRollover)
-
             if ((nextFragmentSegmentOffset / PAGE_SIZE) == (lastFragmentSegmentOffset / PAGE_SIZE))
             {
-                // if fragment does not straddle page boundaries we need not drop the last fragment
+                // if last fragment does not straddle page boundaries we need not drop it
                 lastFragmentSegmentOffset = nextFragmentSegmentOffset;
-            }
-
-            if (lastFragmentSegmentOffset != stoppedSegmentOffset)
-            {
-                // process has failed between transferring the data to updating the stop position, we can't trust
-                // the last fragment, so take the position of the previous fragment as the stop position
-                encoder.stopPosition(stopPosition + (lastFragmentSegmentOffset - stoppedSegmentOffset));
             }
         }
         catch (final Exception ex)
         {
             LangUtil.rethrowUnchecked(ex);
         }
+        return lastFragmentSegmentOffset;
     }
 
     static void initDescriptor(
@@ -413,7 +408,7 @@ class Catalog implements AutoCloseable
             .startTimestamp(startTimestamp)
             .stopTimestamp(NULL_TIME)
             .startPosition(startPosition)
-            .stopPosition(startPosition)
+            .stopPosition(NULL_POSITION)
             .initialTermId(initialTermId)
             .segmentFileLength(segmentFileLength)
             .termBufferLength(termBufferLength)
@@ -432,5 +427,10 @@ class Catalog implements AutoCloseable
             DESCRIPTOR_HEADER_LENGTH,
             DESCRIPTOR_BLOCK_LENGTH,
             SCHEMA_VERSION);
+    }
+
+    static void wrapDescriptorEncoder(final RecordingDescriptorEncoder decoder, final UnsafeBuffer descriptorBuffer)
+    {
+        decoder.wrap(descriptorBuffer, DESCRIPTOR_HEADER_LENGTH);
     }
 }

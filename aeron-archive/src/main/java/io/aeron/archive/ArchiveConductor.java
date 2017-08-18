@@ -316,7 +316,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         }
 
         final long newId = replaySessionId++;
-        final AtomicCounter recordingPosition = recordingPositionByIdMap.get(recordingId);
         final ReplaySession replaySession = new ReplaySession(
             position,
             length,
@@ -330,7 +329,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             replayChannel,
             replayStreamId,
             descriptorBuffer,
-            recordingPosition);
+            recordingPositionByIdMap.get(recordingId));
 
         replaySessionByIdMap.put(newId, replaySession);
         replayer.addSession(replaySession);
@@ -396,9 +395,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                 image.subscription().streamId() + "'");
         }
 
-        final Subscription subscription = image.subscription();
         final int sessionId = image.sessionId();
-        final int streamId = subscription.streamId();
+        final int streamId = image.subscription().streamId();
         final String sourceIdentity = image.sourceIdentity();
         final int termBufferLength = image.termBufferLength();
         final int mtuLength = image.mtuLength();

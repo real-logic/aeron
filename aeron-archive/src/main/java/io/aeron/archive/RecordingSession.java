@@ -30,6 +30,8 @@ import static io.aeron.archive.Catalog.NULL_POSITION;
  */
 class RecordingSession implements Session
 {
+    private static final int MAX_BLOCK_LENGTH = 16 * 1204 * 1024;
+
     private enum State
     {
         INIT, RECORDING, INACTIVE, CLOSED
@@ -64,7 +66,7 @@ class RecordingSession implements Session
         this.position = position;
         this.context = context;
 
-        blockLengthLimit = Math.min(image.termBufferLength(), 16 * 1204 * 1024);
+        blockLengthLimit = Math.min(image.termBufferLength(), MAX_BLOCK_LENGTH);
     }
 
     public boolean isDone()
@@ -145,7 +147,7 @@ class RecordingSession implements Session
         if (recordingWriter != null)
         {
             final long startPosition = recordingWriter.startPosition();
-            final long stopPosition = recordingWriter.stopPosition();
+            final long stopPosition = recordingWriter.recordedPosition();
             CloseHelper.quietClose(recordingWriter);
             recordingEventsProxy.stopped(recordingId, startPosition, stopPosition);
         }
@@ -171,7 +173,7 @@ class RecordingSession implements Session
                 recordingEventsProxy.progress(
                     recordingWriter.recordingId(),
                     recordingWriter.startPosition(),
-                    recordingWriter.stopPosition());
+                    recordingWriter.recordedPosition());
             }
 
             if (image.isClosed() || recordingWriter.isClosed())

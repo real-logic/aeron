@@ -61,7 +61,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
-    private final AtomicCounter stopPosition;
+    private final AtomicCounter recordedPosition;
     private final int segmentFileLength;
     private final long startPosition;
 
@@ -75,9 +75,9 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     private boolean isClosed = false;
 
-    RecordingWriter(final Context context, final UnsafeBuffer descriptorBuffer, final AtomicCounter stopPosition)
+    RecordingWriter(final Context context, final UnsafeBuffer descriptorBuffer, final AtomicCounter recordedPosition)
     {
-        this.stopPosition = stopPosition;
+        this.recordedPosition = recordedPosition;
         final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
         wrapDescriptorDecoder(descriptorDecoder, descriptorBuffer);
 
@@ -91,7 +91,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
         this.recordingId = descriptorDecoder.recordingId();
         this.startPosition = descriptorDecoder.startPosition();
-        this.stopPosition.setOrdered(startPosition);
+        this.recordedPosition.setOrdered(startPosition);
 
         final int termsMask = (segmentFileLength / termBufferLength) - 1;
         if (((termsMask + 1) & termsMask) != 0)
@@ -221,9 +221,9 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         return startPosition;
     }
 
-    long stopPosition()
+    long recordedPosition()
     {
-        return stopPosition.getWeak();
+        return recordedPosition.getWeak();
     }
 
     private int writeData(final ByteBuffer buffer, final int position, final FileChannel fileChannel)
@@ -297,8 +297,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     private void afterWrite(final int blockLength)
     {
         segmentPosition += blockLength;
-        final long newPosition = stopPosition.getWeak() + blockLength;
-        stopPosition.setOrdered(newPosition);
+        recordedPosition.addOrdered(blockLength);
     }
 
     static class Context

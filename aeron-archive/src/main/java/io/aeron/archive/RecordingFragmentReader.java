@@ -78,7 +78,7 @@ class RecordingFragmentReader implements AutoCloseable
             if (recordingPosition == null)
             {
                 throw new IllegalArgumentException(
-                    "Recording descriptor indicates live recording, but recordingPosition" +
+                    "Recording descriptor indicates live recording, but recordedPosition" +
                         " is null. Replay for recording id:" + recordingId);
             }
             else if (recordingPosition.isClosed())

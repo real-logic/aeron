@@ -82,6 +82,7 @@ public class ReplaySessionTest
     {
         when(position.getWeak()).then((invocation) -> positionLong);
         when(position.get()).then((invocation) -> positionLong);
+
         doAnswer(
             (invocation) ->
             {
@@ -89,6 +90,15 @@ public class ReplaySessionTest
                 return null;
             })
             .when(position).setOrdered(anyLong());
+
+        doAnswer(
+            (invocation) ->
+            {
+                final long delta = invocation.getArgument(0);
+                positionLong += delta;
+                return null;
+            })
+            .when(position).addOrdered(anyLong());
 
         context = new RecordingWriter.Context()
             .archiveDir(archiveDir)

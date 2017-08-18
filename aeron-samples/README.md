@@ -33,6 +33,7 @@ for illustration, with variants for throughput or latency measurement:
 
 ## Aeron Archive Samples
 
-In the archive sub-directory, or package, you can find samples for recording and replay of streams from an Archive.
+In the [archive](https://github.com/real-logic/aeron/tree/master/aeron-samples/scripts/archive) sub-directory, 
+or package, you can find samples for recording and replay of streams from an Archive.
 
     aeron-samples/scripts/archive/

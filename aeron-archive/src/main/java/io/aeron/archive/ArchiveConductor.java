@@ -416,8 +416,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             originalChannel,
             sourceIdentity);
 
-        final String label = "rec-pos: " + recordingId + ' ' + sessionId + ' ' + streamId + ' ' + strippedChannel;
-        final AtomicCounter position = countersManager.newCounter(label);
+        final AtomicCounter position = newRecordingPositionCounter(recordingId, sessionId, streamId, strippedChannel);
 
         final RecordingSession session = new RecordingSession(
             recordingId,
@@ -432,6 +431,19 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         recordingPositionByIdMap.put(recordingId, position);
 
         recorder.addSession(session);
+    }
+
+    void closeRecordingSession(final RecordingSession session)
+    {
+        recordingSessionByIdMap.remove(session.sessionId());
+        closeSession(session);
+        recordingPositionByIdMap.remove(session.sessionId()).close();
+    }
+
+    void closeReplaySession(final ReplaySession session)
+    {
+        replaySessionByIdMap.remove(session.sessionId());
+        closeSession(session);
     }
 
     interface ReplayPublicationSupplier
@@ -467,19 +479,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         return aeron.addExclusivePublication(channel, replayStreamId);
     }
 
-    void closeRecordingSession(final RecordingSession session)
-    {
-        recordingSessionByIdMap.remove(session.sessionId());
-        closeSession(session);
-        recordingPositionByIdMap.remove(session.sessionId()).close();
-    }
-
-    void closeReplaySession(final ReplaySession session)
-    {
-        replaySessionByIdMap.remove(session.sessionId());
-        closeSession(session);
-    }
-
     private static FileChannel channelForDirectorySync(final File directory, final int fileSyncLevel)
     {
         if (fileSyncLevel > 0)
@@ -494,5 +493,19 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         }
 
         return null;
+    }
+
+    private AtomicCounter newRecordingPositionCounter(
+        final long recordingId,
+        final int sessionId,
+        final int streamId,
+        final String strippedChannel)
+    {
+        final String label = "rec-pos: " + recordingId + ' ' + sessionId + ' ' + streamId + ' ' + strippedChannel;
+
+        return countersManager.newCounter(
+            label,
+            Archive.Configuration.ARCHIVE_RECORDING_POSITION_TYPE_ID,
+            (buffer) -> buffer.putLong(0, recordingId));
     }
 }

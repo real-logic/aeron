@@ -127,6 +127,8 @@ public final class Archive implements AutoCloseable
 
     public static class Configuration
     {
+        public static final int ARCHIVE_RECORDING_POSITION_TYPE_ID = 100;
+
         public static final String ARCHIVE_DIR_PROP_NAME = "aeron.archive.dir";
         public static final String ARCHIVE_DIR_DEFAULT = "archive";
 

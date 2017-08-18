@@ -1,7 +1,7 @@
-Under Construction, USE AT YOUR OWN RISK
+Aeron Archive
 ===
 
-The aeron-archive is an application which enables data stream recording
+The aeron-archive is an service which enables Aeron data stream recording
 and replay support from an archive. 
 
 Currently implemented functionality:
@@ -16,18 +16,18 @@ a particular __termId + termOffset__, and for a particular length.
 
 - **Query:** service provides a rudimentary query interface which
 allows __recordingId__ discovery and description. Currently this
-supports a query for all descriptors or by <__channel, streamId__>.
+supports a query for all descriptors or filtered by <__channel, streamId__>.
 
 Usage
 =====
 
 Protocol
 =====
-Messages are specified using SBE under `../aeron-archive-codecs`. The
+Messages are specified using SBE in `aeron-archive-codecs.xml`. The
 Archive communicates via the following interfaces:
- - **Notifications channel:** other parties can subscribe to the notifications
- to track the creation/termination/progress of recordings. These are the
- notification messages specified in the codec.
+ - **Events channel:** other parties can subscribe to events for the start,
+ stop, and progress of recordings. These are the
+ recording events messages specified in the codec.
  
  - **Requests channel:** this allows clients to initiate replay or queries
  interactions with the archive. Requests have a correlationId sent
@@ -38,26 +38,14 @@ Archive communicates via the following interfaces:
  on the `ConnectRequest` message.
 
 A control session can be established with the Archive. Operations happen within
-the context of such a ControlSession.
+the context of such a ControlSession which is allocated a `controlSessionId`.
 
-Notifications
+Recording Events
 ----
 Aeron clients wishing to observe the Archive recordings lifecycle can do so by
-subscribing to the Notifications channel. The messages are described in the codec.
+subscribing to the recording events channel. The messages are described in the codec.
 To fully capture the state of the Archive a client could subscribe to these
-notifications as well as query for the full list of descriptors.
-
-Control client connections
-----
-
-Start/Stop Recording Interaction
-----
-
-Start/Abort Replay Interaction
-----
-
-Query Recording Descriptors
-----
+events as well as query for the full list of descriptors.
 
 Persisted Format
 =====

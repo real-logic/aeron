@@ -18,10 +18,7 @@ package io.aeron.driver.status;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 
-import java.nio.charset.StandardCharsets;
-
 import static io.aeron.driver.status.StreamPositionCounter.*;
-import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
  * Allocates {@link AtomicCounter} indicating a per {@link io.aeron.driver.PublicationImage} indication.
@@ -66,11 +63,9 @@ public class PerImageIndicator
                 buffer.putInt(SESSION_ID_OFFSET, sessionId);
                 buffer.putInt(STREAM_ID_OFFSET, streamId);
 
-                final byte[] channelBytes = channel.getBytes(StandardCharsets.UTF_8);
-                final int length = Math.min(channelBytes.length, MAX_CHANNEL_LENGTH);
-
-                buffer.putInt(CHANNEL_OFFSET, length);
-                buffer.putBytes(CHANNEL_OFFSET + SIZE_OF_INT, channelBytes, 0, length);
+                final String truncatedChannel =
+                    channel.length() > MAX_CHANNEL_LENGTH ? channel.substring(0, MAX_CHANNEL_LENGTH) : channel;
+                buffer.putStringAscii(CHANNEL_OFFSET, truncatedChannel);
             });
     }
 }

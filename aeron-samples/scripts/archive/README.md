@@ -1,15 +1,14 @@
-Aeron Archive Samples
-===
+# Aeron Archive Samples
 
-The scripts in this directory can launch the sample applications of the Aeron Archive service.
+The scripts in this directory can launch the sample applications for the Aeron Archive service.
 
-### Embedded Throughput Samples
+## Embedded Throughput Samples
 
-Suitable for measuring IO performance of your system. The sample will default to creating
-an archive directory in the the temporary file system. It is recommended that a properties file is provided
-by passing it as argument to the script. The `aeron.archive.dir` should be located on fast storage.
+Suitable for measuring IO performance of your system. The samples will default to creating
+an archive directory on the the temporary file system. It is recommended that a properties file is provided
+by passing it as argument to the script. The `aeron.archive.dir` property should be located on fast storage.
 
-#### Recording Throughput
+### Recording Throughput
 
 `embedded-recording-throughput`: Will record a number of messages using the `SampleConfiguration` properties then 
 ask if the test should be repeated. Doing it multiple times allows the system to warm up.
@@ -20,7 +19,7 @@ It is worth trying different levels of write synchronisation for durability.
 - `aeron.archive.file.sync.level=1`: for forcing the dirty data pages to disk. 
 - `aeron.archive.file.sync.level=2`: for forcing the dirty data pages and file metadata to disk. 
 
-#### Replay Throughput
+### Replay Throughput
 
 `embedded-replay-throughput`: Will record a number of messages using the `SampleConfiguration` properties then
 replay them on a new stream. The test will ask to repeat the replay of record message and doing it multiple times
@@ -28,7 +27,7 @@ allows for the system to warm up.
 
 It is worth playing with different messages lengths and threading configurations.
 
-### Basic Publication and Subscription to an archived stream
+## Basic Publication and Subscription to an archived stream
 
 1. Start the archiving media driver in its own console.
 

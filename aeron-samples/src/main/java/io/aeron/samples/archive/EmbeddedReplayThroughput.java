@@ -17,11 +17,10 @@ package io.aeron.samples.archive;
 
 import io.aeron.*;
 import io.aeron.archive.Archive;
-import io.aeron.archive.ArchiveThreadingMode;
+import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.samples.SampleConfiguration;
@@ -31,6 +30,9 @@ import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 
+import java.io.File;
+
+import static io.aeron.archive.Archive.Configuration.ARCHIVE_DIR_DEFAULT;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.samples.archive.TestUtil.MEGABYTE;
 import static io.aeron.samples.archive.TestUtil.NOOP_FRAGMENT_HANDLER;
@@ -47,8 +49,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
     private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
 
-    private MediaDriver driver;
-    private Archive archive;
+    private ArchivingMediaDriver archivingMediaDriver;
     private Aeron aeron;
     private AeronArchive aeronArchive;
     private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MESSAGE_LENGTH, FRAME_ALIGNMENT));
@@ -90,19 +91,13 @@ public class EmbeddedReplayThroughput implements AutoCloseable
 
     public EmbeddedReplayThroughput()
     {
-        driver = MediaDriver.launch(
-            new MediaDriver.Context()
-                .threadingMode(ThreadingMode.DEDICATED)
-                .useConcurrentCounterManager(true)
-                .dirsDeleteOnStart(true));
+        final String archiveDirName = Archive.Configuration.archiveDirName();
+        final File archiveDir =  ARCHIVE_DIR_DEFAULT.equals(archiveDirName) ?
+            TestUtil.createTempDir() : new File(archiveDirName);
 
-        archive = Archive.launch(
-            new Archive.Context()
-                .archiveDir(TestUtil.createTempDir())
-                .fileSyncLevel(0)
-                .threadingMode(ArchiveThreadingMode.SHARED)
-                .countersManager(driver.context().countersManager())
-                .errorHandler(driver.context().errorHandler()));
+        archivingMediaDriver = ArchivingMediaDriver.launch(
+            new MediaDriver.Context().dirsDeleteOnStart(true),
+            new Archive.Context().archiveDir(archiveDir));
 
         aeron = Aeron.connect();
 
@@ -114,11 +109,10 @@ public class EmbeddedReplayThroughput implements AutoCloseable
     public void close()
     {
         CloseHelper.close(aeronArchive);
-        CloseHelper.close(archive);
-        CloseHelper.close(driver);
+        CloseHelper.close(archivingMediaDriver);
 
-        archive.context().deleteArchiveDirectory();
-        driver.context().deleteAeronDirectory();
+        archivingMediaDriver.archive().context().deleteArchiveDirectory();
+        archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
     }
 
     @SuppressWarnings("unused")

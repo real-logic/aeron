@@ -19,13 +19,12 @@ import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Subscription;
 import io.aeron.archive.Archive;
-import io.aeron.archive.ArchiveThreadingMode;
+import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingEventsAdapter;
 import io.aeron.archive.client.RecordingEventsListener;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.ThreadingMode;
 import io.aeron.samples.SampleConfiguration;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.BackoffIdleStrategy;
@@ -33,6 +32,9 @@ import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 
+import java.io.File;
+
+import static io.aeron.archive.Archive.Configuration.ARCHIVE_DIR_DEFAULT;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.samples.archive.TestUtil.MEGABYTE;
 import static io.aeron.samples.archive.TestUtil.NOOP_FRAGMENT_HANDLER;
@@ -46,8 +48,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
     private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
 
-    private final MediaDriver driver;
-    private final Archive archive;
+    private final ArchivingMediaDriver archivingMediaDriver;
     private final Aeron aeron;
     private final AeronArchive aeronArchive;
     private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MESSAGE_LENGTH, FRAME_ALIGNMENT));
@@ -81,18 +82,13 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
 
     public EmbeddedRecordingThroughput()
     {
-        driver = MediaDriver.launch(
-            new MediaDriver.Context()
-                .threadingMode(ThreadingMode.DEDICATED)
-                .useConcurrentCounterManager(true)
-                .dirsDeleteOnStart(true));
+        final String archiveDirName = Archive.Configuration.archiveDirName();
+        final File archiveDir =  ARCHIVE_DIR_DEFAULT.equals(archiveDirName) ?
+            TestUtil.createTempDir() : new File(archiveDirName);
 
-        archive = Archive.launch(
-            new Archive.Context()
-                .archiveDir(TestUtil.createTempDir())
-                .threadingMode(ArchiveThreadingMode.SHARED)
-                .countersManager(driver.context().countersManager())
-                .errorHandler(driver.context().errorHandler()));
+        archivingMediaDriver = ArchivingMediaDriver.launch(
+            new MediaDriver.Context().dirsDeleteOnStart(true),
+            new Archive.Context().archiveDir(archiveDir));
 
         aeron = Aeron.connect();
 
@@ -112,11 +108,10 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
     public void close()
     {
         CloseHelper.close(aeronArchive);
-        CloseHelper.close(archive);
-        CloseHelper.close(driver);
+        CloseHelper.close(archivingMediaDriver);
 
-        archive.context().deleteArchiveDirectory();
-        driver.context().deleteAeronDirectory();
+        archivingMediaDriver.archive().context().deleteArchiveDirectory();
+        archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
     }
 
     public void onStart(

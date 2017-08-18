@@ -788,8 +788,7 @@ void aeron_network_publication_on_time_event(
 
         case AERON_NETWORK_PUBLICATION_STATUS_LINGER:
         {
-            if (!publication->flow_control->should_linger(publication->flow_control->state, now_ns) ||
-                (now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->linger_timeout_ns)))
+            if (now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->linger_timeout_ns))
             {
                 aeron_driver_conductor_cleanup_network_publication(conductor, publication);
                 publication->conductor_fields.status = AERON_NETWORK_PUBLICATION_STATUS_CLOSING;

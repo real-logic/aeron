@@ -106,8 +106,7 @@ public class CubicCongestionControl implements CongestionControl
             registrationId,
             sessionId,
             streamId,
-            udpChannel.originalUriString(),
-            "");
+            udpChannel.originalUriString());
 
         windowIndicator = PerImageIndicator.allocate(
             "rcv-cc-cubic-wnd",
@@ -115,8 +114,7 @@ public class CubicCongestionControl implements CongestionControl
             registrationId,
             sessionId,
             streamId,
-            udpChannel.originalUriString(),
-            "");
+            udpChannel.originalUriString());
 
         rttIndicator.setOrdered(0);
         windowIndicator.setOrdered(minWindow);

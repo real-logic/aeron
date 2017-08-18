@@ -38,6 +38,7 @@ import static io.aeron.driver.status.PublisherLimit.PUBLISHER_LIMIT_TYPE_ID;
 import static io.aeron.driver.status.ReceiveChannelStatus.RECEIVE_CHANNEL_STATUS_TYPE_ID;
 import static io.aeron.driver.status.ReceiverPos.RECEIVER_POS_TYPE_ID;
 import static io.aeron.driver.status.SendChannelStatus.SEND_CHANNEL_STATUS_TYPE_ID;
+import static io.aeron.driver.status.SenderLimit.SENDER_LIMIT_TYPE_ID;
 import static io.aeron.driver.status.StreamPositionCounter.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 
@@ -58,7 +59,7 @@ public class AeronStat
      * Types of the counters.
      * <ul>
      * <li>0: System Counters</li>
-     * <li>1 - 5, 9: Stream Positions</li>
+     * <li>1 - 5, 9, 10: Stream Positions and Indicators</li>
      * <li>6 - 7: Channel Endpoint Status</li>
      * </ul>
      */
@@ -256,7 +257,8 @@ public class AeronStat
         {
             return false;
         }
-        else if ((typeId >= PUBLISHER_LIMIT_TYPE_ID && typeId <= RECEIVER_POS_TYPE_ID) || typeId == PER_IMAGE_TYPE_ID)
+        else if ((typeId >= PUBLISHER_LIMIT_TYPE_ID && typeId <= RECEIVER_POS_TYPE_ID) ||
+            typeId == SENDER_LIMIT_TYPE_ID || typeId == PER_IMAGE_TYPE_ID)
         {
             if (!match(identityFilter, () -> Long.toString(keyBuffer.getLong(REGISTRATION_ID_OFFSET))) ||
                 !match(sessionFilter, () -> Integer.toString(keyBuffer.getInt(SESSION_ID_OFFSET))) ||

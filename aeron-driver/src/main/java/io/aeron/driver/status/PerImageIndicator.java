@@ -39,7 +39,6 @@ public class PerImageIndicator
      * @param sessionId       for the stream of messages.
      * @param streamId        for the stream of messages.
      * @param channel         for the stream of messages.
-     * @param suffix          for the label.
      * @return a new {@link AtomicCounter} for tracking the indicator.
      */
     public static AtomicCounter allocate(
@@ -48,11 +47,9 @@ public class PerImageIndicator
         final long registrationId,
         final int sessionId,
         final int streamId,
-        final String channel,
-        final String suffix)
+        final String channel)
     {
-        final String label =
-            name + ": " + registrationId + ' ' + sessionId + ' ' + streamId + ' ' + channel + ' ' + suffix;
+        final String label = name + ": " + registrationId + ' ' + sessionId + ' ' + streamId + ' ' + channel;
 
         return countersManager.newCounter(
             label,

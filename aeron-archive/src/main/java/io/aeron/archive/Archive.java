@@ -48,7 +48,7 @@ public final class Archive implements AutoCloseable
         this.ctx = ctx;
 
         ctx.aeronContext
-            .errorHandler(this::onError)
+            .errorHandler(ctx.countedErrorHandler())
             .driverAgentInvoker(ctx.mediaDriverAgentInvoker())
             .clientLock(new NoOpLock());
 
@@ -71,12 +71,6 @@ public final class Archive implements AutoCloseable
             conductorInvoker = null;
             conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
         }
-    }
-
-    private void onError(final Throwable throwable)
-    {
-        ctx.errorCounter().increment();
-        ctx.errorHandler().onError(throwable);
     }
 
     /**
@@ -258,6 +252,7 @@ public final class Archive implements AutoCloseable
         private ErrorHandler errorHandler;
         private CountersManager countersManager;
         private AtomicCounter errorCounter;
+        private CountedErrorHandler countedErrorHandler;
 
         private AgentInvoker mediaDriverAgentInvoker;
         private int maxConcurrentRecordings;
@@ -299,6 +294,7 @@ public final class Archive implements AutoCloseable
             }
 
             errorCounter = countersManager.newCounter("Archive errors");
+            countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
 
             if (null == archiveDir)
             {
@@ -582,6 +578,16 @@ public final class Archive implements AutoCloseable
         {
             this.errorHandler = errorHandler;
             return this;
+        }
+
+        /**
+         * The {@link #errorHandler()} that will increment {@link #errorCounter()}.
+         *
+         * @return {@link #errorHandler()} that will increment {@link #errorCounter()}.
+         */
+        public CountedErrorHandler countedErrorHandler()
+        {
+            return countedErrorHandler;
         }
 
         /**

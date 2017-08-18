@@ -76,7 +76,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     ArchiveConductor(final Aeron aeron, final Archive.Context ctx)
     {
-        super("archive-conductor", ctx.errorHandler());
+        super("archive-conductor", ctx.countedErrorHandler());
 
         this.aeron = aeron;
         this.ctx = ctx;

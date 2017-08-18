@@ -20,7 +20,6 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.IoUtil;
-import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -219,7 +218,7 @@ class RecordingFragmentReader implements AutoCloseable
     {
         final long recordingPosition = this.recordingPosition.get();
         final boolean positionClosed = this.recordingPosition.isClosed();
-        final long newStopPosition = positionClosed ? descriptorStopPosition() : recordingPosition;
+        final long newStopPosition = positionClosed ? descriptorDecoder.stopPosition() : recordingPosition;
 
         if (positionClosed && newStopPosition < replayLimit)
         {
@@ -239,12 +238,6 @@ class RecordingFragmentReader implements AutoCloseable
         }
 
         return false;
-    }
-
-    private long descriptorStopPosition()
-    {
-        UnsafeAccess.UNSAFE.loadFence();
-        return descriptorDecoder.stopPosition();
     }
 
     private void nextTerm() throws IOException
@@ -281,7 +274,6 @@ class RecordingFragmentReader implements AutoCloseable
     {
         final String segmentFileName = segmentFileName(recordingId, segmentFileIndex);
         final File segmentFile = new File(archiveDir, segmentFileName);
-        final long stopPosition = descriptorStopPosition();
 
         if (!segmentFile.exists())
         {

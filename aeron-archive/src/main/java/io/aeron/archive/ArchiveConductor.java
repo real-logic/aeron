@@ -134,10 +134,10 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
     protected void postSessionsClose()
     {
+        CloseHelper.quietClose(catalog);
         CloseHelper.quietClose(archiveDirChannel);
         CloseHelper.quietClose(aeronAgentInvoker);
         CloseHelper.quietClose(driverAgentInvoker);
-        CloseHelper.quietClose(catalog);
     }
 
     protected int preWork()

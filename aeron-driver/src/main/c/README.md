@@ -11,6 +11,7 @@ The driver binary requires the following dependencies.
 
 - Aeron C Driver Library, source of which is included here and built and placed in `${CMAKE_CURRENT_BINARY_DIR}/lib`
 - Linux Dependencies:
+    - C Library (for the system built on)
     - `-lpthread` - pthread Library
     - `-ldl` - DL Library
     - `-lbsd` - BSD Library
@@ -36,3 +37,12 @@ The driver can be stopped gracefully via `Control-C` or `SIGINT` just like the J
 The C media driver may be embeeded quite easily. An example is the driver main itself, 
 [aeronmd.c](https://github.com/real-logic/aeron/blob/master/aeron-driver/src/main/c/aeronmd.c), and the API is documented in 
 [aeronmd.h](https://github.com/real-logic/aeron/blob/master/aeron-driver/src/main/c/aeronmd.h).
+
+## Driver Logging
+
+The C media driver uses DL interception for logging. To use this logging, add the
+Aeron C Driver Agent Library to `LD_PRELOAD` or `DYLD_INSERT_LIBRARIES` (for Mac.
+Also requires flat namespace) and set the environment variable, `AERON_EVENT_LOG`
+to a numeric mask for the events of interest. The following
+[script](https://github.com/real-logic/aeron/blob/master/aeron-samples/scripts/logging-c-media-driver)
+may be used for convenience.

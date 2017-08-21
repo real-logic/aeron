@@ -225,18 +225,6 @@ public class AeronStat
         }
     }
 
-    private static void clearScreen() throws Exception
-    {
-        if (SystemUtil.osName().contains("win"))
-        {
-            new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
-        }
-        else
-        {
-            System.out.print(ANSI_CLS + ANSI_HOME);
-        }
-    }
-
     public void print(final PrintStream out)
     {
         counters.forEach(
@@ -307,5 +295,17 @@ public class AeronStat
     private static boolean match(final Pattern pattern, final Supplier<String> supplier)
     {
         return null == pattern || pattern.matcher(supplier.get()).find();
+    }
+
+    private static void clearScreen() throws Exception
+    {
+        if (SystemUtil.osName().contains("win"))
+        {
+            new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+        }
+        else
+        {
+            System.out.print(ANSI_CLS + ANSI_HOME);
+        }
     }
 }

@@ -20,6 +20,7 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.IoUtil;
+import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -216,11 +217,12 @@ class RecordingFragmentReader implements AutoCloseable
 
     private boolean refreshStopPositionAndLimit(final long replayPosition, final long oldStopPosition)
     {
-        final long recordingPosition = this.recordingPosition.get();
-        final boolean positionClosed = this.recordingPosition.isClosed();
-        final long newStopPosition = positionClosed ? descriptorDecoder.stopPosition() : recordingPosition;
+        final long currentRecodingPosition = recordingPosition.get();
+        UnsafeAccess.UNSAFE.loadFence();
+        final boolean hasRecordingStopped = recordingPosition.isClosed();
+        final long newStopPosition = hasRecordingStopped ? descriptorDecoder.stopPosition() : currentRecodingPosition;
 
-        if (positionClosed && newStopPosition < replayLimit)
+        if (hasRecordingStopped && newStopPosition < replayLimit)
         {
             replayLimit = newStopPosition;
         }

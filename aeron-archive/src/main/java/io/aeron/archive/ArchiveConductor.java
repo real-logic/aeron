@@ -21,6 +21,7 @@ import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.archive.codecs.SourceLocation;
 import org.agrona.CloseHelper;
+import org.agrona.UnsafeAccess;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
@@ -437,10 +438,14 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         recordingSessionByIdMap.remove(session.sessionId());
         closeSession(session);
+
         final AtomicCounter position = recordingPositionByIdMap.remove(session.sessionId());
         Catalog.wrapDescriptorEncoder(recordingDescriptorEncoder, session.descriptorBuffer());
         recordingDescriptorEncoder.stopPosition(position.get());
         recordingDescriptorEncoder.stopTimestamp(epochClock.time());
+
+        UnsafeAccess.UNSAFE.storeFence();
+
         position.close();
     }
 

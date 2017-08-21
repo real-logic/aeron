@@ -83,15 +83,15 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
         final int termBufferLength = descriptorDecoder.termBufferLength();
 
-        this.archiveDirChannel = context.archiveDirChannel;
-        this.archiveDir = context.archiveDir;
-        this.segmentFileLength = Math.max(context.segmentFileLength, termBufferLength);
-        this.forceWrites = context.fileSyncLevel > 0;
-        this.forceMetadata = context.fileSyncLevel > 1;
+        archiveDirChannel = context.archiveDirChannel;
+        archiveDir = context.archiveDir;
+        segmentFileLength = Math.max(context.segmentFileLength, termBufferLength);
+        forceWrites = context.fileSyncLevel > 0;
+        forceMetadata = context.fileSyncLevel > 1;
 
-        this.recordingId = descriptorDecoder.recordingId();
-        this.startPosition = descriptorDecoder.startPosition();
-        this.recordedPosition.setOrdered(startPosition);
+        recordingId = descriptorDecoder.recordingId();
+        startPosition = descriptorDecoder.startPosition();
+        recordedPosition.setOrdered(startPosition);
 
         final int termsMask = (segmentFileLength / termBufferLength) - 1;
         if (((termsMask + 1) & termsMask) != 0)

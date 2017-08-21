@@ -219,8 +219,8 @@ class Catalog implements AutoCloseable
             originalChannel,
             sourceIdentity);
 
-        descriptorHeaderEncoder.wrap(indexUBuffer, 0);
         descriptorHeaderEncoder
+            .wrap(indexUBuffer, 0)
             .length(descriptorEncoder.encodedLength())
             .valid(VALID);
 
@@ -346,9 +346,7 @@ class Catalog implements AutoCloseable
         nextRecordingId = recordingId + 1;
     }
 
-    private long recoverStopOffset(
-        final File segmentFile,
-        final int segmentFileLength)
+    private long recoverStopOffset(final File segmentFile, final int segmentFileLength)
     {
         long lastFragmentSegmentOffset = 0;
         try (FileChannel segment = FileChannel.open(segmentFile.toPath(), READ))
@@ -385,6 +383,7 @@ class Catalog implements AutoCloseable
         {
             LangUtil.rethrowUnchecked(ex);
         }
+
         return lastFragmentSegmentOffset;
     }
 

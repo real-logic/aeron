@@ -74,7 +74,7 @@ public class ReplaySessionTest
     private File archiveDir = makeTempDir();
     private ControlResponseProxy proxy = mock(ControlResponseProxy.class);
     private EpochClock epochClock = mock(EpochClock.class);
-    private RecordingWriter.Context context;
+    private Archive.Context context;
     private long positionLong;
 
     @Before
@@ -100,7 +100,7 @@ public class ReplaySessionTest
             })
             .when(position).addOrdered(anyLong());
 
-        context = new RecordingWriter.Context()
+        context = new Archive.Context()
             .archiveDir(archiveDir)
             .epochClock(epochClock);
 
@@ -111,7 +111,7 @@ public class ReplaySessionTest
             START_TIMESTAMP,
             START_POSITION,
             INITIAL_TERM_ID,
-            context.segmentFileLength,
+            context.segmentFileLength(),
             TERM_BUFFER_LENGTH,
             MTU_LENGTH,
             SESSION_ID,
@@ -120,7 +120,7 @@ public class ReplaySessionTest
             "channel",
             "sourceIdentity");
 
-        try (RecordingWriter writer = new RecordingWriter(context, descriptorBuffer, position))
+        try (RecordingWriter writer = new RecordingWriter(context, null, descriptorBuffer, position))
         {
 
             final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
@@ -394,7 +394,7 @@ public class ReplaySessionTest
             START_TIMESTAMP,
             START_POSITION,
             INITIAL_TERM_ID,
-            context.segmentFileLength,
+            context.segmentFileLength(),
             TERM_BUFFER_LENGTH,
             MTU_LENGTH,
             1,
@@ -403,7 +403,7 @@ public class ReplaySessionTest
             "channel",
             "sourceIdentity");
 
-        try (RecordingWriter writer = new RecordingWriter(context, descriptorBuffer, position))
+        try (RecordingWriter writer = new RecordingWriter(context, null, descriptorBuffer, position))
         {
             when(epochClock.time()).thenReturn(TIME);
 

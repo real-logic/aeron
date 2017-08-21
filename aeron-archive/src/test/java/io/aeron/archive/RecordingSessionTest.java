@@ -61,7 +61,7 @@ public class RecordingSessionTest
     private static final long START_POSITION = TERM_OFFSET;
     private static final int INITIAL_TERM_ID = 0;
     public static final long START_TIMESTAMP = 0L;
-    public static final long STOP_TIMESTAMP = 128L;
+    public static final FileChannel ARCHIVE_CHANNEL = null;
 
     private final RecordingEventsProxy recordingEventsProxy = mock(RecordingEventsProxy.class);
     private final AtomicCounter position = mock(AtomicCounter.class);
@@ -72,8 +72,7 @@ public class RecordingSessionTest
     private UnsafeBuffer mockLogBufferMapped;
     private File termFile;
     private EpochClock epochClock = Mockito.mock(EpochClock.class);
-    private RecordingDescriptorDecoder descriptorDecoder;
-    private RecordingWriter.Context context;
+    private Archive.Context context;
     private UnsafeBuffer descriptorBuffer =
         new UnsafeBuffer(allocateDirectAligned(Catalog.DEFAULT_RECORD_LENGTH, FRAME_ALIGNMENT));
 
@@ -107,12 +106,12 @@ public class RecordingSessionTest
             .headerType(DataHeaderFlyweight.HDR_TYPE_DATA)
             .frameLength(RECORDED_BLOCK_LENGTH);
 
-        context = new RecordingWriter.Context()
-            .recordingFileLength(SEGMENT_FILE_SIZE)
+        context = new Archive.Context()
+            .segmentFileLength(SEGMENT_FILE_SIZE)
             .archiveDir(tempDirForTest)
             .epochClock(epochClock);
 
-        descriptorDecoder = new RecordingDescriptorDecoder();
+        final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
         wrapDescriptorDecoder(descriptorDecoder, descriptorBuffer);
 
         Catalog.initDescriptor(
@@ -121,7 +120,7 @@ public class RecordingSessionTest
             START_TIMESTAMP,
             START_POSITION,
             INITIAL_TERM_ID,
-            context.segmentFileLength,
+            context.segmentFileLength(),
             TERM_BUFFER_LENGTH,
             MTU_LENGTH,
             SESSION_ID,
@@ -144,7 +143,7 @@ public class RecordingSessionTest
     public void shouldRecordFragmentsFromImage() throws Exception
     {
         final RecordingSession session = new RecordingSession(
-            RECORDING_ID, descriptorBuffer, recordingEventsProxy, CHANNEL, image, position, context);
+            RECORDING_ID, descriptorBuffer, recordingEventsProxy, CHANNEL, image, position, ARCHIVE_CHANNEL, context);
 
         assertEquals(RECORDING_ID, session.sessionId());
 

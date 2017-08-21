@@ -61,7 +61,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     private final EpochClock epochClock;
     private final File archiveDir;
     private final FileChannel archiveDirChannel;
-    private final RecordingWriter.Context recordingCtx;
 
     private final Catalog catalog;
     private final RecordingEventsProxy recordingEventsProxy;
@@ -104,13 +103,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
 
         catalog = new Catalog(archiveDir, archiveDirChannel, fileSyncLevel, epochClock);
         countersManager = ctx.countersManager();
-
-        recordingCtx = new RecordingWriter.Context()
-            .archiveDirChannel(archiveDirChannel)
-            .archiveDir(archiveDir)
-            .recordingFileLength(ctx.segmentFileLength())
-            .epochClock(ctx.epochClock())
-            .fileSyncLevel(fileSyncLevel);
     }
 
     public void onStart()
@@ -408,7 +400,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             startPosition,
             epochClock.time(),
             initialTermId,
-            recordingCtx.recordingFileLength(),
+            ctx.segmentFileLength(),
             termBufferLength,
             mtuLength,
             sessionId,
@@ -426,7 +418,8 @@ abstract class ArchiveConductor extends SessionWorker<Session>
             strippedChannel,
             image,
             position,
-            recordingCtx);
+            archiveDirChannel,
+            ctx);
 
         recordingSessionByIdMap.put(recordingId, session);
         recordingPositionByIdMap.put(recordingId, position);

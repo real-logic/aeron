@@ -24,7 +24,6 @@ import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
-import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -75,7 +74,11 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     private boolean isClosed = false;
 
-    RecordingWriter(final Context context, final UnsafeBuffer descriptorBuffer, final AtomicCounter recordedPosition)
+    RecordingWriter(
+        final Archive.Context context,
+        final FileChannel archiveDirChannel,
+        final UnsafeBuffer descriptorBuffer,
+        final AtomicCounter recordedPosition)
     {
         this.recordedPosition = recordedPosition;
         final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
@@ -83,11 +86,11 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
         final int termBufferLength = descriptorDecoder.termBufferLength();
 
-        archiveDirChannel = context.archiveDirChannel;
-        archiveDir = context.archiveDir;
-        segmentFileLength = Math.max(context.segmentFileLength, termBufferLength);
-        forceWrites = context.fileSyncLevel > 0;
-        forceMetadata = context.fileSyncLevel > 1;
+        this.archiveDirChannel = archiveDirChannel;
+        archiveDir = context.archiveDir();
+        segmentFileLength = Math.max(context.segmentFileLength(), termBufferLength);
+        forceWrites = context.fileSyncLevel() > 0;
+        forceMetadata = context.fileSyncLevel() > 1;
 
         recordingId = descriptorDecoder.recordingId();
         startPosition = descriptorDecoder.startPosition();
@@ -123,12 +126,12 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
                 onFileRollOver();
             }
 
-            long written = 0;
+            long bytesWritten = 0;
             do
             {
-                written += transferTo(fileChannel, fileOffset + written, (int)(blockLength - written));
+                bytesWritten += transferTo(fileChannel, fileOffset + bytesWritten, blockLength - bytesWritten);
             }
-            while (written < blockLength);
+            while (bytesWritten < blockLength);
 
             if (forceWrites)
             {
@@ -233,10 +236,10 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     }
 
     // extend for testing
-    long transferTo(final FileChannel fromFileChannel, final long fileOffset, final int blockLength)
+    long transferTo(final FileChannel fromFileChannel, final long position, final long count)
         throws IOException
     {
-        return fromFileChannel.transferTo(fileOffset, blockLength, recordingFileChannel);
+        return fromFileChannel.transferTo(position, count, recordingFileChannel);
     }
 
     // extend for testing
@@ -298,49 +301,5 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     {
         segmentPosition += blockLength;
         recordedPosition.addOrdered(blockLength);
-    }
-
-    static class Context
-    {
-        FileChannel archiveDirChannel;
-        File archiveDir;
-        EpochClock epochClock;
-        int fileSyncLevel = 0;
-        int segmentFileLength = 1024 * 1024 * 1024;
-
-        Context archiveDirChannel(final FileChannel archiveDirChannel)
-        {
-            this.archiveDirChannel = archiveDirChannel;
-            return this;
-        }
-
-        Context archiveDir(final File archiveDir)
-        {
-            this.archiveDir = archiveDir;
-            return this;
-        }
-
-        Context epochClock(final EpochClock epochClock)
-        {
-            this.epochClock = epochClock;
-            return this;
-        }
-
-        Context fileSyncLevel(final int syncLevel)
-        {
-            this.fileSyncLevel = syncLevel;
-            return this;
-        }
-
-        Context recordingFileLength(final int recordingFileLength)
-        {
-            this.segmentFileLength = recordingFileLength;
-            return this;
-        }
-
-        int recordingFileLength()
-        {
-            return segmentFileLength;
-        }
     }
 }

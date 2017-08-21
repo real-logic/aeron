@@ -17,11 +17,12 @@ package io.aeron.archive;
 
 import io.aeron.Image;
 import io.aeron.Subscription;
-import io.aeron.archive.RecordingWriter.Context;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
+
+import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.Catalog.NULL_POSITION;
 
@@ -44,7 +45,8 @@ class RecordingSession implements Session
     private final String strippedChannel;
     private final Image image;
     private final AtomicCounter position;
-    private final RecordingWriter.Context context;
+    private final FileChannel archiveDirChannel;
+    private final Archive.Context context;
 
     private RecordingWriter recordingWriter;
     private State state = State.INIT;
@@ -56,7 +58,8 @@ class RecordingSession implements Session
         final String strippedChannel,
         final Image image,
         final AtomicCounter position,
-        final Context context)
+        final FileChannel archiveDirChannel,
+        final Archive.Context context)
     {
         this.recordingId = recordingId;
         this.descriptorBuffer = descriptorBuffer;
@@ -64,6 +67,7 @@ class RecordingSession implements Session
         this.strippedChannel = strippedChannel;
         this.image = image;
         this.position = position;
+        this.archiveDirChannel = archiveDirChannel;
         this.context = context;
 
         blockLengthLimit = Math.min(image.termBufferLength(), MAX_BLOCK_LENGTH);
@@ -118,7 +122,7 @@ class RecordingSession implements Session
         RecordingWriter recordingWriter = null;
         try
         {
-            recordingWriter = new RecordingWriter(context, descriptorBuffer, position);
+            recordingWriter = new RecordingWriter(context, archiveDirChannel, descriptorBuffer, position);
         }
         catch (final Exception ex)
         {

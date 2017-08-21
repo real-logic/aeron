@@ -37,7 +37,7 @@ public class RecordingWriterTest
 
     private File archiveDir = TestUtil.makeTempDir();
     private EpochClock epochClock = Mockito.mock(EpochClock.class);
-    private final RecordingWriter.Context recordingCtx = new RecordingWriter.Context();
+    private final Archive.Context ctx = new Archive.Context();
     private FileChannel mockArchiveDirFileChannel = Mockito.mock(FileChannel.class);
     private FileChannel mockDataFileChannel = Mockito.mock(FileChannel.class);
     private UnsafeBuffer mockTermBuffer = Mockito.mock(UnsafeBuffer.class);
@@ -57,10 +57,9 @@ public class RecordingWriterTest
             })
             .when(position).setOrdered(anyLong());
 
-        recordingCtx
-            .archiveDirChannel(mockArchiveDirFileChannel)
+        ctx
             .archiveDir(archiveDir)
-            .recordingFileLength(1024 * 1024)
+            .segmentFileLength(1024 * 1024)
             .epochClock(epochClock)
             .fileSyncLevel(SYNC_LEVEL);
     }
@@ -91,7 +90,7 @@ public class RecordingWriterTest
             START_TIMESTAMP,
             START_POSITION,
             INITIAL_TERM_ID,
-            recordingCtx.segmentFileLength,
+            ctx.segmentFileLength(),
             TERM_BUFFER_LENGTH,
             MTU_LENGTH,
             SESSION_ID,
@@ -100,7 +99,8 @@ public class RecordingWriterTest
             CHANNEL,
             SOURCE);
 
-        try (RecordingWriter writer = Mockito.spy(new RecordingWriter(recordingCtx, descriptorBuffer, position)))
+        try (RecordingWriter writer = Mockito.spy(
+            new RecordingWriter(ctx, mockArchiveDirFileChannel, descriptorBuffer, position)))
         {
             when(mockDataFileChannel.transferTo(eq(0L), eq(256L), any(FileChannel.class))).then(
                 (invocation) ->

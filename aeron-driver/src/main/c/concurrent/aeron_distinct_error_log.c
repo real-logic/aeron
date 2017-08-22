@@ -18,7 +18,6 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <stdatomic.h>
 #include <errno.h>
 #include "util/aeron_error.h"
 #include "util/aeron_strutil.h"

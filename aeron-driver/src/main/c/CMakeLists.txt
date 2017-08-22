@@ -40,13 +40,19 @@ else()
     check_symbol_exists(arc4random "bsd/stdlib.h" ARC4RANDOM_PROTOTYPE_EXISTS)
 endif()
 
-if(LIBUUID_EXISTS)
-    check_symbol_exists(uuid_generate "uuid/uuid.h" UUID_GENERATE_PROTOTYPE_EXISTS)
-endif()
+check_symbol_exists(uuid_generate "uuid/uuid.h" UUID_GENERATE_PROTOTYPE_EXISTS)
 
 check_symbol_exists(poll "poll.h" POLL_PROTOTYPE_EXISTS)
 check_symbol_exists(epoll_create "sys/epoll.h" EPOLL_PROTOTYPE_EXISTS)
 check_symbol_exists(recvmmsg "sys/socket.h" RECVMMSG_PROTOTYPE_EXISTS)
+
+if(NOT ARC4RANDOM_PROTOTYPE_EXISTS)
+    message(FATAL_ERROR "Could not find arc4random. If on Linux, is libbsd installed?")
+endif()
+
+if(NOT UUID_GENERATE_PROTOTYPE_EXISTS)
+    message(FATAL_ERROR "Could not find uuid_generate. If on Linux, is libuuid installed?")
+endif()
 
 if(POLL_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_POLL)

@@ -67,7 +67,7 @@ inline static const char *tmp_dir()
 inline static bool has_file_separator_at_end(const char *path)
 {
 #if defined(_MSC_VER)
-    return path[strlen(path) - 1] == '\';
+    return path[strlen(path) - 1] == '\\';
 #else
     return path[strlen(path) - 1] == '/';
 #endif
@@ -210,8 +210,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
 #if defined(__linux__)
     snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "/dev/shm/aeron-%s", username());
-#elif (_MSC_VER)
-    snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s%saeron-%s", tmp_dir(), has_file_separator_at_end(tmp_dir()) ? "" : "\", username());
+#elif defined(_MSC_VER)
+    snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s%saeron-%s", tmp_dir(), has_file_separator_at_end(tmp_dir()) ? "" : "\\", username());
 #else
     snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s%saeron-%s", tmp_dir(), has_file_separator_at_end(tmp_dir()) ? "" : "/", username());
 #endif

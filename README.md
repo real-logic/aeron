@@ -136,7 +136,7 @@ If you are comfortable with using CMake, then a full clean, build, and test look
 __NOTE__: C Media Driver is currently only supported on Mac and Linux.
 
 For dependencies and other information, see the
-[README](https://github.com/real-logic/aeron/blob/master/aeron-driver/src/main/c/README.md)
+[README](https://github.com/real-logic/aeron/blob/master/aeron-driver/src/main/c/README.md).
 
 #### Documentation
 

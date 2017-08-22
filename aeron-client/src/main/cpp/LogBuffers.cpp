@@ -45,8 +45,8 @@ LogBuffers::LogBuffers(const char *filename)
     }
     else
     {
-        const index_t metaDataSectionOffset = (index_t) (termLength * LogBufferDescriptor::PARTITION_COUNT);
-        const std::int64_t metaDataSectionLength = (index_t) (logLength - metaDataSectionOffset);
+        const std::int64_t metaDataSectionOffset = (termLength * LogBufferDescriptor::PARTITION_COUNT);
+        const std::int64_t metaDataSectionLength = (logLength - metaDataSectionOffset);
 
         m_memoryMappedFiles.push_back(
             MemoryMappedFile::mapExisting(filename, metaDataSectionOffset, metaDataSectionLength));

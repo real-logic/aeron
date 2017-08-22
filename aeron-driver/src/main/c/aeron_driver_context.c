@@ -27,7 +27,11 @@
 #include <errno.h>
 #include <math.h>
 #include <limits.h>
+
+#ifdef HAVE_UUID_H
 #include <uuid/uuid.h>
+#endif
+
 #include "util/aeron_error.h"
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_fileutil.h"
@@ -495,6 +499,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->to_driver_interceptor_func = aeron_driver_conductor_to_driver_interceptor_null;
     _context->to_client_interceptor_func = aeron_driver_conductor_to_client_interceptor_null;
 
+#ifdef HAVE_UUID_GENERATE
     uuid_t id;
     uuid_generate(id);
 
@@ -504,8 +509,11 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         uint64_t low;
     }
     *id_as_uint64 = (struct uuid_as_uint64 *)&id;
-
     _context->receiver_id = id_as_uint64->high ^ id_as_uint64->low;
+#else
+    /* pure random id */
+    _context->receiver_id = aeron_randomised_int32();
+#endif
 
     *context = _context;
     return 0;

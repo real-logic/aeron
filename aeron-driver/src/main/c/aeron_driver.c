@@ -16,7 +16,9 @@
 
 #if defined(__linux__)
 #define _GNU_SOURCE
+#ifdef HAVE_BSDSTDLIB_H
 #include <bsd/stdlib.h>
+#endif
 #endif
 
 #include <stddef.h>
@@ -70,12 +72,30 @@ extern int aeron_number_of_trailing_zeroes(int32_t value);
 extern int aeron_number_of_leading_zeroes(int32_t value);
 extern int32_t aeron_find_next_power_of_two(int32_t value);
 
+#ifndef HAVE_ARC4RANDOM
+static int aeron_dev_random_fd = -1;
+#endif
+
 int32_t aeron_randomised_int32()
 {
-    uint32_t value = arc4random();
     int32_t result;
 
+#ifdef HAVE_ARC4RANDOM
+    uint32_t value = arc4random();
+
     memcpy(&result, &value, sizeof(int32_t));
+#elif defined(__linux__)
+    if (-1 == aeron_dev_random_fd)
+    {
+        if ((aeron_dev_random_fd = open("/dev/urandom", O_RDONLY)) < 0)
+        {
+            fprintf(stderr, "could not open /dev/urandom (%d): %s\n", errno, strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    read(aeron_dev_random_fd, &result, sizeof(result));
+#endif
     return result;
 }
 

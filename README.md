@@ -135,6 +135,9 @@ If you are comfortable with using CMake, then a full clean, build, and test look
 
 __NOTE__: C Media Driver is currently only supported on Mac and Linux.
 
+For dependencies and other information, see the
+[README](https://github.com/real-logic/aeron/blob/master/aeron-driver/src/main/c/README.md)
+
 #### Documentation
 
 If you have doxygen installed and want to build the Doxygen doc, there is a nice `doc` target that can be used.

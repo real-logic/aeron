@@ -14,8 +14,34 @@
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+include(CheckSymbolExists)
+include(CheckIncludeFile)
+
 if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
-    set(CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+    set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
+endif()
+
+check_include_file("bsd/stdlib.h" BSDSTDLIB_H_EXISTS)
+check_include_file("uuid/uuid.h" UUID_H_EXISTS)
+find_library(LIBBSD_EXISTS NAMES bsd libbsd)
+find_library(LIBUUID_EXISTS NAMES uuid libuuid)
+
+if(LIBBSD_EXISTS)
+    set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} -lbsd")
+endif()
+
+if(LIBUUID_EXISTS)
+    set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} -luuid")
+endif()
+
+if(NOT BSDSTDLIB_H_EXISTS)
+    check_symbol_exists(arc4random "stdlib.h" ARC4RANDOM_PROTOTYPE_EXISTS)
+else()
+    check_symbol_exists(arc4random "bsd/stdlib.h" ARC4RANDOM_PROTOTYPE_EXISTS)
+endif()
+
+if(LIBUUID_EXISTS)
+    check_symbol_exists(uuid_generate "uuid/uuid.h" UUID_GENERATE_PROTOTYPE_EXISTS)
 endif()
 
 check_symbol_exists(poll "poll.h" POLL_PROTOTYPE_EXISTS)
@@ -170,9 +196,15 @@ add_executable(aeronmd aeronmd.c)
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
 
 if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
-    set(AERON_LIB_BSD_LIBS "-lbsd")
-    set(AERON_LIB_UUID_LIBS "-luuid")
-    set(AERON_LIB_M_LIBS "-lm")
+    if(LIBBSD_EXISTS)
+        set(AERON_LIB_BSD_LIBS bsd)
+    endif()
+
+    if(LIBUUID_EXISTS)
+        set(AERON_LIB_UUID_LIBS uuid)
+    endif()
+
+    set(AERON_LIB_M_LIBS m)
 endif()
 
 target_link_libraries(

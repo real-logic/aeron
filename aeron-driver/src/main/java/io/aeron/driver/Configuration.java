@@ -43,6 +43,17 @@ import static org.agrona.BitUtil.fromHex;
 public class Configuration
 {
     /**
+     * Warn if the Aeron directory exists.
+     */
+    public static final String WARN_IF_AERON_DIR_EXISTS_PROP_NAME = "aeron.dir.warn.if.exists";
+
+    /**
+     * Warn if the Aeron directory exists.
+     */
+    public static final boolean WARN_IF_AERON_DIR_EXISTS =
+        "true".equals(getProperty(WARN_IF_AERON_DIR_EXISTS_PROP_NAME, "true"));
+
+    /**
      * Should high resolution timer be used on Windows.
      */
     public static final String USE_WINDOWS_HIGH_RES_TIMER_PROP_NAME = "aeron.use.windows.high.res.timer";

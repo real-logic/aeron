@@ -425,14 +425,14 @@ public final class MediaDriver implements AutoCloseable
     {
         if (ctx.aeronDirectory().isDirectory())
         {
-            if (ctx.warnIfDirectoriesExist())
+            if (ctx.warnIfDirectoryExists())
             {
                 System.err.println("WARNING: " + ctx.aeronDirectory() + " already exists.");
             }
 
             if (!ctx.dirsDeleteOnStart())
             {
-                final Consumer<String> logger = ctx.warnIfDirectoriesExist() ? System.err::println : (s) -> {};
+                final Consumer<String> logger = ctx.warnIfDirectoryExists() ? System.err::println : (s) -> {};
                 final MappedByteBuffer cncByteBuffer = ctx.mapExistingCncFile(logger);
                 try
                 {
@@ -534,7 +534,7 @@ public final class MediaDriver implements AutoCloseable
         private int mtuLength;
         private int ipcMtuLength;
 
-        private boolean warnIfDirectoriesExist = true;
+        private boolean warnIfDirectoryExists = Configuration.WARN_IF_AERON_DIR_EXISTS;
         private boolean dirsDeleteOnStart;
         private ThreadingMode threadingMode;
         private ThreadFactory conductorThreadFactory;
@@ -941,9 +941,9 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context warnIfDirectoriesExist(final boolean value)
+        public Context warnIfDirectoryExists(final boolean value)
         {
-            this.warnIfDirectoriesExist = value;
+            this.warnIfDirectoryExists = value;
             return this;
         }
 
@@ -1250,9 +1250,9 @@ public final class MediaDriver implements AutoCloseable
             return statusMessageTimeout;
         }
 
-        public boolean warnIfDirectoriesExist()
+        public boolean warnIfDirectoryExists()
         {
-            return warnIfDirectoriesExist;
+            return warnIfDirectoryExists;
         }
 
         public ErrorHandler errorHandler()

@@ -340,6 +340,7 @@ project(':aeron-system-tests') {
     test {
         jvmArgs "-javaagent:" + project(':aeron-agent').jar.outputs.files.getSingleFile()
         systemProperties(
+                'aeron.dir.warn.if.exists': 'false',
                 'aeron.term.buffer.sparse.file': 'true',
                 'aeron.event.log': System.properties['aeron.event.log'])
     }

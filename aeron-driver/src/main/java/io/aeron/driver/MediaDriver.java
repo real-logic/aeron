@@ -66,6 +66,7 @@ public final class MediaDriver implements AutoCloseable
      */
     public static final String DIRS_DELETE_ON_START_PROP_NAME = "aeron.dir.delete.on.start";
 
+    private boolean wasHighResTimerEnabled;
     private final AgentRunner sharedRunner;
     private final AgentRunner sharedNetworkRunner;
     private final AgentRunner conductorRunner;
@@ -307,6 +308,14 @@ public final class MediaDriver implements AutoCloseable
         CloseHelper.quietClose(conductorRunner);
         CloseHelper.quietClose(sharedInvoker);
 
+        if (ctx.useWindowsHighResTimer() && SystemUtil.osName().startsWith("win"))
+        {
+            if (!wasHighResTimerEnabled)
+            {
+                HighResolutionTimer.disable();
+            }
+        }
+
         ctx.close();
     }
 
@@ -323,9 +332,13 @@ public final class MediaDriver implements AutoCloseable
 
     private MediaDriver start()
     {
-        if (SystemUtil.osName().startsWith("win") && !HighResolutionTimer.isEnabled())
+        if (ctx.useWindowsHighResTimer() && SystemUtil.osName().startsWith("win"))
         {
-            HighResolutionTimer.enable();
+            wasHighResTimerEnabled = HighResolutionTimer.isEnabled();
+            if (!wasHighResTimerEnabled)
+            {
+                HighResolutionTimer.enable();
+            }
         }
 
         if (null != conductorRunner)
@@ -474,6 +487,7 @@ public final class MediaDriver implements AutoCloseable
      */
     public static class Context extends CommonContext
     {
+        private boolean useWindowsHighResTimer = Configuration.USE_WINDOWS_HIGH_RES_TIMER;
         private RawLogFactory rawLogFactory;
         private DataTransportPoller dataTransportPoller;
         private ControlTransportPoller controlTransportPoller;
@@ -746,6 +760,17 @@ public final class MediaDriver implements AutoCloseable
             {
                 congestionControlSupplier = Configuration.congestionControlSupplier();
             }
+        }
+
+        public Context useWindowsHighResTimer(final boolean useWindowsHighResTimers)
+        {
+            this.useWindowsHighResTimer = useWindowsHighResTimers;
+            return this;
+        }
+
+        public boolean useWindowsHighResTimer()
+        {
+            return useWindowsHighResTimer;
         }
 
         public Context epochClock(final EpochClock clock)

@@ -43,6 +43,17 @@ import static org.agrona.BitUtil.fromHex;
 public class Configuration
 {
     /**
+     * Should high resolution timer be used on Windows.
+     */
+    public static final String USE_WINDOWS_HIGH_RES_TIMER_PROP_NAME = "aeron.use.windows.high.res.timer";
+
+    /**
+     * Should high resolution timer be used on Windows.
+     */
+    public static final boolean USE_WINDOWS_HIGH_RES_TIMER =
+        "true".equals(getProperty(USE_WINDOWS_HIGH_RES_TIMER_PROP_NAME));
+
+    /**
      * Property name for boolean value of term buffers should be created sparse.
      */
     public static final String TERM_BUFFER_SPARSE_FILE_PROP_NAME = "aeron.term.buffer.sparse.file";

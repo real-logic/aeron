@@ -157,7 +157,7 @@ public final class MediaDriver implements AutoCloseable
         ctx.concludeAeronDirectory();
 
         ensureDirectoryIsRecreated(ctx);
-        validateSufficientSocketBufferLengths(ctx);
+        validateSocketBufferLengths(ctx);
 
         // TODO: eliminate queues if mode is not concurrent
         ctx
@@ -374,7 +374,7 @@ public final class MediaDriver implements AutoCloseable
         return this;
     }
 
-    private static void validateSufficientSocketBufferLengths(final Context ctx)
+    private static void validateSocketBufferLengths(final Context ctx)
     {
         try (DatagramChannel probe = DatagramChannel.open())
         {

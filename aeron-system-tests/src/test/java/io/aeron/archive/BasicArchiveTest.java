@@ -63,7 +63,7 @@ public class BasicArchiveTest
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
-                .dirsDeleteOnStart(true)
+                .dirDeleteOnStart(true)
                 .useConcurrentCounterManager(true));
 
         archive = Archive.launch(

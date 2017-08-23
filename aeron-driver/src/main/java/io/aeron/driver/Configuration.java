@@ -45,13 +45,24 @@ public class Configuration
     /**
      * Warn if the Aeron directory exists.
      */
-    public static final String WARN_IF_AERON_DIR_EXISTS_PROP_NAME = "aeron.dir.warn.if.exists";
+    public static final String DIR_WARN_IF_EXISTS_PROP_NAME = "aeron.dir.warn.if.exists";
 
     /**
      * Warn if the Aeron directory exists.
      */
-    public static final boolean WARN_IF_AERON_DIR_EXISTS =
-        "true".equals(getProperty(WARN_IF_AERON_DIR_EXISTS_PROP_NAME, "true"));
+    public static final boolean DIR_WARN_IF_EXISTS =
+        "true".equals(getProperty(DIR_WARN_IF_EXISTS_PROP_NAME, "true"));
+
+    /**
+     * Should driver attempt to delete Aeron directory on start if it exists.
+     */
+    public static final String DIR_DELETE_ON_START_PROP_NAME = "aeron.dir.delete.on.start";
+
+    /**
+     * Should driver attempt to delete Aeron directory on start if it exists.
+     */
+    public static final boolean DIR_DELETE_ON_START =
+        "true".equals(getProperty(DIR_DELETE_ON_START_PROP_NAME, "false"));
 
     /**
      * Should high resolution timer be used on Windows.
@@ -383,7 +394,6 @@ public class Configuration
      */
     public static final long PUBLICATION_UNBLOCK_TIMEOUT_NS = getLong(
         PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME, PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS);
-
 
     private static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 

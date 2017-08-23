@@ -94,7 +94,7 @@ public class ArchiveRecordingLoadTest
                 .threadingMode(ThreadingMode.DEDICATED)
                 .useConcurrentCounterManager(true)
                 .errorHandler(Throwable::printStackTrace)
-                .dirsDeleteOnStart(true));
+                .dirDeleteOnStart(true));
 
         archive = Archive.launch(
             new Archive.Context()

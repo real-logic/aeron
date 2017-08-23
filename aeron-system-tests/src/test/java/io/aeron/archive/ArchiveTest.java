@@ -145,7 +145,7 @@ public class ArchiveTest
             .termBufferSparseFile(true)
             .threadingMode(threadingMode)
             .errorHandler(Throwable::printStackTrace)
-            .dirsDeleteOnStart(true)
+            .dirDeleteOnStart(true)
             .useConcurrentCounterManager(true);
 
         driver = MediaDriver.launch(driverCtx);

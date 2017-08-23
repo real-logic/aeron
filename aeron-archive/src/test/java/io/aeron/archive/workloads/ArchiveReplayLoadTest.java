@@ -110,7 +110,7 @@ public class ArchiveReplayLoadTest
                 .threadingMode(ThreadingMode.DEDICATED)
                 .useConcurrentCounterManager(true)
                 .errorHandler(Throwable::printStackTrace)
-                .dirsDeleteOnStart(true));
+                .dirDeleteOnStart(true));
 
         archive = Archive.launch(
             new Archive.Context()

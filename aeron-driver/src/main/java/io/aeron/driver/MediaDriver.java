@@ -44,7 +44,6 @@ import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY;
-import static java.lang.Boolean.getBoolean;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.agrona.IoUtil.mapNewFile;
 
@@ -61,11 +60,6 @@ import static org.agrona.IoUtil.mapNewFile;
  */
 public final class MediaDriver implements AutoCloseable
 {
-    /**
-     * Attempt to delete directories on start if they exist
-     */
-    public static final String DIRS_DELETE_ON_START_PROP_NAME = "aeron.dir.delete.on.start";
-
     private boolean wasHighResTimerEnabled;
     private final AgentRunner sharedRunner;
     private final AgentRunner sharedNetworkRunner;
@@ -430,7 +424,7 @@ public final class MediaDriver implements AutoCloseable
                 System.err.println("WARNING: " + ctx.aeronDirectory() + " already exists.");
             }
 
-            if (!ctx.dirsDeleteOnStart())
+            if (!ctx.dirDeleteOnStart())
             {
                 final Consumer<String> logger = ctx.warnIfDirectoryExists() ? System.err::println : (s) -> {};
                 final MappedByteBuffer cncByteBuffer = ctx.mapExistingCncFile(logger);
@@ -534,8 +528,8 @@ public final class MediaDriver implements AutoCloseable
         private int mtuLength;
         private int ipcMtuLength;
 
-        private boolean warnIfDirectoryExists = Configuration.WARN_IF_AERON_DIR_EXISTS;
-        private boolean dirsDeleteOnStart;
+        private boolean warnIfDirectoryExists = Configuration.DIR_WARN_IF_EXISTS;
+        private boolean dirDeleteOnStart = Configuration.DIR_DELETE_ON_START;
         private ThreadingMode threadingMode;
         private ThreadFactory conductorThreadFactory;
         private ThreadFactory senderThreadFactory;
@@ -559,8 +553,6 @@ public final class MediaDriver implements AutoCloseable
             statusMessageTimeout(Configuration.statusMessageTimeout());
             mtuLength(Configuration.MTU_LENGTH);
             ipcMtuLength(Configuration.IPC_MTU_LENGTH);
-
-            dirsDeleteOnStart(getBoolean(DIRS_DELETE_ON_START_PROP_NAME));
         }
 
         public Context conclude()
@@ -1025,9 +1017,9 @@ public final class MediaDriver implements AutoCloseable
          * @param dirsDeleteOnStart Attempt deletion.
          * @return this Object for method chaining.
          */
-        public Context dirsDeleteOnStart(final boolean dirsDeleteOnStart)
+        public Context dirDeleteOnStart(final boolean dirsDeleteOnStart)
         {
-            this.dirsDeleteOnStart = dirsDeleteOnStart;
+            this.dirDeleteOnStart = dirsDeleteOnStart;
             return this;
         }
 
@@ -1310,9 +1302,9 @@ public final class MediaDriver implements AutoCloseable
          *
          * @return true when directories will be deleted, otherwise false.
          */
-        public boolean dirsDeleteOnStart()
+        public boolean dirDeleteOnStart()
         {
-            return dirsDeleteOnStart;
+            return dirDeleteOnStart;
         }
 
         public SendChannelEndpointSupplier sendChannelEndpointSupplier()

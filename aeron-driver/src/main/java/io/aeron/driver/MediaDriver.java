@@ -33,7 +33,6 @@ import org.agrona.concurrent.status.*;
 import java.io.*;
 import java.net.*;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.DatagramChannel;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ThreadFactory;
@@ -366,53 +365,6 @@ public final class MediaDriver implements AutoCloseable
         }
 
         return this;
-    }
-
-    private static void validateSocketBufferLengths(final Context ctx)
-    {
-        try (DatagramChannel probe = DatagramChannel.open())
-        {
-            final int defaultSoSndBuf = probe.getOption(StandardSocketOptions.SO_SNDBUF);
-
-            probe.setOption(StandardSocketOptions.SO_SNDBUF, Integer.MAX_VALUE);
-            final int maxSoSndBuf = probe.getOption(StandardSocketOptions.SO_SNDBUF);
-
-            if (maxSoSndBuf < SOCKET_SNDBUF_LENGTH)
-            {
-                System.err.format(
-                    "WARNING: Could not get desired SO_SNDBUF, adjust OS buffer to match %s: attempted=%d, actual=%d%n",
-                    SOCKET_SNDBUF_LENGTH_PROP_NAME,
-                    SOCKET_SNDBUF_LENGTH,
-                    maxSoSndBuf);
-            }
-
-            probe.setOption(StandardSocketOptions.SO_RCVBUF, Integer.MAX_VALUE);
-            final int maxSoRcvBuf = probe.getOption(StandardSocketOptions.SO_RCVBUF);
-
-            if (maxSoRcvBuf < SOCKET_RCVBUF_LENGTH)
-            {
-                System.err.format(
-                    "WARNING: Could not get desired SO_RCVBUF, adjust OS buffer to match %s: attempted=%d, actual=%d%n",
-                    SOCKET_RCVBUF_LENGTH_PROP_NAME,
-                    SOCKET_RCVBUF_LENGTH,
-                    maxSoRcvBuf);
-            }
-
-            final int soSndBuf = 0 == SOCKET_SNDBUF_LENGTH ? defaultSoSndBuf : SOCKET_SNDBUF_LENGTH;
-
-            if (ctx.mtuLength() > soSndBuf)
-            {
-                throw new ConfigurationException(String.format(
-                    "MTU greater than socket SO_SNDBUF, adjust %s to match MTU: mtuLength=%d, SO_SNDBUF=%d",
-                    SOCKET_SNDBUF_LENGTH_PROP_NAME,
-                    ctx.mtuLength(),
-                    soSndBuf));
-            }
-        }
-        catch (final IOException ex)
-        {
-            throw new RuntimeException("probe socket: " + ex.toString(), ex);
-        }
     }
 
     private static void ensureDirectoryIsRecreated(final Context ctx)

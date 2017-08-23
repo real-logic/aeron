@@ -15,6 +15,7 @@
  */
 
 #if defined(__linux__)
+#define _BSD_SOURCE
 #define _GNU_SOURCE
 #ifdef HAVE_BSDSTDLIB_H
 #include <bsd/stdlib.h>

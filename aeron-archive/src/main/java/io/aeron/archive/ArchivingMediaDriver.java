@@ -106,9 +106,9 @@ public final class ArchivingMediaDriver implements AutoCloseable
             .useConcurrentCounterManager(useConcurrentCounterManager));
 
         final Archive archive = Archive.launch(archiveCtx
-                .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
-                .countersManager(driver.context().countersManager())
-                .errorHandler(driver.context().errorHandler()));
+            .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
+            .countersManager(driver.context().countersManager())
+            .errorHandler(driver.context().errorHandler()));
 
         return new ArchivingMediaDriver(driver, archive);
     }

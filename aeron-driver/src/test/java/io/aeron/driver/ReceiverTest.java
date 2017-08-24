@@ -112,19 +112,20 @@ public class ReceiverTest
             .thenReturn(CongestionControlUtil.packOutcome(INITIAL_WINDOW_LENGTH, false));
         when(congestionControl.initialWindowLength()).thenReturn(INITIAL_WINDOW_LENGTH);
 
+        toConductorQueue = new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY);
+
+        final DriverConductorProxy driverConductorProxy =
+            new DriverConductorProxy(ThreadingMode.DEDICATED, toConductorQueue, mock(AtomicCounter.class));
+
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .driverCommandQueue(new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+            .driverCommandQueue(toConductorQueue)
             .dataTransportPoller(mockDataTransportPoller)
             .controlTransportPoller(mockControlTransportPoller)
             .rawLogBuffersFactory(mockRawLogFactory)
             .systemCounters(mockSystemCounters)
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
-            .nanoClock(() -> currentTime);
-
-        toConductorQueue = ctx.driverCommandQueue();
-        final DriverConductorProxy driverConductorProxy =
-            new DriverConductorProxy(ThreadingMode.DEDICATED, toConductorQueue, mock(AtomicCounter.class));
-        ctx.driverConductorProxy(driverConductorProxy);
+            .nanoClock(() -> currentTime)
+            .driverConductorProxy(driverConductorProxy);
 
         receiverProxy = new ReceiverProxy(
             ThreadingMode.DEDICATED, ctx.receiverCommandQueue(), mock(AtomicCounter.class));

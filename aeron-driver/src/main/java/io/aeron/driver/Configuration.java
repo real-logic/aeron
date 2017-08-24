@@ -54,7 +54,7 @@ public class Configuration
      * Warn if the Aeron directory exists.
      */
     public static final boolean DIR_WARN_IF_EXISTS =
-        "true".equals(getProperty(DIR_WARN_IF_EXISTS_PROP_NAME, "true"));
+        "true".equalsIgnoreCase(getProperty(DIR_WARN_IF_EXISTS_PROP_NAME, "true"));
 
     /**
      * Should driver attempt to delete Aeron directory on start if it exists.
@@ -65,7 +65,7 @@ public class Configuration
      * Should driver attempt to delete Aeron directory on start if it exists.
      */
     public static final boolean DIR_DELETE_ON_START =
-        "true".equals(getProperty(DIR_DELETE_ON_START_PROP_NAME, "false"));
+        "true".equalsIgnoreCase(getProperty(DIR_DELETE_ON_START_PROP_NAME, "false"));
 
     /**
      * Should high resolution timer be used on Windows.
@@ -76,7 +76,7 @@ public class Configuration
      * Should high resolution timer be used on Windows.
      */
     public static final boolean USE_WINDOWS_HIGH_RES_TIMER =
-        "true".equals(getProperty(USE_WINDOWS_HIGH_RES_TIMER_PROP_NAME));
+        "true".equalsIgnoreCase(getProperty(USE_WINDOWS_HIGH_RES_TIMER_PROP_NAME, "false"));
 
     /**
      * Property name for boolean value of term buffers should be created sparse.
@@ -89,7 +89,8 @@ public class Configuration
      * If a platform supports sparse files then log buffer creation is faster with pages being allocated as
      * needed. This can help for large numbers of channels/streams but can result in latency pauses.
      */
-    public static final String TERM_BUFFER_SPARSE_FILE = getProperty(TERM_BUFFER_SPARSE_FILE_PROP_NAME);
+    public static final boolean TERM_BUFFER_SPARSE_FILE =
+        "true".equalsIgnoreCase(getProperty(TERM_BUFFER_SPARSE_FILE_PROP_NAME, "false"));
 
     /**
      * Length (in bytes) of the log buffers for terms.
@@ -944,9 +945,10 @@ public class Configuration
      * {@link FrameDescriptor#FRAME_ALIGNMENT}.
      *
      * @param mtuLength to be validated.
+     * @return the mtuLength if valid.
      * @throws ConfigurationException if the MTU length is not valid.
      */
-    public static void validateMtuLength(final int mtuLength)
+    public static int validateMtuLength(final int mtuLength)
     {
         if (mtuLength < DataHeaderFlyweight.HEADER_LENGTH || mtuLength > MAX_UDP_PAYLOAD_LENGTH)
         {
@@ -958,6 +960,8 @@ public class Configuration
         {
             throw new ConfigurationException("mtuLength must be a multiple of FRAME_ALIGNMENT: mtuLength=" + mtuLength);
         }
+
+        return mtuLength;
     }
 
     /**

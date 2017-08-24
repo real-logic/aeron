@@ -437,18 +437,21 @@ public final class MediaDriver implements AutoCloseable
     /**
      * Configuration for the {@link MediaDriver} that can be used to override {@link Configuration}.
      * <p>
-     * <b>Note:</b> Do not reuse instances of the context across different {@link MediaDriver}s.
+     * <b>Note:</b> Do not reuse instances of this {@link Context} across different {@link MediaDriver}s.
      */
     public static class Context extends CommonContext
     {
         private boolean useWindowsHighResTimer = Configuration.USE_WINDOWS_HIGH_RES_TIMER;
+        private boolean warnIfDirectoryExists = Configuration.DIR_WARN_IF_EXISTS;
+        private boolean dirDeleteOnStart = Configuration.DIR_DELETE_ON_START;
+        private boolean termBufferSparseFile = Configuration.TERM_BUFFER_SPARSE_FILE;
+        private EpochClock epochClock;
+        private NanoClock nanoClock;
         private RawLogFactory rawLogFactory;
         private DataTransportPoller dataTransportPoller;
         private ControlTransportPoller controlTransportPoller;
         private FlowControlSupplier unicastFlowControlSupplier;
         private FlowControlSupplier multicastFlowControlSupplier;
-        private EpochClock epochClock;
-        private NanoClock nanoClock;
         private ManyToOneConcurrentArrayQueue<DriverConductorCmd> driverCommandQueue;
         private OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue;
         private OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue;
@@ -479,17 +482,14 @@ public final class MediaDriver implements AutoCloseable
         private long clientLivenessTimeoutNs = Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
         private long publicationUnblockTimeoutNs = Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS;
 
-        private Boolean termBufferSparseFile;
-        private int publicationTermBufferLength;
+        private int publicationTermBufferLength = Configuration.termBufferLength();
         private int ipcPublicationTermBufferLength;
-        private int maxTermBufferLength;
-        private int initialWindowLength;
-        private long statusMessageTimeout;
-        private int mtuLength;
-        private int ipcMtuLength;
+        private int maxTermBufferLength = Configuration.maxTermBufferLength();
+        private int initialWindowLength = Configuration.initialWindowLength();
+        private long statusMessageTimeout = Configuration.statusMessageTimeout();
+        private int mtuLength = Configuration.MTU_LENGTH;
+        private int ipcMtuLength = Configuration.IPC_MTU_LENGTH;
 
-        private boolean warnIfDirectoryExists = Configuration.DIR_WARN_IF_EXISTS;
-        private boolean dirDeleteOnStart = Configuration.DIR_DELETE_ON_START;
         private ThreadingMode threadingMode;
         private ThreadFactory conductorThreadFactory;
         private ThreadFactory senderThreadFactory;
@@ -502,17 +502,17 @@ public final class MediaDriver implements AutoCloseable
         private ReceiveChannelEndpointThreadLocals receiveChannelEndpointThreadLocals;
 
         private byte[] applicationSpecificFeedback = Configuration.SM_APPLICATION_SPECIFIC_FEEDBACK;
-
         private CongestionControlSupplier congestionControlSupplier;
 
-        public Context()
+        /**
+         * Free up resources but don't delete files in case they are required for debugging.
+         */
+        public void close()
         {
-            publicationTermBufferLength(Configuration.termBufferLength());
-            maxTermBufferLength(Configuration.maxTermBufferLength());
-            initialWindowLength(Configuration.initialWindowLength());
-            statusMessageTimeout(Configuration.statusMessageTimeout());
-            mtuLength(Configuration.MTU_LENGTH);
-            ipcMtuLength(Configuration.IPC_MTU_LENGTH);
+            IoUtil.unmap(cncByteBuffer);
+            IoUtil.unmap(lossReportBuffer);
+
+            super.close();
         }
 
         public Context conclude()
@@ -522,6 +522,9 @@ public final class MediaDriver implements AutoCloseable
             try
             {
                 concludeNullProperties();
+
+                validateMtuLength(mtuLength);
+                validateMtuLength(ipcMtuLength);
 
                 LogBufferDescriptor.checkTermLength(maxTermBufferLength);
                 LogBufferDescriptor.checkTermLength(publicationTermBufferLength);
@@ -614,150 +617,133 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        private void concludeNullProperties()
-        {
-            if (null == epochClock)
-            {
-                epochClock = new SystemEpochClock();
-            }
-
-            if (null == nanoClock)
-            {
-                nanoClock = new SystemNanoClock();
-            }
-
-            if (null == threadingMode)
-            {
-                threadingMode = Configuration.THREADING_MODE_DEFAULT;
-            }
-
-            if (null == unicastFlowControlSupplier)
-            {
-                unicastFlowControlSupplier = Configuration.unicastFlowControlSupplier();
-            }
-
-            if (null == multicastFlowControlSupplier)
-            {
-                multicastFlowControlSupplier = Configuration.multicastFlowControlSupplier();
-            }
-
-            if (0 == ipcPublicationTermBufferLength)
-            {
-                ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength(publicationTermBufferLength());
-            }
-
-            if (null == sendChannelEndpointSupplier)
-            {
-                sendChannelEndpointSupplier = Configuration.sendChannelEndpointSupplier();
-            }
-
-            if (null == receiveChannelEndpointSupplier)
-            {
-                receiveChannelEndpointSupplier = Configuration.receiveChannelEndpointSupplier();
-            }
-
-            if (null == dataTransportPoller)
-            {
-                dataTransportPoller = new DataTransportPoller();
-            }
-
-            if (null == controlTransportPoller)
-            {
-                controlTransportPoller = new ControlTransportPoller();
-            }
-
-            if (null == termBufferSparseFile)
-            {
-                if (null != Configuration.TERM_BUFFER_SPARSE_FILE)
-                {
-                    termBufferSparseFile = Boolean.valueOf(Configuration.TERM_BUFFER_SPARSE_FILE);
-                }
-                else
-                {
-                    termBufferSparseFile = Boolean.FALSE;
-                }
-            }
-
-            if (null == conductorThreadFactory)
-            {
-                conductorThreadFactory = Thread::new;
-            }
-
-            if (null == senderThreadFactory)
-            {
-                senderThreadFactory = Thread::new;
-            }
-
-            if (null == receiverThreadFactory)
-            {
-                receiverThreadFactory = Thread::new;
-            }
-
-            if (null == sharedThreadFactory)
-            {
-                sharedThreadFactory = Thread::new;
-            }
-
-            if (null == sharedNetworkThreadFactory)
-            {
-                sharedNetworkThreadFactory = Thread::new;
-            }
-
-            if (null == receiveChannelEndpointThreadLocals)
-            {
-                receiveChannelEndpointThreadLocals = new ReceiveChannelEndpointThreadLocals(this);
-            }
-
-            if (null == congestionControlSupplier)
-            {
-                congestionControlSupplier = Configuration.congestionControlSupplier();
-            }
-        }
-
+        /**
+         * Should an attempt be made to use the high resolution timers for waiting on Windows.
+         *
+         * @param useWindowsHighResTimers Should an attempt be made to use the high-res timers for waiting on Windows.
+         * @return this for a fluent API.
+         */
         public Context useWindowsHighResTimer(final boolean useWindowsHighResTimers)
         {
             this.useWindowsHighResTimer = useWindowsHighResTimers;
             return this;
         }
 
+        /*
+         * Should an attempt be made to use the high resolution timers for waiting on Windows.
+         */
         public boolean useWindowsHighResTimer()
         {
             return useWindowsHighResTimer;
         }
 
+        /**
+         * Should a warning be issued if the {@link #aeronDirectoryName()} exists?
+         *
+         * @return should a warning be issued if the {@link #aeronDirectoryName()} exists?
+         */
+        public boolean warnIfDirectoryExists()
+        {
+            return  warnIfDirectoryExists;
+        }
+
+        /**
+         * Should a warning be issued if the {@link #aeronDirectoryName()} exists?
+         *
+         * @param warnIfDirectoryExists warn if the {@link #aeronDirectoryName()} exists?
+         * @return this for a fluent API.
+         */
+        public Context warnIfDirectoryExists(final boolean warnIfDirectoryExists)
+        {
+            this.warnIfDirectoryExists = warnIfDirectoryExists;
+            return this;
+        }
+
+        /**
+         * Will the driver attempt to immediately delete {@link #aeronDirectoryName()} on startup.
+         *
+         * @return true when directory will be deleted, otherwise false.
+         */
+        public boolean dirDeleteOnStart()
+        {
+            return dirDeleteOnStart;
+        }
+
+        /**
+         * Should the driver attempt to immediately delete {@link #aeronDirectoryName()} on startup.
+         *
+         * @param dirDeleteOnStart Attempt deletion.
+         * @return this for a fluent API.
+         */
+        public Context dirDeleteOnStart(final boolean dirDeleteOnStart)
+        {
+            this.dirDeleteOnStart = dirDeleteOnStart;
+            return this;
+        }
+
+        /**
+         * Should the term buffers be created with sparse files?
+         *
+         * @return should the term buffers be created with sparse files?
+         */
+        public boolean termBufferSparseFile()
+        {
+            return termBufferSparseFile;
+        }
+
+        /**
+         * Should the term buffer be created with sparse files?
+         *
+         * @param termBufferSparseFile should the term buffers be created with sparse files?
+         * @return this for a fluent API.
+         */
+        public Context termBufferSparseFile(final boolean termBufferSparseFile)
+        {
+            this.termBufferSparseFile = termBufferSparseFile;
+            return this;
+        }
+
+        /**
+         * The {@link EpochClock} as a source of time in milliseconds for wall clock time.
+         *
+         * @return the {@link EpochClock} as a source of time in milliseconds for wall clock time.
+         */
+        public EpochClock epochClock()
+        {
+            return epochClock;
+        }
+
+        /**
+         * The {@link EpochClock} as a source of time in milliseconds for wall clock time.
+         *
+         * @param clock to be used.
+         * @return this for a fluent API.
+         */
         public Context epochClock(final EpochClock clock)
         {
             this.epochClock = clock;
             return this;
         }
 
+        /**
+         * The {@link NanoClock} as a source of time in nanoseconds for measuring duration.
+         *
+         * @return the {@link NanoClock} as a source of time in nanoseconds for measuring duration.
+         */
+        public NanoClock nanoClock()
+        {
+            return nanoClock;
+        }
+
+        /**
+         * The {@link NanoClock} as a source of time in nanoseconds for measuring duration.
+         *
+         * @param clock to be used.
+         * @return this for a fluent API.
+         */
         public Context nanoClock(final NanoClock clock)
         {
             this.nanoClock = clock;
-            return this;
-        }
-
-        public Context driverCommandQueue(final ManyToOneConcurrentArrayQueue<DriverConductorCmd> queue)
-        {
-            this.driverCommandQueue = queue;
-            return this;
-        }
-
-        public Context rawLogBuffersFactory(final RawLogFactory rawLogFactory)
-        {
-            this.rawLogFactory = rawLogFactory;
-            return this;
-        }
-
-        public Context dataTransportPoller(final DataTransportPoller transportPoller)
-        {
-            this.dataTransportPoller = transportPoller;
-            return this;
-        }
-
-        public Context controlTransportPoller(final ControlTransportPoller transportPoller)
-        {
-            this.controlTransportPoller = transportPoller;
             return this;
         }
 
@@ -782,24 +768,6 @@ public final class MediaDriver implements AutoCloseable
         public Context senderCommandQueue(final OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue)
         {
             this.senderCommandQueue = senderCommandQueue;
-            return this;
-        }
-
-        public Context receiverProxy(final ReceiverProxy receiverProxy)
-        {
-            this.receiverProxy = receiverProxy;
-            return this;
-        }
-
-        public Context senderProxy(final SenderProxy senderProxy)
-        {
-            this.senderProxy = senderProxy;
-            return this;
-        }
-
-        public Context driverConductorProxy(final DriverConductorProxy driverConductorProxy)
-        {
-            this.driverConductorProxy = driverConductorProxy;
             return this;
         }
 
@@ -857,12 +825,6 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context termBufferSparseFile(final Boolean termBufferSparseFile)
-        {
-            this.termBufferSparseFile = termBufferSparseFile;
-            return this;
-        }
-
         public Context publicationTermBufferLength(final int termBufferLength)
         {
             this.publicationTermBufferLength = termBufferLength;
@@ -890,12 +852,6 @@ public final class MediaDriver implements AutoCloseable
         public Context statusMessageTimeout(final long statusMessageTimeout)
         {
             this.statusMessageTimeout = statusMessageTimeout;
-            return this;
-        }
-
-        public Context warnIfDirectoryExists(final boolean value)
-        {
-            this.warnIfDirectoryExists = value;
             return this;
         }
 
@@ -972,18 +928,6 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Set whether or not the driver will immediately attempt to delete the Aeron directories when starting.
-         *
-         * @param dirsDeleteOnStart Attempt deletion.
-         * @return this Object for method chaining.
-         */
-        public Context dirDeleteOnStart(final boolean dirsDeleteOnStart)
-        {
-            this.dirDeleteOnStart = dirsDeleteOnStart;
-            return this;
-        }
-
-        /**
          * @see CommonContext#aeronDirectoryName(String)
          */
         public Context aeronDirectoryName(final String dirName)
@@ -1020,16 +964,6 @@ public final class MediaDriver implements AutoCloseable
         {
             this.congestionControlSupplier = supplier;
             return this;
-        }
-
-        public EpochClock epochClock()
-        {
-            return epochClock;
-        }
-
-        public NanoClock nanoClock()
-        {
-            return nanoClock;
         }
 
         public ManyToOneConcurrentArrayQueue<DriverConductorCmd> driverCommandQueue()
@@ -1202,11 +1136,6 @@ public final class MediaDriver implements AutoCloseable
             return statusMessageTimeout;
         }
 
-        public boolean warnIfDirectoryExists()
-        {
-            return warnIfDirectoryExists;
-        }
-
         public ErrorHandler errorHandler()
         {
             return errorHandler;
@@ -1235,7 +1164,6 @@ public final class MediaDriver implements AutoCloseable
 
         public Context mtuLength(final int mtuLength)
         {
-            Configuration.validateMtuLength(mtuLength);
             this.mtuLength = mtuLength;
             return this;
         }
@@ -1247,7 +1175,6 @@ public final class MediaDriver implements AutoCloseable
 
         public Context ipcMtuLength(final int ipcMtuLength)
         {
-            Configuration.validateMtuLength(ipcMtuLength);
             this.ipcMtuLength = ipcMtuLength;
             return this;
         }
@@ -1255,16 +1182,6 @@ public final class MediaDriver implements AutoCloseable
         public SystemCounters systemCounters()
         {
             return systemCounters;
-        }
-
-        /**
-         * Get whether or not the driver will immediately attempt to delete the Aeron directories when starting.
-         *
-         * @return true when directories will be deleted, otherwise false.
-         */
-        public boolean dirDeleteOnStart()
-        {
-            return dirDeleteOnStart;
         }
 
         public SendChannelEndpointSupplier sendChannelEndpointSupplier()
@@ -1292,13 +1209,48 @@ public final class MediaDriver implements AutoCloseable
             return congestionControlSupplier;
         }
 
-        public void close()
-        {
-            // do not close so that contents can be inspected for debugging.
-            IoUtil.unmap(cncByteBuffer);
-            IoUtil.unmap(lossReportBuffer);
+        // Methods for testing.
 
-            super.close();
+        public Context driverCommandQueue(final ManyToOneConcurrentArrayQueue<DriverConductorCmd> queue)
+        {
+            this.driverCommandQueue = queue;
+            return this;
+        }
+
+        public Context rawLogBuffersFactory(final RawLogFactory rawLogFactory)
+        {
+            this.rawLogFactory = rawLogFactory;
+            return this;
+        }
+
+        public Context dataTransportPoller(final DataTransportPoller transportPoller)
+        {
+            this.dataTransportPoller = transportPoller;
+            return this;
+        }
+
+        public Context controlTransportPoller(final ControlTransportPoller transportPoller)
+        {
+            this.controlTransportPoller = transportPoller;
+            return this;
+        }
+
+        public Context receiverProxy(final ReceiverProxy receiverProxy)
+        {
+            this.receiverProxy = receiverProxy;
+            return this;
+        }
+
+        public Context senderProxy(final SenderProxy senderProxy)
+        {
+            this.senderProxy = senderProxy;
+            return this;
+        }
+
+        public Context driverConductorProxy(final DriverConductorProxy driverConductorProxy)
+        {
+            this.driverConductorProxy = driverConductorProxy;
+            return this;
         }
 
         private void concludeCounters()
@@ -1330,6 +1282,94 @@ public final class MediaDriver implements AutoCloseable
             if (null == systemCounters)
             {
                 systemCounters = new SystemCounters(countersManager);
+            }
+        }
+
+        private void concludeNullProperties()
+        {
+            if (null == epochClock)
+            {
+                epochClock = new SystemEpochClock();
+            }
+
+            if (null == nanoClock)
+            {
+                nanoClock = new SystemNanoClock();
+            }
+
+            if (null == threadingMode)
+            {
+                threadingMode = Configuration.THREADING_MODE_DEFAULT;
+            }
+
+            if (null == unicastFlowControlSupplier)
+            {
+                unicastFlowControlSupplier = Configuration.unicastFlowControlSupplier();
+            }
+
+            if (null == multicastFlowControlSupplier)
+            {
+                multicastFlowControlSupplier = Configuration.multicastFlowControlSupplier();
+            }
+
+            if (0 == ipcPublicationTermBufferLength)
+            {
+                ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength(publicationTermBufferLength());
+            }
+
+            if (null == sendChannelEndpointSupplier)
+            {
+                sendChannelEndpointSupplier = Configuration.sendChannelEndpointSupplier();
+            }
+
+            if (null == receiveChannelEndpointSupplier)
+            {
+                receiveChannelEndpointSupplier = Configuration.receiveChannelEndpointSupplier();
+            }
+
+            if (null == dataTransportPoller)
+            {
+                dataTransportPoller = new DataTransportPoller();
+            }
+
+            if (null == controlTransportPoller)
+            {
+                controlTransportPoller = new ControlTransportPoller();
+            }
+
+            if (null == conductorThreadFactory)
+            {
+                conductorThreadFactory = Thread::new;
+            }
+
+            if (null == senderThreadFactory)
+            {
+                senderThreadFactory = Thread::new;
+            }
+
+            if (null == receiverThreadFactory)
+            {
+                receiverThreadFactory = Thread::new;
+            }
+
+            if (null == sharedThreadFactory)
+            {
+                sharedThreadFactory = Thread::new;
+            }
+
+            if (null == sharedNetworkThreadFactory)
+            {
+                sharedNetworkThreadFactory = Thread::new;
+            }
+
+            if (null == receiveChannelEndpointThreadLocals)
+            {
+                receiveChannelEndpointThreadLocals = new ReceiveChannelEndpointThreadLocals(this);
+            }
+
+            if (null == congestionControlSupplier)
+            {
+                congestionControlSupplier = Configuration.congestionControlSupplier();
             }
         }
 

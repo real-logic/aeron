@@ -24,7 +24,7 @@ endif()
 check_include_file("bsd/stdlib.h" BSDSTDLIB_H_EXISTS)
 check_include_file("uuid/uuid.h" UUID_H_EXISTS)
 find_library(LIBBSD_EXISTS NAMES bsd libbsd)
-find_library(LIBUUID_EXISTS NAMES uuid libuuid)
+find_library(LIBUUID_EXISTS NAMES uuid libuuid libuuid.dll)
 
 if(LIBBSD_EXISTS)
     set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} -lbsd")
@@ -220,6 +220,12 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     endif()
 
     set(AERON_LIB_M_LIBS m)
+endif()
+
+if(CYGWIN)
+    if(LIBUUID_EXISTS)
+        set(AERON_LIB_UUID_LIBS uuid)
+    endif()
 endif()
 
 target_link_libraries(

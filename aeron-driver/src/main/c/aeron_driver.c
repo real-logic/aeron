@@ -49,13 +49,19 @@ void aeron_log_func_none(const char *str)
 int64_t aeron_nanoclock()
 {
     struct timespec ts;
+#if defined(__CYGWIN__)
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0)
+    {
+        return -1;
+    }
+#else
     if (clock_gettime(CLOCK_MONOTONIC_RAW, &ts) < 0)
     {
         return -1;
     }
+#endif
 
     return (ts.tv_sec * 1000000000 + ts.tv_nsec);
-
 }
 
 int64_t aeron_epochclock()
@@ -85,7 +91,7 @@ int32_t aeron_randomised_int32()
     uint32_t value = arc4random();
 
     memcpy(&result, &value, sizeof(int32_t));
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__CYGWIN__)
     if (-1 == aeron_dev_random_fd)
     {
         if ((aeron_dev_random_fd = open("/dev/urandom", O_RDONLY)) < 0)

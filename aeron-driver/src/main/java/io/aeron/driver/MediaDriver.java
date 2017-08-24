@@ -459,50 +459,47 @@ public final class MediaDriver implements AutoCloseable
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
-        private RawLogFactory rawLogFactory;
-        private DataTransportPoller dataTransportPoller;
-        private ControlTransportPoller controlTransportPoller;
-        private FlowControlSupplier unicastFlowControlSupplier;
-        private FlowControlSupplier multicastFlowControlSupplier;
-        private ManyToOneConcurrentArrayQueue<DriverConductorCmd> driverCommandQueue;
-        private OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue;
-        private OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue;
-        private ReceiverProxy receiverProxy;
-        private SenderProxy senderProxy;
-        private DriverConductorProxy driverConductorProxy;
-        private IdleStrategy conductorIdleStrategy;
-        private IdleStrategy senderIdleStrategy;
-        private IdleStrategy receiverIdleStrategy;
-        private IdleStrategy sharedNetworkIdleStrategy;
-        private IdleStrategy sharedIdleStrategy;
-        private ClientProxy clientProxy;
-        private RingBuffer toDriverCommands;
-        private DistinctErrorLog errorLog;
-        private ErrorHandler errorHandler;
-
-        private MappedByteBuffer lossReportBuffer;
-        private LossReport lossReport;
-
-        private MappedByteBuffer cncByteBuffer;
-        private UnsafeBuffer cncMetaDataBuffer;
-
-        private boolean useConcurrentCountersManager;
-        private CountersManager countersManager;
-        private SystemCounters systemCounters;
-
         private ThreadingMode threadingMode;
         private ThreadFactory conductorThreadFactory;
         private ThreadFactory senderThreadFactory;
         private ThreadFactory receiverThreadFactory;
         private ThreadFactory sharedThreadFactory;
         private ThreadFactory sharedNetworkThreadFactory;
-
+        private IdleStrategy conductorIdleStrategy;
+        private IdleStrategy senderIdleStrategy;
+        private IdleStrategy receiverIdleStrategy;
+        private IdleStrategy sharedNetworkIdleStrategy;
+        private IdleStrategy sharedIdleStrategy;
         private SendChannelEndpointSupplier sendChannelEndpointSupplier;
         private ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier;
         private ReceiveChannelEndpointThreadLocals receiveChannelEndpointThreadLocals;
-
+        private FlowControlSupplier unicastFlowControlSupplier;
+        private FlowControlSupplier multicastFlowControlSupplier;
         private byte[] applicationSpecificFeedback = Configuration.SM_APPLICATION_SPECIFIC_FEEDBACK;
         private CongestionControlSupplier congestionControlSupplier;
+
+        private DistinctErrorLog errorLog;
+        private ErrorHandler errorHandler;
+        private boolean useConcurrentCountersManager;
+        private CountersManager countersManager;
+        private SystemCounters systemCounters;
+        private LossReport lossReport;
+
+        private RawLogFactory rawLogFactory;
+        private DataTransportPoller dataTransportPoller;
+        private ControlTransportPoller controlTransportPoller;
+        private ManyToOneConcurrentArrayQueue<DriverConductorCmd> driverCommandQueue;
+        private OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue;
+        private OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue;
+        private ReceiverProxy receiverProxy;
+        private SenderProxy senderProxy;
+        private DriverConductorProxy driverConductorProxy;
+        private ClientProxy clientProxy;
+        private RingBuffer toDriverCommands;
+
+        private MappedByteBuffer lossReportBuffer;
+        private MappedByteBuffer cncByteBuffer;
+        private UnsafeBuffer cncMetaDataBuffer;
 
         /**
          * Free up resources but don't delete files in case they are required for debugging.
@@ -614,6 +611,17 @@ public final class MediaDriver implements AutoCloseable
                 LangUtil.rethrowUnchecked(ex);
             }
 
+            return this;
+        }
+
+
+        /**
+         * @see CommonContext#aeronDirectoryName(String)
+         * @return covariant return for fluent API.
+         */
+        public Context aeronDirectoryName(final String dirName)
+        {
+            super.aeronDirectoryName(dirName);
             return this;
         }
 
@@ -985,28 +993,91 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context unicastFlowControlSupplier(final FlowControlSupplier senderFlowControl)
+        /**
+         * {@link ThreadingMode} that should be used for the driver.
+         *
+         * @return {@link ThreadingMode} that should be used for the driver.
+         */
+        public ThreadingMode threadingMode()
         {
-            this.unicastFlowControlSupplier = senderFlowControl;
+            return threadingMode;
+        }
+
+        /**
+         * {@link ThreadingMode} that should be used for the driver.
+         *
+         * @param threadingMode that should be used for the driver.
+         * @return this for a fluent API.
+         */
+        public Context threadingMode(final ThreadingMode threadingMode)
+        {
+            this.threadingMode = threadingMode;
             return this;
         }
 
-        public Context multicastFlowControlSupplier(final FlowControlSupplier senderFlowControl)
+        public ThreadFactory senderThreadFactory()
         {
-            this.multicastFlowControlSupplier = senderFlowControl;
+            return senderThreadFactory;
+        }
+
+        public Context senderThreadFactory(final ThreadFactory factory)
+        {
+            this.senderThreadFactory = factory;
             return this;
         }
 
-        public Context receiverCommandQueue(final OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue)
+        public ThreadFactory receiverThreadFactory()
         {
-            this.receiverCommandQueue = receiverCommandQueue;
+            return receiverThreadFactory;
+        }
+
+        public Context receiverThreadFactory(final ThreadFactory factory)
+        {
+            this.receiverThreadFactory = factory;
             return this;
         }
 
-        public Context senderCommandQueue(final OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue)
+        public ThreadFactory conductorThreadFactory()
         {
-            this.senderCommandQueue = senderCommandQueue;
+            return conductorThreadFactory;
+        }
+
+        public Context conductorThreadFactory(final ThreadFactory factory)
+        {
+            this.conductorThreadFactory = factory;
             return this;
+        }
+
+        public ThreadFactory sharedThreadFactory()
+        {
+            return sharedThreadFactory;
+        }
+
+        public Context sharedThreadFactory(final ThreadFactory factory)
+        {
+            this.sharedThreadFactory = factory;
+            return this;
+        }
+
+        public ThreadFactory sharedNetworkThreadFactory()
+        {
+            return sharedNetworkThreadFactory;
+        }
+
+        public Context sharedNetworkThreadFactory(final ThreadFactory factory)
+        {
+            this.sharedNetworkThreadFactory = factory;
+            return this;
+        }
+
+        public IdleStrategy conductorIdleStrategy()
+        {
+            return conductorIdleStrategy;
+        }
+
+        public IdleStrategy senderIdleStrategy()
+        {
+            return senderIdleStrategy;
         }
 
         public Context conductorIdleStrategy(final IdleStrategy strategy)
@@ -1021,10 +1092,20 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public IdleStrategy receiverIdleStrategy()
+        {
+            return receiverIdleStrategy;
+        }
+
         public Context receiverIdleStrategy(final IdleStrategy strategy)
         {
             this.receiverIdleStrategy = strategy;
             return this;
+        }
+
+        public IdleStrategy sharedNetworkIdleStrategy()
+        {
+            return sharedNetworkIdleStrategy;
         }
 
         public Context sharedNetworkIdleStrategy(final IdleStrategy strategy)
@@ -1033,97 +1114,20 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public IdleStrategy sharedIdleStrategy()
+        {
+            return sharedIdleStrategy;
+        }
+
         public Context sharedIdleStrategy(final IdleStrategy strategy)
         {
             this.sharedIdleStrategy = strategy;
             return this;
         }
 
-        public Context clientProxy(final ClientProxy clientProxy)
+        public SendChannelEndpointSupplier sendChannelEndpointSupplier()
         {
-            this.clientProxy = clientProxy;
-            return this;
-        }
-
-        public Context toDriverCommands(final RingBuffer toDriverCommands)
-        {
-            this.toDriverCommands = toDriverCommands;
-            return this;
-        }
-
-        public Context useConcurrentCountersManager(final boolean useConcurrentCountersManager)
-        {
-            this.useConcurrentCountersManager = useConcurrentCountersManager;
-            return this;
-        }
-
-        public Context countersManager(final CountersManager countersManager)
-        {
-            this.countersManager = countersManager;
-            return this;
-        }
-
-        public Context errorLog(final DistinctErrorLog errorLog)
-        {
-            this.errorLog = errorLog;
-            return this;
-        }
-
-        public Context lossReport(final LossReport lossReport)
-        {
-            this.lossReport = lossReport;
-            return this;
-        }
-
-        public Context systemCounters(final SystemCounters systemCounters)
-        {
-            this.systemCounters = systemCounters;
-            return this;
-        }
-
-        public Context threadingMode(final ThreadingMode threadingMode)
-        {
-            this.threadingMode = threadingMode;
-            return this;
-        }
-
-        public Context senderThreadFactory(final ThreadFactory factory)
-        {
-            this.senderThreadFactory = factory;
-            return this;
-        }
-
-        public Context receiverThreadFactory(final ThreadFactory factory)
-        {
-            this.receiverThreadFactory = factory;
-            return this;
-        }
-
-        public Context conductorThreadFactory(final ThreadFactory factory)
-        {
-            this.conductorThreadFactory = factory;
-            return this;
-        }
-
-        public Context sharedThreadFactory(final ThreadFactory factory)
-        {
-            this.sharedThreadFactory = factory;
-            return this;
-        }
-
-        public Context sharedNetworkThreadFactory(final ThreadFactory factory)
-        {
-            this.sharedNetworkThreadFactory = factory;
-            return this;
-        }
-
-        /**
-         * @see CommonContext#aeronDirectoryName(String)
-         */
-        public Context aeronDirectoryName(final String dirName)
-        {
-            super.aeronDirectoryName(dirName);
-            return this;
+            return sendChannelEndpointSupplier;
         }
 
         public Context sendChannelEndpointSupplier(final SendChannelEndpointSupplier supplier)
@@ -1132,10 +1136,20 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier()
+        {
+            return receiveChannelEndpointSupplier;
+        }
+
         public Context receiveChannelEndpointSupplier(final ReceiveChannelEndpointSupplier supplier)
         {
             this.receiveChannelEndpointSupplier = supplier;
             return this;
+        }
+
+        public ReceiveChannelEndpointThreadLocals receiveChannelEndpointThreadLocals()
+        {
+            return receiveChannelEndpointThreadLocals;
         }
 
         public Context receiveChannelEndpointThreadLocals(final ReceiveChannelEndpointThreadLocals threadLocals)
@@ -1144,41 +1158,15 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context applicationSpecificFeedback(final byte[] bytes)
-        {
-            this.applicationSpecificFeedback = bytes;
-            return this;
-        }
-
-        public Context congestControlSupplier(final CongestionControlSupplier supplier)
-        {
-            this.congestionControlSupplier = supplier;
-            return this;
-        }
-
-        public ManyToOneConcurrentArrayQueue<DriverConductorCmd> driverCommandQueue()
-        {
-            return driverCommandQueue;
-        }
-
-        public RawLogFactory rawLogBuffersFactory()
-        {
-            return rawLogFactory;
-        }
-
-        public DataTransportPoller dataTransportPoller()
-        {
-            return dataTransportPoller;
-        }
-
-        public ControlTransportPoller controlTransportPoller()
-        {
-            return controlTransportPoller;
-        }
-
         public FlowControlSupplier unicastFlowControlSupplier()
         {
             return unicastFlowControlSupplier;
+        }
+
+        public Context unicastFlowControlSupplier(final FlowControlSupplier senderFlowControl)
+        {
+            this.unicastFlowControlSupplier = senderFlowControl;
+            return this;
         }
 
         public FlowControlSupplier multicastFlowControlSupplier()
@@ -1186,104 +1174,32 @@ public final class MediaDriver implements AutoCloseable
             return multicastFlowControlSupplier;
         }
 
-        public OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue()
+        public Context multicastFlowControlSupplier(final FlowControlSupplier senderFlowControl)
         {
-            return receiverCommandQueue;
+            this.multicastFlowControlSupplier = senderFlowControl;
+            return this;
         }
 
-        public OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue()
+        public byte[] applicationSpecificFeedback()
         {
-            return senderCommandQueue;
+            return applicationSpecificFeedback;
         }
 
-        public ReceiverProxy receiverProxy()
+        public Context applicationSpecificFeedback(final byte[] bytes)
         {
-            return receiverProxy;
+            this.applicationSpecificFeedback = bytes;
+            return this;
         }
 
-        public SenderProxy senderProxy()
+        public CongestionControlSupplier congestionControlSupplier()
         {
-            return senderProxy;
+            return congestionControlSupplier;
         }
 
-        public DriverConductorProxy driverConductorProxy()
+        public Context congestControlSupplier(final CongestionControlSupplier supplier)
         {
-            return driverConductorProxy;
-        }
-
-        public ThreadingMode threadingMode()
-        {
-            return threadingMode;
-        }
-
-        public IdleStrategy conductorIdleStrategy()
-        {
-            return conductorIdleStrategy;
-        }
-
-        public IdleStrategy senderIdleStrategy()
-        {
-            return senderIdleStrategy;
-        }
-
-        public IdleStrategy receiverIdleStrategy()
-        {
-            return receiverIdleStrategy;
-        }
-
-        public IdleStrategy sharedNetworkIdleStrategy()
-        {
-            return sharedNetworkIdleStrategy;
-        }
-
-        public IdleStrategy sharedIdleStrategy()
-        {
-            return sharedIdleStrategy;
-        }
-
-        public ThreadFactory senderThreadFactory()
-        {
-            return this.senderThreadFactory;
-        }
-
-        public ThreadFactory receiverThreadFactory()
-        {
-            return this.receiverThreadFactory;
-        }
-
-        public ThreadFactory conductorThreadFactory()
-        {
-            return this.conductorThreadFactory;
-        }
-
-        public ThreadFactory sharedThreadFactory()
-        {
-            return this.sharedThreadFactory;
-        }
-
-        public ThreadFactory sharedNetworkThreadFactory()
-        {
-            return this.sharedNetworkThreadFactory;
-        }
-
-        public ClientProxy clientProxy()
-        {
-            return clientProxy;
-        }
-
-        public RingBuffer toDriverCommands()
-        {
-            return toDriverCommands;
-        }
-
-        public boolean useConcurrentCountersManager()
-        {
-            return useConcurrentCountersManager;
-        }
-
-        public CountersManager countersManager()
-        {
-            return countersManager;
+            this.congestionControlSupplier = supplier;
+            return this;
         }
 
         public ErrorHandler errorHandler()
@@ -1302,9 +1218,32 @@ public final class MediaDriver implements AutoCloseable
             return errorLog;
         }
 
-        public LossReport lossReport()
+        public Context errorLog(final DistinctErrorLog errorLog)
         {
-            return lossReport;
+            this.errorLog = errorLog;
+            return this;
+        }
+
+        public boolean useConcurrentCountersManager()
+        {
+            return useConcurrentCountersManager;
+        }
+
+        public Context useConcurrentCountersManager(final boolean useConcurrentCountersManager)
+        {
+            this.useConcurrentCountersManager = useConcurrentCountersManager;
+            return this;
+        }
+
+        public CountersManager countersManager()
+        {
+            return countersManager;
+        }
+
+        public Context countersManager(final CountersManager countersManager)
+        {
+            this.countersManager = countersManager;
+            return this;
         }
 
         public SystemCounters systemCounters()
@@ -1312,70 +1251,139 @@ public final class MediaDriver implements AutoCloseable
             return systemCounters;
         }
 
-        public SendChannelEndpointSupplier sendChannelEndpointSupplier()
+        public Context systemCounters(final SystemCounters systemCounters)
         {
-            return sendChannelEndpointSupplier;
+            this.systemCounters = systemCounters;
+            return this;
         }
 
-        public ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier()
+        public LossReport lossReport()
         {
-            return receiveChannelEndpointSupplier;
+            return lossReport;
         }
 
-        public ReceiveChannelEndpointThreadLocals receiveChannelEndpointThreadLocals()
+        public Context lossReport(final LossReport lossReport)
         {
-            return receiveChannelEndpointThreadLocals;
+            this.lossReport = lossReport;
+            return this;
         }
 
-        public byte[] applicationSpecificFeedback()
+        OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue()
         {
-            return applicationSpecificFeedback;
+            return receiverCommandQueue;
         }
 
-        public CongestionControlSupplier congestionControlSupplier()
+        Context receiverCommandQueue(final OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue)
         {
-            return congestionControlSupplier;
+            this.receiverCommandQueue = receiverCommandQueue;
+            return this;
         }
 
-        // Methods for testing.
+        OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue()
+        {
+            return senderCommandQueue;
+        }
 
-        public Context driverCommandQueue(final ManyToOneConcurrentArrayQueue<DriverConductorCmd> queue)
+        Context senderCommandQueue(final OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue)
+        {
+            this.senderCommandQueue = senderCommandQueue;
+            return this;
+        }
+
+        ManyToOneConcurrentArrayQueue<DriverConductorCmd> driverCommandQueue()
+        {
+            return driverCommandQueue;
+        }
+
+        Context driverCommandQueue(final ManyToOneConcurrentArrayQueue<DriverConductorCmd> queue)
         {
             this.driverCommandQueue = queue;
             return this;
         }
 
-        public Context rawLogBuffersFactory(final RawLogFactory rawLogFactory)
+        ClientProxy clientProxy()
+        {
+            return clientProxy;
+        }
+
+        Context clientProxy(final ClientProxy clientProxy)
+        {
+            this.clientProxy = clientProxy;
+            return this;
+        }
+
+        RingBuffer toDriverCommands()
+        {
+            return toDriverCommands;
+        }
+
+        Context toDriverCommands(final RingBuffer toDriverCommands)
+        {
+            this.toDriverCommands = toDriverCommands;
+            return this;
+        }
+
+        RawLogFactory rawLogBuffersFactory()
+        {
+            return rawLogFactory;
+        }
+
+        Context rawLogBuffersFactory(final RawLogFactory rawLogFactory)
         {
             this.rawLogFactory = rawLogFactory;
             return this;
         }
 
-        public Context dataTransportPoller(final DataTransportPoller transportPoller)
+        DataTransportPoller dataTransportPoller()
+        {
+            return dataTransportPoller;
+        }
+
+        Context dataTransportPoller(final DataTransportPoller transportPoller)
         {
             this.dataTransportPoller = transportPoller;
             return this;
         }
 
-        public Context controlTransportPoller(final ControlTransportPoller transportPoller)
+        ControlTransportPoller controlTransportPoller()
+        {
+            return controlTransportPoller;
+        }
+
+        Context controlTransportPoller(final ControlTransportPoller transportPoller)
         {
             this.controlTransportPoller = transportPoller;
             return this;
         }
 
-        public Context receiverProxy(final ReceiverProxy receiverProxy)
+        ReceiverProxy receiverProxy()
+        {
+            return receiverProxy;
+        }
+
+        Context receiverProxy(final ReceiverProxy receiverProxy)
         {
             this.receiverProxy = receiverProxy;
             return this;
         }
 
-        public Context senderProxy(final SenderProxy senderProxy)
+        SenderProxy senderProxy()
+        {
+            return senderProxy;
+        }
+
+        Context senderProxy(final SenderProxy senderProxy)
         {
             this.senderProxy = senderProxy;
             return this;
         }
 
-        public Context driverConductorProxy(final DriverConductorProxy driverConductorProxy)
+        DriverConductorProxy driverConductorProxy()
+        {
+            return driverConductorProxy;
+        }
+
+        Context driverConductorProxy(final DriverConductorProxy driverConductorProxy)
         {
             this.driverConductorProxy = driverConductorProxy;
             return this;

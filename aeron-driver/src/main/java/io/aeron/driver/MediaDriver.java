@@ -79,20 +79,28 @@ public final class MediaDriver implements AutoCloseable
     {
         final Properties properties = new Properties(System.getProperties());
 
-        try (InputStream in = MediaDriver.class.getClassLoader().getResourceAsStream(filenameOrUrl))
+        final URL resource = MediaDriver.class.getClassLoader().getResource(filenameOrUrl);
+        if (null != resource)
         {
-            properties.load(in);
-        }
-        catch (final Exception ignore)
-        {
+            try (InputStream in = resource.openStream())
+            {
+                properties.load(in);
+            }
+            catch (final Exception ignore)
+            {
+            }
         }
 
-        try (FileInputStream in = new FileInputStream(filenameOrUrl))
+        final File file = new File(filenameOrUrl);
+        if (file.exists())
         {
-            properties.load(in);
-        }
-        catch (final Exception ignore)
-        {
+            try (FileInputStream in = new FileInputStream(file))
+            {
+                properties.load(in);
+            }
+            catch (final Exception ignore)
+            {
+            }
         }
 
         try (InputStream in = new URL(filenameOrUrl).openStream())
@@ -130,7 +138,7 @@ public final class MediaDriver implements AutoCloseable
     {
         loadPropertiesFiles(args);
 
-        try (MediaDriver ignored = MediaDriver.launch())
+        try (MediaDriver ignore = MediaDriver.launch())
         {
             new ShutdownSignalBarrier().await();
 

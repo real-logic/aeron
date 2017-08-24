@@ -483,7 +483,7 @@ public final class MediaDriver implements AutoCloseable
         private long publicationUnblockTimeoutNs = Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS;
 
         private int publicationTermBufferLength = Configuration.termBufferLength();
-        private int ipcPublicationTermBufferLength;
+        private int ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength(publicationTermBufferLength);
         private int maxTermBufferLength = Configuration.maxTermBufferLength();
         private int initialWindowLength = Configuration.initialWindowLength();
         private long statusMessageTimeout = Configuration.statusMessageTimeout();
@@ -1310,11 +1310,6 @@ public final class MediaDriver implements AutoCloseable
             if (null == multicastFlowControlSupplier)
             {
                 multicastFlowControlSupplier = Configuration.multicastFlowControlSupplier();
-            }
-
-            if (0 == ipcPublicationTermBufferLength)
-            {
-                ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength(publicationTermBufferLength());
             }
 
             if (null == sendChannelEndpointSupplier)

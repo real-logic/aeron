@@ -70,7 +70,7 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
         this.commandQueue = ctx.senderCommandQueue();
         this.totalBytesSent = ctx.systemCounters().get(BYTES_SENT);
         this.nanoClock = ctx.nanoClock();
-        this.statusMessageReadTimeoutNs = ctx.statusMessageTimeout() / 2;
+        this.statusMessageReadTimeoutNs = ctx.statusMessageTimeoutNs() / 2;
         this.dutyCycleRatio = Configuration.sendToStatusMessagePollRatio();
     }
 

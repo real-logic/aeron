@@ -93,7 +93,7 @@ public class DriverConductor implements Agent
         imageLivenessTimeoutNs = ctx.imageLivenessTimeoutNs();
         clientLivenessTimeoutNs = ctx.clientLivenessTimeoutNs();
         publicationUnblockTimeoutNs = ctx.publicationUnblockTimeoutNs();
-        statusMessageTimeoutNs = ctx.statusMessageTimeout();
+        statusMessageTimeoutNs = ctx.statusMessageTimeoutNs();
         driverCmdQueue = ctx.driverCommandQueue();
         receiverProxy = ctx.receiverProxy();
         senderProxy = ctx.senderProxy();

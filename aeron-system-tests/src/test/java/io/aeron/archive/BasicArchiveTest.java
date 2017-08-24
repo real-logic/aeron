@@ -64,7 +64,7 @@ public class BasicArchiveTest
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true)
-                .useConcurrentCounterManager(true));
+                .useConcurrentCountersManager(true));
 
         archive = Archive.launch(
             new Archive.Context()

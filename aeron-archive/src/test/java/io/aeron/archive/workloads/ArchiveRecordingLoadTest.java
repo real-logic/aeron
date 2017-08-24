@@ -92,7 +92,7 @@ public class ArchiveRecordingLoadTest
         driver = MediaDriver.launch(
             new MediaDriver.Context()
                 .threadingMode(ThreadingMode.DEDICATED)
-                .useConcurrentCounterManager(true)
+                .useConcurrentCountersManager(true)
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true));
 

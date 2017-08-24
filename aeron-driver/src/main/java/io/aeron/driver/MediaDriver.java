@@ -445,6 +445,18 @@ public final class MediaDriver implements AutoCloseable
         private boolean warnIfDirectoryExists = Configuration.DIR_WARN_IF_EXISTS;
         private boolean dirDeleteOnStart = Configuration.DIR_DELETE_ON_START;
         private boolean termBufferSparseFile = Configuration.TERM_BUFFER_SPARSE_FILE;
+
+        private long clientLivenessTimeoutNs = Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
+        private long imageLivenessTimeoutNs = Configuration.IMAGE_LIVENESS_TIMEOUT_NS;
+        private long publicationUnblockTimeoutNs = Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS;
+        private long statusMessageTimeoutNs = Configuration.statusMessageTimeout();
+        private int maxTermBufferLength = Configuration.maxTermBufferLength();
+        private int publicationTermBufferLength = Configuration.termBufferLength();
+        private int ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength(publicationTermBufferLength);
+        private int initialWindowLength = Configuration.initialWindowLength();
+        private int mtuLength = Configuration.MTU_LENGTH;
+        private int ipcMtuLength = Configuration.IPC_MTU_LENGTH;
+
         private EpochClock epochClock;
         private NanoClock nanoClock;
         private RawLogFactory rawLogFactory;
@@ -474,21 +486,9 @@ public final class MediaDriver implements AutoCloseable
         private MappedByteBuffer cncByteBuffer;
         private UnsafeBuffer cncMetaDataBuffer;
 
-        private boolean useConcurrentCounterManager;
+        private boolean useConcurrentCountersManager;
         private CountersManager countersManager;
         private SystemCounters systemCounters;
-
-        private long imageLivenessTimeoutNs = Configuration.IMAGE_LIVENESS_TIMEOUT_NS;
-        private long clientLivenessTimeoutNs = Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
-        private long publicationUnblockTimeoutNs = Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS;
-
-        private int publicationTermBufferLength = Configuration.termBufferLength();
-        private int ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength(publicationTermBufferLength);
-        private int maxTermBufferLength = Configuration.maxTermBufferLength();
-        private int initialWindowLength = Configuration.initialWindowLength();
-        private long statusMessageTimeout = Configuration.statusMessageTimeout();
-        private int mtuLength = Configuration.MTU_LENGTH;
-        private int ipcMtuLength = Configuration.IPC_MTU_LENGTH;
 
         private ThreadingMode threadingMode;
         private ThreadFactory conductorThreadFactory;
@@ -532,16 +532,16 @@ public final class MediaDriver implements AutoCloseable
 
                 if (publicationTermBufferLength > maxTermBufferLength)
                 {
-                    throw new ConfigurationException(String.format(
-                        "publication term buffer length %d greater than max length %d",
-                        publicationTermBufferLength, maxTermBufferLength));
+                    throw new ConfigurationException(
+                        "publication term buffer length " + publicationTermBufferLength +
+                            " greater than max length " + maxTermBufferLength);
                 }
 
                 if (ipcPublicationTermBufferLength > maxTermBufferLength)
                 {
-                    throw new ConfigurationException(String.format(
-                        "IPC publication term buffer length %d greater than max length %d",
-                        ipcPublicationTermBufferLength, maxTermBufferLength));
+                    throw new ConfigurationException(
+                        "IPC publication term buffer length " + ipcPublicationTermBufferLength +
+                            " greater than max length " + maxTermBufferLength);
                 }
 
                 Configuration.validateInitialWindowLength(initialWindowLength, mtuLength);
@@ -704,6 +704,244 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
+         * Time in nanoseconds an Image will be kept alive for its subscribers to consume it once disconnected.
+         *
+         * @return nanoseconds that an Image will be kept alive for its subscribers to consume it.
+         */
+        public long imageLivenessTimeoutNs()
+        {
+            return imageLivenessTimeoutNs;
+        }
+
+        /**
+         * Time in nanoseconds an Image will be kept alive after for its subscribers to consume it once disconnected.
+         *
+         * @param timeout for keeping an image alive for its subscribers to consume it.
+         * @return this for a fluent API.
+         */
+        public Context imageLivenessTimeoutNs(final long timeout)
+        {
+            this.imageLivenessTimeoutNs = timeout;
+            return this;
+        }
+
+        /**
+         * Time in nanoseconds after which a client is considered dead if a keep alive is not received.
+         *
+         * @return time in nanoseconds after which a client is considered dead if a keep alive is not received.
+         */
+        public long clientLivenessTimeoutNs()
+        {
+            return clientLivenessTimeoutNs;
+        }
+
+        /**
+         * Time in nanoseconds after which a client is considered dead if a keep alive is not received.
+         *
+         * @param timeoutNs in nanoseconds after which a client is considered dead if a keep alive is not received.
+         * @return this for a fluent API.
+         */
+        public Context clientLivenessTimeoutNs(final long timeoutNs)
+        {
+            this.clientLivenessTimeoutNs = timeoutNs;
+            return this;
+        }
+
+        /**
+         * Time in nanoseconds after which a status message will be sent if data is flowing slowly.
+         *
+         * @return time in nanoseconds after which a status message will be sent if data is flowing slowly.
+         */
+        public long statusMessageTimeoutNs()
+        {
+            return statusMessageTimeoutNs;
+        }
+
+        /**
+         * Time in nanoseconds after which a status message will be sent if data is flowing slowly.
+         *
+         * @param statusMessageTimeoutNs after which a status message will be sent if data is flowing slowly.
+         * @return this for a fluent API.
+         */
+        public Context statusMessageTimeoutNs(final long statusMessageTimeoutNs)
+        {
+            this.statusMessageTimeoutNs = statusMessageTimeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout in nanoseconds after which a publication will be unblocked if a offer is partially complete to allow
+         * other publishers to make progress.
+         *
+         * @return timeout in nanoseconds after which a publication will be unblocked.
+         */
+        public long publicationUnblockTimeoutNs()
+        {
+            return publicationUnblockTimeoutNs;
+        }
+
+        /**
+         * Timeout in nanoseconds after which a publication will be unblocked if a offer is partially complete to allow
+         * other publishers to make progress.
+         *
+         * @param timeoutNs in nanoseconds after which a publication will be unblocked.
+         * @return this for a fluent API.
+         */
+        public Context publicationUnblockTimeoutNs(final long timeoutNs)
+        {
+            this.publicationUnblockTimeoutNs = timeoutNs;
+            return this;
+        }
+
+        /**
+         * Maximum length for a term buffer in the log which must be a power of two.
+         *
+         * @return maximum length for a term buffer in the log which must be a power of two.
+         */
+        public int maxTermBufferLength()
+        {
+            return maxTermBufferLength;
+        }
+
+        /**
+         * Maximum length for a term buffer in the log which must be a power of two.
+         *
+         * @param maxTermBufferLength for a term buffer in the log which must be a power of two.
+         * @return this for a fluent API.
+         */
+        public Context maxTermBufferLength(final int maxTermBufferLength)
+        {
+            this.maxTermBufferLength = maxTermBufferLength;
+            return this;
+        }
+
+        /**
+         * Default length for a term buffer on a network publication.
+         *
+         * @return default length for a term buffer on a network publication.
+         */
+        public int publicationTermBufferLength()
+        {
+            return publicationTermBufferLength;
+        }
+
+        /**
+         * Default length for a term buffer on a network publication.
+         * <p>
+         * This can be overridden on publication by using channel URI params.
+         *
+         * @param termBufferLength default length for a term buffer on a network publication.
+         * @return this for a fluent API.
+         */
+        public Context publicationTermBufferLength(final int termBufferLength)
+        {
+            this.publicationTermBufferLength = termBufferLength;
+            return this;
+        }
+
+        /**
+         * Default length for a term buffer on a IPC publication.
+         *
+         * @return default length for a term buffer on a IPC publication.
+         */
+        public int ipcTermBufferLength()
+        {
+            return ipcPublicationTermBufferLength;
+        }
+
+        /**
+         * Default length for a term buffer on a IPC publication.
+         * <p>
+         * This can be overridden on publication by using channel URI params.
+         *
+         * @param termBufferLength default length for a term buffer on a IPC publication.
+         * @return this for a fluent API.
+         */
+        public Context ipcTermBufferLength(final int termBufferLength)
+        {
+            this.ipcPublicationTermBufferLength = termBufferLength;
+            return this;
+        }
+
+        /**
+         * The initial window for in flight data on a connection which must be less than
+         * {@link Configuration#SOCKET_RCVBUF_LENGTH}. This needs to be configured for throughput respecting BDP.
+         *
+         * @return The initial window for in flight data on a connection
+         */
+        public int initialWindowLength()
+        {
+            return initialWindowLength;
+        }
+
+        /**
+         * The initial window for in flight data on a connection which must be less than
+         * {@link Configuration#SOCKET_RCVBUF_LENGTH}. This needs to be configured for throughput respecting BDP.
+         *
+         * @param initialWindowLength The initial window for in flight data on a connection
+         * @return this for a fluent API.
+         */
+        public Context initialWindowLength(final int initialWindowLength)
+        {
+            this.initialWindowLength = initialWindowLength;
+            return this;
+        }
+
+        /**
+         * MTU in bytes for datagrams sent to the network. Messages larger than this are fragmented.
+         * <p>
+         * Larger MTUs reduce system call overhead at the expense of possible increase in loss which
+         * will need to be recovered.
+         *
+         * @return MTU in bytes for datagrams sent to the network.
+         */
+        public int mtuLength()
+        {
+            return mtuLength;
+        }
+
+        /**
+         * MTU in bytes for datagrams sent to the network. Messages larger than this are fragmented.
+         * <p>
+         * Larger MTUs reduce system call overhead at the expense of possible increase in loss which
+         * will need to be recovered.
+         *
+         * @param mtuLength in bytes for datagrams sent to the network.
+         * @return this for a fluent API.
+         */
+        public Context mtuLength(final int mtuLength)
+        {
+            this.mtuLength = mtuLength;
+            return this;
+        }
+
+        /**
+         * MTU in bytes for datagrams sent to the network. Messages larger than this are fragmented.
+         * <p>
+         * Larger MTUs reduce fragmentation.
+         *
+         * @return MTU in bytes for message fragments.
+         */
+        public int ipcMtuLength()
+        {
+            return ipcMtuLength;
+        }
+
+        /**
+         * MTU in bytes for datagrams sent to the network. Messages larger than this are fragmented.
+         * <p>
+         * Larger MTUs reduce fragmentation.
+         *
+         * @param ipcMtuLength in bytes for message fragments.
+         * @return this for a fluent API.
+         */
+        public Context ipcMtuLength(final int ipcMtuLength)
+        {
+            this.ipcMtuLength = ipcMtuLength;
+            return this;
+        }
+
+        /**
          * The {@link EpochClock} as a source of time in milliseconds for wall clock time.
          *
          * @return the {@link EpochClock} as a source of time in milliseconds for wall clock time.
@@ -813,45 +1051,15 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context useConcurrentCounterManager(final boolean useConcurrentCounterManager)
+        public Context useConcurrentCountersManager(final boolean useConcurrentCountersManager)
         {
-            this.useConcurrentCounterManager = useConcurrentCounterManager;
+            this.useConcurrentCountersManager = useConcurrentCountersManager;
             return this;
         }
 
         public Context countersManager(final CountersManager countersManager)
         {
             this.countersManager = countersManager;
-            return this;
-        }
-
-        public Context publicationTermBufferLength(final int termBufferLength)
-        {
-            this.publicationTermBufferLength = termBufferLength;
-            return this;
-        }
-
-        public Context maxTermBufferLength(final int maxTermBufferLength)
-        {
-            this.maxTermBufferLength = maxTermBufferLength;
-            return this;
-        }
-
-        public Context ipcTermBufferLength(final int ipcTermBufferLength)
-        {
-            this.ipcPublicationTermBufferLength = ipcTermBufferLength;
-            return this;
-        }
-
-        public Context initialWindowLength(final int initialWindowLength)
-        {
-            this.initialWindowLength = initialWindowLength;
-            return this;
-        }
-
-        public Context statusMessageTimeout(final long statusMessageTimeout)
-        {
-            this.statusMessageTimeout = statusMessageTimeout;
             return this;
         }
 
@@ -864,24 +1072,6 @@ public final class MediaDriver implements AutoCloseable
         public Context lossReport(final LossReport lossReport)
         {
             this.lossReport = lossReport;
-            return this;
-        }
-
-        public Context imageLivenessTimeoutNs(final long timeout)
-        {
-            this.imageLivenessTimeoutNs = timeout;
-            return this;
-        }
-
-        public Context clientLivenessTimeoutNs(final long timeout)
-        {
-            this.clientLivenessTimeoutNs = timeout;
-            return this;
-        }
-
-        public Context publicationUnblockTimeoutNs(final long timeout)
-        {
-            this.publicationUnblockTimeoutNs = timeout;
             return this;
         }
 
@@ -1086,54 +1276,14 @@ public final class MediaDriver implements AutoCloseable
             return toDriverCommands;
         }
 
-        public boolean useConcurrentCounterManager()
+        public boolean useConcurrentCountersManager()
         {
-            return useConcurrentCounterManager;
+            return useConcurrentCountersManager;
         }
 
         public CountersManager countersManager()
         {
             return countersManager;
-        }
-
-        public long imageLivenessTimeoutNs()
-        {
-            return imageLivenessTimeoutNs;
-        }
-
-        public long clientLivenessTimeoutNs()
-        {
-            return clientLivenessTimeoutNs;
-        }
-
-        public long publicationUnblockTimeoutNs()
-        {
-            return publicationUnblockTimeoutNs;
-        }
-
-        public int publicationTermBufferLength()
-        {
-            return publicationTermBufferLength;
-        }
-
-        public int maxTermBufferLength()
-        {
-            return maxTermBufferLength;
-        }
-
-        public int ipcTermBufferLength()
-        {
-            return ipcPublicationTermBufferLength;
-        }
-
-        public int initialWindowLength()
-        {
-            return initialWindowLength;
-        }
-
-        public long statusMessageTimeout()
-        {
-            return statusMessageTimeout;
         }
 
         public ErrorHandler errorHandler()
@@ -1155,28 +1305,6 @@ public final class MediaDriver implements AutoCloseable
         public LossReport lossReport()
         {
             return lossReport;
-        }
-
-        public int mtuLength()
-        {
-            return mtuLength;
-        }
-
-        public Context mtuLength(final int mtuLength)
-        {
-            this.mtuLength = mtuLength;
-            return this;
-        }
-
-        public int ipcMtuLength()
-        {
-            return ipcMtuLength;
-        }
-
-        public Context ipcMtuLength(final int ipcMtuLength)
-        {
-            this.ipcMtuLength = ipcMtuLength;
-            return this;
         }
 
         public SystemCounters systemCounters()
@@ -1269,7 +1397,7 @@ public final class MediaDriver implements AutoCloseable
 
                 final UnsafeBuffer metaDataBuffer = countersMetaDataBuffer();
                 final UnsafeBuffer valuesBuffer = countersValuesBuffer();
-                if (useConcurrentCounterManager())
+                if (useConcurrentCountersManager)
                 {
                     countersManager(new ConcurrentCountersManager(metaDataBuffer, valuesBuffer, US_ASCII));
                 }

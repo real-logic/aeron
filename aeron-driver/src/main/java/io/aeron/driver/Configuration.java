@@ -246,7 +246,7 @@ public class Configuration
     public static final int INITIAL_WINDOW_LENGTH_DEFAULT = 128 * 1024;
 
     /**
-     * Property name for status message timeout in nanoseconds.
+     * Property name for status message timeout in nanoseconds after which one will be sent.
      */
     public static final String STATUS_MESSAGE_TIMEOUT_PROP_NAME = "aeron.rcv.status.message.timeout";
 

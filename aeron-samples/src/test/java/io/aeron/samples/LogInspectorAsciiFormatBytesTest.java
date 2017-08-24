@@ -29,7 +29,6 @@ import java.util.Arrays;
 @RunWith(Parameterized.class)
 public class LogInspectorAsciiFormatBytesTest
 {
-    private static final String FORMAT_KEY = "aeron.log.inspector.data.format";
     private String originalDataFormatProperty;
 
     private byte buffer;
@@ -57,7 +56,7 @@ public class LogInspectorAsciiFormatBytesTest
     @Before
     public void before()
     {
-        originalDataFormatProperty = System.getProperty(FORMAT_KEY);
+        originalDataFormatProperty = System.getProperty(LogInspector.AERON_LOG_DATA_FORMAT_PROP_NAME);
     }
 
     @After
@@ -65,18 +64,18 @@ public class LogInspectorAsciiFormatBytesTest
     {
         if (null == originalDataFormatProperty)
         {
-            System.clearProperty(FORMAT_KEY);
+            System.clearProperty(LogInspector.AERON_LOG_DATA_FORMAT_PROP_NAME);
         }
         else
         {
-            System.setProperty(FORMAT_KEY, originalDataFormatProperty);
+            System.setProperty(LogInspector.AERON_LOG_DATA_FORMAT_PROP_NAME, originalDataFormatProperty);
         }
     }
 
     @Test
     public void shouldFormatBytesToAscii()
     {
-        System.setProperty(FORMAT_KEY, "ascii");
+        System.setProperty(LogInspector.AERON_LOG_DATA_FORMAT_PROP_NAME, "ascii");
         final char[] formattedBytes = LogInspector.formatBytes(new UnsafeBuffer(new byte[]{ buffer }), 0, 1);
 
         Assert.assertEquals(expected, formattedBytes[0]);

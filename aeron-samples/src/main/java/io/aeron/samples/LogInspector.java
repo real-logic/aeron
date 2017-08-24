@@ -36,12 +36,27 @@ import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
  */
 public class LogInspector
 {
-    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+    /**
+     * Data format for fragments which can be ASCII or HEX.
+     */
+    public static final String AERON_LOG_DATA_FORMAT_PROP_NAME = "aeron.log.inspector.data.format";
+    public static final String AERON_LOG_DATA_FORMAT = System.getProperty(
+        AERON_LOG_DATA_FORMAT_PROP_NAME, "hex").toLowerCase();
 
-    private static final String DATA_FORMAT = System.getProperty(
-        "aeron.log.inspector.data.format", "hex").toLowerCase();
-    private static final boolean SKIP_DEFAULT_HEADER = Boolean.getBoolean("aeron.log.inspector.skipDefaultHeader");
-    private static final boolean SCAN_OVER_ZEROES = Boolean.getBoolean("aeron.log.inspector.scanOverZeroes");
+    /**
+     * Should the default header be skipped for output.
+     */
+    public static final String AERON_LOG_SKIP_DEFAULT_HEADER_PROP_NAME = "aeron.log.inspector.skipDefaultHeader";
+    public static final boolean AERON_LOG_SKIP_DEFAULT_HEADER = Boolean.getBoolean(
+        AERON_LOG_SKIP_DEFAULT_HEADER_PROP_NAME);
+
+    /**
+     * Should zeros be skipped in the output to reduce noise.
+     */
+    public static final String AERON_LOG_SCAN_OVER_ZEROES_PROP_NAME = "aeron.log.inspector.scanOverZeroes";
+    public static final boolean AERON_LOG_SCAN_OVER_ZEROES = Boolean.getBoolean(AERON_LOG_SCAN_OVER_ZEROES_PROP_NAME);
+
+    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
     public static void main(final String[] args) throws Exception
     {
@@ -74,7 +89,7 @@ public class LogInspector
             out.format("     MTU length: %d%n", mtuLength(metaDataBuffer));
             out.format("   EOS Position: %d%n%n", endOfStreamPosition(metaDataBuffer));
 
-            if (!SKIP_DEFAULT_HEADER)
+            if (!AERON_LOG_SKIP_DEFAULT_HEADER)
             {
                 dataHeaderFlyweight.wrap(defaultFrameHeader(metaDataBuffer));
                 out.format("default %s%n", dataHeaderFlyweight);
@@ -95,8 +110,7 @@ public class LogInspector
                     termOffset,
                     termId,
                     rawTail,
-                    LogBufferDescriptor.computePosition(termId, offset, bitsToShift, initialTermId)
-                );
+                    LogBufferDescriptor.computePosition(termId, offset, bitsToShift, initialTermId));
             }
 
             for (int i = 0; i < PARTITION_COUNT; i++)
@@ -115,7 +129,7 @@ public class LogInspector
                     final int frameLength = dataHeaderFlyweight.frameLength();
                     if (frameLength < DataHeaderFlyweight.HEADER_LENGTH)
                     {
-                        if (0 == frameLength && SCAN_OVER_ZEROES)
+                        if (0 == frameLength && AERON_LOG_SCAN_OVER_ZEROES)
                         {
                             offset += FrameDescriptor.FRAME_ALIGNMENT;
                             continue;
@@ -147,8 +161,10 @@ public class LogInspector
 
     public static char[] formatBytes(final DirectBuffer buffer, final int offset, final int length)
     {
-        switch (DATA_FORMAT)
+        switch (AERON_LOG_DATA_FORMAT)
         {
+            case "us-ascii":
+            case "us_ascii":
             case "ascii":
                 return bytesToAscii(buffer, offset, length);
 

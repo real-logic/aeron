@@ -629,6 +629,7 @@ task uploadToMavenCentral {
             'aeron-driver:uploadArchives',
             'aeron-samples:uploadArchives',
             'aeron-system-tests:uploadArchives',
+            'aeron-archive:uploadArchives',
             'aeron-all:uploadArchives',
             'aeron-all:uploadShadow',
             'aeron-agent:uploadArchives',

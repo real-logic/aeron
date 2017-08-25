@@ -9,7 +9,7 @@ Each of the Samples can be run with a simple script that can be found in:
 
     aeron-samples/scripts/
 
-Before running any of the samples below the media driver needs to be launched running one of:
+Before running any of the samples below the media driver needs to be launched by running one of:
 
     aeron-samples/scripts/media-driver
     aeron-samples/scripts/low-latency-media-driver

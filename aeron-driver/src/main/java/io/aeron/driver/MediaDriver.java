@@ -1435,7 +1435,7 @@ public final class MediaDriver implements AutoCloseable
          * {@link ErrorHandler} to be used for reporting errors during {@link Agent}s operations.
          * <p>
          * The default {@link ErrorHandler} will delegate to the {@link #errorLog()} and output to {@link System#err}
-         * the log fails.
+         * if the log is full.
          * <p>
          * <b>Note:</b> {@link ErrorHandler} should be thread safe.
          *

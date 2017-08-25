@@ -836,7 +836,7 @@ public final class Aeron implements AutoCloseable
         /**
          * Set the timeout between service calls the to {@link ClientConductor} duty cycles.
          *
-         * @param interServiceTimeout the timeout (ms) between service calls the to {@link ClientConductor} duty cycles.
+         * @param interServiceTimeout the timeout (ns) between service calls the to {@link ClientConductor} duty cycle.
          * @return this Aeron.Context for method chaining.
          */
         public Context interServiceTimeout(final long interServiceTimeout)
@@ -853,7 +853,7 @@ public final class Aeron implements AutoCloseable
          * <p>
          * This value is controlled by the driver and included in the CnC file.
          *
-         * @return the timeout between service calls in nanoseconds.
+         * @return the timeout in nanoseconds between service calls in nanoseconds.
          */
         public long interServiceTimeout()
         {

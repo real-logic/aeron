@@ -1015,110 +1015,246 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        /**
+         * {@link ThreadFactory} to be used for creating agent thread for the {@link Sender} when running in
+         * {@link ThreadingMode#DEDICATED}.
+         *
+         * @return {@link ThreadFactory} to be used for creating agent thread for the {@link Sender}.
+         */
         public ThreadFactory senderThreadFactory()
         {
             return senderThreadFactory;
         }
 
+        /**
+         * {@link ThreadFactory} to be used for creating agent thread for the {@link Sender} when running in
+         * {@link ThreadingMode#DEDICATED}.
+         * <p>
+         * If none is provided then this will default a simple new operation.
+         *
+         * @param factory to be used for creating agent thread for the {@link Sender}.
+         * @return this for a fluent API.
+         */
         public Context senderThreadFactory(final ThreadFactory factory)
         {
             this.senderThreadFactory = factory;
             return this;
         }
 
+        /**
+         * {@link ThreadFactory} to be used for creating agent thread for the {@link Receiver} when running in
+         * {@link ThreadingMode#DEDICATED}.
+         *
+         * @return {@link ThreadFactory} to be used for creating agent thread for the {@link Receiver}.
+         */
         public ThreadFactory receiverThreadFactory()
         {
             return receiverThreadFactory;
         }
 
+        /**
+         * {@link ThreadFactory} to be used for creating agent thread for the {@link Receiver} when running in
+         * {@link ThreadingMode#DEDICATED}.
+         * <p>
+         * If none is provided then this will default a simple new operation.
+         *
+         * @param factory to be used for creating agent thread for the {@link Receiver}.
+         * @return this for a fluent API.
+         */
         public Context receiverThreadFactory(final ThreadFactory factory)
         {
             this.receiverThreadFactory = factory;
             return this;
         }
 
+        /**
+         * {@link ThreadFactory} to be used for creating agent thread for the {@link DriverConductor} when running in
+         * {@link ThreadingMode#DEDICATED} or {@link ThreadingMode#SHARED_NETWORK}.
+         *
+         * @return {@link ThreadFactory} to be used for creating agent thread for the {@link DriverConductor}.
+         */
         public ThreadFactory conductorThreadFactory()
         {
             return conductorThreadFactory;
         }
 
+        /**
+         * {@link ThreadFactory} to be used for creating agent thread for the {@link DriverConductor} when running in
+         * {@link ThreadingMode#DEDICATED} or {@link ThreadingMode#SHARED_NETWORK}.
+         * <p>
+         * If none is provided then this will default a simple new operation.
+         *
+         * @param factory to be used for creating agent thread for the {@link DriverConductor}.
+         * @return this for a fluent API.
+         */
         public Context conductorThreadFactory(final ThreadFactory factory)
         {
             this.conductorThreadFactory = factory;
             return this;
         }
 
+        /**
+         * {@link ThreadFactory} to be used for creating agent thread for the all driver agents as a
+         * {@link CompositeAgent} when running in {@link ThreadingMode#SHARED}.
+         *
+         * @return {@link ThreadFactory} to be used for creating agent thread for the {@link CompositeAgent}.
+         */
         public ThreadFactory sharedThreadFactory()
         {
             return sharedThreadFactory;
         }
 
+        /**
+         * {@link ThreadFactory} to be used for creating agent thread for the all driver agents as a
+         * {@link CompositeAgent} when running in {@link ThreadingMode#SHARED}.
+         * <p>
+         * If none is provided then this will default a simple new operation.
+         *
+         * @param factory to be used for creating agent thread for the {@link CompositeAgent}.
+         * @return this for a fluent API.
+         */
         public Context sharedThreadFactory(final ThreadFactory factory)
         {
             this.sharedThreadFactory = factory;
             return this;
         }
 
+        /**
+         * {@link ThreadFactory} to be used for creating agent thread for the sender and receiver agents as a
+         * {@link CompositeAgent} when running in {@link ThreadingMode#SHARED_NETWORK}.
+         *
+         * @return {@link ThreadFactory} to be used for creating agent thread for the {@link CompositeAgent}.
+         */
         public ThreadFactory sharedNetworkThreadFactory()
         {
             return sharedNetworkThreadFactory;
         }
 
+        /**
+         * {@link ThreadFactory} to be used for creating agent thread for the sender and receiver agents as a
+         * {@link CompositeAgent} when running in {@link ThreadingMode#SHARED_NETWORK}.
+         * <p>
+         * If none is provided then this will default a simple new operation.
+         *
+         * @param factory to be used for creating agent thread for the {@link CompositeAgent}.
+         * @return this for a fluent API.
+         */
         public Context sharedNetworkThreadFactory(final ThreadFactory factory)
         {
             this.sharedNetworkThreadFactory = factory;
             return this;
         }
 
-        public IdleStrategy conductorIdleStrategy()
-        {
-            return conductorIdleStrategy;
-        }
-
+        /**
+         * {@link IdleStrategy} to be used by the {@link Sender} when in {@link ThreadingMode#DEDICATED}.
+         *
+         * @return {@link IdleStrategy} to be used by the {@link Sender} when in {@link ThreadingMode#DEDICATED}.
+         */
         public IdleStrategy senderIdleStrategy()
         {
             return senderIdleStrategy;
         }
 
-        public Context conductorIdleStrategy(final IdleStrategy strategy)
-        {
-            this.conductorIdleStrategy = strategy;
-            return this;
-        }
-
+        /**
+         * {@link IdleStrategy} to be used by the {@link Sender} when in {@link ThreadingMode#DEDICATED}.
+         *
+         * @param strategy to be used by the {@link Sender} when in {@link ThreadingMode#DEDICATED}.
+         * @return this for a fluent API.
+         */
         public Context senderIdleStrategy(final IdleStrategy strategy)
         {
             this.senderIdleStrategy = strategy;
             return this;
         }
 
+        /**
+         * {@link IdleStrategy} to be used by the {@link Receiver} when in {@link ThreadingMode#DEDICATED}.
+         *
+         * @return {@link IdleStrategy} used by the {@link Receiver} when in {@link ThreadingMode#DEDICATED}.
+         */
         public IdleStrategy receiverIdleStrategy()
         {
             return receiverIdleStrategy;
         }
 
+        /**
+         * {@link IdleStrategy} to be used by the {@link Receiver} when in {@link ThreadingMode#DEDICATED}.
+         *
+         * @param strategy to be used by the {@link Receiver} when in {@link ThreadingMode#DEDICATED}.
+         * @return this for a fluent API.
+         */
         public Context receiverIdleStrategy(final IdleStrategy strategy)
         {
             this.receiverIdleStrategy = strategy;
             return this;
         }
 
+        /**
+         * {@link IdleStrategy} to be used by the {@link DriverConductor} when in {@link ThreadingMode#DEDICATED}
+         * or {@link ThreadingMode#SHARED_NETWORK}.
+         *
+         * @return {@link IdleStrategy} used by the {@link DriverConductor}
+         */
+        public IdleStrategy conductorIdleStrategy()
+        {
+            return conductorIdleStrategy;
+        }
+
+        /**
+         * {@link IdleStrategy} to be used by the {@link DriverConductor} when in {@link ThreadingMode#DEDICATED}
+         * or {@link ThreadingMode#SHARED_NETWORK}.
+         *
+         * @param strategy to be used by the {@link DriverConductor}.
+         * @return this for a fluent API.
+         */
+        public Context conductorIdleStrategy(final IdleStrategy strategy)
+        {
+            this.conductorIdleStrategy = strategy;
+            return this;
+        }
+
+        /**
+         * {@link IdleStrategy} to be used by the {@link Sender} and {@link Receiver} agents when in
+         * {@link ThreadingMode#SHARED_NETWORK}.
+         *
+         * @return {@link IdleStrategy} used by the {@link Sender} and {@link Receiver}.
+         */
         public IdleStrategy sharedNetworkIdleStrategy()
         {
             return sharedNetworkIdleStrategy;
         }
 
+        /**
+         * {@link IdleStrategy} to be used by the {@link Sender} and {@link Receiver} agents when in
+         * {@link ThreadingMode#SHARED_NETWORK}.
+         *
+         * @param strategy to be used by the {@link Sender} and {@link Receiver}.
+         * @return this for a fluent API.
+         */
         public Context sharedNetworkIdleStrategy(final IdleStrategy strategy)
         {
             this.sharedNetworkIdleStrategy = strategy;
             return this;
         }
 
+        /**
+         * {@link IdleStrategy} to be used by the {@link Sender}, {@link Receiver} and {@link DriverConductor}
+         * agents when in {@link ThreadingMode#SHARED}.
+         *
+         * @return {@link IdleStrategy} used by the {@link Sender}, {@link Receiver} and {@link DriverConductor}.
+         */
         public IdleStrategy sharedIdleStrategy()
         {
             return sharedIdleStrategy;
         }
 
+        /**
+         * {@link IdleStrategy} to be used by the {@link Sender}, {@link Receiver} and {@link DriverConductor}
+         * agents when in {@link ThreadingMode#SHARED}.
+         *
+         * @param strategy to be used by the {@link Sender}, {@link Receiver} and {@link DriverConductor}.
+         * @return this for a fluent API.
+         */
         public Context sharedIdleStrategy(final IdleStrategy strategy)
         {
             this.sharedIdleStrategy = strategy;

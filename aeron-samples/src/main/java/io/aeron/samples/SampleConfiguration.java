@@ -66,11 +66,11 @@ public class SampleConfiguration
         PONG_STREAM_ID = Integer.getInteger(PONG_STREAM_ID_PROP, 10);
         FRAGMENT_COUNT_LIMIT = Integer.getInteger(FRAME_COUNT_LIMIT_PROP, 20);
         MESSAGE_LENGTH = Integer.getInteger(MESSAGE_LENGTH_PROP, 256);
-        RANDOM_MESSAGE_LENGTH = Boolean.getBoolean(RANDOM_MESSAGE_LENGTH_PROP);
+        RANDOM_MESSAGE_LENGTH =  Boolean.parseBoolean(System.getProperty(RANDOM_MESSAGE_LENGTH_PROP));
         NUMBER_OF_MESSAGES = Integer.getInteger(NUMBER_OF_MESSAGES_PROP, 1_000_000);
         WARMUP_NUMBER_OF_MESSAGES = Integer.getInteger(WARMUP_NUMBER_OF_MESSAGES_PROP, 10_000);
         WARMUP_NUMBER_OF_ITERATIONS = Integer.getInteger(WARMUP_NUMBER_OF_ITERATIONS_PROP, 5);
-        EMBEDDED_MEDIA_DRIVER = Boolean.getBoolean(EMBEDDED_MEDIA_DRIVER_PROP);
-        INFO_FLAG = Boolean.getBoolean(INFO_FLAG_PROP);
+        EMBEDDED_MEDIA_DRIVER = Boolean.parseBoolean(System.getProperty(EMBEDDED_MEDIA_DRIVER_PROP));
+        INFO_FLAG = Boolean.parseBoolean(System.getProperty(INFO_FLAG_PROP));
     }
 }

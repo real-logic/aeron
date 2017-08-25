@@ -1377,7 +1377,7 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * Application specific feedback used to identify a receiver groups when using a
-         * {@link PreferredMulticastFlowControl} strategy.
+         * {@link PreferredMulticastFlowControl} strategy which is added to Status Messages (SMs)..
          *
          * @return Application specific feedback used to identify receivers for flow control.
          */
@@ -1388,7 +1388,7 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * Application specific feedback used to identify a receiver groups when using a
-         * {@link PreferredMulticastFlowControl} strategy.
+         * {@link PreferredMulticastFlowControl} strategy which is added to Status Messages (SMs).
          *
          * @param asfBytes for identifying the receiver group.
          * @return this for a fluent API.

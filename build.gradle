@@ -471,16 +471,16 @@ project(':aeron-archive') {
         codecGeneration
     }
 
-    def generatedDir = file("${buildDir}/generated-src")
-    sourceSets {
-        generated.java.srcDir generatedDir
-    }
-
     dependencies {
         compile project(':aeron-client')
         compile project(':aeron-driver')
         compile files('build/classes/java/generated')
-        codecGeneration "uk.co.real-logic:sbe-all:${sbeVersion}"
+        codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
+    }
+
+    def generatedDir = file("${buildDir}/generated-src")
+    sourceSets {
+        generated.java.srcDir generatedDir
     }
 
     compileJava.dependsOn 'compileGeneratedJava'
@@ -499,7 +499,7 @@ project(':aeron-archive') {
     }
 
     jar {
-        from("$buildDir/classes/generated") {
+        from("${buildDir}/classes/generated") {
             include '**/*.class'
         }
     }

@@ -967,7 +967,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public Context epochClock(final EpochClock clock)
         {
-            this.epochClock = clock;
+            epochClock = clock;
             return this;
         }
 
@@ -989,7 +989,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public Context nanoClock(final NanoClock clock)
         {
-            this.nanoClock = clock;
+            nanoClock = clock;
             return this;
         }
 
@@ -1037,7 +1037,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public Context senderThreadFactory(final ThreadFactory factory)
         {
-            this.senderThreadFactory = factory;
+            senderThreadFactory = factory;
             return this;
         }
 
@@ -1063,7 +1063,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public Context receiverThreadFactory(final ThreadFactory factory)
         {
-            this.receiverThreadFactory = factory;
+            receiverThreadFactory = factory;
             return this;
         }
 
@@ -1089,7 +1089,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public Context conductorThreadFactory(final ThreadFactory factory)
         {
-            this.conductorThreadFactory = factory;
+            conductorThreadFactory = factory;
             return this;
         }
 
@@ -1115,7 +1115,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public Context sharedThreadFactory(final ThreadFactory factory)
         {
-            this.sharedThreadFactory = factory;
+            sharedThreadFactory = factory;
             return this;
         }
 
@@ -1141,7 +1141,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public Context sharedNetworkThreadFactory(final ThreadFactory factory)
         {
-            this.sharedNetworkThreadFactory = factory;
+            sharedNetworkThreadFactory = factory;
             return this;
         }
 
@@ -1163,7 +1163,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public Context senderIdleStrategy(final IdleStrategy strategy)
         {
-            this.senderIdleStrategy = strategy;
+            senderIdleStrategy = strategy;
             return this;
         }
 
@@ -1185,7 +1185,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public Context receiverIdleStrategy(final IdleStrategy strategy)
         {
-            this.receiverIdleStrategy = strategy;
+            receiverIdleStrategy = strategy;
             return this;
         }
 
@@ -1209,7 +1209,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public Context conductorIdleStrategy(final IdleStrategy strategy)
         {
-            this.conductorIdleStrategy = strategy;
+            conductorIdleStrategy = strategy;
             return this;
         }
 
@@ -1233,7 +1233,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public Context sharedNetworkIdleStrategy(final IdleStrategy strategy)
         {
-            this.sharedNetworkIdleStrategy = strategy;
+            sharedNetworkIdleStrategy = strategy;
             return this;
         }
 
@@ -1257,81 +1257,164 @@ public final class MediaDriver implements AutoCloseable
          */
         public Context sharedIdleStrategy(final IdleStrategy strategy)
         {
-            this.sharedIdleStrategy = strategy;
+            sharedIdleStrategy = strategy;
             return this;
         }
 
+        /**
+         * Supplier of dynamically created {@link SendChannelEndpoint} subclasses for specialising interactions
+         * with the send side of a network channel.
+         *
+         * @return the supplier of dynamically created {@link SendChannelEndpoint} subclasses.
+         */
         public SendChannelEndpointSupplier sendChannelEndpointSupplier()
         {
             return sendChannelEndpointSupplier;
         }
 
+        /**
+         * Supplier of dynamically created {@link SendChannelEndpoint} subclasses for specialising interactions
+         * with the send side of a network channel.
+         *
+         * @param supplier of dynamically created {@link SendChannelEndpoint} subclasses.
+         * @return this for a fluent API.
+         */
         public Context sendChannelEndpointSupplier(final SendChannelEndpointSupplier supplier)
         {
-            this.sendChannelEndpointSupplier = supplier;
+            sendChannelEndpointSupplier = supplier;
             return this;
         }
 
+        /**
+         * Supplier of dynamically created {@link ReceiveChannelEndpoint} subclasses for specialising interactions
+         * with the receive side of a network channel.
+         *
+         * @return the supplier of dynamically created {@link ReceiveChannelEndpoint} subclasses.
+         */
         public ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier()
         {
             return receiveChannelEndpointSupplier;
         }
 
+        /**
+         * Supplier of dynamically created {@link ReceiveChannelEndpoint} subclasses for specialising interactions
+         * with the receive side of a network channel.
+         *
+         * @param supplier of dynamically created {@link ReceiveChannelEndpoint} subclasses.
+         * @return this for a fluent API.
+         */
         public Context receiveChannelEndpointSupplier(final ReceiveChannelEndpointSupplier supplier)
         {
-            this.receiveChannelEndpointSupplier = supplier;
+            receiveChannelEndpointSupplier = supplier;
             return this;
         }
 
+        /**
+         * The thread local buffers and associated objects for use by subclasses of {@link ReceiveChannelEndpoint}.
+         *
+         * @return thread local buffers and associated objects for use by subclasses of {@link ReceiveChannelEndpoint}.
+         */
         public ReceiveChannelEndpointThreadLocals receiveChannelEndpointThreadLocals()
         {
             return receiveChannelEndpointThreadLocals;
         }
 
+        /**
+         * The thread local buffers and associated objects for use by subclasses of {@link ReceiveChannelEndpoint}.
+         *
+         * @param threadLocals for use by subclasses of {@link ReceiveChannelEndpoint}.
+         * @return this for a fluent API.
+         */
         public Context receiveChannelEndpointThreadLocals(final ReceiveChannelEndpointThreadLocals threadLocals)
         {
-            this.receiveChannelEndpointThreadLocals = threadLocals;
+            receiveChannelEndpointThreadLocals = threadLocals;
             return this;
         }
 
+        /**
+         * Supplier of dynamically created {@link FlowControl} strategies for unicast connections.
+         *
+         * @return supplier of dynamically created {@link FlowControl} strategies for unicast connections.
+         */
         public FlowControlSupplier unicastFlowControlSupplier()
         {
             return unicastFlowControlSupplier;
         }
 
-        public Context unicastFlowControlSupplier(final FlowControlSupplier senderFlowControl)
+        /**
+         * Supplier of dynamically created {@link FlowControl} strategies for unicast connections.
+         *
+         * @param flowControlSupplier of {@link FlowControl} strategies for unicast connections.
+         * @return this for a fluent API.
+         */
+        public Context unicastFlowControlSupplier(final FlowControlSupplier flowControlSupplier)
         {
-            this.unicastFlowControlSupplier = senderFlowControl;
+            unicastFlowControlSupplier = flowControlSupplier;
             return this;
         }
 
+        /**
+         * Supplier of dynamically created {@link FlowControl} strategies for multicast connections.
+         *
+         * @return supplier of dynamically created {@link FlowControl} strategies for multicast connections.
+         */
         public FlowControlSupplier multicastFlowControlSupplier()
         {
             return multicastFlowControlSupplier;
         }
 
-        public Context multicastFlowControlSupplier(final FlowControlSupplier senderFlowControl)
+        /**
+         * Supplier of dynamically created {@link FlowControl} strategies for multicast connections.
+         *
+         * @param flowControlSupplier of {@link FlowControl} strategies for multicast connections.
+         * @return this for a fluent API.
+         */
+        public Context multicastFlowControlSupplier(final FlowControlSupplier flowControlSupplier)
         {
-            this.multicastFlowControlSupplier = senderFlowControl;
+            multicastFlowControlSupplier = flowControlSupplier;
             return this;
         }
 
+        /**
+         * Application specific feedback used to identify a receiver groups when using a
+         * {@link PreferredMulticastFlowControl} strategy.
+         *
+         * @return Application specific feedback used to identify receivers for flow control.
+         */
         public byte[] applicationSpecificFeedback()
         {
             return applicationSpecificFeedback;
         }
 
-        public Context applicationSpecificFeedback(final byte[] bytes)
+        /**
+         * Application specific feedback used to identify a receiver groups when using a
+         * {@link PreferredMulticastFlowControl} strategy.
+         *
+         * @param asfBytes for identifying the receiver group.
+         * @return this for a fluent API.
+         */
+        public Context applicationSpecificFeedback(final byte[] asfBytes)
         {
-            this.applicationSpecificFeedback = bytes;
+            this.applicationSpecificFeedback = asfBytes;
             return this;
         }
 
+        /**
+         * Supplier of dynamically created {@link CongestionControl} strategies for individual connections.
+         *
+         * @return supplier of dynamically created {@link CongestionControl} strategies for individual connections.
+         */
         public CongestionControlSupplier congestionControlSupplier()
         {
             return congestionControlSupplier;
         }
 
+        /**
+         * Supplier of dynamically created {@link CongestionControl} strategies for individual connections.
+         *
+         * @param supplier of dynamically created {@link CongestionControl} strategies for individual connections.
+         * @return this for a fluent API.
+         */
         public Context congestControlSupplier(final CongestionControlSupplier supplier)
         {
             this.congestionControlSupplier = supplier;

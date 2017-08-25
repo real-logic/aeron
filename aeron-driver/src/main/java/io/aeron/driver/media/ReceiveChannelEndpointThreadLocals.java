@@ -27,6 +27,10 @@ import java.util.UUID;
 
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
+/**
+ * Thread local variables that will only be accessed in the context of the Receiver agent thread from within a
+ * {@link ReceiveChannelEndpoint} subclass.
+ */
 public class ReceiveChannelEndpointThreadLocals
 {
     private final ByteBuffer smBuffer;

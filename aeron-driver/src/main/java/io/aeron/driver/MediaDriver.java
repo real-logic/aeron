@@ -459,7 +459,7 @@ public final class MediaDriver implements AutoCloseable
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
-        private ThreadingMode threadingMode;
+        private ThreadingMode threadingMode = Configuration.THREADING_MODE_DEFAULT;
         private ThreadFactory conductorThreadFactory;
         private ThreadFactory senderThreadFactory;
         private ThreadFactory receiverThreadFactory;
@@ -1421,66 +1421,145 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        /**
+         * {@link ErrorHandler} to be used for reporting errors during {@link Agent}s operations.
+         *
+         * @return the {@link ErrorHandler} to be used for reporting errors during {@link Agent}s operations.
+         */
         public ErrorHandler errorHandler()
         {
             return errorHandler;
         }
 
+        /**
+         * {@link ErrorHandler} to be used for reporting errors during {@link Agent}s operations.
+         * <p>
+         * The default {@link ErrorHandler} will delegate to the {@link #errorLog()} and output to {@link System#err}
+         * the log fails.
+         * <p>
+         * <b>Note:</b> {@link ErrorHandler} should be thread safe.
+         *
+         * @param errorHandler to be used for reporting errors during {@link Agent}s operations.
+         * @return this for a fluent API.
+         */
         public Context errorHandler(final ErrorHandler errorHandler)
         {
             this.errorHandler = errorHandler;
             return this;
         }
 
+        /**
+         * Log to which exceptions are recorded.
+         *
+         * @return log to which exceptions are recorded.
+         */
         public DistinctErrorLog errorLog()
         {
             return errorLog;
         }
 
+        /**
+         * Log to which exceptions are recorded.
+         *
+         * @param errorLog to which exceptions are recorded.
+         * @return this for a fluent API.
+         */
         public Context errorLog(final DistinctErrorLog errorLog)
         {
             this.errorLog = errorLog;
             return this;
         }
 
+        /**
+         * Should a {@link ConcurrentCountersManager} be used to allow for cross thread usage.
+         *
+         * @return true if a {@link ConcurrentCountersManager} should be used otherwise false.
+         */
         public boolean useConcurrentCountersManager()
         {
             return useConcurrentCountersManager;
         }
 
+        /**
+         * Should a {@link ConcurrentCountersManager} be used to allow for cross thread usage.
+         * <p>
+         * The default is to use a normal {@link CountersManager} from only the {@link DriverConductor}. If the
+         * {@link MediaDriver} is to be composed into another services that allocates counters then this should be
+         * concurrent.
+         *
+         * @param useConcurrentCountersManager true if a {@link ConcurrentCountersManager} should be used.
+         * @return this for a fluent API.
+         */
         public Context useConcurrentCountersManager(final boolean useConcurrentCountersManager)
         {
             this.useConcurrentCountersManager = useConcurrentCountersManager;
             return this;
         }
 
+        /**
+         * Get the {@link CountersManager} that has been concluded for this context.
+         *
+         * @return the {@link CountersManager} that has been concluded for this context.
+         */
         public CountersManager countersManager()
         {
             return countersManager;
         }
 
+        /**
+         * Set the {@link CountersManager} to override the one that would have been concluded.
+         *
+         * @param countersManager to override the one that would have been concluded.
+         * @return this for a fluent API.
+         */
         public Context countersManager(final CountersManager countersManager)
         {
             this.countersManager = countersManager;
             return this;
         }
 
+        /**
+         * The {@link SystemCounters} for the driver for recording aggregate events of system status.
+         *
+         * @return the {@link SystemCounters} for the driver for recording aggregate events of system status.
+         */
         public SystemCounters systemCounters()
         {
             return systemCounters;
         }
 
+        /**
+         * The {@link SystemCounters} for the driver for recording aggregate events of system status.
+         * <p>
+         * The default should only be overridden for testing.
+         *
+         * @param systemCounters for the driver for recording aggregate events of system status.
+         * @return this for a fluent API.
+         */
         public Context systemCounters(final SystemCounters systemCounters)
         {
             this.systemCounters = systemCounters;
             return this;
         }
 
+        /**
+         * {@link LossReport}for identifying loss issues on specific connections.
+         *
+         * @return {@link LossReport} for identifying loss issues on specific connections.
+         */
         public LossReport lossReport()
         {
             return lossReport;
         }
 
+        /**
+         * {@link LossReport}for identifying loss issues on specific connections.
+         * <p>
+         * The default should only be overridden for testing.
+         *
+         * @param lossReport for identifying loss issues on specific connections.
+         * @return this for a fluent API.
+         */
         public Context lossReport(final LossReport lossReport)
         {
             this.lossReport = lossReport;
@@ -1650,11 +1729,6 @@ public final class MediaDriver implements AutoCloseable
             if (null == nanoClock)
             {
                 nanoClock = new SystemNanoClock();
-            }
-
-            if (null == threadingMode)
-            {
-                threadingMode = Configuration.THREADING_MODE_DEFAULT;
             }
 
             if (null == unicastFlowControlSupplier)

@@ -945,10 +945,9 @@ public class Configuration
      * {@link FrameDescriptor#FRAME_ALIGNMENT}.
      *
      * @param mtuLength to be validated.
-     * @return the mtuLength if valid.
      * @throws ConfigurationException if the MTU length is not valid.
      */
-    public static int validateMtuLength(final int mtuLength)
+    public static void validateMtuLength(final int mtuLength)
     {
         if (mtuLength < DataHeaderFlyweight.HEADER_LENGTH || mtuLength > MAX_UDP_PAYLOAD_LENGTH)
         {
@@ -960,8 +959,6 @@ public class Configuration
         {
             throw new ConfigurationException("mtuLength must be a multiple of FRAME_ALIGNMENT: mtuLength=" + mtuLength);
         }
-
-        return mtuLength;
     }
 
     /**

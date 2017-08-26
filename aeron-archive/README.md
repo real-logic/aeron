@@ -25,6 +25,7 @@ Protocol
 =====
 Messages are specified using SBE in [aeron-archive-codecs.xml](https://github.com/real-logic/aeron/blob/master/aeron-archive/src/main/resources/aeron-archive-codecs.xml).
 The Archive communicates via the following interfaces:
+
  - **Recording Events stream:** other parties can subscribe to events for the start,
  stop, and progress of recordings. These are the
  recording events messages specified in the codec.

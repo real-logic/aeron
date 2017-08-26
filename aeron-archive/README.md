@@ -25,19 +25,19 @@ Protocol
 =====
 Messages are specified using SBE in [aeron-archive-codecs.xml](https://github.com/real-logic/aeron/blob/master/aeron-archive/src/main/resources/aeron-archive-codecs.xml).
 The Archive communicates via the following interfaces:
- - **Events channel:** other parties can subscribe to events for the start,
+ - **Recording Events stream:** other parties can subscribe to events for the start,
  stop, and progress of recordings. These are the
  recording events messages specified in the codec.
  
- - **Control Request channel:** this allows clients to initiate replay or queries
+ - **Control Request stream:** this allows clients to initiate replay or queries
  interactions with the archive. Requests have a correlationId sent
  on the initiating request. The `correlationId` is expected to be managed by
  the clients and is offered as a means for clients to track multiple
  concurrent requests. A request will typically involve the
  archive sending data back on the reply channel specified by the client 
- on the `ConnectRequest` message.
+ on the `ConnectRequest`.
 
-A control session can be established with the Archive. Operations happen within
+A control session can be established with the Archive after a `ConnectRequest`. Operations happen within
 the context of such a ControlSession which is allocated a `controlSessionId`.
 
 Recording Events

@@ -29,7 +29,7 @@ The Archive communicates via the following interfaces:
  stop, and progress of recordings. These are the
  recording events messages specified in the codec.
  
- - **Requests channel:** this allows clients to initiate replay or queries
+ - **Control Request channel:** this allows clients to initiate replay or queries
  interactions with the archive. Requests have a correlationId sent
  on the initiating request. The `correlationId` is expected to be managed by
  the clients and is offered as a means for clients to track multiple
@@ -51,8 +51,8 @@ Persisted Format
 =====
 The Archiver is backed by 2 file types, all of which are expected to reside in the __archiveDir__.
 
- -  **Catalog (one per archive):** The catalog contains fixed length (4k) records of recording
- descriptors. The descriptors can be queried as described above. Each descriptor entry is 4k aligned,
+ -  **Catalog (one per archive):** The catalog contains fixed length (1k) records of recording
+ descriptors. The descriptors can be queried as described above. Each descriptor entry is 1k aligned,
  and as the __recordingId__ is a simple sequence, this means lookup is a dead reckoning operation.
  Each entry has a frame (32b) followed by the RecordingDescriptor, the frame contains the encoded
  length of the RecordingDescriptor.

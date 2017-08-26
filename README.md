@@ -22,6 +22,7 @@ For the latest version information and changes see the [Change Log](https://gith
 1. [Monitoring and Debugging](https://github.com/real-logic/aeron/wiki/Monitoring-and-Debugging)
 1. [Configuration Options](https://github.com/real-logic/aeron/wiki/Configuration-Options)
 1. [Channel Specific Configuration](https://github.com/real-logic/aeron/wiki/Channel-Configuration)
+1. [Aeron Archive](https://github.com/real-logic/aeron/wiki/Aeron-Archive)
 
 ### How does Aeron work?
 

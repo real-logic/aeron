@@ -97,7 +97,7 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Connect to an Aeron archive using a default {@link Context}.
+     * Connect to an Aeron archive using a default {@link Context}. This will create a control session.
      *
      * @return the newly created Aeron Archive client.
      */
@@ -107,7 +107,9 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Connect to an Aeron archive by providing a context. Before connecting {@link Context#conclude()} will be called.
+     * Connect to an Aeron archive by providing a {@link Context}. This will create a control session.
+     * <p>
+     * Before connecting {@link Context#conclude()} will be called.
      * If an exception occurs then {@link Context#close()} will be called.
      *
      * @param context for connection configuration.

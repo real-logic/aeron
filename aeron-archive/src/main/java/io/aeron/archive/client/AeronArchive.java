@@ -39,13 +39,13 @@ public final class AeronArchive implements AutoCloseable
 {
     private static final int RESPONSE_FRAGMENT_LIMIT = 4;
 
+    private final long controlSessionId;
     private final long messageTimeoutNs;
     private final Context context;
     private final Aeron aeron;
     private final ArchiveProxy archiveProxy;
     private final IdleStrategy idleStrategy;
     private final ControlResponsePoller controlResponsePoller;
-    private final long controlSessionId;
 
     private AeronArchive(final Context context)
     {

@@ -53,7 +53,7 @@
 
     <sbe:message name="ConnectRequest"
                  id="2"
-                 description="Request a connection to the archive and provide response stream details">
+                 description="Request a connection to the archive and provide response stream details for the session">
         <field name="correlationId"      id="1" type="int64"/>
         <field name="responseStreamId"   id="2" type="int32"/>
         <data  name="responseChannel"    id="3" type="varAsciiEncoding"/>

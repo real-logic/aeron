@@ -82,13 +82,17 @@ You require the following to build Aeron:
 
 You must first build and install [Agrona](https://github.com/real-logic/agrona) and [Simple Binary Encoding (SBE)](https://github.com/real-logic/simple-binary-encoding) into the local maven repository
 
+```shell
     $ ./gradlew
+```
 
 After Agrona & SBE is compiled and installed, then you can build Aeron.
 
 Full clean and build of all modules
 
+```shell
     $ ./gradlew
+```
     
 ### C++ Build
 
@@ -99,22 +103,28 @@ You require the following to build the C++ API for Aeron:
 * C11 supported compiler for the supported platform
 * Requirements to build [HdrHistogram_c](https://github.com/HdrHistogram/HdrHistogram_c). HdrHistogram requires `zlib.h` currently. So on Ubuntu:
 
-    `$ sudo apt-get install libz-dev`
+```shell
+    $ sudo apt-get install libz-dev
+```
 
 __NOTE__: Aeron is supported on Linux, Mac, and Windows. Windows builds require Visual Studio and are being developed
 with Visual Studio 2013 and 2015 with 64-bit builds only. Cygwin, MSys, etc. may work, but are not maintained at this time.
 
 For convenience, a script is provided that does a full clean, build, and test of all targets as a Release build.
 
+```shell
     $ ./cppbuild/cppbuild
+```
 
 If you are comfortable with using CMake, then a full clean, build, and test looks like:
 
+```shell
     $ mkdir -p cppbuild/Debug
     $ cd cppbuild/Debug
     $ cmake ../..
     $ cmake --build . --clean-first
     $ ctest
+```
 
 #### C Media Driver
 
@@ -124,15 +134,19 @@ option `BUILD_AERON_DRIVER` being set to `ON`.
 For convenience, a script is provided that does a full clean, build, and test of all targets as a Release build of the
 C++ API and the C Media Driver.
 
+```shell
     $ ./cppbuild/cppbuild-driver
+```
 
 If you are comfortable with using CMake, then a full clean, build, and test looks like:
 
+```shell
     $ mkdir -p cppbuild/Debug
     $ cd cppbuild/Debug
     $ cmake -DBUILD_AERON_DRIVER=ON ../..
     $ cmake --build . --clean-first
     $ ctest
+```
 
 __NOTE__: C Media Driver is currently only supported on Mac and Linux.
 
@@ -143,7 +157,9 @@ For dependencies and other information, see the
 
 If you have doxygen installed and want to build the Doxygen doc, there is a nice `doc` target that can be used.
 
+```shell
     $ make doc
+```
     
 #### Packaging
 
@@ -151,31 +167,42 @@ If you would like a packaged version of the compiled API, there is the `package`
 has been built previous to the packaging, it will be included. Packages created are "TGZ;STGZ", but can be changed
 by running `cpack` directly.
 
+```shell
     $ make package
+```
 
 Running Samples
 ---------------
 
 Start up a media driver which will create the data and conductor directories. On Linux, this will probably be in `/dev/shm/aeron` or `/tmp/aeron`.
 
+```shell
     $ java -cp aeron-samples/build/libs/samples.jar io.aeron.driver.MediaDriver
+```
 
 Alternatively, specify the data and conductor directories. The following example uses the shared memory 'directory' on Linux, but you could just as easily point to the regular filesystem.
 
+```shell
     $ java -cp aeron-samples/build/libs/samples.jar -Daeron.dir=/dev/shm/aeron io.aeron.driver.MediaDriver
+```
 
 You can run the `BasicSubscriber` from a command line. On Linux, this will be pointing to the `/dev/shm` shared memory directory, so be sure your `MediaDriver` is doing the same!
 
+```shell
     $ java -cp aeron-samples/build/libs/samples.jar io.aeron.samples.BasicSubscriber
+```
     
 You can run the `BasicPublisher` from a command line. On Linux, this will be pointing to the `/dev/shm` shared memory directory, so be sure your `MediaDriver` is doing the same!
 
+```shell
     $ java -cp aeron-samples/build/libs/samples.jar io.aeron.samples.BasicPublisher
+```
 
 You can run the `AeronStat` utility to read system counters from a command line
     
+```shell
     $ java -cp aeron-samples/build/libs/samples.jar io.aeron.samples.AeronStat
-
+```
 
 Media Driver Packaging
 ----------------------
@@ -190,20 +217,20 @@ Troubleshooting
 
 1. On linux, the subscriber sample throws an exception
  
- ```
- java.lang.InternalError(a fault occurred in a recent unsafe memory access operation in compiled Java code)
- ```
+   ```
+    java.lang.InternalError(a fault occurred in a recent unsafe memory access operation in compiled Java code)
+   ```
 
-  This is actually an out of disk space issue.
+   This is actually an out of disk space issue.
   
-  To alleviate, check to make sure you have enough disk space.
+   To alleviate, check to make sure you have enough disk space.
 
-  In the samples, on Linux, this will probably be either at `/dev/shm/aeron` or `/tmp/aeron` (depending on your settings).
+   In the samples, on Linux, this will probably be either at `/dev/shm/aeron` or `/tmp/aeron` (depending on your settings).
 
-  See this [thread](https://issues.apache.org/jira/browse/CASSANDRA-5737?focusedCommentId=14251018&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-14251018) for a similar problem.
+   See this [thread](https://issues.apache.org/jira/browse/CASSANDRA-5737?focusedCommentId=14251018&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-14251018) for a similar problem.
   
-  Note: if you are trying to run this inside a Linux Docker, be aware that, by default, [Docker only allocates 64 MB](https://github.com/docker/docker/issues/2606) to the [shared memory](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&ved=0CB8QFjAA&url=http%3A%2F%2Fwww.cyberciti.biz%2Ftips%2Fwhat-is-devshm-and-its-practical-usage.html&ei=NBEPVcfzLZLWoASv8IKYCA&usg=AFQjCNHwBF2R9m4v_Z9pyNlunei2gH-ssA&sig2=VzzxpzRAGoHRjpH_MhRL8w&bvm=bv.88528373,d.cGU) space at `/dev/shm`. However, the samples will quickly outgrow this.
+   Note: if you are trying to run this inside a Linux Docker, be aware that, by default, [Docker only allocates 64 MB](https://github.com/docker/docker/issues/2606) to the [shared memory](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&ved=0CB8QFjAA&url=http%3A%2F%2Fwww.cyberciti.biz%2Ftips%2Fwhat-is-devshm-and-its-practical-usage.html&ei=NBEPVcfzLZLWoASv8IKYCA&usg=AFQjCNHwBF2R9m4v_Z9pyNlunei2gH-ssA&sig2=VzzxpzRAGoHRjpH_MhRL8w&bvm=bv.88528373,d.cGU) space at `/dev/shm`. However, the samples will quickly outgrow this.
   
-  You can work around this issue by using the `--shm-size` argument for `docker run` or `shm_size` in `docker-compose.yaml`.
+   You can work around this issue by using the `--shm-size` argument for `docker run` or `shm_size` in `docker-compose.yaml`.
 
   

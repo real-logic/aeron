@@ -190,7 +190,7 @@ Troubleshooting
 
 1. On linux, the subscriber sample throws an exception
  
- ```java
+ ```
  java.lang.InternalError(a fault occurred in a recent unsafe memory access operation in compiled Java code)
  ```
 

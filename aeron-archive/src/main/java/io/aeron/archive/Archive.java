@@ -46,15 +46,15 @@ public final class Archive implements AutoCloseable
     private Archive(final Context ctx)
     {
         this.ctx = ctx;
+        ctx.conclude();
 
         ctx.aeronContext
             .errorHandler(ctx.countedErrorHandler())
             .driverAgentInvoker(ctx.mediaDriverAgentInvoker())
+            .useConductorAgentInvoker(true)
             .clientLock(new NoOpLock());
 
         aeron = Aeron.connect(ctx.aeronContext);
-
-        ctx.conclude();
 
         final ArchiveConductor conductor =
             ArchiveThreadingMode.DEDICATED == ctx.threadingMode() ?
@@ -255,8 +255,7 @@ public final class Archive implements AutoCloseable
      */
     public static class Context
     {
-        private final Aeron.Context aeronContext;
-
+        private Aeron.Context aeronContext;
         private File archiveDir;
 
         private String controlChannel = AeronArchive.Configuration.controlChannel();
@@ -284,25 +283,6 @@ public final class Archive implements AutoCloseable
         private int maxConcurrentReplays = Configuration.maxConcurrentReplays();
 
         /**
-         * Default constructor that sets up a default {@link #aeronContext()}.
-         */
-        public Context()
-        {
-            this(new Aeron.Context());
-        }
-
-        /**
-         * Create a new context and provide an {@link Aeron.Context} for the client.
-         *
-         * @param aeronContext for the Aeron client.
-         */
-        public Context(final Aeron.Context aeronContext)
-        {
-            this.aeronContext = aeronContext;
-            aeronContext.useConductorAgentInvoker(true);
-        }
-
-        /**
          * Conclude the configuration parameters by resolving dependencies and null values to use defaults.
          */
         public void conclude()
@@ -315,6 +295,11 @@ public final class Archive implements AutoCloseable
             if (null == countersManager)
             {
                 throw new IllegalStateException("Counter manager must be externally supplied");
+            }
+
+            if (null == aeronContext)
+            {
+                aeronContext = new Aeron.Context();
             }
 
             errorCounter = countersManager.newCounter("Archive errors");
@@ -343,6 +328,30 @@ public final class Archive implements AutoCloseable
         }
 
         /**
+         * Get the Aeron client context used by the Archive.
+         *
+         * @return Aeron client context used by the Archive
+         */
+        public Aeron.Context aeronContext()
+        {
+            return aeronContext;
+        }
+
+        /**
+         * Provide an {@link Aeron.Context} for configuring the connection to Aeron.
+         * <p>
+         * If not provided then a default context will be created.
+         *
+         * @param aeronContext for configuring the connection to Aeron.
+         * @return this for a fluent API.
+         */
+        public Context aeronContext(final Aeron.Context aeronContext)
+        {
+            this.aeronContext = aeronContext;
+            return this;
+        }
+
+        /**
          * Get the directory in which the Archive will store recordings and the {@link Catalog}.
          *
          * @return the directory in which the Archive will store recordings and the {@link Catalog}.
@@ -362,16 +371,6 @@ public final class Archive implements AutoCloseable
         {
             this.archiveDir = archiveDir;
             return this;
-        }
-
-        /**
-         * Get the Aeron client context used by the Archive.
-         *
-         * @return Aeron client context used by the Archive
-         */
-        public Aeron.Context aeronContext()
-        {
-            return aeronContext;
         }
 
         /**

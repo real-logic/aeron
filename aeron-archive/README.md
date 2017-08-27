@@ -60,7 +60,7 @@ The Archiver is backed by 2 file types, all of which are expected to reside in t
  See the codec for full descriptor details.
  
  - **Recording Segment Data (many per recorded stream):** This is where the recorded data is kept.
- Recording segments follow the naming convention of: `<recordingId>.<segmentIndex>.rec`
+ Recording segments follow the naming convention of: `<recordingId>-<segmentIndex>.rec`
  The Archiver copies data as is from the recorded Image. As such the files follow the same convention
  as Aeron data streams. Data starts at `startPosition`, which translates into the offset
  `startPosition % termBufferLength` in the first segment file. From there one can read fragments

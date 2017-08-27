@@ -104,21 +104,43 @@ public final class Archive implements AutoCloseable
         return this;
     }
 
+    /**
+     * Get the {@link AgentInvoker} for the archive if it is running in {@link ArchiveThreadingMode#INVOKER}.
+     *
+     * @return the {@link AgentInvoker} for the archive if it is running in {@link ArchiveThreadingMode#INVOKER}
+     * otherwise null.
+     */
     public AgentInvoker invoker()
     {
         return conductorInvoker;
     }
 
+    /**
+     * Launch an Archive using a default configuration.
+     *
+     * @return a new instance of an Archive.
+     */
     public static Archive launch()
     {
         return launch(new Context());
     }
 
+    /**
+     * Launch an Archive by providing a configuration context.
+     *
+     * @param ctx for the configuration parameters.
+     * @return  a new instance of an Archive.
+     */
     public static Archive launch(final Context ctx)
     {
         return new Archive(ctx).start();
     }
 
+    /**
+     * Configuration for system properties and defaults.
+     * <p>
+     * Details for the individual parameters can be found in the Javadoc for the {@link Context} setters.
+     */
     public static class Configuration
     {
         public static final int ARCHIVE_RECORDING_POSITION_TYPE_ID = 100;
@@ -228,22 +250,25 @@ public final class Archive implements AutoCloseable
         }
     }
 
+    /**
+     * Overrides for the defaults and system properties.
+     */
     public static class Context
     {
         private final Aeron.Context aeronContext;
 
         private File archiveDir;
 
-        private String controlChannel;
-        private int controlStreamId;
+        private String controlChannel = AeronArchive.Configuration.controlChannel();
+        private int controlStreamId = AeronArchive.Configuration.controlStreamId();
 
-        private String recordingEventsChannel;
-        private int recordingEventsStreamId;
+        private String recordingEventsChannel = AeronArchive.Configuration.recordingEventsChannel();
+        private int recordingEventsStreamId = AeronArchive.Configuration.recordingEventsStreamId();
 
-        private int segmentFileLength;
-        private int fileSyncLevel;
+        private int segmentFileLength = Configuration.segmentFileLength();
+        private int fileSyncLevel = Configuration.fileSyncLevel();
 
-        private ArchiveThreadingMode threadingMode;
+        private ArchiveThreadingMode threadingMode = Configuration.threadingMode();
         private ThreadFactory threadFactory = Thread::new;
 
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -255,33 +280,32 @@ public final class Archive implements AutoCloseable
         private CountedErrorHandler countedErrorHandler;
 
         private AgentInvoker mediaDriverAgentInvoker;
-        private int maxConcurrentRecordings;
-        private int maxConcurrentReplays;
+        private int maxConcurrentRecordings = Configuration.maxConcurrentRecordings();
+        private int maxConcurrentReplays = Configuration.maxConcurrentReplays();
 
+        /**
+         * Default constructor that sets up a default {@link #aeronContext()}.
+         */
         public Context()
         {
             this(new Aeron.Context());
         }
 
+        /**
+         * Create a new context and provide an {@link Aeron.Context} for the client.
+         *
+         * @param aeronContext for the Aeron client.
+         */
         public Context(final Aeron.Context aeronContext)
         {
             this.aeronContext = aeronContext;
             aeronContext.useConductorAgentInvoker(true);
-
-            controlChannel(AeronArchive.Configuration.controlChannel());
-            controlStreamId(AeronArchive.Configuration.controlStreamId());
-
-            recordingEventsChannel(AeronArchive.Configuration.recordingEventsChannel());
-            recordingEventsStreamId(AeronArchive.Configuration.recordingEventsStreamId());
-
-            segmentFileLength(Configuration.segmentFileLength());
-            fileSyncLevel(Configuration.fileSyncLevel());
-            threadingMode(Configuration.threadingMode());
-            maxConcurrentRecordings(Configuration.maxConcurrentRecordings());
-            maxConcurrentReplays(Configuration.maxConcurrentReplays());
         }
 
-        void conclude()
+        /**
+         * Conclude the configuration parameters by resolving dependencies and null values to use defaults.
+         */
+        public void conclude()
         {
             if (null == errorHandler)
             {
@@ -319,9 +343,9 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * Get the directory in which the Archive will store recordings/index/counters etc.
+         * Get the directory in which the Archive will store recordings and the {@link Catalog}.
          *
-         * @return the directory in which the Archive will store recordings/index/counters etc
+         * @return the directory in which the Archive will store recordings and the {@link Catalog}.
          */
         public File archiveDir()
         {
@@ -353,7 +377,7 @@ public final class Archive implements AutoCloseable
         /**
          * Get the channel URI on which the control request subscription will listen.
          *
-         * @return the channel URI on which the control request subscription will listen
+         * @return the channel URI on which the control request subscription will listen.
          */
         public String controlChannel()
         {
@@ -363,7 +387,7 @@ public final class Archive implements AutoCloseable
         /**
          * Set the channel URI on which the control request subscription will listen.
          *
-         * @param controlChannel channel URI on which the control request subscription will listen
+         * @param controlChannel channel URI on which the control request subscription will listen.
          * @return this for a fluent API.
          */
         public Context controlChannel(final String controlChannel)
@@ -375,7 +399,7 @@ public final class Archive implements AutoCloseable
         /**
          * Get the stream id on which the control request subscription will listen.
          *
-         * @return the stream id on which the control request subscription will listen
+         * @return the stream id on which the control request subscription will listen.
          */
         public int controlStreamId()
         {
@@ -385,7 +409,7 @@ public final class Archive implements AutoCloseable
         /**
          * Set the stream id on which the control request subscription will listen.
          *
-         * @param controlStreamId stream id on which the control request subscription will listen
+         * @param controlStreamId stream id on which the control request subscription will listen.
          * @return this for a fluent API.
          */
         public Context controlStreamId(final int controlStreamId)
@@ -397,7 +421,7 @@ public final class Archive implements AutoCloseable
         /**
          * Get the channel URI on which the recording events publication will publish.
          *
-         * @return the channel URI on which the recording events publication will publish
+         * @return the channel URI on which the recording events publication will publish.
          */
         public String recordingEventsChannel()
         {
@@ -410,7 +434,7 @@ public final class Archive implements AutoCloseable
          * To support dynamic subscribers then this can be set to multicast or MDC (Multi-Destination-Cast) if
          * multicast cannot be supported for on the available the network infrastructure.
          *
-         * @param recordingEventsChannel channel URI on which the recording events publication will publish
+         * @param recordingEventsChannel channel URI on which the recording events publication will publish.
          * @return this for a fluent API.
          * @see io.aeron.CommonContext#MDC_CONTROL_PARAM_NAME
          */
@@ -423,7 +447,7 @@ public final class Archive implements AutoCloseable
         /**
          * Get the stream id on which the recording events publication will publish.
          *
-         * @return the stream id on which the recording events publication will publish
+         * @return the stream id on which the recording events publication will publish.
          */
         public int recordingEventsStreamId()
         {
@@ -433,7 +457,7 @@ public final class Archive implements AutoCloseable
         /**
          * Set the stream id on which the recording events publication will publish.
          *
-         * @param recordingEventsStreamId stream id on which the recording events publication will publish
+         * @param recordingEventsStreamId stream id on which the recording events publication will publish.
          * @return this for a fluent API.
          */
         public Context recordingEventsStreamId(final int recordingEventsStreamId)
@@ -445,7 +469,7 @@ public final class Archive implements AutoCloseable
         /**
          * Provides an {@link IdleStrategy} supplier for the thread responsible for publication/subscription backoff.
          *
-         * @param idleStrategySupplier supplier of thread idle strategy for publication/subscription backoff
+         * @param idleStrategySupplier supplier of thread idle strategy for publication/subscription backoff.
          * @return this for a fluent API.
          */
         public Context idleStrategySupplier(final Supplier<IdleStrategy> idleStrategySupplier)
@@ -457,7 +481,7 @@ public final class Archive implements AutoCloseable
         /**
          * Get a new {@link IdleStrategy} based on configured supplier.
          *
-         * @return a new {@link IdleStrategy} based on configured supplier
+         * @return a new {@link IdleStrategy} based on configured supplier.
          */
         public IdleStrategy idleStrategy()
         {
@@ -467,7 +491,7 @@ public final class Archive implements AutoCloseable
         /**
          * Set the {@link EpochClock} to be used for tracking wall clock time when interacting with the archive.
          *
-         * @param clock {@link EpochClock} to be used for tracking wall clock time when interacting with the archive
+         * @param clock {@link EpochClock} to be used for tracking wall clock time when interacting with the archive.
          * @return this for a fluent API.
          */
         public Context epochClock(final EpochClock clock)
@@ -565,7 +589,7 @@ public final class Archive implements AutoCloseable
         /**
          * Get the {@link ErrorHandler} to be used by the Archive.
          *
-         * @return the {@link ErrorHandler} to be used by the Archive
+         * @return the {@link ErrorHandler} to be used by the Archive.
          */
         public ErrorHandler errorHandler()
         {
@@ -575,7 +599,7 @@ public final class Archive implements AutoCloseable
         /**
          * Set the {@link ErrorHandler} to be used by the Archive.
          *
-         * @param errorHandler the error handler to be used by the Archive
+         * @param errorHandler the error handler to be used by the Archive.
          * @return this for a fluent API
          */
         public Context errorHandler(final ErrorHandler errorHandler)
@@ -597,7 +621,7 @@ public final class Archive implements AutoCloseable
         /**
          * Get the archive threading mode.
          *
-         * @return the archive threading mode
+         * @return the archive threading mode.
          */
         public ArchiveThreadingMode threadingMode()
         {
@@ -607,8 +631,8 @@ public final class Archive implements AutoCloseable
         /**
          * Set the archive threading mode.
          *
-         * @param threadingMode archive threading mode
-         * @return this for a fluent API
+         * @param threadingMode archive threading mode.
+         * @return this for a fluent API.
          */
         public Context threadingMode(final ArchiveThreadingMode threadingMode)
         {
@@ -617,9 +641,10 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * Get the thread factory used for creating threads in SHARED and DEDICATED threading modes.
+         * Get the thread factory used for creating threads in {@link ArchiveThreadingMode#SHARED} and
+         * {@link ArchiveThreadingMode#DEDICATED} threading modes.
          *
-         * @return thread factory used for creating threads in SHARED and DEDICATED threading modes
+         * @return thread factory used for creating threads in SHARED and DEDICATED threading modes.
          */
         public ThreadFactory threadFactory()
         {
@@ -627,10 +652,11 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * Set the thread factory used for creating threads in SHARED and DEDICATED threading modes.
+         * Set the thread factory used for creating threads in {@link ArchiveThreadingMode#SHARED} and
+         * {@link ArchiveThreadingMode#DEDICATED} threading modes.
          *
-         * @param threadFactory used for creating threads in SHARED and DEDICATED threading modes
-         * @return this for a fluent API
+         * @param threadFactory used for creating threads in SHARED and DEDICATED threading modes.
+         * @return this for a fluent API.
          */
         public Context threadFactory(final ThreadFactory threadFactory)
         {
@@ -646,7 +672,7 @@ public final class Archive implements AutoCloseable
         /**
          * Get the max number of concurrent recordings.
          *
-         * @return the max number of concurrent recordings
+         * @return the max number of concurrent recordings.
          */
         public int maxConcurrentRecordings()
         {
@@ -656,8 +682,8 @@ public final class Archive implements AutoCloseable
         /**
          * Set the max number of concurrent recordings.
          *
-         * @param maxConcurrentRecordings the max number of concurrent recordings
-         * @return this for a fluent API
+         * @param maxConcurrentRecordings the max number of concurrent recordings.
+         * @return this for a fluent API.
          */
         public Context maxConcurrentRecordings(final int maxConcurrentRecordings)
         {
@@ -668,7 +694,7 @@ public final class Archive implements AutoCloseable
         /**
          * Get the max number of concurrent replays.
          *
-         * @return the max number of concurrent replays
+         * @return the max number of concurrent replays.
          */
         public int maxConcurrentReplays()
         {
@@ -678,8 +704,8 @@ public final class Archive implements AutoCloseable
         /**
          * Set the max number of concurrent replays.
          *
-         * @param maxConcurrentReplays the max number of concurrent replays
-         * @return this for a fluent API
+         * @param maxConcurrentReplays the max number of concurrent replays.
+         * @return this for a fluent API.
          */
         public Context maxConcurrentReplays(final int maxConcurrentReplays)
         {
@@ -700,8 +726,8 @@ public final class Archive implements AutoCloseable
         /**
          * The {@link CountersManager} is a shared resource between the embedded media driver and the archive.
          *
-         * @param countersManager shared counters manager to be used
-         * @return this for a fluent API
+         * @param countersManager shared counters manager to be used.
+         * @return this for a fluent API.
          */
         public Context countersManager(final CountersManager countersManager)
         {
@@ -728,6 +754,6 @@ public final class Archive implements AutoCloseable
 
     static String segmentFileName(final long recordingId, final int segmentIndex)
     {
-        return recordingId + "." + segmentIndex + Configuration.RECORDING_SEGMENT_POSTFIX;
+        return recordingId + '-' + segmentIndex + Configuration.RECORDING_SEGMENT_POSTFIX;
     }
 }

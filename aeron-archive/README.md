@@ -7,9 +7,8 @@ and replay support from an archive.
 Currently implemented functionality:
 - **Record:** service can record a particular subscription, described
 by `<channel, streamId>`. Each resulting image for the subscription
-will be recorded under a new `recordingId`. Only local Publications
-are recorded, and so only IPC or spy subscriptions are supported, at
-this time (this may change in near term future).
+will be recorded under a new `recordingId`. Local network publications are
+recorded using the spy feature for efficiency.
 
 - **Replay:** service can replay a recorded `recordingId` from
 a particular `termId + termOffset`, and for a particular length.

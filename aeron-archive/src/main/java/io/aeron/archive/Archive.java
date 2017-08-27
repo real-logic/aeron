@@ -406,9 +406,13 @@ public final class Archive implements AutoCloseable
 
         /**
          * Set the channel URI on which the recording events publication will publish.
+         * <p>
+         * To support dynamic subscribers then this can be set to multicast or MDC (Multi-Destination-Cast) if
+         * multicast cannot be supported for on the available the network infrastructure.
          *
          * @param recordingEventsChannel channel URI on which the recording events publication will publish
          * @return this for a fluent API.
+         * @see io.aeron.CommonContext#MDC_CONTROL_PARAM_NAME
          */
         public Context recordingEventsChannel(final String recordingEventsChannel)
         {

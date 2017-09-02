@@ -491,10 +491,10 @@ project(':aeron-archive') {
         main = 'uk.co.real_logic.sbe.SbeTool'
         classpath = configurations.codecGeneration
         systemProperties(
-        'sbe.output.dir': generatedDir,
-        'sbe.target.language': 'Java',
-        'sbe.validation.xsd': 'src/main/resources/fpl/sbe.xsd',
-        'sbe.validation.stop.on.error': 'true')
+            'sbe.output.dir': generatedDir,
+            'sbe.target.language': 'Java',
+            'sbe.validation.xsd': 'src/main/resources/fpl/sbe.xsd',
+            'sbe.validation.stop.on.error': 'true')
         args = ['src/main/resources/aeron-archive-codecs.xml']
     }
 

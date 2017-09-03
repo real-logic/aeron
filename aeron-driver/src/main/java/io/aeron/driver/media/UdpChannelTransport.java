@@ -77,8 +77,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
             receiveDatagramChannel = sendDatagramChannel;
             if (udpChannel.isMulticast())
             {
-                final NetworkInterface localInterface = udpChannel.localInterface();
-
                 if (null != connectAddress)
                 {
                     receiveDatagramChannel = DatagramChannel.open(udpChannel.protocolFamily());
@@ -86,8 +84,8 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
                 receiveDatagramChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
                 receiveDatagramChannel.bind(new InetSocketAddress(endPointAddress.getPort()));
-                receiveDatagramChannel.join(endPointAddress.getAddress(), localInterface);
-                sendDatagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, localInterface);
+                receiveDatagramChannel.join(endPointAddress.getAddress(), udpChannel.localInterface());
+                sendDatagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, udpChannel.localInterface());
 
                 if (0 != udpChannel.multicastTtl())
                 {

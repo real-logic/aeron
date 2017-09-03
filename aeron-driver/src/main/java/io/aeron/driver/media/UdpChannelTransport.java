@@ -75,6 +75,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         {
             sendDatagramChannel = DatagramChannel.open(udpChannel.protocolFamily());
             receiveDatagramChannel = sendDatagramChannel;
+
             if (udpChannel.isMulticast())
             {
                 if (null != connectAddress)
@@ -92,20 +93,15 @@ public abstract class UdpChannelTransport implements AutoCloseable
                     sendDatagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_TTL, udpChannel.multicastTtl());
                     multicastTtl = getOption(StandardSocketOptions.IP_MULTICAST_TTL);
                 }
-
-                if (null != connectAddress)
-                {
-                    sendDatagramChannel.connect(connectAddress);
-                }
             }
             else
             {
                 sendDatagramChannel.bind(bindAddress);
+            }
 
-                if (null != connectAddress)
-                {
-                    sendDatagramChannel.connect(connectAddress);
-                }
+            if (null != connectAddress)
+            {
+                sendDatagramChannel.connect(connectAddress);
             }
 
             if (0 != Configuration.SOCKET_SNDBUF_LENGTH)

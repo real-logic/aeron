@@ -29,17 +29,29 @@ import static io.aeron.driver.media.NetworkUtil.findAddressOnInterface;
 import static io.aeron.driver.media.NetworkUtil.getProtocolFamily;
 import static java.lang.System.lineSeparator;
 import static java.net.InetAddress.getByAddress;
-import static org.agrona.BitUtil.toHex;
 
 /**
  * Encapsulation of UDP Channels.
  * <p>
  * Format of URI as in {@link ChannelUri}.
+ *
+ * @see ChannelUri
+ * @see io.aeron.ChannelUriStringBuilder
  */
 public final class UdpChannel
 {
-    public static final String UDP_MEDIA_ID = "udp";
+    /**
+     * Media type id for UDP channels.
+     */
+    public static final String MEDIA_ID = "udp";
 
+    private static final byte[] HEX_DIGIT_TABLE =
+    {
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
+    };
+
+    private final boolean hasExplicitControl;
+    private final boolean isMulticast;
     private final int multicastTtl;
     private final InetSocketAddress remoteData;
     private final InetSocketAddress localData;
@@ -50,11 +62,12 @@ public final class UdpChannel
     private final NetworkInterface localInterface;
     private final ProtocolFamily protocolFamily;
     private final ChannelUri channelUri;
-    private final boolean hasExplicitControl;
-    private final boolean isMulticast;
 
     private UdpChannel(final Context context)
     {
+        hasExplicitControl = context.hasExplicitControl;
+        isMulticast = context.isMulticast;
+        multicastTtl = context.multicastTtl;
         remoteData = context.remoteData;
         localData = context.localData;
         remoteControl = context.remoteControl;
@@ -63,27 +76,22 @@ public final class UdpChannel
         canonicalForm = context.canonicalForm;
         localInterface = context.localInterface;
         protocolFamily = context.protocolFamily;
-        multicastTtl = context.multicastTtl;
         channelUri = context.channelUri;
-        hasExplicitControl = context.hasExplicitControl;
-        isMulticast = context.isMulticast;
     }
 
     /**
-     * Parse URI and create {@link UdpChannel}.
+     * Parse channel URI and create a {@link UdpChannel}.
      *
      * @param channelUriString to parse
      * @return a new {@link UdpChannel}
+     * @throws InvalidChannelException if an error occurs.
      */
     public static UdpChannel parse(final String channelUriString)
     {
         try
         {
             final ChannelUri channelUri = ChannelUri.parse(channelUriString);
-
             validateConfiguration(channelUri);
-
-            final Context context = new Context().uriStr(channelUriString).channelUri(channelUri);
 
             InetSocketAddress endpointAddress = getEndpointAddress(channelUri);
             final InetSocketAddress explicitControlAddress = getExplicitControlAddress(channelUri);
@@ -110,23 +118,25 @@ public final class UdpChannel
                 endpointAddress = new InetSocketAddress("0.0.0.0", 0);
             }
 
+            final Context context = new Context().uriStr(channelUriString).channelUri(channelUri);
+
             if (endpointAddress.getAddress().isMulticastAddress())
             {
                 final InetSocketAddress controlAddress = getMulticastControlAddress(endpointAddress);
-
                 final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(channelUri);
+                final NetworkInterface localInterface = findInterface(searchAddress);
+                final InetSocketAddress resolvedAddress = resolveToAddressOfInterface(localInterface, searchAddress);
 
                 context
                     .isMulticast(true)
-                    .localControlAddress(resolveToAddressOfInterface(findInterface(searchAddress), searchAddress))
+                    .localControlAddress(resolvedAddress)
                     .remoteControlAddress(controlAddress)
-                    .localDataAddress(resolveToAddressOfInterface(findInterface(searchAddress), searchAddress))
+                    .localDataAddress(resolvedAddress)
                     .remoteDataAddress(endpointAddress)
-                    .localInterface(findInterface(searchAddress))
+                    .localInterface(localInterface)
                     .multicastTtl(getMulticastTtl(channelUri))
                     .protocolFamily(getProtocolFamily(endpointAddress.getAddress()))
-                    .canonicalForm(canonicalise(
-                        resolveToAddressOfInterface(findInterface(searchAddress), searchAddress), endpointAddress));
+                    .canonicalForm(canonicalise(resolvedAddress, endpointAddress));
             }
             else if (null != explicitControlAddress)
             {
@@ -142,15 +152,10 @@ public final class UdpChannel
             else
             {
                 final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(channelUri);
-                final InetSocketAddress localAddress;
-                if (searchAddress.getInetAddress().isAnyLocalAddress())
-                {
-                    localAddress = searchAddress.getAddress();
-                }
-                else
-                {
-                    localAddress = resolveToAddressOfInterface(findInterface(searchAddress), searchAddress);
-                }
+
+                final InetSocketAddress localAddress = searchAddress.getInetAddress().isAnyLocalAddress() ?
+                    searchAddress.getAddress() :
+                    resolveToAddressOfInterface(findInterface(searchAddress), searchAddress);
 
                 context
                     .remoteControlAddress(endpointAddress)
@@ -185,27 +190,33 @@ public final class UdpChannel
      * <p>
      * A canonical form:
      * - begins with the string "UDP-"
-     * - has all hostnames converted to hexadecimal
-     * - has all fields expanded out
+     * - has all addresses converted to hexadecimal
      * - uses "-" as all field separators
      * <p>
      * The general format is:
      * UDP-interface-localPort-remoteAddress-remotePort
      *
-     * @param localData  for the channel
-     * @param remoteData for the channel
+     * @param localData  address/interface for the channel
+     * @param remoteData address for the channel
      * @return canonical representation as a string
      */
     public static String canonicalise(final InetSocketAddress localData, final InetSocketAddress remoteData)
     {
-        return "UDP-" +
-            toHex(localData.getAddress().getAddress()) +
-            '-' +
-            localData.getPort() +
-            '-' +
-            toHex(remoteData.getAddress().getAddress()) +
-            '-' +
-            remoteData.getPort();
+        final StringBuilder builder = new StringBuilder(48);
+
+        builder.append("UDP-");
+
+        toHexString(builder, localData.getAddress().getAddress())
+            .append('-')
+            .append(localData.getPort());
+
+        builder.append('-');
+
+        toHexString(builder, remoteData.getAddress().getAddress())
+            .append('-')
+            .append(remoteData.getPort());
+
+        return builder.toString();
     }
 
     /**
@@ -377,6 +388,30 @@ public final class UdpChannel
         }
     }
 
+    /**
+     * Used for debugging to get a human readable description of the channel.
+     *
+     * @return a human readable description of the channel.
+     */
+    public String description()
+    {
+        final StringBuilder builder = new StringBuilder("UdpChannel - ");
+        if (null != localInterface)
+        {
+            builder
+                .append("interface: ")
+                .append(localInterface.getDisplayName())
+                .append(", ");
+        }
+
+        builder
+            .append("localData: ").append(localData)
+            .append(", remoteData: ").append(remoteData)
+            .append(", ttl: ").append(multicastTtl);
+
+        return builder.toString();
+    }
+
     private static InterfaceSearchAddress getInterfaceSearchAddress(final ChannelUri uri) throws UnknownHostException
     {
         final String interfaceValue = uri.get(CommonContext.INTERFACE_PARAM_NAME);
@@ -436,9 +471,9 @@ public final class UdpChannel
 
     private static void validateMedia(final ChannelUri uri)
     {
-        if (!UDP_MEDIA_ID.equals(uri.media()))
+        if (!MEDIA_ID.equals(uri.media()))
         {
-            throw new IllegalArgumentException("Udp channel only supports udp media: " + uri);
+            throw new IllegalArgumentException("UdpChannel only supports UDP media: " + uri);
         }
     }
 
@@ -473,97 +508,8 @@ public final class UdpChannel
         throw new IllegalArgumentException(errorNoMatchingInterfaces(filteredInterfaces, searchAddress));
     }
 
-    static class Context
-    {
-        private int multicastTtl;
-        private InetSocketAddress remoteData;
-        private InetSocketAddress localData;
-        private InetSocketAddress remoteControl;
-        private InetSocketAddress localControl;
-        private String uriStr;
-        private String canonicalForm;
-        private NetworkInterface localInterface;
-        private ProtocolFamily protocolFamily;
-        private ChannelUri channelUri;
-        private boolean hasExplicitControl = false;
-        private boolean isMulticast = false;
-
-        public Context uriStr(final String uri)
-        {
-            uriStr = uri;
-            return this;
-        }
-
-        public Context remoteDataAddress(final InetSocketAddress remoteData)
-        {
-            this.remoteData = remoteData;
-            return this;
-        }
-
-        public Context localDataAddress(final InetSocketAddress localData)
-        {
-            this.localData = localData;
-            return this;
-        }
-
-        public Context remoteControlAddress(final InetSocketAddress remoteControl)
-        {
-            this.remoteControl = remoteControl;
-            return this;
-        }
-
-        public Context localControlAddress(final InetSocketAddress localControl)
-        {
-            this.localControl = localControl;
-            return this;
-        }
-
-        public Context canonicalForm(final String canonicalForm)
-        {
-            this.canonicalForm = canonicalForm;
-            return this;
-        }
-
-        public Context localInterface(final NetworkInterface networkInterface)
-        {
-            this.localInterface = networkInterface;
-            return this;
-        }
-
-        public Context protocolFamily(final ProtocolFamily protocolFamily)
-        {
-            this.protocolFamily = protocolFamily;
-            return this;
-        }
-
-        public Context multicastTtl(final int multicastTtl)
-        {
-            this.multicastTtl = multicastTtl;
-            return this;
-        }
-
-        public Context channelUri(final ChannelUri channelUri)
-        {
-            this.channelUri = channelUri;
-            return this;
-        }
-
-        public Context hasExplicitControl(final boolean hasExplicitControl)
-        {
-            this.hasExplicitControl = hasExplicitControl;
-            return this;
-        }
-
-        public Context isMulticast(final boolean isMulticast)
-        {
-            this.isMulticast = isMulticast;
-            return this;
-        }
-    }
-
     private static String errorNoMatchingInterfaces(
-        final NetworkInterface[] filteredInterfaces,
-        final InterfaceSearchAddress address)
+        final NetworkInterface[] filteredInterfaces, final InterfaceSearchAddress address)
         throws SocketException
     {
         final StringBuilder builder = new StringBuilder()
@@ -592,22 +538,104 @@ public final class UdpChannel
         return builder.toString();
     }
 
-    public String description()
+    private static StringBuilder toHexString(final StringBuilder builder, final byte[] bytes)
     {
-        final StringBuilder builder = new StringBuilder("UdpChannel - ");
-        if (null != localInterface)
+        for (int i = 0, length = bytes.length; i < length; i++)
         {
-            builder
-                .append("interface: ")
-                .append(localInterface.getDisplayName())
-                .append(", ");
+            final byte b = bytes[i];
+
+            builder.append((char)(HEX_DIGIT_TABLE[(b >> 4) & 0x0F]));
+            builder.append((char)(HEX_DIGIT_TABLE[b & 0x0F]));
         }
 
-        builder
-            .append("localData: ").append(localData)
-            .append(", remoteData: ").append(remoteData)
-            .append(", ttl: ").append(multicastTtl);
+        return builder;
+    }
 
-        return builder.toString();
+    static class Context
+    {
+        int multicastTtl;
+        InetSocketAddress remoteData;
+        InetSocketAddress localData;
+        InetSocketAddress remoteControl;
+        InetSocketAddress localControl;
+        String uriStr;
+        String canonicalForm;
+        NetworkInterface localInterface;
+        ProtocolFamily protocolFamily;
+        ChannelUri channelUri;
+        boolean hasExplicitControl = false;
+        boolean isMulticast = false;
+
+        Context uriStr(final String uri)
+        {
+            uriStr = uri;
+            return this;
+        }
+
+        Context remoteDataAddress(final InetSocketAddress remoteData)
+        {
+            this.remoteData = remoteData;
+            return this;
+        }
+
+        Context localDataAddress(final InetSocketAddress localData)
+        {
+            this.localData = localData;
+            return this;
+        }
+
+        Context remoteControlAddress(final InetSocketAddress remoteControl)
+        {
+            this.remoteControl = remoteControl;
+            return this;
+        }
+
+        Context localControlAddress(final InetSocketAddress localControl)
+        {
+            this.localControl = localControl;
+            return this;
+        }
+
+        Context canonicalForm(final String canonicalForm)
+        {
+            this.canonicalForm = canonicalForm;
+            return this;
+        }
+
+        Context localInterface(final NetworkInterface networkInterface)
+        {
+            this.localInterface = networkInterface;
+            return this;
+        }
+
+        Context protocolFamily(final ProtocolFamily protocolFamily)
+        {
+            this.protocolFamily = protocolFamily;
+            return this;
+        }
+
+        Context multicastTtl(final int multicastTtl)
+        {
+            this.multicastTtl = multicastTtl;
+            return this;
+        }
+
+        Context channelUri(final ChannelUri channelUri)
+        {
+            this.channelUri = channelUri;
+            return this;
+        }
+
+        Context hasExplicitControl(final boolean hasExplicitControl)
+        {
+            this.hasExplicitControl = hasExplicitControl;
+            return this;
+        }
+
+        Context isMulticast(final boolean isMulticast)
+        {
+            this.isMulticast = isMulticast;
+            return this;
+        }
     }
 }

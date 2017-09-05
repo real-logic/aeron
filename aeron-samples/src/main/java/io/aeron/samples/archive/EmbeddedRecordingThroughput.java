@@ -101,7 +101,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
         recordingEventsThread.start();
 
         consumerThread = new Thread(this::runConsumer);
-        consumerThread.setName("consumer-thread");
+        consumerThread.setName("stream-consumer");
         consumerThread.start();
     }
 

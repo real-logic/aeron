@@ -659,7 +659,7 @@ public class ArchiveTest
             recordingEvents,
             1);
 
-        final Thread t = new Thread(
+        final Thread thread = new Thread(
             () ->
             {
                 try
@@ -683,8 +683,9 @@ public class ArchiveTest
                 waitForData.countDown();
             });
 
-        t.setDaemon(true);
-        t.start();
+        thread.setDaemon(true);
+        thread.setName("recording-progress-tracker");
+        thread.start();
     }
 
     private void validateActiveRecordingReplay(
@@ -695,7 +696,7 @@ public class ArchiveTest
         final int messageCount,
         final CountDownLatch waitForData)
     {
-        Thread t = new Thread(
+        final Thread thread = new Thread(
             () ->
             {
                 do
@@ -739,8 +740,8 @@ public class ArchiveTest
                 }
             });
 
-        t.setName("replay-consumer");
-        t.setDaemon(true);
-        t.start();
+        thread.setName("replay-consumer");
+        thread.setDaemon(true);
+        thread.start();
     }
 }

@@ -94,6 +94,6 @@ public class SpySubscriptionTest
 
     private static String spyForChannel(final String channel)
     {
-        return "aeron-spy:" + channel;
+        return CommonContext.SPY_PREFIX + channel;
     }
 }

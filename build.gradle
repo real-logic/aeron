@@ -540,6 +540,82 @@ project(':aeron-archive') {
     }
 }
 
+project(':aeron-cluster') {
+    apply plugin: 'osgi'
+
+    configurations{
+        codecGeneration
+    }
+
+    dependencies {
+        compile project(':aeron-client')
+        compile project(':aeron-driver')
+        compile files('build/classes/java/generated')
+        codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
+    }
+
+    def generatedDir = file("${buildDir}/generated-src")
+    sourceSets {
+        generated.java.srcDir generatedDir
+    }
+
+    compileJava.dependsOn 'compileGeneratedJava'
+    compileGeneratedJava.dependsOn 'generateCodecs'
+    compileGeneratedJava.classpath += configurations.codecGeneration
+
+    task(generateCodecs, type: JavaExec) {
+        main = 'uk.co.real_logic.sbe.SbeTool'
+        classpath = configurations.codecGeneration
+        systemProperties(
+                'sbe.output.dir': generatedDir,
+                'sbe.target.language': 'Java',
+                'sbe.validation.xsd': 'src/main/resources/fpl/sbe.xsd',
+                'sbe.validation.stop.on.error': 'true')
+        args = ['src/main/resources/aeron-cluster-codecs.xml']
+    }
+
+    jar {
+        from("${buildDir}/classes/generated") {
+            include '**/*.class'
+        }
+    }
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                beforeDeployment {
+                    MavenDeployment deployment -> signing.signPom(deployment)
+                }
+
+                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                pom.project(projectPom)
+            }
+        }
+    }
+
+    task sourcesJar(type: Jar) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from javadoc.destinationDir
+    }
+
+    artifacts {
+        archives sourcesJar
+        archives javadocJar
+    }
+}
+
 project(':aeron-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
 

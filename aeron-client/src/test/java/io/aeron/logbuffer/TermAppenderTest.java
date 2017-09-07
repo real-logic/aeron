@@ -15,8 +15,9 @@
  */
 package io.aeron.logbuffer;
 
+import io.aeron.DirectBufferVector;
 import io.aeron.ReservedValueSupplier;
-import org.junit.Before;
+import org.agrona.BitUtil;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -53,13 +54,7 @@ public class TermAppenderTest
     private final UnsafeBuffer logMetaDataBuffer = new UnsafeBuffer(allocateDirect(META_DATA_BUFFER_LENGTH));
     private final HeaderWriter headerWriter = spy(new HeaderWriter(createDefaultHeader(0, 0, TERM_ID)));
 
-    private TermAppender termAppender;
-
-    @Before
-    public void setUp()
-    {
-        termAppender = new TermAppender(termBuffer, logMetaDataBuffer, PARTITION_INDEX);
-    }
+    private final TermAppender termAppender = new TermAppender(termBuffer, logMetaDataBuffer, PARTITION_INDEX);
 
     @Test
     public void shouldPackResult()
@@ -85,8 +80,8 @@ public class TermAppenderTest
 
         logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, packTail(TERM_ID, tail));
 
-        assertThat(termAppender.appendUnfragmentedMessage(
-            headerWriter, buffer, 0, msgLength, RVS), is((long)alignedFrameLength));
+        assertThat(termAppender.appendUnfragmentedMessage(headerWriter, buffer, 0, msgLength, RVS),
+            is((long)alignedFrameLength));
 
         assertThat(rawTailVolatile(logMetaDataBuffer, PARTITION_INDEX),
             is(packTail(TERM_ID, tail + alignedFrameLength)));
@@ -126,7 +121,8 @@ public class TermAppenderTest
 
         tail = alignedFrameLength;
         inOrder.verify(headerWriter, times(1)).write(termBuffer, tail, frameLength, TERM_ID);
-        inOrder.verify(termBuffer, times(1)).putBytes(tail + headerLength, buffer, 0, msgLength);
+        inOrder.verify(termBuffer, times(1))
+            .putBytes(tail + headerLength, buffer, 0, msgLength);
         inOrder.verify(termBuffer, times(1)).putLong(tail + RESERVED_VALUE_OFFSET, RV, LITTLE_ENDIAN);
         inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameLength);
     }
@@ -213,5 +209,89 @@ public class TermAppenderTest
 
         final InOrder inOrder = inOrder(headerWriter);
         inOrder.verify(headerWriter, times(1)).write(termBuffer, tail, frameLength, TERM_ID);
+    }
+
+    @Test
+    public void shouldAppendUnfragmentedFromVectorsToEmptyLog()
+    {
+        final int headerLength = DEFAULT_HEADER.capacity();
+        final UnsafeBuffer bufferOne = new UnsafeBuffer(new byte[64]);
+        final UnsafeBuffer bufferTwo = new UnsafeBuffer(new byte[256]);
+        bufferOne.setMemory(0, bufferOne.capacity(), (byte)'1');
+        bufferTwo.setMemory(0, bufferTwo.capacity(), (byte)'2');
+        final int msgLength = bufferOne.capacity() + 200;
+        final int frameLength = msgLength + headerLength;
+        final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
+        final int tail = 0;
+
+        logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, packTail(TERM_ID, tail));
+
+        final DirectBufferVector[] vectors = new DirectBufferVector[]
+        {
+            new DirectBufferVector(bufferOne, 0, bufferOne.capacity()),
+            new DirectBufferVector(bufferTwo, 0, 200)
+        };
+
+        assertThat(termAppender.appendUnfragmentedMessage(headerWriter, vectors, msgLength, RVS),
+            is((long)alignedFrameLength));
+
+        assertThat(rawTailVolatile(logMetaDataBuffer, PARTITION_INDEX),
+            is(packTail(TERM_ID, tail + alignedFrameLength)));
+
+        final InOrder inOrder = inOrder(termBuffer, headerWriter);
+        inOrder.verify(headerWriter, times(1)).write(termBuffer, tail, frameLength, TERM_ID);
+        inOrder.verify(termBuffer, times(1)).putBytes(headerLength, bufferOne, 0, bufferOne.capacity());
+        inOrder.verify(termBuffer, times(1)).putBytes(headerLength + bufferOne.capacity(), bufferTwo, 0, 200);
+        inOrder.verify(termBuffer, times(1)).putLong(tail + RESERVED_VALUE_OFFSET, RV, LITTLE_ENDIAN);
+        inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameLength);
+    }
+
+    @Test
+    public void shouldAppendFragmentedFromVectorsToEmptyLog()
+    {
+        final int mtu = 2048;
+        final int headerLength = DEFAULT_HEADER.capacity();
+        final int maxPayloadLength = mtu - headerLength;
+        final int bufferOneLength = 64;
+        final int bufferTwoLength = 3000;
+        final UnsafeBuffer bufferOne = new UnsafeBuffer(new byte[bufferOneLength]);
+        final UnsafeBuffer bufferTwo = new UnsafeBuffer(new byte[bufferTwoLength]);
+        bufferOne.setMemory(0, bufferOne.capacity(), (byte)'1');
+        bufferTwo.setMemory(0, bufferTwo.capacity(), (byte)'2');
+        final int msgLength = bufferOneLength + bufferTwoLength;
+        int tail = 0;
+        final int frameOneLength = mtu;
+        final int frameTwoLength = (msgLength - (mtu - headerLength)) + headerLength;
+        final long resultingPosition = frameOneLength + BitUtil.align(frameTwoLength, FRAME_ALIGNMENT);
+
+        logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, packTail(TERM_ID, tail));
+
+        final DirectBufferVector[] vectors = new DirectBufferVector[]
+        {
+            new DirectBufferVector(bufferOne, 0, bufferOneLength),
+            new DirectBufferVector(bufferTwo, 0, bufferTwoLength)
+        };
+
+        assertThat(termAppender.appendFragmentedMessage(headerWriter, vectors, msgLength, maxPayloadLength, RVS),
+            is(resultingPosition));
+
+        final InOrder inOrder = inOrder(termBuffer, headerWriter);
+
+        inOrder.verify(headerWriter, times(1)).write(termBuffer, tail, frameOneLength, TERM_ID);
+        inOrder.verify(termBuffer, times(1)).putBytes(headerLength, bufferOne, 0, bufferOneLength);
+        inOrder.verify(termBuffer, times(1))
+            .putBytes(headerLength + bufferOneLength, bufferTwo, 0, maxPayloadLength - bufferOneLength);
+        inOrder.verify(termBuffer, times(1)).putLong(tail + RESERVED_VALUE_OFFSET, RV, LITTLE_ENDIAN);
+        inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameOneLength);
+
+        tail += frameOneLength;
+        final int bufferTwoOffset = maxPayloadLength - bufferOneLength;
+        final int fragmentTwoPayloadLength = bufferTwoLength - (maxPayloadLength - bufferOneLength);
+
+        inOrder.verify(headerWriter, times(1)).write(termBuffer, tail, frameTwoLength, TERM_ID);
+        inOrder.verify(termBuffer, times(1))
+            .putBytes(tail + headerLength, bufferTwo, bufferTwoOffset, fragmentTwoPayloadLength);
+        inOrder.verify(termBuffer, times(1)).putLong(tail + RESERVED_VALUE_OFFSET, RV, LITTLE_ENDIAN);
+        inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameTwoLength);
     }
 }

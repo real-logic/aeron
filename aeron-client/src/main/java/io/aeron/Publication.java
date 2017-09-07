@@ -385,8 +385,8 @@ public class Publication implements AutoCloseable
             final TermAppender termAppender = termAppenders[partitionIndex];
             final long rawTail = termAppender.rawTailVolatile();
             final long termOffset = rawTail & 0xFFFF_FFFFL;
-            final long position =
-                computeTermBeginPosition(termId(rawTail), positionBitsToShift, initialTermId) + termOffset;
+            final long position = computeTermBeginPosition(
+                termId(rawTail), positionBitsToShift, initialTermId) + termOffset;
 
             if (position < limit)
             {
@@ -408,6 +408,73 @@ public class Publication implements AutoCloseable
             else
             {
                 newPosition = backPressureStatus(position, length);
+            }
+        }
+
+        return newPosition;
+    }
+
+    /**
+     * Non-blocking publish by gathering buffer vectors into a message.
+     *
+     * @param vectors which make up the message.
+     * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
+     */
+    public long offer(final DirectBufferVector[] vectors)
+    {
+        return offer(vectors, null);
+    }
+
+    /**
+     * Non-blocking publish by gathering buffer vectors into a message.
+     *
+     * @param vectors               which make up the message.
+     * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
+     * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
+     */
+    public long offer(final DirectBufferVector[] vectors, final ReservedValueSupplier reservedValueSupplier)
+    {
+        long newPosition = CLOSED;
+
+        int messageLength = 0;
+        for (final DirectBufferVector vector : vectors)
+        {
+            vector.validate();
+            messageLength += vector.length;
+        }
+
+        if (!isClosed)
+        {
+            final long limit = positionLimit.getVolatile();
+            final int partitionIndex = activePartitionIndex(logMetaDataBuffer);
+            final TermAppender termAppender = termAppenders[partitionIndex];
+            final long rawTail = termAppender.rawTailVolatile();
+            final long termOffset = rawTail & 0xFFFF_FFFFL;
+            final long position = computeTermBeginPosition(
+                termId(rawTail), positionBitsToShift, initialTermId) + termOffset;
+
+            if (position < limit)
+            {
+                final long result;
+                if (messageLength <= maxPayloadLength)
+                {
+                    result = termAppender.appendUnfragmentedMessage(
+                        headerWriter, vectors, messageLength, reservedValueSupplier);
+                }
+                else
+                {
+                    checkForMaxMessageLength(messageLength);
+                    result = termAppender.appendFragmentedMessage(
+                        headerWriter, vectors, messageLength, maxPayloadLength, reservedValueSupplier);
+                }
+
+                newPosition = newPosition(partitionIndex, (int)termOffset, position, result);
+            }
+            else
+            {
+                newPosition = backPressureStatus(position, messageLength);
             }
         }
 
@@ -460,8 +527,8 @@ public class Publication implements AutoCloseable
             final TermAppender termAppender = termAppenders[partitionIndex];
             final long rawTail = termAppender.rawTailVolatile();
             final long termOffset = rawTail & 0xFFFF_FFFFL;
-            final long position =
-                computeTermBeginPosition(termId(rawTail), positionBitsToShift, initialTermId) + termOffset;
+            final long position = computeTermBeginPosition(
+                termId(rawTail), positionBitsToShift, initialTermId) + termOffset;
 
             if (position < limit)
             {

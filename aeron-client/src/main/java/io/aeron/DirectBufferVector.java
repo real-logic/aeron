@@ -140,11 +140,6 @@ public final class DirectBufferVector
      */
     public DirectBufferVector validate()
     {
-        if (null == buffer)
-        {
-            throw new NullPointerException("buffer cannot be null");
-        }
-
         final int capacity = buffer.capacity();
         if (offset < 0 || offset >= capacity)
         {

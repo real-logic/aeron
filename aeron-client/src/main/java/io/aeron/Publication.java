@@ -436,7 +436,7 @@ public class Publication implements AutoCloseable
      */
     public long offer(final DirectBufferVector[] vectors, final ReservedValueSupplier reservedValueSupplier)
     {
-        final int messageLength = DirectBufferVector.validateAndComputeLength(vectors);
+        final int length = DirectBufferVector.validateAndComputeLength(vectors);
         long newPosition = CLOSED;
 
         if (!isClosed)
@@ -452,23 +452,23 @@ public class Publication implements AutoCloseable
             if (position < limit)
             {
                 final long result;
-                if (messageLength <= maxPayloadLength)
+                if (length <= maxPayloadLength)
                 {
                     result = termAppender.appendUnfragmentedMessage(
-                        headerWriter, vectors, messageLength, reservedValueSupplier);
+                        headerWriter, vectors, length, reservedValueSupplier);
                 }
                 else
                 {
-                    checkForMaxMessageLength(messageLength);
+                    checkForMaxMessageLength(length);
                     result = termAppender.appendFragmentedMessage(
-                        headerWriter, vectors, messageLength, maxPayloadLength, reservedValueSupplier);
+                        headerWriter, vectors, length, maxPayloadLength, reservedValueSupplier);
                 }
 
                 newPosition = newPosition(partitionIndex, (int)termOffset, position, result);
             }
             else
             {
-                newPosition = backPressureStatus(position, messageLength);
+                newPosition = backPressureStatus(position, length);
             }
         }
 

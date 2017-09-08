@@ -434,6 +434,69 @@ public class ExclusivePublication implements AutoCloseable
     }
 
     /**
+     * Non-blocking publish by gathering buffer vectors into a message.
+     *
+     * @param vectors which make up the message.
+     * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
+     */
+    public long offer(final DirectBufferVector[] vectors)
+    {
+        return offer(vectors, null);
+    }
+
+    /**
+     * Non-blocking publish by gathering buffer vectors into a message.
+     *
+     * @param vectors               which make up the message.
+     * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
+     * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
+     */
+    public long offer(final DirectBufferVector[] vectors, final ReservedValueSupplier reservedValueSupplier)
+    {
+        final int length = DirectBufferVector.validateAndComputeLength(vectors);
+        long newPosition = CLOSED;
+
+        if (!isClosed)
+        {
+            final long limit = positionLimit.getVolatile();
+            final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
+            final long position = termBeginPosition + termOffset;
+
+            if (position < limit)
+            {
+                final int result;
+                if (length <= maxPayloadLength)
+                {
+                    result = termAppender.appendUnfragmentedMessage(
+                        termId, termOffset, headerWriter, vectors, length, reservedValueSupplier);
+                }
+                else
+                {
+                    checkForMaxMessageLength(length);
+                    result = termAppender.appendFragmentedMessage(
+                        termId,
+                        termOffset,
+                        headerWriter,
+                        vectors,
+                        length,
+                        maxPayloadLength,
+                        reservedValueSupplier);
+                }
+
+                newPosition = newPosition(result);
+            }
+            else
+            {
+                newPosition = backPressureStatus(position, length);
+            }
+        }
+
+        return newPosition;
+    }
+
+    /**
      * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
      * Once the message has been written then {@link ExclusiveBufferClaim#commit()} should be called thus making it
      * available.

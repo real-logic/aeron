@@ -180,7 +180,7 @@ public class TermAppender
      *
      * @param header                for writing the default header.
      * @param vectors               to the buffers.
-     * @param messageLength         of the message as a sum of the vectors.
+     * @param length                of the message as a sum of the vectors.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or
      * {@link #FAILED} packed with the termId if a padding record was inserted at the end.
@@ -188,10 +188,10 @@ public class TermAppender
     public long appendUnfragmentedMessage(
         final HeaderWriter header,
         final DirectBufferVector[] vectors,
-        final int messageLength,
+        final int length,
         final ReservedValueSupplier reservedValueSupplier)
     {
-        final int frameLength = messageLength + HEADER_LENGTH;
+        final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
         final long rawTail = getAndAddRawTail(alignedLength);
         final long termOffset = rawTail & 0xFFFF_FFFFL;
@@ -311,11 +311,11 @@ public class TermAppender
 
     /**
      * Append a fragmented message to the the term buffer.
-     * The message will be split up into fragments of MTU messageLength minus header.
+     * The message will be split up into fragments of MTU length minus header.
      *
      * @param header                for writing the default header.
      * @param vectors               to the buffers.
-     * @param messageLength         of the message as a sum of the vectors.
+     * @param length                of the message as a sum of the vectors.
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED}
@@ -324,12 +324,12 @@ public class TermAppender
     public long appendFragmentedMessage(
         final HeaderWriter header,
         final DirectBufferVector[] vectors,
-        final int messageLength,
+        final int length,
         final int maxPayloadLength,
         final ReservedValueSupplier reservedValueSupplier)
     {
-        final int numMaxPayloads = messageLength / maxPayloadLength;
-        final int remainingPayload = messageLength % maxPayloadLength;
+        final int numMaxPayloads = length / maxPayloadLength;
+        final int remainingPayload = length % maxPayloadLength;
         final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
         final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
         final long rawTail = getAndAddRawTail(requiredLength);
@@ -348,7 +348,7 @@ public class TermAppender
         {
             int frameOffset = (int)termOffset;
             byte flags = BEGIN_FRAG_FLAG;
-            int remaining = messageLength;
+            int remaining = length;
             int vectorIndex = 0;
             int vectorOffset = 0;
 

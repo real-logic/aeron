@@ -48,6 +48,23 @@ public final class DirectBufferVector
     }
 
     /**
+     * Reset the values.
+     *
+     * @param buffer which is the super set.
+     * @param offset at which the vector begins.
+     * @param length of the vector.
+     * @return this for a fluent API.
+     */
+    public DirectBufferVector reset(final DirectBuffer buffer, final int offset, final int length)
+    {
+        this.buffer = buffer;
+        this.offset = offset;
+        this.length = length;
+
+        return this;
+    }
+
+    /**
      * The buffer which the vector applies to.
      *
      * @return buffer which the vector applies to.
@@ -119,8 +136,9 @@ public final class DirectBufferVector
      * @throws NullPointerException if the buffer is null.
      * @throws IllegalArgumentException if the offset is out of range for the buffer.
      * @throws IllegalArgumentException if the length is out of range for the buffer.
+     * @return this for a fluent API.
      */
-    public void validate()
+    public DirectBufferVector validate()
     {
         if (null == buffer)
         {
@@ -137,5 +155,7 @@ public final class DirectBufferVector
         {
             throw new IllegalArgumentException("offset=" + offset + " capacity=" + capacity + " length=" + length);
         }
+
+        return this;
     }
 }

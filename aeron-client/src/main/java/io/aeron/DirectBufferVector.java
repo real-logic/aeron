@@ -158,4 +158,22 @@ public final class DirectBufferVector
 
         return this;
     }
+
+    /**
+     * Validate an array of vectors to make up a message and compute the total length.
+     *
+     * @param vectors to be validated summed.
+     * @return the sum of the vector lengths.
+     */
+    public static int validateAndComputeLength(final DirectBufferVector[] vectors)
+    {
+        int messageLength = 0;
+        for (final DirectBufferVector vector : vectors)
+        {
+            vector.validate();
+            messageLength += vector.length;
+        }
+
+        return messageLength;
+    }
 }

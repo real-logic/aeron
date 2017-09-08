@@ -436,14 +436,8 @@ public class Publication implements AutoCloseable
      */
     public long offer(final DirectBufferVector[] vectors, final ReservedValueSupplier reservedValueSupplier)
     {
+        final int messageLength = DirectBufferVector.validateAndComputeLength(vectors);
         long newPosition = CLOSED;
-
-        int messageLength = 0;
-        for (final DirectBufferVector vector : vectors)
-        {
-            vector.validate();
-            messageLength += vector.length;
-        }
 
         if (!isClosed)
         {

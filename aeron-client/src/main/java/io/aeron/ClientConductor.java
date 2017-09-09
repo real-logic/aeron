@@ -62,7 +62,7 @@ class ClientConductor implements Agent, DriverEventsListener
     private final LogBuffersFactory logBuffersFactory;
     private final ActivePublications activePublications = new ActivePublications();
     private final Long2ObjectHashMap<ExclusivePublication> activeExclusivePublications = new Long2ObjectHashMap<>();
-    private final ActiveSubscriptions activeSubscriptions = new ActiveSubscriptions();
+    private final Long2ObjectHashMap<Subscription> activeSubscriptions = new Long2ObjectHashMap<>();
     private final ArrayList<ManagedResource> lingeringResources = new ArrayList<>();
     private final UnavailableImageHandler defaultUnavailableImageHandler;
     private final AvailableImageHandler defaultAvailableImageHandler;
@@ -117,8 +117,6 @@ class ClientConductor implements Agent, DriverEventsListener
             {
                 lingeringResources.get(i).delete();
             }
-
-            lingeringResources.clear();
         }
     }
 
@@ -250,7 +248,8 @@ class ClientConductor implements Agent, DriverEventsListener
         final long correlationId = driverProxy.addSubscription(channel, streamId);
         final Subscription subscription = new Subscription(
             this, channel, streamId, correlationId, availableImageHandler, unavailableImageHandler);
-        activeSubscriptions.add(subscription);
+
+        activeSubscriptions.put(correlationId, subscription);
 
         awaitResponse(correlationId, channel);
 
@@ -264,9 +263,9 @@ class ClientConductor implements Agent, DriverEventsListener
             throw new IllegalStateException("Aeron client is closed");
         }
 
-        awaitResponse(driverProxy.removeSubscription(subscription.registrationId()), null);
-
-        activeSubscriptions.remove(subscription);
+        final long registrationId = subscription.registrationId();
+        awaitResponse(driverProxy.removeSubscription(registrationId), null);
+        activeSubscriptions.remove(registrationId);
     }
 
     void asyncReleaseSubscription(final Subscription subscription)
@@ -352,44 +351,40 @@ class ClientConductor implements Agent, DriverEventsListener
         final String logFileName,
         final String sourceIdentity)
     {
-        activeSubscriptions.forEach(
-            streamId,
-            (subscription) ->
+        final Subscription subscription = activeSubscriptions.get(subscriberRegistrationId);
+        if (null != subscription && subscription.registrationId() == subscriberRegistrationId)
+        {
+            final Image image = new Image(
+                subscription,
+                sessionId,
+                new UnsafeBufferPosition(counterValuesBuffer, subscriberPositionId),
+                logBuffersFactory.map(logFileName, imageMapMode),
+                errorHandler,
+                sourceIdentity,
+                correlationId);
+
+            try
             {
-                if (subscription.registrationId() == subscriberRegistrationId && !subscription.hasImage(correlationId))
+                final AvailableImageHandler handler = subscription.availableImageHandler();
+                if (null != handler)
                 {
-                    final Image image = new Image(
-                        subscription,
-                        sessionId,
-                        new UnsafeBufferPosition(counterValuesBuffer, subscriberPositionId),
-                        logBuffersFactory.map(logFileName, imageMapMode),
-                        errorHandler,
-                        sourceIdentity,
-                        correlationId);
-
-                    try
-                    {
-                        final AvailableImageHandler handler = subscription.availableImageHandler();
-                        if (null != handler)
-                        {
-                            handler.onAvailableImage(image);
-                        }
-                    }
-                    catch (final Throwable ex)
-                    {
-                        errorHandler.onError(ex);
-                    }
-
-                    subscription.addImage(image);
+                    handler.onAvailableImage(image);
                 }
-            });
+            }
+            catch (final Throwable ex)
+            {
+                errorHandler.onError(ex);
+            }
+
+            subscription.addImage(image);
+        }
     }
 
     public void onUnavailableImage(final long correlationId, final int streamId)
     {
-        activeSubscriptions.forEach(
-            streamId,
-            (subscription) ->
+        for (final Subscription subscription : activeSubscriptions.values())
+        {
+            if (subscription.streamId() == streamId)
             {
                 final Image image = subscription.removeImage(correlationId);
                 if (null != image)
@@ -407,7 +402,8 @@ class ClientConductor implements Agent, DriverEventsListener
                         errorHandler.onError(ex);
                     }
                 }
-            });
+            }
+        }
     }
 
     DriverEventsAdapter driverListenerAdapter()
@@ -572,10 +568,14 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             publication.forceClose();
         }
-
         activeExclusivePublications.clear();
 
         activePublications.close();
-        activeSubscriptions.close();
+
+        for (final Subscription subscription : activeSubscriptions.values())
+        {
+            subscription.forceClose();
+        }
+        activeSubscriptions.clear();
     }
 }

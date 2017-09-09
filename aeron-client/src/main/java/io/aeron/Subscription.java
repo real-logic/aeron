@@ -440,24 +440,11 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         return removedImage;
     }
 
-    boolean hasImage(final long correlationId)
-    {
-        boolean hasImage = false;
-
-        for (final Image image : images)
-        {
-            if (correlationId == image.correlationId())
-            {
-                hasImage = true;
-                break;
-            }
-        }
-
-        return hasImage;
-    }
-
     private void closeImages()
     {
+        final Image[] images = this.images;
+        this.images = EMPTY_ARRAY;
+
         for (final Image image : images)
         {
             clientConductor.lingerResource(image.managedResource());
@@ -474,7 +461,5 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
                 clientConductor.handleError(ex);
             }
         }
-
-        this.images = EMPTY_ARRAY;
     }
 }

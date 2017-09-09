@@ -53,6 +53,8 @@ class ClientConductor implements Agent, DriverEventsListener
     private long timeOfLastResourcesCheckNs;
     private long timeOfLastServiceNs;
     private volatile boolean isClosed;
+    private String stashedChannel;
+    private RegistrationException driverException;
 
     private final Lock clientLock;
     private final EpochClock epochClock;
@@ -70,8 +72,6 @@ class ClientConductor implements Agent, DriverEventsListener
     private final DriverProxy driverProxy;
     private final ErrorHandler errorHandler;
     private final AgentInvoker driverAgentInvoker;
-
-    private RegistrationException driverException;
 
     ClientConductor(final Aeron.Context ctx)
     {
@@ -133,7 +133,7 @@ class ClientConductor implements Agent, DriverEventsListener
                     throw new AgentTerminationException();
                 }
 
-                workCount = service(NO_CORRELATION_ID, null);
+                workCount = service(NO_CORRELATION_ID);
             }
             finally
             {
@@ -174,7 +174,8 @@ class ClientConductor implements Agent, DriverEventsListener
         Publication publication = activePublications.get(channel, streamId);
         if (null == publication)
         {
-            awaitResponse(driverProxy.addPublication(channel, streamId), channel);
+            stashedChannel = channel;
+            awaitResponse(driverProxy.addPublication(channel, streamId));
             publication = activePublications.get(channel, streamId);
         }
 
@@ -190,8 +191,9 @@ class ClientConductor implements Agent, DriverEventsListener
             throw new IllegalStateException("Aeron client is closed");
         }
 
+        stashedChannel = channel;
         final long registrationId = driverProxy.addExclusivePublication(channel, streamId);
-        awaitResponse(registrationId, channel);
+        awaitResponse(registrationId);
 
         return activeExclusivePublications.get(registrationId);
     }
@@ -206,7 +208,7 @@ class ClientConductor implements Agent, DriverEventsListener
         if (publication == activePublications.remove(publication.channel(), publication.streamId()))
         {
             lingerResource(publication.managedResource());
-            awaitResponse(driverProxy.removePublication(publication.registrationId()), null);
+            awaitResponse(driverProxy.removePublication(publication.registrationId()));
         }
     }
 
@@ -220,7 +222,7 @@ class ClientConductor implements Agent, DriverEventsListener
         if (publication == activeExclusivePublications.remove(publication.registrationId()))
         {
             lingerResource(publication.managedResource());
-            awaitResponse(driverProxy.removePublication(publication.registrationId()), null);
+            awaitResponse(driverProxy.removePublication(publication.registrationId()));
         }
     }
 
@@ -251,7 +253,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
         activeSubscriptions.put(correlationId, subscription);
 
-        awaitResponse(correlationId, channel);
+        awaitResponse(correlationId);
 
         return subscription;
     }
@@ -264,7 +266,7 @@ class ClientConductor implements Agent, DriverEventsListener
         }
 
         final long registrationId = subscription.registrationId();
-        awaitResponse(driverProxy.removeSubscription(registrationId), null);
+        awaitResponse(driverProxy.removeSubscription(registrationId));
         activeSubscriptions.remove(registrationId);
     }
 
@@ -280,7 +282,7 @@ class ClientConductor implements Agent, DriverEventsListener
             throw new IllegalStateException("Aeron client is closed");
         }
 
-        awaitResponse(driverProxy.addDestination(registrationId, endpointChannel), null);
+        awaitResponse(driverProxy.addDestination(registrationId, endpointChannel));
     }
 
     void removeDestination(final long registrationId, final String endpointChannel)
@@ -290,7 +292,7 @@ class ClientConductor implements Agent, DriverEventsListener
             throw new IllegalStateException("Aeron client is closed");
         }
 
-        awaitResponse(driverProxy.removeDestination(registrationId, endpointChannel), null);
+        awaitResponse(driverProxy.removeDestination(registrationId, endpointChannel));
     }
 
     public void onError(final long correlationId, final ErrorCode errorCode, final String message)
@@ -304,12 +306,11 @@ class ClientConductor implements Agent, DriverEventsListener
         final int streamId,
         final int sessionId,
         final int publicationLimitId,
-        final String channel,
         final String logFileName)
     {
         final Publication publication = new Publication(
             this,
-            channel,
+            stashedChannel,
             streamId,
             sessionId,
             new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
@@ -317,7 +318,7 @@ class ClientConductor implements Agent, DriverEventsListener
             registrationId,
             correlationId);
 
-        activePublications.put(channel, streamId, publication);
+        activePublications.put(publication.channel(), streamId, publication);
     }
 
     public void onNewExclusivePublication(
@@ -326,12 +327,11 @@ class ClientConductor implements Agent, DriverEventsListener
         final int streamId,
         final int sessionId,
         final int publicationLimitId,
-        final String channel,
         final String logFileName)
     {
         final ExclusivePublication publication = new ExclusivePublication(
             this,
-            channel,
+            stashedChannel,
             streamId,
             sessionId,
             new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
@@ -422,14 +422,14 @@ class ClientConductor implements Agent, DriverEventsListener
         return epochClock.time() <= (timeOfLastStatusMessageMs + publicationConnectionTimeoutMs);
     }
 
-    private int service(final long correlationId, final String expectedChannel)
+    private int service(final long correlationId)
     {
         int workCount = 0;
 
         try
         {
             workCount += onCheckTimeouts();
-            workCount += driverEventsAdapter.receive(correlationId, expectedChannel);
+            workCount += driverEventsAdapter.receive(correlationId);
         }
         catch (final Throwable throwable)
         {
@@ -449,7 +449,7 @@ class ClientConductor implements Agent, DriverEventsListener
         return correlationId != NO_CORRELATION_ID;
     }
 
-    private void awaitResponse(final long correlationId, final String expectedChannel)
+    private void awaitResponse(final long correlationId)
     {
         driverException = null;
         final long deadlineNs = nanoClock.nanoTime() + driverTimeoutNs;
@@ -465,7 +465,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 driverAgentInvoker.invoke();
             }
 
-            service(correlationId, expectedChannel);
+            service(correlationId);
 
             if (driverEventsAdapter.lastReceivedCorrelationId() == correlationId)
             {

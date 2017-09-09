@@ -38,7 +38,6 @@ class DriverEventsAdapter implements MessageHandler
 
     private long activeCorrelationId;
     private long lastReceivedCorrelationId;
-    private String expectedChannel;
 
     DriverEventsAdapter(final CopyBroadcastReceiver broadcastReceiver, final DriverEventsListener listener)
     {
@@ -46,11 +45,10 @@ class DriverEventsAdapter implements MessageHandler
         this.listener = listener;
     }
 
-    public int receive(final long activeCorrelationId, final String expectedChannel)
+    public int receive(final long activeCorrelationId)
     {
         this.activeCorrelationId = activeCorrelationId;
         this.lastReceivedCorrelationId = -1;
-        this.expectedChannel = expectedChannel;
 
         return broadcastReceiver.receive(this);
     }
@@ -107,7 +105,6 @@ class DriverEventsAdapter implements MessageHandler
                         publicationReady.streamId(),
                         publicationReady.sessionId(),
                         publicationReady.publicationLimitCounterId(),
-                        expectedChannel,
                         publicationReady.logFileName());
 
                     lastReceivedCorrelationId = correlationId;
@@ -148,7 +145,6 @@ class DriverEventsAdapter implements MessageHandler
                         publicationReady.streamId(),
                         publicationReady.sessionId(),
                         publicationReady.publicationLimitCounterId(),
-                        expectedChannel,
                         publicationReady.logFileName());
 
                     lastReceivedCorrelationId = correlationId;

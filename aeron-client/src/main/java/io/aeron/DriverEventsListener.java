@@ -37,7 +37,6 @@ interface DriverEventsListener
         int streamId,
         int sessionId,
         int publicationLimitId,
-        String channel,
         String logFileName);
 
     void onUnavailableImage(long correlationId, int streamId);
@@ -48,6 +47,5 @@ interface DriverEventsListener
         int streamId,
         int sessionId,
         int publicationLimitId,
-        String channel,
         String logFileName);
 }

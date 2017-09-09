@@ -17,6 +17,8 @@ package io.aeron;
 
 import org.agrona.DirectBuffer;
 
+import java.util.Arrays;
+
 /**
  * Vector into a {@link DirectBuffer} to be used for gathering IO as and offset and length.
  */
@@ -154,6 +156,15 @@ public final class DirectBufferVector
         return this;
     }
 
+    public String toString()
+    {
+        return "DirectBufferVector{" +
+            "buffer=" + buffer +
+            ", offset=" + offset +
+            ", length=" + length +
+            '}';
+    }
+
     /**
      * Validate an array of vectors to make up a message and compute the total length.
      *
@@ -167,6 +178,11 @@ public final class DirectBufferVector
         {
             vector.validate();
             messageLength += vector.length;
+
+            if (messageLength < 0)
+            {
+                throw new IllegalStateException("length overflow: " + Arrays.toString(vectors));
+            }
         }
 
         return messageLength;

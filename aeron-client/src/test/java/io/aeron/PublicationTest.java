@@ -86,8 +86,6 @@ public class PublicationTest
             CORRELATION_ID,
             CORRELATION_ID);
 
-        publication.incRef();
-
         initialiseTailWithTermId(logMetaDataBuffer, PARTITION_INDEX, TERM_ID_1);
     }
 
@@ -147,25 +145,8 @@ public class PublicationTest
     }
 
     @Test
-    public void shouldNotUnmapBuffersBeforeLastRelease() throws Exception
+    public void shouldUnmapBuffersOnClose() throws Exception
     {
-        publication.incRef();
-        publication.close();
-
-        verify(logBuffers, never()).close();
-
-        final InOrder inOrder = Mockito.inOrder(conductorLock, conductor);
-        inOrder.verify(conductorLock).lock();
-        inOrder.verify(conductorLock).unlock();
-        inOrder.verifyNoMoreInteractions();
-    }
-
-    @Test
-    public void shouldUnmapBuffersWithMultipleReferences() throws Exception
-    {
-        publication.incRef();
-        publication.close();
-
         publication.close();
 
         final InOrder inOrder = Mockito.inOrder(conductorLock, conductor);

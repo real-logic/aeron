@@ -220,20 +220,6 @@ public class ClientConductorTest
     }
 
     @Test
-    public void conductorShouldCachePublicationInstances()
-    {
-        whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_PUBLICATION_READY,
-            publicationReadyBuffer,
-            (buffer) -> publicationReady.length());
-
-        final Publication firstPublication = conductor.addPublication(CHANNEL, STREAM_ID_1);
-        final Publication secondPublication = conductor.addPublication(CHANNEL, STREAM_ID_1);
-
-        assertThat(firstPublication, sameInstance(secondPublication));
-    }
-
-    @Test
     public void closingPublicationShouldNotifyMediaDriver() throws Exception
     {
         whenReceiveBroadcastOnMessage(
@@ -311,29 +297,6 @@ public class ClientConductorTest
             });
 
         conductor.addPublication(CHANNEL, STREAM_ID_1);
-    }
-
-    @Test
-    public void publicationOnlyRemovedOnLastClose() throws Exception
-    {
-        whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
-
-        final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1);
-        conductor.addPublication(CHANNEL, STREAM_ID_1);
-
-        publication.close();
-
-        verify(driverProxy, never()).removePublication(CORRELATION_ID);
-
-        whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_OPERATION_SUCCESS,
-            correlatedMessageBuffer,
-            (buffer) -> CorrelatedMessageFlyweight.LENGTH);
-
-        publication.close();
-
-        verify(driverProxy).removePublication(CORRELATION_ID);
     }
 
     @Test

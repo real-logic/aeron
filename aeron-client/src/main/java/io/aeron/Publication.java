@@ -71,7 +71,6 @@ public class Publication implements AutoCloseable
     private final long originalRegistrationId;
     private final long registrationId;
     private final long maxPossiblePosition;
-    private int refCount = 0;
     private final int streamId;
     private final int sessionId;
     private final int initialTermId;
@@ -264,7 +263,7 @@ public class Publication implements AutoCloseable
         conductor.clientLock().lock();
         try
         {
-            if (!isClosed && --refCount == 0)
+            if (!isClosed)
             {
                 isClosed = true;
                 conductor.releasePublication(this);
@@ -572,14 +571,6 @@ public class Publication implements AutoCloseable
         {
             conductor.clientLock().unlock();
         }
-    }
-
-    /**
-     * @see Publication#close()
-     */
-    void incRef()
-    {
-        ++refCount;
     }
 
     private long newPosition(final int index, final int currentTail, final long position, final long result)

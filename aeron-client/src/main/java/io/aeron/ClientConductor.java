@@ -62,7 +62,7 @@ class ClientConductor implements Agent, DriverEventsListener
     private final NanoClock nanoClock;
     private final DriverEventsAdapter driverEventsAdapter;
     private final LogBuffersFactory logBuffersFactory;
-    private final ActivePublications activePublications = new ActivePublications();
+    private final Long2ObjectHashMap<Publication> activePublications = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<ExclusivePublication> activeExclusivePublications = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<Subscription> activeSubscriptions = new Long2ObjectHashMap<>();
     private final ArrayList<ManagedResource> lingeringResources = new ArrayList<>();
@@ -171,17 +171,11 @@ class ClientConductor implements Agent, DriverEventsListener
             throw new IllegalStateException("Aeron client is closed");
         }
 
-        Publication publication = activePublications.get(channel, streamId);
-        if (null == publication)
-        {
-            stashedChannel = channel;
-            awaitResponse(driverProxy.addPublication(channel, streamId));
-            publication = activePublications.get(channel, streamId);
-        }
+        stashedChannel = channel;
+        final long registrationId = driverProxy.addPublication(channel, streamId);
+        awaitResponse(registrationId);
 
-        publication.incRef();
-
-        return publication;
+        return activePublications.get(registrationId);
     }
 
     ExclusivePublication addExclusivePublication(final String channel, final int streamId)
@@ -205,7 +199,7 @@ class ClientConductor implements Agent, DriverEventsListener
             throw new IllegalStateException("Aeron client is closed");
         }
 
-        if (publication == activePublications.remove(publication.channel(), publication.streamId()))
+        if (publication == activePublications.remove(publication.registrationId()))
         {
             lingerResource(publication.managedResource());
             awaitResponse(driverProxy.removePublication(publication.registrationId()));
@@ -318,7 +312,7 @@ class ClientConductor implements Agent, DriverEventsListener
             registrationId,
             correlationId);
 
-        activePublications.put(publication.channel(), streamId, publication);
+        activePublications.put(correlationId, publication);
     }
 
     public void onNewExclusivePublication(
@@ -570,7 +564,11 @@ class ClientConductor implements Agent, DriverEventsListener
         }
         activeExclusivePublications.clear();
 
-        activePublications.close();
+        for (final Publication publication : activePublications.values())
+        {
+            publication.forceClose();
+        }
+        activePublications.clear();
 
         for (final Subscription subscription : activeSubscriptions.values())
         {

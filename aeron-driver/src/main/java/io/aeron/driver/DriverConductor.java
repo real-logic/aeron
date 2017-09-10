@@ -966,10 +966,9 @@ public class DriverConductor implements Agent
         final long subscriberRegistrationId = subscription.registrationId();
         final int streamId = publication.streamId();
         final int sessionId = publication.sessionId();
-        final String channel = subscription.uri();
 
         final Position position = SubscriberPos.allocate(
-            countersManager, subscriberRegistrationId, sessionId, streamId, channel, joinPosition);
+            countersManager, subscriberRegistrationId, sessionId, streamId, subscription.uri(), joinPosition);
 
         position.setOrdered(joinPosition);
         publication.addSubscriber(position);
@@ -982,7 +981,7 @@ public class DriverConductor implements Agent
             subscriberRegistrationId,
             position.id(),
             publication.rawLog().fileName(),
-            channel);
+            CommonContext.IPC_CHANNEL);
     }
 
     private ReceiveChannelEndpoint getOrCreateReceiveChannelEndpoint(final UdpChannel udpChannel)

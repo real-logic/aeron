@@ -29,7 +29,7 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
  * {@link #offer(DirectBuffer)} methods, or a {@link #tryClaim(int, BufferClaim)} and {@link BufferClaim#commit()}
  * method combination.
  * <p>
- * The APIs used try claim and offer are non-blocking and thread safe.
+ * The APIs used for try claim and offer are non-blocking and thread safe.
  * <p>
  * <b>Note:</b> Publication instances are threadsafe and can be shared between publishing threads.
  *
@@ -210,7 +210,7 @@ public class Publication implements AutoCloseable
     }
 
     /**
-     * Get the original registration used to register this Publication with the media driver by the first publisher.
+     * Get the registration used to register this Publication with the media driver by the first publisher.
      *
      * @return original registration id
      */
@@ -233,8 +233,7 @@ public class Publication implements AutoCloseable
     /**
      * Get the registration id used to register this Publication with the media driver.
      * <p>
-     * If this value is different from the {@link #originalRegistrationId()} then another client has previously added
-     * this Publication.
+     * If this value is different from the {@link #originalRegistrationId()} then a previous active registration exists.
      *
      * @return registration id
      */

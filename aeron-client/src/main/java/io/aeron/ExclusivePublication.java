@@ -33,7 +33,7 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
  * <p>
  * {@link ExclusivePublication}s have the potential to provide greater throughput than {@link Publication}s.
  * <p>
- * The APIs used try claim and offer are non-blocking.
+ * The APIs used for try claim and offer are non-blocking.
  * <p>
  * <b>Note:</b> Instances are NOT threadsafe for offer and try claim methods but are for the others.
  *
@@ -229,7 +229,7 @@ public class ExclusivePublication implements AutoCloseable
     }
 
     /**
-     * Get the original registration used to register this Publication with the media driver by the first publisher.
+     * Get the registration used to register this Publication with the media driver by the first publisher.
      *
      * @return original registration id
      */
@@ -239,8 +239,7 @@ public class ExclusivePublication implements AutoCloseable
     }
 
     /**
-     * Is this Publication the original instance added to the driver? If not then it was added after another client
-     * has already added the publication.
+     * Exclusive publications are always original.
      *
      * @return true if this instance is the first added otherwise false.
      */
@@ -252,8 +251,8 @@ public class ExclusivePublication implements AutoCloseable
     /**
      * Get the registration id used to register this Publication with the media driver.
      * <p>
-     * If this value is different from the {@link #originalRegistrationId()} then another client has previously added
-     * this Publication. In the case of an exclusive publication this should never happen.
+     * If this value is different from the {@link #originalRegistrationId()} then a previous active registration exists.
+     * In the case of an exclusive publication this should never happen.
      *
      * @return registration id
      */

@@ -15,15 +15,13 @@
  */
 package io.aeron;
 
-import java.nio.channels.FileChannel;
-
 /**
  * Default mapping byteBuffer lifecycle strategy for the client
  */
 class MappedLogBuffersFactory implements LogBuffersFactory
 {
-    public LogBuffers map(final String logFileName, final FileChannel.MapMode mapMode)
+    public LogBuffers map(final String logFileName)
     {
-        return new LogBuffers(logFileName, mapMode);
+        return new LogBuffers(logFileName);
     }
 }

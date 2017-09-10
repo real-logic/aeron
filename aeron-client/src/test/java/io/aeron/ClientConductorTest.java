@@ -31,7 +31,6 @@ import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.function.ToIntFunction;
@@ -41,8 +40,6 @@ import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static java.lang.Boolean.TRUE;
 import static java.nio.ByteBuffer.allocateDirect;
-import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
-import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
@@ -120,7 +117,6 @@ public class ClientConductorTest
             .errorHandler(mockClientErrorHandler)
             .availableImageHandler(mockAvailableImageHandler)
             .unavailableImageHandler(mockUnavailableImageHandler)
-            .imageMapMode(READ_ONLY)
             .keepAliveInterval(KEEP_ALIVE_INTERVAL)
             .driverTimeoutMs(AWAIT_TIMEOUT)
             .interServiceTimeout(TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS))
@@ -171,10 +167,10 @@ public class ClientConductorTest
         final LogBuffers logBuffersSession1 = mock(LogBuffers.class);
         final LogBuffers logBuffersSession2 = mock(LogBuffers.class);
 
-        when(logBuffersFactory.map(SESSION_ID_1 + "-log", READ_WRITE)).thenReturn(logBuffersSession1);
-        when(logBuffersFactory.map(SESSION_ID_2 + "-log", READ_WRITE)).thenReturn(logBuffersSession2);
-        when(logBuffersFactory.map(SESSION_ID_1 + "-log", READ_ONLY)).thenReturn(logBuffersSession1);
-        when(logBuffersFactory.map(SESSION_ID_2 + "-log", READ_ONLY)).thenReturn(logBuffersSession2);
+        when(logBuffersFactory.map(SESSION_ID_1 + "-log")).thenReturn(logBuffersSession1);
+        when(logBuffersFactory.map(SESSION_ID_2 + "-log")).thenReturn(logBuffersSession2);
+        when(logBuffersFactory.map(SESSION_ID_1 + "-log")).thenReturn(logBuffersSession1);
+        when(logBuffersFactory.map(SESSION_ID_2 + "-log")).thenReturn(logBuffersSession2);
 
         when(logBuffersSession1.termBuffers()).thenReturn(termBuffersSession1);
         when(logBuffersSession2.termBuffers()).thenReturn(termBuffersSession2);
@@ -210,7 +206,7 @@ public class ClientConductorTest
 
         conductor.addPublication(CHANNEL, STREAM_ID_1);
 
-        verify(logBuffersFactory).map(SESSION_ID_1 + "-log", READ_WRITE);
+        verify(logBuffersFactory).map(SESSION_ID_1 + "-log");
     }
 
     @Test(expected = DriverTimeoutException.class, timeout = 5_000)
@@ -358,7 +354,7 @@ public class ClientConductorTest
         final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1);
         conductor.doWork();
 
-        verify(logBuffersFactory, times(1)).map(anyString(), any(FileChannel.MapMode.class));
+        verify(logBuffersFactory, times(1)).map(anyString());
         assertThat(publication.registrationId(), is(CORRELATION_ID));
     }
 
@@ -457,7 +453,7 @@ public class ClientConductorTest
             SESSION_ID_1 + "-log",
             SOURCE_INFO);
 
-        verify(logBuffersFactory).map(eq(SESSION_ID_1 + "-log"), any(FileChannel.MapMode.class));
+        verify(logBuffersFactory).map(eq(SESSION_ID_1 + "-log"));
     }
 
     @Test
@@ -504,7 +500,7 @@ public class ClientConductorTest
             SESSION_ID_2 + "-log",
             SOURCE_INFO);
 
-        verify(logBuffersFactory, never()).map(anyString(), any(FileChannel.MapMode.class));
+        verify(logBuffersFactory, never()).map(anyString());
         verify(mockAvailableImageHandler, never()).onAvailableImage(any(Image.class));
     }
 
@@ -513,7 +509,7 @@ public class ClientConductorTest
     {
         conductor.onUnavailableImage(CORRELATION_ID_2, STREAM_ID_2);
 
-        verify(logBuffersFactory, never()).map(anyString(), any(FileChannel.MapMode.class));
+        verify(logBuffersFactory, never()).map(anyString());
         verify(mockUnavailableImageHandler, never()).onUnavailableImage(any(Image.class));
     }
 

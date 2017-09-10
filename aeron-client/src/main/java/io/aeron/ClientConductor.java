@@ -25,7 +25,6 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -58,7 +57,6 @@ class ClientConductor implements Agent, DriverEventsListener
 
     private final Lock clientLock;
     private final EpochClock epochClock;
-    private final FileChannel.MapMode imageMapMode;
     private final NanoClock nanoClock;
     private final DriverEventsAdapter driverEventsAdapter;
     private final LogBuffersFactory logBuffersFactory;
@@ -82,7 +80,6 @@ class ClientConductor implements Agent, DriverEventsListener
         counterValuesBuffer = ctx.countersValuesBuffer();
         driverProxy = ctx.driverProxy();
         logBuffersFactory = ctx.logBuffersFactory();
-        imageMapMode = ctx.imageMapMode();
         keepAliveIntervalNs = ctx.keepAliveInterval();
         driverTimeoutMs = ctx.driverTimeoutMs();
         driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
@@ -308,7 +305,7 @@ class ClientConductor implements Agent, DriverEventsListener
             streamId,
             sessionId,
             new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
-            logBuffersFactory.map(logFileName, FileChannel.MapMode.READ_WRITE),
+            logBuffersFactory.map(logFileName),
             registrationId,
             correlationId);
 
@@ -329,7 +326,7 @@ class ClientConductor implements Agent, DriverEventsListener
             streamId,
             sessionId,
             new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
-            logBuffersFactory.map(logFileName, FileChannel.MapMode.READ_WRITE),
+            logBuffersFactory.map(logFileName),
             registrationId,
             correlationId);
 
@@ -352,7 +349,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 subscription,
                 sessionId,
                 new UnsafeBufferPosition(counterValuesBuffer, subscriberPositionId),
-                logBuffersFactory.map(logFileName, imageMapMode),
+                logBuffersFactory.map(logFileName),
                 errorHandler,
                 sourceIdentity,
                 correlationId);

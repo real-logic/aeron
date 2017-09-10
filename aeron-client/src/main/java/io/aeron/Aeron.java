@@ -34,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static org.agrona.IoUtil.mapExistingFile;
 
 /**
@@ -396,7 +395,6 @@ public final class Aeron implements AutoCloseable
         private long keepAliveInterval = KEEPALIVE_INTERVAL_NS;
         private long interServiceTimeout = 0;
         private long publicationConnectionTimeout = PUBLICATION_CONNECTION_TIMEOUT_MS;
-        private FileChannel.MapMode imageMapMode;
         private ThreadFactory threadFactory = Thread::new;
 
         /**
@@ -475,11 +473,6 @@ public final class Aeron implements AutoCloseable
             if (null == errorHandler)
             {
                 errorHandler = DEFAULT_ERROR_HANDLER;
-            }
-
-            if (null == imageMapMode)
-            {
-                imageMapMode = READ_ONLY;
             }
 
             if (null == driverProxy)
@@ -899,9 +892,9 @@ public final class Aeron implements AutoCloseable
          * @param imageMapMode file memory mapping mode for {@link Image}s.
          * @return this for a fluent API.
          */
+        @Deprecated
         public Context imageMapMode(final FileChannel.MapMode imageMapMode)
         {
-            this.imageMapMode = imageMapMode;
             return this;
         }
 
@@ -910,9 +903,10 @@ public final class Aeron implements AutoCloseable
          *
          * @return the file memory mapping mode for {@link Image}s.
          */
+        @Deprecated
         public FileChannel.MapMode imageMapMode()
         {
-            return imageMapMode;
+            return FileChannel.MapMode.READ_WRITE;
         }
 
         /**

@@ -963,23 +963,23 @@ public class DriverConductor implements Agent
     private void linkSpy(final NetworkPublication publication, final SubscriptionLink subscription)
     {
         final long joinPosition = publication.consumerPosition();
-        final long registrationId = subscription.registrationId();
+        final long subscriberRegistrationId = subscription.registrationId();
         final int streamId = publication.streamId();
         final int sessionId = publication.sessionId();
         final String channel = subscription.uri();
 
         final Position position = SubscriberPos.allocate(
-            countersManager, registrationId, sessionId, streamId, channel, joinPosition);
+            countersManager, subscriberRegistrationId, sessionId, streamId, channel, joinPosition);
 
         position.setOrdered(joinPosition);
         publication.addSubscriber(position);
         subscription.link(publication, position);
 
         clientProxy.onAvailableImage(
-            correlationId(publication.rawLog().metaData()),
+            publication.registrationId(),
             streamId,
             sessionId,
-            registrationId,
+            subscriberRegistrationId,
             position.id(),
             publication.rawLog().fileName(),
             channel);

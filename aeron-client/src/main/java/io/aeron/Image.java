@@ -153,9 +153,9 @@ public class Image
     }
 
     /**
-     * The originalRegistrationId for identification of the image with the media driver.
+     * The correlationId for identification of the image with the media driver.
      *
-     * @return the originalRegistrationId for identification of the image with the media driver.
+     * @return the correlationId for identification of the image with the media driver.
      */
     public long correlationId()
     {
@@ -574,32 +574,15 @@ public class Image
         }
     }
 
-    ManagedResource managedResource()
+    LogBuffers logBuffers()
+    {
+        return logBuffers;
+    }
+
+    void close()
     {
         finalPosition = subscriberPosition.getVolatile();
         isEos = finalPosition >= endOfStreamPosition(logBuffers.metaDataBuffer());
         isClosed = true;
-
-        return new ImageManagedResource();
-    }
-
-    private class ImageManagedResource implements ManagedResource
-    {
-        private long timeOfLastStateChange = 0;
-
-        public void timeOfLastStateChange(final long time)
-        {
-            this.timeOfLastStateChange = time;
-        }
-
-        public long timeOfLastStateChange()
-        {
-            return timeOfLastStateChange;
-        }
-
-        public void delete()
-        {
-            logBuffers.close();
-        }
     }
 }

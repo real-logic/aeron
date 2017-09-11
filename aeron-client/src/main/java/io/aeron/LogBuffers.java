@@ -17,6 +17,7 @@ package io.aeron;
 
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
+import org.agrona.ManagedResource;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
@@ -34,9 +35,11 @@ import static java.nio.file.StandardOpenOption.WRITE;
  *
  * @see io.aeron.logbuffer.LogBufferDescriptor
  */
-public class LogBuffers implements AutoCloseable
+public class LogBuffers implements AutoCloseable, ManagedResource
 {
     private final int termLength;
+    private int refCount;
+    private long timeOfLastStateChangeNs;
     private final FileChannel fileChannel;
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
     private final UnsafeBuffer logMetaDataBuffer;
@@ -127,5 +130,30 @@ public class LogBuffers implements AutoCloseable
     public int termLength()
     {
         return termLength;
+    }
+
+    public int incRef()
+    {
+        return ++refCount;
+    }
+
+    public int decRef()
+    {
+        return --refCount;
+    }
+
+    public void timeOfLastStateChange(final long timeNs)
+    {
+        timeOfLastStateChangeNs = timeNs;
+    }
+
+    public long timeOfLastStateChange()
+    {
+        return timeOfLastStateChangeNs;
+    }
+
+    public void delete()
+    {
+        close();
     }
 }

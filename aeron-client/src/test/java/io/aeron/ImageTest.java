@@ -88,7 +88,7 @@ public class ImageTest
     {
         final Image image = createImage();
 
-        image.managedResource();
+        image.close();
 
         assertTrue(image.isClosed());
         assertThat(image.poll(mockFragmentHandler, Integer.MAX_VALUE), is(0));

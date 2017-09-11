@@ -409,7 +409,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     {
         if (isClosed)
         {
-            clientConductor.lingerResource(image.managedResource());
+            clientConductor.releaseImage(image);
         }
         else
         {
@@ -434,7 +434,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         if (null != removedImage)
         {
             images = ArrayUtil.remove(oldArray, removedImage);
-            clientConductor.lingerResource(removedImage.managedResource());
+            clientConductor.releaseImage(removedImage);
         }
 
         return removedImage;
@@ -447,7 +447,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
 
         for (final Image image : images)
         {
-            clientConductor.lingerResource(image.managedResource());
+            clientConductor.releaseImage(image);
 
             try
             {

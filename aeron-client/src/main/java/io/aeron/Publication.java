@@ -292,9 +292,13 @@ public class Publication implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            conductor.asyncReleasePublication(registrationId);
-            conductor.lingerResource(managedResource());
+            conductor.asyncReleasePublication(this);
         }
+    }
+
+    LogBuffers logBuffers()
+    {
+        return logBuffers;
     }
 
     /**
@@ -625,31 +629,6 @@ public class Publication implements AutoCloseable
         {
             throw new IllegalArgumentException(
                 "Message exceeds maxMessageLength of " + maxMessageLength + ", length=" + length);
-        }
-    }
-
-    ManagedResource managedResource()
-    {
-        return new PublicationManagedResource();
-    }
-
-    private class PublicationManagedResource implements ManagedResource
-    {
-        private long timeOfLastStateChange = 0;
-
-        public void timeOfLastStateChange(final long time)
-        {
-            this.timeOfLastStateChange = time;
-        }
-
-        public long timeOfLastStateChange()
-        {
-            return timeOfLastStateChange;
-        }
-
-        public void delete()
-        {
-            logBuffers.close();
         }
     }
 }

@@ -60,6 +60,7 @@ class ClientConductor implements Agent, DriverEventsListener
     private final NanoClock nanoClock;
     private final DriverEventsAdapter driverEventsAdapter;
     private final LogBuffersFactory logBuffersFactory;
+    private final Long2ObjectHashMap<LogBuffers> logBuffersByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<Publication> publicationByRegIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<ExclusivePublication> exclusivePublicationByRegIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<Subscription> subscriptionByRegIdMap = new Long2ObjectHashMap<>();
@@ -163,10 +164,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
     Publication addPublication(final String channel, final int streamId)
     {
-        if (isClosed)
-        {
-            throw new IllegalStateException("Aeron client is closed");
-        }
+        ensureOpen();
 
         stashedChannel = channel;
         final long registrationId = driverProxy.addPublication(channel, streamId);
@@ -177,10 +175,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
     ExclusivePublication addExclusivePublication(final String channel, final int streamId)
     {
-        if (isClosed)
-        {
-            throw new IllegalStateException("Aeron client is closed");
-        }
+        ensureOpen();
 
         stashedChannel = channel;
         final long registrationId = driverProxy.addExclusivePublication(channel, streamId);
@@ -191,35 +186,36 @@ class ClientConductor implements Agent, DriverEventsListener
 
     void releasePublication(final Publication publication)
     {
-        if (isClosed)
-        {
-            throw new IllegalStateException("Aeron client is closed");
-        }
+        ensureOpen();
 
         if (publication == publicationByRegIdMap.remove(publication.registrationId()))
         {
-            lingerResource(publication.managedResource());
+            releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
             awaitResponse(driverProxy.removePublication(publication.registrationId()));
         }
     }
 
     void releasePublication(final ExclusivePublication publication)
     {
-        if (isClosed)
-        {
-            throw new IllegalStateException("Aeron client is closed");
-        }
+        ensureOpen();
 
         if (publication == exclusivePublicationByRegIdMap.remove(publication.registrationId()))
         {
-            lingerResource(publication.managedResource());
+            releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
             awaitResponse(driverProxy.removePublication(publication.registrationId()));
         }
     }
 
-    void asyncReleasePublication(final long registrationId)
+    void asyncReleasePublication(final ExclusivePublication publication)
     {
-        driverProxy.removePublication(registrationId);
+        releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
+        driverProxy.removePublication(publication.registrationId());
+    }
+
+    void asyncReleasePublication(final Publication publication)
+    {
+        releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
+        driverProxy.removePublication(publication.registrationId());
     }
 
     Subscription addSubscription(final String channel, final int streamId)
@@ -233,10 +229,7 @@ class ClientConductor implements Agent, DriverEventsListener
         final AvailableImageHandler availableImageHandler,
         final UnavailableImageHandler unavailableImageHandler)
     {
-        if (isClosed)
-        {
-            throw new IllegalStateException("Aeron client is closed");
-        }
+        ensureOpen();
 
         final long correlationId = driverProxy.addSubscription(channel, streamId);
         final Subscription subscription = new Subscription(
@@ -251,10 +244,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
     void releaseSubscription(final Subscription subscription)
     {
-        if (isClosed)
-        {
-            throw new IllegalStateException("Aeron client is closed");
-        }
+        ensureOpen();
 
         final long registrationId = subscription.registrationId();
         awaitResponse(driverProxy.removeSubscription(registrationId));
@@ -268,20 +258,14 @@ class ClientConductor implements Agent, DriverEventsListener
 
     void addDestination(final long registrationId, final String endpointChannel)
     {
-        if (isClosed)
-        {
-            throw new IllegalStateException("Aeron client is closed");
-        }
+        ensureOpen();
 
         awaitResponse(driverProxy.addDestination(registrationId, endpointChannel));
     }
 
     void removeDestination(final long registrationId, final String endpointChannel)
     {
-        if (isClosed)
-        {
-            throw new IllegalStateException("Aeron client is closed");
-        }
+        ensureOpen();
 
         awaitResponse(driverProxy.removeDestination(registrationId, endpointChannel));
     }
@@ -305,7 +289,7 @@ class ClientConductor implements Agent, DriverEventsListener
             streamId,
             sessionId,
             new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
-            logBuffersFactory.map(logFileName),
+            logBuffers(registrationId, logFileName),
             registrationId,
             correlationId);
 
@@ -326,7 +310,7 @@ class ClientConductor implements Agent, DriverEventsListener
             streamId,
             sessionId,
             new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
-            logBuffersFactory.map(logFileName),
+            logBuffers(registrationId, logFileName),
             registrationId,
             correlationId);
 
@@ -349,7 +333,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 subscription,
                 sessionId,
                 new UnsafeBufferPosition(counterValuesBuffer, subscriberPositionId),
-                logBuffersFactory.map(logFileName),
+                logBuffers(correlationId, logFileName),
                 errorHandler,
                 sourceIdentity,
                 correlationId);
@@ -397,20 +381,52 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
+    void releaseImage(final Image image)
+    {
+        image.close();
+        releaseLogBuffers(image.logBuffers(), image.correlationId());
+    }
+
+    void releaseLogBuffers(final LogBuffers logBuffers, final long registrationId)
+    {
+        if (logBuffers.decRef() == 0)
+        {
+            logBuffers.timeOfLastStateChange(nanoClock.nanoTime());
+            logBuffersByIdMap.remove(registrationId);
+            lingeringResources.add(logBuffers);
+        }
+    }
+
     DriverEventsAdapter driverListenerAdapter()
     {
         return driverEventsAdapter;
     }
 
-    void lingerResource(final ManagedResource managedResource)
-    {
-        managedResource.timeOfLastStateChange(nanoClock.nanoTime());
-        lingeringResources.add(managedResource);
-    }
-
     boolean isPublicationConnected(final long timeOfLastStatusMessageMs)
     {
         return epochClock.time() <= (timeOfLastStatusMessageMs + publicationConnectionTimeoutMs);
+    }
+
+    private void ensureOpen()
+    {
+        if (isClosed)
+        {
+            throw new IllegalStateException("Aeron client is closed");
+        }
+    }
+
+    private LogBuffers logBuffers(final long registrationId, final String logFileName)
+    {
+        LogBuffers logBuffers = logBuffersByIdMap.get(registrationId);
+        if (null == logBuffers)
+        {
+            logBuffers = logBuffersFactory.map(logFileName);
+            logBuffersByIdMap.put(registrationId, logBuffers);
+        }
+
+        logBuffers.incRef();
+
+        return logBuffers;
     }
 
     private int service(final long correlationId)

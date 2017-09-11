@@ -60,9 +60,9 @@ class ClientConductor implements Agent, DriverEventsListener
     private final NanoClock nanoClock;
     private final DriverEventsAdapter driverEventsAdapter;
     private final LogBuffersFactory logBuffersFactory;
-    private final Long2ObjectHashMap<Publication> activePublications = new Long2ObjectHashMap<>();
-    private final Long2ObjectHashMap<ExclusivePublication> activeExclusivePublications = new Long2ObjectHashMap<>();
-    private final Long2ObjectHashMap<Subscription> activeSubscriptions = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<Publication> publicationByRegIdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<ExclusivePublication> exclusivePublicationByRegIdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<Subscription> subscriptionByRegIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<ManagedResource> lingeringResources = new ArrayList<>();
     private final UnavailableImageHandler defaultUnavailableImageHandler;
     private final AvailableImageHandler defaultAvailableImageHandler;
@@ -172,7 +172,7 @@ class ClientConductor implements Agent, DriverEventsListener
         final long registrationId = driverProxy.addPublication(channel, streamId);
         awaitResponse(registrationId);
 
-        return activePublications.get(registrationId);
+        return publicationByRegIdMap.get(registrationId);
     }
 
     ExclusivePublication addExclusivePublication(final String channel, final int streamId)
@@ -186,7 +186,7 @@ class ClientConductor implements Agent, DriverEventsListener
         final long registrationId = driverProxy.addExclusivePublication(channel, streamId);
         awaitResponse(registrationId);
 
-        return activeExclusivePublications.get(registrationId);
+        return exclusivePublicationByRegIdMap.get(registrationId);
     }
 
     void releasePublication(final Publication publication)
@@ -196,7 +196,7 @@ class ClientConductor implements Agent, DriverEventsListener
             throw new IllegalStateException("Aeron client is closed");
         }
 
-        if (publication == activePublications.remove(publication.registrationId()))
+        if (publication == publicationByRegIdMap.remove(publication.registrationId()))
         {
             lingerResource(publication.managedResource());
             awaitResponse(driverProxy.removePublication(publication.registrationId()));
@@ -210,7 +210,7 @@ class ClientConductor implements Agent, DriverEventsListener
             throw new IllegalStateException("Aeron client is closed");
         }
 
-        if (publication == activeExclusivePublications.remove(publication.registrationId()))
+        if (publication == exclusivePublicationByRegIdMap.remove(publication.registrationId()))
         {
             lingerResource(publication.managedResource());
             awaitResponse(driverProxy.removePublication(publication.registrationId()));
@@ -242,7 +242,7 @@ class ClientConductor implements Agent, DriverEventsListener
         final Subscription subscription = new Subscription(
             this, channel, streamId, correlationId, availableImageHandler, unavailableImageHandler);
 
-        activeSubscriptions.put(correlationId, subscription);
+        subscriptionByRegIdMap.put(correlationId, subscription);
 
         awaitResponse(correlationId);
 
@@ -258,7 +258,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
         final long registrationId = subscription.registrationId();
         awaitResponse(driverProxy.removeSubscription(registrationId));
-        activeSubscriptions.remove(registrationId);
+        subscriptionByRegIdMap.remove(registrationId);
     }
 
     void asyncReleaseSubscription(final Subscription subscription)
@@ -309,7 +309,7 @@ class ClientConductor implements Agent, DriverEventsListener
             registrationId,
             correlationId);
 
-        activePublications.put(correlationId, publication);
+        publicationByRegIdMap.put(correlationId, publication);
     }
 
     public void onNewExclusivePublication(
@@ -330,7 +330,7 @@ class ClientConductor implements Agent, DriverEventsListener
             registrationId,
             correlationId);
 
-        activeExclusivePublications.put(correlationId, publication);
+        exclusivePublicationByRegIdMap.put(correlationId, publication);
     }
 
     public void onAvailableImage(
@@ -342,7 +342,7 @@ class ClientConductor implements Agent, DriverEventsListener
         final String logFileName,
         final String sourceIdentity)
     {
-        final Subscription subscription = activeSubscriptions.get(subscriberRegistrationId);
+        final Subscription subscription = subscriptionByRegIdMap.get(subscriberRegistrationId);
         if (null != subscription && subscription.registrationId() == subscriberRegistrationId)
         {
             final Image image = new Image(
@@ -373,7 +373,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
     public void onUnavailableImage(final long correlationId, final int streamId)
     {
-        for (final Subscription subscription : activeSubscriptions.values())
+        for (final Subscription subscription : subscriptionByRegIdMap.values())
         {
             if (subscription.streamId() == streamId)
             {
@@ -555,22 +555,22 @@ class ClientConductor implements Agent, DriverEventsListener
 
     private void forceClosePublicationsAndSubscriptions()
     {
-        for (final ExclusivePublication publication : activeExclusivePublications.values())
+        for (final ExclusivePublication publication : exclusivePublicationByRegIdMap.values())
         {
             publication.forceClose();
         }
-        activeExclusivePublications.clear();
+        exclusivePublicationByRegIdMap.clear();
 
-        for (final Publication publication : activePublications.values())
+        for (final Publication publication : publicationByRegIdMap.values())
         {
             publication.forceClose();
         }
-        activePublications.clear();
+        publicationByRegIdMap.clear();
 
-        for (final Subscription subscription : activeSubscriptions.values())
+        for (final Subscription subscription : subscriptionByRegIdMap.values())
         {
             subscription.forceClose();
         }
-        activeSubscriptions.clear();
+        subscriptionByRegIdMap.clear();
     }
 }

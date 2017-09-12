@@ -74,7 +74,7 @@ public class EmbeddedThroughput
             do
             {
                 System.out.format(
-                    "%nStreaming %,d messages of size %d bytes to %s on stream Id %d%n",
+                    "%nStreaming %,d messages of payload length %d bytes to %s on stream Id %d%n",
                     NUMBER_OF_MESSAGES, MESSAGE_LENGTH, CHANNEL, STREAM_ID);
 
                 printingActive = true;
@@ -118,7 +118,7 @@ public class EmbeddedThroughput
         if (printingActive)
         {
             System.out.format(
-                "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB%n",
+                "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB payloads%n",
                 messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024));
         }
     }

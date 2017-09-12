@@ -91,7 +91,7 @@ public class EmbeddedPingPong
 
         System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
         System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
-        System.out.println("Message size of " + MESSAGE_LENGTH + " bytes");
+        System.out.println("Message payload length of " + MESSAGE_LENGTH + " bytes");
 
         final FragmentAssembler dataHandler = new FragmentAssembler(EmbeddedPingPong::pongHandler);
 

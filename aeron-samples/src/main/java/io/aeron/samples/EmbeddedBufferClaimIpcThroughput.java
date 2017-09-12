@@ -99,7 +99,7 @@ public class EmbeddedBufferClaimIpcThroughput
                 final long bytesTransferred = newTotalBytes - lastTotalBytes;
 
                 System.out.format(
-                    "Duration %dms - %,d messages - %,d bytes%n",
+                    "Duration %dms - %,d messages - %,d payload bytes%n",
                     duration, bytesTransferred / MESSAGE_LENGTH, bytesTransferred);
 
                 lastTimeStamp = newTimeStamp;

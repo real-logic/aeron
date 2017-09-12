@@ -40,7 +40,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 class ClientConductor implements Agent, DriverEventsListener
 {
     private static final long NO_CORRELATION_ID = -1;
-    private static final long RESOURCE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
+    private static final long RESOURCE_CHECK_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
     private static final long RESOURCE_LINGER_NS = TimeUnit.SECONDS.toNanos(3);
 
     private final long keepAliveIntervalNs;
@@ -547,7 +547,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
     private int checkLingeringResources(final long nowNs)
     {
-        if (nowNs > (timeOfLastResourcesCheckNs + RESOURCE_TIMEOUT_NS))
+        if (nowNs > (timeOfLastResourcesCheckNs + RESOURCE_CHECK_INTERVAL_NS))
         {
             final ArrayList<ManagedResource> lingeringResources = this.lingeringResources;
             for (int lastIndex = lingeringResources.size() - 1, i = lastIndex; i >= 0; i--)

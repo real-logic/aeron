@@ -17,7 +17,7 @@ package io.aeron;
 
 import io.aeron.logbuffer.*;
 import org.agrona.collections.ArrayUtil;
-import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.collections.LongHashSet;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -38,7 +38,7 @@ class SubscriptionFields extends SubscriptionLhsPadding
     protected volatile boolean isClosed = false;
 
     protected volatile Image[] images = EMPTY_ARRAY;
-    protected final Long2ObjectHashMap<Image> imageByCorrelationIdMap = new Long2ObjectHashMap<>();
+    protected final LongHashSet imageIdSet = new LongHashSet();
     protected final ClientConductor clientConductor;
     protected final String channel;
     protected final AvailableImageHandler availableImageHandler;
@@ -409,7 +409,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
 
     boolean containsImage(final long correlationId)
     {
-        return imageByCorrelationIdMap.containsKey(correlationId);
+        return imageIdSet.contains(correlationId);
     }
 
     void addImage(final Image image)
@@ -420,7 +420,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         }
         else
         {
-            if (null == imageByCorrelationIdMap.put(image.correlationId(), image))
+            if (imageIdSet.add(image.correlationId()))
             {
                 images = ArrayUtil.add(images, image);
             }
@@ -430,11 +430,23 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     Image removeImage(final long correlationId)
     {
         final Image[] oldArray = images;
-        final Image removedImage = imageByCorrelationIdMap.remove(correlationId);
+        Image removedImage = null;
 
-        if (null != removedImage)
+        if (imageIdSet.remove(correlationId))
         {
-            images = ArrayUtil.remove(oldArray, removedImage);
+            int i = 0;
+            for (final Image image : oldArray)
+            {
+                if (image.correlationId() == correlationId)
+                {
+                    removedImage = image;
+                    break;
+                }
+
+                i++;
+            }
+
+            images = ArrayUtil.remove(oldArray, i);
             clientConductor.releaseImage(removedImage);
         }
 

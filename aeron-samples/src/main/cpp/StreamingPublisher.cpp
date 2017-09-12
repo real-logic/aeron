@@ -89,7 +89,7 @@ void printRate(double messagesPerSec, double bytesPerSec, long totalFragments, l
     if (printingActive)
     {
         std::printf(
-            "%.02g msgs/sec, %.02g bytes/sec, totals %ld messages %ld MB\n",
+            "%.02g msgs/sec, %.02g bytes/sec, totals %ld messages %ld MB payloads\n",
             messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024));
     }
 }
@@ -138,7 +138,7 @@ int main(int argc, char **argv)
         Settings settings = parseCmdLine(cp, argc, argv);
 
         std::cout << "Streaming " << toStringWithCommas(settings.numberOfMessages) << " messages of"
-            << (settings.randomMessageLength ? " random" : "") << " size "
+            << (settings.randomMessageLength ? " random" : "") << " payload length "
             << settings.messageLength << " bytes to "
             << settings.channel << " on stream ID "
             << settings.streamId << std::endl;

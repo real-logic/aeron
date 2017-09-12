@@ -71,7 +71,7 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
 void printRate(double messagesPerSec, double bytesPerSec, long totalFragments, long totalBytes)
 {
     std::printf(
-        "%.02g msgs/sec, %.02g bytes/sec, totals %ld messages %ld MB\n",
+        "%.02g msgs/sec, %.02g bytes/sec, totals %ld messages %ld MB payloads\n",
         messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024));
 }
 

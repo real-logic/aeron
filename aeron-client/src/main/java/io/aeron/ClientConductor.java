@@ -327,7 +327,9 @@ class ClientConductor implements Agent, DriverEventsListener
         final String sourceIdentity)
     {
         final Subscription subscription = subscriptionByRegIdMap.get(subscriberRegistrationId);
-        if (null != subscription && subscription.registrationId() == subscriberRegistrationId)
+        if (null != subscription &&
+            subscription.registrationId() == subscriberRegistrationId &&
+            !subscription.containsImage(correlationId))
         {
             final Image image = new Image(
                 subscription,

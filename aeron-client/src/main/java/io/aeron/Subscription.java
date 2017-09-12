@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.logbuffer.*;
 import org.agrona.collections.ArrayUtil;
+import org.agrona.collections.Long2ObjectHashMap;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -37,6 +38,7 @@ class SubscriptionFields extends SubscriptionLhsPadding
     protected volatile boolean isClosed = false;
 
     protected volatile Image[] images = EMPTY_ARRAY;
+    protected final Long2ObjectHashMap<Image> imageByCorrelationIdMap = new Long2ObjectHashMap<>();
     protected final ClientConductor clientConductor;
     protected final String channel;
     protected final AvailableImageHandler availableImageHandler;
@@ -405,6 +407,11 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         clientConductor.asyncReleaseSubscription(this);
     }
 
+    boolean containsImage(final long correlationId)
+    {
+        return imageByCorrelationIdMap.containsKey(correlationId);
+    }
+
     void addImage(final Image image)
     {
         if (isClosed)
@@ -413,23 +420,17 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         }
         else
         {
-            images = ArrayUtil.add(images, image);
+            if (null == imageByCorrelationIdMap.put(image.correlationId(), image))
+            {
+                images = ArrayUtil.add(images, image);
+            }
         }
     }
 
     Image removeImage(final long correlationId)
     {
         final Image[] oldArray = images;
-        Image removedImage = null;
-
-        for (final Image image : oldArray)
-        {
-            if (image.correlationId() == correlationId)
-            {
-                removedImage = image;
-                break;
-            }
-        }
+        final Image removedImage = imageByCorrelationIdMap.remove(correlationId);
 
         if (null != removedImage)
         {

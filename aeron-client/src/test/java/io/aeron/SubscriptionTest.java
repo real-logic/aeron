@@ -58,6 +58,9 @@ public class SubscriptionTest
     @Before
     public void setUp()
     {
+        when(imageOneMock.correlationId()).thenReturn(1L);
+        when(imageTwoMock.correlationId()).thenReturn(2L);
+
         when(header.flags()).thenReturn(FLAGS);
         when(conductor.clientLock()).thenReturn(conductorLock);
 

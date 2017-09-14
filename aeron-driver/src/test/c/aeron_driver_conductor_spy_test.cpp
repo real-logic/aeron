@@ -221,7 +221,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSinglePublicationThenAddSingleSu
             EXPECT_EQ(response.subscriberRegistrationId(), sub_id);
 
             EXPECT_EQ(log_file_name, response.logFileName());
-            EXPECT_EQ(CHANNEL_1, response.sourceIdentity());
+            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
         }
 
         response_number++;

@@ -1792,7 +1792,7 @@ int aeron_driver_conductor_on_add_spy_subscription(
                     publication->stream_id,
                     aeron_network_publication_consumer_position(publication),
                     endpoint->conductor_fields.udp_channel->original_uri,
-                    udp_channel->original_uri,
+                    AERON_IPC_CHANNEL,
                     publication->log_file_name,
                     publication->log_file_name_length) < 0)
                 {

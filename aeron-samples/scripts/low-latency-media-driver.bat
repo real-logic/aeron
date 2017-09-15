@@ -21,4 +21,4 @@
     -XX:GuaranteedSafepointInterval=300000 ^
     -XX:BiasedLockingStartupDelay=0 ^
     io.aeron.driver.MediaDriver ^
-    low-latency.properties
+    low-latency.properties %*

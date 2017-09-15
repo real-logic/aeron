@@ -22,4 +22,4 @@ set /p VERSION=<..\..\version.txt
     -cp ..\build\libs\samples.jar ^
     -javaagent:..\..\aeron-agent\build\libs\aeron-agent-%VERSION%-all.jar ^
     -Daeron.event.log=admin,FRAME_IN ^
-    io.aeron.driver.MediaDriver
+    io.aeron.driver.MediaDriver %*

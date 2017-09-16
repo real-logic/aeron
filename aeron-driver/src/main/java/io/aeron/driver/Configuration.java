@@ -232,9 +232,9 @@ public class Configuration
     public static final String INITIAL_WINDOW_LENGTH_PROP_NAME = "aeron.rcv.initial.window.length";
 
     /**
-     * Default initial window length for flow control sender to receiver purposes
+     * Default initial window length for flow control sender to receiver purposes.
      * <p>
-     * Length of Initial Window
+     * Length of Initial Window:
      * <p>
      * RTT (LAN) = 100 usec
      * Throughput = 10 Gbps
@@ -319,12 +319,12 @@ public class Configuration
     public static final String PUBLICATION_LINGER_PROP_NAME = "aeron.publication.linger.timeout";
 
     /**
-     * Default time for {@link Publication}s to linger before cleanup.
+     * Default time for {@link Publication}s to linger before cleanup in nanoseconds.
      */
     public static final long PUBLICATION_LINGER_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
     /**
-     * Time for {@link Publication}s to linger before cleanup.
+     * Time for {@link Publication}s to linger before cleanup in nanoseconds.
      */
     public static final long PUBLICATION_LINGER_NS = getLong(
         PUBLICATION_LINGER_PROP_NAME, PUBLICATION_LINGER_DEFAULT_NS);
@@ -538,7 +538,7 @@ public class Configuration
     public static final int MTU_LENGTH = getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
 
     /**
-     * Length of the maximum transmission unit of the media driver's protocol for IPC
+     * Length of the maximum transmission unit of the media driver's protocol for IPC.
      */
     public static final String IPC_MTU_LENGTH_PROP_NAME = "aeron.ipc.mtu.length";
 
@@ -548,7 +548,7 @@ public class Configuration
     public static final int IPC_MTU_LENGTH = getInteger(IPC_MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
 
     /**
-     * {@link ThreadingMode} to be used by the Aeron {@link MediaDriver}
+     * {@link ThreadingMode} to be used by the Aeron {@link MediaDriver}.
      */
     public static final String THREADING_MODE_PROP_NAME = "aeron.threading.mode";
 
@@ -559,7 +559,7 @@ public class Configuration
         getProperty(THREADING_MODE_PROP_NAME, DEDICATED.name()));
 
     /**
-     * How often to check liveness and cleanup
+     * How often to check liveness and cleanup in nanoseconds.
      */
     public static final long HEARTBEAT_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
 
@@ -586,13 +586,13 @@ public class Configuration
         RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultReceiveChannelEndpointSupplier");
 
     /**
-     * Property name for Application Specific Feedback added to Status Messages by the driver.
+     * Property name for Application Specific Feedback added to Status Messages by the driver for flow control.
      */
     public static final String SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME =
         "aeron.flow.control.sm.applicationSpecificFeedback";
 
     /**
-     * Value to use for all Status Message Application Specific Feedback values from the driver.
+     * Value to use for all Status Message Application Specific Feedback values from the driver for flow control.
      */
     public static final byte[] SM_APPLICATION_SPECIFIC_FEEDBACK = fromHex(getProperty(
         SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME, ""));
@@ -629,17 +629,17 @@ public class Configuration
     public static final long PUBLICATION_HEARTBEAT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(100);
 
     /**
-     * Default group size estimate for NAK delay randomization.
+     * Default group size estimate for NAK delay randomisation.
      */
     public static final int NAK_GROUPSIZE_DEFAULT = 10;
 
     /**
-     * Default group RTT estimate for NAK delay randomization in ms.
+     * Default group RTT estimate for NAK delay randomization in milliseconds.
      */
     public static final int NAK_GRTT_DEFAULT = 10;
 
     /**
-     * Default max backoff for NAK delay randomization in ms.
+     * Default max backoff for NAK delay randomisation in milliseconds.
      */
     public static final long NAK_MAX_BACKOFF_DEFAULT = TimeUnit.MILLISECONDS.toNanos(60);
 
@@ -661,7 +661,7 @@ public class Configuration
         NAK_UNICAST_DELAY_DEFAULT_NS, true);
 
     /**
-     * Default delay for retransmission of data for unicast.
+     * Default delay before retransmission of data for unicast in nanoseconds.
      */
     public static final long RETRANSMIT_UNICAST_DELAY_DEFAULT_NS = TimeUnit.NANOSECONDS.toNanos(0);
 
@@ -672,7 +672,7 @@ public class Configuration
         () -> RETRANSMIT_UNICAST_DELAY_DEFAULT_NS;
 
     /**
-     * Default delay for linger for unicast.
+     * Default delay for linger for unicast in nanoseconds.
      */
     public static final long RETRANSMIT_UNICAST_LINGER_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
 
@@ -706,7 +706,7 @@ public class Configuration
     }
 
     /**
-     * How far ahead the publisher can get from the sender position for IPC only.
+     * How far ahead the publisher can get from the minimum subscriber position for IPC only.
      *
      * @param termBufferLength to be used when {@link #IPC_PUBLICATION_TERM_WINDOW_LENGTH} is not set.
      * @return the length to be used for the publication window.
@@ -735,7 +735,7 @@ public class Configuration
     }
 
     /**
-     * Validate that the initial window length is suitably greater than MTU.
+     * Validate that the initial window length is greater than MTU.
      *
      * @param initialWindowLength to be validated.
      * @param mtuLength           against which to validate.
@@ -751,7 +751,7 @@ public class Configuration
     /**
      * Get the {@link IdleStrategy} that should be applied to {@link org.agrona.concurrent.Agent}s.
      *
-     * @param strategyName       to be created.
+     * @param strategyName       of the class to be created.
      * @param controllableStatus status indicator for what the strategy should do.
      * @return the newly created IdleStrategy.
      */
@@ -838,7 +838,7 @@ public class Configuration
 
     /**
      * Get the supplier of {@link SendChannelEndpoint}s which can be used for
-     * debugging, monitoring, or modifying the behaviour when sending to the media channel.
+     * debugging, monitoring, or modifying the behaviour when sending to the channel.
      *
      * @return the {@link SendChannelEndpointSupplier}.
      */
@@ -859,7 +859,7 @@ public class Configuration
 
     /**
      * Get the supplier of {@link ReceiveChannelEndpoint}s which can be used for
-     * debugging, monitoring, or modifying the behaviour when receiving from the media channel.
+     * debugging, monitoring, or modifying the behaviour when receiving from the channel.
      *
      * @return the {@link SendChannelEndpointSupplier}.
      */
@@ -900,7 +900,7 @@ public class Configuration
     }
 
     /**
-     * Get the supplier of {@link FlowControl}s which can be used for changing behavior of flow control for unicast
+     * Get the supplier of {@link FlowControl}s which can be used for changing behavior of flow control for multicast
      * publications.
      *
      * @return the {@link FlowControlSupplier}.
@@ -921,7 +921,7 @@ public class Configuration
     }
 
     /**
-     * Get the supplier of {@link CongestionControl}s which can be used for receivers.
+     * Get the supplier of {@link CongestionControl} implementations which can be used for receivers.
      *
      * @return the {@link CongestionControlSupplier}
      */

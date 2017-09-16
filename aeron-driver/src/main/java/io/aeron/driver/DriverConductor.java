@@ -50,7 +50,7 @@ import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
 /**
  * Driver Conductor that takes commands from publishers and subscribers and orchestrates the media driver.
  */
-public class DriverConductor implements Agent
+public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 {
     private final long imageLivenessTimeoutNs;
     private final long clientLivenessTimeoutNs;
@@ -61,7 +61,6 @@ public class DriverConductor implements Agent
     private long lastConsumerCommandPosition;
     private int nextSessionId = BitUtil.generateRandomisedId();
 
-    private final NetworkPublicationThreadLocals networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
     private final Context context;
     private final RawLogFactory rawLogFactory;
     private final ReceiverProxy receiverProxy;
@@ -72,20 +71,17 @@ public class DriverConductor implements Agent
     private final ManyToOneConcurrentArrayQueue<DriverConductorCmd> driverCmdQueue;
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
     private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
-    private final ArrayList<PublicationLink> publicationLinks = new ArrayList<>();
     private final ArrayList<NetworkPublication> networkPublications = new ArrayList<>();
-    private final ArrayList<SubscriptionLink> subscriptionLinks = new ArrayList<>();
-    private final ArrayList<PublicationImage> publicationImages = new ArrayList<>();
-    private final ArrayList<AeronClient> clients = new ArrayList<>();
     private final ArrayList<IpcPublication> ipcPublications = new ArrayList<>();
-
+    private final ArrayList<PublicationImage> publicationImages = new ArrayList<>();
+    private final ArrayList<PublicationLink> publicationLinks = new ArrayList<>();
+    private final ArrayList<SubscriptionLink> subscriptionLinks = new ArrayList<>();
+    private final ArrayList<AeronClient> clients = new ArrayList<>();
     private final EpochClock epochClock;
     private final NanoClock nanoClock;
-
-    private final Consumer<DriverConductorCmd> onDriverConductorCmdFunc = this::onDriverConductorCmd;
-
     private final CountersManager countersManager;
     private final AtomicCounter clientKeepAlives;
+    private final NetworkPublicationThreadLocals networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
 
     public DriverConductor(final Context ctx)
     {
@@ -131,12 +127,17 @@ public class DriverConductor implements Agent
         return "driver-conductor";
     }
 
+    public void accept(final DriverConductorCmd cmd)
+    {
+        cmd.execute(this);
+    }
+
     public int doWork() throws Exception
     {
         int workCount = 0;
 
         workCount += clientRequestAdapter.receive();
-        workCount += driverCmdQueue.drain(onDriverConductorCmdFunc, 10);
+        workCount += driverCmdQueue.drain(this, 10);
 
         final long nowNs = nanoClock.nanoTime();
         workCount += processTimers(nowNs);
@@ -1000,11 +1001,6 @@ public class DriverConductor implements Agent
         }
 
         return channelEndpoint;
-    }
-
-    private void onDriverConductorCmd(final DriverConductorCmd cmd)
-    {
-        cmd.execute(this);
     }
 
     private AeronClient getOrAddClient(final long clientId)

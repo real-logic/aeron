@@ -57,12 +57,14 @@ public class Configuration
         "true".equalsIgnoreCase(getProperty(DIR_WARN_IF_EXISTS_PROP_NAME, "true"));
 
     /**
-     * Should driver attempt to delete Aeron directory on start if it exists.
+     * Should driver attempt to an immediate forced delete of {@link CommonContext#AERON_DIR_PROP_NAME} on start
+     * if it exists.
      */
     public static final String DIR_DELETE_ON_START_PROP_NAME = "aeron.dir.delete.on.start";
 
     /**
-     * Should driver attempt to delete Aeron directory on start if it exists.
+     * Should driver attempt to an immediate forced delete of {@link CommonContext#AERON_DIR_PROP_NAME} on start
+     * if it exists.
      */
     public static final boolean DIR_DELETE_ON_START =
         "true".equalsIgnoreCase(getProperty(DIR_DELETE_ON_START_PROP_NAME, "false"));

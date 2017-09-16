@@ -19,4 +19,4 @@ ${JAVA_HOME}/bin/java \
     -cp ../build/libs/samples.jar \
     -Dagrona.disable.bounds.checks=true \
     -Daeron.sample.messageLength=256 \
-    io.aeron.samples.EmbeddedExclusiveVectoredIpcThroughput
+    io.aeron.samples.EmbeddedExclusiveVectoredIpcThroughput "$@"

@@ -76,7 +76,7 @@ public class IpcPublicationTest
             .toDriverCommands(fromClientCommands)
             .rawLogBuffersFactory(mockRawLogFactory)
             .clientProxy(mock(ClientProxy.class))
-            .driverCommandQueue(mock(ManyToOneConcurrentArrayQueue.class))
+            .driverCommandQueue(mock(OneToOneConcurrentArrayQueue.class))
             .epochClock(new SystemEpochClock())
             .countersManager(countersManager)
             .systemCounters(mock(SystemCounters.class))

@@ -160,12 +160,7 @@ public final class MediaDriver implements AutoCloseable
         ensureDirectoryIsRecreated(ctx);
         validateSocketBufferLengths(ctx);
 
-        // TODO: eliminate queues if mode is not concurrent
-        ctx
-            .driverCommandQueue(new ManyToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
-            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
-            .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
-            .conclude();
+        ctx.conclude();
 
         final DriverConductor conductor = new DriverConductor(ctx);
         final Receiver receiver = new Receiver(ctx);
@@ -488,7 +483,7 @@ public final class MediaDriver implements AutoCloseable
         private RawLogFactory rawLogFactory;
         private DataTransportPoller dataTransportPoller;
         private ControlTransportPoller controlTransportPoller;
-        private ManyToOneConcurrentArrayQueue<DriverConductorCmd> driverCommandQueue;
+        private OneToOneConcurrentArrayQueue<DriverConductorCmd> driverCommandQueue;
         private OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue;
         private OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue;
         private ReceiverProxy receiverProxy;
@@ -1588,12 +1583,12 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        ManyToOneConcurrentArrayQueue<DriverConductorCmd> driverCommandQueue()
+        OneToOneConcurrentArrayQueue<DriverConductorCmd> driverCommandQueue()
         {
             return driverCommandQueue;
         }
 
-        Context driverCommandQueue(final ManyToOneConcurrentArrayQueue<DriverConductorCmd> queue)
+        Context driverCommandQueue(final OneToOneConcurrentArrayQueue<DriverConductorCmd> queue)
         {
             this.driverCommandQueue = queue;
             return this;
@@ -1794,6 +1789,21 @@ public final class MediaDriver implements AutoCloseable
             if (null == congestionControlSupplier)
             {
                 congestionControlSupplier = Configuration.congestionControlSupplier();
+            }
+
+            if (null == driverCommandQueue)
+            {
+                driverCommandQueue = new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
+            }
+
+            if (null == receiverCommandQueue)
+            {
+                receiverCommandQueue = new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
+            }
+
+            if (null == senderCommandQueue)
+            {
+                senderCommandQueue = new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
             }
         }
 

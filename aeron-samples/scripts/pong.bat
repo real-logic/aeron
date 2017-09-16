@@ -20,4 +20,4 @@
     -XX:+UnlockDiagnosticVMOptions ^
     -XX:GuaranteedSafepointInterval=300000 ^
     -Dagrona.disable.bounds.checks=true ^
-    io.aeron.samples.Pong
+    %JVM_OPTS% io.aeron.samples.Pong

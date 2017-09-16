@@ -27,4 +27,4 @@
     -Daeron.socket.so_rcvbuf=2097152 ^
     -Daeron.rcv.initial.window.length=2097152 ^
     -Daeron.archive.file.sync.level=0 ^
-    io.aeron.samples.archive.EmbeddedRecordingThroughput %*
+    %JVM_OPTS% io.aeron.samples.archive.EmbeddedRecordingThroughput %*

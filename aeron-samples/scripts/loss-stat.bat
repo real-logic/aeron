@@ -17,4 +17,4 @@
 @echo off
 "%JAVA_HOME%\bin\java" ^
     -cp ..\build\libs\samples.jar ^
-    io.aeron.samples.LossStat
+    %JVM_OPTS% io.aeron.samples.LossStat

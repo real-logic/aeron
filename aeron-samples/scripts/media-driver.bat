@@ -17,4 +17,4 @@
 @echo off
 "%JAVA_HOME%\bin\java" ^
     -cp ..\build\libs\samples.jar ^
-    io.aeron.driver.MediaDriver %*
+    %JVM_OPTS% io.aeron.driver.MediaDriver %*

@@ -17,4 +17,4 @@
 @echo off
 "%JAVA_HOME%\bin\java" ^
     -cp ..\build\libs\samples.jar ^
-    io.aeron.samples.AeronStat %*
+    %JVM_OPTS% io.aeron.samples.AeronStat %*

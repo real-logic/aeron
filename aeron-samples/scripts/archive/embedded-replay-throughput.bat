@@ -26,4 +26,4 @@
     -Daeron.socket.so_sndbuf=2097152 ^
     -Daeron.socket.so_rcvbuf=2097152 ^
     -Daeron.rcv.initial.window.length=2097152 ^
-    io.aeron.samples.archive.EmbeddedReplayThroughput %*
+    %JVM_OPTS% io.aeron.samples.archive.EmbeddedReplayThroughput %*

@@ -19,4 +19,4 @@
     -cp ..\build\libs\samples.jar ^
     -Dagrona.disable.bounds.checks=true ^
     -Daeron.sample.frameCountLimit=256 ^
-    io.aeron.samples.RateSubscriber
+    %JVM_OPTS% io.aeron.samples.RateSubscriber

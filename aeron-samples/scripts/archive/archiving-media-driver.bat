@@ -20,4 +20,4 @@
     -XX:+UnlockDiagnosticVMOptions ^
     -XX:GuaranteedSafepointInterval=300000 ^
     -XX:BiasedLockingStartupDelay=0 ^
-    io.aeron.archive.ArchivingMediaDriver %*
+    %JVM_OPTS% io.aeron.archive.ArchivingMediaDriver %*

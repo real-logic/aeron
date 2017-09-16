@@ -22,4 +22,4 @@
     -Daeron.sample.messages=1000000 ^
     -Daeron.sample.messageLength=32 ^
     -Dagrona.disable.bounds.checks=true ^
-    io.aeron.samples.Ping
+    %JVM_OPTS% io.aeron.samples.Ping

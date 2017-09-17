@@ -21,4 +21,4 @@ ${JAVA_HOME}/bin/java \
     -XX:GuaranteedSafepointInterval=300000 \
     -XX:BiasedLockingStartupDelay=0 \
     io.aeron.driver.MediaDriver \
-    low-latency.properties "$@"
+    ${JVM_OPTS} low-latency.properties "$@"

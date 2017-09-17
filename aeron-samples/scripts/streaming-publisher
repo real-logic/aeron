@@ -20,4 +20,4 @@ ${JAVA_HOME}/bin/java \
     -Dagrona.disable.bounds.checks=true \
     -Daeron.sample.messageLength=32 \
     -Daeron.sample.messages=500000000 \
-    io.aeron.samples.StreamingPublisher
+    ${JVM_OPTS} io.aeron.samples.StreamingPublisher

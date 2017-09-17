@@ -83,7 +83,6 @@ class RecordingEventsProxy
         final int fullLength = MessageHeaderEncoder.ENCODED_LENGTH + length;
         while (true)
         {
-            // TODO: should we make this publication unreliable?
             // TODO: Under back pressure it should drop sends and then do an update on timeout to avoid tail loss.
             final long result = recordingEventsPublication.offer(outboundBuffer, 0, fullLength);
             if (result > 0 || result == Publication.NOT_CONNECTED)

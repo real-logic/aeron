@@ -196,7 +196,7 @@ class RecordingFragmentReader implements AutoCloseable
             }
 
             polled++;
-            // TODO: if length crosses a fragment boundary we will send more than requested, consider under supplying
+
             if (replayLimit <= replayPosition)
             {
                 isDone = true;

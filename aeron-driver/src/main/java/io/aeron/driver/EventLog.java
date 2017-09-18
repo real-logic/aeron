@@ -15,6 +15,10 @@
  */
 package io.aeron.driver;
 
+/**
+ * Indicates that a class can be instrumented for logging method invocations to the event log when the logging agent
+ * is attached.
+ */
 public @interface EventLog
 {
 }

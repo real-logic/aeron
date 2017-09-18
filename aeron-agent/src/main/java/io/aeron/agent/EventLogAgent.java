@@ -77,7 +77,7 @@ public class EventLogAgent
             final Throwable throwable)
         {
             System.out.println("ERROR " + typeName);
-            throwable.printStackTrace(System.err);
+            throwable.printStackTrace(System.out);
         }
 
         public void onComplete(

@@ -44,6 +44,7 @@ public class EventDissector
     private static final ImageMessageFlyweight IMAGE_MSG = new ImageMessageFlyweight();
     private static final RemoveMessageFlyweight REMOVE_MSG = new RemoveMessageFlyweight();
     private static final DestinationMessageFlyweight DESTINATION_MSG = new DestinationMessageFlyweight();
+    private static final ErrorResponseFlyweight ERROR_MSG = new ErrorResponseFlyweight();
 
     public static String dissectAsFrame(final EventCode code, final MutableDirectBuffer buffer, final int offset)
     {
@@ -158,6 +159,12 @@ public class EventDissector
                 final DestinationMessageFlyweight destinationMessageFlyweight = DESTINATION_MSG;
                 destinationMessageFlyweight.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(destinationMessageFlyweight));
+                break;
+
+            case CMD_OUT_ERROR:
+                final ErrorResponseFlyweight errorResponseFlyweight = ERROR_MSG;
+                errorResponseFlyweight.wrap(buffer, offset + relativeOffset);
+                builder.append(dissect(errorResponseFlyweight));
                 break;
 
             default:
@@ -408,6 +415,15 @@ public class EventDissector
             msg.registrationCorrelationId(),
             msg.clientId(),
             msg.correlationId());
+    }
+
+    private static String dissect(final ErrorResponseFlyweight msg)
+    {
+        return String.format(
+            "%d %s %s",
+            msg.offendingCommandCorrelationId(),
+            msg.errorCode(),
+            msg.errorMessage());
     }
 
     public static int frameType(final MutableDirectBuffer buffer, final int termOffset)

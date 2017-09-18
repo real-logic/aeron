@@ -40,7 +40,7 @@ public class EventConfiguration
      * <ul>
      * <li>A comma separated list of EventCodes to enable</li>
      * <li>"all" which enables all the codes</li>
-     * <li>"admin" which enables the codes specified by {@link #ADMIN_ONLY_EVENT_CODES}</li>
+     * <li>"admin" which enables the codes specified by {@link #ADMIN_ONLY_EVENT_CODES} which is the admin commands</li>
      * </ul>
      */
     public static final String ENABLED_EVENT_CODES_PROP_NAME = "aeron.event.log";
@@ -58,6 +58,7 @@ public class EventConfiguration
         CMD_OUT_AVAILABLE_IMAGE,
         CMD_OUT_ON_UNAVAILABLE_IMAGE,
         CMD_OUT_ON_OPERATION_SUCCESS,
+        CMD_OUT_ERROR,
         SEND_CHANNEL_CREATION,
         RECEIVE_CHANNEL_CREATION,
         SEND_CHANNEL_CLOSE,
@@ -96,10 +97,9 @@ public class EventConfiguration
     {
         ENABLED_EVENT_CODES = makeTagBitSet(getEnabledEventCodes(System.getProperty(ENABLED_EVENT_CODES_PROP_NAME)));
 
-        final int bufferLength =
-            Integer.getInteger(
-                EventConfiguration.BUFFER_LENGTH_PROP_NAME,
-                EventConfiguration.BUFFER_LENGTH_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
+        final int bufferLength = Integer.getInteger(
+            EventConfiguration.BUFFER_LENGTH_PROP_NAME,
+            EventConfiguration.BUFFER_LENGTH_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
 
         EVENT_RING_BUFFER = new ManyToOneRingBuffer(new UnsafeBuffer(ByteBuffer.allocateDirect(bufferLength)));
     }

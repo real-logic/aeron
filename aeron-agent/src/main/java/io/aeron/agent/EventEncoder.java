@@ -31,7 +31,6 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class EventEncoder
 {
-    static final int STACK_DEPTH = 5;
     private static final int LOG_HEADER_LENGTH = 16;
     private static final int SOCKET_ADDRESS_MAX_LENGTH = 24;
 
@@ -88,49 +87,6 @@ public class EventEncoder
         encodeLogHeader(encodingBuffer, recordLength, recordLength);
 
         return recordLength;
-    }
-
-    public static int encode(final MutableDirectBuffer encodingBuffer, final StackTraceElement stack)
-    {
-        final int relativeOffset = putStackTraceElement(encodingBuffer, stack, LOG_HEADER_LENGTH);
-        final int captureLength = relativeOffset;
-        encodeLogHeader(encodingBuffer, captureLength, captureLength);
-
-        return relativeOffset;
-    }
-
-    public static int encode(final MutableDirectBuffer encodingBuffer, final Throwable ex)
-    {
-        final String msg = null != ex.getMessage() ? ex.getMessage() : "exception message not set";
-
-        int relativeOffset = LOG_HEADER_LENGTH;
-        relativeOffset += encodingBuffer.putStringUtf8(relativeOffset, ex.getClass().getName(), LITTLE_ENDIAN);
-        relativeOffset += encodingBuffer.putStringUtf8(relativeOffset, msg, LITTLE_ENDIAN);
-
-        final StackTraceElement[] stackTrace = ex.getStackTrace();
-        for (int i = 0; i < Math.min(STACK_DEPTH, stackTrace.length); i++)
-        {
-            relativeOffset = putStackTraceElement(encodingBuffer, stackTrace[i], relativeOffset);
-        }
-
-        final int recordLength = relativeOffset - LOG_HEADER_LENGTH;
-        encodeLogHeader(encodingBuffer, recordLength, recordLength);
-
-        return relativeOffset;
-    }
-
-    private static int putStackTraceElement(
-        final MutableDirectBuffer encodingBuffer, final StackTraceElement stack, final int relativeOffset)
-    {
-        int offset = relativeOffset;
-        encodingBuffer.putInt(offset, stack.getLineNumber(), LITTLE_ENDIAN);
-
-        offset += SIZE_OF_INT;
-        offset += encodingBuffer.putStringUtf8(offset, stack.getClassName(), LITTLE_ENDIAN);
-        offset += encodingBuffer.putStringUtf8(offset, stack.getMethodName(), LITTLE_ENDIAN);
-        offset += encodingBuffer.putStringUtf8(offset, stack.getFileName(), LITTLE_ENDIAN);
-
-        return offset;
     }
 
     private static int encodeLogHeader(

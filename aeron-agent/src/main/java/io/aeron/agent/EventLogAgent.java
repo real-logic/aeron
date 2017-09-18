@@ -32,18 +32,17 @@ import java.util.concurrent.TimeUnit;
 import static net.bytebuddy.asm.Advice.to;
 import static net.bytebuddy.matcher.ElementMatchers.*;
 
+@SuppressWarnings("unused")
 public class EventLogAgent
 {
     private static final long SLEEP_PERIOD_NS = TimeUnit.MILLISECONDS.toNanos(1);
     private static final EventLogReaderAgent EVENT_LOG_READER_AGENT = new EventLogReaderAgent();
 
-    private static final AgentRunner EVENT_LOG_READER_AGENT_RUNNER = new AgentRunner(
+    private static final Thread EVENT_LOG_READER_THREAD = new Thread(new AgentRunner(
         new SleepingIdleStrategy(SLEEP_PERIOD_NS),
-        EventLogAgent::errorHandler,
+        Throwable::printStackTrace,
         null,
-        EVENT_LOG_READER_AGENT);
-
-    private static final Thread EVENT_LOG_READER_THREAD = new Thread(EVENT_LOG_READER_AGENT_RUNNER);
+        EVENT_LOG_READER_AGENT));
 
     private static volatile ClassFileTransformer logTransformer;
     private static volatile Instrumentation instrumentation;
@@ -95,10 +94,6 @@ public class EventLogAgent
         {
         }
     };
-
-    private static void errorHandler(final Throwable throwable)
-    {
-    }
 
     private static void agent(final boolean shouldRedefine, final Instrumentation instrumentation)
     {
@@ -200,6 +195,7 @@ public class EventLogAgent
             instrumentation.removeTransformer(new AgentBuilder.Default()
                 .type(nameEndsWith("DriverConductor")
                     .or(nameEndsWith("ClientProxy"))
+                    .or(nameEndsWith("ClientRequestAdapter"))
                     .or(nameEndsWith("SenderProxy"))
                     .or(nameEndsWith("ReceiverProxy"))
                     .or(inheritsAnnotation(EventLog.class)))

@@ -122,6 +122,7 @@ public class EventLogger
     {
         final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
         final int encodingLength = EventEncoder.encode(encodedBuffer, value);
+
         ringBuffer.write(code.id(), encodedBuffer, 0, encodingLength);
     }
 }

@@ -66,7 +66,7 @@ public class CmdInterceptor
                 break;
 
             case ON_ERROR:
-                // TODO: add event code and dissector
+                LOGGER.log(CMD_OUT_ERROR, buffer, index, length);
                 break;
 
             case ON_OPERATION_SUCCESS:

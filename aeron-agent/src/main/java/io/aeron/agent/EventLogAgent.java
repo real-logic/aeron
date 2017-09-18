@@ -96,16 +96,6 @@ public class EventLogAgent
             return;
         }
 
-        /*
-         * Intercept based on enabled events:
-         *  SenderProxy
-         *  ReceiverProxy
-         *  ClientProxy
-         *  DriverConductor (onClientCommand)
-         *  SendChannelEndpoint
-         *  ReceiveChannelEndpoint
-         */
-
         EventLogAgent.instrumentation = instrumentation;
 
         readerAgentRunner = new AgentRunner(
@@ -118,24 +108,21 @@ public class EventLogAgent
             .with(LISTENER)
             .disableClassFormatChanges()
             .with(shouldRedefine ?
-                AgentBuilder.RedefinitionStrategy.RETRANSFORMATION :
-                AgentBuilder.RedefinitionStrategy.DISABLED)
+                AgentBuilder.RedefinitionStrategy.RETRANSFORMATION : AgentBuilder.RedefinitionStrategy.DISABLED)
             .type(nameEndsWith("DriverConductor"))
             .transform((builder, typeDescription, classLoader, javaModule) ->
                 builder
-                    .visit(to(CleanupInterceptor.DriverConductorInterceptor.CleanupImage.class)
-                        .on(named("cleanupImage")))
-                    .visit(to(CleanupInterceptor.DriverConductorInterceptor.CleanupPublication.class)
-                        .on(named("cleanupPublication")))
-                    .visit(to(CleanupInterceptor.DriverConductorInterceptor.CleanupSubscriptionLink.class)
-                        .on(named("cleanupSubscriptionLink"))))
-            .type(nameEndsWith("ClientRequestAdapter"))
+                    .visit(to(CleanupInterceptor.CleanupImage.class).on(named("cleanupImage")))
+                    .visit(to(CleanupInterceptor.CleanupPublication.class).on(named("cleanupPublication")))
+                    .visit(to(CleanupInterceptor.CleanupSubscriptionLink.class).on(named("cleanupSubscriptionLink"))))
+            .type(nameEndsWith("ClientCommandAdapter"))
             .transform((builder, typeDescription, classLoader, javaModule) ->
                 builder
                     .visit(to(CmdInterceptor.class).on(named("onMessage"))))
             .type(nameEndsWith("ClientProxy"))
             .transform((builder, typeDescription, classLoader, javaModule) ->
-                builder.visit(to(CmdInterceptor.class).on(named("transmit"))))
+                builder
+                    .visit(to(CmdInterceptor.class).on(named("transmit"))))
             .type(nameEndsWith("SenderProxy"))
             .transform((builder, typeDescription, classLoader, javaModule) ->
                 builder
@@ -196,7 +183,7 @@ public class EventLogAgent
             instrumentation.removeTransformer(new AgentBuilder.Default()
                 .type(nameEndsWith("DriverConductor")
                     .or(nameEndsWith("ClientProxy"))
-                    .or(nameEndsWith("ClientRequestAdapter"))
+                    .or(nameEndsWith("ClientCommandAdapter"))
                     .or(nameEndsWith("SenderProxy"))
                     .or(nameEndsWith("ReceiverProxy"))
                     .or(inheritsAnnotation(EventLog.class)))

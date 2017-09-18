@@ -27,40 +27,37 @@ import static io.aeron.agent.EventLogger.LOGGER;
  */
 public class CleanupInterceptor
 {
-    public static class DriverConductorInterceptor
+    public static class CleanupImage
     {
-        public static class CleanupImage
+        @Advice.OnMethodEnter
+        public static void cleanupImageInterceptor(final PublicationImage image)
         {
-            @Advice.OnMethodEnter
-            public static void cleanupImageInterceptor(final PublicationImage image)
-            {
-                LOGGER.logImageRemoval(
-                    image.channelUriString(), image.sessionId(), image.streamId(), image.correlationId());
-            }
+            LOGGER.logImageRemoval(
+                image.channelUriString(), image.sessionId(), image.streamId(), image.correlationId());
         }
+    }
 
-        public static class CleanupPublication
+    public static class CleanupPublication
+    {
+        @Advice.OnMethodEnter
+        public static void cleanupPublication(final NetworkPublication publication)
         {
-            @Advice.OnMethodEnter
-            public static void cleanupPublication(final NetworkPublication publication)
-            {
-                LOGGER.logPublicationRemoval(
-                    publication.channelEndpoint().originalUriString(),
-                    publication.sessionId(),
-                    publication.streamId());
-            }
+            LOGGER.logPublicationRemoval(
+                publication.channelEndpoint().originalUriString(),
+                publication.sessionId(),
+                publication.streamId());
         }
+    }
 
-        public static class CleanupSubscriptionLink
+    public static class CleanupSubscriptionLink
+    {
+        @Advice.OnMethodEnter
+        public static void cleanupSubscriptionLink(final SubscriptionLink subscriptionLink)
         {
-            @Advice.OnMethodEnter
-            public static void cleanupSubscriptionLink(final SubscriptionLink subscriptionLink)
-            {
-                LOGGER.logSubscriptionRemoval(
-                    subscriptionLink.uri(),
-                    subscriptionLink.streamId(),
-                    subscriptionLink.registrationId());
-            }
+            LOGGER.logSubscriptionRemoval(
+                subscriptionLink.uri(),
+                subscriptionLink.streamId(),
+                subscriptionLink.registrationId());
         }
     }
 }

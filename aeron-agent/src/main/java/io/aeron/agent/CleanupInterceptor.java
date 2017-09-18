@@ -18,11 +18,13 @@ package io.aeron.agent;
 import io.aeron.driver.SubscriptionLink;
 import io.aeron.driver.NetworkPublication;
 import io.aeron.driver.PublicationImage;
-import io.aeron.driver.media.ReceiveChannelEndpoint;
 import net.bytebuddy.asm.Advice;
 
 import static io.aeron.agent.EventLogger.LOGGER;
 
+/**
+ * Intercepts calls in the driver to log the clean up of major resources.
+ */
 public class CleanupInterceptor
 {
     public static class DriverConductorInterceptor
@@ -54,15 +56,10 @@ public class CleanupInterceptor
             @Advice.OnMethodEnter
             public static void cleanupSubscriptionLink(final SubscriptionLink subscriptionLink)
             {
-                final ReceiveChannelEndpoint channelEndpoint = subscriptionLink.channelEndpoint();
-
-                if (null != channelEndpoint)
-                {
-                    LOGGER.logSubscriptionRemoval(
-                        channelEndpoint.originalUriString(),
-                        subscriptionLink.streamId(),
-                        subscriptionLink.registrationId());
-                }
+                LOGGER.logSubscriptionRemoval(
+                    subscriptionLink.uri(),
+                    subscriptionLink.streamId(),
+                    subscriptionLink.registrationId());
             }
         }
     }

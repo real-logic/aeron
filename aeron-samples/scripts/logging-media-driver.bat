@@ -21,5 +21,5 @@ set /p VERSION=<..\..\version.txt
 "%JAVA_HOME%\bin\java" ^
     -cp ..\build\libs\samples.jar ^
     -javaagent:..\..\aeron-agent\build\libs\aeron-agent-%VERSION%-all.jar ^
-    -Daeron.event.log=admin,FRAME_IN ^
+    -Daeron.event.log=all ^
     %JVM_OPTS% io.aeron.driver.MediaDriver %*

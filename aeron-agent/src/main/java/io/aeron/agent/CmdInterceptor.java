@@ -22,6 +22,9 @@ import static io.aeron.agent.EventCode.*;
 import static io.aeron.agent.EventLogger.LOGGER;
 import static io.aeron.command.ControlProtocolEvents.*;
 
+/**
+ * Intercepts calls for the command protocol from clients to the driver for logging.
+ */
 public class CmdInterceptor
 {
     @Advice.OnMethodEnter

@@ -350,11 +350,9 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         if (null != channelEndpoint)
         {
-            final int streamId = subscription.streamId();
-
             if (0 == channelEndpoint.decRefToStream(subscription.streamId()))
             {
-                receiverProxy.removeSubscription(channelEndpoint, streamId);
+                receiverProxy.removeSubscription(channelEndpoint, subscription.streamId());
             }
 
             if (channelEndpoint.shouldBeClosed())

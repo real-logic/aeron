@@ -23,11 +23,10 @@ import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.scaffold.TypeValidation;
 import net.bytebuddy.utility.JavaModule;
 import org.agrona.concurrent.AgentRunner;
-import org.agrona.concurrent.SleepingIdleStrategy;
+import org.agrona.concurrent.SleepingMillisIdleStrategy;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
-import java.util.concurrent.TimeUnit;
 
 import static net.bytebuddy.asm.Advice.to;
 import static net.bytebuddy.matcher.ElementMatchers.*;
@@ -35,17 +34,12 @@ import static net.bytebuddy.matcher.ElementMatchers.*;
 @SuppressWarnings("unused")
 public class EventLogAgent
 {
-    private static final long SLEEP_PERIOD_NS = TimeUnit.MILLISECONDS.toNanos(1);
+    private static final long SLEEP_PERIOD_MS = 1L;
     private static final EventLogReaderAgent EVENT_LOG_READER_AGENT = new EventLogReaderAgent();
 
-    private static final Thread EVENT_LOG_READER_THREAD = new Thread(new AgentRunner(
-        new SleepingIdleStrategy(SLEEP_PERIOD_NS),
-        Throwable::printStackTrace,
-        null,
-        EVENT_LOG_READER_AGENT));
-
+    private static AgentRunner readerAgentRunner;
+    private static Instrumentation instrumentation;
     private static volatile ClassFileTransformer logTransformer;
-    private static volatile Instrumentation instrumentation;
 
     private static final AgentBuilder.Listener LISTENER = new AgentBuilder.Listener()
     {
@@ -83,7 +77,7 @@ public class EventLogAgent
             final Throwable throwable)
         {
             System.out.println("ERROR " + typeName);
-            throwable.printStackTrace(System.out);
+            throwable.printStackTrace(System.err);
         }
 
         public void onComplete(
@@ -113,6 +107,12 @@ public class EventLogAgent
          */
 
         EventLogAgent.instrumentation = instrumentation;
+
+        readerAgentRunner = new AgentRunner(
+            new SleepingMillisIdleStrategy(SLEEP_PERIOD_MS),
+            Throwable::printStackTrace,
+            null,
+            EVENT_LOG_READER_AGENT);
 
         logTransformer = new AgentBuilder.Default(new ByteBuddy().with(TypeValidation.DISABLED))
             .with(LISTENER)
@@ -171,9 +171,10 @@ public class EventLogAgent
                         .on(named("onRttMeasurement"))))
             .installOn(instrumentation);
 
-        EVENT_LOG_READER_THREAD.setName("event log reader");
-        EVENT_LOG_READER_THREAD.setDaemon(true);
-        EVENT_LOG_READER_THREAD.start();
+        final Thread thread = new Thread(readerAgentRunner);
+        thread.setName("event log reader");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     public static void premain(final String agentArgs, final Instrumentation instrumentation)
@@ -190,8 +191,8 @@ public class EventLogAgent
     {
         if (logTransformer != null)
         {
+            readerAgentRunner.close();
             instrumentation.removeTransformer(logTransformer);
-
             instrumentation.removeTransformer(new AgentBuilder.Default()
                 .type(nameEndsWith("DriverConductor")
                     .or(nameEndsWith("ClientProxy"))
@@ -201,6 +202,10 @@ public class EventLogAgent
                     .or(inheritsAnnotation(EventLog.class)))
                 .transform(AgentBuilder.Transformer.NoOp.INSTANCE)
                 .installOn(instrumentation));
+
+            readerAgentRunner = null;
+            instrumentation = null;
+            logTransformer = null;
         }
     }
 }

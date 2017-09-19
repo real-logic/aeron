@@ -37,7 +37,7 @@ class SenderLhsPadding
 
 class SenderHotFields extends SenderLhsPadding
 {
-    protected long controlPollTimeoutNs;
+    protected long controlPollDeadlineNs;
     protected int dutyCycleCounter;
     protected int roundRobinIndex = 0;
 }
@@ -88,12 +88,12 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
 
         int bytesReceived = 0;
 
-        if (0 == bytesSent || ++dutyCycleCounter == dutyCycleRatio || nowNs >= controlPollTimeoutNs)
+        if (0 == bytesSent || ++dutyCycleCounter == dutyCycleRatio || nowNs >= controlPollDeadlineNs)
         {
             bytesReceived = controlTransportPoller.pollTransports();
 
             dutyCycleCounter = 0;
-            controlPollTimeoutNs = nowNs + statusMessageReadTimeoutNs;
+            controlPollDeadlineNs = nowNs + statusMessageReadTimeoutNs;
         }
 
         return workCount + bytesSent + bytesReceived;

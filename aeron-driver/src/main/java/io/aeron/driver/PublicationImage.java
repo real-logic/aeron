@@ -550,8 +550,9 @@ public class PublicationImage
                     statusMessagesSent.orderedIncrement();
 
                     lastSmChangeNumber = changeNumber;
-                    workCount = 1;
                 }
+
+                workCount = 1;
             }
         }
 
@@ -593,8 +594,9 @@ public class PublicationImage
                 }
 
                 lastLossChangeNumber = changeNumber;
-                workCount = 1;
             }
+
+            workCount = 1;
         }
 
         return workCount;

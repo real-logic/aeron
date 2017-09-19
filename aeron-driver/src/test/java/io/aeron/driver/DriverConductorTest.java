@@ -533,11 +533,11 @@ public class DriverConductorTest
         assertThat(publication.status(), is(NetworkPublication.Status.DRAINING));
 
         currentTimeMs += PUBLICATION_CONNECTION_TIMEOUT_MS + 1;
-        currentTimeNs += HEARTBEAT_TIMEOUT_NS;
+        currentTimeNs += TIMER_INTERVAL_NS;
         driverConductor.doWork();
         assertThat(publication.status(), is(NetworkPublication.Status.LINGER));
 
-        currentTimeNs += HEARTBEAT_TIMEOUT_NS + PUBLICATION_LINGER_NS;
+        currentTimeNs += TIMER_INTERVAL_NS + PUBLICATION_LINGER_NS;
         driverConductor.doWork();
         assertThat(publication.status(), is(NetworkPublication.Status.CLOSING));
 

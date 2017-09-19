@@ -561,9 +561,9 @@ public class Configuration
         getProperty(THREADING_MODE_PROP_NAME, DEDICATED.name()));
 
     /**
-     * How often to check liveness and cleanup in nanoseconds.
+     * How often to check liveness and cleanup timers in nanoseconds.
      */
-    public static final long HEARTBEAT_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
+    public static final long TIMER_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
 
     /**
      * Property name for {@link SendChannelEndpointSupplier}.

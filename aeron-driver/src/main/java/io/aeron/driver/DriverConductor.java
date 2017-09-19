@@ -57,7 +57,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     private final long publicationUnblockTimeoutNs;
     private final long statusMessageTimeoutNs;
     private long timeOfLastToDriverPositionChangeNs;
-    private long timeOfLastTimeoutCheckNs;
+    private long timeOfLastTimerCheckNs;
     private long lastConsumerCommandPosition;
     private int nextSessionId = BitUtil.generateRandomisedId();
 
@@ -110,7 +110,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             this);
 
         final long nowNs = nanoClock.nanoTime();
-        timeOfLastTimeoutCheckNs = nowNs;
+        timeOfLastTimerCheckNs = nowNs;
         timeOfLastToDriverPositionChangeNs = nowNs;
         lastConsumerCommandPosition = toDriverCommands.consumerPosition();
     }
@@ -604,20 +604,20 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         }
     }
 
-    private void onHeartbeatCheckTimeouts(final long nowNs)
+    private void heartbeatAndCheckTimers(final long nowNs)
     {
         final long nowMs = epochClock.time();
         toDriverCommands.consumerHeartbeatTime(nowMs);
 
-        onCheckManagedResources(clients, nowNs, nowMs);
-        onCheckManagedResources(publicationLinks, nowNs, nowMs);
-        onCheckManagedResources(networkPublications, nowNs, nowMs);
-        onCheckManagedResources(subscriptionLinks, nowNs, nowMs);
-        onCheckManagedResources(publicationImages, nowNs, nowMs);
-        onCheckManagedResources(ipcPublications, nowNs, nowMs);
+        checkManagedResources(clients, nowNs, nowMs);
+        checkManagedResources(publicationLinks, nowNs, nowMs);
+        checkManagedResources(networkPublications, nowNs, nowMs);
+        checkManagedResources(subscriptionLinks, nowNs, nowMs);
+        checkManagedResources(publicationImages, nowNs, nowMs);
+        checkManagedResources(ipcPublications, nowNs, nowMs);
     }
 
-    private void onCheckForBlockedToDriverCommands(final long nowNs)
+    private void checkForBlockedToDriverCommands(final long nowNs)
     {
         final long consumerPosition = toDriverCommands.consumerPosition();
 
@@ -1122,7 +1122,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         return ipcPublication;
     }
 
-    private <T extends DriverManagedResource> void onCheckManagedResources(
+    private <T extends DriverManagedResource> void checkManagedResources(
         final ArrayList<T> list, final long nowNs, final long nowMs)
     {
         for (int lastIndex = list.size() - 1, i = lastIndex; i >= 0; i--)
@@ -1156,11 +1156,11 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     {
         int workCount = 0;
 
-        if (nowNs > (timeOfLastTimeoutCheckNs + HEARTBEAT_TIMEOUT_NS))
+        if (nowNs > (timeOfLastTimerCheckNs + TIMER_INTERVAL_NS))
         {
-            onHeartbeatCheckTimeouts(nowNs);
-            onCheckForBlockedToDriverCommands(nowNs);
-            timeOfLastTimeoutCheckNs = nowNs;
+            heartbeatAndCheckTimers(nowNs);
+            checkForBlockedToDriverCommands(nowNs);
+            timeOfLastTimerCheckNs = nowNs;
             workCount = 1;
         }
 

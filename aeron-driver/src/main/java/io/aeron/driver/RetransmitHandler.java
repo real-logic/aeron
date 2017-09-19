@@ -131,12 +131,9 @@ public class RetransmitHandler
      *
      * @param nowNs            time in nanoseconds
      * @param retransmitSender to call on retransmissions
-     * @return count of expired actions performed
      */
-    public int processTimeouts(final long nowNs, final RetransmitSender retransmitSender)
+    public void processTimeouts(final long nowNs, final RetransmitSender retransmitSender)
     {
-        int result = 0;
-
         if (activeRetransmitsMap.size() > 0)
         {
             for (final RetransmitAction action : retransmitActionPool)
@@ -148,7 +145,6 @@ public class RetransmitHandler
                         {
                             retransmitSender.resend(action.termId, action.termOffset, action.length);
                             action.linger(determineLingerTimeout(), nanoClock.nanoTime());
-                            result++;
                         }
                         break;
 
@@ -157,14 +153,11 @@ public class RetransmitHandler
                         {
                             action.cancel();
                             activeRetransmitsMap.remove(action.termId, action.termOffset);
-                            result++;
                         }
                         break;
                 }
             }
         }
-
-        return result;
     }
 
     private boolean isInvalid(final int termOffset, final int termLength)

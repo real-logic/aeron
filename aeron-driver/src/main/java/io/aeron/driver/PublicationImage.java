@@ -100,7 +100,7 @@ public class PublicationImage
     private long nextSmPosition;
     private int nextSmReceiverWindowLength;
 
-    private long lastStatusMessageTimestamp;
+    private long timeOfLastStatusMessageNs;
 
     private final long correlationId;
     private final long imageLivenessTimeoutNs;
@@ -390,7 +390,7 @@ public class PublicationImage
 
         nextSmPosition = smPosition;
         nextSmReceiverWindowLength = receiverWindowLength;
-        lastStatusMessageTimestamp = nowNs;
+        timeOfLastStatusMessageNs = nowNs;
 
         endSmChange = changeNumber;
     }
@@ -399,9 +399,9 @@ public class PublicationImage
      * Called from the {@link DriverConductor}.
      *
      * @param nowNs                in nanoseconds
-     * @param statusMessageTimeout for sending of Status Messages.
+     * @param statusMessageTimeoutNs for sending of Status Messages.
      */
-    void trackRebuild(final long nowNs, final long statusMessageTimeout)
+    void trackRebuild(final long nowNs, final long statusMessageTimeoutNs)
     {
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
@@ -442,7 +442,7 @@ public class PublicationImage
         final long threshold = CongestionControlUtil.positionThreshold(window);
 
         if (CongestionControlUtil.shouldForceStatusMessage(ccOutcome) ||
-            (nowNs > (lastStatusMessageTimestamp + statusMessageTimeout)) ||
+            (nowNs > (timeOfLastStatusMessageNs + statusMessageTimeoutNs)) ||
             (minSubscriberPosition > (nextSmPosition + threshold)))
         {
             scheduleStatusMessage(nowNs, minSubscriberPosition, window);

@@ -247,8 +247,7 @@ public class NetworkPublication
             final boolean isEndOfStream = this.isEndOfStream;
 
             bytesSent = heartbeatMessageCheck(nowNs, activeTermId, termOffset, isEndOfStream);
-            senderLimit.setOrdered(
-                flowControl.onIdle(nowNs, senderLimit.get(), this.senderPosition.get(), isEndOfStream));
+            senderLimit.setOrdered(flowControl.onIdle(nowNs, senderLimit.get(), senderPosition, isEndOfStream));
         }
 
         retransmitHandler.processTimeouts(nowNs, this);

@@ -265,7 +265,7 @@ void aeron_driver_receiver_on_remove_endpoint(void *clientd, void *command)
     {
         aeron_driver_receiver_pending_setup_entry_t *entry = &receiver->pending_setups.array[i];
 
-        if (entry->is_periodic && entry->endpoint == endpoint)
+        if (entry->endpoint == endpoint)
         {
             aeron_array_fast_unordered_remove(
                 (uint8_t *) receiver->pending_setups.array,

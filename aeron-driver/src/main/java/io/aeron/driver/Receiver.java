@@ -63,7 +63,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
 
     public int doWork() throws Exception
     {
-        int workCount = commandQueue.drain(this);
+        int workCount = commandQueue.drain(this, Configuration.COMMAND_DRAIN_LIMIT);
         final int bytesReceived = dataTransportPoller.pollTransports();
 
         final long nowNs = clock.nanoTime();

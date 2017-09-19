@@ -81,7 +81,7 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
 
     public int doWork()
     {
-        final int workCount = commandQueue.drain(this);
+        final int workCount = commandQueue.drain(this, Configuration.COMMAND_DRAIN_LIMIT);
 
         final long nowNs = nanoClock.nanoTime();
         final int bytesSent = doSend(nowNs);

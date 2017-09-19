@@ -33,11 +33,6 @@ import static io.aeron.command.ControlProtocolEvents.*;
  */
 class ClientCommandAdapter implements MessageHandler
 {
-    /**
-     * Limit for the number of messages to be read in each receive.
-     */
-    public static final int MESSAGE_COUNT_LIMIT = 10;
-
     private final PublicationMessageFlyweight publicationMsgFlyweight = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMsgFlyweight = new SubscriptionMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMsgFlyweight = new CorrelatedMessageFlyweight();
@@ -65,7 +60,7 @@ class ClientCommandAdapter implements MessageHandler
 
     public int receive()
     {
-        return toDriverCommands.read(this, MESSAGE_COUNT_LIMIT);
+        return toDriverCommands.read(this, Configuration.COMMAND_DRAIN_LIMIT);
     }
 
     @SuppressWarnings("MethodLength")

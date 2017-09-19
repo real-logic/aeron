@@ -611,7 +611,7 @@ public class Configuration
         CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultCongestionControlSupplier");
 
     /**
-     * Limit for the number of commands drained in one operations.
+     * Limit for the number of commands drained in one operation.
      */
     public static final int COMMAND_DRAIN_LIMIT = 10;
 

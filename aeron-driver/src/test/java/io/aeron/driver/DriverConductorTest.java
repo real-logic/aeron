@@ -525,21 +525,21 @@ public class DriverConductorTest
 
         appender.appendUnfragmentedMessage(headerWriter, srcBuffer, 0, 256, null);
 
-        assertThat(publication.status(), is(NetworkPublication.Status.ACTIVE));
+        assertThat(publication.state(), is(NetworkPublication.State.ACTIVE));
 
         driverConductor.doWork();
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        assertThat(publication.status(), is(NetworkPublication.Status.DRAINING));
+        assertThat(publication.state(), is(NetworkPublication.State.DRAINING));
 
         currentTimeMs += PUBLICATION_CONNECTION_TIMEOUT_MS + 1;
         currentTimeNs += TIMER_INTERVAL_NS;
         driverConductor.doWork();
-        assertThat(publication.status(), is(NetworkPublication.Status.LINGER));
+        assertThat(publication.state(), is(NetworkPublication.State.LINGER));
 
         currentTimeNs += TIMER_INTERVAL_NS + PUBLICATION_LINGER_NS;
         driverConductor.doWork();
-        assertThat(publication.status(), is(NetworkPublication.Status.CLOSING));
+        assertThat(publication.state(), is(NetworkPublication.State.CLOSING));
 
         verify(senderProxy).removeNetworkPublication(eq(publication));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
@@ -674,7 +674,7 @@ public class DriverConductorTest
 
         final PublicationImage publicationImage = captor.getValue();
 
-        publicationImage.status(PublicationImage.Status.INACTIVE);
+        publicationImage.state(PublicationImage.State.INACTIVE);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= IMAGE_LIVENESS_TIMEOUT_NS + 1000);
 
@@ -705,13 +705,13 @@ public class DriverConductorTest
 
         final PublicationImage publicationImage = captor.getValue();
 
-        publicationImage.status(PublicationImage.Status.ACTIVE);
+        publicationImage.state(PublicationImage.State.ACTIVE);
 
         driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
 
         driverConductor.doWork();
 
-        publicationImage.status(PublicationImage.Status.INACTIVE);
+        publicationImage.state(PublicationImage.State.INACTIVE);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= IMAGE_LIVENESS_TIMEOUT_NS + 1000);
 
@@ -752,7 +752,7 @@ public class DriverConductorTest
 
         final PublicationImage publicationImage = captor.getValue();
 
-        publicationImage.status(PublicationImage.Status.INACTIVE);
+        publicationImage.state(PublicationImage.State.INACTIVE);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= IMAGE_LIVENESS_TIMEOUT_NS / 2);
 

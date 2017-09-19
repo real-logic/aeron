@@ -531,7 +531,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
             final IpcPublication publication = ipcPublications.get(i);
-            if (publication.streamId() == streamId && IpcPublication.Status.ACTIVE == publication.status())
+            if (publication.streamId() == streamId && IpcPublication.State.ACTIVE == publication.state())
             {
                 linkIpcSubscription(subscription, publication);
             }
@@ -556,7 +556,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
             if (streamId == publication.streamId() &&
                 channelEndpoint == publication.channelEndpoint() &&
-                NetworkPublication.Status.ACTIVE == publication.status())
+                NetworkPublication.State.ACTIVE == publication.state())
             {
                 linkSpy(publication, subscriptionLink);
             }
@@ -679,7 +679,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
             if (streamId == publication.streamId() &&
                 channelEndpoint == publication.channelEndpoint() &&
-                NetworkPublication.Status.ACTIVE == publication.status() &&
+                NetworkPublication.State.ACTIVE == publication.state() &&
                 !publication.isExclusive())
             {
                 return publication;
@@ -1112,7 +1112,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             final IpcPublication publication = ipcPublications.get(i);
             if (publication.streamId() == streamId &&
                 !publication.isExclusive() &&
-                IpcPublication.Status.ACTIVE == publication.status())
+                IpcPublication.State.ACTIVE == publication.state())
             {
                 ipcPublication = publication;
                 break;

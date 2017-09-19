@@ -26,9 +26,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetSocketAddress;
 
-import static io.aeron.driver.DataPacketDispatcher.SessionStatus.INIT_IN_PROGRESS;
-import static io.aeron.driver.DataPacketDispatcher.SessionStatus.ON_COOL_DOWN;
-import static io.aeron.driver.DataPacketDispatcher.SessionStatus.PENDING_SETUP_FRAME;
+import static io.aeron.driver.DataPacketDispatcher.SessionState.INIT_IN_PROGRESS;
+import static io.aeron.driver.DataPacketDispatcher.SessionState.ON_COOL_DOWN;
+import static io.aeron.driver.DataPacketDispatcher.SessionState.PENDING_SETUP_FRAME;
 
 /**
  * Handling of dispatching data packets to {@link PublicationImage}s streams.
@@ -37,14 +37,14 @@ import static io.aeron.driver.DataPacketDispatcher.SessionStatus.PENDING_SETUP_F
  */
 public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHandler
 {
-    public enum SessionStatus
+    public enum SessionState
     {
         PENDING_SETUP_FRAME,
         INIT_IN_PROGRESS,
         ON_COOL_DOWN,
     }
 
-    private final BiInt2ObjectMap<SessionStatus> ignoredSessionsMap = new BiInt2ObjectMap<>();
+    private final BiInt2ObjectMap<SessionState> ignoredSessionsMap = new BiInt2ObjectMap<>();
     private final Int2ObjectHashMap<Int2ObjectHashMap<PublicationImage>> sessionsByStreamIdMap =
         new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
@@ -85,7 +85,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         imageBySessionIdMap.put(sessionId, image);
         ignoredSessionsMap.remove(sessionId, streamId);
 
-        image.status(PublicationImage.Status.ACTIVE);
+        image.state(PublicationImage.State.ACTIVE);
     }
 
     public void removePublicationImage(final PublicationImage image)
@@ -231,9 +231,9 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
 
     private boolean isNotAlreadyInProgressOrOnCoolDown(final int streamId, final int sessionId)
     {
-        final SessionStatus status = ignoredSessionsMap.get(sessionId, streamId);
+        final SessionState state = ignoredSessionsMap.get(sessionId, streamId);
 
-        return INIT_IN_PROGRESS != status && ON_COOL_DOWN != status;
+        return INIT_IN_PROGRESS != state && ON_COOL_DOWN != state;
     }
 
     private void elicitSetupMessageFromSource(

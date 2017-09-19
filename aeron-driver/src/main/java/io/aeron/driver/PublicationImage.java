@@ -36,7 +36,7 @@ import java.net.InetSocketAddress;
 
 import static io.aeron.driver.LossDetector.lossFound;
 import static io.aeron.driver.LossDetector.rebuildOffset;
-import static io.aeron.driver.PublicationImage.Status.ACTIVE;
+import static io.aeron.driver.PublicationImage.State.ACTIVE;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.TermGapFiller.tryFillGap;
@@ -80,12 +80,12 @@ public class PublicationImage
     extends PublicationImagePadding3
     implements LossHandler, DriverManagedResource, Subscribable
 {
-    enum Status
+    enum State
     {
         INIT, ACTIVE, INACTIVE, LINGER
     }
 
-    private long timeOfLastStatusChangeNs;
+    private long timeOfLastStateChangeNs;
     private long lastLossChangeNumber = -1;
     private long lastSmChangeNumber = -1;
 
@@ -112,7 +112,7 @@ public class PublicationImage
     private final boolean isReliable;
 
     private boolean reachedEndOfLife = false;
-    private volatile Status status = Status.INIT;
+    private volatile State state = State.INIT;
 
     private final NanoClock nanoClock;
     private final InetSocketAddress controlAddress;
@@ -181,7 +181,7 @@ public class PublicationImage
         this.nanoClock = nanoClock;
         this.epochClock = epochClock;
         final long nowNs = nanoClock.nanoTime();
-        timeOfLastStatusChangeNs = nowNs;
+        timeOfLastStateChangeNs = nowNs;
         lastPacketTimestampNs = nowNs;
 
         termBuffers = rawLog.termBuffers();
@@ -358,28 +358,28 @@ public class PublicationImage
     }
 
     /**
-     * Return status of the image. Retrieved by {@link DriverConductor}.
+     * Return state of the image. Retrieved by {@link DriverConductor}.
      *
-     * @return status of the image
+     * @return state of the image
      */
-    Status status()
+    State state()
     {
-        return status;
+        return state;
     }
 
     /**
-     * Set status of the image.
+     * Set state of the image.
      * <p>
      * Set by {@link Receiver} for INIT to ACTIVE to INACTIVE
      * <p>
      * Set by {@link DriverConductor} for INACTIVE to LINGER
      *
-     * @param status of the image
+     * @param state of the image
      */
-    void status(final Status status)
+    void state(final State state)
     {
-        timeOfLastStatusChangeNs = nanoClock.nanoTime();
-        this.status = status;
+        timeOfLastStateChangeNs = nanoClock.nanoTime();
+        this.state = state;
     }
 
     private void scheduleStatusMessage(final long nowNs, final long smPosition, final int receiverWindowLength)
@@ -451,13 +451,13 @@ public class PublicationImage
     }
 
     /**
-     * Set status to INACTIVE, but only if currently ACTIVE. Set by {@link Receiver}.
+     * Set state to INACTIVE, but only if currently ACTIVE. Set by {@link Receiver}.
      */
     void ifActiveGoInactive()
     {
-        if (Status.ACTIVE == status)
+        if (State.ACTIVE == state)
         {
-            status(Status.INACTIVE);
+            state(State.INACTIVE);
         }
     }
 
@@ -528,7 +528,7 @@ public class PublicationImage
     {
         int workCount = 0;
 
-        if (ACTIVE == status)
+        if (ACTIVE == state)
         {
             final long changeNumber = endSmChange;
 
@@ -642,7 +642,7 @@ public class PublicationImage
      */
     boolean isAcceptingSubscriptions()
     {
-        return subscriberPositions.length > 0 && status == ACTIVE;
+        return subscriberPositions.length > 0 && state == ACTIVE;
     }
 
     /**
@@ -657,18 +657,18 @@ public class PublicationImage
 
     public void onTimeEvent(final long timeNs, final long timesMs, final DriverConductor conductor)
     {
-        switch (status)
+        switch (state)
         {
             case INACTIVE:
-                if (isDrained() || timeNs > (timeOfLastStatusChangeNs + imageLivenessTimeoutNs))
+                if (isDrained() || timeNs > (timeOfLastStateChangeNs + imageLivenessTimeoutNs))
                 {
-                    status(PublicationImage.Status.LINGER);
+                    state(State.LINGER);
                     conductor.transitionToLinger(this);
                 }
                 break;
 
             case LINGER:
-                if (timeNs > (timeOfLastStatusChangeNs + imageLivenessTimeoutNs))
+                if (timeNs > (timeOfLastStateChangeNs + imageLivenessTimeoutNs))
                 {
                     reachedEndOfLife = true;
                     conductor.cleanupImage(this);
@@ -688,7 +688,7 @@ public class PublicationImage
 
     public long timeOfLastStateChange()
     {
-        return timeOfLastStatusChangeNs;
+        return timeOfLastStateChangeNs;
     }
 
     public void delete()

@@ -34,7 +34,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
  */
 public class IpcPublication implements DriverManagedResource, Subscribable
 {
-    enum Status
+    enum State
     {
         ACTIVE, INACTIVE, LINGER
     }
@@ -55,11 +55,11 @@ public class IpcPublication implements DriverManagedResource, Subscribable
     private long lastConsumerPosition;
     private long timeOfLastConsumerPositionUpdateNs;
     private long cleanPosition;
-    private long timeOfLastStatusChangeNs;
+    private long timeOfLastStateChangeNs;
     private int refCount = 0;
     private boolean reachedEndOfLife = false;
     private final boolean isExclusive;
-    private Status status = Status.ACTIVE;
+    private State state = State.ACTIVE;
     private final UnsafeBuffer[] termBuffers;
     private ReadablePosition[] subscriberPositions = EMPTY_POSITIONS;
     private final Position publisherLimit;
@@ -100,7 +100,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         lastConsumerPosition = consumerPosition;
         cleanPosition = consumerPosition;
         timeOfLastConsumerPositionUpdateNs = nowNs;
-        timeOfLastStatusChangeNs = nowNs;
+        timeOfLastStateChangeNs = nowNs;
     }
 
     public int sessionId()
@@ -233,19 +233,19 @@ public class IpcPublication implements DriverManagedResource, Subscribable
             LogBufferDescriptor.timeOfLastStatusMessage(metaDataBuffer, timeMs);
         }
 
-        switch (status)
+        switch (state)
         {
             case INACTIVE:
                 if (isDrained())
                 {
-                    status = Status.LINGER;
-                    timeOfLastStatusChangeNs = timeNs;
+                    state = State.LINGER;
+                    timeOfLastStateChangeNs = timeNs;
                     conductor.transitionToLinger(this);
                 }
                 break;
 
             case LINGER:
-                if (timeNs > (timeOfLastStatusChangeNs + PUBLICATION_LINGER_NS))
+                if (timeNs > (timeOfLastStateChangeNs + PUBLICATION_LINGER_NS))
                 {
                     reachedEndOfLife = true;
                     conductor.cleanupIpcPublication(this);
@@ -261,12 +261,12 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
     public void timeOfLastStateChange(final long timeNs)
     {
-        timeOfLastStatusChangeNs = timeNs;
+        timeOfLastStateChangeNs = timeNs;
     }
 
     public long timeOfLastStateChange()
     {
-        return timeOfLastStatusChangeNs;
+        return timeOfLastStateChangeNs;
     }
 
     public void delete()
@@ -285,7 +285,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
         if (0 == count)
         {
-            status = Status.INACTIVE;
+            state = State.INACTIVE;
             LogBufferDescriptor.endOfStreamPosition(metaDataBuffer, producerPosition());
         }
 
@@ -297,9 +297,9 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         return consumerPosition;
     }
 
-    Status status()
+    State state()
     {
-        return status;
+        return state;
     }
 
     private boolean isDrained()

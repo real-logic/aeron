@@ -85,7 +85,7 @@ public class NetworkPublication
     extends NetworkPublicationPadding3
     implements RetransmitSender, DriverManagedResource, Subscribable
 {
-    public enum Status
+    public enum State
     {
         ACTIVE, DRAINING, LINGER, CLOSING
     }
@@ -104,7 +104,7 @@ public class NetworkPublication
     private volatile boolean isConnected;
     private volatile boolean hasSenderReleased;
     private volatile boolean isEndOfStream;
-    private Status status = Status.ACTIVE;
+    private State state = State.ACTIVE;
 
     private final UnsafeBuffer[] termBuffers;
     private final ByteBuffer[] sendBuffers;
@@ -608,7 +608,7 @@ public class NetworkPublication
     {
         updateConnectedStatus(timeMs);
 
-        switch (status)
+        switch (state)
         {
             case ACTIVE:
                 checkForBlockedPublisher(timeNs, consumerPosition());
@@ -638,7 +638,7 @@ public class NetworkPublication
                 if (spiesFinishedConsuming(conductor, consumerPosition))
                 {
                     timeOfLastActivityNs = timeNs;
-                    status = Status.LINGER;
+                    state = State.LINGER;
                 }
                 break;
 
@@ -646,7 +646,7 @@ public class NetworkPublication
                 if (timeNs > (timeOfLastActivityNs + PUBLICATION_LINGER_NS))
                 {
                     conductor.cleanupPublication(this);
-                    status = Status.CLOSING;
+                    state = State.CLOSING;
                 }
                 break;
         }
@@ -677,7 +677,7 @@ public class NetworkPublication
 
         if (0 == count)
         {
-            status = Status.DRAINING;
+            state = State.DRAINING;
             channelEndpoint.decRef();
             timeOfLastActivityNs = nanoClock.nanoTime();
             if (consumerPosition() >= producerPosition())
@@ -694,9 +694,9 @@ public class NetworkPublication
         return ++refCount;
     }
 
-    Status status()
+    State state()
     {
-        return status;
+        return state;
     }
 
     void senderRelease()

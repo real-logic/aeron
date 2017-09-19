@@ -260,6 +260,11 @@ public class NetworkPublication
         return channelEndpoint;
     }
 
+    public String channel()
+    {
+        return channelEndpoint.originalUriString();
+    }
+
     public int sessionId()
     {
         return sessionId;

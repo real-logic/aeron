@@ -674,7 +674,8 @@ public class DriverConductorTest
 
         final PublicationImage publicationImage = captor.getValue();
 
-        publicationImage.state(PublicationImage.State.INACTIVE);
+        publicationImage.activate();
+        publicationImage.ifActiveGoInactive();
 
         doWorkUntil(() -> nanoClock.nanoTime() >= IMAGE_LIVENESS_TIMEOUT_NS + 1000);
 
@@ -705,13 +706,13 @@ public class DriverConductorTest
 
         final PublicationImage publicationImage = captor.getValue();
 
-        publicationImage.state(PublicationImage.State.ACTIVE);
+        publicationImage.activate();
 
         driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
 
         driverConductor.doWork();
 
-        publicationImage.state(PublicationImage.State.INACTIVE);
+        publicationImage.ifActiveGoInactive();
 
         doWorkUntil(() -> nanoClock.nanoTime() >= IMAGE_LIVENESS_TIMEOUT_NS + 1000);
 
@@ -752,7 +753,8 @@ public class DriverConductorTest
 
         final PublicationImage publicationImage = captor.getValue();
 
-        publicationImage.state(PublicationImage.State.INACTIVE);
+        publicationImage.activate();
+        publicationImage.ifActiveGoInactive();
 
         doWorkUntil(() -> nanoClock.nanoTime() >= IMAGE_LIVENESS_TIMEOUT_NS / 2);
 

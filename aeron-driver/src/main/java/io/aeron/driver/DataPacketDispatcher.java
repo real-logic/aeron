@@ -72,7 +72,10 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
             throw new UnknownSubscriptionException("No subscription registered on stream " + streamId);
         }
 
-        imageBySessionIdMap.values().forEach(PublicationImage::ifActiveGoInactive);
+        for (final PublicationImage image : imageBySessionIdMap.values())
+        {
+            image.ifActiveGoInactive();
+        }
     }
 
     public void addPublicationImage(final PublicationImage image)
@@ -85,7 +88,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         imageBySessionIdMap.put(sessionId, image);
         ignoredSessionsMap.remove(sessionId, streamId);
 
-        image.state(PublicationImage.State.ACTIVE);
+        image.activate();
     }
 
     public void removePublicationImage(final PublicationImage image)

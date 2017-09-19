@@ -206,7 +206,7 @@ public class DataPacketDispatcherTest
         dispatcher.addPublicationImage(mockImage);
         dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
 
-        verify(mockImage).state(PublicationImage.State.ACTIVE);
+        verify(mockImage).activate();
         verify(mockImage).insertPacket(ACTIVE_TERM_ID, TERM_OFFSET, mockBuffer, LENGTH);
     }
 

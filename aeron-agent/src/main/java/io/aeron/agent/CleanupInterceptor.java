@@ -32,8 +32,7 @@ public class CleanupInterceptor
         @Advice.OnMethodEnter
         public static void cleanupImageInterceptor(final PublicationImage image)
         {
-            LOGGER.logImageRemoval(
-                image.channelUriString(), image.sessionId(), image.streamId(), image.correlationId());
+            LOGGER.logImageRemoval(image.channel(), image.sessionId(), image.streamId(), image.correlationId());
         }
     }
 
@@ -42,22 +41,16 @@ public class CleanupInterceptor
         @Advice.OnMethodEnter
         public static void cleanupPublication(final NetworkPublication publication)
         {
-            LOGGER.logPublicationRemoval(
-                publication.channelEndpoint().originalUriString(),
-                publication.sessionId(),
-                publication.streamId());
+            LOGGER.logPublicationRemoval(publication.channel(), publication.sessionId(), publication.streamId());
         }
     }
 
     public static class CleanupSubscriptionLink
     {
         @Advice.OnMethodEnter
-        public static void cleanupSubscriptionLink(final SubscriptionLink subscriptionLink)
+        public static void cleanupSubscriptionLink(final SubscriptionLink link)
         {
-            LOGGER.logSubscriptionRemoval(
-                subscriptionLink.uri(),
-                subscriptionLink.streamId(),
-                subscriptionLink.registrationId());
+            LOGGER.logSubscriptionRemoval(link.uri(), link.streamId(), link.registrationId());
         }
     }
 }

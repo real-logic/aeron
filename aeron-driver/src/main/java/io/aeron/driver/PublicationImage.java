@@ -247,7 +247,7 @@ public class PublicationImage
      *
      * @return the string representation of the channel URI.
      */
-    public String channelUriString()
+    public String channel()
     {
         return channelEndpoint.originalUriString();
     }
@@ -309,7 +309,7 @@ public class PublicationImage
         else if (null != lossReport)
         {
             reportEntry = lossReport.createEntry(
-                length, epochClock.time(), sessionId, streamId, channelUriString(), sourceAddress.toString());
+                length, epochClock.time(), sessionId, streamId, channel(), sourceAddress.toString());
 
             if (null == reportEntry)
             {
@@ -358,25 +358,14 @@ public class PublicationImage
     }
 
     /**
-     * Return state of the image. Retrieved by {@link DriverConductor}.
-     *
-     * @return state of the image
+     * Activate this image from the {@link Receiver}
      */
-    State state()
+    void activate()
     {
-        return state;
+        state(ACTIVE);
     }
 
-    /**
-     * Set state of the image.
-     * <p>
-     * Set by {@link Receiver} for INIT to ACTIVE to INACTIVE
-     * <p>
-     * Set by {@link DriverConductor} for INACTIVE to LINGER
-     *
-     * @param state of the image
-     */
-    void state(final State state)
+    private void state(final State state)
     {
         timeOfLastStateChangeNs = nanoClock.nanoTime();
         this.state = state;
@@ -451,7 +440,7 @@ public class PublicationImage
     }
 
     /**
-     * Set state to INACTIVE, but only if currently ACTIVE. Set by {@link Receiver}.
+     * Set state to {@link State#INACTIVE} if currently {@link State#ACTIVE}. Set by {@link Receiver}.
      */
     void ifActiveGoInactive()
     {

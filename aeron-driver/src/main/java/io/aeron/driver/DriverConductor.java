@@ -320,10 +320,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     void cleanupSpies(final NetworkPublication publication)
     {
-        clientProxy.onUnavailableImage(
-            publication.registrationId(),
-            publication.streamId(),
-            publication.channelEndpoint().originalUriString());
+        clientProxy.onUnavailableImage(publication.registrationId(), publication.streamId(), publication.channel());
 
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
@@ -366,7 +363,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     void transitionToLinger(final PublicationImage image)
     {
-        clientProxy.onUnavailableImage(image.correlationId(), image.streamId(), image.channelUriString());
+        clientProxy.onUnavailableImage(image.correlationId(), image.streamId(), image.channel());
         receiverProxy.removeCoolDown(image.channelEndpoint(), image.sessionId(), image.streamId());
     }
 

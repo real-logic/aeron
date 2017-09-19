@@ -30,7 +30,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
     protected final long registrationId;
     protected final long clientLivenessTimeoutNs;
     protected final int streamId;
-    protected final String uri;
+    protected final String channel;
     protected final AeronClient aeronClient;
     protected final Map<Subscribable, ReadablePosition> positionBySubscribableMap = new IdentityHashMap<>();
 
@@ -39,13 +39,13 @@ public abstract class SubscriptionLink implements DriverManagedResource
     protected SubscriptionLink(
         final long registrationId,
         final int streamId,
-        final String channelUri,
+        final String channel,
         final AeronClient aeronClient,
         final long clientLivenessTimeoutNs)
     {
         this.registrationId = registrationId;
         this.streamId = streamId;
-        this.uri = channelUri;
+        this.channel = channel;
         this.aeronClient = aeronClient;
         this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
     }
@@ -60,9 +60,9 @@ public abstract class SubscriptionLink implements DriverManagedResource
         return streamId;
     }
 
-    public String uri()
+    public String channel()
     {
-        return uri;
+        return channel;
     }
 
     public ReceiveChannelEndpoint channelEndpoint()

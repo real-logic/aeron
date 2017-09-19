@@ -219,7 +219,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
                 ReceiverHwm.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 ReceiverPos.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 nanoClock,
-                context.epochClock(),
+                epochClock,
                 context.systemCounters(),
                 sourceAddress,
                 congestionControl,
@@ -509,7 +509,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         final AeronClient client = getOrAddClient(clientId);
         final SubscriptionLink subscription = new NetworkSubscriptionLink(
-            registrationId, channelEndpoint, streamId, channel, client, context.clientLivenessTimeoutNs(), isReliable);
+            registrationId, channelEndpoint, streamId, channel, client, clientLivenessTimeoutNs, isReliable);
 
         subscriptionLinks.add(subscription);
         clientProxy.operationSucceeded(registrationId);
@@ -520,7 +520,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     void onAddIpcSubscription(final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final IpcSubscriptionLink subscription = new IpcSubscriptionLink(
-            registrationId, streamId, channel, getOrAddClient(clientId), context.clientLivenessTimeoutNs());
+            registrationId, streamId, channel, getOrAddClient(clientId), clientLivenessTimeoutNs);
 
         subscriptionLinks.add(subscription);
         clientProxy.operationSucceeded(registrationId);
@@ -654,7 +654,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
                     subscription.registrationId(),
                     sessionId,
                     streamId,
-                    subscription.uri(),
+                    subscription.channel(),
                     joinPosition);
 
                 position.setOrdered(joinPosition);
@@ -874,7 +874,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     {
         final long registrationId = subscription.registrationId();
         final int streamId = subscription.streamId();
-        final String channel = subscription.uri();
+        final String channel = subscription.channel();
 
         for (int i = 0, size = publicationImages.size(); i < size; i++)
         {
@@ -937,7 +937,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final long registrationId = subscription.registrationId();
         final int sessionId = publication.sessionId();
         final int streamId = subscription.streamId();
-        final String channel = subscription.uri();
+        final String channel = subscription.channel();
 
         final Position position = SubscriberPos.allocate(
             countersManager, registrationId, sessionId, streamId, channel, joinPosition);
@@ -964,7 +964,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final int sessionId = publication.sessionId();
 
         final Position position = SubscriberPos.allocate(
-            countersManager, subscriberRegistrationId, sessionId, streamId, subscription.uri(), joinPosition);
+            countersManager, subscriberRegistrationId, sessionId, streamId, subscription.channel(), joinPosition);
 
         position.setOrdered(joinPosition);
         publication.addSubscriber(position);

@@ -50,7 +50,7 @@ public class CleanupInterceptor
         @Advice.OnMethodEnter
         public static void cleanupSubscriptionLink(final SubscriptionLink link)
         {
-            LOGGER.logSubscriptionRemoval(link.uri(), link.streamId(), link.registrationId());
+            LOGGER.logSubscriptionRemoval(link.channel(), link.streamId(), link.registrationId());
         }
     }
 }

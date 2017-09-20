@@ -98,7 +98,7 @@ public enum EventCode
 
     public static EventCode get(final int id)
     {
-        if (id < 0 || id > EVENT_CODE_BY_ID.length)
+        if (id < 0 || id >= EVENT_CODE_BY_ID.length)
         {
             throw new IllegalArgumentException("No EventCode for ID: " + id);
         }

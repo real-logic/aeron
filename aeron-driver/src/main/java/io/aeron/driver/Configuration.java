@@ -401,6 +401,17 @@ public class Configuration
     public static final long PUBLICATION_UNBLOCK_TIMEOUT_NS = getLong(
         PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME, PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS);
 
+    /**
+     * Property name for {@link Publication} spies may advance configuration.
+     */
+    public static final String PUBLICATION_SPIES_MAY_ADVANCE_PROP_NAME = "aeron.publication.spies.may.advance";
+
+    /**
+     * Publication may advance with spies or not.
+     */
+    public static final boolean PUBLICATION_SPIES_MAY_ADVANCE =
+        "true".equalsIgnoreCase(getProperty(PUBLICATION_SPIES_MAY_ADVANCE_PROP_NAME, "false"));
+
     private static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 
     static final long AGENT_IDLE_MAX_SPINS = 100;

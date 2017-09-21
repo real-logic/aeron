@@ -739,7 +739,8 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             retransmitHandler,
             networkPublicationThreadLocals,
             publicationUnblockTimeoutNs,
-            isExclusive);
+            isExclusive,
+            context.publicationSpiesMayAdvance());
 
         channelEndpoint.incRef();
         networkPublications.add(publication);

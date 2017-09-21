@@ -145,6 +145,7 @@ public class SenderTest
             mockRetransmitHandler,
             new NetworkPublicationThreadLocals(),
             Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS,
+            false,
             false);
 
         senderCommandQueue.offer(new NewPublicationCmd(publication));

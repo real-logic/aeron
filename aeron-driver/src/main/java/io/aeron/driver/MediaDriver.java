@@ -440,6 +440,7 @@ public final class MediaDriver implements AutoCloseable
         private boolean warnIfDirectoryExists = Configuration.DIR_WARN_IF_EXISTS;
         private boolean dirDeleteOnStart = Configuration.DIR_DELETE_ON_START;
         private boolean termBufferSparseFile = Configuration.TERM_BUFFER_SPARSE_FILE;
+        private boolean publicationSpiesMayAdvance = Configuration.PUBLICATION_SPIES_MAY_ADVANCE;
 
         private long clientLivenessTimeoutNs = Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
         private long imageLivenessTimeoutNs = Configuration.IMAGE_LIVENESS_TIMEOUT_NS;
@@ -793,6 +794,28 @@ public final class MediaDriver implements AutoCloseable
         public Context publicationUnblockTimeoutNs(final long timeoutNs)
         {
             this.publicationUnblockTimeoutNs = timeoutNs;
+            return this;
+        }
+
+        /**
+         * May spies advance a {@link Publication} without the presence of a network Subscription?
+         *
+         * @return whether pies may advance the {@link Publication} or not.
+         */
+        public boolean publicationSpiesMayAdvance()
+        {
+            return publicationSpiesMayAdvance;
+        }
+
+        /**
+         * May spies advance a {@link Publication} without the presence of a network Subscription?
+         *
+         * @param spiesMayAdvance the Publication?
+         * @return this for a fluent API.
+         */
+        public Context publicationSpiesMayAdvance(final boolean spiesMayAdvance)
+        {
+            this.publicationSpiesMayAdvance = spiesMayAdvance;
             return this;
         }
 

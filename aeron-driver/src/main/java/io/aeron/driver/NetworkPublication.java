@@ -18,7 +18,6 @@ package io.aeron.driver;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.status.SystemCounters;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.LogBufferUnblocker;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
@@ -101,9 +100,12 @@ public class NetworkPublication
     private final int sessionId;
     private final int streamId;
     private final boolean isExclusive;
-    private volatile boolean isConnected;
+    private final boolean spiesMayAdvance;
+    private volatile long timeOfLastStatusMessageMs;
+    private volatile boolean isSubscriptionConnected;
     private volatile boolean hasSenderReleased;
     private volatile boolean isEndOfStream;
+    private volatile boolean isSpyConnected;
     private State state = State.ACTIVE;
 
     private final UnsafeBuffer[] termBuffers;
@@ -148,7 +150,8 @@ public class NetworkPublication
         final RetransmitHandler retransmitHandler,
         final NetworkPublicationThreadLocals threadLocals,
         final long unblockTimeoutNs,
-        final boolean isExclusive)
+        final boolean isExclusive,
+        final boolean spiesMayAdvance)
     {
         this.registrationId = registrationId;
         this.unblockTimeoutNs = unblockTimeoutNs;
@@ -166,6 +169,7 @@ public class NetworkPublication
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.isExclusive = isExclusive;
+        this.spiesMayAdvance = spiesMayAdvance;
 
         metaDataBuffer = rawLog.metaData();
         setupBuffer = threadLocals.setupBuffer();
@@ -192,6 +196,8 @@ public class NetworkPublication
         final long nowNs = nanoClock.nanoTime();
         timeOfLastSendOrHeartbeatNs = nowNs - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
         timeOfLastSetupNs = nowNs - PUBLICATION_SETUP_TIMEOUT_NS - 1;
+
+        timeOfLastStatusMessageMs = epochClock.time() - PUBLICATION_CONNECTION_TIMEOUT_MS - 1;
 
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
@@ -247,7 +253,18 @@ public class NetworkPublication
             final boolean isEndOfStream = this.isEndOfStream;
 
             bytesSent = heartbeatMessageCheck(nowNs, activeTermId, termOffset, isEndOfStream);
-            senderLimit.setOrdered(flowControl.onIdle(nowNs, senderLimit.get(), senderPosition, isEndOfStream));
+
+            if (spiesShouldAdvanceSenderPosition(nowNs))
+            {
+                final long newSenderPosition = producerPosition();
+
+                this.senderPosition.setOrdered(newSenderPosition);
+                senderLimit.setOrdered(flowControl.onIdle(nowNs, newSenderPosition, newSenderPosition, isEndOfStream));
+            }
+            else
+            {
+                senderLimit.setOrdered(flowControl.onIdle(nowNs, senderLimit.get(), senderPosition, isEndOfStream));
+            }
         }
 
         retransmitHandler.processTimeouts(nowNs, this);
@@ -325,12 +342,18 @@ public class NetworkPublication
     public void addSubscriber(final ReadablePosition spyPosition)
     {
         spyPositions = ArrayUtil.add(spyPositions, spyPosition);
+        isSpyConnected = true;
     }
 
     public void removeSubscriber(final ReadablePosition spyPosition)
     {
         spyPositions = ArrayUtil.remove(spyPositions, spyPosition);
         spyPosition.close();
+
+        if (0 == spyPositions.length)
+        {
+            isSpyConnected = false;
+        }
     }
 
     public void onNak(final int termId, final int termOffset, final int length)
@@ -340,11 +363,11 @@ public class NetworkPublication
 
     public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
-        LogBufferDescriptor.timeOfLastStatusMessage(metaDataBuffer, epochClock.time());
+        timeOfLastStatusMessageMs = epochClock.time();
 
-        if (!isConnected)
+        if (!isSubscriptionConnected)
         {
-            isConnected = true;
+            isSubscriptionConnected = true;
         }
 
         senderLimit.setOrdered(
@@ -402,7 +425,7 @@ public class NetworkPublication
         int workCount = 0;
 
         final long senderPosition = this.senderPosition.getVolatile();
-        if (isConnected)
+        if (isSubscriptionConnected || (spiesMayAdvance && isSpyConnected))
         {
             long minConsumerPosition = senderPosition;
             if (spyPositions.length > 0)
@@ -431,6 +454,12 @@ public class NetworkPublication
     boolean hasSpies()
     {
         return spyPositions.length > 0;
+    }
+
+    private boolean spiesShouldAdvanceSenderPosition(final long nowMs)
+    {
+        return spiesMayAdvance && isSpyConnected &&
+            (nowMs > (timeOfLastStatusMessageMs + PUBLICATION_CONNECTION_TIMEOUT_MS));
     }
 
     private int sendData(final long nowNs, final long senderPosition, final int termOffset)
@@ -496,7 +525,7 @@ public class NetworkPublication
             timeOfLastSetupNs = nowNs;
             timeOfLastSendOrHeartbeatNs = nowNs;
 
-            if (isConnected)
+            if (isSubscriptionConnected)
             {
                 shouldSendSetupFrame = false;
             }
@@ -603,9 +632,19 @@ public class NetworkPublication
 
     private void updateConnectedStatus(final long timeMs)
     {
-        if (isConnected && timeMs > (timeOfLastStatusMessage(metaDataBuffer) + PUBLICATION_CONNECTION_TIMEOUT_MS))
+        if (isSubscriptionConnected && timeMs > (timeOfLastStatusMessageMs + PUBLICATION_CONNECTION_TIMEOUT_MS))
         {
-            isConnected = false;
+            isSubscriptionConnected = false;
+        }
+
+        if (spiesMayAdvance && isSpyConnected)
+        {
+            timeOfLastStatusMessage(metaDataBuffer, timeMs);
+        }
+        else
+        {
+            timeOfLastStatusMessage(
+                metaDataBuffer, Math.max(timeOfLastStatusMessageMs, timeOfLastStatusMessage(metaDataBuffer)));
         }
     }
 
@@ -630,7 +669,7 @@ public class NetworkPublication
                         break;
                     }
 
-                    if (isConnected)
+                    if (isSubscriptionConnected)
                     {
                         break;
                     }

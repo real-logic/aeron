@@ -45,7 +45,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.LockSupport;
 
-import static io.aeron.archive.TestUtil.*;
+import static io.aeron.archive.TestUtil.awaitConnectedReply;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
 import static org.agrona.BufferUtil.allocateDirectAligned;
@@ -189,7 +189,7 @@ public class ArchiveTest
             final ExclusivePublication recordedPublication =
                 publishingClient.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
 
-            awaitConnected(recordedPublication);
+            TestUtil.await(recordedPublication::isConnected);
 
             final int sessionId = recordedPublication.sessionId();
             final int termBufferLength = recordedPublication.termBufferLength();
@@ -228,7 +228,7 @@ public class ArchiveTest
             final ExclusivePublication recordedPublication =
                 publishingClient.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
 
-            awaitConnected(recordedPublication);
+            TestUtil.await(recordedPublication::isConnected);
 
             final int sessionId = recordedPublication.sessionId();
             final int termBufferLength = recordedPublication.termBufferLength();
@@ -269,7 +269,7 @@ public class ArchiveTest
             prePublicationActionsAndVerifications(publishingClient, archiveProxy, controlPublication, recordingEvents);
 
             final Publication recordedPublication = publishingClient.addPublication(publishUri, PUBLISH_STREAM_ID);
-            awaitConnected(recordedPublication);
+            TestUtil.await(recordedPublication::isConnected);
 
             final int sessionId = recordedPublication.sessionId();
             final int termBufferLength = recordedPublication.termBufferLength();
@@ -342,7 +342,7 @@ public class ArchiveTest
             requestStopCorrelationId,
             controlSessionId));
 
-        awaitOk(controlResponse, requestStopCorrelationId);
+        TestUtil.awaitOk(controlResponse, requestStopCorrelationId);
 
         final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new FailRecordingEventsListener()
@@ -375,13 +375,14 @@ public class ArchiveTest
         final Publication controlPublication,
         final Subscription recordingEvents)
     {
-        awaitConnected(controlPublication);
-        awaitConnected(recordingEvents);
+        TestUtil.await(controlPublication::isConnected);
+        TestUtil.await(recordingEvents::isConnected);
 
         controlResponse = publishingClient.addSubscription(CONTROL_URI, CONTROL_STREAM_ID);
         final long connectCorrelationId = correlationId++;
         assertTrue(archiveProxy.connect(CONTROL_URI, CONTROL_STREAM_ID, connectCorrelationId));
-        awaitConnected(controlResponse);
+
+        TestUtil.await(controlResponse::isConnected);
         awaitConnectedReply(controlResponse, connectCorrelationId, (sessionId) -> controlSessionId = sessionId);
         verifyEmptyDescriptorList(archiveProxy);
 
@@ -393,16 +394,16 @@ public class ArchiveTest
             startRecordingCorrelationId,
             controlSessionId));
 
-        awaitOk(controlResponse, startRecordingCorrelationId);
+        TestUtil.awaitOk(controlResponse, startRecordingCorrelationId);
 
-        startDrainingSubscriber(aeron, publishUri, PUBLISH_STREAM_ID);
+        TestUtil.startDrainingSubscriber(aeron, publishUri, PUBLISH_STREAM_ID);
     }
 
     private void verifyEmptyDescriptorList(final ArchiveProxy client)
     {
         final long requestRecordingsCorrelationId = this.correlationId++;
         client.listRecordings(0, 100, requestRecordingsCorrelationId, controlSessionId);
-        awaitResponse(controlResponse, requestRecordingsCorrelationId);
+        TestUtil.awaitResponse(controlResponse, requestRecordingsCorrelationId);
     }
 
     private void verifyDescriptorListOngoingArchive(
@@ -511,7 +512,7 @@ public class ArchiveTest
         {
             final int dataLength = messageLengths[i] - HEADER_LENGTH;
             buffer.putInt(0, i);
-            offer(publication, buffer, dataLength);
+            TestUtil.offer(publication, buffer, dataLength);
         }
 
         final long position = publication.position();
@@ -534,7 +535,7 @@ public class ArchiveTest
         {
             final int dataLength = messageLengths[i] - HEADER_LENGTH;
             buffer.putInt(0, i);
-            offer(publication, buffer, dataLength);
+            TestUtil.offer(publication, buffer, dataLength);
         }
 
         final long position = publication.position();
@@ -562,8 +563,8 @@ public class ArchiveTest
                 replayCorrelationId,
                 controlSessionId));
 
-            awaitOk(controlResponse, replayCorrelationId);
-            awaitConnected(replay);
+            TestUtil.awaitOk(controlResponse, replayCorrelationId);
+            TestUtil.await(replay::isConnected);
             final Image image = replay.images().get(0);
             assertThat(image.initialTermId(), is(initialTermId));
             assertThat(image.mtuLength(), is(maxPayloadLength + HEADER_LENGTH));
@@ -575,7 +576,7 @@ public class ArchiveTest
 
             while (remaining > 0)
             {
-                poll(replay, this::validateFragment2);
+                TestUtil.poll(replay, this::validateFragment2);
             }
 
             assertThat(this.messageCount, is(messageCount));
@@ -588,7 +589,7 @@ public class ArchiveTest
         remaining = totalDataLength;
         final File archiveDir = archive.context().archiveDir();
         try (Catalog catalog = new Catalog(archiveDir, null, 0, System::currentTimeMillis);
-             RecordingFragmentReader archiveDataFileReader = newRecordingFragmentReader(
+             RecordingFragmentReader archiveDataFileReader = TestUtil.newRecordingFragmentReader(
                  catalog.wrapDescriptor(recordingId), archiveDir))
         {
             this.messageCount = 0;
@@ -718,9 +719,9 @@ public class ArchiveTest
                         replayCorrelationId,
                         controlSessionId));
 
-                    awaitOk(controlResponse, replayCorrelationId);
+                    TestUtil.awaitOk(controlResponse, replayCorrelationId);
 
-                    awaitConnected(replay);
+                    TestUtil.await(replay::isConnected);
 
                     final Image image = replay.images().get(0);
                     assertThat(image.initialTermId(), is(initialTermId));
@@ -733,7 +734,7 @@ public class ArchiveTest
 
                     while (this.messageCount < messageCount)
                     {
-                        poll(replay, this::validateFragment2);
+                        TestUtil.poll(replay, this::validateFragment2);
                     }
 
                     waitForData.countDown();

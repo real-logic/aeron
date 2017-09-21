@@ -147,11 +147,11 @@ public class ArchiveReplayLoadTest
              Subscription recordingEvents = aeron.addSubscription(
                  archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
         {
-            awaitConnected(recordingEvents);
+            await(recordingEvents::isConnected);
             aeronArchive.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, SourceLocation.LOCAL);
 
             startDrainingSubscriber(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
-            awaitConnected(publication);
+            await(publication::isConnected);
 
             final CountDownLatch recordingStopped = prepAndSendMessages(recordingEvents, publication);
 
@@ -221,7 +221,7 @@ public class ArchiveReplayLoadTest
         try (Subscription replay = aeronArchive.replay(
             recordingId, startPosition, expectedRecordingLength, REPLAY_URI, iteration))
         {
-            while (replay.hasNoImages())
+            while (!replay.isConnected())
             {
                 Thread.yield();
             }

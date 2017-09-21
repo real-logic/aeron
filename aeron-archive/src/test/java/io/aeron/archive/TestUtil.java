@@ -227,21 +227,6 @@ public class TestUtil
         }
     }
 
-    public static void awaitConnected(final Subscription subscription)
-    {
-        await(() -> subscription.imageCount() > 0);
-    }
-
-    public static void awaitConnected(final Publication publication)
-    {
-        await(publication::isConnected);
-    }
-
-    public static void awaitConnected(final ExclusivePublication publication)
-    {
-        await(publication::isConnected);
-    }
-
     static RecordingFragmentReader newRecordingFragmentReader(
         final UnsafeBuffer descriptorBuffer, final File archiveDir)
         throws IOException

@@ -287,6 +287,16 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
+     * Is this subscription connected by having at least one publication {@link Image}.
+     *
+     * @return true if this subscription connected by having at least one publication {@link Image}.
+     */
+    public boolean isConnected()
+    {
+        return images.length > 0;
+    }
+
+    /**
      * Has the subscription currently no images connected to it?
      *
      * @return he subscription currently no images connected to it?

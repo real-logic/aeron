@@ -134,7 +134,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
         try (ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID);
              Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
-            while (subscription.hasNoImages())
+            while (!subscription.isConnected())
             {
                 Thread.yield();
             }
@@ -169,7 +169,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
         try (Subscription subscription = aeronArchive.replay(
             recordingId, 0L, recordingLength, REPLAY_URI, REPLAY_STREAM_ID))
         {
-            while (subscription.hasNoImages())
+            while (!subscription.isConnected())
             {
                 Thread.yield();
             }

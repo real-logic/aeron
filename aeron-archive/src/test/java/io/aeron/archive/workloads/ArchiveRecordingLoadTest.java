@@ -132,7 +132,7 @@ public class ArchiveRecordingLoadTest
         {
             initRecordingStartIndicator(recordingEvents);
             initRecordingEndIndicator(recordingEvents);
-            awaitConnected(recordingEvents);
+            await(recordingEvents::isConnected);
 
             final long deadlineMs = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
 
@@ -144,7 +144,7 @@ public class ArchiveRecordingLoadTest
                 final long start;
                 try (ExclusivePublication publication = aeron.addExclusivePublication(PUBLISH_URI, PUBLISH_STREAM_ID))
                 {
-                    awaitConnected(publication);
+                    await(publication::isConnected);
                     await(recordingStarted);
 
                     doneRecording = false;

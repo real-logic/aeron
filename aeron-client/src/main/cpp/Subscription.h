@@ -214,6 +214,16 @@ public:
     }
 
     /**
+     * Is the subscription connected by having at least one image available.
+     *
+     * @return true if the subscription has more than one image available.
+     */
+    inline bool isConnected() const
+    {
+        return std::atomic_load_explicit(&m_imageList, std::memory_order_acquire)->m_length > 0;
+    }
+
+    /**
      * Count of images connected to this subscription.
      *
      * @return count of images connected to this subscription.

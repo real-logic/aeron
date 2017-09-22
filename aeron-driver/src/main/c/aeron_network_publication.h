@@ -69,7 +69,6 @@ typedef struct aeron_network_publication_stct
     aeron_logbuffer_metadata_t *log_meta_data;
     aeron_send_channel_endpoint_t *endpoint;
     aeron_flow_control_strategy_t *flow_control;
-    aeron_clock_func_t epoch_clock;
     aeron_clock_func_t nano_clock;
 
     char *log_file_name;
@@ -77,8 +76,10 @@ typedef struct aeron_network_publication_stct
     int64_t trip_gain;
     int64_t linger_timeout_ns;
     int64_t unblock_timeout_ns;
+    int64_t connection_timeout_ns;
     int64_t time_of_last_send_or_heartbeat_ns;
     int64_t time_of_last_setup_ns;
+    int64_t time_of_last_status_message_ns;
     int32_t session_id;
     int32_t stream_id;
     int32_t initial_term_id;
@@ -88,7 +89,7 @@ typedef struct aeron_network_publication_stct
     size_t mtu_length;
     bool is_exclusive;
     bool should_send_setup_frame;
-    bool is_connected;
+    bool has_receivers;
     bool is_end_of_stream;
     bool track_sender_limits;
     bool has_sender_released;

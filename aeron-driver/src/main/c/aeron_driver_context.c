@@ -245,6 +245,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->initial_window_length = 128 * 1024;
     _context->loss_report_length = 1024 * 1024;
     _context->publication_unblock_timeout_ns = 10 * 1000 * 1000 * 1000L;
+    _context->publication_connection_timeout_ns = 5 * 1000 * 1000 * 1000L;
 
     /* set from env */
     char *value = NULL;
@@ -458,6 +459,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         aeron_config_parse_uint64(
             getenv(AERON_PUBLICATION_UNBLOCK_TIMEOUT_ENV_VAR),
             _context->publication_unblock_timeout_ns,
+            1000,
+            INT64_MAX);
+
+    _context->publication_connection_timeout_ns =
+        aeron_config_parse_uint64(
+            getenv(AERON_PUBLICATION_CONNECTION_TIMEOUT_ENV_VAR),
+            _context->publication_connection_timeout_ns,
             1000,
             INT64_MAX);
 

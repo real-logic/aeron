@@ -122,13 +122,12 @@ int aeron_network_publication_create(
     _pub->log_meta_data->initial_term_id = initial_term_id;
     _pub->log_meta_data->mtu_length = (int32_t)mtu_length;
     _pub->log_meta_data->correlation_id = registration_id;
-    _pub->log_meta_data->time_of_last_status_message = 0;
+    _pub->log_meta_data->is_connected = 0;
     aeron_logbuffer_fill_default_header(
         _pub->mapped_raw_log.log_meta_data.addr, session_id, stream_id, initial_term_id);
 
     _pub->endpoint = endpoint;
     _pub->flow_control = flow_control_strategy;
-    _pub->epoch_clock = context->epoch_clock;
     _pub->nano_clock = context->nano_clock;
     _pub->conductor_fields.subscribeable.array = NULL;
     _pub->conductor_fields.subscribeable.length = 0;
@@ -161,11 +160,13 @@ int aeron_network_publication_create(
     _pub->term_window_length = (int64_t)aeron_network_publication_term_window_length(context, term_buffer_length);
     _pub->linger_timeout_ns = (int64_t)context->publication_linger_timeout_ns;
     _pub->unblock_timeout_ns = (int64_t)context->publication_unblock_timeout_ns;
+    _pub->connection_timeout_ns = (int64_t)context->publication_connection_timeout_ns;
     _pub->time_of_last_send_or_heartbeat_ns = now_ns - AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
     _pub->time_of_last_setup_ns = now_ns - AERON_NETWORK_PUBLICATION_SETUP_TIMEOUT_NS - 1;
+    _pub->time_of_last_status_message_ns = now_ns - context->publication_connection_timeout_ns - 1;
     _pub->is_exclusive = is_exclusive;
     _pub->should_send_setup_frame = true;
-    _pub->is_connected = false;
+    _pub->has_receivers = false;
     _pub->is_end_of_stream = false;
     _pub->track_sender_limits = true;
     _pub->has_sender_released = false;
@@ -253,9 +254,7 @@ int aeron_network_publication_setup_message_check(
         publication->time_of_last_setup_ns = now_ns;
         publication->time_of_last_send_or_heartbeat_ns = now_ns;
 
-        bool is_connected;
-        AERON_GET_VOLATILE(is_connected, publication->is_connected);
-        if (is_connected)
+        if (publication->has_receivers)
         {
             publication->should_send_setup_frame = false;
         }
@@ -434,6 +433,13 @@ int aeron_network_publication_send(aeron_network_publication_t *publication, int
         aeron_counter_set_ordered(publication->snd_lmt_position.value_addr, flow_control_position);
     }
 
+    if (publication->has_receivers &&
+        now_ns > (publication->time_of_last_status_message_ns + publication->connection_timeout_ns))
+    {
+        AERON_PUT_ORDERED(publication->has_receivers, false);
+        AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 0);
+    }
+
     aeron_retransmit_handler_process_timeouts(&publication->retransmit_handler, now_ns);
 
     return bytes_sent;
@@ -527,13 +533,14 @@ void aeron_network_publication_on_nak(
 void aeron_network_publication_on_status_message(
     aeron_network_publication_t *publication, const uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
 {
-    AERON_PUT_ORDERED(publication->log_meta_data->time_of_last_status_message, publication->epoch_clock());
+    const int64_t time_ns = publication->nano_clock();
 
-    bool is_connected;
-    AERON_GET_VOLATILE(is_connected, publication->is_connected);
-    if (!is_connected)
+    publication->time_of_last_status_message_ns = time_ns;
+
+    if (!publication->has_receivers)
     {
-        AERON_PUT_ORDERED(publication->is_connected, true);
+        AERON_PUT_ORDERED(publication->has_receivers, true);
+        AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 1);
     }
 
     aeron_counter_set_ordered(
@@ -546,7 +553,7 @@ void aeron_network_publication_on_status_message(
             *publication->snd_lmt_position.value_addr,
             publication->initial_term_id,
             publication->position_bits_to_shift,
-            publication->nano_clock()));
+            time_ns));
 }
 
 void aeron_network_publication_on_rttm(
@@ -616,9 +623,9 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
 
     int64_t snd_pos;
     AERON_GET_VOLATILE(snd_pos, *publication->snd_pos_position.value_addr);
-    bool is_connected;
-    AERON_GET_VOLATILE(is_connected, publication->is_connected);
-    if (is_connected)
+    bool has_receivers;
+    AERON_GET_VOLATILE(has_receivers, publication->has_receivers);
+    if (has_receivers)
     {
         int64_t min_consumer_position = snd_pos;
         if (publication->conductor_fields.subscribeable.length > 0)
@@ -728,18 +735,8 @@ bool aeron_network_publication_spies_finished_consuming(
 void aeron_network_publication_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication, int64_t now_ns, int64_t now_ms)
 {
-    bool is_connected;
-    AERON_GET_VOLATILE(is_connected, publication->is_connected);
-    if (is_connected)
-    {
-        int64_t time_of_last_status_message;
-        AERON_GET_VOLATILE(time_of_last_status_message, publication->log_meta_data->time_of_last_status_message);
-        if (now_ms > (time_of_last_status_message + AERON_NETWORK_PUBLICATION_CONNECTION_TIMEOUT_MS))
-        {
-            AERON_PUT_ORDERED(publication->is_connected, false);
-
-        }
-    }
+    bool has_receivers;
+    AERON_GET_VOLATILE(has_receivers, publication->has_receivers);
 
     switch (publication->conductor_fields.status)
     {
@@ -766,8 +763,7 @@ void aeron_network_publication_on_time_event(
                     break;
                 }
 
-                AERON_GET_VOLATILE(is_connected, publication->is_connected);
-                if (is_connected)
+                if (has_receivers)
                 {
                     break;
                 }

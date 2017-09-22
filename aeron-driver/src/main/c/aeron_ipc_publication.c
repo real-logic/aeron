@@ -86,7 +86,7 @@ int aeron_ipc_publication_create(
     _pub->log_meta_data->initial_term_id = initial_term_id;
     _pub->log_meta_data->mtu_length = (int32_t)mtu_length;
     _pub->log_meta_data->correlation_id = registration_id;
-    _pub->log_meta_data->time_of_last_status_message = 0;
+    _pub->log_meta_data->is_connected = 0;
     _pub->log_meta_data->end_of_stream_position = INT64_MAX;
     aeron_logbuffer_fill_default_header(
         _pub->mapped_raw_log.log_meta_data.addr, session_id, stream_id, initial_term_id);
@@ -213,7 +213,11 @@ void aeron_ipc_publication_on_time_event(aeron_ipc_publication_t *publication, i
 
     if (0 < publication->conductor_fields.subscribeable.length)
     {
-        AERON_PUT_ORDERED(publication->log_meta_data->time_of_last_status_message, now_ms);
+        AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 1);
+    }
+    else
+    {
+        AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 0);
     }
 }
 

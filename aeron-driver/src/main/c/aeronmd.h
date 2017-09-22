@@ -173,6 +173,11 @@ typedef struct aeron_driver_stct aeron_driver_t;
 #define AERON_PUBLICATION_UNBLOCK_TIMEOUT_ENV_VAR "AERON_PUBLICATION_UNBLOCK_TIMEOUT"
 
 /**
+ * Timeout for publication connection in nanoseconds.
+ */
+#define AERON_PUBLICATION_CONNECTION_TIMEOUT_ENV_VAR "AERON_PUBLICATION_CONNECTION_TIMEOUT"
+
+/**
  * Idle strategy to be employed by Sender for DEDICATED Threading Mode.
  */
 #define AERON_SENDER_IDLE_STRATEGY_ENV_VAR "AERON_SENDER_IDLE_STRATEGY"

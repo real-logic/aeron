@@ -109,7 +109,7 @@ int aeron_publication_image_create(
     _image->log_meta_data->initial_term_id = initial_term_id;
     _image->log_meta_data->mtu_length = sender_mtu_length;
     _image->log_meta_data->correlation_id = correlation_id;
-    _image->log_meta_data->time_of_last_status_message = 0;
+    _image->log_meta_data->is_connected = 0;
     _image->log_meta_data->end_of_stream_position = INT64_MAX;
     aeron_logbuffer_fill_default_header(
         _image->mapped_raw_log.log_meta_data.addr, session_id, stream_id, initial_term_id);

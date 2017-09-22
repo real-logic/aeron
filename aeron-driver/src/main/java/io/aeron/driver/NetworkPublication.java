@@ -102,7 +102,7 @@ public class NetworkPublication
     private final boolean isExclusive;
     private final boolean spiesSimulateConnection;
     private volatile long timeOfLastStatusMessageMs;
-    private volatile boolean isSubscriptionConnected;
+    private volatile boolean hasReceivers;
     private volatile boolean hasSenderReleased;
     private volatile boolean isEndOfStream;
     private volatile boolean hasSpiesConnected;
@@ -365,9 +365,9 @@ public class NetworkPublication
     {
         timeOfLastStatusMessageMs = epochClock.time();
 
-        if (!isSubscriptionConnected)
+        if (!hasReceivers)
         {
-            isSubscriptionConnected = true;
+            hasReceivers = true;
         }
 
         senderLimit.setOrdered(
@@ -425,7 +425,7 @@ public class NetworkPublication
         int workCount = 0;
 
         final long senderPosition = this.senderPosition.getVolatile();
-        if (isSubscriptionConnected || (spiesSimulateConnection && spyPositions.length > 0))
+        if (hasReceivers || (spiesSimulateConnection && spyPositions.length > 0))
         {
             long minConsumerPosition = senderPosition;
             if (spyPositions.length > 0)
@@ -525,7 +525,7 @@ public class NetworkPublication
             timeOfLastSetupNs = nowNs;
             timeOfLastSendOrHeartbeatNs = nowNs;
 
-            if (isSubscriptionConnected)
+            if (hasReceivers)
             {
                 shouldSendSetupFrame = false;
             }
@@ -632,9 +632,9 @@ public class NetworkPublication
 
     private void updateConnectedStatus(final long timeMs)
     {
-        if (isSubscriptionConnected && timeMs > (timeOfLastStatusMessageMs + PUBLICATION_CONNECTION_TIMEOUT_MS))
+        if (hasReceivers && timeMs > (timeOfLastStatusMessageMs + PUBLICATION_CONNECTION_TIMEOUT_MS))
         {
-            isSubscriptionConnected = false;
+            hasReceivers = false;
         }
 
         if (spiesSimulateConnection && spyPositions.length > 0)
@@ -669,7 +669,7 @@ public class NetworkPublication
                         break;
                     }
 
-                    if (isSubscriptionConnected)
+                    if (hasReceivers)
                     {
                         break;
                     }

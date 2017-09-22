@@ -147,6 +147,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
     public void addSubscriber(final ReadablePosition subscriberPosition)
     {
         subscriberPositions = ArrayUtil.add(subscriberPositions, subscriberPosition);
+        LogBufferDescriptor.isConnected(metaDataBuffer, true);
     }
 
     public void removeSubscriber(final ReadablePosition subscriberPosition)
@@ -154,6 +155,11 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         consumerPosition = Math.max(consumerPosition, subscriberPosition.getVolatile());
         subscriberPositions = ArrayUtil.remove(subscriberPositions, subscriberPosition);
         subscriberPosition.close();
+
+        if (subscriberPositions.length == 0)
+        {
+            LogBufferDescriptor.isConnected(metaDataBuffer, false);
+        }
     }
 
     int updatePublishersLimit()
@@ -227,8 +233,6 @@ public class IpcPublication implements DriverManagedResource, Subscribable
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
         checkForBlockedPublisher(timeNs);
-
-        LogBufferDescriptor.isConnected(metaDataBuffer, (subscriberPositions.length > 0));
 
         switch (state)
         {

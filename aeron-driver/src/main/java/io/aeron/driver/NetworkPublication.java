@@ -655,14 +655,17 @@ public class NetworkPublication
         switch (state)
         {
             case ACTIVE:
-                checkForBlockedPublisher(timeNs, consumerPosition());
+                // TODO: Handle case of spies being the only consumer.
+                checkForBlockedPublisher(timeNs, senderPosition.getVolatile());
                 break;
 
             case DRAINING:
-                final long consumerPosition = consumerPosition();
-                if (producerPosition() > consumerPosition)
+                final long senderPosition = this.senderPosition.getVolatile();
+                final long producerPosition = producerPosition();
+                if (producerPosition > senderPosition)
                 {
-                    if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, consumerPosition))
+                    // TODO: Handle case of spies being the only consumer.
+                    if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition))
                     {
                         unblockedPublications.orderedIncrement();
                         timeOfLastActivityNs = timeNs;
@@ -679,7 +682,7 @@ public class NetworkPublication
                     isEndOfStream = true;
                 }
 
-                if (spiesFinishedConsuming(conductor, consumerPosition))
+                if (spiesFinishedConsuming(conductor, spiesSimulateConnection ? producerPosition : senderPosition))
                 {
                     timeOfLastActivityNs = timeNs;
                     state = State.LINGER;
@@ -724,7 +727,7 @@ public class NetworkPublication
             state = State.DRAINING;
             channelEndpoint.decRef();
             timeOfLastActivityNs = nanoClock.nanoTime();
-            if (consumerPosition() >= producerPosition())
+            if (senderPosition.getVolatile() >= producerPosition())
             {
                 isEndOfStream = true;
             }

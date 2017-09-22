@@ -25,7 +25,6 @@
             <validValue name="OK">0</validValue>
             <validValue name="ERROR">1</validValue>
             <validValue name="RECORDING_UNKNOWN">2</validValue>
-            <validValue name="CONNECTED">3</validValue>
         </enum>
         <enum name="SourceLocation" encodingType="uint8">
             <validValue name="LOCAL">0</validValue>

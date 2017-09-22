@@ -249,11 +249,11 @@ class ControlSession implements Session
             controlSessionId,
             correlationId,
             controlSessionId,
-            CONNECTED,
+            OK,
             null,
             controlPublication))
         {
-            queueResponse(correlationId, controlSessionId, CONNECTED, null);
+            queueResponse(correlationId, controlSessionId, OK, null);
         }
     }
 

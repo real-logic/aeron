@@ -397,7 +397,7 @@ public final class AeronArchive implements AutoCloseable
             }
 
             final ControlResponseCode code = poller.controlResponseDecoder().code();
-            if (code != ControlResponseCode.CONNECTED)
+            if (code != ControlResponseCode.OK)
             {
                 throw new IllegalStateException("Unexpected response: code=" + code);
             }

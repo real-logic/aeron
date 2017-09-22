@@ -90,10 +90,10 @@ public class TestUtil
                     final ControlResponseCode code,
                     final String errorMessage)
                 {
-                    if (ControlResponseCode.CONNECTED != code)
+                    if (ControlResponseCode.OK != code)
                     {
                         throw new IllegalStateException(
-                            "expected=" + ControlResponseCode.CONNECTED + " actual=" + code);
+                            "expected=" + ControlResponseCode.OK + " actual=" + code);
                     }
 
                     if (correlationId != expectedCorrelationId)

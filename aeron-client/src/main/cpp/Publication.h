@@ -179,7 +179,7 @@ public:
      */
     inline bool isConnected() const
     {
-        return !isClosed() && isPublicationConnected(LogBufferDescriptor::timeOfLastStatusMessage(m_logMetaDataBuffer));
+        return !isClosed() && LogBufferDescriptor::isConnected(m_logMetaDataBuffer);
     }
 
     /**
@@ -280,7 +280,7 @@ public:
 
                 newPosition = Publication::newPosition(partitionIndex, static_cast<std::int32_t>(termOffset), position, appendResult);
             }
-            else if (isPublicationConnected(LogBufferDescriptor::timeOfLastStatusMessage(m_logMetaDataBuffer)))
+            else if (LogBufferDescriptor::isConnected(m_logMetaDataBuffer))
             {
                 newPosition = BACK_PRESSURED;
             }
@@ -373,7 +373,7 @@ public:
                 termAppender->claim(claimResult, m_headerWriter, length, bufferClaim);
                 newPosition = Publication::newPosition(partitionIndex, static_cast<std::int32_t>(termOffset), position, claimResult);
             }
-            else if (isPublicationConnected(LogBufferDescriptor::timeOfLastStatusMessage(m_logMetaDataBuffer)))
+            else if (LogBufferDescriptor::isConnected(m_logMetaDataBuffer))
             {
                 newPosition = BACK_PRESSURED;
             }

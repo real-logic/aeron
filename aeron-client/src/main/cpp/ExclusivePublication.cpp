@@ -69,11 +69,6 @@ ExclusivePublication::~ExclusivePublication()
     m_conductor.releaseExclusivePublication(m_registrationId);
 }
 
-bool ExclusivePublication::isPublicationConnected(std::int64_t timeOfLastStatusMessage) const
-{
-    return m_conductor.isPublicationConnected(timeOfLastStatusMessage);
-}
-
 void ExclusivePublication::addDestination(const std::string& endpointChannel)
 {
     m_conductor.addDestination(m_registrationId, endpointChannel);

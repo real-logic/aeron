@@ -115,14 +115,14 @@ TEST_F(ExclusivePublicationTest, shouldReportCorrectTermBufferLength)
 TEST_F(ExclusivePublicationTest, shouldReportThatPublicationHasNotBeenConnectedYet)
 {
     createPub();
-    LogBufferDescriptor::timeOfLastStatusMessage(m_logMetaDataBuffer, m_currentTime - PUBLICATION_CONNECTION_TIMEOUT_MS - 1);
+    LogBufferDescriptor::isConnected(m_logMetaDataBuffer, false);
     EXPECT_FALSE(m_publication->isConnected());
 }
 
 TEST_F(ExclusivePublicationTest, shouldReportThatPublicationHasBeenConnectedYet)
 {
     createPub();
-    LogBufferDescriptor::timeOfLastStatusMessage(m_logMetaDataBuffer, m_currentTime);
+    LogBufferDescriptor::isConnected(m_logMetaDataBuffer, true);
     EXPECT_TRUE(m_publication->isConnected());
 }
 

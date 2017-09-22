@@ -55,8 +55,7 @@ Aeron::Aeron(Context &context) :
         context.m_exceptionHandler,
         context.m_mediaDriverTimeout,
         context.m_resourceLingerTimeout,
-        CncFileDescriptor::clientLivenessTimeout(m_cncBuffer),
-        context.m_publicationConnectionTimeout),
+        CncFileDescriptor::clientLivenessTimeout(m_cncBuffer)),
     m_idleStrategy(IDLE_SLEEP_MS),
     m_conductorRunner(m_conductor, m_idleStrategy, m_context.m_exceptionHandler),
     m_conductorInvoker(m_conductor, m_context.m_exceptionHandler)

@@ -740,7 +740,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             networkPublicationThreadLocals,
             publicationUnblockTimeoutNs,
             isExclusive,
-            context.publicationSpiesMayAdvance());
+            context.spiesSimulateConnection());
 
         channelEndpoint.incRef();
         networkPublications.add(publication);

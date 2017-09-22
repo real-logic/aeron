@@ -100,12 +100,12 @@ public class NetworkPublication
     private final int sessionId;
     private final int streamId;
     private final boolean isExclusive;
-    private final boolean spiesMayAdvance;
+    private final boolean spiesSimulateConnection;
     private volatile long timeOfLastStatusMessageMs;
     private volatile boolean isSubscriptionConnected;
     private volatile boolean hasSenderReleased;
     private volatile boolean isEndOfStream;
-    private volatile boolean isSpyConnected;
+    private volatile boolean hasSpiesConnected;
     private State state = State.ACTIVE;
 
     private final UnsafeBuffer[] termBuffers;
@@ -151,7 +151,7 @@ public class NetworkPublication
         final NetworkPublicationThreadLocals threadLocals,
         final long unblockTimeoutNs,
         final boolean isExclusive,
-        final boolean spiesMayAdvance)
+        final boolean spiesSimulateConnection)
     {
         this.registrationId = registrationId;
         this.unblockTimeoutNs = unblockTimeoutNs;
@@ -169,7 +169,7 @@ public class NetworkPublication
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.isExclusive = isExclusive;
-        this.spiesMayAdvance = spiesMayAdvance;
+        this.spiesSimulateConnection = spiesSimulateConnection;
 
         metaDataBuffer = rawLog.metaData();
         setupBuffer = threadLocals.setupBuffer();
@@ -342,7 +342,7 @@ public class NetworkPublication
     public void addSubscriber(final ReadablePosition spyPosition)
     {
         spyPositions = ArrayUtil.add(spyPositions, spyPosition);
-        isSpyConnected = true;
+        hasSpiesConnected = true;
     }
 
     public void removeSubscriber(final ReadablePosition spyPosition)
@@ -352,7 +352,7 @@ public class NetworkPublication
 
         if (0 == spyPositions.length)
         {
-            isSpyConnected = false;
+            hasSpiesConnected = false;
         }
     }
 
@@ -425,7 +425,7 @@ public class NetworkPublication
         int workCount = 0;
 
         final long senderPosition = this.senderPosition.getVolatile();
-        if (isSubscriptionConnected || (spiesMayAdvance && isSpyConnected))
+        if (isSubscriptionConnected || (spiesSimulateConnection && spyPositions.length > 0))
         {
             long minConsumerPosition = senderPosition;
             if (spyPositions.length > 0)
@@ -458,7 +458,7 @@ public class NetworkPublication
 
     private boolean spiesShouldAdvanceSenderPosition(final long nowMs)
     {
-        return spiesMayAdvance && isSpyConnected &&
+        return spiesSimulateConnection && hasSpiesConnected &&
             (nowMs > (timeOfLastStatusMessageMs + PUBLICATION_CONNECTION_TIMEOUT_MS));
     }
 
@@ -637,7 +637,7 @@ public class NetworkPublication
             isSubscriptionConnected = false;
         }
 
-        if (spiesMayAdvance && isSpyConnected)
+        if (spiesSimulateConnection && spyPositions.length > 0)
         {
             timeOfLastStatusMessage(metaDataBuffer, timeMs);
         }

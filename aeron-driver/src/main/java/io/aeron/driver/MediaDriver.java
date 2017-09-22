@@ -440,7 +440,7 @@ public final class MediaDriver implements AutoCloseable
         private boolean warnIfDirectoryExists = Configuration.DIR_WARN_IF_EXISTS;
         private boolean dirDeleteOnStart = Configuration.DIR_DELETE_ON_START;
         private boolean termBufferSparseFile = Configuration.TERM_BUFFER_SPARSE_FILE;
-        private boolean publicationSpiesMayAdvance = Configuration.PUBLICATION_SPIES_MAY_ADVANCE;
+        private boolean spiesSimulateConnection = Configuration.SPIES_SIMULATE_CONNECTION;
 
         private long clientLivenessTimeoutNs = Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
         private long imageLivenessTimeoutNs = Configuration.IMAGE_LIVENESS_TIMEOUT_NS;
@@ -798,24 +798,24 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * May spies advance a {@link Publication} without the presence of a network Subscription?
+         * Does a spy subscription simulate a connection to a network publication.
          *
-         * @return whether pies may advance the {@link Publication} or not.
+         * @return true if a spy subscription should simulate a connection to a network publication.
          */
-        public boolean publicationSpiesMayAdvance()
+        public boolean spiesSimulateConnection()
         {
-            return publicationSpiesMayAdvance;
+            return spiesSimulateConnection;
         }
 
         /**
-         * May spies advance a {@link Publication} without the presence of a network Subscription?
+         * Does a spy subscription simulate a connection to a network publication.
          *
-         * @param spiesMayAdvance the Publication?
+         * @param spiesSimulateConnection true if a spy subscription simulates a connection to a network publication.
          * @return this for a fluent API.
          */
-        public Context publicationSpiesMayAdvance(final boolean spiesMayAdvance)
+        public Context spiesSimulateConnection(final boolean spiesSimulateConnection)
         {
-            this.publicationSpiesMayAdvance = spiesMayAdvance;
+            this.spiesSimulateConnection = spiesSimulateConnection;
             return this;
         }
 

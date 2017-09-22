@@ -69,7 +69,7 @@ public class PublicationTest
 
         initialTermId(logMetaDataBuffer, TERM_ID_1);
         mtuLength(logMetaDataBuffer, MTU_LENGTH);
-        timeOfLastStatusMessage(logMetaDataBuffer, 0);
+        isConnected(logMetaDataBuffer, false);
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
@@ -121,14 +121,14 @@ public class PublicationTest
     public void shouldReportThatPublicationHasNotBeenConnectedYet()
     {
         when(publicationLimit.getVolatile()).thenReturn(0L);
-        when(conductor.isPublicationConnected(anyLong())).thenReturn(false);
+        isConnected(logMetaDataBuffer, false);
         assertFalse(publication.isConnected());
     }
 
     @Test
     public void shouldReportThatPublicationHasBeenConnectedYet()
     {
-        when(conductor.isPublicationConnected(anyLong())).thenReturn(true);
+        isConnected(logMetaDataBuffer, true);
         assertTrue(publication.isConnected());
     }
 

@@ -725,7 +725,6 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             registrationId,
             channelEndpoint,
             nanoClock,
-            epochClock,
             newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId, params),
             PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, channel),
             senderPosition,
@@ -739,6 +738,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             retransmitHandler,
             networkPublicationThreadLocals,
             publicationUnblockTimeoutNs,
+            context.publicationConnectionTimeoutNs(),
             isExclusive,
             context.spiesSimulateConnection());
 

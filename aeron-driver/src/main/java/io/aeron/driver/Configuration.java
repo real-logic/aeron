@@ -402,6 +402,22 @@ public class Configuration
         PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME, PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS);
 
     /**
+     * Property name for {@link Publication} connection timeout.
+     */
+    public static final String PUBLICATION_CONNECTION_TIMEOUT_PROP_NAME = "aeron.publication.connection.timeout";
+
+    /**
+     * Timeout for {@link Publication} connection timeout in nanoseconds
+     */
+    public static final long PUBLICATION_CONNECTION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
+
+    /**
+     * Publication timeout for when to indicate no connection from lack of status messages.
+     */
+    public static final long PUBLICATION_CONNECTION_TIMEOUT_NS = getLong(
+        PUBLICATION_CONNECTION_TIMEOUT_PROP_NAME, PUBLICATION_CONNECTION_TIMEOUT_DEFAULT_NS);
+
+    /**
      * Property name for if spy subscriptions simulate a connection.
      */
     public static final String SPIES_SIMULATE_CONNECTION_PROP_NAME = "aeron.spies.simulate.connection";

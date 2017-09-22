@@ -268,7 +268,7 @@ public class ExclusivePublication implements AutoCloseable
      */
     public boolean isConnected()
     {
-        return !isClosed && conductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer));
+        return !isClosed && LogBufferDescriptor.isConnected(logMetaDataBuffer);
     }
 
     /**
@@ -666,7 +666,7 @@ public class ExclusivePublication implements AutoCloseable
         {
             status = MAX_POSITION_EXCEEDED;
         }
-        else if (conductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
+        else if (LogBufferDescriptor.isConnected(logMetaDataBuffer))
         {
             status = BACK_PRESSURED;
         }

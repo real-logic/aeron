@@ -445,6 +445,7 @@ public final class MediaDriver implements AutoCloseable
         private long clientLivenessTimeoutNs = Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
         private long imageLivenessTimeoutNs = Configuration.IMAGE_LIVENESS_TIMEOUT_NS;
         private long publicationUnblockTimeoutNs = Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS;
+        private long publicationConnectionTimeoutNs = Configuration.PUBLICATION_CONNECTION_TIMEOUT_NS;
         private long statusMessageTimeoutNs = Configuration.statusMessageTimeout();
         private int maxTermBufferLength = Configuration.maxTermBufferLength();
         private int publicationTermBufferLength = Configuration.termBufferLength();
@@ -794,6 +795,30 @@ public final class MediaDriver implements AutoCloseable
         public Context publicationUnblockTimeoutNs(final long timeoutNs)
         {
             this.publicationUnblockTimeoutNs = timeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout in nanoseconds after which a publication will be considered not connected if no status messages are
+         * received.
+         *
+         * @return timeout in nanoseconds after which a publication is considered not connected.
+         */
+        public long publicationConnectionTimeoutNs()
+        {
+            return publicationConnectionTimeoutNs;
+        }
+
+        /**
+         * Timeout in nanoseconds after which a publication will be considered not connected if no status messages are
+         * received.
+         *
+         * @param timeoutNs in nanoseconds after which a publication will be considered not connected.
+         * @return this for a fluent API.
+         */
+        public Context publicationConnectionTimeoutNs(final long timeoutNs)
+        {
+            this.publicationConnectionTimeoutNs = timeoutNs;
             return this;
         }
 

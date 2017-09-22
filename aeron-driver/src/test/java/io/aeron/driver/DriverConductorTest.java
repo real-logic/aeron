@@ -29,7 +29,10 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.TermAppender;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.ErrorHandler;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -46,14 +49,13 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
+import java.util.function.LongConsumer;
 
-import static io.aeron.Aeron.PUBLICATION_CONNECTION_TIMEOUT_MS;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
 public class DriverConductorTest
@@ -528,13 +530,18 @@ public class DriverConductorTest
         assertThat(publication.state(), is(NetworkPublication.State.ACTIVE));
 
         driverConductor.doWork();
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(
+            () -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2,
+            (timeNs) ->
+            {
+                publication.onStatusMessage(msg, new InetSocketAddress("localhost", 4059));
+            });
 
         assertThat(publication.state(), is(NetworkPublication.State.DRAINING));
 
-        currentTimeMs += PUBLICATION_CONNECTION_TIMEOUT_MS + 1;
-        currentTimeNs += TIMER_INTERVAL_NS;
-        driverConductor.doWork();
+        final long endtime = nanoClock.nanoTime() + PUBLICATION_CONNECTION_TIMEOUT_NS + TIMER_INTERVAL_NS;
+        doWorkUntil(() -> nanoClock.nanoTime() >= endtime);
+
         assertThat(publication.state(), is(NetworkPublication.State.LINGER));
 
         currentTimeNs += TIMER_INTERVAL_NS + PUBLICATION_LINGER_NS;
@@ -1187,13 +1194,22 @@ public class DriverConductorTest
         verify(mockClientProxy).onError(eq(id2), any(ErrorCode.class), anyString());
     }
 
-    private void doWorkUntil(final BooleanSupplier condition) throws Exception
+    private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer) throws Exception
     {
         while (!condition.getAsBoolean())
         {
-            currentTimeNs += TimeUnit.MILLISECONDS.toNanos(16);
+            final long millisecondsToAdvance = 16;
+
+            currentTimeNs += TimeUnit.MILLISECONDS.toNanos(millisecondsToAdvance);
+            currentTimeMs += millisecondsToAdvance;
+            timeConsumer.accept(currentTimeNs);
             driverConductor.doWork();
         }
+    }
+
+    private void doWorkUntil(final BooleanSupplier condition) throws Exception
+    {
+        doWorkUntil(condition, (j) -> {});
     }
 
     private static String spyForChannel(final String channel)

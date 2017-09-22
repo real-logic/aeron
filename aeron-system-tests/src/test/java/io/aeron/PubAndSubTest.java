@@ -85,8 +85,9 @@ public class PubAndSubTest
     private void launch(final String channel) throws Exception
     {
         context.threadingMode(THREADING_MODE);
+        context.publicationConnectionTimeoutNs(TimeUnit.SECONDS.toNanos(1));
         driver = MediaDriver.launch(context);
-        publishingClient = Aeron.connect(new Aeron.Context().publicationConnectionTimeout(1000));
+        publishingClient = Aeron.connect();
         subscribingClient = Aeron.connect();
         publication = publishingClient.addPublication(channel, STREAM_ID);
         subscription = subscribingClient.addSubscription(channel, STREAM_ID);

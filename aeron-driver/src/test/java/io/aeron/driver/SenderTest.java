@@ -131,7 +131,6 @@ public class SenderTest
             1,
             mockSendChannelEndpoint,
             () -> currentTimestamp,
-            () -> currentTimestamp / (1_000_000L),
             rawLog,
             mock(Position.class),
             new AtomicLongPosition(),
@@ -145,6 +144,7 @@ public class SenderTest
             mockRetransmitHandler,
             new NetworkPublicationThreadLocals(),
             Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS,
+            Configuration.PUBLICATION_CONNECTION_TIMEOUT_NS,
             false,
             false);
 

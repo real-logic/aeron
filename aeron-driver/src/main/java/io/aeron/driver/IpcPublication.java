@@ -228,10 +228,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
     {
         checkForBlockedPublisher(timeNs);
 
-        if (subscriberPositions.length > 0)
-        {
-            LogBufferDescriptor.timeOfLastStatusMessage(metaDataBuffer, timeMs);
-        }
+        LogBufferDescriptor.isConnected(metaDataBuffer, (subscriberPositions.length > 0));
 
         switch (state)
         {

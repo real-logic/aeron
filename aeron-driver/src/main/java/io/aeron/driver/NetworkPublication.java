@@ -18,6 +18,7 @@ package io.aeron.driver;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.status.SystemCounters;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.LogBufferUnblocker;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
@@ -34,7 +35,6 @@ import org.agrona.concurrent.status.ReadablePosition;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import static io.aeron.Aeron.PUBLICATION_CONNECTION_TIMEOUT_MS;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
@@ -91,6 +91,7 @@ public class NetworkPublication
 
     private final long registrationId;
     private final long unblockTimeoutNs;
+    private final long connectionTimeoutNs;
     private final int positionBitsToShift;
     private final int initialTermId;
     private final int termBufferLength;
@@ -101,7 +102,7 @@ public class NetworkPublication
     private final int streamId;
     private final boolean isExclusive;
     private final boolean spiesSimulateConnection;
-    private volatile long timeOfLastStatusMessageMs;
+    private volatile long timeOfLastStatusMessageNs;
     private volatile boolean hasReceivers;
     private volatile boolean hasSenderReleased;
     private volatile boolean isEndOfStream;
@@ -122,7 +123,6 @@ public class NetworkPublication
     private final RttMeasurementFlyweight rttMeasurementHeader;
     private final FlowControl flowControl;
     private final NanoClock nanoClock;
-    private final EpochClock epochClock;
     private final RetransmitHandler retransmitHandler;
     private final UnsafeBuffer metaDataBuffer;
     private final RawLog rawLog;
@@ -136,7 +136,6 @@ public class NetworkPublication
         final long registrationId,
         final SendChannelEndpoint channelEndpoint,
         final NanoClock nanoClock,
-        final EpochClock epochClock,
         final RawLog rawLog,
         final Position publisherLimit,
         final Position senderPosition,
@@ -150,15 +149,16 @@ public class NetworkPublication
         final RetransmitHandler retransmitHandler,
         final NetworkPublicationThreadLocals threadLocals,
         final long unblockTimeoutNs,
+        final long connectionTimeoutNs,
         final boolean isExclusive,
         final boolean spiesSimulateConnection)
     {
         this.registrationId = registrationId;
         this.unblockTimeoutNs = unblockTimeoutNs;
+        this.connectionTimeoutNs = connectionTimeoutNs;
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
         this.nanoClock = nanoClock;
-        this.epochClock = epochClock;
         this.senderPosition = senderPosition;
         this.senderLimit = senderLimit;
         this.flowControl = flowControl;
@@ -196,8 +196,7 @@ public class NetworkPublication
         final long nowNs = nanoClock.nanoTime();
         timeOfLastSendOrHeartbeatNs = nowNs - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
         timeOfLastSetupNs = nowNs - PUBLICATION_SETUP_TIMEOUT_NS - 1;
-
-        timeOfLastStatusMessageMs = epochClock.time() - PUBLICATION_CONNECTION_TIMEOUT_MS - 1;
+        timeOfLastStatusMessageNs = nowNs - connectionTimeoutNs - 1;
 
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
@@ -363,7 +362,9 @@ public class NetworkPublication
 
     public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
-        timeOfLastStatusMessageMs = epochClock.time();
+        final long timeNs = nanoClock.nanoTime();
+
+        timeOfLastStatusMessageNs = timeNs;
 
         if (!hasReceivers)
         {
@@ -377,7 +378,7 @@ public class NetworkPublication
                 senderLimit.get(),
                 initialTermId,
                 positionBitsToShift,
-                nanoClock.nanoTime()));
+                timeNs));
     }
 
     public void onRttMeasurement(
@@ -456,10 +457,10 @@ public class NetworkPublication
         return spyPositions.length > 0;
     }
 
-    private boolean spiesShouldAdvanceSenderPosition(final long nowMs)
+    private boolean spiesShouldAdvanceSenderPosition(final long nowNs)
     {
         return spiesSimulateConnection && hasSpiesConnected &&
-            (nowMs > (timeOfLastStatusMessageMs + PUBLICATION_CONNECTION_TIMEOUT_MS));
+            (nowNs > (timeOfLastStatusMessageNs + connectionTimeoutNs));
     }
 
     private int sendData(final long nowNs, final long senderPosition, final int termOffset)
@@ -630,27 +631,26 @@ public class NetworkPublication
         return true;
     }
 
-    private void updateConnectedStatus(final long timeMs)
+    private void updateConnectedStatus(final long timeNs)
     {
-        if (hasReceivers && timeMs > (timeOfLastStatusMessageMs + PUBLICATION_CONNECTION_TIMEOUT_MS))
+        if (hasReceivers && timeNs > (timeOfLastStatusMessageNs + connectionTimeoutNs))
         {
             hasReceivers = false;
         }
 
         if (spiesSimulateConnection && spyPositions.length > 0)
         {
-            timeOfLastStatusMessage(metaDataBuffer, timeMs);
+            LogBufferDescriptor.isConnected(metaDataBuffer, true);
         }
         else
         {
-            timeOfLastStatusMessage(
-                metaDataBuffer, Math.max(timeOfLastStatusMessageMs, timeOfLastStatusMessage(metaDataBuffer)));
+            LogBufferDescriptor.isConnected(metaDataBuffer, hasReceivers);
         }
     }
 
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
-        updateConnectedStatus(timeMs);
+        updateConnectedStatus(timeNs);
 
         switch (state)
         {

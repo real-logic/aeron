@@ -81,7 +81,7 @@ public class LogInspector
             final UnsafeBuffer metaDataBuffer = logBuffers.metaDataBuffer();
             final int initialTermId = initialTermId(metaDataBuffer);
 
-            out.format("Time of last SM: %s%n", new Date(timeOfLastStatusMessage(metaDataBuffer)));
+            out.format("   Is Connected: %s%n", isConnected(metaDataBuffer));
             out.format("Initial term id: %d%n", initialTermId);
             out.format("   Active index: %d%n", activePartitionIndex(metaDataBuffer));
             out.format("    Term length: %d%n", termLength);

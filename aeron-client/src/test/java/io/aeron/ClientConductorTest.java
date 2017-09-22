@@ -119,8 +119,7 @@ public class ClientConductorTest
             .unavailableImageHandler(mockUnavailableImageHandler)
             .keepAliveInterval(KEEP_ALIVE_INTERVAL)
             .driverTimeoutMs(AWAIT_TIMEOUT)
-            .interServiceTimeout(TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS))
-            .publicationConnectionTimeout(PUBLICATION_CONNECTION_TIMEOUT_MS);
+            .interServiceTimeout(TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS));
 
         ctx.countersValuesBuffer(counterValuesBuffer);
 

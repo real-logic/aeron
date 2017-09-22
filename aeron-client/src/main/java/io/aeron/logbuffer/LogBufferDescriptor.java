@@ -74,14 +74,14 @@ public class LogBufferDescriptor
     public static final int LOG_ACTIVE_PARTITION_INDEX_OFFSET;
 
     /**
-     * Offset within the log meta data where the time of last SM is stored.
-     */
-    public static final int LOG_TIME_OF_LAST_SM_OFFSET;
-
-    /**
      * Offset within the log meta data where the position of the End of Stream is stored.
      */
     public static final int LOG_END_OF_STREAM_POSITION_OFFSET;
+
+    /**
+     * Offset within the log meta data where whether the log is connected or not is stored.
+     */
+    public static final int LOG_IS_CONNECTED_OFFSET;
 
     /**
      * Offset within the log meta data where the active term id is stored.
@@ -122,8 +122,8 @@ public class LogBufferDescriptor
         LOG_ACTIVE_PARTITION_INDEX_OFFSET = offset;
 
         offset = (CACHE_LINE_LENGTH * 2);
-        LOG_TIME_OF_LAST_SM_OFFSET = offset;
-        LOG_END_OF_STREAM_POSITION_OFFSET = LOG_TIME_OF_LAST_SM_OFFSET + SIZE_OF_LONG;
+        LOG_END_OF_STREAM_POSITION_OFFSET = offset;
+        LOG_IS_CONNECTED_OFFSET = LOG_END_OF_STREAM_POSITION_OFFSET + SIZE_OF_LONG;
 
         offset += (CACHE_LINE_LENGTH * 2);
         LOG_CORRELATION_ID_OFFSET = offset;
@@ -157,11 +157,10 @@ public class LogBufferDescriptor
      *  |                      Cache Line Padding                      ...
      * ...                                                              |
      *  +---------------------------------------------------------------+
-     *  |                 Time of Last Status Message                   |
-     *  |                                                               |
-     *  +---------------------------------------------------------------+
      *  |                    End of Stream Position                     |
      *  |                                                               |
+     *  +---------------------------------------------------------------+
+     *  |                        Is Connected                           |
      *  +---------------------------------------------------------------+
      *  |                      Cache Line Padding                      ...
      * ...                                                              |
@@ -279,25 +278,25 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Get the value of the time of last SM in {@link System#currentTimeMillis()}.
+     * Get whether the log is considered connected or not by the driver.
      *
      * @param logMetaDataBuffer containing the meta data.
-     * @return the value of time of last SM
+     * @return wehther the log is considered connected or not by the driver.
      */
-    public static long timeOfLastStatusMessage(final UnsafeBuffer logMetaDataBuffer)
+    public static boolean isConnected(final UnsafeBuffer logMetaDataBuffer)
     {
-        return logMetaDataBuffer.getLongVolatile(LOG_TIME_OF_LAST_SM_OFFSET);
+        return logMetaDataBuffer.getIntVolatile(LOG_IS_CONNECTED_OFFSET) == 1;
     }
 
     /**
-     * Set the value of the time of last SM used by the producer of this log.
+     * Set whether the log is considered connected or not by the driver.
      *
      * @param logMetaDataBuffer containing the meta data.
-     * @param timeInMillis      value of the time of last SM in {@link System#currentTimeMillis()}
+     * @param isConnected      or not
      */
-    public static void timeOfLastStatusMessage(final UnsafeBuffer logMetaDataBuffer, final long timeInMillis)
+    public static void isConnected(final UnsafeBuffer logMetaDataBuffer, final boolean isConnected)
     {
-        logMetaDataBuffer.putLongOrdered(LOG_TIME_OF_LAST_SM_OFFSET, timeInMillis);
+        logMetaDataBuffer.putIntOrdered(LOG_IS_CONNECTED_OFFSET, isConnected ? 1 : 0);
     }
 
     /**

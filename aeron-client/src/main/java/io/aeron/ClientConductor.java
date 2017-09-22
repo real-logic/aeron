@@ -47,7 +47,6 @@ class ClientConductor implements Agent, DriverEventsListener
     private final long driverTimeoutMs;
     private final long driverTimeoutNs;
     private final long interServiceTimeoutNs;
-    private final long publicationConnectionTimeoutMs;
     private long timeOfLastKeepAliveNs;
     private long timeOfLastResourcesCheckNs;
     private long timeOfLastServiceNs;
@@ -85,7 +84,6 @@ class ClientConductor implements Agent, DriverEventsListener
         driverTimeoutMs = ctx.driverTimeoutMs();
         driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
         interServiceTimeoutNs = ctx.interServiceTimeout();
-        publicationConnectionTimeoutMs = ctx.publicationConnectionTimeout();
         defaultAvailableImageHandler = ctx.availableImageHandler();
         defaultUnavailableImageHandler = ctx.unavailableImageHandler();
         driverEventsAdapter = new DriverEventsAdapter(ctx.toClientBuffer(), this);
@@ -400,11 +398,6 @@ class ClientConductor implements Agent, DriverEventsListener
     DriverEventsAdapter driverListenerAdapter()
     {
         return driverEventsAdapter;
-    }
-
-    boolean isPublicationConnected(final long timeOfLastStatusMessageMs)
-    {
-        return epochClock.time() <= (timeOfLastStatusMessageMs + publicationConnectionTimeoutMs);
     }
 
     private void ensureOpen()

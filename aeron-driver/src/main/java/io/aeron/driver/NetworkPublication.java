@@ -769,6 +769,7 @@ public class NetworkPublication
 
     long consumerPosition()
     {
+        // TODO: Handle case of spies being the only consumer.
         return senderPosition.getVolatile();
     }
 }

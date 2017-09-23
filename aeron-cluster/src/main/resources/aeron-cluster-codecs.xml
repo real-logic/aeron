@@ -4,7 +4,7 @@
                    id="1"
                    version="0"
                    semanticVersion="5.2"
-                   description="Message Codecs for communicating with an Aeron Cluster"
+                   description="Message Codecs for communicating with and within an Aeron Cluster"
                    byteOrder="littleEndian">
     <types>
         <composite name="messageHeader" description="Message identifiers and length of message root">
@@ -29,7 +29,22 @@
         <type name="time_t" primitiveType="int64" description="Unix epoch time"/>
     </types>
 
-    <!-- Cluster Session Protocol Messages -->
+    <!--
+        Cluster Session Protocol Messages
+        =================================
+
+        Connect Session
+        - If requested is served by the leader then a session is opened.
+        - If the request is served by a follower then a REDIRECT response will provide the detail of the current leader.
+
+        State Machine Interaction
+        - User messages are sent to the state machine with a StateMachineMessageHeader followed by user payload.
+        - The state machine will emit responses and events with a StateMachineMessageHeader follow by a payload.
+        - If the leader changes during a session then a REDIRECT response will provide the detail of the current leader.
+
+        Close Session
+        - A cluster session can be closed with a CloseSessionRequest
+    -->
 
     <sbe:message name="SessionResponse"
                  id="1"
@@ -44,17 +59,25 @@
                description="Detail for a REDIRECT or ERROR response code."/>
     </sbe:message>
 
-    <sbe:message name="SessionConnectRequest"
+    <sbe:message name="ConnectSessionRequest"
                  id="2"
-                 description="Request a connection to the cluster to open a session.">
+                 description="Request a connection to the cluster and if successful then open a session.">
         <field name="correlationId"      id="1" type="int64"/>
         <field name="responseStreamId"   id="2" type="int32"/>
         <data  name="responseChannel"    id="3" type="varAsciiEncoding"/>
     </sbe:message>
 
-    <sbe:message name="SessionCloseRequest"
+    <sbe:message name="StateMachineMessageHeader"
                  id="3"
-                 description="Close an existing cluster session">
+                 description="Header for clustered state machine ingress and egress session messages.">
+        <field name="correlationId"      id="1" type="int64"/>
+        <field name="clusterSessionId"   id="2" type="int64"/>
+        <field name="timestamp"          id="3" type="time_t"/>
+    </sbe:message>
+
+    <sbe:message name="CloseSessionRequest"
+                 id="4"
+                 description="Close an existing cluster session.">
         <field name="clusterSessionId"   id="1" type="int64"/>
     </sbe:message>
 

@@ -535,12 +535,15 @@ public class DriverConductorTest
             (timeNs) ->
             {
                 publication.onStatusMessage(msg, new InetSocketAddress("localhost", 4059));
+                publication.updateHasReceivers(timeNs);
             });
 
         assertThat(publication.state(), is(NetworkPublication.State.DRAINING));
 
         final long endtime = nanoClock.nanoTime() + PUBLICATION_CONNECTION_TIMEOUT_NS + TIMER_INTERVAL_NS;
-        doWorkUntil(() -> nanoClock.nanoTime() >= endtime);
+        doWorkUntil(
+            () -> nanoClock.nanoTime() >= endtime,
+            publication::updateHasReceivers);
 
         assertThat(publication.state(), is(NetworkPublication.State.LINGER));
 

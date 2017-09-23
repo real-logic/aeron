@@ -66,6 +66,7 @@ class NetworkPublicationSenderFields extends NetworkPublicationPadding2
 {
     protected long timeOfLastSendOrHeartbeatNs;
     protected long timeOfLastSetupNs;
+    protected long connectionDeadLineNs;
     protected boolean trackSenderLimits = true;
     protected boolean shouldSendSetupFrame = true;
 }
@@ -101,7 +102,6 @@ public class NetworkPublication
     private final int streamId;
     private final boolean isExclusive;
     private final boolean spiesSimulateConnection;
-    private volatile long timeOfLastStatusMessageNs;
     private volatile boolean hasReceivers;
     private volatile boolean hasSenderReleased;
     private volatile boolean isEndOfStream;
@@ -195,7 +195,7 @@ public class NetworkPublication
         final long nowNs = nanoClock.nanoTime();
         timeOfLastSendOrHeartbeatNs = nowNs - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
         timeOfLastSetupNs = nowNs - PUBLICATION_SETUP_TIMEOUT_NS - 1;
-        timeOfLastStatusMessageNs = nowNs - connectionTimeoutNs - 1;
+        connectionDeadLineNs = nowNs + connectionTimeoutNs;
 
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
@@ -264,6 +264,8 @@ public class NetworkPublication
                 senderLimit.setOrdered(flowControl.onIdle(nowNs, senderLimit.get(), senderPosition, isEndOfStream));
             }
         }
+
+        updateHasReceivers(nowNs);
 
         retransmitHandler.processTimeouts(nowNs, this);
 
@@ -363,7 +365,8 @@ public class NetworkPublication
     {
         final long timeNs = nanoClock.nanoTime();
 
-        timeOfLastStatusMessageNs = timeNs;
+        connectionDeadLineNs = timeNs + connectionTimeoutNs;
+        LogBufferDescriptor.isConnected(metaDataBuffer, true);
 
         if (!hasReceivers)
         {
@@ -456,10 +459,17 @@ public class NetworkPublication
         return spyPositions.length > 0;
     }
 
-    private boolean spiesShouldAdvanceSenderPosition(final long nowNs)
+    void updateHasReceivers(final long timeNs)
     {
-        return spiesSimulateConnection && hasSpiesConnected &&
-            (nowNs > (timeOfLastStatusMessageNs + connectionTimeoutNs));
+        if (hasReceivers && timeNs > connectionDeadLineNs)
+        {
+            hasReceivers = false;
+        }
+    }
+
+    private boolean spiesShouldAdvanceSenderPosition(final long timeNs)
+    {
+        return spiesSimulateConnection && hasSpiesConnected && timeNs > connectionDeadLineNs;
     }
 
     private int sendData(final long nowNs, final long senderPosition, final int termOffset)
@@ -630,26 +640,16 @@ public class NetworkPublication
         return true;
     }
 
-    private void updateConnectedStatus(final long timeNs)
+    private void updateConnectedStatus()
     {
-        if (hasReceivers && timeNs > (timeOfLastStatusMessageNs + connectionTimeoutNs))
-        {
-            hasReceivers = false;
-        }
+        final boolean isConnected = hasReceivers || (spiesSimulateConnection && spyPositions.length > 0);
 
-        if (spiesSimulateConnection && spyPositions.length > 0)
-        {
-            LogBufferDescriptor.isConnected(metaDataBuffer, true);
-        }
-        else
-        {
-            LogBufferDescriptor.isConnected(metaDataBuffer, hasReceivers);
-        }
+        LogBufferDescriptor.isConnected(metaDataBuffer, isConnected);
     }
 
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
-        updateConnectedStatus(timeNs);
+        updateConnectedStatus();
 
         switch (state)
         {

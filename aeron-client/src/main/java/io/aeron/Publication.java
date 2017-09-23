@@ -387,25 +387,25 @@ public class Publication implements AutoCloseable
             final TermAppender termAppender = termAppenders[partitionIndex];
             final long rawTail = termAppender.rawTailVolatile();
             final long termOffset = rawTail & 0xFFFF_FFFFL;
-            final long position = computeTermBeginPosition(
-                termId(rawTail), positionBitsToShift, initialTermId) + termOffset;
+            final int termId = termId(rawTail);
+            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
 
             if (position < limit)
             {
-                final long result;
+                final int resultingOffset;
                 if (length <= maxPayloadLength)
                 {
-                    result = termAppender.appendUnfragmentedMessage(
-                        headerWriter, buffer, offset, length, reservedValueSupplier);
+                    resultingOffset = termAppender.appendUnfragmentedMessage(
+                        headerWriter, buffer, offset, length, reservedValueSupplier, termId);
                 }
                 else
                 {
                     checkForMaxMessageLength(length);
-                    result = termAppender.appendFragmentedMessage(
-                        headerWriter, buffer, offset, length, maxPayloadLength, reservedValueSupplier);
+                    resultingOffset = termAppender.appendFragmentedMessage(
+                        headerWriter, buffer, offset, length, maxPayloadLength, reservedValueSupplier, termId);
                 }
 
-                newPosition = newPosition(partitionIndex, (int)termOffset, position, result);
+                newPosition = newPosition(partitionIndex, (int)termOffset, termId, position, resultingOffset);
             }
             else
             {
@@ -448,25 +448,25 @@ public class Publication implements AutoCloseable
             final TermAppender termAppender = termAppenders[partitionIndex];
             final long rawTail = termAppender.rawTailVolatile();
             final long termOffset = rawTail & 0xFFFF_FFFFL;
-            final long position = computeTermBeginPosition(
-                termId(rawTail), positionBitsToShift, initialTermId) + termOffset;
+            final int termId = termId(rawTail);
+            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
 
             if (position < limit)
             {
-                final long result;
+                final int resultingOffset;
                 if (length <= maxPayloadLength)
                 {
-                    result = termAppender.appendUnfragmentedMessage(
-                        headerWriter, vectors, length, reservedValueSupplier);
+                    resultingOffset = termAppender.appendUnfragmentedMessage(
+                        headerWriter, vectors, length, reservedValueSupplier, termId);
                 }
                 else
                 {
                     checkForMaxMessageLength(length);
-                    result = termAppender.appendFragmentedMessage(
-                        headerWriter, vectors, length, maxPayloadLength, reservedValueSupplier);
+                    resultingOffset = termAppender.appendFragmentedMessage(
+                        headerWriter, vectors, length, maxPayloadLength, reservedValueSupplier, termId);
                 }
 
-                newPosition = newPosition(partitionIndex, (int)termOffset, position, result);
+                newPosition = newPosition(partitionIndex, (int)termOffset, termId, position, resultingOffset);
             }
             else
             {
@@ -523,13 +523,13 @@ public class Publication implements AutoCloseable
             final TermAppender termAppender = termAppenders[partitionIndex];
             final long rawTail = termAppender.rawTailVolatile();
             final long termOffset = rawTail & 0xFFFF_FFFFL;
-            final long position = computeTermBeginPosition(
-                termId(rawTail), positionBitsToShift, initialTermId) + termOffset;
+            final int termId = termId(rawTail);
+            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
 
             if (position < limit)
             {
-                final long result = termAppender.claim(headerWriter, length, bufferClaim);
-                newPosition = newPosition(partitionIndex, (int)termOffset, position, result);
+                final int resultingOffset = termAppender.claim(headerWriter, length, bufferClaim, termId);
+                newPosition = newPosition(partitionIndex, (int)termOffset, termId, position, resultingOffset);
             }
             else
             {
@@ -576,22 +576,22 @@ public class Publication implements AutoCloseable
         }
     }
 
-    private long newPosition(final int index, final int currentTail, final long position, final long result)
+    private long newPosition(
+        final int index, final int termOffset, final int termId, final long position, final int resultingOffset)
     {
         long newPosition = ADMIN_ACTION;
-        final int termOffset = termOffset(result);
-        if (termOffset > 0)
+        if (resultingOffset > 0)
         {
-            newPosition = (position - currentTail) + termOffset;
+            newPosition = (position - termOffset) + resultingOffset;
         }
-        else if ((position + currentTail) > maxPossiblePosition)
+        else if ((position + termOffset) > maxPossiblePosition)
         {
             newPosition = MAX_POSITION_EXCEEDED;
         }
-        else if (termOffset == TermAppender.TRIPPED)
+        else if (resultingOffset == TermAppender.TRIPPED)
         {
             final int nextIndex = nextPartitionIndex(index);
-            initialiseTailWithTermId(logMetaDataBuffer, nextIndex, termId(result) + 1);
+            initialiseTailWithTermId(logMetaDataBuffer, nextIndex, termId + 1);
             activePartitionIndexOrdered(logMetaDataBuffer, nextIndex);
         }
 

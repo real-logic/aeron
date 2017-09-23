@@ -525,7 +525,7 @@ public class DriverConductorTest
 
         publication.onStatusMessage(msg, new InetSocketAddress("localhost", 4059));
 
-        appender.appendUnfragmentedMessage(headerWriter, srcBuffer, 0, 256, null);
+        appender.appendUnfragmentedMessage(headerWriter, srcBuffer, 0, 256, null, termId);
 
         assertThat(publication.state(), is(NetworkPublication.State.ACTIVE));
 

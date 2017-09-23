@@ -29,7 +29,6 @@ import static io.aeron.logbuffer.FrameDescriptor.frameFlags;
 import static io.aeron.logbuffer.FrameDescriptor.frameLengthOrdered;
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTERS_OFFSET;
-import static io.aeron.logbuffer.LogBufferDescriptor.packTail;
 import static io.aeron.logbuffer.LogBufferDescriptor.termId;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -57,7 +56,7 @@ public class TermAppender
     public static final int TRIPPED = -1;
 
     /**
-     * The append operation went past the end of the buffer and failed.
+     * The append operation failed because it was for the wrong term or past the end of the buffer.
      */
     public static final int FAILED = -2;
 
@@ -95,35 +94,45 @@ public class TermAppender
     /**
      * Claim length of a the term buffer for writing in the message with zero copy semantics.
      *
-     * @param header      for writing the default header.
-     * @param length      of the message to be written.
-     * @param bufferClaim to be updated with the claimed region.
+     * @param header       for writing the default header.
+     * @param length       of the message to be written.
+     * @param bufferClaim  to be updated with the claimed region.
+     * @param activeTermId used for flow control.
      * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED}
-     * or {@link #FAILED} packed with the termId if a padding record was inserted at the end.
+     * or {@link #FAILED}.
      */
-    public long claim(final HeaderWriter header, final int length, final BufferClaim bufferClaim)
+    public int claim(
+        final HeaderWriter header,
+        final int length,
+        final BufferClaim bufferClaim,
+        final int activeTermId)
     {
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
         final long rawTail = getAndAddRawTail(alignedLength);
+        final int termId = termId(rawTail);
         final long termOffset = rawTail & 0xFFFF_FFFFL;
-
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
+
+        if (termId != activeTermId)
+        {
+            return FAILED;
+        }
 
         long resultingOffset = termOffset + alignedLength;
         if (resultingOffset > termLength)
         {
-            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId(rawTail));
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
         }
         else
         {
             final int frameOffset = (int)termOffset;
-            header.write(termBuffer, frameOffset, frameLength, termId(rawTail));
+            header.write(termBuffer, frameOffset, frameLength, termId);
             bufferClaim.wrap(termBuffer, frameOffset, frameLength);
         }
 
-        return resultingOffset;
+        return (int)resultingOffset;
     }
 
     /**
@@ -134,33 +143,40 @@ public class TermAppender
      * @param srcOffset             at which the message begins.
      * @param length                of the message in the source buffer.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
+     * @param activeTermId          used for flow control.
      * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or
-     * {@link #FAILED} packed with the termId if a padding record was inserted at the end.
+     * {@link #FAILED}
      */
-    public long appendUnfragmentedMessage(
+    public int appendUnfragmentedMessage(
         final HeaderWriter header,
         final DirectBuffer srcBuffer,
         final int srcOffset,
         final int length,
-        final ReservedValueSupplier reservedValueSupplier)
+        final ReservedValueSupplier reservedValueSupplier,
+        final int activeTermId)
     {
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
         final long rawTail = getAndAddRawTail(alignedLength);
+        final int termId = termId(rawTail);
         final long termOffset = rawTail & 0xFFFF_FFFFL;
-
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
+
+        if (termId != activeTermId)
+        {
+            return FAILED;
+        }
 
         long resultingOffset = termOffset + alignedLength;
         if (resultingOffset > termLength)
         {
-            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId(rawTail));
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
         }
         else
         {
             final int frameOffset = (int)termOffset;
-            header.write(termBuffer, frameOffset, frameLength, termId(rawTail));
+            header.write(termBuffer, frameOffset, frameLength, termId);
             termBuffer.putBytes(frameOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
 
             if (null != reservedValueSupplier)
@@ -172,7 +188,7 @@ public class TermAppender
             frameLengthOrdered(termBuffer, frameOffset, frameLength);
         }
 
-        return resultingOffset;
+        return (int)resultingOffset;
     }
 
     /**
@@ -182,32 +198,39 @@ public class TermAppender
      * @param vectors               to the buffers.
      * @param length                of the message as a sum of the vectors.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
+     * @param activeTermId          used for flow control.
      * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or
-     * {@link #FAILED} packed with the termId if a padding record was inserted at the end.
+     * {@link #FAILED}.
      */
-    public long appendUnfragmentedMessage(
+    public int appendUnfragmentedMessage(
         final HeaderWriter header,
         final DirectBufferVector[] vectors,
         final int length,
-        final ReservedValueSupplier reservedValueSupplier)
+        final ReservedValueSupplier reservedValueSupplier,
+        final int activeTermId)
     {
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
         final long rawTail = getAndAddRawTail(alignedLength);
+        final int termId = termId(rawTail);
         final long termOffset = rawTail & 0xFFFF_FFFFL;
-
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
+
+        if (termId != activeTermId)
+        {
+            return FAILED;
+        }
 
         long resultingOffset = termOffset + alignedLength;
         if (resultingOffset > termLength)
         {
-            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId(rawTail));
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
         }
         else
         {
             final int frameOffset = (int)termOffset;
-            header.write(termBuffer, frameOffset, frameLength, termId(rawTail));
+            header.write(termBuffer, frameOffset, frameLength, termId);
 
             int offset = frameOffset + HEADER_LENGTH;
             for (final DirectBufferVector vector : vectors)
@@ -225,7 +248,7 @@ public class TermAppender
             frameLengthOrdered(termBuffer, frameOffset, frameLength);
         }
 
-        return resultingOffset;
+        return (int)resultingOffset;
     }
 
     /**
@@ -238,16 +261,18 @@ public class TermAppender
      * @param length                of the message in the source buffer.
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
+     * @param activeTermId          used for flow control.
      * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED}
-     * or {@link #FAILED} packed with the termId if a padding record was inserted at the end.
+     * or {@link #FAILED}.
      */
-    public long appendFragmentedMessage(
+    public int appendFragmentedMessage(
         final HeaderWriter header,
         final DirectBuffer srcBuffer,
         final int srcOffset,
         final int length,
         final int maxPayloadLength,
-        final ReservedValueSupplier reservedValueSupplier)
+        final ReservedValueSupplier reservedValueSupplier,
+        final int activeTermId)
     {
         final int numMaxPayloads = length / maxPayloadLength;
         final int remainingPayload = length % maxPayloadLength;
@@ -256,9 +281,13 @@ public class TermAppender
         final long rawTail = getAndAddRawTail(requiredLength);
         final int termId = termId(rawTail);
         final long termOffset = rawTail & 0xFFFF_FFFFL;
-
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
+
+        if (termId != activeTermId)
+        {
+            return FAILED;
+        }
 
         long resultingOffset = termOffset + requiredLength;
         if (resultingOffset > termLength)
@@ -306,7 +335,7 @@ public class TermAppender
             while (remaining > 0);
         }
 
-        return resultingOffset;
+        return (int)resultingOffset;
     }
 
     /**
@@ -318,15 +347,17 @@ public class TermAppender
      * @param length                of the message as a sum of the vectors.
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
+     * @param activeTermId          used for flow control.
      * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED}
-     * or {@link #FAILED} packed with the termId if a padding record was inserted at the end.
+     * or {@link #FAILED}.
      */
-    public long appendFragmentedMessage(
+    public int appendFragmentedMessage(
         final HeaderWriter header,
         final DirectBufferVector[] vectors,
         final int length,
         final int maxPayloadLength,
-        final ReservedValueSupplier reservedValueSupplier)
+        final ReservedValueSupplier reservedValueSupplier,
+        final int activeTermId)
     {
         final int numMaxPayloads = length / maxPayloadLength;
         final int remainingPayload = length % maxPayloadLength;
@@ -335,9 +366,13 @@ public class TermAppender
         final long rawTail = getAndAddRawTail(requiredLength);
         final int termId = termId(rawTail);
         final long termOffset = rawTail & 0xFFFF_FFFFL;
-
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
+
+        if (termId != activeTermId)
+        {
+            return FAILED;
+        }
 
         long resultingOffset = termOffset + requiredLength;
         if (resultingOffset > termLength)
@@ -404,10 +439,10 @@ public class TermAppender
             while (remaining > 0);
         }
 
-        return resultingOffset;
+        return (int)resultingOffset;
     }
 
-    private long handleEndOfLogCondition(
+    private int handleEndOfLogCondition(
         final UnsafeBuffer termBuffer,
         final long termOffset,
         final HeaderWriter header,
@@ -430,7 +465,7 @@ public class TermAppender
             }
         }
 
-        return packTail(termId, resultingOffset);
+        return resultingOffset;
     }
 
     private long getAndAddRawTail(final int alignedLength)

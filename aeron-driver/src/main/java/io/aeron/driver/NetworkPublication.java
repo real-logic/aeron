@@ -106,6 +106,7 @@ public class NetworkPublication
     private volatile boolean hasSenderReleased;
     private volatile boolean isEndOfStream;
     private volatile boolean hasSpiesConnected;
+    private volatile boolean isConnected;
     private State state = State.ACTIVE;
 
     private final UnsafeBuffer[] termBuffers;
@@ -364,9 +365,13 @@ public class NetworkPublication
     public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
         final long timeNs = nanoClock.nanoTime();
-
         statusMessageDeadlineNs = timeNs + connectionTimeoutNs;
-        LogBufferDescriptor.isConnected(metaDataBuffer, true);
+
+        if (!isConnected)
+        {
+            isConnected = true;
+            LogBufferDescriptor.isConnected(metaDataBuffer, true);
+        }
 
         if (!hasReceivers)
         {
@@ -642,9 +647,13 @@ public class NetworkPublication
 
     private void updateConnectedStatus()
     {
-        final boolean isConnected = hasReceivers || (spiesSimulateConnection && spyPositions.length > 0);
+        final boolean currentConnectedState = hasReceivers || (spiesSimulateConnection && spyPositions.length > 0);
 
-        LogBufferDescriptor.isConnected(metaDataBuffer, isConnected);
+        if (currentConnectedState != isConnected)
+        {
+            isConnected = currentConnectedState;
+            LogBufferDescriptor.isConnected(metaDataBuffer, currentConnectedState);
+        }
     }
 
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)

@@ -540,9 +540,9 @@ public class DriverConductorTest
 
         assertThat(publication.state(), is(NetworkPublication.State.DRAINING));
 
-        final long endtime = nanoClock.nanoTime() + PUBLICATION_CONNECTION_TIMEOUT_NS + TIMER_INTERVAL_NS;
+        final long endTime = nanoClock.nanoTime() + PUBLICATION_CONNECTION_TIMEOUT_NS + TIMER_INTERVAL_NS;
         doWorkUntil(
-            () -> nanoClock.nanoTime() >= endtime,
+            () -> nanoClock.nanoTime() >= endTime,
             publication::updateHasReceivers);
 
         assertThat(publication.state(), is(NetworkPublication.State.LINGER));

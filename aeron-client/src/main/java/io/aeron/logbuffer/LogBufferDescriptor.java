@@ -552,7 +552,7 @@ public class LogBufferDescriptor
     public static void initialiseTailWithTermId(
         final UnsafeBuffer logMetaData, final int partitionIndex, final int termId)
     {
-        logMetaData.putLong(TERM_TAIL_COUNTERS_OFFSET + (partitionIndex * SIZE_OF_LONG), packTail(termId, 0));
+        logMetaData.putLongOrdered(TERM_TAIL_COUNTERS_OFFSET + (partitionIndex * SIZE_OF_LONG), packTail(termId, 0));
     }
 
     /**

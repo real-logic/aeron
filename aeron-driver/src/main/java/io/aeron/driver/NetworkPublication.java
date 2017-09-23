@@ -66,7 +66,7 @@ class NetworkPublicationSenderFields extends NetworkPublicationPadding2
 {
     protected long timeOfLastSendOrHeartbeatNs;
     protected long timeOfLastSetupNs;
-    protected long connectionDeadLineNs;
+    protected long statusMessageDeadlineNs;
     protected boolean trackSenderLimits = true;
     protected boolean shouldSendSetupFrame = true;
 }
@@ -195,7 +195,7 @@ public class NetworkPublication
         final long nowNs = nanoClock.nanoTime();
         timeOfLastSendOrHeartbeatNs = nowNs - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
         timeOfLastSetupNs = nowNs - PUBLICATION_SETUP_TIMEOUT_NS - 1;
-        connectionDeadLineNs = nowNs + connectionTimeoutNs;
+        statusMessageDeadlineNs = nowNs + connectionTimeoutNs;
 
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
@@ -365,7 +365,7 @@ public class NetworkPublication
     {
         final long timeNs = nanoClock.nanoTime();
 
-        connectionDeadLineNs = timeNs + connectionTimeoutNs;
+        statusMessageDeadlineNs = timeNs + connectionTimeoutNs;
         LogBufferDescriptor.isConnected(metaDataBuffer, true);
 
         if (!hasReceivers)
@@ -461,7 +461,7 @@ public class NetworkPublication
 
     void updateHasReceivers(final long timeNs)
     {
-        if (hasReceivers && timeNs > connectionDeadLineNs)
+        if (hasReceivers && timeNs > statusMessageDeadlineNs)
         {
             hasReceivers = false;
         }
@@ -469,7 +469,7 @@ public class NetworkPublication
 
     private boolean spiesShouldAdvanceSenderPosition(final long timeNs)
     {
-        return spiesSimulateConnection && hasSpiesConnected && timeNs > connectionDeadLineNs;
+        return spiesSimulateConnection && hasSpiesConnected && timeNs > statusMessageDeadlineNs;
     }
 
     private int sendData(final long nowNs, final long senderPosition, final int termOffset)

@@ -638,7 +638,7 @@ public class ExclusivePublication implements AutoCloseable
         }
         else
         {
-            if ((termBeginPosition + termBufferLength) >= maxPossiblePosition())
+            if ((termBeginPosition + termBufferLength) >= maxPossiblePosition)
             {
                 return MAX_POSITION_EXCEEDED;
             }

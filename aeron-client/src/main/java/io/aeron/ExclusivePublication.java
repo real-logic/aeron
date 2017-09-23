@@ -78,10 +78,10 @@ public class ExclusivePublication implements AutoCloseable
     private final int streamId;
     private final int sessionId;
     private final int initialTermId;
-    private final int termBufferLength;
     private final int maxMessageLength;
     private final int maxPayloadLength;
     private final int positionBitsToShift;
+    private final int termBufferLength;
     private long termBeginPosition;
     private int activePartitionIndex;
     private int termId;

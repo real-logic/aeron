@@ -79,7 +79,7 @@ public final class MediaDriver implements AutoCloseable
     {
         final Properties properties = new Properties(System.getProperties());
 
-        final URL resource = MediaDriver.class.getClassLoader().getResource(filenameOrUrl);
+        final URL resource = ClassLoader.getSystemClassLoader().getResource(filenameOrUrl);
         if (null != resource)
         {
             try (InputStream in = resource.openStream())

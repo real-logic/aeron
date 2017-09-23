@@ -281,7 +281,7 @@ public class LogBufferDescriptor
      * Get whether the log is considered connected or not by the driver.
      *
      * @param logMetaDataBuffer containing the meta data.
-     * @return wehther the log is considered connected or not by the driver.
+     * @return whether the log is considered connected or not by the driver.
      */
     public static boolean isConnected(final UnsafeBuffer logMetaDataBuffer)
     {
@@ -292,7 +292,7 @@ public class LogBufferDescriptor
      * Set whether the log is considered connected or not by the driver.
      *
      * @param logMetaDataBuffer containing the meta data.
-     * @param isConnected      or not
+     * @param isConnected       or not
      */
     public static void isConnected(final UnsafeBuffer logMetaDataBuffer, final boolean isConnected)
     {

@@ -133,10 +133,11 @@ public class ExclusivePublication implements AutoCloseable
         headerWriter = new HeaderWriter(defaultFrameHeader(logMetaDataBuffer));
         initialTermId = LogBufferDescriptor.initialTermId(logMetaDataBuffer);
 
-        final int activeIndex = activePartitionIndex(logMetaDataBuffer);
-        activePartitionIndex = activeIndex;
+        final int termCount = activeTermCount(logMetaDataBuffer);
+        final int index = indexByTermCount(termCount);
+        activePartitionIndex = index;
 
-        final long rawTail = rawTail(logMetaDataBuffer, activeIndex);
+        final long rawTail = rawTail(logMetaDataBuffer, index);
         termId = termId(rawTail);
         termOffset = termOffset(rawTail);
         termBeginPosition = computeTermBeginPosition(termId, positionBitsToShift, initialTermId);
@@ -651,8 +652,10 @@ public class ExclusivePublication implements AutoCloseable
             termId = nextTermId;
             termBeginPosition = computeTermBeginPosition(nextTermId, positionBitsToShift, initialTermId);
 
+            final int termCount = nextTermId - initialTermId;
+
             initialiseTailWithTermId(logMetaDataBuffer, nextIndex, nextTermId);
-            activePartitionIndexOrdered(logMetaDataBuffer, nextIndex);
+            activeTermCountOrdered(logMetaDataBuffer, termCount);
 
             return ADMIN_ACTION;
         }

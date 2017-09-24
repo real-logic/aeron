@@ -49,7 +49,8 @@ public class LogBufferUnblocker
         switch (TermUnblocker.unblock(logMetaDataBuffer, termBuffer, blockedOffset, tailOffset, termId))
         {
             case UNBLOCKED_TO_END:
-                rotateLog(logMetaDataBuffer, index, termId + 1);
+                final int termCount = (int)(blockedPosition >> positionBitsToShift);
+                rotateLog(logMetaDataBuffer, termCount, termId);
                 // fall through
             case UNBLOCKED:
                 result = true;

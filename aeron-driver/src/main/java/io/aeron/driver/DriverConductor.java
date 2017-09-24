@@ -770,9 +770,10 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         if (params.isReplay)
         {
+            final int termCount = params.termId - initialTermId;
             final int activeIndex = indexByTerm(initialTermId, params.termId);
             rawTail(logMetaData, activeIndex, packTail(params.termId, params.termOffset));
-            activePartitionIndex(logMetaData, activeIndex);
+            activeTermCount(logMetaData, termCount);
         }
         else
         {
@@ -801,9 +802,10 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         if (params.isReplay)
         {
+            final int termCount = params.termId - initialTermId;
             final int activeIndex = indexByTerm(initialTermId, params.termId);
             rawTail(logMetaData, activeIndex, packTail(params.termId, params.termOffset));
-            activePartitionIndex(logMetaData, activeIndex);
+            activeTermCount(logMetaData, termCount);
         }
         else
         {

@@ -71,7 +71,7 @@ public class LogBufferDescriptor
     /**
      * Offset within the log meta data where the active partition index is stored.
      */
-    public static final int LOG_ACTIVE_PARTITION_INDEX_OFFSET;
+    public static final int LOG_ACTIVE_TERM_COUNT_OFFSET;
 
     /**
      * Offset within the log meta data where the position of the End of Stream is stored.
@@ -119,7 +119,7 @@ public class LogBufferDescriptor
         TERM_TAIL_COUNTERS_OFFSET = offset;
 
         offset += (SIZE_OF_LONG * PARTITION_COUNT);
-        LOG_ACTIVE_PARTITION_INDEX_OFFSET = offset;
+        LOG_ACTIVE_TERM_COUNT_OFFSET = offset;
 
         offset = (CACHE_LINE_LENGTH * 2);
         LOG_END_OF_STREAM_POSITION_OFFSET = offset;
@@ -152,9 +152,9 @@ public class LogBufferDescriptor
      *  |                       Tail Counter 2                          |
      *  |                                                               |
      *  +---------------------------------------------------------------+
-     *  |                   Active Partition Index                      |
+     *  |                      Active Term Count                        |
      *  +---------------------------------------------------------------+
-     *  |                      Cache Line Padding                      ...
+     *  |                     Cache Line Padding                       ...
      * ...                                                              |
      *  +---------------------------------------------------------------+
      *  |                    End of Stream Position                     |
@@ -177,7 +177,7 @@ public class LogBufferDescriptor
      *  |                      Cache Line Padding                      ...
      * ...                                                              |
      *  +---------------------------------------------------------------+
-     *  |                    Default Frame Header                      ...
+     *  |                     Default Frame Header                     ...
      * ...                                                              |
      *  +---------------------------------------------------------------+
      * </pre>
@@ -322,37 +322,51 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Get the value of the active partition index used by the producer of this log. Consumers may have a different
-     * active index if they are running behind. The read is done with volatile semantics.
+     * Get the value of the active term count used by the producer of this log. Consumers may have a different
+     * active term count if they are running behind. The read is done with volatile semantics.
      *
      * @param logMetaDataBuffer containing the meta data.
-     * @return the value of the active partition index used by the producer of this log.
+     * @return the value of the active term count used by the producer of this log.
      */
-    public static int activePartitionIndex(final UnsafeBuffer logMetaDataBuffer)
+    public static int activeTermCount(final UnsafeBuffer logMetaDataBuffer)
     {
-        return logMetaDataBuffer.getIntVolatile(LOG_ACTIVE_PARTITION_INDEX_OFFSET);
+        return logMetaDataBuffer.getIntVolatile(LOG_ACTIVE_TERM_COUNT_OFFSET);
     }
 
     /**
-     * Set the value of the current active partition index for the producer using memory ordered semantics.
+     * Set the value of the current active term count for the producer using memory ordered semantics.
      *
-     * @param logMetaDataBuffer    containing the meta data.
-     * @param activePartitionIndex value of the active partition index used by the producer of this log.
+     * @param logMetaDataBuffer containing the meta data.
+     * @param termCount         value of the active term count used by the producer of this log.
      */
-    public static void activePartitionIndexOrdered(final UnsafeBuffer logMetaDataBuffer, final int activePartitionIndex)
+    public static void activeTermCountOrdered(final UnsafeBuffer logMetaDataBuffer, final int termCount)
     {
-        logMetaDataBuffer.putIntOrdered(LOG_ACTIVE_PARTITION_INDEX_OFFSET, activePartitionIndex);
+        logMetaDataBuffer.putIntOrdered(LOG_ACTIVE_TERM_COUNT_OFFSET, termCount);
+    }
+
+    /**
+     * Compare and set the value of the current active term count.
+     *
+     * @param logMetaDataBuffer containing the meta data.
+     * @param expectedTermCount value of the active term count expected in the log
+     * @param updateTermCount   value of the active term count to be updated in the log
+     * @return true if successful otherwise false.
+     */
+    public static boolean casActiveTermCount(
+        final UnsafeBuffer logMetaDataBuffer, final int expectedTermCount, final int updateTermCount)
+    {
+        return logMetaDataBuffer.compareAndSetInt(LOG_ACTIVE_TERM_COUNT_OFFSET, expectedTermCount, updateTermCount);
     }
 
     /**
      * Set the value of the current active partition index for the producer.
      *
-     * @param logMetaDataBuffer    containing the meta data.
-     * @param activePartitionIndex value of the active partition index used by the producer of this log.
+     * @param logMetaDataBuffer containing the meta data.
+     * @param termCount         value of the active term count used by the producer of this log.
      */
-    public static void activePartitionIndex(final UnsafeBuffer logMetaDataBuffer, final int activePartitionIndex)
+    public static void activeTermCount(final UnsafeBuffer logMetaDataBuffer, final int termCount)
     {
-        logMetaDataBuffer.putInt(LOG_ACTIVE_PARTITION_INDEX_OFFSET, activePartitionIndex);
+        logMetaDataBuffer.putInt(LOG_ACTIVE_TERM_COUNT_OFFSET, termCount);
     }
 
     /**
@@ -496,7 +510,7 @@ public class LogBufferDescriptor
         if (defaultHeader.capacity() != HEADER_LENGTH)
         {
             throw new IllegalArgumentException(
-                "Default header of not equals to HEADER_LENGTH: length=" + defaultHeader.capacity());
+                "Default header length not equal to HEADER_LENGTH: length=" + defaultHeader.capacity());
         }
 
         logMetaDataBuffer.putInt(LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET, HEADER_LENGTH);
@@ -530,15 +544,17 @@ public class LogBufferDescriptor
     /**
      * Rotate the log and update the default headers for the new term.
      *
-     * @param logMetaDataBuffer    for the meta data.
-     * @param activePartitionIndex current active index.
-     * @param termId               to be used in the default headers.
+     * @param logMetaDataBuffer for the meta data.
+     * @param currentTermCount  from which to rotate.
+     * @param currentTermId     to be used in the default headers.
      */
-    public static void rotateLog(final UnsafeBuffer logMetaDataBuffer, final int activePartitionIndex, final int termId)
+    public static void rotateLog(
+        final UnsafeBuffer logMetaDataBuffer, final int currentTermCount, final int currentTermId)
     {
-        final int nextIndex = nextPartitionIndex(activePartitionIndex);
-        initialiseTailWithTermId(logMetaDataBuffer, nextIndex, termId);
-        activePartitionIndexOrdered(logMetaDataBuffer, nextIndex);
+        final int nextTermCount = currentTermCount + 1;
+        final int nextIndex = indexByTermCount(nextTermCount);
+        initialiseTailWithTermId(logMetaDataBuffer, nextIndex, currentTermId + 1);
+        activeTermCountOrdered(logMetaDataBuffer, nextTermCount);
     }
 
     /**
@@ -660,7 +676,7 @@ public class LogBufferDescriptor
      */
     public static long rawTailVolatile(final UnsafeBuffer logMetaDataBuffer)
     {
-        final int partitionIndex = activePartitionIndex(logMetaDataBuffer);
+        final int partitionIndex = indexByTermCount(activeTermCount(logMetaDataBuffer));
         return logMetaDataBuffer.getLongVolatile(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex));
     }
 }

@@ -83,7 +83,8 @@ public class LogInspector
 
             out.format("   Is Connected: %s%n", isConnected(metaDataBuffer));
             out.format("Initial term id: %d%n", initialTermId);
-            out.format("   Active index: %d%n", activePartitionIndex(metaDataBuffer));
+            out.format("     Term Count: %d%n", activeTermCount(metaDataBuffer));
+            out.format("   Active index: %d%n", indexByTermCount(activeTermCount(metaDataBuffer)));
             out.format("    Term length: %d%n", termLength);
             out.format("     MTU length: %d%n", mtuLength(metaDataBuffer));
             out.format("   EOS Position: %d%n%n", endOfStreamPosition(metaDataBuffer));

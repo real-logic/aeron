@@ -39,6 +39,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
@@ -494,6 +495,7 @@ public class DriverConductorTest
         verify(senderProxy, never()).removeNetworkPublication(eq(publication));
     }
 
+    @Ignore
     @Test
     public void shouldTimeoutPublicationWithNoKeepaliveButNotDrained() throws Exception
     {

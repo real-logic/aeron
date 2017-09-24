@@ -56,7 +56,7 @@ public class TermAppender
     public static final int TRIPPED = -1;
 
     /**
-     * The append operation failed because it was for the wrong term or past the end of the buffer.
+     * The append operation failed because it was past the end of the buffer.
      */
     public static final int FAILED = -2;
 
@@ -115,10 +115,7 @@ public class TermAppender
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
 
-        if (termId != activeTermId)
-        {
-            return FAILED;
-        }
+        checkTerm(activeTermId, termId);
 
         long resultingOffset = termOffset + alignedLength;
         if (resultingOffset > termLength)
@@ -163,10 +160,7 @@ public class TermAppender
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
 
-        if (termId != activeTermId)
-        {
-            return FAILED;
-        }
+        checkTerm(activeTermId, termId);
 
         long resultingOffset = termOffset + alignedLength;
         if (resultingOffset > termLength)
@@ -217,10 +211,7 @@ public class TermAppender
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
 
-        if (termId != activeTermId)
-        {
-            return FAILED;
-        }
+        checkTerm(activeTermId, termId);
 
         long resultingOffset = termOffset + alignedLength;
         if (resultingOffset > termLength)
@@ -284,10 +275,7 @@ public class TermAppender
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
 
-        if (termId != activeTermId)
-        {
-            return FAILED;
-        }
+        checkTerm(activeTermId, termId);
 
         long resultingOffset = termOffset + requiredLength;
         if (resultingOffset > termLength)
@@ -369,10 +357,7 @@ public class TermAppender
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
 
-        if (termId != activeTermId)
-        {
-            return FAILED;
-        }
+        checkTerm(activeTermId, termId);
 
         long resultingOffset = termOffset + requiredLength;
         if (resultingOffset > termLength)
@@ -440,6 +425,15 @@ public class TermAppender
         }
 
         return (int)resultingOffset;
+    }
+
+    private static void checkTerm(final int expectedTermId, final int termId)
+    {
+        if (termId != expectedTermId)
+        {
+            throw new IllegalStateException(
+                "Action possibly delayed: expectedTermId=" + expectedTermId + " termId=" + termId);
+        }
     }
 
     private int handleEndOfLogCondition(

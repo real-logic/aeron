@@ -301,8 +301,6 @@ public class DriverConductorTest
         final long id = driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
         driverProxy.removePublication(id);
 
-        driverConductor.doWork();
-
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + PUBLICATION_LINGER_NS * 2);
 
         verify(senderProxy).removeNetworkPublication(any());
@@ -321,8 +319,6 @@ public class DriverConductorTest
         driverProxy.removePublication(id2);
         driverProxy.removePublication(id3);
         driverProxy.removePublication(id4);
-
-        driverConductor.doWork();
 
         doWorkUntil(() -> nanoClock.nanoTime() >= PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
@@ -439,7 +435,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldErrorOnAddSubscriptionWithInvalidUri() throws Exception
+    public void shouldErrorOnAddSubscriptionWithInvalidChannel() throws Exception
     {
         driverProxy.addSubscription(INVALID_URI, STREAM_ID_1);
 
@@ -513,10 +509,10 @@ public class DriverConductorTest
         final int termId = 101;
         final int index = LogBufferDescriptor.indexByTerm(termId, termId);
         final RawLog rawLog = publication.rawLog();
+        LogBufferDescriptor.rawTail(rawLog.metaData(), index, LogBufferDescriptor.packTail(termId, 0));
         final TermAppender appender = new TermAppender(rawLog.termBuffers()[index], rawLog.metaData(), index);
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[256]);
-        final HeaderWriter headerWriter = new HeaderWriter(
-            createDefaultHeader(publication.sessionId(), STREAM_ID_1, termId));
+        final HeaderWriter headerWriter = new HeaderWriter(createDefaultHeader(SESSION_ID, STREAM_ID_1, termId));
 
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(termId);
@@ -524,12 +520,10 @@ public class DriverConductorTest
         when(msg.receiverWindowLength()).thenReturn(10);
 
         publication.onStatusMessage(msg, new InetSocketAddress("localhost", 4059));
-
         appender.appendUnfragmentedMessage(headerWriter, srcBuffer, 0, 256, null, termId);
 
         assertThat(publication.state(), is(NetworkPublication.State.ACTIVE));
 
-        driverConductor.doWork();
         doWorkUntil(
             () -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2,
             (timeNs) ->
@@ -541,9 +535,7 @@ public class DriverConductorTest
         assertThat(publication.state(), is(NetworkPublication.State.DRAINING));
 
         final long endTime = nanoClock.nanoTime() + PUBLICATION_CONNECTION_TIMEOUT_NS + TIMER_INTERVAL_NS;
-        doWorkUntil(
-            () -> nanoClock.nanoTime() >= endTime,
-            publication::updateHasReceivers);
+        doWorkUntil(() -> nanoClock.nanoTime() >= endTime, publication::updateHasReceivers);
 
         assertThat(publication.state(), is(NetworkPublication.State.LINGER));
 
@@ -1129,8 +1121,6 @@ public class DriverConductorTest
         driverProxy.removePublication(id1);
         driverProxy.removePublication(id2);
 
-        driverConductor.doWork();
-
         doWorkUntil(
             () ->
             {
@@ -1148,8 +1138,6 @@ public class DriverConductorTest
         final long id2 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_2);
         driverProxy.removeSubscription(id1);
         driverProxy.removeSubscription(id2);
-
-        driverConductor.doWork();
 
         doWorkUntil(
             () ->

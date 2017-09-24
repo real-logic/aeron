@@ -282,4 +282,16 @@ public class TermAppenderTest
         inOrder.verify(termBuffer, times(1)).putLong(tail + RESERVED_VALUE_OFFSET, RV, LITTLE_ENDIAN);
         inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameTwoLength);
     }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldDetectInvalidTerm()
+    {
+        final int length = 128;
+        final int srcOffset = 0;
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[length]);
+
+        logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, packTail(TERM_ID + 1, 0));
+
+        termAppender.appendUnfragmentedMessage(headerWriter, buffer, srcOffset, length, RVS, TERM_ID);
+    }
 }

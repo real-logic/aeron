@@ -35,7 +35,7 @@
 typedef struct aeron_logbuffer_metadata_stct
 {
     int64_t term_tail_counters[AERON_LOGBUFFER_PARTITION_COUNT];
-    int32_t active_partition_index;
+    int32_t active_term_count;
     uint8_t pad1[(2 * AERON_CACHE_LINE_LENGTH) - ((AERON_LOGBUFFER_PARTITION_COUNT * sizeof(int64_t)) + sizeof(int32_t))];
     int64_t end_of_stream_position;
     int32_t is_connected;
@@ -53,15 +53,15 @@ aeron_logbuffer_metadata_t;
 
 #define AERON_LOGBUFFER_COMPUTE_LOG_LENGTH(term_length) ((term_length * AERON_LOGBUFFER_PARTITION_COUNT) + AERON_LOGBUFFER_META_DATA_LENGTH)
 
-#define AERON_LOGBUFFER_ACTIVE_PARTITION_INDEX_VOLATILE(d,m) (AERON_GET_VOLATILE(d,(m->active_partition_index)))
-
 #define AERON_LOGBUFFER_FRAME_ALIGNMENT (32)
 
 #define AERON_LOGBUFFER_RAWTAIL_VOLATILE(d,m) \
 do \
 { \
+    size_t active_term_count; \
     size_t partition; \
-    AERON_GET_VOLATILE(partition,(m->active_partition_index)); \
+    AERON_GET_VOLATILE(active_term_count,(m->active_term_count)); \
+    partition = active_term_count & AERON_LOGBUFFER_PARTITION_COUNT; \
     AERON_GET_VOLATILE(d, m->term_tail_counters[partition]); \
 } \
 while(0)
@@ -88,6 +88,11 @@ inline size_t aeron_logbuffer_index_by_term(int32_t initial_term_id, int32_t act
     return (size_t)((active_term_id - initial_term_id) % AERON_LOGBUFFER_PARTITION_COUNT);
 }
 
+inline size_t aeron_logbuffer_index_by_term_count(int64_t term_count)
+{
+    return (size_t)(term_count % AERON_LOGBUFFER_PARTITION_COUNT);
+}
+
 inline int64_t aeron_logbuffer_compute_position(
     int32_t active_term_id, int32_t term_offset, size_t position_bits_to_shift, int32_t initial_term_id)
 {
@@ -110,11 +115,12 @@ inline int32_t aeron_logbuffer_compute_term_offset_from_position(int64_t positio
 }
 
 inline void aeron_logbuffer_rotate_log(
-    aeron_logbuffer_metadata_t *log_meta_data, size_t active_partition_index, int32_t term_id)
+    aeron_logbuffer_metadata_t *log_meta_data, int32_t current_term_count, int32_t term_id)
 {
-    const size_t next_index = (active_partition_index + 1) % AERON_LOGBUFFER_PARTITION_COUNT;
+    const int32_t next_term_count = current_term_count + 1;
+    const size_t next_index = aeron_logbuffer_index_by_term_count(next_term_count);
     log_meta_data->term_tail_counters[next_index] = (int64_t)term_id << 32;
-    AERON_PUT_ORDERED(log_meta_data->active_partition_index, next_index);
+    AERON_PUT_ORDERED(log_meta_data->active_term_count, next_term_count);
 }
 
 inline void aeron_logbuffer_fill_default_header(

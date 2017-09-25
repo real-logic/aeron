@@ -39,7 +39,10 @@ bool aeron_logbuffer_unblocker_unblock(
         log_meta_data, term_buffers[index].addr, term_length, blocked_offset, tail_offset, term_id))
     {
         case AERON_TERM_UNBLOCKER_STATUS_UNBLOCKED_TO_END:
-            aeron_logbuffer_rotate_log(log_meta_data, index, term_id + 1);
+        {
+            const int32_t term_count = (int32_t) (blocked_position >> position_bits_to_shift);
+            aeron_logbuffer_rotate_log(log_meta_data, term_count, term_id + 1);
+        }
             /* fall through */
         case AERON_TERM_UNBLOCKER_STATUS_UNBLOCKED:
             result = true;

@@ -238,7 +238,7 @@ TEST_F(LogBufferUnblockerTest, shouldUnblockWhenPositionHasNonCommittedMessageAn
 
     ASSERT_TRUE(aeron_logbuffer_unblocker_unblock(m_mapped_buffers, m_log_meta_data, blocked_position));
 
-    EXPECT_EQ(m_log_meta_data->active_partition_index, (int32_t)(active_index + 1));
+    EXPECT_EQ(m_log_meta_data->active_term_count, 1);
 
     int64_t raw_tail;
     AERON_LOGBUFFER_RAWTAIL_VOLATILE(raw_tail, m_log_meta_data);
@@ -261,7 +261,7 @@ TEST_F(LogBufferUnblockerTest, shouldUnblockWhenPositionHasNonCommittedMessageAn
 
     ASSERT_TRUE(aeron_logbuffer_unblocker_unblock(m_mapped_buffers, m_log_meta_data, blocked_position));
 
-    EXPECT_EQ(m_log_meta_data->active_partition_index, (int32_t)(active_index + 1));
+    EXPECT_EQ(m_log_meta_data->active_term_count, 1);
 
     int64_t raw_tail;
     AERON_LOGBUFFER_RAWTAIL_VOLATILE(raw_tail, m_log_meta_data);

@@ -83,6 +83,7 @@ int aeron_ipc_publication_create(
     _pub->log_meta_data = (aeron_logbuffer_metadata_t *)(_pub->mapped_raw_log.log_meta_data.addr);
 
     _pub->log_meta_data->term_tail_counters[0] = (int64_t)initial_term_id << 32;
+    _pub->log_meta_data->active_term_count = 0;
     _pub->log_meta_data->initial_term_id = initial_term_id;
     _pub->log_meta_data->mtu_length = (int32_t)mtu_length;
     _pub->log_meta_data->correlation_id = registration_id;

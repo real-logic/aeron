@@ -663,7 +663,6 @@ public class NetworkPublication
         switch (state)
         {
             case ACTIVE:
-                // TODO: Handle case of spies being the only consumer.
                 checkForBlockedPublisher(timeNs, senderPosition.getVolatile());
                 break;
 

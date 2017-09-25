@@ -26,6 +26,7 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
+import static io.aeron.SystemTestHelper.spyForChannel;
 import static org.mockito.Mockito.*;
 
 @RunWith(Theories.class)
@@ -90,10 +91,5 @@ public class SpySubscriptionTest
         {
             ctx.deleteAeronDirectory();
         }
-    }
-
-    private static String spyForChannel(final String channel)
-    {
-        return CommonContext.SPY_PREFIX + channel;
     }
 }

@@ -45,4 +45,15 @@ public class SystemTestHelper
         }
         while (!condition.getAsBoolean() && ((nowNs - startNs) < timeoutNs) && i++ < maxIterations);
     }
+
+    /**
+     * Form URI for spy on channel given.
+     *
+     * @param channel to spy on
+     * @return URI for spy channel.
+     */
+    public static String spyForChannel(final String channel)
+    {
+        return CommonContext.SPY_PREFIX + channel;
+    }
 }

@@ -100,12 +100,12 @@ public class LogBufferUnblockerTest
 
         assertTrue(LogBufferUnblocker.unblock(termBuffers, logMetaDataBuffer, blockedPosition));
 
-        verify(logMetaDataBuffer).putIntOrdered(LOG_ACTIVE_TERM_COUNT_OFFSET, activeIndex + 1);
-
         final long rawTail = rawTailVolatile(logMetaDataBuffer);
         final int termId = termId(rawTail);
         assertThat(computePosition(termId, 0, positionBitsToShift, TERM_ID_1),
             is(blockedPosition + messageLength));
+
+        verify(logMetaDataBuffer).putIntOrdered(LOG_ACTIVE_TERM_COUNT_OFFSET, termId - TERM_ID_1);
     }
 
     @Test
@@ -122,11 +122,12 @@ public class LogBufferUnblockerTest
 
         assertTrue(LogBufferUnblocker.unblock(termBuffers, logMetaDataBuffer, blockedPosition));
 
-        verify(logMetaDataBuffer).putIntOrdered(LOG_ACTIVE_TERM_COUNT_OFFSET, activeIndex + 1);
-
         final long rawTail = rawTailVolatile(logMetaDataBuffer);
-        assertThat(computePosition(termId(rawTail), 0, positionBitsToShift, TERM_ID_1),
+        final int termId = termId(rawTail);
+        assertThat(computePosition(termId, 0, positionBitsToShift, TERM_ID_1),
             is(blockedPosition + messageLength));
+
+        verify(logMetaDataBuffer).putIntOrdered(LOG_ACTIVE_TERM_COUNT_OFFSET, termId - TERM_ID_1);
     }
 
     private static long pack(final int termId, final int offset)

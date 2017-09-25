@@ -74,7 +74,7 @@ static const util::index_t LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT;
  *  |                       Tail Counter 2                          |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                   Active Partition Index                      |
+ *  |                      Active Term Count                        |
  *  +---------------------------------------------------------------+
  *  |                      Cache Line Padding                      ...
  * ...                                                              |
@@ -112,7 +112,7 @@ static const util::index_t LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = util::BitUtil::
 struct LogMetaDataDefn
 {
     std::int64_t termTailCounters[PARTITION_COUNT];
-    std::int32_t activePartitionIndex;
+    std::int32_t activeTermCount;
     std::int8_t pad1[(2 * util::BitUtil::CACHE_LINE_LENGTH) - ((PARTITION_COUNT * sizeof(std::int64_t)) + sizeof(std::int32_t))];
     std::int64_t endOfStreamPosition;
     std::int32_t isConnected;
@@ -127,7 +127,7 @@ struct LogMetaDataDefn
 
 static const util::index_t TERM_TAIL_COUNTER_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, termTailCounters);
 
-static const util::index_t LOG_ACTIVE_PARTITION_INDEX_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, activePartitionIndex);
+static const util::index_t LOG_ACTIVE_TERM_COUNT_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, activeTermCount);
 static const util::index_t LOG_END_OF_STREAM_POSITION_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, endOfStreamPosition);
 static const util::index_t LOG_IS_CONNECTED_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, isConnected);
 static const util::index_t LOG_INITIAL_TERM_ID_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, initialTermId);
@@ -163,14 +163,20 @@ inline static std::int32_t mtuLength(AtomicBuffer& logMetaDataBuffer)
     return logMetaDataBuffer.getInt32(LOG_MTU_LENGTH_OFFSET);
 }
 
-inline static std::int32_t activePartitionIndex(AtomicBuffer& logMetaDataBuffer)
+inline static std::int32_t activeTermCount(AtomicBuffer& logMetaDataBuffer)
 {
-    return logMetaDataBuffer.getInt32Volatile(LOG_ACTIVE_PARTITION_INDEX_OFFSET);
+    return logMetaDataBuffer.getInt32Volatile(LOG_ACTIVE_TERM_COUNT_OFFSET);
 }
 
-inline static void activePartitionIndex(AtomicBuffer& logMetaDataBuffer, std::int32_t activeTermId)
+inline static void activeTermCountOrdered(AtomicBuffer& logMetaDataBuffer, std::int32_t activeTermId)
 {
-    logMetaDataBuffer.putInt32Ordered(LOG_ACTIVE_PARTITION_INDEX_OFFSET, activeTermId);
+    logMetaDataBuffer.putInt32Ordered(LOG_ACTIVE_TERM_COUNT_OFFSET, activeTermId);
+}
+
+inline static bool casActiveTermCount(
+    AtomicBuffer& logMetaDataBuffer, std::int32_t expectedTermCount, std::int32_t updateTermCount)
+{
+    return logMetaDataBuffer.compareAndSetInt32(LOG_ACTIVE_TERM_COUNT_OFFSET, expectedTermCount, updateTermCount);
 }
 
 inline static int nextPartitionIndex(int currentIndex) AERON_NOEXCEPT
@@ -206,6 +212,11 @@ inline static void endOfStreamPosition(AtomicBuffer &logMetaDataBuffer, std::int
 inline static int indexByTerm(std::int32_t initialTermId, std::int32_t activeTermId) AERON_NOEXCEPT
 {
     return (activeTermId - initialTermId) % PARTITION_COUNT;
+}
+
+inline static int indexByTermCount(std::int64_t termCount) AERON_NOEXCEPT
+{
+    return static_cast<int>(termCount % PARTITION_COUNT);
 }
 
 inline static int indexByPosition(std::int64_t position, std::int32_t positionBitsToShift) AERON_NOEXCEPT
@@ -247,6 +258,12 @@ inline static AtomicBuffer defaultFrameHeader(AtomicBuffer& logMetaDataBuffer)
     return AtomicBuffer(header, DataFrameHeader::LENGTH);
 }
 
+inline static void initializeTailWithTermId(AtomicBuffer& logMetaDataBuffer, int partitionIndex, std::int32_t termId)
+{
+    logMetaDataBuffer.putInt64Ordered(
+        TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)), (static_cast<std::int64_t>(termId)) << 32);
+}
+
 inline static std::int32_t termId(const std::int64_t rawTail)
 {
     return static_cast<std::int32_t>(rawTail >> 32);
@@ -261,7 +278,7 @@ inline static std::int32_t termOffset(const std::int64_t rawTail, const std::int
 
 inline static std::int64_t rawTailVolatile(AtomicBuffer& logMetaDataBuffer)
 {
-    const std::int32_t partitionIndex = activePartitionIndex(logMetaDataBuffer);
+    const std::int32_t partitionIndex = indexByTermCount(activeTermCount(logMetaDataBuffer));
     return logMetaDataBuffer.getInt64Volatile(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)));
 }
 

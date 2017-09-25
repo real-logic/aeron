@@ -71,7 +71,7 @@ public:
 
         const std::int32_t index = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1);
 
-        m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_ACTIVE_PARTITION_INDEX_OFFSET, index);
+        m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_ACTIVE_TERM_COUNT_OFFSET, 0);
 
         m_logMetaDataBuffer.putInt64(termTailCounterOffset(index), static_cast<std::int64_t>(TERM_ID_1) << 32);
 
@@ -180,7 +180,7 @@ TEST_F(PublicationTest, shouldRotateWhenAppendTrips)
     EXPECT_EQ(m_publication->offer(m_srcBuffer), ADMIN_ACTION);
 
     const int nextIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1 + 1);
-    EXPECT_EQ(m_logMetaDataBuffer.getInt32(LogBufferDescriptor::LOG_ACTIVE_PARTITION_INDEX_OFFSET), nextIndex);
+    EXPECT_EQ(m_logMetaDataBuffer.getInt32(LogBufferDescriptor::LOG_ACTIVE_TERM_COUNT_OFFSET), 1);
 
     EXPECT_EQ(m_logMetaDataBuffer.getInt64(termTailCounterOffset(nextIndex)), static_cast<std::int64_t>(TERM_ID_1 + 1) << 32);
 
@@ -200,7 +200,7 @@ TEST_F(PublicationTest, shouldRotateWhenClaimTrips)
     EXPECT_EQ(m_publication->tryClaim(SRC_BUFFER_LENGTH, bufferClaim), ADMIN_ACTION);
 
     const int nextIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1 + 1);
-    EXPECT_EQ(m_logMetaDataBuffer.getInt32(LogBufferDescriptor::LOG_ACTIVE_PARTITION_INDEX_OFFSET), nextIndex);
+    EXPECT_EQ(m_logMetaDataBuffer.getInt32(LogBufferDescriptor::LOG_ACTIVE_TERM_COUNT_OFFSET), 1);
 
     EXPECT_EQ(m_logMetaDataBuffer.getInt64(termTailCounterOffset(nextIndex)), static_cast<std::int64_t>(TERM_ID_1 + 1) << 32);
 

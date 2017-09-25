@@ -102,7 +102,6 @@ TEST_F(TermAppenderTest, shouldAppendFrameToEmptyLog)
     const std::int64_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
     util::index_t tail = 0;
     testing::Sequence sequence;
-    TermAppender::Result result;
 
     EXPECT_CALL(m_metaDataBuffer, getAndAddInt64(TERM_TAIL_OFFSET, alignedFrameLength))
         .Times(1)
@@ -122,8 +121,9 @@ TEST_F(TermAppenderTest, shouldAppendFrameToEmptyLog)
         .Times(1)
         .InSequence(sequence);
 
-    m_termAppender.appendUnfragmentedMessage(result, m_headerWriter, m_src, 0, msgLength, reservedValueSupplier);
-    EXPECT_EQ(result.termOffset, alignedFrameLength);
+    const std::int32_t resultingOffset =
+        m_termAppender.appendUnfragmentedMessage(m_headerWriter, m_src, 0, msgLength, reservedValueSupplier, TERM_ID);
+    EXPECT_EQ(resultingOffset, alignedFrameLength);
 }
 
 TEST_F(TermAppenderTest, shouldAppendFrameTwiceToLog)
@@ -153,9 +153,9 @@ TEST_F(TermAppenderTest, shouldAppendFrameTwiceToLog)
         .Times(1)
         .InSequence(sequence1);
 
-    TermAppender::Result result;
-    m_termAppender.appendUnfragmentedMessage(result, m_headerWriter, m_src, 0, msgLength, reservedValueSupplier);
-    EXPECT_EQ(result.termOffset, alignedFrameLength);
+    std::int32_t resultingOffset =
+        m_termAppender.appendUnfragmentedMessage(m_headerWriter, m_src, 0, msgLength, reservedValueSupplier, TERM_ID);
+    EXPECT_EQ(resultingOffset, alignedFrameLength);
 
     tail = alignedFrameLength;
 
@@ -172,8 +172,9 @@ TEST_F(TermAppenderTest, shouldAppendFrameTwiceToLog)
         .Times(1)
         .InSequence(sequence2);
 
-    m_termAppender.appendUnfragmentedMessage(result, m_headerWriter, m_src, 0, msgLength, reservedValueSupplier);
-    EXPECT_EQ(result.termOffset, alignedFrameLength * 2);
+    resultingOffset =
+        m_termAppender.appendUnfragmentedMessage(m_headerWriter, m_src, 0, msgLength, reservedValueSupplier, TERM_ID);
+    EXPECT_EQ(resultingOffset, alignedFrameLength * 2);
 }
 
 TEST_F(TermAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemainingCapacity)
@@ -198,10 +199,9 @@ TEST_F(TermAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemaini
         .Times(1)
         .InSequence(sequence);
 
-    TermAppender::Result result;
-    m_termAppender.appendUnfragmentedMessage(result, m_headerWriter, m_src, 0, msgLength, reservedValueSupplier);
-    EXPECT_EQ(result.termId, TERM_ID);
-    EXPECT_EQ(result.termOffset, TERM_APPENDER_TRIPPED);
+    const std::int32_t resultingOffset =
+        m_termAppender.appendUnfragmentedMessage(m_headerWriter, m_src, 0, msgLength, reservedValueSupplier, TERM_ID);
+    EXPECT_EQ(resultingOffset, TERM_APPENDER_TRIPPED);
 }
 
 TEST_F(TermAppenderTest, shouldFragmentMessageOverTwoFrames)
@@ -252,9 +252,10 @@ TEST_F(TermAppenderTest, shouldFragmentMessageOverTwoFrames)
         .Times(1)
         .InSequence(sequence);
 
-    TermAppender::Result result;
-    m_termAppender.appendFragmentedMessage(result, m_headerWriter, m_src, 0, msgLength, MAX_PAYLOAD_LENGTH, reservedValueSupplier);
-    EXPECT_EQ(result.termOffset, requiredCapacity);
+    const std::int32_t resultingOffset =
+        m_termAppender.appendFragmentedMessage(
+            m_headerWriter, m_src, 0, msgLength, MAX_PAYLOAD_LENGTH, reservedValueSupplier, TERM_ID);
+    EXPECT_EQ(resultingOffset, requiredCapacity);
 }
 
 TEST_F(TermAppenderTest, shouldClaimRegionForZeroCopyEncoding)
@@ -275,9 +276,9 @@ TEST_F(TermAppenderTest, shouldClaimRegionForZeroCopyEncoding)
         .Times(1)
         .InSequence(sequence);
 
-    TermAppender::Result result;
-    m_termAppender.claim(result, m_headerWriter, msgLength, bufferClaim);
-    EXPECT_EQ(result.termOffset, alignedFrameLength);
+    const std::int32_t resultingOffset =
+        m_termAppender.claim(m_headerWriter, msgLength, bufferClaim, TERM_ID);
+    EXPECT_EQ(resultingOffset, alignedFrameLength);
 
     EXPECT_EQ(bufferClaim.offset(), (tail + DataFrameHeader::LENGTH));
     EXPECT_EQ(bufferClaim.length(), msgLength);

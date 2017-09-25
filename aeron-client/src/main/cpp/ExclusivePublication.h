@@ -56,7 +56,7 @@ public:
         ClientConductor& conductor,
         const std::string& channel,
         std::int64_t registrationId,
-        std::int64_t correlationId,
+        std::int64_t originalRegistrationId,
         std::int32_t streamId,
         std::int32_t sessionId,
         UnsafeBufferPosition& publicationLimit,
@@ -270,13 +270,9 @@ public:
 
                 newPosition = ExclusivePublication::newPosition(result);
             }
-            else if (LogBufferDescriptor::isConnected(m_logMetaDataBuffer))
-            {
-                newPosition = BACK_PRESSURED;
-            }
             else
             {
-                newPosition = NOT_CONNECTED;
+                newPosition = ExclusivePublication::backPressureStatus(position, length);
             }
         }
 
@@ -357,13 +353,9 @@ public:
                 const std::int32_t result = termAppender->claim(m_termId, m_termOffset, m_headerWriter, length, bufferClaim);
                 newPosition = ExclusivePublication::newPosition(result);
             }
-            else if (LogBufferDescriptor::isConnected(m_logMetaDataBuffer))
-            {
-                newPosition = BACK_PRESSURED;
-            }
             else
             {
-                newPosition = NOT_CONNECTED;
+                newPosition = ExclusivePublication::backPressureStatus(position, length);
             }
         }
 
@@ -398,6 +390,7 @@ private:
     const std::string m_channel;
     std::int64_t m_registrationId;
     std::int64_t m_originalRegistrationId;
+    std::int64_t m_maxPossiblePosition;
     std::int32_t m_streamId;
     std::int32_t m_sessionId;
     std::int32_t m_initialTermId;
@@ -427,6 +420,11 @@ private:
         }
         else
         {
+            if ((m_termBeginPosition + termBufferLength()) >= m_maxPossiblePosition)
+            {
+                return MAX_POSITION_EXCEEDED;
+            }
+
             const int nextIndex = LogBufferDescriptor::nextPartitionIndex(m_activePartitionIndex);
             const std::int32_t nextTermId = m_termId + 1;
 
@@ -435,11 +433,29 @@ private:
             m_termId = nextTermId;
             m_termBeginPosition = LogBufferDescriptor::computeTermBeginPosition(nextTermId, m_positionBitsToShift, m_initialTermId);
 
-            m_appenders[nextIndex]->tailTermId(nextTermId);
-            LogBufferDescriptor::activePartitionIndex(m_logMetaDataBuffer, nextIndex);
+            const std::int32_t termCount = nextTermId - m_initialTermId;
+
+            LogBufferDescriptor::initializeTailWithTermId(m_logMetaDataBuffer, nextIndex, nextTermId);
+            LogBufferDescriptor::activeTermCountOrdered(m_logMetaDataBuffer, termCount);
 
             return ADMIN_ACTION;
         }
+    }
+
+    inline std::int64_t backPressureStatus(std::int64_t currentPosition, std::int32_t messageLength)
+    {
+        std::int64_t status = NOT_CONNECTED;
+
+        if ((currentPosition + messageLength) >= m_maxPossiblePosition)
+        {
+            status = MAX_POSITION_EXCEEDED;
+        }
+        else if (LogBufferDescriptor::isConnected(m_logMetaDataBuffer))
+        {
+            status = BACK_PRESSURED;
+        }
+
+        return status;
     }
 
     inline void checkForMaxMessageLength(const util::index_t length) const
@@ -462,7 +478,6 @@ private:
         }
     }
 
-    bool isPublicationConnected(std::int64_t timeOfLastStatusMessage) const;
 };
 
 }

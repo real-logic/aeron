@@ -54,11 +54,6 @@ public:
         return *m_tailAddr;
     }
 
-    inline void tailTermId(const std::int32_t termId)
-    {
-        *m_tailAddr = static_cast<std::int64_t>(termId) << 32;
-    }
-
     inline std::int32_t claim(
         std::int32_t termId,
         std::int32_t termOffset,

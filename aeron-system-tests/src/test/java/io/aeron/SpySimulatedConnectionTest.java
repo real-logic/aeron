@@ -46,7 +46,7 @@ import static org.mockito.Mockito.*;
  * Tests that allow Spies to simulate connection
  */
 @RunWith(Theories.class)
-public class SpySimulateConnectionTest
+public class SpySimulatedConnectionTest
 {
     @DataPoint
     public static final String UNICAST_CHANNEL = "aeron:udp?endpoint=localhost:54325";
@@ -84,7 +84,7 @@ public class SpySimulateConnectionTest
     }
 
     @After
-    public void closeEverything()
+    public void after()
     {
         CloseHelper.quietClose(publication);
         CloseHelper.quietClose(subscription);

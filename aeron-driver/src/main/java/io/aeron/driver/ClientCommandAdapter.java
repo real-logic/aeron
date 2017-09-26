@@ -176,7 +176,8 @@ class ClientCommandAdapter implements MessageHandler
         }
         catch (final Exception ex)
         {
-            clientProxy.onError(correlationId, GENERIC_ERROR, ex.getMessage());
+            final String errorMessage = ex.getClass().getName() + " : " + ex.getMessage();
+            clientProxy.onError(correlationId, GENERIC_ERROR, errorMessage);
             recordError(ex);
         }
     }

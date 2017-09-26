@@ -51,11 +51,6 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 public class TermAppender
 {
     /**
-     * The append operation tripped the end of the buffer and needs to rotate.
-     */
-    public static final int TRIPPED = -1;
-
-    /**
      * The append operation failed because it was past the end of the buffer.
      */
     public static final int FAILED = -2;
@@ -98,8 +93,7 @@ public class TermAppender
      * @param length       of the message to be written.
      * @param bufferClaim  to be updated with the claimed region.
      * @param activeTermId used for flow control.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED}
-     * or {@link #FAILED}.
+     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
      */
     public int claim(
         final HeaderWriter header,
@@ -141,8 +135,7 @@ public class TermAppender
      * @param length                of the message in the source buffer.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @param activeTermId          used for flow control.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or
-     * {@link #FAILED}
+     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}
      */
     public int appendUnfragmentedMessage(
         final HeaderWriter header,
@@ -193,8 +186,7 @@ public class TermAppender
      * @param length                of the message as a sum of the vectors.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @param activeTermId          used for flow control.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or
-     * {@link #FAILED}.
+     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
      */
     public int appendUnfragmentedMessage(
         final HeaderWriter header,
@@ -253,8 +245,7 @@ public class TermAppender
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @param activeTermId          used for flow control.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED}
-     * or {@link #FAILED}.
+     * @return the resulting offset of the term after the append on success otherwise  {@link #FAILED}.
      */
     public int appendFragmentedMessage(
         final HeaderWriter header,
@@ -336,8 +327,7 @@ public class TermAppender
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @param activeTermId          used for flow control.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED}
-     * or {@link #FAILED}.
+     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
      */
     public int appendFragmentedMessage(
         final HeaderWriter header,
@@ -443,23 +433,16 @@ public class TermAppender
         final int termLength,
         final int termId)
     {
-        int resultingOffset = FAILED;
-
-        if (termOffset <= termLength)
+        if (termOffset < termLength)
         {
-            resultingOffset = TRIPPED;
-
-            if (termOffset < termLength)
-            {
-                final int offset = (int)termOffset;
-                final int paddingLength = termLength - offset;
-                header.write(termBuffer, offset, paddingLength, termId);
-                frameType(termBuffer, offset, PADDING_FRAME_TYPE);
-                frameLengthOrdered(termBuffer, offset, paddingLength);
-            }
+            final int offset = (int)termOffset;
+            final int paddingLength = termLength - offset;
+            header.write(termBuffer, offset, paddingLength, termId);
+            frameType(termBuffer, offset, PADDING_FRAME_TYPE);
+            frameLengthOrdered(termBuffer, offset, paddingLength);
         }
 
-        return resultingOffset;
+        return FAILED;
     }
 
     private long getAndAddRawTail(final int alignedLength)

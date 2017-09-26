@@ -542,7 +542,9 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Rotate the log and update the default headers for the new term.
+     * Rotate the log and update the tail counter for the new term.
+     *
+     * This method is safe for concurrent use.
      *
      * @param logMetaDataBuffer for the meta data.
      * @param currentTermCount  from which to rotate.
@@ -551,10 +553,23 @@ public class LogBufferDescriptor
     public static void rotateLog(
         final UnsafeBuffer logMetaDataBuffer, final int currentTermCount, final int currentTermId)
     {
+        final int nextTermId = currentTermId + 1;
         final int nextTermCount = currentTermCount + 1;
         final int nextIndex = indexByTermCount(nextTermCount);
-        initialiseTailWithTermId(logMetaDataBuffer, nextIndex, currentTermId + 1);
-        activeTermCountOrdered(logMetaDataBuffer, nextTermCount);
+        final int expectedTermId = nextTermId - PARTITION_COUNT;
+
+        long rawTail;
+        do
+        {
+            rawTail = rawTail(logMetaDataBuffer, nextIndex);
+            if (expectedTermId != termId(rawTail))
+            {
+                break;
+            }
+        }
+        while (!casRawTail(logMetaDataBuffer, nextIndex, rawTail, packTail(nextTermId, 0)));
+
+        casActiveTermCount(logMetaDataBuffer, currentTermCount, nextTermCount);
     }
 
     /**
@@ -567,7 +582,7 @@ public class LogBufferDescriptor
     public static void initialiseTailWithTermId(
         final UnsafeBuffer logMetaData, final int partitionIndex, final int termId)
     {
-        logMetaData.putLongOrdered(TERM_TAIL_COUNTERS_OFFSET + (partitionIndex * SIZE_OF_LONG), packTail(termId, 0));
+        logMetaData.putLong(TERM_TAIL_COUNTERS_OFFSET + (partitionIndex * SIZE_OF_LONG), packTail(termId, 0));
     }
 
     /**
@@ -678,5 +693,24 @@ public class LogBufferDescriptor
     {
         final int partitionIndex = indexByTermCount(activeTermCount(logMetaDataBuffer));
         return logMetaDataBuffer.getLongVolatile(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex));
+    }
+
+    /**
+     * Compare and set the raw value of the tail for the given partition.
+     *
+     * @param logMetaDataBuffer containing the tail counters.
+     * @param partitionIndex    for the tail counter.
+     * @param expectedRawTail   expected current value.
+     * @param updateRawTail     to be applied.
+     * @return true if the update was successful otherwise false.
+     */
+    public static boolean casRawTail(
+        final UnsafeBuffer logMetaDataBuffer,
+        final int partitionIndex,
+        final long expectedRawTail,
+        final long updateRawTail)
+    {
+        final int index = TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex);
+        return logMetaDataBuffer.compareAndSetLong(index, expectedRawTail, updateRawTail);
     }
 }

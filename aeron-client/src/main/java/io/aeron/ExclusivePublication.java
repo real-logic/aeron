@@ -637,44 +637,41 @@ public class ExclusivePublication implements AutoCloseable
 
             return termBeginPosition + resultingOffset;
         }
-        else
+
+        if ((termBeginPosition + termBufferLength) >= maxPossiblePosition)
         {
-            if ((termBeginPosition + termBufferLength) >= maxPossiblePosition)
-            {
-                return MAX_POSITION_EXCEEDED;
-            }
-
-            final int nextIndex = nextPartitionIndex(activePartitionIndex);
-            final int nextTermId = termId + 1;
-
-            activePartitionIndex = nextIndex;
-            termOffset = 0;
-            termId = nextTermId;
-            termBeginPosition = computeTermBeginPosition(nextTermId, positionBitsToShift, initialTermId);
-
-            final int termCount = nextTermId - initialTermId;
-
-            initialiseTailWithTermId(logMetaDataBuffer, nextIndex, nextTermId);
-            activeTermCountOrdered(logMetaDataBuffer, termCount);
-
-            return ADMIN_ACTION;
+            return MAX_POSITION_EXCEEDED;
         }
+
+        final int nextIndex = nextPartitionIndex(activePartitionIndex);
+        final int nextTermId = termId + 1;
+
+        activePartitionIndex = nextIndex;
+        termOffset = 0;
+        termId = nextTermId;
+        termBeginPosition = computeTermBeginPosition(nextTermId, positionBitsToShift, initialTermId);
+
+        final int termCount = nextTermId - initialTermId;
+
+        initialiseTailWithTermId(logMetaDataBuffer, nextIndex, nextTermId);
+        activeTermCountOrdered(logMetaDataBuffer, termCount);
+
+        return ADMIN_ACTION;
     }
 
     private long backPressureStatus(final long currentPosition, final int messageLength)
     {
-        long status = NOT_CONNECTED;
-
         if ((currentPosition + messageLength) >= maxPossiblePosition)
         {
-            status = MAX_POSITION_EXCEEDED;
-        }
-        else if (LogBufferDescriptor.isConnected(logMetaDataBuffer))
-        {
-            status = BACK_PRESSURED;
+            return MAX_POSITION_EXCEEDED;
         }
 
-        return status;
+        if (LogBufferDescriptor.isConnected(logMetaDataBuffer))
+        {
+            return BACK_PRESSURED;
+        }
+
+        return NOT_CONNECTED;
     }
 
     private void checkForMaxPayloadLength(final int length)

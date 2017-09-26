@@ -771,13 +771,25 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         if (params.isReplay)
         {
             final int termCount = params.termId - initialTermId;
-            final int activeIndex = indexByTerm(initialTermId, params.termId);
+            int activeIndex = indexByTerm(initialTermId, params.termId);
             rawTail(logMetaData, activeIndex, packTail(params.termId, params.termOffset));
             activeTermCount(logMetaData, termCount);
+
+            for (int i = 1; i < PARTITION_COUNT; i++)
+            {
+                final int expectedTermId = (initialTermId + i) - PARTITION_COUNT;
+                activeIndex = nextPartitionIndex(activeIndex);
+                initialiseTailWithTermId(logMetaData, activeIndex, expectedTermId);
+            }
         }
         else
         {
             initialiseTailWithTermId(logMetaData, 0, initialTermId);
+            for (int i = 1; i < PARTITION_COUNT; i++)
+            {
+                final int expectedTermId = (initialTermId + i) - PARTITION_COUNT;
+                initialiseTailWithTermId(logMetaData, i, expectedTermId);
+            }
         }
 
         return rawLog;
@@ -803,13 +815,25 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         if (params.isReplay)
         {
             final int termCount = params.termId - initialTermId;
-            final int activeIndex = indexByTerm(initialTermId, params.termId);
+            int activeIndex = indexByTermCount(termCount);
             rawTail(logMetaData, activeIndex, packTail(params.termId, params.termOffset));
             activeTermCount(logMetaData, termCount);
+
+            for (int i = 1; i < PARTITION_COUNT; i++)
+            {
+                final int expectedTermId = (initialTermId + i) - PARTITION_COUNT;
+                activeIndex = nextPartitionIndex(activeIndex);
+                initialiseTailWithTermId(logMetaData, activeIndex, expectedTermId);
+            }
         }
         else
         {
             initialiseTailWithTermId(logMetaData, 0, initialTermId);
+            for (int i = 1; i < PARTITION_COUNT; i++)
+            {
+                final int expectedTermId = (initialTermId + i) - PARTITION_COUNT;
+                initialiseTailWithTermId(logMetaData, i, expectedTermId);
+            }
         }
 
         return rawLog;

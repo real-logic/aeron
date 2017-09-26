@@ -594,47 +594,34 @@ public class Publication implements AutoCloseable
     private long newPosition(
         final int termCount, final int termOffset, final int termId, final long position, final int resultingOffset)
     {
-        long newPosition = ADMIN_ACTION;
         if (resultingOffset > 0)
         {
-            newPosition = (position - termOffset) + resultingOffset;
+            return (position - termOffset) + resultingOffset;
         }
-        else if ((position + termOffset) > maxPossiblePosition)
+
+        if ((position + termOffset) > maxPossiblePosition)
         {
-            newPosition = MAX_POSITION_EXCEEDED;
-        }
-        else if (resultingOffset == TermAppender.TRIPPED)
-        {
-            final int nextTermCount = termCount + 1;
-            final int nextIndex = indexByTermCount(nextTermCount);
-
-            initialiseTailWithTermId(logMetaDataBuffer, nextIndex, termId + 1);
-
-            if (!casActiveTermCount(logMetaDataBuffer, termCount, nextTermCount))
-            {
-                throw new IllegalStateException(
-                    "CAS failed: expected=" + termCount +
-                        " update=" + nextTermCount + " actual=" + activeTermCount(logMetaDataBuffer));
-            }
+            return MAX_POSITION_EXCEEDED;
         }
 
-        return newPosition;
+        rotateLog(logMetaDataBuffer, termCount, termId);
+
+        return ADMIN_ACTION;
     }
 
     private long backPressureStatus(final long currentPosition, final int messageLength)
     {
-        long status = NOT_CONNECTED;
-
         if ((currentPosition + messageLength) >= maxPossiblePosition)
         {
-            status = MAX_POSITION_EXCEEDED;
-        }
-        else if (LogBufferDescriptor.isConnected(logMetaDataBuffer))
-        {
-            status = BACK_PRESSURED;
+            return MAX_POSITION_EXCEEDED;
         }
 
-        return status;
+        if (LogBufferDescriptor.isConnected(logMetaDataBuffer))
+        {
+            return BACK_PRESSURED;
+        }
+
+        return NOT_CONNECTED;
     }
 
     private void checkForMaxPayloadLength(final int length)

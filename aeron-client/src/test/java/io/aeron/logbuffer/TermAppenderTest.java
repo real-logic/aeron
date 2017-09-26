@@ -25,6 +25,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTERS_OFFSET;
 import static io.aeron.logbuffer.LogBufferDescriptor.packTail;
 import static io.aeron.logbuffer.LogBufferDescriptor.rawTailVolatile;
+import static io.aeron.logbuffer.TermAppender.FAILED;
 import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static java.nio.ByteBuffer.allocateDirect;
@@ -33,7 +34,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 import static io.aeron.logbuffer.FrameDescriptor.*;
-import static io.aeron.logbuffer.TermAppender.TRIPPED;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static org.agrona.BitUtil.*;
 
@@ -116,7 +116,7 @@ public class TermAppenderTest
     }
 
     @Test
-    public void shouldPadLogAndTripWhenAppendingWithInsufficientRemainingCapacity()
+    public void shouldPadLogWhenAppendingWithInsufficientRemainingCapacity()
     {
         final int msgLength = 120;
         final int headerLength = DEFAULT_HEADER.capacity();
@@ -128,7 +128,7 @@ public class TermAppenderTest
         logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, packTail(TERM_ID, tailValue));
 
         assertThat(termAppender.appendUnfragmentedMessage(headerWriter, buffer, 0, msgLength, RVS, TERM_ID),
-            is(TRIPPED));
+            is(FAILED));
 
         assertThat(rawTailVolatile(logMetaDataBuffer, PARTITION_INDEX),
             is(packTail(TERM_ID, tailValue + requiredFrameSize)));

@@ -34,7 +34,6 @@ public class LogBufferUnblockerTest
     private static final int PARTITION_INDEX = 0;
     private static final int TERM_TAIL_COUNTER_OFFSET = TERM_TAIL_COUNTERS_OFFSET + (PARTITION_INDEX * SIZE_OF_LONG);
 
-
     private final UnsafeBuffer logMetaDataBuffer = spy(new UnsafeBuffer(allocateDirect(LOG_META_DATA_LENGTH)));
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
 
@@ -50,7 +49,13 @@ public class LogBufferUnblockerTest
             termBuffers[i] = spy(new UnsafeBuffer(allocateDirect(TERM_LENGTH)));
         }
 
-        initialiseTailWithTermId(logMetaDataBuffer, PARTITION_INDEX, TERM_ID_1);
+        final int initialTermId = TERM_ID_1;
+        initialiseTailWithTermId(logMetaDataBuffer, 0, initialTermId);
+        for (int i = 1; i < PARTITION_COUNT; i++)
+        {
+            final int expectedTermId = (initialTermId + i) - PARTITION_COUNT;
+            initialiseTailWithTermId(logMetaDataBuffer, i, expectedTermId);
+        }
     }
 
     @Test
@@ -96,7 +101,7 @@ public class LogBufferUnblockerTest
 
         when(termBuffers[activeIndex].getIntVolatile(blockedOffset)).thenReturn(0);
 
-        logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, pack(TERM_ID_1, TERM_LENGTH));
+        logMetaDataBuffer.getAndAddLong(TERM_TAIL_COUNTER_OFFSET, TERM_LENGTH);
 
         assertTrue(LogBufferUnblocker.unblock(termBuffers, logMetaDataBuffer, blockedPosition));
 
@@ -105,7 +110,7 @@ public class LogBufferUnblockerTest
         assertThat(computePosition(termId, 0, positionBitsToShift, TERM_ID_1),
             is(blockedPosition + messageLength));
 
-        verify(logMetaDataBuffer).putIntOrdered(LOG_ACTIVE_TERM_COUNT_OFFSET, termId - TERM_ID_1);
+        verify(logMetaDataBuffer).compareAndSetInt(LOG_ACTIVE_TERM_COUNT_OFFSET, 0, 1);
     }
 
     @Test
@@ -127,7 +132,7 @@ public class LogBufferUnblockerTest
         assertThat(computePosition(termId, 0, positionBitsToShift, TERM_ID_1),
             is(blockedPosition + messageLength));
 
-        verify(logMetaDataBuffer).putIntOrdered(LOG_ACTIVE_TERM_COUNT_OFFSET, termId - TERM_ID_1);
+        verify(logMetaDataBuffer).compareAndSetInt(LOG_ACTIVE_TERM_COUNT_OFFSET, 0, 1);
     }
 
     private static long pack(final int termId, final int offset)

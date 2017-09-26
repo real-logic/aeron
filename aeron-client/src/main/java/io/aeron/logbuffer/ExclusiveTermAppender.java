@@ -48,7 +48,7 @@ public class ExclusiveTermAppender
     /**
      * The append operation tripped the end of the buffer and needs to rotate.
      */
-    public static final int TRIPPED = -1;
+    public static final int FAILED = -1;
 
     private final long tailAddressOffset;
     private final byte[] tailBuffer;
@@ -80,7 +80,7 @@ public class ExclusiveTermAppender
      * @param header      for writing the default header.
      * @param length      of the message to be written.
      * @param bufferClaim to be updated with the claimed region.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED}.
+     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
      */
     public int claim(
         final int termId,
@@ -117,7 +117,7 @@ public class ExclusiveTermAppender
      * @param termOffset in the term at which to append.
      * @param header     for writing the default header.
      * @param length     of the padding to be written.
-     * @return the resulting offset of the term after success otherwise {@link #TRIPPED}.
+     * @return the resulting offset of the term after success otherwise {@link #FAILED}.
      */
     public int appendPadding(
         final int termId,
@@ -157,7 +157,7 @@ public class ExclusiveTermAppender
      * @param srcOffset             at which the message begins.
      * @param length                of the message in the source buffer.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED}.
+     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
      */
     public int appendUnfragmentedMessage(
         final int termId,
@@ -206,7 +206,7 @@ public class ExclusiveTermAppender
      * @param vectors               to the buffers.
      * @param length                of the message as a sum of the vectors.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED}.
+     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
      */
     public int appendUnfragmentedMessage(
         final int termId,
@@ -263,7 +263,7 @@ public class ExclusiveTermAppender
      * @param length                of the message in the source buffer.
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED}.
+     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
      */
     public int appendFragmentedMessage(
         final int termId,
@@ -343,7 +343,7 @@ public class ExclusiveTermAppender
      * @param length                of the message in the source buffer.
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED}.
+     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
      */
     public int appendFragmentedMessage(
         final int termId,
@@ -447,7 +447,7 @@ public class ExclusiveTermAppender
             frameLengthOrdered(termBuffer, offset, paddingLength);
         }
 
-        return TRIPPED;
+        return FAILED;
     }
 
     private void putRawTailOrdered(final int termId, final int termOffset)

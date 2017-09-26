@@ -25,7 +25,7 @@ extern "C"
 
 #define TERM_LENGTH (AERON_LOGBUFFER_TERM_MIN_LENGTH)
 #define MTU_LENGTH (1024)
-#define TERM_ID (7)
+#define TERM_ID (1)
 
 typedef std::array<std::uint8_t, TERM_LENGTH> buffer_t;
 typedef std::array<std::uint8_t, AERON_LOGBUFFER_META_DATA_LENGTH> log_meta_data_buffer_t;
@@ -170,7 +170,12 @@ public:
         m_position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes(TERM_LENGTH);
         m_log_meta_data_buffer.fill(0);
         m_log_meta_data->initial_term_id = TERM_ID;
-        m_log_meta_data->term_tail_counters[PARTITION_INDEX] = (int64_t)TERM_ID << 32;
+        m_log_meta_data->term_tail_counters[0] = (int64_t)TERM_ID << 32;
+        for (int i = 1; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
+        {
+            const int64_t expected_term_id = (TERM_ID + i) - AERON_LOGBUFFER_PARTITION_COUNT;
+            m_log_meta_data->term_tail_counters[i] = expected_term_id << 32;
+        }
     }
 
 protected:
@@ -232,9 +237,8 @@ TEST_F(LogBufferUnblockerTest, shouldUnblockWhenPositionHasNonCommittedMessageAn
     int32_t blocked_offset = TERM_LENGTH - message_length;
     int64_t blocked_position =
         aeron_logbuffer_compute_position(TERM_ID, blocked_offset, m_position_bits_to_shift, TERM_ID);
-    const size_t active_index = aeron_logbuffer_index_by_position(blocked_position, m_position_bits_to_shift);
 
-    m_log_meta_data->term_tail_counters[active_index] = (int64_t)TERM_ID << 32 | TERM_LENGTH;
+    m_log_meta_data->term_tail_counters[0] = (int64_t)TERM_ID << 32 | TERM_LENGTH;
 
     ASSERT_TRUE(aeron_logbuffer_unblocker_unblock(m_mapped_buffers, m_log_meta_data, blocked_position));
 
@@ -254,9 +258,8 @@ TEST_F(LogBufferUnblockerTest, shouldUnblockWhenPositionHasNonCommittedMessageAn
     int32_t blocked_offset = TERM_LENGTH - message_length;
     int64_t blocked_position =
         aeron_logbuffer_compute_position(TERM_ID, blocked_offset, m_position_bits_to_shift, TERM_ID);
-    const size_t active_index = aeron_logbuffer_index_by_position(blocked_position, m_position_bits_to_shift);
 
-    m_log_meta_data->term_tail_counters[active_index] =
+    m_log_meta_data->term_tail_counters[0] =
         (int64_t)TERM_ID << 32 | (TERM_LENGTH + AERON_DATA_HEADER_LENGTH);
 
     ASSERT_TRUE(aeron_logbuffer_unblocker_unblock(m_mapped_buffers, m_log_meta_data, blocked_position));

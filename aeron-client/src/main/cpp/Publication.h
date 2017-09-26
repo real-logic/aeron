@@ -223,14 +223,12 @@ public:
      */
     inline std::int64_t positionLimit()
     {
-        std::int64_t result = PUBLICATION_CLOSED;
-
-        if (!isClosed())
+        if (isClosed())
         {
-            result = m_publicationLimit.getVolatile();
+            return PUBLICATION_CLOSED;
         }
 
-        return result;
+        return m_publicationLimit.getVolatile();
     }
 
     /**
@@ -432,57 +430,41 @@ private:
     std::unique_ptr<TermAppender> m_appenders[3];
     HeaderWriter m_headerWriter;
 
-    std::int64_t newPosition(
+    inline std::int64_t newPosition(
         std::int32_t termCount,
         std::int32_t termOffset,
         std::int32_t termId,
         std::int64_t position,
         std::int32_t resultingOffset)
     {
-        std::int64_t newPosition = ADMIN_ACTION;
-
         if (resultingOffset > 0)
         {
-            newPosition = (position - termOffset) + resultingOffset;
-
+            return (position - termOffset) + resultingOffset;
         }
-        else if ((position + termOffset) > m_maxPossiblePosition)
+
+        if ((position + termOffset) > m_maxPossiblePosition)
         {
-            newPosition = MAX_POSITION_EXCEEDED;
-        }
-        else if (resultingOffset == TERM_APPENDER_TRIPPED)
-        {
-            const std::int32_t nextTermCount = termCount + 1;
-            const int nextIndex = LogBufferDescriptor::indexByTermCount(nextTermCount);
-
-            LogBufferDescriptor::initializeTailWithTermId(m_logMetaDataBuffer, nextIndex, termId + 1);
-
-            if (!LogBufferDescriptor::casActiveTermCount(m_logMetaDataBuffer, termCount, nextTermCount))
-            {
-                throw util::IllegalStateException(
-                    util::strPrintf("CAS failed: expected=%d update=%d actual=%d",
-                        termCount, nextTermCount, LogBufferDescriptor::activeTermCount(m_logMetaDataBuffer)),
-                    SOURCEINFO);
-            }
+            return MAX_POSITION_EXCEEDED;
         }
 
-        return newPosition;
+        LogBufferDescriptor::rotateLog(m_logMetaDataBuffer, termCount, termId);
+
+        return ADMIN_ACTION;
     }
 
     inline std::int64_t backPressureStatus(std::int64_t currentPosition, std::int32_t messageLength)
     {
-        std::int64_t status = NOT_CONNECTED;
-
         if ((currentPosition + messageLength) >= m_maxPossiblePosition)
         {
-            status = MAX_POSITION_EXCEEDED;
-        }
-        else if (LogBufferDescriptor::isConnected(m_logMetaDataBuffer))
-        {
-            status = BACK_PRESSURED;
+            return MAX_POSITION_EXCEEDED;
         }
 
-        return status;
+        if (LogBufferDescriptor::isConnected(m_logMetaDataBuffer))
+        {
+            return BACK_PRESSURED;
+        }
+
+        return NOT_CONNECTED;
     }
 
     inline void checkForMaxMessageLength(const util::index_t length)

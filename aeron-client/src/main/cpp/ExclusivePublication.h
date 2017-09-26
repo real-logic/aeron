@@ -338,12 +338,11 @@ public:
      */
     inline std::int64_t tryClaim(util::index_t length, concurrent::logbuffer::ExclusiveBufferClaim& bufferClaim)
     {
+        checkForMaxPayloadLength(length);
         std::int64_t newPosition = PUBLICATION_CLOSED;
 
         if (AERON_COND_EXPECT((!isClosed()), true))
         {
-            checkForMaxPayloadLength(length);
-
             const std::int64_t limit = m_publicationLimit.getVolatile();
             ExclusiveTermAppender *termAppender = m_appenders[m_activePartitionIndex].get();
             const std::int64_t position = m_termBeginPosition + m_termOffset;
@@ -418,44 +417,41 @@ private:
 
             return m_termBeginPosition + resultingOffset;
         }
-        else
+
+        if ((m_termBeginPosition + termBufferLength()) >= m_maxPossiblePosition)
         {
-            if ((m_termBeginPosition + termBufferLength()) >= m_maxPossiblePosition)
-            {
-                return MAX_POSITION_EXCEEDED;
-            }
-
-            const int nextIndex = LogBufferDescriptor::nextPartitionIndex(m_activePartitionIndex);
-            const std::int32_t nextTermId = m_termId + 1;
-
-            m_activePartitionIndex = nextIndex;
-            m_termOffset = 0;
-            m_termId = nextTermId;
-            m_termBeginPosition = LogBufferDescriptor::computeTermBeginPosition(nextTermId, m_positionBitsToShift, m_initialTermId);
-
-            const std::int32_t termCount = nextTermId - m_initialTermId;
-
-            LogBufferDescriptor::initializeTailWithTermId(m_logMetaDataBuffer, nextIndex, nextTermId);
-            LogBufferDescriptor::activeTermCountOrdered(m_logMetaDataBuffer, termCount);
-
-            return ADMIN_ACTION;
+            return MAX_POSITION_EXCEEDED;
         }
+
+        const int nextIndex = LogBufferDescriptor::nextPartitionIndex(m_activePartitionIndex);
+        const std::int32_t nextTermId = m_termId + 1;
+
+        m_activePartitionIndex = nextIndex;
+        m_termOffset = 0;
+        m_termId = nextTermId;
+        m_termBeginPosition = LogBufferDescriptor::computeTermBeginPosition(nextTermId, m_positionBitsToShift, m_initialTermId);
+
+        const std::int32_t termCount = nextTermId - m_initialTermId;
+
+        LogBufferDescriptor::initializeTailWithTermId(m_logMetaDataBuffer, nextIndex, nextTermId);
+        LogBufferDescriptor::activeTermCountOrdered(m_logMetaDataBuffer, termCount);
+
+        return ADMIN_ACTION;
     }
 
     inline std::int64_t backPressureStatus(std::int64_t currentPosition, std::int32_t messageLength)
     {
-        std::int64_t status = NOT_CONNECTED;
-
         if ((currentPosition + messageLength) >= m_maxPossiblePosition)
         {
-            status = MAX_POSITION_EXCEEDED;
-        }
-        else if (LogBufferDescriptor::isConnected(m_logMetaDataBuffer))
-        {
-            status = BACK_PRESSURED;
+            return MAX_POSITION_EXCEEDED;
         }
 
-        return status;
+        if (LogBufferDescriptor::isConnected(m_logMetaDataBuffer))
+        {
+            return BACK_PRESSURED;
+        }
+
+        return NOT_CONNECTED;
     }
 
     inline void checkForMaxMessageLength(const util::index_t length) const

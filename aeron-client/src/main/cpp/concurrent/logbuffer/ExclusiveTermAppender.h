@@ -202,7 +202,7 @@ private:
             FrameDescriptor::frameLengthOrdered(termBuffer, termOffset, paddingLength);
         }
 
-        return TERM_APPENDER_TRIPPED;
+        return TERM_APPENDER_FAILED;
     }
 
     inline void putRawTailOrdered(const std::int64_t termId, const std::int32_t termOffset)

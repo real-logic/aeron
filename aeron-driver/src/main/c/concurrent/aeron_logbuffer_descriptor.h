@@ -58,13 +58,13 @@ aeron_logbuffer_metadata_t;
 #define AERON_LOGBUFFER_RAWTAIL_VOLATILE(d,m) \
 do \
 { \
-    size_t active_term_count; \
+    int32_t active_term_count; \
     size_t partition; \
     AERON_GET_VOLATILE(active_term_count,(m->active_term_count)); \
-    partition = active_term_count & AERON_LOGBUFFER_PARTITION_COUNT; \
+    partition = (size_t)(active_term_count % AERON_LOGBUFFER_PARTITION_COUNT); \
     AERON_GET_VOLATILE(d, m->term_tail_counters[partition]); \
 } \
-while(0)
+while(false)
 
 inline int32_t aeron_logbuffer_term_offset(int64_t raw_tail, int32_t term_length)
 {
@@ -114,13 +114,43 @@ inline int32_t aeron_logbuffer_compute_term_offset_from_position(int64_t positio
     return (int32_t)(position & mask);
 }
 
-inline void aeron_logbuffer_rotate_log(
-    aeron_logbuffer_metadata_t *log_meta_data, int32_t current_term_count, int32_t term_id)
+inline bool aeron_logbuffer_cas_raw_tail(
+    aeron_logbuffer_metadata_t *log_meta_data,
+    size_t partition_index,
+    int64_t expected_raw_tail,
+    int64_t update_raw_tail)
 {
+    return aeron_cmpxchg64(&log_meta_data->term_tail_counters[partition_index], expected_raw_tail, update_raw_tail);
+}
+
+inline bool aeron_logbuffer_cas_active_term_count(
+    aeron_logbuffer_metadata_t *log_meta_data,
+    int32_t expected_term_count,
+    int32_t update_term_count)
+{
+    return aeron_cmpxchg32(&log_meta_data->active_term_count, expected_term_count, update_term_count);
+}
+
+inline void aeron_logbuffer_rotate_log(
+    aeron_logbuffer_metadata_t *log_meta_data, int32_t current_term_count, int32_t current_term_id)
+{
+    const int32_t next_term_id = current_term_id + 1;
     const int32_t next_term_count = current_term_count + 1;
     const size_t next_index = aeron_logbuffer_index_by_term_count(next_term_count);
-    log_meta_data->term_tail_counters[next_index] = (int64_t)term_id << 32;
-    AERON_PUT_ORDERED(log_meta_data->active_term_count, next_term_count);
+    const int32_t expected_term_id = next_term_id - AERON_LOGBUFFER_PARTITION_COUNT;
+
+    int64_t raw_tail;
+    do
+    {
+        raw_tail = log_meta_data->term_tail_counters[next_index];
+        if (expected_term_id != aeron_logbuffer_term_id(raw_tail))
+        {
+            break;
+        }
+    }
+    while (!aeron_logbuffer_cas_raw_tail(log_meta_data, next_index, raw_tail, (int64_t)next_term_id << 32));
+
+    aeron_logbuffer_cas_active_term_count(log_meta_data, current_term_count, next_term_count);
 }
 
 inline void aeron_logbuffer_fill_default_header(

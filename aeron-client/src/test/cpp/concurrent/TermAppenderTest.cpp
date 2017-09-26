@@ -177,7 +177,7 @@ TEST_F(TermAppenderTest, shouldAppendFrameTwiceToLog)
     EXPECT_EQ(resultingOffset, alignedFrameLength * 2);
 }
 
-TEST_F(TermAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemainingCapacity)
+TEST_F(TermAppenderTest, shouldPadLogWhenAppendingWithInsufficientRemainingCapacity)
 {
     const util::index_t msgLength = 120;
     const util::index_t requiredFrameSize = util::BitUtil::align(msgLength + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
@@ -201,7 +201,7 @@ TEST_F(TermAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemaini
 
     const std::int32_t resultingOffset =
         m_termAppender.appendUnfragmentedMessage(m_headerWriter, m_src, 0, msgLength, reservedValueSupplier, TERM_ID);
-    EXPECT_EQ(resultingOffset, TERM_APPENDER_TRIPPED);
+    EXPECT_EQ(resultingOffset, TERM_APPENDER_FAILED);
 }
 
 TEST_F(TermAppenderTest, shouldFragmentMessageOverTwoFrames)

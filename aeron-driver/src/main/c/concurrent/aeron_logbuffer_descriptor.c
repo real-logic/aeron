@@ -26,8 +26,17 @@ extern int64_t aeron_logbuffer_compute_position(
 extern int32_t aeron_logbuffer_compute_term_id_from_position(
     int64_t position, size_t position_bits_to_shift, int32_t initial_term_id);
 extern int32_t aeron_logbuffer_compute_term_offset_from_position(int64_t position, size_t position_bits_to_shift);
+extern bool aeron_logbuffer_cas_raw_tail(
+    aeron_logbuffer_metadata_t *log_meta_data,
+    size_t partition_index,
+    int64_t expected_raw_tail,
+    int64_t update_raw_tail);
+extern bool aeron_logbuffer_cas_active_term_count(
+    aeron_logbuffer_metadata_t *log_meta_data,
+    int32_t expected_term_count,
+    int32_t update_term_count);
 extern void aeron_logbuffer_rotate_log(
-    aeron_logbuffer_metadata_t *log_meta_data, int32_t current_term_count, int32_t term_id);
+    aeron_logbuffer_metadata_t *log_meta_data, int32_t current_term_count, int32_t current_term_id);
 extern void aeron_logbuffer_fill_default_header(
     uint8_t *log_meta_data_buffer, int32_t session_id, int32_t stream_id, int32_t initial_term_id);
 extern void aeron_logbuffer_apply_default_header(uint8_t *log_meta_data_buffer, uint8_t *buffer);

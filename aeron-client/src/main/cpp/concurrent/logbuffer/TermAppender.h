@@ -43,7 +43,6 @@ typedef std::function<std::int64_t(
     util::index_t termOffset,
     util::index_t length)> on_reserved_value_supplier_t;
 
-#define TERM_APPENDER_TRIPPED ((std::int32_t)-1)
 #define TERM_APPENDER_FAILED ((std::int32_t)-2)
 
 static const on_reserved_value_supplier_t DEFAULT_RESERVED_VALUE_SUPPLIER =
@@ -235,23 +234,16 @@ private:
         std::int32_t termLength,
         std::int32_t termId)
     {
-        std::int32_t resultingOffset = TERM_APPENDER_FAILED;
-
-        if (termOffset <= termLength)
+        if (termOffset < termLength)
         {
-            resultingOffset = TERM_APPENDER_TRIPPED;
-
-            if (termOffset < termLength)
-            {
-                const std::int32_t offset = static_cast<std::int32_t>(termOffset);
-                const std::int32_t paddingLength = termLength - offset;
-                header.write(termBuffer, offset, paddingLength, termId);
-                FrameDescriptor::frameType(termBuffer, offset, DataFrameHeader::HDR_TYPE_PAD);
-                FrameDescriptor::frameLengthOrdered(termBuffer, offset, paddingLength);
-            }
+            const std::int32_t offset = static_cast<std::int32_t>(termOffset);
+            const std::int32_t paddingLength = termLength - offset;
+            header.write(termBuffer, offset, paddingLength, termId);
+            FrameDescriptor::frameType(termBuffer, offset, DataFrameHeader::HDR_TYPE_PAD);
+            FrameDescriptor::frameLengthOrdered(termBuffer, offset, paddingLength);
         }
 
-        return resultingOffset;
+        return TERM_APPENDER_FAILED;
     }
 
     inline std::int64_t getAndAddRawTail(const util::index_t alignedLength)

@@ -768,29 +768,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         mtuLength(logMetaData, params.mtuLength);
         correlationId(logMetaData, registrationId);
 
-        if (params.isReplay)
-        {
-            final int termCount = params.termId - initialTermId;
-            int activeIndex = indexByTerm(initialTermId, params.termId);
-            rawTail(logMetaData, activeIndex, packTail(params.termId, params.termOffset));
-            activeTermCount(logMetaData, termCount);
-
-            for (int i = 1; i < PARTITION_COUNT; i++)
-            {
-                final int expectedTermId = (initialTermId + i) - PARTITION_COUNT;
-                activeIndex = nextPartitionIndex(activeIndex);
-                initialiseTailWithTermId(logMetaData, activeIndex, expectedTermId);
-            }
-        }
-        else
-        {
-            initialiseTailWithTermId(logMetaData, 0, initialTermId);
-            for (int i = 1; i < PARTITION_COUNT; i++)
-            {
-                final int expectedTermId = (initialTermId + i) - PARTITION_COUNT;
-                initialiseTailWithTermId(logMetaData, i, expectedTermId);
-            }
-        }
+        initialisePositionCounters(initialTermId, params, logMetaData);
 
         return rawLog;
     }
@@ -812,19 +790,28 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         correlationId(logMetaData, registrationId);
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
 
+        initialisePositionCounters(initialTermId, params, logMetaData);
+
+        return rawLog;
+    }
+
+    private static void initialisePositionCounters(
+        final int initialTermId, final PublicationParams params, final UnsafeBuffer logMetaData)
+    {
         if (params.isReplay)
         {
             final int termCount = params.termId - initialTermId;
-            int activeIndex = indexByTermCount(termCount);
-            rawTail(logMetaData, activeIndex, packTail(params.termId, params.termOffset));
-            activeTermCount(logMetaData, termCount);
+            int activeIndex = indexByTerm(initialTermId, params.termId);
 
+            rawTail(logMetaData, activeIndex, packTail(params.termId, params.termOffset));
             for (int i = 1; i < PARTITION_COUNT; i++)
             {
                 final int expectedTermId = (initialTermId + i) - PARTITION_COUNT;
                 activeIndex = nextPartitionIndex(activeIndex);
                 initialiseTailWithTermId(logMetaData, activeIndex, expectedTermId);
             }
+
+            activeTermCount(logMetaData, termCount);
         }
         else
         {
@@ -835,8 +822,6 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
                 initialiseTailWithTermId(logMetaData, i, expectedTermId);
             }
         }
-
-        return rawLog;
     }
 
     private RawLog newPublicationImageLog(

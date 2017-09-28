@@ -143,19 +143,19 @@ public class DriverConductorTest
             .receiveChannelEndpointSupplier(Configuration.receiveChannelEndpointSupplier())
             .congestControlSupplier(Configuration.congestionControlSupplier());
 
-        ctx.toDriverCommands(fromClientCommands);
-        ctx.clientProxy(mockClientProxy);
-        ctx.countersValuesBuffer(counterBuffer);
+        ctx.toDriverCommands(fromClientCommands)
+            .clientProxy(mockClientProxy)
+            .countersValuesBuffer(counterBuffer);
 
         final SystemCounters mockSystemCounters = mock(SystemCounters.class);
-        ctx.systemCounters(mockSystemCounters);
         when(mockSystemCounters.get(any())).thenReturn(mockErrorCounter);
 
-        ctx.receiverProxy(receiverProxy);
-        ctx.senderProxy(senderProxy);
-        ctx.driverConductorProxy(driverConductorProxy);
-        ctx.clientLivenessTimeoutNs(CLIENT_LIVENESS_TIMEOUT_NS);
-        ctx.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(ctx));
+        ctx.systemCounters(mockSystemCounters)
+            .receiverProxy(receiverProxy)
+            .senderProxy(senderProxy)
+            .driverConductorProxy(driverConductorProxy)
+            .clientLivenessTimeoutNs(CLIENT_LIVENESS_TIMEOUT_NS)
+            .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(ctx));
 
         driverProxy = new DriverProxy(fromClientCommands, fromClientCommands.nextCorrelationId());
         driverConductor = new DriverConductor(ctx);

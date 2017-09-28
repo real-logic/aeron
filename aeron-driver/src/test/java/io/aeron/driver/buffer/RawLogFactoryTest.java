@@ -40,6 +40,7 @@ public class RawLogFactoryTest
     private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
     private static final int TERM_BUFFER_MAX_LENGTH = Configuration.TERM_BUFFER_LENGTH_MAX_DEFAULT;
     private static final boolean PRE_ZERO_LOG = false;
+    private static final boolean PERFORM_STORAGE_CHECKS = false;
     private RawLogFactory rawLogFactory;
     private UdpChannel udpChannel = UdpChannel.parse(CHANNEL);
 
@@ -51,6 +52,7 @@ public class RawLogFactoryTest
             DATA_DIR.getAbsolutePath(),
             TERM_BUFFER_MAX_LENGTH,
             PRE_ZERO_LOG,
+            PERFORM_STORAGE_CHECKS,
             mock(DistinctErrorLog.class));
     }
 

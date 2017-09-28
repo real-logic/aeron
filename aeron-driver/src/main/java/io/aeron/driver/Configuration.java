@@ -95,6 +95,17 @@ public class Configuration
         "true".equalsIgnoreCase(getProperty(TERM_BUFFER_SPARSE_FILE_PROP_NAME, "false"));
 
     /**
+     * Property name for boolean value for if storage checks should be performed when allocating files.
+     */
+    public static final String PERFORM_STORAGE_CHECKS_PROP_NAME = "aeron.perform.storage.checks";
+
+    /**
+     * Should storage checks should be performed when allocating files.
+     */
+    public static final boolean PERFORM_STORAGE_CHECKS =
+        "true".equalsIgnoreCase(getProperty(PERFORM_STORAGE_CHECKS_PROP_NAME, "true"));
+
+    /**
      * Length (in bytes) of the log buffers for terms.
      */
     public static final String TERM_BUFFER_MAX_LENGTH_PROP_NAME = "aeron.term.buffer.max.length";

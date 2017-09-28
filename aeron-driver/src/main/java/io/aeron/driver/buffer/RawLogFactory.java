@@ -35,6 +35,7 @@ public class RawLogFactory
     private final DistinctErrorLog errorLog;
     private final int maxTermBufferLength;
     private final boolean useSparseFiles;
+    private final boolean performStorageChecks;
     private final File publicationsDir;
     private final File imagesDir;
     private final FileStore fileStore;
@@ -43,10 +44,12 @@ public class RawLogFactory
         final String dataDirectoryName,
         final int imagesTermBufferMaxLength,
         final boolean useSparseFiles,
+        final boolean performStorageChecks,
         final DistinctErrorLog errorLog)
     {
         this.errorLog = errorLog;
         this.useSparseFiles = useSparseFiles;
+        this.performStorageChecks = performStorageChecks;
 
         final FileMappingConvention fileMappingConvention = new FileMappingConvention(dataDirectoryName);
         publicationsDir = fileMappingConvention.publicationsDir();
@@ -58,7 +61,10 @@ public class RawLogFactory
         FileStore fs = null;
         try
         {
-            fs = Files.getFileStore(Paths.get(dataDirectoryName));
+            if (performStorageChecks)
+            {
+                fs = Files.getFileStore(Paths.get(dataDirectoryName));
+            }
         }
         catch (final IOException ex)
         {
@@ -134,6 +140,18 @@ public class RawLogFactory
     {
         validateTermBufferLength(termBufferLength);
 
+        if (performStorageChecks)
+        {
+            checkStorage(termBufferLength);
+        }
+
+        final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
+
+        return new MappedRawLog(location, useSparseFiles, termBufferLength, errorLog);
+    }
+
+    private void checkStorage(final int termBufferLength)
+    {
         final long usableSpace = getUsableSpace();
         final long logLength = LogBufferDescriptor.computeLogLength(termBufferLength);
 
@@ -148,10 +166,6 @@ public class RawLogFactory
             throw new IllegalStateException(
                 "Insufficient usable storage for new log of length=" + logLength + " in " + fileStore);
         }
-
-        final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
-
-        return new MappedRawLog(location, useSparseFiles, termBufferLength, errorLog);
     }
 
     private long getUsableSpace()

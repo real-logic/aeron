@@ -440,6 +440,7 @@ public final class MediaDriver implements AutoCloseable
         private boolean warnIfDirectoryExists = Configuration.DIR_WARN_IF_EXISTS;
         private boolean dirDeleteOnStart = Configuration.DIR_DELETE_ON_START;
         private boolean termBufferSparseFile = Configuration.TERM_BUFFER_SPARSE_FILE;
+        private boolean performStorageChecks = Configuration.PERFORM_STORAGE_CHECKS;
         private boolean spiesSimulateConnection = Configuration.SPIES_SIMULATE_CONNECTION;
 
         private long clientLivenessTimeoutNs = Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
@@ -539,7 +540,6 @@ public final class MediaDriver implements AutoCloseable
                 }
 
                 Configuration.validateInitialWindowLength(initialWindowLength, mtuLength);
-
                 cncByteBuffer = mapNewFile(
                     cncFile(),
                     CncFileDescriptor.computeCncFileLength(
@@ -556,48 +556,8 @@ public final class MediaDriver implements AutoCloseable
                     clientLivenessTimeoutNs,
                     ERROR_BUFFER_LENGTH);
 
-                clientProxy(new ClientProxy(new BroadcastTransmitter(
-                    createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer))));
-
-                toDriverCommands(new ManyToOneRingBuffer(createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer)));
-
-                if (null == errorLog)
-                {
-                    errorLog = new DistinctErrorLog(createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), epochClock);
-                }
-
-                if (null == errorHandler)
-                {
-                    errorHandler =
-                        (throwable) ->
-                        {
-                            if (!errorLog.record(throwable))
-                            {
-                                System.err.println(
-                                    "Error Log is full, consider increasing " + ERROR_BUFFER_LENGTH_PROP_NAME);
-                                throwable.printStackTrace(System.err);
-                            }
-                        };
-                }
-
                 concludeCounters();
-
-                receiverProxy(new ReceiverProxy(
-                    threadingMode, receiverCommandQueue(), systemCounters.get(RECEIVER_PROXY_FAILS)));
-                senderProxy(new SenderProxy(
-                    threadingMode, senderCommandQueue(), systemCounters.get(SENDER_PROXY_FAILS)));
-                driverConductorProxy(new DriverConductorProxy(
-                    threadingMode, driverCommandQueue, systemCounters.get(CONDUCTOR_PROXY_FAILS)));
-
-                rawLogBuffersFactory(new RawLogFactory(
-                    aeronDirectoryName(), maxTermBufferLength, termBufferSparseFile, errorLog));
-
-                if (null == lossReport)
-                {
-                    lossReportBuffer = mapLossReport(aeronDirectoryName(), Configuration.LOSS_REPORT_BUFFER_LENGTH);
-                    lossReport = new LossReport(new UnsafeBuffer(lossReportBuffer));
-                }
-
+                concludeDependantProperties();
                 concludeIdleStrategies();
 
                 toDriverCommands.consumerHeartbeatTime(epochClock.time());
@@ -610,7 +570,6 @@ public final class MediaDriver implements AutoCloseable
 
             return this;
         }
-
 
         /**
          * @see CommonContext#aeronDirectoryName(String)
@@ -705,6 +664,28 @@ public final class MediaDriver implements AutoCloseable
         public Context termBufferSparseFile(final boolean termBufferSparseFile)
         {
             this.termBufferSparseFile = termBufferSparseFile;
+            return this;
+        }
+
+        /**
+         * Should the driver perform storage checks when allocating files.
+         *
+         * @return true if the driver should perform storage checks when allocating files.
+         */
+        public boolean performStorageChecks()
+        {
+            return performStorageChecks;
+        }
+
+        /**
+         * Should the driver perform storage checks when allocating files.
+         *
+         * @param performStorageChecks true if the driver should perform storage checks when allocating files.
+         * @return this for a fluent API.
+         */
+        public Context performStorageChecks(final boolean performStorageChecks)
+        {
+            this.performStorageChecks = performStorageChecks;
             return this;
         }
 
@@ -1728,6 +1709,56 @@ public final class MediaDriver implements AutoCloseable
         {
             this.driverConductorProxy = driverConductorProxy;
             return this;
+        }
+
+        private void concludeDependantProperties()
+        {
+            clientProxy = new ClientProxy(new BroadcastTransmitter(
+                createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer)));
+
+            toDriverCommands = new ManyToOneRingBuffer(createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
+
+            if (null == errorLog)
+            {
+                errorLog = new DistinctErrorLog(createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), epochClock);
+            }
+
+            if (null == errorHandler)
+            {
+                errorHandler =
+                    (throwable) ->
+                    {
+                        if (!errorLog.record(throwable))
+                        {
+                            System.err.println(
+                                "Error Log is full, consider increasing " + ERROR_BUFFER_LENGTH_PROP_NAME);
+                            throwable.printStackTrace(System.err);
+                        }
+                    };
+            }
+
+            receiverProxy = new ReceiverProxy(
+                threadingMode, receiverCommandQueue(), systemCounters.get(RECEIVER_PROXY_FAILS));
+            senderProxy = new SenderProxy(
+                threadingMode, senderCommandQueue(), systemCounters.get(SENDER_PROXY_FAILS));
+            driverConductorProxy = new DriverConductorProxy(
+                threadingMode, driverCommandQueue, systemCounters.get(CONDUCTOR_PROXY_FAILS));
+
+            if (null == rawLogFactory)
+            {
+                rawLogFactory = new RawLogFactory(
+                    aeronDirectoryName(),
+                    maxTermBufferLength,
+                    termBufferSparseFile,
+                    performStorageChecks,
+                    errorLog);
+            }
+
+            if (null == lossReport)
+            {
+                lossReportBuffer = mapLossReport(aeronDirectoryName(), Configuration.LOSS_REPORT_BUFFER_LENGTH);
+                lossReport = new LossReport(new UnsafeBuffer(lossReportBuffer));
+            }
         }
 
         private void concludeCounters()

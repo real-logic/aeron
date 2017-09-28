@@ -51,6 +51,12 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 public class FrameDescriptor
 {
     /**
+     * Set a pragmatic maximum message length regardless of term length to encourage better design.
+     * Messages larger than half the cache size should be broken up into chunks and streamed.
+     */
+    public static final int MAX_MESSAGE_LENGTH = 16 * 1024 * 1024;
+
+    /**
      * Alignment as a multiple of bytes for each frame. The length field will store the unaligned length in bytes.
      */
     public static final int FRAME_ALIGNMENT = 32;
@@ -108,7 +114,7 @@ public class FrameDescriptor
      */
     public static int computeMaxMessageLength(final int termLength)
     {
-        return termLength / 8;
+        return Math.min(termLength / 8, MAX_MESSAGE_LENGTH);
     }
 
     /**
@@ -119,7 +125,7 @@ public class FrameDescriptor
      */
     public static int computeExclusiveMaxMessageLength(final int termLength)
     {
-        return termLength / 4;
+        return Math.min(termLength / 4, MAX_MESSAGE_LENGTH);
     }
 
     /**

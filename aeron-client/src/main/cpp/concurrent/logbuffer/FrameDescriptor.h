@@ -68,6 +68,8 @@ static const util::index_t TYPE_OFFSET = 6;
 static const util::index_t LENGTH_OFFSET = 0;
 static const util::index_t TERM_OFFSET = 8;
 
+static const util::index_t MAX_MESSAGE_LENGTH = 16 * 1024 * 1024;
+
 inline static void checkHeaderLength(util::index_t length)
 {
     if (length != DataFrameHeader::LENGTH)
@@ -88,10 +90,15 @@ inline static void checkMaxFrameLength(util::index_t length)
 
 inline static util::index_t computeMaxMessageLength(util::index_t capacity)
 {
-    return capacity / 8;
+    return std::min(capacity / 8, MAX_MESSAGE_LENGTH);
 }
 
-inline static util::index_t typeOffset(util::index_t frameOffset)
+inline static util::index_t computeExclusiveMaxMessageLength(util::index_t capacity)
+{
+    return std::min(capacity / 4, MAX_MESSAGE_LENGTH);
+}
+
+    inline static util::index_t typeOffset(util::index_t frameOffset)
 {
     return frameOffset + DataFrameHeader::TYPE_FIELD_OFFSET;
 }

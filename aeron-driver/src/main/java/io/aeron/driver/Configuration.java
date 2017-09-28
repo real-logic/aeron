@@ -100,6 +100,22 @@ public class Configuration
     public static final String PERFORM_STORAGE_CHECKS_PROP_NAME = "aeron.perform.storage.checks";
 
     /**
+     * Property name for page size to align all files to.
+     */
+    public static final String FILE_PAGE_SIZE_PROP_NAME = "aeron.file.page.size";
+
+    /**
+     * Default page size for alignment of all files.
+     */
+    public static final int FILE_PAGE_SIZE_DEFAULT = 4 * 1024;
+
+    /**
+     * Page size for alignment of all files.
+     */
+    public static final int FILE_PAGE_SIZE =
+        getInteger(FILE_PAGE_SIZE_PROP_NAME, FILE_PAGE_SIZE_DEFAULT);
+
+    /**
      * Should storage checks should be performed when allocating files.
      */
     public static final boolean PERFORM_STORAGE_CHECKS =

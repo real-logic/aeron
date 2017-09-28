@@ -100,6 +100,7 @@ typedef struct aeron_driver_context_stct
     size_t send_to_sm_poll_ratio;               /* aeron.send.to.status.poll.ratio = 4 */
     size_t initial_window_length;               /* aeron.rcv.initial.window.length = 128KB */
     size_t loss_report_length;                  /* aeron.loss.report.buffer.length = 1MB */
+    size_t file_page_size;                      /* aeron.file.page.size = 4KB */
     uint8_t multicast_ttl;                      /* aeron.socket.multicast.ttl = 0 */
 
     aeron_mapped_file_t cnc_map;
@@ -200,9 +201,9 @@ inline uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata)
         metadata->counter_values_buffer_length;
 }
 
-inline size_t aeron_cnc_computed_length(size_t total_length_of_buffers)
+inline size_t aeron_cnc_computed_length(size_t total_length_of_buffers, size_t alignment)
 {
-    return AERON_CNC_VERSION_AND_META_DATA_LENGTH + total_length_of_buffers;
+    return AERON_ALIGN(AERON_CNC_VERSION_AND_META_DATA_LENGTH + total_length_of_buffers, alignment);
 }
 
 inline size_t aeron_cnc_length(aeron_driver_context_t *context)
@@ -212,7 +213,8 @@ inline size_t aeron_cnc_length(aeron_driver_context_t *context)
         context->to_clients_buffer_length +
         context->counters_metadata_buffer_length +
         context->counters_values_buffer_length +
-        context->error_buffer_length);
+        context->error_buffer_length,
+        context->file_page_size);
 }
 
 inline size_t aeron_ipc_publication_term_window_length(aeron_driver_context_t *context, size_t term_length)

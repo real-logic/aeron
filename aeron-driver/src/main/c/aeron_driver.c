@@ -291,7 +291,8 @@ int aeron_driver_create_loss_report_file(aeron_driver_t *driver)
     char buffer[AERON_MAX_PATH];
 
     driver->context->loss_report.addr = NULL;
-    driver->context->loss_report.length = driver->context->loss_report_length;
+    driver->context->loss_report.length =
+        AERON_ALIGN(driver->context->loss_report_length, driver->context->file_page_size);
 
     snprintf(buffer, sizeof(buffer) - 1, "%s/%s", driver->context->aeron_dir, AERON_LOSS_REPORT_FILE);
 

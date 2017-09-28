@@ -93,6 +93,11 @@ typedef struct aeron_driver_stct aeron_driver_t;
 #define AERON_PERFORM_STORAGE_CHECKS_ENV_VAR "AERON_PERFORM_STORAGE_CHECKS"
 
 /**
+ * Page size for alignment of all files.
+ */
+#define AERON_FILE_PAGE_SIZE_ENV_VAR "AERON_FILE_PAGE_SIZE"
+
+/**
  * Length (in bytes) of the maximum transmission unit of the publication
  */
 #define AERON_MTU_LENGTH_ENV_VAR "AERON_MTU_LENGTH"

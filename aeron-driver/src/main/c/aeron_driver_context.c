@@ -246,6 +246,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->image_liveness_timeout_ns = 10 * 1000 * 1000 * 1000L;
     _context->initial_window_length = 128 * 1024;
     _context->loss_report_length = 1024 * 1024;
+    _context->file_page_size = 4 * 1024;
     _context->publication_unblock_timeout_ns = 10 * 1000 * 1000 * 1000L;
     _context->publication_connection_timeout_ns = 5 * 1000 * 1000 * 1000L;
 
@@ -462,6 +463,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             1024,
             INT32_MAX);
 
+    _context->file_page_size =
+        aeron_config_parse_uint64(
+            getenv(AERON_FILE_PAGE_SIZE_ENV_VAR),
+            _context->file_page_size,
+            1024,
+            INT32_MAX);
+
     _context->publication_unblock_timeout_ns =
         aeron_config_parse_uint64(
             getenv(AERON_PUBLICATION_UNBLOCK_TIMEOUT_ENV_VAR),
@@ -668,7 +676,7 @@ extern uint8_t *aeron_cnc_to_clients_buffer(aeron_cnc_metadata_t *metadata);
 extern uint8_t *aeron_cnc_counters_metadata_buffer(aeron_cnc_metadata_t *metadata);
 extern uint8_t *aeron_cnc_counters_values_buffer(aeron_cnc_metadata_t *metadata);
 extern uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata);
-extern size_t aeron_cnc_computed_length(size_t total_length_of_buffers);
+extern size_t aeron_cnc_computed_length(size_t total_length_of_buffers, size_t alignment);
 extern size_t aeron_cnc_length(aeron_driver_context_t *context);
 
 extern size_t aeron_ipc_publication_term_window_length(aeron_driver_context_t *context, size_t term_length);

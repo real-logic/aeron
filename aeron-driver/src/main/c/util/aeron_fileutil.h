@@ -43,6 +43,7 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file);
 typedef uint64_t (*aeron_usable_fs_space_func_t)(const char *path);
 
 uint64_t aeron_usable_fs_space(const char *path);
+uint64_t aeron_usable_fs_space_disabled(const char *path);
 
 #define AERON_LOG_META_DATA_SECTION_INDEX (AERON_LOGBUFFER_PARTITION_COUNT)
 

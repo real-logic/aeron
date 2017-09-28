@@ -88,6 +88,11 @@ typedef struct aeron_driver_stct aeron_driver_t;
 #define AERON_TERM_BUFFER_SPARSE_FILE_ENV_VAR "AERON_TERM_BUFFER_SPARSE_FILE"
 
 /**
+ * Should storage checks should be performed when allocating files.
+ */
+#define AERON_PERFORM_STORAGE_CHECKS_ENV_VAR "AERON_PERFORM_STORAGE_CHECKS"
+
+/**
  * Length (in bytes) of the maximum transmission unit of the publication
  */
 #define AERON_MTU_LENGTH_ENV_VAR "AERON_MTU_LENGTH"

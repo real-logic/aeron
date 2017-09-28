@@ -222,6 +222,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->threading_mode = AERON_THREADING_MODE_DEDICATED;
     _context->dirs_delete_on_start = false;
     _context->warn_if_dirs_exist = true;
+    _context->term_buffer_sparse_file = false;
+    _context->perform_storage_checks = true;
     _context->driver_timeout_ms = 10 * 1000;
     _context->to_driver_buffer_length = 1024 * 1024 + AERON_RB_TRAILER_LENGTH;
     _context->to_clients_buffer_length = 1024 * 1024 + AERON_BROADCAST_BUFFER_TRAILER_LENGTH;
@@ -312,6 +314,11 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         aeron_config_parse_bool(
             getenv(AERON_TERM_BUFFER_SPARSE_FILE_ENV_VAR),
             _context->term_buffer_sparse_file);
+
+    _context->perform_storage_checks =
+        aeron_config_parse_bool(
+            getenv(AERON_PERFORM_STORAGE_CHECKS_ENV_VAR),
+            _context->perform_storage_checks);
 
     _context->to_driver_buffer_length =
         aeron_config_parse_uint64(
@@ -503,7 +510,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             AERON_CONFIG_GETENV_OR_DEFAULT(AERON_RECEIVER_IDLE_STRATEGY_ENV_VAR, "noop"),
             &_context->receiver_idle_strategy_state);
 
-    _context->usable_fs_space_func = aeron_usable_fs_space;
+    _context->usable_fs_space_func =
+        _context->perform_storage_checks ? aeron_usable_fs_space : aeron_usable_fs_space_disabled;
     _context->map_raw_log_func = aeron_map_raw_log;
     _context->map_raw_log_close_func = aeron_map_raw_log_close;
 

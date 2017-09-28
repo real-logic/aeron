@@ -188,6 +188,11 @@ uint64_t aeron_usable_fs_space(const char *path)
     return result;
 }
 
+uint64_t aeron_usable_fs_space_disabled(const char *path)
+{
+    return UINT64_MAX;
+}
+
 /*
  * stream location:
  * dir/channel-sessionId(hex)-streamId(hex)-correlationId(hex).logbuffer

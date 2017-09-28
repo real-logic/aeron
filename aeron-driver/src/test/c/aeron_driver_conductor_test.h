@@ -143,7 +143,7 @@ struct TestDriverContext
 
         m_context->term_buffer_length = TERM_LENGTH;
         m_context->ipc_term_buffer_length = TERM_LENGTH;
-        m_context->term_buffer_sparse_file = 1;
+        m_context->term_buffer_sparse_file = true;
 
         /* control time */
         m_context->nano_clock = test_nano_clock;

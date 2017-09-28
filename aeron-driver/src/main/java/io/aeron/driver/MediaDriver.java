@@ -44,6 +44,7 @@ import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.agrona.BitUtil.align;
 import static org.agrona.IoUtil.mapNewFile;
 
 /**
@@ -454,6 +455,7 @@ public final class MediaDriver implements AutoCloseable
         private int initialWindowLength = Configuration.initialWindowLength();
         private int mtuLength = Configuration.MTU_LENGTH;
         private int ipcMtuLength = Configuration.IPC_MTU_LENGTH;
+        private int filePageSize = Configuration.FILE_PAGE_SIZE;
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -543,8 +545,12 @@ public final class MediaDriver implements AutoCloseable
                 cncByteBuffer = mapNewFile(
                     cncFile(),
                     CncFileDescriptor.computeCncFileLength(
-                        CONDUCTOR_BUFFER_LENGTH + TO_CLIENTS_BUFFER_LENGTH +
-                            COUNTERS_METADATA_BUFFER_LENGTH + COUNTERS_VALUES_BUFFER_LENGTH + ERROR_BUFFER_LENGTH));
+                        CONDUCTOR_BUFFER_LENGTH +
+                            TO_CLIENTS_BUFFER_LENGTH +
+                            COUNTERS_METADATA_BUFFER_LENGTH +
+                            COUNTERS_VALUES_BUFFER_LENGTH +
+                            ERROR_BUFFER_LENGTH,
+                        filePageSize));
 
                 cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
                 CncFileDescriptor.fillMetaData(
@@ -686,6 +692,28 @@ public final class MediaDriver implements AutoCloseable
         public Context performStorageChecks(final boolean performStorageChecks)
         {
             this.performStorageChecks = performStorageChecks;
+            return this;
+        }
+
+        /**
+         * Page size for alignment of all files.
+         *
+         * @return page size for alignment of all files.
+         */
+        public int filePageSize()
+        {
+            return filePageSize;
+        }
+
+        /**
+         * Page size for alignment of all files.
+         *
+         * @param filePageSize for alignment of file sizes.
+         * @return this for a fluent API.
+         */
+        public Context filePageSize(final int filePageSize)
+        {
+            this.filePageSize = filePageSize;
             return this;
         }
 
@@ -1756,7 +1784,8 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == lossReport)
             {
-                lossReportBuffer = mapLossReport(aeronDirectoryName(), Configuration.LOSS_REPORT_BUFFER_LENGTH);
+                lossReportBuffer = mapLossReport(
+                    aeronDirectoryName(), align(Configuration.LOSS_REPORT_BUFFER_LENGTH, filePageSize));
                 lossReport = new LossReport(new UnsafeBuffer(lossReportBuffer));
             }
         }

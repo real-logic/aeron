@@ -96,11 +96,12 @@ public class CncFileDescriptor
      * Compute the length of the cnc file and return it.
      *
      * @param totalLengthOfBuffers in bytes
+     * @param alignment for file length to adhere to
      * @return cnc file length in bytes
      */
-    public static int computeCncFileLength(final int totalLengthOfBuffers)
+    public static int computeCncFileLength(final int totalLengthOfBuffers, final int alignment)
     {
-        return END_OF_METADATA_OFFSET + totalLengthOfBuffers;
+        return align(END_OF_METADATA_OFFSET + totalLengthOfBuffers, alignment);
     }
 
     public static int cncVersionOffset(final int baseOffset)

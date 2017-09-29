@@ -253,7 +253,7 @@ public class NetworkPublication
 
             bytesSent = heartbeatMessageCheck(nowNs, activeTermId, termOffset, isEndOfStream);
 
-            if (spiesShouldAdvanceSenderPosition(nowNs))
+            if (spiesSimulateConnection && hasSpiesConnected && nowNs > statusMessageDeadlineNs)
             {
                 final long newSenderPosition = maxSpyPosition();
 
@@ -470,11 +470,6 @@ public class NetworkPublication
         {
             hasReceivers = false;
         }
-    }
-
-    private boolean spiesShouldAdvanceSenderPosition(final long timeNs)
-    {
-        return spiesSimulateConnection && hasSpiesConnected && timeNs > statusMessageDeadlineNs;
     }
 
     private int sendData(final long nowNs, final long senderPosition, final int termOffset)

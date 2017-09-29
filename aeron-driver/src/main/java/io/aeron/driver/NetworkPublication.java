@@ -250,12 +250,11 @@ public class NetworkPublication
         if (0 == bytesSent)
         {
             final boolean isEndOfStream = this.isEndOfStream;
-
             bytesSent = heartbeatMessageCheck(nowNs, activeTermId, termOffset, isEndOfStream);
 
-            if (spiesSimulateConnection && hasSpiesConnected && nowNs > statusMessageDeadlineNs)
+            if (spiesSimulateConnection && nowNs > statusMessageDeadlineNs && hasSpiesConnected)
             {
-                final long newSenderPosition = maxSpyPosition();
+                final long newSenderPosition = maxSpyPosition(senderPosition);
 
                 this.senderPosition.setOrdered(newSenderPosition);
                 senderLimit.setOrdered(flowControl.onIdle(nowNs, newSenderPosition, newSenderPosition, isEndOfStream));
@@ -267,7 +266,6 @@ public class NetworkPublication
         }
 
         updateHasReceivers(nowNs);
-
         retransmitHandler.processTimeouts(nowNs, this);
 
         return bytesSent;
@@ -640,9 +638,9 @@ public class NetworkPublication
         return true;
     }
 
-    private long maxSpyPosition()
+    private long maxSpyPosition(final long senderPosition)
     {
-        long position = 0L;
+        long position = senderPosition;
 
         for (final ReadablePosition spyPosition : spyPositions)
         {

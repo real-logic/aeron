@@ -255,7 +255,7 @@ public class NetworkPublication
 
             if (spiesShouldAdvanceSenderPosition(nowNs))
             {
-                final long newSenderPosition = producerPosition();
+                final long newSenderPosition = maxSpyPosition();
 
                 this.senderPosition.setOrdered(newSenderPosition);
                 senderLimit.setOrdered(flowControl.onIdle(nowNs, newSenderPosition, newSenderPosition, isEndOfStream));
@@ -645,6 +645,18 @@ public class NetworkPublication
         return true;
     }
 
+    private long maxSpyPosition()
+    {
+        long position = 0L;
+
+        for (final ReadablePosition spyPosition : spyPositions)
+        {
+            position = Math.max(position, spyPosition.getVolatile());
+        }
+
+        return position;
+    }
+
     private void updateConnectedStatus()
     {
         final boolean currentConnectedState = hasReceivers || (spiesSimulateConnection && spyPositions.length > 0);
@@ -671,7 +683,6 @@ public class NetworkPublication
                 final long producerPosition = producerPosition();
                 if (producerPosition > senderPosition)
                 {
-                    // TODO: Handle case of spies being the only consumer.
                     if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition))
                     {
                         unblockedPublications.orderedIncrement();
@@ -768,7 +779,6 @@ public class NetworkPublication
 
     long consumerPosition()
     {
-        // TODO: Handle case of spies being the only consumer.
         return senderPosition.getVolatile();
     }
 }

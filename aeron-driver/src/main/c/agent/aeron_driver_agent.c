@@ -347,10 +347,18 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
 }
 
 #if defined(HAVE_RECVMMSG)
+
+// See: https://sourceware.org/bugzilla/show_bug.cgi?id=16852
+#if __GLIBC__ <= 5 && __GLIBC_MINOR__ < 21
+typedef const struct timespec * recvmmsg_timespec_ptr_t;
+#else
+typedef struct timespec * recvmmsg_timespec_ptr_t;
+#endif
+
 typedef int (*aeron_driver_agent_sendmmsg_func_t)
     (int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags);
 typedef int (*aeron_driver_agent_recvmmsg_func_t)
-    (int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, struct timespec *timeout);
+    (int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, recvmmsg_timespec_ptr_t timeout);
 
 int sendmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags)
 {
@@ -383,7 +391,7 @@ int sendmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags)
     return result;
 }
 
-int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, struct timespec *timeout)
+int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, recvmmsg_timespec_ptr_t timeout)
 {
     static aeron_driver_agent_recvmmsg_func_t _original_func = NULL;
 

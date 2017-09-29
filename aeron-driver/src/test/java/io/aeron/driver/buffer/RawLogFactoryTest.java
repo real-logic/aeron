@@ -39,6 +39,7 @@ public class RawLogFactoryTest
     private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
     private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
     private static final int TERM_BUFFER_MAX_LENGTH = Configuration.TERM_BUFFER_LENGTH_MAX_DEFAULT;
+    private static final int PAGE_SIZE = 4 * 1024;
     private static final boolean PRE_ZERO_LOG = false;
     private static final boolean PERFORM_STORAGE_CHECKS = false;
     private RawLogFactory rawLogFactory;
@@ -51,6 +52,7 @@ public class RawLogFactoryTest
         rawLogFactory = new RawLogFactory(
             DATA_DIR.getAbsolutePath(),
             TERM_BUFFER_MAX_LENGTH,
+            PAGE_SIZE,
             PRE_ZERO_LOG,
             PERFORM_STORAGE_CHECKS,
             mock(DistinctErrorLog.class));

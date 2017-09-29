@@ -17,7 +17,11 @@ package io.aeron.logbuffer;
 
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
+
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static org.agrona.BitUtil.*;
@@ -94,14 +98,24 @@ public class LogBufferDescriptor
     public static final int LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET;
 
     /**
-     * Offset within the log meta data which the MTU length is stored;
+     * Offset within the log meta data which the MTU length is stored.
      */
     public static final int LOG_MTU_LENGTH_OFFSET;
 
     /**
-     * Offset within the log meta data which the
+     * Offset within the log meta data which the correlation id is stored.
      */
     public static final int LOG_CORRELATION_ID_OFFSET;
+
+    /**
+     * Offset within the log meta data which the term length is stored.
+     */
+    public static final int LOG_TERM_LENGTH_OFFSET;
+
+    /**
+     * Offset within the log meta data which the page size is stored.
+     */
+    public static final int LOG_PAGE_SIZE_OFFSET;
 
     /**
      * Offset at which the default frame headers begin.
@@ -130,6 +144,8 @@ public class LogBufferDescriptor
         LOG_INITIAL_TERM_ID_OFFSET = LOG_CORRELATION_ID_OFFSET + SIZE_OF_LONG;
         LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = LOG_INITIAL_TERM_ID_OFFSET + SIZE_OF_INT;
         LOG_MTU_LENGTH_OFFSET = LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET + SIZE_OF_INT;
+        LOG_TERM_LENGTH_OFFSET = LOG_MTU_LENGTH_OFFSET + SIZE_OF_INT;
+        LOG_PAGE_SIZE_OFFSET = LOG_TERM_LENGTH_OFFSET + SIZE_OF_INT;
 
         offset += CACHE_LINE_LENGTH;
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
@@ -173,6 +189,10 @@ public class LogBufferDescriptor
      *  |                  Default Frame Header Length                  |
      *  +---------------------------------------------------------------+
      *  |                          MTU Length                           |
+     *  +---------------------------------------------------------------+
+     *  |                         Term Length                           |
+     *  +---------------------------------------------------------------+
+     *  |                          Page Size                            |
      *  +---------------------------------------------------------------+
      *  |                      Cache Line Padding                      ...
      * ...                                                              |
@@ -253,6 +273,50 @@ public class LogBufferDescriptor
     public static void mtuLength(final UnsafeBuffer logMetaDataBuffer, final int mtuLength)
     {
         logMetaDataBuffer.putInt(LOG_MTU_LENGTH_OFFSET, mtuLength);
+    }
+
+    /**
+     * Get the value of the Term Length used for this log.
+     *
+     * @param logMetaDataBuffer containing the meta data.
+     * @return the value of the term length used for this log.
+     */
+    public static int termLength(final UnsafeBuffer logMetaDataBuffer)
+    {
+        return logMetaDataBuffer.getInt(LOG_TERM_LENGTH_OFFSET);
+    }
+
+    /**
+     * Set the term length used for this log.
+     *
+     * @param logMetaDataBuffer containing the meta data.
+     * @param termLength        value to be set.
+     */
+    public static void termLength(final UnsafeBuffer logMetaDataBuffer, final int termLength)
+    {
+        logMetaDataBuffer.putInt(LOG_TERM_LENGTH_OFFSET, termLength);
+    }
+
+    /**
+     * Get the value of the page size used for this log.
+     *
+     * @param logMetaDataBuffer containing the meta data.
+     * @return the value of the page size used for this log.
+     */
+    public static int pageSize(final UnsafeBuffer logMetaDataBuffer)
+    {
+        return logMetaDataBuffer.getInt(LOG_PAGE_SIZE_OFFSET);
+    }
+
+    /**
+     * Set the page size used for this log.
+     *
+     * @param logMetaDataBuffer containing the meta data.
+     * @param pageSize          value to be set.
+     */
+    public static void pageSize(final UnsafeBuffer logMetaDataBuffer, final int pageSize)
+    {
+        logMetaDataBuffer.putInt(LOG_PAGE_SIZE_OFFSET, pageSize);
     }
 
     /**
@@ -480,22 +544,83 @@ public class LogBufferDescriptor
      * Compute the total length of a log file given the term length.
      *
      * @param termLength on which to base the calculation.
+     * @param filePageSize to use for log.
      * @return the total length of the log file.
      */
-    public static long computeLogLength(final int termLength)
+    public static long computeLogLength(final int termLength, final int filePageSize)
     {
-        return ((long)termLength * PARTITION_COUNT) + LOG_META_DATA_LENGTH;
+        if (termLength < (1024 * 1024 * 1024))
+        {
+            return align((termLength * PARTITION_COUNT) + LOG_META_DATA_LENGTH, filePageSize);
+        }
+
+        return 3 * align(termLength, filePageSize) + align(LOG_META_DATA_LENGTH, filePageSize);
     }
 
     /**
-     * Compute the term length based on the total length of the log.
+     * Given a {@link FileChannel} for a logbuffer, read the term length field and return its value.
      *
-     * @param logLength the total length of the log.
-     * @return length of an individual term buffer in the log.
+     * @param fileChannel to read term length from
+     * @param logLength   for the logbuffer
+     * @param buffer      to hold the read value
+     * @return            term length read
      */
-    public static int computeTermLength(final long logLength)
+    public static int readTermLengthFromLogBuffer(
+        final FileChannel fileChannel, final long logLength, final ByteBuffer buffer)
     {
-        return (int)((logLength - LOG_META_DATA_LENGTH) / PARTITION_COUNT);
+        int termLength = 0;
+
+        try
+        {
+            final long termLengthOffset = logLength - (LOG_META_DATA_LENGTH - LOG_TERM_LENGTH_OFFSET);
+
+            buffer.position(0);
+            if (SIZE_OF_INT != fileChannel.read(buffer, termLengthOffset))
+            {
+                throw new IllegalStateException("Term length can not be read from LogBuffer.");
+            }
+
+            termLength = buffer.getInt(0);
+        }
+        catch (final Exception exception)
+        {
+            LangUtil.rethrowUnchecked(exception);
+        }
+
+        return termLength;
+    }
+
+    /**
+     * Given a {@link FileChannel} for a logbuffer, read the term length field and return its value.
+     *
+     * @param fileChannel to read term length from
+     * @param logLength   for the logbuffer
+     * @param buffer      to hold the read value
+     * @return            term length read
+     */
+    public static int readPageSizeFromLogBuffer(
+        final FileChannel fileChannel, final long logLength, final ByteBuffer buffer)
+    {
+        int pageSize = 0;
+
+        try
+        {
+            final long pageSizeOffset = logLength - (LOG_META_DATA_LENGTH - LOG_PAGE_SIZE_OFFSET);
+
+            buffer.position(0);
+            if (SIZE_OF_INT != fileChannel.read(buffer, pageSizeOffset))
+            {
+                throw new IllegalStateException("Page size can not be read from LogBuffer.");
+            }
+
+            pageSize = buffer.getInt(0);
+        }
+        catch (final Exception exception)
+        {
+            LangUtil.rethrowUnchecked(exception);
+        }
+
+        return pageSize;
     }
 
     /**

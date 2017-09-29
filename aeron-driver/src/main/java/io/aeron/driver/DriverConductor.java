@@ -766,6 +766,8 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         initialTermId(logMetaData, initialTermId);
         mtuLength(logMetaData, params.mtuLength);
+        termLength(logMetaData, rawLog.termLength());
+        pageSize(logMetaData, context.filePageSize());
         correlationId(logMetaData, registrationId);
 
         initialisePositionCounters(initialTermId, params, logMetaData);
@@ -787,6 +789,8 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         initialTermId(logMetaData, initialTermId);
         mtuLength(logMetaData, params.mtuLength);
+        termLength(logMetaData, rawLog.termLength());
+        pageSize(logMetaData, context.filePageSize());
         correlationId(logMetaData, registrationId);
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
 
@@ -840,6 +844,8 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
         initialTermId(logMetaData, initialTermId);
         mtuLength(logMetaData, senderMtuLength);
+        termLength(logMetaData, termBufferLength);
+        pageSize(logMetaData, context.filePageSize());
         correlationId(logMetaData, correlationId);
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
 

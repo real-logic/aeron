@@ -15,26 +15,23 @@
  */
 package io.aeron;
 
-import org.junit.Before;
-import org.junit.Test;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
-
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.locks.Lock;
 
+import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static io.aeron.logbuffer.LogBufferDescriptor.*;
 
 public class PublicationTest
 {
@@ -46,6 +43,7 @@ public class PublicationTest
     private static final int SEND_BUFFER_CAPACITY = 1024;
     private static final int PARTITION_INDEX = 0;
     private static final int MTU_LENGTH = 4096;
+    private static final int PAGE_SIZE = 4 * 1024;
 
     private final ByteBuffer sendBuffer = allocateDirect(SEND_BUFFER_CAPACITY);
     private final UnsafeBuffer atomicSendBuffer = new UnsafeBuffer(sendBuffer);
@@ -69,6 +67,8 @@ public class PublicationTest
 
         initialTermId(logMetaDataBuffer, TERM_ID_1);
         mtuLength(logMetaDataBuffer, MTU_LENGTH);
+        termLength(logMetaDataBuffer, TERM_MIN_LENGTH);
+        pageSize(logMetaDataBuffer, PAGE_SIZE);
         isConnected(logMetaDataBuffer, false);
 
         for (int i = 0; i < PARTITION_COUNT; i++)

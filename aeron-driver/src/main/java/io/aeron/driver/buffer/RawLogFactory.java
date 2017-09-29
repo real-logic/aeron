@@ -34,6 +34,7 @@ public class RawLogFactory
 {
     private final DistinctErrorLog errorLog;
     private final int maxTermBufferLength;
+    private final int filePageSize;
     private final boolean useSparseFiles;
     private final boolean performStorageChecks;
     private final File publicationsDir;
@@ -43,12 +44,14 @@ public class RawLogFactory
     public RawLogFactory(
         final String dataDirectoryName,
         final int imagesTermBufferMaxLength,
+        final int filePageSize,
         final boolean useSparseFiles,
         final boolean performStorageChecks,
         final DistinctErrorLog errorLog)
     {
         this.errorLog = errorLog;
         this.useSparseFiles = useSparseFiles;
+        this.filePageSize = filePageSize;
         this.performStorageChecks = performStorageChecks;
 
         final FileMappingConvention fileMappingConvention = new FileMappingConvention(dataDirectoryName);
@@ -147,13 +150,13 @@ public class RawLogFactory
 
         final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
 
-        return new MappedRawLog(location, useSparseFiles, termBufferLength, errorLog);
+        return new MappedRawLog(location, useSparseFiles, termBufferLength, filePageSize, errorLog);
     }
 
     private void checkStorage(final int termBufferLength)
     {
         final long usableSpace = getUsableSpace();
-        final long logLength = LogBufferDescriptor.computeLogLength(termBufferLength);
+        final long logLength = LogBufferDescriptor.computeLogLength(termBufferLength, filePageSize);
 
         if (usableSpace <= LOW_FILE_STORE_WARNING_THRESHOLD)
         {

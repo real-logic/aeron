@@ -1777,6 +1777,7 @@ public final class MediaDriver implements AutoCloseable
                 rawLogFactory = new RawLogFactory(
                     aeronDirectoryName(),
                     maxTermBufferLength,
+                    filePageSize,
                     termBufferSparseFile,
                     performStorageChecks,
                     errorLog);

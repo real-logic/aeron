@@ -87,6 +87,7 @@ public class LogInspector
             out.format("   Active index: %d%n", indexByTermCount(activeTermCount(metaDataBuffer)));
             out.format("    Term length: %d%n", termLength);
             out.format("     MTU length: %d%n", mtuLength(metaDataBuffer));
+            out.format("      Page Size: %d%n", pageSize(metaDataBuffer));
             out.format("   EOS Position: %d%n%n", endOfStreamPosition(metaDataBuffer));
 
             if (!AERON_LOG_SKIP_DEFAULT_HEADER)
@@ -94,7 +95,6 @@ public class LogInspector
                 dataHeaderFlyweight.wrap(defaultFrameHeader(metaDataBuffer));
                 out.format("default %s%n", dataHeaderFlyweight);
             }
-
             out.println();
 
             for (int i = 0; i < PARTITION_COUNT; i++)

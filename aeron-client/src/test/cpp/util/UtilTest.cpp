@@ -82,3 +82,20 @@ TEST(utilTests, findNextPowerOfTwo)
     EXPECT_EQ(BitUtil::findNextPowerOfTwo<std::uint32_t>(33), 64u);
     EXPECT_EQ(BitUtil::findNextPowerOfTwo<std::uint32_t>(4096), 4096u);
 }
+
+TEST(utilTests, numberOfTrailingZeroes)
+{
+    for (int32_t i = 0x80000000; i < 0; i++)
+    {
+        int tz = BitUtil::numberOfTrailingZeroes(i);
+        EXPECT_EQ(i & ((1 << tz) - 1), 0);
+        EXPECT_EQ((i >> tz) & 1, 1);
+    }
+
+    for (int32_t i = 1; i < 0x7FFFFFFF; i++)
+    {
+        int tz = BitUtil::numberOfTrailingZeroes(i);
+        EXPECT_EQ(i & ((1 << tz) - 1), 0);
+        EXPECT_EQ((i >> tz) & 1, 1);
+    }
+}

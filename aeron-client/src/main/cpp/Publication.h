@@ -320,6 +320,80 @@ public:
     }
 
     /**
+     * Non-blocking publish of buffers containing a message.
+     *
+     * @param startBuffer containing part of the message.
+     * @param lastBuffer after the message.
+     * @param reservedValueSupplier for the frame.
+     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
+     * {@link #ADMIN_ACTION} or {@link #CLOSED}.
+     */
+    template <class BufferIterator> std::int64_t offer(
+        BufferIterator startBuffer,
+        BufferIterator lastBuffer,
+        const on_reserved_value_supplier_t& reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
+    {
+        std::int64_t newPosition = PUBLICATION_CLOSED;
+
+        if (!isClosed())
+        {
+            const std::int64_t limit = m_publicationLimit.getVolatile();
+            const std::int32_t termCount = LogBufferDescriptor::activeTermCount(m_logMetaDataBuffer);
+            TermAppender *termAppender = m_appenders[LogBufferDescriptor::indexByTermCount(termCount)].get();
+            const std::int64_t rawTail = termAppender->rawTailVolatile();
+            const std::int64_t termOffset = rawTail & 0xFFFFFFFF;
+            const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
+            const std::int64_t position =
+                LogBufferDescriptor::computeTermBeginPosition(
+                    termId, m_positionBitsToShift, m_initialTermId) + termOffset;
+
+            if (termCount != (termId - m_initialTermId))
+            {
+                return ADMIN_ACTION;
+            }
+
+            if (position < limit)
+            {
+                util::index_t length = 0;
+                for (BufferIterator it = startBuffer; it != lastBuffer; ++it)
+                {
+                    if (AERON_COND_EXPECT(length + it->capacity() < 0, false))
+                    {
+                        throw aeron::util::OutOfBoundsException(
+                            aeron::util::strPrintf("Capacity overflow: %d + ", length, it->capacity()),
+                            SOURCEINFO);
+                    }
+
+                    length += it->capacity();
+                }
+
+                std::int32_t resultingOffset;
+                if (length <= m_maxPayloadLength)
+                {
+                    resultingOffset = termAppender->appendUnfragmentedMessage(
+                        m_headerWriter, startBuffer, length, reservedValueSupplier, termId);
+                }
+                else
+                {
+                    checkForMaxMessageLength(length);
+                    resultingOffset = termAppender->appendFragmentedMessage(
+                        m_headerWriter, startBuffer, length, m_maxPayloadLength, reservedValueSupplier, termId);
+                }
+
+                newPosition =
+                    Publication::newPosition(
+                        termCount, static_cast<std::int32_t>(termOffset), termId, position, resultingOffset);
+            }
+            else
+            {
+                newPosition = Publication::backPressureStatus(position, 0);
+            }
+        }
+
+        return newPosition;
+    }
+
+    /**
      * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
      * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
      * <p>

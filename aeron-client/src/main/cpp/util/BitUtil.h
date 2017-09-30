@@ -17,6 +17,7 @@
 #ifndef INCLUDED_AERON_UTIL_BITUTIL__
 #define INCLUDED_AERON_UTIL_BITUTIL__
 
+#include <cstdint>
 #include <type_traits>
 #include <util/Exceptions.h>
 
@@ -82,7 +83,9 @@ namespace BitUtil
 #if defined(__GNUC__)
         return __builtin_clz(value);
 #elif defined(_MSC_VER)
-        return __lzcnt(value);
+        unsigned long r;
+        _BitScanReverse(&r, (unsigned long)value);
+        return 31 - (int)r;
 #else
 #error "do not understand how to clz"
 #endif
@@ -94,9 +97,13 @@ namespace BitUtil
     {
 #if defined(__GNUC__)
         return __builtin_ctz(value);
+#elif defined(_MSC_VER)
+        unsigned long r;
+        _BitScanForward(&r, (unsigned long)value);
+        return r;
 #else
         static_assert(std::is_integral<value_t>::value, "numberOfTrailingZeroes only available on integral types");
-        static_assert(sizeof(value_t)==4, "numberOfTrailingZeroes only available on 32-bit integral types");
+        static_assert(sizeof(value_t) <= 4, "numberOfTrailingZeroes only available on up to 32-bit integral types");
 
         static char table[32] = {
             0, 1, 2, 24, 3, 19, 6, 25,
@@ -109,9 +116,9 @@ namespace BitUtil
             return 32;
         }
 
-        value = (value & -value) * 0x04D7651F;
+        uint32_t index = static_cast<uint32_t>((value & -value) * 0x04D7651F);
 
-        return table[value >> 27];
+        return table[index >> 27];
 #endif
     }
 

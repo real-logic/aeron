@@ -17,11 +17,7 @@ package io.aeron.logbuffer;
 
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static org.agrona.BitUtil.*;
@@ -62,6 +58,17 @@ public class LogBufferDescriptor
      * Maximum buffer length for a log term
      */
     public static final int TERM_MAX_LENGTH = 1024 * 1024 * 1024;
+
+    /**
+     * Minimum page size
+     */
+    public static final int PAGE_MIN_SIZE = 4 * 1024;
+
+    /**
+     * Maximum page size
+     */
+    public static final int PAGE_MAX_SIZE = 1024 * 1024 * 1024;
+
 
     // *******************************
     // *** Log Meta Data Constants ***
@@ -201,7 +208,7 @@ public class LogBufferDescriptor
         offset += CACHE_LINE_LENGTH;
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
 
-        LOG_META_DATA_LENGTH = offset + LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH;
+        LOG_META_DATA_LENGTH = align(offset + LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH, PAGE_MIN_SIZE);
     }
 
     /**
@@ -227,6 +234,32 @@ public class LogBufferDescriptor
         if (!BitUtil.isPowerOfTwo(termLength))
         {
             throw new IllegalStateException("Term length not a power of 2: length=" + termLength);
+        }
+    }
+
+    /**
+     * Check that page size is valid and alignment is valid.
+     *
+     * @param pageSize to be checked.
+     * @throws IllegalStateException if the size is not as expected.
+     */
+    public static void checkPageSize(final int pageSize)
+    {
+        if (pageSize < PAGE_MIN_SIZE)
+        {
+            throw new IllegalStateException(
+                "Page size less than min size of " + PAGE_MIN_SIZE + ": page size=" + pageSize);
+        }
+
+        if (pageSize > PAGE_MAX_SIZE)
+        {
+            throw new IllegalStateException(
+                "Page size more than max size of " + PAGE_MAX_SIZE + ": page size=" + pageSize);
+        }
+
+        if (!BitUtil.isPowerOfTwo(pageSize))
+        {
+            throw new IllegalStateException("Page size not a power of 2: page size=" + pageSize);
         }
     }
 
@@ -543,6 +576,8 @@ public class LogBufferDescriptor
     /**
      * Compute the total length of a log file given the term length.
      *
+     * Assumes TERM_MAX_LENGTH is 1GB and that filePageSize is 1GB or less and a power of 2.
+     *
      * @param termLength on which to base the calculation.
      * @param filePageSize to use for log.
      * @return the total length of the log file.
@@ -554,73 +589,7 @@ public class LogBufferDescriptor
             return align((termLength * PARTITION_COUNT) + LOG_META_DATA_LENGTH, filePageSize);
         }
 
-        return 3 * align(termLength, filePageSize) + align(LOG_META_DATA_LENGTH, filePageSize);
-    }
-
-    /**
-     * Given a {@link FileChannel} for a log buffer, read the term length field and return its value.
-     *
-     * @param fileChannel to read term length from
-     * @param logLength   for the log buffer
-     * @param buffer      to hold the read value
-     * @return            term length read
-     */
-    public static int readTermLengthFromLogBuffer(
-        final FileChannel fileChannel, final long logLength, final ByteBuffer buffer)
-    {
-        int termLength = 0;
-
-        try
-        {
-            final long termLengthOffset = logLength - (LOG_META_DATA_LENGTH - LOG_TERM_LENGTH_OFFSET);
-
-            buffer.position(0);
-            if (SIZE_OF_INT != fileChannel.read(buffer, termLengthOffset))
-            {
-                throw new IllegalStateException("Term length can not be read from LogBuffer.");
-            }
-
-            termLength = buffer.getInt(0);
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-
-        return termLength;
-    }
-
-    /**
-     * Given a {@link FileChannel} for a log buffer, read the term length field and return its value.
-     *
-     * @param fileChannel to read term length from
-     * @param logLength   for the log buffer
-     * @param buffer      to hold the read value
-     * @return            term length read
-     */
-    public static int readPageSizeFromLogBuffer(
-        final FileChannel fileChannel, final long logLength, final ByteBuffer buffer)
-    {
-        int pageSize = 0;
-
-        try
-        {
-            final long pageSizeOffset = logLength - (LOG_META_DATA_LENGTH - LOG_PAGE_SIZE_OFFSET);
-
-            buffer.position(0);
-            if (SIZE_OF_INT != fileChannel.read(buffer, pageSizeOffset))
-            {
-                throw new IllegalStateException("Page size can not be read from LogBuffer.");
-            }
-
-            pageSize = buffer.getInt(0);
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-
-        return pageSize;
+        return (PARTITION_COUNT * termLength) + align(LOG_META_DATA_LENGTH, filePageSize);
     }
 
     /**

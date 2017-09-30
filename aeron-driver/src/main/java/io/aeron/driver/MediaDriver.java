@@ -522,6 +522,7 @@ public final class MediaDriver implements AutoCloseable
 
                 validateMtuLength(mtuLength);
                 validateMtuLength(ipcMtuLength);
+                validatePageSize(filePageSize);
 
                 LogBufferDescriptor.checkTermLength(maxTermBufferLength);
                 LogBufferDescriptor.checkTermLength(publicationTermBufferLength);

@@ -21,6 +21,7 @@ import io.aeron.driver.media.*;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.BitUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.ControllableIdleStrategy;
@@ -35,6 +36,8 @@ import java.nio.channels.DatagramChannel;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.ThreadingMode.DEDICATED;
+import static io.aeron.logbuffer.LogBufferDescriptor.PAGE_MAX_SIZE;
+import static io.aeron.logbuffer.LogBufferDescriptor.PAGE_MIN_SIZE;
 import static java.lang.Integer.getInteger;
 import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
@@ -1071,6 +1074,32 @@ public class Configuration
         catch (final IOException ex)
         {
             throw new RuntimeException("probe socket: " + ex.toString(), ex);
+        }
+    }
+
+    /**
+     * Validate that page size is valid and alignment is valid.
+     *
+     * @param pageSize to be checked.
+     * @throws ConfigurationException if the size is not as expected.
+     */
+    public static void validatePageSize(final int pageSize)
+    {
+        if (pageSize < PAGE_MIN_SIZE)
+        {
+            throw new ConfigurationException(
+                "Page size less than min size of " + PAGE_MIN_SIZE + ": page size=" + pageSize);
+        }
+
+        if (pageSize > PAGE_MAX_SIZE)
+        {
+            throw new ConfigurationException(
+                "Page size more than max size of " + PAGE_MAX_SIZE + ": page size=" + pageSize);
+        }
+
+        if (!BitUtil.isPowerOfTwo(pageSize))
+        {
+            throw new ConfigurationException("Page size not a power of 2: page size=" + pageSize);
         }
     }
 }

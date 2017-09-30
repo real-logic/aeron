@@ -15,14 +15,13 @@
  */
 package io.aeron;
 
+import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.ManagedResource;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
@@ -31,8 +30,6 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.align;
 
 /**
  * Takes a log file name and maps the file into memory and wraps it with {@link UnsafeBuffer}s as appropriate.
@@ -56,17 +53,21 @@ public class LogBuffers implements AutoCloseable, ManagedResource
             fileChannel = FileChannel.open(Paths.get(logFileName), READ, WRITE);
 
             final long logLength = fileChannel.size();
-            final ByteBuffer tmpBuffer = ByteBuffer.allocate(SIZE_OF_INT).order(ByteOrder.nativeOrder());
-            final int termLength = readTermLengthFromLogBuffer(fileChannel, logLength, tmpBuffer);
-            final int filePageSize = readPageSizeFromLogBuffer(fileChannel, logLength, tmpBuffer);
-
-            checkTermLength(termLength);
-            this.termLength = termLength;
 
             if (logLength < Integer.MAX_VALUE)
             {
                 final MappedByteBuffer mappedBuffer = fileChannel.map(READ_WRITE, 0, logLength);
                 mappedByteBuffers = new MappedByteBuffer[]{ mappedBuffer };
+
+                logMetaDataBuffer = new UnsafeBuffer(
+                    mappedBuffer, (int)(logLength - LOG_META_DATA_LENGTH), LOG_META_DATA_LENGTH);
+
+                final int termLength = LogBufferDescriptor.termLength(logMetaDataBuffer);
+                final int pageSize = LogBufferDescriptor.pageSize(logMetaDataBuffer);
+
+                checkTermLength(termLength);
+                checkPageSize(pageSize);
+                this.termLength = termLength;
 
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {
@@ -75,25 +76,15 @@ public class LogBuffers implements AutoCloseable, ManagedResource
 
                     termBuffers[i] = new UnsafeBuffer(mappedBuffer.slice());
                 }
-
-                logMetaDataBuffer = new UnsafeBuffer(
-                    mappedBuffer, (int)(logLength - LOG_META_DATA_LENGTH), LOG_META_DATA_LENGTH);
             }
             else
             {
                 mappedByteBuffers = new MappedByteBuffer[PARTITION_COUNT + 1];
 
-                final long termMappingLength = align(termLength, filePageSize);
+                final int assumedTermLength = TERM_MAX_LENGTH;
 
-                for (int i = 0; i < PARTITION_COUNT; i++)
-                {
-                    mappedByteBuffers[i] =
-                        fileChannel.map(READ_WRITE, termMappingLength * (long)i, termMappingLength);
-                    termBuffers[i] = new UnsafeBuffer(mappedByteBuffers[i], 0, termLength);
-                }
-
-                final int metaDataMappingLength = align(LOG_META_DATA_LENGTH, filePageSize);
-                final long metaDataSectionOffset = termMappingLength * (long)PARTITION_COUNT;
+                final long metaDataSectionOffset = assumedTermLength * (long)PARTITION_COUNT;
+                final long metaDataMappingLength = logLength - metaDataSectionOffset;
 
                 final MappedByteBuffer metaDataMappedBuffer = fileChannel.map(
                     READ_WRITE, metaDataSectionOffset, metaDataMappingLength);
@@ -103,13 +94,38 @@ public class LogBuffers implements AutoCloseable, ManagedResource
                 logMetaDataBuffer =
                     new UnsafeBuffer(
                         metaDataMappedBuffer,
-                        metaDataMappingLength - LOG_META_DATA_LENGTH,
+                        (int)metaDataMappingLength - LOG_META_DATA_LENGTH,
                         LOG_META_DATA_LENGTH);
+
+                final int metaDataTermLength = LogBufferDescriptor.termLength(logMetaDataBuffer);
+                final int pageSize = LogBufferDescriptor.pageSize(logMetaDataBuffer);
+
+                checkPageSize(pageSize);
+                if (metaDataTermLength != assumedTermLength)
+                {
+                    throw new IllegalStateException(
+                        "Assumed term length " + assumedTermLength +
+                        " does not match metadata: termLength=" + metaDataTermLength);
+                }
+
+                this.termLength = assumedTermLength;
+
+                for (int i = 0; i < PARTITION_COUNT; i++)
+                {
+                    mappedByteBuffers[i] =
+                        fileChannel.map(READ_WRITE, assumedTermLength * (long)i, assumedTermLength);
+                    termBuffers[i] = new UnsafeBuffer(mappedByteBuffers[i], 0, assumedTermLength);
+                }
             }
         }
         catch (final IOException ex)
         {
             throw new RuntimeException(ex);
+        }
+        catch (final IllegalStateException ex)
+        {
+            close();
+            throw ex;
         }
 
         for (final UnsafeBuffer buffer : termBuffers)

@@ -81,12 +81,10 @@ class MappedRawLog implements RawLog
             {
                 mappedBuffers = new MappedByteBuffer[PARTITION_COUNT + 1];
 
-                final long termMappingLength = align(termLength, filePageSize);
-
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {
                     mappedBuffers[i] =
-                        logChannel.map(READ_WRITE, termMappingLength * (long)i, termMappingLength);
+                        logChannel.map(READ_WRITE, termLength * (long)i, termLength);
                     if (!useSparseFiles)
                     {
                         allocatePages(mappedBuffers[i], termLength, filePageSize);
@@ -96,7 +94,7 @@ class MappedRawLog implements RawLog
                 }
 
                 final int metaDataMappingLength = align(LOG_META_DATA_LENGTH, filePageSize);
-                final long metaDataSectionOffset = termMappingLength * (long)PARTITION_COUNT;
+                final long metaDataSectionOffset = termLength * (long)PARTITION_COUNT;
 
                 final MappedByteBuffer metaDataMappedBuffer = logChannel.map(
                     READ_WRITE, metaDataSectionOffset, metaDataMappingLength);

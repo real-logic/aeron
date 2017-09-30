@@ -693,7 +693,7 @@ public class NetworkPublication
                     isEndOfStream = true;
                 }
 
-                if (spiesFinishedConsuming(conductor, spiesSimulateConnection ? producerPosition : senderPosition))
+                if (spiesFinishedConsuming(conductor, producerPosition))
                 {
                     timeOfLastActivityNs = timeNs;
                     state = State.LINGER;

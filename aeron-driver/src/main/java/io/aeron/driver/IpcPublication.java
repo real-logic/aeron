@@ -164,6 +164,11 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
     int updatePublishersLimit()
     {
+        if (State.ACTIVE != state)
+        {
+            return 0;
+        }
+
         int workCount = 0;
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = consumerPosition;

@@ -36,7 +36,6 @@ import static org.agrona.BitUtil.align;
 class MappedRawLog implements RawLog
 {
     private static final int ONE_GIG = 1 << 30;
-    private static final int PAGE_LENGTH = 4096;
 
     private final int termLength;
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
@@ -65,7 +64,7 @@ class MappedRawLog implements RawLog
                 final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);
                 if (!useSparseFiles)
                 {
-                    allocatePages(mappedBuffer, (int)logLength);
+                    allocatePages(mappedBuffer, (int)logLength, filePageSize);
                 }
 
                 mappedBuffers = new MappedByteBuffer[]{ mappedBuffer };
@@ -90,7 +89,7 @@ class MappedRawLog implements RawLog
                         logChannel.map(READ_WRITE, termMappingLength * (long)i, termMappingLength);
                     if (!useSparseFiles)
                     {
-                        allocatePages(mappedBuffers[i], termLength);
+                        allocatePages(mappedBuffers[i], termLength, filePageSize);
                     }
 
                     termBuffers[i] = new UnsafeBuffer(mappedBuffers[i], 0, termLength);
@@ -173,9 +172,9 @@ class MappedRawLog implements RawLog
         return logFile.getAbsolutePath();
     }
 
-    private static void allocatePages(final MappedByteBuffer buffer, final int length)
+    private static void allocatePages(final MappedByteBuffer buffer, final int length, final int pageSize)
     {
-        for (int i = 0; i < length; i += PAGE_LENGTH)
+        for (int i = 0; i < length; i += pageSize)
         {
             buffer.put(i, (byte)0);
         }

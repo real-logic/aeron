@@ -32,27 +32,27 @@ import static io.aeron.driver.buffer.FileMappingConvention.streamLocation;
  */
 public class RawLogFactory
 {
-    private final DistinctErrorLog errorLog;
     private final int maxTermBufferLength;
     private final int filePageSize;
     private final boolean useSparseFiles;
-    private final boolean performStorageChecks;
+    private final boolean checkStorage;
+    private final DistinctErrorLog errorLog;
     private final File publicationsDir;
     private final File imagesDir;
     private final FileStore fileStore;
 
     public RawLogFactory(
         final String dataDirectoryName,
-        final int imagesTermBufferMaxLength,
+        final int termBufferMaxLength,
         final int filePageSize,
         final boolean useSparseFiles,
-        final boolean performStorageChecks,
+        final boolean checkStorage,
         final DistinctErrorLog errorLog)
     {
-        this.errorLog = errorLog;
         this.useSparseFiles = useSparseFiles;
         this.filePageSize = filePageSize;
-        this.performStorageChecks = performStorageChecks;
+        this.checkStorage = checkStorage;
+        this.errorLog = errorLog;
 
         final FileMappingConvention fileMappingConvention = new FileMappingConvention(dataDirectoryName);
         publicationsDir = fileMappingConvention.publicationsDir();
@@ -64,7 +64,7 @@ public class RawLogFactory
         FileStore fs = null;
         try
         {
-            if (performStorageChecks)
+            if (checkStorage)
             {
                 fs = Files.getFileStore(Paths.get(dataDirectoryName));
             }
@@ -75,7 +75,7 @@ public class RawLogFactory
         }
 
         fileStore = fs;
-        this.maxTermBufferLength = imagesTermBufferMaxLength;
+        this.maxTermBufferLength = termBufferMaxLength;
     }
 
     /**
@@ -143,7 +143,7 @@ public class RawLogFactory
     {
         validateTermBufferLength(termBufferLength);
 
-        if (performStorageChecks)
+        if (checkStorage)
         {
             checkStorage(termBufferLength);
         }

@@ -127,32 +127,6 @@ public class LogBufferDescriptor
      */
     public static final int LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = CACHE_LINE_LENGTH * 2;
 
-    static
-    {
-        int offset = 0;
-        TERM_TAIL_COUNTERS_OFFSET = offset;
-
-        offset += (SIZE_OF_LONG * PARTITION_COUNT);
-        LOG_ACTIVE_TERM_COUNT_OFFSET = offset;
-
-        offset = (CACHE_LINE_LENGTH * 2);
-        LOG_END_OF_STREAM_POSITION_OFFSET = offset;
-        LOG_IS_CONNECTED_OFFSET = LOG_END_OF_STREAM_POSITION_OFFSET + SIZE_OF_LONG;
-
-        offset += (CACHE_LINE_LENGTH * 2);
-        LOG_CORRELATION_ID_OFFSET = offset;
-        LOG_INITIAL_TERM_ID_OFFSET = LOG_CORRELATION_ID_OFFSET + SIZE_OF_LONG;
-        LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = LOG_INITIAL_TERM_ID_OFFSET + SIZE_OF_INT;
-        LOG_MTU_LENGTH_OFFSET = LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET + SIZE_OF_INT;
-        LOG_TERM_LENGTH_OFFSET = LOG_MTU_LENGTH_OFFSET + SIZE_OF_INT;
-        LOG_PAGE_SIZE_OFFSET = LOG_TERM_LENGTH_OFFSET + SIZE_OF_INT;
-
-        offset += CACHE_LINE_LENGTH;
-        LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
-
-        LOG_META_DATA_LENGTH = offset + LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH;
-    }
-
     /**
      * Total length of the log meta data buffer in bytes.
      * <pre>
@@ -203,6 +177,32 @@ public class LogBufferDescriptor
      * </pre>
      */
     public static final int LOG_META_DATA_LENGTH;
+
+    static
+    {
+        int offset = 0;
+        TERM_TAIL_COUNTERS_OFFSET = offset;
+
+        offset += (SIZE_OF_LONG * PARTITION_COUNT);
+        LOG_ACTIVE_TERM_COUNT_OFFSET = offset;
+
+        offset = (CACHE_LINE_LENGTH * 2);
+        LOG_END_OF_STREAM_POSITION_OFFSET = offset;
+        LOG_IS_CONNECTED_OFFSET = LOG_END_OF_STREAM_POSITION_OFFSET + SIZE_OF_LONG;
+
+        offset += (CACHE_LINE_LENGTH * 2);
+        LOG_CORRELATION_ID_OFFSET = offset;
+        LOG_INITIAL_TERM_ID_OFFSET = LOG_CORRELATION_ID_OFFSET + SIZE_OF_LONG;
+        LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = LOG_INITIAL_TERM_ID_OFFSET + SIZE_OF_INT;
+        LOG_MTU_LENGTH_OFFSET = LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET + SIZE_OF_INT;
+        LOG_TERM_LENGTH_OFFSET = LOG_MTU_LENGTH_OFFSET + SIZE_OF_INT;
+        LOG_PAGE_SIZE_OFFSET = LOG_TERM_LENGTH_OFFSET + SIZE_OF_INT;
+
+        offset += CACHE_LINE_LENGTH;
+        LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
+
+        LOG_META_DATA_LENGTH = offset + LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH;
+    }
 
     /**
      * Check that term length is valid and alignment is valid.
@@ -558,10 +558,10 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Given a {@link FileChannel} for a logbuffer, read the term length field and return its value.
+     * Given a {@link FileChannel} for a log buffer, read the term length field and return its value.
      *
      * @param fileChannel to read term length from
-     * @param logLength   for the logbuffer
+     * @param logLength   for the log buffer
      * @param buffer      to hold the read value
      * @return            term length read
      */
@@ -582,19 +582,19 @@ public class LogBufferDescriptor
 
             termLength = buffer.getInt(0);
         }
-        catch (final Exception exception)
+        catch (final Exception ex)
         {
-            LangUtil.rethrowUnchecked(exception);
+            LangUtil.rethrowUnchecked(ex);
         }
 
         return termLength;
     }
 
     /**
-     * Given a {@link FileChannel} for a logbuffer, read the term length field and return its value.
+     * Given a {@link FileChannel} for a log buffer, read the term length field and return its value.
      *
      * @param fileChannel to read term length from
-     * @param logLength   for the logbuffer
+     * @param logLength   for the log buffer
      * @param buffer      to hold the read value
      * @return            term length read
      */
@@ -615,9 +615,9 @@ public class LogBufferDescriptor
 
             pageSize = buffer.getInt(0);
         }
-        catch (final Exception exception)
+        catch (final Exception ex)
         {
-            LangUtil.rethrowUnchecked(exception);
+            LangUtil.rethrowUnchecked(ex);
         }
 
         return pageSize;

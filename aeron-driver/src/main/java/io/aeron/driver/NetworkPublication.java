@@ -78,7 +78,7 @@ class NetworkPublicationPadding3 extends NetworkPublicationSenderFields
 }
 
 /**
- * Publication to be sent to registered subscribers.
+ * Publication to be sent to connected subscribers.
  */
 public class NetworkPublication
     extends NetworkPublicationPadding3
@@ -103,10 +103,10 @@ public class NetworkPublication
     private final boolean isExclusive;
     private final boolean spiesSimulateConnection;
     private volatile boolean hasReceivers;
-    private volatile boolean hasSenderReleased;
-    private volatile boolean isEndOfStream;
-    private volatile boolean hasSpiesConnected;
+    private volatile boolean hasSpies;
     private volatile boolean isConnected;
+    private volatile boolean isEndOfStream;
+    private volatile boolean hasSenderReleased;
     private State state = State.ACTIVE;
 
     private final UnsafeBuffer[] termBuffers;
@@ -252,10 +252,9 @@ public class NetworkPublication
             final boolean isEndOfStream = this.isEndOfStream;
             bytesSent = heartbeatMessageCheck(nowNs, activeTermId, termOffset, isEndOfStream);
 
-            if (spiesSimulateConnection && nowNs > statusMessageDeadlineNs && hasSpiesConnected)
+            if (spiesSimulateConnection && nowNs > statusMessageDeadlineNs && hasSpies)
             {
                 final long newSenderPosition = maxSpyPosition(senderPosition);
-
                 this.senderPosition.setOrdered(newSenderPosition);
                 senderLimit.setOrdered(flowControl.onIdle(nowNs, newSenderPosition, newSenderPosition, isEndOfStream));
             }
@@ -341,18 +340,21 @@ public class NetworkPublication
     public void addSubscriber(final ReadablePosition spyPosition)
     {
         spyPositions = ArrayUtil.add(spyPositions, spyPosition);
-        hasSpiesConnected = true;
+
+        hasSpies = true;
+
+        if (spiesSimulateConnection)
+        {
+            isConnected = true;
+            LogBufferDescriptor.isConnected(metaDataBuffer, true);
+        }
     }
 
     public void removeSubscriber(final ReadablePosition spyPosition)
     {
         spyPositions = ArrayUtil.remove(spyPositions, spyPosition);
+        hasSpies = spyPositions.length > 0;
         spyPosition.close();
-
-        if (0 == spyPositions.length)
-        {
-            hasSpiesConnected = false;
-        }
     }
 
     public void onNak(final int termId, final int termOffset, final int length)
@@ -428,18 +430,20 @@ public class NetworkPublication
      */
     int updatePublisherLimit()
     {
+        if (State.ACTIVE != state)
+        {
+            return 0;
+        }
+
         int workCount = 0;
 
         final long senderPosition = this.senderPosition.getVolatile();
         if (hasReceivers || (spiesSimulateConnection && spyPositions.length > 0))
         {
             long minConsumerPosition = senderPosition;
-            if (spyPositions.length > 0)
+            for (final ReadablePosition spyPosition : spyPositions)
             {
-                for (final ReadablePosition spyPosition : spyPositions)
-                {
-                    minConsumerPosition = Math.min(minConsumerPosition, spyPosition.getVolatile());
-                }
+                minConsumerPosition = Math.min(minConsumerPosition, spyPosition.getVolatile());
             }
 
             final long proposedPublisherLimit = minConsumerPosition + termWindowLength;
@@ -459,12 +463,12 @@ public class NetworkPublication
 
     boolean hasSpies()
     {
-        return spyPositions.length > 0;
+        return hasSpies;
     }
 
     void updateHasReceivers(final long timeNs)
     {
-        if (hasReceivers && timeNs > statusMessageDeadlineNs)
+        if (timeNs > statusMessageDeadlineNs && hasReceivers)
         {
             hasReceivers = false;
         }
@@ -626,13 +630,9 @@ public class NetworkPublication
                 }
             }
 
-            conductor.cleanupSpies(this);
-            for (final ReadablePosition position : spyPositions)
-            {
-                position.close();
-            }
+            hasSpies = false;
 
-            spyPositions = EMPTY_POSITIONS;
+            conductor.cleanupSpies(this);
         }
 
         return true;

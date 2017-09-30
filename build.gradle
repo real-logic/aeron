@@ -121,7 +121,7 @@ subprojects {
 
     dependencies {
         checkstyle 'com.puppycrawl.tools:checkstyle:8.2'
-        checkstyle 'com.github.sevntu-checkstyle:sevntu-checks:1.24.1'
+        checkstyle 'com.github.sevntu-checkstyle:sevntu-checks:1.24.2'
 
         testCompile 'org.hamcrest:hamcrest-all:1.3'
         testCompile 'junit:junit:4.12'

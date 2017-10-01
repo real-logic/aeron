@@ -110,10 +110,6 @@ public class ArchiveTest
     private long startPosition;
     private int requestedInitialTermId;
 
-    private int publicationInitialTermId;
-    private int publicationStartTermId;
-    private int publicationStartTermOffset;
-
     @Before
     public void before() throws Exception
     {
@@ -401,7 +397,7 @@ public class ArchiveTest
 
     private void verifyEmptyDescriptorList(final ArchiveProxy client)
     {
-        final long requestRecordingsCorrelationId = this.correlationId++;
+        final long requestRecordingsCorrelationId = correlationId++;
         client.listRecordings(0, 100, requestRecordingsCorrelationId, controlSessionId);
         TestUtil.awaitResponse(controlResponse, requestRecordingsCorrelationId);
     }
@@ -409,7 +405,7 @@ public class ArchiveTest
     private void verifyDescriptorListOngoingArchive(
         final ArchiveProxy archiveProxy, final int publicationTermBufferLength)
     {
-        final long requestRecordingsCorrelationId = this.correlationId++;
+        final long requestRecordingsCorrelationId = correlationId++;
         archiveProxy.listRecordings(recordingId, 1, requestRecordingsCorrelationId, controlSessionId);
 
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
@@ -483,9 +479,7 @@ public class ArchiveTest
     }
 
     private void prepMessagesAndListener(
-        final Subscription recordingEvents,
-        final int messageCount,
-        final CountDownLatch waitForData)
+        final Subscription recordingEvents, final int messageCount, final CountDownLatch waitForData)
     {
         messageLengths = new int[messageCount];
         for (int i = 0; i < messageCount; i++)
@@ -502,9 +496,6 @@ public class ArchiveTest
     {
         startPosition = publication.position();
 
-        publicationInitialTermId = publication.initialTermId();
-        publicationStartTermId = (int)(publicationInitialTermId + (startPosition / publication.termBufferLength()));
-        publicationStartTermOffset = (int)(startPosition % publication.termBufferLength());
         buffer.setMemory(0, 1024, (byte)'z');
         buffer.putStringAscii(32, "TEST");
 
@@ -523,10 +514,6 @@ public class ArchiveTest
     private void publishDataToRecorded(final ExclusivePublication publication, final int messageCount)
     {
         startPosition = publication.position();
-
-        publicationInitialTermId = publication.initialTermId();
-        publicationStartTermId = (int)(publicationInitialTermId + (startPosition / publication.termBufferLength()));
-        publicationStartTermOffset = (int)(startPosition % publication.termBufferLength());
 
         buffer.setMemory(0, 1024, (byte)'z');
         buffer.putStringAscii(32, "TEST");
@@ -619,11 +606,6 @@ public class ArchiveTest
         assertThat(buffer.getInt(offset), is(messageCount));
         assertThat(buffer.getByte(offset + 4), is((byte)'z'));
 
-        if (messageCount == 0)
-        {
-            assertThat(headerFlyweight.termId(), is(this.publicationStartTermId));
-            assertThat(headerFlyweight.termOffset(), is(this.publicationStartTermOffset));
-        }
         remaining -= BitUtil.align(messageLengths[messageCount], FrameDescriptor.FRAME_ALIGNMENT);
         messageCount++;
 
@@ -712,7 +694,7 @@ public class ArchiveTest
 
                     TestUtil.await(() -> archiveProxy.replay(
                         recordingId,
-                        this.startPosition,
+                        startPosition,
                         Long.MAX_VALUE,
                         REPLAY_URI,
                         REPLAY_STREAM_ID,
@@ -727,7 +709,7 @@ public class ArchiveTest
                     assertThat(image.initialTermId(), is(initialTermId));
                     assertThat(image.mtuLength(), is(maxPayloadLength + HEADER_LENGTH));
                     assertThat(image.termBufferLength(), is(termBufferLength));
-                    assertThat(image.position(), is(this.startPosition));
+                    assertThat(image.position(), is(startPosition));
 
                     this.messageCount = 0;
                     remaining = totalDataLength;

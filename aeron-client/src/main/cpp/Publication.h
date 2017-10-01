@@ -18,6 +18,7 @@
 #define INCLUDED_AERON_PUBLICATION__
 
 #include <iostream>
+#include <array>
 #include <atomic>
 #include <concurrent/AtomicBuffer.h>
 #include <concurrent/logbuffer/BufferClaim.h>
@@ -333,6 +334,19 @@ public:
         BufferIterator lastBuffer,
         const on_reserved_value_supplier_t& reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
     {
+        util::index_t length = 0;
+        for (BufferIterator it = startBuffer; it != lastBuffer; ++it)
+        {
+            if (AERON_COND_EXPECT(length + it->capacity() < 0, false))
+            {
+                throw aeron::util::IllegalStateException(
+                    aeron::util::strPrintf("length overflow: %d + %d -> %d", length, it->capacity(), length + it->capacity()),
+                    SOURCEINFO);
+            }
+
+            length += it->capacity();
+        }
+
         std::int64_t newPosition = PUBLICATION_CLOSED;
 
         if (!isClosed())
@@ -354,19 +368,6 @@ public:
 
             if (position < limit)
             {
-                util::index_t length = 0;
-                for (BufferIterator it = startBuffer; it != lastBuffer; ++it)
-                {
-                    if (AERON_COND_EXPECT(length + it->capacity() < 0, false))
-                    {
-                        throw aeron::util::OutOfBoundsException(
-                            aeron::util::strPrintf("Capacity overflow: %d + ", length, it->capacity()),
-                            SOURCEINFO);
-                    }
-
-                    length += it->capacity();
-                }
-
                 std::int32_t resultingOffset;
                 if (length <= m_maxPayloadLength)
                 {
@@ -386,11 +387,43 @@ public:
             }
             else
             {
-                newPosition = Publication::backPressureStatus(position, 0);
+                newPosition = Publication::backPressureStatus(position, length);
             }
         }
 
         return newPosition;
+    }
+
+    /**
+     * Non-blocking publish of array of buffers containing a message.
+     *
+     * @param buffers containing parts of the message.
+     * @param length of the array of buffers.
+     * @param reservedValueSupplier for the frame.
+     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
+     * {@link #ADMIN_ACTION} or {@link #CLOSED}.
+     */
+    std::int64_t offer(
+        const concurrent::AtomicBuffer buffers[],
+        size_t length,
+        const on_reserved_value_supplier_t& reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
+    {
+        return offer(buffers, buffers + length, reservedValueSupplier);
+    }
+
+    /**
+     * Non-blocking publish of array of buffers containing a message.
+     *
+     * @param buffers containing parts of the message.
+     * @param reservedValueSupplier for the frame.
+     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
+     * {@link #ADMIN_ACTION} or {@link #CLOSED}.
+     */
+    template <size_t N> std::int64_t offer(
+        const std::array<concurrent::AtomicBuffer, N>& buffers,
+        const on_reserved_value_supplier_t& reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
+    {
+        return offer(buffers.begin(), buffers.end(), reservedValueSupplier);
     }
 
     /**

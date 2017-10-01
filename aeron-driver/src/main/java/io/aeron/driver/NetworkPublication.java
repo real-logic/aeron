@@ -340,13 +340,12 @@ public class NetworkPublication
     public void addSubscriber(final ReadablePosition spyPosition)
     {
         spyPositions = ArrayUtil.add(spyPositions, spyPosition);
-
         hasSpies = true;
 
         if (spiesSimulateConnection)
         {
-            isConnected = true;
             LogBufferDescriptor.isConnected(metaDataBuffer, true);
+            isConnected = true;
         }
     }
 
@@ -367,15 +366,15 @@ public class NetworkPublication
         final long timeNs = nanoClock.nanoTime();
         statusMessageDeadlineNs = timeNs + connectionTimeoutNs;
 
-        if (!isConnected)
-        {
-            isConnected = true;
-            LogBufferDescriptor.isConnected(metaDataBuffer, true);
-        }
-
         if (!hasReceivers)
         {
             hasReceivers = true;
+        }
+
+        if (!isConnected)
+        {
+            LogBufferDescriptor.isConnected(metaDataBuffer, true);
+            isConnected = true;
         }
 
         senderLimit.setOrdered(
@@ -656,8 +655,8 @@ public class NetworkPublication
 
         if (currentConnectedState != isConnected)
         {
-            isConnected = currentConnectedState;
             LogBufferDescriptor.isConnected(metaDataBuffer, currentConnectedState);
+            isConnected = currentConnectedState;
         }
     }
 

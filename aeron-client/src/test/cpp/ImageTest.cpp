@@ -26,6 +26,7 @@ using namespace aeron;
 using namespace std::placeholders;
 
 #define TERM_LENGTH (LogBufferDescriptor::TERM_MIN_LENGTH)
+#define PAGE_SIZE (LogBufferDescriptor::PAGE_MIN_SIZE)
 #define LOG_META_DATA_LENGTH (LogBufferDescriptor::LOG_META_DATA_LENGTH)
 #define SRC_BUFFER_LENGTH 1024
 
@@ -70,7 +71,7 @@ class ImageTest : public testing::Test, ClientConductorFixture
 public:
     ImageTest() :
         m_srcBuffer(m_src, 0),
-        m_logBuffers(std::make_shared<LogBuffers>(m_log.data(), static_cast<index_t>(m_log.size()))),
+        m_logBuffers(std::make_shared<LogBuffers>(m_log.data(), static_cast<std::int64_t>(m_log.size()), TERM_LENGTH)),
         m_subscriberPosition(m_counterValuesBuffer, SUBSCRIBER_POSITION_ID),
         m_handler(std::bind(&MockFragmentHandler::onFragment, &m_fragmentHandler, _1, _2, _3, _4)),
         m_controlledHandler(std::bind(&MockControlledFragmentHandler::onFragment, &m_controlledFragmentHandler, _1, _2, _3, _4))
@@ -85,6 +86,8 @@ public:
         m_logMetaDataBuffer = m_logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX);
 
         m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_MTU_LENGTH_OFFSET, (3 * m_srcBuffer.capacity()));
+        m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_TERM_LENGTH_OFFSET, TERM_LENGTH);
+        m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_PAGE_SIZE_OFFSET, PAGE_SIZE);
     }
 
     virtual void SetUp()

@@ -29,8 +29,10 @@ namespace aeron { namespace concurrent { namespace logbuffer {
 
 namespace LogBufferDescriptor {
 
-static const util::index_t TERM_MIN_LENGTH = 64 * 1024;
-static const std::int64_t MAX_SINGLE_MAPPING_SIZE = 0x7FFFFFFF;
+static const std::int32_t TERM_MIN_LENGTH = 64 * 1024;
+static const std::int32_t TERM_MAX_LENGTH = 1024 * 1024 * 1024;
+static const std::int32_t PAGE_MIN_SIZE = 4 * 1024;
+static const std::int32_t PAGE_MAX_SIZE = 1024 * 1024 * 1024;
 
 #if defined(__GNUC__) || _MSC_VER >= 1900
 constexpr static const int PARTITION_COUNT = 3;
@@ -96,6 +98,10 @@ static const util::index_t LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT;
  *  +---------------------------------------------------------------+
  *  |                          MTU Length                           |
  *  +---------------------------------------------------------------+
+ *  |                         Term Length                           |
+ *  +---------------------------------------------------------------+
+ *  |                          Page Size                            |
+ *  +---------------------------------------------------------------+
  *  |                      Cache Line Padding                      ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
@@ -121,7 +127,9 @@ struct LogMetaDataDefn
     std::int32_t initialTermId;
     std::int32_t defaultFrameHeaderLength;
     std::int32_t mtuLength;
-    std::int8_t pad3[(util::BitUtil::CACHE_LINE_LENGTH) - (5 * sizeof(std::int32_t))];
+    std::int32_t termLength;
+    std::int32_t pageSize;
+    std::int8_t pad3[(util::BitUtil::CACHE_LINE_LENGTH) - (7 * sizeof(std::int32_t))];
 };
 #pragma pack(pop)
 
@@ -133,10 +141,12 @@ static const util::index_t LOG_IS_CONNECTED_OFFSET = (util::index_t)offsetof(Log
 static const util::index_t LOG_INITIAL_TERM_ID_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, initialTermId);
 static const util::index_t LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, defaultFrameHeaderLength);
 static const util::index_t LOG_MTU_LENGTH_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, mtuLength);
+static const util::index_t LOG_TERM_LENGTH_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, termLength);
+static const util::index_t LOG_PAGE_SIZE_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, pageSize);
 static const util::index_t LOG_DEFAULT_FRAME_HEADER_OFFSET = (util::index_t)sizeof(LogMetaDataDefn);
-static const util::index_t LOG_META_DATA_LENGTH = (util::index_t)sizeof(LogMetaDataDefn) + LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH;
+static const util::index_t LOG_META_DATA_LENGTH = 4 * 1024;
 
-inline static void checkTermLength(std::int64_t termLength)
+inline static void checkTermLength(std::int32_t termLength)
 {
     if (termLength < TERM_MIN_LENGTH)
     {
@@ -145,11 +155,40 @@ inline static void checkTermLength(std::int64_t termLength)
                 TERM_MIN_LENGTH, termLength), SOURCEINFO);
     }
 
-    if ((termLength & (FrameDescriptor::FRAME_ALIGNMENT - 1)) != 0)
+    if (termLength > TERM_MAX_LENGTH)
     {
         throw util::IllegalStateException(
-            util::strPrintf("Term length not a multiple of %d, length=%d",
-                FrameDescriptor::FRAME_ALIGNMENT, termLength), SOURCEINFO);
+            util::strPrintf("Term length greater than max size of %d, length=%d",
+                TERM_MAX_LENGTH, termLength), SOURCEINFO);
+    }
+
+    if (!util::BitUtil::isPowerOfTwo(termLength))
+    {
+        throw util::IllegalStateException(
+            util::strPrintf("Term length not a power of 2, length=%d", termLength), SOURCEINFO);
+    }
+}
+
+inline static void checkPageSize(std::int32_t pageSize)
+{
+    if (pageSize < PAGE_MIN_SIZE)
+    {
+        throw util::IllegalStateException(
+            util::strPrintf("Page size less than min size of %d, size=%d",
+                PAGE_MIN_SIZE, pageSize), SOURCEINFO);
+    }
+
+    if (pageSize > PAGE_MAX_SIZE)
+    {
+        throw util::IllegalStateException(
+            util::strPrintf("Page Size greater than max size of %d, size=%d",
+                PAGE_MAX_SIZE, pageSize), SOURCEINFO);
+    }
+
+    if (!util::BitUtil::isPowerOfTwo(pageSize))
+    {
+        throw util::IllegalStateException(
+            util::strPrintf("Page size not a power of 2, size=%d", pageSize), SOURCEINFO);
     }
 }
 
@@ -161,6 +200,16 @@ inline static std::int32_t initialTermId(AtomicBuffer& logMetaDataBuffer)
 inline static std::int32_t mtuLength(AtomicBuffer& logMetaDataBuffer)
 {
     return logMetaDataBuffer.getInt32(LOG_MTU_LENGTH_OFFSET);
+}
+
+inline static std::int32_t termLength(AtomicBuffer& logMetaDataBuffer)
+{
+    return logMetaDataBuffer.getInt32(LOG_TERM_LENGTH_OFFSET);
+}
+
+inline static std::int32_t pageSize(AtomicBuffer& logMetaDataBuffer)
+{
+    return logMetaDataBuffer.getInt32(LOG_PAGE_SIZE_OFFSET);
 }
 
 inline static std::int32_t activeTermCount(AtomicBuffer& logMetaDataBuffer)
@@ -238,16 +287,6 @@ inline static std::int64_t computeTermBeginPosition(
     const std::int64_t termCount = activeTermId - initialTermId;
 
     return termCount << positionBitsToShift;
-}
-
-inline static std::int64_t computeLogLength(std::int64_t termLength)
-{
-    return (termLength * PARTITION_COUNT) + LOG_META_DATA_LENGTH;
-}
-
-inline static std::int64_t computeTermLength(std::int64_t logLength)
-{
-    return (logLength - LOG_META_DATA_LENGTH) / PARTITION_COUNT;
 }
 
 inline static std::int64_t rawTailVolatile(AtomicBuffer& logMetaDataBuffer)

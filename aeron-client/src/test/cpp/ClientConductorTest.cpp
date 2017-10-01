@@ -27,7 +27,8 @@ static const std::int32_t SESSION_ID = 200;
 static const std::int32_t PUBLICATION_LIMIT_COUNTER_ID = 0;
 static const std::int32_t PUBLICATION_LIMIT_COUNTER_ID_2 = 1;
 static const std::int32_t TERM_LENGTH = LogBufferDescriptor::TERM_MIN_LENGTH;
-static const std::int64_t LOG_FILE_LENGTH = LogBufferDescriptor::computeLogLength(TERM_LENGTH);
+static const std::int32_t PAGE_SIZE = LogBufferDescriptor::PAGE_MIN_SIZE;
+static const std::int64_t LOG_FILE_LENGTH = (TERM_LENGTH * 3) + LogBufferDescriptor::LOG_META_DATA_LENGTH;
 static const std::string SOURCE_IDENTITY = "127.0.0.1:43567";
 
 class ClientConductorTest : public testing::Test, public ClientConductorFixture
@@ -43,9 +44,25 @@ public:
     {
         m_toDriver.fill(0);
         m_toClients.fill(0);
-        MemoryMappedFile::createNew(m_logFileName.c_str(), 0, static_cast<size_t>(LOG_FILE_LENGTH));
-        MemoryMappedFile::createNew(m_logFileName2.c_str(), 0, static_cast<size_t>(LOG_FILE_LENGTH));
+        MemoryMappedFile::ptr_t logbuffer1 =
+            MemoryMappedFile::createNew(m_logFileName.c_str(), 0, static_cast<size_t>(LOG_FILE_LENGTH));
+        MemoryMappedFile::ptr_t logbuffer2 =
+            MemoryMappedFile::createNew(m_logFileName2.c_str(), 0, static_cast<size_t>(LOG_FILE_LENGTH));
         m_manyToOneRingBuffer.consumerHeartbeatTime(m_currentTime);
+
+        AtomicBuffer logMetaDataBuffer;
+
+        logMetaDataBuffer.wrap(
+            logbuffer1->getMemoryPtr() + (LOG_FILE_LENGTH - LogBufferDescriptor::LOG_META_DATA_LENGTH),
+            LogBufferDescriptor::LOG_META_DATA_LENGTH);
+        logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_TERM_LENGTH_OFFSET, TERM_LENGTH);
+        logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_PAGE_SIZE_OFFSET, PAGE_SIZE);
+
+        logMetaDataBuffer.wrap(
+            logbuffer2->getMemoryPtr() + (LOG_FILE_LENGTH - LogBufferDescriptor::LOG_META_DATA_LENGTH),
+            LogBufferDescriptor::LOG_META_DATA_LENGTH);
+        logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_TERM_LENGTH_OFFSET, TERM_LENGTH);
+        logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_PAGE_SIZE_OFFSET, PAGE_SIZE);
     }
 
     virtual void TearDown()

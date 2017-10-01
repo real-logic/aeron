@@ -24,61 +24,39 @@ using namespace aeron::concurrent::logbuffer;
 LogBuffers::LogBuffers(const char *filename)
 {
     const std::int64_t logLength = MemoryMappedFile::getFileSize(filename);
-    const std::int64_t termLength = LogBufferDescriptor::computeTermLength(logLength);
+
+    m_memoryMappedFiles = MemoryMappedFile::mapExisting(filename);
+
+    std::uint8_t *basePtr = m_memoryMappedFiles->getMemoryPtr();
+
+    m_buffers[LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX]
+        .wrap(basePtr + (logLength - LogBufferDescriptor::LOG_META_DATA_LENGTH),
+            LogBufferDescriptor::LOG_META_DATA_LENGTH);
+
+    const std::int32_t termLength =
+        LogBufferDescriptor::termLength(m_buffers[LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX]);
+    const std::int32_t pageSize =
+        LogBufferDescriptor::pageSize(m_buffers[LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX]);
 
     LogBufferDescriptor::checkTermLength(termLength);
+    LogBufferDescriptor::checkPageSize(pageSize);
 
-    if (logLength < LogBufferDescriptor::MAX_SINGLE_MAPPING_SIZE)
+    for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
     {
-        m_memoryMappedFiles.push_back(MemoryMappedFile::mapExisting(filename));
-
-        std::uint8_t *basePtr = m_memoryMappedFiles[0]->getMemoryPtr();
-
-        for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
-        {
-            m_buffers[i].wrap(basePtr + (i * termLength), util::convertSizeToIndex(termLength));
-        }
-
-        m_buffers[LogBufferDescriptor::PARTITION_COUNT]
-            .wrap(basePtr + (logLength - LogBufferDescriptor::LOG_META_DATA_LENGTH),
-                LogBufferDescriptor::LOG_META_DATA_LENGTH);
-    }
-    else
-    {
-        const std::int64_t metaDataSectionOffset = (termLength * LogBufferDescriptor::PARTITION_COUNT);
-        const std::int64_t metaDataSectionLength = (logLength - metaDataSectionOffset);
-
-        m_memoryMappedFiles.push_back(
-            MemoryMappedFile::mapExisting(filename, metaDataSectionOffset, metaDataSectionLength));
-
-        std::uint8_t *metaDataBasePtr = m_memoryMappedFiles[0]->getMemoryPtr();
-
-        for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
-        {
-            // one map for each term
-            m_memoryMappedFiles.push_back(MemoryMappedFile::mapExisting(filename, i * termLength, termLength));
-
-            std::uint8_t *basePtr = m_memoryMappedFiles[i + 1]->getMemoryPtr();
-
-            m_buffers[i].wrap(basePtr, util::convertSizeToIndex(termLength));
-        }
-
-        m_buffers[LogBufferDescriptor::PARTITION_COUNT].wrap(metaDataBasePtr, LogBufferDescriptor::LOG_META_DATA_LENGTH);
+        m_buffers[i].wrap(basePtr + (i * termLength), termLength);
     }
 }
 
-LogBuffers::LogBuffers(std::uint8_t *address, index_t length)
+LogBuffers::LogBuffers(std::uint8_t *address, std::int64_t logLength, std::int32_t termLength)
 {
-    const index_t termLength = (index_t)LogBufferDescriptor::computeTermLength(length);
+    m_buffers[LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX]
+        .wrap(address + (logLength - LogBufferDescriptor::LOG_META_DATA_LENGTH),
+            LogBufferDescriptor::LOG_META_DATA_LENGTH);
 
     for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
     {
         m_buffers[i].wrap(address + (i * termLength), termLength);
     }
-
-    m_buffers[LogBufferDescriptor::PARTITION_COUNT]
-        .wrap(address + (length - LogBufferDescriptor::LOG_META_DATA_LENGTH),
-            LogBufferDescriptor::LOG_META_DATA_LENGTH);
 }
 
 LogBuffers::~LogBuffers() = default;

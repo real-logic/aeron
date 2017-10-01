@@ -22,6 +22,7 @@ using namespace aeron::concurrent;
 using namespace aeron;
 
 #define TERM_LENGTH (LogBufferDescriptor::TERM_MIN_LENGTH)
+#define PAGE_SIZE (LogBufferDescriptor::PAGE_MIN_SIZE)
 #define LOG_META_DATA_LENGTH (LogBufferDescriptor::LOG_META_DATA_LENGTH)
 #define SRC_BUFFER_LENGTH 1024
 
@@ -54,7 +55,7 @@ class PublicationTest : public testing::Test, public ClientConductorFixture
 public:
     PublicationTest() :
         m_srcBuffer(m_src, 0),
-        m_logBuffers(new LogBuffers(m_log.data(), static_cast<index_t>(m_log.size()))),
+        m_logBuffers(new LogBuffers(m_log.data(), static_cast<std::int64_t>(m_log.size()), TERM_LENGTH)),
         m_publicationLimit(m_counterValuesBuffer, PUBLICATION_LIMIT_COUNTER_ID)
     {
         m_log.fill(0);
@@ -67,6 +68,8 @@ public:
         m_logMetaDataBuffer = m_logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX);
 
         m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_MTU_LENGTH_OFFSET, (3 * m_srcBuffer.capacity()));
+        m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_TERM_LENGTH_OFFSET, TERM_LENGTH);
+        m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_PAGE_SIZE_OFFSET, PAGE_SIZE);
         m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_INITIAL_TERM_ID_OFFSET, TERM_ID_1);
 
         m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_ACTIVE_TERM_COUNT_OFFSET, 0);

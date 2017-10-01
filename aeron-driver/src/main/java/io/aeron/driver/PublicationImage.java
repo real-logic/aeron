@@ -111,7 +111,8 @@ public class PublicationImage
     private final int initialTermId;
     private final boolean isReliable;
 
-    private boolean reachedEndOfLife = false;
+    private boolean noLongerActive;
+    private boolean reachedEndOfLife;
     private volatile State state = State.INIT;
 
     private final NanoClock nanoClock;
@@ -387,11 +388,16 @@ public class PublicationImage
     /**
      * Called from the {@link DriverConductor}.
      *
-     * @param nowNs                in nanoseconds
+     * @param nowNs                  in nanoseconds
      * @param statusMessageTimeoutNs for sending of Status Messages.
      */
     void trackRebuild(final long nowNs, final long statusMessageTimeoutNs)
     {
+        if (noLongerActive)
+        {
+            return;
+        }
+
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
 
@@ -654,6 +660,7 @@ public class PublicationImage
                     state(State.LINGER);
                     conductor.transitionToLinger(this);
                 }
+                noLongerActive = true;
                 break;
 
             case LINGER:
@@ -708,7 +715,7 @@ public class PublicationImage
     private boolean isEndOfStream(final UnsafeBuffer packet)
     {
         return DataHeaderFlyweight.BEGIN_END_AND_EOS_FLAGS ==
-                (packet.getByte(HeaderFlyweight.FLAGS_FIELD_OFFSET) & 0xFF);
+            (packet.getByte(HeaderFlyweight.FLAGS_FIELD_OFFSET) & 0xFF);
     }
 
     private void hwmCandidate(final long proposedPosition)

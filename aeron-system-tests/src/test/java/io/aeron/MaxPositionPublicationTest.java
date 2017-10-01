@@ -54,12 +54,14 @@ public class MaxPositionPublicationTest
              ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID);
              Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID))
         {
-            while (!publication.isConnected())
+            long resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
+            while (resultingPosition < 0)
             {
                 Thread.yield();
+                resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
             }
 
-            assertEquals(publication.maxPossiblePosition(), publication.offer(srcBuffer, 0, MESSAGE_LENGTH));
+            assertEquals(publication.maxPossiblePosition(), resultingPosition);
             assertEquals(MAX_POSITION_EXCEEDED, publication.offer(srcBuffer, 0, MESSAGE_LENGTH));
             assertEquals(MAX_POSITION_EXCEEDED, publication.offer(srcBuffer, 0, MESSAGE_LENGTH));
         }

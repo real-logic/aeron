@@ -55,7 +55,7 @@ int aeron_publication_image_create(
             correlation_id);
     aeron_publication_image_t *_image = NULL;
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
-    const uint64_t log_length = AERON_LOGBUFFER_COMPUTE_LOG_LENGTH(term_buffer_length);
+    const uint64_t log_length = aeron_logbuffer_compute_log_length((uint64_t)term_buffer_length, context->file_page_size);
     bool is_multicast = endpoint->conductor_fields.udp_channel->multicast;
     int64_t now_ns = context->nano_clock();
 
@@ -92,7 +92,12 @@ int aeron_publication_image_create(
         return -1;
     }
 
-    if (context->map_raw_log_func(&_image->mapped_raw_log, path, context->term_buffer_sparse_file, (uint64_t)term_buffer_length) < 0)
+    if (context->map_raw_log_func(
+        &_image->mapped_raw_log,
+        path,
+        context->term_buffer_sparse_file,
+        (uint64_t)term_buffer_length,
+        context->file_page_size) < 0)
     {
         aeron_free(_image->log_file_name);
         aeron_free(_image);
@@ -108,6 +113,8 @@ int aeron_publication_image_create(
 
     _image->log_meta_data->initial_term_id = initial_term_id;
     _image->log_meta_data->mtu_length = sender_mtu_length;
+    _image->log_meta_data->term_length = term_buffer_length;
+    _image->log_meta_data->page_size = (int32_t)context->file_page_size;
     _image->log_meta_data->correlation_id = correlation_id;
     _image->log_meta_data->is_connected = 0;
     _image->log_meta_data->end_of_stream_position = INT64_MAX;

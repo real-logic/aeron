@@ -85,25 +85,24 @@ static int64_t test_epoch_clock()
 }
 
 static int test_malloc_map_raw_log(
-    aeron_mapped_raw_log_t *log, const char *path, bool use_sparse_file, uint64_t term_length)
+    aeron_mapped_raw_log_t *log, const char *path, bool use_sparse_file, uint64_t term_length, uint64_t page_size)
 {
-    uint64_t log_length = AERON_LOGBUFFER_COMPUTE_LOG_LENGTH(term_length);
+    uint64_t log_length = aeron_logbuffer_compute_log_length(term_length, page_size);
 
-    log->num_mapped_files = 0;
-    log->mapped_files[0].length = 0;
-    log->mapped_files[0].addr = malloc(log_length);
+    log->mapped_file.length = 0;
+    log->mapped_file.addr = malloc(log_length);
 
-    memset(log->mapped_files[0].addr, 0, log_length);
+    memset(log->mapped_file.addr, 0, log_length);
 
     for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
     {
         log->term_buffers[i].addr =
-            (uint8_t *)log->mapped_files[0].addr + (i * term_length);
+            (uint8_t *)log->mapped_file.addr + (i * term_length);
         log->term_buffers[i].length = term_length;
     }
 
     log->log_meta_data.addr =
-        (uint8_t *)log->mapped_files[0].addr + (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
+        (uint8_t *)log->mapped_file.addr + (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
     log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
 
     log->term_length = term_length;
@@ -112,7 +111,7 @@ static int test_malloc_map_raw_log(
 
 static int test_malloc_map_raw_log_close(aeron_mapped_raw_log_t *log)
 {
-    free(log->mapped_files[0].addr);
+    free(log->mapped_file.addr);
     return 0;
 }
 

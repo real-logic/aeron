@@ -165,9 +165,13 @@ void aeron_driver_agent_conductor_to_client_interceptor(
 }
 
 int aeron_driver_agent_map_raw_log_interceptor(
-        aeron_mapped_raw_log_t *mapped_raw_log, const char *path, bool use_sparse_files, uint64_t term_length)
+    aeron_mapped_raw_log_t *mapped_raw_log,
+    const char *path,
+    bool use_sparse_files,
+    uint64_t term_length,
+    uint64_t page_size)
 {
-    int result = aeron_map_raw_log(mapped_raw_log, path, use_sparse_files, term_length);
+    int result = aeron_map_raw_log(mapped_raw_log, path, use_sparse_files, term_length, page_size);
 
     uint8_t buffer[AERON_MAX_PATH + sizeof(aeron_driver_agent_map_raw_log_op_header_t)];
     aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)buffer;

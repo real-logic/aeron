@@ -22,9 +22,6 @@
 #include <stdint.h>
 #include "concurrent/aeron_logbuffer_descriptor.h"
 
-#define AERON_PAGE_MIN_SIZE (4 * 1024)
-#define AERON_PAGE_MAX_SIZE (1024 * 1024 * 1024)
-
 typedef struct aeron_mapped_file_stct
 {
     void *addr;
@@ -54,8 +51,7 @@ typedef struct aeron_mapped_raw_log_stct
 {
     aeron_mapped_buffer_t term_buffers[AERON_LOGBUFFER_PARTITION_COUNT];
     aeron_mapped_buffer_t log_meta_data;
-    aeron_mapped_file_t mapped_files[AERON_LOGBUFFER_PARTITION_COUNT + 1];
-    size_t num_mapped_files;
+    aeron_mapped_file_t mapped_file;
     size_t term_length;
 }
 aeron_mapped_raw_log_t;
@@ -89,11 +85,15 @@ int aeron_publication_image_location(
     int32_t stream_id,
     int64_t correlation_id);
 
-typedef int (*aeron_map_raw_log_func_t)(aeron_mapped_raw_log_t *, const char *, bool, uint64_t);
+typedef int (*aeron_map_raw_log_func_t)(aeron_mapped_raw_log_t *, const char *, bool, uint64_t, uint64_t);
 typedef int (*aeron_map_raw_log_close_func_t)(aeron_mapped_raw_log_t *);
 
 int aeron_map_raw_log(
-    aeron_mapped_raw_log_t *mapped_raw_log, const char *path, bool use_sparse_files, uint64_t term_length);
+    aeron_mapped_raw_log_t *mapped_raw_log,
+    const char *path,
+    bool use_sparse_files,
+    uint64_t term_length,
+    uint64_t page_size);
 int aeron_map_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log);
 
 #endif //AERON_AERON_FILEUTIL_H

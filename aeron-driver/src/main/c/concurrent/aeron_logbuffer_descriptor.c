@@ -16,6 +16,7 @@
 
 #include "concurrent/aeron_logbuffer_descriptor.h"
 
+extern uint64_t aeron_logbuffer_compute_log_length(uint64_t term_length, uint64_t page_size);
 extern int32_t aeron_logbuffer_term_offset(int64_t raw_tail, int32_t term_length);
 extern int32_t aeron_logbuffer_term_id(int64_t raw_tail);
 extern size_t aeron_logbuffer_index_by_position(int64_t position, size_t position_bits_to_shift);

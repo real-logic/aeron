@@ -26,6 +26,8 @@
 #define AERON_LOGBUFFER_PARTITION_COUNT (3)
 #define AERON_LOGBUFFER_TERM_MIN_LENGTH (64 * 1024)
 #define AERON_LOGBUFFER_TERM_MAX_LENGTH (1024 * 1024 * 1024)
+#define AERON_PAGE_MIN_SIZE (4 * 1024)
+#define AERON_PAGE_MAX_SIZE (1024 * 1024 * 1024)
 #define AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH  (AERON_CACHE_LINE_LENGTH * 2)
 
 #define AERON_MAX_UDP_PAYLOAD_LENGTH (65504)
@@ -44,14 +46,15 @@ typedef struct aeron_logbuffer_metadata_stct
     int32_t initial_term_id;
     int32_t default_frame_header_length;
     int32_t mtu_length;
-    uint8_t pad3[(AERON_CACHE_LINE_LENGTH) - (5 * sizeof(int32_t))];
+    int32_t term_length;
+    int32_t page_size;
+    uint8_t pad3[(AERON_CACHE_LINE_LENGTH) - (7 * sizeof(int32_t))];
 }
 aeron_logbuffer_metadata_t;
 #pragma pack(pop)
 
-#define AERON_LOGBUFFER_META_DATA_LENGTH (sizeof(aeron_logbuffer_metadata_t) + AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH)
-
-#define AERON_LOGBUFFER_COMPUTE_LOG_LENGTH(term_length) ((term_length * AERON_LOGBUFFER_PARTITION_COUNT) + AERON_LOGBUFFER_META_DATA_LENGTH)
+#define AERON_LOGBUFFER_META_DATA_LENGTH \
+    (AERON_ALIGN((sizeof(aeron_logbuffer_metadata_t) + AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH), AERON_PAGE_MIN_SIZE))
 
 #define AERON_LOGBUFFER_FRAME_ALIGNMENT (32)
 
@@ -65,6 +68,11 @@ do \
     AERON_GET_VOLATILE(d, m->term_tail_counters[partition]); \
 } \
 while(false)
+
+inline uint64_t aeron_logbuffer_compute_log_length(uint64_t term_length, uint64_t page_size)
+{
+    return AERON_ALIGN(((term_length * AERON_LOGBUFFER_PARTITION_COUNT) + AERON_LOGBUFFER_META_DATA_LENGTH), page_size);
+}
 
 inline int32_t aeron_logbuffer_term_offset(int64_t raw_tail, int32_t term_length)
 {

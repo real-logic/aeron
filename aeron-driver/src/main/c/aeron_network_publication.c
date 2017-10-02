@@ -68,7 +68,7 @@ int aeron_network_publication_create(
             registration_id);
     aeron_network_publication_t *_pub = NULL;
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
-    const uint64_t log_length = AERON_LOGBUFFER_COMPUTE_LOG_LENGTH(term_buffer_length);
+    const uint64_t log_length = aeron_logbuffer_compute_log_length(term_buffer_length, context->file_page_size);
     const int64_t now_ns = context->nano_clock();
 
     *publication = NULL;
@@ -104,7 +104,8 @@ int aeron_network_publication_create(
         return -1;
     }
 
-    if (context->map_raw_log_func(&_pub->mapped_raw_log, path, context->term_buffer_sparse_file, term_buffer_length) < 0)
+    if (context->map_raw_log_func(
+        &_pub->mapped_raw_log, path, context->term_buffer_sparse_file, term_buffer_length, context->file_page_size) < 0)
     {
         aeron_free(_pub->log_file_name);
         aeron_free(_pub);
@@ -128,6 +129,8 @@ int aeron_network_publication_create(
     _pub->log_meta_data->active_term_count = 0;
     _pub->log_meta_data->initial_term_id = initial_term_id;
     _pub->log_meta_data->mtu_length = (int32_t)mtu_length;
+    _pub->log_meta_data->term_length = (int32_t)term_buffer_length;
+    _pub->log_meta_data->page_size = (int32_t)context->file_page_size;
     _pub->log_meta_data->correlation_id = registration_id;
     _pub->log_meta_data->is_connected = 0;
     aeron_logbuffer_fill_default_header(

@@ -52,6 +52,7 @@ import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
  */
 public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 {
+    private final long timerIntervalNs;
     private final long imageLivenessTimeoutNs;
     private final long clientLivenessTimeoutNs;
     private final long publicationUnblockTimeoutNs;
@@ -86,6 +87,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     public DriverConductor(final Context ctx)
     {
         context = ctx;
+        timerIntervalNs = ctx.timerIntervalNs();
         imageLivenessTimeoutNs = ctx.imageLivenessTimeoutNs();
         clientLivenessTimeoutNs = ctx.clientLivenessTimeoutNs();
         publicationUnblockTimeoutNs = ctx.publicationUnblockTimeoutNs();
@@ -1171,7 +1173,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     {
         int workCount = 0;
 
-        if (nowNs > (timeOfLastTimerCheckNs + TIMER_INTERVAL_NS))
+        if (nowNs > (timeOfLastTimerCheckNs + timerIntervalNs))
         {
             heartbeatAndCheckTimers(nowNs);
             checkForBlockedToDriverCommands(nowNs);

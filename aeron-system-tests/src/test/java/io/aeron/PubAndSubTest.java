@@ -21,6 +21,7 @@ import io.aeron.driver.reports.LossReport;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
+import org.agrona.collections.MutableLong;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Test;
@@ -85,7 +86,9 @@ public class PubAndSubTest
     private void launch(final String channel) throws Exception
     {
         context.threadingMode(THREADING_MODE);
-        context.publicationConnectionTimeoutNs(TimeUnit.SECONDS.toNanos(1));
+        context.publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
+        context.timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
+
         driver = MediaDriver.launch(context);
         publishingClient = Aeron.connect();
         subscribingClient = Aeron.connect();
@@ -123,8 +126,12 @@ public class PubAndSubTest
             () -> fragmentsRead.value > 0,
             (i) ->
             {
-                fragmentsRead.value += subscription.poll(fragmentHandler, 10);
-                Thread.yield();
+                final int fragments = subscription.poll(fragmentHandler, 10);
+                if (0 == fragments)
+                {
+                    Thread.yield();
+                }
+                fragmentsRead.value += fragments;
             },
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(9900));
@@ -144,13 +151,17 @@ public class PubAndSubTest
 
         publishMessage();
 
-        final MutableInteger fragmentsRead = new MutableInteger();
+        final MutableLong bytesRead = new MutableLong();
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead.value > 0,
+            () -> bytesRead.value > 0,
             (i) ->
             {
-                fragmentsRead.value += (int)subscription.rawPoll(rawBlockHandler, Integer.MAX_VALUE);
-                Thread.yield();
+                final long bytes = subscription.rawPoll(rawBlockHandler, Integer.MAX_VALUE);
+                if (0 == bytes)
+                {
+                    Thread.yield();
+                }
+                bytesRead.value += bytes;
             },
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(9900));
@@ -207,8 +218,12 @@ public class PubAndSubTest
                 () -> fragmentsRead.value > 0,
                 (j) ->
                 {
-                    fragmentsRead.value += subscription.poll(fragmentHandler, 10);
-                    Thread.yield();
+                    final int fragments = subscription.poll(fragmentHandler, 10);
+                    if (0 == fragments)
+                    {
+                        Thread.yield();
+                    }
+                    fragmentsRead.value += fragments;
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(500));
@@ -250,8 +265,12 @@ public class PubAndSubTest
                 () -> fragmentsRead.value > 0,
                 (j) ->
                 {
-                    fragmentsRead.value += subscription.poll(fragmentHandler, 10);
-                    Thread.yield();
+                    final int fragments = subscription.poll(fragmentHandler, 10);
+                    if (0 == fragments)
+                    {
+                        Thread.yield();
+                    }
+                    fragmentsRead.value += fragments;
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(500));
@@ -283,8 +302,12 @@ public class PubAndSubTest
             () -> fragmentsRead.value == 9,
             (j) ->
             {
-                fragmentsRead.value += subscription.poll(fragmentHandler, 10);
-                Thread.yield();
+                final int fragments = subscription.poll(fragmentHandler, 10);
+                if (0 == fragments)
+                {
+                    Thread.yield();
+                }
+                fragmentsRead.value += fragments;
             },
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(500));
@@ -351,8 +374,12 @@ public class PubAndSubTest
                 () -> mutableInteger.value > 0,
                 (j) ->
                 {
-                    mutableInteger.value += subscription.poll(fragmentHandler, 10);
-                    Thread.yield();
+                    final int fragments = subscription.poll(fragmentHandler, 10);
+                    if (0 == fragments)
+                    {
+                        Thread.yield();
+                    }
+                    mutableInteger.value += fragments;
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(900));
@@ -416,8 +443,12 @@ public class PubAndSubTest
                 () -> fragmentsRead.value >= numMessagesPerBatch,
                 (j) ->
                 {
-                    fragmentsRead.value += subscription.poll(fragmentHandler, 10);
-                    Thread.yield();
+                    final int fragments = subscription.poll(fragmentHandler, 10);
+                    if (0 == fragments)
+                    {
+                        Thread.yield();
+                    }
+                    fragmentsRead.value += fragments;
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(900));
@@ -463,8 +494,12 @@ public class PubAndSubTest
                 () -> fragmentsRead.value >= numMessagesPerBatch,
                 (j) ->
                 {
-                    fragmentsRead.value += subscription.poll(fragmentHandler, 10);
-                    Thread.yield();
+                    final int fragments = subscription.poll(fragmentHandler, 10);
+                    if (0 == fragments)
+                    {
+                        Thread.yield();
+                    }
+                    fragmentsRead.value += fragments;
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(900));
@@ -481,8 +516,12 @@ public class PubAndSubTest
             () -> fragmentsRead.value > 0,
             (j) ->
             {
-                fragmentsRead.value += subscription.poll(fragmentHandler, 10);
-                Thread.yield();
+                final int fragments = subscription.poll(fragmentHandler, 10);
+                if (0 == fragments)
+                {
+                    Thread.yield();
+                }
+                fragmentsRead.value += fragments;
             },
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(900));
@@ -525,8 +564,12 @@ public class PubAndSubTest
                 () -> fragmentsRead.value > 0,
                 (j) ->
                 {
-                    fragmentsRead.value += subscription.poll(fragmentHandler, 10);
-                    Thread.yield();
+                    final int fragments = subscription.poll(fragmentHandler, 10);
+                    if (0 == fragments)
+                    {
+                        Thread.yield();
+                    }
+                    fragmentsRead.value += fragments;
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(500));
@@ -575,8 +618,12 @@ public class PubAndSubTest
                 () -> fragmentsRead.value >= numMessagesPerBatch,
                 (j) ->
                 {
-                    fragmentsRead.value += subscription.poll(fragmentHandler, 10);
-                    Thread.yield();
+                    final int fragments = subscription.poll(fragmentHandler, 10);
+                    if (0 == fragments)
+                    {
+                        Thread.yield();
+                    }
+                    fragmentsRead.value += fragments;
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(900));
@@ -635,8 +682,12 @@ public class PubAndSubTest
             () -> fragmentsRead.value >= messagesToReceive,
             (j) ->
             {
-                fragmentsRead.value += subscription.poll(fragmentHandler, 10);
-                Thread.yield();
+                final int fragments = subscription.poll(fragmentHandler, 10);
+                if (0 == fragments)
+                {
+                    Thread.yield();
+                }
+                fragmentsRead.value += fragments;
             },
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(500));
@@ -681,8 +732,12 @@ public class PubAndSubTest
                 () -> fragmentsRead.value > 0,
                 (j) ->
                 {
-                    fragmentsRead.value += subscription.poll(fragmentHandler, 10);
-                    Thread.yield();
+                    final int fragments = subscription.poll(fragmentHandler, 10);
+                    if (0 == fragments)
+                    {
+                        Thread.yield();
+                    }
+                    fragmentsRead.value += fragments;
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(900));
@@ -714,8 +769,12 @@ public class PubAndSubTest
                 () -> fragmentsRead.value > 0,
                 (j) ->
                 {
-                    fragmentsRead.value += subscription.poll(fragmentHandler, 10);
-                    Thread.yield();
+                    final int fragments = subscription.poll(fragmentHandler, 10);
+                    if (0 == fragments)
+                    {
+                        Thread.yield();
+                    }
+                    fragmentsRead.value += fragments;
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(900));
@@ -747,8 +806,6 @@ public class PubAndSubTest
 
         launch(channel);
 
-        Assume.assumeThat(channel, not(IPC_URI));
-
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publication.offer(buffer, 0, messageLength) < 0L)
@@ -763,8 +820,12 @@ public class PubAndSubTest
             () -> fragmentsRead.value > numFramesToExpect,
             (j) ->
             {
-                fragmentsRead.value += subscription.poll(fragmentHandler, 10);
-                Thread.yield();
+                final int fragments = subscription.poll(fragmentHandler, 10);
+                if (0 == fragments)
+                {
+                    Thread.yield();
+                }
+                fragmentsRead.value += fragments;
             },
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(500));
@@ -791,7 +852,7 @@ public class PubAndSubTest
 
         while (publication.isConnected())
         {
-            Thread.sleep(1);
+            Thread.yield();
         }
     }
 }

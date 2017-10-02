@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -48,8 +49,10 @@ public class PublicationUnblockTest
     public void shouldUnblockNonCommittedMessage(final String channel) throws Exception
     {
         final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
-        final MediaDriver.Context ctx = new MediaDriver.Context();
-        ctx.publicationUnblockTimeoutNs(TimeUnit.MILLISECONDS.toNanos(10));
+        final MediaDriver.Context ctx = new MediaDriver.Context()
+            .threadingMode(ThreadingMode.SHARED)
+            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
+            .publicationUnblockTimeoutNs(TimeUnit.MILLISECONDS.toNanos(10));
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
              Aeron client = Aeron.connect(new Aeron.Context());
@@ -92,7 +95,13 @@ public class PublicationUnblockTest
             int numFragments = 0;
             do
             {
-                numFragments += subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
+                final int fragments = subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
+                if (numFragments == 0)
+                {
+                    Thread.yield();
+                }
+
+                numFragments += fragments;
             }
             while (numFragments < expectedFragments);
 

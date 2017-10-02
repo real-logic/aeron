@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
@@ -59,7 +60,8 @@ public class ExclusivePublicationTest
         final AtomicInteger imageCounter = new AtomicInteger();
         final AvailableImageHandler availableImageHandler = (image) -> imageCounter.getAndIncrement();
 
-        final MediaDriver.Context driverCtx = new MediaDriver.Context();
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .threadingMode(ThreadingMode.SHARED);
         final Aeron.Context clientCtx = new Aeron.Context().availableImageHandler(availableImageHandler);
 
         try (MediaDriver ignore = MediaDriver.launch(driverCtx);

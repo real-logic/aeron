@@ -444,6 +444,7 @@ public final class MediaDriver implements AutoCloseable
         private boolean performStorageChecks = Configuration.PERFORM_STORAGE_CHECKS;
         private boolean spiesSimulateConnection = Configuration.SPIES_SIMULATE_CONNECTION;
 
+        private long timerIntervalNs = Configuration.TIMER_INTERVAL_NS;
         private long clientLivenessTimeoutNs = Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
         private long imageLivenessTimeoutNs = Configuration.IMAGE_LIVENESS_TIMEOUT_NS;
         private long publicationUnblockTimeoutNs = Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS;
@@ -715,6 +716,28 @@ public final class MediaDriver implements AutoCloseable
         public Context filePageSize(final int filePageSize)
         {
             this.filePageSize = filePageSize;
+            return this;
+        }
+
+        /**
+         * Interval in nanoseconds between checks for timers and timeouts.
+         *
+         * @return nanoseconds between checks for timers and timeouts.
+         */
+        public long timerIntervalNs()
+        {
+            return timerIntervalNs;
+        }
+
+        /**
+         * Interval in nanoseconds between checks for timers and timeouts.
+         *
+         * @param timerIntervalNs nanoseconds between checks for timers and timeouts.
+         * @return this for a fluent API.
+         */
+        public Context timerIntervalNs(final long timerIntervalNs)
+        {
+            this.timerIntervalNs = timerIntervalNs;
             return this;
         }
 

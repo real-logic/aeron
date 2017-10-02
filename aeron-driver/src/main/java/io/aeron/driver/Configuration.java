@@ -618,9 +618,19 @@ public class Configuration
         getProperty(THREADING_MODE_PROP_NAME, DEDICATED.name()));
 
     /**
+     * Interval in between checks for timers and timeouts.
+     */
+    public static final String TIMER_INTERVAL_PROP_NAME = "aeron.timer.interval";
+
+    /**
+     * Default interval in between checks for timers and timeouts.
+     */
+    public static final long DEFAULT_TIMER_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
+
+    /**
      * How often to check liveness and cleanup timers in nanoseconds.
      */
-    public static final long TIMER_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
+    public static final long TIMER_INTERVAL_NS = getLong(TIMER_INTERVAL_PROP_NAME, DEFAULT_TIMER_INTERVAL_NS);
 
     /**
      * Property name for {@link SendChannelEndpointSupplier}.

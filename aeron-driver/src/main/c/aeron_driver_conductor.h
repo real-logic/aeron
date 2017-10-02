@@ -33,7 +33,6 @@
 #include "aeron_publication_image.h"
 #include "reports/aeron_loss_reporter.h"
 
-#define AERON_DRIVER_CONDUCTOR_TIMEOUT_CHECK_NS (1 * 1000 * 1000 * 1000)
 #define AERON_DRIVER_CONDUCTOR_LINGER_RESOURCE_TIMEOUT_NS (5 * 1000 * 1000 * 1000L)
 
 typedef struct aeron_publication_link_stct

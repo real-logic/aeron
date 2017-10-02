@@ -22,6 +22,9 @@
 #include <stdint.h>
 #include "concurrent/aeron_logbuffer_descriptor.h"
 
+#define AERON_PAGE_MIN_SIZE (4 * 1024)
+#define AERON_PAGE_MAX_SIZE (1024 * 1024 * 1024)
+
 typedef struct aeron_mapped_file_stct
 {
     void *addr;

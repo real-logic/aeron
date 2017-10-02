@@ -188,6 +188,11 @@ typedef struct aeron_driver_stct aeron_driver_t;
 #define AERON_PUBLICATION_CONNECTION_TIMEOUT_ENV_VAR "AERON_PUBLICATION_CONNECTION_TIMEOUT"
 
 /**
+ * Interval (in nanoseconds) between checks for timers and timeouts.
+ */
+#define AERON_TIMER_INTERVAL_ENV_VAR "AERON_TIMER_INTERVAL"
+
+/**
  * Idle strategy to be employed by Sender for DEDICATED Threading Mode.
  */
 #define AERON_SENDER_IDLE_STRATEGY_ENV_VAR "AERON_SENDER_IDLE_STRATEGY"

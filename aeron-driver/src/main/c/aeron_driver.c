@@ -411,6 +411,38 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
     return result;
 }
 
+int aeron_driver_validate_page_size(aeron_driver_t *driver)
+{
+    if (driver->context->file_page_size < AERON_PAGE_MIN_SIZE)
+    {
+        aeron_set_err(
+            EINVAL,
+            "Page size less than min size of %" PRIu64 ": page size=%" PRIu64,
+            AERON_PAGE_MIN_SIZE, driver->context->file_page_size);
+        return -1;
+    }
+
+    if (driver->context->file_page_size > AERON_PAGE_MAX_SIZE)
+    {
+        aeron_set_err(
+            EINVAL,
+            "Page size greater than max size of %" PRIu64 ": page size=%" PRIu64,
+            AERON_PAGE_MAX_SIZE, driver->context->file_page_size);
+        return -1;
+    }
+
+    if (!AERON_IS_POWER_OF_TWO(driver->context->file_page_size))
+    {
+        aeron_set_err(
+            EINVAL,
+            "Page size not a power of 2: page size=%" PRIu64,
+            driver->context->file_page_size);
+        return -1;
+    }
+
+    return 0;
+}
+
 int aeron_driver_shared_do_work(void *clientd)
 {
     aeron_driver_t *driver = (aeron_driver_t *)clientd;
@@ -474,6 +506,11 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
         _driver->runners[i].state = AERON_AGENT_STATE_UNUSED;
         _driver->runners[i].role_name = NULL;
         _driver->runners[i].on_close = NULL;
+    }
+
+    if (aeron_driver_validate_page_size(_driver) < 0)
+    {
+        return -1;
     }
 
     if (aeron_driver_validate_sufficient_socket_buffer_lengths(_driver) < 0)

@@ -84,6 +84,7 @@ typedef struct aeron_driver_context_stct
     uint64_t image_liveness_timeout_ns;         /* aeron.image.liveness.timeout = 10s */
     uint64_t publication_unblock_timeout_ns;    /* aeron.publication.unblock.timeout = 10s */
     uint64_t publication_connection_timeout_ns; /* aeron.publication.connection.timeout = 5s */
+    uint64_t timer_interval_ns;                 /* aeron.timer.interval = 1s */
     size_t to_driver_buffer_length;             /* aeron.conductor.buffer.length = 1MB + trailer*/
     size_t to_clients_buffer_length;            /* aeron.clients.buffer.length = 1MB + trailer */
     size_t counters_values_buffer_length;       /* aeron.counters.buffer.length = 1MB */

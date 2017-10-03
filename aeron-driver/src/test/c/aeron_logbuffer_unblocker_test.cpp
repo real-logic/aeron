@@ -252,6 +252,24 @@ TEST_F(LogBufferUnblockerTest, shouldUnblockWhenPositionHasNonCommittedMessageAn
         blocked_position + message_length);
 }
 
+TEST_F(LogBufferUnblockerTest, shouldUnblockWhenPositionHasCommittedMessageAndTailAtEndOfTermButNotRotated)
+{
+    int64_t blocked_position = TERM_LENGTH;
+
+    m_log_meta_data->term_tail_counters[0] = (int64_t)TERM_ID << 32 | TERM_LENGTH;
+
+    ASSERT_TRUE(aeron_logbuffer_unblocker_unblock(m_mapped_buffers, m_log_meta_data, blocked_position));
+
+    EXPECT_EQ(m_log_meta_data->active_term_count, 1);
+
+    int64_t raw_tail;
+    AERON_LOGBUFFER_RAWTAIL_VOLATILE(raw_tail, m_log_meta_data);
+    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
+
+    EXPECT_EQ(term_id, (TERM_ID + 1));
+    EXPECT_EQ(aeron_logbuffer_compute_position(term_id, 0, m_position_bits_to_shift, TERM_ID), blocked_position);
+}
+
 TEST_F(LogBufferUnblockerTest, shouldUnblockWhenPositionHasNonCommittedMessageAndTailPastEndOfTerm)
 {
     int32_t message_length = AERON_DATA_HEADER_LENGTH * 4;

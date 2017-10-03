@@ -139,7 +139,7 @@ inline bool aeron_logbuffer_cas_active_term_count(
     return aeron_cmpxchg32(&log_meta_data->active_term_count, expected_term_count, update_term_count);
 }
 
-inline void aeron_logbuffer_rotate_log(
+inline bool aeron_logbuffer_rotate_log(
     aeron_logbuffer_metadata_t *log_meta_data, int32_t current_term_count, int32_t current_term_id)
 {
     const int32_t next_term_id = current_term_id + 1;
@@ -158,7 +158,7 @@ inline void aeron_logbuffer_rotate_log(
     }
     while (!aeron_logbuffer_cas_raw_tail(log_meta_data, next_index, raw_tail, (int64_t)next_term_id << 32));
 
-    aeron_logbuffer_cas_active_term_count(log_meta_data, current_term_count, next_term_count);
+    return aeron_logbuffer_cas_active_term_count(log_meta_data, current_term_count, next_term_count);
 }
 
 inline void aeron_logbuffer_fill_default_header(

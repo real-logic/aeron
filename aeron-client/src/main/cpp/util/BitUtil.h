@@ -84,8 +84,11 @@ namespace BitUtil
         return __builtin_clz(value);
 #elif defined(_MSC_VER)
         unsigned long r;
-        _BitScanReverse(&r, (unsigned long)value);
-        return 31 - (int)r;
+
+        if (_BitScanReverse(&r, (unsigned long)value))
+            return 31 - (int)r;
+
+        return 32;
 #else
 #error "do not understand how to clz"
 #endif
@@ -99,8 +102,11 @@ namespace BitUtil
         return __builtin_ctz(value);
 #elif defined(_MSC_VER)
         unsigned long r;
-        _BitScanForward(&r, (unsigned long)value);
-        return r;
+
+        if (_BitScanForward(&r, (unsigned long)value))
+            return r;
+
+        return 32;
 #else
         static_assert(std::is_integral<value_t>::value, "numberOfTrailingZeroes only available on integral types");
         static_assert(sizeof(value_t) <= 4, "numberOfTrailingZeroes only available on up to 32-bit integral types");
@@ -130,11 +136,6 @@ namespace BitUtil
     inline value_t findNextPowerOfTwo(value_t value) AERON_NOEXCEPT
     {
         static_assert(std::is_integral<value_t>::value, "findNextPowerOfTwo only available on integral types");
-
-#if defined(__GNUC__)
-        if (sizeof(value) == sizeof(unsigned int))
-            return 1 << (32 - numberOfLeadingZeroes(value - 1));
-#endif
 
         value--;
 

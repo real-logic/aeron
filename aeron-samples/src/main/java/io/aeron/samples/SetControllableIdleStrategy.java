@@ -16,11 +16,9 @@
 package io.aeron.samples;
 
 import io.aeron.Aeron;
-import io.aeron.driver.status.SystemCounterDescriptor;
-import org.agrona.collections.MutableInteger;
+import io.aeron.driver.status.StatusUtil;
 import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.status.StatusIndicator;
-import org.agrona.concurrent.status.UnsafeBufferStatusIndicator;
 
 public class SetControllableIdleStrategy
 {
@@ -29,24 +27,10 @@ public class SetControllableIdleStrategy
         try (Aeron aeron = Aeron.connect())
         {
             final CountersReader countersReader = aeron.countersReader();
-            final MutableInteger id = new MutableInteger();
+            final StatusIndicator statusIndicator = StatusUtil.controllableIdleStrategy(countersReader);
 
-            id.value = -1;
-
-            countersReader.forEach(
-                (counterId, typeId, keyBuffer, label) ->
-                {
-                    if (counterId == SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY.id() &&
-                        label.equals(SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY.label()))
-                    {
-                        id.value = counterId;
-                    }
-                });
-
-            if (-1 != id.value)
+            if (null != statusIndicator)
             {
-                final StatusIndicator statusIndicator =
-                    new UnsafeBufferStatusIndicator(countersReader.valuesBuffer(), id.value);
                 final int status = Integer.parseInt(args[0]);
 
                 statusIndicator.setOrdered(status);

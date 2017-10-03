@@ -23,6 +23,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.After;
@@ -33,7 +34,6 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.aeron.SystemTestHelper.spyForChannel;
 import static org.junit.Assert.assertFalse;
@@ -105,7 +105,7 @@ public class SpySimulatedConnectionTest
         publication = client.addPublication(channel, STREAM_ID);
         spy = client.addSubscription(spyForChannel(channel), STREAM_ID);
 
-        while (spy.hasNoImages())
+        while (!spy.isConnected())
         {
             Thread.yield();
         }
@@ -119,7 +119,8 @@ public class SpySimulatedConnectionTest
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
-        driverContext.publicationConnectionTimeoutNs(TimeUnit.SECONDS.toNanos(1));
+        driverContext.publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(250));
+        driverContext.timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
         driverContext.spiesSimulateConnection(true);
 
         launch();
@@ -127,12 +128,7 @@ public class SpySimulatedConnectionTest
         publication = client.addPublication(channel, STREAM_ID);
         spy = client.addSubscription(spyForChannel(channel), STREAM_ID);
 
-        while (spy.hasNoImages())
-        {
-            Thread.yield();
-        }
-
-        while (!publication.isConnected())
+        while (!spy.isConnected() || !publication.isConnected())
         {
             Thread.yield();
         }
@@ -144,13 +140,17 @@ public class SpySimulatedConnectionTest
                 Thread.yield();
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
+            final MutableInteger fragmentsRead = new MutableInteger();
             SystemTestHelper.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead.addAndGet(spy.poll(fragmentHandlerSpy, 10));
-                    Thread.yield();
+                    final int fragments = spy.poll(fragmentHandlerSpy, 10);
+                    if (0 == fragments)
+                    {
+                        Thread.yield();
+                    }
+                    fragmentsRead.value += fragments;
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(500));
@@ -172,7 +172,8 @@ public class SpySimulatedConnectionTest
         int numFragmentsFromSpy = 0;
         int numFragmentsFromSubscription = 0;
 
-        driverContext.publicationConnectionTimeoutNs(TimeUnit.SECONDS.toNanos(1));
+        driverContext.publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(250));
+        driverContext.timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
         driverContext.spiesSimulateConnection(true);
 
         launch();
@@ -181,17 +182,12 @@ public class SpySimulatedConnectionTest
         spy = client.addSubscription(spyForChannel(channel), STREAM_ID);
         subscription = client.addSubscription(channel, STREAM_ID);
 
-        while (spy.hasNoImages() || subscription.hasNoImages())
+        while (!spy.isConnected() || !subscription.isConnected() || !publication.isConnected())
         {
             Thread.yield();
         }
 
-        while (!publication.isConnected())
-        {
-            Thread.yield();
-        }
-
-        for (long i = 0;
+        for (int i = 0;
              numFragmentsFromSpy < numMessagesToSend || numFragmentsFromSubscription < numMessagesToSend;
              i++)
         {
@@ -237,7 +233,8 @@ public class SpySimulatedConnectionTest
         int numFragmentsReadFromSubscription = 0;
         boolean isSubscriptionClosed = false;
 
-        driverContext.publicationConnectionTimeoutNs(TimeUnit.SECONDS.toNanos(1));
+        driverContext.publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(250));
+        driverContext.timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
         driverContext.spiesSimulateConnection(true);
 
         launch();
@@ -246,12 +243,7 @@ public class SpySimulatedConnectionTest
         spy = client.addSubscription(spyForChannel(channel), STREAM_ID);
         subscription = client.addSubscription(channel, STREAM_ID);
 
-        while (spy.hasNoImages() || subscription.hasNoImages())
-        {
-            Thread.yield();
-        }
-
-        while (!publication.isConnected())
+        while (!spy.isConnected() || !subscription.isConnected() || !publication.isConnected())
         {
             Thread.yield();
         }

@@ -182,7 +182,7 @@ public class CommonContext implements AutoCloseable
      */
     public static String generateRandomDirName()
     {
-        return AERON_DIR_PROP_DEFAULT + "-" + UUID.randomUUID().toString();
+        return AERON_DIR_PROP_DEFAULT + '-' + UUID.randomUUID().toString();
     }
 
     /**
@@ -251,7 +251,7 @@ public class CommonContext implements AutoCloseable
      * of the data buffers.
      *
      * @param dirName New top level Aeron directory.
-     * @return this Object for method chaining.
+     * @return this for a fluent API.
      */
     public CommonContext aeronDirectoryName(final String dirName)
     {
@@ -284,7 +284,7 @@ public class CommonContext implements AutoCloseable
      * Set the buffer containing the counter meta data. Testing/internal purposes only.
      *
      * @param countersMetaDataBuffer The new counter meta data buffer.
-     * @return this Object for method chaining.
+     * @return this for a fluent API.
      */
     public CommonContext countersMetaDataBuffer(final UnsafeBuffer countersMetaDataBuffer)
     {
@@ -306,7 +306,7 @@ public class CommonContext implements AutoCloseable
      * Set the buffer containing the counters. Testing/internal purposes only.
      *
      * @param countersValuesBuffer The new counters buffer.
-     * @return this Object for method chaining.
+     * @return this for a fluent API.
      */
     public CommonContext countersValuesBuffer(final UnsafeBuffer countersValuesBuffer)
     {
@@ -328,7 +328,7 @@ public class CommonContext implements AutoCloseable
      * Set the driver timeout in milliseconds
      *
      * @param driverTimeoutMs to indicate liveness of driver
-     * @return driver timeout in milliseconds
+     * @return this for a fluent API.
      */
     public CommonContext driverTimeoutMs(final long driverTimeoutMs)
     {

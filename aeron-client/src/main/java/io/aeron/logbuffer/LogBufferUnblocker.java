@@ -48,11 +48,10 @@ public class LogBufferUnblocker
             return rotateLog(logMetaDataBuffer, activeTermCount, termId);
         }
 
-        final UnsafeBuffer termBuffer = termBuffers[index];
         final int tailOffset = termOffset(rawTail, termLength);
         final int blockedOffset = computeTermOffsetFromPosition(blockedPosition, positionBitsToShift);
 
-        switch (TermUnblocker.unblock(logMetaDataBuffer, termBuffer, blockedOffset, tailOffset, termId))
+        switch (TermUnblocker.unblock(logMetaDataBuffer, termBuffers[index], blockedOffset, tailOffset, termId))
         {
             case UNBLOCKED_TO_END:
                 rotateLog(logMetaDataBuffer, activeTermCount, termId);

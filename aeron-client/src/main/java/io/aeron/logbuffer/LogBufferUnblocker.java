@@ -37,14 +37,20 @@ public class LogBufferUnblocker
     {
         final int termLength = termBuffers[0].capacity();
         final int positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
-        final int index = indexByPosition(blockedPosition, positionBitsToShift);
-        final UnsafeBuffer termBuffer = termBuffers[index];
+        final int activeTermCount = activeTermCount(logMetaDataBuffer);
+        final int expectedTermCount = (int)(blockedPosition >> positionBitsToShift);
+        final int index = indexByTermCount(activeTermCount);
         final long rawTail = rawTailVolatile(logMetaDataBuffer, index);
         final int termId = termId(rawTail);
+
+        if (activeTermCount == (expectedTermCount - 1) && 0 == (blockedPosition & (termLength - 1)))
+        {
+            return rotateLog(logMetaDataBuffer, activeTermCount, termId);
+        }
+
+        final UnsafeBuffer termBuffer = termBuffers[index];
         final int tailOffset = termOffset(rawTail, termLength);
         final int blockedOffset = computeTermOffsetFromPosition(blockedPosition, positionBitsToShift);
-
-        boolean result = false;
 
         switch (TermUnblocker.unblock(logMetaDataBuffer, termBuffer, blockedOffset, tailOffset, termId))
         {
@@ -53,9 +59,9 @@ public class LogBufferUnblocker
                 rotateLog(logMetaDataBuffer, termCount, termId);
                 // fall through
             case UNBLOCKED:
-                result = true;
+                return true;
         }
 
-        return result;
+        return false;
     }
 }

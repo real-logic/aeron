@@ -530,6 +530,19 @@ public class LogBufferDescriptor
     }
 
     /**
+     * Compute the current position in absolute number of bytes.
+     *
+     * @param termCount           of terms since the initial term.
+     * @param termOffset          in the term.
+     * @param positionBitsToShift number of times to left shift the term count
+     * @return the absolute position in bytes
+     */
+    public static long computePosition(final int termCount, final int termOffset, final int positionBitsToShift)
+    {
+        return (termCount << positionBitsToShift) + termOffset;
+    }
+
+    /**
      * Compute the current position in absolute number of bytes for the beginning of a term.
      *
      * @param activeTermId        active term id.
@@ -643,8 +656,9 @@ public class LogBufferDescriptor
      * @param logMetaDataBuffer for the meta data.
      * @param currentTermCount  from which to rotate.
      * @param currentTermId     to be used in the default headers.
+     * @return true if log was rotated.
      */
-    public static void rotateLog(
+    public static boolean rotateLog(
         final UnsafeBuffer logMetaDataBuffer, final int currentTermCount, final int currentTermId)
     {
         final int nextTermId = currentTermId + 1;
@@ -663,7 +677,7 @@ public class LogBufferDescriptor
         }
         while (!casRawTail(logMetaDataBuffer, nextIndex, rawTail, packTail(nextTermId, 0)));
 
-        casActiveTermCount(logMetaDataBuffer, currentTermCount, nextTermCount);
+        return casActiveTermCount(logMetaDataBuffer, currentTermCount, nextTermCount);
     }
 
     /**

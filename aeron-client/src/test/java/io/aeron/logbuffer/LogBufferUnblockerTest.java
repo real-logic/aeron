@@ -18,6 +18,7 @@ package io.aeron.logbuffer;
 import org.junit.Before;
 import org.junit.Test;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.mockito.InOrder;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -31,8 +32,7 @@ public class LogBufferUnblockerTest
 {
     private static final int TERM_LENGTH = TERM_MIN_LENGTH;
     private static final int TERM_ID_1 = 1;
-    private static final int PARTITION_INDEX = 0;
-    private static final int TERM_TAIL_COUNTER_OFFSET = TERM_TAIL_COUNTERS_OFFSET + (PARTITION_INDEX * SIZE_OF_LONG);
+    private static final int TERM_TAIL_COUNTER_OFFSET = TERM_TAIL_COUNTERS_OFFSET;
 
     private final UnsafeBuffer logMetaDataBuffer = spy(new UnsafeBuffer(allocateDirect(LOG_META_DATA_LENGTH)));
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
@@ -111,6 +111,27 @@ public class LogBufferUnblockerTest
             is(blockedPosition + messageLength));
 
         verify(logMetaDataBuffer).compareAndSetInt(LOG_ACTIVE_TERM_COUNT_OFFSET, 0, 1);
+    }
+
+    @Test
+    public void shouldUnblockWhenPositionHasCommittedMessageAndTailAtEndOfTermButNotRotated()
+    {
+        final long blockedPosition = TERM_LENGTH;
+
+        final int termTailCounterTwoOffset = TERM_TAIL_COUNTER_OFFSET + SIZE_OF_LONG;
+        logMetaDataBuffer.getAndAddLong(TERM_TAIL_COUNTER_OFFSET, TERM_LENGTH);
+
+        assertTrue(LogBufferUnblocker.unblock(termBuffers, logMetaDataBuffer, blockedPosition));
+
+        final long rawTail = rawTailVolatile(logMetaDataBuffer);
+        final int termId = termId(rawTail);
+        assertThat(termId, is(TERM_ID_1 + 1));
+        assertThat(computePosition(termId, 0, positionBitsToShift, TERM_ID_1), is(blockedPosition));
+
+        final InOrder inOrder = inOrder(logMetaDataBuffer);
+        inOrder.verify(logMetaDataBuffer)
+            .compareAndSetLong(termTailCounterTwoOffset, pack(TERM_ID_1 - 2, 0), pack(TERM_ID_1 + 1, 0));
+        inOrder.verify(logMetaDataBuffer).compareAndSetInt(LOG_ACTIVE_TERM_COUNT_OFFSET, 0, 1);
     }
 
     @Test

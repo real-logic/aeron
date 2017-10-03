@@ -590,6 +590,38 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
+         * @see CommonContext#driverTimeoutMs(long)
+         * @return covariant return for fluent API.
+         */
+        public Context driverTimeoutMs(final long value)
+        {
+            super.driverTimeoutMs(value);
+            return this;
+        }
+
+
+        /**
+         * @see CommonContext#countersMetaDataBuffer(UnsafeBuffer)
+         * @return covariant return for fluent API.
+         */
+        public Context countersMetaDataBuffer(final UnsafeBuffer countersMetaDataBuffer)
+        {
+            super.countersMetaDataBuffer(countersMetaDataBuffer);
+            return this;
+        }
+
+        /**
+         /**
+         * @see CommonContext#countersValuesBuffer(UnsafeBuffer)
+         * @return covariant return for fluent API.
+         */
+        public Context countersValuesBuffer(final UnsafeBuffer countersValuesBuffer)
+        {
+            super.countersValuesBuffer(countersValuesBuffer);
+            return this;
+        }
+
+        /**
          * Should an attempt be made to use the high resolution timers for waiting on Windows.
          *
          * @param useWindowsHighResTimers Should an attempt be made to use the high-res timers for waiting on Windows.

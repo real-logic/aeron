@@ -27,7 +27,6 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -71,7 +70,7 @@ public final class Aeron implements AutoCloseable
     /**
      * Duration in milliseconds for which the client conductor will sleep between duty cycles.
      */
-    public static final long IDLE_SLEEP_MS = 16L;
+    public static final long IDLE_SLEEP_MS = 16;
 
     /**
      * Duration in nanoseconds for which the client conductor will sleep between duty cycles.
@@ -153,7 +152,7 @@ public final class Aeron implements AutoCloseable
             }
             else
             {
-                aeron.start(ctx.threadFactory);
+                AgentRunner.startOnThread(aeron.conductorRunner, ctx.threadFactory);
             }
 
             return aeron;
@@ -350,13 +349,6 @@ public final class Aeron implements AutoCloseable
         }
 
         return new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer(), StandardCharsets.US_ASCII);
-    }
-
-    private Aeron start(final ThreadFactory threadFactory)
-    {
-        AgentRunner.startOnThread(conductorRunner, threadFactory);
-
-        return this;
     }
 
     /**
@@ -854,29 +846,6 @@ public final class Aeron implements AutoCloseable
         {
             super.aeronDirectoryName(dirName);
             return this;
-        }
-
-        /**
-         * The file memory mapping mode for {@link Image}s.
-         *
-         * @param imageMapMode file memory mapping mode for {@link Image}s.
-         * @return this for a fluent API.
-         */
-        @Deprecated
-        public Context imageMapMode(final FileChannel.MapMode imageMapMode)
-        {
-            return this;
-        }
-
-        /**
-         * The file memory mapping mode for {@link Image}s.
-         *
-         * @return the file memory mapping mode for {@link Image}s.
-         */
-        @Deprecated
-        public FileChannel.MapMode imageMapMode()
-        {
-            return FileChannel.MapMode.READ_WRITE;
         }
 
         /**

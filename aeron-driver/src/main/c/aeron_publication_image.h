@@ -157,8 +157,7 @@ inline bool aeron_publication_image_is_heartbeat(const uint8_t *buffer, size_t l
 
 inline bool aeron_publication_image_is_end_of_stream(const uint8_t *buffer, size_t length)
 {
-    return ((aeron_frame_header_t *)buffer)->flags &
-        (AERON_DATA_HEADER_EOS_FLAG | AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG);
+    return (((aeron_frame_header_t *)buffer)->flags & AERON_DATA_HEADER_EOS_FLAG) != 0;
 }
 
 inline bool aeron_publication_image_is_flow_control_under_run(

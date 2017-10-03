@@ -357,7 +357,7 @@ int aeron_publication_image_insert_packet(
     if (!aeron_publication_image_is_flow_control_under_run(image, window_position, packet_position) &&
         !aeron_publication_image_is_flow_control_over_run(image, window_position, proposed_position))
     {
-        if (aeron_publication_image_is_heartbeat(buffer, length))
+        if (is_heartbeat)
         {
             if (aeron_publication_image_is_end_of_stream(buffer, length))
             {

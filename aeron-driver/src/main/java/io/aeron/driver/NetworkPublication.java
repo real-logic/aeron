@@ -600,7 +600,7 @@ public class NetworkPublication
 
     private void checkForBlockedPublisher(final long timeNs, final long senderPosition)
     {
-        if (senderPosition == lastSenderPosition && isProducerPositionDifferent(senderPosition))
+        if (senderPosition == lastSenderPosition && isPossiblyBlocked(senderPosition))
         {
             if (timeNs > (timeOfLastActivityNs + unblockTimeoutNs))
             {
@@ -617,14 +617,14 @@ public class NetworkPublication
         }
     }
 
-    private boolean isProducerPositionDifferent(final long consumerPosition)
+    private boolean isPossiblyBlocked(final long consumerPosition)
     {
         final int producerTermCount = activeTermCount(metaDataBuffer);
         final int expectedTermCount = (int)(consumerPosition >> positionBitsToShift);
 
         if (producerTermCount != expectedTermCount)
         {
-            return false;
+            return true;
         }
 
         final long rawTail = rawTailVolatile(metaDataBuffer, indexByTermCount(producerTermCount));

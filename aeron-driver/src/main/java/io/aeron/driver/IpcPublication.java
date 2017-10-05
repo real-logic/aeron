@@ -327,7 +327,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
     {
         final long consumerPosition = this.consumerPosition;
 
-        if (consumerPosition == lastConsumerPosition && isProducerPositionDifferent(consumerPosition))
+        if (consumerPosition == lastConsumerPosition && isPossiblyBlocked(consumerPosition))
         {
             if (timeNs > (timeOfLastConsumerPositionUpdateNs + unblockTimeoutNs))
             {
@@ -344,14 +344,14 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         }
     }
 
-    private boolean isProducerPositionDifferent(final long consumerPosition)
+    private boolean isPossiblyBlocked(final long consumerPosition)
     {
         final int producerTermCount = activeTermCount(metaDataBuffer);
         final int expectedTermCount = (int)(consumerPosition >> positionBitsToShift);
 
         if (producerTermCount != expectedTermCount)
         {
-            return false;
+            return true;
         }
 
         final long rawTail = rawTailVolatile(metaDataBuffer, indexByTermCount(producerTermCount));

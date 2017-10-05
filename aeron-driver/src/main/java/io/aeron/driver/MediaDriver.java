@@ -31,7 +31,6 @@ import org.agrona.concurrent.ringbuffer.*;
 import org.agrona.concurrent.status.*;
 
 import java.io.*;
-import java.net.*;
 import java.nio.MappedByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -56,8 +55,8 @@ import static org.agrona.SystemUtil.loadPropertiesFiles;
  * $ java -jar aeron-driver.jar
  * $ java -Doption=value -jar aeron-driver.jar
  * </code>
- * <p>
- * {@link Configuration}
+ *
+ * @see Configuration
  */
 public final class MediaDriver implements AutoCloseable
 {
@@ -474,17 +473,18 @@ public final class MediaDriver implements AutoCloseable
                 {
                     throw new ConfigurationException(
                         "publication term buffer length " + publicationTermBufferLength +
-                            " greater than max length " + maxTermBufferLength);
+                        " greater than max length " + maxTermBufferLength);
                 }
 
                 if (ipcPublicationTermBufferLength > maxTermBufferLength)
                 {
                     throw new ConfigurationException(
                         "IPC publication term buffer length " + ipcPublicationTermBufferLength +
-                            " greater than max length " + maxTermBufferLength);
+                        " greater than max length " + maxTermBufferLength);
                 }
 
                 Configuration.validateInitialWindowLength(initialWindowLength, mtuLength);
+
                 cncByteBuffer = mapNewFile(
                     cncFile(),
                     CncFileDescriptor.computeCncFileLength(
@@ -521,8 +521,8 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * @see CommonContext#aeronDirectoryName(String)
          * @return covariant return for fluent API.
+         * @see CommonContext#aeronDirectoryName(String)
          */
         public Context aeronDirectoryName(final String dirName)
         {
@@ -531,8 +531,8 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * @see CommonContext#driverTimeoutMs(long)
          * @return covariant return for fluent API.
+         * @see CommonContext#driverTimeoutMs(long)
          */
         public Context driverTimeoutMs(final long value)
         {
@@ -542,8 +542,8 @@ public final class MediaDriver implements AutoCloseable
 
 
         /**
-         * @see CommonContext#countersMetaDataBuffer(UnsafeBuffer)
          * @return covariant return for fluent API.
+         * @see CommonContext#countersMetaDataBuffer(UnsafeBuffer)
          */
         public Context countersMetaDataBuffer(final UnsafeBuffer countersMetaDataBuffer)
         {
@@ -552,9 +552,10 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         /**
-         * @see CommonContext#countersValuesBuffer(UnsafeBuffer)
+         * /**
+         *
          * @return covariant return for fluent API.
+         * @see CommonContext#countersValuesBuffer(UnsafeBuffer)
          */
         public Context countersValuesBuffer(final UnsafeBuffer countersValuesBuffer)
         {
@@ -589,7 +590,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public boolean warnIfDirectoryExists()
         {
-            return  warnIfDirectoryExists;
+            return warnIfDirectoryExists;
         }
 
         /**

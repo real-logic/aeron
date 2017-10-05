@@ -85,9 +85,10 @@ public class PubAndSubTest
 
     private void launch(final String channel) throws Exception
     {
-        context.threadingMode(THREADING_MODE);
-        context.publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
-        context.timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
+        context
+            .threadingMode(THREADING_MODE)
+            .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
+            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
 
         driver = MediaDriver.launch(context);
         publishingClient = Aeron.connect();

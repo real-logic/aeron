@@ -119,9 +119,10 @@ public class SpySimulatedConnectionTest
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
-        driverContext.publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(250));
-        driverContext.timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
-        driverContext.spiesSimulateConnection(true);
+        driverContext
+            .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(250))
+            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
+            .spiesSimulateConnection(true);
 
         launch();
 
@@ -172,9 +173,10 @@ public class SpySimulatedConnectionTest
         int numFragmentsFromSpy = 0;
         int numFragmentsFromSubscription = 0;
 
-        driverContext.publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(250));
-        driverContext.timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
-        driverContext.spiesSimulateConnection(true);
+        driverContext
+            .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(250))
+            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
+            .spiesSimulateConnection(true);
 
         launch();
 
@@ -233,9 +235,10 @@ public class SpySimulatedConnectionTest
         int numFragmentsReadFromSubscription = 0;
         boolean isSubscriptionClosed = false;
 
-        driverContext.publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(250));
-        driverContext.timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
-        driverContext.spiesSimulateConnection(true);
+        driverContext
+            .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(250))
+            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
+            .spiesSimulateConnection(true);
 
         launch();
 

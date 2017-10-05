@@ -600,7 +600,7 @@ public class NetworkPublication
 
     private void checkForBlockedPublisher(final long timeNs, final long senderPosition)
     {
-        if (senderPosition == lastSenderPosition && producerPosition() > senderPosition)
+        if (senderPosition == lastSenderPosition && isProducerPositionDifferent(senderPosition))
         {
             if (timeNs > (timeOfLastActivityNs + unblockTimeoutNs))
             {
@@ -615,6 +615,23 @@ public class NetworkPublication
             timeOfLastActivityNs = timeNs;
             lastSenderPosition = senderPosition;
         }
+    }
+
+    private boolean isProducerPositionDifferent(final long consumerPosition)
+    {
+        final int producerTermCount = activeTermCount(metaDataBuffer);
+        final int expectedTermCount = (int)(consumerPosition >> positionBitsToShift);
+
+        if (producerTermCount != expectedTermCount)
+        {
+            return false;
+        }
+
+        final long rawTail = rawTailVolatile(metaDataBuffer, indexByTermCount(producerTermCount));
+        final int termOffset = termOffset(rawTail, termBufferLength);
+        final long producerPosition = computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);
+
+        return producerPosition > consumerPosition;
     }
 
     private boolean spiesFinishedConsuming(final DriverConductor conductor, final long eosPosition)

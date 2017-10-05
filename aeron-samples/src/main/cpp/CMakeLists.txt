@@ -86,6 +86,8 @@ target_link_libraries(PingPong
     ${HDRHISTOGRAM_LIBS}
     ${CMAKE_THREAD_LIBS_INIT})
 
+add_dependencies(PingPong hdr_histogram)
+
 install(
     TARGETS AeronStat BasicPublisher TimeTests BasicSubscriber StreamingPublisher RateSubscriber Ping Pong Throughput ErrorStat ExclusiveThroughput PingPong
     DESTINATION bin)

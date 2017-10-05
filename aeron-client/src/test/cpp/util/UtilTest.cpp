@@ -81,4 +81,25 @@ TEST(utilTests, findNextPowerOfTwo)
 {
     EXPECT_EQ(BitUtil::findNextPowerOfTwo<std::uint32_t>(33), 64u);
     EXPECT_EQ(BitUtil::findNextPowerOfTwo<std::uint32_t>(4096), 4096u);
+    EXPECT_EQ(BitUtil::findNextPowerOfTwo<std::uint32_t>(4097), 8192u);
+}
+
+TEST(utilTests, numberOfLeadingZeroes)
+{
+    EXPECT_EQ(BitUtil::numberOfLeadingZeroes<std::uint32_t>(0xFFFFFFFF), 0);
+    EXPECT_EQ(BitUtil::numberOfLeadingZeroes<std::uint32_t>(0x10000000), 3);
+    EXPECT_EQ(BitUtil::numberOfLeadingZeroes<std::uint32_t>(0x010000FF), 7);
+    EXPECT_EQ(BitUtil::numberOfLeadingZeroes<std::uint32_t>(0x0000FFFF), 16);
+    EXPECT_EQ(BitUtil::numberOfLeadingZeroes<std::uint32_t>(0x00000001), 31);
+}
+
+TEST(utilTests, numberOfTrailingZeroes)
+{
+    EXPECT_EQ(BitUtil::numberOfTrailingZeroes<std::uint32_t>(1 << 21), 21);
+    EXPECT_EQ(BitUtil::numberOfTrailingZeroes<std::uint32_t>(0x00000008), 3);
+    EXPECT_EQ(BitUtil::numberOfTrailingZeroes<std::uint32_t>(0x80000000), 31);
+    EXPECT_EQ(BitUtil::numberOfTrailingZeroes<std::uint32_t>(0x01000080), 7);
+    EXPECT_EQ(BitUtil::numberOfTrailingZeroes<std::uint32_t>(0x0000FFFF), 0);
+    EXPECT_EQ(BitUtil::numberOfTrailingZeroes<std::uint32_t>(0xFFFF0000), 16);
+    EXPECT_EQ(BitUtil::numberOfTrailingZeroes<std::uint32_t>(0x00000001), 0);
 }

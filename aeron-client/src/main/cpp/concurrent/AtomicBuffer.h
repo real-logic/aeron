@@ -309,7 +309,7 @@ public:
         return atomic::getAndAddInt32((volatile std::int32_t*)(m_buffer + offset), delta);
     }
 
-    inline COND_MOCK_VIRTUAL void putBytes(util::index_t index, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
+    inline COND_MOCK_VIRTUAL void putBytes(util::index_t index, const concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
     {
         boundsCheck(index, length);
         srcBuffer.boundsCheck(srcIndex, length);

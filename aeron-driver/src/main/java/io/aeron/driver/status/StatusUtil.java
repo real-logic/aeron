@@ -22,7 +22,7 @@ import org.agrona.concurrent.status.StatusIndicatorReader;
 import org.agrona.concurrent.status.UnsafeBufferStatusIndicator;
 
 /**
- * Utilities for applications to use to help with counters.
+ * Functions for working with status counters.
  */
 public class StatusUtil
 {
@@ -34,10 +34,8 @@ public class StatusUtil
      */
     public static StatusIndicator controllableIdleStrategy(final CountersReader countersReader)
     {
-        final MutableInteger id = new MutableInteger();
         StatusIndicator statusIndicator = null;
-
-        id.value = -1;
+        final MutableInteger id = new MutableInteger(-1);
 
         countersReader.forEach(
             (counterId, typeId, keyBuffer, label) ->
@@ -60,27 +58,22 @@ public class StatusUtil
     /**
      * Return the read-only status indicator for the given send channel URI.
      *
-     * @see ChannelEndpointStatus for status values and indications.
-     *
      * @param countersReader that holds the status indicator.
-     * @param uri for the send channel.
+     * @param channel        for the send channel.
      * @return read-only status indicator that can be used to query the status of the send channel or null
+     * @see ChannelEndpointStatus for status values and indications.
      */
-    public static StatusIndicatorReader sendChannelStatus(final CountersReader countersReader, final String uri)
+    public static StatusIndicatorReader sendChannelStatus(final CountersReader countersReader, final String channel)
     {
-        final MutableInteger id = new MutableInteger();
         StatusIndicatorReader statusReader = null;
-
-        id.value = -1;
+        final MutableInteger id = new MutableInteger(-1);
 
         countersReader.forEach(
             (counterId, typeId, keyBuffer, label) ->
             {
                 if (typeId == SendChannelStatus.SEND_CHANNEL_STATUS_TYPE_ID)
                 {
-                    final String bufferUri = keyBuffer.getStringAscii(ChannelEndpointStatus.CHANNEL_OFFSET);
-
-                    if (uri.equals(bufferUri))
+                    if (channel.startsWith(keyBuffer.getStringAscii(ChannelEndpointStatus.CHANNEL_OFFSET)))
                     {
                         id.value = counterId;
                     }
@@ -98,27 +91,22 @@ public class StatusUtil
     /**
      * Return the read-only status indicator for the given receive channel URI.
      *
-     * @see ChannelEndpointStatus for status values and indications.
-     *
      * @param countersReader that holds the status indicator.
-     * @param uri for the receive channel.
+     * @param channel        for the receive channel.
      * @return read-only status indicator that can be used to query the status of the receive channel or null.
+     * @see ChannelEndpointStatus for status values and indications.
      */
-    public static StatusIndicatorReader receiveChannelStatus(final CountersReader countersReader, final String uri)
+    public static StatusIndicatorReader receiveChannelStatus(final CountersReader countersReader, final String channel)
     {
-        final MutableInteger id = new MutableInteger();
         StatusIndicatorReader statusReader = null;
-
-        id.value = -1;
+        final MutableInteger id = new MutableInteger(-1);
 
         countersReader.forEach(
             (counterId, typeId, keyBuffer, label) ->
             {
                 if (typeId == ReceiveChannelStatus.RECEIVE_CHANNEL_STATUS_TYPE_ID)
                 {
-                    final String bufferUri = keyBuffer.getStringAscii(ChannelEndpointStatus.CHANNEL_OFFSET);
-
-                    if (uri.equals(bufferUri))
+                    if (channel.startsWith(keyBuffer.getStringAscii(ChannelEndpointStatus.CHANNEL_OFFSET)))
                     {
                         id.value = counterId;
                     }

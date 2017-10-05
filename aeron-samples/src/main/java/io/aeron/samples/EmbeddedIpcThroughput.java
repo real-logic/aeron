@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
+import static org.agrona.SystemUtil.loadPropertiesFiles;
 import static org.agrona.UnsafeAccess.UNSAFE;
 
 public class EmbeddedIpcThroughput
@@ -38,7 +39,7 @@ public class EmbeddedIpcThroughput
 
     public static void main(final String[] args) throws Exception
     {
-        MediaDriver.loadPropertiesFiles(args);
+        loadPropertiesFiles(args);
 
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));

@@ -16,6 +16,7 @@
 package io.aeron.samples;
 
 import static io.aeron.samples.SamplesUtil.rateReporterHandler;
+import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -50,7 +51,7 @@ public class EmbeddedThroughput
 
     public static void main(final String[] args) throws Exception
     {
-        MediaDriver.loadPropertiesFiles(args);
+        loadPropertiesFiles(args);
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), EmbeddedThroughput::printRate);
         final FragmentHandler rateReporterHandler = rateReporterHandler(reporter);

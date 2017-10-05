@@ -39,6 +39,7 @@ import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.samples.archive.TestUtil.MEGABYTE;
 import static io.aeron.samples.archive.TestUtil.NOOP_FRAGMENT_HANDLER;
 import static org.agrona.BufferUtil.allocateDirectAligned;
+import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEventsListener
 {
@@ -60,7 +61,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
 
     public static void main(final String[] args) throws Exception
     {
-        MediaDriver.loadPropertiesFiles(args);
+        loadPropertiesFiles(args);
 
         try (EmbeddedRecordingThroughput test = new EmbeddedRecordingThroughput())
         {

@@ -28,6 +28,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.samples.SamplesUtil.rateReporterHandler;
+import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 public class EmbeddedExclusiveThroughput
 {
@@ -46,7 +47,7 @@ public class EmbeddedExclusiveThroughput
 
     public static void main(final String[] args) throws Exception
     {
-        MediaDriver.loadPropertiesFiles(args);
+        loadPropertiesFiles(args);
 
         final RateReporter reporter = new RateReporter(
             TimeUnit.SECONDS.toNanos(1), EmbeddedExclusiveThroughput::printRate);

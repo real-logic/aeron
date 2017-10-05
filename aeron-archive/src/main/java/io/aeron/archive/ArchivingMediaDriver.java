@@ -20,7 +20,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
-import static io.aeron.driver.MediaDriver.loadPropertiesFiles;
+import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 /**
  * Archiving {@link MediaDriver}.

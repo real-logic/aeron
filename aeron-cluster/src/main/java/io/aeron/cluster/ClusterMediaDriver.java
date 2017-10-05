@@ -18,7 +18,7 @@ package io.aeron.cluster;
 import io.aeron.driver.MediaDriver;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
-import static io.aeron.driver.MediaDriver.loadPropertiesFiles;
+import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 public class ClusterMediaDriver implements AutoCloseable
 {

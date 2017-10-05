@@ -46,6 +46,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_S
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.agrona.BitUtil.align;
 import static org.agrona.IoUtil.mapNewFile;
+import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 /**
  * Main class for JVM-based media driver
@@ -68,66 +69,6 @@ public final class MediaDriver implements AutoCloseable
     private final AgentRunner senderRunner;
     private final AgentInvoker sharedInvoker;
     private final Context ctx;
-
-    /**
-     * Load system properties from a given filename or url.
-     * <p>
-     * File is first searched for in resources, then file system, then URL. All are loaded if multiples found.
-     *
-     * @param filenameOrUrl that holds properties
-     */
-    public static void loadPropertiesFile(final String filenameOrUrl)
-    {
-        final Properties properties = new Properties(System.getProperties());
-
-        final URL resource = ClassLoader.getSystemClassLoader().getResource(filenameOrUrl);
-        if (null != resource)
-        {
-            try (InputStream in = resource.openStream())
-            {
-                properties.load(in);
-            }
-            catch (final Exception ignore)
-            {
-            }
-        }
-
-        final File file = new File(filenameOrUrl);
-        if (file.exists())
-        {
-            try (FileInputStream in = new FileInputStream(file))
-            {
-                properties.load(in);
-            }
-            catch (final Exception ignore)
-            {
-            }
-        }
-
-        try (InputStream in = new URL(filenameOrUrl).openStream())
-        {
-            properties.load(in);
-        }
-        catch (final Exception ignore)
-        {
-        }
-
-        System.setProperties(properties);
-    }
-
-    /**
-     * Load system properties from a given set of filenames or URLs.
-     *
-     * @param filenamesOrUrls that holds properties
-     * @see #loadPropertiesFile(String)
-     */
-    public static void loadPropertiesFiles(final String[] filenamesOrUrls)
-    {
-        for (final String filenameOrUrl : filenamesOrUrls)
-        {
-            loadPropertiesFile(filenameOrUrl);
-        }
-    }
 
     /**
      * Start Media Driver as a stand-alone process.

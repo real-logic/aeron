@@ -30,7 +30,7 @@
 #include "util/aeron_netutil.h"
 #include "aeron_udp_channel_transport.h"
 
-#if !defined(HAVE_RECVMMSG)
+#if !defined(HAVE_STRUCT_MMSGHDR)
 struct mmsghdr
 {
     struct msghdr msg_hdr;
@@ -318,7 +318,7 @@ int aeron_udp_channel_transport_sendmmsg(
     struct mmsghdr *msgvec,
     size_t vlen)
 {
-#if defined(HAVE_RECVMMSG)
+#if defined(HAVE_SENDMMSG)
     int sendmmsg_result = sendmmsg(transport->fd, msgvec, vlen, 0);
     if (sendmmsg_result < 0)
     {

@@ -26,7 +26,7 @@
 #include "aeron_driver_receiver.h"
 #include "aeron_publication_image.h"
 
-#if !defined(HAVE_RECVMMSG)
+#if !defined(HAVE_STRUCT_MMSGHDR)
 struct mmsghdr
 {
     struct msghdr msg_hdr;

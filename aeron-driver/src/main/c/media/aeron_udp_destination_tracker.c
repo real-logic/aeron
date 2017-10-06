@@ -24,7 +24,7 @@
 #include "util/aeron_arrayutil.h"
 #include "media/aeron_udp_destination_tracker.h"
 
-#if !defined(HAVE_RECVMMSG)
+#if !defined(HAVE_STRUCT_MMSGHDR)
 struct mmsghdr
 {
     struct msghdr msg_hdr;

@@ -22,7 +22,7 @@
 #include <sys/socket.h>
 #include <stdio.h>
 
-#if !defined(HAVE_RECVMMSG)
+#if !defined(HAVE_STRUCT_MMSGHDR)
 struct mmsghdr
 {
     struct msghdr msg_hdr;

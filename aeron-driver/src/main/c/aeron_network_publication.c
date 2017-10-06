@@ -31,7 +31,7 @@
 #include "aeron_driver_conductor.h"
 #include "concurrent/aeron_logbuffer_unblocker.h"
 
-#if !defined(HAVE_RECVMMSG)
+#if !defined(HAVE_STRUCT_MMSGHDR)
 struct mmsghdr
 {
     struct msghdr msg_hdr;

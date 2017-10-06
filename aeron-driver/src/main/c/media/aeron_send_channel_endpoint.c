@@ -30,7 +30,7 @@
 #include "aeron_alloc.h"
 #include "media/aeron_send_channel_endpoint.h"
 
-#if !defined(HAVE_RECVMMSG)
+#if !defined(HAVE_STRUCT_MMSGHDR)
 struct mmsghdr
 {
     struct msghdr msg_hdr;

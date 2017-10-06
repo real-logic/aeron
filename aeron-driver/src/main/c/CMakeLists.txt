@@ -16,6 +16,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 include(CheckSymbolExists)
 include(CheckIncludeFile)
+include(CheckTypeSize)
 
 if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
@@ -49,7 +50,13 @@ check_symbol_exists(uuid_generate "uuid/uuid.h" UUID_GENERATE_PROTOTYPE_EXISTS)
 
 check_symbol_exists(poll "poll.h" POLL_PROTOTYPE_EXISTS)
 check_symbol_exists(epoll_create "sys/epoll.h" EPOLL_PROTOTYPE_EXISTS)
+
+set(CMAKE_EXTRA_INCLUDE_FILES sys/socket.h)
+check_type_size("struct mmsghdr" STRUCT_MMSGHDR_TYPE_EXISTS)
+set(CMAKE_EXTRA_INCLUDE_FILES)
+
 check_symbol_exists(recvmmsg "sys/socket.h" RECVMMSG_PROTOTYPE_EXISTS)
+check_symbol_exists(sendmmsg "sys/socket.h" SENDMMSG_PROTOTYPE_EXISTS)
 
 if(ARC4RANDOM_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_ARC4RANDOM)
@@ -71,8 +78,16 @@ if(EPOLL_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_EPOLL)
 endif()
 
+if(STRUCT_MMSGHDR_TYPE_EXISTS)
+    add_definitions(-DHAVE_STRUCT_MMSGHDR)
+endif()
+
 if(RECVMMSG_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_RECVMMSG)
+endif()
+
+if(SENDMMSG_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_SENDMMSG)
 endif()
 
 SET(SOURCE

@@ -19,7 +19,6 @@ import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -97,8 +96,10 @@ public class EmbeddedReplayThroughput implements AutoCloseable
             TestUtil.createTempDir() : new File(archiveDirName);
 
         archivingMediaDriver = ArchivingMediaDriver.launch(
-            new MediaDriver.Context().dirDeleteOnStart(true),
-            new Archive.Context().archiveDir(archiveDir));
+            new MediaDriver.Context()
+                .dirDeleteOnStart(true),
+            new Archive.Context()
+                .archiveDir(archiveDir));
 
         aeron = Aeron.connect();
 
@@ -130,9 +131,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
 
     private long makeRecording()
     {
-        aeronArchive.startRecording(CHANNEL, STREAM_ID, SourceLocation.LOCAL);
-
-        try (ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID);
+        try (ExclusivePublication publication = aeronArchive.addRecordedExclusivePublication(CHANNEL, STREAM_ID);
              Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             while (!subscription.isConnected())
@@ -162,6 +161,10 @@ public class EmbeddedReplayThroughput implements AutoCloseable
             }
 
             return position;
+        }
+        finally
+        {
+            aeronArchive.stopRecording(CHANNEL, STREAM_ID);
         }
     }
 

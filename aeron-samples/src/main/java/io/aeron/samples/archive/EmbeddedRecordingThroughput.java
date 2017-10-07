@@ -58,6 +58,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
     private volatile long recordingStartTimeMs;
     private volatile long stopPosition;
     private volatile boolean isRunning = true;
+    private volatile boolean isRecording;
 
     public static void main(final String[] args) throws Exception
     {
@@ -69,11 +70,9 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
             test.startRecording();
 
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
-
             do
             {
                 test.streamMessagesForRecording();
-                Thread.sleep(10);
             }
             while (barrier.await());
 
@@ -128,7 +127,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
 
     public void onProgress(final long recordingId, final long startPosition, final long position)
     {
-        if (position == stopPosition)
+        if (position >= stopPosition)
         {
             final long durationMs = System.currentTimeMillis() - recordingStartTimeMs;
             final long recordingLength = position - startPosition;
@@ -137,19 +136,22 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
             final long msgRate = (NUMBER_OF_MESSAGES / durationMs) * 1000L;
 
             System.out.printf("Recorded %.02f MB @ %.02f MB/s - %,d msg/sec%n", recordingMb, dataRate, msgRate);
+            isRecording = false;
         }
     }
 
     public void onStop(final long recordingId, final long startPosition, final long stopPosition)
     {
-        // System.out.println("Recording stopped for id: " + recordingId + " @ " + stopPosition);
+        isRecording = false;
+        //System.out.println("Recording stopped for id: " + recordingId + " @ " + stopPosition);
     }
 
-    public void streamMessagesForRecording()
+    public void streamMessagesForRecording() throws Exception
     {
         try (ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
         {
-            stopPosition = -1L;
+            isRecording = true;
+            stopPosition = Long.MAX_VALUE;
             recordingStartTimeMs = System.currentTimeMillis();
 
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
@@ -162,6 +164,11 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
             }
 
             stopPosition = publication.position();
+        }
+
+        while (isRecording)
+        {
+            Thread.sleep(1);
         }
     }
 

@@ -466,6 +466,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     private void closeImages()
     {
         final Image[] images = this.images;
+        imageIdSet.clear();
         this.images = EMPTY_ARRAY;
 
         for (final Image image : images)

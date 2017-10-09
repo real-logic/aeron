@@ -763,16 +763,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final RawLog rawLog = rawLogFactory.newNetworkPublication(
             udpChannel.canonicalForm(), sessionId, streamId, registrationId, params.termLength);
 
-        final UnsafeBuffer logMetaData = rawLog.metaData();
-        storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
-
-        initialTermId(logMetaData, initialTermId);
-        mtuLength(logMetaData, params.mtuLength);
-        termLength(logMetaData, rawLog.termLength());
-        pageSize(logMetaData, context.filePageSize());
-        correlationId(logMetaData, registrationId);
-
-        initialisePositionCounters(initialTermId, params, logMetaData);
+        initPublicationMetadata(sessionId, streamId, initialTermId, registrationId, params, rawLog);
 
         return rawLog;
     }
@@ -786,6 +777,19 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     {
         final RawLog rawLog = rawLogFactory.newIpcPublication(sessionId, streamId, registrationId, params.termLength);
 
+        initPublicationMetadata(sessionId, streamId, initialTermId, registrationId, params, rawLog);
+
+        return rawLog;
+    }
+
+    private void initPublicationMetadata(
+        final int sessionId,
+        final int streamId,
+        final int initialTermId,
+        final long registrationId,
+        final PublicationParams params,
+        final RawLog rawLog)
+    {
         final UnsafeBuffer logMetaData = rawLog.metaData();
         storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
 
@@ -797,8 +801,6 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
 
         initialisePositionCounters(initialTermId, params, logMetaData);
-
-        return rawLog;
     }
 
     private static void initialisePositionCounters(

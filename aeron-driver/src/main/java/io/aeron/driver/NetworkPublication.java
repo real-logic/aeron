@@ -707,6 +707,7 @@ public class NetworkPublication
                 else
                 {
                     isEndOfStream = true;
+                    endOfStreamPosition(metaDataBuffer, producerPosition);
                 }
 
                 if (spiesFinishedConsuming(conductor, producerPosition))
@@ -754,9 +755,11 @@ public class NetworkPublication
             state = State.DRAINING;
             channelEndpoint.decRef();
             timeOfLastActivityNs = nanoClock.nanoTime();
-            if (senderPosition.getVolatile() >= producerPosition())
+            final long producerPosition = producerPosition();
+            if (senderPosition.getVolatile() >= producerPosition)
             {
                 isEndOfStream = true;
+                endOfStreamPosition(metaDataBuffer, producerPosition);
             }
         }
 

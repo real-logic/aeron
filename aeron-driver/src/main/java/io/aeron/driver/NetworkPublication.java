@@ -647,7 +647,6 @@ public class NetworkPublication
             }
 
             hasSpies = false;
-
             conductor.cleanupSpies(this);
         }
 
@@ -707,7 +706,6 @@ public class NetworkPublication
                 else
                 {
                     isEndOfStream = true;
-                    endOfStreamPosition(metaDataBuffer, producerPosition);
                 }
 
                 if (spiesFinishedConsuming(conductor, producerPosition))
@@ -756,13 +754,11 @@ public class NetworkPublication
             channelEndpoint.decRef();
             timeOfLastActivityNs = nanoClock.nanoTime();
             final long producerPosition = producerPosition();
+            endOfStreamPosition(metaDataBuffer, producerPosition);
             if (senderPosition.getVolatile() >= producerPosition)
             {
                 isEndOfStream = true;
-                endOfStreamPosition(metaDataBuffer, producerPosition);
             }
-
-            LogBufferDescriptor.endOfStreamPosition(metaDataBuffer, producerPosition());
         }
 
         return count;

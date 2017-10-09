@@ -53,13 +53,10 @@ public class EmbeddedExclusiveThroughput
             TimeUnit.SECONDS.toNanos(1), EmbeddedExclusiveThroughput::printRate);
         final FragmentHandler rateReporterHandler = rateReporterHandler(reporter);
         final ExecutorService executor = Executors.newFixedThreadPool(2);
-
-        final Aeron.Context context = new Aeron.Context();
-
         final AtomicBoolean running = new AtomicBoolean(true);
 
         try (MediaDriver ignore = MediaDriver.launch();
-             Aeron aeron = Aeron.connect(context);
+             Aeron aeron = Aeron.connect();
              ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID);
              Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
@@ -100,7 +97,6 @@ public class EmbeddedExclusiveThroughput
                 }
 
                 printingActive = false;
-
             }
             while (barrier.await());
 

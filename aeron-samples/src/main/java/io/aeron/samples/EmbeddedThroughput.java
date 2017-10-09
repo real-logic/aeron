@@ -56,13 +56,10 @@ public class EmbeddedThroughput
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), EmbeddedThroughput::printRate);
         final FragmentHandler rateReporterHandler = rateReporterHandler(reporter);
         final ExecutorService executor = Executors.newFixedThreadPool(2);
-
-        final Aeron.Context context = new Aeron.Context();
-
         final AtomicBoolean running = new AtomicBoolean(true);
 
         try (MediaDriver ignore = MediaDriver.launch();
-             Aeron aeron = Aeron.connect(context);
+             Aeron aeron = Aeron.connect();
              Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
              Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
@@ -103,7 +100,6 @@ public class EmbeddedThroughput
                 }
 
                 printingActive = false;
-
             }
             while (barrier.await());
 

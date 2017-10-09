@@ -751,15 +751,17 @@ public class NetworkPublication
 
         if (0 == count)
         {
+            final long producerPosition = producerPosition();
+
             state = State.DRAINING;
             channelEndpoint.decRef();
             timeOfLastActivityNs = nanoClock.nanoTime();
-            if (senderPosition.getVolatile() >= producerPosition())
+            if (senderPosition.getVolatile() >= producerPosition)
             {
                 isEndOfStream = true;
             }
 
-            LogBufferDescriptor.endOfStreamPosition(metaDataBuffer, producerPosition());
+            LogBufferDescriptor.endOfStreamPosition(metaDataBuffer, producerPosition);
         }
 
         return count;

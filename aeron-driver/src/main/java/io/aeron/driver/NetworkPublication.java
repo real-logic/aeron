@@ -758,6 +758,8 @@ public class NetworkPublication
             {
                 isEndOfStream = true;
             }
+
+            LogBufferDescriptor.endOfStreamPosition(metaDataBuffer, producerPosition());
         }
 
         return count;

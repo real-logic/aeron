@@ -771,6 +771,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         termLength(logMetaData, rawLog.termLength());
         pageSize(logMetaData, context.filePageSize());
         correlationId(logMetaData, registrationId);
+        endOfStreamPosition(logMetaData, Long.MAX_VALUE);
 
         initialisePositionCounters(initialTermId, params, logMetaData);
 

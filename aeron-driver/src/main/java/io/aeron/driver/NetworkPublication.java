@@ -753,6 +753,7 @@ public class NetworkPublication
             state = State.DRAINING;
             channelEndpoint.decRef();
             timeOfLastActivityNs = nanoClock.nanoTime();
+
             final long producerPosition = producerPosition();
             endOfStreamPosition(metaDataBuffer, producerPosition);
             if (senderPosition.getVolatile() >= producerPosition)

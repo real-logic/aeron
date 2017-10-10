@@ -77,6 +77,7 @@ typedef struct aeron_driver_context_stct
     bool warn_if_dirs_exist;
     bool term_buffer_sparse_file;               /* aeron.term.buffer.sparse.file = false */
     bool perform_storage_checks;                /* aeron.perform.storage.checks = true */
+    bool spies_simulate_connection;             /* aeron.spies.simulate.connection = false */
     uint64_t driver_timeout_ms;
     uint64_t client_liveness_timeout_ns;        /* aeron.client.liveness.timeout = 5s */
     uint64_t publication_linger_timeout_ns;     /* aeron.publication.linger.timeout = 5s */

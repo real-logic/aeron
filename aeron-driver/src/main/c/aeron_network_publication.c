@@ -54,6 +54,7 @@ int aeron_network_publication_create(
     aeron_flow_control_strategy_t *flow_control_strategy,
     size_t term_buffer_length,
     bool is_exclusive,
+    bool spies_simulate_connection,
     aeron_system_counters_t *system_counters)
 {
     char path[AERON_MAX_PATH];
@@ -176,6 +177,7 @@ int aeron_network_publication_create(
     _pub->time_of_last_setup_ns = now_ns - AERON_NETWORK_PUBLICATION_SETUP_TIMEOUT_NS - 1;
     _pub->time_of_last_status_message_ns = now_ns - context->publication_connection_timeout_ns - 1;
     _pub->is_exclusive = is_exclusive;
+    _pub->spies_simulate_connection;
     _pub->should_send_setup_frame = true;
     _pub->has_receivers = false;
     _pub->is_end_of_stream = false;
@@ -669,7 +671,7 @@ void aeron_network_publication_check_for_blocked_publisher(
     aeron_network_publication_t *publication, int64_t now_ns, int64_t snd_pos)
 {
     if (snd_pos == publication->conductor_fields.last_snd_pos &&
-        aeron_network_publication_producer_position(publication) > snd_pos)
+        aeron_network_publication_is_possibly_blocked(publication, snd_pos))
     {
         if (now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->unblock_timeout_ns))
         {
@@ -812,6 +814,8 @@ void aeron_network_publication_on_time_event(
     }
 }
 
+extern bool aeron_network_publication_is_possibly_blocked(
+    aeron_network_publication_t *publication, int64_t consumer_position);
 extern int64_t aeron_network_publication_producer_position(aeron_network_publication_t *publication);
 extern int64_t aeron_network_publication_consumer_position(aeron_network_publication_t *publication);
 extern void aeron_network_publication_trigger_send_setup_frame(aeron_network_publication_t *publication);

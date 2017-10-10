@@ -93,6 +93,11 @@ typedef struct aeron_driver_stct aeron_driver_t;
 #define AERON_PERFORM_STORAGE_CHECKS_ENV_VAR "AERON_PERFORM_STORAGE_CHECKS"
 
 /**
+ * Should a spy subscription simulate a connection to a network publication.
+ */
+#define AERON_SPIES_SIMULATE_CONNECTION_ENV_VAR "AERON_SPIES_SIMULATE_CONNECTION"
+
+/**
  * Page size for alignment of all files.
  */
 #define AERON_FILE_PAGE_SIZE_ENV_VAR "AERON_FILE_PAGE_SIZE"

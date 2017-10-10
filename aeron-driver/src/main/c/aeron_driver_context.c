@@ -224,6 +224,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->warn_if_dirs_exist = true;
     _context->term_buffer_sparse_file = false;
     _context->perform_storage_checks = true;
+    _context->spies_simulate_connection = false;
     _context->driver_timeout_ms = 10 * 1000;
     _context->to_driver_buffer_length = 1024 * 1024 + AERON_RB_TRAILER_LENGTH;
     _context->to_clients_buffer_length = 1024 * 1024 + AERON_BROADCAST_BUFFER_TRAILER_LENGTH;
@@ -321,6 +322,11 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         aeron_config_parse_bool(
             getenv(AERON_PERFORM_STORAGE_CHECKS_ENV_VAR),
             _context->perform_storage_checks);
+
+    _context->spies_simulate_connection =
+        aeron_config_parse_bool(
+            getenv(AERON_SPIES_SIMULATE_CONNECTION_ENV_VAR),
+            _context->spies_simulate_connection);
 
     _context->to_driver_buffer_length =
         aeron_config_parse_uint64(

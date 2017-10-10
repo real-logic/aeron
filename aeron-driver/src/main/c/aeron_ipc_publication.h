@@ -99,6 +99,13 @@ void aeron_ipc_publication_decref(void *clientd);
 
 void aeron_ipc_publication_check_for_blocked_publisher(aeron_ipc_publication_t *publication, int64_t now_ns);
 
+inline void aeron_ipc_publication_add_subscriber_hook(void *clientd, int64_t *value_addr)
+{
+    aeron_ipc_publication_t *publication = (aeron_ipc_publication_t *)clientd;
+
+    AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 1);
+}
+
 inline void aeron_ipc_publication_remove_subscriber_hook(void *clientd, int64_t *value_addr)
 {
     aeron_ipc_publication_t *publication = (aeron_ipc_publication_t *)clientd;
@@ -107,6 +114,38 @@ inline void aeron_ipc_publication_remove_subscriber_hook(void *clientd, int64_t 
     publication->conductor_fields.consumer_position =
         position > publication->conductor_fields.consumer_position ?
             position : publication->conductor_fields.consumer_position;
+
+    if (1 == publication->conductor_fields.subscribeable.length)
+    {
+        AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 0);
+    }
+}
+
+inline bool aeron_ipc_publication_is_possibly_blocked(
+    aeron_ipc_publication_t *publication, int64_t consumer_position)
+{
+    int32_t producer_term_count;
+
+    AERON_GET_VOLATILE(producer_term_count, publication->log_meta_data->active_term_count);
+    const int32_t expected_term_count = (int32_t)(consumer_position >> publication->position_bits_to_shift);
+
+    if (producer_term_count != expected_term_count)
+    {
+        return true;
+    }
+
+    int64_t raw_tail;
+
+    AERON_GET_VOLATILE(
+        raw_tail,
+        publication->log_meta_data->term_tail_counters[aeron_logbuffer_index_by_term_count(producer_term_count)]);
+    const int64_t producer_position = aeron_logbuffer_compute_position(
+        aeron_logbuffer_term_id(raw_tail),
+        aeron_logbuffer_term_offset(raw_tail, (int32_t)publication->mapped_raw_log.term_length),
+        publication->position_bits_to_shift,
+        publication->initial_term_id);
+
+    return producer_position > consumer_position;
 }
 
 inline int64_t aeron_ipc_publication_producer_position(aeron_ipc_publication_t *publication)

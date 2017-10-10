@@ -760,6 +760,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                         flow_control_strategy,
                         conductor->context->term_buffer_length,
                         is_exclusive,
+                        conductor->context->spies_simulate_connection,
                         &conductor->system_counters) >= 0)
                 {
                     endpoint->conductor_fields.managed_resource.incref(endpoint->conductor_fields.managed_resource.clientd);

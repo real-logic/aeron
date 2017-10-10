@@ -15,7 +15,6 @@
  */
 package io.aeron.archive;
 
-import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.Subscription;
@@ -251,54 +250,5 @@ public class TestUtil
                 System.err.println(clazz.getName() + " failed with random seed: " + seed);
             }
         };
-    }
-
-    /**
-     * Create a {@link Subscription} and register a callback handler that will create a thread and drain the
-     * first available {@link io.aeron.Image} then terminate and close.
-     * <p>
-     * This is useful for draining a {@link Publication}. In the case of an IPC channel then no action is taken.
-     *
-     * @param aeron    client to create the subscription with.
-     * @param channel  for the subscription.
-     * @param streamId for the subscription.
-     */
-    public static void startDrainingSubscriber(final Aeron aeron, final String channel, final int streamId)
-    {
-        if (channel.contains("ipc"))
-        {
-            return;
-        }
-
-        aeron.addSubscription(
-            channel,
-            streamId,
-            (image) ->
-            {
-                final Thread t = new Thread(
-                    () ->
-                    {
-                        while (true)
-                        {
-                            final int fragments = image.poll((buffer, offset, length, header) -> {}, 16);
-                            if (0 == fragments)
-                            {
-                                if (image.isEndOfStream() || image.isClosed())
-                                {
-                                    break;
-                                }
-
-                                LockSupport.parkNanos(1);
-                            }
-                        }
-
-                        image.subscription().close();
-                    });
-
-                t.setDaemon(true);
-                t.setName("eager-subscriber");
-                t.start();
-            },
-            null);
     }
 }

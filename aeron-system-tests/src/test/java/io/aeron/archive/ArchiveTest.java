@@ -140,6 +140,7 @@ public class ArchiveTest
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .termBufferSparseFile(true)
             .threadingMode(threadingMode)
+            .spiesSimulateConnection(true)
             .errorHandler(Throwable::printStackTrace)
             .dirDeleteOnStart(true)
             .useConcurrentCountersManager(true);
@@ -180,7 +181,7 @@ public class ArchiveTest
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
-            prePublicationActionsAndVerifications(publishingClient, archiveProxy, controlPublication, recordingEvents);
+            prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
 
             final ExclusivePublication recordedPublication =
                 publishingClient.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
@@ -219,7 +220,7 @@ public class ArchiveTest
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
-            prePublicationActionsAndVerifications(publishingClient, archiveProxy, controlPublication, recordingEvents);
+            prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
 
             final ExclusivePublication recordedPublication =
                 publishingClient.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
@@ -262,7 +263,7 @@ public class ArchiveTest
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
-            prePublicationActionsAndVerifications(publishingClient, archiveProxy, controlPublication, recordingEvents);
+            prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
 
             final Publication recordedPublication = publishingClient.addPublication(publishUri, PUBLISH_STREAM_ID);
             TestUtil.await(recordedPublication::isConnected);
@@ -366,7 +367,6 @@ public class ArchiveTest
     }
 
     private void prePublicationActionsAndVerifications(
-        final Aeron aeron,
         final ArchiveProxy archiveProxy,
         final Publication controlPublication,
         final Subscription recordingEvents)
@@ -391,8 +391,6 @@ public class ArchiveTest
             controlSessionId));
 
         TestUtil.awaitOk(controlResponse, startRecordingCorrelationId);
-
-        TestUtil.startDrainingSubscriber(aeron, publishUri, PUBLISH_STREAM_ID);
     }
 
     private void verifyEmptyDescriptorList(final ArchiveProxy client)

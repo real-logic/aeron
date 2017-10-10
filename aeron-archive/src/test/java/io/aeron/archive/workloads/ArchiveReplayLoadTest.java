@@ -109,6 +109,7 @@ public class ArchiveReplayLoadTest
             new MediaDriver.Context()
                 .threadingMode(ThreadingMode.DEDICATED)
                 .useConcurrentCountersManager(true)
+                .spiesSimulateConnection(true)
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true));
 
@@ -150,7 +151,6 @@ public class ArchiveReplayLoadTest
             await(recordingEvents::isConnected);
             aeronArchive.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, SourceLocation.LOCAL);
 
-            startDrainingSubscriber(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
             await(publication::isConnected);
 
             final CountDownLatch recordingStopped = prepAndSendMessages(recordingEvents, publication);

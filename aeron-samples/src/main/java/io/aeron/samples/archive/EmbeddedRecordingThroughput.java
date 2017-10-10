@@ -37,7 +37,6 @@ import java.io.File;
 import static io.aeron.archive.Archive.Configuration.ARCHIVE_DIR_DEFAULT;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.samples.archive.TestUtil.MEGABYTE;
-import static io.aeron.samples.archive.TestUtil.NOOP_FRAGMENT_HANDLER;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
@@ -54,7 +53,6 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
     private final AeronArchive aeronArchive;
     private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MESSAGE_LENGTH, FRAME_ALIGNMENT));
     private final Thread recordingEventsThread;
-    private final Thread consumerThread;
     private volatile long recordingStartTimeMs;
     private volatile long stopPosition;
     private volatile boolean isRunning = true;
@@ -100,10 +98,6 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
         recordingEventsThread = new Thread(this::runRecordingEventPoller);
         recordingEventsThread.setName("recording-events-poller");
         recordingEventsThread.start();
-
-        consumerThread = new Thread(this::runConsumer);
-        consumerThread.setName("stream-consumer");
-        consumerThread.start();
     }
 
     public void close()
@@ -177,7 +171,6 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
     {
         isRunning = false;
         recordingEventsThread.join();
-        consumerThread.join();
     }
 
     public void startRecording()
@@ -198,18 +191,6 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
             while (isRunning)
             {
                 idleStrategy.idle(recordingEventsAdapter.poll());
-            }
-        }
-    }
-
-    private void runConsumer()
-    {
-        try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
-        {
-            final IdleStrategy idleStrategy = new BackoffIdleStrategy(10, 100, 1, 1);
-            while (isRunning)
-            {
-                idleStrategy.idle(subscription.poll(NOOP_FRAGMENT_HANDLER, FRAGMENT_COUNT_LIMIT));
             }
         }
     }

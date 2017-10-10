@@ -103,6 +103,7 @@ public final class ArchivingMediaDriver implements AutoCloseable
                 (driverCtx.threadingMode() == null && Configuration.THREADING_MODE_DEFAULT != ThreadingMode.INVOKER);
 
         final MediaDriver driver = MediaDriver.launch(driverCtx
+            .spiesSimulateConnection(true)
             .useConcurrentCountersManager(useConcurrentCounterManager));
 
         final Archive archive = Archive.launch(archiveCtx

@@ -93,6 +93,7 @@ public class ArchiveRecordingLoadTest
             new MediaDriver.Context()
                 .threadingMode(ThreadingMode.DEDICATED)
                 .useConcurrentCountersManager(true)
+                .spiesSimulateConnection(true)
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true));
 
@@ -138,7 +139,6 @@ public class ArchiveRecordingLoadTest
 
             while (System.currentTimeMillis() < deadlineMs)
             {
-                startDrainingSubscriber(aeron, PUBLISH_URI, PUBLISH_STREAM_ID);
                 aeronArchive.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, SourceLocation.LOCAL);
 
                 final long start;

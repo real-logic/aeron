@@ -79,7 +79,7 @@ typedef struct aeron_network_publication_stct
     int64_t connection_timeout_ns;
     int64_t time_of_last_send_or_heartbeat_ns;
     int64_t time_of_last_setup_ns;
-    int64_t time_of_last_status_message_ns;
+    int64_t status_message_deadline_ns;
     int32_t session_id;
     int32_t stream_id;
     int32_t initial_term_id;
@@ -91,6 +91,8 @@ typedef struct aeron_network_publication_stct
     bool spies_simulate_connection;
     bool should_send_setup_frame;
     bool has_receivers;
+    bool has_spies;
+    bool is_connected;
     bool is_end_of_stream;
     bool track_sender_limits;
     bool has_sender_released;
@@ -149,6 +151,28 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
 
 void aeron_network_publication_check_for_blocked_publisher(
     aeron_network_publication_t *publication, int64_t now_ns, int64_t snd_pos);
+
+inline void aeron_network_publication_add_subscriber_hook(void *clientd, int64_t *value_addr)
+{
+    aeron_network_publication_t *publication = (aeron_network_publication_t *)clientd;
+
+    AERON_PUT_ORDERED(publication->has_spies, true);
+    if (publication->spies_simulate_connection)
+    {
+        AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 1);
+        AERON_PUT_ORDERED(publication->is_connected, true);
+    }
+}
+
+inline void aeron_network_publication_remove_subscriber_hook(void *clientd, int64_t *value_addr)
+{
+    aeron_network_publication_t *publication = (aeron_network_publication_t *)clientd;
+
+    if (1 == publication->conductor_fields.subscribeable.length)
+    {
+        AERON_PUT_ORDERED(publication->has_spies, false);
+    }
+}
 
 inline bool aeron_network_publication_is_possibly_blocked(
     aeron_network_publication_t *publication, int64_t consumer_position)
@@ -211,6 +235,21 @@ inline bool aeron_network_publication_has_sender_released(aeron_network_publicat
     AERON_GET_VOLATILE(has_sender_released, publication->has_sender_released);
 
     return has_sender_released;
+}
+
+inline int64_t aeron_network_publication_max_spy_position(aeron_network_publication_t *publication, int64_t snd_pos)
+{
+    int64_t position = snd_pos;
+
+    for (size_t i = 0, length = publication->conductor_fields.subscribeable.length; i < length; i++)
+    {
+        int64_t spy_position =
+            aeron_counter_get_volatile(publication->conductor_fields.subscribeable.array[i].value_addr);
+
+        position = (spy_position > position) ? spy_position : position;
+    }
+
+    return position;
 }
 
 inline size_t aeron_network_publication_num_spy_subscribers(aeron_network_publication_t *publication)

@@ -48,7 +48,7 @@ typedef struct aeron_network_publication_stct
     struct aeron_network_publication_conductor_fields_stct
     {
         aeron_driver_managed_resource_t managed_resource;
-        aeron_subscribeable_t subscribeable;
+        aeron_subscribable_t subscribable;
         int64_t clean_position;
         int64_t time_of_last_activity_ns;
         int64_t last_snd_pos;
@@ -168,7 +168,7 @@ inline void aeron_network_publication_remove_subscriber_hook(void *clientd, int6
 {
     aeron_network_publication_t *publication = (aeron_network_publication_t *)clientd;
 
-    if (1 == publication->conductor_fields.subscribeable.length)
+    if (1 == publication->conductor_fields.subscribable.length)
     {
         AERON_PUT_ORDERED(publication->has_spies, false);
     }
@@ -241,10 +241,10 @@ inline int64_t aeron_network_publication_max_spy_position(aeron_network_publicat
 {
     int64_t position = snd_pos;
 
-    for (size_t i = 0, length = publication->conductor_fields.subscribeable.length; i < length; i++)
+    for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
     {
         int64_t spy_position =
-            aeron_counter_get_volatile(publication->conductor_fields.subscribeable.array[i].value_addr);
+            aeron_counter_get_volatile(publication->conductor_fields.subscribable.array[i].value_addr);
 
         position = (spy_position > position) ? spy_position : position;
     }
@@ -254,7 +254,7 @@ inline int64_t aeron_network_publication_max_spy_position(aeron_network_publicat
 
 inline size_t aeron_network_publication_num_spy_subscribers(aeron_network_publication_t *publication)
 {
-    return publication->conductor_fields.subscribeable.length;
+    return publication->conductor_fields.subscribable.length;
 }
 
 #endif //AERON_AERON_NETWORK_PUBLICATION_H

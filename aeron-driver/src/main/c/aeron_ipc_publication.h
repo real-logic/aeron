@@ -37,7 +37,7 @@ typedef struct aeron_ipc_publication_stct
     struct aeron_ipc_publication_conductor_fields_stct
     {
         aeron_driver_managed_resource_t managed_resource;
-        aeron_subscribeable_t subscribeable;
+        aeron_subscribable_t subscribable;
         int64_t cleaning_position;
         int64_t trip_limit;
         int64_t consumer_position;
@@ -115,7 +115,7 @@ inline void aeron_ipc_publication_remove_subscriber_hook(void *clientd, int64_t 
         position > publication->conductor_fields.consumer_position ?
             position : publication->conductor_fields.consumer_position;
 
-    if (1 == publication->conductor_fields.subscribeable.length)
+    if (1 == publication->conductor_fields.subscribable.length)
     {
         AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 0);
     }
@@ -175,9 +175,9 @@ inline bool aeron_ipc_publication_is_drained(aeron_ipc_publication_t *publicatio
 {
     int64_t producer_position = aeron_ipc_publication_producer_position(publication);
 
-    for (size_t i = 0, length = publication->conductor_fields.subscribeable.length; i < length; i++)
+    for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
     {
-        int64_t sub_pos = aeron_counter_get_volatile(publication->conductor_fields.subscribeable.array[i].value_addr);
+        int64_t sub_pos = aeron_counter_get_volatile(publication->conductor_fields.subscribable.array[i].value_addr);
 
         if (sub_pos < producer_position)
         {
@@ -190,7 +190,7 @@ inline bool aeron_ipc_publication_is_drained(aeron_ipc_publication_t *publicatio
 
 inline size_t aeron_ipc_publication_num_subscribers(aeron_ipc_publication_t *publication)
 {
-    return publication->conductor_fields.subscribeable.length;
+    return publication->conductor_fields.subscribable.length;
 }
 
 #endif //AERON_AERON_IPC_PUBLICATION_H

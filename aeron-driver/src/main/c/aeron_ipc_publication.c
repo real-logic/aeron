@@ -102,12 +102,12 @@ int aeron_ipc_publication_create(
         _pub->mapped_raw_log.log_meta_data.addr, session_id, stream_id, initial_term_id);
 
     _pub->nano_clock = context->nano_clock;
-    _pub->conductor_fields.subscribeable.array = NULL;
-    _pub->conductor_fields.subscribeable.length = 0;
-    _pub->conductor_fields.subscribeable.capacity = 0;
-    _pub->conductor_fields.subscribeable.add_position_hook_func = aeron_ipc_publication_add_subscriber_hook;
-    _pub->conductor_fields.subscribeable.remove_position_hook_func = aeron_ipc_publication_remove_subscriber_hook;
-    _pub->conductor_fields.subscribeable.clientd = _pub;
+    _pub->conductor_fields.subscribable.array = NULL;
+    _pub->conductor_fields.subscribable.length = 0;
+    _pub->conductor_fields.subscribable.capacity = 0;
+    _pub->conductor_fields.subscribable.add_position_hook_func = aeron_ipc_publication_add_subscriber_hook;
+    _pub->conductor_fields.subscribable.remove_position_hook_func = aeron_ipc_publication_remove_subscriber_hook;
+    _pub->conductor_fields.subscribable.clientd = _pub;
     _pub->conductor_fields.managed_resource.registration_id = registration_id;
     _pub->conductor_fields.managed_resource.clientd = _pub;
     _pub->conductor_fields.managed_resource.incref = aeron_ipc_publication_incref;
@@ -144,15 +144,15 @@ int aeron_ipc_publication_create(
 
 void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aeron_ipc_publication_t *publication)
 {
-    aeron_subscribeable_t *subscribeable = &publication->conductor_fields.subscribeable;
+    aeron_subscribable_t *subscribable = &publication->conductor_fields.subscribable;
 
     aeron_counters_manager_free(counters_manager, (int32_t)publication->pub_lmt_position.counter_id);
 
-    for (size_t i = 0, length = subscribeable->length; i < length; i++)
+    for (size_t i = 0, length = subscribable->length; i < length; i++)
     {
-        aeron_counters_manager_free(counters_manager, (int32_t)subscribeable->array[i].counter_id);
+        aeron_counters_manager_free(counters_manager, (int32_t)subscribable->array[i].counter_id);
     }
-    aeron_free(subscribeable->array);
+    aeron_free(subscribable->array);
 
     if (NULL != publication)
     {
@@ -169,15 +169,15 @@ int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication)
     int64_t min_sub_pos = INT64_MAX;
     int64_t max_sub_pos = publication->conductor_fields.consumer_position;
 
-    for (size_t i = 0, length = publication->conductor_fields.subscribeable.length; i < length; i++)
+    for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
     {
-        int64_t position = aeron_counter_get_volatile(publication->conductor_fields.subscribeable.array[i].value_addr);
+        int64_t position = aeron_counter_get_volatile(publication->conductor_fields.subscribable.array[i].value_addr);
 
         min_sub_pos = (position < min_sub_pos) ? (position) : (min_sub_pos);
         max_sub_pos = (position > max_sub_pos) ? (position) : (max_sub_pos);
     }
 
-    if (0 == publication->conductor_fields.subscribeable.length)
+    if (0 == publication->conductor_fields.subscribable.length)
     {
         aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, max_sub_pos);
         publication->conductor_fields.trip_limit = max_sub_pos;
@@ -221,7 +221,7 @@ void aeron_ipc_publication_on_time_event(aeron_ipc_publication_t *publication, i
 {
     aeron_ipc_publication_check_for_blocked_publisher(publication, now_ns);
 
-    if (0 < publication->conductor_fields.subscribeable.length)
+    if (0 < publication->conductor_fields.subscribable.length)
     {
         AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 1);
     }

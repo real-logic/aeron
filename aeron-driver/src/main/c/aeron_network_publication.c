@@ -141,12 +141,12 @@ int aeron_network_publication_create(
     _pub->endpoint = endpoint;
     _pub->flow_control = flow_control_strategy;
     _pub->nano_clock = context->nano_clock;
-    _pub->conductor_fields.subscribeable.array = NULL;
-    _pub->conductor_fields.subscribeable.length = 0;
-    _pub->conductor_fields.subscribeable.capacity = 0;
-    _pub->conductor_fields.subscribeable.add_position_hook_func = aeron_network_publication_add_subscriber_hook;
-    _pub->conductor_fields.subscribeable.remove_position_hook_func = aeron_network_publication_remove_subscriber_hook;
-    _pub->conductor_fields.subscribeable.clientd = _pub;
+    _pub->conductor_fields.subscribable.array = NULL;
+    _pub->conductor_fields.subscribable.length = 0;
+    _pub->conductor_fields.subscribable.capacity = 0;
+    _pub->conductor_fields.subscribable.add_position_hook_func = aeron_network_publication_add_subscriber_hook;
+    _pub->conductor_fields.subscribable.remove_position_hook_func = aeron_network_publication_remove_subscriber_hook;
+    _pub->conductor_fields.subscribable.clientd = _pub;
     _pub->conductor_fields.managed_resource.registration_id = registration_id;
     _pub->conductor_fields.managed_resource.clientd = _pub;
     _pub->conductor_fields.managed_resource.incref = aeron_network_publication_incref;
@@ -203,18 +203,18 @@ void aeron_network_publication_close(aeron_counters_manager_t *counters_manager,
 {
     if (NULL != publication)
     {
-        aeron_subscribeable_t *subscribeable = &publication->conductor_fields.subscribeable;
+        aeron_subscribable_t *subscribable = &publication->conductor_fields.subscribable;
 
         aeron_counters_manager_free(counters_manager, (int32_t)publication->pub_lmt_position.counter_id);
         aeron_counters_manager_free(counters_manager, (int32_t)publication->snd_pos_position.counter_id);
         aeron_counters_manager_free(counters_manager, (int32_t)publication->snd_lmt_position.counter_id);
 
-        for (size_t i = 0, length = subscribeable->length; i < length; i++)
+        for (size_t i = 0, length = subscribable->length; i < length; i++)
         {
-            aeron_counters_manager_free(counters_manager, (int32_t)subscribeable->array[i].counter_id);
+            aeron_counters_manager_free(counters_manager, (int32_t)subscribable->array[i].counter_id);
         }
 
-        aeron_free(subscribeable->array);
+        aeron_free(subscribable->array);
         publication->conductor_fields.managed_resource.clientd = NULL;
 
         aeron_retransmit_handler_close(&publication->retransmit_handler);
@@ -664,15 +664,15 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
     bool has_receivers;
     AERON_GET_VOLATILE(has_receivers, publication->has_receivers);
     if (has_receivers ||
-        (publication->spies_simulate_connection && publication->conductor_fields.subscribeable.length > 0))
+        (publication->spies_simulate_connection && publication->conductor_fields.subscribable.length > 0))
     {
         int64_t min_consumer_position = snd_pos;
-        if (publication->conductor_fields.subscribeable.length > 0)
+        if (publication->conductor_fields.subscribable.length > 0)
         {
-            for (size_t i = 0, length = publication->conductor_fields.subscribeable.length; i < length; i++)
+            for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
             {
                 int64_t position =
-                    aeron_counter_get_volatile(publication->conductor_fields.subscribeable.array[i].value_addr);
+                    aeron_counter_get_volatile(publication->conductor_fields.subscribable.array[i].value_addr);
 
                 min_consumer_position = (position < min_consumer_position) ? (position) : (min_consumer_position);
             }
@@ -747,11 +747,11 @@ void aeron_network_publication_decref(void *clientd)
 bool aeron_network_publication_spies_finished_consuming(
     aeron_network_publication_t *publication, aeron_driver_conductor_t *conductor, int64_t eos_pos)
 {
-    if (publication->conductor_fields.subscribeable.length > 0)
+    if (publication->conductor_fields.subscribable.length > 0)
     {
-        for (size_t i = 0, length = publication->conductor_fields.subscribeable.length; i < length; i++)
+        for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
         {
-            if (aeron_counter_get_volatile(publication->conductor_fields.subscribeable.array[i].value_addr) < eos_pos)
+            if (aeron_counter_get_volatile(publication->conductor_fields.subscribable.array[i].value_addr) < eos_pos)
             {
                 return false;
             }
@@ -760,16 +760,16 @@ bool aeron_network_publication_spies_finished_consuming(
         AERON_PUT_ORDERED(publication->has_spies, false);
         aeron_driver_conductor_cleanup_spies(conductor, publication);
 
-        for (size_t i = 0, length = publication->conductor_fields.subscribeable.length; i < length; i++)
+        for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
         {
             aeron_counters_manager_free(
-                &conductor->counters_manager, (int32_t)publication->conductor_fields.subscribeable.array[i].counter_id);
+                &conductor->counters_manager, (int32_t)publication->conductor_fields.subscribable.array[i].counter_id);
         }
 
-        aeron_free(publication->conductor_fields.subscribeable.array);
-        publication->conductor_fields.subscribeable.array = NULL;
-        publication->conductor_fields.subscribeable.length = 0;
-        publication->conductor_fields.subscribeable.capacity = 0;
+        aeron_free(publication->conductor_fields.subscribable.array);
+        publication->conductor_fields.subscribable.array = NULL;
+        publication->conductor_fields.subscribable.length = 0;
+        publication->conductor_fields.subscribable.capacity = 0;
     }
 
     return true;
@@ -782,7 +782,7 @@ void aeron_network_publication_on_time_event(
     AERON_GET_VOLATILE(has_receivers, publication->has_receivers);
 
     const bool current_connected_status =
-        has_receivers || (publication->spies_simulate_connection && publication->conductor_fields.subscribeable.length > 0);
+        has_receivers || (publication->spies_simulate_connection && publication->conductor_fields.subscribable.length > 0);
 
     bool is_connected;
     AERON_GET_VOLATILE(is_connected, publication->is_connected);

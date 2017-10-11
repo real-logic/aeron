@@ -127,12 +127,12 @@ int aeron_publication_image_create(
     _image->loss_reporter_offset = -1;
     _image->nano_clock = context->nano_clock;
     _image->epoch_clock = context->epoch_clock;
-    _image->conductor_fields.subscribeable.array = NULL;
-    _image->conductor_fields.subscribeable.length = 0;
-    _image->conductor_fields.subscribeable.capacity = 0;
-    _image->conductor_fields.subscribeable.add_position_hook_func = aeron_driver_subscribeable_null_hook;
-    _image->conductor_fields.subscribeable.remove_position_hook_func = aeron_driver_subscribeable_null_hook;
-    _image->conductor_fields.subscribeable.clientd = NULL;
+    _image->conductor_fields.subscribable.array = NULL;
+    _image->conductor_fields.subscribable.length = 0;
+    _image->conductor_fields.subscribable.capacity = 0;
+    _image->conductor_fields.subscribable.add_position_hook_func = aeron_driver_subscribable_null_hook;
+    _image->conductor_fields.subscribable.remove_position_hook_func = aeron_driver_subscribable_null_hook;
+    _image->conductor_fields.subscribable.clientd = NULL;
     _image->conductor_fields.managed_resource.registration_id = correlation_id;
     _image->conductor_fields.managed_resource.clientd = _image;
     _image->conductor_fields.managed_resource.incref = NULL;
@@ -201,17 +201,17 @@ int aeron_publication_image_close(aeron_counters_manager_t *counters_manager, ae
 {
     if (NULL != image)
     {
-        aeron_subscribeable_t *subscribeable = &image->conductor_fields.subscribeable;
+        aeron_subscribable_t *subscribable = &image->conductor_fields.subscribable;
 
         aeron_counters_manager_free(counters_manager, (int32_t)image->rcv_hwm_position.counter_id);
         aeron_counters_manager_free(counters_manager, (int32_t)image->rcv_pos_position.counter_id);
 
-        for (size_t i = 0, length = subscribeable->length; i < length; i++)
+        for (size_t i = 0, length = subscribable->length; i < length; i++)
         {
-            aeron_counters_manager_free(counters_manager, (int32_t)subscribeable->array[i].counter_id);
+            aeron_counters_manager_free(counters_manager, (int32_t)subscribable->array[i].counter_id);
         }
 
-        aeron_free(subscribeable->array);
+        aeron_free(subscribable->array);
 
         image->map_raw_log_close_func(&image->mapped_raw_log);
         image->congestion_control->fini(image->congestion_control);
@@ -292,9 +292,9 @@ void aeron_publication_image_track_rebuild(
     int64_t min_sub_pos = hwm_position;
     int64_t max_sub_pos = INT64_MIN;
 
-    for (size_t i = 0, length = image->conductor_fields.subscribeable.length; i < length; i++)
+    for (size_t i = 0, length = image->conductor_fields.subscribable.length; i < length; i++)
     {
-        int64_t position = aeron_counter_get_volatile(image->conductor_fields.subscribeable.array[i].value_addr);
+        int64_t position = aeron_counter_get_volatile(image->conductor_fields.subscribable.array[i].value_addr);
 
         min_sub_pos = (position < min_sub_pos) ? (position) : (min_sub_pos);
         max_sub_pos = (position > max_sub_pos) ? (position) : (max_sub_pos);
@@ -523,7 +523,7 @@ void aeron_publication_image_on_time_event(
             int64_t last_packet_timestamp_ns;
             AERON_GET_VOLATILE(last_packet_timestamp_ns, image->last_packet_timestamp_ns);
 
-            if (0 == image->conductor_fields.subscribeable.length ||
+            if (0 == image->conductor_fields.subscribable.length ||
                 now_ns > (last_packet_timestamp_ns + image->conductor_fields.liveness_timeout_ns))
             {
                 image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_INACTIVE;

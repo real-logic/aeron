@@ -141,7 +141,7 @@ int aeron_udp_channel_transport_init(
         else
         {
             struct ip_mreq mreq;
-            struct sockaddr_in *interface_addr = (struct sockaddr_in *) &multicast_if_addr;
+            struct sockaddr_in *interface_addr = (struct sockaddr_in *) multicast_if_addr;
 
             mreq.imr_multiaddr.s_addr = in4->sin_addr.s_addr;
             mreq.imr_interface.s_addr = interface_addr->sin_addr.s_addr;
@@ -154,7 +154,7 @@ int aeron_udp_channel_transport_init(
                 goto error;
             }
 
-            if (setsockopt(transport->fd, IPPROTO_IP, IP_MULTICAST_IF, interface_addr, sizeof(struct in_addr)) < 0)
+            if (setsockopt(transport->fd, IPPROTO_IP, IP_MULTICAST_IF, &interface_addr->sin_addr, sizeof(struct in_addr)) < 0)
             {
                 int errcode = errno;
 

@@ -508,7 +508,19 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
         _driver->runners[i].on_close = NULL;
     }
 
+    if (aeron_logbuffer_check_term_length(_driver->context->term_buffer_length) < 0 ||
+        aeron_logbuffer_check_term_length(_driver->context->ipc_term_buffer_length) < 0)
+    {
+        return -1;
+    }
+
     if (aeron_driver_validate_page_size(_driver) < 0)
+    {
+        return -1;
+    }
+
+    if (aeron_driver_context_validate_mtu_length(_driver->context->mtu_length) < 0 ||
+        aeron_driver_context_validate_mtu_length(_driver->context->ipc_mtu_length) < 0)
     {
         return -1;
     }

@@ -14,7 +14,42 @@
  * limitations under the License.
  */
 
+#include <errno.h>
+#include <inttypes.h>
+#include "util/aeron_error.h"
 #include "concurrent/aeron_logbuffer_descriptor.h"
+
+int aeron_logbuffer_check_term_length(uint64_t term_length)
+{
+    if (term_length < AERON_LOGBUFFER_TERM_MIN_LENGTH)
+    {
+        aeron_set_err(
+            EINVAL,
+            "Term length less than min length of %" PRIu64 ": length=%" PRIu64,
+            AERON_LOGBUFFER_TERM_MIN_LENGTH, term_length);
+        return -1;
+    }
+
+    if (term_length > AERON_LOGBUFFER_TERM_MAX_LENGTH)
+    {
+        aeron_set_err(
+            EINVAL,
+            "Term length greater than max length of %" PRIu64 ": length=%" PRIu64,
+            AERON_LOGBUFFER_TERM_MAX_LENGTH, term_length);
+        return -1;
+    }
+
+    if (!AERON_IS_POWER_OF_TWO(term_length))
+    {
+        aeron_set_err(
+            EINVAL,
+            "Term length not a power of 2: length=%" PRIu64,
+            term_length);
+        return -1;
+    }
+
+    return 0;
+}
 
 extern uint64_t aeron_logbuffer_compute_log_length(uint64_t term_length, uint64_t page_size);
 extern int32_t aeron_logbuffer_term_offset(int64_t raw_tail, int32_t term_length);

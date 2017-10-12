@@ -156,6 +156,8 @@ aeron_driver_context_t;
 
 void aeron_driver_fill_cnc_metadata(aeron_driver_context_t *context);
 
+int aeron_driver_context_validate_mtu_length(uint64_t mtu_length);
+
 inline int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata)
 {
     int32_t cnc_version;

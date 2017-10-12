@@ -69,6 +69,8 @@ do \
 } \
 while(false)
 
+int aeron_logbuffer_check_term_length(uint64_t term_length);
+
 inline uint64_t aeron_logbuffer_compute_log_length(uint64_t term_length, uint64_t page_size)
 {
     return AERON_ALIGN(((term_length * AERON_LOGBUFFER_PARTITION_COUNT) + AERON_LOGBUFFER_META_DATA_LENGTH), page_size);

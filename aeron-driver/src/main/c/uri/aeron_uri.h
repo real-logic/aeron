@@ -17,6 +17,7 @@
 #ifndef AERON_AERON_URI_H
 #define AERON_AERON_URI_H
 
+#include <errno.h>
 #include "aeron_driver_common.h"
 
 typedef struct aeron_uri_param_stct
@@ -53,9 +54,10 @@ typedef struct aeron_uri_publication_params_stct
 {
     size_t term_length;
     size_t mtu_length;
-    size_t initial_term_id;
-    size_t term_id;
-    size_t term_offset;
+    int64_t initial_term_id;
+    int64_t term_id;
+    uint64_t term_offset;
+    bool is_replay;
 }
 aeron_uri_publication_params_t;
 
@@ -117,13 +119,12 @@ const char *aeron_uri_find_param_value(aeron_uri_params_t *uri_params, const cha
 typedef struct aeron_driver_context_stct aeron_driver_context_t;
 
 int aeron_uri_publication_params(
-    aeron_uri_type_t type,
-    aeron_uri_params_t *uri_params,
+    aeron_uri_t *uri,
     aeron_uri_publication_params_t *params,
     aeron_driver_context_t *context,
     bool is_exclusive);
 int aeron_udp_channel_subscription_params(
-    aeron_uri_params_t *uri_params,
+    aeron_uri_t *uri,
     aeron_udp_channel_subscription_params_t *params,
     aeron_driver_context_t *context);
 

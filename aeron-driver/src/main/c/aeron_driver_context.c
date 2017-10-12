@@ -583,6 +583,26 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     return 0;
 }
 
+int aeron_driver_context_validate_mtu_length(uint64_t mtu_length)
+{
+    if (mtu_length < AERON_DATA_HEADER_LENGTH || mtu_length > AERON_MAX_UDP_PAYLOAD_LENGTH)
+    {
+        aeron_set_err(
+            EINVAL,
+            "mtuLength must be a >= HEADER_LENGTH and <= MAX_UDP_PAYLOAD_LENGTH: mtuLength=%" PRIu64,
+            mtu_length);
+        return -1;
+    }
+
+    if ((mtu_length & (AERON_LOGBUFFER_FRAME_ALIGNMENT - 1)) != 0)
+    {
+        aeron_set_err(EINVAL, "mtuLength must be a multiple of FRAME_ALIGNMENT: mtuLength=%" PRIu64, mtu_length);
+        return -1;
+    }
+
+    return 0;
+}
+
 static int unlink_func(const char *path, const struct stat *sb, int type_flag, struct FTW *ftw)
 {
     if (remove(path) != 0)

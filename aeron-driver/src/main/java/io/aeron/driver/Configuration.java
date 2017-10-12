@@ -19,7 +19,6 @@ import io.aeron.*;
 import io.aeron.driver.exceptions.ConfigurationException;
 import io.aeron.driver.media.*;
 import io.aeron.logbuffer.FrameDescriptor;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
@@ -123,16 +122,6 @@ public class Configuration
      */
     public static final boolean PERFORM_STORAGE_CHECKS =
         "true".equalsIgnoreCase(getProperty(PERFORM_STORAGE_CHECKS_PROP_NAME, "true"));
-
-    /**
-     * Length (in bytes) of the log buffers for terms.
-     */
-    public static final String TERM_BUFFER_MAX_LENGTH_PROP_NAME = "aeron.term.buffer.max.length";
-
-    /**
-     * Default term max buffer length. The maximum possible term length is 1GB.
-     */
-    public static final int TERM_BUFFER_LENGTH_MAX_DEFAULT = LogBufferDescriptor.TERM_MAX_LENGTH;
 
     /**
      * Length (in bytes) of the log buffers for publication terms.
@@ -888,11 +877,6 @@ public class Configuration
     static int termBufferLength()
     {
         return getInteger(TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_LENGTH_DEFAULT);
-    }
-
-    static int maxTermBufferLength()
-    {
-        return getInteger(TERM_BUFFER_MAX_LENGTH_PROP_NAME, TERM_BUFFER_LENGTH_MAX_DEFAULT);
     }
 
     static int initialWindowLength()

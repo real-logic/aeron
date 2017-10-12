@@ -42,6 +42,7 @@ import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY;
+import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.agrona.BitUtil.align;
 import static org.agrona.IoUtil.mapNewFile;
@@ -390,7 +391,6 @@ public final class MediaDriver implements AutoCloseable
         private long publicationUnblockTimeoutNs = Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS;
         private long publicationConnectionTimeoutNs = Configuration.PUBLICATION_CONNECTION_TIMEOUT_NS;
         private long statusMessageTimeoutNs = Configuration.statusMessageTimeout();
-        private int maxTermBufferLength = Configuration.maxTermBufferLength();
         private int publicationTermBufferLength = Configuration.termBufferLength();
         private int ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength(publicationTermBufferLength);
         private int initialWindowLength = Configuration.initialWindowLength();
@@ -465,23 +465,8 @@ public final class MediaDriver implements AutoCloseable
                 validateMtuLength(ipcMtuLength);
                 validatePageSize(filePageSize);
 
-                LogBufferDescriptor.checkTermLength(maxTermBufferLength);
                 LogBufferDescriptor.checkTermLength(publicationTermBufferLength);
                 LogBufferDescriptor.checkTermLength(ipcPublicationTermBufferLength);
-
-                if (publicationTermBufferLength > maxTermBufferLength)
-                {
-                    throw new ConfigurationException(
-                        "publication term buffer length " + publicationTermBufferLength +
-                        " greater than max length " + maxTermBufferLength);
-                }
-
-                if (ipcPublicationTermBufferLength > maxTermBufferLength)
-                {
-                    throw new ConfigurationException(
-                        "IPC publication term buffer length " + ipcPublicationTermBufferLength +
-                        " greater than max length " + maxTermBufferLength);
-                }
 
                 Configuration.validateInitialWindowLength(initialWindowLength, mtuLength);
 
@@ -856,9 +841,10 @@ public final class MediaDriver implements AutoCloseable
          *
          * @return maximum length for a term buffer in the log which must be a power of two.
          */
+        @Deprecated
         public int maxTermBufferLength()
         {
-            return maxTermBufferLength;
+            return TERM_MAX_LENGTH;
         }
 
         /**
@@ -867,9 +853,9 @@ public final class MediaDriver implements AutoCloseable
          * @param maxTermBufferLength for a term buffer in the log which must be a power of two.
          * @return this for a fluent API.
          */
+        @Deprecated
         public Context maxTermBufferLength(final int maxTermBufferLength)
         {
-            this.maxTermBufferLength = maxTermBufferLength;
             return this;
         }
 
@@ -1774,7 +1760,6 @@ public final class MediaDriver implements AutoCloseable
             {
                 rawLogFactory = new RawLogFactory(
                     aeronDirectoryName(),
-                    maxTermBufferLength,
                     filePageSize,
                     termBufferSparseFile,
                     performStorageChecks,

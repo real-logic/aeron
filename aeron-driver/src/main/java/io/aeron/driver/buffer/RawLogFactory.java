@@ -26,13 +26,13 @@ import java.nio.file.*;
 
 import static io.aeron.driver.Configuration.LOW_FILE_STORE_WARNING_THRESHOLD;
 import static io.aeron.driver.buffer.FileMappingConvention.streamLocation;
+import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 
 /**
  * Factory for creating {@link RawLog}s in the source publications or publication images directories as appropriate.
  */
 public class RawLogFactory
 {
-    private final int maxTermBufferLength;
     private final int filePageSize;
     private final boolean useSparseFiles;
     private final boolean checkStorage;
@@ -43,7 +43,6 @@ public class RawLogFactory
 
     public RawLogFactory(
         final String dataDirectoryName,
-        final int termBufferMaxLength,
         final int filePageSize,
         final boolean useSparseFiles,
         final boolean checkStorage,
@@ -75,7 +74,6 @@ public class RawLogFactory
         }
 
         fileStore = fs;
-        this.maxTermBufferLength = termBufferMaxLength;
     }
 
     /**
@@ -189,10 +187,10 @@ public class RawLogFactory
 
     private void validateTermBufferLength(final int termBufferLength)
     {
-        if (termBufferLength < 0 || termBufferLength > maxTermBufferLength)
+        if (termBufferLength < 0 || termBufferLength > TERM_MAX_LENGTH)
         {
             throw new IllegalArgumentException(
-                "invalid buffer length: " + termBufferLength + " max is " + maxTermBufferLength);
+                "invalid buffer length: " + termBufferLength + " max is " + TERM_MAX_LENGTH);
         }
     }
 }

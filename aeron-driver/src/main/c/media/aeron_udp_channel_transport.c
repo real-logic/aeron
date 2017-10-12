@@ -95,16 +95,20 @@ int aeron_udp_channel_transport_init(
         }
 #endif
 
-        if (bind(transport->fd, (struct sockaddr *) bind_addr, bind_addr_len) < 0)
-        {
-            int errcode = errno;
-
-            aeron_set_err(errcode, "multicast bind: %s", strerror(errcode));
-            goto error;
-        }
-
         if (is_ipv6)
         {
+            struct sockaddr_in6 addr;
+            memcpy(&addr, bind_addr, sizeof(addr));
+            addr.sin6_addr = in6addr_any;
+
+            if (bind(transport->fd, (struct sockaddr *) &addr, bind_addr_len) < 0)
+            {
+                int errcode = errno;
+
+                aeron_set_err(errcode, "multicast IPv6 bind: %s", strerror(errcode));
+                goto error;
+            }
+
             struct ipv6_mreq mreq;
 
             memcpy(&mreq.ipv6mr_multiaddr, &in6->sin6_addr, sizeof(in6->sin6_addr));
@@ -140,6 +144,18 @@ int aeron_udp_channel_transport_init(
         }
         else
         {
+            struct sockaddr_in addr;
+            memcpy(&addr, bind_addr, sizeof(addr));
+            addr.sin_addr.s_addr = INADDR_ANY;
+
+            if (bind(transport->fd, (struct sockaddr *) &addr, bind_addr_len) < 0)
+            {
+                int errcode = errno;
+
+                aeron_set_err(errcode, "multicast IPv4 bind: %s", strerror(errcode));
+                goto error;
+            }
+
             struct ip_mreq mreq;
             struct sockaddr_in *interface_addr = (struct sockaddr_in *) multicast_if_addr;
 

@@ -76,7 +76,7 @@ public class LogInspector
             out.println("======================================================================");
 
             final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
-            final UnsafeBuffer[] termBuffers = logBuffers.termBuffers();
+            final UnsafeBuffer[] termBuffers = logBuffers.duplicateTermBuffers();
             final int termLength = logBuffers.termLength();
             final UnsafeBuffer metaDataBuffer = logBuffers.metaDataBuffer();
             final int initialTermId = initialTermId(metaDataBuffer);

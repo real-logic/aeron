@@ -97,7 +97,7 @@ public class Publication implements AutoCloseable
         final long originalRegistrationId,
         final long registrationId)
     {
-        final UnsafeBuffer[] buffers = logBuffers.termBuffers();
+        final UnsafeBuffer[] buffers = logBuffers.duplicateTermBuffers();
         final UnsafeBuffer logMetaDataBuffer = logBuffers.metaDataBuffer();
 
         for (int i = 0; i < PARTITION_COUNT; i++)

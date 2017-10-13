@@ -22,6 +22,8 @@ import org.agrona.ManagedResource;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
@@ -38,14 +40,19 @@ import static java.nio.file.StandardOpenOption.WRITE;
  */
 public class LogBuffers implements AutoCloseable, ManagedResource
 {
-    private final int termLength;
-    private int refCount;
     private long timeOfLastStateChangeNs;
+    private int refCount;
+    private final int termLength;
     private final FileChannel fileChannel;
-    private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
+    private final ByteBuffer[] termBuffers = new ByteBuffer[PARTITION_COUNT];
     private final UnsafeBuffer logMetaDataBuffer;
     private final MappedByteBuffer[] mappedByteBuffers;
 
+    /**
+     * Construct the log buffers for a given log file.
+     *
+     * @param logFileName to be mapped.
+     */
     public LogBuffers(final String logFileName)
     {
         try
@@ -74,7 +81,7 @@ public class LogBuffers implements AutoCloseable, ManagedResource
                     final int offset = i * termLength;
                     mappedBuffer.limit(offset + termLength).position(offset);
 
-                    termBuffers[i] = new UnsafeBuffer(mappedBuffer.slice());
+                    termBuffers[i] = mappedBuffer.slice();
                 }
             }
             else
@@ -91,11 +98,10 @@ public class LogBuffers implements AutoCloseable, ManagedResource
 
                 mappedByteBuffers[mappedByteBuffers.length - 1] = metaDataMappedBuffer;
 
-                logMetaDataBuffer =
-                    new UnsafeBuffer(
-                        metaDataMappedBuffer,
-                        (int)metaDataMappingLength - LOG_META_DATA_LENGTH,
-                        LOG_META_DATA_LENGTH);
+                logMetaDataBuffer = new UnsafeBuffer(
+                    metaDataMappedBuffer,
+                    (int)metaDataMappingLength - LOG_META_DATA_LENGTH,
+                    LOG_META_DATA_LENGTH);
 
                 final int metaDataTermLength = LogBufferDescriptor.termLength(logMetaDataBuffer);
                 final int pageSize = LogBufferDescriptor.pageSize(logMetaDataBuffer);
@@ -112,9 +118,9 @@ public class LogBuffers implements AutoCloseable, ManagedResource
 
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {
-                    mappedByteBuffers[i] =
-                        fileChannel.map(READ_WRITE, assumedTermLength * (long)i, assumedTermLength);
-                    termBuffers[i] = new UnsafeBuffer(mappedByteBuffers[i], 0, assumedTermLength);
+                    final long position = assumedTermLength * (long)i;
+                    mappedByteBuffers[i] = fileChannel.map(READ_WRITE, position, assumedTermLength);
+                    termBuffers[i] = mappedByteBuffers[i];
                 }
             }
         }
@@ -127,25 +133,40 @@ public class LogBuffers implements AutoCloseable, ManagedResource
             close();
             throw ex;
         }
+    }
 
-        for (final UnsafeBuffer buffer : termBuffers)
+    /**
+     * Duplicate the underlying {@link ByteBuffer}s and wrap them for thread local access.
+     *
+     * @return duplicates of the wrapped underlying {@link ByteBuffer}s.
+     */
+    public UnsafeBuffer[] duplicateTermBuffers()
+    {
+        final UnsafeBuffer[] buffers = new UnsafeBuffer[PARTITION_COUNT];
+
+        for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            buffer.verifyAlignment();
+            buffers[i] = new UnsafeBuffer(termBuffers[i].duplicate().order(ByteOrder.LITTLE_ENDIAN));
         }
 
-        logMetaDataBuffer.verifyAlignment();
+        return buffers;
     }
 
-    public UnsafeBuffer[] termBuffers()
-    {
-        return termBuffers;
-    }
-
+    /**
+     * Get the buffer which holds the log metadata.
+     *
+     * @return the buffer which holds the log metadata.
+     */
     public UnsafeBuffer metaDataBuffer()
     {
         return logMetaDataBuffer;
     }
 
+    /**
+     * The {@link FileChannel} for the mapped log.
+     *
+     * @return the {@link FileChannel} for the mapped log.
+     */
     public FileChannel fileChannel()
     {
         return fileChannel;
@@ -161,6 +182,11 @@ public class LogBuffers implements AutoCloseable, ManagedResource
         CloseHelper.close(fileChannel);
     }
 
+    /**
+     * The length of the term buffer in each log partition.
+     *
+     * @return length of the term buffer in each log partition.
+     */
     public int termLength()
     {
         return termLength;

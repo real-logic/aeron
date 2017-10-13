@@ -60,7 +60,7 @@ public class PublicationTest
     public void setUp()
     {
         when(publicationLimit.getVolatile()).thenReturn(2L * SEND_BUFFER_CAPACITY);
-        when(logBuffers.termBuffers()).thenReturn(termBuffers);
+        when(logBuffers.duplicateTermBuffers()).thenReturn(termBuffers);
         when(logBuffers.termLength()).thenReturn(TERM_MIN_LENGTH);
         when(logBuffers.metaDataBuffer()).thenReturn(logMetaDataBuffer);
         when(conductor.clientLock()).thenReturn(conductorLock);

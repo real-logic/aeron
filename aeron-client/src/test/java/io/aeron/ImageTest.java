@@ -78,7 +78,7 @@ public class ImageTest
 
         final UnsafeBuffer logMetaDataBuffer = new UnsafeBuffer(allocateDirect(LOG_META_DATA_LENGTH));
 
-        when(logBuffers.termBuffers()).thenReturn(termBuffers);
+        when(logBuffers.duplicateTermBuffers()).thenReturn(termBuffers);
         when(logBuffers.termLength()).thenReturn(TERM_BUFFER_LENGTH);
         when(logBuffers.metaDataBuffer()).thenReturn(logMetaDataBuffer);
     }

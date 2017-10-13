@@ -93,7 +93,7 @@ public class Image
         this.correlationId = correlationId;
         this.joinPosition = subscriberPosition.get();
 
-        termBuffers = logBuffers.termBuffers();
+        termBuffers = logBuffers.duplicateTermBuffers();
 
         final int termLength = logBuffers.termLength();
         this.termLengthMask = termLength - 1;

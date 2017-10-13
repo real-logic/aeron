@@ -171,8 +171,8 @@ public class ClientConductorTest
         when(logBuffersFactory.map(SESSION_ID_1 + "-log")).thenReturn(logBuffersSession1);
         when(logBuffersFactory.map(SESSION_ID_2 + "-log")).thenReturn(logBuffersSession2);
 
-        when(logBuffersSession1.termBuffers()).thenReturn(termBuffersSession1);
-        when(logBuffersSession2.termBuffers()).thenReturn(termBuffersSession2);
+        when(logBuffersSession1.duplicateTermBuffers()).thenReturn(termBuffersSession1);
+        when(logBuffersSession2.duplicateTermBuffers()).thenReturn(termBuffersSession2);
 
         when(logBuffersSession1.metaDataBuffer()).thenReturn(logMetaDataSession1);
         when(logBuffersSession2.metaDataBuffer()).thenReturn(logMetaDataSession2);

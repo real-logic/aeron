@@ -195,7 +195,10 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
-     * Clean up and release all Aeron internal resources and shutdown threads.
+     * Clean up and release all Aeron client resources and shutdown conductor thread if not using
+     * {@link Context#useConductorAgentInvoker(boolean)}.
+     * <p>
+     * This will close all {@link Publication}s and {@link Subscription}s created from this client.
      */
     public void close()
     {

@@ -753,6 +753,6 @@ public final class Archive implements AutoCloseable
 
     static String segmentFileName(final long recordingId, final int segmentIndex)
     {
-        return recordingId + '-' + segmentIndex + Configuration.RECORDING_SEGMENT_POSTFIX;
+        return recordingId + "-" + segmentIndex + Configuration.RECORDING_SEGMENT_POSTFIX;
     }
 }

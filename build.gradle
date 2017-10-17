@@ -496,7 +496,7 @@ project(':aeron-archive') {
     }
 
     jar {
-        from("${buildDir}/classes/generated") {
+        from("${buildDir}/classes/java/generated") {
             include '**/*.class'
         }
     }

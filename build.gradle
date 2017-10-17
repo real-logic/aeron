@@ -572,7 +572,7 @@ project(':aeron-cluster') {
     }
 
     jar {
-        from("${buildDir}/classes/generated") {
+        from("${buildDir}/classes/java/generated") {
             include '**/*.class'
         }
     }

@@ -182,7 +182,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
         if (subscriberPositions.length > 0)
         {
-            if (maxSubscriberPosition != consumerPosition)
+            if (maxSubscriberPosition > consumerPosition)
             {
                 consumerPosition = maxSubscriberPosition;
             }

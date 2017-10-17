@@ -197,10 +197,10 @@ public class IpcPublication implements DriverManagedResource, Subscribable
                 workCount = 1;
             }
         }
-        else if (tripLimit > maxSubscriberPosition)
+        else if (publisherLimit.get() > consumerPosition)
         {
-            tripLimit = maxSubscriberPosition;
-            publisherLimit.setOrdered(maxSubscriberPosition);
+            tripLimit = consumerPosition;
+            publisherLimit.setOrdered(consumerPosition);
         }
 
         return workCount;

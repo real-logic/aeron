@@ -25,6 +25,7 @@ import java.util.Set;
 
 import static io.aeron.agent.EventConfiguration.ALL_LOGGER_EVENT_CODES;
 import static io.aeron.agent.EventConfiguration.getEnabledEventCodes;
+import static io.aeron.driver.Configuration.parseSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
@@ -74,5 +75,14 @@ public class EventConfigurationTest
         final Set<EventCode> eventCodes = EnumSet.of(EventCode.FRAME_OUT, EventCode.FRAME_IN);
         final long bitSet = EventConfiguration.makeTagBitSet(eventCodes);
         assertThat(bitSet, Matchers.is(EventCode.FRAME_OUT.tagBit() | EventCode.FRAME_IN.tagBit()));
+    }
+
+    @Test
+    public void shouldParseSizesWithSuffix()
+    {
+        assertThat(parseSize("", "1"), Matchers.equalTo(1));
+        assertThat(parseSize("", "1k"), Matchers.equalTo(1024));
+        assertThat(parseSize("", "1m"), Matchers.equalTo(1024 * 1024));
+        assertThat(parseSize("", "1g"), Matchers.equalTo(1024 * 1024 * 1024));
     }
 }

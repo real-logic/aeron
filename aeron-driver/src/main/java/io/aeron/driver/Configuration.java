@@ -33,6 +33,8 @@ import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.nio.channels.DatagramChannel;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static io.aeron.driver.ThreadingMode.DEDICATED;
 import static io.aeron.logbuffer.LogBufferDescriptor.PAGE_MAX_SIZE;
@@ -110,7 +112,7 @@ public class Configuration
      * Page size for alignment of all files.
      */
     public static final int FILE_PAGE_SIZE =
-        getInteger(FILE_PAGE_SIZE_PROP_NAME, FILE_PAGE_SIZE_DEFAULT);
+            getSize(FILE_PAGE_SIZE_PROP_NAME, FILE_PAGE_SIZE_DEFAULT);
 
     /**
      * Property name for boolean value for if storage checks should be performed when allocating files.
@@ -146,7 +148,7 @@ public class Configuration
     /**
      * IPC Term buffer length in bytes.
      */
-    public static final int IPC_TERM_BUFFER_LENGTH = getInteger(
+    public static final int IPC_TERM_BUFFER_LENGTH = getSize(
         IPC_TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_IPC_LENGTH_DEFAULT);
 
     /**
@@ -163,7 +165,7 @@ public class Configuration
      * Default value for low file storage warning threshold.
      */
     public static final long LOW_FILE_STORE_WARNING_THRESHOLD =
-        getLong(LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME, LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT);
+            getSize(LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME, LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT);
 
     /**
      * Length (in bytes) of the conductor buffer for control commands from the clients to the media driver conductor.
@@ -178,7 +180,7 @@ public class Configuration
     /**
      * Conductor buffer length in bytes.
      */
-    public static final int CONDUCTOR_BUFFER_LENGTH = getInteger(
+    public static final int CONDUCTOR_BUFFER_LENGTH = getSize(
         CONDUCTOR_BUFFER_LENGTH_PROP_NAME, CONDUCTOR_BUFFER_LENGTH_DEFAULT);
 
     /**
@@ -194,7 +196,7 @@ public class Configuration
     /**
      * Length for broadcast buffers from the media driver and the clients.
      */
-    public static final int TO_CLIENTS_BUFFER_LENGTH = getInteger(
+    public static final int TO_CLIENTS_BUFFER_LENGTH = getSize(
         TO_CLIENTS_BUFFER_LENGTH_PROP_NAME, TO_CLIENTS_BUFFER_LENGTH_DEFAULT);
 
     /**
@@ -210,7 +212,7 @@ public class Configuration
     /**
      * Length of the memory mapped buffers for the system counters file.
      */
-    public static final int COUNTERS_VALUES_BUFFER_LENGTH = getInteger(
+    public static final int COUNTERS_VALUES_BUFFER_LENGTH = getSize(
         COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME, COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT);
 
     public static final int COUNTERS_METADATA_BUFFER_LENGTH =
@@ -229,7 +231,7 @@ public class Configuration
     /**
      * Buffer length for the error buffer for the media driver.
      */
-    public static final int ERROR_BUFFER_LENGTH = getInteger(
+    public static final int ERROR_BUFFER_LENGTH = getSize(
         ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
     /**
      * Property name for length of the memory mapped buffer for the loss report buffer.
@@ -244,7 +246,7 @@ public class Configuration
     /**
      * Buffer length for the loss report buffer for the media driver.
      */
-    public static final int LOSS_REPORT_BUFFER_LENGTH = getInteger(
+    public static final int LOSS_REPORT_BUFFER_LENGTH = getSize(
         LOSS_REPORT_BUFFER_LENGTH_PROP_NAME, LOSS_REPORT_BUFFER_LENGTH_DEFAULT);
 
     /**
@@ -299,7 +301,7 @@ public class Configuration
     /**
      * SO_RCVBUF length, 0 means use OS default.
      */
-    public static final int SOCKET_RCVBUF_LENGTH = getInteger(
+    public static final int SOCKET_RCVBUF_LENGTH = getSize(
         SOCKET_RCVBUF_LENGTH_PROP_NAME, SOCKET_RCVBUF_LENGTH_DEFAULT);
 
     /**
@@ -315,7 +317,7 @@ public class Configuration
     /**
      * SO_SNDBUF length, 0 means use OS default.
      */
-    public static final int SOCKET_SNDBUF_LENGTH = getInteger(
+    public static final int SOCKET_SNDBUF_LENGTH = getSize(
         SOCKET_SNDBUF_LENGTH_PROP_NAME, SOCKET_SNDBUF_LENGTH_DEFAULT);
 
     /**
@@ -401,7 +403,7 @@ public class Configuration
     /**
      * IPC Publication term window length for flow control in bytes.
      */
-    public static final int IPC_PUBLICATION_TERM_WINDOW_LENGTH = getInteger(
+    public static final int IPC_PUBLICATION_TERM_WINDOW_LENGTH = getSize(
         IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
 
     /**
@@ -583,7 +585,7 @@ public class Configuration
     /**
      * Length of the MTU to use for sending messages.
      */
-    public static final int MTU_LENGTH = getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
+    public static final int MTU_LENGTH = getSize(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
 
     /**
      * Length of the maximum transmission unit of the media driver's protocol for IPC.
@@ -593,7 +595,7 @@ public class Configuration
     /**
      * Length of the MTU to use for sending messages via IPC
      */
-    public static final int IPC_MTU_LENGTH = getInteger(IPC_MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
+    public static final int IPC_MTU_LENGTH = getSize(IPC_MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
 
     /**
      * {@link ThreadingMode} to be used by the Aeron {@link MediaDriver}.
@@ -876,12 +878,12 @@ public class Configuration
 
     static int termBufferLength()
     {
-        return getInteger(TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_LENGTH_DEFAULT);
+        return getSize(TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_LENGTH_DEFAULT);
     }
 
     static int initialWindowLength()
     {
-        return getInteger(INITIAL_WINDOW_LENGTH_PROP_NAME, INITIAL_WINDOW_LENGTH_DEFAULT);
+        return getSize(INITIAL_WINDOW_LENGTH_PROP_NAME, INITIAL_WINDOW_LENGTH_DEFAULT);
     }
 
     static long statusMessageTimeout()
@@ -1094,6 +1096,70 @@ public class Configuration
         if (!BitUtil.isPowerOfTwo(pageSize))
         {
             throw new ConfigurationException("Page size not a power of 2: page size=" + pageSize);
+        }
+    }
+
+    private static int getSize(final String propertyKey, final int defaultValue)
+    {
+        final String propString = getProperty(propertyKey);
+        if (propString != null)
+        {
+            return parseSize(propertyKey, propString);
+        }
+        else
+        {
+            return defaultValue;
+        }
+    }
+
+    private static long getSize(final String propertyKey, final long defaultValue)
+    {
+        final String propertyValue = getProperty(propertyKey);
+        if (propertyValue != null)
+        {
+            return parseSize(propertyKey, propertyValue);
+        }
+        else
+        {
+            return defaultValue;
+        }
+    }
+
+    private static final Pattern SIZE_REGEX = Pattern.compile("(?<value>\\d+)(?<magnitude>\\w)?");
+    private static final String PARSE_SIZE_MAGNITUDE_FAILURE_FORMAT = "Couldn't parse value: %s for property %s. " +
+            "Trailing character should be one of k, m, or g, but was %s";
+    private static final String PARSE_SIZE_VALUE_FAILURE_FORMAT = "Couldn't parse value: %s for property %s. " +
+            "Should be a positive number followed by one of k, m, or g.";
+
+    public static int parseSize(final String propertyKey, final String sizeString)
+    {
+        final Matcher matcher = SIZE_REGEX.matcher(sizeString);
+        if (!matcher.matches())
+        {
+            throw new IllegalArgumentException(String.format(PARSE_SIZE_VALUE_FAILURE_FORMAT, sizeString, propertyKey));
+        }
+
+        final int value = Integer.valueOf(matcher.group("value"));
+        final String magnitude = matcher.group("magnitude");
+
+        if (magnitude != null)
+        {
+            switch (magnitude)
+            {
+                case "k":
+                    return value * 1024;
+                case "m":
+                    return value * 1024 * 1024;
+                case "g":
+                    return value * 1024 * 1024 * 1024;
+                default:
+                    throw new IllegalArgumentException(
+                            String.format(PARSE_SIZE_MAGNITUDE_FAILURE_FORMAT, sizeString, propertyKey, magnitude));
+            }
+        }
+        else
+        {
+            return value;
         }
     }
 }

@@ -4,7 +4,7 @@
                    id="1"
                    version="0"
                    semanticVersion="5.2"
-                   description="Message Codecs for communicating with and within an Aeron Cluster"
+                   description="Message Codecs for communicating with, and within, an Aeron Cluster"
                    byteOrder="littleEndian">
     <types>
         <composite name="messageHeader" description="Message identifiers and length of message root">
@@ -26,50 +26,54 @@
             <validValue name="ERROR">1</validValue>
             <validValue name="REDIRECT">2</validValue>
         </enum>
-        <type name="time_t" primitiveType="int64" description="Unix epoch time"/>
+        <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC"/>
     </types>
 
     <!--
-        Cluster Session Protocol Messages
-        =================================
+        Cluster Session Protocol
+        ========================
 
-        Connect Session
-        - If requested is served by the leader then a session is opened.
-        - If the request is served by a follower then a REDIRECT response will provide the detail of the current leader.
+        Protocol is: connect, *session-message, close
 
-        State Machine Interaction
-        - User messages are sent to the state machine with a StateMachineMessageHeader followed by user payload.
-        - The state machine will emit responses and events with a StateMachineMessageHeader follow by a payload.
-        - If the leader changes during a session then a REDIRECT response will provide the detail of the current leader.
+        1. Connect Session
+          - If connect request is serviced by the leader then a session is opened.
+          - If connect request is serviced by a follower then a response will REDIRECT with detail for the current leader.
 
-        Close Session
-        - A cluster session can be closed with a CloseSessionRequest
+        2. State Machine Interaction via Session Messages
+          - Messages are sent to the state machine with a SessionHeader followed by user defined protocol payload.
+          - The state machine will emit responses and events with a SessionHeader followed by user protocol payload.
+          - If the leader changes during a session then a response will REDIRECT with detail for the current leader.
+          - The user defined protocol is the protocol of messages for interacting with the application being clustered.
+
+        3. Close Session
+          - A cluster session can be closed with a CloseSessionRequest
+          - If the session is not explicitly closed then it will timeout if the connection becomes unavailable.
     -->
 
     <sbe:message name="SessionResponse"
                  id="1"
-                 description="Generic response to a session request. Details will be empty if code is OK.">
+                 description="Generic response to a session request. Details will be empty if code is OK">
         <field name="clusterSessionId"   id="1" type="int64"
-               description="Session id for a multiplexed session over a shared connection, i.e. same Image."/>
+               description="Session id for a multiplexed session over a shared connection, i.e. same Image"/>
         <field name="correlationId"      id="2" type="int64"
-               description="Request correlation id with which this response is associated."/>
+               description="Request correlation id with which this response is associated"/>
         <field name="code"               id="3" type="SessionResponseCode"
                description="code type of the response"/>
         <data  name="detail"             id="4" type="varAsciiEncoding"
-               description="Detail for a REDIRECT or ERROR response code."/>
+               description="Detail for a REDIRECT or ERROR response code"/>
     </sbe:message>
 
     <sbe:message name="ConnectSessionRequest"
                  id="2"
-                 description="Request a connection to the cluster and if successful then open a session.">
+                 description="Connect to the cluster and if successful then open a session">
         <field name="correlationId"      id="1" type="int64"/>
         <field name="responseStreamId"   id="2" type="int32"/>
         <data  name="responseChannel"    id="3" type="varAsciiEncoding"/>
     </sbe:message>
 
-    <sbe:message name="StateMachineMessageHeader"
+    <sbe:message name="SessionHeader"
                  id="3"
-                 description="Header for clustered state machine ingress and egress session messages.">
+                 description="Header for request and response messages within a communication session with the clustered state machine">
         <field name="correlationId"      id="1" type="int64"/>
         <field name="clusterSessionId"   id="2" type="int64"/>
         <field name="timestamp"          id="3" type="time_t"/>
@@ -77,17 +81,17 @@
 
     <sbe:message name="CloseSessionRequest"
                  id="4"
-                 description="Close an existing cluster session.">
+                 description="Close an open cluster session">
         <field name="clusterSessionId"   id="1" type="int64"/>
     </sbe:message>
 
     <sbe:message name="TimerEvent"
                  id="5"
-                 description="Timer triggered event as the result of registering a timer and the deadline passing.">
+                 description="Timer triggered event as the result of a deadline passing on a registered timer">
         <field name="correlationId"      id="1" type="int64"/>
         <field name="timestamp"          id="2" type="time_t"/>
     </sbe:message>
 
-    <!-- Cluster Consensus Protocol Messages -->
+    <!-- Cluster Consensus Protocol -->
 
 </sbe:messageSchema>

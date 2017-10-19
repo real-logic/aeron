@@ -64,7 +64,7 @@ public class BasicPublisher
         try (Aeron aeron = Aeron.connect(ctx);
              Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
-            for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
+            for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
                 final String message = "Hello World! " + i;
                 final byte[] messageBytes = message.getBytes();

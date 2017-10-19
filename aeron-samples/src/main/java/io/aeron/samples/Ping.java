@@ -41,8 +41,8 @@ public class Ping
 {
     private static final int PING_STREAM_ID = SampleConfiguration.PING_STREAM_ID;
     private static final int PONG_STREAM_ID = SampleConfiguration.PONG_STREAM_ID;
-    private static final int NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
-    private static final int WARMUP_NUMBER_OF_MESSAGES = SampleConfiguration.WARMUP_NUMBER_OF_MESSAGES;
+    private static final long NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
+    private static final long WARMUP_NUMBER_OF_MESSAGES = SampleConfiguration.WARMUP_NUMBER_OF_MESSAGES;
     private static final int WARMUP_NUMBER_OF_ITERATIONS = SampleConfiguration.WARMUP_NUMBER_OF_ITERATIONS;
     private static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
@@ -111,7 +111,7 @@ public class Ping
         final FragmentHandler fragmentHandler,
         final Publication publication,
         final Subscription subscription,
-        final int count)
+        final long count)
     {
         while (subscription.hasNoImages())
         {
@@ -120,7 +120,7 @@ public class Ping
 
         final Image image = subscription.imageAtIndex(0);
 
-        for (int i = 0; i < count; i++)
+        for (long i = 0; i < count; i++)
         {
             long offeredPosition;
 

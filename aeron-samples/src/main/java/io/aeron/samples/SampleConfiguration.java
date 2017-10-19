@@ -42,18 +42,20 @@ public class SampleConfiguration
     public static final String CHANNEL;
     public static final String PING_CHANNEL;
     public static final String PONG_CHANNEL;
-    public static final long LINGER_TIMEOUT_MS;
+
+    public static final boolean EMBEDDED_MEDIA_DRIVER;
+    public static final boolean RANDOM_MESSAGE_LENGTH;
+    public static final boolean INFO_FLAG;
     public static final int STREAM_ID;
     public static final int PING_STREAM_ID;
     public static final int PONG_STREAM_ID;
     public static final int FRAGMENT_COUNT_LIMIT;
     public static final int MESSAGE_LENGTH;
-    public static final int NUMBER_OF_MESSAGES;
-    public static final int WARMUP_NUMBER_OF_MESSAGES;
     public static final int WARMUP_NUMBER_OF_ITERATIONS;
-    public static final boolean EMBEDDED_MEDIA_DRIVER;
-    public static final boolean RANDOM_MESSAGE_LENGTH;
-    public static final boolean INFO_FLAG;
+    public static final long WARMUP_NUMBER_OF_MESSAGES;
+    public static final long NUMBER_OF_MESSAGES;
+    public static final long LINGER_TIMEOUT_MS;
+
 
     static
     {
@@ -67,8 +69,8 @@ public class SampleConfiguration
         FRAGMENT_COUNT_LIMIT = Integer.getInteger(FRAME_COUNT_LIMIT_PROP, 20);
         MESSAGE_LENGTH = Integer.getInteger(MESSAGE_LENGTH_PROP, 256);
         RANDOM_MESSAGE_LENGTH = Boolean.getBoolean(RANDOM_MESSAGE_LENGTH_PROP);
-        NUMBER_OF_MESSAGES = Integer.getInteger(NUMBER_OF_MESSAGES_PROP, 1_000_000);
-        WARMUP_NUMBER_OF_MESSAGES = Integer.getInteger(WARMUP_NUMBER_OF_MESSAGES_PROP, 10_000);
+        NUMBER_OF_MESSAGES = Long.getLong(NUMBER_OF_MESSAGES_PROP, 1_000_000);
+        WARMUP_NUMBER_OF_MESSAGES = Long.getLong(WARMUP_NUMBER_OF_MESSAGES_PROP, 10_000);
         WARMUP_NUMBER_OF_ITERATIONS = Integer.getInteger(WARMUP_NUMBER_OF_ITERATIONS_PROP, 5);
         EMBEDDED_MEDIA_DRIVER = Boolean.getBoolean(EMBEDDED_MEDIA_DRIVER_PROP);
         INFO_FLAG = Boolean.getBoolean(INFO_FLAG_PROP);

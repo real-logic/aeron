@@ -1107,22 +1107,18 @@ public class Configuration
         final String propertyValue = getProperty(propertyKey);
         if (propertyValue != null)
         {
-            final long sizeAsLong = parseSize(propertyKey, propertyValue);
-            if (0 <= sizeAsLong && sizeAsLong <= Integer.MAX_VALUE)
+            final long value = parseSize(propertyKey, propertyValue);
+            if (value < 0 || value > Integer.MAX_VALUE)
             {
-                return (int)sizeAsLong;
+                throw new ConfigurationException(
+                    "Value " + value + " for property " + propertyKey +
+                    " is too large, must positive and less than " + Integer.MAX_VALUE);
             }
-            else
-            {
-                throw new ConfigurationException("Value " + sizeAsLong + " for property " + propertyKey +
-                                                           " is too large, must be " + 0 +
-                                                           " <= " + propertyKey + " <= " + Integer.MAX_VALUE);
-            }
+
+            return (int)value;
         }
-        else
-        {
-            return defaultValue;
-        }
+
+        return defaultValue;
     }
 
     private static long getSize(final String propertyKey, final long defaultValue)
@@ -1130,72 +1126,66 @@ public class Configuration
         final String propertyValue = getProperty(propertyKey);
         if (propertyValue != null)
         {
-            final long size = parseSize(propertyKey, propertyValue);
-            if (0 <= size && size <= Integer.MAX_VALUE)
+            final long value = parseSize(propertyKey, propertyValue);
+            if (value < 0)
             {
-                return size;
+                throw new ConfigurationException(
+                    "Value " + value + " for property " + propertyKey + " must be positive");
             }
-            else
-            {
-                throw new ConfigurationException("Value " + size + " for property " + propertyKey +
-                                                         " is too large, must be " + 0 +
-                                                         " <= " + propertyKey + " <= " + Long.MAX_VALUE);
-            }
+
+            return value;
         }
-        else
-        {
-            return defaultValue;
-        }
+
+        return defaultValue;
     }
 
     private static final long MAX_G_VALUE = 8589934591L;
     private static final long MAX_M_VALUE = 8796093022207L;
     private static final long MAX_K_VALUE = 9007199254739968L;
 
-    public static long parseSize(final String propertyKey, final String sizeString)
+    public static long parseSize(final String propertyKey, final String propertyValue)
     {
-        final char lastCharacter = sizeString.charAt(sizeString.length() - 1);
-
-        final long value;
+        final char lastCharacter = propertyValue.charAt(propertyValue.length() - 1);
         if (Character.isDigit(lastCharacter))
         {
-            return Long.valueOf(sizeString);
+            return Long.valueOf(propertyValue);
         }
-        else
-        {
-            value = Long.valueOf(sizeString.substring(0, sizeString.length() - 1));
-        }
+
+        final long value = Long.valueOf(propertyValue.substring(0, propertyValue.length() - 1));
 
         switch (lastCharacter)
         {
             case 'k':
             case 'K':
-                if (MAX_K_VALUE <= value)
+                if (value > MAX_K_VALUE)
                 {
-                    throw new ConfigurationException("Value " + value + lastCharacter +
-                                                             " would overflow maximum long.");
+                    throw new ConfigurationException(
+                        "Value " + propertyValue + " would overflow maximum long.");
                 }
                 return value * 1024;
+
             case 'm':
             case 'M':
-                if (MAX_M_VALUE <= value)
+                if (value > MAX_M_VALUE)
                 {
-                    throw new ConfigurationException("Value " + value + lastCharacter +
-                                                             " would overflow maximum long.");
+                    throw new ConfigurationException(
+                        "Value " + propertyValue + " would overflow maximum long.");
                 }
                 return value * 1024 * 1024;
+
             case 'g':
             case 'G':
-                if (MAX_G_VALUE <= value)
+                if (value > MAX_G_VALUE)
                 {
-                    throw new ConfigurationException("Value " + value + lastCharacter +
-                                                             " would overflow maximum long.");
+                    throw new ConfigurationException(
+                        "Value " + propertyValue + " would overflow maximum long.");
                 }
                 return value * 1024 * 1024 * 1024;
+
             default:
                 throw new ConfigurationException(
-                        "Couldn't parse value: " + sizeString + " for property " + propertyKey + ". " +
-                                "Trailing character should be one of k, m, or g, but was " + lastCharacter);
+                    "Couldn't parse value: " + propertyValue + " for property " + propertyKey + ". " +
+                    "Trailing character should be one of k, m, or g, but was " + lastCharacter);
         }
     }
 }

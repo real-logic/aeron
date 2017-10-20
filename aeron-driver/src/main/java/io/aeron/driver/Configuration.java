@@ -1112,7 +1112,7 @@ public class Configuration
             {
                 throw new ConfigurationException(
                     "Value " + value + " for property " + propertyKey +
-                    " is too large, must positive and less than " + Integer.MAX_VALUE);
+                    " is out of range, must positive and less than " + Integer.MAX_VALUE);
             }
 
             return (int)value;

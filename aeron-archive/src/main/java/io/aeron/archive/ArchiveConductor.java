@@ -40,8 +40,19 @@ import java.util.concurrent.ThreadLocalRandom;
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.archive.codecs.ControlResponseCode.ERROR;
 
-abstract class ArchiveConductor extends SessionWorker<Session>
+abstract class ArchiveConductor extends SessionWorker<Session> implements AvailableImageHandler
 {
+    interface ReplayPublicationSupplier
+    {
+        ExclusivePublication newReplayPublication(
+            String replayChannel,
+            int replayStreamId,
+            long fromPosition,
+            int mtuLength,
+            int initialTermId,
+            int termBufferLength);
+    }
+
     private static final int CONTROL_TERM_LENGTH = AeronArchive.Configuration.controlTermBufferLength();
     private static final int CONTROL_MTU = AeronArchive.Configuration.controlMtuLength();
 
@@ -91,17 +102,15 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         epochClock = ctx.epochClock();
         driverAgentInvoker = ctx.mediaDriverAgentInvoker();
         archiveDir = ctx.archiveDir();
-        final int fileSyncLevel = ctx.fileSyncLevel();
-        archiveDirChannel = channelForDirectorySync(archiveDir, fileSyncLevel);
-
+        archiveDirChannel = channelForDirectorySync(archiveDir, ctx.fileSyncLevel());
         controlResponseProxy = new ControlResponseProxy();
 
-        aeron.addSubscription(ctx.controlChannel(), ctx.controlStreamId(), this::onControlConnection, null);
+        aeron.addSubscription(ctx.controlChannel(), ctx.controlStreamId(), this, null);
 
         recordingEventsProxy = new RecordingEventsProxy(
             ctx.idleStrategy(), aeron.addPublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId()));
 
-        catalog = new Catalog(archiveDir, archiveDirChannel, fileSyncLevel, epochClock);
+        catalog = new Catalog(archiveDir, archiveDirChannel, ctx.fileSyncLevel(), epochClock);
         countersManager = ctx.countersManager();
     }
 
@@ -109,6 +118,11 @@ abstract class ArchiveConductor extends SessionWorker<Session>
     {
         replayer = newReplayer();
         recorder = newRecorder();
+    }
+
+    public void onAvailableImage(final Image image)
+    {
+        addSession(new ControlSessionDemuxer(image, this));
     }
 
     protected abstract SessionWorker<RecordingSession> newRecorder();
@@ -142,47 +156,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         return workCount;
     }
 
-    /**
-     * Note: this is only a thread safe interaction because we are running the aeron client as an invoked agent so the
-     * available image notifications are run from this agent thread.
-     */
-    private void onControlConnection(final Image image)
-    {
-        addSession(new ControlSessionDemuxer(image, this));
-    }
-
-    void stopRecording(
-        final long correlationId,
-        final ControlSession controlSession,
-        final int streamId,
-        final String channel)
-    {
-        try
-        {
-            final String key = makeKey(streamId, strippedChannelBuilder(channel).build());
-            final Subscription oldSubscription = subscriptionMap.remove(key);
-
-            if (oldSubscription != null)
-            {
-                oldSubscription.close();
-                controlSession.sendOkResponse(correlationId, controlResponseProxy);
-            }
-            else
-            {
-                controlSession.sendResponse(
-                    correlationId,
-                    ERROR,
-                    "No recording subscription found for: " + key,
-                    controlResponseProxy);
-            }
-        }
-        catch (final Exception ex)
-        {
-            errorHandler.onError(ex);
-            controlSession.sendResponse(correlationId, ERROR, ex.getMessage(), controlResponseProxy);
-        }
-    }
-
     void startRecordingSubscription(
         final long correlationId,
         final ControlSession controlSession,
@@ -190,8 +163,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final String originalChannel,
         final SourceLocation sourceLocation)
     {
-        // note that since a subscription may trigger multiple images, and therefore multiple recordings this is a soft
-        // limit.
         if (recordingSessionByIdMap.size() >= maxConcurrentRecordings)
         {
             controlSession.sendResponse(
@@ -229,6 +200,38 @@ abstract class ArchiveConductor extends SessionWorker<Session>
                     correlationId,
                     ERROR,
                     "Recording already setup for subscription: " + key,
+                    controlResponseProxy);
+            }
+        }
+        catch (final Exception ex)
+        {
+            errorHandler.onError(ex);
+            controlSession.sendResponse(correlationId, ERROR, ex.getMessage(), controlResponseProxy);
+        }
+    }
+
+    void stopRecording(
+        final long correlationId,
+        final ControlSession controlSession,
+        final int streamId,
+        final String channel)
+    {
+        try
+        {
+            final String key = makeKey(streamId, strippedChannelBuilder(channel).build());
+            final Subscription oldSubscription = subscriptionMap.remove(key);
+
+            if (oldSubscription != null)
+            {
+                oldSubscription.close();
+                controlSession.sendOkResponse(correlationId, controlResponseProxy);
+            }
+            else
+            {
+                controlSession.sendResponse(
+                    correlationId,
+                    ERROR,
+                    "No recording subscription found for: " + key,
                     controlResponseProxy);
             }
         }
@@ -362,11 +365,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         return controlSession;
     }
 
-    private static String makeKey(final int streamId, final String strippedChannel)
-    {
-        return streamId + ':' + strippedChannel;
-    }
-
     ChannelUriStringBuilder strippedChannelBuilder(final String channel)
     {
         final ChannelUri channelUri = ChannelUri.parse(channel);
@@ -380,12 +378,38 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         return channelBuilder;
     }
 
+    void closeRecordingSession(final RecordingSession session)
+    {
+        recordingSessionByIdMap.remove(session.sessionId());
+        closeSession(session);
+
+        final AtomicCounter position = recordingPositionByIdMap.remove(session.sessionId());
+        Catalog.wrapDescriptorEncoder(recordingDescriptorEncoder, session.descriptorBuffer());
+        recordingDescriptorEncoder.stopPosition(position.get());
+        recordingDescriptorEncoder.stopTimestamp(epochClock.time());
+
+        UnsafeAccess.UNSAFE.storeFence();
+
+        position.close();
+    }
+
+    void closeReplaySession(final ReplaySession session)
+    {
+        replaySessionByIdMap.remove(session.sessionId());
+        closeSession(session);
+    }
+
+    private static String makeKey(final int streamId, final String strippedChannel)
+    {
+        return streamId + ":" + strippedChannel;
+    }
+
     private void startImageRecording(final String strippedChannel, final String originalChannel, final Image image)
     {
         if (recordingSessionByIdMap.size() >= 2 * maxConcurrentRecordings)
         {
-            throw new IllegalStateException("Too many recordings, can't record: '" + originalChannel + ":" +
-                image.subscription().streamId() + "'");
+            throw new IllegalStateException(
+                "Too many recordings, can't record: " + originalChannel + ":" + image.subscription().streamId());
         }
 
         final int sessionId = image.sessionId();
@@ -425,38 +449,6 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         recordingPositionByIdMap.put(recordingId, position);
 
         recorder.addSession(session);
-    }
-
-    void closeRecordingSession(final RecordingSession session)
-    {
-        recordingSessionByIdMap.remove(session.sessionId());
-        closeSession(session);
-
-        final AtomicCounter position = recordingPositionByIdMap.remove(session.sessionId());
-        Catalog.wrapDescriptorEncoder(recordingDescriptorEncoder, session.descriptorBuffer());
-        recordingDescriptorEncoder.stopPosition(position.get());
-        recordingDescriptorEncoder.stopTimestamp(epochClock.time());
-
-        UnsafeAccess.UNSAFE.storeFence();
-
-        position.close();
-    }
-
-    void closeReplaySession(final ReplaySession session)
-    {
-        replaySessionByIdMap.remove(session.sessionId());
-        closeSession(session);
-    }
-
-    interface ReplayPublicationSupplier
-    {
-        ExclusivePublication newReplayPublication(
-            String replayChannel,
-            int replayStreamId,
-            long fromPosition,
-            int mtuLength,
-            int initialTermId,
-            int termBufferLength);
     }
 
     private ExclusivePublication newReplayPublication(
@@ -503,7 +495,7 @@ abstract class ArchiveConductor extends SessionWorker<Session>
         final int streamId,
         final String strippedChannel)
     {
-        final String label = "rec-pos: " + recordingId + ' ' + sessionId + ' ' + streamId + ' ' + strippedChannel;
+        final String label = "rec-pos: " + recordingId + " " + sessionId + " " + streamId + " " + strippedChannel;
 
         return countersManager.newCounter(
             label,

@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import io.aeron.driver.exceptions.ConfigurationException;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
@@ -80,9 +81,18 @@ public class EventConfigurationTest
     @Test
     public void shouldParseSizesWithSuffix()
     {
-        assertThat(parseSize("", "1"), Matchers.equalTo(1));
-        assertThat(parseSize("", "1k"), Matchers.equalTo(1024));
-        assertThat(parseSize("", "1m"), Matchers.equalTo(1024 * 1024));
-        assertThat(parseSize("", "1g"), Matchers.equalTo(1024 * 1024 * 1024));
+        assertThat(parseSize("", "1"), Matchers.equalTo(1L));
+        assertThat(parseSize("", "1k"), Matchers.equalTo(1024L));
+        assertThat(parseSize("", "1K"), Matchers.equalTo(1024L));
+        assertThat(parseSize("", "1m"), Matchers.equalTo(1024L * 1024));
+        assertThat(parseSize("", "1M"), Matchers.equalTo(1024L * 1024));
+        assertThat(parseSize("", "1g"), Matchers.equalTo(1024L * 1024 * 1024));
+        assertThat(parseSize("", "1G"), Matchers.equalTo(1024L * 1024 * 1024));
+    }
+
+    @Test(expected = ConfigurationException.class)
+    public void shouldThrowWhenParseSizeOverflows()
+    {
+        parseSize("", 8589934592L + "g");
     }
 }

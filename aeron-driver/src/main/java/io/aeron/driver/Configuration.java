@@ -15,9 +15,13 @@
  */
 package io.aeron.driver;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.CommonContext;
+import io.aeron.Image;
+import io.aeron.Publication;
 import io.aeron.driver.exceptions.ConfigurationException;
-import io.aeron.driver.media.*;
+import io.aeron.driver.media.ReceiveChannelEndpoint;
+import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
@@ -27,14 +31,13 @@ import org.agrona.concurrent.ControllableIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
-import org.agrona.concurrent.status.*;
+import org.agrona.concurrent.status.CountersReader;
+import org.agrona.concurrent.status.StatusIndicator;
 
 import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.nio.channels.DatagramChannel;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static io.aeron.driver.ThreadingMode.DEDICATED;
 import static io.aeron.logbuffer.LogBufferDescriptor.PAGE_MAX_SIZE;
@@ -1101,10 +1104,20 @@ public class Configuration
 
     private static int getSize(final String propertyKey, final int defaultValue)
     {
-        final String propString = getProperty(propertyKey);
-        if (propString != null)
+        final String propertyValue = getProperty(propertyKey);
+        if (propertyValue != null)
         {
-            return parseSize(propertyKey, propString);
+            final long sizeAsLong = parseSize(propertyKey, propertyValue);
+            if (0 <= sizeAsLong && sizeAsLong <= Integer.MAX_VALUE)
+            {
+                return (int)sizeAsLong;
+            }
+            else
+            {
+                throw new ConfigurationException("Value " + sizeAsLong + " for property " + propertyKey +
+                                                           " is too large, must be " + 0 +
+                                                           " <= " + propertyKey + " <= " + Integer.MAX_VALUE);
+            }
         }
         else
         {
@@ -1117,7 +1130,17 @@ public class Configuration
         final String propertyValue = getProperty(propertyKey);
         if (propertyValue != null)
         {
-            return parseSize(propertyKey, propertyValue);
+            final long size = parseSize(propertyKey, propertyValue);
+            if (0 <= size && size <= Integer.MAX_VALUE)
+            {
+                return size;
+            }
+            else
+            {
+                throw new ConfigurationException("Value " + size + " for property " + propertyKey +
+                                                         " is too large, must be " + 0 +
+                                                         " <= " + propertyKey + " <= " + Long.MAX_VALUE);
+            }
         }
         else
         {
@@ -1125,41 +1148,54 @@ public class Configuration
         }
     }
 
-    private static final Pattern SIZE_REGEX = Pattern.compile("(?<value>\\d+)(?<magnitude>\\w)?");
-    private static final String PARSE_SIZE_MAGNITUDE_FAILURE_FORMAT = "Couldn't parse value: %s for property %s. " +
-            "Trailing character should be one of k, m, or g, but was %s";
-    private static final String PARSE_SIZE_VALUE_FAILURE_FORMAT = "Couldn't parse value: %s for property %s. " +
-            "Should be a positive number followed by one of k, m, or g.";
+    private static final long MAX_G_VALUE = 8589934591L;
+    private static final long MAX_M_VALUE = 8796093022207L;
+    private static final long MAX_K_VALUE = 9007199254739968L;
 
-    public static int parseSize(final String propertyKey, final String sizeString)
+    public static long parseSize(final String propertyKey, final String sizeString)
     {
-        final Matcher matcher = SIZE_REGEX.matcher(sizeString);
-        if (!matcher.matches())
-        {
-            throw new IllegalArgumentException(String.format(PARSE_SIZE_VALUE_FAILURE_FORMAT, sizeString, propertyKey));
-        }
+        final char lastCharacter = sizeString.charAt(sizeString.length() - 1);
 
-        final int value = Integer.valueOf(matcher.group("value"));
-        final String magnitude = matcher.group("magnitude");
-
-        if (magnitude != null)
+        final long value;
+        if (Character.isDigit(lastCharacter))
         {
-            switch (magnitude)
-            {
-                case "k":
-                    return value * 1024;
-                case "m":
-                    return value * 1024 * 1024;
-                case "g":
-                    return value * 1024 * 1024 * 1024;
-                default:
-                    throw new IllegalArgumentException(
-                            String.format(PARSE_SIZE_MAGNITUDE_FAILURE_FORMAT, sizeString, propertyKey, magnitude));
-            }
+            return Long.valueOf(sizeString);
         }
         else
         {
-            return value;
+            value = Long.valueOf(sizeString.substring(0, sizeString.length() - 1));
+        }
+
+        switch (lastCharacter)
+        {
+            case 'k':
+            case 'K':
+                if (MAX_K_VALUE <= value)
+                {
+                    throw new ConfigurationException("Value " + value + lastCharacter +
+                                                             " would overflow maximum long.");
+                }
+                return value * 1024;
+            case 'm':
+            case 'M':
+                if (MAX_M_VALUE <= value)
+                {
+                    throw new ConfigurationException("Value " + value + lastCharacter +
+                                                             " would overflow maximum long.");
+                }
+                return value * 1024 * 1024;
+            case 'g':
+            case 'G':
+                if (MAX_G_VALUE <= value)
+                {
+                    throw new ConfigurationException("Value " + value + lastCharacter +
+                                                             " would overflow maximum long.");
+                }
+                return value * 1024 * 1024 * 1024;
+            default:
+                throw new ConfigurationException(
+                        "Couldn't parse value: " + sizeString + " for property " + propertyKey + ". " +
+                                "Trailing character should be one of k, m, or g, but was " + lastCharacter);
         }
     }
 }

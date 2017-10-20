@@ -247,7 +247,7 @@ class Catalog implements AutoCloseable
         descriptorHeaderDecoder.wrap(
             buffer, 0, DESCRIPTOR_HEADER_LENGTH, RecordingDescriptorHeaderDecoder.SCHEMA_VERSION);
 
-        return descriptorHeaderDecoder.length() != 0;
+        return descriptorHeaderDecoder.length() > 0;
     }
 
     UnsafeBuffer wrapDescriptor(final long recordingId)

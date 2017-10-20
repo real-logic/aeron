@@ -384,7 +384,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         closeSession(session);
 
         final AtomicCounter position = recordingPositionByIdMap.remove(session.sessionId());
-        Catalog.wrapDescriptorEncoder(recordingDescriptorEncoder, session.descriptorBuffer());
+        recordingDescriptorEncoder.wrap(session.descriptorBuffer(), Catalog.DESCRIPTOR_HEADER_LENGTH);
         recordingDescriptorEncoder.stopPosition(position.get());
         recordingDescriptorEncoder.stopTimestamp(epochClock.time());
 

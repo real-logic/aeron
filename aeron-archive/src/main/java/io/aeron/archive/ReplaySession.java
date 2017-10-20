@@ -20,6 +20,7 @@ import io.aeron.Publication;
 import io.aeron.archive.ArchiveConductor.ReplayPublicationSupplier;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
+import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -32,7 +33,6 @@ import org.agrona.concurrent.status.AtomicCounter;
 import java.io.File;
 
 import static io.aeron.archive.Catalog.NULL_POSITION;
-import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 import static io.aeron.logbuffer.FrameDescriptor.frameFlags;
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
 import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
@@ -99,7 +99,11 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         this.epochClock = epochClock;
 
         final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
-        wrapDescriptorDecoder(descriptorDecoder, descriptorBuffer);
+        descriptorDecoder.wrap(
+            descriptorBuffer,
+            RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.BLOCK_LENGTH,
+            RecordingDescriptorHeaderDecoder.SCHEMA_VERSION);
 
         final long startPosition = descriptorDecoder.startPosition();
         final int mtuLength = descriptorDecoder.mtuLength();

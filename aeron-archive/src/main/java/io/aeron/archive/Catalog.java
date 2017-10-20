@@ -72,9 +72,6 @@ class Catalog implements AutoCloseable
     static final byte INVALID = 0;
     static final int DESCRIPTOR_HEADER_LENGTH = RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
 
-    private static final int SCHEMA_VERSION = RecordingDescriptorHeaderDecoder.SCHEMA_VERSION;
-    private static final int DESCRIPTOR_BLOCK_LENGTH = RecordingDescriptorDecoder.BLOCK_LENGTH;
-
     private final RecordingDescriptorHeaderDecoder descriptorHeaderDecoder = new RecordingDescriptorHeaderDecoder();
     private final RecordingDescriptorHeaderEncoder descriptorHeaderEncoder = new RecordingDescriptorHeaderEncoder();
 
@@ -135,12 +132,12 @@ class Catalog implements AutoCloseable
             if (indexPreExists)
             {
                 final CatalogHeaderDecoder catalogHeaderDecoder = new CatalogHeaderDecoder()
-                    .wrap(indexUBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, SCHEMA_VERSION);
+                    .wrap(indexUBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, CatalogHeaderDecoder.SCHEMA_VERSION);
 
-                if (catalogHeaderDecoder.version() != SCHEMA_VERSION)
+                if (catalogHeaderDecoder.version() != CatalogHeaderDecoder.SCHEMA_VERSION)
                 {
                     throw new IllegalArgumentException("Catalog file version" + catalogHeaderDecoder.version() +
-                        " does not match software:" + SCHEMA_VERSION);
+                        " does not match software:" + CatalogHeaderDecoder.SCHEMA_VERSION);
                 }
                 recordLength = catalogHeaderDecoder.entryLength();
             }
@@ -148,7 +145,7 @@ class Catalog implements AutoCloseable
             {
                 new CatalogHeaderEncoder()
                     .wrap(indexUBuffer, 0)
-                    .version(SCHEMA_VERSION)
+                    .version(CatalogHeaderEncoder.SCHEMA_VERSION)
                     .entryLength(DEFAULT_RECORD_LENGTH);
 
                 recordLength = DEFAULT_RECORD_LENGTH;
@@ -247,7 +244,8 @@ class Catalog implements AutoCloseable
         }
 
         buffer.wrap(indexMappedBBuffer, recordingDescriptorOffset(recordingId), recordLength);
-        descriptorHeaderDecoder.wrap(buffer, 0, DESCRIPTOR_HEADER_LENGTH, SCHEMA_VERSION);
+        descriptorHeaderDecoder.wrap(
+            buffer, 0, DESCRIPTOR_HEADER_LENGTH, RecordingDescriptorHeaderDecoder.SCHEMA_VERSION);
 
         return descriptorHeaderDecoder.length() != 0;
     }
@@ -280,7 +278,8 @@ class Catalog implements AutoCloseable
         long recordingId = 0L;
         while (recordingId < maxRecordingId && wrapDescriptor(recordingId, indexUBuffer))
         {
-            descriptorHeaderDecoder.wrap(indexUBuffer, 0, DESCRIPTOR_HEADER_LENGTH, SCHEMA_VERSION);
+            descriptorHeaderDecoder.wrap(
+                indexUBuffer, 0, DESCRIPTOR_HEADER_LENGTH, RecordingDescriptorHeaderDecoder.SCHEMA_VERSION);
             descriptorHeaderEncoder.wrap(indexUBuffer, 0);
             wrapDescriptorDecoder(descriptorDecoder, indexUBuffer);
             descriptorEncoder.wrap(indexUBuffer, DESCRIPTOR_HEADER_LENGTH);
@@ -293,7 +292,8 @@ class Catalog implements AutoCloseable
     {
         if (wrapDescriptor(recordingId, indexUBuffer))
         {
-            descriptorHeaderDecoder.wrap(indexUBuffer, 0, DESCRIPTOR_HEADER_LENGTH, SCHEMA_VERSION);
+            descriptorHeaderDecoder.wrap(
+                indexUBuffer, 0, DESCRIPTOR_HEADER_LENGTH, RecordingDescriptorHeaderDecoder.SCHEMA_VERSION);
             descriptorHeaderEncoder.wrap(indexUBuffer, 0);
             wrapDescriptorDecoder(descriptorDecoder, indexUBuffer);
             descriptorEncoder.wrap(indexUBuffer, DESCRIPTOR_HEADER_LENGTH);
@@ -423,13 +423,8 @@ class Catalog implements AutoCloseable
     {
         decoder.wrap(
             descriptorBuffer,
-            DESCRIPTOR_HEADER_LENGTH,
-            DESCRIPTOR_BLOCK_LENGTH,
-            SCHEMA_VERSION);
-    }
-
-    static void wrapDescriptorEncoder(final RecordingDescriptorEncoder decoder, final UnsafeBuffer descriptorBuffer)
-    {
-        decoder.wrap(descriptorBuffer, DESCRIPTOR_HEADER_LENGTH);
+            RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.SCHEMA_VERSION);
     }
 }

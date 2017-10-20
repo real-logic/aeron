@@ -116,13 +116,15 @@ class RecordingSession implements Session
         final Subscription subscription = image.subscription();
         final int sessionId = image.sessionId();
         final int streamId = subscription.streamId();
+        final int termBufferLength = image.termBufferLength();
         final String sourceIdentity = image.sourceIdentity();
         final long startPosition = image.joinPosition();
 
         RecordingWriter recordingWriter = null;
         try
         {
-            recordingWriter = new RecordingWriter(context, archiveDirChannel, descriptorBuffer, position);
+            recordingWriter = new RecordingWriter(
+                recordingId, startPosition, termBufferLength, context, archiveDirChannel, position);
         }
         catch (final Exception ex)
         {

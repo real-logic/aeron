@@ -15,7 +15,6 @@
  */
 package io.aeron.archive;
 
-import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.RawBlockHandler;
@@ -35,7 +34,6 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.Archive.segmentFileName;
-import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 
 /**
  * Responsible for writing out a recording into the file system. A recording has descriptor file and a set of data files
@@ -75,25 +73,22 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     private boolean isClosed = false;
 
     RecordingWriter(
+        final long recordingId,
+        final long startPosition,
+        final int termBufferLength,
         final Archive.Context context,
         final FileChannel archiveDirChannel,
-        final UnsafeBuffer descriptorBuffer,
         final AtomicCounter recordedPosition)
     {
         this.recordedPosition = recordedPosition;
-        final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
-        wrapDescriptorDecoder(descriptorDecoder, descriptorBuffer);
-
-        final int termBufferLength = descriptorDecoder.termBufferLength();
-
         this.archiveDirChannel = archiveDirChannel;
         archiveDir = context.archiveDir();
         segmentFileLength = Math.max(context.segmentFileLength(), termBufferLength);
         forceWrites = context.fileSyncLevel() > 0;
         forceMetadata = context.fileSyncLevel() > 1;
 
-        recordingId = descriptorDecoder.recordingId();
-        startPosition = descriptorDecoder.startPosition();
+        this.recordingId = recordingId;
+        this.startPosition = startPosition;
         recordedPosition.setOrdered(startPosition);
 
         final int termsMask = (segmentFileLength / termBufferLength) - 1;

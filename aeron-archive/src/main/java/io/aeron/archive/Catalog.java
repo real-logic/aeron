@@ -231,11 +231,6 @@ class Catalog implements AutoCloseable
         return newRecordingId;
     }
 
-    private int recordingDescriptorOffset(final long newRecordingId)
-    {
-        return (int)(newRecordingId * recordLength) + recordLength;
-    }
-
     boolean wrapDescriptor(final long recordingId, final UnsafeBuffer buffer)
     {
         if (recordingId < 0 || recordingId >= maxRecordingId)
@@ -254,23 +249,6 @@ class Catalog implements AutoCloseable
     {
         final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
         return wrapDescriptor(recordingId, unsafeBuffer) ? unsafeBuffer : null;
-    }
-
-    /**
-     * On catalog load we verify entries are in coherent state and attempt to recover entries data where untimely
-     * termination of recording has resulted in an unaccounted for stopPosition/stopTimestamp. This operation may be
-     * expensive for large catalogs.
-     */
-    private void refreshCatalog(final boolean fixOnRefresh)
-    {
-        if (fixOnRefresh)
-        {
-            forEach(this::refreshAndFixDescriptor);
-        }
-        else
-        {
-            forEach(((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) -> nextRecordingId++));
-        }
     }
 
     void forEach(final CatalogEntryProcessor consumer)
@@ -303,6 +281,69 @@ class Catalog implements AutoCloseable
         }
 
         return false;
+    }
+
+    static void initDescriptor(
+        final RecordingDescriptorEncoder recordingDescriptorEncoder,
+        final long recordingId,
+        final long startTimestamp,
+        final long startPosition,
+        final int initialTermId,
+        final int segmentFileLength,
+        final int termBufferLength,
+        final int mtuLength,
+        final int sessionId,
+        final int streamId,
+        final String strippedChannel,
+        final String originalChannel,
+        final String sourceIdentity)
+    {
+        recordingDescriptorEncoder
+            .recordingId(recordingId)
+            .startTimestamp(startTimestamp)
+            .stopTimestamp(NULL_TIME)
+            .startPosition(startPosition)
+            .stopPosition(NULL_POSITION)
+            .initialTermId(initialTermId)
+            .segmentFileLength(segmentFileLength)
+            .termBufferLength(termBufferLength)
+            .mtuLength(mtuLength)
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .strippedChannel(strippedChannel)
+            .originalChannel(originalChannel)
+            .sourceIdentity(sourceIdentity);
+    }
+
+    static void wrapDescriptorDecoder(final RecordingDescriptorDecoder decoder, final UnsafeBuffer descriptorBuffer)
+    {
+        decoder.wrap(
+            descriptorBuffer,
+            RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.SCHEMA_VERSION);
+    }
+
+    private int recordingDescriptorOffset(final long newRecordingId)
+    {
+        return (int)(newRecordingId * recordLength) + recordLength;
+    }
+
+    /**
+     * On catalog load we verify entries are in coherent state and attempt to recover entries data where untimely
+     * termination of recording has resulted in an unaccounted for stopPosition/stopTimestamp. This operation may be
+     * expensive for large catalogs.
+     */
+    private void refreshCatalog(final boolean fixOnRefresh)
+    {
+        if (fixOnRefresh)
+        {
+            forEach(this::refreshAndFixDescriptor);
+        }
+        else
+        {
+            forEach(((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) -> nextRecordingId++));
+        }
     }
 
     private void refreshAndFixDescriptor(
@@ -385,46 +426,5 @@ class Catalog implements AutoCloseable
         }
 
         return lastFragmentSegmentOffset;
-    }
-
-    static void initDescriptor(
-        final RecordingDescriptorEncoder recordingDescriptorEncoder,
-        final long recordingId,
-        final long startTimestamp,
-        final long startPosition,
-        final int initialTermId,
-        final int segmentFileLength,
-        final int termBufferLength,
-        final int mtuLength,
-        final int sessionId,
-        final int streamId,
-        final String strippedChannel,
-        final String originalChannel,
-        final String sourceIdentity)
-    {
-        recordingDescriptorEncoder
-            .recordingId(recordingId)
-            .startTimestamp(startTimestamp)
-            .stopTimestamp(NULL_TIME)
-            .startPosition(startPosition)
-            .stopPosition(NULL_POSITION)
-            .initialTermId(initialTermId)
-            .segmentFileLength(segmentFileLength)
-            .termBufferLength(termBufferLength)
-            .mtuLength(mtuLength)
-            .sessionId(sessionId)
-            .streamId(streamId)
-            .strippedChannel(strippedChannel)
-            .originalChannel(originalChannel)
-            .sourceIdentity(sourceIdentity);
-    }
-
-    static void wrapDescriptorDecoder(final RecordingDescriptorDecoder decoder, final UnsafeBuffer descriptorBuffer)
-    {
-        decoder.wrap(
-            descriptorBuffer,
-            RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
-            RecordingDescriptorDecoder.BLOCK_LENGTH,
-            RecordingDescriptorDecoder.SCHEMA_VERSION);
     }
 }

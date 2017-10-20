@@ -99,8 +99,8 @@ public class RecordingWriterTest
             CHANNEL,
             SOURCE);
 
-        try (RecordingWriter writer = Mockito.spy(
-            new RecordingWriter(ctx, mockArchiveDirFileChannel, descriptorBuffer, position)))
+        try (RecordingWriter writer = Mockito.spy(new RecordingWriter(
+            RECORDING_ID, START_POSITION, TERM_BUFFER_LENGTH, ctx, mockArchiveDirFileChannel, position)))
         {
             when(mockDataFileChannel.transferTo(eq(0L), eq(256L), any(FileChannel.class))).then(
                 (invocation) ->

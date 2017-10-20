@@ -120,7 +120,8 @@ public class ReplaySessionTest
             "channel",
             "sourceIdentity");
 
-        try (RecordingWriter writer = new RecordingWriter(context, null, descriptorBuffer, position))
+        try (RecordingWriter writer = new RecordingWriter(
+            RECORDING_ID, START_POSITION, TERM_BUFFER_LENGTH, context, null, position))
         {
 
             final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
@@ -403,7 +404,8 @@ public class ReplaySessionTest
             "channel",
             "sourceIdentity");
 
-        try (RecordingWriter writer = new RecordingWriter(context, null, descriptorBuffer, position))
+        try (RecordingWriter writer = new RecordingWriter(
+            recordingId, START_POSITION, TERM_BUFFER_LENGTH, context, null, position))
         {
             when(epochClock.time()).thenReturn(TIME);
 

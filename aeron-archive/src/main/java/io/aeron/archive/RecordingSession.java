@@ -19,7 +19,6 @@ import io.aeron.Image;
 import io.aeron.Subscription;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.nio.channels.FileChannel;
@@ -40,7 +39,6 @@ class RecordingSession implements Session
 
     private final long recordingId;
     private final int blockLengthLimit;
-    private final UnsafeBuffer descriptorBuffer;
     private final RecordingEventsProxy recordingEventsProxy;
     private final String strippedChannel;
     private final Image image;
@@ -53,7 +51,6 @@ class RecordingSession implements Session
 
     RecordingSession(
         final long recordingId,
-        final UnsafeBuffer descriptorBuffer,
         final RecordingEventsProxy recordingEventsProxy,
         final String strippedChannel,
         final Image image,
@@ -62,7 +59,6 @@ class RecordingSession implements Session
         final Archive.Context context)
     {
         this.recordingId = recordingId;
-        this.descriptorBuffer = descriptorBuffer;
         this.recordingEventsProxy = recordingEventsProxy;
         this.strippedChannel = strippedChannel;
         this.image = image;
@@ -71,6 +67,11 @@ class RecordingSession implements Session
         this.context = context;
 
         blockLengthLimit = Math.min(image.termBufferLength(), MAX_BLOCK_LENGTH);
+    }
+
+    public long recordingId()
+    {
+        return recordingId;
     }
 
     public boolean isDone()
@@ -161,11 +162,6 @@ class RecordingSession implements Session
         {
             recordingEventsProxy.stopped(recordingId, NULL_POSITION, NULL_POSITION);
         }
-    }
-
-    UnsafeBuffer descriptorBuffer()
-    {
-        return descriptorBuffer;
     }
 
     private int record()

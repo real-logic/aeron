@@ -18,7 +18,6 @@ package io.aeron.archive;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
-import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.archive.codecs.SourceLocation;
 import org.agrona.CloseHelper;
 import org.agrona.UnsafeAccess;
@@ -64,7 +63,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final ReplayPublicationSupplier newReplayPublication = this::newReplayPublication;
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
-    private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
 
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;
@@ -383,10 +381,11 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         recordingSessionByIdMap.remove(session.sessionId());
         closeSession(session);
 
+        final long recordingId = session.recordingId();
         final AtomicCounter position = recordingPositionByIdMap.remove(session.sessionId());
-        recordingDescriptorEncoder.wrap(session.descriptorBuffer(), Catalog.DESCRIPTOR_HEADER_LENGTH);
-        recordingDescriptorEncoder.stopPosition(position.get());
-        recordingDescriptorEncoder.stopTimestamp(epochClock.time());
+
+        catalog.stopPosition(recordingId, position.get());
+        catalog.stopTimestamp(recordingId, epochClock.time());
 
         UnsafeAccess.UNSAFE.storeFence();
 
@@ -437,7 +436,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
         final RecordingSession session = new RecordingSession(
             recordingId,
-            catalog.wrapDescriptor(recordingId),
             recordingEventsProxy,
             strippedChannel,
             image,

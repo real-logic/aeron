@@ -78,8 +78,9 @@ class Catalog implements AutoCloseable
     private final RecordingDescriptorEncoder descriptorEncoder = new RecordingDescriptorEncoder();
     private final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
 
-    private final UnsafeBuffer indexUBuffer;
     private final MappedByteBuffer indexMappedBBuffer;
+    private final UnsafeBuffer indexUBuffer;
+    private final UnsafeBuffer fieldAccessBuffer;
 
     private final int recordLength;
 
@@ -116,6 +117,7 @@ class Catalog implements AutoCloseable
         {
             indexMappedBBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, Integer.MAX_VALUE);
             indexUBuffer = new UnsafeBuffer(indexMappedBBuffer);
+            fieldAccessBuffer = new UnsafeBuffer(indexMappedBBuffer);
 
             if (!indexPreExists && archiveDirChannel != null && fileSyncLevel > 0)
             {
@@ -139,6 +141,7 @@ class Catalog implements AutoCloseable
                     throw new IllegalArgumentException("Catalog file version" + catalogHeaderDecoder.version() +
                         " does not match software:" + CatalogHeaderDecoder.SCHEMA_VERSION);
                 }
+
                 recordLength = catalogHeaderDecoder.entryLength();
             }
             else
@@ -324,6 +327,29 @@ class Catalog implements AutoCloseable
             RecordingDescriptorDecoder.SCHEMA_VERSION);
     }
 
+    //
+    // Methods for access specify record fields by recordingId.
+    // Note: These methods are thread safe.
+    /////////////////////////////////////////////////////////////
+
+    void stopPosition(final long recordingId, final long position)
+    {
+        final int index = recordingDescriptorOffset(recordingId) +
+            RecordingDescriptorHeaderEncoder.BLOCK_LENGTH +
+            RecordingDescriptorDecoder.stopPositionEncodingOffset();
+
+        fieldAccessBuffer.putLong(index, position);
+    }
+
+    void stopTimestamp(final long recordingId, final long timestamp)
+    {
+        final int index = recordingDescriptorOffset(recordingId) +
+            RecordingDescriptorHeaderEncoder.BLOCK_LENGTH +
+            RecordingDescriptorDecoder.stopTimestampEncodingOffset();
+
+        fieldAccessBuffer.putLong(index, timestamp);
+    }
+
     private int recordingDescriptorOffset(final long newRecordingId)
     {
         return (int)(newRecordingId * recordLength) + recordLength;
@@ -355,7 +381,6 @@ class Catalog implements AutoCloseable
         final long recordingId = decoder.recordingId();
         if (headerDecoder.valid() == VALID && decoder.stopTimestamp() == NULL_TIME)
         {
-
             int segmentIndex = 0;
             File segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentIndex));
             final long startPosition = decoder.startPosition();

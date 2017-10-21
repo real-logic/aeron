@@ -332,22 +332,12 @@ class Catalog implements AutoCloseable
     // Note: These methods are thread safe.
     /////////////////////////////////////////////////////////////
 
-    void stopPosition(final long recordingId, final long position)
+    void recordingStopped(final long recordingId, final long position, final long timestamp)
     {
-        final int index = recordingDescriptorOffset(recordingId) +
-            RecordingDescriptorHeaderEncoder.BLOCK_LENGTH +
-            RecordingDescriptorDecoder.stopPositionEncodingOffset();
+        final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
 
-        fieldAccessBuffer.putLong(index, position);
-    }
-
-    void stopTimestamp(final long recordingId, final long timestamp)
-    {
-        final int index = recordingDescriptorOffset(recordingId) +
-            RecordingDescriptorHeaderEncoder.BLOCK_LENGTH +
-            RecordingDescriptorDecoder.stopTimestampEncodingOffset();
-
-        fieldAccessBuffer.putLong(index, timestamp);
+        fieldAccessBuffer.putLong(offset + RecordingDescriptorDecoder.stopPositionEncodingOffset(), position);
+        fieldAccessBuffer.putLong(offset + RecordingDescriptorDecoder.stopTimestampEncodingOffset(), timestamp);
     }
 
     private int recordingDescriptorOffset(final long newRecordingId)

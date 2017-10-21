@@ -60,9 +60,7 @@ class ClientConductor implements Agent, DriverEventsListener
     private final DriverEventsAdapter driverEventsAdapter;
     private final LogBuffersFactory logBuffersFactory;
     private final Long2ObjectHashMap<LogBuffers> logBuffersByIdMap = new Long2ObjectHashMap<>();
-    private final Long2ObjectHashMap<Publication> publicationByRegIdMap = new Long2ObjectHashMap<>();
-    private final Long2ObjectHashMap<ExclusivePublication> exclusivePublicationByRegIdMap = new Long2ObjectHashMap<>();
-    private final Long2ObjectHashMap<Subscription> subscriptionByRegIdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<Object> resourceByRegIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<ManagedResource> lingeringResources = new ArrayList<>();
     private final UnavailableImageHandler defaultUnavailableImageHandler;
     private final AvailableImageHandler defaultAvailableImageHandler;
@@ -102,7 +100,7 @@ class ClientConductor implements Agent, DriverEventsListener
             isClosed = true;
 
             final int lingeringResourcesSize = lingeringResources.size();
-            forceClosePublicationsAndSubscriptions();
+            forceCloseResources();
 
             if (lingeringResources.size() > lingeringResourcesSize)
             {
@@ -168,7 +166,7 @@ class ClientConductor implements Agent, DriverEventsListener
         final long registrationId = driverProxy.addPublication(channel, streamId);
         awaitResponse(registrationId);
 
-        return publicationByRegIdMap.get(registrationId);
+        return (Publication)resourceByRegIdMap.get(registrationId);
     }
 
     ExclusivePublication addExclusivePublication(final String channel, final int streamId)
@@ -179,14 +177,14 @@ class ClientConductor implements Agent, DriverEventsListener
         final long registrationId = driverProxy.addExclusivePublication(channel, streamId);
         awaitResponse(registrationId);
 
-        return exclusivePublicationByRegIdMap.get(registrationId);
+        return (ExclusivePublication)resourceByRegIdMap.get(registrationId);
     }
 
     void releasePublication(final Publication publication)
     {
         ensureOpen();
 
-        if (publication == publicationByRegIdMap.remove(publication.registrationId()))
+        if (publication == resourceByRegIdMap.remove(publication.registrationId()))
         {
             releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
             awaitResponse(driverProxy.removePublication(publication.registrationId()));
@@ -197,7 +195,7 @@ class ClientConductor implements Agent, DriverEventsListener
     {
         ensureOpen();
 
-        if (publication == exclusivePublicationByRegIdMap.remove(publication.registrationId()))
+        if (publication == resourceByRegIdMap.remove(publication.registrationId()))
         {
             releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
             awaitResponse(driverProxy.removePublication(publication.registrationId()));
@@ -233,7 +231,7 @@ class ClientConductor implements Agent, DriverEventsListener
         final Subscription subscription = new Subscription(
             this, channel, streamId, correlationId, availableImageHandler, unavailableImageHandler);
 
-        subscriptionByRegIdMap.put(correlationId, subscription);
+        resourceByRegIdMap.put(correlationId, subscription);
 
         awaitResponse(correlationId);
 
@@ -246,7 +244,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
         final long registrationId = subscription.registrationId();
         awaitResponse(driverProxy.removeSubscription(registrationId));
-        subscriptionByRegIdMap.remove(registrationId);
+        resourceByRegIdMap.remove(registrationId);
     }
 
     void asyncReleaseSubscription(final Subscription subscription)
@@ -291,7 +289,7 @@ class ClientConductor implements Agent, DriverEventsListener
             registrationId,
             correlationId);
 
-        publicationByRegIdMap.put(correlationId, publication);
+        resourceByRegIdMap.put(correlationId, publication);
     }
 
     public void onNewExclusivePublication(
@@ -312,7 +310,7 @@ class ClientConductor implements Agent, DriverEventsListener
             registrationId,
             correlationId);
 
-        exclusivePublicationByRegIdMap.put(correlationId, publication);
+        resourceByRegIdMap.put(correlationId, publication);
     }
 
     public void onAvailableImage(
@@ -324,7 +322,7 @@ class ClientConductor implements Agent, DriverEventsListener
         final String logFileName,
         final String sourceIdentity)
     {
-        final Subscription subscription = subscriptionByRegIdMap.get(subscriberRegistrationId);
+        final Subscription subscription = (Subscription)resourceByRegIdMap.get(subscriberRegistrationId);
         if (null != subscription && !subscription.containsImage(correlationId))
         {
             final Image image = new Image(
@@ -355,24 +353,28 @@ class ClientConductor implements Agent, DriverEventsListener
 
     public void onUnavailableImage(final long correlationId, final int streamId)
     {
-        for (final Subscription subscription : subscriptionByRegIdMap.values())
+        for (final Object resource : resourceByRegIdMap.values())
         {
-            if (subscription.streamId() == streamId)
+            if (resource instanceof Subscription)
             {
-                final Image image = subscription.removeImage(correlationId);
-                if (null != image)
+                final Subscription subscription = (Subscription)resource;
+                if (subscription.streamId() == streamId)
                 {
-                    try
+                    final Image image = subscription.removeImage(correlationId);
+                    if (null != image)
                     {
-                        final UnavailableImageHandler handler = subscription.unavailableImageHandler();
-                        if (null != handler)
+                        try
                         {
-                            handler.onUnavailableImage(image);
+                            final UnavailableImageHandler handler = subscription.unavailableImageHandler();
+                            if (null != handler)
+                            {
+                                handler.onUnavailableImage(image);
+                            }
                         }
-                    }
-                    catch (final Throwable ex)
-                    {
-                        errorHandler.onError(ex);
+                        catch (final Throwable ex)
+                        {
+                            errorHandler.onError(ex);
+                        }
                     }
                 }
             }
@@ -505,7 +507,7 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             final int lingeringResourcesSize = lingeringResources.size();
 
-            forceClosePublicationsAndSubscriptions();
+            forceCloseResources();
 
             if (lingeringResources.size() > lingeringResourcesSize)
             {
@@ -562,24 +564,24 @@ class ClientConductor implements Agent, DriverEventsListener
         return 0;
     }
 
-    private void forceClosePublicationsAndSubscriptions()
+    private void forceCloseResources()
     {
-        for (final ExclusivePublication publication : exclusivePublicationByRegIdMap.values())
+        for (final Object resource : resourceByRegIdMap.values())
         {
-            publication.forceClose();
+            if (resource instanceof Publication)
+            {
+                ((Publication)resource).forceClose();
+            }
+            else if (resource instanceof ExclusivePublication)
+            {
+                ((ExclusivePublication)resource).forceClose();
+            }
+            else
+            {
+                ((Subscription)resource).forceClose();
+            }
         }
-        exclusivePublicationByRegIdMap.clear();
 
-        for (final Publication publication : publicationByRegIdMap.values())
-        {
-            publication.forceClose();
-        }
-        publicationByRegIdMap.clear();
-
-        for (final Subscription subscription : subscriptionByRegIdMap.values())
-        {
-            subscription.forceClose();
-        }
-        subscriptionByRegIdMap.clear();
+        resourceByRegIdMap.clear();
     }
 }

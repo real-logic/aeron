@@ -1102,16 +1102,16 @@ public class Configuration
         }
     }
 
-    private static int getSize(final String propertyKey, final int defaultValue)
+    private static int getSize(final String propertyName, final int defaultValue)
     {
-        final String propertyValue = getProperty(propertyKey);
+        final String propertyValue = getProperty(propertyName);
         if (propertyValue != null)
         {
-            final long value = parseSize(propertyKey, propertyValue);
+            final long value = parseSize(propertyName, propertyValue);
             if (value < 0 || value > Integer.MAX_VALUE)
             {
                 throw new ConfigurationException(
-                    "Value " + value + " for property " + propertyKey +
+                    "Value " + value + " for property " + propertyName +
                     " is out of range, must positive and less than " + Integer.MAX_VALUE);
             }
 
@@ -1121,16 +1121,16 @@ public class Configuration
         return defaultValue;
     }
 
-    private static long getSize(final String propertyKey, final long defaultValue)
+    private static long getSize(final String propertyName, final long defaultValue)
     {
-        final String propertyValue = getProperty(propertyKey);
+        final String propertyValue = getProperty(propertyName);
         if (propertyValue != null)
         {
-            final long value = parseSize(propertyKey, propertyValue);
+            final long value = parseSize(propertyName, propertyValue);
             if (value < 0)
             {
                 throw new ConfigurationException(
-                    "Value " + value + " for property " + propertyKey + " must be positive");
+                    "Value " + value + " for property " + propertyName + " must be positive");
             }
 
             return value;
@@ -1143,7 +1143,7 @@ public class Configuration
     private static final long MAX_M_VALUE = 8796093022207L;
     private static final long MAX_K_VALUE = 9007199254739968L;
 
-    public static long parseSize(final String propertyKey, final String propertyValue)
+    public static long parseSize(final String propertyName, final String propertyValue)
     {
         final char lastCharacter = propertyValue.charAt(propertyValue.length() - 1);
         if (Character.isDigit(lastCharacter))
@@ -1184,7 +1184,7 @@ public class Configuration
 
             default:
                 throw new ConfigurationException(
-                    "Couldn't parse value: " + propertyValue + " for property " + propertyKey + ". " +
+                    "Couldn't parse value: " + propertyValue + " for property " + propertyName + ". " +
                     "Trailing character should be one of k, m, or g, but was " + lastCharacter);
         }
     }

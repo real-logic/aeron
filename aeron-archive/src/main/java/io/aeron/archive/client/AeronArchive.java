@@ -23,8 +23,11 @@ import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.NoOpLock;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static io.aeron.archive.client.ControlResponseAdapter.dispatchDescriptor;
 
@@ -34,6 +37,8 @@ import static io.aeron.archive.client.ControlResponseAdapter.dispatchDescriptor;
  * This client provides a simple interaction model which is mostly synchronous and may not be optimal.
  * The underlying components such as the {@link ArchiveProxy} and the {@link ControlResponsePoller} may be used
  * directly if a more asynchronous pattern of interaction is required.
+ * <p>
+ * Note: This class is threadsafe but the lock can be elided if single threaded access via {@link Context#lock(Lock)}.
  */
 public final class AeronArchive implements AutoCloseable
 {
@@ -46,6 +51,7 @@ public final class AeronArchive implements AutoCloseable
     private final ArchiveProxy archiveProxy;
     private final IdleStrategy idleStrategy;
     private final ControlResponsePoller controlResponsePoller;
+    private final Lock lock;
 
     private AeronArchive(final Context context)
     {
@@ -57,6 +63,7 @@ public final class AeronArchive implements AutoCloseable
             aeron = context.aeron();
             idleStrategy = context.idleStrategy();
             messageTimeoutNs = context.messageTimeoutNs();
+            lock = context.lock();
 
             archiveProxy = context.archiveProxy();
             final long correlationId = aeron.nextCorrelationId();
@@ -85,15 +92,23 @@ public final class AeronArchive implements AutoCloseable
      */
     public void close()
     {
-        archiveProxy.closeSession(controlSessionId);
-
-        if (!context.ownsAeronClient())
+        lock.lock();
+        try
         {
-            controlResponsePoller.subscription().close();
-            archiveProxy.publication().close();
-        }
+            archiveProxy.closeSession(controlSessionId);
 
-        context.close();
+            if (!context.ownsAeronClient())
+            {
+                controlResponsePoller.subscription().close();
+                archiveProxy.publication().close();
+            }
+
+            context.close();
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     /**
@@ -148,16 +163,24 @@ public final class AeronArchive implements AutoCloseable
      */
     public String pollForErrorResponse()
     {
-        if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
+        lock.lock();
+        try
         {
-            if (controlResponsePoller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
-                controlResponsePoller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
+            if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
             {
-                return controlResponsePoller.controlResponseDecoder().errorMessage();
+                if (controlResponsePoller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
+                    controlResponsePoller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
+                {
+                    return controlResponsePoller.controlResponseDecoder().errorMessage();
+                }
             }
-        }
 
-        return null;
+            return null;
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     /**
@@ -169,18 +192,26 @@ public final class AeronArchive implements AutoCloseable
      */
     public Publication addRecordedPublication(final String channel, final int streamId)
     {
-        startRecording(channel, streamId, SourceLocation.LOCAL);
-
-        final Publication publication = aeron.addPublication(channel, streamId);
-        if (!publication.isOriginal())
+        lock.lock();
+        try
         {
-            publication.close();
+            startRecording(channel, streamId, SourceLocation.LOCAL);
 
-            throw new IllegalStateException(
-                "Publication already added for channel=" + channel + " streamId=" + streamId);
+            final Publication publication = aeron.addPublication(channel, streamId);
+            if (!publication.isOriginal())
+            {
+                publication.close();
+
+                throw new IllegalStateException(
+                    "Publication already added for channel=" + channel + " streamId=" + streamId);
+            }
+
+            return publication;
         }
-
-        return publication;
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     /**
@@ -192,9 +223,17 @@ public final class AeronArchive implements AutoCloseable
      */
     public ExclusivePublication addRecordedExclusivePublication(final String channel, final int streamId)
     {
-        startRecording(channel, streamId, SourceLocation.LOCAL);
+        lock.lock();
+        try
+        {
+            startRecording(channel, streamId, SourceLocation.LOCAL);
 
-        return aeron.addExclusivePublication(channel, streamId);
+            return aeron.addExclusivePublication(channel, streamId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     /**
@@ -206,14 +245,22 @@ public final class AeronArchive implements AutoCloseable
      */
     public void startRecording(final String channel, final int streamId, final SourceLocation sourceLocation)
     {
-        final long correlationId = aeron.nextCorrelationId();
-
-        if (!archiveProxy.startRecording(channel, streamId, sourceLocation, correlationId, controlSessionId))
+        lock.lock();
+        try
         {
-            throw new IllegalStateException("Failed to send start recording request");
-        }
+            final long correlationId = aeron.nextCorrelationId();
 
-        pollForResponse(correlationId);
+            if (!archiveProxy.startRecording(channel, streamId, sourceLocation, correlationId, controlSessionId))
+            {
+                throw new IllegalStateException("Failed to send start recording request");
+            }
+
+            pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     /**
@@ -224,14 +271,22 @@ public final class AeronArchive implements AutoCloseable
      */
     public void stopRecording(final String channel, final int streamId)
     {
-        final long correlationId = aeron.nextCorrelationId();
-
-        if (!archiveProxy.stopRecording(channel, streamId, correlationId, controlSessionId))
+        lock.lock();
+        try
         {
-            throw new IllegalStateException("Failed to send stop recording request");
-        }
+            final long correlationId = aeron.nextCorrelationId();
 
-        pollForResponse(correlationId);
+            if (!archiveProxy.stopRecording(channel, streamId, correlationId, controlSessionId))
+            {
+                throw new IllegalStateException("Failed to send stop recording request");
+            }
+
+            pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     /**
@@ -251,23 +306,31 @@ public final class AeronArchive implements AutoCloseable
         final String replayChannel,
         final int replayStreamId)
     {
-        final long correlationId = aeron.nextCorrelationId();
-
-        if (!archiveProxy.replay(
-            recordingId,
-            position,
-            length,
-            replayChannel,
-            replayStreamId,
-            correlationId,
-            controlSessionId))
+        lock.lock();
+        try
         {
-            throw new IllegalStateException("Failed to send replay request");
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.replay(
+                recordingId,
+                position,
+                length,
+                replayChannel,
+                replayStreamId,
+                correlationId,
+                controlSessionId))
+            {
+                throw new IllegalStateException("Failed to send replay request");
+            }
+
+            pollForResponse(correlationId);
+
+            return aeron.addSubscription(replayChannel, replayStreamId);
         }
-
-        pollForResponse(correlationId);
-
-        return aeron.addSubscription(replayChannel, replayStreamId);
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     /**
@@ -291,23 +354,31 @@ public final class AeronArchive implements AutoCloseable
         final AvailableImageHandler availableImageHandler,
         final UnavailableImageHandler unavailableImageHandler)
     {
-        final long correlationId = aeron.nextCorrelationId();
-
-        if (!archiveProxy.replay(
-            recordingId,
-            position,
-            length,
-            replayChannel,
-            replayStreamId,
-            correlationId,
-            controlSessionId))
+        lock.lock();
+        try
         {
-            throw new IllegalStateException("Failed to send replay request");
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.replay(
+                recordingId,
+                position,
+                length,
+                replayChannel,
+                replayStreamId,
+                correlationId,
+                controlSessionId))
+            {
+                throw new IllegalStateException("Failed to send replay request");
+            }
+
+            pollForResponse(correlationId);
+
+            return aeron.addSubscription(replayChannel, replayStreamId, availableImageHandler, unavailableImageHandler);
         }
-
-        pollForResponse(correlationId);
-
-        return aeron.addSubscription(replayChannel, replayStreamId, availableImageHandler, unavailableImageHandler);
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     /**
@@ -323,14 +394,22 @@ public final class AeronArchive implements AutoCloseable
     public int listRecordings(
         final long fromRecordingId, final int recordCount, final RecordingDescriptorConsumer consumer)
     {
-        final long correlationId = aeron.nextCorrelationId();
-
-        if (!archiveProxy.listRecordings(fromRecordingId, recordCount, correlationId, controlSessionId))
+        lock.lock();
+        try
         {
-            throw new IllegalStateException("Failed to send list recordings request");
-        }
+            final long correlationId = aeron.nextCorrelationId();
 
-        return pollForDescriptors(correlationId, recordCount, consumer);
+            if (!archiveProxy.listRecordings(fromRecordingId, recordCount, correlationId, controlSessionId))
+            {
+                throw new IllegalStateException("Failed to send list recordings request");
+            }
+
+            return pollForDescriptors(correlationId, recordCount, consumer);
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     /**
@@ -352,20 +431,28 @@ public final class AeronArchive implements AutoCloseable
         final int streamId,
         final RecordingDescriptorConsumer consumer)
     {
-        final long correlationId = aeron.nextCorrelationId();
-
-        if (!archiveProxy.listRecordingsForUri(
-            fromRecordingId,
-            recordCount,
-            channel,
-            streamId,
-            correlationId,
-            controlSessionId))
+        lock.lock();
+        try
         {
-            throw new IllegalStateException("Failed to send list recordings request");
-        }
+            final long correlationId = aeron.nextCorrelationId();
 
-        return pollForDescriptors(correlationId, recordCount, consumer);
+            if (!archiveProxy.listRecordingsForUri(
+                fromRecordingId,
+                recordCount,
+                channel,
+                streamId,
+                correlationId,
+                controlSessionId))
+            {
+                throw new IllegalStateException("Failed to send list recordings request");
+            }
+
+            return pollForDescriptors(correlationId, recordCount, consumer);
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     private long pollForConnected(final long expectedCorrelationId)
@@ -722,6 +809,7 @@ public final class AeronArchive implements AutoCloseable
         private Aeron aeron;
         private ArchiveProxy archiveProxy;
         private IdleStrategy idleStrategy;
+        private Lock lock;
         private boolean ownsAeronClient = true;
 
         /**
@@ -751,6 +839,11 @@ public final class AeronArchive implements AutoCloseable
                     idleStrategy,
                     messageTimeoutNs,
                     ArchiveProxy.DEFAULT_MAX_RETRY_ATTEMPTS);
+            }
+
+            if (null == lock)
+            {
+                lock = new ReentrantLock();
             }
         }
 
@@ -1000,6 +1093,31 @@ public final class AeronArchive implements AutoCloseable
         public boolean ownsAeronClient()
         {
             return ownsAeronClient;
+        }
+
+        /**
+         * The {@link Lock} that is used to provide mutual exclusion in the {@link AeronArchive} client.
+         * <p>
+         * If the {@link AeronArchive} is used from only a single thread then the lock can be set to
+         * {@link NoOpLock} to elide the lock overhead.
+         *
+         * @param lock that is used to provide mutual exclusion in the {@link AeronArchive} client.
+         * @return this for a fluent API.
+         */
+        public Context lock(final Lock lock)
+        {
+            this.lock = lock;
+            return this;
+        }
+
+        /**
+         * Get the {@link Lock} that is used to provide mutual exclusion in the {@link AeronArchive} client.
+         *
+         * @return the {@link Lock} that is used to provide mutual exclusion in the {@link AeronArchive} client.
+         */
+        public Lock lock()
+        {
+            return lock;
         }
 
         /**

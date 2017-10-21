@@ -114,8 +114,7 @@ public class Configuration
     /**
      * Page size for alignment of all files.
      */
-    public static final int FILE_PAGE_SIZE =
-            getSize(FILE_PAGE_SIZE_PROP_NAME, FILE_PAGE_SIZE_DEFAULT);
+    public static final int FILE_PAGE_SIZE = getIntSize(FILE_PAGE_SIZE_PROP_NAME, FILE_PAGE_SIZE_DEFAULT);
 
     /**
      * Property name for boolean value for if storage checks should be performed when allocating files.
@@ -151,7 +150,7 @@ public class Configuration
     /**
      * IPC Term buffer length in bytes.
      */
-    public static final int IPC_TERM_BUFFER_LENGTH = getSize(
+    public static final int IPC_TERM_BUFFER_LENGTH = getIntSize(
         IPC_TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_IPC_LENGTH_DEFAULT);
 
     /**
@@ -168,7 +167,7 @@ public class Configuration
      * Default value for low file storage warning threshold.
      */
     public static final long LOW_FILE_STORE_WARNING_THRESHOLD =
-            getSize(LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME, LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT);
+            getLongSize(LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME, LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT);
 
     /**
      * Length (in bytes) of the conductor buffer for control commands from the clients to the media driver conductor.
@@ -183,7 +182,7 @@ public class Configuration
     /**
      * Conductor buffer length in bytes.
      */
-    public static final int CONDUCTOR_BUFFER_LENGTH = getSize(
+    public static final int CONDUCTOR_BUFFER_LENGTH = getIntSize(
         CONDUCTOR_BUFFER_LENGTH_PROP_NAME, CONDUCTOR_BUFFER_LENGTH_DEFAULT);
 
     /**
@@ -199,7 +198,7 @@ public class Configuration
     /**
      * Length for broadcast buffers from the media driver and the clients.
      */
-    public static final int TO_CLIENTS_BUFFER_LENGTH = getSize(
+    public static final int TO_CLIENTS_BUFFER_LENGTH = getIntSize(
         TO_CLIENTS_BUFFER_LENGTH_PROP_NAME, TO_CLIENTS_BUFFER_LENGTH_DEFAULT);
 
     /**
@@ -215,7 +214,7 @@ public class Configuration
     /**
      * Length of the memory mapped buffers for the system counters file.
      */
-    public static final int COUNTERS_VALUES_BUFFER_LENGTH = getSize(
+    public static final int COUNTERS_VALUES_BUFFER_LENGTH = getIntSize(
         COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME, COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT);
 
     public static final int COUNTERS_METADATA_BUFFER_LENGTH =
@@ -234,7 +233,7 @@ public class Configuration
     /**
      * Buffer length for the error buffer for the media driver.
      */
-    public static final int ERROR_BUFFER_LENGTH = getSize(
+    public static final int ERROR_BUFFER_LENGTH = getIntSize(
         ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
     /**
      * Property name for length of the memory mapped buffer for the loss report buffer.
@@ -249,7 +248,7 @@ public class Configuration
     /**
      * Buffer length for the loss report buffer for the media driver.
      */
-    public static final int LOSS_REPORT_BUFFER_LENGTH = getSize(
+    public static final int LOSS_REPORT_BUFFER_LENGTH = getIntSize(
         LOSS_REPORT_BUFFER_LENGTH_PROP_NAME, LOSS_REPORT_BUFFER_LENGTH_DEFAULT);
 
     /**
@@ -304,7 +303,7 @@ public class Configuration
     /**
      * SO_RCVBUF length, 0 means use OS default.
      */
-    public static final int SOCKET_RCVBUF_LENGTH = getSize(
+    public static final int SOCKET_RCVBUF_LENGTH = getIntSize(
         SOCKET_RCVBUF_LENGTH_PROP_NAME, SOCKET_RCVBUF_LENGTH_DEFAULT);
 
     /**
@@ -320,7 +319,7 @@ public class Configuration
     /**
      * SO_SNDBUF length, 0 means use OS default.
      */
-    public static final int SOCKET_SNDBUF_LENGTH = getSize(
+    public static final int SOCKET_SNDBUF_LENGTH = getIntSize(
         SOCKET_SNDBUF_LENGTH_PROP_NAME, SOCKET_SNDBUF_LENGTH_DEFAULT);
 
     /**
@@ -406,7 +405,7 @@ public class Configuration
     /**
      * IPC Publication term window length for flow control in bytes.
      */
-    public static final int IPC_PUBLICATION_TERM_WINDOW_LENGTH = getSize(
+    public static final int IPC_PUBLICATION_TERM_WINDOW_LENGTH = getIntSize(
         IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
 
     /**
@@ -588,7 +587,7 @@ public class Configuration
     /**
      * Length of the MTU to use for sending messages.
      */
-    public static final int MTU_LENGTH = getSize(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
+    public static final int MTU_LENGTH = getIntSize(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
 
     /**
      * Length of the maximum transmission unit of the media driver's protocol for IPC.
@@ -598,7 +597,7 @@ public class Configuration
     /**
      * Length of the MTU to use for sending messages via IPC
      */
-    public static final int IPC_MTU_LENGTH = getSize(IPC_MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
+    public static final int IPC_MTU_LENGTH = getIntSize(IPC_MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
 
     /**
      * {@link ThreadingMode} to be used by the Aeron {@link MediaDriver}.
@@ -881,12 +880,12 @@ public class Configuration
 
     static int termBufferLength()
     {
-        return getSize(TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_LENGTH_DEFAULT);
+        return getIntSize(TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_LENGTH_DEFAULT);
     }
 
     static int initialWindowLength()
     {
-        return getSize(INITIAL_WINDOW_LENGTH_PROP_NAME, INITIAL_WINDOW_LENGTH_DEFAULT);
+        return getIntSize(INITIAL_WINDOW_LENGTH_PROP_NAME, INITIAL_WINDOW_LENGTH_DEFAULT);
     }
 
     static long statusMessageTimeout()
@@ -1102,7 +1101,7 @@ public class Configuration
         }
     }
 
-    private static int getSize(final String propertyName, final int defaultValue)
+    private static int getIntSize(final String propertyName, final int defaultValue)
     {
         final String propertyValue = getProperty(propertyName);
         if (propertyValue != null)
@@ -1121,7 +1120,7 @@ public class Configuration
         return defaultValue;
     }
 
-    private static long getSize(final String propertyName, final long defaultValue)
+    private static long getLongSize(final String propertyName, final long defaultValue)
     {
         final String propertyValue = getProperty(propertyName);
         if (propertyValue != null)

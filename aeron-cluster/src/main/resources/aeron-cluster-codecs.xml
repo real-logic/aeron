@@ -21,7 +21,7 @@
             <type name="length"      primitiveType="uint32" maxValue="1073741824"/>
             <type name="varData"     primitiveType="uint8" length="0" characterEncoding="US-ASCII"/>
         </composite>
-        <enum name="SessionResponseCode" encodingType="int32">
+        <enum name="SessionEventCode" encodingType="int32">
             <validValue name="OK">0</validValue>
             <validValue name="ERROR">1</validValue>
         </enum>
@@ -32,7 +32,10 @@
         Cluster Session Protocol
         ========================
 
-        Protocol is: connect, *session-message, close
+        Protocol is:
+            -> connect, *session-message, close
+                      \
+            <-          *session-event, [*session-message | *session-event | *new-leader-event]
 
         1. Connect Session
           - An attempt is made to establish a connection with the cluster via multicast or multi-destination-cast.
@@ -50,14 +53,14 @@
           - If the session is not explicitly closed then it will timeout if the connection becomes unavailable.
     -->
 
-    <sbe:message name="SessionResponse"
+    <sbe:message name="SessionEvent"
                  id="1"
-                 description="Generic response to a session request. Details will be empty if code is OK">
+                 description="Generic event response to a connect request or async event. Details will be empty if code is OK">
         <field name="clusterSessionId"   id="1" type="int64"
                description="Session id for a multiplexed session over a shared connection, i.e. same Image"/>
         <field name="correlationId"      id="2" type="int64"
-               description="Request correlation id with which this response is associated"/>
-        <field name="code"               id="3" type="SessionResponseCode"
+               description="Request correlation id with which this event is associated"/>
+        <field name="code"               id="3" type="SessionEventCode"
                description="code type of the response"/>
         <data  name="detail"             id="4" type="varAsciiEncoding"
                description="Further detail such as an error message as necessary"/>

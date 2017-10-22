@@ -17,7 +17,6 @@ package io.aeron.archive;
 
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
-import io.aeron.archive.ArchiveConductor.ReplayPublicationSupplier;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
@@ -80,7 +79,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
     ReplaySession(
         final long replayPosition,
         final long replayLength,
-        final ReplayPublicationSupplier supplier,
+        final ArchiveConductor archiveConductor,
         final ControlSession controlSession,
         final File archiveDir,
         final ControlResponseProxy threadLocalControlResponseProxy,
@@ -152,7 +151,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         ExclusivePublication replayPublication = null;
         try
         {
-            replayPublication = supplier.newReplayPublication(
+            replayPublication = archiveConductor.newReplayPublication(
                 replayChannel,
                 replayStreamId,
                 cursor.fromPosition(),

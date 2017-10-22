@@ -41,17 +41,6 @@ import static io.aeron.archive.codecs.ControlResponseCode.ERROR;
 
 abstract class ArchiveConductor extends SessionWorker<Session> implements AvailableImageHandler
 {
-    interface ReplayPublicationSupplier
-    {
-        ExclusivePublication newReplayPublication(
-            String replayChannel,
-            int replayStreamId,
-            long fromPosition,
-            int mtuLength,
-            int initialTermId,
-            int termBufferLength);
-    }
-
     private static final int CONTROL_TERM_LENGTH = AeronArchive.Configuration.controlTermBufferLength();
     private static final int CONTROL_MTU = AeronArchive.Configuration.controlMtuLength();
 
@@ -60,7 +49,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<AtomicCounter> recordingPositionByIdMap = new Long2ObjectHashMap<>();
     private final Map<String, Subscription> subscriptionMap = new HashMap<>();
-    private final ReplayPublicationSupplier newReplayPublication = this::newReplayPublication;
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
 
@@ -313,7 +301,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final ReplaySession replaySession = new ReplaySession(
             position,
             length,
-            newReplayPublication,
+            this,
             controlSession,
             archiveDir,
             controlResponseProxy,
@@ -445,7 +433,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         recorder.addSession(session);
     }
 
-    private ExclusivePublication newReplayPublication(
+    ExclusivePublication newReplayPublication(
         final String replayChannel,
         final int replayStreamId,
         final long fromPosition,

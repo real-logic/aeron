@@ -63,8 +63,7 @@ public class ReplaySessionTest
 
     private final ExclusivePublication mockReplayPub = mock(ExclusivePublication.class);
     private final ControlSession mockControlSession = mock(ControlSession.class);
-    private final ArchiveConductor.ReplayPublicationSupplier mockReplyPubSupplier =
-        mock(ArchiveConductor.ReplayPublicationSupplier.class);
+    private final ArchiveConductor mockArchiveConductor = mock(ArchiveConductor.class);
     private final AtomicCounter position = mock(AtomicCounter.class);
     private final UnsafeBuffer descriptorBuffer =
         new UnsafeBuffer(allocateDirectAligned(Catalog.DEFAULT_RECORD_LENGTH, FRAME_ALIGNMENT));
@@ -223,7 +222,7 @@ public class ReplaySessionTest
             correlationId,
             mockReplayPub,
             mockControlSession,
-            mockReplyPubSupplier);
+            mockArchiveConductor);
 
         when(mockReplayPub.isClosed()).thenReturn(false);
         when(mockReplayPub.isConnected()).thenReturn(false);
@@ -238,7 +237,7 @@ public class ReplaySessionTest
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
         verify(mockControlSession, times(1)).sendOkResponse(correlationId, proxy);
-        verify(mockReplyPubSupplier).newReplayPublication(
+        verify(mockArchiveConductor).newReplayPublication(
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
             RECORDING_POSITION,
@@ -264,7 +263,7 @@ public class ReplaySessionTest
         new ReplaySession(
             RECORDING_POSITION + 1,
             (long)FRAME_LENGTH,
-            mockReplyPubSupplier,
+            mockArchiveConductor,
             mockControlSession,
             archiveDir,
             proxy,
@@ -288,7 +287,7 @@ public class ReplaySessionTest
             correlationId,
             mockReplayPub,
             mockControlSession,
-            mockReplyPubSupplier);
+            mockArchiveConductor);
 
         when(mockReplayPub.isClosed()).thenReturn(false);
         when(mockReplayPub.isConnected()).thenReturn(false);
@@ -303,7 +302,7 @@ public class ReplaySessionTest
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
         verify(mockControlSession, times(1)).sendOkResponse(correlationId, proxy);
-        verify(mockReplyPubSupplier).newReplayPublication(
+        verify(mockArchiveConductor).newReplayPublication(
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
             RECORDING_POSITION,
@@ -338,7 +337,7 @@ public class ReplaySessionTest
             correlationId,
             mockReplayPub,
             mockControlSession,
-            mockReplyPubSupplier);
+            mockArchiveConductor);
 
         when(mockReplayPub.isClosed()).thenReturn(false);
         when(mockReplayPub.isConnected()).thenReturn(true);
@@ -367,7 +366,7 @@ public class ReplaySessionTest
             correlationId,
             mockReplayPub,
             mockControlSession,
-            mockReplyPubSupplier);
+            mockArchiveConductor);
 
         when(mockReplayPub.isClosed()).thenReturn(false);
         when(mockReplayPub.isConnected()).thenReturn(false);
@@ -427,7 +426,7 @@ public class ReplaySessionTest
                 correlationId,
                 mockReplayPub,
                 mockControlSession,
-                mockReplyPubSupplier);
+                mockArchiveConductor);
 
             when(mockReplayPub.isClosed()).thenReturn(false);
             when(mockReplayPub.isConnected()).thenReturn(false);
@@ -442,7 +441,7 @@ public class ReplaySessionTest
             assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
             verify(mockControlSession, times(1)).sendOkResponse(correlationId, proxy);
-            verify(mockReplyPubSupplier).newReplayPublication(
+            verify(mockArchiveConductor).newReplayPublication(
                 REPLAY_CHANNEL,
                 REPLAY_STREAM_ID,
                 RECORDING_POSITION,
@@ -534,7 +533,7 @@ public class ReplaySessionTest
         final long correlationId,
         final ExclusivePublication replay,
         final ControlSession control,
-        final ArchiveConductor.ReplayPublicationSupplier conductor)
+        final ArchiveConductor conductor)
     {
         when(conductor.newReplayPublication(
             eq(REPLAY_CHANNEL),

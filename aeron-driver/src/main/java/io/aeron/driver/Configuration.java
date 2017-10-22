@@ -43,7 +43,6 @@ import static io.aeron.driver.ThreadingMode.DEDICATED;
 import static io.aeron.logbuffer.LogBufferDescriptor.PAGE_MAX_SIZE;
 import static io.aeron.logbuffer.LogBufferDescriptor.PAGE_MIN_SIZE;
 import static java.lang.Integer.getInteger;
-import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
 import static org.agrona.BitUtil.fromHex;
 
@@ -351,7 +350,7 @@ public class Configuration
     /**
      * Time for {@link Publication}s to linger before cleanup in nanoseconds.
      */
-    public static final long PUBLICATION_LINGER_NS = getLong(
+    public static final long PUBLICATION_LINGER_NS = getTimeInNanos(
         PUBLICATION_LINGER_PROP_NAME, PUBLICATION_LINGER_DEFAULT_NS);
 
     /**
@@ -367,7 +366,7 @@ public class Configuration
     /**
      * Timeout for client liveness in nanoseconds.
      */
-    public static final long CLIENT_LIVENESS_TIMEOUT_NS = getLong(
+    public static final long CLIENT_LIVENESS_TIMEOUT_NS = getTimeInNanos(
         CLIENT_LIVENESS_TIMEOUT_PROP_NAME, CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS);
 
     /**
@@ -383,7 +382,7 @@ public class Configuration
     /**
      * Timeout for {@link Image} liveness in nanoseconds.
      */
-    public static final long IMAGE_LIVENESS_TIMEOUT_NS = getLong(
+    public static final long IMAGE_LIVENESS_TIMEOUT_NS = getTimeInNanos(
         IMAGE_LIVENESS_TIMEOUT_PROP_NAME, IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS);
 
     /**
@@ -421,7 +420,7 @@ public class Configuration
     /**
      * Publication timeout for when to unblock a partially written message.
      */
-    public static final long PUBLICATION_UNBLOCK_TIMEOUT_NS = getLong(
+    public static final long PUBLICATION_UNBLOCK_TIMEOUT_NS = getTimeInNanos(
         PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME, PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS);
 
     /**
@@ -437,7 +436,7 @@ public class Configuration
     /**
      * Publication timeout for when to indicate no connection from lack of status messages.
      */
-    public static final long PUBLICATION_CONNECTION_TIMEOUT_NS = getLong(
+    public static final long PUBLICATION_CONNECTION_TIMEOUT_NS = getTimeInNanos(
         PUBLICATION_CONNECTION_TIMEOUT_PROP_NAME, PUBLICATION_CONNECTION_TIMEOUT_DEFAULT_NS);
 
     /**
@@ -623,7 +622,7 @@ public class Configuration
     /**
      * How often to check liveness and cleanup timers in nanoseconds.
      */
-    public static final long TIMER_INTERVAL_NS = getLong(TIMER_INTERVAL_PROP_NAME, DEFAULT_TIMER_INTERVAL_NS);
+    public static final long TIMER_INTERVAL_NS = getTimeInNanos(TIMER_INTERVAL_PROP_NAME, DEFAULT_TIMER_INTERVAL_NS);
 
     /**
      * Property name for {@link SendChannelEndpointSupplier}.
@@ -890,7 +889,7 @@ public class Configuration
 
     static long statusMessageTimeout()
     {
-        return getLong(STATUS_MESSAGE_TIMEOUT_PROP_NAME, STATUS_MESSAGE_TIMEOUT_DEFAULT_NS);
+        return getTimeInNanos(STATUS_MESSAGE_TIMEOUT_PROP_NAME, STATUS_MESSAGE_TIMEOUT_DEFAULT_NS);
     }
 
     static int sendToStatusMessagePollRatio()
@@ -1185,6 +1184,78 @@ public class Configuration
                 throw new ConfigurationException(
                     "Couldn't parse value: " + propertyValue + " for property " + propertyName + ". " +
                     "Trailing character should be one of k, m, or g, but was " + lastCharacter);
+        }
+    }
+
+    private static long getTimeInNanos(final String propertyName, final long defaultValue)
+    {
+        final String propertyValue = getProperty(propertyName);
+        if (propertyValue != null)
+        {
+            final long value = parseTime(propertyName, propertyValue);
+            if (value < 0)
+            {
+                throw new ConfigurationException(
+                        "Value " + value + " for property " + propertyName + " must be positive");
+            }
+
+            if (value == Long.MAX_VALUE)
+            {
+                throw new ConfigurationException(
+                        "Value " + value + " for property " + propertyName + " overflows max long");
+            }
+
+            return value;
+        }
+
+        return defaultValue;
+    }
+
+    public static long parseTime(final String propertyName, final String propertyValue)
+    {
+        final char lastCharacter = propertyValue.charAt(propertyValue.length() - 1);
+
+        if (Character.isDigit(lastCharacter))
+        {
+            return Long.valueOf(propertyValue);
+        }
+
+        final char secondToLastCharacter = propertyValue.charAt(propertyValue.length() - 2);
+
+        if (lastCharacter != 's' && lastCharacter != 'S')
+        {
+            throw new ConfigurationException(
+                    "Couldn't parse value: " + propertyValue + " for property " + propertyName + ". " +
+                            "Trailing characters should be one of s, ms, us or ns, but was " +
+                            secondToLastCharacter + lastCharacter);
+        }
+
+        if (Character.isDigit(secondToLastCharacter))
+        {
+            return TimeUnit.SECONDS.toNanos(Long.valueOf(propertyValue.substring(0, propertyValue.length() - 1)));
+        }
+
+        final long value = Long.valueOf(propertyValue.substring(0, propertyValue.length() - 2));
+
+        switch (secondToLastCharacter)
+        {
+            case 'n':
+            case 'N':
+                return value;
+
+            case 'u':
+            case 'U':
+                return TimeUnit.MICROSECONDS.toNanos(value);
+
+            case 'm':
+            case 'M':
+                return TimeUnit.MILLISECONDS.toNanos(value);
+
+            default:
+                throw new ConfigurationException(
+                        "Couldn't parse value: " + propertyValue + " for property " + propertyName + ". " +
+                                "Trailing characters should be one of s, ms, us or ns, but was " +
+                                secondToLastCharacter + lastCharacter);
         }
     }
 }

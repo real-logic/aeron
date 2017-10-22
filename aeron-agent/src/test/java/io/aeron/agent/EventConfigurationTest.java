@@ -27,6 +27,7 @@ import java.util.Set;
 import static io.aeron.agent.EventConfiguration.ALL_LOGGER_EVENT_CODES;
 import static io.aeron.agent.EventConfiguration.getEnabledEventCodes;
 import static io.aeron.driver.Configuration.parseSize;
+import static io.aeron.driver.Configuration.parseTime;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
@@ -88,6 +89,33 @@ public class EventConfigurationTest
         assertThat(parseSize("", "1M"), Matchers.equalTo(1024L * 1024));
         assertThat(parseSize("", "1g"), Matchers.equalTo(1024L * 1024 * 1024));
         assertThat(parseSize("", "1G"), Matchers.equalTo(1024L * 1024 * 1024));
+    }
+
+    @Test
+    public void shouldParseTimesWithSuffix()
+    {
+        assertThat(parseTime("", "1"), Matchers.equalTo(1L));
+        assertThat(parseTime("", "1ns"), Matchers.equalTo(1L));
+        assertThat(parseTime("", "1NS"), Matchers.equalTo(1L));
+        assertThat(parseTime("", "1us"), Matchers.equalTo(1000L));
+        assertThat(parseTime("", "1US"), Matchers.equalTo(1000L));
+        assertThat(parseTime("", "1ms"), Matchers.equalTo(1000L * 1000));
+        assertThat(parseTime("", "1MS"), Matchers.equalTo(1000L * 1000));
+        assertThat(parseTime("", "1s"), Matchers.equalTo(1000L * 1000 * 1000));
+        assertThat(parseTime("", "1S"), Matchers.equalTo(1000L * 1000 * 1000));
+        assertThat(parseTime("", "12s"), Matchers.equalTo(12L * 1000 * 1000 * 1000));
+    }
+
+    @Test(expected = ConfigurationException.class)
+    public void shouldThrowWhenParseTimeHasBadSuffix()
+    {
+        parseTime("", "1g");
+    }
+
+    @Test(expected = ConfigurationException.class)
+    public void shouldThrowWhenParseTimeHasBadTwoLetterSuffix()
+    {
+        parseTime("", "1zs");
     }
 
     @Test(expected = ConfigurationException.class)

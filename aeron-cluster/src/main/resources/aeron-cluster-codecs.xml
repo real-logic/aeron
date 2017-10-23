@@ -39,14 +39,13 @@
 
         1. Connect Session
           - An attempt is made to establish a connection with the cluster via multicast or multi-destination-cast.
-          - If successful NewLeaderSessionEvent will come as a response as the first message in the return Image.
+          - If successful, a NewLeaderSessionEvent will be sent in the return path Image.
           - If a change of leader occurs mid session then another NewLeaderSessionEvent will occur on a new Image.
 
-        2. State Machine Interaction via Session Messages
-          - Messages are sent to the state machine with a SessionHeader followed by user defined protocol payload.
-          - The state machine will emit responses and events with a SessionHeader followed by user protocol payload.
-          - If the leader changes during a session then a response will REDIRECT with detail for the current leader.
-          - The user defined protocol is the protocol of messages for interacting with the application being clustered.
+        2. Service Interaction via Session Messages
+          - Messages are sent to a clustered service with a SessionHeader followed by user defined protocol payload.
+          - The service will emit responses and events with a SessionHeader followed by user protocol payload.
+          - The user defined protocol is the protocol of messages for interacting with the service being clustered.
 
         3. Close Session
           - A cluster session can be closed with a CloseSessionRequest
@@ -76,7 +75,7 @@
 
     <sbe:message name="SessionHeader"
                  id="3"
-                 description="Header for request and response messages within a communication session with the clustered state machine">
+                 description="Header for request and response messages within a communication session with the clustered service">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
         <field name="timestamp"            id="3" type="time_t"/>
@@ -100,7 +99,7 @@
         <data  name="clusterLeader"        id="7" type="varAsciiEncoding"/>
     </sbe:message>
 
-    <!-- Events to be delivered to the state machine which are session related -->
+    <!-- Events to be delivered to the clustered service which are session related -->
 
     <sbe:message name="TimerEvent"
                  id="6"

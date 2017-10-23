@@ -86,7 +86,9 @@ public class ClusterEventAdapter implements FragmentHandler
                 listener.newLeader(
                     newLeaderSessionEventDecoder.lastCorrelationId(),
                     newLeaderSessionEventDecoder.clusterSessionId(),
-                    newLeaderSessionEventDecoder.timestamp(),
+                    newLeaderSessionEventDecoder.lastMessageTimestamp(),
+                    newLeaderSessionEventDecoder.clusterTermTimestamp(),
+                    newLeaderSessionEventDecoder.clusterMessageIndex(),
                     newLeaderSessionEventDecoder.clusterTermId(),
                     newLeaderSessionEventDecoder.clusterLeader());
                 break;

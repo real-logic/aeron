@@ -23,7 +23,14 @@ public interface ClusterEventListener
 {
     void sessionEvent(long correlationId, long clusterSessionId, SessionEventCode code, String detail);
 
-    void newLeader(long correlationId, long clusterSessionId, long timestamp, long clusterTermId, String leader);
+    void newLeader(
+        long correlationId,
+        long clusterSessionId,
+        long lastMessageTimestamp,
+        long clusterTermTimestamp,
+        long clusterMessageIndex,
+        long clusterTermId,
+        String leader);
 
     void onMessage(
         long correlationId,

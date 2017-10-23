@@ -19,6 +19,7 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import org.agrona.CloseHelper;
 
+// Track the message counter in the cluster
 public final class AeronCluster implements AutoCloseable
 {
     private final long sessionId;

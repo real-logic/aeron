@@ -142,6 +142,11 @@ public class CommonContext implements AutoCloseable
     public static final String MDC_CONTROL_MODE_MANUAL = "manual";
 
     /**
+     * Valie value for {@link #MDC_CONTROL_MODE_PARAM_NAME} when dynamic control is desired. Default value.
+     */
+    public static final String MDC_CONTROL_MODE_DYNAMIC = "dynamic";
+
+    /**
      * Parameter name for channel URI param to indicate if a subscribed must be reliable or not. Value is boolean.
      */
     public static final String RELIABLE_STREAM_PARAM_NAME = "reliable";

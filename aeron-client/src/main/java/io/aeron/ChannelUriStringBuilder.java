@@ -239,7 +239,9 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder controlMode(final String controlMode)
     {
-        if (null != controlMode && !controlMode.equals(CommonContext.MDC_CONTROL_MODE_MANUAL))
+        if (null != controlMode &&
+            !controlMode.equals(CommonContext.MDC_CONTROL_MODE_MANUAL) &&
+            !controlMode.equals(CommonContext.MDC_CONTROL_MODE_DYNAMIC))
         {
             throw new IllegalArgumentException("Invalid control mode: " + controlMode);
         }

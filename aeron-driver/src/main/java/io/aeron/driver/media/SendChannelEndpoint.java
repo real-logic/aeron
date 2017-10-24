@@ -76,7 +76,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
             {
                 destinationTracker = new UdpDestinationTracker(this::presend);
             }
-            else
+            else if (null == mode || CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(mode))
             {
                 destinationTracker = new UdpDestinationTracker(context.nanoClock(), this::presend, DESTINATION_TIMEOUT);
             }

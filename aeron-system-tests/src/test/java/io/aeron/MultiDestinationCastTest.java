@@ -40,7 +40,7 @@ import static org.mockito.Mockito.*;
 
 public class MultiDestinationCastTest
 {
-    private static final String PUB_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:54325";
+    private static final String PUB_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:54325|control-mode=dynamic";
     private static final String SUB1_MDC_DYNAMIC_URI = "aeron:udp?endpoint=localhost:54326|control=localhost:54325";
     private static final String SUB2_MDC_DYNAMIC_URI = "aeron:udp?endpoint=localhost:54327|control=localhost:54325";
 

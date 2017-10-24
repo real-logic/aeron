@@ -326,6 +326,19 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
         goto cleanup;
     }
 
+    size_t default_rcvbuf = 0;
+    len = sizeof(default_rcvbuf);
+    if (getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &default_sndbuf, &len) < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "getsockopt(SO_RCVBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        goto cleanup;
+    }
+
+    size_t max_rcvbuf = default_rcvbuf;
+    size_t max_sndbuf = default_sndbuf;
+
     if (driver->context->socket_sndbuf > 0)
     {
         size_t socket_sndbuf = driver->context->socket_sndbuf;
@@ -346,6 +359,8 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
             aeron_set_err(errcode, "getsockopt(SO_SNDBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
             goto cleanup;
         }
+
+        max_sndbuf = default_sndbuf;
 
         if (driver->context->socket_sndbuf > socket_sndbuf)
         {
@@ -379,6 +394,8 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
             goto cleanup;
         }
 
+        max_rcvbuf = socket_rcvbuf;
+
         if (driver->context->socket_rcvbuf > socket_rcvbuf)
         {
             fprintf(
@@ -390,16 +407,25 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
         }
     }
 
-    size_t sndbuf = (0 == driver->context->socket_sndbuf) ? default_sndbuf : driver->context->socket_sndbuf;
-
-    if (driver->context->mtu_length > sndbuf)
+    if (driver->context->mtu_length > max_sndbuf)
     {
         aeron_set_err(
             EINVAL,
             "MTU greater than socket SO_SNDBUF, adjust %s to match MTU: mtuLength=%" PRIu64 ", SO_SNDBUF=%" PRIu64 "\n",
             AERON_SOCKET_SO_SNDBUF_ENV_VAR,
             (uint64_t)driver->context->mtu_length,
-            sndbuf);
+            max_sndbuf);
+        goto cleanup;
+    }
+
+    if (driver->context->initial_window_length > max_rcvbuf)
+    {
+        aeron_set_err(
+            EINVAL,
+            "Window length greater than socket SO_RCVBUF, increase %s to match window: windowLength=%" PRIu64 ", SO_RCVBUF=%" PRIu64 "\n",
+            AERON_RCV_INITIAL_WINDOW_LENGTH_ENV_VAR,
+            (uint64_t)driver->context->initial_window_length,
+            max_rcvbuf);
         goto cleanup;
     }
 

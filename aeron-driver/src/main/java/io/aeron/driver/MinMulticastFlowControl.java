@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
+import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
  * Minimum multicast sender flow control strategy.
@@ -44,7 +45,8 @@ public class MinMulticastFlowControl implements FlowControl
      */
     private static final long RECEIVER_TIMEOUT_DEFAULT = TimeUnit.SECONDS.toNanos(2);
 
-    private static final long RECEIVER_TIMEOUT = Long.getLong(RECEIVER_TIMEOUT_PROP_NAME, RECEIVER_TIMEOUT_DEFAULT);
+    private static final long RECEIVER_TIMEOUT = getDurationInNanos(
+        RECEIVER_TIMEOUT_PROP_NAME, RECEIVER_TIMEOUT_DEFAULT);
 
     private final ArrayList<Receiver> receiverList = new ArrayList<>();
 

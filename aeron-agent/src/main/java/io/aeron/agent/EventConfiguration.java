@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import org.agrona.SystemUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
@@ -97,9 +98,9 @@ public class EventConfiguration
     {
         ENABLED_EVENT_CODES = makeTagBitSet(getEnabledEventCodes(System.getProperty(ENABLED_EVENT_CODES_PROP_NAME)));
 
-        final int bufferLength = Integer.getInteger(
-            EventConfiguration.BUFFER_LENGTH_PROP_NAME,
-            EventConfiguration.BUFFER_LENGTH_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
+        final int bufferLength = SystemUtil.getSizeAsInt(
+            EventConfiguration.BUFFER_LENGTH_PROP_NAME, EventConfiguration.BUFFER_LENGTH_DEFAULT) +
+            RingBufferDescriptor.TRAILER_LENGTH;
 
         EVENT_RING_BUFFER = new ManyToOneRingBuffer(new UnsafeBuffer(ByteBuffer.allocateDirect(bufferLength)));
     }

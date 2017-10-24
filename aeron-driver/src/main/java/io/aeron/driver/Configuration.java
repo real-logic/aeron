@@ -396,7 +396,7 @@ public class Configuration
     /**
      * Publication term window length for flow control in bytes.
      */
-    public static final int PUBLICATION_TERM_WINDOW_LENGTH = getInteger(PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
+    public static final int PUBLICATION_TERM_WINDOW_LENGTH = getSizeAsInt(PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
 
     /**
      * Property name for window limit for IPC publications.
@@ -1076,8 +1076,7 @@ public class Configuration
             {
                 throw new ConfigurationException("Window length greater than socket SO_RCVBUF, increase '" +
                     Configuration.INITIAL_WINDOW_LENGTH_PROP_NAME +
-                    "' to match window: windowLength=" + ctx.initialWindowLength() +
-                    ", SO_RCVBUF=" + maxSoRcvBuf);
+                    "' to match window: windowLength=" + ctx.initialWindowLength() + ", SO_RCVBUF=" + maxSoRcvBuf);
             }
         }
         catch (final IOException ex)
@@ -1103,7 +1102,7 @@ public class Configuration
         if (pageSize > PAGE_MAX_SIZE)
         {
             throw new ConfigurationException(
-                "Page size more than max size of " + PAGE_MAX_SIZE + ": " + pageSize);
+                "Page size greater than max size of " + PAGE_MAX_SIZE + ": " + pageSize);
         }
 
         if (!BitUtil.isPowerOfTwo(pageSize))

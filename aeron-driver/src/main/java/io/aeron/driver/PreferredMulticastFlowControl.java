@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 import static java.lang.System.getProperty;
+import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
  * Minimum multicast sender flow control strategy only for preferred members.
@@ -46,7 +47,8 @@ public class PreferredMulticastFlowControl implements FlowControl
      */
     private static final long RECEIVER_TIMEOUT_DEFAULT = TimeUnit.SECONDS.toNanos(2);
 
-    private static final long RECEIVER_TIMEOUT = Long.getLong(RECEIVER_TIMEOUT_PROP_NAME, RECEIVER_TIMEOUT_DEFAULT);
+    private static final long RECEIVER_TIMEOUT = getDurationInNanos(
+        RECEIVER_TIMEOUT_PROP_NAME, RECEIVER_TIMEOUT_DEFAULT);
 
     /**
      * Property name used to set Application Specific Feedback (ASF) in Status Messages to identify preferred receivers.

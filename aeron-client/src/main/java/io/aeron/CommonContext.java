@@ -142,7 +142,7 @@ public class CommonContext implements AutoCloseable
     public static final String MDC_CONTROL_MODE_MANUAL = "manual";
 
     /**
-     * Valie value for {@link #MDC_CONTROL_MODE_PARAM_NAME} when dynamic control is desired. Default value.
+     * Valid value for {@link #MDC_CONTROL_MODE_PARAM_NAME} when dynamic control is desired. Default value.
      */
     public static final String MDC_CONTROL_MODE_DYNAMIC = "dynamic";
 

@@ -45,6 +45,9 @@ import static io.aeron.logbuffer.LogBufferDescriptor.PAGE_MIN_SIZE;
 import static java.lang.Integer.getInteger;
 import static java.lang.System.getProperty;
 import static org.agrona.BitUtil.fromHex;
+import static org.agrona.SystemUtil.getDurationInNanos;
+import static org.agrona.SystemUtil.getSizeAsInt;
+import static org.agrona.SystemUtil.getSizeAsLong;
 
 /**
  * Configuration options for the {@link MediaDriver}.
@@ -165,8 +168,8 @@ public class Configuration
     /**
      * Default value for low file storage warning threshold.
      */
-    public static final long LOW_FILE_STORE_WARNING_THRESHOLD =
-            getSizeAsLong(LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME, LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT);
+    public static final long LOW_FILE_STORE_WARNING_THRESHOLD = getSizeAsLong(
+        LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME, LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT);
 
     /**
      * Length (in bytes) of the conductor buffer for control commands from the clients to the media driver conductor.
@@ -1014,12 +1017,12 @@ public class Configuration
         if (mtuLength < DataHeaderFlyweight.HEADER_LENGTH || mtuLength > MAX_UDP_PAYLOAD_LENGTH)
         {
             throw new ConfigurationException(
-                "mtuLength must be a >= HEADER_LENGTH and <= MAX_UDP_PAYLOAD_LENGTH: mtuLength=" + mtuLength);
+                "mtuLength must be a >= HEADER_LENGTH and <= MAX_UDP_PAYLOAD_LENGTH: " + mtuLength);
         }
 
         if ((mtuLength & (FrameDescriptor.FRAME_ALIGNMENT - 1)) != 0)
         {
-            throw new ConfigurationException("mtuLength must be a multiple of FRAME_ALIGNMENT: mtuLength=" + mtuLength);
+            throw new ConfigurationException("mtuLength must be a multiple of FRAME_ALIGNMENT: " + mtuLength);
         }
     }
 
@@ -1040,7 +1043,7 @@ public class Configuration
             if (maxSoSndBuf < SOCKET_SNDBUF_LENGTH)
             {
                 System.err.format(
-                    "WARNING: Could not get desired SO_SNDBUF, adjust OS buffer to match %s: attempted=%d, actual=%d%n",
+                    "WARNING: Could not get desired SO_SNDBUF, adjust OS to allow %s: attempted=%d, actual=%d%n",
                     SOCKET_SNDBUF_LENGTH_PROP_NAME,
                     SOCKET_SNDBUF_LENGTH,
                     maxSoSndBuf);
@@ -1052,7 +1055,7 @@ public class Configuration
             if (maxSoRcvBuf < SOCKET_RCVBUF_LENGTH)
             {
                 System.err.format(
-                    "WARNING: Could not get desired SO_RCVBUF, adjust OS buffer to match %s: attempted=%d, actual=%d%n",
+                    "WARNING: Could not get desired SO_RCVBUF, adjust OS to allow %s: attempted=%d, actual=%d%n",
                     SOCKET_RCVBUF_LENGTH_PROP_NAME,
                     SOCKET_RCVBUF_LENGTH,
                     maxSoRcvBuf);
@@ -1094,207 +1097,18 @@ public class Configuration
         if (pageSize < PAGE_MIN_SIZE)
         {
             throw new ConfigurationException(
-                "Page size less than min size of " + PAGE_MIN_SIZE + ": page size=" + pageSize);
+                "Page size less than min size of " + PAGE_MIN_SIZE + ": " + pageSize);
         }
 
         if (pageSize > PAGE_MAX_SIZE)
         {
             throw new ConfigurationException(
-                "Page size more than max size of " + PAGE_MAX_SIZE + ": page size=" + pageSize);
+                "Page size more than max size of " + PAGE_MAX_SIZE + ": " + pageSize);
         }
 
         if (!BitUtil.isPowerOfTwo(pageSize))
         {
-            throw new ConfigurationException("Page size not a power of 2: page size=" + pageSize);
-        }
-    }
-
-    /**
-     * Get a size value as an int from a system property. Supports a 'g', 'm', and 'k' suffix to indicate
-     * gigabytes, megabytes, or kilobytes respectively.
-     *
-     * @param propertyName to lookup.
-     * @param defaultValue to be applied if the system property is not set.
-     * @return the int value.
-     * @throws NumberFormatException if the value is out of range or mal-formatted.
-     */
-    public static int getSizeAsInt(final String propertyName, final int defaultValue)
-    {
-        final String propertyValue = getProperty(propertyName);
-        if (propertyValue != null)
-        {
-            final long value = parseSize(propertyName, propertyValue);
-            if (value < 0 || value > Integer.MAX_VALUE)
-            {
-                throw new NumberFormatException(
-                    propertyName + " must positive and less than Integer.MAX_VALUE :" + value);
-            }
-
-            return (int)value;
-        }
-
-        return defaultValue;
-    }
-
-    /**
-     * Get a size value as a long from a system property. Supports a 'g', 'm', and 'k' suffix to indicate
-     * gigabytes, megabytes, or kilobytes respectively.
-     *
-     * @param propertyName to lookup.
-     * @param defaultValue to be applied if the system property is not set.
-     * @return the long value.
-     * @throws NumberFormatException if the value is out of range or mal-formatted.
-     */
-    public static long getSizeAsLong(final String propertyName, final long defaultValue)
-    {
-        final String propertyValue = getProperty(propertyName);
-        if (propertyValue != null)
-        {
-            final long value = parseSize(propertyName, propertyValue);
-            if (value < 0)
-            {
-                throw new NumberFormatException(propertyName + " must be positive: " + value);
-            }
-
-            return value;
-        }
-
-        return defaultValue;
-    }
-
-    private static final long MAX_G_VALUE = 8589934591L;
-    private static final long MAX_M_VALUE = 8796093022207L;
-    private static final long MAX_K_VALUE = 9007199254739968L;
-
-    /**
-     * Parse a string representation of a value with optional suffix of 'g', 'm', and 'k' suffix to indicate
-     * gigabytes, megabytes, or kilobytes respectively.
-     *
-     * @param propertyName  that associated with the size value.
-     * @param propertyValue to be parsed.
-     * @return the long value.
-     * @throws NumberFormatException if the value is out of range or mal-formatted.
-     */
-    public static long parseSize(final String propertyName, final String propertyValue)
-    {
-        final char lastCharacter = propertyValue.charAt(propertyValue.length() - 1);
-        if (Character.isDigit(lastCharacter))
-        {
-            return Long.valueOf(propertyValue);
-        }
-
-        final long value = Long.valueOf(propertyValue.substring(0, propertyValue.length() - 1));
-
-        switch (lastCharacter)
-        {
-            case 'k':
-            case 'K':
-                if (value > MAX_K_VALUE)
-                {
-                    throw new NumberFormatException(propertyName + " would overflow long: " + propertyValue);
-                }
-                return value * 1024;
-
-            case 'm':
-            case 'M':
-                if (value > MAX_M_VALUE)
-                {
-                    throw new NumberFormatException(propertyName + " would overflow long: " + propertyValue);
-                }
-                return value * 1024 * 1024;
-
-            case 'g':
-            case 'G':
-                if (value > MAX_G_VALUE)
-                {
-                    throw new NumberFormatException(propertyName + " would overflow long: " + propertyValue);
-                }
-                return value * 1024 * 1024 * 1024;
-
-            default:
-                throw new NumberFormatException(
-                    propertyName + ": " + propertyValue + " should end with: k, m, or g.");
-        }
-    }
-
-    /**
-     * Get a string representation of a time duration with an optional suffix of 's', 'ms', 'us', or 'ns' suffix to
-     * indicate seconds, milliseconds, microseconds, or nanoseconds respectively.
-     * <p>
-     * If the resulting duration is greater than {@link Long#MAX_VALUE} then {@link Long#MAX_VALUE} is used.
-     *
-     * @param propertyName associated with the duration value.
-     * @param defaultValue to be used if the property is not present.
-     * @return the long value.
-     * @throws NumberFormatException if the value is negative or malformed.
-     */
-    public static long getDurationInNanos(final String propertyName, final long defaultValue)
-    {
-        final String propertyValue = getProperty(propertyName);
-        if (propertyValue != null)
-        {
-            final long value = parseDuration(propertyName, propertyValue);
-            if (value < 0)
-            {
-                throw new NumberFormatException(propertyName + " must be positive: " + value);
-            }
-
-            return value;
-        }
-
-        return defaultValue;
-    }
-
-    /**
-     * Parse a string representation of a time duration with an optional suffix of 's', 'ms', 'us', or 'ns' to
-     * indicate seconds, milliseconds, microseconds, or nanoseconds respectively.
-     * <p>
-     * If the resulting duration is greater than {@link Long#MAX_VALUE} then {@link Long#MAX_VALUE} is used.
-     *
-     * @param propertyName  associated with the duration value.
-     * @param propertyValue to be parsed.
-     * @return the long value.
-     * @throws NumberFormatException if the value is negative or malformed.
-     */
-    public static long parseDuration(final String propertyName, final String propertyValue)
-    {
-        final char lastCharacter = propertyValue.charAt(propertyValue.length() - 1);
-        if (Character.isDigit(lastCharacter))
-        {
-            return Long.valueOf(propertyValue);
-        }
-
-        if (lastCharacter != 's' && lastCharacter != 'S')
-        {
-            throw new NumberFormatException(
-                propertyName + ": " + propertyValue + " should end with: s, ms, us, or ns.");
-        }
-
-        final char secondLastCharacter = propertyValue.charAt(propertyValue.length() - 2);
-        if (Character.isDigit(secondLastCharacter))
-        {
-            return TimeUnit.SECONDS.toNanos(Long.valueOf(propertyValue.substring(0, propertyValue.length() - 1)));
-        }
-
-        final long value = Long.valueOf(propertyValue.substring(0, propertyValue.length() - 2));
-
-        switch (secondLastCharacter)
-        {
-            case 'n':
-            case 'N':
-                return value;
-
-            case 'u':
-            case 'U':
-                return TimeUnit.MICROSECONDS.toNanos(value);
-
-            case 'm':
-            case 'M':
-                return TimeUnit.MILLISECONDS.toNanos(value);
-
-            default:
-                throw new NumberFormatException(
-                    propertyName + ": " + propertyValue + " should end with: s, ms, us, or ns.");
+            throw new ConfigurationException("Page size not a power of 2: " + pageSize);
         }
     }
 }

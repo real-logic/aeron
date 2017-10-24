@@ -171,7 +171,7 @@ subprojects {
     }
 }
 
-def agronaVersion = '0.9.9'
+def agronaVersion = '0.9.10-SNAPSHOT'
 def sbeVersion = '1.7.3'
 
 project(':aeron-client') {

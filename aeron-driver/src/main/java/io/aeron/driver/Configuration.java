@@ -1109,6 +1109,15 @@ public class Configuration
         }
     }
 
+    /**
+     * Get a size value as an int from a system property. Supports a 'g', 'm', and 'k' suffix to indicate
+     * gigabytes, megabytes, or kilobytes respectively.
+     *
+     * @param propertyName to lookup.
+     * @param defaultValue to be applied if the system property is not set.
+     * @return the int value.
+     * @throws NumberFormatException if the value is out of range or mal-formatted.
+     */
     public static int getSizeAsInt(final String propertyName, final int defaultValue)
     {
         final String propertyValue = getProperty(propertyName);
@@ -1117,7 +1126,7 @@ public class Configuration
             final long value = parseSize(propertyName, propertyValue);
             if (value < 0 || value > Integer.MAX_VALUE)
             {
-                throw new ConfigurationException(
+                throw new NumberFormatException(
                     propertyName + " must positive and less than Integer.MAX_VALUE :" + value);
             }
 
@@ -1127,6 +1136,15 @@ public class Configuration
         return defaultValue;
     }
 
+    /**
+     * Get a size value as a long from a system property. Supports a 'g', 'm', and 'k' suffix to indicate
+     * gigabytes, megabytes, or kilobytes respectively.
+     *
+     * @param propertyName to lookup.
+     * @param defaultValue to be applied if the system property is not set.
+     * @return the long value.
+     * @throws NumberFormatException if the value is out of range or mal-formatted.
+     */
     public static long getSizeAsLong(final String propertyName, final long defaultValue)
     {
         final String propertyValue = getProperty(propertyName);
@@ -1135,7 +1153,7 @@ public class Configuration
             final long value = parseSize(propertyName, propertyValue);
             if (value < 0)
             {
-                throw new ConfigurationException(propertyName + " must be positive: " + value);
+                throw new NumberFormatException(propertyName + " must be positive: " + value);
             }
 
             return value;
@@ -1148,6 +1166,15 @@ public class Configuration
     private static final long MAX_M_VALUE = 8796093022207L;
     private static final long MAX_K_VALUE = 9007199254739968L;
 
+    /**
+     * Parse a string representation of a value with optional suffix of 'g', 'm', and 'k' suffix to indicate
+     * gigabytes, megabytes, or kilobytes respectively.
+     *
+     * @param propertyName  that associated with the size value.
+     * @param propertyValue to be parsed.
+     * @return the long value.
+     * @throws NumberFormatException if the value is out of range or mal-formatted.
+     */
     public static long parseSize(final String propertyName, final String propertyValue)
     {
         final char lastCharacter = propertyValue.charAt(propertyValue.length() - 1);
@@ -1164,7 +1191,7 @@ public class Configuration
             case 'K':
                 if (value > MAX_K_VALUE)
                 {
-                    throw new ConfigurationException(propertyName + " would overflow long: " + propertyValue);
+                    throw new NumberFormatException(propertyName + " would overflow long: " + propertyValue);
                 }
                 return value * 1024;
 
@@ -1172,7 +1199,7 @@ public class Configuration
             case 'M':
                 if (value > MAX_M_VALUE)
                 {
-                    throw new ConfigurationException(propertyName + " would overflow long: " + propertyValue);
+                    throw new NumberFormatException(propertyName + " would overflow long: " + propertyValue);
                 }
                 return value * 1024 * 1024;
 
@@ -1180,16 +1207,27 @@ public class Configuration
             case 'G':
                 if (value > MAX_G_VALUE)
                 {
-                    throw new ConfigurationException(propertyName + " would overflow long: " + propertyValue);
+                    throw new NumberFormatException(propertyName + " would overflow long: " + propertyValue);
                 }
                 return value * 1024 * 1024 * 1024;
 
             default:
-                throw new ConfigurationException(
+                throw new NumberFormatException(
                     propertyName + ": " + propertyValue + " should end with: k, m, or g.");
         }
     }
 
+    /**
+     * Get a string representation of a time duration with an optional suffix of 's', 'ms', 'us', or 'ns' suffix to
+     * indicate seconds, milliseconds, microseconds, or nanoseconds respectively.
+     * <p>
+     * If the resulting duration is greater than {@link Long#MAX_VALUE} then {@link Long#MAX_VALUE} is used.
+     *
+     * @param propertyName associated with the duration value.
+     * @param defaultValue to be used if the property is not present.
+     * @return the long value.
+     * @throws NumberFormatException if the value is negative or malformed.
+     */
     public static long getDurationInNanos(final String propertyName, final long defaultValue)
     {
         final String propertyValue = getProperty(propertyName);
@@ -1198,7 +1236,7 @@ public class Configuration
             final long value = parseDuration(propertyName, propertyValue);
             if (value < 0)
             {
-                throw new ConfigurationException(propertyName + " must be positive: " + value);
+                throw new NumberFormatException(propertyName + " must be positive: " + value);
             }
 
             return value;
@@ -1207,6 +1245,17 @@ public class Configuration
         return defaultValue;
     }
 
+    /**
+     * Parse a string representation of a time duration with an optional suffix of 's', 'ms', 'us', or 'ns' to
+     * indicate seconds, milliseconds, microseconds, or nanoseconds respectively.
+     * <p>
+     * If the resulting duration is greater than {@link Long#MAX_VALUE} then {@link Long#MAX_VALUE} is used.
+     *
+     * @param propertyName  associated with the duration value.
+     * @param propertyValue to be parsed.
+     * @return the long value.
+     * @throws NumberFormatException if the value is negative or malformed.
+     */
     public static long parseDuration(final String propertyName, final String propertyValue)
     {
         final char lastCharacter = propertyValue.charAt(propertyValue.length() - 1);
@@ -1217,7 +1266,7 @@ public class Configuration
 
         if (lastCharacter != 's' && lastCharacter != 'S')
         {
-            throw new ConfigurationException(
+            throw new NumberFormatException(
                 propertyName + ": " + propertyValue + " should end with: s, ms, us, or ns.");
         }
 
@@ -1244,7 +1293,7 @@ public class Configuration
                 return TimeUnit.MILLISECONDS.toNanos(value);
 
             default:
-                throw new ConfigurationException(
+                throw new NumberFormatException(
                     propertyName + ": " + propertyValue + " should end with: s, ms, us, or ns.");
         }
     }

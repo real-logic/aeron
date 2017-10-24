@@ -15,7 +15,6 @@
  */
 package io.aeron.agent;
 
-import io.aeron.driver.exceptions.ConfigurationException;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
@@ -106,19 +105,19 @@ public class EventConfigurationTest
         assertThat(parseDuration("", "12s"), Matchers.equalTo(12L * 1000 * 1000 * 1000));
     }
 
-    @Test(expected = ConfigurationException.class)
+    @Test(expected = NumberFormatException.class)
     public void shouldThrowWhenParseTimeHasBadSuffix()
     {
         parseDuration("", "1g");
     }
 
-    @Test(expected = ConfigurationException.class)
+    @Test(expected = NumberFormatException.class)
     public void shouldThrowWhenParseTimeHasBadTwoLetterSuffix()
     {
         parseDuration("", "1zs");
     }
 
-    @Test(expected = ConfigurationException.class)
+    @Test(expected = NumberFormatException.class)
     public void shouldThrowWhenParseSizeOverflows()
     {
         parseSize("", 8589934592L + "g");

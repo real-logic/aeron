@@ -16,7 +16,7 @@
 package io.aeron;
 
 import io.aeron.logbuffer.*;
-import org.agrona.*;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
 
@@ -70,44 +70,38 @@ public class Publication implements AutoCloseable
 
     private final long originalRegistrationId;
     private final long registrationId;
-    private final long maxPossiblePosition;
+    protected final long maxPossiblePosition;
     private final int streamId;
     private final int sessionId;
-    private final int initialTermId;
+    protected final int initialTermId;
     private final int maxMessageLength;
-    private final int maxPayloadLength;
-    private final int positionBitsToShift;
+    protected final int maxPayloadLength;
+    protected final int positionBitsToShift;
     private volatile boolean isClosed = false;
 
     private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
-    private final ReadablePosition positionLimit;
-    private final UnsafeBuffer logMetaDataBuffer;
-    private final HeaderWriter headerWriter;
+    protected final ReadablePosition positionLimit;
+    protected final UnsafeBuffer logMetaDataBuffer;
+    protected final HeaderWriter headerWriter;
     private final LogBuffers logBuffers;
     private final ClientConductor conductor;
     private final String channel;
 
-    Publication(
-        final ClientConductor clientConductor,
-        final String channel,
-        final int streamId,
-        final int sessionId,
-        final ReadablePosition positionLimit,
-        final LogBuffers logBuffers,
-        final long originalRegistrationId,
-        final long registrationId)
+    protected Publication(
+            final ClientConductor clientConductor,
+            final String channel,
+            final int streamId,
+            final int sessionId,
+            final ReadablePosition positionLimit,
+            final LogBuffers logBuffers,
+            final long originalRegistrationId,
+            final long registrationId,
+            final int maxMessageLength)
     {
-        final UnsafeBuffer[] buffers = logBuffers.duplicateTermBuffers();
-        final UnsafeBuffer logMetaDataBuffer = logBuffers.metaDataBuffer();
-
-        for (int i = 0; i < PARTITION_COUNT; i++)
-        {
-            termAppenders[i] = new TermAppender(buffers[i], logMetaDataBuffer, i);
-        }
-
         final int termLength = logBuffers.termLength();
+        final UnsafeBuffer logMetaDataBuffer = logBuffers.metaDataBuffer();
+        this.maxMessageLength = maxMessageLength;
         this.maxPayloadLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
-        this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(termLength);
         this.maxPossiblePosition = termLength * (1L << 31L);
         this.conductor = clientConductor;
         this.channel = channel;
@@ -121,6 +115,34 @@ public class Publication implements AutoCloseable
         this.logBuffers = logBuffers;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         this.headerWriter = new HeaderWriter(defaultFrameHeader(logMetaDataBuffer));
+    }
+
+    Publication(
+        final ClientConductor clientConductor,
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final ReadablePosition positionLimit,
+        final LogBuffers logBuffers,
+        final long originalRegistrationId,
+        final long registrationId)
+    {
+        this(clientConductor,
+              channel,
+              streamId,
+              sessionId,
+              positionLimit,
+              logBuffers,
+              originalRegistrationId,
+              registrationId,
+              FrameDescriptor.computeMaxMessageLength(logBuffers.termLength()));
+
+        final UnsafeBuffer[] buffers = this.logBuffers.duplicateTermBuffers();
+
+        for (int i = 0; i < PARTITION_COUNT; i++)
+        {
+            termAppenders[i] = new TermAppender(buffers[i], logMetaDataBuffer, i);
+        }
     }
 
     /**
@@ -609,7 +631,7 @@ public class Publication implements AutoCloseable
         return ADMIN_ACTION;
     }
 
-    private long backPressureStatus(final long currentPosition, final int messageLength)
+    long backPressureStatus(final long currentPosition, final int messageLength)
     {
         if ((currentPosition + messageLength) >= maxPossiblePosition)
         {
@@ -624,7 +646,7 @@ public class Publication implements AutoCloseable
         return NOT_CONNECTED;
     }
 
-    private void checkForMaxPayloadLength(final int length)
+    void checkForMaxPayloadLength(final int length)
     {
         if (length > maxPayloadLength)
         {
@@ -633,7 +655,7 @@ public class Publication implements AutoCloseable
         }
     }
 
-    private void checkForMaxMessageLength(final int length)
+    void checkForMaxMessageLength(final int length)
     {
         if (length > maxMessageLength)
         {

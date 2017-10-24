@@ -1201,11 +1201,6 @@ public class Configuration
                 throw new ConfigurationException(propertyName + " must be positive: " + value);
             }
 
-            if (value == Long.MAX_VALUE)
-            {
-                throw new ConfigurationException(propertyName + " overflows long: " + propertyName);
-            }
-
             return value;
         }
 

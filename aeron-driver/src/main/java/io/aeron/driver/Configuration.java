@@ -1067,6 +1067,14 @@ public class Configuration
                     ctx.mtuLength(),
                     soSndBuf));
             }
+
+            if (ctx.initialWindowLength() > maxSoRcvBuf)
+            {
+                throw new ConfigurationException("Window length greater than socket SO_RCVBUF, increase '" +
+                    Configuration.INITIAL_WINDOW_LENGTH_PROP_NAME +
+                    "' to match window: windowLength=" + ctx.initialWindowLength() +
+                    ", SO_RCVBUF=" + maxSoRcvBuf);
+            }
         }
         catch (final IOException ex)
         {

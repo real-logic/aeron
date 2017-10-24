@@ -184,7 +184,7 @@ public class EmbeddedIpcThroughput
 
         public void run()
         {
-            while (subscription.hasNoImages())
+            while (!subscription.isConnected())
             {
                 Thread.yield();
             }

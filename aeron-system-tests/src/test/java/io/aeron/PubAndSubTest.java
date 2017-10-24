@@ -715,7 +715,7 @@ public class PubAndSubTest
 
         launch(channel);
 
-        while (subscription.hasNoImages())
+        while (!subscription.isConnected())
         {
             Thread.yield();
         }
@@ -750,7 +750,7 @@ public class PubAndSubTest
         stage.set(2);
         subscription = subscribingClient.addSubscription(channel, STREAM_ID);
 
-        while (subscription.hasNoImages())
+        while (!subscription.isConnected())
         {
             Thread.yield();
         }

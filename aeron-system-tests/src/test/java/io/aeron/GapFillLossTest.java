@@ -120,7 +120,7 @@ public class GapFillLossTest
         {
             final IdleStrategy idleStrategy = new YieldingIdleStrategy();
 
-            while (subscription.hasNoImages())
+            while (!subscription.isConnected())
             {
                 idleStrategy.idle();
             }

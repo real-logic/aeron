@@ -234,7 +234,7 @@ public class ArchiveReplayLoadTest
                 final int fragments = replay.poll(validatingFragmentHandler, 128);
                 if (0 == fragments)
                 {
-                    if (replay.hasNoImages() && remaining > 0)
+                    if (!replay.isConnected() && remaining > 0)
                     {
                         System.out.println("Unexpected close of image: remaining=" + remaining);
                         System.out.println(

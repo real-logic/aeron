@@ -113,7 +113,7 @@ public class Ping
         final Subscription subscription,
         final long count)
     {
-        while (subscription.hasNoImages())
+        while (!subscription.isConnected())
         {
             Thread.yield();
         }

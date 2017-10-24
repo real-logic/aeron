@@ -195,7 +195,7 @@ public class EmbeddedExclusiveVectoredIpcThroughput
 
         public void run()
         {
-            while (subscription.hasNoImages())
+            while (!subscription.isConnected())
             {
                 Thread.yield();
             }

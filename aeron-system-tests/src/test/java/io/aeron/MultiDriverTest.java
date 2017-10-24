@@ -110,7 +110,7 @@ public class MultiDriverTest
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
 
-        while (subscriptionA.hasNoImages() && subscriptionB.hasNoImages())
+        while (!subscriptionA.isConnected() && !subscriptionB.isConnected())
         {
             Thread.sleep(1);
         }
@@ -205,7 +205,7 @@ public class MultiDriverTest
         publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
 
-        while (!publication.isConnected() && subscriptionA.hasNoImages())
+        while (!publication.isConnected() && !subscriptionA.isConnected())
         {
             Thread.yield();
         }

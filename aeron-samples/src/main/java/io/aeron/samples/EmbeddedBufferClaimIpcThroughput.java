@@ -190,7 +190,7 @@ public class EmbeddedBufferClaimIpcThroughput
 
         public void run()
         {
-            while (subscription.hasNoImages())
+            while (!subscription.isConnected())
             {
                 Thread.yield();
             }

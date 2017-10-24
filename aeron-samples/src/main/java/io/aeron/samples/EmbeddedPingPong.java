@@ -163,7 +163,7 @@ public class EmbeddedPingPong
         final Subscription pongSubscription,
         final long numMessages)
     {
-        while (pongSubscription.hasNoImages())
+        while (!pongSubscription.isConnected())
         {
             Thread.yield();
         }

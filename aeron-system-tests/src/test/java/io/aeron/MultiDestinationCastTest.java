@@ -152,7 +152,7 @@ public class MultiDestinationCastTest
         subscriptionA = clientA.addSubscription(SUB1_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(SUB2_MDC_DYNAMIC_URI, STREAM_ID);
 
-        while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages())
+        while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
             Thread.sleep(1);
         }
@@ -211,7 +211,7 @@ public class MultiDestinationCastTest
         subscriptionA = clientA.addSubscription(SUB1_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionB = clientA.addSubscription(SUB2_MDC_DYNAMIC_URI, STREAM_ID);
 
-        while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages())
+        while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
             Thread.sleep(1);
         }
@@ -273,7 +273,7 @@ public class MultiDestinationCastTest
         publication.addDestination(SUB1_MDC_MANUAL_URI);
         publication.addDestination(SUB2_MDC_MANUAL_URI);
 
-        while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages())
+        while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
             Thread.sleep(1);
         }
@@ -340,7 +340,7 @@ public class MultiDestinationCastTest
         publication.addDestination(SUB1_MDC_MANUAL_URI);
         publication.addDestination(SUB2_MDC_MANUAL_URI);
 
-        while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages())
+        while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
             Thread.sleep(1);
         }
@@ -420,7 +420,7 @@ public class MultiDestinationCastTest
 
         publication.addDestination(SUB1_MDC_MANUAL_URI);
 
-        while (subscriptionA.hasNoImages())
+        while (!subscriptionA.isConnected())
         {
             Thread.sleep(1);
         }

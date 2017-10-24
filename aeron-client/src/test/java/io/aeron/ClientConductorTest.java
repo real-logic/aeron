@@ -479,12 +479,14 @@ public class ClientConductorTest
             SOURCE_INFO);
 
         assertFalse(subscription.hasNoImages());
+        assertTrue(subscription.isConnected());
         verify(mockAvailableImageHandler).onAvailableImage(any(Image.class));
 
         conductor.onUnavailableImage(CORRELATION_ID, STREAM_ID_1);
 
         verify(mockUnavailableImageHandler).onUnavailableImage(any(Image.class));
         assertTrue(subscription.hasNoImages());
+        assertFalse(subscription.isConnected());
     }
 
     @Test

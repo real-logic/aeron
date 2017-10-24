@@ -113,7 +113,7 @@ public class Configuration
     /**
      * Page size for alignment of all files.
      */
-    public static final int FILE_PAGE_SIZE = getIntSize(FILE_PAGE_SIZE_PROP_NAME, FILE_PAGE_SIZE_DEFAULT);
+    public static final int FILE_PAGE_SIZE = getSizeAsInt(FILE_PAGE_SIZE_PROP_NAME, FILE_PAGE_SIZE_DEFAULT);
 
     /**
      * Property name for boolean value for if storage checks should be performed when allocating files.
@@ -149,7 +149,7 @@ public class Configuration
     /**
      * IPC Term buffer length in bytes.
      */
-    public static final int IPC_TERM_BUFFER_LENGTH = getIntSize(
+    public static final int IPC_TERM_BUFFER_LENGTH = getSizeAsInt(
         IPC_TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_IPC_LENGTH_DEFAULT);
 
     /**
@@ -166,7 +166,7 @@ public class Configuration
      * Default value for low file storage warning threshold.
      */
     public static final long LOW_FILE_STORE_WARNING_THRESHOLD =
-            getLongSize(LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME, LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT);
+            getSizeAsLong(LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME, LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT);
 
     /**
      * Length (in bytes) of the conductor buffer for control commands from the clients to the media driver conductor.
@@ -181,7 +181,7 @@ public class Configuration
     /**
      * Conductor buffer length in bytes.
      */
-    public static final int CONDUCTOR_BUFFER_LENGTH = getIntSize(
+    public static final int CONDUCTOR_BUFFER_LENGTH = getSizeAsInt(
         CONDUCTOR_BUFFER_LENGTH_PROP_NAME, CONDUCTOR_BUFFER_LENGTH_DEFAULT);
 
     /**
@@ -197,7 +197,7 @@ public class Configuration
     /**
      * Length for broadcast buffers from the media driver and the clients.
      */
-    public static final int TO_CLIENTS_BUFFER_LENGTH = getIntSize(
+    public static final int TO_CLIENTS_BUFFER_LENGTH = getSizeAsInt(
         TO_CLIENTS_BUFFER_LENGTH_PROP_NAME, TO_CLIENTS_BUFFER_LENGTH_DEFAULT);
 
     /**
@@ -213,7 +213,7 @@ public class Configuration
     /**
      * Length of the memory mapped buffers for the system counters file.
      */
-    public static final int COUNTERS_VALUES_BUFFER_LENGTH = getIntSize(
+    public static final int COUNTERS_VALUES_BUFFER_LENGTH = getSizeAsInt(
         COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME, COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT);
 
     public static final int COUNTERS_METADATA_BUFFER_LENGTH =
@@ -232,7 +232,7 @@ public class Configuration
     /**
      * Buffer length for the error buffer for the media driver.
      */
-    public static final int ERROR_BUFFER_LENGTH = getIntSize(
+    public static final int ERROR_BUFFER_LENGTH = getSizeAsInt(
         ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
     /**
      * Property name for length of the memory mapped buffer for the loss report buffer.
@@ -247,7 +247,7 @@ public class Configuration
     /**
      * Buffer length for the loss report buffer for the media driver.
      */
-    public static final int LOSS_REPORT_BUFFER_LENGTH = getIntSize(
+    public static final int LOSS_REPORT_BUFFER_LENGTH = getSizeAsInt(
         LOSS_REPORT_BUFFER_LENGTH_PROP_NAME, LOSS_REPORT_BUFFER_LENGTH_DEFAULT);
 
     /**
@@ -302,7 +302,7 @@ public class Configuration
     /**
      * SO_RCVBUF length, 0 means use OS default.
      */
-    public static final int SOCKET_RCVBUF_LENGTH = getIntSize(
+    public static final int SOCKET_RCVBUF_LENGTH = getSizeAsInt(
         SOCKET_RCVBUF_LENGTH_PROP_NAME, SOCKET_RCVBUF_LENGTH_DEFAULT);
 
     /**
@@ -318,7 +318,7 @@ public class Configuration
     /**
      * SO_SNDBUF length, 0 means use OS default.
      */
-    public static final int SOCKET_SNDBUF_LENGTH = getIntSize(
+    public static final int SOCKET_SNDBUF_LENGTH = getSizeAsInt(
         SOCKET_SNDBUF_LENGTH_PROP_NAME, SOCKET_SNDBUF_LENGTH_DEFAULT);
 
     /**
@@ -350,7 +350,7 @@ public class Configuration
     /**
      * Time for {@link Publication}s to linger before cleanup in nanoseconds.
      */
-    public static final long PUBLICATION_LINGER_NS = getTimeInNanos(
+    public static final long PUBLICATION_LINGER_NS = getDurationInNanos(
         PUBLICATION_LINGER_PROP_NAME, PUBLICATION_LINGER_DEFAULT_NS);
 
     /**
@@ -366,7 +366,7 @@ public class Configuration
     /**
      * Timeout for client liveness in nanoseconds.
      */
-    public static final long CLIENT_LIVENESS_TIMEOUT_NS = getTimeInNanos(
+    public static final long CLIENT_LIVENESS_TIMEOUT_NS = getDurationInNanos(
         CLIENT_LIVENESS_TIMEOUT_PROP_NAME, CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS);
 
     /**
@@ -382,7 +382,7 @@ public class Configuration
     /**
      * Timeout for {@link Image} liveness in nanoseconds.
      */
-    public static final long IMAGE_LIVENESS_TIMEOUT_NS = getTimeInNanos(
+    public static final long IMAGE_LIVENESS_TIMEOUT_NS = getDurationInNanos(
         IMAGE_LIVENESS_TIMEOUT_PROP_NAME, IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS);
 
     /**
@@ -404,7 +404,7 @@ public class Configuration
     /**
      * IPC Publication term window length for flow control in bytes.
      */
-    public static final int IPC_PUBLICATION_TERM_WINDOW_LENGTH = getIntSize(
+    public static final int IPC_PUBLICATION_TERM_WINDOW_LENGTH = getSizeAsInt(
         IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
 
     /**
@@ -420,7 +420,7 @@ public class Configuration
     /**
      * Publication timeout for when to unblock a partially written message.
      */
-    public static final long PUBLICATION_UNBLOCK_TIMEOUT_NS = getTimeInNanos(
+    public static final long PUBLICATION_UNBLOCK_TIMEOUT_NS = getDurationInNanos(
         PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME, PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS);
 
     /**
@@ -436,7 +436,7 @@ public class Configuration
     /**
      * Publication timeout for when to indicate no connection from lack of status messages.
      */
-    public static final long PUBLICATION_CONNECTION_TIMEOUT_NS = getTimeInNanos(
+    public static final long PUBLICATION_CONNECTION_TIMEOUT_NS = getDurationInNanos(
         PUBLICATION_CONNECTION_TIMEOUT_PROP_NAME, PUBLICATION_CONNECTION_TIMEOUT_DEFAULT_NS);
 
     /**
@@ -586,7 +586,7 @@ public class Configuration
     /**
      * Length of the MTU to use for sending messages.
      */
-    public static final int MTU_LENGTH = getIntSize(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
+    public static final int MTU_LENGTH = getSizeAsInt(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
 
     /**
      * Length of the maximum transmission unit of the media driver's protocol for IPC.
@@ -596,7 +596,7 @@ public class Configuration
     /**
      * Length of the MTU to use for sending messages via IPC
      */
-    public static final int IPC_MTU_LENGTH = getIntSize(IPC_MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
+    public static final int IPC_MTU_LENGTH = getSizeAsInt(IPC_MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
 
     /**
      * {@link ThreadingMode} to be used by the Aeron {@link MediaDriver}.
@@ -622,7 +622,8 @@ public class Configuration
     /**
      * How often to check liveness and cleanup timers in nanoseconds.
      */
-    public static final long TIMER_INTERVAL_NS = getTimeInNanos(TIMER_INTERVAL_PROP_NAME, DEFAULT_TIMER_INTERVAL_NS);
+    public static final long TIMER_INTERVAL_NS = getDurationInNanos(
+        TIMER_INTERVAL_PROP_NAME, DEFAULT_TIMER_INTERVAL_NS);
 
     /**
      * Property name for {@link SendChannelEndpointSupplier}.
@@ -879,17 +880,17 @@ public class Configuration
 
     static int termBufferLength()
     {
-        return getIntSize(TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_LENGTH_DEFAULT);
+        return getSizeAsInt(TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_LENGTH_DEFAULT);
     }
 
     static int initialWindowLength()
     {
-        return getIntSize(INITIAL_WINDOW_LENGTH_PROP_NAME, INITIAL_WINDOW_LENGTH_DEFAULT);
+        return getSizeAsInt(INITIAL_WINDOW_LENGTH_PROP_NAME, INITIAL_WINDOW_LENGTH_DEFAULT);
     }
 
     static long statusMessageTimeout()
     {
-        return getTimeInNanos(STATUS_MESSAGE_TIMEOUT_PROP_NAME, STATUS_MESSAGE_TIMEOUT_DEFAULT_NS);
+        return getDurationInNanos(STATUS_MESSAGE_TIMEOUT_PROP_NAME, STATUS_MESSAGE_TIMEOUT_DEFAULT_NS);
     }
 
     static int sendToStatusMessagePollRatio()
@@ -1108,7 +1109,7 @@ public class Configuration
         }
     }
 
-    private static int getIntSize(final String propertyName, final int defaultValue)
+    public static int getSizeAsInt(final String propertyName, final int defaultValue)
     {
         final String propertyValue = getProperty(propertyName);
         if (propertyValue != null)
@@ -1117,8 +1118,7 @@ public class Configuration
             if (value < 0 || value > Integer.MAX_VALUE)
             {
                 throw new ConfigurationException(
-                    "Value " + value + " for property " + propertyName +
-                    " is out of range, must positive and less than " + Integer.MAX_VALUE);
+                    propertyName + " must positive and less than Integer.MAX_VALUE :" + value);
             }
 
             return (int)value;
@@ -1127,7 +1127,7 @@ public class Configuration
         return defaultValue;
     }
 
-    private static long getLongSize(final String propertyName, final long defaultValue)
+    public static long getSizeAsLong(final String propertyName, final long defaultValue)
     {
         final String propertyValue = getProperty(propertyName);
         if (propertyValue != null)
@@ -1135,8 +1135,7 @@ public class Configuration
             final long value = parseSize(propertyName, propertyValue);
             if (value < 0)
             {
-                throw new ConfigurationException(
-                    "Value " + value + " for property " + propertyName + " must be positive");
+                throw new ConfigurationException(propertyName + " must be positive: " + value);
             }
 
             return value;
@@ -1165,8 +1164,7 @@ public class Configuration
             case 'K':
                 if (value > MAX_K_VALUE)
                 {
-                    throw new ConfigurationException(
-                        "Value " + propertyValue + " would overflow maximum long.");
+                    throw new ConfigurationException(propertyName + " would overflow long: " + propertyValue);
                 }
                 return value * 1024;
 
@@ -1174,8 +1172,7 @@ public class Configuration
             case 'M':
                 if (value > MAX_M_VALUE)
                 {
-                    throw new ConfigurationException(
-                        "Value " + propertyValue + " would overflow maximum long.");
+                    throw new ConfigurationException(propertyName + " would overflow long: " + propertyValue);
                 }
                 return value * 1024 * 1024;
 
@@ -1183,34 +1180,30 @@ public class Configuration
             case 'G':
                 if (value > MAX_G_VALUE)
                 {
-                    throw new ConfigurationException(
-                        "Value " + propertyValue + " would overflow maximum long.");
+                    throw new ConfigurationException(propertyName + " would overflow long: " + propertyValue);
                 }
                 return value * 1024 * 1024 * 1024;
 
             default:
                 throw new ConfigurationException(
-                    "Couldn't parse value: " + propertyValue + " for property " + propertyName + ". " +
-                    "Trailing character should be one of k, m, or g, but was " + lastCharacter);
+                    propertyName + ": " + propertyValue + " should end with: k, m, or g.");
         }
     }
 
-    private static long getTimeInNanos(final String propertyName, final long defaultValue)
+    public static long getDurationInNanos(final String propertyName, final long defaultValue)
     {
         final String propertyValue = getProperty(propertyName);
         if (propertyValue != null)
         {
-            final long value = parseTime(propertyName, propertyValue);
+            final long value = parseDuration(propertyName, propertyValue);
             if (value < 0)
             {
-                throw new ConfigurationException(
-                        "Value " + value + " for property " + propertyName + " must be positive");
+                throw new ConfigurationException(propertyName + " must be positive: " + value);
             }
 
             if (value == Long.MAX_VALUE)
             {
-                throw new ConfigurationException(
-                        "Value " + value + " for property " + propertyName + " overflows max long");
+                throw new ConfigurationException(propertyName + " overflows long: " + propertyName);
             }
 
             return value;
@@ -1219,33 +1212,29 @@ public class Configuration
         return defaultValue;
     }
 
-    public static long parseTime(final String propertyName, final String propertyValue)
+    public static long parseDuration(final String propertyName, final String propertyValue)
     {
         final char lastCharacter = propertyValue.charAt(propertyValue.length() - 1);
-
         if (Character.isDigit(lastCharacter))
         {
             return Long.valueOf(propertyValue);
         }
 
-        final char secondToLastCharacter = propertyValue.charAt(propertyValue.length() - 2);
-
         if (lastCharacter != 's' && lastCharacter != 'S')
         {
             throw new ConfigurationException(
-                    "Couldn't parse value: " + propertyValue + " for property " + propertyName + ". " +
-                            "Trailing characters should be one of s, ms, us or ns, but was " +
-                            secondToLastCharacter + lastCharacter);
+                propertyName + ": " + propertyValue + " should end with: s, ms, us, or ns.");
         }
 
-        if (Character.isDigit(secondToLastCharacter))
+        final char secondLastCharacter = propertyValue.charAt(propertyValue.length() - 2);
+        if (Character.isDigit(secondLastCharacter))
         {
             return TimeUnit.SECONDS.toNanos(Long.valueOf(propertyValue.substring(0, propertyValue.length() - 1)));
         }
 
         final long value = Long.valueOf(propertyValue.substring(0, propertyValue.length() - 2));
 
-        switch (secondToLastCharacter)
+        switch (secondLastCharacter)
         {
             case 'n':
             case 'N':
@@ -1261,9 +1250,7 @@ public class Configuration
 
             default:
                 throw new ConfigurationException(
-                        "Couldn't parse value: " + propertyValue + " for property " + propertyName + ". " +
-                                "Trailing characters should be one of s, ms, us or ns, but was " +
-                                secondToLastCharacter + lastCharacter);
+                    propertyName + ": " + propertyValue + " should end with: s, ms, us, or ns.");
         }
     }
 }

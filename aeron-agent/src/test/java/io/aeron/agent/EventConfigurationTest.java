@@ -27,7 +27,7 @@ import java.util.Set;
 import static io.aeron.agent.EventConfiguration.ALL_LOGGER_EVENT_CODES;
 import static io.aeron.agent.EventConfiguration.getEnabledEventCodes;
 import static io.aeron.driver.Configuration.parseSize;
-import static io.aeron.driver.Configuration.parseTime;
+import static io.aeron.driver.Configuration.parseDuration;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
@@ -94,28 +94,28 @@ public class EventConfigurationTest
     @Test
     public void shouldParseTimesWithSuffix()
     {
-        assertThat(parseTime("", "1"), Matchers.equalTo(1L));
-        assertThat(parseTime("", "1ns"), Matchers.equalTo(1L));
-        assertThat(parseTime("", "1NS"), Matchers.equalTo(1L));
-        assertThat(parseTime("", "1us"), Matchers.equalTo(1000L));
-        assertThat(parseTime("", "1US"), Matchers.equalTo(1000L));
-        assertThat(parseTime("", "1ms"), Matchers.equalTo(1000L * 1000));
-        assertThat(parseTime("", "1MS"), Matchers.equalTo(1000L * 1000));
-        assertThat(parseTime("", "1s"), Matchers.equalTo(1000L * 1000 * 1000));
-        assertThat(parseTime("", "1S"), Matchers.equalTo(1000L * 1000 * 1000));
-        assertThat(parseTime("", "12s"), Matchers.equalTo(12L * 1000 * 1000 * 1000));
+        assertThat(parseDuration("", "1"), Matchers.equalTo(1L));
+        assertThat(parseDuration("", "1ns"), Matchers.equalTo(1L));
+        assertThat(parseDuration("", "1NS"), Matchers.equalTo(1L));
+        assertThat(parseDuration("", "1us"), Matchers.equalTo(1000L));
+        assertThat(parseDuration("", "1US"), Matchers.equalTo(1000L));
+        assertThat(parseDuration("", "1ms"), Matchers.equalTo(1000L * 1000));
+        assertThat(parseDuration("", "1MS"), Matchers.equalTo(1000L * 1000));
+        assertThat(parseDuration("", "1s"), Matchers.equalTo(1000L * 1000 * 1000));
+        assertThat(parseDuration("", "1S"), Matchers.equalTo(1000L * 1000 * 1000));
+        assertThat(parseDuration("", "12s"), Matchers.equalTo(12L * 1000 * 1000 * 1000));
     }
 
     @Test(expected = ConfigurationException.class)
     public void shouldThrowWhenParseTimeHasBadSuffix()
     {
-        parseTime("", "1g");
+        parseDuration("", "1g");
     }
 
     @Test(expected = ConfigurationException.class)
     public void shouldThrowWhenParseTimeHasBadTwoLetterSuffix()
     {
-        parseTime("", "1zs");
+        parseDuration("", "1zs");
     }
 
     @Test(expected = ConfigurationException.class)

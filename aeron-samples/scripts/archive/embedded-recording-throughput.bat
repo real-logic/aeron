@@ -23,8 +23,8 @@
     -Daeron.sample.messages=50000000 ^
     -Daeron.term.buffer.sparse.file=false ^
     -Daeron.mtu.length=16384 ^
-    -Daeron.socket.so_sndbuf=2097152 ^
-    -Daeron.socket.so_rcvbuf=2097152 ^
-    -Daeron.rcv.initial.window.length=2097152 ^
+    -Daeron.socket.so_sndbuf=2m ^
+    -Daeron.socket.so_rcvbuf=2m ^
+    -Daeron.rcv.initial.window.length=2m ^
     -Daeron.archive.file.sync.level=0 ^
     %JVM_OPTS% io.aeron.samples.archive.EmbeddedRecordingThroughput %*

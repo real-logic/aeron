@@ -31,6 +31,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static org.agrona.SystemUtil.getSizeAsInt;
+
 /**
  * The Aeron Archive which allows for the archival of {@link io.aeron.Publication}s and
  * {@link io.aeron.ExclusivePublication}s. It expects to be launched in the same process as a Java
@@ -183,7 +185,7 @@ public final class Archive implements AutoCloseable
 
         public static int segmentFileLength()
         {
-            return Integer.getInteger(SEGMENT_FILE_LENGTH_PROP_NAME, SEGMENT_FILE_LENGTH_DEFAULT);
+            return getSizeAsInt(SEGMENT_FILE_LENGTH_PROP_NAME, SEGMENT_FILE_LENGTH_DEFAULT);
         }
 
         public static int fileSyncLevel()

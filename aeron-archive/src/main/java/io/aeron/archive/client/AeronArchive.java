@@ -30,6 +30,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static io.aeron.archive.client.ControlResponseAdapter.dispatchDescriptor;
+import static org.agrona.SystemUtil.getDurationInNanos;
+import static org.agrona.SystemUtil.getSizeAsInt;
 
 /**
  * Client for interacting with a local or remote Aeron Archive that records and replays message streams.
@@ -698,7 +700,7 @@ public final class AeronArchive implements AutoCloseable
          */
         public static long messageTimeoutNs()
         {
-            return Long.getLong(MESSAGE_TIMEOUT_PROP_NAME, MESSAGE_TIMEOUT_DEFAULT_NS);
+            return getDurationInNanos(MESSAGE_TIMEOUT_PROP_NAME, MESSAGE_TIMEOUT_DEFAULT_NS);
         }
 
         /**
@@ -708,7 +710,7 @@ public final class AeronArchive implements AutoCloseable
          */
         public static int controlTermBufferLength()
         {
-            return Integer.getInteger(CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME, CONTROL_TERM_BUFFER_LENGTH_DEFAULT);
+            return getSizeAsInt(CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME, CONTROL_TERM_BUFFER_LENGTH_DEFAULT);
         }
 
         /**
@@ -718,7 +720,7 @@ public final class AeronArchive implements AutoCloseable
          */
         public static int controlMtuLength()
         {
-            return Integer.getInteger(CONTROL_MTU_LENGTH_PARAM_NAME, CONTROL_MTU_LENGTH_DEFAULT);
+            return getSizeAsInt(CONTROL_MTU_LENGTH_PARAM_NAME, CONTROL_MTU_LENGTH_DEFAULT);
         }
 
         /**

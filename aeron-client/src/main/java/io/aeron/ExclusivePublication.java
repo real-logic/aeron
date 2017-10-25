@@ -48,8 +48,6 @@ public class ExclusivePublication extends Publication implements AutoCloseable
     private int termId;
     private int termOffset;
 
-    private volatile boolean isClosed = false;
-
     private final ExclusiveTermAppender[] termAppenders = new ExclusiveTermAppender[PARTITION_COUNT];
 
     ExclusivePublication(
@@ -62,15 +60,16 @@ public class ExclusivePublication extends Publication implements AutoCloseable
         final long originalRegistrationId,
         final long registrationId)
     {
-        super(clientConductor,
-              channel,
-              streamId,
-              sessionId,
-              positionLimit,
-              logBuffers,
-              originalRegistrationId,
-              registrationId,
-              FrameDescriptor.computeExclusiveMaxMessageLength(logBuffers.termLength()));
+        super(
+            clientConductor,
+            channel,
+            streamId,
+            sessionId,
+            positionLimit,
+            logBuffers,
+            originalRegistrationId,
+            registrationId,
+            FrameDescriptor.computeExclusiveMaxMessageLength(logBuffers.termLength()));
 
         final UnsafeBuffer[] buffers = logBuffers.duplicateTermBuffers();
         final UnsafeBuffer logMetaDataBuffer = logBuffers.metaDataBuffer();
@@ -337,7 +336,7 @@ public class ExclusivePublication extends Publication implements AutoCloseable
             return termBeginPosition + resultingOffset;
         }
 
-        if ((termBeginPosition + termBufferLength()) >= maxPossiblePosition)
+        if ((termBeginPosition + termBufferLength) >= maxPossiblePosition)
         {
             return MAX_POSITION_EXCEEDED;
         }

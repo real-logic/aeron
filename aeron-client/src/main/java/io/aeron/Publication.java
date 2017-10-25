@@ -73,11 +73,12 @@ public class Publication implements AutoCloseable
     protected final long maxPossiblePosition;
     private final int streamId;
     private final int sessionId;
-    protected final int initialTermId;
     private final int maxMessageLength;
+    protected final int initialTermId;
     protected final int maxPayloadLength;
     protected final int positionBitsToShift;
-    private volatile boolean isClosed = false;
+    protected final int termBufferLength;
+    protected volatile boolean isClosed = false;
 
     private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
     protected final ReadablePosition positionLimit;
@@ -88,21 +89,21 @@ public class Publication implements AutoCloseable
     private final String channel;
 
     protected Publication(
-            final ClientConductor clientConductor,
-            final String channel,
-            final int streamId,
-            final int sessionId,
-            final ReadablePosition positionLimit,
-            final LogBuffers logBuffers,
-            final long originalRegistrationId,
-            final long registrationId,
-            final int maxMessageLength)
+        final ClientConductor clientConductor,
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final ReadablePosition positionLimit,
+        final LogBuffers logBuffers,
+        final long originalRegistrationId,
+        final long registrationId,
+        final int maxMessageLength)
     {
-        final int termLength = logBuffers.termLength();
         final UnsafeBuffer logMetaDataBuffer = logBuffers.metaDataBuffer();
+        this.termBufferLength = logBuffers.termLength();
         this.maxMessageLength = maxMessageLength;
         this.maxPayloadLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
-        this.maxPossiblePosition = termLength * (1L << 31L);
+        this.maxPossiblePosition = termBufferLength * (1L << 31L);
         this.conductor = clientConductor;
         this.channel = channel;
         this.streamId = streamId;
@@ -113,7 +114,7 @@ public class Publication implements AutoCloseable
         this.registrationId = registrationId;
         this.positionLimit = positionLimit;
         this.logBuffers = logBuffers;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(termBufferLength);
         this.headerWriter = new HeaderWriter(defaultFrameHeader(logMetaDataBuffer));
     }
 
@@ -127,15 +128,16 @@ public class Publication implements AutoCloseable
         final long originalRegistrationId,
         final long registrationId)
     {
-        this(clientConductor,
-              channel,
-              streamId,
-              sessionId,
-              positionLimit,
-              logBuffers,
-              originalRegistrationId,
-              registrationId,
-              FrameDescriptor.computeMaxMessageLength(logBuffers.termLength()));
+        this(
+            clientConductor,
+            channel,
+            streamId,
+            sessionId,
+            positionLimit,
+            logBuffers,
+            originalRegistrationId,
+            registrationId,
+            FrameDescriptor.computeMaxMessageLength(logBuffers.termLength()));
 
         final UnsafeBuffer[] buffers = this.logBuffers.duplicateTermBuffers();
 
@@ -152,7 +154,7 @@ public class Publication implements AutoCloseable
      */
     public int termBufferLength()
     {
-        return logBuffers.termLength();
+        return termBufferLength;
     }
 
     /**
@@ -304,23 +306,6 @@ public class Publication implements AutoCloseable
     public boolean isClosed()
     {
         return isClosed;
-    }
-
-    /**
-     * Forcibly close the Publication and release resources
-     */
-    void forceClose()
-    {
-        if (!isClosed)
-        {
-            isClosed = true;
-            conductor.asyncReleasePublication(this);
-        }
-    }
-
-    LogBuffers logBuffers()
-    {
-        return logBuffers;
     }
 
     /**
@@ -613,22 +598,21 @@ public class Publication implements AutoCloseable
         }
     }
 
-    private long newPosition(
-        final int termCount, final int termOffset, final int termId, final long position, final int resultingOffset)
+    /**
+     * Forcibly close the Publication and release resources
+     */
+    void forceClose()
     {
-        if (resultingOffset > 0)
+        if (!isClosed)
         {
-            return (position - termOffset) + resultingOffset;
+            isClosed = true;
+            conductor.asyncReleasePublication(this);
         }
+    }
 
-        if ((position + termOffset) > maxPossiblePosition)
-        {
-            return MAX_POSITION_EXCEEDED;
-        }
-
-        rotateLog(logMetaDataBuffer, termCount, termId);
-
-        return ADMIN_ACTION;
+    LogBuffers logBuffers()
+    {
+        return logBuffers;
     }
 
     long backPressureStatus(final long currentPosition, final int messageLength)
@@ -662,5 +646,23 @@ public class Publication implements AutoCloseable
             throw new IllegalArgumentException(
                 "Message exceeds maxMessageLength of " + maxMessageLength + ", length=" + length);
         }
+    }
+
+    private long newPosition(
+        final int termCount, final int termOffset, final int termId, final long position, final int resultingOffset)
+    {
+        if (resultingOffset > 0)
+        {
+            return (position - termOffset) + resultingOffset;
+        }
+
+        if ((position + termOffset) > maxPossiblePosition)
+        {
+            return MAX_POSITION_EXCEEDED;
+        }
+
+        rotateLog(logMetaDataBuffer, termCount, termId);
+
+        return ADMIN_ACTION;
     }
 }

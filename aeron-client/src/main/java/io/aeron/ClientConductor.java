@@ -191,23 +191,6 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
-    void releasePublication(final ExclusivePublication publication)
-    {
-        ensureOpen();
-
-        if (publication == resourceByRegIdMap.remove(publication.registrationId()))
-        {
-            releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
-            awaitResponse(driverProxy.removePublication(publication.registrationId()));
-        }
-    }
-
-    void asyncReleasePublication(final ExclusivePublication publication)
-    {
-        releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
-        driverProxy.removePublication(publication.registrationId());
-    }
-
     void asyncReleasePublication(final Publication publication)
     {
         releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
@@ -279,17 +262,17 @@ class ClientConductor implements Agent, DriverEventsListener
         final int publicationLimitId,
         final String logFileName)
     {
-        final Publication publication = new Publication(
-            this,
-            stashedChannel,
-            streamId,
-            sessionId,
-            new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
-            logBuffers(registrationId, logFileName),
-            registrationId,
-            correlationId);
-
-        resourceByRegIdMap.put(correlationId, publication);
+        resourceByRegIdMap.put(
+            correlationId,
+            new Publication(
+                this,
+                stashedChannel,
+                streamId,
+                sessionId,
+                new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
+                logBuffers(registrationId, logFileName),
+                registrationId,
+                correlationId));
     }
 
     public void onNewExclusivePublication(
@@ -300,17 +283,17 @@ class ClientConductor implements Agent, DriverEventsListener
         final int publicationLimitId,
         final String logFileName)
     {
-        final ExclusivePublication publication = new ExclusivePublication(
-            this,
-            stashedChannel,
-            streamId,
-            sessionId,
-            new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
-            logBuffers(registrationId, logFileName),
-            registrationId,
-            correlationId);
-
-        resourceByRegIdMap.put(correlationId, publication);
+        resourceByRegIdMap.put(
+            correlationId,
+            new ExclusivePublication(
+                this,
+                stashedChannel,
+                streamId,
+                sessionId,
+                new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
+                logBuffers(registrationId, logFileName),
+                registrationId,
+                correlationId));
     }
 
     public void onAvailableImage(
@@ -568,17 +551,13 @@ class ClientConductor implements Agent, DriverEventsListener
     {
         for (final Object resource : resourceByRegIdMap.values())
         {
-            if (resource instanceof Publication)
+            if (resource instanceof Subscription)
             {
-                ((Publication)resource).forceClose();
-            }
-            else if (resource instanceof ExclusivePublication)
-            {
-                ((ExclusivePublication)resource).forceClose();
+                ((Subscription)resource).forceClose();
             }
             else
             {
-                ((Subscription)resource).forceClose();
+                ((Publication)resource).forceClose();
             }
         }
 

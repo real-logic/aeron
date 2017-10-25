@@ -27,9 +27,11 @@ import java.util.Objects;
 /**
  * Encapsulate the {@link Publication} to the cluster and when offering apply the cluster session header.
  * <p>
- * Note: This class is not threadsafe. Each publisher thread requires its own instance.
+ * The session header is applied by a vectored offer to the {@link Publication}.
+ * <p>
+ * <b>Note:</b> This class is NOT threadsafe. Each publisher thread requires its own instance.
  */
-public class ClusterPublication
+public class VectoredSessionPublication
 {
     /**
      * Length of the session header that will be prepended to the message.
@@ -48,7 +50,7 @@ public class ClusterPublication
      * @param publication      that is connected to the cluster.
      * @param clusterSessionId that has been allocated by the cluster.
      */
-    public ClusterPublication(final Publication publication, final long clusterSessionId)
+    public VectoredSessionPublication(final Publication publication, final long clusterSessionId)
     {
         Objects.requireNonNull(publication);
         this.publication = publication;
@@ -60,6 +62,16 @@ public class ClusterPublication
 
         vectors[0] = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
         vectors[1] = messageBuffer;
+    }
+
+    /**
+     * Get the wrapped session {@link Publication}.
+     *
+     * @return the wrapped session {@link Publication}.
+     */
+    public Publication publication()
+    {
+        return publication;
     }
 
     /**

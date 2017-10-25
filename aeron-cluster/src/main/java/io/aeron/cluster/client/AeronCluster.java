@@ -80,7 +80,7 @@ public final class AeronCluster implements AutoCloseable
     /**
      * Get the raw {@link Publication} for sending to the cluster.
      * <p>
-     * This can be wrapped with a {@link ClusterPublication} for prepending the cluster session header to messages.
+     * This can be wrapped with a {@link VectoredSessionPublication} for prepending the cluster session header to messages.
      *
      * @return the raw {@link Publication} for connecting to the cluster.
      */

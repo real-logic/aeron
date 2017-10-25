@@ -158,7 +158,7 @@ class ClientConductor implements Agent, DriverEventsListener
         errorHandler.onError(ex);
     }
 
-    Publication addPublication(final String channel, final int streamId)
+    ConcurrentPublication addPublication(final String channel, final int streamId)
     {
         ensureOpen();
 
@@ -166,7 +166,7 @@ class ClientConductor implements Agent, DriverEventsListener
         final long registrationId = driverProxy.addPublication(channel, streamId);
         awaitResponse(registrationId);
 
-        return (Publication)resourceByRegIdMap.get(registrationId);
+        return (ConcurrentPublication)resourceByRegIdMap.get(registrationId);
     }
 
     ExclusivePublication addExclusivePublication(final String channel, final int streamId)

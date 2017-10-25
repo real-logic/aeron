@@ -26,17 +26,16 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 /**
  * Aeron publisher API for sending messages to subscribers of a given channel and streamId pair. {@link Publication}s
  * are created via the {@link Aeron#addPublication(String, int)} method, and messages are sent via one of the
- * {@link #offer(DirectBuffer)} methods, or a {@link #tryClaim(int, BufferClaim)} and {@link BufferClaim#commit()}
- * method combination.
+ * {@link #offer(DirectBuffer)} methods.
  * <p>
  * The APIs used for try claim and offer are non-blocking and thread safe.
  * <p>
  * <b>Note:</b> Publication instances are threadsafe and can be shared between publishing threads.
  *
  * @see Aeron#addPublication(String, int)
- * @see BufferClaim
+ * @see Aeron#addExclusivePublication(String, int)
  */
-public class Publication implements AutoCloseable
+public abstract class Publication implements AutoCloseable
 {
     /**
      * The publication is not yet connected to a subscriber.
@@ -68,25 +67,24 @@ public class Publication implements AutoCloseable
      */
     public static final long MAX_POSITION_EXCEEDED = -5;
 
-    private final long originalRegistrationId;
-    private final long registrationId;
+    protected final long originalRegistrationId;
+    protected final long registrationId;
     protected final long maxPossiblePosition;
-    private final int streamId;
-    private final int sessionId;
-    private final int maxMessageLength;
+    protected final int streamId;
+    protected final int sessionId;
+    protected final int maxMessageLength;
     protected final int initialTermId;
     protected final int maxPayloadLength;
     protected final int positionBitsToShift;
     protected final int termBufferLength;
     protected volatile boolean isClosed = false;
 
-    private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
     protected final ReadablePosition positionLimit;
     protected final UnsafeBuffer logMetaDataBuffer;
     protected final HeaderWriter headerWriter;
-    private final LogBuffers logBuffers;
-    private final ClientConductor conductor;
-    private final String channel;
+    protected final LogBuffers logBuffers;
+    protected final ClientConductor conductor;
+    protected final String channel;
 
     protected Publication(
         final ClientConductor clientConductor,
@@ -116,35 +114,6 @@ public class Publication implements AutoCloseable
         this.logBuffers = logBuffers;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termBufferLength);
         this.headerWriter = new HeaderWriter(defaultFrameHeader(logMetaDataBuffer));
-    }
-
-    Publication(
-        final ClientConductor clientConductor,
-        final String channel,
-        final int streamId,
-        final int sessionId,
-        final ReadablePosition positionLimit,
-        final LogBuffers logBuffers,
-        final long originalRegistrationId,
-        final long registrationId)
-    {
-        this(
-            clientConductor,
-            channel,
-            streamId,
-            sessionId,
-            positionLimit,
-            logBuffers,
-            originalRegistrationId,
-            registrationId,
-            FrameDescriptor.computeMaxMessageLength(logBuffers.termLength()));
-
-        final UnsafeBuffer[] buffers = this.logBuffers.duplicateTermBuffers();
-
-        for (int i = 0; i < PARTITION_COUNT; i++)
-        {
-            termAppenders[i] = new TermAppender(buffers[i], logMetaDataBuffer, i);
-        }
     }
 
     /**
@@ -322,7 +291,7 @@ public class Publication implements AutoCloseable
         }
 
         final long rawTail = rawTailVolatile(logMetaDataBuffer);
-        final int termOffset = termOffset(rawTail, logBuffers.termLength());
+        final int termOffset = termOffset(rawTail, termBufferLength);
 
         return computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);
     }
@@ -351,7 +320,7 @@ public class Publication implements AutoCloseable
      * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
      * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      */
-    public long offer(final DirectBuffer buffer)
+    public final long offer(final DirectBuffer buffer)
     {
         return offer(buffer, 0, buffer.capacity());
     }
@@ -365,7 +334,7 @@ public class Publication implements AutoCloseable
      * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
      * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      */
-    public long offer(final DirectBuffer buffer, final int offset, final int length)
+    public final long offer(final DirectBuffer buffer, final int offset, final int length)
     {
         return offer(buffer, offset, length, null);
     }
@@ -380,53 +349,8 @@ public class Publication implements AutoCloseable
      * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
      * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      */
-    public long offer(
-        final DirectBuffer buffer,
-        final int offset,
-        final int length,
-        final ReservedValueSupplier reservedValueSupplier)
-    {
-        long newPosition = CLOSED;
-        if (!isClosed)
-        {
-            final long limit = positionLimit.getVolatile();
-            final int termCount = activeTermCount(logMetaDataBuffer);
-            final TermAppender termAppender = termAppenders[indexByTermCount(termCount)];
-            final long rawTail = termAppender.rawTailVolatile();
-            final long termOffset = rawTail & 0xFFFF_FFFFL;
-            final int termId = termId(rawTail);
-            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
-
-            if (termCount != (termId - initialTermId))
-            {
-                return ADMIN_ACTION;
-            }
-
-            if (position < limit)
-            {
-                final int resultingOffset;
-                if (length <= maxPayloadLength)
-                {
-                    resultingOffset = termAppender.appendUnfragmentedMessage(
-                        headerWriter, buffer, offset, length, reservedValueSupplier, termId);
-                }
-                else
-                {
-                    checkForMaxMessageLength(length);
-                    resultingOffset = termAppender.appendFragmentedMessage(
-                        headerWriter, buffer, offset, length, maxPayloadLength, reservedValueSupplier, termId);
-                }
-
-                newPosition = newPosition(termCount, (int)termOffset, termId, position, resultingOffset);
-            }
-            else
-            {
-                newPosition = backPressureStatus(position, length);
-            }
-        }
-
-        return newPosition;
-    }
+    public abstract long offer(
+        DirectBuffer buffer, int offset, int length, ReservedValueSupplier reservedValueSupplier);
 
     /**
      * Non-blocking publish by gathering buffer vectors into a message.
@@ -435,7 +359,7 @@ public class Publication implements AutoCloseable
      * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
      * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      */
-    public long offer(final DirectBufferVector[] vectors)
+    public final long offer(final DirectBufferVector[] vectors)
     {
         return offer(vectors, null);
     }
@@ -448,51 +372,7 @@ public class Publication implements AutoCloseable
      * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
      * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
      */
-    public long offer(final DirectBufferVector[] vectors, final ReservedValueSupplier reservedValueSupplier)
-    {
-        final int length = DirectBufferVector.validateAndComputeLength(vectors);
-        long newPosition = CLOSED;
-
-        if (!isClosed)
-        {
-            final long limit = positionLimit.getVolatile();
-            final int termCount = activeTermCount(logMetaDataBuffer);
-            final TermAppender termAppender = termAppenders[indexByTermCount(termCount)];
-            final long rawTail = termAppender.rawTailVolatile();
-            final long termOffset = rawTail & 0xFFFF_FFFFL;
-            final int termId = termId(rawTail);
-            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
-
-            if (termCount != (termId - initialTermId))
-            {
-                return ADMIN_ACTION;
-            }
-
-            if (position < limit)
-            {
-                final int resultingOffset;
-                if (length <= maxPayloadLength)
-                {
-                    resultingOffset = termAppender.appendUnfragmentedMessage(
-                        headerWriter, vectors, length, reservedValueSupplier, termId);
-                }
-                else
-                {
-                    checkForMaxMessageLength(length);
-                    resultingOffset = termAppender.appendFragmentedMessage(
-                        headerWriter, vectors, length, maxPayloadLength, reservedValueSupplier, termId);
-                }
-
-                newPosition = newPosition(termCount, (int)termOffset, termId, position, resultingOffset);
-            }
-            else
-            {
-                newPosition = backPressureStatus(position, length);
-            }
-        }
-
-        return newPosition;
-    }
+    public abstract long offer(DirectBufferVector[] vectors, ReservedValueSupplier reservedValueSupplier);
 
     /**
      * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
@@ -528,39 +408,7 @@ public class Publication implements AutoCloseable
      * @see BufferClaim#commit()
      * @see BufferClaim#abort()
      */
-    public long tryClaim(final int length, final BufferClaim bufferClaim)
-    {
-        checkForMaxPayloadLength(length);
-        long newPosition = CLOSED;
-
-        if (!isClosed)
-        {
-            final long limit = positionLimit.getVolatile();
-            final int termCount = activeTermCount(logMetaDataBuffer);
-            final TermAppender termAppender = termAppenders[indexByTermCount(termCount)];
-            final long rawTail = termAppender.rawTailVolatile();
-            final long termOffset = rawTail & 0xFFFF_FFFFL;
-            final int termId = termId(rawTail);
-            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
-
-            if (termCount != (termId - initialTermId))
-            {
-                return ADMIN_ACTION;
-            }
-
-            if (position < limit)
-            {
-                final int resultingOffset = termAppender.claim(headerWriter, length, bufferClaim, termId);
-                newPosition = newPosition(termCount, (int)termOffset, termId, position, resultingOffset);
-            }
-            else
-            {
-                newPosition = backPressureStatus(position, length);
-            }
-        }
-
-        return newPosition;
-    }
+    public abstract long tryClaim(int length, BufferClaim bufferClaim);
 
     /**
      * Add a destination manually to a multi-destination-cast Publication.
@@ -646,23 +494,5 @@ public class Publication implements AutoCloseable
             throw new IllegalArgumentException(
                 "Message exceeds maxMessageLength of " + maxMessageLength + ", length=" + length);
         }
-    }
-
-    private long newPosition(
-        final int termCount, final int termOffset, final int termId, final long position, final int resultingOffset)
-    {
-        if (resultingOffset > 0)
-        {
-            return (position - termOffset) + resultingOffset;
-        }
-
-        if ((position + termOffset) > maxPossiblePosition)
-        {
-            return MAX_POSITION_EXCEEDED;
-        }
-
-        rotateLog(logMetaDataBuffer, termCount, termId);
-
-        return ADMIN_ACTION;
     }
 }

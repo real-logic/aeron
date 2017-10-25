@@ -54,7 +54,7 @@ public class PublicationTest
     private final ClientConductor conductor = mock(ClientConductor.class);
     private final LogBuffers logBuffers = mock(LogBuffers.class);
     private final ReadablePosition publicationLimit = mock(ReadablePosition.class);
-    private Publication publication;
+    private ConcurrentPublication publication;
 
     @Before
     public void setUp()
@@ -76,7 +76,7 @@ public class PublicationTest
             termBuffers[i] = new UnsafeBuffer(allocateDirect(TERM_MIN_LENGTH));
         }
 
-        publication = new Publication(
+        publication = new ConcurrentPublication(
             conductor,
             CHANNEL,
             STREAM_ID_1,

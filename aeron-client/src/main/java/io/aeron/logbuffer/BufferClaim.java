@@ -41,7 +41,7 @@ import static io.aeron.protocol.HeaderFlyweight.TYPE_FIELD_OFFSET;
  */
 public class BufferClaim
 {
-    private final UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
+    protected final UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
 
     /**
      * Wrap a region of an underlying log buffer so can can represent a claimed space for use by a publisher.
@@ -50,7 +50,7 @@ public class BufferClaim
      * @param offset at which the claimed region begins including space for the header.
      * @param length length of the underlying claimed region including space for the header.
      */
-    public void wrap(final AtomicBuffer buffer, final int offset, final int length)
+    public final void wrap(final AtomicBuffer buffer, final int offset, final int length)
     {
         this.buffer.wrap(buffer, offset, length);
     }
@@ -60,7 +60,7 @@ public class BufferClaim
      *
      * @return the referenced buffer to be used..
      */
-    public MutableDirectBuffer buffer()
+    public final MutableDirectBuffer buffer()
     {
         return buffer;
     }
@@ -70,7 +70,7 @@ public class BufferClaim
      *
      * @return offset in the buffer at which the range begins.
      */
-    public int offset()
+    public final int offset()
     {
         return HEADER_LENGTH;
     }
@@ -80,7 +80,7 @@ public class BufferClaim
      *
      * @return length of the range in the buffer.
      */
-    public int length()
+    public final int length()
     {
         return buffer.capacity() - HEADER_LENGTH;
     }
@@ -93,7 +93,7 @@ public class BufferClaim
      * @return the value stored in the reserve space at the end of a data frame header.
      * @see DataHeaderFlyweight
      */
-    public long reservedValue()
+    public final long reservedValue()
     {
         return buffer.getLong(RESERVED_VALUE_OFFSET, LITTLE_ENDIAN);
     }
@@ -116,7 +116,7 @@ public class BufferClaim
     /**
      * Commit the message to the log buffer so that is it available to subscribers.
      */
-    public void commit()
+    public final void commit()
     {
         int frameLength = buffer.capacity();
         if (ByteOrder.nativeOrder() != LITTLE_ENDIAN)
@@ -130,7 +130,7 @@ public class BufferClaim
     /**
      * Abort a claim of the message space to the log buffer so that the log can progress by ignoring this claim.
      */
-    public void abort()
+    public final void abort()
     {
         int frameLength = buffer.capacity();
         if (ByteOrder.nativeOrder() != LITTLE_ENDIAN)

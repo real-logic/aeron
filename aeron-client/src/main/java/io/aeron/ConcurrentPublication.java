@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2017 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,7 @@
  */
 package io.aeron;
 
-import io.aeron.logbuffer.BufferClaim;
-import io.aeron.logbuffer.ExclusiveBufferClaim;
-import io.aeron.logbuffer.ExclusiveTermAppender;
-import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.*;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
@@ -26,33 +23,23 @@ import org.agrona.concurrent.status.ReadablePosition;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 
 /**
- * Aeron publisher API for sending messages to subscribers of a given channel and streamId pair. ExclusivePublications
- * each get their own session id so multiple can be concurrently active on the same media driver as independent streams.
+ * Aeron publisher API for sending messages to subscribers of a given channel and streamId pair. {@link Publication}s
+ * are created via the {@link Aeron#addPublication(String, int)} method, and messages are sent via one of the
+ * {@link #offer(DirectBuffer)} methods, or a {@link #tryClaim(int, BufferClaim)} and {@link BufferClaim#commit()}
+ * method combination.
  * <p>
- * {@link ExclusivePublication}s are created via the {@link Aeron#addExclusivePublication(String, int)} method,
- * and messages are sent via one of the {@link #offer(DirectBuffer)} methods, or a
- * {@link #tryClaim(int, BufferClaim)} and {@link BufferClaim#commit()} method combination.
+ * The APIs used for try claim and offer are non-blocking and thread safe.
  * <p>
- * {@link ExclusivePublication}s have the potential to provide greater throughput than the default {@link Publication}
- * which supports concurrent access.
- * <p>
- * The APIs used for try claim and offer are non-blocking.
- * <p>
- * <b>Note:</b> Instances are NOT threadsafe for offer and try claim methods but are for the others.
+ * <b>Note:</b> Publication instances are threadsafe and can be shared between publishing threads.
  *
- * @see Aeron#addExclusivePublication(String, int)
- * @see ExclusiveBufferClaim
+ * @see Aeron#addPublication(String, int)
+ * @see BufferClaim
  */
-public class ExclusivePublication extends Publication
+public class ConcurrentPublication extends Publication
 {
-    private long termBeginPosition;
-    private int activePartitionIndex;
-    private int termId;
-    private int termOffset;
+    private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
 
-    private final ExclusiveTermAppender[] termAppenders = new ExclusiveTermAppender[PARTITION_COUNT];
-
-    ExclusivePublication(
+    ConcurrentPublication(
         final ClientConductor clientConductor,
         final String channel,
         final int streamId,
@@ -71,24 +58,14 @@ public class ExclusivePublication extends Publication
             logBuffers,
             originalRegistrationId,
             registrationId,
-            FrameDescriptor.computeExclusiveMaxMessageLength(logBuffers.termLength()));
+            FrameDescriptor.computeMaxMessageLength(logBuffers.termLength()));
 
         final UnsafeBuffer[] buffers = logBuffers.duplicateTermBuffers();
-        final UnsafeBuffer logMetaDataBuffer = logBuffers.metaDataBuffer();
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            termAppenders[i] = new ExclusiveTermAppender(buffers[i], logMetaDataBuffer, i);
+            termAppenders[i] = new TermAppender(buffers[i], logMetaDataBuffer, i);
         }
-
-        final int termCount = activeTermCount(logMetaDataBuffer);
-        final int index = indexByTermCount(termCount);
-        activePartitionIndex = index;
-
-        final long rawTail = rawTail(logMetaDataBuffer, index);
-        termId = termId(rawTail);
-        termOffset = termOffset(rawTail);
-        termBeginPosition = computeTermBeginPosition(termId, positionBitsToShift, initialTermId);
     }
 
     /**
@@ -111,32 +88,34 @@ public class ExclusivePublication extends Publication
         if (!isClosed)
         {
             final long limit = positionLimit.getVolatile();
-            final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
-            final long position = termBeginPosition + termOffset;
+            final int termCount = activeTermCount(logMetaDataBuffer);
+            final TermAppender termAppender = termAppenders[indexByTermCount(termCount)];
+            final long rawTail = termAppender.rawTailVolatile();
+            final long termOffset = rawTail & 0xFFFF_FFFFL;
+            final int termId = termId(rawTail);
+            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
+
+            if (termCount != (termId - initialTermId))
+            {
+                return ADMIN_ACTION;
+            }
 
             if (position < limit)
             {
-                final int result;
+                final int resultingOffset;
                 if (length <= maxPayloadLength)
                 {
-                    result = termAppender.appendUnfragmentedMessage(
-                        termId, termOffset, headerWriter, buffer, offset, length, reservedValueSupplier);
+                    resultingOffset = termAppender.appendUnfragmentedMessage(
+                        headerWriter, buffer, offset, length, reservedValueSupplier, termId);
                 }
                 else
                 {
                     checkForMaxMessageLength(length);
-                    result = termAppender.appendFragmentedMessage(
-                        termId,
-                        termOffset,
-                        headerWriter,
-                        buffer,
-                        offset,
-                        length,
-                        maxPayloadLength,
-                        reservedValueSupplier);
+                    resultingOffset = termAppender.appendFragmentedMessage(
+                        headerWriter, buffer, offset, length, maxPayloadLength, reservedValueSupplier, termId);
                 }
 
-                newPosition = newPosition(result);
+                newPosition = newPosition(termCount, (int)termOffset, termId, position, resultingOffset);
             }
             else
             {
@@ -163,31 +142,34 @@ public class ExclusivePublication extends Publication
         if (!isClosed)
         {
             final long limit = positionLimit.getVolatile();
-            final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
-            final long position = termBeginPosition + termOffset;
+            final int termCount = activeTermCount(logMetaDataBuffer);
+            final TermAppender termAppender = termAppenders[indexByTermCount(termCount)];
+            final long rawTail = termAppender.rawTailVolatile();
+            final long termOffset = rawTail & 0xFFFF_FFFFL;
+            final int termId = termId(rawTail);
+            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
+
+            if (termCount != (termId - initialTermId))
+            {
+                return ADMIN_ACTION;
+            }
 
             if (position < limit)
             {
-                final int result;
+                final int resultingOffset;
                 if (length <= maxPayloadLength)
                 {
-                    result = termAppender.appendUnfragmentedMessage(
-                        termId, termOffset, headerWriter, vectors, length, reservedValueSupplier);
+                    resultingOffset = termAppender.appendUnfragmentedMessage(
+                        headerWriter, vectors, length, reservedValueSupplier, termId);
                 }
                 else
                 {
                     checkForMaxMessageLength(length);
-                    result = termAppender.appendFragmentedMessage(
-                        termId,
-                        termOffset,
-                        headerWriter,
-                        vectors,
-                        length,
-                        maxPayloadLength,
-                        reservedValueSupplier);
+                    resultingOffset = termAppender.appendFragmentedMessage(
+                        headerWriter, vectors, length, maxPayloadLength, reservedValueSupplier, termId);
                 }
 
-                newPosition = newPosition(result);
+                newPosition = newPosition(termCount, (int)termOffset, termId, position, resultingOffset);
             }
             else
             {
@@ -200,14 +182,13 @@ public class ExclusivePublication extends Publication
 
     /**
      * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
-     * Once the message has been written then {@link ExclusiveBufferClaim#commit()} should be called thus making it
-     * available.
+     * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
      * <p>
      * <b>Note:</b> This method can only be used for message lengths less than MTU length minus header.
      * If the claim is held for more than the aeron.publication.unblock.timeout system property then the driver will
      * assume the publication thread is dead and will unblock the claim thus allowing other threads to make progress.
      * <pre>{@code
-     *     final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
+     *     final BufferClaim bufferClaim = new BufferClaim(); // Can be stored and reused to avoid allocation
      *
      *     if (publication.tryClaim(messageLength, bufferClaim) > 0L)
      *     {
@@ -241,13 +222,22 @@ public class ExclusivePublication extends Publication
         if (!isClosed)
         {
             final long limit = positionLimit.getVolatile();
-            final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
-            final long position = termBeginPosition + termOffset;
+            final int termCount = activeTermCount(logMetaDataBuffer);
+            final TermAppender termAppender = termAppenders[indexByTermCount(termCount)];
+            final long rawTail = termAppender.rawTailVolatile();
+            final long termOffset = rawTail & 0xFFFF_FFFFL;
+            final int termId = termId(rawTail);
+            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
+
+            if (termCount != (termId - initialTermId))
+            {
+                return ADMIN_ACTION;
+            }
 
             if (position < limit)
             {
-                final int result = termAppender.claim(termId, termOffset, headerWriter, length, bufferClaim);
-                newPosition = newPosition(result);
+                final int resultingOffset = termAppender.claim(headerWriter, length, bufferClaim, termId);
+                newPosition = newPosition(termCount, (int)termOffset, termId, position, resultingOffset);
             }
             else
             {
@@ -258,66 +248,22 @@ public class ExclusivePublication extends Publication
         return newPosition;
     }
 
-    /**
-     * Append a padding record log of a given length to make up the log to a position.
-     *
-     * @param length of the range to claim, in bytes..
-     * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
-     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
-     * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength()}.
-     */
-    public long appendPadding(final int length)
-    {
-        checkForMaxMessageLength(length);
-        long newPosition = CLOSED;
-
-        if (!isClosed)
-        {
-            final long limit = positionLimit.getVolatile();
-            final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
-            final long position = termBeginPosition + termOffset;
-
-            if (position < limit)
-            {
-                final int result = termAppender.appendPadding(termId, termOffset, headerWriter, length);
-                newPosition = newPosition(result);
-            }
-            else
-            {
-                newPosition = backPressureStatus(position, length);
-            }
-        }
-
-        return newPosition;
-    }
-
-    private long newPosition(final int resultingOffset)
+    private long newPosition(
+        final int termCount, final int termOffset, final int termId, final long position, final int resultingOffset)
     {
         if (resultingOffset > 0)
         {
-            termOffset = resultingOffset;
-
-            return termBeginPosition + resultingOffset;
+            return (position - termOffset) + resultingOffset;
         }
 
-        if ((termBeginPosition + termBufferLength) >= maxPossiblePosition)
+        if ((position + termOffset) > maxPossiblePosition)
         {
             return MAX_POSITION_EXCEEDED;
         }
 
-        final int nextIndex = nextPartitionIndex(activePartitionIndex);
-        final int nextTermId = termId + 1;
-
-        activePartitionIndex = nextIndex;
-        termOffset = 0;
-        termId = nextTermId;
-        termBeginPosition = computeTermBeginPosition(nextTermId, positionBitsToShift, initialTermId);
-
-        final int termCount = nextTermId - initialTermId;
-
-        initialiseTailWithTermId(logMetaDataBuffer, nextIndex, nextTermId);
-        activeTermCountOrdered(logMetaDataBuffer, termCount);
+        rotateLog(logMetaDataBuffer, termCount, termId);
 
         return ADMIN_ACTION;
     }
 }
+

@@ -264,7 +264,7 @@ class ClientConductor implements Agent, DriverEventsListener
     {
         resourceByRegIdMap.put(
             correlationId,
-            new Publication(
+            new ConcurrentPublication(
                 this,
                 stashedChannel,
                 streamId,

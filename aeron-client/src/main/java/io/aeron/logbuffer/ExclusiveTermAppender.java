@@ -87,7 +87,7 @@ public class ExclusiveTermAppender
         final int termOffset,
         final HeaderWriter header,
         final int length,
-        final ExclusiveBufferClaim bufferClaim)
+        final BufferClaim bufferClaim)
     {
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);

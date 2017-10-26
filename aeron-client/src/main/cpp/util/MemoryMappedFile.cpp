@@ -174,7 +174,9 @@ size_t MemoryMappedFile::getMemorySize() const
     return m_memorySize;
 }
 
+#if !defined(PAGE_SIZE)
 size_t MemoryMappedFile::PAGE_SIZE = getPageSize();
+#endif
 
 #ifdef _WIN32
 MemoryMappedFile::MemoryMappedFile(FileHandle fd, size_t offset, size_t length)

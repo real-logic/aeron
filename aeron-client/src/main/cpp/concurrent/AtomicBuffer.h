@@ -191,7 +191,7 @@ public:
         return *reinterpret_cast<std::int32_t *>(m_buffer + offset);
     }
 
-    inline COND_MOCK_VIRTUAL std::int16_t getInt16(util::index_t offset)
+    inline COND_MOCK_VIRTUAL std::int16_t getInt16(util::index_t offset) const
     {
         boundsCheck(offset, sizeof(std::int16_t));
         return *reinterpret_cast<std::int16_t *>(m_buffer + offset);
@@ -203,7 +203,7 @@ public:
         *reinterpret_cast<std::int16_t *>(m_buffer + offset) = v;
     }
 
-    inline COND_MOCK_VIRTUAL std::uint16_t getUInt16(util::index_t offset)
+    inline COND_MOCK_VIRTUAL std::uint16_t getUInt16(util::index_t offset) const
     {
         boundsCheck(offset, sizeof(std::uint16_t));
         return *reinterpret_cast<std::uint16_t *>(m_buffer + offset);
@@ -215,7 +215,7 @@ public:
         *reinterpret_cast<std::uint16_t *>(m_buffer + offset) = v;
     }
 
-    inline std::uint8_t getUInt8(util::index_t offset)
+    inline std::uint8_t getUInt8(util::index_t offset) const
     {
         boundsCheck(offset, sizeof(std::uint8_t));
         return *reinterpret_cast<std::uint8_t *>(m_buffer + offset);

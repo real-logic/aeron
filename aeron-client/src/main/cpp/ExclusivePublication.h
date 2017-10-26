@@ -336,7 +336,7 @@ public:
      * @throws IllegalArgumentException if the length is greater than max payload length within an MTU.
      * @see BufferClaim::commit
      */
-    inline std::int64_t tryClaim(util::index_t length, concurrent::logbuffer::ExclusiveBufferClaim& bufferClaim)
+    inline std::int64_t tryClaim(util::index_t length, concurrent::logbuffer::BufferClaim& bufferClaim)
     {
         checkForMaxPayloadLength(length);
         std::int64_t newPosition = PUBLICATION_CLOSED;

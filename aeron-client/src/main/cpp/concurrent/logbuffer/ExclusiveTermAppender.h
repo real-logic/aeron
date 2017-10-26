@@ -22,7 +22,7 @@
 #include <concurrent/AtomicBuffer.h>
 #include "HeaderWriter.h"
 #include "LogBufferDescriptor.h"
-#include "ExclusiveBufferClaim.h"
+#include "BufferClaim.h"
 #include "DataFrameHeader.h"
 #include "TermAppender.h"
 
@@ -59,7 +59,7 @@ public:
         std::int32_t termOffset,
         const HeaderWriter& header,
         util::index_t length,
-        ExclusiveBufferClaim& bufferClaim)
+        BufferClaim& bufferClaim)
     {
         const util::index_t frameLength = length + DataFrameHeader::LENGTH;
         const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);

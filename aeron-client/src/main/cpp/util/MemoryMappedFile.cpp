@@ -36,13 +36,13 @@ namespace aeron { namespace util {
 bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
 {
     uint8_t buffer[8196];
-    memset(buffer, value, PAGE_SIZE);
+    memset(buffer, value, m_page_size);
 
     DWORD written = 0;
 
-    while (size >= PAGE_SIZE)
+    while (size >= m_page_size)
     {
-        if (!WriteFile(fd.handle, buffer, (DWORD)PAGE_SIZE, &written, NULL))
+        if (!WriteFile(fd.handle, buffer, (DWORD)m_page_size, &written, NULL))
         {
             return false;
         }
@@ -94,17 +94,17 @@ MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, size
 #else
 bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
 {
-    std::unique_ptr<uint8_t[]> buffer(new uint8_t[PAGE_SIZE]);
-    memset(buffer.get(), value, PAGE_SIZE);
+    std::unique_ptr<uint8_t[]> buffer(new uint8_t[m_page_size]);
+    memset(buffer.get(), value, m_page_size);
 
-    while (size >= PAGE_SIZE)
+    while (size >= m_page_size)
     {
-        if (static_cast<size_t>(write(fd.handle, buffer.get(), PAGE_SIZE)) != PAGE_SIZE)
+        if (static_cast<size_t>(write(fd.handle, buffer.get(), m_page_size)) != m_page_size)
         {
             return false;
         }
 
-        size -= PAGE_SIZE;
+        size -= m_page_size;
     }
 
     if (size)
@@ -174,9 +174,7 @@ size_t MemoryMappedFile::getMemorySize() const
     return m_memorySize;
 }
 
-#if !defined(PAGE_SIZE)
-size_t MemoryMappedFile::PAGE_SIZE = getPageSize();
-#endif
+size_t MemoryMappedFile::m_page_size = getPageSize();
 
 #ifdef _WIN32
 MemoryMappedFile::MemoryMappedFile(FileHandle fd, size_t offset, size_t length)

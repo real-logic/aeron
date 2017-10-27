@@ -39,13 +39,14 @@ public class LogBufferUnblocker
         final int positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         final int activeTermCount = activeTermCount(logMetaDataBuffer);
         final int expectedTermCount = (int)(blockedPosition >> positionBitsToShift);
-        final int index = indexByTermCount(activeTermCount);
+        final int index = indexByTermCount(expectedTermCount);
         final long rawTail = rawTailVolatile(logMetaDataBuffer, index);
         final int termId = termId(rawTail);
 
-        if (activeTermCount == (expectedTermCount - 1) && 0 == (blockedPosition & (termLength - 1)))
+        if (activeTermCount == (expectedTermCount - 1) && (blockedPosition & 0xFFFF_FFFFL) == termLength)
         {
-            return rotateLog(logMetaDataBuffer, activeTermCount, termId);
+            final int currentTermId = termId(rawTailVolatile(logMetaDataBuffer));
+            return rotateLog(logMetaDataBuffer, activeTermCount, currentTermId);
         }
 
         final int tailOffset = termOffset(rawTail, termLength);

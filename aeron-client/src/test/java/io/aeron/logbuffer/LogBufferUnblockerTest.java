@@ -67,7 +67,7 @@ public class LogBufferUnblockerTest
 
         when(termBuffers[activeIndex].getIntVolatile(blockedOffset)).thenReturn(HEADER_LENGTH);
 
-        assertFalse(LogBufferUnblocker.unblock(termBuffers, logMetaDataBuffer, blockedPosition));
+        assertFalse(LogBufferUnblocker.unblock(termBuffers, logMetaDataBuffer, blockedPosition, TERM_LENGTH));
 
         final long rawTail = rawTailVolatile(logMetaDataBuffer);
         assertThat(computePosition(termId(rawTail), blockedOffset, positionBitsToShift, TERM_ID_1),
@@ -84,7 +84,7 @@ public class LogBufferUnblockerTest
 
         when(termBuffers[activeIndex].getIntVolatile(blockedOffset)).thenReturn(-messageLength);
 
-        assertTrue(LogBufferUnblocker.unblock(termBuffers, logMetaDataBuffer, blockedPosition));
+        assertTrue(LogBufferUnblocker.unblock(termBuffers, logMetaDataBuffer, blockedPosition, TERM_LENGTH));
 
         final long rawTail = rawTailVolatile(logMetaDataBuffer);
         assertThat(computePosition(termId(rawTail), blockedOffset + messageLength, positionBitsToShift, TERM_ID_1),
@@ -103,7 +103,7 @@ public class LogBufferUnblockerTest
 
         logMetaDataBuffer.getAndAddLong(TERM_TAIL_COUNTER_OFFSET, TERM_LENGTH);
 
-        assertTrue(LogBufferUnblocker.unblock(termBuffers, logMetaDataBuffer, blockedPosition));
+        assertTrue(LogBufferUnblocker.unblock(termBuffers, logMetaDataBuffer, blockedPosition, TERM_LENGTH));
 
         final long rawTail = rawTailVolatile(logMetaDataBuffer);
         final int termId = termId(rawTail);
@@ -121,7 +121,7 @@ public class LogBufferUnblockerTest
         final int termTailCounterTwoOffset = TERM_TAIL_COUNTER_OFFSET + SIZE_OF_LONG;
         logMetaDataBuffer.getAndAddLong(TERM_TAIL_COUNTER_OFFSET, TERM_LENGTH);
 
-        assertTrue(LogBufferUnblocker.unblock(termBuffers, logMetaDataBuffer, blockedPosition));
+        assertTrue(LogBufferUnblocker.unblock(termBuffers, logMetaDataBuffer, blockedPosition, TERM_LENGTH));
 
         final long rawTail = rawTailVolatile(logMetaDataBuffer);
         final int termId = termId(rawTail);
@@ -146,7 +146,7 @@ public class LogBufferUnblockerTest
 
         logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, pack(TERM_ID_1, TERM_LENGTH + HEADER_LENGTH));
 
-        assertTrue(LogBufferUnblocker.unblock(termBuffers, logMetaDataBuffer, blockedPosition));
+        assertTrue(LogBufferUnblocker.unblock(termBuffers, logMetaDataBuffer, blockedPosition, TERM_LENGTH));
 
         final long rawTail = rawTailVolatile(logMetaDataBuffer);
         final int termId = termId(rawTail);

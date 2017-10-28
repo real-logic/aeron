@@ -604,7 +604,7 @@ public class NetworkPublication
         {
             if (timeNs > (timeOfLastActivityNs + unblockTimeoutNs))
             {
-                if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition))
+                if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition, termBufferLength))
                 {
                     unblockedPublications.orderedIncrement();
                 }
@@ -691,7 +691,7 @@ public class NetworkPublication
                 final long producerPosition = producerPosition();
                 if (producerPosition > senderPosition)
                 {
-                    if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition))
+                    if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition, termBufferLength))
                     {
                         unblockedPublications.orderedIncrement();
                         timeOfLastActivityNs = timeNs;

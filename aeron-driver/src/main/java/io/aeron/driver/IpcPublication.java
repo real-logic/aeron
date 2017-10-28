@@ -331,7 +331,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         {
             if (timeNs > (timeOfLastConsumerPositionUpdateNs + unblockTimeoutNs))
             {
-                if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, consumerPosition))
+                if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, consumerPosition, termBufferLength))
                 {
                     unblockedPublications.orderedIncrement();
                 }

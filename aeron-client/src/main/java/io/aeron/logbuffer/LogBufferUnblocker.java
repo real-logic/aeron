@@ -30,31 +30,36 @@ public class LogBufferUnblocker
      * @param termBuffers       for current blockedOffset
      * @param logMetaDataBuffer for log buffer
      * @param blockedPosition   to attempt to unblock
+     * @param termLength        of the buffer for each term in the log
      * @return whether unblocked or not
      */
     public static boolean unblock(
-        final UnsafeBuffer[] termBuffers, final UnsafeBuffer logMetaDataBuffer, final long blockedPosition)
+        final UnsafeBuffer[] termBuffers,
+        final UnsafeBuffer logMetaDataBuffer,
+        final long blockedPosition,
+        final int termLength)
     {
-        final int termLength = termBuffers[0].capacity();
         final int positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
-        final int activeTermCount = activeTermCount(logMetaDataBuffer);
-        final int expectedTermCount = (int)(blockedPosition >> positionBitsToShift);
-        final int index = indexByTermCount(expectedTermCount);
-        final long rawTail = rawTailVolatile(logMetaDataBuffer, index);
-        final int termId = termId(rawTail);
-        final int tailOffset = termOffset(rawTail, termLength);
+        final int blockedTermCount = (int)(blockedPosition >> positionBitsToShift);
         final int blockedOffset = computeTermOffsetFromPosition(blockedPosition, positionBitsToShift);
+        final int activeTermCount = activeTermCount(logMetaDataBuffer);
 
-        if (activeTermCount == (expectedTermCount - 1) && blockedOffset == 0)
+        if (activeTermCount == (blockedTermCount - 1) && blockedOffset == 0)
         {
             final int currentTermId = termId(rawTailVolatile(logMetaDataBuffer, indexByTermCount(activeTermCount)));
             return rotateLog(logMetaDataBuffer, activeTermCount, currentTermId);
         }
 
-        switch (TermUnblocker.unblock(logMetaDataBuffer, termBuffers[index], blockedOffset, tailOffset, termId))
+        final int blockedIndex = indexByTermCount(blockedTermCount);
+        final long rawTail = rawTailVolatile(logMetaDataBuffer, blockedIndex);
+        final int termId = termId(rawTail);
+        final int tailOffset = termOffset(rawTail, termLength);
+        final UnsafeBuffer termBuffer = termBuffers[blockedIndex];
+
+        switch (TermUnblocker.unblock(logMetaDataBuffer, termBuffer, blockedOffset, tailOffset, termId))
         {
             case UNBLOCKED_TO_END:
-                rotateLog(logMetaDataBuffer, activeTermCount, termId);
+                rotateLog(logMetaDataBuffer, blockedTermCount, termId);
                 // fall through
             case UNBLOCKED:
                 return true;

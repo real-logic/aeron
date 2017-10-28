@@ -40,19 +40,6 @@ public:
     }
 
     /**
-     * Write the provided value into the reserved space at the end of the data frame header.
-     *
-     * @param value to be stored in the reserve space at the end of a data frame header.
-     * @return this for fluent API semantics.
-     */
-    inline this_t& reservedValue(const std::int64_t value)
-    {
-        BufferClaim::reservedValue(value);
-
-        return *this;
-    }
-
-    /**
      * Get the value of the flags field.
      *
      * @return the value of the header flags field.

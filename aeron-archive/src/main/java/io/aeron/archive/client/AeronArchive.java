@@ -506,6 +506,11 @@ public final class AeronArchive implements AutoCloseable
         {
             while (poller.poll() <= 0 && !poller.isPollComplete())
             {
+                if (!poller.subscription().isConnected())
+                {
+                    throw new IllegalStateException("Subscription to archive is not connected");
+                }
+
                 if (System.nanoTime() > deadline)
                 {
                     throw new TimeoutException("Waiting for response: correlationId=" + expectedCorrelationId);
@@ -559,6 +564,11 @@ public final class AeronArchive implements AutoCloseable
         {
             while (poller.poll() <= 0 && !poller.isPollComplete())
             {
+                if (!poller.subscription().isConnected())
+                {
+                    throw new IllegalStateException("Subscription to archive is not connected");
+                }
+
                 if (System.nanoTime() > deadline)
                 {
                     throw new TimeoutException(

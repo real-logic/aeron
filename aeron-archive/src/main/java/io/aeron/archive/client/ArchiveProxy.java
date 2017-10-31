@@ -283,6 +283,11 @@ public class ArchiveProxy
                 return true;
             }
 
+            if (result == Publication.NOT_CONNECTED)
+            {
+                throw new IllegalStateException("Connection to the archive is no longer available");
+            }
+
             if (result == Publication.MAX_POSITION_EXCEEDED)
             {
                 throw new IllegalStateException("Publication failed due to max position being reached");
@@ -304,9 +309,15 @@ public class ArchiveProxy
         final long timeoutNs = System.nanoTime() + connectTimeoutNs;
         while (true)
         {
-            if (publication.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length) > 0)
+            final long result;
+            if ((result = publication.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length)) > 0)
             {
                 return true;
+            }
+
+            if (result == Publication.MAX_POSITION_EXCEEDED)
+            {
+                throw new IllegalStateException("Publication failed due to max position being reached");
             }
 
             if (System.nanoTime() > timeoutNs)

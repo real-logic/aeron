@@ -30,6 +30,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static io.aeron.archive.client.ControlResponseAdapter.dispatchDescriptor;
+import static io.aeron.archive.codecs.ControlResponseCode.RECORDING_UNKNOWN;
 import static org.agrona.SystemUtil.getDurationInNanos;
 import static org.agrona.SystemUtil.getSizeAsInt;
 
@@ -513,10 +514,12 @@ public final class AeronArchive implements AutoCloseable
                 idleStrategy.idle();
             }
 
-            if (poller.controlSessionId() != controlSessionId || poller.correlationId() != expectedCorrelationId)
+            if (poller.controlSessionId() != controlSessionId)
             {
                 continue;
             }
+
+            checkForError(poller, expectedCorrelationId);
 
             if (poller.templateId() == ControlResponseDecoder.TEMPLATE_ID)
             {
@@ -524,11 +527,14 @@ public final class AeronArchive implements AutoCloseable
                 switch (code)
                 {
                     case OK:
-                        return;
-
-                    case ERROR:
-                        throw new IllegalStateException("response for correlationId=" + expectedCorrelationId +
-                            " error: " + poller.controlResponseDecoder().errorMessage());
+                        if (poller.correlationId() == expectedCorrelationId)
+                        {
+                            return;
+                        }
+                        else
+                        {
+                            break;
+                        }
 
                     default:
                         throw new IllegalStateException("Unexpected response code: " + code);
@@ -562,7 +568,14 @@ public final class AeronArchive implements AutoCloseable
                 idleStrategy.idle();
             }
 
-            if (poller.controlSessionId() != controlSessionId || poller.correlationId() != expectedCorrelationId)
+            if (poller.controlSessionId() != controlSessionId)
+            {
+                continue;
+            }
+
+            checkForError(poller, expectedCorrelationId);
+
+            if (poller.correlationId() != expectedCorrelationId)
             {
                 continue;
             }
@@ -579,22 +592,28 @@ public final class AeronArchive implements AutoCloseable
 
                 case ControlResponseDecoder.TEMPLATE_ID:
                     final ControlResponseCode code = poller.controlResponseDecoder().code();
-                    switch (code)
+                    if (RECORDING_UNKNOWN == code)
                     {
-                        case RECORDING_UNKNOWN:
-                            return count;
-
-                        case ERROR:
-                            throw new IllegalStateException("response for correlationId=" + expectedCorrelationId +
-                                " error: " + poller.controlResponseDecoder().errorMessage());
-
-                        default:
-                            throw new IllegalStateException("Unexpected response: code=" + code);
+                        return count;
+                    }
+                    else
+                    {
+                        throw new IllegalStateException("Unexpected response: code=" + code);
                     }
 
                 default:
                     throw new IllegalStateException("Unknown response: templateId=" + poller.templateId());
             }
+        }
+    }
+
+    private void checkForError(final ControlResponsePoller poller, final long expectedCorrelationId)
+    {
+        if (poller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
+            poller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
+        {
+            throw new IllegalStateException("response for expectedCorrelationId=" + expectedCorrelationId +
+                ", error: " + poller.controlResponseDecoder().errorMessage());
         }
     }
 

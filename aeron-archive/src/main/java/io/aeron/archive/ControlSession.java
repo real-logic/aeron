@@ -24,7 +24,7 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.util.ArrayDeque;
-import java.util.function.Supplier;
+import java.util.function.BooleanSupplier;
 
 import static io.aeron.archive.codecs.ControlResponseCode.*;
 
@@ -44,12 +44,12 @@ class ControlSession implements Session
     }
 
     static final long TIMEOUT_MS = 5000L;
-    private static final int NO_ACTIVE_DEADLINE = -1;
+    private static final int NULL_DEADLINE = -1;
 
     private final ArchiveConductor conductor;
     private final EpochClock epochClock;
     private final ArrayDeque<AbstractListRecordingsSession> listRecordingsSessions = new ArrayDeque<>();
-    private final ManyToOneConcurrentLinkedQueue<Supplier<Boolean>> queuedResponses =
+    private final ManyToOneConcurrentLinkedQueue<BooleanSupplier> queuedResponses =
         new ManyToOneConcurrentLinkedQueue<>();
     private final ControlResponseProxy controlResponseProxy;
     private final long controlSessionId;
@@ -57,7 +57,7 @@ class ControlSession implements Session
     private final ControlSessionDemuxer demuxer;
     private final Publication controlPublication;
     private State state = State.INIT;
-    private long timeoutDeadlineMs = -1;
+    private long activityDeadlineMs = -1;
 
     ControlSession(
         final long controlSessionId,
@@ -91,7 +91,7 @@ class ControlSession implements Session
     {
         state = State.CLOSED;
         CloseHelper.quietClose(controlPublication);
-        demuxer.notifyControlSessionClosed(this);
+        demuxer.removeControlSession(this);
     }
 
     public boolean isDone()
@@ -110,7 +110,7 @@ class ControlSession implements Session
 
         if (state == State.ACTIVE)
         {
-            workCount = sendQueuedResponsesOrPollForRequests();
+            workCount = sendQueuedResponses();
         }
 
         return workCount;
@@ -197,10 +197,6 @@ class ControlSession implements Session
         }
     }
 
-    /**
-     * Send a response, or if the publication cannot handle it queue up the sending of a response. This method
-     * is thread safe.
-     */
     void sendOkResponse(final long correlationId, final ControlResponseProxy proxy)
     {
         if (!proxy.sendResponse(controlSessionId, correlationId, 0, OK, null, controlPublication))
@@ -209,10 +205,6 @@ class ControlSession implements Session
         }
     }
 
-    /**
-     * Send a response, or if the publication cannot handle it queue up the sending of a response. This method
-     * is thread safe.
-     */
     void sendRecordingUnknown(final long correlationId, final long recordingId, final ControlResponseProxy proxy)
     {
         if (!proxy.sendResponse(
@@ -227,10 +219,6 @@ class ControlSession implements Session
         }
     }
 
-    /**
-     * Send a response, or if the publication cannot handle it queue up the sending of a response. This method
-     * is thread safe.
-     */
     void sendResponse(
         final long correlationId,
         final ControlResponseCode code,
@@ -241,6 +229,16 @@ class ControlSession implements Session
         {
             queueResponse(correlationId, 0, code, errorMessage);
         }
+    }
+
+    int sendDescriptor(final long correlationId, final UnsafeBuffer descriptorBuffer, final ControlResponseProxy proxy)
+    {
+        return proxy.sendDescriptor(controlSessionId, correlationId, descriptorBuffer, controlPublication);
+    }
+
+    int maxPayloadLength()
+    {
+        return controlPublication.maxPayloadLength();
     }
 
     private void sendConnectResponse()
@@ -257,23 +255,7 @@ class ControlSession implements Session
         }
     }
 
-    /**
-     * Send a descriptor, return the number of bytes sent or 0 if failed to send. This method is thread safe.
-     */
-    int sendDescriptor(
-        final long correlationId,
-        final UnsafeBuffer descriptorBuffer,
-        final ControlResponseProxy proxy)
-    {
-        return proxy.sendDescriptor(controlSessionId, correlationId, descriptorBuffer, controlPublication);
-    }
-
-    int maxPayloadLength()
-    {
-        return controlPublication.maxPayloadLength();
-    }
-
-    private int sendQueuedResponsesOrPollForRequests()
+    private int sendQueuedResponses()
     {
         int workCount = 0;
         if (!controlPublication.isConnected())
@@ -287,12 +269,12 @@ class ControlSession implements Session
                 if (sendFirst(queuedResponses))
                 {
                     queuedResponses.poll();
-                    timeoutDeadlineMs = NO_ACTIVE_DEADLINE;
+                    activityDeadlineMs = NULL_DEADLINE;
                     workCount++;
                 }
-                else if (timeoutDeadlineMs == NO_ACTIVE_DEADLINE)
+                else if (activityDeadlineMs == NULL_DEADLINE)
                 {
-                    timeoutDeadlineMs = epochClock.time() + TIMEOUT_MS;
+                    activityDeadlineMs = epochClock.time() + TIMEOUT_MS;
                 }
                 else if (hasGoneInactive())
                 {
@@ -304,21 +286,21 @@ class ControlSession implements Session
         return workCount;
     }
 
-    private static boolean sendFirst(final ManyToOneConcurrentLinkedQueue<Supplier<Boolean>> responseQueue)
+    private static boolean sendFirst(final ManyToOneConcurrentLinkedQueue<BooleanSupplier> responseQueue)
     {
-        return responseQueue.peek().get();
+        return responseQueue.peek().getAsBoolean();
     }
 
     private int waitForConnection()
     {
         int workCount = 0;
-        if (timeoutDeadlineMs == NO_ACTIVE_DEADLINE)
+        if (activityDeadlineMs == NULL_DEADLINE)
         {
-            timeoutDeadlineMs = epochClock.time() + TIMEOUT_MS;
+            activityDeadlineMs = epochClock.time() + TIMEOUT_MS;
         }
         else if (controlPublication.isConnected())
         {
-            timeoutDeadlineMs = NO_ACTIVE_DEADLINE;
+            activityDeadlineMs = NULL_DEADLINE;
             state = State.ACTIVE;
             sendConnectResponse();
             workCount += 1;
@@ -333,7 +315,7 @@ class ControlSession implements Session
 
     private boolean hasGoneInactive()
     {
-        return timeoutDeadlineMs != NO_ACTIVE_DEADLINE && epochClock.time() > timeoutDeadlineMs;
+        return activityDeadlineMs != NULL_DEADLINE && epochClock.time() > activityDeadlineMs;
     }
 
     private void queueResponse(

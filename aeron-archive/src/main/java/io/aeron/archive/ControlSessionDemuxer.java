@@ -178,7 +178,7 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         controlSession.onListRecordings(correlationId, fromRecordingId, recordCount);
     }
 
-    void notifyControlSessionClosed(final ControlSession controlSession)
+    void removeControlSession(final ControlSession controlSession)
     {
         controlSessionByIdMap.remove(controlSession.sessionId());
     }

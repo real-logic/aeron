@@ -72,6 +72,10 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
             if (image.isClosed())
             {
                 state = State.INACTIVE;
+                for (final Session session : controlSessionByIdMap.values())
+                {
+                    session.abort();
+                }
             }
             else
             {

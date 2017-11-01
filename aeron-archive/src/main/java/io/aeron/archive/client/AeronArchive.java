@@ -21,6 +21,7 @@ import io.aeron.archive.codecs.ControlResponseDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.TimeoutException;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NoOpLock;
@@ -58,6 +59,7 @@ public final class AeronArchive implements AutoCloseable
 
     private AeronArchive(final Context context)
     {
+        ControlResponsePoller poller = null;
         try
         {
             context.conclude();
@@ -68,6 +70,11 @@ public final class AeronArchive implements AutoCloseable
             messageTimeoutNs = context.messageTimeoutNs();
             lock = context.lock();
 
+            poller = new ControlResponsePoller(
+                aeron.addSubscription(context.controlResponseChannel(), context.controlResponseStreamId()),
+                RESPONSE_FRAGMENT_LIMIT);
+            controlResponsePoller = poller;
+
             archiveProxy = context.archiveProxy();
             final long correlationId = aeron.nextCorrelationId();
             if (!archiveProxy.connect(
@@ -76,15 +83,22 @@ public final class AeronArchive implements AutoCloseable
                 throw new IllegalStateException("Cannot connect to aeron archive: " + context.controlRequestChannel());
             }
 
-            controlResponsePoller = new ControlResponsePoller(
-                aeron.addSubscription(context.controlResponseChannel(), context.controlResponseStreamId()),
-                RESPONSE_FRAGMENT_LIMIT);
-
             controlSessionId = pollForConnected(correlationId);
         }
         catch (final Exception ex)
         {
+            if (!context.ownsAeronClient())
+            {
+                if (null != poller)
+                {
+                    CloseHelper.quietClose(poller.subscription());
+                }
+
+                CloseHelper.quietClose(context.archiveProxy.publication());
+            }
+
             context.close();
+
             throw ex;
         }
     }

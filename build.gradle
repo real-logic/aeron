@@ -172,7 +172,7 @@ subprojects {
 }
 
 def agronaVersion = '0.9.10-SNAPSHOT'
-def sbeVersion = '1.7.3'
+def sbeVersion = '1.7.4-SNAPSHOT'
 
 project(':aeron-client') {
     apply plugin: 'osgi'

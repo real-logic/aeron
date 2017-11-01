@@ -880,7 +880,7 @@ public final class AeronArchive implements AutoCloseable
             if (null == archiveProxy)
             {
                 archiveProxy = new ArchiveProxy(
-                    aeron.addPublication(controlRequestChannel, controlRequestStreamId),
+                    aeron.addExclusivePublication(controlRequestChannel, controlRequestStreamId),
                     idleStrategy,
                     messageTimeoutNs,
                     ArchiveProxy.DEFAULT_MAX_RETRY_ATTEMPTS);

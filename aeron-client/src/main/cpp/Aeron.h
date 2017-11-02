@@ -85,7 +85,7 @@ public:
      * This function returns immediately and does not wait for the response from the media driver. The returned
      * registration id is to be used to determine the status of the command with the media driver.
      *
-     * @param channel for receiving the messages known to the media layer.
+     * @param channel for sending the messages known to the media layer.
      * @param streamId within the channel scope.
      * @return registration id for the publication
      */
@@ -119,7 +119,7 @@ public:
     /**
      * Add an {@link ExclusivePublication} for publishing messages to subscribers from a single thread.
      *
-     * @param channel  for receiving the messages known to the media layer.
+     * @param channel  for sending the messages known to the media layer.
      * @param streamId within the channel scope.
      * @return registration id for the publication
      */

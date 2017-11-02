@@ -30,7 +30,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
  * <p>
  * The APIs used for try claim and offer are non-blocking and thread safe.
  * <p>
- * <b>Note:</b> Publication instances are threadsafe and can be shared between publishing threads.
+ * <b>Note:</b> Instances are threadsafe and can be shared between publishing threads.
  *
  * @see Aeron#addPublication(String, int)
  * @see BufferClaim

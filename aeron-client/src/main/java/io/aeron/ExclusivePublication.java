@@ -36,9 +36,9 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
  * {@link ExclusivePublication}s have the potential to provide greater throughput than the default {@link Publication}
  * which supports concurrent access.
  * <p>
- * The APIs used for try claim and offer are non-blocking.
+ * The APIs used for tryClaim and offer are non-blocking.
  * <p>
- * <b>Note:</b> Instances are NOT threadsafe for offer and try claim methods but are for the others.
+ * <b>Note:</b> Instances are NOT threadsafe for offer and tryClaim methods but are for the others.
  *
  * @see Aeron#addExclusivePublication(String, int)
  * @see ExclusiveBufferClaim

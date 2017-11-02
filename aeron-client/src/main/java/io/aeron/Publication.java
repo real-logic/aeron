@@ -25,13 +25,16 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 /**
  * Aeron publisher API for sending messages to subscribers of a given channel and streamId pair. {@link Publication}s
- * are created via the {@link Aeron#addPublication(String, int)} method, and messages are sent via one of the
- * {@link #offer(DirectBuffer)} methods.
+ * are created via the {@link Aeron#addPublication(String, int)} {@link Aeron#addExclusivePublication(String, int)}
+ * methods, and messages are sent via one of the {@link #offer(DirectBuffer)} methods.
  * <p>
- * The APIs used for try claim and offer are non-blocking and thread safe.
+ * The APIs used for tryClaim and offer are non-blocking.
  * <p>
- * <b>Note:</b> Publication instances are threadsafe and can be shared between publishing threads.
+ * <b>Note:</b> All methods are threadsafe with the exception of offer and tryClaim for the subclass
+ * {@link ExclusivePublication}. In the case of {@link ConcurrentPublication} all methods are threadsafe.
  *
+ * @see ConcurrentPublication
+ * @see ExclusivePublication
  * @see Aeron#addPublication(String, int)
  * @see Aeron#addExclusivePublication(String, int)
  */

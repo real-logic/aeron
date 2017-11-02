@@ -225,9 +225,9 @@ public final class Aeron implements AutoCloseable
     /**
      * Add a {@link Publication} for publishing messages to subscribers. The publication returned is threadsafe.
      *
-     * @param channel  for receiving the messages known to the media layer.
+     * @param channel  for sending the messages known to the media layer.
      * @param streamId within the channel scope.
-     * @return the a new {@link ConcurrentPublication}.
+     * @return a new {@link ConcurrentPublication}.
      */
     public ConcurrentPublication addPublication(final String channel, final int streamId)
     {
@@ -245,9 +245,9 @@ public final class Aeron implements AutoCloseable
     /**
      * Add an {@link ExclusivePublication} for publishing messages to subscribers from a single thread.
      *
-     * @param channel  for receiving the messages known to the media layer.
+     * @param channel  for sending the messages known to the media layer.
      * @param streamId within the channel scope.
-     * @return the new Publication.
+     * @return a new {@link ExclusivePublication}.
      */
     public ExclusivePublication addExclusivePublication(final String channel, final int streamId)
     {

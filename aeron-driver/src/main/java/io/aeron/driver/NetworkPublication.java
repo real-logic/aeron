@@ -683,7 +683,10 @@ public class NetworkPublication
         switch (state)
         {
             case ACTIVE:
-                checkForBlockedPublisher(timeNs, senderPosition.getVolatile());
+                if (!isExclusive)
+                {
+                    checkForBlockedPublisher(timeNs, senderPosition.getVolatile());
+                }
                 break;
 
             case DRAINING:
@@ -694,7 +697,6 @@ public class NetworkPublication
                     if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition, termBufferLength))
                     {
                         unblockedPublications.orderedIncrement();
-                        timeOfLastActivityNs = timeNs;
                         break;
                     }
 

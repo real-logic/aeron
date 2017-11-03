@@ -237,16 +237,25 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
-        checkForBlockedPublisher(timeNs);
-
         switch (state)
         {
+            case ACTIVE:
+                if (!isExclusive)
+                {
+                    checkForBlockedPublisher(timeNs);
+                }
+                break;
+
             case INACTIVE:
                 if (isDrained())
                 {
                     state = State.LINGER;
                     timeOfLastStateChangeNs = timeNs;
                     conductor.transitionToLinger(this);
+                }
+                else if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, consumerPosition, termBufferLength))
+                {
+                    unblockedPublications.orderedIncrement();
                 }
                 break;
 

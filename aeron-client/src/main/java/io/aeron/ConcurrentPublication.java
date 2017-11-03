@@ -186,7 +186,8 @@ public class ConcurrentPublication extends Publication
      * <p>
      * <b>Note:</b> This method can only be used for message lengths less than MTU length minus header.
      * If the claim is held for more than the aeron.publication.unblock.timeout system property then the driver will
-     * assume the publication thread is dead and will unblock the claim thus allowing other threads to make progress.
+     * assume the publication thread is dead and will unblock the claim thus allowing other threads to make progress or
+     * to reach end-of-stream (EOS).
      * <pre>{@code
      *     final BufferClaim bufferClaim = new BufferClaim(); // Can be stored and reused to avoid allocation
      *

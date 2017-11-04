@@ -30,7 +30,7 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.Archive.segmentFileIndex;
 import static io.aeron.archive.Archive.segmentFileName;
-import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static io.aeron.logbuffer.FrameDescriptor.*;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardOpenOption.READ;
 
@@ -102,6 +102,7 @@ class RecordingFragmentReader implements AutoCloseable
         {
             throw new IllegalArgumentException("fromPosition must be positive");
         }
+
         this.recordingPosition = recordingPosition;
         final long maxLength = recordingPosition == null ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
         final long replayLength = length == NULL_LENGTH ? maxLength : Math.min(length, maxLength);
@@ -127,12 +128,10 @@ class RecordingFragmentReader implements AutoCloseable
         termBuffer = new UnsafeBuffer(mappedSegmentBuffer, fromTermStartSegmentOffset, termLength);
         termStartSegmentOffset = fromTermStartSegmentOffset;
         termOffset = fromTermOffset;
-        final DataHeaderFlyweight flyweight = new DataHeaderFlyweight();
-        flyweight.wrap(termBuffer, termOffset, DataHeaderFlyweight.HEADER_LENGTH);
 
-        if (flyweight.sessionId() != recordingSummary.sessionId ||
-            flyweight.streamId() != recordingSummary.streamId ||
-            flyweight.termOffset() != termOffset)
+        if (DataHeaderFlyweight.termOffset(termBuffer, fromTermOffset) != fromTermOffset ||
+            DataHeaderFlyweight.sessionId(termBuffer, fromTermOffset) != recordingSummary.sessionId ||
+            DataHeaderFlyweight.streamId(termBuffer, fromTermOffset) != recordingSummary.streamId)
         {
             close();
             throw new IllegalArgumentException("fromPosition is not aligned to fragment: " + fromPosition);

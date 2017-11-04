@@ -93,6 +93,11 @@ public class DataHeaderFlyweight extends HeaderFlyweight
         return getInt(SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
+    public static int sessionId(final UnsafeBuffer termBuffer, final int frameOffset)
+    {
+        return termBuffer.getInt(frameOffset + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+    }
+
     /**
      * set session id field
      *
@@ -114,6 +119,11 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     public int streamId()
     {
         return getInt(STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+    }
+
+    public static int streamId(final UnsafeBuffer termBuffer, final int frameOffset)
+    {
+        return termBuffer.getInt(frameOffset + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -139,6 +149,11 @@ public class DataHeaderFlyweight extends HeaderFlyweight
         return getInt(TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
+    public static int termId(final UnsafeBuffer termBuffer, final int frameOffset)
+    {
+        return termBuffer.getInt(frameOffset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+    }
+
     /**
      * set term id field
      *
@@ -160,6 +175,11 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     public int termOffset()
     {
         return getInt(TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
+    }
+
+    public static int termOffset(final UnsafeBuffer termBuffer, final int frameOffset)
+    {
+        return termBuffer.getInt(frameOffset + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**

@@ -338,6 +338,13 @@ void aeron_ipc_publication_entry_on_time_event(
                     AERON_IPC_CHANNEL,
                     AERON_IPC_CHANNEL_LEN);
             }
+            else if (aeron_logbuffer_unblocker_unblock(
+                publication->mapped_raw_log.term_buffers,
+                publication->log_meta_data,
+                publication->conductor_fields.consumer_position))
+            {
+                aeron_counter_ordered_increment(publication->unblocked_publications_counter, 1);
+            }
             break;
 
         case AERON_IPC_PUBLICATION_STATUS_LINGER:

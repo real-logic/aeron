@@ -51,6 +51,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final Map<String, Subscription> subscriptionMap = new HashMap<>();
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
+    private final RecordingSummary recordingSummary = new RecordingSummary();
 
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;
@@ -140,6 +141,11 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         workCount += aeronAgentInvoker.invoke();
 
         return workCount;
+    }
+
+    Catalog catalog()
+    {
+        return catalog;
     }
 
     void startRecordingSubscription(
@@ -285,8 +291,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             return;
         }
 
-        final UnsafeBuffer descriptorBuffer = catalog.wrapDescriptor(recordingId);
-        if (descriptorBuffer == null)
+        if (!catalog.hasRecording(recordingId))
         {
             controlSession.sendResponse(
                 correlationId,
@@ -296,6 +301,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
             return;
         }
+
+        catalog.recordingSummary(recordingId, recordingSummary);
 
         final long newId = replaySessionId++;
         final ReplaySession replaySession = new ReplaySession(
@@ -310,7 +317,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             epochClock,
             replayChannel,
             replayStreamId,
-            descriptorBuffer,
+            recordingSummary,
             recordingPositionByIdMap.get(recordingId));
 
         replaySessionByIdMap.put(newId, replaySession);

@@ -20,7 +20,6 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.client.ControlResponseAdapter;
 import io.aeron.archive.codecs.ControlResponseCode;
-import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.rules.TestWatcher;
@@ -32,7 +31,6 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
-import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 import static org.junit.Assert.fail;
 
 public class TestUtil
@@ -224,21 +222,6 @@ public class TestUtil
                 fail();
             }
         }
-    }
-
-    static RecordingFragmentReader newRecordingFragmentReader(
-        final UnsafeBuffer descriptorBuffer, final File archiveDir)
-        throws IOException
-    {
-        final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
-        wrapDescriptorDecoder(descriptorDecoder, descriptorBuffer);
-
-        return new RecordingFragmentReader(
-            descriptorDecoder,
-            archiveDir,
-            RecordingFragmentReader.NULL_POSITION,
-            RecordingFragmentReader.NULL_LENGTH,
-            null);
     }
 
     public static TestWatcher newWatcher(final Class clazz, final long seed)

@@ -16,7 +16,6 @@
 package io.aeron.archive;
 
 import io.aeron.ExclusivePublication;
-import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
@@ -32,9 +31,8 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
+import static io.aeron.archive.Catalog.NULL_POSITION;
 import static io.aeron.archive.TestUtil.makeTempDir;
-import static io.aeron.archive.TestUtil.newRecordingFragmentReader;
-import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
@@ -65,22 +63,23 @@ public class ReplaySessionTest
     private final ControlSession mockControlSession = mock(ControlSession.class);
     private final ArchiveConductor mockArchiveConductor = mock(ArchiveConductor.class);
     private final AtomicCounter position = mock(AtomicCounter.class);
-    private final UnsafeBuffer descriptorBuffer =
-        new UnsafeBuffer(allocateDirectAligned(Catalog.DEFAULT_RECORD_LENGTH, FRAME_ALIGNMENT));
 
     private int messageCounter = 0;
 
     private File archiveDir = makeTempDir();
     private ControlResponseProxy proxy = mock(ControlResponseProxy.class);
     private EpochClock epochClock = mock(EpochClock.class);
+    private Catalog mockCatalog = mock(Catalog.class);
     private Archive.Context context;
     private long positionLong;
+    private RecordingSummary recordingSummary = new RecordingSummary();
 
     @Before
     public void before() throws Exception
     {
         when(position.getWeak()).then((invocation) -> positionLong);
         when(position.get()).then((invocation) -> positionLong);
+        when(mockArchiveConductor.catalog()).thenReturn(mockCatalog);
 
         doAnswer(
             (invocation) ->
@@ -103,26 +102,19 @@ public class ReplaySessionTest
             .archiveDir(archiveDir)
             .epochClock(epochClock);
 
-        final RecordingDescriptorEncoder encoder = new RecordingDescriptorEncoder();
-        Catalog.initDescriptor(
-            encoder.wrap(descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH),
-            RECORDING_ID,
-            START_TIMESTAMP,
-            START_POSITION,
-            INITIAL_TERM_ID,
-            context.segmentFileLength(),
-            TERM_BUFFER_LENGTH,
-            MTU_LENGTH,
-            SESSION_ID,
-            STREAM_ID,
-            "channel",
-            "channel",
-            "sourceIdentity");
+        recordingSummary.recordingId = RECORDING_ID;
+        recordingSummary.startTimestamp = START_TIMESTAMP;
+        recordingSummary.startPosition = START_POSITION;
+        recordingSummary.segmentFileLength = context.segmentFileLength();
+        recordingSummary.initialTermId = INITIAL_TERM_ID;
+        recordingSummary.termBufferLength = TERM_BUFFER_LENGTH;
+        recordingSummary.mtuLength = MTU_LENGTH;
+        recordingSummary.streamId = STREAM_ID;
+        recordingSummary.sessionId = SESSION_ID;
 
         try (RecordingWriter writer = new RecordingWriter(
             RECORDING_ID, START_POSITION, TERM_BUFFER_LENGTH, context, null, position))
         {
-
             final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
 
             final DataHeaderFlyweight headerFwt = new DataHeaderFlyweight();
@@ -134,8 +126,9 @@ public class ReplaySessionTest
             recordFragment(writer, buffer, headerFwt, header, 2, FrameDescriptor.END_FRAG_FLAG, HDR_TYPE_DATA);
             recordFragment(writer, buffer, headerFwt, header, 3, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_PAD);
         }
-        encoder.stopPosition(START_POSITION + 4 * FRAME_LENGTH);
-        encoder.stopTimestamp(128);
+
+        recordingSummary.stopTimestamp = 128;
+        recordingSummary.stopPosition = START_POSITION + 4 * FRAME_LENGTH;
     }
 
     @After
@@ -147,7 +140,13 @@ public class ReplaySessionTest
     @Test
     public void verifyRecordingFile() throws IOException
     {
-        try (RecordingFragmentReader reader = newRecordingFragmentReader(descriptorBuffer, archiveDir))
+        try (RecordingFragmentReader reader = new RecordingFragmentReader(
+            mockCatalog,
+            recordingSummary,
+            archiveDir,
+            RecordingFragmentReader.NULL_POSITION,
+            RecordingFragmentReader.NULL_LENGTH,
+            null))
         {
             int polled = reader.controlledPoll(
                 (buffer, offset, length) ->
@@ -262,7 +261,7 @@ public class ReplaySessionTest
         final long correlationId = 1L;
         new ReplaySession(
             RECORDING_POSITION + 1,
-            (long)FRAME_LENGTH,
+            FRAME_LENGTH,
             mockArchiveConductor,
             mockControlSession,
             archiveDir,
@@ -272,7 +271,8 @@ public class ReplaySessionTest
             epochClock,
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
-            descriptorBuffer, position);
+            recordingSummary,
+            position);
     }
 
     @Test
@@ -386,22 +386,10 @@ public class ReplaySessionTest
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
 
         final int recordingId = RECORDING_ID + 1;
-        final RecordingDescriptorEncoder encoder =
-            new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH);
-        Catalog.initDescriptor(
-            encoder,
-            recordingId,
-            START_TIMESTAMP,
-            START_POSITION,
-            INITIAL_TERM_ID,
-            context.segmentFileLength(),
-            TERM_BUFFER_LENGTH,
-            MTU_LENGTH,
-            1,
-            1,
-            "channel",
-            "channel",
-            "sourceIdentity");
+        recordingSummary.recordingId = recordingId;
+        recordingSummary.stopPosition = NULL_POSITION;
+
+        when(mockCatalog.stopPosition(recordingId)).thenReturn(START_POSITION + FRAME_LENGTH * 4);
 
         try (RecordingWriter writer = new RecordingWriter(
             recordingId, START_POSITION, TERM_BUFFER_LENGTH, context, null, position))
@@ -462,8 +450,9 @@ public class ReplaySessionTest
             recordFragment(writer, buffer, headerFwt, header, 2, FrameDescriptor.END_FRAG_FLAG, HDR_TYPE_DATA);
             recordFragment(writer, buffer, headerFwt, header, 3, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_PAD);
         }
+
         when(position.isClosed()).thenReturn(true);
-        encoder.stopPosition(START_POSITION + FRAME_LENGTH * 4);
+        when(mockCatalog.stopPosition(recordingId)).thenReturn(START_POSITION + FRAME_LENGTH * 4);
         assertNotEquals(0, replaySession.doWork());
 
         validateFrame(termBuffer, 2, FrameDescriptor.END_FRAG_FLAG);
@@ -555,7 +544,7 @@ public class ReplaySessionTest
             epochClock,
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
-            descriptorBuffer,
+            recordingSummary,
             position);
     }
 

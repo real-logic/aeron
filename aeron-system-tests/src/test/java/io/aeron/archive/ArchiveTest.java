@@ -574,8 +574,13 @@ public class ArchiveTest
         remaining = totalDataLength;
         final File archiveDir = archive.context().archiveDir();
         try (Catalog catalog = new Catalog(archiveDir, null, 0, System::currentTimeMillis);
-             RecordingFragmentReader archiveDataFileReader = TestUtil.newRecordingFragmentReader(
-                 catalog.wrapDescriptor(recordingId), archiveDir))
+             RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
+                 catalog,
+                 catalog.recordingSummary(recordingId, new RecordingSummary()),
+                 archiveDir,
+                 RecordingFragmentReader.NULL_POSITION,
+                 RecordingFragmentReader.NULL_LENGTH,
+                 null))
         {
             this.messageCount = 0;
             remaining = totalDataLength;

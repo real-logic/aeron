@@ -15,7 +15,6 @@
  */
 package io.aeron.archive;
 
-import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
@@ -46,7 +45,7 @@ class RecordingFragmentReader implements AutoCloseable
     private final int segmentLength;
     private final int termLength;
 
-    private final RecordingDescriptorDecoder descriptorDecoder;
+    private final Catalog catalog;
     private final AtomicCounter recordingPosition;
     private final UnsafeBuffer termBuffer;
     private MappedByteBuffer mappedSegmentBuffer;
@@ -61,18 +60,19 @@ class RecordingFragmentReader implements AutoCloseable
     private boolean isDone = false;
 
     RecordingFragmentReader(
-        final RecordingDescriptorDecoder descriptorDecoder,
+        final Catalog catalog,
+        final RecordingSummary recordingSummary,
         final File archiveDir,
         final long position,
         final long length,
         final AtomicCounter recordingPosition) throws IOException
     {
-        this.descriptorDecoder = descriptorDecoder;
-        stopPosition = descriptorDecoder.stopPosition();
-        termLength = descriptorDecoder.termBufferLength();
-        segmentLength = descriptorDecoder.segmentFileLength();
-        startPosition = descriptorDecoder.startPosition();
-        recordingId = descriptorDecoder.recordingId();
+        this.catalog = catalog;
+        stopPosition = recordingSummary.stopPosition;
+        termLength = recordingSummary.termBufferLength;
+        segmentLength = recordingSummary.segmentFileLength;
+        startPosition = recordingSummary.startPosition;
+        recordingId = recordingSummary.recordingId;
 
         if (stopPosition == NULL_POSITION)
         {
@@ -130,8 +130,8 @@ class RecordingFragmentReader implements AutoCloseable
         final DataHeaderFlyweight flyweight = new DataHeaderFlyweight();
         flyweight.wrap(termBuffer, termOffset, DataHeaderFlyweight.HEADER_LENGTH);
 
-        if (flyweight.sessionId() != descriptorDecoder.sessionId() ||
-            flyweight.streamId() != descriptorDecoder.streamId() ||
+        if (flyweight.sessionId() != recordingSummary.sessionId ||
+            flyweight.streamId() != recordingSummary.streamId ||
             flyweight.termOffset() != termOffset)
         {
             close();
@@ -220,7 +220,7 @@ class RecordingFragmentReader implements AutoCloseable
         final long currentRecodingPosition = recordingPosition.get();
         UnsafeAccess.UNSAFE.loadFence();
         final boolean hasRecordingStopped = recordingPosition.isClosed();
-        final long newStopPosition = hasRecordingStopped ? descriptorDecoder.stopPosition() : currentRecodingPosition;
+        final long newStopPosition = hasRecordingStopped ? catalog.stopPosition(recordingId) : currentRecodingPosition;
 
         if (hasRecordingStopped && newStopPosition < replayLimit)
         {

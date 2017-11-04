@@ -17,8 +17,6 @@ package io.aeron.archive;
 
 import io.aeron.Image;
 import io.aeron.Subscription;
-import io.aeron.archive.codecs.RecordingDescriptorDecoder;
-import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -30,17 +28,12 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.io.File;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.Archive.segmentFileName;
-import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
-import static io.aeron.archive.TestUtil.newRecordingFragmentReader;
-import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.nio.file.StandardOpenOption.*;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -71,11 +64,9 @@ public class RecordingSessionTest
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
     private File termFile;
-    private EpochClock epochClock = Mockito.mock(EpochClock.class);
+    private EpochClock epochClock = mock(EpochClock.class);
+    private Catalog mockCatalog = mock(Catalog.class);
     private Archive.Context context;
-    private UnsafeBuffer descriptorBuffer =
-        new UnsafeBuffer(allocateDirectAligned(Catalog.DEFAULT_RECORD_LENGTH, FRAME_ALIGNMENT));
-
     private long positionLong;
 
     @Before
@@ -110,24 +101,6 @@ public class RecordingSessionTest
             .segmentFileLength(SEGMENT_FILE_SIZE)
             .archiveDir(tempDirForTest)
             .epochClock(epochClock);
-
-        final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
-        wrapDescriptorDecoder(descriptorDecoder, descriptorBuffer);
-
-        Catalog.initDescriptor(
-            new RecordingDescriptorEncoder().wrap(descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH),
-            RECORDING_ID,
-            START_TIMESTAMP,
-            START_POSITION,
-            INITIAL_TERM_ID,
-            context.segmentFileLength(),
-            TERM_BUFFER_LENGTH,
-            MTU_LENGTH,
-            SESSION_ID,
-            STREAM_ID,
-            CHANNEL,
-            CHANNEL,
-            SOURCE_IDENTITY);
     }
 
     @After
@@ -174,11 +147,26 @@ public class RecordingSessionTest
 
         final File segmentFile = new File(tempDirForTest, segmentFileName(RECORDING_ID, 0));
         assertTrue(segmentFile.exists());
-        new RecordingDescriptorEncoder()
-            .wrap(descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH)
-            .stopPosition(START_POSITION + RECORDED_BLOCK_LENGTH);
 
-        try (RecordingFragmentReader reader = newRecordingFragmentReader(descriptorBuffer, tempDirForTest))
+        final RecordingSummary recordingSummary = new RecordingSummary();
+        recordingSummary.recordingId = RECORDING_ID;
+        recordingSummary.recordingId = RECORDING_ID;
+        recordingSummary.startTimestamp = START_TIMESTAMP;
+        recordingSummary.startPosition = START_POSITION;
+        recordingSummary.segmentFileLength = context.segmentFileLength();
+        recordingSummary.initialTermId = INITIAL_TERM_ID;
+        recordingSummary.termBufferLength = TERM_BUFFER_LENGTH;
+        recordingSummary.streamId = STREAM_ID;
+        recordingSummary.sessionId = SESSION_ID;
+        recordingSummary.stopPosition = START_POSITION + RECORDED_BLOCK_LENGTH;
+
+        try (RecordingFragmentReader reader = new RecordingFragmentReader(
+            mockCatalog,
+            recordingSummary,
+            tempDirForTest,
+            RecordingFragmentReader.NULL_POSITION,
+            RecordingFragmentReader.NULL_LENGTH,
+            null))
         {
             final int polled = reader.controlledPoll(
                 (buffer, offset, length) ->

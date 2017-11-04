@@ -29,8 +29,10 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.Archive.segmentFileName;
+import static io.aeron.archive.codecs.RecordingDescriptorDecoder.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BitUtil.align;
 import static org.agrona.BufferUtil.allocateDirectAligned;
@@ -248,6 +250,14 @@ class Catalog implements AutoCloseable
         return descriptorHeaderDecoder.length() > 0;
     }
 
+    boolean hasRecording(final long recordingId)
+    {
+        return recordingId >= 0 && recordingId < nextRecordingId &&
+            fieldAccessBuffer.getInt(
+                recordingDescriptorOffset(recordingId) +
+                    RecordingDescriptorHeaderDecoder.lengthEncodingOffset(), LITTLE_ENDIAN) > 0;
+    }
+
     UnsafeBuffer wrapDescriptor(final long recordingId)
     {
         final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
@@ -336,13 +346,41 @@ class Catalog implements AutoCloseable
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
 
-        fieldAccessBuffer.putLong(offset + RecordingDescriptorDecoder.stopPositionEncodingOffset(), position);
-        fieldAccessBuffer.putLong(offset + RecordingDescriptorDecoder.stopTimestampEncodingOffset(), timestamp);
+        fieldAccessBuffer.putLong(offset + stopPositionEncodingOffset(), position, LITTLE_ENDIAN);
+        fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), timestamp, LITTLE_ENDIAN);
     }
 
-    private int recordingDescriptorOffset(final long newRecordingId)
+    long stopPosition(final long recordingId)
     {
-        return (int)(newRecordingId * recordLength) + recordLength;
+        final int offset = recordingDescriptorOffset(recordingId) +
+            RecordingDescriptorHeaderDecoder.BLOCK_LENGTH +
+            startPositionEncodingOffset();
+
+        return fieldAccessBuffer.getLong(offset, LITTLE_ENDIAN);
+    }
+
+    RecordingSummary recordingSummary(final long recordingId, final RecordingSummary summary)
+    {
+        final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
+
+        summary.recordingId = recordingId;
+        summary.startTimestamp = fieldAccessBuffer.getLong(offset + startTimestampEncodingOffset(), LITTLE_ENDIAN);
+        summary.stopTimestamp = fieldAccessBuffer.getLong(offset + stopTimestampEncodingOffset(), LITTLE_ENDIAN);
+        summary.startPosition = fieldAccessBuffer.getLong(offset + startPositionEncodingOffset(), LITTLE_ENDIAN);
+        summary.stopPosition = fieldAccessBuffer.getLong(offset + stopPositionEncodingOffset(), LITTLE_ENDIAN);
+        summary.initialTermId = fieldAccessBuffer.getInt(offset + initialTermIdEncodingOffset(), LITTLE_ENDIAN);
+        summary.segmentFileLength = fieldAccessBuffer.getInt(offset + segmentFileLengthEncodingOffset(), LITTLE_ENDIAN);
+        summary.termBufferLength = fieldAccessBuffer.getInt(offset + termBufferLengthEncodingOffset(), LITTLE_ENDIAN);
+        summary.mtuLength = fieldAccessBuffer.getInt(offset + mtuLengthEncodingOffset(), LITTLE_ENDIAN);
+        summary.streamId = fieldAccessBuffer.getInt(offset + streamIdEncodingOffset(), LITTLE_ENDIAN);
+        summary.sessionId = fieldAccessBuffer.getInt(offset + sessionIdEncodingOffset(), LITTLE_ENDIAN);
+
+        return summary;
+    }
+
+    private int recordingDescriptorOffset(final long recordingId)
+    {
+        return (int)(recordingId * recordLength) + recordLength;
     }
 
     /**

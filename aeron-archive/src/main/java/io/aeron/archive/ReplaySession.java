@@ -18,8 +18,6 @@ package io.aeron.archive;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.archive.codecs.ControlResponseCode;
-import io.aeron.archive.codecs.RecordingDescriptorDecoder;
-import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -88,7 +86,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         final EpochClock epochClock,
         final String replayChannel,
         final int replayStreamId,
-        final UnsafeBuffer descriptorBuffer,
+        final RecordingSummary recordingSummary,
         final AtomicCounter recordingPosition)
     {
         this.controlSession = controlSession;
@@ -97,17 +95,10 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         this.correlationId = correlationId;
         this.epochClock = epochClock;
 
-        final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
-        descriptorDecoder.wrap(
-            descriptorBuffer,
-            RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
-            RecordingDescriptorDecoder.BLOCK_LENGTH,
-            RecordingDescriptorHeaderDecoder.SCHEMA_VERSION);
-
-        final long startPosition = descriptorDecoder.startPosition();
-        final int mtuLength = descriptorDecoder.mtuLength();
-        final int termBufferLength = descriptorDecoder.termBufferLength();
-        final int initialTermId = descriptorDecoder.initialTermId();
+        final long startPosition = recordingSummary.startPosition;
+        final int mtuLength = recordingSummary.mtuLength;
+        final int termBufferLength = recordingSummary.termBufferLength;
+        final int initialTermId = recordingSummary.initialTermId;
 
         if (replayPosition - startPosition < 0)
         {
@@ -119,7 +110,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
             return;
         }
 
-        final long stopPosition = descriptorDecoder.stopPosition();
+        final long stopPosition = recordingSummary.stopPosition;
         if (stopPosition != NULL_POSITION && replayPosition >= stopPosition)
         {
             final String errorMessage = "requested replay start position(=" + replayPosition +
@@ -135,7 +126,8 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         try
         {
             cursor = new RecordingFragmentReader(
-                descriptorDecoder,
+                archiveConductor.catalog(),
+                recordingSummary,
                 archiveDir,
                 replayPosition,
                 replayLength,

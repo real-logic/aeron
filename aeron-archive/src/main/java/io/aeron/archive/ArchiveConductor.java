@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import org.agrona.CloseHelper;
@@ -37,6 +38,7 @@ import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.CommonContext.SPY_PREFIX;
+import static io.aeron.archive.Catalog.NULL_POSITION;
 import static io.aeron.archive.codecs.ControlResponseCode.ERROR;
 
 abstract class ArchiveConductor extends SessionWorker<Session> implements AvailableImageHandler
@@ -303,6 +305,32 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
 
         catalog.recordingSummary(recordingId, recordingSummary);
+
+        final long startPosition = recordingSummary.startPosition;
+        if (position - startPosition < 0)
+        {
+            controlSession.sendResponse(
+                correlationId,
+                ControlResponseCode.ERROR,
+                "requested replay start position(=" + position +
+                    ") is before recording start position(=" + startPosition + ")",
+                controlResponseProxy);
+
+            return;
+        }
+
+        final long stopPosition = recordingSummary.stopPosition;
+        if (stopPosition != NULL_POSITION && position >= stopPosition)
+        {
+            controlSession.sendResponse(
+                correlationId,
+                ControlResponseCode.ERROR,
+                "requested replay start position(=" + position +
+                    ") must be before current highest recorded position(=" + stopPosition + ")",
+                controlResponseProxy);
+
+            return;
+        }
 
         final long newId = replaySessionId++;
         final ReplaySession replaySession = new ReplaySession(

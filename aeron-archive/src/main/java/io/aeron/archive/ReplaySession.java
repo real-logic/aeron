@@ -29,7 +29,6 @@ import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
 
-import static io.aeron.archive.Catalog.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.frameFlags;
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
 import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
@@ -95,33 +94,6 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         this.correlationId = correlationId;
         this.epochClock = epochClock;
 
-        final long startPosition = recordingSummary.startPosition;
-        final int mtuLength = recordingSummary.mtuLength;
-        final int termBufferLength = recordingSummary.termBufferLength;
-        final int initialTermId = recordingSummary.initialTermId;
-
-        if (replayPosition - startPosition < 0)
-        {
-            final String errorMessage = "requested replay start position(=" + replayPosition +
-                ") is before recording start position(=" + startPosition + ")";
-            closeOnError(new IllegalArgumentException(errorMessage), errorMessage);
-            cursor = null;
-            replayPublication = null;
-            return;
-        }
-
-        final long stopPosition = recordingSummary.stopPosition;
-        if (stopPosition != NULL_POSITION && replayPosition >= stopPosition)
-        {
-            final String errorMessage = "requested replay start position(=" + replayPosition +
-                ") must be before current highest recorded position(=" + stopPosition + ")";
-            closeOnError(new IllegalArgumentException(errorMessage), errorMessage);
-            cursor = null;
-            replayPublication = null;
-
-            return;
-        }
-
         RecordingFragmentReader cursor = null;
         try
         {
@@ -147,9 +119,9 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
                 replayChannel,
                 replayStreamId,
                 cursor.fromPosition(),
-                mtuLength,
-                initialTermId,
-                termBufferLength);
+                recordingSummary.mtuLength,
+                recordingSummary.initialTermId,
+                recordingSummary.termBufferLength);
         }
         catch (final Exception ex)
         {

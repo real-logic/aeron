@@ -93,7 +93,9 @@ class ControlResponseProxy
                 return true;
             }
 
-            if (result == Publication.NOT_CONNECTED || result == Publication.CLOSED)
+            if (result == Publication.NOT_CONNECTED ||
+                result == Publication.CLOSED ||
+                result == Publication.MAX_POSITION_EXCEEDED)
             {
                 throw new IllegalStateException("Response channel is down: " + controlPublication);
             }

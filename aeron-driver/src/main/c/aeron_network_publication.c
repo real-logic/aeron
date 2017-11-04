@@ -797,9 +797,11 @@ void aeron_network_publication_on_time_event(
     {
         case AERON_NETWORK_PUBLICATION_STATUS_ACTIVE:
         {
-            aeron_network_publication_check_for_blocked_publisher(
-                publication, now_ns, aeron_counter_get_volatile(publication->snd_pos_position.value_addr));
-
+            if (!publication->is_exclusive)
+            {
+                aeron_network_publication_check_for_blocked_publisher(
+                    publication, now_ns, aeron_counter_get_volatile(publication->snd_pos_position.value_addr));
+            }
             break;
         }
 
@@ -814,7 +816,6 @@ void aeron_network_publication_on_time_event(
                     publication->mapped_raw_log.term_buffers, publication->log_meta_data, sender_position))
                 {
                     aeron_counter_ordered_increment(publication->unblocked_publications_counter, 1);
-                    publication->conductor_fields.time_of_last_activity_ns = now_ns;
                     break;
                 }
 

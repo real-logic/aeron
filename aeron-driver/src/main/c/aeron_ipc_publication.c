@@ -220,21 +220,13 @@ void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, in
 void aeron_ipc_publication_on_time_event(aeron_ipc_publication_t *publication, int64_t now_ns, int64_t now_ms)
 {
     aeron_ipc_publication_check_for_blocked_publisher(publication, now_ns);
-
-    if (0 < publication->conductor_fields.subscribable.length)
-    {
-        AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 1);
-    }
-    else
-    {
-        AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 0);
-    }
 }
 
 void aeron_ipc_publication_incref(void *clientd)
 {
     aeron_ipc_publication_t *publication = (aeron_ipc_publication_t *)clientd;
 
+    AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 1);
     publication->conductor_fields.refcnt++;
 }
 
@@ -246,6 +238,7 @@ void aeron_ipc_publication_decref(void *clientd)
     if (0 == ref_count)
     {
         publication->conductor_fields.status = AERON_IPC_PUBLICATION_STATUS_INACTIVE;
+        AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 0);
         AERON_PUT_ORDERED(publication->log_meta_data->end_of_stream_position, aeron_ipc_publication_producer_position(publication));
     }
 }

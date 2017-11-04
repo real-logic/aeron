@@ -42,7 +42,7 @@ using namespace aeron::concurrent::status;
  *
  * The APIs used try claim and offer are non-blocking.
  *
- * <b>Note:</b> ExclusivePublication instances are NOT threadsafe for offer and try claim method but are for position.
+ * <b>Note:</b> ExclusivePublication instances are NOT threadsafe for offer and try claim methods but are for others.
  *
  * @see Aeron#addExclusivePublication(String, int)
  * @see ExclusiveBufferClaim

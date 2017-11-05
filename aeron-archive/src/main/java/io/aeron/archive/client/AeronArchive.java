@@ -646,7 +646,7 @@ public final class AeronArchive implements AutoCloseable
         public static final String MESSAGE_TIMEOUT_PROP_NAME = "aeron.archive.message.timeout";
 
         /**
-         * Default to 5 seconds in nanoseconds.
+         * Timeout when waiting on a message to be sent or received. Default to 5 seconds in nanoseconds.
          */
         public static final long MESSAGE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
@@ -656,7 +656,7 @@ public final class AeronArchive implements AutoCloseable
         public static final String CONTROL_CHANNEL_PROP_NAME = "aeron.archive.control.channel";
 
         /**
-         * Default to localhost.
+         * Channel for sending control messages to an archive. Default to localhost.
          */
         public static final String CONTROL_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8010";
 

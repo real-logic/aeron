@@ -21,8 +21,6 @@ package io.aeron.archive;
 public class RecordingSummary
 {
     public long recordingId;
-    public long startTimestamp;
-    public long stopTimestamp;
     public long startPosition;
     public long stopPosition;
     public int initialTermId;

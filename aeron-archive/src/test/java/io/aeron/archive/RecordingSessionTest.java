@@ -53,7 +53,6 @@ public class RecordingSessionTest
     private static final int MTU_LENGTH = 1024;
     private static final long START_POSITION = TERM_OFFSET;
     private static final int INITIAL_TERM_ID = 0;
-    public static final long START_TIMESTAMP = 0L;
     public static final FileChannel ARCHIVE_CHANNEL = null;
 
     private final RecordingEventsProxy recordingEventsProxy = mock(RecordingEventsProxy.class);
@@ -150,8 +149,6 @@ public class RecordingSessionTest
 
         final RecordingSummary recordingSummary = new RecordingSummary();
         recordingSummary.recordingId = RECORDING_ID;
-        recordingSummary.recordingId = RECORDING_ID;
-        recordingSummary.startTimestamp = START_TIMESTAMP;
         recordingSummary.startPosition = START_POSITION;
         recordingSummary.segmentFileLength = context.segmentFileLength();
         recordingSummary.initialTermId = INITIAL_TERM_ID;

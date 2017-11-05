@@ -364,8 +364,6 @@ class Catalog implements AutoCloseable
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
 
         summary.recordingId = recordingId;
-        summary.startTimestamp = fieldAccessBuffer.getLong(offset + startTimestampEncodingOffset(), LITTLE_ENDIAN);
-        summary.stopTimestamp = fieldAccessBuffer.getLong(offset + stopTimestampEncodingOffset(), LITTLE_ENDIAN);
         summary.startPosition = fieldAccessBuffer.getLong(offset + startPositionEncodingOffset(), LITTLE_ENDIAN);
         summary.stopPosition = fieldAccessBuffer.getLong(offset + stopPositionEncodingOffset(), LITTLE_ENDIAN);
         summary.initialTermId = fieldAccessBuffer.getInt(offset + initialTermIdEncodingOffset(), LITTLE_ENDIAN);

@@ -57,7 +57,6 @@ public class ReplaySessionTest
     private static final int FRAME_LENGTH = 1024;
     private static final int SESSION_ID = 1;
     private static final int STREAM_ID = 1;
-    private static final long START_TIMESTAMP = 0L;
 
     private final ExclusivePublication mockReplayPub = mock(ExclusivePublication.class);
     private final ControlSession mockControlSession = mock(ControlSession.class);
@@ -103,7 +102,6 @@ public class ReplaySessionTest
             .epochClock(epochClock);
 
         recordingSummary.recordingId = RECORDING_ID;
-        recordingSummary.startTimestamp = START_TIMESTAMP;
         recordingSummary.startPosition = START_POSITION;
         recordingSummary.segmentFileLength = context.segmentFileLength();
         recordingSummary.initialTermId = INITIAL_TERM_ID;
@@ -127,7 +125,6 @@ public class ReplaySessionTest
             recordFragment(writer, buffer, headerFwt, header, 3, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_PAD);
         }
 
-        recordingSummary.stopTimestamp = 128;
         recordingSummary.stopPosition = START_POSITION + 4 * FRAME_LENGTH;
     }
 

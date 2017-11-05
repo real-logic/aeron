@@ -853,7 +853,6 @@ public final class AeronArchive implements AutoCloseable
         private int controlResponseStreamId = Configuration.controlResponseStreamId();
         private int controlTermBufferLength = Configuration.controlTermBufferLength();
         private int controlMtuLength = Configuration.controlMtuLength();
-        private ArchiveProxy archiveProxy;
         private IdleStrategy idleStrategy;
         private Lock lock;
         private Aeron aeron;
@@ -874,15 +873,15 @@ public final class AeronArchive implements AutoCloseable
                 idleStrategy = new BackoffIdleStrategy(1, 10, 1, 1);
             }
 
-            final ChannelUri uri = ChannelUri.parse(controlRequestChannel);
-            uri.put(CommonContext.TERM_LENGTH_PARAM_NAME, Integer.toString(controlTermBufferLength));
-            uri.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(controlMtuLength));
-            controlRequestChannel = uri.toString();
-
             if (null == lock)
             {
                 lock = new ReentrantLock();
             }
+
+            final ChannelUri uri = ChannelUri.parse(controlRequestChannel);
+            uri.put(CommonContext.TERM_LENGTH_PARAM_NAME, Integer.toString(controlTermBufferLength));
+            uri.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(controlMtuLength));
+            controlRequestChannel = uri.toString();
         }
 
         /**

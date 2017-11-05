@@ -19,6 +19,8 @@ import io.aeron.Publication;
 import io.aeron.archive.codecs.*;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.SystemNanoClock;
 import org.agrona.concurrent.YieldingIdleStrategy;
 
 import static io.aeron.archive.client.AeronArchive.Configuration.MESSAGE_TIMEOUT_DEFAULT_NS;
@@ -36,6 +38,7 @@ public class ArchiveProxy
     private final long connectTimeoutNs;
     private final int maxRetryAttempts;
     private final IdleStrategy retryIdleStrategy;
+    private final NanoClock nanoClock;
 
     private final ExpandableDirectByteBuffer buffer = new ExpandableDirectByteBuffer(1024);
     private final Publication publication;
@@ -60,7 +63,12 @@ public class ArchiveProxy
      */
     public ArchiveProxy(final Publication publication)
     {
-        this(publication, new YieldingIdleStrategy(), MESSAGE_TIMEOUT_DEFAULT_NS, DEFAULT_MAX_RETRY_ATTEMPTS);
+        this(
+            publication,
+            new YieldingIdleStrategy(),
+            new SystemNanoClock(),
+            MESSAGE_TIMEOUT_DEFAULT_NS,
+            DEFAULT_MAX_RETRY_ATTEMPTS);
     }
 
     /**
@@ -68,17 +76,20 @@ public class ArchiveProxy
      *
      * @param publication       publication for sending control messages to an archive.
      * @param retryIdleStrategy for what should happen between retry attempts at offering messages.
+     * @param nanoClock         to be used for calculating checking deadlines.
      * @param connectTimeoutNs  for for connection requests.
      * @param maxRetryAttempts  for offering control messages before giving up.
      */
     public ArchiveProxy(
         final Publication publication,
         final IdleStrategy retryIdleStrategy,
+        final NanoClock nanoClock,
         final long connectTimeoutNs,
         final int maxRetryAttempts)
     {
         this.publication = publication;
         this.retryIdleStrategy = retryIdleStrategy;
+        this.nanoClock = nanoClock;
         this.connectTimeoutNs = connectTimeoutNs;
         this.maxRetryAttempts = maxRetryAttempts;
     }
@@ -306,7 +317,7 @@ public class ArchiveProxy
     {
         retryIdleStrategy.reset();
 
-        final long timeoutNs = System.nanoTime() + connectTimeoutNs;
+        final long deadlineNs = nanoClock.nanoTime() + connectTimeoutNs;
         while (true)
         {
             final long result;
@@ -320,7 +331,7 @@ public class ArchiveProxy
                 throw new IllegalStateException("Publication failed due to max position being reached");
             }
 
-            if (System.nanoTime() > timeoutNs)
+            if (nanoClock.nanoTime() > deadlineNs)
             {
                 return false;
             }

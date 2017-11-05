@@ -24,6 +24,7 @@ import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpLock;
 
 import java.util.concurrent.TimeUnit;
@@ -60,6 +61,7 @@ public final class AeronArchive implements AutoCloseable
     private final IdleStrategy idleStrategy;
     private final ControlResponsePoller controlResponsePoller;
     private final Lock lock;
+    private final NanoClock nanoClock;
 
     private AeronArchive(final Context ctx)
     {
@@ -74,12 +76,14 @@ public final class AeronArchive implements AutoCloseable
             idleStrategy = ctx.idleStrategy();
             messageTimeoutNs = ctx.messageTimeoutNs();
             lock = ctx.lock();
+            nanoClock = aeron.context().nanoClock();
 
             subscription = aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId());
             controlResponsePoller = new ControlResponsePoller(subscription, RESPONSE_FRAGMENT_LIMIT);
 
             publication = aeron.addExclusivePublication(ctx.controlRequestChannel(), ctx.controlRequestStreamId());
-            archiveProxy = new ArchiveProxy(publication, idleStrategy, messageTimeoutNs, DEFAULT_MAX_RETRY_ATTEMPTS);
+            archiveProxy = new ArchiveProxy(
+                publication, idleStrategy, nanoClock, messageTimeoutNs, DEFAULT_MAX_RETRY_ATTEMPTS);
 
             final long correlationId = aeron.nextCorrelationId();
             if (!archiveProxy.connect(ctx.controlResponseChannel(), ctx.controlResponseStreamId(), correlationId))
@@ -474,7 +478,7 @@ public final class AeronArchive implements AutoCloseable
 
     private long pollForConnected(final long expectedCorrelationId)
     {
-        final long deadline = System.nanoTime() + messageTimeoutNs;
+        final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
         final ControlResponsePoller poller = controlResponsePoller;
         idleStrategy.reset();
 
@@ -482,7 +486,7 @@ public final class AeronArchive implements AutoCloseable
         {
             while (poller.poll() <= 0 && !poller.isPollComplete())
             {
-                if (System.nanoTime() > deadline)
+                if (nanoClock.nanoTime() > deadlineNs)
                 {
                     throw new TimeoutException("Waiting for response: correlationId=" + expectedCorrelationId);
                 }
@@ -517,7 +521,7 @@ public final class AeronArchive implements AutoCloseable
 
     private void pollForResponse(final long expectedCorrelationId)
     {
-        final long deadline = System.nanoTime() + messageTimeoutNs;
+        final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
         final ControlResponsePoller poller = controlResponsePoller;
         idleStrategy.reset();
 
@@ -530,7 +534,7 @@ public final class AeronArchive implements AutoCloseable
                     throw new IllegalStateException("Subscription to archive is not connected");
                 }
 
-                if (System.nanoTime() > deadline)
+                if (nanoClock.nanoTime() > deadlineNs)
                 {
                     throw new TimeoutException("Waiting for response: correlationId=" + expectedCorrelationId);
                 }
@@ -567,7 +571,7 @@ public final class AeronArchive implements AutoCloseable
         final long expectedCorrelationId, final int recordCount, final RecordingDescriptorConsumer consumer)
     {
         int count = 0;
-        final long deadline = System.nanoTime() + messageTimeoutNs;
+        final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
         final ControlResponsePoller poller = controlResponsePoller;
         idleStrategy.reset();
 
@@ -580,7 +584,7 @@ public final class AeronArchive implements AutoCloseable
                     throw new IllegalStateException("Subscription to archive is not connected");
                 }
 
-                if (System.nanoTime() > deadline)
+                if (nanoClock.nanoTime() > deadlineNs)
                 {
                     throw new TimeoutException(
                         "Waiting for recording descriptors: correlationId=" + expectedCorrelationId);

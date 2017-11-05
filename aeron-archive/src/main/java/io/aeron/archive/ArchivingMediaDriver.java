@@ -23,7 +23,7 @@ import org.agrona.concurrent.ShutdownSignalBarrier;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 /**
- * Archiving {@link MediaDriver}.
+ * Archiving media driver which is an aggregate of a {@link MediaDriver} and an {@link Archive}.
  */
 public final class ArchivingMediaDriver implements AutoCloseable
 {
@@ -34,32 +34,6 @@ public final class ArchivingMediaDriver implements AutoCloseable
     {
         this.driver = driver;
         this.archive = archive;
-    }
-
-    /**
-     * Get the launched {@link Archive}.
-     *
-     * @return the launched {@link Archive}.
-     */
-    public Archive archive()
-    {
-        return archive;
-    }
-
-    /**
-     * Get the launched {@link MediaDriver}.
-     *
-     * @return the launched {@link MediaDriver}.
-     */
-    public MediaDriver mediaDriver()
-    {
-        return driver;
-    }
-
-    public void close()
-    {
-        archive.close();
-        driver.close();
     }
 
     /**
@@ -80,7 +54,8 @@ public final class ArchivingMediaDriver implements AutoCloseable
     }
 
     /**
-     * Launch a new {@link ArchivingMediaDriver} with default contexts.
+     * Launch a new {@link ArchivingMediaDriver} with defaults for {@link MediaDriver.Context} and
+     * {@link Archive.Context}.
      *
      * @return a new {@link ArchivingMediaDriver} with default contexts.
      */
@@ -112,5 +87,31 @@ public final class ArchivingMediaDriver implements AutoCloseable
             .errorHandler(driver.context().errorHandler()));
 
         return new ArchivingMediaDriver(driver, archive);
+    }
+
+    /**
+     * Get the launched {@link Archive}.
+     *
+     * @return the launched {@link Archive}.
+     */
+    public Archive archive()
+    {
+        return archive;
+    }
+
+    /**
+     * Get the launched {@link MediaDriver}.
+     *
+     * @return the launched {@link MediaDriver}.
+     */
+    public MediaDriver mediaDriver()
+    {
+        return driver;
+    }
+
+    public void close()
+    {
+        archive.close();
+        driver.close();
     }
 }

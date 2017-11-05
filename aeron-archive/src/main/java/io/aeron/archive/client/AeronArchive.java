@@ -31,6 +31,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static io.aeron.archive.client.ControlResponseAdapter.dispatchDescriptor;
+import static io.aeron.archive.codecs.ControlResponseCode.OK;
 import static io.aeron.archive.codecs.ControlResponseCode.RECORDING_UNKNOWN;
 import static org.agrona.SystemUtil.getDurationInNanos;
 import static org.agrona.SystemUtil.getSizeAsInt;
@@ -534,28 +535,20 @@ public final class AeronArchive implements AutoCloseable
 
             checkForError(poller, expectedCorrelationId);
 
-            if (poller.templateId() == ControlResponseDecoder.TEMPLATE_ID)
-            {
-                final ControlResponseCode code = poller.controlResponseDecoder().code();
-                switch (code)
-                {
-                    case OK:
-                        if (poller.correlationId() == expectedCorrelationId)
-                        {
-                            return;
-                        }
-                        else
-                        {
-                            break;
-                        }
-
-                    default:
-                        throw new IllegalStateException("Unexpected response code: " + code);
-                }
-            }
-            else
+            if (poller.templateId() != ControlResponseDecoder.TEMPLATE_ID)
             {
                 throw new IllegalStateException("Unknown response type: templateId=" + poller.templateId());
+            }
+
+            final ControlResponseCode code = poller.controlResponseDecoder().code();
+            if (OK != code)
+            {
+                throw new IllegalStateException("Unexpected response code: " + code);
+            }
+
+            if (poller.correlationId() == expectedCorrelationId)
+            {
+                return;
             }
         }
     }
@@ -736,6 +729,7 @@ public final class AeronArchive implements AutoCloseable
          * The timeout in nanoseconds to wait for a message.
          *
          * @return timeout in nanoseconds to wait for a message.
+         * @see #MESSAGE_TIMEOUT_PROP_NAME
          */
         public static long messageTimeoutNs()
         {
@@ -746,6 +740,7 @@ public final class AeronArchive implements AutoCloseable
          * Term buffer length to be used for control request and response streams.
          *
          * @return term buffer length to be used for control request and response streams.
+         * @see #CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME
          */
         public static int controlTermBufferLength()
         {
@@ -756,6 +751,7 @@ public final class AeronArchive implements AutoCloseable
          * MTU length to be used for control request and response streams.
          *
          * @return MTU length to be used for control request and response streams.
+         * @see #CONTROL_MTU_LENGTH_PARAM_NAME
          */
         public static int controlMtuLength()
         {
@@ -776,10 +772,10 @@ public final class AeronArchive implements AutoCloseable
 
         /**
          * The value {@link #CONTROL_STREAM_ID_DEFAULT} or system property
-         * {@link #CONTROL_STREAM_ID_DEFAULT} if set.
+         * {@link #CONTROL_STREAM_ID_PROP_NAME} if set.
          *
          * @return {@link #CONTROL_STREAM_ID_DEFAULT} or system property
-         * {@link #CONTROL_STREAM_ID_DEFAULT} if set.
+         * {@link #CONTROL_STREAM_ID_PROP_NAME} if set.
          */
         public static int controlStreamId()
         {
@@ -788,10 +784,10 @@ public final class AeronArchive implements AutoCloseable
 
         /**
          * The value {@link #CONTROL_RESPONSE_CHANNEL_DEFAULT} or system property
-         * {@link #CONTROL_RESPONSE_CHANNEL_DEFAULT} if set.
+         * {@link #CONTROL_RESPONSE_CHANNEL_PROP_NAME} if set.
          *
          * @return {@link #CONTROL_RESPONSE_CHANNEL_DEFAULT} or system property
-         * {@link #CONTROL_RESPONSE_CHANNEL_DEFAULT} if set.
+         * {@link #CONTROL_RESPONSE_CHANNEL_PROP_NAME} if set.
          */
         public static String controlResponseChannel()
         {
@@ -847,10 +843,10 @@ public final class AeronArchive implements AutoCloseable
         private int controlResponseStreamId = Configuration.controlResponseStreamId();
         private int controlTermBufferLength = Configuration.controlTermBufferLength();
         private int controlMtuLength = Configuration.controlMtuLength();
-        private Aeron aeron;
         private ArchiveProxy archiveProxy;
         private IdleStrategy idleStrategy;
         private Lock lock;
+        private Aeron aeron;
         private boolean ownsAeronClient = true;
 
         /**
@@ -868,10 +864,10 @@ public final class AeronArchive implements AutoCloseable
                 idleStrategy = new BackoffIdleStrategy(1, 10, 1, 1);
             }
 
-            final ChannelUri controlChannel = ChannelUri.parse(controlRequestChannel);
-            controlChannel.put(CommonContext.TERM_LENGTH_PARAM_NAME, Integer.toString(controlTermBufferLength));
-            controlChannel.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(controlMtuLength));
-            controlRequestChannel = controlChannel.toString();
+            final ChannelUri uri = ChannelUri.parse(controlRequestChannel);
+            uri.put(CommonContext.TERM_LENGTH_PARAM_NAME, Integer.toString(controlTermBufferLength));
+            uri.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(controlMtuLength));
+            controlRequestChannel = uri.toString();
 
             if (null == archiveProxy)
             {
@@ -1057,34 +1053,6 @@ public final class AeronArchive implements AutoCloseable
         }
 
         /**
-         * {@link Aeron} client for communicating with the local Media Driver.
-         * <p>
-         * This client will be closed when the {@link #close()} method is called if {@link #ownsAeronClient()} is true.
-         *
-         * @param aeron client for communicating with the local Media Driver.
-         * @return this for a fluent API.
-         * @see Aeron#connect()
-         */
-        public Context aeron(final Aeron aeron)
-        {
-            this.aeron = aeron;
-            return this;
-        }
-
-        /**
-         * {@link Aeron} client for communicating with the local Media Driver.
-         * <p>
-         * If not provided then a default will be established during {@link #conclude()} by calling
-         * {@link Aeron#connect()}.
-         *
-         * @return client for communicating with the local Media Driver.
-         */
-        public Aeron aeron()
-        {
-            return aeron;
-        }
-
-        /**
          * Set the {@link ArchiveProxy} for sending control messages to an archive. If one is not provided then one
          * will be created.
          *
@@ -1127,6 +1095,35 @@ public final class AeronArchive implements AutoCloseable
         public IdleStrategy idleStrategy()
         {
             return idleStrategy;
+        }
+
+        /**
+         * {@link Aeron} client for communicating with the local Media Driver.
+         * <p>
+         * This client will be closed when the {@link AeronArchive#close()} or {@link #close()} methods are called if
+         * {@link #ownsAeronClient()} is true.
+         *
+         * @param aeron client for communicating with the local Media Driver.
+         * @return this for a fluent API.
+         * @see Aeron#connect()
+         */
+        public Context aeron(final Aeron aeron)
+        {
+            this.aeron = aeron;
+            return this;
+        }
+
+        /**
+         * {@link Aeron} client for communicating with the local Media Driver.
+         * <p>
+         * If not provided then a default will be established during {@link #conclude()} by calling
+         * {@link Aeron#connect()}.
+         *
+         * @return client for communicating with the local Media Driver.
+         */
+        public Aeron aeron()
+        {
+            return aeron;
         }
 
         /**

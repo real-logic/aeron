@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static io.aeron.archive.client.ArchiveProxy.DEFAULT_MAX_RETRY_ATTEMPTS;
 import static io.aeron.archive.client.ControlResponseAdapter.dispatchDescriptor;
 import static io.aeron.archive.codecs.ControlResponseCode.ERROR;
 import static io.aeron.archive.codecs.ControlResponseCode.OK;
@@ -63,6 +64,7 @@ public final class AeronArchive implements AutoCloseable
     private AeronArchive(final Context ctx)
     {
         Subscription subscription = null;
+        Publication publication = null;
         try
         {
             ctx.conclude();
@@ -76,7 +78,9 @@ public final class AeronArchive implements AutoCloseable
             subscription = aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId());
             controlResponsePoller = new ControlResponsePoller(subscription, RESPONSE_FRAGMENT_LIMIT);
 
-            archiveProxy = ctx.archiveProxy();
+            publication = aeron.addExclusivePublication(ctx.controlRequestChannel(), ctx.controlRequestStreamId());
+            archiveProxy = new ArchiveProxy(publication, idleStrategy, messageTimeoutNs, DEFAULT_MAX_RETRY_ATTEMPTS);
+
             final long correlationId = aeron.nextCorrelationId();
             if (!archiveProxy.connect(ctx.controlResponseChannel(), ctx.controlResponseStreamId(), correlationId))
             {
@@ -90,7 +94,7 @@ public final class AeronArchive implements AutoCloseable
             if (!ctx.ownsAeronClient())
             {
                 CloseHelper.quietClose(subscription);
-                CloseHelper.quietClose(ctx.archiveProxy.publication());
+                CloseHelper.quietClose(publication);
             }
 
             ctx.close();
@@ -875,15 +879,6 @@ public final class AeronArchive implements AutoCloseable
             uri.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(controlMtuLength));
             controlRequestChannel = uri.toString();
 
-            if (null == archiveProxy)
-            {
-                archiveProxy = new ArchiveProxy(
-                    aeron.addExclusivePublication(controlRequestChannel, controlRequestStreamId),
-                    idleStrategy,
-                    messageTimeoutNs,
-                    ArchiveProxy.DEFAULT_MAX_RETRY_ATTEMPTS);
-            }
-
             if (null == lock)
             {
                 lock = new ReentrantLock();
@@ -1056,29 +1051,6 @@ public final class AeronArchive implements AutoCloseable
         public int controlMtuLength()
         {
             return controlMtuLength;
-        }
-
-        /**
-         * Set the {@link ArchiveProxy} for sending control messages to an archive. If one is not provided then one
-         * will be created.
-         *
-         * @param archiveProxy for sending control messages to an archive.
-         * @return this for a fluent API.
-         */
-        public Context archiveProxy(final ArchiveProxy archiveProxy)
-        {
-            this.archiveProxy = archiveProxy;
-            return this;
-        }
-
-        /**
-         * Get the {@link ArchiveProxy} for sending control messages to an archive.
-         *
-         * @return the {@link ArchiveProxy} for sending control messages to an archive.
-         */
-        public ArchiveProxy archiveProxy()
-        {
-            return archiveProxy;
         }
 
         /**

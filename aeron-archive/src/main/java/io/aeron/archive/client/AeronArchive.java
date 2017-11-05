@@ -42,7 +42,8 @@ import static org.agrona.SystemUtil.getSizeAsInt;
  * The underlying components such as the {@link ArchiveProxy} and the {@link ControlResponsePoller} may be used
  * directly if a more asynchronous pattern of interaction is required.
  * <p>
- * Note: This class is threadsafe but the lock can be elided if single threaded access via {@link Context#lock(Lock)}.
+ * Note: This class is threadsafe but the lock can be elided for single threaded access via {@link Context#lock(Lock)}
+ * being set to {@link NoOpLock}.
  */
 public final class AeronArchive implements AutoCloseable
 {
@@ -57,47 +58,40 @@ public final class AeronArchive implements AutoCloseable
     private final ControlResponsePoller controlResponsePoller;
     private final Lock lock;
 
-    private AeronArchive(final Context context)
+    private AeronArchive(final Context ctx)
     {
-        ControlResponsePoller poller = null;
+        Subscription subscription = null;
         try
         {
-            context.conclude();
+            ctx.conclude();
 
-            this.context = context;
-            aeron = context.aeron();
-            idleStrategy = context.idleStrategy();
-            messageTimeoutNs = context.messageTimeoutNs();
-            lock = context.lock();
+            context = ctx;
+            aeron = ctx.aeron();
+            idleStrategy = ctx.idleStrategy();
+            messageTimeoutNs = ctx.messageTimeoutNs();
+            lock = ctx.lock();
 
-            poller = new ControlResponsePoller(
-                aeron.addSubscription(context.controlResponseChannel(), context.controlResponseStreamId()),
-                RESPONSE_FRAGMENT_LIMIT);
-            controlResponsePoller = poller;
+            subscription = aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId());
+            controlResponsePoller = new ControlResponsePoller(subscription, RESPONSE_FRAGMENT_LIMIT);
 
-            archiveProxy = context.archiveProxy();
+            archiveProxy = ctx.archiveProxy();
             final long correlationId = aeron.nextCorrelationId();
-            if (!archiveProxy.connect(
-                context.controlResponseChannel(), context.controlResponseStreamId(), correlationId))
+            if (!archiveProxy.connect(ctx.controlResponseChannel(), ctx.controlResponseStreamId(), correlationId))
             {
-                throw new IllegalStateException("Cannot connect to aeron archive: " + context.controlRequestChannel());
+                throw new IllegalStateException("Cannot connect to aeron archive: " + ctx.controlRequestChannel());
             }
 
             controlSessionId = pollForConnected(correlationId);
         }
         catch (final Exception ex)
         {
-            if (!context.ownsAeronClient())
+            if (!ctx.ownsAeronClient())
             {
-                if (null != poller)
-                {
-                    CloseHelper.quietClose(poller.subscription());
-                }
-
-                CloseHelper.quietClose(context.archiveProxy.publication());
+                CloseHelper.quietClose(subscription);
+                CloseHelper.quietClose(ctx.archiveProxy.publication());
             }
 
-            context.close();
+            ctx.close();
 
             throw ex;
         }
@@ -672,7 +666,7 @@ public final class AeronArchive implements AutoCloseable
         public static final String CONTROL_STREAM_ID_PROP_NAME = "aeron.archive.control.stream.id";
 
         /**
-         * Default to stream id of 0.
+         * Stream id within a channel for sending control messages to an archive. Default to stream id of 0.
          */
         public static final int CONTROL_STREAM_ID_DEFAULT = 0;
 
@@ -682,7 +676,7 @@ public final class AeronArchive implements AutoCloseable
         public static final String CONTROL_RESPONSE_CHANNEL_PROP_NAME = "aeron.archive.control.response.channel";
 
         /**
-         * Default to localhost.
+         * Channel for receiving control response messages from an archive. Default to localhost.
          */
         public static final String CONTROL_RESPONSE_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8020";
 
@@ -692,27 +686,29 @@ public final class AeronArchive implements AutoCloseable
         public static final String CONTROL_RESPONSE_STREAM_ID_PROP_NAME = "aeron.archive.control.response.stream.id";
 
         /**
-         * Default to stream id of 0.
+         * Stream id within a channel for receiving control messages from an archive. Default to stream id of 0.
          */
         public static final int CONTROL_RESPONSE_STREAM_ID_DEFAULT = 0;
 
         /**
-         * Channel for receiving events related to the progress of recordings from an archive.
+         * Channel for receiving progress events of recordings from an archive.
          */
         public static final String RECORDING_EVENTS_CHANNEL_PROP_NAME = "aeron.archive.recording.events.channel";
 
         /**
-         * Defaults to localhost.
+         * Channel for receiving progress events of recordings from an archive. Defaults to localhost.
+         * For production it is recommended that multicast or dynamic multi-destination-cast (MDC) is used to allow
+         * for dynamic subscribers.
          */
         public static final String RECORDING_EVENTS_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8011";
 
         /**
-         * Stream id within a channel for receiving events related to the progress of recordings from an archive.
+         * Stream id within a channel for receiving progress of recordings from an archive.
          */
         public static final String RECORDING_EVENTS_STREAM_ID_PROP_NAME = "aeron.archive.recording.events.stream.id";
 
         /**
-         * Default to a stream id of 0.
+         * Stream id within a channel for receiving progress of recordings from an archive. Default to a stream id of 0.
          */
         public static final int RECORDING_EVENTS_STREAM_ID_DEFAULT = 0;
 
@@ -897,6 +893,7 @@ public final class AeronArchive implements AutoCloseable
          *
          * @param messageTimeoutNs to wait for sending or receiving a message.
          * @return this for a fluent API.
+         * @see Configuration#MESSAGE_TIMEOUT_PROP_NAME
          */
         public Context messageTimeoutNs(final long messageTimeoutNs)
         {
@@ -908,6 +905,7 @@ public final class AeronArchive implements AutoCloseable
          * The message timeout in nanoseconds to wait for sending or receiving a message.
          *
          * @return the message timeout in nanoseconds to wait for sending or receiving a message.
+         * @see Configuration#MESSAGE_TIMEOUT_PROP_NAME
          */
         public long messageTimeoutNs()
         {
@@ -919,6 +917,7 @@ public final class AeronArchive implements AutoCloseable
          *
          * @param channel parameter for the control request channel.
          * @return this for a fluent API.
+         * @see Configuration#CONTROL_CHANNEL_PROP_NAME
          */
         public Context controlRequestChannel(final String channel)
         {
@@ -930,6 +929,7 @@ public final class AeronArchive implements AutoCloseable
          * Get the channel parameter for the control request channel.
          *
          * @return the channel parameter for the control request channel.
+         * @see Configuration#CONTROL_CHANNEL_PROP_NAME
          */
         public String controlRequestChannel()
         {
@@ -941,6 +941,7 @@ public final class AeronArchive implements AutoCloseable
          *
          * @param streamId for the control request channel.
          * @return this for a fluent API
+         * @see Configuration#CONTROL_STREAM_ID_PROP_NAME
          */
         public Context controlRequestStreamId(final int streamId)
         {
@@ -952,6 +953,7 @@ public final class AeronArchive implements AutoCloseable
          * Get the stream id for the control request channel.
          *
          * @return the stream id for the control request channel.
+         * @see Configuration#CONTROL_STREAM_ID_PROP_NAME
          */
         public int controlRequestStreamId()
         {
@@ -963,6 +965,7 @@ public final class AeronArchive implements AutoCloseable
          *
          * @param channel parameter for the control response channel.
          * @return this for a fluent API.
+         * @see Configuration#CONTROL_RESPONSE_CHANNEL_PROP_NAME
          */
         public Context controlResponseChannel(final String channel)
         {
@@ -974,6 +977,7 @@ public final class AeronArchive implements AutoCloseable
          * Get the channel parameter for the control response channel.
          *
          * @return the channel parameter for the control response channel.
+         * @see Configuration#CONTROL_RESPONSE_CHANNEL_PROP_NAME
          */
         public String controlResponseChannel()
         {
@@ -985,6 +989,7 @@ public final class AeronArchive implements AutoCloseable
          *
          * @param streamId for the control response channel.
          * @return this for a fluent API
+         * @see Configuration#CONTROL_RESPONSE_STREAM_ID_PROP_NAME
          */
         public Context controlResponseStreamId(final int streamId)
         {
@@ -996,6 +1001,7 @@ public final class AeronArchive implements AutoCloseable
          * Get the stream id for the control response channel.
          *
          * @return the stream id for the control response channel.
+         * @see Configuration#CONTROL_RESPONSE_STREAM_ID_PROP_NAME
          */
         public int controlResponseStreamId()
         {
@@ -1007,6 +1013,7 @@ public final class AeronArchive implements AutoCloseable
          *
          * @param controlTermBufferLength for the control stream.
          * @return this for a fluent API.
+         * @see Configuration#CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME
          */
         public Context controlTermBufferLength(final int controlTermBufferLength)
         {
@@ -1018,6 +1025,7 @@ public final class AeronArchive implements AutoCloseable
          * Get the term buffer length for the control steam.
          *
          * @return the term buffer length for the control steam.
+         * @see Configuration#CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME
          */
         public int controlTermBufferLength()
         {
@@ -1029,6 +1037,7 @@ public final class AeronArchive implements AutoCloseable
          *
          * @param controlMtuLength for the control stream.
          * @return this for a fluent API.
+         * @see Configuration#CONTROL_MTU_LENGTH_PARAM_NAME
          */
         public Context controlMtuLength(final int controlMtuLength)
         {
@@ -1040,6 +1049,7 @@ public final class AeronArchive implements AutoCloseable
          * Get the MTU length for the control steam.
          *
          * @return the MTU length for the control steam.
+         * @see Configuration#CONTROL_MTU_LENGTH_PARAM_NAME
          */
         public int controlMtuLength()
         {
@@ -1053,6 +1063,7 @@ public final class AeronArchive implements AutoCloseable
          *
          * @param aeron client for communicating with the local Media Driver.
          * @return this for a fluent API.
+         * @see Aeron#connect()
          */
         public Context aeron(final Aeron aeron)
         {

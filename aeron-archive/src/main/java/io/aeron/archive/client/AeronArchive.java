@@ -656,7 +656,7 @@ public final class AeronArchive implements AutoCloseable
         public static final String CONTROL_CHANNEL_PROP_NAME = "aeron.archive.control.channel";
 
         /**
-         * Channel for sending control messages to an archive. Default to localhost.
+         * Channel for sending control messages to an archive. Default to localhost:8010.
          */
         public static final String CONTROL_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8010";
 
@@ -676,7 +676,7 @@ public final class AeronArchive implements AutoCloseable
         public static final String CONTROL_RESPONSE_CHANNEL_PROP_NAME = "aeron.archive.control.response.channel";
 
         /**
-         * Channel for receiving control response messages from an archive. Default to localhost.
+         * Channel for receiving control response messages from an archive. Default to localhost:8020.
          */
         public static final String CONTROL_RESPONSE_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8020";
 
@@ -696,7 +696,7 @@ public final class AeronArchive implements AutoCloseable
         public static final String RECORDING_EVENTS_CHANNEL_PROP_NAME = "aeron.archive.recording.events.channel";
 
         /**
-         * Channel for receiving progress events of recordings from an archive. Defaults to localhost.
+         * Channel for receiving progress events of recordings from an archive. Defaults to localhost:8011.
          * For production it is recommended that multicast or dynamic multi-destination-cast (MDC) is used to allow
          * for dynamic subscribers.
          */

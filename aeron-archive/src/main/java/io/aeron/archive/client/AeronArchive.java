@@ -31,6 +31,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static io.aeron.archive.client.ControlResponseAdapter.dispatchDescriptor;
+import static io.aeron.archive.codecs.ControlResponseCode.ERROR;
 import static io.aeron.archive.codecs.ControlResponseCode.OK;
 import static io.aeron.archive.codecs.ControlResponseCode.RECORDING_UNKNOWN;
 import static org.agrona.SystemUtil.getDurationInNanos;
@@ -498,6 +499,11 @@ public final class AeronArchive implements AutoCloseable
             final ControlResponseCode code = poller.controlResponseDecoder().code();
             if (code != ControlResponseCode.OK)
             {
+                if (code == ERROR)
+                {
+                    throw new IllegalStateException("Error: " + poller.controlResponseDecoder().errorMessage());
+                }
+
                 throw new IllegalStateException("Unexpected response: code=" + code);
             }
 

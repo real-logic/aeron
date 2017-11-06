@@ -46,10 +46,7 @@ final class MultiDestination
         this.destinationTimeoutNs = 0;
     }
 
-    int send(
-        final DatagramChannel sendDatagramChannel,
-        final ByteBuffer buffer,
-        final SendChannelEndpoint sendChannelEndpoint)
+    int send(final DatagramChannel datagramChannel, final ByteBuffer buffer, final SendChannelEndpoint channelEndpoint)
     {
         final ArrayList<Destination> destinations = this.destinations;
         final long nowNs = nanoClock.nanoTime();
@@ -70,10 +67,10 @@ final class MultiDestination
                 int bytesSent = 0;
                 try
                 {
-                    sendChannelEndpoint.presend(buffer, destination.address);
+                    channelEndpoint.presend(buffer, destination.address);
 
                     buffer.position(position);
-                    bytesSent = sendDatagramChannel.send(buffer, destination.address);
+                    bytesSent = datagramChannel.send(buffer, destination.address);
                 }
                 catch (final PortUnreachableException | ClosedChannelException ignore)
                 {

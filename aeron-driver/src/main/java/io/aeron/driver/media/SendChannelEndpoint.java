@@ -48,7 +48,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     private int refCount = 0;
     private final BiInt2ObjectMap<NetworkPublication> publicationBySessionAndStreamId = new BiInt2ObjectMap<>();
-    private final UdpDestinationTracker multiDestinationTracker;
+    private final MultiDestination multiDestination;
     private final AtomicCounter statusMessagesReceived;
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusIndicator;
@@ -68,21 +68,21 @@ public class SendChannelEndpoint extends UdpChannelTransport
         statusMessagesReceived = context.systemCounters().get(STATUS_MESSAGES_RECEIVED);
         this.statusIndicator = statusIndicator;
 
-        UdpDestinationTracker destinationTracker = null;
+        MultiDestination multiDestination = null;
         if (udpChannel.hasExplicitControl())
         {
             final String mode = udpChannel.channelUri().get(CommonContext.MDC_CONTROL_MODE_PARAM_NAME);
             if (CommonContext.MDC_CONTROL_MODE_MANUAL.equals(mode))
             {
-                destinationTracker = new UdpDestinationTracker(this::presend);
+                multiDestination = new MultiDestination(this);
             }
             else if (null == mode || CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(mode))
             {
-                destinationTracker = new UdpDestinationTracker(context.nanoClock(), this::presend, DESTINATION_TIMEOUT);
+                multiDestination = new MultiDestination(context.nanoClock(), this, DESTINATION_TIMEOUT);
             }
         }
 
-        multiDestinationTracker = destinationTracker;
+        this.multiDestination = multiDestination;
     }
 
     public int decRef()
@@ -167,7 +167,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
         int byteSent = 0;
 
-        if (null == multiDestinationTracker)
+        if (null == multiDestination)
         {
             try
             {
@@ -184,7 +184,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
         else
         {
-            byteSent = multiDestinationTracker.sendToDestinations(sendDatagramChannel, buffer);
+            byteSent = multiDestination.send(sendDatagramChannel, buffer);
         }
 
         return byteSent;
@@ -206,9 +206,9 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
         final NetworkPublication publication = publicationBySessionAndStreamId.get(msg.sessionId(), msg.streamId());
 
-        if (null != multiDestinationTracker)
+        if (null != multiDestination)
         {
-            multiDestinationTracker.destinationActivity(msg, srcAddress);
+            multiDestination.onStatusMessage(msg, srcAddress);
 
             if (0 == msg.sessionId() && 0 == msg.streamId() && SEND_SETUP_FLAG == (msg.flags() & SEND_SETUP_FLAG))
             {
@@ -238,8 +238,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         final int length,
         final InetSocketAddress srcAddress)
     {
-        final NetworkPublication publication = publicationBySessionAndStreamId.get(
-            msg.sessionId(), msg.streamId());
+        final NetworkPublication publication = publicationBySessionAndStreamId.get(msg.sessionId(), msg.streamId());
 
         if (null != publication)
         {
@@ -264,7 +263,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public void validateAllowsManualControl()
     {
-        if (null == multiDestinationTracker || !multiDestinationTracker.isManualControlMode())
+        if (null == multiDestination || !multiDestination.isManualControlMode())
         {
             throw new IllegalArgumentException("Control channel does not allow manual control");
         }
@@ -272,11 +271,11 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public void addDestination(final InetSocketAddress address)
     {
-        multiDestinationTracker.addDestination(address);
+        multiDestination.addDestination(address);
     }
 
     public void removeDestination(final InetSocketAddress address)
     {
-        multiDestinationTracker.removeDestination(address);
+        multiDestination.removeDestination(address);
     }
 }

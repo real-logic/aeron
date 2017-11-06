@@ -28,59 +28,52 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
 
-public class UdpDestinationTracker
+public class MultiDestination
 {
-    public interface PreSendFunction
-    {
-        void presend(ByteBuffer buffer, InetSocketAddress address);
-    }
-
-    private final ArrayList<Destination> destinationList = new ArrayList<>();
+    private final ArrayList<Destination> destinations = new ArrayList<>();
     private final NanoClock nanoClock;
-    private final PreSendFunction preSendFunction;
+    private final SendChannelEndpoint sendChannelEndpoint;
     private final long destinationTimeoutNs;
 
-    public UdpDestinationTracker(
-        final NanoClock nanoClock,
-        final PreSendFunction preSendFunction,
-        final long timeout)
+    public MultiDestination(
+        final NanoClock nanoClock, final SendChannelEndpoint sendChannelEndpoint, final long timeout)
     {
         this.nanoClock = nanoClock;
-        this.preSendFunction = preSendFunction;
+        this.sendChannelEndpoint = sendChannelEndpoint;
         this.destinationTimeoutNs = timeout;
     }
 
-    public UdpDestinationTracker(final PreSendFunction preSendFunction)
+    public MultiDestination(final SendChannelEndpoint sendChannelEndpoint)
     {
         this.nanoClock = () -> 0;
-        this.preSendFunction = preSendFunction;
+        this.sendChannelEndpoint = sendChannelEndpoint;
         this.destinationTimeoutNs = 0;
     }
 
-    public int sendToDestinations(final DatagramChannel sendDatagramChannel, final ByteBuffer buffer)
+    public int send(final DatagramChannel sendDatagramChannel, final ByteBuffer buffer)
     {
-        final ArrayList<Destination> destinationList = this.destinationList;
+        final ArrayList<Destination> destinations = this.destinations;
         final long nowNs = nanoClock.nanoTime();
-        int minByteSent = buffer.remaining();
+        int minBytesSent = buffer.remaining();
 
-        for (int lastIndex = destinationList.size() - 1, i = lastIndex; i >= 0; i--)
+        for (int lastIndex = destinations.size() - 1, i = lastIndex; i >= 0; i--)
         {
-            final Destination destination = destinationList.get(i);
+            final Destination destination = destinations.get(i);
 
             if (nowNs > (destination.timeOfLastActivityNs + destinationTimeoutNs))
             {
-                ArrayListUtil.fastUnorderedRemove(destinationList, i, lastIndex);
+                ArrayListUtil.fastUnorderedRemove(destinations, i, lastIndex);
                 lastIndex--;
             }
             else
             {
-                int byteSent = 0;
+                int bytesSent = 0;
                 try
                 {
-                    preSendFunction.presend(buffer, destination.address);
+                    sendChannelEndpoint.presend(buffer, destination.address);
 
                     final int position = buffer.position();
-                    byteSent = sendDatagramChannel.send(buffer, destination.address);
+                    bytesSent = sendDatagramChannel.send(buffer, destination.address);
                     buffer.position(position);
                 }
                 catch (final PortUnreachableException | ClosedChannelException ignore)
@@ -91,27 +84,27 @@ public class UdpDestinationTracker
                     LangUtil.rethrowUnchecked(ex);
                 }
 
-                minByteSent = Math.min(minByteSent, byteSent);
+                minBytesSent = Math.min(minBytesSent, bytesSent);
             }
         }
 
-        return minByteSent;
+        return minBytesSent;
     }
 
-    public void destinationActivity(final StatusMessageFlyweight msg, final InetSocketAddress destAddress)
+    public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
     {
         if (destinationTimeoutNs > 0)
         {
-            final ArrayList<Destination> destinationList = this.destinationList;
+            final ArrayList<Destination> destinations = this.destinations;
             final long nowNs = nanoClock.nanoTime();
             boolean isExisting = false;
             final long receiverId = msg.receiverId();
 
-            for (int i = 0, size = destinationList.size(); i < size; i++)
+            for (int i = 0, size = destinations.size(); i < size; i++)
             {
-                final Destination destination = destinationList.get(i);
+                final Destination destination = destinations.get(i);
 
-                if (receiverId == destination.receiverId && destAddress.getPort() == destination.port)
+                if (receiverId == destination.receiverId && address.getPort() == destination.port)
                 {
                     destination.timeOfLastActivityNs = nowNs;
                     isExisting = true;
@@ -121,7 +114,7 @@ public class UdpDestinationTracker
 
             if (!isExisting)
             {
-                destinationList.add(new Destination(nowNs, receiverId, destAddress));
+                destinations.add(new Destination(nowNs, receiverId, address));
             }
         }
     }
@@ -133,26 +126,26 @@ public class UdpDestinationTracker
 
     public void addDestination(final InetSocketAddress address)
     {
-        destinationList.add(new Destination(Long.MAX_VALUE, 0, address));
+        destinations.add(new Destination(Long.MAX_VALUE, 0, address));
     }
 
     public void removeDestination(final InetSocketAddress address)
     {
-        final ArrayList<Destination> destinationList = this.destinationList;
+        final ArrayList<Destination> destinations = this.destinations;
 
-        for (int lastIndex = destinationList.size() - 1, i = lastIndex; i >= 0; i--)
+        for (int lastIndex = destinations.size() - 1, i = lastIndex; i >= 0; i--)
         {
-            final Destination destination = destinationList.get(i);
+            final Destination destination = destinations.get(i);
 
             if (address.equals(destination.address))
             {
-                ArrayListUtil.fastUnorderedRemove(destinationList, i, lastIndex);
+                ArrayListUtil.fastUnorderedRemove(destinations, i, lastIndex);
                 break;
             }
         }
     }
 
-    public static class Destination
+    static final class Destination
     {
         long timeOfLastActivityNs;
         long receiverId;

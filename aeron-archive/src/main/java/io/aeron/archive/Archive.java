@@ -50,7 +50,7 @@ public final class Archive implements AutoCloseable
         this.ctx = ctx;
         ctx.conclude();
 
-        ctx.aeronContext
+        ctx.aeronContext()
             .errorHandler(ctx.countedErrorHandler())
             .driverAgentInvoker(ctx.mediaDriverAgentInvoker())
             .useConductorAgentInvoker(true)

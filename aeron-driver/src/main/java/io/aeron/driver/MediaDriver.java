@@ -115,7 +115,7 @@ public final class MediaDriver implements AutoCloseable
         final AtomicCounter errorCounter = ctx.systemCounters().get(ERRORS);
         final ErrorHandler errorHandler = ctx.errorHandler();
 
-        switch (ctx.threadingMode)
+        switch (ctx.threadingMode())
         {
             case INVOKER:
                 sharedInvoker = new AgentInvoker(
@@ -129,7 +129,7 @@ public final class MediaDriver implements AutoCloseable
 
             case SHARED:
                 sharedRunner = new AgentRunner(
-                    ctx.sharedIdleStrategy,
+                    ctx.sharedIdleStrategy(),
                     errorHandler,
                     errorCounter,
                     new CompositeAgent(sender, receiver, conductor));
@@ -142,8 +142,8 @@ public final class MediaDriver implements AutoCloseable
 
             case SHARED_NETWORK:
                 sharedNetworkRunner = new AgentRunner(
-                    ctx.sharedNetworkIdleStrategy, errorHandler, errorCounter, new CompositeAgent(sender, receiver));
-                conductorRunner = new AgentRunner(ctx.conductorIdleStrategy, errorHandler, errorCounter, conductor);
+                    ctx.sharedNetworkIdleStrategy(), errorHandler, errorCounter, new CompositeAgent(sender, receiver));
+                conductorRunner = new AgentRunner(ctx.conductorIdleStrategy(), errorHandler, errorCounter, conductor);
                 sharedRunner = null;
                 receiverRunner = null;
                 senderRunner = null;
@@ -152,9 +152,9 @@ public final class MediaDriver implements AutoCloseable
 
             default:
             case DEDICATED:
-                senderRunner = new AgentRunner(ctx.senderIdleStrategy, errorHandler, errorCounter, sender);
-                receiverRunner = new AgentRunner(ctx.receiverIdleStrategy, errorHandler, errorCounter, receiver);
-                conductorRunner = new AgentRunner(ctx.conductorIdleStrategy, errorHandler, errorCounter, conductor);
+                senderRunner = new AgentRunner(ctx.senderIdleStrategy(), errorHandler, errorCounter, sender);
+                receiverRunner = new AgentRunner(ctx.receiverIdleStrategy(), errorHandler, errorCounter, receiver);
+                conductorRunner = new AgentRunner(ctx.conductorIdleStrategy(), errorHandler, errorCounter, conductor);
                 sharedNetworkRunner = null;
                 sharedRunner = null;
                 sharedInvoker = null;
@@ -285,27 +285,27 @@ public final class MediaDriver implements AutoCloseable
 
         if (null != conductorRunner)
         {
-            AgentRunner.startOnThread(conductorRunner, ctx.conductorThreadFactory);
+            AgentRunner.startOnThread(conductorRunner, ctx.conductorThreadFactory());
         }
 
         if (null != senderRunner)
         {
-            AgentRunner.startOnThread(senderRunner, ctx.senderThreadFactory);
+            AgentRunner.startOnThread(senderRunner, ctx.senderThreadFactory());
         }
 
         if (null != receiverRunner)
         {
-            AgentRunner.startOnThread(receiverRunner, ctx.receiverThreadFactory);
+            AgentRunner.startOnThread(receiverRunner, ctx.receiverThreadFactory());
         }
 
         if (null != sharedNetworkRunner)
         {
-            AgentRunner.startOnThread(sharedNetworkRunner, ctx.sharedNetworkThreadFactory);
+            AgentRunner.startOnThread(sharedNetworkRunner, ctx.sharedNetworkThreadFactory());
         }
 
         if (null != sharedRunner)
         {
-            AgentRunner.startOnThread(sharedRunner, ctx.sharedThreadFactory);
+            AgentRunner.startOnThread(sharedRunner, ctx.sharedThreadFactory());
         }
 
         if (null != sharedInvoker)

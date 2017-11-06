@@ -158,7 +158,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     /**
      * Send contents of a {@link ByteBuffer} to connected address.
-     * This is used on the send size for performance over sentTo().
+     * This is used on the sender side for performance over send(ByteBuffer, SocketAddress).
      *
      * @param buffer to send
      * @return number of bytes sent

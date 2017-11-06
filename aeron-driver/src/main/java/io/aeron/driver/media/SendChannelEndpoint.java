@@ -165,14 +165,14 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public int send(final ByteBuffer buffer)
     {
-        int byteSent = 0;
+        int bytesSent = 0;
 
         if (null == multiDestination)
         {
             try
             {
                 presend(buffer, connectAddress);
-                byteSent = sendDatagramChannel.write(buffer);
+                bytesSent = sendDatagramChannel.write(buffer);
             }
             catch (final PortUnreachableException | ClosedChannelException ignore)
             {
@@ -184,10 +184,10 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
         else
         {
-            byteSent = multiDestination.send(sendDatagramChannel, buffer);
+            bytesSent = multiDestination.send(sendDatagramChannel, buffer);
         }
 
-        return byteSent;
+        return bytesSent;
     }
 
     /*
@@ -204,13 +204,15 @@ public class SendChannelEndpoint extends UdpChannelTransport
         final int length,
         final InetSocketAddress srcAddress)
     {
-        final NetworkPublication publication = publicationBySessionAndStreamId.get(msg.sessionId(), msg.streamId());
+        final int sessionId = msg.sessionId();
+        final int streamId = msg.streamId();
+        final NetworkPublication publication = publicationBySessionAndStreamId.get(sessionId, streamId);
 
         if (null != multiDestination)
         {
             multiDestination.onStatusMessage(msg, srcAddress);
 
-            if (0 == msg.sessionId() && 0 == msg.streamId() && SEND_SETUP_FLAG == (msg.flags() & SEND_SETUP_FLAG))
+            if (0 == sessionId && 0 == streamId && SEND_SETUP_FLAG == (msg.flags() & SEND_SETUP_FLAG))
             {
                 publicationBySessionAndStreamId.forEach(NetworkPublication::triggerSendSetupFrame);
                 statusMessagesReceived.orderedIncrement();

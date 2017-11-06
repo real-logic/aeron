@@ -721,9 +721,9 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * The {@link CountersManager} used for shared resource between the embedded media driver and the archive.
+         * The {@link CountersManager} used for shared use between the embedded media driver and the archive.
          *
-         * @return {@link CountersManager} used for shared resource between the embedded media driver and the archive.
+         * @return {@link CountersManager} used for shared use between the embedded media driver and the archive.
          */
         public CountersManager countersManager()
         {
@@ -731,7 +731,7 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * The {@link CountersManager} is a shared resource between the embedded media driver and the archive.
+         * The {@link CountersManager} is a shared use between the embedded media driver and the archive.
          *
          * @param countersManager shared counters manager to be used.
          * @return this for a fluent API.

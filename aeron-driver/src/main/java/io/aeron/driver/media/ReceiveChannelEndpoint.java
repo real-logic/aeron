@@ -16,7 +16,6 @@
 package io.aeron.driver.media;
 
 import io.aeron.driver.*;
-import io.aeron.driver.exceptions.ConfigurationException;
 import io.aeron.driver.status.ChannelEndpointStatus;
 import io.aeron.protocol.*;
 import org.agrona.LangUtil;
@@ -26,7 +25,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 
 import static io.aeron.driver.status.ChannelEndpointStatus.status;
@@ -53,7 +51,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final Int2IntCounterMap refCountByStreamIdMap = new Int2IntCounterMap(0);
 
     private final long receiverId;
-    private int soRcvBufLength;
     private boolean isClosed = false;
 
     public ReceiveChannelEndpoint(
@@ -143,8 +140,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     public void openChannel()
     {
         openDatagramChannel(statusIndicator);
-
-        soRcvBufLength = getOption(StandardSocketOptions.SO_RCVBUF);
     }
 
     public void possibleTtlAsymmetryEncountered()
@@ -224,28 +219,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final InetSocketAddress controlAddress, final int sessionId, final int streamId)
     {
         sendStatusMessage(controlAddress, sessionId, streamId, 0, 0, 0, SEND_SETUP_FLAG);
-    }
-
-    public void validateSenderMtuLength(final int senderMtuLength, final int windowMaxLength)
-    {
-        Configuration.validateMtuLength(senderMtuLength);
-        Configuration.validateInitialWindowLength(windowMaxLength, senderMtuLength);
-
-        if (windowMaxLength > soRcvBufLength)
-        {
-            throw new ConfigurationException("Max Window length greater than socket SO_RCVBUF, increase '" +
-                Configuration.INITIAL_WINDOW_LENGTH_PROP_NAME +
-                "' to match window: windowMaxLength=" + windowMaxLength +
-                ", SO_RCVBUF=" + soRcvBufLength);
-        }
-
-        if (senderMtuLength > soRcvBufLength)
-        {
-            throw new ConfigurationException("Sender MTU greater than socket SO_RCVBUF, increase '" +
-                Configuration.SOCKET_RCVBUF_LENGTH_PROP_NAME +
-                "' to match MTU: senderMtuLength=" + senderMtuLength +
-                ", SO_RCVBUF=" + soRcvBufLength);
-        }
     }
 
     public void sendStatusMessage(

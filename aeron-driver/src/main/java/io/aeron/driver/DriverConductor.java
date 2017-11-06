@@ -177,7 +177,8 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final InetSocketAddress sourceAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
-        channelEndpoint.validateSenderMtuLength(senderMtuLength, context.initialWindowLength());
+        Configuration.validateMtuLength(senderMtuLength);
+        Configuration.validateInitialWindowLength(context.initialWindowLength(), senderMtuLength);
 
         final UdpChannel udpChannel = channelEndpoint.udpChannel();
         final String channel = udpChannel.originalUriString();

@@ -271,7 +271,7 @@ public final class Archive implements AutoCloseable
         private int fileSyncLevel = Configuration.fileSyncLevel();
 
         private ArchiveThreadingMode threadingMode = Configuration.threadingMode();
-        private ThreadFactory threadFactory = Thread::new;
+        private ThreadFactory threadFactory;
 
         private Supplier<IdleStrategy> idleStrategySupplier;
         private EpochClock epochClock;
@@ -305,8 +305,20 @@ public final class Archive implements AutoCloseable
                 aeronContext = new Aeron.Context();
             }
 
-            errorCounter = countersManager.newCounter("Archive errors");
-            countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
+            if (null == threadFactory)
+            {
+                threadFactory = Thread::new;
+            }
+
+            if (null == idleStrategySupplier)
+            {
+                idleStrategySupplier = Configuration.idleStrategySupplier(null);
+            }
+
+            if (null == epochClock)
+            {
+                epochClock = new SystemEpochClock();
+            }
 
             if (null == archiveDir)
             {
@@ -319,15 +331,8 @@ public final class Archive implements AutoCloseable
                     "Failed to create archive dir: " + archiveDir.getAbsolutePath());
             }
 
-            if (null == idleStrategySupplier)
-            {
-                idleStrategySupplier = Configuration.idleStrategySupplier(null);
-            }
-
-            if (null == epochClock)
-            {
-                epochClock = new SystemEpochClock();
-            }
+            errorCounter = countersManager.newCounter("Archive errors");
+            countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
         }
 
         /**

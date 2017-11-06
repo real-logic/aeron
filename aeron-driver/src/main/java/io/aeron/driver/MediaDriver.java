@@ -166,8 +166,8 @@ public final class MediaDriver implements AutoCloseable
      * Launch an isolated MediaDriver embedded in the current process with a generated aeronDirectoryName that can be
      * retrieved by calling aeronDirectoryName.
      * <p>
-     * If the aeronDirectoryName is set to something different than {@link CommonContext#AERON_DIR_PROP_DEFAULT} then
-     * it will be used.
+     * If the aeronDirectoryName is set as a system property to something different than
+     * {@link CommonContext#AERON_DIR_PROP_DEFAULT} then this set value will be used.
      *
      * @return the newly started MediaDriver.
      */
@@ -181,8 +181,8 @@ public final class MediaDriver implements AutoCloseable
      * aeronDirectoryName (overwrites configured {@link Context#aeronDirectoryName()}) that can be retrieved by calling
      * aeronDirectoryName.
      * <p>
-     * If the aeronDirectoryName is set to something different than {@link CommonContext#AERON_DIR_PROP_DEFAULT} then
-     * it will be used.
+     * If the aeronDirectoryName is set as a system property, or via context, to something different than
+     * {@link CommonContext#AERON_DIR_PROP_DEFAULT} then this set value will be used.
      *
      * @param ctx containing the configuration options.
      * @return the newly started MediaDriver.

@@ -241,7 +241,7 @@ public abstract class Publication implements AutoCloseable
     /**
      * Has the {@link Publication} seen an active Subscriber recently?
      *
-     * @return true if this {@link Publication} has seen an active subscriber otherwise false.
+     * @return true if this {@link Publication} has recently seen an active subscriber otherwise false.
      */
     public boolean isConnected()
     {

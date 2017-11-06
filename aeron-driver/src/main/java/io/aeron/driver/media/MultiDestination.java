@@ -28,29 +28,28 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
 
-public class MultiDestination
+final class MultiDestination
 {
     private final ArrayList<Destination> destinations = new ArrayList<>();
     private final NanoClock nanoClock;
     private final SendChannelEndpoint sendChannelEndpoint;
     private final long destinationTimeoutNs;
 
-    public MultiDestination(
-        final NanoClock nanoClock, final SendChannelEndpoint sendChannelEndpoint, final long timeout)
+    MultiDestination(final NanoClock nanoClock, final SendChannelEndpoint sendChannelEndpoint, final long timeout)
     {
         this.nanoClock = nanoClock;
         this.sendChannelEndpoint = sendChannelEndpoint;
         this.destinationTimeoutNs = timeout;
     }
 
-    public MultiDestination(final SendChannelEndpoint sendChannelEndpoint)
+    MultiDestination(final SendChannelEndpoint sendChannelEndpoint)
     {
         this.nanoClock = () -> 0;
         this.sendChannelEndpoint = sendChannelEndpoint;
         this.destinationTimeoutNs = 0;
     }
 
-    public int send(final DatagramChannel sendDatagramChannel, final ByteBuffer buffer)
+    int send(final DatagramChannel sendDatagramChannel, final ByteBuffer buffer)
     {
         final ArrayList<Destination> destinations = this.destinations;
         final long nowNs = nanoClock.nanoTime();
@@ -91,7 +90,7 @@ public class MultiDestination
         return minBytesSent;
     }
 
-    public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
+    void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
     {
         if (destinationTimeoutNs > 0)
         {
@@ -119,17 +118,17 @@ public class MultiDestination
         }
     }
 
-    public boolean isManualControlMode()
+    boolean isManualControlMode()
     {
         return destinationTimeoutNs == 0;
     }
 
-    public void addDestination(final InetSocketAddress address)
+    void addDestination(final InetSocketAddress address)
     {
         destinations.add(new Destination(Long.MAX_VALUE, 0, address));
     }
 
-    public void removeDestination(final InetSocketAddress address)
+    void removeDestination(final InetSocketAddress address)
     {
         final ArrayList<Destination> destinations = this.destinations;
 

@@ -74,11 +74,11 @@ public class SendChannelEndpoint extends UdpChannelTransport
             final String mode = udpChannel.channelUri().get(CommonContext.MDC_CONTROL_MODE_PARAM_NAME);
             if (CommonContext.MDC_CONTROL_MODE_MANUAL.equals(mode))
             {
-                multiDestination = new MultiDestination(this);
+                multiDestination = new MultiDestination();
             }
             else if (null == mode || CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(mode))
             {
-                multiDestination = new MultiDestination(context.nanoClock(), this, DESTINATION_TIMEOUT);
+                multiDestination = new MultiDestination(context.nanoClock(), DESTINATION_TIMEOUT);
             }
         }
 
@@ -184,7 +184,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
         else
         {
-            bytesSent = multiDestination.send(sendDatagramChannel, buffer);
+            bytesSent = multiDestination.send(sendDatagramChannel, buffer, this);
         }
 
         return bytesSent;

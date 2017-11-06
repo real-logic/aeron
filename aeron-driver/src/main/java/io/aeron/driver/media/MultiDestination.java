@@ -30,29 +30,30 @@ import java.util.ArrayList;
 
 final class MultiDestination
 {
+    private final long destinationTimeoutNs;
     private final ArrayList<Destination> destinations = new ArrayList<>();
     private final NanoClock nanoClock;
-    private final SendChannelEndpoint sendChannelEndpoint;
-    private final long destinationTimeoutNs;
 
-    MultiDestination(final NanoClock nanoClock, final SendChannelEndpoint sendChannelEndpoint, final long timeout)
+    MultiDestination(final NanoClock nanoClock, final long timeout)
     {
         this.nanoClock = nanoClock;
-        this.sendChannelEndpoint = sendChannelEndpoint;
         this.destinationTimeoutNs = timeout;
     }
 
-    MultiDestination(final SendChannelEndpoint sendChannelEndpoint)
+    MultiDestination()
     {
         this.nanoClock = () -> 0;
-        this.sendChannelEndpoint = sendChannelEndpoint;
         this.destinationTimeoutNs = 0;
     }
 
-    int send(final DatagramChannel sendDatagramChannel, final ByteBuffer buffer)
+    int send(
+        final DatagramChannel sendDatagramChannel,
+        final ByteBuffer buffer,
+        final SendChannelEndpoint sendChannelEndpoint)
     {
         final ArrayList<Destination> destinations = this.destinations;
         final long nowNs = nanoClock.nanoTime();
+        final int position = buffer.position();
         int minBytesSent = buffer.remaining();
 
         for (int lastIndex = destinations.size() - 1, i = lastIndex; i >= 0; i--)
@@ -71,9 +72,8 @@ final class MultiDestination
                 {
                     sendChannelEndpoint.presend(buffer, destination.address);
 
-                    final int position = buffer.position();
-                    bytesSent = sendDatagramChannel.send(buffer, destination.address);
                     buffer.position(position);
+                    bytesSent = sendDatagramChannel.send(buffer, destination.address);
                 }
                 catch (final PortUnreachableException | ClosedChannelException ignore)
                 {

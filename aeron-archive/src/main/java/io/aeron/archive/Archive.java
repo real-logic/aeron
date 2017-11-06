@@ -202,38 +202,39 @@ public final class Archive implements AutoCloseable
         public static Supplier<IdleStrategy> idleStrategySupplier(final StatusIndicator controllableStatus)
         {
             final String strategyName = System.getProperty(ARCHIVER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
-            return () ->
-            {
-                IdleStrategy idleStrategy = null;
-                switch (strategyName)
+            return
+                () ->
                 {
-                    case DEFAULT_IDLE_STRATEGY:
-                        idleStrategy = new BackoffIdleStrategy(
-                            AGENT_IDLE_MAX_SPINS,
-                            AGENT_IDLE_MAX_YIELDS,
-                            AGENT_IDLE_MIN_PARK_NS,
-                            AGENT_IDLE_MAX_PARK_NS);
-                        break;
+                    IdleStrategy idleStrategy = null;
+                    switch (strategyName)
+                    {
+                        case DEFAULT_IDLE_STRATEGY:
+                            idleStrategy = new BackoffIdleStrategy(
+                                AGENT_IDLE_MAX_SPINS,
+                                AGENT_IDLE_MAX_YIELDS,
+                                AGENT_IDLE_MIN_PARK_NS,
+                                AGENT_IDLE_MAX_PARK_NS);
+                            break;
 
-                    case CONTROLLABLE_IDLE_STRATEGY:
-                        idleStrategy = new ControllableIdleStrategy(controllableStatus);
-                        controllableStatus.setOrdered(ControllableIdleStrategy.PARK);
-                        break;
+                        case CONTROLLABLE_IDLE_STRATEGY:
+                            idleStrategy = new ControllableIdleStrategy(controllableStatus);
+                            controllableStatus.setOrdered(ControllableIdleStrategy.PARK);
+                            break;
 
-                    default:
-                        try
-                        {
-                            idleStrategy = (IdleStrategy)Class.forName(strategyName).newInstance();
-                        }
-                        catch (final Exception ex)
-                        {
-                            LangUtil.rethrowUnchecked(ex);
-                        }
-                        break;
-                }
+                        default:
+                            try
+                            {
+                                idleStrategy = (IdleStrategy)Class.forName(strategyName).newInstance();
+                            }
+                            catch (final Exception ex)
+                            {
+                                LangUtil.rethrowUnchecked(ex);
+                            }
+                            break;
+                    }
 
-                return idleStrategy;
-            };
+                    return idleStrategy;
+                };
         }
 
         public static int maxConcurrentRecordings()
@@ -291,12 +292,12 @@ public final class Archive implements AutoCloseable
         {
             if (null == errorHandler)
             {
-                throw new IllegalStateException("Error handler must be externally supplied");
+                throw new IllegalStateException("Error handler must be supplied");
             }
 
             if (null == countersManager)
             {
-                throw new IllegalStateException("Counter manager must be externally supplied");
+                throw new IllegalStateException("Counters manager must be supplied");
             }
 
             if (null == aeronContext)
@@ -665,6 +666,11 @@ public final class Archive implements AutoCloseable
             return this;
         }
 
+        /**
+         * Get the error counter that will record the number of errors the archive has observed.
+         *
+         * @return the error counter that will record the number of errors the archive has observed.
+         */
         public AtomicCounter errorCounter()
         {
             return errorCounter;

@@ -488,7 +488,7 @@ public final class AeronArchive implements AutoCloseable
             {
                 if (nanoClock.nanoTime() > deadlineNs)
                 {
-                    throw new TimeoutException("Waiting for response: correlationId=" + expectedCorrelationId);
+                    throw new TimeoutException("Waiting for correlationId=" + expectedCorrelationId);
                 }
 
                 idleStrategy.idle();
@@ -532,7 +532,7 @@ public final class AeronArchive implements AutoCloseable
 
                 if (nanoClock.nanoTime() > deadlineNs)
                 {
-                    throw new TimeoutException("Waiting for response: correlationId=" + expectedCorrelationId);
+                    throw new TimeoutException("Waiting for correlationId=" + expectedCorrelationId);
                 }
 
                 idleStrategy.idle();

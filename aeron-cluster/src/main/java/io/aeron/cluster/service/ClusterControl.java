@@ -1,5 +1,5 @@
 /*
- *  Copyright 2017 Real Logic Ltd.
+ * Copyright 2017 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,13 @@
  */
 package io.aeron.cluster.service;
 
-public interface LogListener
+public class ClusterControl
 {
+    public void registerTimer(final long correlationId, final long deadlineMs)
+    {
+    }
+
+    public void cancelTimer(final long correlationId)
+    {
+    }
 }

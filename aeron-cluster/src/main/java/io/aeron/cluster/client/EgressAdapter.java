@@ -18,14 +18,14 @@ package io.aeron.cluster.client;
 import io.aeron.FragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
-import io.aeron.cluster.codecs.NewLeaderSessionEventDecoder;
+import io.aeron.cluster.codecs.NewLeaderEventDecoder;
 import io.aeron.cluster.codecs.SessionEventDecoder;
 import io.aeron.cluster.codecs.SessionHeaderDecoder;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
-public class ClusterEventAdapter implements FragmentHandler
+public class EgressAdapter implements FragmentHandler
 {
     /**
      * Length of the session header that will be prepended to the message.
@@ -35,15 +35,14 @@ public class ClusterEventAdapter implements FragmentHandler
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionEventDecoder sessionEventDecoder = new SessionEventDecoder();
-    private final NewLeaderSessionEventDecoder newLeaderSessionEventDecoder = new NewLeaderSessionEventDecoder();
+    private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
-    private final ClusterEventListener listener;
+    private final EgressListener listener;
     private final Subscription subscription;
     private final int fragmentLimit;
 
-    public ClusterEventAdapter(
-        final ClusterEventListener listener, final Subscription subscription, final int fragmentLimit)
+    public EgressAdapter(final EgressListener listener, final Subscription subscription, final int fragmentLimit)
     {
         this.listener = listener;
         this.subscription = subscription;
@@ -76,21 +75,21 @@ public class ClusterEventAdapter implements FragmentHandler
                     sessionEventDecoder.detail());
                 break;
 
-            case NewLeaderSessionEventDecoder.TEMPLATE_ID:
-                newLeaderSessionEventDecoder.wrap(
+            case NewLeaderEventDecoder.TEMPLATE_ID:
+                newLeaderEventDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
                 listener.newLeader(
-                    newLeaderSessionEventDecoder.lastCorrelationId(),
-                    newLeaderSessionEventDecoder.clusterSessionId(),
-                    newLeaderSessionEventDecoder.lastMessageTimestamp(),
-                    newLeaderSessionEventDecoder.clusterTermTimestamp(),
-                    newLeaderSessionEventDecoder.clusterMessageIndex(),
-                    newLeaderSessionEventDecoder.clusterTermId(),
-                    newLeaderSessionEventDecoder.clusterLeader());
+                    newLeaderEventDecoder.lastCorrelationId(),
+                    newLeaderEventDecoder.clusterSessionId(),
+                    newLeaderEventDecoder.lastMessageTimestamp(),
+                    newLeaderEventDecoder.clusterTermTimestamp(),
+                    newLeaderEventDecoder.clusterMessageIndex(),
+                    newLeaderEventDecoder.clusterTermId(),
+                    newLeaderEventDecoder.clusterLeader());
                 break;
 
             case SessionHeaderDecoder.TEMPLATE_ID:

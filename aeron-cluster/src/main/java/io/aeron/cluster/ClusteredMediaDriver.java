@@ -20,14 +20,13 @@ import org.agrona.concurrent.ShutdownSignalBarrier;
 
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
-public class ClusterMediaDriver implements AutoCloseable
+/**
+ * Clustered media driver which is an aggregate of a {@link MediaDriver} and an {@link ClusterNode}.
+ */
+public class ClusteredMediaDriver implements AutoCloseable
 {
-    public void close()
-    {
-    }
-
     /**
-     * Launch a {@link Cluster} with an embedded {@link MediaDriver} and await a shutdown signal.
+     * Launch the clustered media driver aggregate and await a shutdown signal.
      *
      * @param args command line argument which is a list for properties files as URLs or filenames.
      */
@@ -35,21 +34,25 @@ public class ClusterMediaDriver implements AutoCloseable
     {
         loadPropertiesFiles(args);
 
-        try (ClusterMediaDriver ignore = launch())
+        try (ClusteredMediaDriver ignore = launch())
         {
             new ShutdownSignalBarrier().await();
 
-            System.out.println("Shutdown ClusterMediaDriver...");
+            System.out.println("Shutdown ClusteredMediaDriver...");
         }
     }
 
     /**
-     * Launch a new {@link ClusterMediaDriver} with default contexts.
+     * Launch a new {@link ClusteredMediaDriver} with default contexts.
      *
-     * @return a new {@link ClusterMediaDriver} with default contexts.
+     * @return a new {@link ClusteredMediaDriver} with default contexts.
      */
-    public static ClusterMediaDriver launch()
+    public static ClusteredMediaDriver launch()
     {
-        return new ClusterMediaDriver();
+        return new ClusteredMediaDriver();
+    }
+
+    public void close()
+    {
     }
 }

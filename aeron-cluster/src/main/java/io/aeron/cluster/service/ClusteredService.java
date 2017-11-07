@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ *  Copyright 2017 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster;
+package io.aeron.cluster.service;
 
-public class Cluster
+import io.aeron.logbuffer.Header;
+import org.agrona.DirectBuffer;
+
+public interface ClusteredService
 {
+    void onSessionOpen(ClientSession session);
+
+    void onSessionClose(ClientSession session);
+
+    void onSessionMessage(
+        ClientSession session, long correlationId, DirectBuffer buffer, int offset, int length, Header header);
+
+    void onTimerEvent(long correlationId);
 }

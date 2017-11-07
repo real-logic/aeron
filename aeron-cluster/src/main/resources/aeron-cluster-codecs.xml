@@ -33,21 +33,22 @@
         ========================
 
         Protocol is:
-            -> connect, *session-message, close
+            -> session-connect, [*session-message | *session-keep-alive], session-close
                       \
             <-          *session-event, [*session-message | *session-event | *new-leader-event]
 
-        1. Connect Session
+        1. Session Connect
           - An attempt is made to establish a connection with the cluster via multicast or multi-destination-cast.
           - If successful, a NewLeaderSessionEvent will be sent in the return path Image.
           - If a change of leader occurs mid session then another NewLeaderSessionEvent will occur on a new Image.
 
-        2. Service Interaction via Session Messages
-          - Messages are sent to a clustered service with a SessionHeader followed by user defined protocol payload.
-          - The service will emit responses and events with a SessionHeader followed by user protocol payload.
-          - The user defined protocol is the protocol of messages for interacting with the service being clustered.
+        2. Session Message - Service messages which make up application protocol.
+          - Messages are sent to a clustered service with a SessionHeader followed by application protocol payload.
+          - The service will emit responses and events with a SessionHeader followed by application protocol payload.
+          - The application protocol is the user defined messages for interacting with the service being clustered.
+          - Keep alive messages should be sent when insufficient session messages are sent to keep the session open.
 
-        3. Close Session
+        3. Session Close
           - A cluster session can be closed with a CloseSessionRequest
           - If the session is not explicitly closed then it will timeout if the connection becomes unavailable.
     -->
@@ -65,12 +66,13 @@
                description="Further detail such as an error message as necessary"/>
     </sbe:message>
 
-    <sbe:message name="ConnectSessionRequest"
+    <sbe:message name="SessionConnectRequest"
                  id="2"
                  description="Connect to the cluster and if successful then open a session">
         <field name="correlationId"        id="1" type="int64"/>
-        <field name="responseStreamId"     id="2" type="int32"/>
-        <data  name="responseChannel"      id="3" type="varAsciiEncoding"/>
+        <field name="clusterSessionId"     id="2" type="int64"/>
+        <field name="responseStreamId"     id="3" type="int32"/>
+        <data  name="responseChannel"      id="4" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="SessionHeader"
@@ -81,14 +83,21 @@
         <field name="timestamp"            id="3" type="time_t"/>
     </sbe:message>
 
-    <sbe:message name="CloseSessionRequest"
+    <sbe:message name="SessionCloseRequest"
                  id="4"
                  description="Close an open cluster session">
         <field name="clusterSessionId"     id="1" type="int64"/>
     </sbe:message>
 
-    <sbe:message name="NewLeaderSessionEvent"
+    <sbe:message name="SessionKeepAliveRequest"
                  id="5"
+                 description="Keep a cluster session open by indicating the client is alive">
+        <field name="correlationId"        id="1" type="int64"/>
+        <field name="clusterSessionId"     id="2" type="int64"/>
+    </sbe:message>
+
+    <sbe:message name="NewLeaderEvent"
+                 id="6"
                  description="Event to indicate a new leader is established for the cluster">
         <field name="lastCorrelationId"    id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
@@ -102,14 +111,14 @@
     <!-- Events to be delivered to the clustered service which are session related -->
 
     <sbe:message name="TimerEvent"
-                 id="6"
+                 id="20"
                  description="Timer triggered event as the result of a deadline passing on a registered timer">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="timestamp"            id="2" type="time_t"/>
     </sbe:message>
 
     <sbe:message name="OpenSessionEvent"
-                 id="7"
+                 id="21"
                  description="Event for the state machine to notify a session has been opened">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
@@ -119,7 +128,7 @@
     </sbe:message>
 
     <sbe:message name="CloseSessionEvent"
-                 id="8"
+                 id="22"
                  description="Event for the state machine to notify a session has been closed">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>

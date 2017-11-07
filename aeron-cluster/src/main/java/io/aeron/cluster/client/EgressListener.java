@@ -19,7 +19,7 @@ import io.aeron.cluster.codecs.SessionEventCode;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
-public interface ClusterEventListener
+public interface EgressListener
 {
     void sessionEvent(long correlationId, long clusterSessionId, SessionEventCode code, String detail);
 

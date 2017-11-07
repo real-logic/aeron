@@ -192,8 +192,7 @@ class ClientCommandAdapter implements MessageHandler
                     removeMsgFlyweight.wrap(buffer, index);
 
                     correlationId = removeMsgFlyweight.correlationId();
-                    conductor.onRemoveCounter(
-                        removeMsgFlyweight.registrationId(), correlationId);
+                    conductor.onRemoveCounter(removeMsgFlyweight.registrationId(), correlationId);
                     break;
                 }
             }

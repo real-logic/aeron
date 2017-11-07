@@ -18,13 +18,14 @@ package io.aeron.archive.client;
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.archive.codecs.*;
+import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
 /**
  * Encapsulate the polling and decoding of archive control protocol response messages.
  */
-public class ControlResponsePoller
+public class ControlResponsePoller implements ControlledFragmentHandler
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
@@ -32,7 +33,7 @@ public class ControlResponsePoller
 
     private final int fragmentLimit;
     private final Subscription subscription;
-    private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this::onFragment);
+    private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private long controlSessionId = -1;
     private long correlationId = -1;
     private int templateId = -1;
@@ -115,11 +116,8 @@ public class ControlResponsePoller
         return templateId;
     }
 
-    private ControlledFragmentAssembler.Action onFragment(
-        final DirectBuffer buffer,
-        final int offset,
-        @SuppressWarnings("unused") final int length,
-        @SuppressWarnings("unused") final Header header)
+    public ControlledFragmentAssembler.Action onFragment(
+        final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 

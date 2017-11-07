@@ -15,13 +15,11 @@
  */
 package io.aeron.cluster.service;
 
-public class ClusterControl
+public interface Cluster
 {
-    public void registerTimer(final long correlationId, final long deadlineMs)
-    {
-    }
+    ClientSession getClientSession(long clusterSessionId);
 
-    public void cancelTimer(final long correlationId)
-    {
-    }
+    void registerTimer(long correlationId, long deadlineMs);
+
+    void cancelTimer(long correlationId);
 }

@@ -16,10 +16,12 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
+import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.cluster.client.*;
 import io.aeron.cluster.codecs.SessionEventCode;
 import io.aeron.cluster.service.ClientSession;
+import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceAgent;
 import io.aeron.driver.MediaDriver;
@@ -108,15 +110,15 @@ public class ClusterNodeTest
                 .ownsAeronClient(false)
                 .lock(new NoOpLock()));
 
-        final VectoredSessionPublication publication = new VectoredSessionPublication(
-            cluster.ingressPublication(), cluster.sessionId());
+        final VectoredSessionHeader vectoredSessionHeader = new VectoredSessionHeader(cluster.sessionId());
+        final Publication publication = cluster.ingressPublication();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
         final long msgCorrelationId = aeron.nextCorrelationId();
         final String msg = "Hello World!";
         msgBuffer.putStringWithoutLengthAscii(0, msg);
 
-        while (publication.offer(msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
+        while (vectoredSessionHeader.offer(publication, msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
         {
             Thread.yield();
         }
@@ -177,6 +179,14 @@ public class ClusterNodeTest
 
     public static class EchoService implements ClusteredService
     {
+        private final VectoredSessionHeader vectoredSessionHeader = new VectoredSessionHeader(0);
+        private Cluster cluster;
+
+        public void onStart(final Cluster cluster)
+        {
+            this.cluster = cluster;
+        }
+
         public void onSessionOpen(final ClientSession session)
         {
         }
@@ -186,18 +196,18 @@ public class ClusterNodeTest
         }
 
         public void onSessionMessage(
-            final ClientSession session,
+            final long clusterSessionId,
             final long correlationId,
             final DirectBuffer buffer,
             final int offset,
             final int length,
             final Header header)
         {
-            final VectoredSessionPublication publication = new VectoredSessionPublication(
-                session.responsePublication(),
-                session.id());
+            final ClientSession session = cluster.getClientSession(clusterSessionId);
+            vectoredSessionHeader.clusterSessionId(clusterSessionId);
+            final Publication publication = session.responsePublication();
 
-            while (publication.offer(correlationId, buffer, offset, length) < 0)
+            while (vectoredSessionHeader.offer(publication, correlationId, buffer, offset, length) < 0)
             {
                 Thread.yield();
             }

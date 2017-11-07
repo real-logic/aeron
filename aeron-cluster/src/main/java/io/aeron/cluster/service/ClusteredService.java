@@ -20,12 +20,14 @@ import org.agrona.DirectBuffer;
 
 public interface ClusteredService
 {
+    void onStart(Cluster cluster);
+
     void onSessionOpen(ClientSession session);
 
     void onSessionClose(ClientSession session);
 
     void onSessionMessage(
-        ClientSession session, long correlationId, DirectBuffer buffer, int offset, int length, Header header);
+        long clusterSessionId, long correlationId, DirectBuffer buffer, int offset, int length, Header header);
 
     void onTimerEvent(long correlationId);
 }

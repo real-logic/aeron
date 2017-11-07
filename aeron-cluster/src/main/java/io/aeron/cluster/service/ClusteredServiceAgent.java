@@ -25,7 +25,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 
-public class ClusteredServiceAgent implements Agent, FragmentHandler
+public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
 {
     /**
      * Length of the session header that will be precede application protocol message.
@@ -53,6 +53,11 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler
         this.aeron = aeron;
         this.service = service;
         this.logSubscription = logSubscription;
+    }
+
+    public void onStart()
+    {
+        service.onStart(this);
     }
 
     public int doWork() throws Exception
@@ -100,15 +105,8 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                final long clusterSessionId = sessionHeaderDecoder.clusterSessionId();
-                final ClientSession session = sessionByIdMap.get(clusterSessionId);
-                if (null == session)
-                {
-                    throw new IllegalArgumentException("Unknown cluster session id: " + clusterSessionId);
-                }
-
                 service.onSessionMessage(
-                    session,
+                    sessionHeaderDecoder.clusterSessionId(),
                     sessionHeaderDecoder.correlationId(),
                     buffer,
                     offset + SESSION_HEADER_LENGTH,
@@ -143,5 +141,20 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler
                 service.onTimerEvent(timerEventDecoder.correlationId());
                 break;
         }
+    }
+
+    public ClientSession getClientSession(final long clusterSessionId)
+    {
+        return sessionByIdMap.get(clusterSessionId);
+    }
+
+    public void registerTimer(final long correlationId, final long deadlineMs)
+    {
+
+    }
+
+    public void cancelTimer(final long correlationId)
+    {
+
     }
 }

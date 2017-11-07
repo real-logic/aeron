@@ -36,7 +36,7 @@ class SequencerAgent implements Agent
     private static final int MAX_SEND_ATTEMPTS = 3;
     private static final int FRAGMENT_LIMIT = 10;
 
-    private long nextSessionId = 1111;
+    private long nextSessionId = 1;
     private final long pendingSessionTimeoutMs = TimeUnit.SECONDS.toMillis(5);
     private final Aeron aeron;
     private final EpochClock epochClock;
@@ -55,7 +55,7 @@ class SequencerAgent implements Agent
 
     // TODO: message counter
     // TODO: Active session limit
-    // TODO: Timeout inactive session and clean up closed sessions that fail to log.
+    // TODO: Timeout inactive sessions and clean up closed sessions that fail to log.
 
     SequencerAgent(final Aeron aeron, final ClusterNode.Context ctx)
     {

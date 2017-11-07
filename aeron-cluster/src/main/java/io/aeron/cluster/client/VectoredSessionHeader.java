@@ -22,8 +22,6 @@ import io.aeron.cluster.codecs.SessionHeaderEncoder;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import java.util.Objects;
-
 /**
  * Encapsulate the {@link Publication} to the cluster and when offering apply the cluster session header.
  * <p>
@@ -31,7 +29,7 @@ import java.util.Objects;
  * <p>
  * <b>Note:</b> This class is NOT threadsafe. Each publisher thread requires its own instance.
  */
-public class VectoredSessionPublication
+public class VectoredSessionHeader
 {
     /**
      * Length of the session header that will be prepended to the message.
@@ -39,22 +37,17 @@ public class VectoredSessionPublication
     public static final int SESSION_HEADER_LENGTH =
         MessageHeaderEncoder.ENCODED_LENGTH + SessionHeaderEncoder.BLOCK_LENGTH;
 
-    private final Publication publication;
     private final DirectBufferVector[] vectors = new DirectBufferVector[2];
     private final DirectBufferVector messageBuffer = new DirectBufferVector();
     private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
 
     /**
-     * Construct a new cluster {@link Publication} wrapper for a given cluster session id.
+     * Construct a new session header wrapper.
      *
-     * @param publication      that is connected to the cluster.
      * @param clusterSessionId that has been allocated by the cluster.
      */
-    public VectoredSessionPublication(final Publication publication, final long clusterSessionId)
+    public VectoredSessionHeader(final long clusterSessionId)
     {
-        Objects.requireNonNull(publication);
-        this.publication = publication;
-
         final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
         sessionHeaderEncoder
             .wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder())
@@ -65,25 +58,31 @@ public class VectoredSessionPublication
     }
 
     /**
-     * Get the wrapped session {@link Publication}.
+     * Reset the cluster session id in the header.
      *
-     * @return the wrapped session {@link Publication}.
+     * @param clusterSessionId to be set in the header.
      */
-    public Publication publication()
+    public void clusterSessionId(final long clusterSessionId)
     {
-        return publication;
+        sessionHeaderEncoder.clusterSessionId(clusterSessionId);
     }
 
     /**
      * Non-blocking publish of a partial buffer containing a message to a cluster.
      *
+     * @param publication   to be offer to.
      * @param correlationId to be used to identify the message to the cluster.
      * @param buffer        containing message.
      * @param offset        offset in the buffer at which the encoded message begins.
      * @param length        in bytes of the encoded message.
      * @return the same as {@link Publication#offer(DirectBuffer, int, int)}.
      */
-    public long offer(final long correlationId, final DirectBuffer buffer, final int offset, final int length)
+    public long offer(
+        final Publication publication,
+        final long correlationId,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
     {
         sessionHeaderEncoder.correlationId(correlationId);
         messageBuffer.reset(buffer, offset, length);

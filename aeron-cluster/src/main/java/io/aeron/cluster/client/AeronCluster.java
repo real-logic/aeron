@@ -162,7 +162,7 @@ public final class AeronCluster implements AutoCloseable
     /**
      * Get the raw {@link Publication} for sending to the cluster.
      * <p>
-     * This can be wrapped with a {@link VectoredSessionPublication} or {@link OffsetSessionPublication} for
+     * This can be wrapped with a {@link VectoredSessionHeader} or {@link OffsetSessionPublication} for
      * pre-pending the cluster session header to messages. All messages should have a header encode with a
      * {@link io.aeron.cluster.codecs.SessionHeaderEncoder} or equivalent.
      *

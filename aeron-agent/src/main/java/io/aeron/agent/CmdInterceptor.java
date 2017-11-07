@@ -87,6 +87,22 @@ public class CmdInterceptor
             case ON_EXCLUSIVE_PUBLICATION_READY:
                 LOGGER.log(CMD_OUT_EXCLUSIVE_PUBLICATION_READY, buffer, index, length);
                 break;
+
+            case ON_SUBSCRIPTION_READY:
+                LOGGER.log(CMD_OUT_SUBSCRIPTION_READY, buffer, index, length);
+                break;
+
+            case ON_COUNTER_READY:
+                LOGGER.log(CMD_OUT_COUNTER_READY, buffer, index, length);
+                break;
+
+            case ADD_COUNTER:
+                LOGGER.log(CMD_IN_ADD_COUNTER, buffer, index, length);
+                break;
+
+            case REMOVE_COUNTER:
+                LOGGER.log(CMD_IN_REMOVE_COUNTER, buffer, index, length);
+                break;
         }
     }
 }

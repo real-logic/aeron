@@ -45,6 +45,10 @@ public class EventDissector
     private static final RemoveMessageFlyweight REMOVE_MSG = new RemoveMessageFlyweight();
     private static final DestinationMessageFlyweight DESTINATION_MSG = new DestinationMessageFlyweight();
     private static final ErrorResponseFlyweight ERROR_MSG = new ErrorResponseFlyweight();
+    private static final CounterMessageFlyweight COUNTER_MSG = new CounterMessageFlyweight();
+    private static final CounterReadyFlyweight COUNTER_READY = new CounterReadyFlyweight();
+    private static final OperationSucceededFlyweight OPERATION_SUCCEEDED = new OperationSucceededFlyweight();
+    private static final SubscriptionReadyFlyweight SUBSCRIPTION_READY = new SubscriptionReadyFlyweight();
 
     public static String dissectAsFrame(final EventCode code, final MutableDirectBuffer buffer, final int offset)
     {
@@ -123,6 +127,7 @@ public class EventDissector
 
             case CMD_IN_REMOVE_PUBLICATION:
             case CMD_IN_REMOVE_SUBSCRIPTION:
+            case CMD_IN_REMOVE_COUNTER:
                 final RemoveMessageFlyweight removeCmd = REMOVE_MSG;
                 removeCmd.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(removeCmd));
@@ -142,6 +147,11 @@ public class EventDissector
                 break;
 
             case CMD_OUT_ON_OPERATION_SUCCESS:
+                final OperationSucceededFlyweight operationSucceeded = OPERATION_SUCCEEDED;
+                operationSucceeded.wrap(buffer, offset + relativeOffset);
+                builder.append(dissect(operationSucceeded));
+                break;
+
             case CMD_IN_KEEPALIVE_CLIENT:
                 final CorrelatedMessageFlyweight correlatedEvent = CORRELATED_MSG;
                 correlatedEvent.wrap(buffer, offset + relativeOffset);
@@ -165,6 +175,24 @@ public class EventDissector
                 final ErrorResponseFlyweight errorResponseFlyweight = ERROR_MSG;
                 errorResponseFlyweight.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(errorResponseFlyweight));
+                break;
+
+            case CMD_IN_ADD_COUNTER:
+                final CounterMessageFlyweight counterMessage = COUNTER_MSG;
+                counterMessage.wrap(buffer, offset + relativeOffset);
+                builder.append(dissect(counterMessage));
+                break;
+
+            case CMD_OUT_SUBSCRIPTION_READY:
+                final SubscriptionReadyFlyweight subscriptionReady = SUBSCRIPTION_READY;
+                subscriptionReady.wrap(buffer, offset + relativeOffset);
+                builder.append(dissect(subscriptionReady));
+                break;
+
+            case CMD_OUT_COUNTER_READY:
+                final CounterReadyFlyweight counterReady = COUNTER_READY;
+                counterReady.wrap(buffer, offset + relativeOffset);
+                builder.append(dissect(counterReady));
                 break;
 
             default:
@@ -359,10 +387,11 @@ public class EventDissector
     private static String dissect(final PublicationBuffersReadyFlyweight msg)
     {
         return String.format(
-            "%d:%d %d [%d %d]%n    %s",
+            "%d:%d %d %d [%d %d]%n    %s",
             msg.sessionId(),
             msg.streamId(),
             msg.publicationLimitCounterId(),
+            msg.channelStatusCounterId(),
             msg.correlationId(),
             msg.registrationId(),
             msg.logFileName());
@@ -392,10 +421,11 @@ public class EventDissector
     private static String dissect(final ImageMessageFlyweight msg)
     {
         return String.format(
-            "%s %d [%d]",
+            "%s %d [%d %d]",
             msg.channel(),
             msg.streamId(),
-            msg.correlationId());
+            msg.correlationId(),
+            msg.subscriptionRegistrationId());
     }
 
     private static String dissect(final RemoveMessageFlyweight msg)
@@ -424,6 +454,40 @@ public class EventDissector
             msg.offendingCommandCorrelationId(),
             msg.errorCode(),
             msg.errorMessage());
+    }
+
+    private static String dissect(final CounterMessageFlyweight msg)
+    {
+        return String.format(
+            "%d [%d %d][%d %d][%d:%d]",
+            msg.typeId(),
+            msg.keyBufferOffset(),
+            msg.keyBufferLength(),
+            msg.labelBufferOffset(),
+            msg.labelBufferLength(),
+            msg.clientId(),
+            msg.correlationId());
+    }
+
+    private static String dissect(final CounterReadyFlyweight msg)
+    {
+        return String.format(
+            "%d %d",
+            msg.correlationId(),
+            msg.counterId());
+    }
+
+    private static String dissect(final OperationSucceededFlyweight msg)
+    {
+        return String.format("%d", msg.correlationId());
+    }
+
+    private static String dissect(final SubscriptionReadyFlyweight msg)
+    {
+        return String.format(
+            "%d %d",
+            msg.correlationId(),
+            msg.channelStatusCounterId());
     }
 
     public static int frameType(final MutableDirectBuffer buffer, final int termOffset)

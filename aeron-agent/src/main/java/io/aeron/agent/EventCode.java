@@ -51,9 +51,14 @@ public enum EventCode
     CMD_IN_ADD_EXCLUSIVE_PUBLICATION(32, EventDissector::dissectAsCommand),
     CMD_OUT_EXCLUSIVE_PUBLICATION_READY(33, EventDissector::dissectAsCommand),
 
-    CMD_OUT_ERROR(34, EventDissector::dissectAsCommand);
+    CMD_OUT_ERROR(34, EventDissector::dissectAsCommand),
 
-    private static final EventCode[] EVENT_CODE_BY_ID = new EventCode[35];
+    CMD_IN_ADD_COUNTER(35, EventDissector::dissectAsCommand),
+    CMD_IN_REMOVE_COUNTER(36, EventDissector::dissectAsCommand),
+    CMD_OUT_SUBSCRIPTION_READY(37, EventDissector::dissectAsCommand),
+    CMD_OUT_COUNTER_READY(38, EventDissector::dissectAsCommand);
+
+    private static final EventCode[] EVENT_CODE_BY_ID = new EventCode[39];
 
     @FunctionalInterface
     private interface DissectFunction

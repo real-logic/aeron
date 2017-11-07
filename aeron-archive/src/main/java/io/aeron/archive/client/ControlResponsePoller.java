@@ -78,7 +78,7 @@ public class ControlResponsePoller
     /**
      * Control session id of the last polled message or -1 if poll returned nothing.
      *
-     * @return correlation id of the last polled message or -1 if unrecognised template.
+     * @return control session id of the last polled message or -1 if unrecognised template.
      */
     public long controlSessionId()
     {

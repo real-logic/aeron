@@ -423,31 +423,25 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
-    public void onUnavailableImage(final long correlationId, final int streamId)
+    public void onUnavailableImage(final long correlationId, final long subscriptionRegistrationId, final int streamId)
     {
-        for (final Object resource : resourceByRegIdMap.values())
+        final Subscription subscription = (Subscription)resourceByRegIdMap.get(subscriptionRegistrationId);
+        if (null != subscription)
         {
-            if (resource instanceof Subscription)
+            final Image image = subscription.removeImage(correlationId);
+            if (null != image)
             {
-                final Subscription subscription = (Subscription)resource;
-                if (subscription.streamId() == streamId)
+                try
                 {
-                    final Image image = subscription.removeImage(correlationId);
-                    if (null != image)
+                    final UnavailableImageHandler handler = subscription.unavailableImageHandler();
+                    if (null != handler)
                     {
-                        try
-                        {
-                            final UnavailableImageHandler handler = subscription.unavailableImageHandler();
-                            if (null != handler)
-                            {
-                                handler.onUnavailableImage(image);
-                            }
-                        }
-                        catch (final Throwable ex)
-                        {
-                            errorHandler.onError(ex);
-                        }
+                        handler.onUnavailableImage(image);
                     }
+                }
+                catch (final Throwable ex)
+                {
+                    errorHandler.onError(ex);
                 }
             }
         }

@@ -482,7 +482,7 @@ public class ClientConductorTest
         assertTrue(subscription.isConnected());
         verify(mockAvailableImageHandler).onAvailableImage(any(Image.class));
 
-        conductor.onUnavailableImage(CORRELATION_ID, STREAM_ID_1);
+        conductor.onUnavailableImage(CORRELATION_ID, subscription.registrationId(), STREAM_ID_1);
 
         verify(mockUnavailableImageHandler).onUnavailableImage(any(Image.class));
         assertTrue(subscription.hasNoImages());
@@ -508,7 +508,7 @@ public class ClientConductorTest
     @Test
     public void shouldIgnoreUnknownInactiveImage()
     {
-        conductor.onUnavailableImage(CORRELATION_ID_2, STREAM_ID_2);
+        conductor.onUnavailableImage(CORRELATION_ID_2, SUBSCRIBER_POSITION_REGISTRATION_ID, STREAM_ID_2);
 
         verify(logBuffersFactory, never()).map(anyString());
         verify(mockUnavailableImageHandler, never()).onUnavailableImage(any(Image.class));

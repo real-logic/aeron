@@ -18,6 +18,7 @@ package io.aeron.command;
 import org.agrona.MutableDirectBuffer;
 
 import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Control message flyweight for any message that needs to represent a connection
@@ -26,6 +27,9 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *  |                        Correlation ID                         |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                 Subscription Registration ID                  |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                          Stream ID                            |
@@ -40,8 +44,9 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 public class ImageMessageFlyweight
 {
     private static final int CORRELATION_ID_OFFSET = 0;
-    private static final int STREAM_ID_FIELD_OFFSET = 8;
-    private static final int CHANNEL_OFFSET = 12;
+    private static final int SUBSCRIPTION_REGISTRATION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
+    private static final int STREAM_ID_FIELD_OFFSET = SUBSCRIPTION_REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
+    private static final int CHANNEL_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
 
     private MutableDirectBuffer buffer;
     private int offset;
@@ -81,6 +86,29 @@ public class ImageMessageFlyweight
     public ImageMessageFlyweight correlationId(final long correlationId)
     {
         buffer.putLong(offset + CORRELATION_ID_OFFSET, correlationId);
+
+        return this;
+    }
+
+    /**
+     * Registration ID for the subscription.
+     *
+     * @return registration ID for the subscription.
+     */
+    public long subscriptionRegistrationId()
+    {
+        return buffer.getLong(offset + SUBSCRIPTION_REGISTRATION_ID_OFFSET);
+    }
+
+    /**
+     * Set the tegistration ID for the subscription.
+     *
+     * @param registrationId for the subscription
+     * @return flyweight
+     */
+    public ImageMessageFlyweight subscriptionRegistrationId(final long registrationId)
+    {
+        buffer.putLong(offset + SUBSCRIPTION_REGISTRATION_ID_OFFSET, registrationId);
 
         return this;
     }

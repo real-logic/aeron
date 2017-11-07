@@ -332,11 +332,16 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     void cleanupSpies(final NetworkPublication publication)
     {
-        clientProxy.onUnavailableImage(publication.registrationId(), publication.streamId(), publication.channel());
-
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
-            subscriptionLinks.get(i).unlink(publication);
+            final SubscriptionLink link = subscriptionLinks.get(i);
+
+            if (link.isLinked(publication))
+            {
+                clientProxy.onUnavailableImage(
+                    publication.registrationId(), link.registrationId(), publication.streamId(), publication.channel());
+                subscriptionLinks.get(i).unlink(publication);
+            }
         }
     }
 
@@ -375,13 +380,35 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     void transitionToLinger(final PublicationImage image)
     {
-        clientProxy.onUnavailableImage(image.correlationId(), image.streamId(), image.channel());
+        for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
+        {
+            final SubscriptionLink link = subscriptionLinks.get(i);
+
+            if (link.isLinked(image))
+            {
+                clientProxy.onUnavailableImage(
+                    image.correlationId(), link.registrationId(), image.streamId(), image.channel());
+            }
+        }
+
         receiverProxy.removeCoolDown(image.channelEndpoint(), image.sessionId(), image.streamId());
     }
 
     void transitionToLinger(final IpcPublication publication)
     {
-        clientProxy.onUnavailableImage(publication.registrationId(), publication.streamId(), CommonContext.IPC_CHANNEL);
+        for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
+        {
+            final SubscriptionLink link = subscriptionLinks.get(i);
+
+            if (link.isLinked(publication))
+            {
+                clientProxy.onUnavailableImage(
+                    publication.registrationId(),
+                    link.registrationId(),
+                    publication.streamId(),
+                    CommonContext.IPC_CHANNEL);
+            }
+        }
     }
 
     void cleanupImage(final PublicationImage image)

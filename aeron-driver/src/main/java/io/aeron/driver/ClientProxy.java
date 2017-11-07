@@ -131,10 +131,12 @@ public class ClientProxy
         transmit(ON_OPERATION_SUCCESS, buffer, 0, OperationSucceededFlyweight.LENGTH);
     }
 
-    public void onUnavailableImage(final long correlationId, final int streamId, final String channel)
+    public void onUnavailableImage(
+        final long correlationId, final long subscriptionRegistrationId, final int streamId, final String channel)
     {
         imageMessage
             .correlationId(correlationId)
+            .subscriptionRegistrationId(subscriptionRegistrationId)
             .streamId(streamId)
             .channel(channel);
 

@@ -151,7 +151,8 @@ class DriverEventsAdapter implements MessageHandler
             {
                 imageMessage.wrap(buffer, index);
 
-                listener.onUnavailableImage(imageMessage.correlationId(), imageMessage.streamId());
+                listener.onUnavailableImage(
+                    imageMessage.correlationId(), imageMessage.subscriptionRegistrationId(), imageMessage.streamId());
                 break;
             }
 

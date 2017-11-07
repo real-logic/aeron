@@ -661,7 +661,7 @@ public class DriverConductorTest
     {
         final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
 
-        driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        final long subId = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -685,7 +685,8 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= IMAGE_LIVENESS_TIMEOUT_NS + 1000);
 
-        verify(mockClientProxy).onUnavailableImage(eq(publicationImage.correlationId()), eq(STREAM_ID_1), anyString());
+        verify(mockClientProxy)
+            .onUnavailableImage(eq(publicationImage.correlationId()), eq(subId), eq(STREAM_ID_1), anyString());
     }
 
     @Test
@@ -693,7 +694,7 @@ public class DriverConductorTest
     {
         final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
 
-        driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        final long subId1 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -714,7 +715,7 @@ public class DriverConductorTest
 
         publicationImage.activate();
 
-        driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        final long subId2 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -732,7 +733,9 @@ public class DriverConductorTest
             anyString(),
             anyString());
         inOrder.verify(mockClientProxy, times(1)).onUnavailableImage(
-            eq(publicationImage.correlationId()), eq(STREAM_ID_1), anyString());
+            eq(publicationImage.correlationId()), eq(subId1), eq(STREAM_ID_1), anyString());
+        inOrder.verify(mockClientProxy, times(1)).onUnavailableImage(
+            eq(publicationImage.correlationId()), eq(subId2), eq(STREAM_ID_1), anyString());
     }
 
     @Test
@@ -783,7 +786,7 @@ public class DriverConductorTest
             anyString(),
             anyString());
         inOrder.verify(mockClientProxy, times(1)).onUnavailableImage(
-            eq(publicationImage.correlationId()), eq(STREAM_ID_1), anyString());
+            eq(publicationImage.correlationId()), eq(subOneId), eq(STREAM_ID_1), anyString());
         inOrder.verify(mockClientProxy, times(1)).onSubscriptionReady(eq(subTwoId), anyInt());
         inOrder.verifyNoMoreInteractions();
     }
@@ -1096,7 +1099,7 @@ public class DriverConductorTest
         final DriverProxy spyDriverProxy = new DriverProxy(fromClientCommands, clientId);
 
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
-        spyDriverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+        final long subId = spyDriverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -1115,7 +1118,7 @@ public class DriverConductorTest
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
         verify(mockClientProxy).onUnavailableImage(
-            eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), anyString());
+            eq(networkPublicationCorrelationId(publication)), eq(subId), eq(STREAM_ID_1), anyString());
     }
 
     @Test

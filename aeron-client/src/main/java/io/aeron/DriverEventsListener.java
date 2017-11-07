@@ -44,7 +44,10 @@ interface DriverEventsListener
         long correlationId,
         int statusIndicatorId);
 
-    void onUnavailableImage(long correlationId, int streamId);
+    void onUnavailableImage(
+        long correlationId,
+        long subscriptionRegistrationId,
+        int streamId);
 
     void onNewExclusivePublication(
         long correlationId,

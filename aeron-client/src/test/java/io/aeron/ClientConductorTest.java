@@ -68,8 +68,8 @@ public class ClientConductorTest
     private static final long INTER_SERVICE_TIMEOUT_MS = 1000;
     private static final long PUBLICATION_CONNECTION_TIMEOUT_MS = 5000;
 
-    private static final int SUBSCRIBER_POSITION_ID = 2;
-    private static final int SUBSCRIBER_POSITION_REGISTRATION_ID = 4001;
+    private static final int SUBSCRIPTION_POSITION_ID = 2;
+    private static final int SUBSCRIPTION_POSITION_REGISTRATION_ID = 4001;
 
     private static final String SOURCE_INFO = "127.0.0.1:40789";
 
@@ -448,7 +448,7 @@ public class ClientConductorTest
             STREAM_ID_1,
             SESSION_ID_1,
             subscription.registrationId(),
-            SUBSCRIBER_POSITION_ID,
+            SUBSCRIPTION_POSITION_ID,
             SESSION_ID_1 + "-log",
             SOURCE_INFO);
 
@@ -474,7 +474,7 @@ public class ClientConductorTest
             STREAM_ID_1,
             SESSION_ID_1,
             subscription.registrationId(),
-            SUBSCRIBER_POSITION_ID,
+            SUBSCRIPTION_POSITION_ID,
             SESSION_ID_1 + "-log",
             SOURCE_INFO);
 
@@ -496,8 +496,8 @@ public class ClientConductorTest
             CORRELATION_ID_2,
             STREAM_ID_2,
             SESSION_ID_2,
-            SUBSCRIBER_POSITION_REGISTRATION_ID,
-            SUBSCRIBER_POSITION_ID,
+            SUBSCRIPTION_POSITION_REGISTRATION_ID,
+            SUBSCRIPTION_POSITION_ID,
             SESSION_ID_2 + "-log",
             SOURCE_INFO);
 
@@ -508,7 +508,7 @@ public class ClientConductorTest
     @Test
     public void shouldIgnoreUnknownInactiveImage()
     {
-        conductor.onUnavailableImage(CORRELATION_ID_2, SUBSCRIBER_POSITION_REGISTRATION_ID, STREAM_ID_2);
+        conductor.onUnavailableImage(CORRELATION_ID_2, SUBSCRIPTION_POSITION_REGISTRATION_ID, STREAM_ID_2);
 
         verify(logBuffersFactory, never()).map(anyString());
         verify(mockUnavailableImageHandler, never()).onUnavailableImage(any(Image.class));

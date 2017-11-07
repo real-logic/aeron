@@ -271,8 +271,9 @@ class ClientConductor implements Agent, DriverEventsListener
     {
         ensureOpen();
 
-        final long registrationId =
-            driverProxy.addCounter(typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
+        final long registrationId = driverProxy.addCounter(
+            typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
+
         awaitResponse(registrationId);
 
         return (Counter)resourceByRegIdMap.get(registrationId);
@@ -374,9 +375,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 correlationId));
     }
 
-    public void onNewSubscription(
-        final long correlationId,
-        final int statusIndicatorId)
+    public void onNewSubscription(final long correlationId, final int statusIndicatorId)
     {
         final Subscription subscription = (Subscription)resourceByRegIdMap.get(correlationId);
 
@@ -458,10 +457,7 @@ class ClientConductor implements Agent, DriverEventsListener
     {
         resourceByRegIdMap.put(
             correlationId,
-            new Counter(
-                this,
-                correlationId,
-                new UnsafeBufferPosition(counterValuesBuffer, counterId)));
+            new Counter(this, correlationId, new UnsafeBufferPosition(counterValuesBuffer, counterId)));
     }
 
     void releaseImage(final Image image)

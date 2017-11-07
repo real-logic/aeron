@@ -183,9 +183,7 @@ class DriverEventsAdapter implements MessageHandler
                 final long correlationId = counterReady.correlationId();
                 if (correlationId == activeCorrelationId)
                 {
-                    listener.onNewCounter(
-                        correlationId,
-                        counterReady.counterId());
+                    listener.onNewCounter(correlationId, counterReady.counterId());
 
                     lastReceivedCorrelationId = correlationId;
                 }

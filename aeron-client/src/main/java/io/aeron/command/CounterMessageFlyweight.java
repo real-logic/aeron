@@ -73,16 +73,34 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
         return this;
     }
 
+    /**
+     * Offset of the key buffer
+     *
+     * @return offset of the key buffer
+     */
     public int keyBufferOffset()
     {
         return KEY_LENGTH_OFFSET + SIZE_OF_INT;
     }
 
+    /**
+     * Length of the key buffer in bytes
+     *
+     * @return length of key buffer in bytes
+     */
     public int keyBufferLength()
     {
         return buffer.getInt(offset + KEY_LENGTH_OFFSET);
     }
 
+    /**
+     * Fill the key buffer.
+     *
+     * @param keyBuffer   containing the optional key for the counter.
+     * @param keyOffset   within the keyBuffer at which the key begins.
+     * @param keyLength   of the key in the keyBuffer.
+     * @return flyweight
+     */
     public CounterMessageFlyweight keyBuffer(
         final DirectBuffer keyBuffer,
         final int keyOffset,
@@ -93,16 +111,34 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
         return this;
     }
 
+    /**
+     * Offset of label buffer.
+     *
+     * @return offset of label buffer
+     */
     public int labelBufferOffset()
     {
         return labelOffset() + SIZE_OF_INT;
     }
 
+    /**
+     * Length of label buffer in bytes.
+     *
+     * @return length of label buffer in bytes
+     */
     public int labelBufferLength()
     {
         return buffer.getInt(offset + labelOffset());
     }
 
+    /**
+     * Fill the label buffer.
+     *
+     * @param labelBuffer containing the mandatory label for the counter.
+     * @param labelOffset within the labelBuffer at which the label begins.
+     * @param labelLength of the label in the labelBuffer.
+     * @return flyweight
+     */
     public CounterMessageFlyweight labelBuffer(
         final DirectBuffer labelBuffer,
         final int labelOffset,

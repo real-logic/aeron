@@ -66,7 +66,7 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
      * @param typeId field value
      * @return flyweight
      */
-    public CounterMessageFlyweight counterTypeId(final long typeId)
+    public CounterMessageFlyweight typeId(final long typeId)
     {
         buffer.putLong(offset + COUNTER_TYPE_ID_FIELD_OFFSET, typeId);
 

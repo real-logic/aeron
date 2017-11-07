@@ -21,6 +21,7 @@ import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.status.StaticStatusIndicator;
+import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import org.agrona.ManagedResource;
 import org.agrona.collections.ArrayListUtil;
@@ -259,6 +260,39 @@ class ClientConductor implements Agent, DriverEventsListener
         awaitResponse(driverProxy.removeDestination(registrationId, endpointChannel));
     }
 
+    Counter addCounter(
+        final int typeId,
+        final DirectBuffer keyBuffer,
+        final int keyOffset,
+        final int keyLength,
+        final DirectBuffer labelBuffer,
+        final int labelOffset,
+        final int labelLength)
+    {
+        ensureOpen();
+
+        final long registrationId =
+            driverProxy.addCounter(typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
+        awaitResponse(registrationId);
+
+        return (Counter)resourceByRegIdMap.get(registrationId);
+    }
+
+    void releaseCounter(final Counter counter)
+    {
+        ensureOpen();
+
+        final long registrationId = counter.registrationId();
+        awaitResponse(driverProxy.removeCounter(registrationId));
+        resourceByRegIdMap.remove(registrationId);
+    }
+
+
+    void asyncReleaseCounter(final Counter counter)
+    {
+        driverProxy.removeCounter(counter.registrationId());
+    }
+
     public void onError(final long correlationId, final ErrorCode errorCode, final String message)
     {
         driverException = new RegistrationException(errorCode, message);
@@ -418,6 +452,16 @@ class ClientConductor implements Agent, DriverEventsListener
                 }
             }
         }
+    }
+
+    public void onNewCounter(final long correlationId, final int counterId)
+    {
+        resourceByRegIdMap.put(
+            correlationId,
+            new Counter(
+                this,
+                correlationId,
+                new UnsafeBufferPosition(counterValuesBuffer, counterId)));
     }
 
     void releaseImage(final Image image)
@@ -611,9 +655,13 @@ class ClientConductor implements Agent, DriverEventsListener
             {
                 ((Subscription)resource).forceClose();
             }
-            else
+            else if (resource instanceof Publication)
             {
                 ((Publication)resource).forceClose();
+            }
+            else if (resource instanceof Counter)
+            {
+                ((Counter)resource).forceClose();
             }
         }
 

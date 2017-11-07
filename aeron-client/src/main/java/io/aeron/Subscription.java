@@ -139,8 +139,6 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         return registrationId;
     }
 
-
-
     /**
      * Callback used to indicate when an {@link Image} becomes available under this {@link Subscription}.
      *

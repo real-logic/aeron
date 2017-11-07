@@ -58,4 +58,8 @@ interface DriverEventsListener
     void onChannelEndpointError(
         int statusIndicatorId,
         String message);
+
+    void onNewCounter(
+        long correlationId,
+        int counterId);
 }

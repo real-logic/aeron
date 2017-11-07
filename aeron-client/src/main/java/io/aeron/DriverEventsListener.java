@@ -26,7 +26,7 @@ interface DriverEventsListener
         long correlationId,
         int streamId,
         int sessionId,
-        long subscriberRegistrationId,
+        long subscriptionRegistrationId,
         int subscriberPositionId,
         String logFileName,
         String sourceIdentity);

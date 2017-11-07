@@ -81,7 +81,7 @@ public class ClientProxy
             .sessionId(sessionId)
             .streamId(streamId)
             .correlationId(correlationId)
-            .subscriberRegistrationId(subscriptionRegistrationId)
+            .subscriptionRegistrationId(subscriptionRegistrationId)
             .subscriberPositionId(positionCounterId)
             .logFileName(logFileName)
             .sourceIdentity(sourceIdentity);

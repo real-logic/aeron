@@ -93,7 +93,7 @@ class DriverEventsAdapter implements MessageHandler
                     imageReady.correlationId(),
                     imageReady.streamId(),
                     imageReady.sessionId(),
-                    imageReady.subscriberRegistrationId(),
+                    imageReady.subscriptionRegistrationId(),
                     imageReady.subscriberPositionId(),
                     imageReady.logFileName(),
                     imageReady.sourceIdentity());

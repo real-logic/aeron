@@ -37,7 +37,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  +---------------------------------------------------------------+
  *  |                          Stream ID                            |
  *  +---------------------------------------------------------------+
- *  |                  Subscriber Registration Id                   |
+ *  |                 Subscription Registration Id                  |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                    Subscriber Position Id                     |
@@ -59,8 +59,8 @@ public class ImageBuffersReadyFlyweight
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
-    private static final int SUBSCRIBER_REGISTRATION_ID_OFFSET =  STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int SUBSCRIBER_POSITION_ID_OFFSET = SUBSCRIBER_REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
+    private static final int SUBSCRIPTION_REGISTRATION_ID_OFFSET =  STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int SUBSCRIBER_POSITION_ID_OFFSET = SUBSCRIPTION_REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int LOG_FILE_NAME_OFFSET = SUBSCRIBER_POSITION_ID_OFFSET + SIZE_OF_INT;
 
     private MutableDirectBuffer buffer;
@@ -174,26 +174,26 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * Set the registration Id for the subscriber position
+     * Set the registration Id for the Subscription
      *
-     * @param id for the subscriber position
+     * @param id for the Subscription
      * @return flyweight
      */
-    public ImageBuffersReadyFlyweight subscriberRegistrationId(final long id)
+    public ImageBuffersReadyFlyweight subscriptionRegistrationId(final long id)
     {
-        buffer.putLong(offset + SUBSCRIBER_REGISTRATION_ID_OFFSET, id);
+        buffer.putLong(offset + SUBSCRIPTION_REGISTRATION_ID_OFFSET, id);
 
         return this;
     }
 
     /**
-     * Return the registration Id for the subscriber position
+     * Return the registration Id for the Subscription
      *
-     * @return registration Id for the subscriber position
+     * @return registration Id for the Subscription
      */
-    public long subscriberRegistrationId()
+    public long subscriptionRegistrationId()
     {
-        return buffer.getLong(offset + SUBSCRIBER_REGISTRATION_ID_OFFSET);
+        return buffer.getLong(offset + SUBSCRIPTION_REGISTRATION_ID_OFFSET);
     }
 
     /**

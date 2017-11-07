@@ -375,7 +375,7 @@ public class EventDissector
             msg.sessionId(),
             msg.streamId(),
             msg.subscriberPositionId(),
-            msg.subscriberRegistrationId(),
+            msg.subscriptionRegistrationId(),
             msg.sourceIdentity(),
             msg.correlationId(),
             msg.logFileName());

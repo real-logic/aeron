@@ -389,12 +389,12 @@ class ClientConductor implements Agent, DriverEventsListener
         final long correlationId,
         final int streamId,
         final int sessionId,
-        final long subscriberRegistrationId,
+        final long subscriptionRegistrationId,
         final int subscriberPositionId,
         final String logFileName,
         final String sourceIdentity)
     {
-        final Subscription subscription = (Subscription)resourceByRegIdMap.get(subscriberRegistrationId);
+        final Subscription subscription = (Subscription)resourceByRegIdMap.get(subscriptionRegistrationId);
         if (null != subscription && !subscription.containsImage(correlationId))
         {
             final Image image = new Image(

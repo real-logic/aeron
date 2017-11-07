@@ -38,7 +38,17 @@ public enum ErrorCode
     /**
      * Attempted to remove a publication, but it was not found.
      */
-    UNKNOWN_PUBLICATION(3);
+    UNKNOWN_PUBLICATION(3),
+
+    /**
+     * Channel Endpoint could not be successfully opened.
+     */
+    CHANNEL_ENDPOINT_ERROR(4),
+
+    /**
+     * Attempted to remove a counter, but it was not found.
+     */
+    UNKNOWN_COUNTER(5);
 
     private final int value;
 

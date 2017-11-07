@@ -15,10 +15,7 @@
  */
 package io.aeron;
 
-import io.aeron.command.ControlProtocolEvents;
-import io.aeron.command.CorrelatedMessageFlyweight;
-import io.aeron.command.ErrorResponseFlyweight;
-import io.aeron.command.PublicationBuffersReadyFlyweight;
+import io.aeron.command.*;
 import io.aeron.exceptions.ConductorServiceTimeoutException;
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.exceptions.RegistrationException;
@@ -77,11 +74,13 @@ public class ClientConductorTest
     private static final String SOURCE_INFO = "127.0.0.1:40789";
 
     private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
-    private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
+    private final SubscriptionReadyFlyweight subscriptionReady = new SubscriptionReadyFlyweight();
+    private final OperationSucceededFlyweight operationSuccess = new OperationSucceededFlyweight();
     private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
 
     private final UnsafeBuffer publicationReadyBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
-    private final UnsafeBuffer correlatedMessageBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
+    private final UnsafeBuffer subscriptionReadyBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
+    private final UnsafeBuffer operationSuccessBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
     private final UnsafeBuffer errorMessageBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
 
     private final CopyBroadcastReceiver mockToClientReceiver = mock(CopyBroadcastReceiver.class);
@@ -134,7 +133,8 @@ public class ClientConductorTest
         conductor = new ClientConductor(ctx);
 
         publicationReady.wrap(publicationReadyBuffer, 0);
-        correlatedMessage.wrap(correlatedMessageBuffer, 0);
+        subscriptionReady.wrap(subscriptionReadyBuffer, 0);
+        operationSuccess.wrap(operationSuccessBuffer, 0);
         errorResponse.wrap(errorMessageBuffer, 0);
 
         publicationReady.correlationId(CORRELATION_ID);
@@ -143,7 +143,7 @@ public class ClientConductorTest
         publicationReady.streamId(STREAM_ID_1);
         publicationReady.logFileName(SESSION_ID_1 + "-log");
 
-        correlatedMessage.correlationId(CLOSE_CORRELATION_ID);
+        operationSuccess.correlationId(CLOSE_CORRELATION_ID);
 
         final UnsafeBuffer[] termBuffersSession1 = new UnsafeBuffer[PARTITION_COUNT];
         final UnsafeBuffer[] termBuffersSession2 = new UnsafeBuffer[PARTITION_COUNT];
@@ -224,8 +224,8 @@ public class ClientConductorTest
 
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_OPERATION_SUCCESS,
-            correlatedMessageBuffer,
-            (buffer) -> CorrelatedMessageFlyweight.LENGTH);
+            operationSuccessBuffer,
+            (buffer) -> OperationSucceededFlyweight.LENGTH);
 
         publication.close();
 
@@ -242,8 +242,8 @@ public class ClientConductorTest
 
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_OPERATION_SUCCESS,
-            correlatedMessageBuffer,
-            (buffer) -> CorrelatedMessageFlyweight.LENGTH);
+            operationSuccessBuffer,
+            (buffer) -> OperationSucceededFlyweight.LENGTH);
 
         firstPublication.close();
 
@@ -319,8 +319,8 @@ public class ClientConductorTest
 
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_OPERATION_SUCCESS,
-            correlatedMessageBuffer,
-            (buffer) -> CorrelatedMessageFlyweight.LENGTH);
+            operationSuccessBuffer,
+            (buffer) -> OperationSucceededFlyweight.LENGTH);
 
         publication.close();
 
@@ -365,12 +365,12 @@ public class ClientConductorTest
     public void addSubscriptionShouldNotifyMediaDriver() throws Exception
     {
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_OPERATION_SUCCESS,
-            correlatedMessageBuffer,
+            ControlProtocolEvents.ON_SUBSCRIPTION_READY,
+            subscriptionReadyBuffer,
             (buffer) ->
             {
-                correlatedMessage.correlationId(CORRELATION_ID);
-                return CorrelatedMessageFlyweight.LENGTH;
+                subscriptionReady.correlationId(CORRELATION_ID);
+                return SubscriptionReadyFlyweight.LENGTH;
             });
 
         conductor.addSubscription(CHANNEL, STREAM_ID_1);
@@ -382,22 +382,22 @@ public class ClientConductorTest
     public void closingSubscriptionShouldNotifyMediaDriver()
     {
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_OPERATION_SUCCESS,
-            correlatedMessageBuffer,
+            ControlProtocolEvents.ON_SUBSCRIPTION_READY,
+            subscriptionReadyBuffer,
             (buffer) ->
             {
-                correlatedMessage.correlationId(CORRELATION_ID);
-                return CorrelatedMessageFlyweight.LENGTH;
+                subscriptionReady.correlationId(CORRELATION_ID);
+                return SubscriptionReadyFlyweight.LENGTH;
             });
 
         final Subscription subscription = conductor.addSubscription(CHANNEL, STREAM_ID_1);
 
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_OPERATION_SUCCESS,
-            correlatedMessageBuffer,
+            operationSuccessBuffer,
             (buffer) ->
             {
-                correlatedMessage.correlationId(CLOSE_CORRELATION_ID);
+                operationSuccess.correlationId(CLOSE_CORRELATION_ID);
                 return CorrelatedMessageFlyweight.LENGTH;
             });
 
@@ -433,12 +433,12 @@ public class ClientConductorTest
     public void clientNotifiedOfNewImageShouldMapLogFile()
     {
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_OPERATION_SUCCESS,
-            correlatedMessageBuffer,
+            ControlProtocolEvents.ON_SUBSCRIPTION_READY,
+            subscriptionReadyBuffer,
             (buffer) ->
             {
-                correlatedMessage.correlationId(CORRELATION_ID);
-                return CorrelatedMessageFlyweight.LENGTH;
+                subscriptionReady.correlationId(CORRELATION_ID);
+                return SubscriptionReadyFlyweight.LENGTH;
             });
 
         final Subscription subscription = conductor.addSubscription(CHANNEL, STREAM_ID_1);
@@ -459,12 +459,12 @@ public class ClientConductorTest
     public void clientNotifiedOfNewAndInactiveImages()
     {
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_OPERATION_SUCCESS,
-            correlatedMessageBuffer,
+            ControlProtocolEvents.ON_SUBSCRIPTION_READY,
+            subscriptionReadyBuffer,
             (buffer) ->
             {
-                correlatedMessage.correlationId(CORRELATION_ID);
-                return CorrelatedMessageFlyweight.LENGTH;
+                subscriptionReady.correlationId(CORRELATION_ID);
+                return SubscriptionReadyFlyweight.LENGTH;
             });
 
         final Subscription subscription = conductor.addSubscription(CHANNEL, STREAM_ID_1);

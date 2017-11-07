@@ -16,7 +16,7 @@
 package io.aeron.driver.media;
 
 import io.aeron.driver.*;
-import io.aeron.driver.status.ChannelEndpointStatus;
+import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.protocol.*;
 import org.agrona.LangUtil;
 import org.agrona.collections.Int2IntCounterMap;
@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import static io.aeron.driver.status.ChannelEndpointStatus.status;
+import static io.aeron.status.ChannelEndpointStatus.status;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 
@@ -110,6 +110,11 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         return udpChannel().originalUriString();
     }
 
+    public int statusIndicatorCounterId()
+    {
+        return statusIndicator.id();
+    }
+
     public void indicateActive()
     {
         final long currentStatus = statusIndicator.get();
@@ -137,9 +142,11 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         isClosed = true;
     }
 
-    public void openChannel()
+    public void openChannel(final DriverConductorProxy conductorProxy)
     {
-        openDatagramChannel(statusIndicator);
+        openDatagramChannel(
+            statusIndicator,
+            error -> conductorProxy.channelEndpointError(statusIndicator.id(), error));
     }
 
     public void possibleTtlAsymmetryEncountered()

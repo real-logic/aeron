@@ -15,15 +15,19 @@
  */
 package io.aeron;
 
+import io.aeron.exceptions.ChannelEndpointException;
 import io.aeron.exceptions.ConductorServiceTimeoutException;
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.exceptions.RegistrationException;
+import io.aeron.status.ChannelEndpointStatus;
+import io.aeron.status.StaticStatusIndicator;
 import org.agrona.ErrorHandler;
 import org.agrona.ManagedResource;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
+import org.agrona.concurrent.status.UnsafeBufferStatusIndicator;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
@@ -212,7 +216,13 @@ class ClientConductor implements Agent, DriverEventsListener
 
         final long correlationId = driverProxy.addSubscription(channel, streamId);
         final Subscription subscription = new Subscription(
-            this, channel, streamId, correlationId, availableImageHandler, unavailableImageHandler);
+            this,
+            channel,
+            streamId,
+            correlationId,
+            availableImageHandler,
+            unavailableImageHandler,
+            StaticStatusIndicator.TEMP_CHANNEL_STATUS_INDICATOR);
 
         resourceByRegIdMap.put(correlationId, subscription);
 
@@ -254,12 +264,39 @@ class ClientConductor implements Agent, DriverEventsListener
         driverException = new RegistrationException(errorCode, message);
     }
 
+    public void onChannelEndpointError(final int statusIndicatorId, final String message)
+    {
+        for (final Object resource : resourceByRegIdMap.values())
+        {
+            if (resource instanceof Subscription)
+            {
+                final Subscription subscription = (Subscription)resource;
+
+                if (subscription.channelStatusIndicator().id() == statusIndicatorId)
+                {
+                    errorHandler.onError(new ChannelEndpointException(statusIndicatorId, message));
+                }
+
+            }
+            else if (resource instanceof Publication)
+            {
+                final Publication publication = (Publication)resource;
+
+                if (publication.channelStatusIndicator().id() == statusIndicatorId)
+                {
+                    errorHandler.onError(new ChannelEndpointException(statusIndicatorId, message));
+                }
+            }
+        }
+    }
+
     public void onNewPublication(
         final long correlationId,
         final long registrationId,
         final int streamId,
         final int sessionId,
         final int publicationLimitId,
+        final int statusIndicatorId,
         final String logFileName)
     {
         resourceByRegIdMap.put(
@@ -270,6 +307,9 @@ class ClientConductor implements Agent, DriverEventsListener
                 streamId,
                 sessionId,
                 new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
+                (statusIndicatorId != ChannelEndpointStatus.NO_ID_ALLOCATED) ?
+                    new UnsafeBufferStatusIndicator(counterValuesBuffer, statusIndicatorId) :
+                    StaticStatusIndicator.NO_CHANNEL_STATUS_INDICATOR,
                 logBuffers(registrationId, logFileName),
                 registrationId,
                 correlationId));
@@ -281,6 +321,7 @@ class ClientConductor implements Agent, DriverEventsListener
         final int streamId,
         final int sessionId,
         final int publicationLimitId,
+        final int statusIndicatorId,
         final String logFileName)
     {
         resourceByRegIdMap.put(
@@ -291,9 +332,24 @@ class ClientConductor implements Agent, DriverEventsListener
                 streamId,
                 sessionId,
                 new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
+                (statusIndicatorId != ChannelEndpointStatus.NO_ID_ALLOCATED) ?
+                    new UnsafeBufferStatusIndicator(counterValuesBuffer, statusIndicatorId) :
+                    StaticStatusIndicator.NO_CHANNEL_STATUS_INDICATOR,
                 logBuffers(registrationId, logFileName),
                 registrationId,
                 correlationId));
+    }
+
+    public void onNewSubscription(
+        final long correlationId,
+        final int statusIndicatorId)
+    {
+        final Subscription subscription = (Subscription)resourceByRegIdMap.get(correlationId);
+
+        subscription.statusIndicatorReader(
+            (statusIndicatorId != ChannelEndpointStatus.NO_ID_ALLOCATED) ?
+                new UnsafeBufferStatusIndicator(counterValuesBuffer, statusIndicatorId) :
+                StaticStatusIndicator.NO_CHANNEL_STATUS_INDICATOR);
     }
 
     public void onAvailableImage(

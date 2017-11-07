@@ -40,6 +40,8 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  +---------------------------------------------------------------+
  *  |                  Publication Limit Counter Id                 |
  *  +---------------------------------------------------------------+
+ *  |                  Channel Status Indicator ID                  |
+ *  +---------------------------------------------------------------+
  *  |                        Log File Length                        |
  *  +---------------------------------------------------------------+
  *  |                     Log File Name (ASCII)                    ...
@@ -54,7 +56,8 @@ public class PublicationBuffersReadyFlyweight
     private static final int SESSION_ID_OFFSET = REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
     private static final int PUBLICATION_LIMIT_COUNTER_ID_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int LOGFILE_FIELD_OFFSET = PUBLICATION_LIMIT_COUNTER_ID_OFFSET + SIZE_OF_INT;
+    private static final int CHANNEL_STATUS_INDICATOR_ID_OFFSET = PUBLICATION_LIMIT_COUNTER_ID_OFFSET + SIZE_OF_INT;
+    private static final int LOGFILE_FIELD_OFFSET = CHANNEL_STATUS_INDICATOR_ID_OFFSET + SIZE_OF_INT;
 
     private MutableDirectBuffer buffer;
     private int offset;
@@ -185,6 +188,29 @@ public class PublicationBuffersReadyFlyweight
     public PublicationBuffersReadyFlyweight publicationLimitCounterId(final int positionCounterId)
     {
         buffer.putInt(offset + PUBLICATION_LIMIT_COUNTER_ID_OFFSET, positionCounterId);
+
+        return this;
+    }
+
+    /**
+     * The channel status counter id.
+     *
+     * @return channel status counter id.
+     */
+    public int channelStatusCounterId()
+    {
+        return buffer.getInt(offset + CHANNEL_STATUS_INDICATOR_ID_OFFSET);
+    }
+
+    /**
+     * Set channel status counter id field
+     *
+     * @param counterId field value
+     * @return flyweight
+     */
+    public PublicationBuffersReadyFlyweight channelStatusCounterId(final int counterId)
+    {
+        buffer.putInt(offset + CHANNEL_STATUS_INDICATOR_ID_OFFSET, counterId);
 
         return this;
     }

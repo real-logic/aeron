@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.status;
 
+import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 

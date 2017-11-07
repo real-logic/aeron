@@ -119,9 +119,9 @@ public class SelectorAndTransportTest
             RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
 
-        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
+        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator, error -> {});
         receiveChannelEndpoint.registerForRead(dataTransportPoller);
-        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
+        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator, error -> {});
         sendChannelEndpoint.registerForRead(controlTransportPoller);
 
         processLoop(dataTransportPoller, 5);
@@ -149,9 +149,9 @@ public class SelectorAndTransportTest
             RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
 
-        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
+        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator, error -> {});
         receiveChannelEndpoint.registerForRead(dataTransportPoller);
-        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
+        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator, error -> {});
         sendChannelEndpoint.registerForRead(controlTransportPoller);
 
         encodeDataHeader.wrap(buffer);
@@ -198,9 +198,9 @@ public class SelectorAndTransportTest
             RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
 
-        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
+        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator, error -> {});
         receiveChannelEndpoint.registerForRead(dataTransportPoller);
-        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
+        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator, error -> {});
         sendChannelEndpoint.registerForRead(controlTransportPoller);
 
         encodeDataHeader.wrap(buffer);
@@ -256,9 +256,9 @@ public class SelectorAndTransportTest
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
         sendChannelEndpoint.registerForSend(mockPublication);
 
-        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
+        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator, error -> {});
         receiveChannelEndpoint.registerForRead(dataTransportPoller);
-        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
+        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator, error -> {});
         sendChannelEndpoint.registerForRead(controlTransportPoller);
 
         statusMessage.wrap(buffer);

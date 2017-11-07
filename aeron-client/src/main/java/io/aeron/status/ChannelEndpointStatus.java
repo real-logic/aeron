@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.driver.status;
+package io.aeron.status;
 
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
@@ -22,11 +22,7 @@ import org.agrona.concurrent.status.CountersReader;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
- * Allocates {@link AtomicCounter} indicating channel endpoint status. Indicators include:
- * <ul>
- * <li>{@link SendChannelStatus}: Indication of send channel status.</li>
- * <li>{@link ReceiveChannelStatus}: Indication of receive channel status.</li>
- * </ul>
+ * Allocates {@link AtomicCounter} indicating channel endpoint status.
  */
 public class ChannelEndpointStatus
 {
@@ -49,6 +45,11 @@ public class ChannelEndpointStatus
      * Channel is being closed.
      */
     public static final long CLOSING = 2;
+
+    /**
+     * No counter ID is allocated.
+     */
+    public static final int NO_ID_ALLOCATED = -1;
 
     /**
      * Offset in the key meta data for the channel of the counter.

@@ -19,6 +19,7 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
+import org.agrona.concurrent.status.StatusIndicatorReader;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -54,6 +55,7 @@ public class PublicationTest
     private final ClientConductor conductor = mock(ClientConductor.class);
     private final LogBuffers logBuffers = mock(LogBuffers.class);
     private final ReadablePosition publicationLimit = mock(ReadablePosition.class);
+    private final StatusIndicatorReader statusIndicatorReader = mock(StatusIndicatorReader.class);
     private ConcurrentPublication publication;
 
     @Before
@@ -82,6 +84,7 @@ public class PublicationTest
             STREAM_ID_1,
             SESSION_ID_1,
             publicationLimit,
+            statusIndicatorReader,
             logBuffers,
             CORRELATION_ID,
             CORRELATION_ID);

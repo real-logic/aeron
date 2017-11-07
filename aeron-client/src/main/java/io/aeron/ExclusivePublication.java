@@ -22,6 +22,7 @@ import io.aeron.logbuffer.FrameDescriptor;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
+import org.agrona.concurrent.status.StatusIndicatorReader;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 
@@ -58,6 +59,7 @@ public class ExclusivePublication extends Publication
         final int streamId,
         final int sessionId,
         final ReadablePosition positionLimit,
+        final StatusIndicatorReader channelStatusIndicator,
         final LogBuffers logBuffers,
         final long originalRegistrationId,
         final long registrationId)
@@ -68,6 +70,7 @@ public class ExclusivePublication extends Publication
             streamId,
             sessionId,
             positionLimit,
+            channelStatusIndicator,
             logBuffers,
             originalRegistrationId,
             registrationId,

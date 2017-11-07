@@ -37,7 +37,12 @@ interface DriverEventsListener
         int streamId,
         int sessionId,
         int publicationLimitId,
+        int statusIndicatorId,
         String logFileName);
+
+    void onNewSubscription(
+        long correlationId,
+        int statusIndicatorId);
 
     void onUnavailableImage(long correlationId, int streamId);
 
@@ -47,5 +52,10 @@ interface DriverEventsListener
         int streamId,
         int sessionId,
         int publicationLimitId,
+        int statusIndicatorId,
         String logFileName);
+
+    void onChannelEndpointError(
+        int statusIndicatorId,
+        String message);
 }

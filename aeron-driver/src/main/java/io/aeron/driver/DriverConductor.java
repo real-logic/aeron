@@ -26,7 +26,9 @@ import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.*;
+import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.BitUtil;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.*;
@@ -38,8 +40,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static io.aeron.CommonContext.RELIABLE_STREAM_PARAM_NAME;
-import static io.aeron.ErrorCode.UNKNOWN_PUBLICATION;
-import static io.aeron.ErrorCode.UNKNOWN_SUBSCRIPTION;
+import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.PublicationParams.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
@@ -77,6 +78,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     private final ArrayList<PublicationImage> publicationImages = new ArrayList<>();
     private final ArrayList<PublicationLink> publicationLinks = new ArrayList<>();
     private final ArrayList<SubscriptionLink> subscriptionLinks = new ArrayList<>();
+    private final ArrayList<CounterLink> counterLinks = new ArrayList<>();
     private final ArrayList<AeronClient> clients = new ArrayList<>();
     private final EpochClock epochClock;
     private final NanoClock nanoClock;
@@ -250,6 +252,12 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         }
     }
 
+    public void onChannelEndpointError(final long statusIndicatorId, final Exception error)
+    {
+        final String errorMessage = error.getClass().getSimpleName() + " : " + error.getMessage();
+        clientProxy.onError(statusIndicatorId, CHANNEL_ENDPOINT_ERROR, errorMessage);
+    }
+
     SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
     {
         return sendChannelEndpointByChannelMap.get(channel.canonicalForm());
@@ -318,6 +326,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             publication.sessionId(),
             publication.rawLog().fileName(),
             publication.publisherLimitId(),
+            channelEndpoint.statusIndicatorCounterId(),
             isExclusive);
     }
 
@@ -408,6 +417,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             ipcPublication.sessionId(),
             ipcPublication.rawLog().fileName(),
             ipcPublication.publisherLimitId(),
+            ChannelEndpointStatus.NO_ID_ALLOCATED,
             isExclusive);
 
         linkIpcSubscriptions(ipcPublication);
@@ -515,7 +525,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             registrationId, channelEndpoint, streamId, channel, client, clientLivenessTimeoutNs, isReliable);
 
         subscriptionLinks.add(subscription);
-        clientProxy.operationSucceeded(registrationId);
+        clientProxy.onSubscriptionReady(registrationId, channelEndpoint.statusIndicatorCounterId());
 
         linkMatchingImages(channelEndpoint, subscription);
     }
@@ -526,7 +536,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             registrationId, streamId, channel, getOrAddClient(clientId), clientLivenessTimeoutNs);
 
         subscriptionLinks.add(subscription);
-        clientProxy.operationSucceeded(registrationId);
+        clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
 
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
@@ -546,7 +556,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             registrationId, udpChannel, streamId, client, context.clientLivenessTimeoutNs());
 
         subscriptionLinks.add(subscriptionLink);
-        clientProxy.operationSucceeded(registrationId);
+        clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
 
         final SendChannelEndpoint channelEndpoint = sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
 
@@ -604,6 +614,52 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         }
     }
 
+    void onAddCounter(
+        final int typeId,
+        final DirectBuffer keyBuffer,
+        final int keyOffset,
+        final int keyLength,
+        final DirectBuffer labelBuffer,
+        final int labelOffset,
+        final int labelLength,
+        final long correlationId,
+        final long clientId)
+    {
+        final AeronClient client = getOrAddClient(clientId);
+        final AtomicCounter counter =
+            countersManager.newCounter(typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
+
+        final CounterLink counterLink = new CounterLink(counter, correlationId, client);
+        counterLinks.add(counterLink);
+
+        clientProxy.onCounterReady(correlationId, counter.id());
+    }
+
+    void onRemoveCounter(final long registrationId, final long correlationId)
+    {
+        CounterLink counterLink = null;
+        final ArrayList<CounterLink> counterLinks = this.counterLinks;
+        for (int i = 0, size = counterLinks.size(), lastIndex = size - 1; i < size; i++)
+        {
+            final CounterLink link = counterLinks.get(i);
+            if (registrationId == link.registrationId())
+            {
+                counterLink = link;
+                fastUnorderedRemove(counterLinks, i, lastIndex);
+                break;
+            }
+        }
+
+        if (null == counterLink)
+        {
+            throw new ControlProtocolException(UNKNOWN_PUBLICATION, "Unknown counter: " + registrationId);
+        }
+
+        counterLink.close();
+
+        clientProxy.operationSucceeded(correlationId);
+    }
+
     private void heartbeatAndCheckTimers(final long nowNs)
     {
         final long nowMs = epochClock.time();
@@ -615,6 +671,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         checkManagedResources(subscriptionLinks, nowNs, nowMs);
         checkManagedResources(publicationImages, nowNs, nowMs);
         checkManagedResources(ipcPublications, nowNs, nowMs);
+        checkManagedResources(counterLinks, nowNs, nowMs);
     }
 
     private void checkForBlockedToDriverCommands(final long nowNs)

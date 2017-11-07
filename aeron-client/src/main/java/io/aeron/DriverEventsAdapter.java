@@ -20,6 +20,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 
+import static io.aeron.ErrorCode.CHANNEL_ENDPOINT_ERROR;
 import static io.aeron.command.ControlProtocolEvents.*;
 
 /**
@@ -31,8 +32,9 @@ class DriverEventsAdapter implements MessageHandler
 
     private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
     private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
+    private final SubscriptionReadyFlyweight subscriptionReady = new SubscriptionReadyFlyweight();
     private final ImageBuffersReadyFlyweight imageReady = new ImageBuffersReadyFlyweight();
-    private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
+    private final OperationSucceededFlyweight operationSucceeded = new OperationSucceededFlyweight();
     private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
     private final DriverEventsListener listener;
 
@@ -67,8 +69,13 @@ class DriverEventsAdapter implements MessageHandler
             {
                 errorResponse.wrap(buffer, index);
 
-                final long correlationId = errorResponse.offendingCommandCorrelationId();
-                if (correlationId == activeCorrelationId)
+                final int correlationId = (int)errorResponse.offendingCommandCorrelationId();
+
+                if (CHANNEL_ENDPOINT_ERROR == errorResponse.errorCode())
+                {
+                    listener.onChannelEndpointError(correlationId, errorResponse.errorMessage());
+                }
+                else if (correlationId == activeCorrelationId)
                 {
                     listener.onError(correlationId, errorResponse.errorCode(), errorResponse.errorMessage());
 
@@ -105,7 +112,22 @@ class DriverEventsAdapter implements MessageHandler
                         publicationReady.streamId(),
                         publicationReady.sessionId(),
                         publicationReady.publicationLimitCounterId(),
+                        publicationReady.channelStatusCounterId(),
                         publicationReady.logFileName());
+
+                    lastReceivedCorrelationId = correlationId;
+                }
+                break;
+            }
+
+            case ON_SUBSCRIPTION_READY:
+            {
+                subscriptionReady.wrap(buffer, index);
+
+                final long correlationId = subscriptionReady.correlationId();
+                if (correlationId == activeCorrelationId)
+                {
+                    listener.onNewSubscription(correlationId, subscriptionReady.channelStatusCounterId());
 
                     lastReceivedCorrelationId = correlationId;
                 }
@@ -114,9 +136,9 @@ class DriverEventsAdapter implements MessageHandler
 
             case ON_OPERATION_SUCCESS:
             {
-                correlatedMessage.wrap(buffer, index);
+                operationSucceeded.wrap(buffer, index);
 
-                final long correlationId = correlatedMessage.correlationId();
+                final long correlationId = operationSucceeded.correlationId();
                 if (correlationId == activeCorrelationId)
                 {
                     lastReceivedCorrelationId = correlationId;
@@ -145,6 +167,7 @@ class DriverEventsAdapter implements MessageHandler
                         publicationReady.streamId(),
                         publicationReady.sessionId(),
                         publicationReady.publicationLimitCounterId(),
+                        publicationReady.channelStatusCounterId(),
                         publicationReady.logFileName());
 
                     lastReceivedCorrelationId = correlationId;

@@ -17,6 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.driver.cmd.CreatePublicationImageCmd;
 import io.aeron.driver.cmd.DriverConductorCmd;
+import io.aeron.driver.cmd.ChannelEndpointErrorCmd;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -89,6 +90,19 @@ public class DriverConductorProxy
                 controlAddress,
                 srcAddress,
                 channelEndpoint));
+        }
+    }
+
+    public void channelEndpointError(
+        final long statusIndicatorId, final Exception error)
+    {
+        if (notConcurrent())
+        {
+            driverConductor.onChannelEndpointError(statusIndicatorId, error);
+        }
+        else
+        {
+            offer(new ChannelEndpointErrorCmd(statusIndicatorId, error));
         }
     }
 

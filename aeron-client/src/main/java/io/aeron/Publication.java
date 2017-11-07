@@ -19,6 +19,7 @@ import io.aeron.logbuffer.*;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
+import org.agrona.concurrent.status.StatusIndicatorReader;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -88,6 +89,7 @@ public abstract class Publication implements AutoCloseable
     protected final LogBuffers logBuffers;
     protected final ClientConductor conductor;
     protected final String channel;
+    protected final StatusIndicatorReader channelStatusIndicator;
 
     protected Publication(
         final ClientConductor clientConductor,
@@ -95,6 +97,7 @@ public abstract class Publication implements AutoCloseable
         final int streamId,
         final int sessionId,
         final ReadablePosition positionLimit,
+        final StatusIndicatorReader channelStatusIndicator,
         final LogBuffers logBuffers,
         final long originalRegistrationId,
         final long registrationId,
@@ -114,6 +117,7 @@ public abstract class Publication implements AutoCloseable
         this.originalRegistrationId = originalRegistrationId;
         this.registrationId = registrationId;
         this.positionLimit = positionLimit;
+        this.channelStatusIndicator = channelStatusIndicator;
         this.logBuffers = logBuffers;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termBufferLength);
         this.headerWriter = new HeaderWriter(defaultFrameHeader(logMetaDataBuffer));
@@ -314,6 +318,16 @@ public abstract class Publication implements AutoCloseable
         }
 
         return positionLimit.getVolatile();
+    }
+
+    /**
+     * Get the status indicator assigned to the channel of this {@link Publication}
+     *
+     * @return status indicator reader for the channel
+     */
+    public StatusIndicatorReader channelStatusIndicator()
+    {
+        return channelStatusIndicator;
     }
 
     /**

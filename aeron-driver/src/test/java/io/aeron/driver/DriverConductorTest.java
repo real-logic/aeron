@@ -184,7 +184,8 @@ public class DriverConductorTest
         assertThat(publication.streamId(), is(STREAM_ID_1));
 
         verify(mockClientProxy)
-            .onPublicationReady(anyLong(), anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
+            .onPublicationReady(
+                anyLong(), anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
     }
 
     @Test
@@ -222,7 +223,8 @@ public class DriverConductorTest
         assertThat(publication.consumerPosition(), is(expectedPosition));
 
         verify(mockClientProxy)
-            .onPublicationReady(anyLong(), anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(true));
+            .onPublicationReady(
+                anyLong(), anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(true));
     }
 
     @Test
@@ -247,7 +249,7 @@ public class DriverConductorTest
 
         final ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
         verify(mockClientProxy).onPublicationReady(
-            anyLong(), captor.capture(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(true));
+            anyLong(), captor.capture(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(true));
 
         final long registrationId = captor.getValue();
         final IpcPublication publication = driverConductor.getIpcPublication(registrationId);
@@ -267,7 +269,7 @@ public class DriverConductorTest
 
         verify(receiverProxy).registerReceiveChannelEndpoint(any());
         verify(receiverProxy).addSubscription(any(), eq(STREAM_ID_1));
-        verify(mockClientProxy).operationSucceeded(id);
+        verify(mockClientProxy).onSubscriptionReady(eq(id), anyInt());
 
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
     }
@@ -394,7 +396,7 @@ public class DriverConductorTest
 
         inOrder.verify(senderProxy).newNetworkPublication(any());
         inOrder.verify(mockClientProxy).onPublicationReady(
-            anyLong(), eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
+            anyLong(), eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onError(anyLong(), eq(UNKNOWN_PUBLICATION), anyString());
         inOrder.verifyNoMoreInteractions();
 
@@ -428,7 +430,7 @@ public class DriverConductorTest
         final InOrder inOrder = inOrder(receiverProxy, mockClientProxy);
 
         inOrder.verify(receiverProxy).addSubscription(any(), anyInt());
-        inOrder.verify(mockClientProxy).operationSucceeded(id1);
+        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(id1), anyInt());
         inOrder.verify(mockClientProxy).onError(anyLong(), eq(UNKNOWN_SUBSCRIPTION), anyString());
         inOrder.verifyNoMoreInteractions();
 
@@ -613,7 +615,7 @@ public class DriverConductorTest
             driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
         assertNotNull(receiveChannelEndpoint);
 
-        receiveChannelEndpoint.openChannel();
+        receiveChannelEndpoint.openChannel(driverConductorProxy);
 
         driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_1, initialTermId, activeTermId, termOffset, TERM_BUFFER_LENGTH, MTU_LENGTH,
@@ -643,7 +645,7 @@ public class DriverConductorTest
             driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
         assertNotNull(receiveChannelEndpoint);
 
-        receiveChannelEndpoint.openChannel();
+        receiveChannelEndpoint.openChannel(driverConductorProxy);
 
         driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_2, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH,
@@ -667,7 +669,7 @@ public class DriverConductorTest
             driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
         assertNotNull(receiveChannelEndpoint);
 
-        receiveChannelEndpoint.openChannel();
+        receiveChannelEndpoint.openChannel(driverConductorProxy);
 
         driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH,
@@ -699,7 +701,7 @@ public class DriverConductorTest
             driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
         assertNotNull(receiveChannelEndpoint);
 
-        receiveChannelEndpoint.openChannel();
+        receiveChannelEndpoint.openChannel(driverConductorProxy);
 
         driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH,
@@ -746,7 +748,7 @@ public class DriverConductorTest
             driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000));
         assertNotNull(receiveChannelEndpoint);
 
-        receiveChannelEndpoint.openChannel();
+        receiveChannelEndpoint.openChannel(driverConductorProxy);
 
         driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH,
@@ -771,7 +773,7 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         final InOrder inOrder = inOrder(mockClientProxy);
-        inOrder.verify(mockClientProxy, times(1)).operationSucceeded(subOneId);
+        inOrder.verify(mockClientProxy, times(1)).onSubscriptionReady(eq(subOneId), anyInt());
         inOrder.verify(mockClientProxy, times(1)).onAvailableImage(
             eq(publicationImage.correlationId()),
             eq(STREAM_ID_1),
@@ -782,7 +784,7 @@ public class DriverConductorTest
             anyString());
         inOrder.verify(mockClientProxy, times(1)).onUnavailableImage(
             eq(publicationImage.correlationId()), eq(STREAM_ID_1), anyString());
-        inOrder.verify(mockClientProxy, times(1)).operationSucceeded(subTwoId);
+        inOrder.verify(mockClientProxy, times(1)).onSubscriptionReady(eq(subTwoId), anyInt());
         inOrder.verifyNoMoreInteractions();
     }
 
@@ -795,7 +797,8 @@ public class DriverConductorTest
 
         assertNotNull(driverConductor.getSharedIpcPublication(STREAM_ID_1));
         verify(mockClientProxy)
-            .onPublicationReady(anyLong(), eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
+            .onPublicationReady(
+                anyLong(), eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
     }
 
     @Test
@@ -811,8 +814,8 @@ public class DriverConductorTest
 
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy).onPublicationReady(
-            anyLong(), eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
-        inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
+            anyLong(), eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
+        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(idSub), anyInt());
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublication.registrationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
             anyLong(), anyInt(), eq(ipcPublication.rawLog().fileName()), anyString());
@@ -838,15 +841,15 @@ public class DriverConductorTest
         assertNotNull(ipcPublicationTwo);
 
         final InOrder inOrder = inOrder(mockClientProxy);
-        inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
+        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(idSub), anyInt());
         inOrder.verify(mockClientProxy).onPublicationReady(
-            anyLong(), eq(idPubOne), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
+            anyLong(), eq(idPubOne), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublicationOne.registrationId()), eq(STREAM_ID_1), eq(ipcPublicationOne.sessionId()),
             anyLong(), anyInt(), eq(ipcPublicationOne.rawLog().fileName()), anyString());
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idPubOneRemove));
         inOrder.verify(mockClientProxy).onPublicationReady(
-            anyLong(), eq(idPubTwo), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
+            anyLong(), eq(idPubTwo), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublicationTwo.registrationId()), eq(STREAM_ID_1), eq(ipcPublicationTwo.sessionId()),
             anyLong(), anyInt(), eq(ipcPublicationTwo.rawLog().fileName()), anyString());
@@ -864,9 +867,9 @@ public class DriverConductorTest
         assertNotNull(ipcPublication);
 
         final InOrder inOrder = inOrder(mockClientProxy);
-        inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
+        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(idSub), anyInt());
         inOrder.verify(mockClientProxy).onPublicationReady(
-            anyLong(), eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt(), eq(false));
+            anyLong(), eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublication.registrationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
             anyLong(), anyInt(), eq(ipcPublication.rawLog().fileName()), anyString());
@@ -981,7 +984,7 @@ public class DriverConductorTest
 
         verify(receiverProxy, never()).registerReceiveChannelEndpoint(any());
         verify(receiverProxy, never()).addSubscription(any(), eq(STREAM_ID_1));
-        verify(mockClientProxy).operationSucceeded(id);
+        verify(mockClientProxy).onSubscriptionReady(eq(id), anyInt());
 
         assertNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
     }
@@ -1001,7 +1004,7 @@ public class DriverConductorTest
         assertTrue(publication.hasSpies());
 
         final InOrder inOrder = inOrder(mockClientProxy);
-        inOrder.verify(mockClientProxy).operationSucceeded(eq(idSpy));
+        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(idSpy), anyInt());
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), eq(publication.sessionId()),
             anyLong(), anyInt(), eq(publication.rawLog().fileName()), anyString());
@@ -1022,7 +1025,7 @@ public class DriverConductorTest
         assertTrue(publication.hasSpies());
 
         final InOrder inOrder = inOrder(mockClientProxy);
-        inOrder.verify(mockClientProxy).operationSucceeded(eq(idSpy));
+        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(idSpy), anyInt());
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), eq(publication.sessionId()),
             anyLong(), anyInt(), eq(publication.rawLog().fileName()), anyString());

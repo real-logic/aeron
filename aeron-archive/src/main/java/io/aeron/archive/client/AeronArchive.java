@@ -494,14 +494,10 @@ public final class AeronArchive implements AutoCloseable
                 idleStrategy.idle();
             }
 
-            if (poller.correlationId() != expectedCorrelationId)
+            if (poller.correlationId() != expectedCorrelationId ||
+                poller.templateId() != ControlResponseDecoder.TEMPLATE_ID)
             {
                 continue;
-            }
-
-            if (poller.templateId() != ControlResponseDecoder.TEMPLATE_ID)
-            {
-                throw new IllegalStateException("Unknown response: templateId=" + poller.templateId());
             }
 
             final ControlResponseCode code = poller.controlResponseDecoder().code();
@@ -542,17 +538,13 @@ public final class AeronArchive implements AutoCloseable
                 idleStrategy.idle();
             }
 
-            if (poller.controlSessionId() != controlSessionId)
+            if (poller.controlSessionId() != controlSessionId ||
+                poller.templateId() != ControlResponseDecoder.TEMPLATE_ID)
             {
                 continue;
             }
 
             checkForError(poller, expectedCorrelationId);
-
-            if (poller.templateId() != ControlResponseDecoder.TEMPLATE_ID)
-            {
-                throw new IllegalStateException("Unknown response type: templateId=" + poller.templateId());
-            }
 
             final ControlResponseCode code = poller.controlResponseDecoder().code();
             if (OK != code)

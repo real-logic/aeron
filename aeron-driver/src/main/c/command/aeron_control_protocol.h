@@ -28,6 +28,8 @@
 #define AERON_COMMAND_CLIENT_KEEPALIVE (0x06)
 #define AERON_COMMAND_ADD_DESTINATION (0x07)
 #define AERON_COMMAND_REMOVE_DESTINATION (0x08)
+#define AERON_COMMAND_ADD_COUNTER (0x09)
+#define AERON_COMMAND_REMOVE_COUNTER (0x0A)
 
 #define AERON_RESPONSE_ON_ERROR (0x0F01)
 #define AERON_RESPONSE_ON_AVAILABLE_IMAGE (0x0F02)
@@ -35,15 +37,19 @@
 #define AERON_RESPONSE_ON_OPERATION_SUCCESS (0x0F04)
 #define AERON_RESPONSE_ON_UNAVAILABLE_IMAGE (0x0F05)
 #define AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY (0x0F06)
+#define AERON_RESPONSE_ON_SUBSCRIPTION_READY (0x0F07)
+#define AERON_RESPONSE_ON_COUNTER_READY (0x0F08)
 
 /* error codes */
 #define AERON_ERROR_CODE_GENERIC_ERROR (0)
 #define AERON_ERROR_CODE_INVALID_CHANNEL (1)
 #define AERON_ERROR_CODE_UNKNOWN_SUBSCRIPTION (2)
-#define AERON_ERROR_CODE_UNKNOWN_PUBLICAITON (3)
-#define AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID (4)
-#define AERON_ERROR_CODE_MALFORMED_COMMAND (5)
-#define AERON_ERROR_CODE_ENOTSUP (6)
+#define AERON_ERROR_CODE_UNKNOWN_PUBLICATION (3)
+#define AERON_ERROR_CODE_CHANNEL_ENDPOINT_ERROR (4)
+#define AERON_ERROR_CODE_UNKNOWN_COUNTER (5)
+#define AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID (10)
+#define AERON_ERROR_CODE_MALFORMED_COMMAND (11)
+#define AERON_ERROR_CODE_ENOTSUP (12)
 
 #pragma pack(push)
 #pragma pack(4)
@@ -69,6 +75,7 @@ typedef struct aeron_publication_buffers_ready_stct
     int32_t session_id;
     int32_t stream_id;
     int32_t position_limit_counter_id;
+    int32_t channel_status_indicator_id;
     int32_t log_file_length;
 }
 aeron_publication_buffers_ready_t;
@@ -82,6 +89,13 @@ typedef struct aeron_subscription_command_stct
 }
 aeron_subscription_command_t;
 
+typedef struct aeron_subscription_ready_stct
+{
+    int64_t correlation_id;
+    int32_t channel_status_indicator_id;
+}
+aeron_subscription_ready_t;
+
 typedef struct aeron_image_buffers_ready_stct
 {
     int64_t correlation_id;
@@ -91,6 +105,12 @@ typedef struct aeron_image_buffers_ready_stct
     int32_t subscriber_position_id;
 }
 aeron_image_buffers_ready_t;
+
+typedef struct aeron_operation_succeeded_stct
+{
+    int64_t correlation_id;
+}
+aeron_operation_succeeded_t;
 
 typedef struct aeron_error_response_stct
 {
@@ -110,6 +130,7 @@ aeron_remove_command_t;
 typedef struct aeron_image_message_stct
 {
     int64_t correlation_id;
+    int64_t subscription_registration_id;
     int32_t stream_id;
     int32_t channel_length;
 }
@@ -123,6 +144,5 @@ typedef struct aeron_destination_command_stct
 }
 aeron_destination_command_t;
 #pragma pack(pop)
-
 
 #endif //AERON_AERON_CONTROL_PROTOCOL_H

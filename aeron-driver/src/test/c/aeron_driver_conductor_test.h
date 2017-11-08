@@ -42,7 +42,9 @@ extern "C"
 #include "command/SubscriptionMessageFlyweight.h"
 #include "command/RemoveMessageFlyweight.h"
 #include "command/ImageMessageFlyweight.h"
-#include <command/ErrorResponseFlyweight.h>
+#include "command/ErrorResponseFlyweight.h"
+#include "command/OperationSucceededFlyweight.h"
+#include "command/SubscriptionReadyFlyweight.h"
 
 using namespace aeron::concurrent::broadcast;
 using namespace aeron::concurrent::ringbuffer;

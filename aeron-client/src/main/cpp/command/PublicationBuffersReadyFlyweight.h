@@ -42,6 +42,8 @@ namespace aeron { namespace command {
 * +---------------------------------------------------------------+
 * |                   Position Limit Counter Id                   |
 * +---------------------------------------------------------------+
+* |                  Channel Status Indicator ID                  |
+* +---------------------------------------------------------------+
 * |                         Log File Length                       |
 * +---------------------------------------------------------------+
 * |                          Log File Name                      ...
@@ -58,6 +60,7 @@ struct PublicationBuffersReadyDefn
     std::int32_t sessionId;
     std::int32_t streamId;
     std::int32_t positionLimitCounterId;
+    std::int32_t channelStatusIndicatorId;
     std::int32_t logFileLength;
     std::int8_t  logFileData[1];
 };
@@ -125,6 +128,17 @@ public:
     inline this_t& positionLimitCounterId(std::int32_t value)
     {
         m_struct.positionLimitCounterId = value;
+        return *this;
+    }
+
+    inline std::int32_t channelStatusIndicatorId() const
+    {
+        return m_struct.channelStatusIndicatorId;
+    }
+
+    inline this_t& channelStatusIndicatorId(std::int32_t value)
+    {
+        m_struct.channelStatusIndicatorId = value;
         return *this;
     }
 

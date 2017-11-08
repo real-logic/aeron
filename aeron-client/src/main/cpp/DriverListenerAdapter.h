@@ -23,6 +23,8 @@
 #include <command/ImageBuffersReadyFlyweight.h>
 #include <command/ImageMessageFlyweight.h>
 #include <command/ErrorResponseFlyweight.h>
+#include <command/OperationSucceededFlyweight.h>
+#include <command/SubscriptionReadyFlyweight.h>
 
 namespace aeron {
 
@@ -55,6 +57,7 @@ public:
                             publicationReady.streamId(),
                             publicationReady.sessionId(),
                             publicationReady.positionLimitCounterId(),
+                            publicationReady.channelStatusIndicatorId(),
                             publicationReady.logFileName(),
                             publicationReady.correlationId(),
                             publicationReady.registrationId());
@@ -69,9 +72,20 @@ public:
                             publicationReady.streamId(),
                             publicationReady.sessionId(),
                             publicationReady.positionLimitCounterId(),
+                            publicationReady.channelStatusIndicatorId(),
                             publicationReady.logFileName(),
                             publicationReady.correlationId(),
                             publicationReady.registrationId());
+                    }
+                    break;
+
+                    case ControlProtocolEvents::ON_SUBSCRIPTION_READY:
+                    {
+                        const SubscriptionReadyFlyweight subscriptionReady(buffer, offset);
+
+                        m_driverListener.onSubscriptionReady(
+                            subscriptionReady.correlationId(),
+                            subscriptionReady.channelStatusIndicatorId());
                     }
                     break;
 
@@ -92,9 +106,9 @@ public:
 
                     case ControlProtocolEvents::ON_OPERATION_SUCCESS:
                     {
-                        const CorrelatedMessageFlyweight correlatedMessage(buffer, offset);
+                        const OperationSucceededFlyweight operationSucceeded(buffer, offset);
 
-                        m_driverListener.onOperationSuccess(correlatedMessage.correlationId());
+                        m_driverListener.onOperationSuccess(operationSucceeded.correlationId());
                     }
                     break;
 
@@ -104,7 +118,8 @@ public:
 
                         m_driverListener.onUnavailableImage(
                             imageMessage.streamId(),
-                            imageMessage.correlationId());
+                            imageMessage.correlationId(),
+                            imageMessage.subscriptionRegistrationId());
                     }
                     break;
 
@@ -118,6 +133,9 @@ public:
                             errorResponse.errorMessage());
                     }
                     break;
+
+                    case ControlProtocolEvents::ON_COUNTER_READY:
+                        break;
 
                     default:
                         break;

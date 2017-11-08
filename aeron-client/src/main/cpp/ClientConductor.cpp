@@ -324,6 +324,7 @@ void ClientConductor::onNewPublication(
     std::int32_t streamId,
     std::int32_t sessionId,
     std::int32_t positionLimitCounterId,
+    std::int32_t channelStatusIndicatorId,
     const std::string &logFileName,
     std::int64_t registrationId,
     std::int64_t originalRegistrationId)
@@ -354,6 +355,7 @@ void ClientConductor::onNewExclusivePublication(
     std::int32_t streamId,
     std::int32_t sessionId,
     std::int32_t positionLimitCounterId,
+    std::int32_t channelStatusIndicatorId,
     const std::string &logFileName,
     std::int64_t registrationId,
     std::int64_t originalRegistrationId)
@@ -380,14 +382,16 @@ void ClientConductor::onNewExclusivePublication(
     }
 }
 
-void ClientConductor::onOperationSuccess(std::int64_t correlationId)
+void ClientConductor::onSubscriptionReady(
+    std::int64_t registrationId,
+    std::int32_t channelStatusIndicatorId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     auto subIt = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
-        [correlationId](const SubscriptionStateDefn &entry)
+        [registrationId](const SubscriptionStateDefn &entry)
         {
-            return (correlationId == entry.m_registrationId);
+            return (registrationId == entry.m_registrationId);
         });
 
     if (subIt != m_subscriptions.end() && (*subIt).m_status == RegistrationStatus::AWAITING_MEDIA_DRIVER)
@@ -398,9 +402,15 @@ void ClientConductor::onOperationSuccess(std::int64_t correlationId)
         state.m_subscriptionCache =
             std::make_shared<Subscription>(*this, state.m_registrationId, state.m_channel, state.m_streamId);
         state.m_subscription = std::weak_ptr<Subscription>(state.m_subscriptionCache);
-        m_onNewSubscriptionHandler(state.m_channel, state.m_streamId, correlationId);
+        m_onNewSubscriptionHandler(state.m_channel, state.m_streamId, registrationId);
         return;
     }
+}
+
+void ClientConductor::onOperationSuccess(std::int64_t correlationId)
+{
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
 }
 
 void ClientConductor::onErrorResponse(
@@ -504,7 +514,8 @@ void ClientConductor::onAvailableImage(
 
 void ClientConductor::onUnavailableImage(
     std::int32_t streamId,
-    std::int64_t correlationId)
+    std::int64_t correlationId,
+    std::int64_t subscriptionRegistrationId)
 {
     const long long now = m_epochClock();
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
@@ -512,7 +523,7 @@ void ClientConductor::onUnavailableImage(
     std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
         [&](const SubscriptionStateDefn &entry)
         {
-            if (streamId == entry.m_streamId)
+            if (subscriptionRegistrationId == entry.m_registrationId)
             {
                 std::shared_ptr<Subscription> subscription = entry.m_subscription.lock();
 

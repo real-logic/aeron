@@ -310,6 +310,7 @@ void aeron_driver_conductor_client_transmit(
 void aeron_driver_conductor_on_unavailable_image(
     aeron_driver_conductor_t *conductor,
     int64_t correlation_id,
+    int64_t subscription_registration_id,
     int32_t stream_id,
     const char *channel,
     size_t channel_length);

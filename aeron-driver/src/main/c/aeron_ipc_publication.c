@@ -227,6 +227,9 @@ void aeron_ipc_publication_on_time_event(aeron_ipc_publication_t *publication, i
                 aeron_ipc_publication_check_for_blocked_publisher(publication, now_ns);
             }
             break;
+
+        default:
+            break;
     }
 }
 

@@ -32,6 +32,9 @@ namespace aeron { namespace command {
 * |                        Correlation ID                         |
 * |                                                               |
 * +---------------------------------------------------------------+
+* |                 Subscription Registration ID                  |
+* |                                                               |
+* +---------------------------------------------------------------+
 * |                          Stream ID                            |
 * +---------------------------------------------------------------+
 * |                        Channel Length                         |
@@ -46,6 +49,7 @@ namespace aeron { namespace command {
 struct ImageMessageDefn
 {
     std::int64_t correlationId;
+    std::int64_t subscriptionRegistrationId;
     std::int32_t streamId;
     std::int32_t channelLength;
     std::int8_t  channelData[1];
@@ -71,6 +75,17 @@ public:
     inline this_t& correlationId(std::int64_t value)
     {
         m_struct.correlationId = value;
+        return *this;
+    }
+
+    inline std::int64_t subscriptionRegistrationId() const
+    {
+        return m_struct.subscriptionRegistrationId;
+    }
+
+    inline this_t& subscriptionRegistrationId(std::int64_t value)
+    {
+        m_struct.subscriptionRegistrationId = value;
         return *this;
     }
 

@@ -114,6 +114,7 @@ public:
         std::int32_t streamId,
         std::int32_t sessionId,
         std::int32_t positionLimitCounterId,
+        std::int32_t channelStatusIndicatorId,
         const std::string& logFileName,
         std::int64_t registrationId,
         std::int64_t originalRegistrationId);
@@ -122,9 +123,14 @@ public:
         std::int32_t streamId,
         std::int32_t sessionId,
         std::int32_t positionLimitCounterId,
+        std::int32_t channelStatusIndicatorId,
         const std::string& logFileName,
         std::int64_t registrationId,
         std::int64_t originalRegistrationId);
+
+    void onSubscriptionReady(
+        std::int64_t registrationId,
+        std::int32_t channelStatusIndicatorId);
 
     void onOperationSuccess(std::int64_t correlationId);
 
@@ -144,7 +150,8 @@ public:
 
     void onUnavailableImage(
         std::int32_t streamId,
-        std::int64_t correlationId);
+        std::int64_t correlationId,
+        std::int64_t subscriptionRegistrationId);
 
     void onInterServiceTimeout(long long now);
 

@@ -117,7 +117,7 @@ int main(int argc, char** argv)
 
         const std::int64_t channelStatus = publication->channelStatusIndicator().getVolatile();
 
-        std::cout << "Publication channel status "
+        std::cout << "Publication channel status (id=" << publication->channelStatusIndicator().id() << ") "
             << ((channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE) ?
                 "ACTIVE" : std::to_string(channelStatus))
             << std::endl;

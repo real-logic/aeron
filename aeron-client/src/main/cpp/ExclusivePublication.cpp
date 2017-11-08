@@ -27,6 +27,7 @@ ExclusivePublication::ExclusivePublication(
     std::int32_t streamId,
     std::int32_t sessionId,
     UnsafeBufferPosition& publicationLimit,
+    StatusIndicatorReader& channelStatusIndicator,
     std::shared_ptr<LogBuffers> buffers)
     :
     m_conductor(conductor),
@@ -44,6 +45,7 @@ ExclusivePublication::ExclusivePublication(
     m_activePartitionIndex(
         LogBufferDescriptor::indexByTermCount(LogBufferDescriptor::activeTermCount(m_logMetaDataBuffer))),
     m_publicationLimit(publicationLimit),
+    m_channelStatusIndicator(channelStatusIndicator),
     m_logbuffers(buffers),
     m_headerWriter(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer))
 {

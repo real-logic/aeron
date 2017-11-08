@@ -129,6 +129,13 @@ int main(int argc, char** argv)
             subscription = aeron->findSubscription(id);
         }
 
+        const std::int64_t channelStatus = subscription->channelStatusIndicator().getVolatile();
+
+        std::cout << "Subscription channel status "
+            << ((channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE) ?
+                "ACTIVE" : std::to_string(channelStatus))
+            << std::endl;
+
         fragment_handler_t handler = printStringMessage();
         SleepingIdleStrategy idleStrategy(IDLE_SLEEP_MS);
 

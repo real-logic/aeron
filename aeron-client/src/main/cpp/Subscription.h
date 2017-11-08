@@ -21,6 +21,7 @@
 #include <iostream>
 #include <atomic>
 #include <concurrent/logbuffer/TermReader.h>
+#include "concurrent/status/StatusIndicatorReader.h"
 #include "Image.h"
 
 namespace aeron {
@@ -49,7 +50,11 @@ class Subscription
 public:
     /// @cond HIDDEN_SYMBOLS
     Subscription(
-        ClientConductor& conductor, std::int64_t registrationId, const std::string& channel, std::int32_t streamId);
+        ClientConductor& conductor,
+        std::int64_t registrationId,
+        const std::string& channel,
+        std::int32_t streamId,
+        StatusIndicatorReader& channelStatusIndicator);
     /// @endcond
     virtual ~Subscription();
 
@@ -81,6 +86,16 @@ public:
     inline std::int64_t registrationId() const
     {
         return m_registrationId;
+    }
+
+    /**
+     * Get the status indicator assigned to the channel of this {@link Subscription}
+     *
+     * @return status indicator reader for the channel
+     */
+    inline StatusIndicatorReader& channelStatusIndicator()
+    {
+        return m_channelStatusIndicator;
     }
 
     /**
@@ -432,6 +447,7 @@ public:
 private:
     ClientConductor& m_conductor;
     const std::string m_channel;
+    StatusIndicatorReader m_channelStatusIndicator;
     std::size_t m_roundRobinIndex = 0;
     std::int64_t m_registrationId;
     std::int32_t m_streamId;

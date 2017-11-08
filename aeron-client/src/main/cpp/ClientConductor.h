@@ -179,6 +179,7 @@ private:
         std::int32_t m_streamId;
         std::int32_t m_sessionId = -1;
         std::int32_t m_positionLimitCounterId = -1;
+        std::int32_t m_channelStatusIndicatorId = -1;
         long long m_timeOfRegistration;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
         std::int32_t m_errorCode;
@@ -201,6 +202,7 @@ private:
         std::int32_t m_streamId;
         std::int32_t m_sessionId = -1;
         std::int32_t m_positionLimitCounterId = -1;
+        std::int32_t m_channelStatusIndicatorId = -1;
         long long m_timeOfRegistration;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
         std::int32_t m_errorCode;

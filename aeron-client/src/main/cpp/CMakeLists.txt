@@ -96,6 +96,7 @@ SET(HEADERS
     concurrent/status/ReadablePosition.h
     concurrent/status/Position.h
     concurrent/status/UnsafeBufferPosition.h
+    concurrent/status/StatusIndicatorReader.h
     protocol/HeaderFlyweight.h
     protocol/NakFlyweight.h
     protocol/StatusMessageFlyweight.h

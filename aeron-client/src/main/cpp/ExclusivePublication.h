@@ -23,6 +23,7 @@
 #include <concurrent/logbuffer/ExclusiveBufferClaim.h>
 #include <concurrent/logbuffer/ExclusiveTermAppender.h>
 #include <concurrent/status/UnsafeBufferPosition.h>
+#include "concurrent/status/StatusIndicatorReader.h"
 #include "Publication.h"
 #include "LogBuffers.h"
 
@@ -60,6 +61,7 @@ public:
         std::int32_t streamId,
         std::int32_t sessionId,
         UnsafeBufferPosition& publicationLimit,
+        StatusIndicatorReader& channelStatusIndicator,
         std::shared_ptr<LogBuffers> buffers);
     /// @endcond
 
@@ -227,6 +229,16 @@ public:
         }
 
         return result;
+    }
+
+    /**
+     * Get the status indicator assigned to the channel of this {@link Publication}
+     *
+     * @return status indicator reader for the channel
+     */
+    inline StatusIndicatorReader& channelStatusIndicator()
+    {
+        return m_channelStatusIndicator;
     }
 
     /**
@@ -403,6 +415,7 @@ private:
     std::int32_t m_termOffset;
 
     ReadablePosition<UnsafeBufferPosition> m_publicationLimit;
+    StatusIndicatorReader m_channelStatusIndicator;
     std::atomic<bool> m_isClosed = { false };
 
     std::shared_ptr<LogBuffers> m_logbuffers;

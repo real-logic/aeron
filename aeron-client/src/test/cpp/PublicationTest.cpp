@@ -56,7 +56,8 @@ public:
     PublicationTest() :
         m_srcBuffer(m_src, 0),
         m_logBuffers(new LogBuffers(m_log.data(), static_cast<std::int64_t>(m_log.size()), TERM_LENGTH)),
-        m_publicationLimit(m_counterValuesBuffer, PUBLICATION_LIMIT_COUNTER_ID)
+        m_publicationLimit(m_counterValuesBuffer, PUBLICATION_LIMIT_COUNTER_ID),
+        m_channelStatusIndicator(m_counterValuesBuffer, ChannelEndpointStatus::NO_ID_ALLOCATED)
     {
         m_log.fill(0);
 
@@ -83,7 +84,7 @@ public:
 
         m_publication = std::unique_ptr<Publication>(new Publication(
             m_conductor, CHANNEL, CORRELATION_ID, ORIGINAL_REGISTRATION_ID,
-            STREAM_ID, SESSION_ID, m_publicationLimit, m_logBuffers));
+            STREAM_ID, SESSION_ID, m_publicationLimit, m_channelStatusIndicator, m_logBuffers));
     }
 
 protected:
@@ -96,6 +97,7 @@ protected:
 
     std::shared_ptr<LogBuffers> m_logBuffers;
     UnsafeBufferPosition m_publicationLimit;
+    StatusIndicatorReader m_channelStatusIndicator;
     std::unique_ptr<Publication> m_publication;
 };
 

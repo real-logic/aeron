@@ -110,7 +110,7 @@ public class ClusterNodeTest
                 .ownsAeronClient(false)
                 .lock(new NoOpLock()));
 
-        final VectoredSessionDecorator vectoredSessionDecorator = new VectoredSessionDecorator(cluster.sessionId());
+        final SessionDecorator sessionDecorator = new SessionDecorator(cluster.sessionId());
         final Publication publication = cluster.ingressPublication();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
@@ -118,7 +118,7 @@ public class ClusterNodeTest
         final String msg = "Hello World!";
         msgBuffer.putStringWithoutLengthAscii(0, msg);
 
-        while (vectoredSessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
+        while (sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
         {
             Thread.yield();
         }

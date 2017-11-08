@@ -29,7 +29,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <p>
  * <b>Note:</b> This class is NOT threadsafe. Each publisher thread requires its own instance.
  */
-public class VectoredSessionDecorator
+public class SessionDecorator
 {
     /**
      * Length of the session header that will be prepended to the message.
@@ -46,7 +46,7 @@ public class VectoredSessionDecorator
      *
      * @param clusterSessionId that has been allocated by the cluster.
      */
-    public VectoredSessionDecorator(final long clusterSessionId)
+    public SessionDecorator(final long clusterSessionId)
     {
         final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
         sessionHeaderEncoder
@@ -68,7 +68,7 @@ public class VectoredSessionDecorator
     }
 
     /**
-     * Non-blocking publish of a partial buffer containing a message to a cluster.
+     * Non-blocking publish of a partial buffer containing a message plus session header to a cluster.
      *
      * @param publication   to be offer to.
      * @param correlationId to be used to identify the message to the cluster.

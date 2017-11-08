@@ -23,13 +23,13 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * Encapsulate the {@link Publication} to the cluster and when offering apply the cluster session header.
+ * Encapsulate applying the cluster session header.
  * <p>
  * The session header is applied by a vectored offer to the {@link Publication}.
  * <p>
  * <b>Note:</b> This class is NOT threadsafe. Each publisher thread requires its own instance.
  */
-public class VectoredSessionHeader
+public class VectoredSessionDecorator
 {
     /**
      * Length of the session header that will be prepended to the message.
@@ -46,7 +46,7 @@ public class VectoredSessionHeader
      *
      * @param clusterSessionId that has been allocated by the cluster.
      */
-    public VectoredSessionHeader(final long clusterSessionId)
+    public VectoredSessionDecorator(final long clusterSessionId)
     {
         final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
         sessionHeaderEncoder

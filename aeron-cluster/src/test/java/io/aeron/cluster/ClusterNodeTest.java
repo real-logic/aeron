@@ -110,7 +110,7 @@ public class ClusterNodeTest
                 .ownsAeronClient(false)
                 .lock(new NoOpLock()));
 
-        final VectoredSessionHeader vectoredSessionHeader = new VectoredSessionHeader(cluster.sessionId());
+        final VectoredSessionDecorator vectoredSessionDecorator = new VectoredSessionDecorator(cluster.sessionId());
         final Publication publication = cluster.ingressPublication();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
@@ -118,7 +118,7 @@ public class ClusterNodeTest
         final String msg = "Hello World!";
         msgBuffer.putStringWithoutLengthAscii(0, msg);
 
-        while (vectoredSessionHeader.offer(publication, msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
+        while (vectoredSessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
         {
             Thread.yield();
         }
@@ -179,7 +179,7 @@ public class ClusterNodeTest
 
     public static class EchoService implements ClusteredService
     {
-        private final VectoredSessionHeader vectoredSessionHeader = new VectoredSessionHeader(0);
+        private final VectoredSessionDecorator vectoredSessionDecorator = new VectoredSessionDecorator(0);
         private Cluster cluster;
 
         public void onStart(final Cluster cluster)
@@ -204,10 +204,10 @@ public class ClusterNodeTest
             final Header header)
         {
             final ClientSession session = cluster.getClientSession(clusterSessionId);
-            vectoredSessionHeader.clusterSessionId(clusterSessionId);
+            vectoredSessionDecorator.clusterSessionId(clusterSessionId);
             final Publication publication = session.responsePublication();
 
-            while (vectoredSessionHeader.offer(publication, correlationId, buffer, offset, length) < 0)
+            while (vectoredSessionDecorator.offer(publication, correlationId, buffer, offset, length) < 0)
             {
                 Thread.yield();
             }

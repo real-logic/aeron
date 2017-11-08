@@ -229,7 +229,7 @@ public class DriverProxy
             .registrationId(registrationId)
             .correlationId(correlationId);
 
-        if (!toDriverCommandBuffer.write(ADD_COUNTER, buffer, 0, RemoveMessageFlyweight.LENGTH))
+        if (!toDriverCommandBuffer.write(REMOVE_COUNTER, buffer, 0, RemoveMessageFlyweight.length()))
         {
             throw new IllegalStateException("Could not write remove counter command");
         }

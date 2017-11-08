@@ -451,7 +451,7 @@ class ClientConductor implements Agent, DriverEventsListener
     {
         resourceByRegIdMap.put(
             correlationId,
-            new Counter(this, correlationId, new UnsafeBufferPosition(counterValuesBuffer, counterId)));
+            new Counter(this, counterValuesBuffer, correlationId, counterId));
     }
 
     void releaseImage(final Image image)

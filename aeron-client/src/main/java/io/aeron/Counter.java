@@ -15,20 +15,24 @@
  */
 package io.aeron;
 
-import org.agrona.concurrent.status.Position;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 
-public class Counter
+public class Counter extends AtomicCounter
 {
     protected final long registrationId;
     protected final ClientConductor clientConductor;
-    protected final Position position;
     protected volatile boolean isClosed = false;
 
-    public Counter(final ClientConductor clientConductor, final long registrationId, final Position position)
+    public Counter(final ClientConductor clientConductor,
+                   final AtomicBuffer buffer,
+                   final long registrationId,
+                   final int counterId)
     {
+        super(buffer, counterId);
+
         this.clientConductor = clientConductor;
         this.registrationId = registrationId;
-        this.position = position;
     }
 
     /**
@@ -39,16 +43,6 @@ public class Counter
     public long registrationId()
     {
         return registrationId;
-    }
-
-    /**
-     * Return the Position providing access to the underlying counter.
-     *
-     * @return atomic counter
-     */
-    public Position position()
-    {
-        return position;
     }
 
     /**

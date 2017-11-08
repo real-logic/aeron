@@ -23,10 +23,7 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
-import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.AgentInvoker;
-import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +37,7 @@ class SequencerAgent implements Agent
     private final long pendingSessionTimeoutMs = TimeUnit.SECONDS.toMillis(5);
     private final Aeron aeron;
     private final EpochClock epochClock;
+    private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
     private final AgentInvoker aeronClientInvoker;
     private final Subscription ingressSubscription;
     private final ExclusivePublication logPublication;
@@ -80,6 +78,7 @@ class SequencerAgent implements Agent
         int workCount = 0;
 
         final long nowMs = epochClock.time();
+        cachedEpochClock.update(nowMs);
 
         workCount += aeronClientInvoker.invoke();
         workCount += processPendingSessions(pendingSessions, nowMs);
@@ -98,7 +97,7 @@ class SequencerAgent implements Agent
         final Publication publication = aeron.addPublication(responseChannel, responseStreamId);
         final long sessionId = nextSessionId++;
         final ClusterSession session = new ClusterSession(sessionId, publication);
-        session.lastActivity(epochClock.time(), correlationId);
+        session.lastActivity(cachedEpochClock.time(), correlationId);
 
         pendingSessions.add(session);
     }
@@ -133,7 +132,7 @@ class SequencerAgent implements Agent
             return ControlledFragmentHandler.Action.ABORT;
         }
 
-        final long nowMs = epochClock.time();
+        final long nowMs = cachedEpochClock.time();
         sessionHeaderEncoder
             .wrap((UnsafeBuffer)buffer, offset + MessageHeaderEncoder.ENCODED_LENGTH)
             .timestamp(nowMs);
@@ -158,8 +157,7 @@ class SequencerAgent implements Agent
         final ClusterSession session = clusterSessionByIdMap.get(clusterSessionId);
         if (null != session)
         {
-            final long nowMs = epochClock.time();
-            session.lastActivity(nowMs, correlationId);
+            session.lastActivity(cachedEpochClock.time(), correlationId);
         }
     }
 
@@ -266,7 +264,7 @@ class SequencerAgent implements Agent
                     .detail("");
 
                 bufferClaim.commit();
-                session.timeOfLastActivityMs(epochClock.time());
+                session.timeOfLastActivityMs(cachedEpochClock.time());
                 session.state(ClusterSession.State.CONNECTED);
                 clusterSessionByIdMap.put(session.id(), session);
 

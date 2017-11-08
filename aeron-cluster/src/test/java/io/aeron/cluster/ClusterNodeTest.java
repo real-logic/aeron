@@ -179,7 +179,6 @@ public class ClusterNodeTest
 
     public static class EchoService implements ClusteredService
     {
-        private final VectoredSessionDecorator vectoredSessionDecorator = new VectoredSessionDecorator(0);
         private Cluster cluster;
 
         public void onStart(final Cluster cluster)
@@ -204,10 +203,8 @@ public class ClusterNodeTest
             final Header header)
         {
             final ClientSession session = cluster.getClientSession(clusterSessionId);
-            vectoredSessionDecorator.clusterSessionId(clusterSessionId);
-            final Publication publication = session.responsePublication();
 
-            while (vectoredSessionDecorator.offer(publication, correlationId, buffer, offset, length) < 0)
+            while (session.offer(correlationId, buffer, offset, length) < 0)
             {
                 Thread.yield();
             }

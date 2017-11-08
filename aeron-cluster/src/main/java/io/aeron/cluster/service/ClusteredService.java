@@ -27,7 +27,13 @@ public interface ClusteredService
     void onSessionClose(ClientSession session);
 
     void onSessionMessage(
-        long clusterSessionId, long correlationId, DirectBuffer buffer, int offset, int length, Header header);
+        long clusterSessionId,
+        long correlationId,
+        long timestampMs,
+        DirectBuffer buffer,
+        int offset,
+        int length,
+        Header header);
 
     void onTimerEvent(long correlationId);
 }

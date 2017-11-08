@@ -197,6 +197,7 @@ public class ClusterNodeTest
         public void onSessionMessage(
             final long clusterSessionId,
             final long correlationId,
+            final long timestampMs,
             final DirectBuffer buffer,
             final int offset,
             final int length,

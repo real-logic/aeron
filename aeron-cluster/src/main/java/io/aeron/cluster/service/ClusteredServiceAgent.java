@@ -108,6 +108,7 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
                 service.onSessionMessage(
                     sessionHeaderDecoder.clusterSessionId(),
                     sessionHeaderDecoder.correlationId(),
+                    sessionHeaderDecoder.timestamp(),
                     buffer,
                     offset + SESSION_HEADER_LENGTH,
                     length - SESSION_HEADER_LENGTH,

@@ -25,6 +25,7 @@
 #include "Publication.h"
 #include "ExclusivePublication.h"
 #include "Subscription.h"
+#include "Counter.h"
 #include "DriverProxy.h"
 #include "Context.h"
 #include "DriverListenerAdapter.h"
@@ -110,6 +111,10 @@ public:
     std::shared_ptr<Subscription> findSubscription(std::int64_t registrationId);
     void releaseSubscription(std::int64_t registrationId, struct ImageList *imageList);
 
+    std::int64_t addCounter(std::int32_t typeId, std::uint8_t *keyBuffer, size_t keyLength, std::string& label);
+    std::shared_ptr<Counter> findCounter(std::int64_t registrationId);
+    void releaseCounter(std::int64_t registrationId);
+
     void onNewPublication(
         std::int32_t streamId,
         std::int32_t sessionId,
@@ -179,6 +184,7 @@ private:
         std::int32_t m_streamId;
         std::int32_t m_sessionId = -1;
         std::int32_t m_positionLimitCounterId = -1;
+        std::int32_t m_channelStatusIndicatorId = -1;
         long long m_timeOfRegistration;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
         std::int32_t m_errorCode;
@@ -201,6 +207,7 @@ private:
         std::int32_t m_streamId;
         std::int32_t m_sessionId = -1;
         std::int32_t m_positionLimitCounterId = -1;
+        std::int32_t m_channelStatusIndicatorId = -1;
         long long m_timeOfRegistration;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
         std::int32_t m_errorCode;

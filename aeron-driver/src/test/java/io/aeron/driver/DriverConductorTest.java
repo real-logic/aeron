@@ -68,6 +68,7 @@ public class DriverConductorTest
     private static final String CHANNEL_4004 = "aeron:udp?endpoint=localhost:4004";
     private static final String CHANNEL_IPC = "aeron:ipc";
     private static final String INVALID_URI = "aeron:udp://";
+    private static final String COUNTER_LABEL = "counter label";
     private static final int SESSION_ID = 100;
     private static final int STREAM_ID_1 = 10;
     private static final int STREAM_ID_2 = 20;
@@ -75,8 +76,14 @@ public class DriverConductorTest
     private static final int STREAM_ID_4 = 40;
     private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
     private static final int BUFFER_LENGTH = 16 * 1024;
+    private static final int COUNTER_TYPE_ID = 101;
+    private static final int COUNTER_KEY_OFFSET = 0;
+    private static final int COUNTER_KEY_LENGTH = 12;
+    private static final int COUNTER_LABEL_OFFSET = COUNTER_KEY_OFFSET + COUNTER_KEY_LENGTH;
+    private static final int COUNTER_LABEL_LENGTH = COUNTER_LABEL.length();
 
     private final ByteBuffer toDriverBuffer = ByteBuffer.allocateDirect(Configuration.CONDUCTOR_BUFFER_LENGTH);
+    private final UnsafeBuffer counterKeyAndLabel = new UnsafeBuffer(new byte[BUFFER_LENGTH]);
 
     private final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
 
@@ -94,6 +101,8 @@ public class DriverConductorTest
     private EpochClock epochClock = () -> currentTimeMs;
     private long currentTimeNs;
     private NanoClock nanoClock = () -> currentTimeNs;
+
+    private CountersManager spyCountersManager;
 
     private DriverProxy driverProxy;
 
@@ -124,9 +133,12 @@ public class DriverConductorTest
 
         currentTimeNs = 0;
 
+        counterKeyAndLabel.putInt(COUNTER_KEY_OFFSET, 42);
+        counterKeyAndLabel.putStringAscii(COUNTER_LABEL_OFFSET, COUNTER_LABEL);
+
         final UnsafeBuffer counterBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH));
-        final CountersManager countersManager = new CountersManager(
-            new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH * 2)), counterBuffer, StandardCharsets.US_ASCII);
+        spyCountersManager = spy(new CountersManager(
+            new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH * 2)), counterBuffer, StandardCharsets.US_ASCII));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
@@ -136,7 +148,7 @@ public class DriverConductorTest
             .driverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
             .errorHandler(mockErrorHandler)
             .rawLogBuffersFactory(mockRawLogFactory)
-            .countersManager(countersManager)
+            .countersManager(spyCountersManager)
             .epochClock(epochClock)
             .nanoClock(nanoClock)
             .sendChannelEndpointSupplier(Configuration.sendChannelEndpointSupplier())
@@ -1191,6 +1203,81 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         verify(mockClientProxy).onError(eq(id2), any(ErrorCode.class), anyString());
+    }
+
+    @Test
+    public void shouldAddSingleCounter() throws Exception
+    {
+        final long registrationId =
+            driverProxy.addCounter(
+                COUNTER_TYPE_ID,
+                counterKeyAndLabel,
+                COUNTER_KEY_OFFSET,
+                COUNTER_KEY_LENGTH,
+                counterKeyAndLabel,
+                COUNTER_LABEL_OFFSET,
+                COUNTER_LABEL_LENGTH);
+
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onCounterReady(eq(registrationId), anyInt());
+        verify(spyCountersManager)
+            .newCounter(eq(COUNTER_TYPE_ID), any(), anyInt(), anyInt(), any(), anyInt(), anyInt());
+    }
+
+    @Test
+    public void shouldRemoveSingleCounter() throws Exception
+    {
+        final UnsafeBuffer counterKeyAndLabel = new UnsafeBuffer(new byte[256]);
+        counterKeyAndLabel.putInt(0, 4);
+        counterKeyAndLabel.putStringAscii(4, "counter label");
+
+        final long registrationId =
+            driverProxy.addCounter(
+                COUNTER_TYPE_ID,
+                counterKeyAndLabel,
+                COUNTER_KEY_OFFSET,
+                COUNTER_KEY_LENGTH,
+                counterKeyAndLabel,
+                COUNTER_LABEL_OFFSET,
+                COUNTER_LABEL_LENGTH);
+
+        driverConductor.doWork();
+
+        final long removeCorrelationId = driverProxy.removeCounter(registrationId);
+        driverConductor.doWork();
+
+        final ArgumentCaptor<Integer> captor = ArgumentCaptor.forClass(Integer.class);
+
+        final InOrder inOrder = inOrder(mockClientProxy);
+        inOrder.verify(mockClientProxy).onCounterReady(eq(registrationId), captor.capture());
+        inOrder.verify(mockClientProxy).operationSucceeded(removeCorrelationId);
+
+        verify(spyCountersManager).free(captor.getValue());
+    }
+
+    @Test
+    public void shouldRemoveCounterOnClientTimeout() throws Exception
+    {
+        final long registrationId =
+            driverProxy.addCounter(
+                COUNTER_TYPE_ID,
+                counterKeyAndLabel,
+                COUNTER_KEY_OFFSET,
+                COUNTER_KEY_LENGTH,
+                counterKeyAndLabel,
+                COUNTER_LABEL_OFFSET,
+                COUNTER_LABEL_LENGTH);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<Integer> captor = ArgumentCaptor.forClass(Integer.class);
+
+        verify(mockClientProxy).onCounterReady(eq(registrationId), captor.capture());
+
+        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+
+        verify(spyCountersManager).free(captor.getValue());
     }
 
     private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer) throws Exception

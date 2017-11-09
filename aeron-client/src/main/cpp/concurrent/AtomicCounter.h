@@ -29,9 +29,7 @@ class AtomicCounter
 {
 public:
 
-    typedef std::shared_ptr<AtomicCounter> ptr_t;
-
-    AtomicCounter(const AtomicBuffer buffer, std::int32_t counterId, CountersManager& countersManager) :
+    AtomicCounter(AtomicBuffer& buffer, std::int32_t counterId, std::shared_ptr<CountersManager> countersManager) :
         m_buffer(buffer),
         m_counterId(counterId),
         m_countersManager(countersManager),
@@ -40,14 +38,25 @@ public:
         m_buffer.putInt64(m_offset, 0);
     }
 
-    ~AtomicCounter()
+    AtomicCounter(AtomicBuffer& buffer, std::int32_t counterId) :
+        m_buffer(buffer),
+        m_counterId(counterId),
+        m_countersManager(nullptr),
+        m_offset(CountersManager::counterOffset(counterId))
     {
-        m_countersManager.free(m_counterId);
     }
 
-    inline static AtomicCounter::ptr_t makeCounter(CountersManager& countersManager, std::string& label)
+    virtual ~AtomicCounter()
     {
-        return std::make_shared<AtomicCounter>(countersManager.valuesBuffer(), countersManager.allocate(label), countersManager);
+        if (nullptr != m_countersManager)
+        {
+            m_countersManager->free(m_counterId);
+        }
+    }
+
+    inline std::int32_t id() const
+    {
+        return m_counterId;
     }
 
     inline void increment()
@@ -75,7 +84,7 @@ public:
         m_buffer.addInt64Ordered(m_offset, increment);
     }
 
-    inline std::int64_t get()
+    inline std::int64_t get() const
     {
         return m_buffer.getInt64Volatile(m_offset);
     }
@@ -83,7 +92,7 @@ public:
 private:
     AtomicBuffer m_buffer;
     std::int32_t m_counterId;
-    CountersManager& m_countersManager;
+    std::shared_ptr<CountersManager> m_countersManager;
     util::index_t m_offset;
 };
 

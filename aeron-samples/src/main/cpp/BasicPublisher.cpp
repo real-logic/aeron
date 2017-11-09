@@ -115,6 +115,13 @@ int main(int argc, char** argv)
             publication = aeron->findPublication(id);
         }
 
+        const std::int64_t channelStatus = publication->channelStatusIndicator().getVolatile();
+
+        std::cout << "Publication channel status (id=" << publication->channelStatusIndicator().id() << ") "
+            << ((channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE) ?
+                "ACTIVE" : std::to_string(channelStatus))
+            << std::endl;
+
         AERON_DECL_ALIGNED(buffer_t buffer, 16);
         concurrent::AtomicBuffer srcBuffer(&buffer[0], buffer.size());
         char message[256];

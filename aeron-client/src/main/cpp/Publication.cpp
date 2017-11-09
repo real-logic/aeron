@@ -27,6 +27,7 @@ Publication::Publication(
     std::int32_t streamId,
     std::int32_t sessionId,
     UnsafeBufferPosition& publicationLimit,
+    StatusIndicatorReader& channelStatusIndicator,
     std::shared_ptr<LogBuffers> buffers)
     :
     m_conductor(conductor),
@@ -42,6 +43,7 @@ Publication::Publication(
     m_maxMessageLength(FrameDescriptor::computeMaxMessageLength(buffers->atomicBuffer(0).capacity())),
     m_positionBitsToShift(util::BitUtil::numberOfTrailingZeroes(buffers->atomicBuffer(0).capacity())),
     m_publicationLimit(publicationLimit),
+    m_channelStatusIndicator(channelStatusIndicator),
     m_logbuffers(buffers),
     m_headerWriter(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer))
 {

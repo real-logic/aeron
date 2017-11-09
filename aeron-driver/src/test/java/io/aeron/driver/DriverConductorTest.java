@@ -1280,6 +1280,35 @@ public class DriverConductorTest
         verify(spyCountersManager).free(captor.getValue());
     }
 
+    @Test
+    public void shouldNotRemoveCounterOnClientKeepalive() throws Exception
+    {
+        final long registrationId =
+            driverProxy.addCounter(
+                COUNTER_TYPE_ID,
+                counterKeyAndLabel,
+                COUNTER_KEY_OFFSET,
+                COUNTER_KEY_LENGTH,
+                counterKeyAndLabel,
+                COUNTER_LABEL_OFFSET,
+                COUNTER_LABEL_LENGTH);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<Integer> captor = ArgumentCaptor.forClass(Integer.class);
+
+        verify(mockClientProxy).onCounterReady(eq(registrationId), captor.capture());
+
+        doWorkUntil(
+            () ->
+            {
+                driverProxy.sendClientKeepalive();
+                return nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2;
+            });
+
+        verify(spyCountersManager, never()).free(captor.getValue());
+    }
+
     private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer) throws Exception
     {
         while (!condition.getAsBoolean())

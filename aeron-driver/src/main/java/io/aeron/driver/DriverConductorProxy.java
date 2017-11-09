@@ -105,7 +105,7 @@ public class DriverConductorProxy
         }
     }
 
-    private boolean notConcurrent()
+    public boolean notConcurrent()
     {
         return threadingMode == SHARED || threadingMode == INVOKER;
     }

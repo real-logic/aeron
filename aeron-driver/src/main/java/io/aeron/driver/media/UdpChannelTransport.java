@@ -29,7 +29,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
-import java.util.function.Consumer;
 
 import static io.aeron.logbuffer.FrameDescriptor.frameVersion;
 import static java.net.StandardSocketOptions.*;
@@ -69,9 +68,8 @@ public abstract class UdpChannelTransport implements AutoCloseable
      * Create the underlying channel for reading and writing.
      *
      * @param statusIndicator to set for status
-     * @param reporter to pass exceptions encountered to
      */
-    public void openDatagramChannel(final AtomicCounter statusIndicator, final Consumer<RuntimeException> reporter)
+    public void openDatagramChannel(final AtomicCounter statusIndicator)
     {
         try
         {
@@ -122,11 +120,8 @@ public abstract class UdpChannelTransport implements AutoCloseable
         catch (final IOException ex)
         {
             statusIndicator.setOrdered(ChannelEndpointStatus.ERRORED);
-            final RuntimeException err = new RuntimeException(
+            throw new RuntimeException(
                 "Channel error: " + ex.getMessage() + " : " + udpChannel.originalUriString(), ex);
-            reporter.accept(err);
-
-            throw err;
         }
     }
 

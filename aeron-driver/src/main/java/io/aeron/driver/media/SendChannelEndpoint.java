@@ -97,9 +97,22 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public void openChannel(final DriverConductorProxy conductorProxy)
     {
-        openDatagramChannel(
-            statusIndicator,
-            (error) -> conductorProxy.channelEndpointError(statusIndicator.id(), error));
+        if (conductorProxy.notConcurrent())
+        {
+            openDatagramChannel(statusIndicator);
+        }
+        else
+        {
+            try
+            {
+                openDatagramChannel(statusIndicator);
+            }
+            catch (final Exception ex)
+            {
+                conductorProxy.channelEndpointError(statusIndicator.id(), ex);
+                throw ex;
+            }
+        }
     }
 
     public String originalUriString()

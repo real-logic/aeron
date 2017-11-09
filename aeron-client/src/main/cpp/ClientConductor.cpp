@@ -310,6 +310,22 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, struct Im
     }
 }
 
+std::int64_t ClientConductor::addCounter(
+    std::int32_t typeId, std::uint8_t *keyBuffer, size_t keyLength, std::string& label)
+{
+    throw std::runtime_error("not implemented");
+}
+
+std::shared_ptr<Counter> ClientConductor::findCounter(std::int64_t registrationId)
+{
+    throw std::runtime_error("not implemented");
+}
+
+void ClientConductor::releaseCounter(std::int64_t registrationId)
+{
+    throw std::runtime_error("not implemented");
+}
+
 void ClientConductor::addDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel)
 {
     verifyDriverIsActive();

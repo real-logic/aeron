@@ -25,6 +25,7 @@
 #include "Publication.h"
 #include "ExclusivePublication.h"
 #include "Subscription.h"
+#include "Counter.h"
 #include "DriverProxy.h"
 #include "Context.h"
 #include "DriverListenerAdapter.h"
@@ -109,6 +110,10 @@ public:
         const on_unavailable_image_t &onUnavailableImageHandler);
     std::shared_ptr<Subscription> findSubscription(std::int64_t registrationId);
     void releaseSubscription(std::int64_t registrationId, struct ImageList *imageList);
+
+    std::int64_t addCounter(std::int32_t typeId, std::uint8_t *keyBuffer, size_t keyLength, std::string& label);
+    std::shared_ptr<Counter> findCounter(std::int64_t registrationId);
+    void releaseCounter(std::int64_t registrationId);
 
     void onNewPublication(
         std::int32_t streamId,

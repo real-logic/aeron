@@ -23,6 +23,7 @@ SET(SOURCE
     ClientConductor.cpp
     Aeron.cpp
     LogBuffers.cpp
+    Counter.cpp
     util/MemoryMappedFile.cpp
     util/CommandOption.cpp
     util/CommandOptionParser.cpp)
@@ -42,6 +43,7 @@ SET(HEADERS
     FragmentAssembler.h
     ControlledFragmentAssembler.h
     ExclusivePublication.h
+    Counter.h
     command/ImageMessageFlyweight.h
     command/ImageBuffersReadyFlyweight.h
     command/ControlProtocolEvents.h

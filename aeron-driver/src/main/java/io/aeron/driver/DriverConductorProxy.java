@@ -93,8 +93,7 @@ public class DriverConductorProxy
         }
     }
 
-    public void channelEndpointError(
-        final long statusIndicatorId, final Exception error)
+    public void channelEndpointError(final long statusIndicatorId, final Exception error)
     {
         if (notConcurrent())
         {

@@ -48,7 +48,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     private int refCount = 0;
     private final BiInt2ObjectMap<NetworkPublication> publicationBySessionAndStreamId = new BiInt2ObjectMap<>();
-    private final MultiDestination multiDestination;
+    private final MultiUnicastDestination multiUnicastDestination;
     private final AtomicCounter statusMessagesReceived;
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusIndicator;
@@ -68,21 +68,21 @@ public class SendChannelEndpoint extends UdpChannelTransport
         statusMessagesReceived = context.systemCounters().get(STATUS_MESSAGES_RECEIVED);
         this.statusIndicator = statusIndicator;
 
-        MultiDestination multiDestination = null;
+        MultiUnicastDestination multiUnicastDestination = null;
         if (udpChannel.hasExplicitControl())
         {
             final String mode = udpChannel.channelUri().get(CommonContext.MDC_CONTROL_MODE_PARAM_NAME);
             if (CommonContext.MDC_CONTROL_MODE_MANUAL.equals(mode))
             {
-                multiDestination = new MultiDestination();
+                multiUnicastDestination = new MultiUnicastDestination();
             }
             else if (null == mode || CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(mode))
             {
-                multiDestination = new MultiDestination(context.nanoClock(), DESTINATION_TIMEOUT);
+                multiUnicastDestination = new MultiUnicastDestination(context.nanoClock(), DESTINATION_TIMEOUT);
             }
         }
 
-        this.multiDestination = multiDestination;
+        this.multiUnicastDestination = multiUnicastDestination;
     }
 
     public int decRef()
@@ -99,7 +99,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
         openDatagramChannel(
             statusIndicator,
-            error -> conductorProxy.channelEndpointError(statusIndicator.id(), error));
+            (error) -> conductorProxy.channelEndpointError(statusIndicator.id(), error));
     }
 
     public String originalUriString()
@@ -174,7 +174,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
         int bytesSent = 0;
 
-        if (null == multiDestination)
+        if (null == multiUnicastDestination)
         {
             try
             {
@@ -191,7 +191,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
         else
         {
-            bytesSent = multiDestination.send(sendDatagramChannel, buffer, this);
+            bytesSent = multiUnicastDestination.send(sendDatagramChannel, buffer, this);
         }
 
         return bytesSent;
@@ -218,9 +218,9 @@ public class SendChannelEndpoint extends UdpChannelTransport
         final int streamId = msg.streamId();
         final NetworkPublication publication = publicationBySessionAndStreamId.get(sessionId, streamId);
 
-        if (null != multiDestination)
+        if (null != multiUnicastDestination)
         {
-            multiDestination.onStatusMessage(msg, srcAddress);
+            multiUnicastDestination.onStatusMessage(msg, srcAddress);
 
             if (0 == sessionId && 0 == streamId && SEND_SETUP_FLAG == (msg.flags() & SEND_SETUP_FLAG))
             {
@@ -275,7 +275,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public void validateAllowsManualControl()
     {
-        if (null == multiDestination || !multiDestination.isManualControlMode())
+        if (null == multiUnicastDestination || !multiUnicastDestination.isManualControlMode())
         {
             throw new IllegalArgumentException("Control channel does not allow manual control");
         }
@@ -283,11 +283,11 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public void addDestination(final InetSocketAddress address)
     {
-        multiDestination.addDestination(address);
+        multiUnicastDestination.addDestination(address);
     }
 
     public void removeDestination(final InetSocketAddress address)
     {
-        multiDestination.removeDestination(address);
+        multiUnicastDestination.removeDestination(address);
     }
 }

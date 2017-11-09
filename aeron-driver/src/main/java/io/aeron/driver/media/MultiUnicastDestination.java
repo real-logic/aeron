@@ -28,19 +28,19 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
 
-final class MultiDestination
+final class MultiUnicastDestination
 {
     private final long destinationTimeoutNs;
     private final ArrayList<Destination> destinations = new ArrayList<>();
     private final NanoClock nanoClock;
 
-    MultiDestination(final NanoClock nanoClock, final long timeout)
+    MultiUnicastDestination(final NanoClock nanoClock, final long timeout)
     {
         this.nanoClock = nanoClock;
         this.destinationTimeoutNs = timeout;
     }
 
-    MultiDestination()
+    MultiUnicastDestination()
     {
         this.nanoClock = () -> 0;
         this.destinationTimeoutNs = 0;

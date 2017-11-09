@@ -33,8 +33,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static io.aeron.archive.client.ArchiveProxy.DEFAULT_MAX_RETRY_ATTEMPTS;
 import static io.aeron.archive.client.ControlResponseAdapter.dispatchDescriptor;
-import static io.aeron.archive.codecs.ControlResponseCode.ERROR;
-import static io.aeron.archive.codecs.ControlResponseCode.OK;
 import static io.aeron.archive.codecs.ControlResponseCode.RECORDING_UNKNOWN;
 import static org.agrona.SystemUtil.getDurationInNanos;
 import static org.agrona.SystemUtil.getSizeAsInt;
@@ -177,7 +175,7 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Poll the response stream once of an error. If another message is present then it will be skipped over
+     * Poll the response stream once for an error. If another message is present then it will be skipped over
      * so only call when not expecting another response.
      *
      * @return the error String otherwise null if no error is found.
@@ -311,7 +309,7 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Replay a length of a recording from a position.
+     * Replay a length in bytes of a recording from a position.
      *
      * @param recordingId    to be replayed.
      * @param position       from which the replay should be started.
@@ -355,7 +353,7 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Replay a length of a recording from a position.
+     * Replay a length in bytes of a recording from a position.
      *
      * @param recordingId             to be replayed.
      * @param position                from which the replay should be started.
@@ -503,7 +501,7 @@ public final class AeronArchive implements AutoCloseable
             final ControlResponseCode code = poller.code();
             if (code != ControlResponseCode.OK)
             {
-                if (code == ERROR)
+                if (code == ControlResponseCode.ERROR)
                 {
                     throw new IllegalStateException("Error: " + poller.errorMessage());
                 }
@@ -547,7 +545,7 @@ public final class AeronArchive implements AutoCloseable
             checkForError(poller, expectedCorrelationId);
 
             final ControlResponseCode code = poller.code();
-            if (OK != code)
+            if (ControlResponseCode.OK != code)
             {
                 throw new IllegalStateException("Unexpected response code: " + code);
             }
@@ -627,8 +625,7 @@ public final class AeronArchive implements AutoCloseable
 
     private void checkForError(final ControlResponsePoller poller, final long expectedCorrelationId)
     {
-        if (poller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
-            poller.code() == ControlResponseCode.ERROR)
+        if (poller.templateId() == ControlResponseDecoder.TEMPLATE_ID && poller.code() == ControlResponseCode.ERROR)
         {
             throw new IllegalStateException("response for expectedCorrelationId=" + expectedCorrelationId +
                 ", error: " + poller.errorMessage());

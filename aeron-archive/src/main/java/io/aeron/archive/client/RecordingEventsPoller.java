@@ -46,7 +46,7 @@ public class RecordingEventsPoller implements FragmentHandler
     /**
      * Create a poller for a given subscription to an archive for recording events.
      *
-     * @param subscription  to poll for new events.
+     * @param subscription to poll for new events.
      */
     public RecordingEventsPoller(final Subscription subscription)
     {

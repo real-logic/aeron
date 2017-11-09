@@ -143,6 +143,21 @@ typedef struct aeron_destination_command_stct
     int32_t channel_length;
 }
 aeron_destination_command_t;
+
+typedef struct aeron_counter_command_stct
+{
+    aeron_correlated_command_t correlated;
+    int32_t type_id;
+}
+aeron_counter_command_t;
+
+typedef struct aeron_counter_ready_stct
+{
+    int64_t correlation_id;
+    int32_t counter_id;
+}
+aeron_counter_ready_t;
+
 #pragma pack(pop)
 
 #endif //AERON_AERON_CONTROL_PROTOCOL_H

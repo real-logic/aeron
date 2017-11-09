@@ -41,6 +41,13 @@ typedef struct aeron_publication_link_stct
 }
 aeron_publication_link_t;
 
+typedef struct aeron_counter_link_stct
+{
+    int64_t registration_id;
+    int32_t counter_id;
+}
+aeron_counter_link_t;
+
 typedef struct aeron_client_stct
 {
     int64_t client_id;
@@ -55,6 +62,14 @@ typedef struct aeron_client_stct
         size_t capacity;
     }
     publication_links;
+
+    struct counter_link_stct
+    {
+        aeron_counter_link_t *array;
+        size_t length;
+        size_t capacity;
+    }
+    counter_links;
 }
 aeron_client_t;
 
@@ -387,6 +402,14 @@ int aeron_driver_conductoor_on_add_destination(
 int aeron_driver_conductoor_on_remove_destination(
     aeron_driver_conductor_t *conductor,
     aeron_destination_command_t *command);
+
+int aeron_driver_conductor_on_add_counter(
+    aeron_driver_conductor_t *conductor,
+    aeron_counter_command_t *command);
+
+int aeron_driver_conductor_on_remove_counter(
+    aeron_driver_conductor_t *conductor,
+    aeron_remove_command_t *command);
 
 void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item);
 

@@ -219,6 +219,9 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
             client->publication_links.array = NULL;
             client->publication_links.length = 0;
             client->publication_links.capacity = 0;
+            client->counter_links.array = NULL;
+            client->counter_links.length = 0;
+            client->counter_links.capacity = 0;
             conductor->clients.length++;
         }
     }
@@ -251,6 +254,13 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
         aeron_driver_managed_resource_t *resource = client->publication_links.array[i].resource;
 
         resource->decref(resource->clientd);
+    }
+
+    for (size_t i = 0; i < client->counter_links.length; i++)
+    {
+        aeron_counter_link_t *link = &client->counter_links.array[i];
+
+        aeron_counters_manager_free(&conductor->counters_manager, link->counter_id);
     }
 
     for (size_t i = 0, size = conductor->ipc_subscriptions.length, last_index = size - 1; i < size; i++)
@@ -315,6 +325,12 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
     client->publication_links.array = NULL;
     client->publication_links.length = 0;
     client->publication_links.capacity = 0;
+
+    aeron_free(client->counter_links.array);
+    client->counter_links.array = NULL;
+    client->counter_links.length = 0;
+    client->counter_links.capacity = 0;
+
     client->client_id = -1;
 }
 
@@ -1001,6 +1017,21 @@ void aeron_driver_conductor_on_subscription_ready(
         conductor, AERON_RESPONSE_ON_SUBSCRIPTION_READY, response, sizeof(aeron_subscription_ready_t));
 }
 
+void aeron_driver_conductor_on_counter_ready(
+    aeron_driver_conductor_t *conductor,
+    int64_t registration_id,
+    int32_t counter_id)
+{
+    char response_buffer[sizeof(aeron_correlated_command_t)];
+    aeron_counter_ready_t *response = (aeron_counter_ready_t *)response_buffer;
+
+    response->correlation_id = registration_id;
+    response->counter_id = counter_id;
+
+    aeron_driver_conductor_client_transmit(
+        conductor, AERON_RESPONSE_ON_COUNTER_READY, response, sizeof(aeron_counter_ready_t));
+}
+
 void aeron_driver_conductor_on_operation_succeeded(
     aeron_driver_conductor_t *conductor,
     int64_t correlation_id)
@@ -1246,6 +1277,36 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             correlation_id = command->correlated.correlation_id;
 
             result = aeron_driver_conductoor_on_remove_destination(conductor, command);
+            break;
+        }
+
+        case AERON_COMMAND_ADD_COUNTER:
+        {
+            aeron_counter_command_t *command = (aeron_counter_command_t *)message;
+
+            if (length < sizeof(aeron_counter_command_t))
+            {
+                goto malformed_command;
+            }
+
+            correlation_id = command->correlated.correlation_id;
+
+            result = aeron_driver_conductor_on_add_counter(conductor, command);
+            break;
+        }
+
+        case AERON_COMMAND_REMOVE_COUNTER:
+        {
+            aeron_remove_command_t *command = (aeron_remove_command_t *)message;
+
+            if (length < sizeof(aeron_remove_command_t))
+            {
+                goto malformed_command;
+            }
+
+            correlation_id = command->correlated.correlation_id;
+
+            result = aeron_driver_conductor_on_remove_counter(conductor, command);
             break;
         }
 
@@ -2179,6 +2240,84 @@ int aeron_driver_conductoor_on_remove_destination(
     aeron_set_err(
         EINVAL,
         "unknown remove destination registration_id=%" PRId64,
+        command->correlated.client_id,
+        command->registration_id);
+    return -1;
+}
+
+int aeron_driver_conductor_on_add_counter(
+    aeron_driver_conductor_t *conductor,
+    aeron_counter_command_t *command)
+{
+    aeron_client_t *client = NULL;
+
+    if ((client = aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id)) == NULL)
+    {
+        return -1;
+    }
+
+    const uint8_t *cursor = (const uint8_t *)command + sizeof(aeron_counter_command_t);
+    int32_t key_length = *((int32_t *)cursor);
+    const uint8_t *key = cursor + sizeof(int32_t);
+
+    cursor = key + key_length;
+    int32_t label_length = *((int32_t *)cursor);
+    const char *label = (const char *)cursor + sizeof(int32_t);
+
+    const int32_t counter_id = aeron_counters_manager_allocate(
+        &conductor->counters_manager, command->type_id, key, (size_t)key_length, label, (size_t)label_length);
+
+    if (counter_id >= 0)
+    {
+        int ensure_capacity_result = 0;
+
+        AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, client->counter_links, aeron_counter_link_t);
+        if (ensure_capacity_result >= 0)
+        {
+            aeron_counter_link_t *link = &client->counter_links.array[client->counter_links.length++];
+
+            link->registration_id = command->correlated.correlation_id;
+            link->counter_id = counter_id;
+
+            aeron_driver_conductor_on_counter_ready(conductor, command->correlated.correlation_id, counter_id);
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
+int aeron_driver_conductor_on_remove_counter(
+    aeron_driver_conductor_t *conductor,
+    aeron_remove_command_t *command)
+{
+    int index;
+
+    if ((index = aeron_driver_conductor_find_client(conductor, command->correlated.client_id)) >= 0)
+    {
+        aeron_client_t *client = &conductor->clients.array[index];
+
+        for (size_t i = 0, size = client->counter_links.length, last_index = size - 1; i < size; i++)
+        {
+            aeron_counter_link_t *link = &client->counter_links.array[i];
+
+            if (command->registration_id == link->registration_id)
+            {
+                aeron_counters_manager_free(&conductor->counters_manager, link->counter_id);
+
+                aeron_array_fast_unordered_remove(
+                    (uint8_t *)client->counter_links.array, sizeof(aeron_counter_link_t), i, last_index);
+                client->counter_links.length--;
+
+                aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
+                return 0;
+            }
+        }
+    }
+
+    aeron_set_err(
+        EINVAL,
+        "unknown counter client_id=%" PRId64 ", registration_id=%" PRId64,
         command->correlated.client_id,
         command->registration_id);
     return -1;

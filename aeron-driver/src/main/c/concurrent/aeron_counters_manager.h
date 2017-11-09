@@ -74,15 +74,13 @@ int aeron_counters_manager_init(
 
 void aeron_counters_manager_close(aeron_counters_manager_t *manager);
 
-typedef void (*aeron_counters_manager_key_func_t)(uint8_t *, size_t, void *);
-
 int32_t aeron_counters_manager_allocate(
     volatile aeron_counters_manager_t *manager,
-    const char *label,
-    size_t label_length,
     int32_t type_id,
-    aeron_counters_manager_key_func_t key_func,
-    void *clientd);
+    const uint8_t *key,
+    size_t key_length,
+    const char *label,
+    size_t label_length);
 
 int32_t aeron_counters_manager_next_counter_id(volatile aeron_counters_manager_t *manager);
 

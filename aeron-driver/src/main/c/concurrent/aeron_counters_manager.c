@@ -52,11 +52,11 @@ void aeron_counters_manager_close(aeron_counters_manager_t *manager)
 
 int32_t aeron_counters_manager_allocate(
     volatile aeron_counters_manager_t *manager,
-    const char *label,
-    size_t label_length,
     int32_t type_id,
-    aeron_counters_manager_key_func_t key_func,
-    void *clientd)
+    const uint8_t *key,
+    size_t key_length,
+    const char *label,
+    size_t label_length)
 {
     const int32_t counter_id = aeron_counters_manager_next_counter_id(manager);
 
@@ -74,7 +74,8 @@ int32_t aeron_counters_manager_allocate(
         (aeron_counter_metadata_descriptor_t *)(manager->metadata + (counter_id * AERON_COUNTERS_MANAGER_METADATA_LENGTH));
 
     metadata->type_id = type_id;
-    key_func((uint8_t *)&metadata->key, sizeof(metadata->key), clientd);
+    memset(metadata->key, 0, sizeof(metadata->key));
+    memcpy(metadata->key, key, fmin(sizeof(metadata->key), key_length));
     memcpy(metadata->label, label, fmin(sizeof(metadata->label), label_length));
     metadata->label_length = (int32_t)label_length;
     AERON_PUT_ORDERED(metadata->state, AERON_COUNTER_RECORD_ALLOCATED);

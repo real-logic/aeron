@@ -50,13 +50,6 @@ static aeron_system_counter_t system_counters[] =
 
 static size_t num_system_counters = sizeof(system_counters)/sizeof(aeron_system_counter_t);
 
-static void system_counter_key_func(uint8_t *key, size_t key_max_length, void *clientd)
-{
-    int32_t key_value = *(int32_t *)(clientd);
-
-    *(int32_t *)key = key_value;
-}
-
 int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters_manager_t *manager)
 {
     if (NULL == counters || NULL == manager)
@@ -76,11 +69,11 @@ int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters
         if ((counters->counter_ids[i] =
             aeron_counters_manager_allocate(
                 manager,
-                system_counters[i].label,
-                strlen(system_counters[i].label),
                 AERON_SYSTEM_COUNTER_TYPE_ID,
-                system_counter_key_func,
-                &(system_counters[i].id))) < 0)
+                (const uint8_t *)&(system_counters[i].id),
+                sizeof(system_counters[i].id),
+                system_counters[i].label,
+                strlen(system_counters[i].label))) < 0)
         {
             return -1;
         }

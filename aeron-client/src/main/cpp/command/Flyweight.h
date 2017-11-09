@@ -59,6 +59,26 @@ protected:
         return m_buffer.getStringUtf8WithoutLength(m_baseOffset + offset, size);
     }
 
+    inline std::int32_t getInt32(util::index_t offset) const
+    {
+        return m_buffer.getInt32(m_baseOffset + offset);
+    }
+
+    inline void putInt32(util::index_t offset, std::int32_t value)
+    {
+        m_buffer.putInt32(m_baseOffset + offset, value);
+    }
+
+    inline const uint8_t *bytesAt(util::index_t offset) const
+    {
+        return m_buffer.buffer() + m_baseOffset + offset;
+    }
+
+    inline void putBytes(util::index_t offset, const uint8_t *buffer, util::index_t length)
+    {
+        m_buffer.putBytes(m_baseOffset + offset, buffer, length);
+    }
+
     template <typename struct_t2>
     inline struct_t2& overlayStruct (util::index_t offset)
     {

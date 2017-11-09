@@ -57,6 +57,8 @@ SET(HEADERS
     command/DestinationMessageFlyweight.h
     command/SubscriptionReadyFlyweight.h
     command/OperationSucceededFlyweight.h
+    command/CounterMessageFlyweight.h
+    command/CounterReadyFlyweight.h
     concurrent/AgentRunner.h
     concurrent/AgentInvoker.h
     concurrent/Atomic64.h

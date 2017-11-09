@@ -41,13 +41,6 @@ typedef struct aeron_channel_endpoint_status_key_layout_stct
 aeron_channel_endpoint_status_key_layout_t;
 #pragma pack(pop)
 
-static void aeron_stream_position_counter_key_func(uint8_t *key, size_t key_max_length, void *clientd)
-{
-    aeron_stream_position_counter_key_layout_t *layout = (aeron_stream_position_counter_key_layout_t *)clientd;
-
-    memcpy(key, layout, key_max_length);
-}
-
 int32_t aeron_stream_position_counter_allocate(
     aeron_counters_manager_t *counters_manager,
     const char *name,
@@ -74,7 +67,7 @@ int32_t aeron_stream_position_counter_allocate(
     strncpy(layout.channel, channel, sizeof(layout.channel) - 1);
 
     return aeron_counters_manager_allocate(
-        counters_manager, label, (size_t)label_length, type_id, aeron_stream_position_counter_key_func, &layout);
+        counters_manager, type_id, (const uint8_t *)&layout, sizeof(layout), label, (size_t)label_length);
 }
 
 int32_t aeron_counter_publisher_limit_allocate(
@@ -190,13 +183,6 @@ int32_t aeron_counter_receiver_position_allocate(
         "");
 }
 
-static void aeron_channel_endpopint_status_key_func(uint8_t *key, size_t key_max_length, void *clientd)
-{
-    aeron_channel_endpoint_status_key_layout_t *layout = (aeron_channel_endpoint_status_key_layout_t *)clientd;
-
-    memcpy(key, layout, key_max_length);
-}
-
 int32_t aeron_channel_endpoint_status_allocate(
     aeron_counters_manager_t *counters_manager,
     const char *name,
@@ -213,7 +199,7 @@ int32_t aeron_channel_endpoint_status_allocate(
     strncpy(layout.channel, channel, sizeof(layout.channel) - 1);
 
     return aeron_counters_manager_allocate(
-        counters_manager, label, (size_t)label_length, type_id, aeron_channel_endpopint_status_key_func, &layout);
+        counters_manager, type_id, (const uint8_t *)&layout, sizeof(layout), label, (size_t)label_length);
 }
 
 int32_t aeron_counter_send_channel_status_allocate(

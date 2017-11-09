@@ -153,24 +153,4 @@ public class EgressPoller implements ControlledFragmentHandler
 
         return ControlledFragmentAssembler.Action.BREAK;
     }
-
-    public MessageHeaderDecoder messageHeaderDecoder()
-    {
-        return messageHeaderDecoder;
-    }
-
-    public SessionEventDecoder sessionEventDecoder()
-    {
-        return sessionEventDecoder;
-    }
-
-    public SessionHeaderDecoder sessionHeaderDecoder()
-    {
-        return sessionHeaderDecoder;
-    }
-
-    public NewLeaderEventDecoder newLeaderEventDecoder()
-    {
-        return newLeaderEventDecoder;
-    }
 }

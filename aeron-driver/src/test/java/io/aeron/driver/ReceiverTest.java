@@ -94,7 +94,8 @@ public class ReceiverTest
     private InetSocketAddress senderAddress = new InetSocketAddress("localhost", 40123);
     private Receiver receiver;
     private ReceiverProxy receiverProxy;
-    private OneToOneConcurrentArrayQueue<DriverConductorCmd> toConductorQueue;
+    private final ManyToOneConcurrentArrayQueue<DriverConductorCmd> toConductorQueue =
+        new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY);
 
     private ReceiveChannelEndpoint receiveChannelEndpoint;
     private CongestionControl congestionControl = mock(CongestionControl.class);
@@ -111,8 +112,6 @@ public class ReceiverTest
             anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), anyBoolean()))
             .thenReturn(CongestionControlUtil.packOutcome(INITIAL_WINDOW_LENGTH, false));
         when(congestionControl.initialWindowLength()).thenReturn(INITIAL_WINDOW_LENGTH);
-
-        toConductorQueue = new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY);
 
         final DriverConductorProxy driverConductorProxy =
             new DriverConductorProxy(ThreadingMode.DEDICATED, toConductorQueue, mock(AtomicCounter.class));

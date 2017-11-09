@@ -433,7 +433,7 @@ public final class MediaDriver implements AutoCloseable
         private RawLogFactory rawLogFactory;
         private DataTransportPoller dataTransportPoller;
         private ControlTransportPoller controlTransportPoller;
-        private OneToOneConcurrentArrayQueue<DriverConductorCmd> driverCommandQueue;
+        private ManyToOneConcurrentArrayQueue<DriverConductorCmd> driverCommandQueue;
         private OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue;
         private OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue;
         private ReceiverProxy receiverProxy;
@@ -1628,12 +1628,12 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        OneToOneConcurrentArrayQueue<DriverConductorCmd> driverCommandQueue()
+        ManyToOneConcurrentArrayQueue<DriverConductorCmd> driverCommandQueue()
         {
             return driverCommandQueue;
         }
 
-        Context driverCommandQueue(final OneToOneConcurrentArrayQueue<DriverConductorCmd> queue)
+        Context driverCommandQueue(final ManyToOneConcurrentArrayQueue<DriverConductorCmd> queue)
         {
             this.driverCommandQueue = queue;
             return this;
@@ -1758,7 +1758,7 @@ public final class MediaDriver implements AutoCloseable
             senderProxy = new SenderProxy(
                 threadingMode, senderCommandQueue(), systemCounters.get(SENDER_PROXY_FAILS));
             driverConductorProxy = new DriverConductorProxy(
-                threadingMode, driverCommandQueue, systemCounters.get(CONDUCTOR_PROXY_FAILS));
+                threadingMode, driverCommandQueue(), systemCounters.get(CONDUCTOR_PROXY_FAILS));
 
             if (null == rawLogFactory)
             {
@@ -1889,7 +1889,7 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == driverCommandQueue)
             {
-                driverCommandQueue = new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
+                driverCommandQueue = new ManyToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
             }
 
             if (null == receiverCommandQueue)

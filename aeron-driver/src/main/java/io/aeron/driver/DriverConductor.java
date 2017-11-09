@@ -70,7 +70,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     private final ClientProxy clientProxy;
     private final RingBuffer toDriverCommands;
     private final ClientCommandAdapter clientCommandAdapter;
-    private final OneToOneConcurrentArrayQueue<DriverConductorCmd> driverCmdQueue;
+    private final ManyToOneConcurrentArrayQueue<DriverConductorCmd> driverCmdQueue;
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
     private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
     private final ArrayList<NetworkPublication> networkPublications = new ArrayList<>();

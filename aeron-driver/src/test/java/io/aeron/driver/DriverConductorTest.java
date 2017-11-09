@@ -29,10 +29,7 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.TermAppender;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.ErrorHandler;
-import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -145,7 +142,7 @@ public class DriverConductorTest
             .ipcTermBufferLength(TERM_BUFFER_LENGTH)
             .unicastFlowControlSupplier(Configuration.unicastFlowControlSupplier())
             .multicastFlowControlSupplier(Configuration.multicastFlowControlSupplier())
-            .driverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+            .driverCommandQueue(new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
             .errorHandler(mockErrorHandler)
             .rawLogBuffersFactory(mockRawLogFactory)
             .countersManager(spyCountersManager)

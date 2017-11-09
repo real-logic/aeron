@@ -37,6 +37,8 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     private long controlSessionId = -1;
     private long correlationId = -1;
     private int templateId = -1;
+    private ControlResponseCode code;
+    private String errorMessage;
     private boolean pollComplete = false;
 
     /**
@@ -116,6 +118,26 @@ public class ControlResponsePoller implements ControlledFragmentHandler
         return templateId;
     }
 
+    /**
+     * Get the response code of the last response.
+     *
+     * @return the response code of the last response.
+     */
+    public ControlResponseCode code()
+    {
+        return code;
+    }
+
+    /**
+     * Get the error message of the last response.
+     *
+     * @return the error message of the last response.
+     */
+    public String errorMessage()
+    {
+        return errorMessage;
+    }
+
     public ControlledFragmentAssembler.Action onFragment(
         final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
@@ -133,6 +155,15 @@ public class ControlResponsePoller implements ControlledFragmentHandler
 
                 controlSessionId = controlResponseDecoder.controlSessionId();
                 correlationId = controlResponseDecoder.correlationId();
+                code = controlResponseDecoder.code();
+                if (ControlResponseCode.ERROR == code)
+                {
+                    errorMessage = controlResponseDecoder.errorMessage();
+                }
+                else
+                {
+                    errorMessage = "";
+                }
                 break;
 
             case RecordingDescriptorDecoder.TEMPLATE_ID:
@@ -153,16 +184,6 @@ public class ControlResponsePoller implements ControlledFragmentHandler
         pollComplete = true;
 
         return ControlledFragmentAssembler.Action.BREAK;
-    }
-
-    public MessageHeaderDecoder messageHeaderDecoder()
-    {
-        return messageHeaderDecoder;
-    }
-
-    public ControlResponseDecoder controlResponseDecoder()
-    {
-        return controlResponseDecoder;
     }
 
     public RecordingDescriptorDecoder recordingDescriptorDecoder()

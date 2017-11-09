@@ -190,9 +190,9 @@ public final class AeronArchive implements AutoCloseable
             if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
             {
                 if (controlResponsePoller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
-                    controlResponsePoller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
+                    controlResponsePoller.code() == ControlResponseCode.ERROR)
                 {
-                    return controlResponsePoller.controlResponseDecoder().errorMessage();
+                    return controlResponsePoller.errorMessage();
                 }
             }
 
@@ -500,12 +500,12 @@ public final class AeronArchive implements AutoCloseable
                 continue;
             }
 
-            final ControlResponseCode code = poller.controlResponseDecoder().code();
+            final ControlResponseCode code = poller.code();
             if (code != ControlResponseCode.OK)
             {
                 if (code == ERROR)
                 {
-                    throw new IllegalStateException("Error: " + poller.controlResponseDecoder().errorMessage());
+                    throw new IllegalStateException("Error: " + poller.errorMessage());
                 }
 
                 throw new IllegalStateException("Unexpected response: code=" + code);
@@ -546,7 +546,7 @@ public final class AeronArchive implements AutoCloseable
 
             checkForError(poller, expectedCorrelationId);
 
-            final ControlResponseCode code = poller.controlResponseDecoder().code();
+            final ControlResponseCode code = poller.code();
             if (OK != code)
             {
                 throw new IllegalStateException("Unexpected response code: " + code);
@@ -600,6 +600,7 @@ public final class AeronArchive implements AutoCloseable
             switch (poller.templateId())
             {
                 case RecordingDescriptorDecoder.TEMPLATE_ID:
+                    // TODO: This needs to be better handled.
                     dispatchDescriptor(poller.recordingDescriptorDecoder(), consumer);
                     if (++count >= recordCount)
                     {
@@ -608,7 +609,7 @@ public final class AeronArchive implements AutoCloseable
                     break;
 
                 case ControlResponseDecoder.TEMPLATE_ID:
-                    final ControlResponseCode code = poller.controlResponseDecoder().code();
+                    final ControlResponseCode code = poller.code();
                     if (RECORDING_UNKNOWN == code)
                     {
                         return count;
@@ -627,10 +628,10 @@ public final class AeronArchive implements AutoCloseable
     private void checkForError(final ControlResponsePoller poller, final long expectedCorrelationId)
     {
         if (poller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
-            poller.controlResponseDecoder().code() == ControlResponseCode.ERROR)
+            poller.code() == ControlResponseCode.ERROR)
         {
             throw new IllegalStateException("response for expectedCorrelationId=" + expectedCorrelationId +
-                ", error: " + poller.controlResponseDecoder().errorMessage());
+                ", error: " + poller.errorMessage());
         }
     }
 

@@ -106,6 +106,7 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
         final int keyOffset,
         final int keyLength)
     {
+        buffer.putInt(KEY_LENGTH_OFFSET, keyLength);
         buffer.putBytes(keyBufferOffset(), keyBuffer, keyOffset, keyLength);
 
         return this;
@@ -144,6 +145,7 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
         final int labelOffset,
         final int labelLength)
     {
+        buffer.putInt(labelOffset(), labelLength);
         buffer.putBytes(labelBufferOffset(), labelBuffer, labelOffset, labelLength);
 
         return this;

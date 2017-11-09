@@ -1219,16 +1219,19 @@ public class DriverConductorTest
 
         verify(mockClientProxy).onCounterReady(eq(registrationId), anyInt());
         verify(spyCountersManager)
-            .newCounter(eq(COUNTER_TYPE_ID), any(), anyInt(), anyInt(), any(), anyInt(), anyInt());
+            .newCounter(
+                eq(COUNTER_TYPE_ID),
+                any(),
+                anyInt(),
+                eq(COUNTER_KEY_LENGTH),
+                any(),
+                anyInt(),
+                eq(COUNTER_LABEL_LENGTH));
     }
 
     @Test
     public void shouldRemoveSingleCounter() throws Exception
     {
-        final UnsafeBuffer counterKeyAndLabel = new UnsafeBuffer(new byte[256]);
-        counterKeyAndLabel.putInt(0, 4);
-        counterKeyAndLabel.putStringAscii(4, "counter label");
-
         final long registrationId =
             driverProxy.addCounter(
                 COUNTER_TYPE_ID,

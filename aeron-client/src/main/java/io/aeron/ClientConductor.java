@@ -311,7 +311,6 @@ class ClientConductor implements Agent, DriverEventsListener
                 {
                     errorHandler.onError(new ChannelEndpointException(statusIndicatorId, message));
                 }
-
             }
             else if (resource instanceof Publication)
             {
@@ -449,9 +448,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
     public void onNewCounter(final long correlationId, final int counterId)
     {
-        resourceByRegIdMap.put(
-            correlationId,
-            new Counter(correlationId, this, counterValuesBuffer, counterId));
+        resourceByRegIdMap.put(correlationId, new Counter(correlationId, this, counterValuesBuffer, counterId));
     }
 
     void releaseImage(final Image image)

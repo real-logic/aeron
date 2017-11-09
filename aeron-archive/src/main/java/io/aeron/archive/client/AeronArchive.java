@@ -18,7 +18,6 @@ package io.aeron.archive.client;
 import io.aeron.*;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.ControlResponseDecoder;
-import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
@@ -32,8 +31,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static io.aeron.archive.client.ArchiveProxy.DEFAULT_MAX_RETRY_ATTEMPTS;
-import static io.aeron.archive.client.ControlResponseAdapter.dispatchDescriptor;
-import static io.aeron.archive.codecs.ControlResponseCode.RECORDING_UNKNOWN;
 import static org.agrona.SystemUtil.getDurationInNanos;
 import static org.agrona.SystemUtil.getSizeAsInt;
 
@@ -41,8 +38,8 @@ import static org.agrona.SystemUtil.getSizeAsInt;
  * Client for interacting with a local or remote Aeron Archive that records and replays message streams.
  * <p>
  * This client provides a simple interaction model which is mostly synchronous and may not be optimal.
- * The underlying components such as the {@link ArchiveProxy} and the {@link ControlResponsePoller} may be used
- * directly if a more asynchronous pattern of interaction is required.
+ * The underlying components such as the {@link ArchiveProxy} and the {@link ControlResponsePoller} or
+ * {@link RecordingDescriptorPoller} may be used directly if a more asynchronous interaction is required.
  * <p>
  * Note: This class is threadsafe but the lock can be elided for single threaded access via {@link Context#lock(Lock)}
  * being set to {@link NoOpLock}.
@@ -58,6 +55,7 @@ public final class AeronArchive implements AutoCloseable
     private final ArchiveProxy archiveProxy;
     private final IdleStrategy idleStrategy;
     private final ControlResponsePoller controlResponsePoller;
+    private final RecordingDescriptorPoller recordingDescriptorPoller;
     private final Lock lock;
     private final NanoClock nanoClock;
 
@@ -90,6 +88,8 @@ public final class AeronArchive implements AutoCloseable
             }
 
             controlSessionId = pollForConnected(correlationId);
+            recordingDescriptorPoller = new RecordingDescriptorPoller(
+                subscription, RESPONSE_FRAGMENT_LIMIT, controlSessionId);
         }
         catch (final Exception ex)
         {
@@ -172,6 +172,16 @@ public final class AeronArchive implements AutoCloseable
     public ControlResponsePoller controlResponsePoller()
     {
         return controlResponsePoller;
+    }
+
+    /**
+     * Get the {@link RecordingDescriptorPoller} for polling recording descriptors on the control channel.
+     *
+     * @return the {@link RecordingDescriptorPoller} for polling recording descriptors on the control channel.
+     */
+    public RecordingDescriptorPoller recordingDescriptorPoller()
+    {
+        return recordingDescriptorPoller;
     }
 
     /**
@@ -542,7 +552,11 @@ public final class AeronArchive implements AutoCloseable
                 continue;
             }
 
-            checkForError(poller, expectedCorrelationId);
+            if (poller.code() == ControlResponseCode.ERROR)
+            {
+                throw new IllegalStateException("response for expectedCorrelationId=" + expectedCorrelationId +
+                    ", error: " + poller.errorMessage());
+            }
 
             final ControlResponseCode code = poller.code();
             if (ControlResponseCode.OK != code)
@@ -560,75 +574,37 @@ public final class AeronArchive implements AutoCloseable
     private int pollForDescriptors(
         final long expectedCorrelationId, final int recordCount, final RecordingDescriptorConsumer consumer)
     {
-        int count = 0;
         final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
-        final ControlResponsePoller poller = controlResponsePoller;
+        final RecordingDescriptorPoller poller = recordingDescriptorPoller;
+        poller.reset(expectedCorrelationId, recordCount, consumer);
         idleStrategy.reset();
 
         while (true)
         {
-            while (poller.poll() <= 0 && !poller.isPollComplete())
+            final int fragments = poller.poll();
+
+            if (poller.isDispatchComplete())
             {
-                if (!poller.subscription().isConnected())
-                {
-                    throw new IllegalStateException("Subscription to archive is not connected");
-                }
-
-                if (nanoClock.nanoTime() > deadlineNs)
-                {
-                    throw new TimeoutException(
-                        "Waiting for recording descriptors: correlationId=" + expectedCorrelationId);
-                }
-
-                idleStrategy.idle();
+                return recordCount - poller.remainingRecordCount();
             }
 
-            if (poller.controlSessionId() != controlSessionId)
+            if (fragments > 0)
             {
                 continue;
             }
 
-            checkForError(poller, expectedCorrelationId);
-
-            if (poller.correlationId() != expectedCorrelationId)
+            if (!poller.subscription().isConnected())
             {
-                continue;
+                throw new IllegalStateException("Subscription to archive is not connected");
             }
 
-            switch (poller.templateId())
+            if (nanoClock.nanoTime() > deadlineNs)
             {
-                case RecordingDescriptorDecoder.TEMPLATE_ID:
-                    // TODO: This needs to be better handled.
-                    dispatchDescriptor(poller.recordingDescriptorDecoder(), consumer);
-                    if (++count >= recordCount)
-                    {
-                        return count;
-                    }
-                    break;
-
-                case ControlResponseDecoder.TEMPLATE_ID:
-                    final ControlResponseCode code = poller.code();
-                    if (RECORDING_UNKNOWN == code)
-                    {
-                        return count;
-                    }
-                    else
-                    {
-                        throw new IllegalStateException("Unexpected response: code=" + code);
-                    }
-
-                default:
-                    throw new IllegalStateException("Unknown response: templateId=" + poller.templateId());
+                throw new TimeoutException(
+                    "Waiting for recording descriptors: correlationId=" + expectedCorrelationId);
             }
-        }
-    }
 
-    private void checkForError(final ControlResponsePoller poller, final long expectedCorrelationId)
-    {
-        if (poller.templateId() == ControlResponseDecoder.TEMPLATE_ID && poller.code() == ControlResponseCode.ERROR)
-        {
-            throw new IllegalStateException("response for expectedCorrelationId=" + expectedCorrelationId +
-                ", error: " + poller.errorMessage());
+            idleStrategy.idle();
         }
     }
 

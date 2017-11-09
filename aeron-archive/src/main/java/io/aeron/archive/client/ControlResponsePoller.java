@@ -29,7 +29,6 @@ public class ControlResponsePoller implements ControlledFragmentHandler
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
-    private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
 
     private final int fragmentLimit;
     private final Subscription subscription;
@@ -101,7 +100,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     /**
      * Has the last polling action received a complete message?
      *
-     * @return true of the last polling action received a complete message?
+     * @return true if the last polling action received a complete message?
      */
     public boolean isPollComplete()
     {
@@ -167,14 +166,6 @@ public class ControlResponsePoller implements ControlledFragmentHandler
                 break;
 
             case RecordingDescriptorDecoder.TEMPLATE_ID:
-                recordingDescriptorDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderEncoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                controlSessionId = recordingDescriptorDecoder.controlSessionId();
-                correlationId = recordingDescriptorDecoder.correlationId();
                 break;
 
             default:
@@ -184,10 +175,5 @@ public class ControlResponsePoller implements ControlledFragmentHandler
         pollComplete = true;
 
         return ControlledFragmentAssembler.Action.BREAK;
-    }
-
-    public RecordingDescriptorDecoder recordingDescriptorDecoder()
-    {
-        return recordingDescriptorDecoder;
     }
 }

@@ -358,6 +358,7 @@ public final class Aeron implements AutoCloseable
     /**
      * Allocate a counter on the media driver and return a {@link Counter} for it.
      * <p>
+     * The counter should be freed by calling {@link Counter#close()}.
      *
      * @param typeId      for the counter.
      * @param keyBuffer   containing the optional key for the counter.
@@ -366,7 +367,7 @@ public final class Aeron implements AutoCloseable
      * @param labelBuffer containing the mandatory label for the counter.
      * @param labelOffset within the labelBuffer at which the label begins.
      * @param labelLength of the label in the labelBuffer.
-     * @return counter
+     * @return the newly allocated counter.
      */
     public Counter addCounter(
         final int typeId,

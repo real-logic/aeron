@@ -342,7 +342,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 streamId,
                 sessionId,
                 new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
-                (statusIndicatorId != ChannelEndpointStatus.NO_ID_ALLOCATED) ?
+                statusIndicatorId != ChannelEndpointStatus.NO_ID_ALLOCATED ?
                     new UnsafeBufferStatusIndicator(counterValuesBuffer, statusIndicatorId) :
                     StaticStatusIndicator.NO_CHANNEL_STATUS_INDICATOR,
                 logBuffers(registrationId, logFileName),
@@ -367,7 +367,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 streamId,
                 sessionId,
                 new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
-                (statusIndicatorId != ChannelEndpointStatus.NO_ID_ALLOCATED) ?
+                statusIndicatorId != ChannelEndpointStatus.NO_ID_ALLOCATED ?
                     new UnsafeBufferStatusIndicator(counterValuesBuffer, statusIndicatorId) :
                     StaticStatusIndicator.NO_CHANNEL_STATUS_INDICATOR,
                 logBuffers(registrationId, logFileName),
@@ -380,7 +380,7 @@ class ClientConductor implements Agent, DriverEventsListener
         final Subscription subscription = (Subscription)resourceByRegIdMap.get(correlationId);
 
         subscription.statusIndicatorReader(
-            (statusIndicatorId != ChannelEndpointStatus.NO_ID_ALLOCATED) ?
+            statusIndicatorId != ChannelEndpointStatus.NO_ID_ALLOCATED ?
                 new UnsafeBufferStatusIndicator(counterValuesBuffer, statusIndicatorId) :
                 StaticStatusIndicator.NO_CHANNEL_STATUS_INDICATOR);
     }
@@ -451,7 +451,7 @@ class ClientConductor implements Agent, DriverEventsListener
     {
         resourceByRegIdMap.put(
             correlationId,
-            new Counter(this, counterValuesBuffer, correlationId, counterId));
+            new Counter(correlationId, this, counterValuesBuffer, counterId));
     }
 
     void releaseImage(final Image image)

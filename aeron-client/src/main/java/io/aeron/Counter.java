@@ -18,25 +18,29 @@ package io.aeron;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
+/**
+ * Counter stored in the counters file managed by the media driver which can be read with AeronStat.
+ */
 public class Counter extends AtomicCounter
 {
-    protected final long registrationId;
-    protected final ClientConductor clientConductor;
-    protected volatile boolean isClosed = false;
+    private final long registrationId;
+    private final ClientConductor clientConductor;
+    private volatile boolean isClosed = false;
 
-    public Counter(final ClientConductor clientConductor,
-                   final AtomicBuffer buffer,
-                   final long registrationId,
-                   final int counterId)
+    Counter(
+        final long registrationId,
+        final ClientConductor clientConductor,
+        final AtomicBuffer buffer,
+        final int counterId)
     {
         super(buffer, counterId);
 
-        this.clientConductor = clientConductor;
         this.registrationId = registrationId;
+        this.clientConductor = clientConductor;
     }
 
     /**
-     * Return the registration id used to register this Counter with the media driver.
+     * Return the registration id used to register this counter with the media driver.
      *
      * @return registration id
      */
@@ -46,7 +50,7 @@ public class Counter extends AtomicCounter
     }
 
     /**
-     * Close the Counter.
+     * Close the counter which will release the resource managed by the media driver.
      * <p>
      * This method is idempotent.
      */
@@ -57,6 +61,7 @@ public class Counter extends AtomicCounter
         {
             if (!isClosed)
             {
+                super.close();
                 isClosed = true;
 
                 clientConductor.releaseCounter(this);
@@ -79,12 +84,13 @@ public class Counter extends AtomicCounter
     }
 
     /**
-     * Forcibly close the Counter and release resources
+     * Forcibly close the counter and release resources.
      */
     void forceClose()
     {
         if (!isClosed)
         {
+            super.close();
             isClosed = true;
             clientConductor.asyncReleaseCounter(this);
         }

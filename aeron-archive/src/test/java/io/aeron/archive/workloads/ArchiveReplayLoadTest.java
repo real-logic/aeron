@@ -299,12 +299,12 @@ public class ArchiveReplayLoadTest
                         {
                             case RecordingStartedDecoder.TEMPLATE_ID:
                             {
-                                final RecordingStartedDecoder decoder = poller.recordingStartedDecoder();
-                                recordingId = decoder.recordingId();
+                                final long startPosition = poller.recordingStartPosition();
+                                recordingId = poller.recordingId();
 
-                                if (0L != decoder.startPosition())
+                                if (0L != startPosition)
                                 {
-                                    throw new IllegalStateException("expected=0 actual=" + decoder.startPosition());
+                                    throw new IllegalStateException("expected=0 actual=" + startPosition);
                                 }
 
                                 printf("Recording started %d %n", recordingId);
@@ -313,8 +313,7 @@ public class ArchiveReplayLoadTest
 
                             case RecordingProgressDecoder.TEMPLATE_ID:
                             {
-                                final RecordingProgressDecoder decoder = poller.recordingProgressDecoder();
-                                recordedLength = decoder.position() - decoder.startPosition();
+                                recordedLength = poller.recordingPosition() - poller.recordingStartPosition();
                                 printf("Recording progress %d %n", recordedLength);
                                 break;
                             }

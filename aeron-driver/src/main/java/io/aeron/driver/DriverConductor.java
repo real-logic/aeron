@@ -653,11 +653,10 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final long clientId)
     {
         final AeronClient client = getOrAddClient(clientId);
-        final AtomicCounter counter =
-            countersManager.newCounter(typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
+        final AtomicCounter counter = countersManager.newCounter(
+            typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
 
-        final CounterLink counterLink = new CounterLink(counter, correlationId, client);
-        counterLinks.add(counterLink);
+        counterLinks.add(new CounterLink(counter, correlationId, client));
 
         clientProxy.onCounterReady(correlationId, counter.id());
     }

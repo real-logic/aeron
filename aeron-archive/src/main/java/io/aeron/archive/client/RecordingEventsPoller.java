@@ -142,6 +142,7 @@ public class RecordingEventsPoller implements FragmentHandler
 
                 recordingId = recordingStartedDecoder.recordingId();
                 recordingStartPosition = recordingStartedDecoder.startPosition();
+                recordingPosition = recordingStartPosition;
                 recordingStopPosition = -1;
                 break;
 
@@ -168,6 +169,7 @@ public class RecordingEventsPoller implements FragmentHandler
                 recordingId = recordingStoppedDecoder.recordingId();
                 recordingStartPosition = recordingStoppedDecoder.startPosition();
                 recordingStopPosition = recordingStoppedDecoder.stopPosition();
+                recordingPosition = recordingStopPosition;
                 break;
 
             default:

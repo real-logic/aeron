@@ -46,7 +46,7 @@ import static org.agrona.SystemUtil.getSizeAsInt;
  */
 public final class AeronArchive implements AutoCloseable
 {
-    private static final int FRAGMENT_LIMIT = 4;
+    private static final int FRAGMENT_LIMIT = 10;
 
     private final long controlSessionId;
     private final long messageTimeoutNs;
@@ -75,7 +75,7 @@ public final class AeronArchive implements AutoCloseable
             nanoClock = aeron.context().nanoClock();
 
             subscription = aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId());
-            controlResponsePoller = new ControlResponsePoller(subscription, FRAGMENT_LIMIT);
+            controlResponsePoller = new ControlResponsePoller(subscription);
 
             publication = aeron.addExclusivePublication(ctx.controlRequestChannel(), ctx.controlRequestStreamId());
             archiveProxy = new ArchiveProxy(
@@ -1146,7 +1146,7 @@ public final class AeronArchive implements AutoCloseable
         /**
          * Close the context and free applicable resources.
          * <p>
-         * If the {@link #ownsAeronClient()} is true then the {@link #aeron()} client will be closed.
+         * If {@link #ownsAeronClient()} is true then the {@link #aeron()} client will be closed.
          */
         public void close()
         {

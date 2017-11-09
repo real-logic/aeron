@@ -27,10 +27,11 @@ import org.agrona.DirectBuffer;
  */
 public class ControlResponsePoller implements ControlledFragmentHandler
 {
+    private static final int FRAGMENT_LIMIT = 10;
+
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
 
-    private final int fragmentLimit;
     private final Subscription subscription;
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private long controlSessionId = -1;
@@ -44,12 +45,10 @@ public class ControlResponsePoller implements ControlledFragmentHandler
      * Create a poller for a given subscription to an archive for control response messages.
      *
      * @param subscription  to poll for new events.
-     * @param fragmentLimit to apply for each polling operation.
      */
-    public ControlResponsePoller(final Subscription subscription, final int fragmentLimit)
+    public ControlResponsePoller(final Subscription subscription)
     {
         this.subscription = subscription;
-        this.fragmentLimit = fragmentLimit;
     }
 
     /**
@@ -74,7 +73,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
         templateId = -1;
         pollComplete = false;
 
-        return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
+        return subscription.controlledPoll(fragmentAssembler, FRAGMENT_LIMIT);
     }
 
     /**
@@ -174,6 +173,6 @@ public class ControlResponsePoller implements ControlledFragmentHandler
 
         pollComplete = true;
 
-        return ControlledFragmentAssembler.Action.BREAK;
+        return Action.BREAK;
     }
 }

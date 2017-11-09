@@ -46,7 +46,7 @@ import static org.agrona.SystemUtil.getSizeAsInt;
  */
 public final class AeronArchive implements AutoCloseable
 {
-    private static final int RESPONSE_FRAGMENT_LIMIT = 4;
+    private static final int FRAGMENT_LIMIT = 4;
 
     private final long controlSessionId;
     private final long messageTimeoutNs;
@@ -75,7 +75,7 @@ public final class AeronArchive implements AutoCloseable
             nanoClock = aeron.context().nanoClock();
 
             subscription = aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId());
-            controlResponsePoller = new ControlResponsePoller(subscription, RESPONSE_FRAGMENT_LIMIT);
+            controlResponsePoller = new ControlResponsePoller(subscription, FRAGMENT_LIMIT);
 
             publication = aeron.addExclusivePublication(ctx.controlRequestChannel(), ctx.controlRequestStreamId());
             archiveProxy = new ArchiveProxy(
@@ -88,8 +88,7 @@ public final class AeronArchive implements AutoCloseable
             }
 
             controlSessionId = pollForConnected(correlationId);
-            recordingDescriptorPoller = new RecordingDescriptorPoller(
-                subscription, RESPONSE_FRAGMENT_LIMIT, controlSessionId);
+            recordingDescriptorPoller = new RecordingDescriptorPoller(subscription, FRAGMENT_LIMIT, controlSessionId);
         }
         catch (final Exception ex)
         {
@@ -492,8 +491,20 @@ public final class AeronArchive implements AutoCloseable
 
         while (true)
         {
-            while (poller.poll() <= 0 && !poller.isPollComplete())
+            while (true)
             {
+                final int fragments = poller.poll();
+
+                if (poller.isPollComplete())
+                {
+                    break;
+                }
+
+                if (fragments > 0)
+                {
+                    continue;
+                }
+
                 if (nanoClock.nanoTime() > deadlineNs)
                 {
                     throw new TimeoutException("Waiting for correlationId=" + expectedCorrelationId);
@@ -531,8 +542,20 @@ public final class AeronArchive implements AutoCloseable
 
         while (true)
         {
-            while (poller.poll() <= 0 && !poller.isPollComplete())
+            while (true)
             {
+                final int fragments = poller.poll();
+
+                if (poller.isPollComplete())
+                {
+                    break;
+                }
+
+                if (fragments > 0)
+                {
+                    continue;
+                }
+
                 if (!poller.subscription().isConnected())
                 {
                     throw new IllegalStateException("Subscription to archive is not connected");

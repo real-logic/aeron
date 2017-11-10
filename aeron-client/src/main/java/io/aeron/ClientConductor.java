@@ -27,6 +27,7 @@ import org.agrona.ManagedResource;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
+import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 import org.agrona.concurrent.status.UnsafeBufferStatusIndicator;
 
@@ -270,6 +271,16 @@ class ClientConductor implements Agent, DriverEventsListener
         final int labelLength)
     {
         ensureOpen();
+
+        if (keyLength < 0 || keyLength > CountersManager.MAX_KEY_LENGTH)
+        {
+            throw new IllegalArgumentException("key length out of bounds: " + keyLength);
+        }
+
+        if (labelLength < 0 || labelLength > CountersManager.MAX_LABEL_LENGTH)
+        {
+            throw new IllegalArgumentException("label length out of bounds: " + labelLength);
+        }
 
         final long registrationId = driverProxy.addCounter(
             typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);

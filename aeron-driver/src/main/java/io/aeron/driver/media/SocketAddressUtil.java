@@ -16,7 +16,6 @@
 package io.aeron.driver.media;
 
 import java.net.InetSocketAddress;
-import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,8 +27,14 @@ class SocketAddressUtil
     private static final Pattern IPV6_ADDRESS_PATTERN = Pattern.compile(
         "\\[([0-9A-Fa-f:]+)(?:%[a-zA-Z0-9_.~-]+)?\\](?::([0-9]+))?");
 
-    static InetSocketAddress parse(
-        final CharSequence cs, final BiFunction<String, String, InetSocketAddress> consumer)
+    /**
+     * Utility for parsing socket addresses from a {@link CharSequence}.  Supports
+     * hostname:port, ipV4Address:port and [ipV6Address]:port
+     *
+     * @param cs to be parsed for the socket address.
+     * @return An {@link InetSocketAddress} for the parsed input.
+     */
+    static InetSocketAddress parse(final CharSequence cs)
     {
         if (null == cs)
         {
@@ -41,9 +46,9 @@ class SocketAddressUtil
         if (ipV4Matcher.matches())
         {
             final String host = ipV4Matcher.group(1);
-            final String portString = ipV4Matcher.group(2);
+            final String port = ipV4Matcher.group(2);
 
-            return consumer.apply(host, portString);
+            return newSocketAddress(host, port);
         }
 
         final Matcher ipV6Matcher = IPV6_ADDRESS_PATTERN.matcher(cs);
@@ -51,31 +56,21 @@ class SocketAddressUtil
         if (ipV6Matcher.matches())
         {
             final String host = ipV6Matcher.group(1);
-            final String portString = ipV6Matcher.group(2);
+            final String port = ipV6Matcher.group(2);
 
-            return consumer.apply(host, portString);
+            return newSocketAddress(host, port);
         }
 
         throw new IllegalArgumentException("Invalid format: " + cs);
     }
 
-    /**
-     * Utility for parsing socket addresses from a {@link CharSequence}.  Supports
-     * hostname:port, ipV4Address:port and [ipV6Address]:port
-     *
-     * @param cs Input string
-     * @return An InetSocketAddress parsed from the input.
-     */
-    static InetSocketAddress parse(final CharSequence cs)
+    private static InetSocketAddress newSocketAddress(final String host, final String port)
     {
-        return parse(cs, (hostString, portString) ->
+        if (null == port)
         {
-            if (null == portString)
-            {
-                throw new IllegalArgumentException("The 'port' portion of the address is required");
-            }
+            throw new IllegalArgumentException("The 'port' portion of the address is required");
+        }
 
-            return new InetSocketAddress(hostString, parseInt(portString));
-        });
+        return new InetSocketAddress(host, parseInt(port));
     }
 }

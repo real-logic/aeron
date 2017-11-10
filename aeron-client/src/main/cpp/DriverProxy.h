@@ -23,6 +23,7 @@
 #include <command/RemoveMessageFlyweight.h>
 #include <command/SubscriptionMessageFlyweight.h>
 #include <command/DestinationMessageFlyweight.h>
+#include <command/CounterMessageFlyweight.h>
 #include <command/ControlProtocolEvents.h>
 
 namespace aeron {
@@ -203,6 +204,48 @@ public:
             length = removeMessage.length();
 
             return ControlProtocolEvents::REMOVE_DESTINATION;
+        });
+
+        return correlationId;
+    }
+
+    std::int64_t addCounter(std::int32_t typeId, const std::uint8_t *key, std::size_t keyLength, std::string& label)
+    {
+        std::int64_t correlationId = m_toDriverCommandBuffer.nextCorrelationId();
+
+        writeCommandToDriver([&](AtomicBuffer &buffer, util::index_t &length)
+        {
+            CounterMessageFlyweight command(buffer, 0);
+
+            command.clientId(m_clientId);
+            command.correlationId(correlationId);
+            command.typeId(typeId);
+            command.keyBuffer(key, keyLength);
+            command.label(label);
+
+            length = command.length();
+
+            return ControlProtocolEvents::ADD_COUNTER;
+        });
+
+        return correlationId;
+    }
+
+    std::int64_t removeCounter(std::int64_t registrationId)
+    {
+        std::int64_t correlationId = m_toDriverCommandBuffer.nextCorrelationId();
+
+        writeCommandToDriver([&](AtomicBuffer &buffer, util::index_t &length)
+        {
+            RemoveMessageFlyweight command(buffer, 0);
+
+            command.clientId(m_clientId);
+            command.correlationId(correlationId);
+            command.registrationId(registrationId);
+
+            length = command.length();
+
+            return ControlProtocolEvents::REMOVE_COUNTER;
         });
 
         return correlationId;

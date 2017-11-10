@@ -311,19 +311,80 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, struct Im
 }
 
 std::int64_t ClientConductor::addCounter(
-    std::int32_t typeId, std::uint8_t *keyBuffer, size_t keyLength, std::string& label)
+    std::int32_t typeId, const std::uint8_t *keyBuffer, std::size_t keyLength, std::string& label)
 {
-    throw std::runtime_error("not implemented");
+    verifyDriverIsActive();
+
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+    std::int64_t registrationId = m_driverProxy.addCounter(typeId, keyBuffer, keyLength, label);
+
+    m_counters.emplace_back(registrationId, m_epochClock());
+
+    return registrationId;
 }
 
 std::shared_ptr<Counter> ClientConductor::findCounter(std::int64_t registrationId)
 {
-    throw std::runtime_error("not implemented");
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+    auto it = std::find_if(
+        m_counters.begin(),
+        m_counters.end(),
+        [registrationId](const CounterStateDefn &entry)
+        {
+            return (registrationId == entry.m_registrationId);
+        });
+
+    if (it == m_counters.end())
+    {
+        return std::shared_ptr<Counter>();
+    }
+
+    CounterStateDefn& state = *it;
+    std::shared_ptr<Counter> counter = state.m_counter.lock();
+
+    if (state.m_counterCache)
+    {
+        state.m_counterCache.reset();
+    }
+
+    if (!counter && RegistrationStatus::AWAITING_MEDIA_DRIVER == state.m_status)
+    {
+        if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
+        {
+            throw DriverTimeoutException(
+                strPrintf("No response from driver in %d ms", m_driverTimeoutMs), SOURCEINFO);
+        }
+    }
+    else if (!counter && RegistrationStatus::ERRORED_MEDIA_DRIVER == state.m_status)
+    {
+        throw RegistrationException(state.m_errorCode, state.m_errorMessage, SOURCEINFO);
+    }
+
+    return counter;
 }
 
 void ClientConductor::releaseCounter(std::int64_t registrationId)
 {
-    throw std::runtime_error("not implemented");
+    verifyDriverIsActiveViaErrorHandler();
+
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+    auto it = std::find_if(
+        m_counters.begin(),
+        m_counters.end(),
+        [registrationId](const CounterStateDefn &entry)
+        {
+            return (registrationId == entry.m_registrationId);
+        });
+
+    if (it != m_counters.end())
+    {
+        m_driverProxy.removeCounter((*it).m_registrationId);
+
+        m_counters.erase(it);
+    }
 }
 
 void ClientConductor::addDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel)
@@ -427,6 +488,31 @@ void ClientConductor::onSubscriptionReady(
                 *this, state.m_registrationId, state.m_channel, state.m_streamId, channelStatusIndicator);
         state.m_subscription = std::weak_ptr<Subscription>(state.m_subscriptionCache);
         m_onNewSubscriptionHandler(state.m_channel, state.m_streamId, registrationId);
+        return;
+    }
+}
+
+void ClientConductor::onCounterReady(
+    std::int64_t registrationId,
+    std::int32_t counterId)
+{
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+    auto counterIt = std::find_if(m_counters.begin(), m_counters.end(),
+        [registrationId](const CounterStateDefn &entry)
+        {
+            return (registrationId == entry.m_registrationId);
+        });
+
+    if (counterIt != m_counters.end() && (*counterIt).m_status == RegistrationStatus::AWAITING_MEDIA_DRIVER)
+    {
+        CounterStateDefn& state = (*counterIt);
+
+        state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
+        state.m_counterCache =
+            std::make_shared<Counter>(
+                *this, m_counterValuesBuffer, state.m_registrationId, state.m_counterId);
+        state.m_counter = std::weak_ptr<Counter>(state.m_counterCache);
         return;
     }
 }

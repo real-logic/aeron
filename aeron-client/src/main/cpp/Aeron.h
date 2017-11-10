@@ -224,6 +224,46 @@ public:
     }
 
     /**
+     * Allocate a counter on the media driver and return a {@link Counter} for it.
+     *
+     * @param typeId      for the counter.
+     * @param keyBuffer   containing the optional key for the counter.
+     * @param keyLength   of the key in the keyBuffer.
+     * @param label       for the counter.
+     * @return registration id for the Counter
+     */
+    inline std::int64_t addCounter(
+        std::int32_t typeId,
+        const std::uint8_t *keyBuffer,
+        std::size_t keyLength,
+        std::string& label)
+    {
+        return m_conductor.addCounter(typeId, keyBuffer, keyLength, label);
+    }
+
+    /**
+     * Retrieve the Counter associated with the given registrationId.
+     *
+     * This method is non-blocking.
+     *
+     * The value returned is dependent on what has occurred with respect to the media driver:
+     *
+     * - If the registrationId is unknown, then a nullptr is returned.
+     * - If the media driver has not answered the add command, then a nullptr is returned.
+     * - If the media driver has successfully added the Counter then what is returned is the Counter.
+     * - If the media driver has returned an error, this method will throw the error returned.
+     *
+     * @see Aeron::addCounter
+     *
+     * @param registrationId of the Counter returned by Aeron::addCounter
+     * @return Counter associated with the registrationId
+     */
+    inline std::shared_ptr<Counter> findCounter(std::int64_t registrationId)
+    {
+        return m_conductor.findCounter(registrationId);
+    }
+
+    /**
      * Return the AgentInvoker for the client conductor.
      *
      * @return AgenInvoker for the conductor.

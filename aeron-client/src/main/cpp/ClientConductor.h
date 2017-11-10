@@ -111,7 +111,7 @@ public:
     std::shared_ptr<Subscription> findSubscription(std::int64_t registrationId);
     void releaseSubscription(std::int64_t registrationId, struct ImageList *imageList);
 
-    std::int64_t addCounter(std::int32_t typeId, std::uint8_t *keyBuffer, size_t keyLength, std::string& label);
+    std::int64_t addCounter(std::int32_t typeId, const std::uint8_t *keyBuffer, std::size_t keyLength, std::string& label);
     std::shared_ptr<Counter> findCounter(std::int64_t registrationId);
     void releaseCounter(std::int64_t registrationId);
 
@@ -157,6 +157,10 @@ public:
         std::int32_t streamId,
         std::int64_t correlationId,
         std::int64_t subscriptionRegistrationId);
+
+    void onCounterReady(
+        std::int64_t registrationId,
+        std::int32_t counterId);
 
     void onInterServiceTimeout(long long now);
 
@@ -253,6 +257,24 @@ private:
         }
     };
 
+    struct CounterStateDefn
+    {
+        std::int64_t m_registrationId;
+        std::int32_t m_counterId = -1;
+        long long m_timeOfRegistration;
+        RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
+        std::int32_t m_errorCode;
+        std::string m_errorMessage;
+        std::shared_ptr<Counter> m_counterCache;
+        std::weak_ptr<Counter> m_counter;
+
+        CounterStateDefn(std::int64_t registrationId, long long now) :
+            m_registrationId(registrationId),
+            m_timeOfRegistration(now)
+        {
+        }
+    };
+
     struct ImageListLingerDefn
     {
         long long m_timeOfLastStatusChange;
@@ -280,6 +302,7 @@ private:
     std::vector<PublicationStateDefn> m_publications;
     std::vector<ExclusivePublicationStateDefn> m_exclusivePublications;
     std::vector<SubscriptionStateDefn> m_subscriptions;
+    std::vector<CounterStateDefn> m_counters;
 
     std::vector<LogBuffersLingerDefn> m_lingeringLogBuffers;
     std::vector<ImageListLingerDefn> m_lingeringImageLists;

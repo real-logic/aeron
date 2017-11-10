@@ -26,6 +26,7 @@ import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceAgent;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -54,14 +55,13 @@ public class ClusterNodeTest
         driver = MediaDriver.launch(
             new MediaDriver.Context()
                 .threadingMode(ThreadingMode.DEDICATED)
-                .useConcurrentCountersManager(true)
                 .spiesSimulateConnection(true)
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true));
 
         clusterNode = ClusterNode.launch(
             new ClusterNode.Context()
-                .countersManager(driver.context().countersManager())
+                .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
                 .errorHandler(driver.context().errorHandler()));
     }
 

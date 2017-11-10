@@ -22,7 +22,6 @@ import org.agrona.ErrorHandler;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.StatusIndicator;
 
 import java.util.concurrent.ThreadFactory;
@@ -197,7 +196,6 @@ public final class ClusterNode implements AutoCloseable
         private EpochClock epochClock;
 
         private ErrorHandler errorHandler;
-        private CountersManager countersManager;
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
 
@@ -231,12 +229,11 @@ public final class ClusterNode implements AutoCloseable
                 throw new IllegalStateException("Error handler must be supplied");
             }
 
-            if (null == countersManager)
+            if (null == errorCounter)
             {
-                throw new IllegalStateException("Counter manager must be supplied");
+                throw new IllegalStateException("Error counter must be supplied");
             }
 
-            errorCounter = countersManager.newCounter("Cluster errors");
             countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
         }
 
@@ -425,28 +422,6 @@ public final class ClusterNode implements AutoCloseable
         }
 
         /**
-         * The {@link CountersManager} used for shared use between the embedded media driver and the cluster node.
-         *
-         * @return {@link CountersManager} used for shared use between the embedded media driver and the cluster node.
-         */
-        public CountersManager countersManager()
-        {
-            return countersManager;
-        }
-
-        /**
-         * The {@link CountersManager} is a shared use between the embedded media driver and the cluster node.
-         *
-         * @param countersManager shared counters manager to be used.
-         * @return this for a fluent API.
-         */
-        public Context countersManager(final CountersManager countersManager)
-        {
-            this.countersManager = countersManager;
-            return this;
-        }
-
-        /**
          * Get the error counter that will record the number of errors the archive has observed.
          *
          * @return the error counter that will record the number of errors the archive has observed.
@@ -456,6 +431,17 @@ public final class ClusterNode implements AutoCloseable
             return errorCounter;
         }
 
+        /**
+         * Set the error counter that will record the number of errors the cluster node has observed.
+         *
+         * @param errorCounter the error counter that will record the number of errors the cluster node has observed.
+         * @return this for a fluent API.
+         */
+        public Context errorCounter(final AtomicCounter errorCounter)
+        {
+            this.errorCounter = errorCounter;
+            return this;
+        }
         /**
          * The {@link #errorHandler()} that will increment {@link #errorCounter()}.
          *

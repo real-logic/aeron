@@ -19,9 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.cluster.client.*;
-import io.aeron.cluster.codecs.SessionEventCode;
 import io.aeron.cluster.service.ClientSession;
-import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceAgent;
 import io.aeron.driver.MediaDriver;
@@ -48,6 +46,7 @@ public class ClusterNodeTest
 
     private MediaDriver driver;
     private ClusterNode clusterNode;
+    private AeronCluster aeronCluster;
 
     @Before
     public void before()
@@ -63,11 +62,16 @@ public class ClusterNodeTest
             new ClusterNode.Context()
                 .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
                 .errorHandler(driver.context().errorHandler()));
+
+        aeronCluster = AeronCluster.connect(
+            new AeronCluster.Context()
+                .lock(new NoOpLock()));
     }
 
     @After
     public void after()
     {
+        CloseHelper.close(aeronCluster);
         CloseHelper.close(clusterNode);
         CloseHelper.close(driver);
 
@@ -77,41 +81,17 @@ public class ClusterNodeTest
     @Test
     public void shouldConnectAndSendKeepAlive()
     {
-        final AeronCluster cluster = AeronCluster.connect(
-            new AeronCluster.Context()
-                .lock(new NoOpLock()));
-
-        assertTrue(cluster.sendKeepAlive());
-
-        cluster.close();
+        assertTrue(aeronCluster.sendKeepAlive());
     }
 
     @Test(timeout = 10_000)
     public void shouldEchoMessageViaService() throws Exception
     {
-        final Aeron aeron = Aeron.connect();
+        final Aeron aeron = aeronCluster.context().aeron();
+        final AgentRunner serviceAgentRunner = launchClusteredService(aeron);
 
-        final Subscription logSubscription = aeron.addSubscription(
-            ClusterNode.Configuration.logChannel(),
-            ClusterNode.Configuration.logStreamId());
-
-        final EchoService echoService = new EchoService();
-        final AgentRunner serviceAgentRunner = new AgentRunner(
-            new SleepingMillisIdleStrategy(1),
-            Throwable::printStackTrace,
-            null,
-            new ClusteredServiceAgent(aeron, echoService, logSubscription));
-
-        AgentRunner.startOnThread(serviceAgentRunner);
-
-        final AeronCluster cluster = AeronCluster.connect(
-            new AeronCluster.Context()
-                .aeron(aeron)
-                .ownsAeronClient(false)
-                .lock(new NoOpLock()));
-
-        final SessionDecorator sessionDecorator = new SessionDecorator(cluster.sessionId());
-        final Publication publication = cluster.ingressPublication();
+        final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
+        final Publication publication = aeronCluster.ingressPublication();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
         final long msgCorrelationId = aeron.nextCorrelationId();
@@ -125,27 +105,8 @@ public class ClusterNodeTest
 
         final MutableInteger messageCount = new MutableInteger();
         final EgressAdapter adapter = new EgressAdapter(
-            new EgressListener()
+            new StubEgressListener()
             {
-                public void sessionEvent(
-                    final long correlationId,
-                    final long clusterSessionId,
-                    final SessionEventCode code,
-                    final String detail)
-                {
-                }
-
-                public void newLeader(
-                    final long correlationId,
-                    final long clusterSessionId,
-                    final long lastMessageTimestamp,
-                    final long clusterTermTimestamp,
-                    final long clusterMessageIndex,
-                    final long clusterTermId,
-                    final String leader)
-                {
-                }
-
                 public void onMessage(
                     final long correlationId,
                     final long clusterSessionId,
@@ -161,7 +122,7 @@ public class ClusterNodeTest
                     messageCount.value += 1;
                 }
             },
-            cluster.egressSubscription(),
+            aeronCluster.egressSubscription(),
             FRAGMENT_LIMIT);
 
         while (messageCount.get() == 0)
@@ -172,47 +133,43 @@ public class ClusterNodeTest
             }
         }
 
-        cluster.close();
         serviceAgentRunner.close();
-        aeron.close();
     }
 
-    public static class EchoService implements ClusteredService
+    private AgentRunner launchClusteredService(final Aeron aeron)
     {
-        private Cluster cluster;
+        final Subscription logSubscription = aeron.addSubscription(
+            ClusterNode.Configuration.logChannel(),
+            ClusterNode.Configuration.logStreamId());
 
-        public void onStart(final Cluster cluster)
+        final ClusteredService echoService = new StubClusteredService()
         {
-            this.cluster = cluster;
-        }
-
-        public void onSessionOpen(final ClientSession session)
-        {
-        }
-
-        public void onSessionClose(final ClientSession session)
-        {
-        }
-
-        public void onSessionMessage(
-            final long clusterSessionId,
-            final long correlationId,
-            final long timestampMs,
-            final DirectBuffer buffer,
-            final int offset,
-            final int length,
-            final Header header)
-        {
-            final ClientSession session = cluster.getClientSession(clusterSessionId);
-
-            while (session.offer(correlationId, buffer, offset, length) < 0)
+            public void onSessionMessage(
+                final long clusterSessionId,
+                final long correlationId,
+                final long timestampMs,
+                final DirectBuffer buffer,
+                final int offset,
+                final int length,
+                final Header header)
             {
-                Thread.yield();
-            }
-        }
+                final ClientSession session = cluster.getClientSession(clusterSessionId);
 
-        public void onTimerEvent(final long correlationId)
-        {
-        }
+                while (session.offer(correlationId, buffer, offset, length) < 0)
+                {
+                    Thread.yield();
+                }
+            }
+        };
+
+        final AgentRunner serviceAgentRunner = new AgentRunner(
+            new SleepingMillisIdleStrategy(1),
+            Throwable::printStackTrace,
+            null,
+            new ClusteredServiceAgent(aeron, echoService, logSubscription));
+
+        AgentRunner.startOnThread(serviceAgentRunner);
+
+        return serviceAgentRunner;
     }
 }

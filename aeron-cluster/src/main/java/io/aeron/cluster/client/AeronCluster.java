@@ -150,6 +150,16 @@ public final class AeronCluster implements AutoCloseable
     }
 
     /**
+     * Get the context used to launch this cluster client.
+     *
+     * @return the context used to launch this cluster client.
+     */
+    public Context context()
+    {
+        return ctx;
+    }
+
+    /**
      * Cluster session id for the session that was opened as the result of a successful connect.
      *
      * @return session id for the session that was opened as the result of a successful connect.

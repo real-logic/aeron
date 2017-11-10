@@ -27,10 +27,13 @@ static const std::int32_t SESSION_ID = 200;
 static const std::int32_t PUBLICATION_LIMIT_COUNTER_ID = 0;
 static const std::int32_t PUBLICATION_LIMIT_COUNTER_ID_2 = 1;
 static const std::int32_t CHANNEL_STATUS_INDICATOR_ID = 2;
+static const std::int32_t COUNTER_ID = 3;
 static const std::int32_t TERM_LENGTH = LogBufferDescriptor::TERM_MIN_LENGTH;
 static const std::int32_t PAGE_SIZE = LogBufferDescriptor::PAGE_MIN_SIZE;
+static const std::int32_t COUNTER_TYPE_ID = 102;
 static const std::int64_t LOG_FILE_LENGTH = (TERM_LENGTH * 3) + LogBufferDescriptor::LOG_META_DATA_LENGTH;
 static const std::string SOURCE_IDENTITY = "127.0.0.1:43567";
+static const std::string COUNTER_LABEL = "counter label";
 
 class ClientConductorTest : public testing::Test, public ClientConductorFixture
 {
@@ -875,4 +878,161 @@ TEST_F(ClientConductorTest, shouldRemoveImageOnInterServiceTimeout)
 
     EXPECT_TRUE(sub->isClosed());
     EXPECT_TRUE(image == nullptr);
+}
+
+
+TEST_F(ClientConductorTest, shouldReturnNullForUnknownCounter)
+{
+    std::shared_ptr<Counter> counter = m_conductor.findCounter(100);
+
+    EXPECT_TRUE(counter == nullptr);
+}
+
+TEST_F(ClientConductorTest, shouldReturnNullForCounterWithoutCounterReady)
+{
+    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+
+    std::shared_ptr<Counter> counter = m_conductor.findCounter(id);
+
+    EXPECT_TRUE(counter == nullptr);
+}
+
+TEST_F(ClientConductorTest, shouldSendAddCounterToDriver)
+{
+    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+    static std::int32_t ADD_COUNTER = ControlProtocolEvents::ADD_COUNTER;
+
+    int count = m_manyToOneRingBuffer.read(
+        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        {
+            const CounterMessageFlyweight message(buffer, offset);
+
+            EXPECT_EQ(msgTypeId, ADD_COUNTER);
+            EXPECT_EQ(message.correlationId(), id);
+            EXPECT_EQ(message.typeId(), COUNTER_TYPE_ID);
+            EXPECT_EQ(message.keyLength(), 0);
+            EXPECT_EQ(message.label(), COUNTER_LABEL);
+        });
+
+    EXPECT_EQ(count, 1);
+}
+
+TEST_F(ClientConductorTest, shouldReturnCounterAfterOnCounterReady)
+{
+    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+
+    m_conductor.onCounterReady(id, COUNTER_ID);
+
+    std::shared_ptr<Counter> counter = m_conductor.findCounter(id);
+
+    ASSERT_TRUE(counter != nullptr);
+    EXPECT_EQ(counter->registrationId(), id);
+    EXPECT_EQ(counter->id(), COUNTER_ID);
+}
+
+TEST_F(ClientConductorTest, shouldReleaseCounterAfterGoingOutOfScope)
+{
+    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+    static std::int32_t REMOVE_COUNTER = ControlProtocolEvents::REMOVE_COUNTER;
+
+    // drain ring buffer
+    m_manyToOneRingBuffer.read(
+        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        {
+        });
+
+    m_conductor.onCounterReady(id, COUNTER_ID);
+
+    {
+        std::shared_ptr<Counter> counter = m_conductor.findCounter(id);
+
+        ASSERT_TRUE(counter != nullptr);
+    }
+
+    int count = m_manyToOneRingBuffer.read(
+        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        {
+            const RemoveMessageFlyweight message(buffer, offset);
+
+            EXPECT_EQ(msgTypeId, REMOVE_COUNTER);
+            EXPECT_EQ(message.registrationId(), id);
+        });
+
+    EXPECT_EQ(count, 1);
+
+    std::shared_ptr<Counter> counterPost = m_conductor.findCounter(id);
+    ASSERT_TRUE(counterPost == nullptr);
+}
+
+TEST_F(ClientConductorTest, shouldReturnDifferentIdsForDuplicateAddCounter)
+{
+    std::int64_t id1 = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+    std::int64_t id2 = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+
+    EXPECT_NE(id1, id2);
+}
+
+TEST_F(ClientConductorTest, shouldReturnSameFindCounterAfterOnCounterReady)
+{
+    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+
+    m_conductor.onCounterReady(id, COUNTER_ID);
+
+    std::shared_ptr<Counter> counter1 = m_conductor.findCounter(id);
+    std::shared_ptr<Counter> counter2 = m_conductor.findCounter(id);
+
+    ASSERT_TRUE(counter1 != nullptr);
+    ASSERT_TRUE(counter2 != nullptr);
+    ASSERT_TRUE(counter1 == counter2);
+}
+
+TEST_F(ClientConductorTest, shouldReturnDifferentCounterAfterOnCounterReady)
+{
+    std::int64_t id1 = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+    std::int64_t id2 = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+
+    m_conductor.onCounterReady(id1, COUNTER_ID);
+    m_conductor.onCounterReady(id2, COUNTER_ID);
+
+    std::shared_ptr<Counter> counter1 = m_conductor.findCounter(id1);
+    std::shared_ptr<Counter> counter2 = m_conductor.findCounter(id2);
+
+    ASSERT_TRUE(counter1 != nullptr);
+    ASSERT_TRUE(counter2 != nullptr);
+    ASSERT_TRUE(counter1 != counter2);
+}
+
+TEST_F(ClientConductorTest, shouldIgnoreOnCounterReadyForUnknownCorrelationId)
+{
+    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+
+    m_conductor.onCounterReady(id + 1, COUNTER_ID);
+
+    std::shared_ptr<Counter> counter = m_conductor.findCounter(id);
+
+    ASSERT_TRUE(counter == nullptr);
+}
+
+TEST_F(ClientConductorTest, shouldTimeoutAddCounterWithoutOnCounterReady)
+{
+    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+
+    m_currentTime += DRIVER_TIMEOUT_MS + 1;
+
+    ASSERT_THROW(
+        {
+            std::shared_ptr<Counter> counter = m_conductor.findCounter(id);
+        }, util::DriverTimeoutException);
+}
+
+TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAddCounter)
+{
+    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+
+    m_conductor.onErrorResponse(id, ERROR_CODE_GENERIC_ERROR, "can't add counter");
+
+    ASSERT_THROW(
+        {
+            std::shared_ptr<Counter> counter = m_conductor.findCounter(id);
+        }, util::RegistrationException);
 }

@@ -311,7 +311,7 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, struct Im
 }
 
 std::int64_t ClientConductor::addCounter(
-    std::int32_t typeId, const std::uint8_t *keyBuffer, std::size_t keyLength, std::string& label)
+    std::int32_t typeId, const std::uint8_t *keyBuffer, std::size_t keyLength, const std::string& label)
 {
     verifyDriverIsActive();
 
@@ -509,9 +509,10 @@ void ClientConductor::onCounterReady(
         CounterStateDefn& state = (*counterIt);
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
+        state.m_counterId = counterId;
         state.m_counterCache =
             std::make_shared<Counter>(
-                *this, m_counterValuesBuffer, state.m_registrationId, state.m_counterId);
+                *this, m_counterValuesBuffer, state.m_registrationId, counterId);
         state.m_counter = std::weak_ptr<Counter>(state.m_counterCache);
         return;
     }
@@ -571,8 +572,22 @@ void ClientConductor::onErrorResponse(
         (*exPubIt).m_errorMessage = errorMessage;
         return;
     }
-}
 
+    auto counterIt = std::find_if(m_counters.begin(), m_counters.end(),
+        [offendingCommandCorrelationId](const CounterStateDefn &entry)
+        {
+            return (offendingCommandCorrelationId == entry.m_registrationId);
+        });
+
+    if (counterIt != m_counters.end())
+    {
+        (*counterIt).m_status = RegistrationStatus::ERRORED_MEDIA_DRIVER;
+        (*counterIt).m_errorCode = errorCode;
+        (*counterIt).m_errorMessage = errorMessage;
+        return;
+    }
+
+}
 
 void ClientConductor::onAvailableImage(
     std::int32_t streamId,

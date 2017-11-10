@@ -98,7 +98,7 @@ public:
         return stringGet(labelLengthOffset());
     }
 
-    inline this_t& label(std::string& label)
+    inline this_t& label(const std::string& label)
     {
         stringPut(labelLengthOffset(), label);
 

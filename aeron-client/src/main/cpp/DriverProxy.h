@@ -209,7 +209,7 @@ public:
         return correlationId;
     }
 
-    std::int64_t addCounter(std::int32_t typeId, const std::uint8_t *key, std::size_t keyLength, std::string& label)
+    std::int64_t addCounter(std::int32_t typeId, const std::uint8_t *key, std::size_t keyLength, const std::string& label)
     {
         std::int64_t correlationId = m_toDriverCommandBuffer.nextCorrelationId();
 

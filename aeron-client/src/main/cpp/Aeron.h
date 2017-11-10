@@ -236,7 +236,7 @@ public:
         std::int32_t typeId,
         const std::uint8_t *keyBuffer,
         std::size_t keyLength,
-        std::string& label)
+        const std::string& label)
     {
         return m_conductor.addCounter(typeId, keyBuffer, keyLength, label);
     }

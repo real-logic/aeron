@@ -111,7 +111,8 @@ public:
     std::shared_ptr<Subscription> findSubscription(std::int64_t registrationId);
     void releaseSubscription(std::int64_t registrationId, struct ImageList *imageList);
 
-    std::int64_t addCounter(std::int32_t typeId, const std::uint8_t *keyBuffer, std::size_t keyLength, std::string& label);
+    std::int64_t addCounter(
+        std::int32_t typeId, const std::uint8_t *keyBuffer, std::size_t keyLength, const std::string& label);
     std::shared_ptr<Counter> findCounter(std::int64_t registrationId);
     void releaseCounter(std::int64_t registrationId);
 

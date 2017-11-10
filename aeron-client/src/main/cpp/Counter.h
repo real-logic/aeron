@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <atomic>
 
 #include <util/Index.h>
 #include "concurrent/AtomicCounter.h"

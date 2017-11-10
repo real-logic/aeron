@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Counter;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.RawBlockHandler;
@@ -24,7 +25,6 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,7 +58,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
-    private final AtomicCounter recordedPosition;
+    private final Counter recordedPosition;
     private final int segmentFileLength;
     private final long startPosition;
 
@@ -78,7 +78,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         final int termBufferLength,
         final Archive.Context context,
         final FileChannel archiveDirChannel,
-        final AtomicCounter recordedPosition)
+        final Counter recordedPosition)
     {
         this.recordedPosition = recordedPosition;
         this.archiveDirChannel = archiveDirChannel;

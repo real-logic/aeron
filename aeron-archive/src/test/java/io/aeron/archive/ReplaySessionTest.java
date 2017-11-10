@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
@@ -23,7 +24,6 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -61,7 +61,7 @@ public class ReplaySessionTest
     private final ExclusivePublication mockReplayPub = mock(ExclusivePublication.class);
     private final ControlSession mockControlSession = mock(ControlSession.class);
     private final ArchiveConductor mockArchiveConductor = mock(ArchiveConductor.class);
-    private final AtomicCounter position = mock(AtomicCounter.class);
+    private final Counter position = mock(Counter.class);
 
     private int messageCounter = 0;
 

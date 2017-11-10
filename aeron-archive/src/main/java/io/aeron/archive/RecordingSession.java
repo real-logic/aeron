@@ -15,11 +15,11 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Counter;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
-import org.agrona.concurrent.status.AtomicCounter;
 
 import java.nio.channels.FileChannel;
 
@@ -42,7 +42,7 @@ class RecordingSession implements Session
     private final RecordingEventsProxy recordingEventsProxy;
     private final String strippedChannel;
     private final Image image;
-    private final AtomicCounter position;
+    private final Counter position;
     private final FileChannel archiveDirChannel;
     private final Archive.Context context;
 
@@ -54,7 +54,7 @@ class RecordingSession implements Session
         final RecordingEventsProxy recordingEventsProxy,
         final String strippedChannel,
         final Image image,
-        final AtomicCounter position,
+        final Counter position,
         final FileChannel archiveDirChannel,
         final Archive.Context context)
     {

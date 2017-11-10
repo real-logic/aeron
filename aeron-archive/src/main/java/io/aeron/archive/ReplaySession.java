@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.archive.codecs.ControlResponseCode;
@@ -25,7 +26,6 @@ import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
 
@@ -86,7 +86,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         final String replayChannel,
         final int replayStreamId,
         final RecordingSummary recordingSummary,
-        final AtomicCounter recordingPosition)
+        final Counter recordingPosition)
     {
         this.controlSession = controlSession;
         this.threadLocalControlResponseProxy = threadLocalControlResponseProxy;

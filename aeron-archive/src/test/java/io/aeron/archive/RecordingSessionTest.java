@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Counter;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.logbuffer.FrameDescriptor;
@@ -24,7 +25,6 @@ import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -56,7 +56,7 @@ public class RecordingSessionTest
     public static final FileChannel ARCHIVE_CHANNEL = null;
 
     private final RecordingEventsProxy recordingEventsProxy = mock(RecordingEventsProxy.class);
-    private final AtomicCounter position = mock(AtomicCounter.class);
+    private final Counter position = mock(Counter.class);
     private Image image = mockImage(
         SESSION_ID, INITIAL_TERM_ID, SOURCE_IDENTITY, TERM_BUFFER_LENGTH, mockSubscription(CHANNEL, STREAM_ID));
     private File tempDirForTest = TestUtil.makeTempDir();

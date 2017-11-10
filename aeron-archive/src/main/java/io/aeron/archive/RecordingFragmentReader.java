@@ -15,13 +15,12 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Counter;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.IoUtil;
-import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,7 +45,7 @@ class RecordingFragmentReader implements AutoCloseable
     private final int termLength;
 
     private final Catalog catalog;
-    private final AtomicCounter recordingPosition;
+    private final Counter recordingPosition;
     private final UnsafeBuffer termBuffer;
     private MappedByteBuffer mappedSegmentBuffer;
 
@@ -65,7 +64,7 @@ class RecordingFragmentReader implements AutoCloseable
         final File archiveDir,
         final long position,
         final long length,
-        final AtomicCounter recordingPosition) throws IOException
+        final Counter recordingPosition) throws IOException
     {
         this.catalog = catalog;
         stopPosition = recordingSummary.stopPosition;
@@ -217,7 +216,6 @@ class RecordingFragmentReader implements AutoCloseable
     private boolean refreshStopPositionAndLimit(final long replayPosition, final long oldStopPosition)
     {
         final long currentRecodingPosition = recordingPosition.get();
-        UnsafeAccess.UNSAFE.loadFence();
         final boolean hasRecordingStopped = recordingPosition.isClosed();
         final long newStopPosition = hasRecordingStopped ? catalog.stopPosition(recordingId) : currentRecodingPosition;
 

@@ -21,13 +21,10 @@ import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import org.agrona.CloseHelper;
-import org.agrona.UnsafeAccess;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.status.CountersManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,6 +37,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.archive.Catalog.NULL_POSITION;
 import static io.aeron.archive.codecs.ControlResponseCode.ERROR;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.concurrent.status.CountersReader.MAX_LABEL_LENGTH;
 
 abstract class ArchiveConductor extends SessionWorker<Session> implements AvailableImageHandler
 {
@@ -49,11 +48,12 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder();
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
-    private final Long2ObjectHashMap<AtomicCounter> recordingPositionByIdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<Counter> recordingPositionByIdMap = new Long2ObjectHashMap<>();
     private final Map<String, Subscription> subscriptionMap = new HashMap<>();
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final RecordingSummary recordingSummary = new RecordingSummary();
+    private final UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[SIZE_OF_LONG + MAX_LABEL_LENGTH]);
 
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;
@@ -66,7 +66,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final RecordingEventsProxy recordingEventsProxy;
     private final int maxConcurrentRecordings;
     private final int maxConcurrentReplays;
-    private final CountersManager countersManager;
 
     protected final Archive.Context ctx;
     protected final ControlResponseProxy controlResponseProxy;
@@ -100,7 +99,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             ctx.idleStrategy(), aeron.addPublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId()));
 
         catalog = new Catalog(archiveDir, archiveDirChannel, ctx.fileSyncLevel(), epochClock);
-        countersManager = ctx.countersManager();
     }
 
     public void onStart()
@@ -404,10 +402,9 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         recordingSessionByIdMap.remove(session.sessionId());
         closeSession(session);
 
-        final AtomicCounter position = recordingPositionByIdMap.remove(session.sessionId());
+        final Counter position = recordingPositionByIdMap.remove(session.sessionId());
         catalog.recordingStopped(session.recordingId(), position.get(), epochClock.time());
 
-        UnsafeAccess.UNSAFE.storeFence();
         position.close();
     }
 
@@ -451,7 +448,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             originalChannel,
             sourceIdentity);
 
-        final AtomicCounter position = newRecordingPositionCounter(recordingId, sessionId, streamId, strippedChannel);
+        final Counter position = newRecordingPositionCounter(recordingId, sessionId, streamId, strippedChannel);
 
         final RecordingSession session = new RecordingSession(
             recordingId,
@@ -506,17 +503,25 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         return null;
     }
 
-    private AtomicCounter newRecordingPositionCounter(
+    private Counter newRecordingPositionCounter(
         final long recordingId,
         final int sessionId,
         final int streamId,
         final String strippedChannel)
     {
         final String label = "rec-pos: " + recordingId + " " + sessionId + " " + streamId + " " + strippedChannel;
+        final String trimmedLabel = label.length() > MAX_LABEL_LENGTH ? label.substring(0, MAX_LABEL_LENGTH) : label;
 
-        return countersManager.newCounter(
-            label,
+        tempBuffer.putLong(0, recordingId);
+        tempBuffer.putStringAscii(SIZE_OF_LONG, trimmedLabel);
+
+        return aeron.addCounter(
             Archive.Configuration.ARCHIVE_RECORDING_POSITION_TYPE_ID,
-            (buffer) -> buffer.putLong(0, recordingId));
+            tempBuffer,
+            0,
+            SIZE_OF_LONG,
+            tempBuffer,
+            SIZE_OF_LONG,
+            trimmedLabel.length());
     }
 }

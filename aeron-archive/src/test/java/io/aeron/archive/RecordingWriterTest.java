@@ -1,11 +1,11 @@
 package io.aeron.archive;
 
+import io.aeron.Counter;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +41,7 @@ public class RecordingWriterTest
     private FileChannel mockArchiveDirFileChannel = Mockito.mock(FileChannel.class);
     private FileChannel mockDataFileChannel = Mockito.mock(FileChannel.class);
     private UnsafeBuffer mockTermBuffer = Mockito.mock(UnsafeBuffer.class);
-    private final AtomicCounter position = mock(AtomicCounter.class);
+    private final Counter position = mock(Counter.class);
     private long positionLong;
 
     @Before

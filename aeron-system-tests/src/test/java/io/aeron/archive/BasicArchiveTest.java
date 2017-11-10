@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
@@ -63,8 +64,7 @@ public class BasicArchiveTest
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
-                .dirDeleteOnStart(true)
-                .useConcurrentCountersManager(true));
+                .dirDeleteOnStart(true));
 
         archive = Archive.launch(
             new Archive.Context()
@@ -73,7 +73,7 @@ public class BasicArchiveTest
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
                 .errorHandler(driver.context().errorHandler())
-                .countersManager(driver.context().countersManager()));
+                .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS)));
 
         aeron = Aeron.connect();
 

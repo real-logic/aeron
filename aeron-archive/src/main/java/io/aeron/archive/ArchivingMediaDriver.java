@@ -15,9 +15,8 @@
  */
 package io.aeron.archive;
 
-import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.ThreadingMode;
+import io.aeron.driver.status.SystemCounterDescriptor;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
 import static org.agrona.SystemUtil.loadPropertiesFiles;
@@ -73,18 +72,13 @@ public final class ArchivingMediaDriver implements AutoCloseable
      */
     public static ArchivingMediaDriver launch(final MediaDriver.Context driverCtx, final Archive.Context archiveCtx)
     {
-        final boolean useConcurrentCounterManager =
-            driverCtx.threadingMode() != ThreadingMode.INVOKER ||
-                (driverCtx.threadingMode() == null && Configuration.THREADING_MODE_DEFAULT != ThreadingMode.INVOKER);
-
         final MediaDriver driver = MediaDriver.launch(driverCtx
-            .spiesSimulateConnection(true)
-            .useConcurrentCountersManager(useConcurrentCounterManager));
+            .spiesSimulateConnection(true));
 
         final Archive archive = Archive.launch(archiveCtx
             .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
-            .countersManager(driver.context().countersManager())
-            .errorHandler(driver.context().errorHandler()));
+            .errorHandler(driverCtx.errorHandler())
+            .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS)));
 
         return new ArchivingMediaDriver(driver, archive);
     }

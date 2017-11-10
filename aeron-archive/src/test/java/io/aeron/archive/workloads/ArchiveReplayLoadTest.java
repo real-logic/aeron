@@ -28,6 +28,7 @@ import io.aeron.archive.codecs.*;
 import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
@@ -108,7 +109,6 @@ public class ArchiveReplayLoadTest
         driver = MediaDriver.launch(
             new MediaDriver.Context()
                 .threadingMode(ThreadingMode.DEDICATED)
-                .useConcurrentCountersManager(true)
                 .spiesSimulateConnection(true)
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true));
@@ -118,7 +118,7 @@ public class ArchiveReplayLoadTest
                 .archiveDir(TestUtil.makeTempDir())
                 .fileSyncLevel(0)
                 .threadingMode(ArchiveThreadingMode.SHARED)
-                .countersManager(driver.context().countersManager())
+                .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
                 .errorHandler(driver.context().errorHandler()));
 
         aeron = Aeron.connect();

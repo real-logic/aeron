@@ -25,6 +25,7 @@ import io.aeron.archive.client.RecordingEventsAdapter;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
@@ -92,7 +93,6 @@ public class ArchiveRecordingLoadTest
         driver = MediaDriver.launch(
             new MediaDriver.Context()
                 .threadingMode(ThreadingMode.DEDICATED)
-                .useConcurrentCountersManager(true)
                 .spiesSimulateConnection(true)
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true));
@@ -102,7 +102,7 @@ public class ArchiveRecordingLoadTest
                 .fileSyncLevel(2)
                 .archiveDir(TestUtil.makeTempDir())
                 .threadingMode(ArchiveThreadingMode.SHARED)
-                .countersManager(driver.context().countersManager())
+                .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
                 .errorHandler(driver.context().errorHandler()));
 
         aeron = Aeron.connect();

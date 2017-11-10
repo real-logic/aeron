@@ -22,6 +22,7 @@ import io.aeron.archive.client.RecordingEventsAdapter;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -142,8 +143,7 @@ public class ArchiveTest
             .threadingMode(threadingMode)
             .spiesSimulateConnection(true)
             .errorHandler(Throwable::printStackTrace)
-            .dirDeleteOnStart(true)
-            .useConcurrentCountersManager(true);
+            .dirDeleteOnStart(true);
 
         driver = MediaDriver.launch(driverCtx);
 
@@ -153,7 +153,7 @@ public class ArchiveTest
             .archiveDir(TestUtil.makeTempDir())
             .segmentFileLength(termLength << rnd.nextInt(4))
             .threadingMode(archiveThreadingMode)
-            .countersManager(driverCtx.countersManager())
+            .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS))
             .errorHandler(driverCtx.errorHandler());
 
         archive = Archive.launch(archiverCtx);

@@ -23,7 +23,6 @@ import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.StatusIndicator;
 
 import java.io.File;
@@ -277,7 +276,6 @@ public final class Archive implements AutoCloseable
         private EpochClock epochClock;
 
         private ErrorHandler errorHandler;
-        private CountersManager countersManager;
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
 
@@ -295,9 +293,9 @@ public final class Archive implements AutoCloseable
                 throw new IllegalStateException("Error handler must be supplied");
             }
 
-            if (null == countersManager)
+            if (null == errorCounter)
             {
-                throw new IllegalStateException("Counters manager must be supplied");
+                throw new IllegalStateException("Error counter must be supplied");
             }
 
             if (null == aeronContext)
@@ -331,7 +329,6 @@ public final class Archive implements AutoCloseable
                     "Failed to create archive dir: " + archiveDir.getAbsolutePath());
             }
 
-            errorCounter = countersManager.newCounter("Archive errors");
             countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
         }
 
@@ -682,6 +679,18 @@ public final class Archive implements AutoCloseable
         }
 
         /**
+         * Set the error counter that will record the number of errors the archive has observed.
+         *
+         * @param errorCounter the error counter that will record the number of errors the archive has observed.
+         * @return this for a fluent API.
+         */
+        public Context errorCounter(final AtomicCounter errorCounter)
+        {
+            this.errorCounter = errorCounter;
+            return this;
+        }
+
+        /**
          * Get the max number of concurrent recordings.
          *
          * @return the max number of concurrent recordings.
@@ -722,28 +731,6 @@ public final class Archive implements AutoCloseable
         public Context maxConcurrentReplays(final int maxConcurrentReplays)
         {
             this.maxConcurrentReplays = maxConcurrentReplays;
-            return this;
-        }
-
-        /**
-         * The {@link CountersManager} used for shared use between the embedded media driver and the archive.
-         *
-         * @return {@link CountersManager} used for shared use between the embedded media driver and the archive.
-         */
-        public CountersManager countersManager()
-        {
-            return countersManager;
-        }
-
-        /**
-         * The {@link CountersManager} is a shared use between the embedded media driver and the archive.
-         *
-         * @param countersManager shared counters manager to be used.
-         * @return this for a fluent API.
-         */
-        public Context countersManager(final CountersManager countersManager)
-        {
-            this.countersManager = countersManager;
             return this;
         }
 

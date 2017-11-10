@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class PongTest
@@ -113,6 +115,91 @@ public class PongTest
             TimeUnit.MILLISECONDS.toNanos(5900));
 
         verify(pongHandler).onFragment(
+            any(DirectBuffer.class),
+            eq(DataHeaderFlyweight.HEADER_LENGTH),
+            eq(BitUtil.SIZE_OF_INT),
+            any(Header.class));
+    }
+
+    @Ignore
+    @Test
+    public void playPingPongWithRestart() throws Exception
+    {
+        buffer.putInt(0, 1);
+
+        while (pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
+        {
+            Thread.yield();
+        }
+
+        final AtomicInteger fragmentsRead = new AtomicInteger();
+
+        SystemTestHelper.executeUntil(
+            () -> fragmentsRead.get() > 0,
+            (i) ->
+            {
+                fragmentsRead.addAndGet(pingSubscription.poll(this::pingHandler, 1));
+                Thread.yield();
+            },
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(5900));
+
+        fragmentsRead.set(0);
+
+        SystemTestHelper.executeUntil(
+            () -> fragmentsRead.get() > 0,
+            (i) ->
+            {
+                fragmentsRead.addAndGet(pongSubscription.poll(pongHandler, 1));
+                Thread.yield();
+            },
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(5900));
+
+        // close Pong side
+        pongPublication.close();
+        pingSubscription.close();
+
+        // wait for disconnect to ensure we stay in lock step
+        while (pingPublication.isConnected())
+        {
+            Thread.sleep(100);
+        }
+
+        // restart Pong side
+        pongPublication = pongClient.addPublication(PONG_URI, PONG_STREAM_ID);
+        pingSubscription = pingClient.addSubscription(PING_URI, PING_STREAM_ID);
+
+        fragmentsRead.set(0);
+
+        while (pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
+        {
+            Thread.yield();
+        }
+
+        SystemTestHelper.executeUntil(
+            () -> fragmentsRead.get() > 0,
+            (i) ->
+            {
+                fragmentsRead.addAndGet(pingSubscription.poll(this::pingHandler, 10));
+                Thread.yield();
+            },
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(5900));
+
+        fragmentsRead.set(0);
+
+        SystemTestHelper.executeUntil(
+            () -> fragmentsRead.get() > 0,
+            (i) ->
+            {
+                fragmentsRead.addAndGet(pongSubscription.poll(pongHandler, 10));
+                Thread.yield();
+            },
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(5900));
+
+        verify(pongHandler, times(2)).onFragment(
             any(DirectBuffer.class),
             eq(DataHeaderFlyweight.HEADER_LENGTH),
             eq(BitUtil.SIZE_OF_INT),

@@ -329,7 +329,10 @@ public final class Archive implements AutoCloseable
                     "Failed to create archive dir: " + archiveDir.getAbsolutePath());
             }
 
-            countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
+            if (null == countedErrorHandler)
+            {
+                countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
+            }
         }
 
         /**
@@ -613,9 +616,21 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * The {@link #errorHandler()} that will increment {@link #errorCounter()}.
+         * Non-default for context.
          *
-         * @return {@link #errorHandler()} that will increment {@link #errorCounter()}.
+         * @param countedErrorHandler to override the default.
+         * @return this for a fluent API.
+         */
+        public Context countedErrorHandler(final CountedErrorHandler countedErrorHandler)
+        {
+            this.countedErrorHandler = countedErrorHandler;
+            return this;
+        }
+
+        /**
+         * The {@link #errorHandler()} that will increment {@link #errorCounter()} by default.
+         *
+         * @return {@link #errorHandler()} that will increment {@link #errorCounter()} by default.
          */
         public CountedErrorHandler countedErrorHandler()
         {

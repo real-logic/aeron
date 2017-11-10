@@ -27,6 +27,7 @@ import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.BroadcastTransmitter;
 import org.agrona.concurrent.errors.DistinctErrorLog;
+import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.ringbuffer.*;
 import org.agrona.concurrent.status.*;
 
@@ -1741,16 +1742,7 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == errorHandler)
             {
-                errorHandler =
-                    (throwable) ->
-                    {
-                        if (!errorLog.record(throwable))
-                        {
-                            System.err.println(
-                                "Error Log is full, consider increasing " + ERROR_BUFFER_LENGTH_PROP_NAME);
-                            throwable.printStackTrace(System.err);
-                        }
-                    };
+                errorHandler = new LoggingErrorHandler(errorLog);
             }
 
             receiverProxy = new ReceiverProxy(

@@ -315,6 +315,16 @@ std::int64_t ClientConductor::addCounter(
 {
     verifyDriverIsActive();
 
+    if (keyLength > CountersManager::MAX_KEY_LENGTH)
+    {
+        throw IllegalArgumentException(strPrintf("key length out of bounds: %d", keyLength), SOURCEINFO);
+    }
+
+    if (label.length() > CountersManager::MAX_LABEL_LENGTH)
+    {
+        throw IllegalArgumentException(strPrintf("label length out of bounds: %d", label.length()), SOURCEINFO);
+    }
+
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     std::int64_t registrationId = m_driverProxy.addCounter(typeId, keyBuffer, keyLength, label);

@@ -74,8 +74,12 @@ int32_t aeron_counters_manager_allocate(
         (aeron_counter_metadata_descriptor_t *)(manager->metadata + (counter_id * AERON_COUNTERS_MANAGER_METADATA_LENGTH));
 
     metadata->type_id = type_id;
-    memset(metadata->key, 0, sizeof(metadata->key));
-    memcpy(metadata->key, key, fmin(sizeof(metadata->key), key_length));
+
+    if (NULL != key && key_length > 0)
+    {
+        memcpy(metadata->key, key, fmin(sizeof(metadata->key), key_length));
+    }
+
     memcpy(metadata->label, label, fmin(sizeof(metadata->label), label_length));
     metadata->label_length = (int32_t)label_length;
     AERON_PUT_ORDERED(metadata->state, AERON_COUNTER_RECORD_ALLOCATED);

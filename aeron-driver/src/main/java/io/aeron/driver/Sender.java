@@ -168,7 +168,7 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
             bytesSent += publications[i].send(nowNs);
         }
 
-        totalBytesSent.addOrdered(bytesSent);
+        totalBytesSent.getAndAddOrdered(bytesSent);
 
         return bytesSent;
     }

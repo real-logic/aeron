@@ -90,7 +90,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
 
         checkPendingSetupMessages(nowNs);
 
-        totalBytesReceived.addOrdered(bytesReceived);
+        totalBytesReceived.getAndAddOrdered(bytesReceived);
 
         return workCount + bytesReceived;
     }

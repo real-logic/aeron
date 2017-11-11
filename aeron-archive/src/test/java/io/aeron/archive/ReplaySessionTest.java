@@ -95,7 +95,7 @@ public class ReplaySessionTest
                 positionLong += delta;
                 return null;
             })
-            .when(position).addOrdered(anyLong());
+            .when(position).getAndAddOrdered(anyLong());
 
         context = new Archive.Context()
             .archiveDir(archiveDir)

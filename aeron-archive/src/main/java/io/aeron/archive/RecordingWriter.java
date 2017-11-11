@@ -295,6 +295,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     private void afterWrite(final int blockLength)
     {
         segmentPosition += blockLength;
-        recordedPosition.addOrdered(blockLength);
+        recordedPosition.getAndAddOrdered(blockLength);
     }
 }

@@ -328,7 +328,7 @@ public class NetworkPublication
             }
             while (remainingBytes > 0);
 
-            retransmitsSent.orderedIncrement();
+            retransmitsSent.incrementOrdered();
         }
     }
 
@@ -506,7 +506,7 @@ public class NetworkPublication
         else if (trackSenderLimits)
         {
             trackSenderLimits = false;
-            senderFlowControlLimits.orderedIncrement();
+            senderFlowControlLimits.incrementOrdered();
         }
 
         return bytesSent;
@@ -572,7 +572,7 @@ public class NetworkPublication
                 shortSends.increment();
             }
 
-            heartbeatsSent.orderedIncrement();
+            heartbeatsSent.incrementOrdered();
             timeOfLastSendOrHeartbeatNs = nowNs;
         }
 
@@ -606,7 +606,7 @@ public class NetworkPublication
             {
                 if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition, termBufferLength))
                 {
-                    unblockedPublications.orderedIncrement();
+                    unblockedPublications.incrementOrdered();
                 }
             }
         }
@@ -696,7 +696,7 @@ public class NetworkPublication
                 {
                     if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition, termBufferLength))
                     {
-                        unblockedPublications.orderedIncrement();
+                        unblockedPublications.incrementOrdered();
                         break;
                     }
 

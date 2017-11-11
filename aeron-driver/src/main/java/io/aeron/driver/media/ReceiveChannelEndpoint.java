@@ -164,7 +164,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
     public void possibleTtlAsymmetryEncountered()
     {
-        possibleTtlAsymmetry.orderedIncrement();
+        possibleTtlAsymmetry.incrementOrdered();
     }
 
     public int incRefToStream(final int streamId)

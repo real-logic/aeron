@@ -255,7 +255,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
                 }
                 else if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, consumerPosition, termBufferLength))
                 {
-                    unblockedPublications.orderedIncrement();
+                    unblockedPublications.incrementOrdered();
                 }
                 break;
 
@@ -342,7 +342,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
             {
                 if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, consumerPosition, termBufferLength))
                 {
-                    unblockedPublications.orderedIncrement();
+                    unblockedPublications.incrementOrdered();
                 }
             }
         }

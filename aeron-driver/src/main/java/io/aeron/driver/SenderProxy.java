@@ -129,7 +129,7 @@ public class SenderProxy
     {
         while (!commandQueue.offer(cmd))
         {
-            failCount.orderedIncrement();
+            failCount.incrementOrdered();
             Thread.yield();
         }
     }

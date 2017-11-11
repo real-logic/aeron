@@ -238,7 +238,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
             if (0 == sessionId && 0 == streamId && SEND_SETUP_FLAG == (msg.flags() & SEND_SETUP_FLAG))
             {
                 publicationBySessionAndStreamId.forEach(NetworkPublication::triggerSendSetupFrame);
-                statusMessagesReceived.orderedIncrement();
+                statusMessagesReceived.incrementOrdered();
             }
         }
 
@@ -253,7 +253,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
                 publication.onStatusMessage(msg, srcAddress);
             }
 
-            statusMessagesReceived.orderedIncrement();
+            statusMessagesReceived.incrementOrdered();
         }
     }
 
@@ -268,7 +268,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         if (null != publication)
         {
             publication.onNak(msg.termId(), msg.termOffset(), msg.length());
-            nakMessagesReceived.orderedIncrement();
+            nakMessagesReceived.incrementOrdered();
         }
     }
 

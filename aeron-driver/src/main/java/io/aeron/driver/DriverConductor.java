@@ -632,7 +632,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     void onClientKeepalive(final long clientId)
     {
-        clientKeepAlives.addOrdered(1);
+        clientKeepAlives.incrementOrdered();
 
         final AeronClient client = findClient(clients, clientId);
         if (null != client)
@@ -711,7 +711,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             {
                 if (toDriverCommands.unblock())
                 {
-                    context.systemCounters().get(UNBLOCKED_COMMANDS).orderedIncrement();
+                    context.systemCounters().get(UNBLOCKED_COMMANDS).incrementOrdered();
                 }
             }
         }

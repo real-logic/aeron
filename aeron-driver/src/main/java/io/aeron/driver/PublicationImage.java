@@ -482,7 +482,7 @@ public class PublicationImage
                     LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), packetPosition);
                 }
 
-                heartbeatsReceived.orderedIncrement();
+                heartbeatsReceived.incrementOrdered();
             }
             else
             {
@@ -542,7 +542,7 @@ public class PublicationImage
                     channelEndpoint.sendStatusMessage(
                         controlAddress, sessionId, streamId, termId, termOffset, receiverWindowLength, (byte)0);
 
-                    statusMessagesSent.orderedIncrement();
+                    statusMessagesSent.incrementOrdered();
 
                     lastSmChangeNumber = changeNumber;
                 }
@@ -577,14 +577,14 @@ public class PublicationImage
                 if (isReliable)
                 {
                     channelEndpoint.sendNakMessage(controlAddress, sessionId, streamId, termId, termOffset, length);
-                    nakMessagesSent.orderedIncrement();
+                    nakMessagesSent.incrementOrdered();
                 }
                 else
                 {
                     final UnsafeBuffer termBuffer = termBuffers[indexByTerm(initialTermId, termId)];
                     if (tryFillGap(rawLog.metaData(), termBuffer, termId, termOffset, length))
                     {
-                        lossGapFills.orderedIncrement();
+                        lossGapFills.incrementOrdered();
                     }
                 }
 
@@ -730,7 +730,7 @@ public class PublicationImage
 
         if (isFlowControlUnderRun)
         {
-            flowControlUnderRuns.orderedIncrement();
+            flowControlUnderRuns.incrementOrdered();
         }
 
         return isFlowControlUnderRun;
@@ -742,7 +742,7 @@ public class PublicationImage
 
         if (isFlowControlOverRun)
         {
-            flowControlOverRuns.orderedIncrement();
+            flowControlOverRuns.incrementOrdered();
         }
 
         return isFlowControlOverRun;

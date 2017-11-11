@@ -282,7 +282,7 @@ public class SelectorAndTransportTest
             processLoop(controlTransportPoller, 1);
         }
 
-        verify(mockStatusMessagesReceivedCounter, times(1)).orderedIncrement();
+        verify(mockStatusMessagesReceivedCounter, times(1)).incrementOrdered();
     }
 
     private void processLoop(final UdpTransportPoller transportPoller, final int iterations) throws Exception

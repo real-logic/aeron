@@ -40,7 +40,7 @@ public class ClientSession
     private final DirectBufferVector messageBuffer = new DirectBufferVector();
     private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
 
-    public ClientSession(final long sessionId, final Publication responsePublication)
+    ClientSession(final long sessionId, final Publication responsePublication)
     {
         this.id = sessionId;
         this.responsePublication = responsePublication;
@@ -62,16 +62,6 @@ public class ClientSession
     public long id()
     {
         return id;
-    }
-
-    /**
-     * Publication for responding to the client.
-     *
-     * @return publication for responding to the client.
-     */
-    public Publication responsePublication()
-    {
-        return responsePublication;
     }
 
     /**
@@ -116,5 +106,10 @@ public class ClientSession
         messageBuffer.reset(buffer, offset, length);
 
         return responsePublication.offer(vectors, reservedValueSupplier);
+    }
+
+    Publication responsePublication()
+    {
+        return responsePublication;
     }
 }

@@ -15,13 +15,13 @@
  */
 package io.aeron.cluster.client;
 
-import io.aeron.cluster.codecs.SessionEventCode;
+import io.aeron.cluster.codecs.EventCode;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
 public interface EgressListener
 {
-    void sessionEvent(long correlationId, long clusterSessionId, SessionEventCode code, String detail);
+    void sessionEvent(long correlationId, long clusterSessionId, EventCode code, String detail);
 
     void newLeader(
         long correlationId,

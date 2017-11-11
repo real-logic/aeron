@@ -16,7 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.cluster.client.EgressListener;
-import io.aeron.cluster.codecs.SessionEventCode;
+import io.aeron.cluster.codecs.EventCode;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
@@ -25,7 +25,7 @@ public class StubEgressListener implements EgressListener
     public void sessionEvent(
         final long correlationId,
         final long clusterSessionId,
-        final SessionEventCode code,
+        final EventCode code,
         final String detail)
     {
     }

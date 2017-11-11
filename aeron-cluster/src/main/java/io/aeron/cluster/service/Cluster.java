@@ -19,6 +19,8 @@ public interface Cluster
 {
     ClientSession getClientSession(long clusterSessionId);
 
+    long timeMs();
+
     void registerTimer(long correlationId, long deadlineMs);
 
     void cancelTimer(long correlationId);

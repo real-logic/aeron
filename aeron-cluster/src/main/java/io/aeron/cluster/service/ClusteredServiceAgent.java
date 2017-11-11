@@ -93,7 +93,7 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
                         connectRequestDecoder.responseStreamId()));
 
                 sessionByIdMap.put(sessionId, session);
-                service.onSessionOpen(session);
+                service.onSessionOpen(session, connectRequestDecoder.timestamp());
                 break;
             }
 
@@ -128,7 +128,7 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
                 if (null != session)
                 {
                     session.responsePublication().close();
-                    service.onSessionClose(session);
+                    service.onSessionClose(session, closeRequestDecoder.timestamp());
                 }
                 break;
 
@@ -139,7 +139,7 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                service.onTimerEvent(timerEventDecoder.correlationId());
+                service.onTimerEvent(timerEventDecoder.correlationId(), timerEventDecoder.timestamp());
                 break;
         }
     }
@@ -149,13 +149,16 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
         return sessionByIdMap.get(clusterSessionId);
     }
 
+    public long timeMs()
+    {
+        return 0L;
+    }
+
     public void registerTimer(final long correlationId, final long deadlineMs)
     {
-
     }
 
     public void cancelTimer(final long correlationId)
     {
-
     }
 }

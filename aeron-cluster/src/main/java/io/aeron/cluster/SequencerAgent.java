@@ -108,7 +108,7 @@ class SequencerAgent implements Agent
         if (null != session)
         {
             session.close();
-            if (appendClosedSessionToLog(session))
+            if (appendClosedSessionToLog(session, CloseReason.USER_ACTION))
             {
                 clusterSessionByIdMap.remove(clusterSessionId);
             }
@@ -190,7 +190,7 @@ class SequencerAgent implements Agent
         return workCount;
     }
 
-    private boolean appendClosedSessionToLog(final ClusterSession session)
+    private boolean appendClosedSessionToLog(final ClusterSession session, final CloseReason closeReason)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionCloseRequestEncoder.BLOCK_LENGTH;
 
@@ -201,7 +201,9 @@ class SequencerAgent implements Agent
             {
                 closeRequestEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .clusterSessionId(session.id());
+                    .clusterSessionId(session.id())
+                    .timestamp(cachedEpochClock.time())
+                    .closeReason(closeReason);
 
                 bufferClaim.commit();
 
@@ -230,6 +232,7 @@ class SequencerAgent implements Agent
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(session.id())
                     .correlationId(session.lastCorrelationId())
+                    .timestamp(cachedEpochClock.time())
                     .responseStreamId(session.responsePublication().streamId())
                     .responseChannel(channel);
 
@@ -260,7 +263,7 @@ class SequencerAgent implements Agent
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(session.id())
                     .correlationId(session.lastCorrelationId())
-                    .code(SessionEventCode.OK)
+                    .code(EventCode.OK)
                     .detail("");
 
                 bufferClaim.commit();

@@ -30,11 +30,11 @@ public class StubClusteredService implements ClusteredService
         this.cluster = cluster;
     }
 
-    public void onSessionOpen(final ClientSession session)
+    public void onSessionOpen(final ClientSession session, final long timestampMs)
     {
     }
 
-    public void onSessionClose(final ClientSession session)
+    public void onSessionClose(final ClientSession session, final long timestampMs)
     {
     }
 
@@ -49,7 +49,7 @@ public class StubClusteredService implements ClusteredService
     {
     }
 
-    public void onTimerEvent(final long correlationId)
+    public void onTimerEvent(final long correlationId, final long timestampMs)
     {
     }
 }

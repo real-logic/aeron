@@ -22,9 +22,9 @@ public interface ClusteredService
 {
     void onStart(Cluster cluster);
 
-    void onSessionOpen(ClientSession session);
+    void onSessionOpen(ClientSession session, long timestampMs);
 
-    void onSessionClose(ClientSession session);
+    void onSessionClose(ClientSession session, long timestampMs);
 
     void onSessionMessage(
         long clusterSessionId,
@@ -35,5 +35,5 @@ public interface ClusteredService
         int length,
         Header header);
 
-    void onTimerEvent(long correlationId);
+    void onTimerEvent(long correlationId, long timestampMs);
 }

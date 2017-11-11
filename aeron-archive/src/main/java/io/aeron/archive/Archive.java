@@ -20,14 +20,12 @@ import io.aeron.archive.client.AeronArchive;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
-import org.agrona.LangUtil;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.StatusIndicator;
 
 import java.io.File;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static org.agrona.SystemUtil.getSizeAsInt;
@@ -161,10 +159,6 @@ public final class Archive implements AutoCloseable
         public static final String ARCHIVER_IDLE_STRATEGY_PROP_NAME = "aeron.archive.idle.strategy";
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 
-        static final long AGENT_IDLE_MAX_SPINS = 100;
-        static final long AGENT_IDLE_MAX_YIELDS = 100;
-        static final long AGENT_IDLE_MIN_PARK_NS = 1;
-        static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(1000);
 
         public static final String MAX_CONCURRENT_RECORDINGS_PROP_NAME = "aeron.archive.max.concurrent.recordings";
         public static final int MAX_CONCURRENT_RECORDINGS_DEFAULT = 128;
@@ -174,8 +168,6 @@ public final class Archive implements AutoCloseable
 
         public static final String REPLAY_FRAGMENT_LIMIT_PROP_NAME = "aeron.archive.replay.fragment.limit";
         public static final int REPLAY_FRAGMENT_LIMIT_DEFAULT = 16;
-
-        private static final String CONTROLLABLE_IDLE_STRATEGY = "org.agrona.concurrent.ControllableIdleStrategy";
 
         public static String archiveDirName()
         {
@@ -198,42 +190,19 @@ public final class Archive implements AutoCloseable
                 THREADING_MODE_PROP_NAME, ArchiveThreadingMode.DEDICATED.name()));
         }
 
+        /**
+         * Create a supplier of {@link IdleStrategy}s that will use the system property.
+         *
+         * @param controllableStatus if a {@link org.agrona.concurrent.ControllableIdleStrategy} is required.
+         * @return the new idle strategy
+         */
         public static Supplier<IdleStrategy> idleStrategySupplier(final StatusIndicator controllableStatus)
         {
-            final String strategyName = System.getProperty(ARCHIVER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
-            return
-                () ->
-                {
-                    IdleStrategy idleStrategy = null;
-                    switch (strategyName)
-                    {
-                        case DEFAULT_IDLE_STRATEGY:
-                            idleStrategy = new BackoffIdleStrategy(
-                                AGENT_IDLE_MAX_SPINS,
-                                AGENT_IDLE_MAX_YIELDS,
-                                AGENT_IDLE_MIN_PARK_NS,
-                                AGENT_IDLE_MAX_PARK_NS);
-                            break;
-
-                        case CONTROLLABLE_IDLE_STRATEGY:
-                            idleStrategy = new ControllableIdleStrategy(controllableStatus);
-                            controllableStatus.setOrdered(ControllableIdleStrategy.PARK);
-                            break;
-
-                        default:
-                            try
-                            {
-                                idleStrategy = (IdleStrategy)Class.forName(strategyName).newInstance();
-                            }
-                            catch (final Exception ex)
-                            {
-                                LangUtil.rethrowUnchecked(ex);
-                            }
-                            break;
-                    }
-
-                    return idleStrategy;
-                };
+            return () ->
+            {
+                final String name = System.getProperty(ARCHIVER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
+                return io.aeron.driver.Configuration.agentIdleStrategy(name, controllableStatus);
+            };
         }
 
         public static int maxConcurrentRecordings()

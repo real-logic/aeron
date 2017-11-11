@@ -45,7 +45,7 @@ public class ClusterNodeTest
     private static final int FRAGMENT_LIMIT = 1;
 
     private MediaDriver driver;
-    private ClusterNode clusterNode;
+    private ConsensusModule consensusModule;
     private AeronCluster aeronCluster;
 
     @Before
@@ -58,8 +58,8 @@ public class ClusterNodeTest
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true));
 
-        clusterNode = ClusterNode.launch(
-            new ClusterNode.Context()
+        consensusModule = ConsensusModule.launch(
+            new ConsensusModule.Context()
                 .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
                 .errorHandler(driver.context().errorHandler()));
 
@@ -72,7 +72,7 @@ public class ClusterNodeTest
     public void after()
     {
         CloseHelper.close(aeronCluster);
-        CloseHelper.close(clusterNode);
+        CloseHelper.close(consensusModule);
         CloseHelper.close(driver);
 
         driver.context().deleteAeronDirectory();
@@ -139,8 +139,8 @@ public class ClusterNodeTest
     private AgentRunner launchClusteredService(final Aeron aeron)
     {
         final Subscription logSubscription = aeron.addSubscription(
-            ClusterNode.Configuration.logChannel(),
-            ClusterNode.Configuration.logStreamId());
+            ConsensusModule.Configuration.logChannel(),
+            ConsensusModule.Configuration.logStreamId());
 
         final ClusteredService echoService = new StubClusteredService()
         {

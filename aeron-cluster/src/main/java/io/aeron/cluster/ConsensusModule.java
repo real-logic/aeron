@@ -28,13 +28,13 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-public final class ClusterNode implements AutoCloseable
+public final class ConsensusModule implements AutoCloseable
 {
     private final Context ctx;
     private final Aeron aeron;
     private final AgentRunner conductorRunner;
 
-    private ClusterNode(final Context ctx)
+    private ConsensusModule(final Context ctx)
     {
         this.ctx = ctx;
         ctx.conclude();
@@ -51,16 +51,16 @@ public final class ClusterNode implements AutoCloseable
         conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
     }
 
-    private ClusterNode start()
+    private ConsensusModule start()
     {
         AgentRunner.startOnThread(conductorRunner, ctx.threadFactory());
         return this;
     }
 
     /**
-     * Get the {@link ClusterNode.Context} that is used by this {@link ClusterNode}.
+     * Get the {@link ConsensusModule.Context} that is used by this {@link ConsensusModule}.
      *
-     * @return the {@link ClusterNode.Context} that is used by this {@link ClusterNode}.
+     * @return the {@link ConsensusModule.Context} that is used by this {@link ConsensusModule}.
      */
     public Context context()
     {
@@ -78,7 +78,7 @@ public final class ClusterNode implements AutoCloseable
      *
      * @return a new instance of an ClusterNode.
      */
-    public static ClusterNode launch()
+    public static ConsensusModule launch()
     {
         return launch(new Context());
     }
@@ -89,9 +89,9 @@ public final class ClusterNode implements AutoCloseable
      * @param ctx for the configuration parameters.
      * @return  a new instance of an ClusterNode.
      */
-    public static ClusterNode launch(final Context ctx)
+    public static ConsensusModule launch(final Context ctx)
     {
-        return new ClusterNode(ctx).start();
+        return new ConsensusModule(ctx).start();
     }
 
     public static class Configuration

@@ -55,7 +55,7 @@ class SequencerAgent implements Agent
     // TODO: Active session limit
     // TODO: Timeout inactive sessions and clean up closed sessions that fail to log.
 
-    SequencerAgent(final Aeron aeron, final ClusterNode.Context ctx)
+    SequencerAgent(final Aeron aeron, final ConsensusModule.Context ctx)
     {
         this.aeron = aeron;
         this.aeronClientInvoker = aeron.conductorAgentInvoker();

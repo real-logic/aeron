@@ -21,7 +21,7 @@ import org.agrona.concurrent.ShutdownSignalBarrier;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 /**
- * Clustered media driver which is an aggregate of a {@link MediaDriver} and an {@link ClusterNode}.
+ * Clustered media driver which is an aggregate of a {@link MediaDriver} and an {@link ConsensusModule}.
  */
 public class ClusteredMediaDriver implements AutoCloseable
 {

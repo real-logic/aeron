@@ -36,6 +36,7 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
     private static final int FRAGMENT_LIMIT = 10;
     private static final int INITIAL_BUFFER_LENGTH = 4096;
 
+    private long timestampMs;
     private final Aeron aeron;
     private final ClusteredService service;
     private final Subscription logSubscription;
@@ -93,7 +94,8 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
                         connectRequestDecoder.responseStreamId()));
 
                 sessionByIdMap.put(sessionId, session);
-                service.onSessionOpen(session, connectRequestDecoder.timestamp());
+                timestampMs = connectRequestDecoder.timestamp();
+                service.onSessionOpen(session, timestampMs);
                 break;
             }
 
@@ -105,10 +107,11 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
+                timestampMs = sessionHeaderDecoder.timestamp();
                 service.onSessionMessage(
                     sessionHeaderDecoder.clusterSessionId(),
                     sessionHeaderDecoder.correlationId(),
-                    sessionHeaderDecoder.timestamp(),
+                    timestampMs,
                     buffer,
                     offset + SESSION_HEADER_LENGTH,
                     length - SESSION_HEADER_LENGTH,
@@ -127,8 +130,9 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
                 final ClientSession session = sessionByIdMap.get(closeRequestDecoder.clusterSessionId());
                 if (null != session)
                 {
+                    timestampMs = closeRequestDecoder.timestamp();
                     session.responsePublication().close();
-                    service.onSessionClose(session, closeRequestDecoder.timestamp());
+                    service.onSessionClose(session, timestampMs, closeRequestDecoder.closeReason());
                 }
                 break;
 
@@ -139,7 +143,8 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                service.onTimerEvent(timerEventDecoder.correlationId(), timerEventDecoder.timestamp());
+                timestampMs = timerEventDecoder.timestamp();
+                service.onTimerEvent(timerEventDecoder.correlationId(), timestampMs);
                 break;
         }
     }
@@ -151,7 +156,7 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
 
     public long timeMs()
     {
-        return 0L;
+        return timestampMs;
     }
 
     public void registerTimer(final long correlationId, final long deadlineMs)

@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster.service;
 
+import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
@@ -24,7 +25,7 @@ public interface ClusteredService
 
     void onSessionOpen(ClientSession session, long timestampMs);
 
-    void onSessionClose(ClientSession session, long timestampMs);
+    void onSessionClose(ClientSession session, long timestampMs, CloseReason closeReason);
 
     void onSessionMessage(
         long clusterSessionId,

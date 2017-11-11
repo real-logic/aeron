@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredService;
@@ -34,7 +35,7 @@ public class StubClusteredService implements ClusteredService
     {
     }
 
-    public void onSessionClose(final ClientSession session, final long timestampMs)
+    public void onSessionClose(final ClientSession session, final long timestampMs, final CloseReason closeReason)
     {
     }
 

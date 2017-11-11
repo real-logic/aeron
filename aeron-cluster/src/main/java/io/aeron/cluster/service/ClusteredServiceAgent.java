@@ -24,6 +24,7 @@ import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.AgentInvoker;
 
 public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
 {
@@ -37,23 +38,27 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
     private static final int INITIAL_BUFFER_LENGTH = 4096;
 
     private long timestampMs;
+    private final boolean useAeronAgentInvoker;
     private final Aeron aeron;
+    private final AgentInvoker aeronAgentInvoker;
     private final ClusteredService service;
     private final Subscription logSubscription;
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this, INITIAL_BUFFER_LENGTH, true);
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final SessionConnectRequestDecoder connectRequestDecoder = new SessionConnectRequestDecoder();
-    private final SessionCloseRequestDecoder closeRequestDecoder = new SessionCloseRequestDecoder();
+    private final SessionOpenEventDecoder openEventDecoder = new SessionOpenEventDecoder();
+    private final SessionCloseEventDecoder closeEventDecoder = new SessionCloseEventDecoder();
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
 
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
 
-    public ClusteredServiceAgent(final Aeron aeron, final ClusteredService service, final Subscription logSubscription)
+    public ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
     {
-        this.aeron = aeron;
-        this.service = service;
-        this.logSubscription = logSubscription;
+        aeron = ctx.aeron();
+        useAeronAgentInvoker = aeron.context().useConductorAgentInvoker();
+        aeronAgentInvoker = aeron.conductorAgentInvoker();
+        service = ctx.clusteredService();
+        logSubscription = aeron.addSubscription(ctx.logChannel(), ctx.logStreamId());
     }
 
     public void onStart()
@@ -63,7 +68,16 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
 
     public int doWork() throws Exception
     {
-        return logSubscription.poll(fragmentAssembler, FRAGMENT_LIMIT);
+        int workCount = 0;
+
+        if (useAeronAgentInvoker)
+        {
+            workCount += aeronAgentInvoker.invoke();
+        }
+
+        workCount += logSubscription.poll(fragmentAssembler, FRAGMENT_LIMIT);
+
+        return workCount;
     }
 
     public String roleName()
@@ -78,27 +92,6 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
-            case SessionConnectRequestDecoder.TEMPLATE_ID:
-            {
-                connectRequestDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                final long sessionId = connectRequestDecoder.clusterSessionId();
-                final ClientSession session = new ClientSession(
-                    sessionId,
-                    aeron.addExclusivePublication(
-                        connectRequestDecoder.responseChannel(),
-                        connectRequestDecoder.responseStreamId()));
-
-                sessionByIdMap.put(sessionId, session);
-                timestampMs = connectRequestDecoder.timestamp();
-                service.onSessionOpen(session, timestampMs);
-                break;
-            }
-
             case SessionHeaderDecoder.TEMPLATE_ID:
             {
                 sessionHeaderDecoder.wrap(
@@ -120,23 +113,8 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
                 break;
             }
 
-            case SessionCloseRequestDecoder.TEMPLATE_ID:
-                closeRequestDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                final ClientSession session = sessionByIdMap.get(closeRequestDecoder.clusterSessionId());
-                if (null != session)
-                {
-                    timestampMs = closeRequestDecoder.timestamp();
-                    session.responsePublication().close();
-                    service.onSessionClose(session, timestampMs, closeRequestDecoder.closeReason());
-                }
-                break;
-
             case TimerEventDecoder.TEMPLATE_ID:
+            {
                 timerEventDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -146,6 +124,46 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
                 timestampMs = timerEventDecoder.timestamp();
                 service.onTimerEvent(timerEventDecoder.correlationId(), timestampMs);
                 break;
+            }
+
+            case SessionOpenEventDecoder.TEMPLATE_ID:
+            {
+                openEventDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final long sessionId = openEventDecoder.clusterSessionId();
+                final ClientSession session = new ClientSession(
+                    sessionId,
+                    aeron.addExclusivePublication(
+                        openEventDecoder.responseChannel(),
+                        openEventDecoder.responseStreamId()));
+
+                sessionByIdMap.put(sessionId, session);
+                timestampMs = openEventDecoder.timestamp();
+                service.onSessionOpen(session, timestampMs);
+                break;
+            }
+
+            case SessionCloseEventDecoder.TEMPLATE_ID:
+            {
+                closeEventDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final ClientSession session = sessionByIdMap.get(closeEventDecoder.clusterSessionId());
+                if (null != session)
+                {
+                    timestampMs = closeEventDecoder.timestamp();
+                    session.responsePublication().close();
+                    service.onSessionClose(session, timestampMs, closeEventDecoder.closeReason());
+                }
+                break;
+            }
         }
     }
 
@@ -159,7 +177,7 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
         return timestampMs;
     }
 
-    public void registerTimer(final long correlationId, final long deadlineMs)
+    public void scheduleTimer(final long correlationId, final long deadlineMs)
     {
     }
 

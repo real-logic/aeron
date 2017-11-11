@@ -15,13 +15,40 @@
  */
 package io.aeron.cluster.service;
 
+/**
+ * Interface for a {@link ClusteredService} to interact with cluster hosting it.
+ */
 public interface Cluster
 {
+    /**
+     * Get the {@link ClientSession} for a given cluster session id.
+     *
+     * @param clusterSessionId to be looked up.
+     * @return the {@link ClientSession} that matches the clusterSessionId.
+     */
     ClientSession getClientSession(long clusterSessionId);
 
+    /**
+     * Current Epoch time in milliseconds.
+     *
+     * @return Epoch time in milliseconds.
+     */
     long timeMs();
 
-    void registerTimer(long correlationId, long deadlineMs);
+    /**
+     * Schedule a timer for a given deadline and provide a correlation id to identify the timer when it expires.
+     * <p>
+     * If the correlationId is for an existing scheduled timer then it will be reschedule to the new deadline.
+     *
+     * @param correlationId to identify the timer when it expires.
+     * @param deadlineMs after which the timer will fire.
+     */
+    void scheduleTimer(long correlationId, long deadlineMs);
 
+    /**
+     * Cancel a previous scheduled timer.
+     *
+     * @param correlationId for the scheduled timer.
+     */
     void cancelTimer(long correlationId);
 }

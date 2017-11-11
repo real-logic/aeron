@@ -19,14 +19,46 @@ import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
+/**
+ * Interface which a service must implement to be contained in the cluster.
+ */
 public interface ClusteredService
 {
+    /**
+     * Start event for the service.
+     *
+     * @param cluster with which the service can interact.
+     */
     void onStart(Cluster cluster);
 
+    /**
+     * A session has been opened for a client to the cluster.
+     *
+     * @param session     for the client which have been opened.
+     * @param timestampMs at which the session was opened.
+     */
     void onSessionOpen(ClientSession session, long timestampMs);
 
+    /**
+     * A session has been closed for a client to the cluster.
+     *
+     * @param session     that has been closed.
+     * @param timestampMs at which the session was closed.
+     * @param closeReason the session was closed.
+     */
     void onSessionClose(ClientSession session, long timestampMs, CloseReason closeReason);
 
+    /**
+     * A message has been received to be processed by a clustered service.
+     *
+     * @param clusterSessionId identifying the client which sent the message.
+     * @param correlationId    to associate any response.
+     * @param timestampMs      for when the message was received.
+     * @param buffer           containing the message.
+     * @param offset           in the buffer at which the message is encoded.
+     * @param length           of the encoded message.
+     * @param header           aeron header for the incoming message.
+     */
     void onSessionMessage(
         long clusterSessionId,
         long correlationId,
@@ -36,5 +68,11 @@ public interface ClusteredService
         int length,
         Header header);
 
+    /**
+     * A scheduled timer has expired.
+     *
+     * @param correlationId for the expired timer.
+     * @param timestampMs   at which the timer expired.
+     */
     void onTimerEvent(long correlationId, long timestampMs);
 }

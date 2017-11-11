@@ -75,7 +75,6 @@
                  description="Connect to the cluster and if successful then open a session">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
-        <field name="timestamp"            id="3" type="time_t"/>
         <field name="responseStreamId"     id="4" type="int32"/>
         <data  name="responseChannel"      id="5" type="varAsciiEncoding"/>
     </sbe:message>
@@ -92,8 +91,6 @@
                  id="4"
                  description="Close an open cluster session">
         <field name="clusterSessionId"     id="1" type="int64"/>
-        <field name="timestamp"            id="2" type="time_t"/>
-        <field name="closeReason"          id="3" type="CloseReason"/>
     </sbe:message>
 
     <sbe:message name="SessionKeepAliveRequest"
@@ -101,7 +98,6 @@
                  description="Keep a cluster session open by indicating the client is alive">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
-        <field name="timestamp"            id="3" type="time_t"/>
     </sbe:message>
 
     <sbe:message name="NewLeaderEvent"
@@ -116,7 +112,7 @@
         <data  name="clusterLeader"        id="7" type="varAsciiEncoding"/>
     </sbe:message>
 
-    <!-- Events to be delivered to the clustered service which are session related -->
+    <!-- Events to be delivered to a clustered service from the sequencer -->
 
     <sbe:message name="TimerEvent"
                  id="20"
@@ -125,7 +121,7 @@
         <field name="timestamp"            id="2" type="time_t"/>
     </sbe:message>
 
-    <sbe:message name="OpenSessionEvent"
+    <sbe:message name="SessionOpenEvent"
                  id="21"
                  description="Event for the state machine to notify a session has been opened">
         <field name="correlationId"        id="1" type="int64"/>
@@ -135,12 +131,13 @@
         <data  name="responseChannel"      id="5" type="varAsciiEncoding"/>
     </sbe:message>
 
-    <sbe:message name="CloseSessionEvent"
+    <sbe:message name="SessionCloseEvent"
                  id="22"
                  description="Event for the state machine to notify a session has been closed">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
         <field name="timestamp"            id="3" type="time_t"/>
+        <field name="closeReason"          id="3" type="CloseReason"/>
     </sbe:message>
 
     <!-- Cluster Consensus Protocol -->

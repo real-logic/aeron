@@ -17,11 +17,10 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
-import io.aeron.Subscription;
 import io.aeron.cluster.client.*;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredService;
-import io.aeron.cluster.service.ClusteredServiceAgent;
+import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.SystemCounterDescriptor;
@@ -30,15 +29,15 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
-import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.NoOpLock;
-import org.agrona.concurrent.SleepingMillisIdleStrategy;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
 
 public class ClusterNodeTest
 {
@@ -87,8 +86,8 @@ public class ClusterNodeTest
     @Test(timeout = 10_000)
     public void shouldEchoMessageViaService() throws Exception
     {
+        final ClusteredServiceContainer container = launchContainer();
         final Aeron aeron = aeronCluster.context().aeron();
-        final AgentRunner serviceAgentRunner = launchClusteredService(aeron);
 
         final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
         final Publication publication = aeronCluster.ingressPublication();
@@ -133,15 +132,11 @@ public class ClusterNodeTest
             }
         }
 
-        serviceAgentRunner.close();
+        container.close();
     }
 
-    private AgentRunner launchClusteredService(final Aeron aeron)
+    private ClusteredServiceContainer launchContainer()
     {
-        final Subscription logSubscription = aeron.addSubscription(
-            ConsensusModule.Configuration.logChannel(),
-            ConsensusModule.Configuration.logStreamId());
-
         final ClusteredService echoService = new StubClusteredService()
         {
             public void onSessionMessage(
@@ -162,14 +157,10 @@ public class ClusterNodeTest
             }
         };
 
-        final AgentRunner serviceAgentRunner = new AgentRunner(
-            new SleepingMillisIdleStrategy(1),
-            Throwable::printStackTrace,
-            null,
-            new ClusteredServiceAgent(aeron, echoService, logSubscription));
-
-        AgentRunner.startOnThread(serviceAgentRunner);
-
-        return serviceAgentRunner;
+        return ClusteredServiceContainer.launch(
+            new ClusteredServiceContainer.Context()
+                .clusteredService(echoService)
+                .errorCounter(mock(AtomicCounter.class))
+                .errorHandler(Throwable::printStackTrace));
     }
 }

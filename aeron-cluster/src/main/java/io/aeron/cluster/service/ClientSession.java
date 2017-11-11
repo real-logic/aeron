@@ -23,6 +23,9 @@ import io.aeron.cluster.codecs.SessionHeaderEncoder;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
+/**
+ * Session representing a connected client to the cluster.
+ */
 public class ClientSession
 {
     /**
@@ -51,11 +54,21 @@ public class ClientSession
         vectors[1] = messageBuffer;
     }
 
+    /**
+     * Cluster session identity uniquely allocated when the session was opened.
+     *
+     * @return the cluster session identity uniquely allocated when the session was opened.
+     */
     public long id()
     {
         return id;
     }
 
+    /**
+     * Publication for responding to the client.
+     *
+     * @return publication for responding to the client.
+     */
     public Publication responsePublication()
     {
         return responsePublication;

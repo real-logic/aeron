@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2017 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,73 +13,64 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster;
+package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
-import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.service.ClusteredServiceContainer;
+import io.aeron.CommonContext;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.StatusIndicator;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
-public final class ConsensusModule implements AutoCloseable
+public final class ClusteredServiceContainer implements AutoCloseable
 {
     private final Context ctx;
-    private final Aeron aeron;
-    private final AgentRunner conductorRunner;
+    private final AgentRunner serviceAgentRunner;
 
-    private ConsensusModule(final Context ctx)
+    private ClusteredServiceContainer(final Context ctx)
     {
         this.ctx = ctx;
         ctx.conclude();
 
-        ctx.aeronContext()
-            .errorHandler(ctx.countedErrorHandler())
-            .driverAgentInvoker(ctx.mediaDriverAgentInvoker())
-            .useConductorAgentInvoker(true)
-            .clientLock(new NoOpLock());
-
-        aeron = Aeron.connect(ctx.aeronContext());
-
-        final SequencerAgent conductor = new SequencerAgent(aeron, ctx);
-        conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
+        final ClusteredServiceAgent agent = new ClusteredServiceAgent(ctx);
+        serviceAgentRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), agent);
     }
 
-    private ConsensusModule start()
+    private ClusteredServiceContainer start()
     {
-        AgentRunner.startOnThread(conductorRunner, ctx.threadFactory());
+        AgentRunner.startOnThread(serviceAgentRunner, ctx.threadFactory());
         return this;
     }
 
     /**
-     * Launch an ClusterNode using a default configuration.
+     * Launch an ClusteredServiceContainer using a default configuration.
      *
-     * @return a new instance of an ClusterNode.
+     * @return a new instance of a ClusteredServiceContainer.
      */
-    public static ConsensusModule launch()
+    public static ClusteredServiceContainer launch()
     {
         return launch(new Context());
     }
 
     /**
-     * Launch an ClusterNode by providing a configuration context.
+     * Launch a ClusteredServiceContainer by providing a configuration context.
      *
      * @param ctx for the configuration parameters.
-     * @return  a new instance of an ClusterNode.
+     * @return a new instance of a ClusteredServiceContainer.
      */
-    public static ConsensusModule launch(final Context ctx)
+    public static ClusteredServiceContainer launch(final Context ctx)
     {
-        return new ConsensusModule(ctx).start();
+        return new ClusteredServiceContainer(ctx).start();
     }
 
     /**
-     * Get the {@link ConsensusModule.Context} that is used by this {@link ConsensusModule}.
+     * Get the {@link Context} that is used by this {@link ClusteredServiceContainer}.
      *
-     * @return the {@link ConsensusModule.Context} that is used by this {@link ConsensusModule}.
+     * @return the {@link Context} that is used by this {@link ClusteredServiceContainer}.
      */
     public Context context()
     {
@@ -88,37 +79,134 @@ public final class ConsensusModule implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(conductorRunner);
-        CloseHelper.close(aeron);
+        CloseHelper.close(serviceAgentRunner);
+        CloseHelper.close(ctx);
     }
 
-    public static class Context
+    /**
+     * Configuration options for the consensus module and service container within a cluster.
+     */
+    public static class Configuration
     {
-        private String ingressChannel = AeronCluster.Configuration.ingressChannel();
-        private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
-        private String logChannel = ClusteredServiceContainer.Configuration.logChannel();
-        private int logStreamId = ClusteredServiceContainer.Configuration.logStreamId();
-        private String timerChannel = ClusteredServiceContainer.Configuration.timerChannel();
-        private int timerStreamId = ClusteredServiceContainer.Configuration.timerStreamId();
+        /**
+         * Channel for the clustered log.
+         */
+        public static final String LOG_CHANNEL_PROP_NAME = "aeron.cluster.log.channel";
+
+        /**
+         * Channel for the clustered log. Default to localhost:9030.
+         */
+        public static final String LOG_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9030";
+
+        /**
+         * Stream id within a channel for the clustered log.
+         */
+        public static final String LOG_STREAM_ID_PROP_NAME = "aeron.cluster.log.stream.id";
+
+        /**
+         * Stream id within a channel for the clustered log. Default to stream id of 3.
+         */
+        public static final int LOG_STREAM_ID_DEFAULT = 3;
+
+        /**
+         * Channel for timer scheduling messages to the cluster.
+         */
+        public static final String TIMER_CHANNEL_PROP_NAME = "aeron.cluster.timer.channel";
+
+        /**
+         * Channel for timer scheduling messages to the cluster. This should be IPC.
+         */
+        public static final String TIMER_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
+
+        /**
+         * Stream id within a channel for timer scheduling messages to the cluster.
+         */
+        public static final String TIMER_STREAM_ID_PROP_NAME = "aeron.cluster.timer.stream.id";
+
+        /**
+         * Stream id within a channel for timer scheduling messages to the cluster. Default to stream id of 4.
+         */
+        public static final int TIMER_STREAM_ID_DEFAULT = 4;
+
+        /**
+         * The value {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
+         *
+         * @return {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
+         */
+        public static String logChannel()
+        {
+            return System.getProperty(LOG_CHANNEL_PROP_NAME, LOG_CHANNEL_DEFAULT);
+        }
+
+        /**
+         * The value {@link #LOG_STREAM_ID_DEFAULT} or system property {@link #LOG_STREAM_ID_PROP_NAME} if set.
+         *
+         * @return {@link #LOG_STREAM_ID_DEFAULT} or system property {@link #LOG_STREAM_ID_PROP_NAME} if set.
+         */
+        public static int logStreamId()
+        {
+            return Integer.getInteger(LOG_STREAM_ID_PROP_NAME, LOG_STREAM_ID_DEFAULT);
+        }
+
+        /**
+         * The value {@link #TIMER_CHANNEL_DEFAULT} or system property {@link #TIMER_CHANNEL_PROP_NAME} if set.
+         *
+         * @return {@link #TIMER_CHANNEL_DEFAULT} or system property {@link #TIMER_CHANNEL_PROP_NAME} if set.
+         */
+        public static String timerChannel()
+        {
+            return System.getProperty(TIMER_CHANNEL_PROP_NAME, TIMER_CHANNEL_DEFAULT);
+        }
+
+        /**
+         * The value {@link #TIMER_STREAM_ID_DEFAULT} or system property {@link #TIMER_STREAM_ID_PROP_NAME} if set.
+         *
+         * @return {@link #TIMER_STREAM_ID_DEFAULT} or system property {@link #TIMER_STREAM_ID_PROP_NAME} if set.
+         */
+        public static int timerStreamId()
+        {
+            return Integer.getInteger(TIMER_STREAM_ID_PROP_NAME, TIMER_STREAM_ID_DEFAULT);
+        }
+
+        public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
+        public static final String CLUSTER_IDLE_STRATEGY_PROP_NAME = "aeron.cluster.idle.strategy";
+
+        /**
+         * Create a supplier of {@link IdleStrategy}s that will use the system property.
+         *
+         * @param controllableStatus if a {@link org.agrona.concurrent.ControllableIdleStrategy} is required.
+         * @return the new idle strategy
+         */
+        public static Supplier<IdleStrategy> idleStrategySupplier(final StatusIndicator controllableStatus)
+        {
+            return () ->
+            {
+                final String name = System.getProperty(CLUSTER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
+                return io.aeron.driver.Configuration.agentIdleStrategy(name, controllableStatus);
+            };
+        }
+    }
+
+    public static class Context implements AutoCloseable
+    {
+        private String logChannel = Configuration.logChannel();
+        private int logStreamId = Configuration.logStreamId();
+        private String timerChannel = Configuration.timerChannel();
+        private int timerStreamId = Configuration.timerStreamId();
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
         private EpochClock epochClock;
-
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
+        private Aeron aeron;
+        private boolean ownsAeronClient = true;
 
-        private AgentInvoker mediaDriverAgentInvoker;
-        private Aeron.Context aeronContext;
+        private ClusteredService clusteredService;
 
         public void conclude()
         {
-            if (null == aeronContext)
-            {
-                aeronContext = new Aeron.Context();
-            }
-
             if (null == threadFactory)
             {
                 threadFactory = Thread::new;
@@ -126,7 +214,7 @@ public final class ConsensusModule implements AutoCloseable
 
             if (null == idleStrategySupplier)
             {
-                idleStrategySupplier = ClusteredServiceContainer.Configuration.idleStrategySupplier(null);
+                idleStrategySupplier = Configuration.idleStrategySupplier(null);
             }
 
             if (null == epochClock)
@@ -148,54 +236,16 @@ public final class ConsensusModule implements AutoCloseable
             {
                 countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
             }
-        }
 
-        /**
-         * Set the channel parameter for the ingress channel.
-         *
-         * @param channel parameter for the ingress channel.
-         * @return this for a fluent API.
-         * @see AeronCluster.Configuration#INGRESS_CHANNEL_PROP_NAME
-         */
-        public Context ingressChannel(final String channel)
-        {
-            ingressChannel = channel;
-            return this;
-        }
-
-        /**
-         * Get the channel parameter for the ingress channel.
-         *
-         * @return the channel parameter for the ingress channel.
-         * @see AeronCluster.Configuration#INGRESS_CHANNEL_PROP_NAME
-         */
-        public String ingressChannel()
-        {
-            return ingressChannel;
-        }
-
-        /**
-         * Set the stream id for the ingress channel.
-         *
-         * @param streamId for the ingress channel.
-         * @return this for a fluent API
-         * @see AeronCluster.Configuration#INGRESS_STREAM_ID_PROP_NAME
-         */
-        public Context ingressStreamId(final int streamId)
-        {
-            ingressStreamId = streamId;
-            return this;
-        }
-
-        /**
-         * Get the stream id for the ingress channel.
-         *
-         * @return the stream id for the ingress channel.
-         * @see AeronCluster.Configuration#INGRESS_STREAM_ID_PROP_NAME
-         */
-        public int ingressStreamId()
-        {
-            return ingressStreamId;
+            if (null == aeron)
+            {
+                aeron = Aeron.connect(
+                    new Aeron.Context()
+                        .errorHandler(countedErrorHandler)
+                        .epochClock(epochClock)
+                        .useConductorAgentInvoker(true)
+                        .clientLock(new NoOpLock()));
+            }
         }
 
         /**
@@ -246,12 +296,13 @@ public final class ConsensusModule implements AutoCloseable
             return logStreamId;
         }
 
+
         /**
          * Set the channel parameter for scheduling timer events channel.
          *
          * @param channel parameter for the scheduling timer events channel.
          * @return this for a fluent API.
-         * @see ClusteredServiceContainer.Configuration#TIMER_CHANNEL_PROP_NAME
+         * @see Configuration#TIMER_CHANNEL_PROP_NAME
          */
         public Context timerChannel(final String channel)
         {
@@ -263,7 +314,7 @@ public final class ConsensusModule implements AutoCloseable
          * Get the channel parameter for the scheduling timer events channel.
          *
          * @return the channel parameter for the scheduling timer events channel.
-         * @see ClusteredServiceContainer.Configuration#TIMER_CHANNEL_PROP_NAME
+         * @see Configuration#TIMER_CHANNEL_PROP_NAME
          */
         public String timerChannel()
         {
@@ -275,7 +326,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @param streamId for the scheduling timer events channel.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#TIMER_STREAM_ID_PROP_NAME
+         * @see Configuration#TIMER_STREAM_ID_PROP_NAME
          */
         public Context timerStreamId(final int streamId)
         {
@@ -287,7 +338,7 @@ public final class ConsensusModule implements AutoCloseable
          * Get the stream id for the scheduling timer events channel.
          *
          * @return the stream id for the scheduling timer events channel.
-         * @see ClusteredServiceContainer.Configuration#TIMER_STREAM_ID_PROP_NAME
+         * @see Configuration#TIMER_STREAM_ID_PROP_NAME
          */
         public int timerStreamId()
         {
@@ -427,49 +478,73 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the {@link AgentInvoker} that should be used for the Media Driver if running in a lightweight mode.
+         * An {@link Aeron} client for the container.
          *
-         * @return the {@link AgentInvoker} that should be used for the Media Driver if running in a lightweight mode.
+         * @return {@link Aeron} client for the container
          */
-        AgentInvoker mediaDriverAgentInvoker()
+        public Aeron aeron()
         {
-            return mediaDriverAgentInvoker;
+            return aeron;
         }
 
         /**
-         * Set the {@link AgentInvoker} that should be used for the Media Driver if running in a lightweight mode.
-         *
-         * @param mediaDriverAgentInvoker that should be used for the Media Driver if running in a lightweight mode.
-         * @return this for a fluent API.
-         */
-        public Context mediaDriverAgentInvoker(final AgentInvoker mediaDriverAgentInvoker)
-        {
-            this.mediaDriverAgentInvoker = mediaDriverAgentInvoker;
-            return this;
-        }
-
-        /**
-         * Get the Aeron client context used by the Archive.
-         *
-         * @return Aeron client context used by the Archive
-         */
-        public Aeron.Context aeronContext()
-        {
-            return aeronContext;
-        }
-
-        /**
-         * Provide an {@link Aeron.Context} for configuring the connection to Aeron.
+         * Provide an {@link Aeron} client for the container
          * <p>
-         * If not provided then a default context will be created.
+         * If not provided then one will be created.
          *
-         * @param aeronContext for configuring the connection to Aeron.
+         * @param aeron client for the container
          * @return this for a fluent API.
          */
-        public Context aeronContext(final Aeron.Context aeronContext)
+        public Context aeron(final Aeron aeron)
         {
-            this.aeronContext = aeronContext;
+            this.aeron = aeron;
             return this;
+        }
+
+        public ClusteredService clusteredService()
+        {
+            return clusteredService;
+        }
+
+        public Context clusteredService(final ClusteredService clusteredService)
+        {
+            this.clusteredService = clusteredService;
+            return this;
+        }
+
+        /**
+         * Does this context own the {@link #aeron()} client and this takes responsibility for closing it?
+         *
+         * @param ownsAeronClient does this context own the {@link #aeron()} client.
+         * @return this for a fluent API.
+         */
+        public Context ownsAeronClient(final boolean ownsAeronClient)
+        {
+            this.ownsAeronClient = ownsAeronClient;
+            return this;
+        }
+
+        /**
+         * Does this context own the {@link #aeron()} client and this takes responsibility for closing it?
+         *
+         * @return does this context own the {@link #aeron()} client and this takes responsibility for closing it?
+         */
+        public boolean ownsAeronClient()
+        {
+            return ownsAeronClient;
+        }
+
+        /**
+         * Close the context and free applicable resources.
+         * <p>
+         * If {@link #ownsAeronClient()} is true then the {@link #aeron()} client will be closed.
+         */
+        public void close()
+        {
+            if (ownsAeronClient)
+            {
+                aeron.close();
+            }
         }
     }
 }

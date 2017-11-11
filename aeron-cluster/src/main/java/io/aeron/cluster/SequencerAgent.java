@@ -46,10 +46,10 @@ class SequencerAgent implements Agent
     private final Long2ObjectHashMap<ClusterSession> clusterSessionByIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<ClusterSession> pendingSessions = new ArrayList<>();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    private final SessionEventEncoder sessionEventEncoder = new SessionEventEncoder();
     private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
-    private final SessionConnectRequestEncoder connectRequestEncoder = new SessionConnectRequestEncoder();
-    private final SessionCloseRequestEncoder closeRequestEncoder = new SessionCloseRequestEncoder();
+    private final SessionEventEncoder sessionEventEncoder = new SessionEventEncoder();
+    private final SessionOpenEventEncoder connectEventEncoder = new SessionOpenEventEncoder();
+    private final SessionCloseEventEncoder closeEventEncoder = new SessionCloseEventEncoder();
 
     // TODO: message counter
     // TODO: Active session limit
@@ -192,14 +192,14 @@ class SequencerAgent implements Agent
 
     private boolean appendClosedSessionToLog(final ClusterSession session, final CloseReason closeReason)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionCloseRequestEncoder.BLOCK_LENGTH;
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionCloseEventEncoder.BLOCK_LENGTH;
 
         int attempts = MAX_SEND_ATTEMPTS;
         do
         {
             if (logPublication.tryClaim(length, bufferClaim) > 0)
             {
-                closeRequestEncoder
+                closeEventEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(session.id())
                     .timestamp(cachedEpochClock.time())
@@ -219,8 +219,8 @@ class SequencerAgent implements Agent
     {
         final String channel = session.responsePublication().channel();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
-            SessionConnectRequestEncoder.BLOCK_LENGTH +
-            SessionConnectRequestEncoder.responseChannelHeaderLength() +
+            SessionOpenEventEncoder.BLOCK_LENGTH +
+            SessionOpenEventEncoder.responseChannelHeaderLength() +
             channel.length();
 
         int attempts = MAX_SEND_ATTEMPTS;
@@ -228,7 +228,7 @@ class SequencerAgent implements Agent
         {
             if (logPublication.tryClaim(length, bufferClaim) > 0)
             {
-                connectRequestEncoder
+                connectEventEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(session.id())
                     .correlationId(session.lastCorrelationId())

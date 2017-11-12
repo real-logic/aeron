@@ -69,6 +69,8 @@ public class SessionDecorator
 
     /**
      * Non-blocking publish of a partial buffer containing a message plus session header to a cluster.
+     * <p>
+     * This version of the method will set the timestamp value in the header to zero.
      *
      * @param publication   to be offer to.
      * @param correlationId to be used to identify the message to the cluster.
@@ -85,6 +87,33 @@ public class SessionDecorator
         final int length)
     {
         sessionHeaderEncoder.correlationId(correlationId);
+        sessionHeaderEncoder.timestamp(0L);
+        messageBuffer.reset(buffer, offset, length);
+
+        return publication.offer(vectors, null);
+    }
+
+    /**
+     * Non-blocking publish of a partial buffer containing a message plus session header to a cluster.
+     *
+     * @param publication   to be offer to.
+     * @param correlationId to be used to identify the message to the cluster.
+     * @param timestampMs   for the message.
+     * @param buffer        containing message.
+     * @param offset        offset in the buffer at which the encoded message begins.
+     * @param length        in bytes of the encoded message.
+     * @return the same as {@link Publication#offer(DirectBuffer, int, int)}.
+     */
+    public long offer(
+        final Publication publication,
+        final long correlationId,
+        final long timestampMs,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
+    {
+        sessionHeaderEncoder.correlationId(correlationId);
+        sessionHeaderEncoder.timestamp(timestampMs);
         messageBuffer.reset(buffer, offset, length);
 
         return publication.offer(vectors, null);

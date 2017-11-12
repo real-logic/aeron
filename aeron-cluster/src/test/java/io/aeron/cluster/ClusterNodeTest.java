@@ -86,7 +86,7 @@ public class ClusterNodeTest
     @Test(timeout = 10_000)
     public void shouldEchoMessageViaService() throws Exception
     {
-        final ClusteredServiceContainer container = launchContainer();
+        final ClusteredServiceContainer container = launchEchoService();
         final Aeron aeron = aeronCluster.context().aeron();
 
         final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
@@ -135,7 +135,59 @@ public class ClusterNodeTest
         container.close();
     }
 
-    private ClusteredServiceContainer launchContainer()
+    @Test(timeout = 10_000)
+    public void shouldScheduleEventInService() throws Exception
+    {
+        final ClusteredServiceContainer container = launchScheduledService();
+        final Aeron aeron = aeronCluster.context().aeron();
+
+        final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
+        final Publication publication = aeronCluster.ingressPublication();
+
+        final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
+        final long msgCorrelationId = aeron.nextCorrelationId();
+        final String msg = "Hello World!";
+        msgBuffer.putStringWithoutLengthAscii(0, msg);
+
+        while (sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
+        {
+            Thread.yield();
+        }
+
+        final MutableInteger messageCount = new MutableInteger();
+        final EgressAdapter adapter = new EgressAdapter(
+            new StubEgressListener()
+            {
+                public void onMessage(
+                    final long correlationId,
+                    final long clusterSessionId,
+                    final long timestamp,
+                    final DirectBuffer buffer,
+                    final int offset,
+                    final int length,
+                    final Header header)
+                {
+                    assertThat(correlationId, is(msgCorrelationId));
+                    assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg + "-scheduled"));
+
+                    messageCount.value += 1;
+                }
+            },
+            aeronCluster.egressSubscription(),
+            FRAGMENT_LIMIT);
+
+        while (messageCount.get() == 0)
+        {
+            if (adapter.poll() <= 0)
+            {
+                Thread.yield();
+            }
+        }
+
+        container.close();
+    }
+
+    private ClusteredServiceContainer launchEchoService()
     {
         final ClusteredService echoService = new StubClusteredService()
         {
@@ -160,6 +212,51 @@ public class ClusterNodeTest
         return ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(echoService)
+                .errorCounter(mock(AtomicCounter.class))
+                .errorHandler(Throwable::printStackTrace));
+    }
+
+    private ClusteredServiceContainer launchScheduledService()
+    {
+        final ClusteredService echoScheduledService = new StubClusteredService()
+        {
+            long clusterSessionId;
+            long correlationId;
+            String msg;
+
+            public void onSessionMessage(
+                final long clusterSessionId,
+                final long correlationId,
+                final long timestampMs,
+                final DirectBuffer buffer,
+                final int offset,
+                final int length,
+                final Header header)
+            {
+                this.clusterSessionId = clusterSessionId;
+                this.correlationId = correlationId;
+                this.msg = buffer.getStringWithoutLengthAscii(offset, length);
+
+                cluster.scheduleTimer(correlationId, timestampMs + 100);
+            }
+
+            public void onTimerEvent(final long correlationId, final long timestampMs)
+            {
+                final String responseMsg = msg + "-scheduled";
+                final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+                buffer.putStringWithoutLengthAscii(0, responseMsg);
+                final ClientSession clientSession = cluster.getClientSession(clusterSessionId);
+
+                while (clientSession.offer(correlationId, buffer, 0, responseMsg.length()) < 0)
+                {
+                    Thread.yield();
+                }
+            }
+        };
+
+        return ClusteredServiceContainer.launch(
+            new ClusteredServiceContainer.Context()
+                .clusteredService(echoScheduledService)
                 .errorCounter(mock(AtomicCounter.class))
                 .errorHandler(Throwable::printStackTrace));
     }

@@ -140,6 +140,22 @@
         <field name="closeReason"          id="3" type="CloseReason"/>
     </sbe:message>
 
+    <!-- Messages for controlling timers -->
+
+    <sbe:message name="ScheduleTimerRequest"
+                 id="30"
+                 description="Schedule a timer event to or reschedule for an unexpired correlation id">
+        <field name="correlationId"        id="1" type="int64"/>
+        <field name="deadline"             id="2" type="time_t"/>
+    </sbe:message>
+
+
+    <sbe:message name="CancelTimerRequest"
+                 id="31"
+                 description="Cancel a scheduled timer event">
+        <field name="correlationId"        id="1" type="int64"/>
+    </sbe:message>
+
     <!-- Cluster Consensus Protocol -->
 
 </sbe:messageSchema>

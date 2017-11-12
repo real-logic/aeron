@@ -19,7 +19,6 @@ import io.aeron.*;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
-import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -31,15 +30,16 @@ import java.util.concurrent.TimeUnit;
 class SequencerAgent implements Agent
 {
     private static final int MAX_SEND_ATTEMPTS = 3;
-    private static final int FRAGMENT_LIMIT = 10;
+    private static final int TIMER_POLL_LIMIT = 10;
+    private static final int FRAGMENT_POLL_LIMIT = 10;
 
     private long nextSessionId = 1;
     private final long pendingSessionTimeoutMs = TimeUnit.SECONDS.toMillis(5);
     private final Aeron aeron;
+    private final AgentInvoker aeronClientInvoker;
     private final EpochClock epochClock;
     private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
-    private final AgentInvoker aeronClientInvoker;
-    private final Subscription ingressSubscription;
+    private final TimerService timerService;
     private final ExclusivePublication logPublication;
     private final IngressAdapter ingressAdapter;
     private final BufferClaim bufferClaim = new BufferClaim();
@@ -50,6 +50,7 @@ class SequencerAgent implements Agent
     private final SessionEventEncoder sessionEventEncoder = new SessionEventEncoder();
     private final SessionOpenEventEncoder connectEventEncoder = new SessionOpenEventEncoder();
     private final SessionCloseEventEncoder closeEventEncoder = new SessionCloseEventEncoder();
+    private final TimerEventEncoder timerEventEncoder = new TimerEventEncoder();
 
     // TODO: message counter for log
     // TODO: last message correlation id per session counter
@@ -62,16 +63,14 @@ class SequencerAgent implements Agent
         this.aeronClientInvoker = aeron.conductorAgentInvoker();
         this.epochClock = ctx.epochClock();
 
-        ingressSubscription = aeron.addSubscription(ctx.ingressChannel(), ctx.ingressStreamId());
-        ingressAdapter = new IngressAdapter(this, ingressSubscription, FRAGMENT_LIMIT);
+        final Subscription ingressSubscription = aeron.addSubscription(ctx.ingressChannel(), ctx.ingressStreamId());
+        ingressAdapter = new IngressAdapter(this, ingressSubscription, FRAGMENT_POLL_LIMIT);
 
         logPublication = aeron.addExclusivePublication(ctx.logChannel(), ctx.logStreamId());
-    }
 
-    public void onClose()
-    {
-        CloseHelper.close(ingressSubscription);
-        CloseHelper.close(logPublication);
+        final Subscription timerSubscription = aeron.addSubscription(ctx.timerChannel(), ctx.timerStreamId());
+        timerService = new TimerService(
+            TIMER_POLL_LIMIT, FRAGMENT_POLL_LIMIT, this, timerSubscription, cachedEpochClock);
     }
 
     public int doWork() throws Exception
@@ -84,6 +83,7 @@ class SequencerAgent implements Agent
         workCount += aeronClientInvoker.invoke();
         workCount += processPendingSessions(pendingSessions, nowMs);
         workCount += ingressAdapter.poll();
+        workCount += timerService.poll(nowMs);
 
         return workCount;
     }
@@ -278,5 +278,29 @@ class SequencerAgent implements Agent
         while (--attempts > 0);
 
         return false;
+    }
+
+    public void onExpireTimer(final long correlationId, final long nowMs)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + TimerEventEncoder.BLOCK_LENGTH;
+
+        int attempts = MAX_SEND_ATTEMPTS;
+        do
+        {
+            if (logPublication.tryClaim(length, bufferClaim) > 0)
+            {
+                timerEventEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .correlationId(correlationId)
+                    .timestamp(nowMs);
+
+                bufferClaim.commit();
+                return;
+            }
+        }
+        while (--attempts > 0);
+
+        // TODO: queue unsuccessful sends.
+        throw new IllegalStateException("Unable to append to log");
     }
 }

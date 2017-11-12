@@ -15,12 +15,12 @@
  */
 package io.aeron.cluster.service;
 
-import io.aeron.Aeron;
-import io.aeron.FragmentAssembler;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.cluster.codecs.*;
+import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
@@ -34,36 +34,59 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
     public static final int SESSION_HEADER_LENGTH =
         MessageHeaderDecoder.ENCODED_LENGTH + SessionHeaderDecoder.BLOCK_LENGTH;
 
+    private static final int MAX_SEND_ATTEMPTS = 3;
     private static final int FRAGMENT_LIMIT = 10;
     private static final int INITIAL_BUFFER_LENGTH = 4096;
 
     private long timestampMs;
+    private final boolean shouldCloseResources;
     private final boolean useAeronAgentInvoker;
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;
     private final ClusteredService service;
     private final Subscription logSubscription;
+    private final ExclusivePublication timerPublication;
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this, INITIAL_BUFFER_LENGTH, true);
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionOpenEventDecoder openEventDecoder = new SessionOpenEventDecoder();
     private final SessionCloseEventDecoder closeEventDecoder = new SessionCloseEventDecoder();
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
+    private final BufferClaim bufferClaim = new BufferClaim();
+    private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+    private final ScheduleTimerRequestEncoder scheduleTimerRequestEncoder = new ScheduleTimerRequestEncoder();
+    private final CancelTimerRequestEncoder cancelTimerRequestEncoder = new CancelTimerRequestEncoder();
 
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
 
     public ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
     {
         aeron = ctx.aeron();
+        shouldCloseResources = ctx.ownsAeronClient();
         useAeronAgentInvoker = aeron.context().useConductorAgentInvoker();
         aeronAgentInvoker = aeron.conductorAgentInvoker();
         service = ctx.clusteredService();
         logSubscription = aeron.addSubscription(ctx.logChannel(), ctx.logStreamId());
+        timerPublication = aeron.addExclusivePublication(ctx.timerChannel(), ctx.timerStreamId());
     }
 
     public void onStart()
     {
         service.onStart(this);
+    }
+
+    public void onClose()
+    {
+        if (shouldCloseResources)
+        {
+            CloseHelper.close(logSubscription);
+            CloseHelper.close(timerPublication);
+
+            for (final ClientSession session : sessionByIdMap.values())
+            {
+                CloseHelper.close(session.responsePublication());
+            }
+        }
     }
 
     public int doWork() throws Exception
@@ -156,7 +179,7 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                final ClientSession session = sessionByIdMap.get(closeEventDecoder.clusterSessionId());
+                final ClientSession session = sessionByIdMap.remove(closeEventDecoder.clusterSessionId());
                 if (null != session)
                 {
                     timestampMs = closeEventDecoder.timestamp();
@@ -180,9 +203,52 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
 
     public void scheduleTimer(final long correlationId, final long deadlineMs)
     {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ScheduleTimerRequestEncoder.BLOCK_LENGTH;
+
+        int attempts = MAX_SEND_ATTEMPTS;
+        do
+        {
+            if (timerPublication.tryClaim(length, bufferClaim) > 0)
+            {
+                scheduleTimerRequestEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .correlationId(correlationId)
+                    .deadline(deadlineMs);
+
+                bufferClaim.commit();
+
+                return;
+            }
+
+            Thread.yield();
+        }
+        while (--attempts > 0);
+
+        throw new IllegalStateException("Failed to schedule timer");
     }
 
     public void cancelTimer(final long correlationId)
     {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + CancelTimerRequestEncoder.BLOCK_LENGTH;
+
+        int attempts = MAX_SEND_ATTEMPTS;
+        do
+        {
+            if (timerPublication.tryClaim(length, bufferClaim) > 0)
+            {
+                cancelTimerRequestEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .correlationId(correlationId);
+
+                bufferClaim.commit();
+
+                return;
+            }
+
+            Thread.yield();
+        }
+        while (--attempts > 0);
+
+        throw new IllegalStateException("Failed to schedule timer");
     }
 }

@@ -31,14 +31,14 @@ public class IngressAdapter implements ControlledFragmentHandler
     private final SessionKeepAliveRequestDecoder keepAliveRequestDecoder = new SessionKeepAliveRequestDecoder();
 
     private final ControlledFragmentHandler fragmentAssembler = new ControlledFragmentAssembler(this);
-    private final SequencerAgent conductor;
+    private final SequencerAgent sequencerAgent;
     private final Subscription subscription;
     private final int fragmentLimit;
 
     public IngressAdapter(
-        final SequencerAgent conductor, final Subscription subscription, final int fragmentLimit)
+        final SequencerAgent sequencerAgent, final Subscription subscription, final int fragmentLimit)
     {
-        this.conductor = conductor;
+        this.sequencerAgent = sequencerAgent;
         this.subscription = subscription;
         this.fragmentLimit = fragmentLimit;
     }
@@ -63,7 +63,7 @@ public class IngressAdapter implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                conductor.onSessionConnect(
+                sequencerAgent.onSessionConnect(
                     connectRequestDecoder.correlationId(),
                     connectRequestDecoder.responseStreamId(),
                     connectRequestDecoder.responseChannel());
@@ -76,7 +76,7 @@ public class IngressAdapter implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                return conductor.onSessionMessage(
+                return sequencerAgent.onSessionMessage(
                     buffer,
                     offset,
                     length,
@@ -90,7 +90,7 @@ public class IngressAdapter implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                conductor.onSessionClose(closeRequestDecoder.clusterSessionId());
+                sequencerAgent.onSessionClose(closeRequestDecoder.clusterSessionId());
                 break;
 
             case SessionKeepAliveRequestDecoder.TEMPLATE_ID:
@@ -100,7 +100,7 @@ public class IngressAdapter implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                conductor.onKeepAlive(
+                sequencerAgent.onKeepAlive(
                     keepAliveRequestDecoder.correlationId(),
                     keepAliveRequestDecoder.clusterSessionId());
                 break;

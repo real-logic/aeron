@@ -82,7 +82,7 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
 
     public String roleName()
     {
-        return "service-agent";
+        return "clustered-service";
     }
 
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)

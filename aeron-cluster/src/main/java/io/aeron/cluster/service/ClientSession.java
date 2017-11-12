@@ -39,11 +39,13 @@ public class ClientSession
     private final DirectBufferVector[] vectors = new DirectBufferVector[2];
     private final DirectBufferVector messageBuffer = new DirectBufferVector();
     private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
+    private final Cluster cluster;
 
-    ClientSession(final long sessionId, final Publication responsePublication)
+    ClientSession(final long sessionId, final Publication responsePublication, final Cluster cluster)
     {
         this.id = sessionId;
         this.responsePublication = responsePublication;
+        this.cluster = cluster;
 
         final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
         sessionHeaderEncoder
@@ -80,6 +82,7 @@ public class ClientSession
         final int length)
     {
         sessionHeaderEncoder.correlationId(correlationId);
+        sessionHeaderEncoder.timestamp(cluster.timeMs());
         messageBuffer.reset(buffer, offset, length);
 
         return responsePublication.offer(vectors, null);
@@ -103,6 +106,7 @@ public class ClientSession
         final ReservedValueSupplier reservedValueSupplier)
     {
         sessionHeaderEncoder.correlationId(correlationId);
+        sessionHeaderEncoder.timestamp(cluster.timeMs());
         messageBuffer.reset(buffer, offset, length);
 
         return responsePublication.offer(vectors, reservedValueSupplier);

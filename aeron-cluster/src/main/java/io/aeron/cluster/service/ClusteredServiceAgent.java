@@ -139,7 +139,8 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
                     sessionId,
                     aeron.addExclusivePublication(
                         openEventDecoder.responseChannel(),
-                        openEventDecoder.responseStreamId()));
+                        openEventDecoder.responseStreamId()),
+                        this);
 
                 sessionByIdMap.put(sessionId, session);
                 timestampMs = openEventDecoder.timestamp();

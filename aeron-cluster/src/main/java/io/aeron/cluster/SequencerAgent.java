@@ -51,7 +51,8 @@ class SequencerAgent implements Agent
     private final SessionOpenEventEncoder connectEventEncoder = new SessionOpenEventEncoder();
     private final SessionCloseEventEncoder closeEventEncoder = new SessionCloseEventEncoder();
 
-    // TODO: message counter
+    // TODO: message counter for log
+    // TODO: last message correlation id per session counter
     // TODO: Active session limit
     // TODO: Timeout inactive sessions and clean up closed sessions that fail to log.
 

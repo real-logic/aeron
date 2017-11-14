@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.exceptions.DriverTimeoutException;
+import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
@@ -746,7 +747,12 @@ public final class Aeron implements AutoCloseable
 
         /**
          * Handle Aeron exceptions in a callback method. The default behavior is defined by
-         * {@link Aeron#DEFAULT_ERROR_HANDLER}.
+         * {@link Aeron#DEFAULT_ERROR_HANDLER}. This is the error handler which will be used if an error occurs
+         * during the callback for poll operations such as {@link Subscription#poll(FragmentHandler, int)}.
+         * <p>
+         * The error handler can be reset after {@link Aeron#connect()} and the latest version will always be used
+         * so that the boot strapping process can be performed such as replacing the default one with a
+         * {@link CountedErrorHandler}.
          *
          * @param errorHandler Method to handle objects of type Throwable.
          * @return this Aeron.Context for method chaining.

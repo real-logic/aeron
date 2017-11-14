@@ -87,6 +87,7 @@ public class BasicArchiveTest
     {
         CloseHelper.close(aeronArchive);
         CloseHelper.close(archive);
+        CloseHelper.close(aeron);
         CloseHelper.close(driver);
 
         archive.context().deleteArchiveDirectory();

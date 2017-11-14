@@ -28,7 +28,9 @@ import java.io.File;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
+import static io.aeron.archive.Archive.Configuration.ARCHIVE_ERRORS_TYPE_ID;
 import static org.agrona.SystemUtil.getSizeAsInt;
+import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 /**
  * The Aeron Archive which allows for the archival of {@link io.aeron.Publication}s and
@@ -40,20 +42,13 @@ public final class Archive implements AutoCloseable
     private final Context ctx;
     private final AgentRunner conductorRunner;
     private final AgentInvoker conductorInvoker;
-    private final Aeron aeron;
 
     private Archive(final Context ctx)
     {
         this.ctx = ctx;
         ctx.conclude();
 
-        ctx.aeronContext()
-            .errorHandler(ctx.countedErrorHandler())
-            .driverAgentInvoker(ctx.mediaDriverAgentInvoker())
-            .useConductorAgentInvoker(true)
-            .clientLock(new NoOpLock());
-
-        aeron = Aeron.connect(ctx.aeronContext);
+        final Aeron aeron = ctx.aeron();
 
         final ArchiveConductor conductor =
             ArchiveThreadingMode.DEDICATED == ctx.threadingMode() ?
@@ -73,6 +68,24 @@ public final class Archive implements AutoCloseable
     }
 
     /**
+     * Launch an {@link Archive} with that communicates with an out of process Media Driver and await a
+     * shutdown signal.
+     *
+     * @param args command line argument which is a list for properties files as URLs or filenames.
+     */
+    public static void main(final String[] args)
+    {
+        loadPropertiesFiles(args);
+
+        try (Archive ignore = launch())
+        {
+            new ShutdownSignalBarrier().await();
+
+            System.out.println("Shutdown Archive...");
+        }
+    }
+
+    /**
      * Get the {@link Archive.Context} that is used by this {@link Archive}.
      *
      * @return the {@link Archive.Context} that is used by this {@link Archive}.
@@ -86,7 +99,7 @@ public final class Archive implements AutoCloseable
     {
         CloseHelper.close(conductorInvoker);
         CloseHelper.close(conductorRunner);
-        CloseHelper.close(aeron);
+        CloseHelper.close(ctx);
     }
 
     private Archive start()
@@ -128,7 +141,7 @@ public final class Archive implements AutoCloseable
      * Launch an Archive by providing a configuration context.
      *
      * @param ctx for the configuration parameters.
-     * @return  a new instance of an Archive.
+     * @return a new instance of an Archive.
      */
     public static Archive launch(final Context ctx)
     {
@@ -143,6 +156,7 @@ public final class Archive implements AutoCloseable
     public static class Configuration
     {
         public static final int ARCHIVE_RECORDING_POSITION_TYPE_ID = 100;
+        public static final int ARCHIVE_ERRORS_TYPE_ID = 101;
 
         public static final String ARCHIVE_DIR_PROP_NAME = "aeron.archive.dir";
         public static final String ARCHIVE_DIR_DEFAULT = "archive";
@@ -224,9 +238,10 @@ public final class Archive implements AutoCloseable
     /**
      * Overrides for the defaults and system properties.
      */
-    public static class Context
+    public static class Context implements AutoCloseable
     {
-        private Aeron.Context aeronContext;
+        private boolean ownsAeronClient = false;
+        private Aeron aeron;
         private File archiveDir;
 
         private String controlChannel = AeronArchive.Configuration.controlChannel();
@@ -262,14 +277,46 @@ public final class Archive implements AutoCloseable
                 throw new IllegalStateException("Error handler must be supplied");
             }
 
+            if (null == epochClock)
+            {
+                epochClock = new SystemEpochClock();
+            }
+
+            if (null == aeron)
+            {
+                ownsAeronClient = true;
+
+                aeron = Aeron.connect(
+                    new Aeron.Context()
+                        .errorHandler(errorHandler)
+                        .epochClock(epochClock)
+                        .driverAgentInvoker(mediaDriverAgentInvoker)
+                        .useConductorAgentInvoker(true)
+                        .clientLock(new NoOpLock()));
+
+                if (null == errorCounter)
+                {
+                    final String archiveErrorsLabel = "Archive Errors";
+                    final int length = archiveErrorsLabel.length();
+                    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[length]);
+
+                    errorCounter = aeron.addCounter(
+                        ARCHIVE_ERRORS_TYPE_ID, buffer, 0, 0, buffer, 0, length);
+                }
+            }
+
             if (null == errorCounter)
             {
                 throw new IllegalStateException("Error counter must be supplied");
             }
 
-            if (null == aeronContext)
+            if (null == countedErrorHandler)
             {
-                aeronContext = new Aeron.Context();
+                countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
+                if (ownsAeronClient)
+                {
+                    aeron.context().errorHandler(countedErrorHandler);
+                }
             }
 
             if (null == threadFactory)
@@ -282,11 +329,6 @@ public final class Archive implements AutoCloseable
                 idleStrategySupplier = Configuration.idleStrategySupplier(null);
             }
 
-            if (null == epochClock)
-            {
-                epochClock = new SystemEpochClock();
-            }
-
             if (null == archiveDir)
             {
                 archiveDir = new File(Configuration.archiveDirName());
@@ -297,35 +339,6 @@ public final class Archive implements AutoCloseable
                 throw new IllegalArgumentException(
                     "Failed to create archive dir: " + archiveDir.getAbsolutePath());
             }
-
-            if (null == countedErrorHandler)
-            {
-                countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
-            }
-        }
-
-        /**
-         * Get the Aeron client context used by the Archive.
-         *
-         * @return Aeron client context used by the Archive
-         */
-        public Aeron.Context aeronContext()
-        {
-            return aeronContext;
-        }
-
-        /**
-         * Provide an {@link Aeron.Context} for configuring the connection to Aeron.
-         * <p>
-         * If not provided then a default context will be created.
-         *
-         * @param aeronContext for configuring the connection to Aeron.
-         * @return this for a fluent API.
-         */
-        public Context aeronContext(final Aeron.Context aeronContext)
-        {
-            this.aeronContext = aeronContext;
-            return this;
         }
 
         /**
@@ -726,6 +739,70 @@ public final class Archive implements AutoCloseable
             if (null != archiveDir)
             {
                 IoUtil.delete(archiveDir, false);
+            }
+        }
+
+        /**
+         * {@link Aeron} client for communicating with the local Media Driver.
+         * <p>
+         * This client will be closed when the {@link Archive#close()} or {@link #close()} methods are called if
+         * {@link #ownsAeronClient()} is true.
+         *
+         * @param aeron client for communicating with the local Media Driver.
+         * @return this for a fluent API.
+         * @see Aeron#connect()
+         */
+        public Context aeron(final Aeron aeron)
+        {
+            this.aeron = aeron;
+            return this;
+        }
+
+        /**
+         * {@link Aeron} client for communicating with the local Media Driver.
+         * <p>
+         * If not provided then a default will be established during {@link #conclude()} by calling
+         * {@link Aeron#connect()}.
+         *
+         * @return client for communicating with the local Media Driver.
+         */
+        public Aeron aeron()
+        {
+            return aeron;
+        }
+
+        /**
+         * Does this context own the {@link #aeron()} client and this takes responsibility for closing it?
+         *
+         * @param ownsAeronClient does this context own the {@link #aeron()} client.
+         * @return this for a fluent API.
+         */
+        public Context ownsAeronClient(final boolean ownsAeronClient)
+        {
+            this.ownsAeronClient = ownsAeronClient;
+            return this;
+        }
+
+        /**
+         * Does this context own the {@link #aeron()} client and this takes responsibility for closing it?
+         *
+         * @return does this context own the {@link #aeron()} client and this takes responsibility for closing it?
+         */
+        public boolean ownsAeronClient()
+        {
+            return ownsAeronClient;
+        }
+
+        /**
+         * Close the context and free applicable resources.
+         * <p>
+         * If {@link #ownsAeronClient()} is true then the {@link #aeron()} client will be closed.
+         */
+        public void close()
+        {
+            if (ownsAeronClient)
+            {
+                CloseHelper.close(aeron);
             }
         }
     }

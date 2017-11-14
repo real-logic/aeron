@@ -849,7 +849,7 @@ public final class AeronArchive implements AutoCloseable
         private IdleStrategy idleStrategy;
         private Lock lock;
         private Aeron aeron;
-        private boolean ownsAeronClient = true;
+        private boolean ownsAeronClient = false;
 
         /**
          * Conclude configuration by setting up defaults when specifics are not provided.
@@ -859,6 +859,7 @@ public final class AeronArchive implements AutoCloseable
             if (null == aeron)
             {
                 aeron = Aeron.connect();
+                ownsAeronClient = true;
             }
 
             if (null == idleStrategy)

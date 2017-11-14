@@ -22,7 +22,6 @@ import io.aeron.exceptions.RegistrationException;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.status.StaticStatusIndicator;
 import org.agrona.DirectBuffer;
-import org.agrona.ErrorHandler;
 import org.agrona.ManagedResource;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -60,6 +59,7 @@ class ClientConductor implements Agent, DriverEventsListener
     private String stashedChannel;
     private RegistrationException driverException;
 
+    private final Aeron.Context ctx;
     private final Lock clientLock;
     private final EpochClock epochClock;
     private final NanoClock nanoClock;
@@ -72,15 +72,15 @@ class ClientConductor implements Agent, DriverEventsListener
     private final AvailableImageHandler defaultAvailableImageHandler;
     private final UnsafeBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
-    private final ErrorHandler errorHandler;
     private final AgentInvoker driverAgentInvoker;
 
     ClientConductor(final Aeron.Context ctx)
     {
+        this.ctx = ctx;
+
         clientLock = ctx.clientLock();
         epochClock = ctx.epochClock();
         nanoClock = ctx.nanoClock();
-        errorHandler = ctx.errorHandler();
         counterValuesBuffer = ctx.countersValuesBuffer();
         driverProxy = ctx.driverProxy();
         logBuffersFactory = ctx.logBuffersFactory();
@@ -161,7 +161,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
     void handleError(final Throwable ex)
     {
-        errorHandler.onError(ex);
+        ctx.errorHandler().onError(ex);
     }
 
     ConcurrentPublication addPublication(final String channel, final int streamId)
@@ -320,7 +320,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
                 if (subscription.channelStatusIndicator().id() == statusIndicatorId)
                 {
-                    errorHandler.onError(new ChannelEndpointException(statusIndicatorId, message));
+                    handleError(new ChannelEndpointException(statusIndicatorId, message));
                 }
             }
             else if (resource instanceof Publication)
@@ -329,7 +329,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
                 if (publication.channelStatusIndicator().id() == statusIndicatorId)
                 {
-                    errorHandler.onError(new ChannelEndpointException(statusIndicatorId, message));
+                    handleError(new ChannelEndpointException(statusIndicatorId, message));
                 }
             }
         }
@@ -412,7 +412,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 sessionId,
                 new UnsafeBufferPosition(counterValuesBuffer, subscriberPositionId),
                 logBuffers(correlationId, logFileName),
-                errorHandler,
+                ctx.errorHandler(),
                 sourceIdentity,
                 correlationId);
 
@@ -426,7 +426,7 @@ class ClientConductor implements Agent, DriverEventsListener
             }
             catch (final Throwable ex)
             {
-                errorHandler.onError(ex);
+                handleError(ex);
             }
 
             subscription.addImage(image);
@@ -451,7 +451,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 }
                 catch (final Throwable ex)
                 {
-                    errorHandler.onError(ex);
+                    handleError(ex);
                 }
             }
         }
@@ -516,7 +516,7 @@ class ClientConductor implements Agent, DriverEventsListener
         }
         catch (final Throwable throwable)
         {
-            errorHandler.onError(throwable);
+            handleError(throwable);
 
             if (isClientApiCall(correlationId))
             {

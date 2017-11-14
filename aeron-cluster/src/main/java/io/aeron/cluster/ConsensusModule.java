@@ -26,10 +26,12 @@ import org.agrona.concurrent.status.AtomicCounter;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
+import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+
 public final class ConsensusModule implements AutoCloseable
 {
     private final Context ctx;
-    private final Aeron aeron;
     private final AgentRunner conductorRunner;
 
     private ConsensusModule(final Context ctx)
@@ -37,15 +39,7 @@ public final class ConsensusModule implements AutoCloseable
         this.ctx = ctx;
         ctx.conclude();
 
-        ctx.aeronContext()
-            .errorHandler(ctx.countedErrorHandler())
-            .driverAgentInvoker(ctx.mediaDriverAgentInvoker())
-            .useConductorAgentInvoker(true)
-            .clientLock(new NoOpLock());
-
-        aeron = Aeron.connect(ctx.aeronContext());
-
-        final SequencerAgent conductor = new SequencerAgent(aeron, ctx);
+        final SequencerAgent conductor = new SequencerAgent(ctx.aeron(), ctx);
         conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
     }
 
@@ -89,11 +83,14 @@ public final class ConsensusModule implements AutoCloseable
     public void close()
     {
         CloseHelper.close(conductorRunner);
-        CloseHelper.close(aeron);
+        CloseHelper.close(ctx);
     }
 
-    public static class Context
+    public static class Context implements AutoCloseable
     {
+        private boolean ownsAeronClient = false;
+        private Aeron aeron;
+
         private String ingressChannel = AeronCluster.Configuration.ingressChannel();
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
         private String logChannel = ClusteredServiceContainer.Configuration.logChannel();
@@ -110,13 +107,55 @@ public final class ConsensusModule implements AutoCloseable
         private CountedErrorHandler countedErrorHandler;
 
         private AgentInvoker mediaDriverAgentInvoker;
-        private Aeron.Context aeronContext;
 
         public void conclude()
         {
-            if (null == aeronContext)
+            if (null == errorHandler)
             {
-                aeronContext = new Aeron.Context();
+                throw new IllegalStateException("Error handler must be supplied");
+            }
+
+            if (null == epochClock)
+            {
+                epochClock = new SystemEpochClock();
+            }
+
+            if (null == aeron)
+            {
+                ownsAeronClient = true;
+
+                aeron = Aeron.connect(
+                    new Aeron.Context()
+                        .errorHandler(errorHandler)
+                        .epochClock(epochClock)
+                        .driverAgentInvoker(mediaDriverAgentInvoker)
+                        .useConductorAgentInvoker(true)
+                        .clientLock(new NoOpLock()));
+
+                if (null == errorCounter)
+                {
+                    final String errorsLabel = "Cluster errors";
+                    final int length = errorsLabel.length();
+                    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[SIZE_OF_INT + length]);
+                    buffer.putStringAscii(0, errorsLabel);
+
+                    errorCounter = aeron.addCounter(
+                        SYSTEM_COUNTER_TYPE_ID, buffer, 0, 0, buffer, 0, length);
+                }
+            }
+
+            if (null == errorCounter)
+            {
+                throw new IllegalStateException("Error counter must be supplied if aeron client is");
+            }
+
+            if (null == countedErrorHandler)
+            {
+                countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
+                if (ownsAeronClient)
+                {
+                    aeron.context().errorHandler(countedErrorHandler);
+                }
             }
 
             if (null == threadFactory)
@@ -127,26 +166,6 @@ public final class ConsensusModule implements AutoCloseable
             if (null == idleStrategySupplier)
             {
                 idleStrategySupplier = ClusteredServiceContainer.Configuration.idleStrategySupplier(null);
-            }
-
-            if (null == epochClock)
-            {
-                epochClock = new SystemEpochClock();
-            }
-
-            if (null == errorHandler)
-            {
-                throw new IllegalStateException("Error handler must be supplied");
-            }
-
-            if (null == errorCounter)
-            {
-                throw new IllegalStateException("Error counter must be supplied");
-            }
-
-            if (null == countedErrorHandler)
-            {
-                countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
             }
         }
 
@@ -449,27 +468,67 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the Aeron client context used by the Archive.
+         * {@link Aeron} client for communicating with the local Media Driver.
+         * <p>
+         * This client will be closed when the {@link ConsensusModule#close()} or {@link #close()} methods are called
+         * if {@link #ownsAeronClient()} is true.
          *
-         * @return Aeron client context used by the Archive
+         * @param aeron client for communicating with the local Media Driver.
+         * @return this for a fluent API.
+         * @see Aeron#connect()
          */
-        public Aeron.Context aeronContext()
+        public Context aeron(final Aeron aeron)
         {
-            return aeronContext;
+            this.aeron = aeron;
+            return this;
         }
 
         /**
-         * Provide an {@link Aeron.Context} for configuring the connection to Aeron.
+         * {@link Aeron} client for communicating with the local Media Driver.
          * <p>
-         * If not provided then a default context will be created.
+         * If not provided then a default will be established during {@link #conclude()} by calling
+         * {@link Aeron#connect()}.
          *
-         * @param aeronContext for configuring the connection to Aeron.
+         * @return client for communicating with the local Media Driver.
+         */
+        public Aeron aeron()
+        {
+            return aeron;
+        }
+
+        /**
+         * Does this context own the {@link #aeron()} client and this takes responsibility for closing it?
+         *
+         * @param ownsAeronClient does this context own the {@link #aeron()} client.
          * @return this for a fluent API.
          */
-        public Context aeronContext(final Aeron.Context aeronContext)
+        public Context ownsAeronClient(final boolean ownsAeronClient)
         {
-            this.aeronContext = aeronContext;
+            this.ownsAeronClient = ownsAeronClient;
             return this;
+        }
+
+        /**
+         * Does this context own the {@link #aeron()} client and this takes responsibility for closing it?
+         *
+         * @return does this context own the {@link #aeron()} client and this takes responsibility for closing it?
+         */
+        public boolean ownsAeronClient()
+        {
+            return ownsAeronClient;
+        }
+
+        /**
+         * Close the context and free applicable resources.
+         * <p>
+         * If {@link #ownsAeronClient()} is true then the {@link #aeron()} client will be closed.
+         */
+        public void close()
+        {
+            if (ownsAeronClient)
+            {
+                CloseHelper.close(aeron);
+            }
         }
     }
 }

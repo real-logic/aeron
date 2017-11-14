@@ -296,10 +296,10 @@ public final class Archive implements AutoCloseable
 
                 if (null == errorCounter)
                 {
-                    final String archiveErrorsLabel = "Archive errors";
-                    final int length = archiveErrorsLabel.length();
+                    final String errorsLabel = "Archive errors";
+                    final int length = errorsLabel.length();
                     final UnsafeBuffer buffer = new UnsafeBuffer(new byte[SIZE_OF_INT + length]);
-                    buffer.putStringAscii(0, archiveErrorsLabel);
+                    buffer.putStringAscii(0, errorsLabel);
 
                     errorCounter = aeron.addCounter(
                         SYSTEM_COUNTER_TYPE_ID, buffer, 0, 0, buffer, 0, length);
@@ -308,7 +308,7 @@ public final class Archive implements AutoCloseable
 
             if (null == errorCounter)
             {
-                throw new IllegalStateException("Error counter must be supplied");
+                throw new IllegalStateException("Error counter must be supplied if aeron client is");
             }
 
             if (null == countedErrorHandler)

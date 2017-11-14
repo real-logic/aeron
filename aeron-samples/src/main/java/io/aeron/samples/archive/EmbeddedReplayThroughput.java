@@ -111,6 +111,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
     public void close()
     {
         CloseHelper.close(aeronArchive);
+        CloseHelper.close(aeron);
         CloseHelper.close(archivingMediaDriver);
 
         archivingMediaDriver.archive().context().deleteArchiveDirectory();

@@ -29,6 +29,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.SystemUtil.getSizeAsInt;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
@@ -297,7 +298,8 @@ public final class Archive implements AutoCloseable
                 {
                     final String archiveErrorsLabel = "Archive errors";
                     final int length = archiveErrorsLabel.length();
-                    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[length]);
+                    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[SIZE_OF_INT + length]);
+                    buffer.putStringAscii(0, archiveErrorsLabel);
 
                     errorCounter = aeron.addCounter(
                         SYSTEM_COUNTER_TYPE_ID, buffer, 0, 0, buffer, 0, length);

@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.CommonContext.SPY_PREFIX;
@@ -82,16 +81,14 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         this.aeron = aeron;
         this.ctx = ctx;
 
-        aeronAgentInvoker = aeron.conductorAgentInvoker();
-        Objects.requireNonNull(aeronAgentInvoker, "An aeron invoker should be present in the context");
-
-        maxConcurrentRecordings = ctx.maxConcurrentRecordings();
-        maxConcurrentReplays = ctx.maxConcurrentReplays();
-        epochClock = ctx.epochClock();
+        aeronAgentInvoker = ctx.ownsAeronClient() ? aeron.conductorAgentInvoker() : null;
         driverAgentInvoker = ctx.mediaDriverAgentInvoker();
+        epochClock = ctx.epochClock();
         archiveDir = ctx.archiveDir();
         archiveDirChannel = channelForDirectorySync(archiveDir, ctx.fileSyncLevel());
         controlResponseProxy = new ControlResponseProxy();
+        maxConcurrentRecordings = ctx.maxConcurrentRecordings();
+        maxConcurrentReplays = ctx.maxConcurrentReplays();
 
         aeron.addSubscription(ctx.controlChannel(), ctx.controlStreamId(), this, null);
 
@@ -138,7 +135,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         int workCount = 0;
 
         workCount += null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
-        workCount += aeronAgentInvoker.invoke();
+        workCount += null != aeronAgentInvoker ? aeronAgentInvoker.invoke() : 0;
 
         return workCount;
     }

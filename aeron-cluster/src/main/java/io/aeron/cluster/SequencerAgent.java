@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -35,6 +36,7 @@ class SequencerAgent implements Agent
 
     private long nextSessionId = 1;
     private final long pendingSessionTimeoutMs = TimeUnit.SECONDS.toMillis(5);
+    private final ConsensusModule.Context ctx;
     private final Aeron aeron;
     private final AgentInvoker aeronClientInvoker;
     private final EpochClock epochClock;
@@ -57,11 +59,13 @@ class SequencerAgent implements Agent
     // TODO: Active session limit
     // TODO: Timeout inactive sessions and clean up closed sessions that fail to log.
 
-    SequencerAgent(final Aeron aeron, final ConsensusModule.Context ctx)
+    SequencerAgent(final ConsensusModule.Context ctx)
     {
-        this.aeron = aeron;
-        this.aeronClientInvoker = aeron.conductorAgentInvoker();
+        this.ctx = ctx;
+        this.aeron = ctx.aeron();
         this.epochClock = ctx.epochClock();
+
+        aeronClientInvoker = ctx.ownsAeronClient() ? aeron.conductorAgentInvoker() : null;
 
         final Subscription ingressSubscription = aeron.addSubscription(ctx.ingressChannel(), ctx.ingressStreamId());
         ingressAdapter = new IngressAdapter(this, ingressSubscription, FRAGMENT_POLL_LIMIT);
@@ -73,6 +77,21 @@ class SequencerAgent implements Agent
             TIMER_POLL_LIMIT, FRAGMENT_POLL_LIMIT, this, timerSubscription, cachedEpochClock);
     }
 
+    public void onClose()
+    {
+        if (!ctx.ownsAeronClient())
+        {
+            for (final ClusterSession session : clusterSessionByIdMap.values())
+            {
+                session.close();
+            }
+
+            CloseHelper.close(ingressAdapter);
+            CloseHelper.close(logPublication);
+            CloseHelper.close(timerService);
+        }
+    }
+
     public int doWork() throws Exception
     {
         int workCount = 0;
@@ -80,7 +99,11 @@ class SequencerAgent implements Agent
         final long nowMs = epochClock.time();
         cachedEpochClock.update(nowMs);
 
-        workCount += aeronClientInvoker.invoke();
+        if (null != aeronClientInvoker)
+        {
+            workCount += aeronClientInvoker.invoke();
+        }
+
         workCount += processPendingSessions(pendingSessions, nowMs);
         workCount += ingressAdapter.poll();
         workCount += timerService.poll(nowMs);

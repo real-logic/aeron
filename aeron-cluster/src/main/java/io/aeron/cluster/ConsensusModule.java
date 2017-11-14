@@ -39,7 +39,7 @@ public final class ConsensusModule implements AutoCloseable
         this.ctx = ctx;
         ctx.conclude();
 
-        final SequencerAgent conductor = new SequencerAgent(ctx.aeron(), ctx);
+        final SequencerAgent conductor = new SequencerAgent(ctx);
         conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
     }
 
@@ -358,9 +358,9 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the {@link EpochClock} to be used for tracking wall clock time when interacting with the archive.
+         * Set the {@link EpochClock} to be used for tracking wall clock time.
          *
-         * @param clock {@link EpochClock} to be used for tracking wall clock time when interacting with the archive.
+         * @param clock {@link EpochClock} to be used for tracking wall clock time.
          * @return this for a fluent API.
          */
         public Context epochClock(final EpochClock clock)
@@ -370,9 +370,9 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the {@link EpochClock} to used for tracking wall clock time within the archive.
+         * Get the {@link EpochClock} to used for tracking wall clock time.
          *
-         * @return the {@link EpochClock} to used for tracking wall clock time within the archive.
+         * @return the {@link EpochClock} to used for tracking wall clock time.
          */
         public EpochClock epochClock()
         {
@@ -380,9 +380,9 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the {@link ErrorHandler} to be used by the Archive.
+         * Get the {@link ErrorHandler} to be used by the Consensus Module.
          *
-         * @return the {@link ErrorHandler} to be used by the Archive.
+         * @return the {@link ErrorHandler} to be used by the Consensus Module.
          */
         public ErrorHandler errorHandler()
         {
@@ -390,9 +390,9 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the {@link ErrorHandler} to be used by the Archive.
+         * Set the {@link ErrorHandler} to be used by the Consensus Module.
          *
-         * @param errorHandler the error handler to be used by the Archive.
+         * @param errorHandler the error handler to be used by the Consensus Module.
          * @return this for a fluent API
          */
         public Context errorHandler(final ErrorHandler errorHandler)
@@ -402,9 +402,9 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the error counter that will record the number of errors the archive has observed.
+         * Get the error counter that will record the number of errors observed.
          *
-         * @return the error counter that will record the number of errors the archive has observed.
+         * @return the error counter that will record the number of errors observed.
          */
         public AtomicCounter errorCounter()
         {
@@ -412,9 +412,9 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the error counter that will record the number of errors the cluster node has observed.
+         * Set the error counter that will record the number of errors observed.
          *
-         * @param errorCounter the error counter that will record the number of errors the cluster node has observed.
+         * @param errorCounter the error counter that will record the number of errors observed.
          * @return this for a fluent API.
          */
         public Context errorCounter(final AtomicCounter errorCounter)

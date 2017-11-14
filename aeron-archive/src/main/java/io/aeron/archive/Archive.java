@@ -479,9 +479,9 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * Set the {@link EpochClock} to be used for tracking wall clock time when interacting with the archive.
+         * Set the {@link EpochClock} to be used for tracking wall clock time.
          *
-         * @param clock {@link EpochClock} to be used for tracking wall clock time when interacting with the archive.
+         * @param clock {@link EpochClock} to be used for tracking wall clock time.
          * @return this for a fluent API.
          */
         public Context epochClock(final EpochClock clock)
@@ -491,9 +491,9 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * Get the {@link EpochClock} to used for tracking wall clock time within the archive.
+         * Get the {@link EpochClock} to used for tracking wall clock time.
          *
-         * @return the {@link EpochClock} to used for tracking wall clock time within the archive.
+         * @return the {@link EpochClock} to used for tracking wall clock time.
          */
         public EpochClock epochClock()
         {
@@ -667,9 +667,9 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * Get the error counter that will record the number of errors the archive has observed.
+         * Get the error counter that will record the number of errors observed.
          *
-         * @return the error counter that will record the number of errors the archive has observed.
+         * @return the error counter that will record the number of errors observed.
          */
         public AtomicCounter errorCounter()
         {
@@ -677,9 +677,9 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * Set the error counter that will record the number of errors the archive has observed.
+         * Set the error counter that will record the number of errors observed.
          *
-         * @param errorCounter the error counter that will record the number of errors the archive has observed.
+         * @param errorCounter the error counter that will record the number of errors observed.
          * @return this for a fluent API.
          */
         public Context errorCounter(final AtomicCounter errorCounter)

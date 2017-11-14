@@ -20,9 +20,10 @@ import io.aeron.Subscription;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 
-public class IngressAdapter implements ControlledFragmentHandler
+public class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionConnectRequestDecoder connectRequestDecoder = new SessionConnectRequestDecoder();
@@ -41,6 +42,11 @@ public class IngressAdapter implements ControlledFragmentHandler
         this.sequencerAgent = sequencerAgent;
         this.subscription = subscription;
         this.fragmentLimit = fragmentLimit;
+    }
+
+    public void close()
+    {
+        CloseHelper.close(subscription);
     }
 
     public int poll()

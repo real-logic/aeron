@@ -21,6 +21,7 @@ import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.ScheduleTimerRequestDecoder;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import org.agrona.CloseHelper;
 import org.agrona.DeadlineTimerWheel;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2LongHashMap;
@@ -28,7 +29,7 @@ import org.agrona.concurrent.EpochClock;
 
 import java.util.concurrent.TimeUnit;
 
-public class TimerService implements FragmentHandler, DeadlineTimerWheel.TimerHandler
+public class TimerService implements FragmentHandler, AutoCloseable, DeadlineTimerWheel.TimerHandler
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ScheduleTimerRequestDecoder scheduleTimerRequestDecoder = new ScheduleTimerRequestDecoder();
@@ -56,6 +57,11 @@ public class TimerService implements FragmentHandler, DeadlineTimerWheel.TimerHa
         this.sequencerAgent = sequencerAgent;
         this.subscription = subscription;
         this.epochClock = epochClock;
+    }
+
+    public void close()
+    {
+        CloseHelper.close(subscription);
     }
 
     public int poll(final long nowMs)

@@ -28,7 +28,7 @@ import java.io.File;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
-import static io.aeron.archive.Archive.Configuration.ARCHIVE_ERRORS_TYPE_ID;
+import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static org.agrona.SystemUtil.getSizeAsInt;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
@@ -156,7 +156,6 @@ public final class Archive implements AutoCloseable
     public static class Configuration
     {
         public static final int ARCHIVE_RECORDING_POSITION_TYPE_ID = 100;
-        public static final int ARCHIVE_ERRORS_TYPE_ID = 101;
 
         public static final String ARCHIVE_DIR_PROP_NAME = "aeron.archive.dir";
         public static final String ARCHIVE_DIR_DEFAULT = "archive";
@@ -296,12 +295,12 @@ public final class Archive implements AutoCloseable
 
                 if (null == errorCounter)
                 {
-                    final String archiveErrorsLabel = "Archive Errors";
+                    final String archiveErrorsLabel = "Archive errors";
                     final int length = archiveErrorsLabel.length();
                     final UnsafeBuffer buffer = new UnsafeBuffer(new byte[length]);
 
                     errorCounter = aeron.addCounter(
-                        ARCHIVE_ERRORS_TYPE_ID, buffer, 0, 0, buffer, 0, length);
+                        SYSTEM_COUNTER_TYPE_ID, buffer, 0, 0, buffer, 0, length);
                 }
             }
 

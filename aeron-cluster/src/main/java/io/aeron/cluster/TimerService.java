@@ -74,11 +74,12 @@ public class TimerService implements FragmentHandler, AutoCloseable, DeadlineTim
         return workCount;
     }
 
-    public void onExpiry(final TimeUnit timeUnit, final long now, final long timerId)
+    public boolean onExpiry(final TimeUnit timeUnit, final long now, final long timerId)
     {
         final long correlationId = correlationIdByTimerIdMap.remove(timerId);
         timerIdByCorrelationIdMap.remove(correlationId);
-        sequencerAgent.onExpireTimer(correlationId, now);
+
+        return sequencerAgent.onExpireTimer(correlationId, now);
     }
 
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)

@@ -303,7 +303,7 @@ class SequencerAgent implements Agent
         return false;
     }
 
-    public void onExpireTimer(final long correlationId, final long nowMs)
+    public boolean onExpireTimer(final long correlationId, final long nowMs)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + TimerEventEncoder.BLOCK_LENGTH;
 
@@ -318,12 +318,12 @@ class SequencerAgent implements Agent
                     .timestamp(nowMs);
 
                 bufferClaim.commit();
-                return;
+
+                return true;
             }
         }
         while (--attempts > 0);
 
-        // TODO: queue unsuccessful sends.
-        throw new IllegalStateException("Unable to append to log");
+        return false;
     }
 }

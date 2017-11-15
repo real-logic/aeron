@@ -43,7 +43,6 @@ import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY;
-import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.agrona.BitUtil.align;
 import static org.agrona.IoUtil.mapNewFile;
@@ -838,29 +837,6 @@ public final class MediaDriver implements AutoCloseable
         public Context spiesSimulateConnection(final boolean spiesSimulateConnection)
         {
             this.spiesSimulateConnection = spiesSimulateConnection;
-            return this;
-        }
-
-        /**
-         * Maximum length for a term buffer in the log which must be a power of two.
-         *
-         * @return maximum length for a term buffer in the log which must be a power of two.
-         */
-        @Deprecated
-        public int maxTermBufferLength()
-        {
-            return TERM_MAX_LENGTH;
-        }
-
-        /**
-         * Maximum length for a term buffer in the log which must be a power of two.
-         *
-         * @param maxTermBufferLength for a term buffer in the log which must be a power of two.
-         * @return this for a fluent API.
-         */
-        @Deprecated
-        public Context maxTermBufferLength(final int maxTermBufferLength)
-        {
             return this;
         }
 

@@ -66,6 +66,7 @@ public class SimplePublisher
                 if (System.nanoTime() >= deadlineNs)
                 {
                     System.out.println("Failed to connect to subscriber");
+                    return;
                 }
 
                 Thread.sleep(1);

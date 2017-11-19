@@ -25,8 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * A very simple Aeron publisher application
- * Publishes a fixed size message on a fixed channel and stream. Upon completion
- * of message send, it lingers for 5 seconds before exiting.
+ * Publishes a fixed size message on a fixed channel and stream.
  */
 public class SimplePublisher
 {

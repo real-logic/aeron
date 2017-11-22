@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.Aeron;
+import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
@@ -241,6 +242,7 @@ public final class Archive implements AutoCloseable
     public static class Context implements AutoCloseable
     {
         private boolean ownsAeronClient = false;
+        private String aeronDirectoryName = CommonContext.AERON_DIR_PROP_DEFAULT;
         private Aeron aeron;
         private File archiveDir;
 
@@ -288,6 +290,7 @@ public final class Archive implements AutoCloseable
 
                 aeron = Aeron.connect(
                     new Aeron.Context()
+                        .aeronDirectoryName(aeronDirectoryName)
                         .errorHandler(errorHandler)
                         .epochClock(epochClock)
                         .driverAgentInvoker(mediaDriverAgentInvoker)
@@ -741,6 +744,28 @@ public final class Archive implements AutoCloseable
             {
                 IoUtil.delete(archiveDir, false);
             }
+        }
+
+        /**
+         * Set the top level Aeron directory used for communication between the Aeron client and Media Driver.
+         *
+         * @param aeronDirectoryName the top level Aeron directory.
+         * @return this for a fluent API.
+         */
+        public Context aeronDirectoryName(final String aeronDirectoryName)
+        {
+            this.aeronDirectoryName = aeronDirectoryName;
+            return this;
+        }
+
+        /**
+         * Get the top level Aeron directory used for communication between the Aeron client and Media Driver.
+         *
+         * @return The top level Aeron directory.
+         */
+        public String aeronDirectoryName()
+        {
+            return aeronDirectoryName;
         }
 
         /**

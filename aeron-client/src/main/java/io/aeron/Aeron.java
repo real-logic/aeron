@@ -29,7 +29,6 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -342,7 +341,7 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
-     * Create and return a {@link CountersReader} for the Aeron media driver counters.
+     * Get the {@link CountersReader} for the Aeron media driver counters.
      *
      * @return new {@link CountersReader} for the Aeron media driver in use.
      */
@@ -353,7 +352,7 @@ public final class Aeron implements AutoCloseable
             throw new IllegalStateException("Client is closed");
         }
 
-        return new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer(), StandardCharsets.US_ASCII);
+        return conductor.countersReader();
     }
 
     /**

@@ -22,7 +22,7 @@ import org.agrona.concurrent.status.CountersReader;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
- * Allocates {@link AtomicCounter} indicating channel endpoint status.
+ * Status for an Aeron media channel for a {@link io.aeron.Publication} or {@link io.aeron.Subscription}.
  */
 public class ChannelEndpointStatus
 {
@@ -47,7 +47,7 @@ public class ChannelEndpointStatus
     public static final long CLOSING = 2;
 
     /**
-     * No counter ID is allocated.
+     * No counter ID is allocated yet.
      */
     public static final int NO_ID_ALLOCATED = -1;
 
@@ -68,14 +68,17 @@ public class ChannelEndpointStatus
         {
             return "INITIALIZING";
         }
+
         if (ERRORED == status)
         {
             return "ERRORED";
         }
+
         if (ACTIVE == status)
         {
             return "ACTIVE";
         }
+
         if (CLOSING == status)
         {
             return "CLOSING";

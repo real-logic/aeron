@@ -15,7 +15,6 @@
  */
 package io.aeron;
 
-import org.agrona.concurrent.status.StatusIndicatorReader;
 import org.junit.Before;
 import org.junit.Test;
 import io.aeron.logbuffer.FragmentHandler;
@@ -53,7 +52,6 @@ public class SubscriptionTest
     private final Image imageTwoMock = mock(Image.class);
     private final AvailableImageHandler availableImageHandlerMock = mock(AvailableImageHandler.class);
     private final UnavailableImageHandler unavailableImageHandlerMock = mock(UnavailableImageHandler.class);
-    private final StatusIndicatorReader statusIndicatorReaderMock = mock(StatusIndicatorReader.class);
 
     private Subscription subscription;
 
@@ -72,8 +70,7 @@ public class SubscriptionTest
             STREAM_ID_1,
             SUBSCRIPTION_CORRELATION_ID,
             availableImageHandlerMock,
-            unavailableImageHandlerMock,
-            statusIndicatorReaderMock);
+            unavailableImageHandlerMock);
     }
 
     @Test

@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
 import org.agrona.concurrent.status.StatusIndicatorReader;
@@ -84,7 +85,7 @@ public class PublicationTest
             STREAM_ID_1,
             SESSION_ID_1,
             publicationLimit,
-            statusIndicatorReader,
+            ChannelEndpointStatus.NO_ID_ALLOCATED,
             logBuffers,
             CORRELATION_ID,
             CORRELATION_ID);

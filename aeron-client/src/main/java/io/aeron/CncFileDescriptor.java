@@ -68,7 +68,7 @@ public class CncFileDescriptor
 {
     public static final String CNC_FILE = "cnc.dat";
 
-    public static final int CNC_VERSION = 9;
+    public static final int CNC_VERSION = 10;
 
     public static final int CNC_VERSION_FIELD_OFFSET;
     public static final int TO_DRIVER_BUFFER_LENGTH_FIELD_OFFSET;

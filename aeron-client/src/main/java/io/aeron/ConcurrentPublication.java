@@ -19,7 +19,6 @@ import io.aeron.logbuffer.*;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
-import org.agrona.concurrent.status.StatusIndicatorReader;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 
@@ -46,7 +45,7 @@ public class ConcurrentPublication extends Publication
         final int streamId,
         final int sessionId,
         final ReadablePosition positionLimit,
-        final StatusIndicatorReader channelStatusIndicator,
+        final int channelStatusId,
         final LogBuffers logBuffers,
         final long originalRegistrationId,
         final long registrationId)
@@ -57,7 +56,7 @@ public class ConcurrentPublication extends Publication
             streamId,
             sessionId,
             positionLimit,
-            channelStatusIndicator,
+            channelStatusId,
             logBuffers,
             originalRegistrationId,
             registrationId,

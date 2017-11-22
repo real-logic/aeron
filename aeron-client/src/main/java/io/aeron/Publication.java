@@ -19,7 +19,6 @@ import io.aeron.logbuffer.*;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
-import org.agrona.concurrent.status.StatusIndicatorReader;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -74,6 +73,7 @@ public abstract class Publication implements AutoCloseable
     protected final long originalRegistrationId;
     protected final long registrationId;
     protected final long maxPossiblePosition;
+    protected final int channelStatusId;
     protected final int streamId;
     protected final int sessionId;
     protected final int maxMessageLength;
@@ -89,7 +89,6 @@ public abstract class Publication implements AutoCloseable
     protected final LogBuffers logBuffers;
     protected final ClientConductor conductor;
     protected final String channel;
-    protected final StatusIndicatorReader channelStatusIndicator;
 
     protected Publication(
         final ClientConductor clientConductor,
@@ -97,7 +96,7 @@ public abstract class Publication implements AutoCloseable
         final int streamId,
         final int sessionId,
         final ReadablePosition positionLimit,
-        final StatusIndicatorReader channelStatusIndicator,
+        final int channelStatusId,
         final LogBuffers logBuffers,
         final long originalRegistrationId,
         final long registrationId,
@@ -117,7 +116,7 @@ public abstract class Publication implements AutoCloseable
         this.originalRegistrationId = originalRegistrationId;
         this.registrationId = registrationId;
         this.positionLimit = positionLimit;
-        this.channelStatusIndicator = channelStatusIndicator;
+        this.channelStatusId = channelStatusId;
         this.logBuffers = logBuffers;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termBufferLength);
         this.headerWriter = new HeaderWriter(defaultFrameHeader(logMetaDataBuffer));
@@ -285,6 +284,20 @@ public abstract class Publication implements AutoCloseable
     }
 
     /**
+     * Get the status of the media channel for this Publication.
+     * <p>
+     * The status will be {@link io.aeron.status.ChannelEndpointStatus#ERRORED} if a socket exception occurs on setup
+     * and {@link io.aeron.status.ChannelEndpointStatus#ACTIVE} if all is well.
+     *
+     * @return status for the channel.
+     * @see io.aeron.status.ChannelEndpointStatus
+     */
+    public long channelStatus()
+    {
+        return conductor.channelStatus(channelStatusId);
+    }
+
+    /**
      * Get the current position to which the publication has advanced for this stream.
      *
      * @return the current position to which the publication has advanced for this stream.
@@ -318,16 +331,6 @@ public abstract class Publication implements AutoCloseable
         }
 
         return positionLimit.getVolatile();
-    }
-
-    /**
-     * Get the status indicator assigned to the channel of this {@link Publication}
-     *
-     * @return status indicator reader for the channel
-     */
-    public StatusIndicatorReader channelStatusIndicator()
-    {
-        return channelStatusIndicator;
     }
 
     /**
@@ -474,6 +477,11 @@ public abstract class Publication implements AutoCloseable
             isClosed = true;
             conductor.asyncReleasePublication(this);
         }
+    }
+
+    int channelStatusId()
+    {
+        return channelStatusId;
     }
 
     LogBuffers logBuffers()

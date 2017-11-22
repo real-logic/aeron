@@ -1309,6 +1309,34 @@ public class DriverConductorTest
         verify(spyCountersManager, never()).free(captor.getValue());
     }
 
+    @Test
+    public void shouldInformClientsOfRemovedCounter() throws Exception
+    {
+        final long registrationId =
+            driverProxy.addCounter(
+                COUNTER_TYPE_ID,
+                counterKeyAndLabel,
+                COUNTER_KEY_OFFSET,
+                COUNTER_KEY_LENGTH,
+                counterKeyAndLabel,
+                COUNTER_LABEL_OFFSET,
+                COUNTER_LABEL_LENGTH);
+
+        driverConductor.doWork();
+
+        final long removeCorrelationId = driverProxy.removeCounter(registrationId);
+        driverConductor.doWork();
+
+        final ArgumentCaptor<Integer> captor = ArgumentCaptor.forClass(Integer.class);
+
+        final InOrder inOrder = inOrder(mockClientProxy);
+        inOrder.verify(mockClientProxy).onCounterReady(eq(registrationId), captor.capture());
+        inOrder.verify(mockClientProxy).operationSucceeded(removeCorrelationId);
+        inOrder.verify(mockClientProxy).onUnavailableCounter(eq(registrationId), captor.capture());
+
+        verify(spyCountersManager).free(captor.getValue());
+    }
+
     private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer) throws Exception
     {
         while (!condition.getAsBoolean())

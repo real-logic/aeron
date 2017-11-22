@@ -245,6 +245,19 @@ void aeron_driver_receiver_on_add_endpoint(void *clientd, void *command)
         {
             AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_add_endpoint: %s", aeron_errmsg());
         }
+
+        if (aeron_receive_channel_endpoint_send_sm(
+            endpoint,
+            &udp_channel->local_control,
+            0,
+            0,
+            0,
+            0,
+            0,
+            AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG) < 0)
+        {
+            AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_add_endpoint send SM: %s", aeron_errmsg());
+        }
     }
 
     aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, command);

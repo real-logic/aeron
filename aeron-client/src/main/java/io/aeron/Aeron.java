@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.status.ReadableCounter;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
@@ -29,7 +30,6 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -342,7 +342,7 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
-     * Create and return a {@link CountersReader} for the Aeron media driver counters.
+     * Get the {@link CountersReader} for the Aeron media driver counters.
      *
      * @return new {@link CountersReader} for the Aeron media driver in use.
      */
@@ -353,7 +353,7 @@ public final class Aeron implements AutoCloseable
             throw new IllegalStateException("Client is closed");
         }
 
-        return new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer(), StandardCharsets.US_ASCII);
+        return conductor.countersReader();
     }
 
     /**
@@ -391,6 +391,28 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
+     * Add a {@link ReadableCounter} for the already allocated counter as identified by registration Id and counter Id.
+     *
+     * @see Context#availableCounterHandler(AvailableCounterHandler)
+     *
+     * @param registrationId for the counter.
+     * @param counterId      for the counter.
+     * @return the read-only counter.
+     */
+    public ReadableCounter addReadableCounter(final long registrationId, final int counterId)
+    {
+        clientLock.lock();
+        try
+        {
+            return conductor.addReadableCounter(registrationId, counterId);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    /**
      * This class provides configuration for the {@link Aeron} class via the {@link Aeron#connect(Aeron.Context)}
      * method and its overloads. It gives applications some control over the interactions with the Aeron Media Driver.
      * It can also set up error handling as well as application callbacks for image information from the
@@ -418,6 +440,8 @@ public final class Aeron implements AutoCloseable
         private ErrorHandler errorHandler;
         private AvailableImageHandler availableImageHandler;
         private UnavailableImageHandler unavailableImageHandler;
+        private AvailableCounterHandler availableCounterHandler;
+        private UnavailableCounterHandler unavailableCounterHandler;
         private long keepAliveInterval = KEEPALIVE_INTERVAL_NS;
         private long interServiceTimeout = 0;
         private ThreadFactory threadFactory = Thread::new;
@@ -817,6 +841,50 @@ public final class Aeron implements AutoCloseable
         public UnavailableImageHandler unavailableImageHandler()
         {
             return unavailableImageHandler;
+        }
+
+        /**
+         * Setup a callback for when a counter is available.
+         *
+         * @param handler to be called for handling available counter notifications.
+         * @return this Aeron.Context for fluent API.
+         */
+        public Context availableCounterHandler(final AvailableCounterHandler handler)
+        {
+            this.availableCounterHandler = handler;
+            return this;
+        }
+
+        /**
+         * Get the callback handler for when a counter is available.
+         *
+         * @return the callback handler for when a counter is available.
+         */
+        public AvailableCounterHandler availableCounterHandler()
+        {
+            return this.availableCounterHandler;
+        }
+
+        /**
+         * Setup a callback for when a counter is unavailable.
+         *
+         * @param handler to be called for handling unavailable counter notifications.
+         * @return this Aeron.Context for fluent API.
+         */
+        public Context unavailableCounterHandler(final UnavailableCounterHandler handler)
+        {
+            this.unavailableCounterHandler = handler;
+            return this;
+        }
+
+        /**
+         * Get the callback handler for when a counter is unavailable.
+         *
+         * @return the callback handler for when a counter is unavailable.
+         */
+        public UnavailableCounterHandler unavailableCounterHandler()
+        {
+            return this.unavailableCounterHandler;
         }
 
         /**

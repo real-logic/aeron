@@ -23,7 +23,7 @@
 namespace aeron { namespace command {
 
 /**
- * Message to denote that a Counter has been successfully set up.
+ * Message to denote that a Counter has been successfully set up or removed.
  *
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -36,22 +36,22 @@ namespace aeron { namespace command {
  */
 #pragma pack(push)
 #pragma pack(4)
-struct CounterReadyDefn
+struct CounterUpdateDefn
 {
     std::int64_t correlationId;
     std::int32_t counterId;
 };
 #pragma pack(pop)
 
-static const util::index_t COUNTER_READY_LENGTH = sizeof(struct CounterReadyDefn);
+static const util::index_t COUNTER_READY_LENGTH = sizeof(struct CounterUpdateDefn);
 
-class CounterReadyFlyweight : public Flyweight<CounterReadyDefn>
+class CounterUpdateFlyweight : public Flyweight<CounterUpdateDefn>
 {
 public:
-    typedef CounterReadyFlyweight this_t;
+    typedef CounterUpdateFlyweight this_t;
 
-    inline CounterReadyFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
-        Flyweight<CounterReadyDefn>(buffer, offset)
+    inline CounterUpdateFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+        Flyweight<CounterUpdateDefn>(buffer, offset)
     {
     }
 

@@ -65,4 +65,12 @@ interface DriverEventsListener
     void onNewCounter(
         long correlationId,
         int counterId);
+
+    void onAvailableCounter(
+        long correlationId,
+        int counterId);
+
+    void onUnavailableCounter(
+        long correlationId,
+        int counterId);
 }

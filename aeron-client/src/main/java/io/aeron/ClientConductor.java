@@ -20,15 +20,16 @@ import io.aeron.exceptions.ConductorServiceTimeoutException;
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.status.ChannelEndpointStatus;
-import io.aeron.status.StaticStatusIndicator;
+import io.aeron.status.ReadableCounter;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ManagedResource;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
-import org.agrona.concurrent.status.UnsafeBufferStatusIndicator;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +37,7 @@ import java.util.concurrent.locks.Lock;
 
 import static io.aeron.Aeron.IDLE_SLEEP_NS;
 import static io.aeron.Aeron.sleep;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -70,9 +72,12 @@ class ClientConductor implements Agent, DriverEventsListener
     private final ArrayList<ManagedResource> lingeringResources = new ArrayList<>();
     private final UnavailableImageHandler defaultUnavailableImageHandler;
     private final AvailableImageHandler defaultAvailableImageHandler;
-    private final UnsafeBuffer counterValuesBuffer;
+    private final AvailableCounterHandler availableCounterHandler;
+    private final UnavailableCounterHandler unavailableCounterHandler;
     private final DriverProxy driverProxy;
     private final AgentInvoker driverAgentInvoker;
+    private final UnsafeBuffer counterValuesBuffer;
+    private final CountersReader countersReader;
 
     ClientConductor(final Aeron.Context ctx)
     {
@@ -81,7 +86,6 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock = ctx.clientLock();
         epochClock = ctx.epochClock();
         nanoClock = ctx.nanoClock();
-        counterValuesBuffer = ctx.countersValuesBuffer();
         driverProxy = ctx.driverProxy();
         logBuffersFactory = ctx.logBuffersFactory();
         keepAliveIntervalNs = ctx.keepAliveInterval();
@@ -90,8 +94,12 @@ class ClientConductor implements Agent, DriverEventsListener
         interServiceTimeoutNs = ctx.interServiceTimeout();
         defaultAvailableImageHandler = ctx.availableImageHandler();
         defaultUnavailableImageHandler = ctx.unavailableImageHandler();
+        availableCounterHandler = ctx.availableCounterHandler();
+        unavailableCounterHandler = ctx.unavailableCounterHandler();
         driverEventsAdapter = new DriverEventsAdapter(ctx.toClientBuffer(), this);
         driverAgentInvoker = ctx.driverAgentInvoker();
+        counterValuesBuffer = ctx.countersValuesBuffer();
+        countersReader = new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer(), US_ASCII);
 
         final long nowNs = nanoClock.nanoTime();
         timeOfLastKeepAliveNs = nowNs;
@@ -152,6 +160,11 @@ class ClientConductor implements Agent, DriverEventsListener
     boolean isClosed()
     {
         return isClosed;
+    }
+
+    CountersReader countersReader()
+    {
+        return countersReader;
     }
 
     Lock clientLock()
@@ -223,8 +236,7 @@ class ClientConductor implements Agent, DriverEventsListener
             streamId,
             correlationId,
             availableImageHandler,
-            unavailableImageHandler,
-            StaticStatusIndicator.TEMP_CHANNEL_STATUS_INDICATOR);
+            unavailableImageHandler);
 
         resourceByRegIdMap.put(correlationId, subscription);
 
@@ -305,6 +317,14 @@ class ClientConductor implements Agent, DriverEventsListener
         driverProxy.removeCounter(counter.registrationId());
     }
 
+    ReadableCounter addReadableCounter(final long registrationId, final int counterId)
+    {
+        final ReadableCounter counter = new ReadableCounter(countersReader, registrationId, counterId);
+
+        resourceByRegIdMap.put(registrationId, counter);
+        return counter;
+    }
+
     public void onError(final long correlationId, final ErrorCode errorCode, final String message)
     {
         driverException = new RegistrationException(errorCode, message);
@@ -318,7 +338,7 @@ class ClientConductor implements Agent, DriverEventsListener
             {
                 final Subscription subscription = (Subscription)resource;
 
-                if (subscription.channelStatusIndicator().id() == statusIndicatorId)
+                if (subscription.channelStatusId() == statusIndicatorId)
                 {
                     handleError(new ChannelEndpointException(statusIndicatorId, message));
                 }
@@ -327,7 +347,7 @@ class ClientConductor implements Agent, DriverEventsListener
             {
                 final Publication publication = (Publication)resource;
 
-                if (publication.channelStatusIndicator().id() == statusIndicatorId)
+                if (publication.channelStatusId() == statusIndicatorId)
                 {
                     handleError(new ChannelEndpointException(statusIndicatorId, message));
                 }
@@ -352,9 +372,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 streamId,
                 sessionId,
                 new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
-                statusIndicatorId != ChannelEndpointStatus.NO_ID_ALLOCATED ?
-                    new UnsafeBufferStatusIndicator(counterValuesBuffer, statusIndicatorId) :
-                    StaticStatusIndicator.NO_CHANNEL_STATUS_INDICATOR,
+                statusIndicatorId,
                 logBuffers(registrationId, logFileName),
                 registrationId,
                 correlationId));
@@ -377,9 +395,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 streamId,
                 sessionId,
                 new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
-                statusIndicatorId != ChannelEndpointStatus.NO_ID_ALLOCATED ?
-                    new UnsafeBufferStatusIndicator(counterValuesBuffer, statusIndicatorId) :
-                    StaticStatusIndicator.NO_CHANNEL_STATUS_INDICATOR,
+                statusIndicatorId,
                 logBuffers(registrationId, logFileName),
                 registrationId,
                 correlationId));
@@ -388,11 +404,7 @@ class ClientConductor implements Agent, DriverEventsListener
     public void onNewSubscription(final long correlationId, final int statusIndicatorId)
     {
         final Subscription subscription = (Subscription)resourceByRegIdMap.get(correlationId);
-
-        subscription.statusIndicatorReader(
-            statusIndicatorId != ChannelEndpointStatus.NO_ID_ALLOCATED ?
-                new UnsafeBufferStatusIndicator(counterValuesBuffer, statusIndicatorId) :
-                StaticStatusIndicator.NO_CHANNEL_STATUS_INDICATOR);
+        subscription.channelStatusId(statusIndicatorId);
     }
 
     public void onAvailableImage(
@@ -460,6 +472,29 @@ class ClientConductor implements Agent, DriverEventsListener
     public void onNewCounter(final long correlationId, final int counterId)
     {
         resourceByRegIdMap.put(correlationId, new Counter(correlationId, this, counterValuesBuffer, counterId));
+    }
+
+    public void onAvailableCounter(final long correlationId, final int counterId)
+    {
+        if (null != availableCounterHandler)
+        {
+            availableCounterHandler.onAvailableCounter(correlationId, counterId);
+        }
+    }
+
+    public void onUnavailableCounter(final long correlationId, final int counterId)
+    {
+        final AutoCloseable closeable = (AutoCloseable)resourceByRegIdMap.remove(correlationId);
+
+        if (null != closeable && closeable instanceof ReadableCounter)
+        {
+            if (null != unavailableCounterHandler)
+            {
+                unavailableCounterHandler.onUnavailableCounter(correlationId, counterId);
+            }
+
+            CloseHelper.quietClose(closeable);
+        }
     }
 
     void releaseImage(final Image image)
@@ -664,5 +699,20 @@ class ClientConductor implements Agent, DriverEventsListener
         }
 
         resourceByRegIdMap.clear();
+    }
+
+    long channelStatus(final int channelStatusId)
+    {
+        switch (channelStatusId)
+        {
+            case 0:
+                return ChannelEndpointStatus.INITIALIZING;
+
+            case ChannelEndpointStatus.NO_ID_ALLOCATED:
+                return ChannelEndpointStatus.ACTIVE;
+
+            default:
+                return countersReader.getCounterValue(channelStatusId);
+        }
     }
 }

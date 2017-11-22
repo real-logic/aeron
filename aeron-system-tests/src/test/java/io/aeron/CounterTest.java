@@ -1,0 +1,179 @@
+/*
+ * Copyright 2014-2017 Real Logic Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.aeron;
+
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
+import io.aeron.status.ReadableCounter;
+import org.agrona.CloseHelper;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersReader;
+import org.junit.After;
+import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.*;
+
+public class CounterTest
+{
+    private static final int COUNTER_TYPE_ID = 101;
+    private static final String COUNTER_LABEL = "counter label";
+
+    private static final ThreadingMode THREADING_MODE = ThreadingMode.DEDICATED;
+
+    private final UnsafeBuffer labelBuffer = new UnsafeBuffer(new byte[COUNTER_LABEL.length()]);
+
+    private Aeron clientA;
+    private Aeron clientB;
+    private MediaDriver.Context driverContext;
+    private MediaDriver driver;
+
+    private AvailableCounterHandler availableCounterHandlerClientA = mock(AvailableCounterHandler.class);
+    private AvailableCounterHandler availableCounterHandlerClientB = mock(AvailableCounterHandler.class);
+    private UnavailableCounterHandler unavailableCounterHandlerClientA = mock(UnavailableCounterHandler.class);
+    private UnavailableCounterHandler unavailableCounterHandlerClientB = mock(UnavailableCounterHandler.class);
+
+    private volatile ReadableCounter readableCounter;
+
+    private void launch()
+    {
+        labelBuffer.putStringWithoutLengthAscii(0, COUNTER_LABEL);
+
+        driverContext =
+            new MediaDriver.Context()
+                .threadingMode(THREADING_MODE);
+
+        driver = MediaDriver.launch(driverContext);
+
+        clientA = Aeron.connect(
+            new Aeron.Context()
+                .availableCounterHandler(availableCounterHandlerClientA)
+                .unavailableCounterHandler(unavailableCounterHandlerClientA));
+
+        clientB = Aeron.connect(
+            new Aeron.Context()
+                .availableCounterHandler(availableCounterHandlerClientB)
+                .unavailableCounterHandler(unavailableCounterHandlerClientB));
+    }
+
+    @After
+    public void closeEverything()
+    {
+        CloseHelper.quietClose(clientB);
+        CloseHelper.quietClose(clientA);
+
+        driver.close();
+
+        driverContext.deleteAeronDirectory();
+    }
+
+    @Test(timeout = 2000)
+    public void shouldBeAbleToAddCounter() throws Exception
+    {
+        launch();
+
+        final Counter counter =
+            clientA.addCounter(
+                COUNTER_TYPE_ID,
+                null,
+                0,
+                0,
+                labelBuffer,
+                0,
+                COUNTER_LABEL.length());
+
+        assertFalse(counter.isClosed());
+
+        verify(availableCounterHandlerClientB, timeout(1000))
+            .onAvailableCounter(counter.registrationId(), counter.id());
+        verifyZeroInteractions(availableCounterHandlerClientA);
+    }
+
+    @Test(timeout = 2000)
+    public void shouldBeAbleToAddReadableCounterWithinHandler() throws Exception
+    {
+        availableCounterHandlerClientB = this::createReadableCounter;
+
+        launch();
+
+        final Counter counter =
+            clientA.addCounter(
+                COUNTER_TYPE_ID,
+                null,
+                0,
+                0,
+                labelBuffer,
+                0,
+                COUNTER_LABEL.length());
+
+        while (null == readableCounter)
+        {
+            Thread.sleep(100);
+        }
+
+        assertThat(readableCounter.state(), is(CountersReader.RECORD_ALLOCATED));
+
+        verifyZeroInteractions(availableCounterHandlerClientA);
+    }
+
+    @Test(timeout = 2000)
+    public void shouldCloseReadableCounterOnUnavailableCounter() throws Exception
+    {
+        availableCounterHandlerClientB = this::createReadableCounter;
+
+        launch();
+
+        final Counter counter =
+            clientA.addCounter(
+                COUNTER_TYPE_ID,
+                null,
+                0,
+                0,
+                labelBuffer,
+                0,
+                COUNTER_LABEL.length());
+
+        final long registrationId = counter.registrationId();
+        final int counterId = counter.id();
+
+        while (null == readableCounter)
+        {
+            Thread.sleep(100);
+        }
+
+        assertTrue(!readableCounter.isClosed());
+        assertThat(readableCounter.state(), is(CountersReader.RECORD_ALLOCATED));
+
+        counter.close();
+
+        while (!readableCounter.isClosed())
+        {
+            Thread.sleep(100);
+        }
+
+        verify(unavailableCounterHandlerClientB).onUnavailableCounter(registrationId, counterId);
+        verifyZeroInteractions(availableCounterHandlerClientA);
+        verifyZeroInteractions(unavailableCounterHandlerClientA);
+    }
+
+    private void createReadableCounter(final long registrationId, final int counterId)
+    {
+        readableCounter = clientB.addReadableCounter(registrationId, counterId);
+    }
+}

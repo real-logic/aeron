@@ -36,7 +36,7 @@ class DriverEventsAdapter implements MessageHandler
     private final ImageBuffersReadyFlyweight imageReady = new ImageBuffersReadyFlyweight();
     private final OperationSucceededFlyweight operationSucceeded = new OperationSucceededFlyweight();
     private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
-    private final CounterReadyFlyweight counterReady = new CounterReadyFlyweight();
+    private final CounterUpdateFlyweight counterUpdate = new CounterUpdateFlyweight();
     private final DriverEventsListener listener;
 
     private long activeCorrelationId;
@@ -179,15 +179,28 @@ class DriverEventsAdapter implements MessageHandler
 
             case ON_COUNTER_READY:
             {
-                counterReady.wrap(buffer, index);
+                counterUpdate.wrap(buffer, index);
 
-                final long correlationId = counterReady.correlationId();
+                final int counterId = counterUpdate.counterId();
+                final long correlationId = counterUpdate.correlationId();
                 if (correlationId == activeCorrelationId)
                 {
-                    listener.onNewCounter(correlationId, counterReady.counterId());
+                    listener.onNewCounter(correlationId, counterId);
 
                     lastReceivedCorrelationId = correlationId;
                 }
+                else
+                {
+                    listener.onAvailableCounter(correlationId, counterId);
+                }
+                break;
+            }
+
+            case ON_UNAVAILABLE_COUNTER:
+            {
+                counterUpdate.wrap(buffer, index);
+
+                listener.onUnavailableCounter(counterUpdate.correlationId(), counterUpdate.counterId());
                 break;
             }
         }

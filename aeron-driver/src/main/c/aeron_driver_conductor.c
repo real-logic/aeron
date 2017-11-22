@@ -1022,14 +1022,29 @@ void aeron_driver_conductor_on_counter_ready(
     int64_t registration_id,
     int32_t counter_id)
 {
-    char response_buffer[sizeof(aeron_correlated_command_t)];
-    aeron_counter_ready_t *response = (aeron_counter_ready_t *)response_buffer;
+    char response_buffer[sizeof(aeron_counter_update_t)];
+    aeron_counter_update_t *response = (aeron_counter_update_t *)response_buffer;
 
     response->correlation_id = registration_id;
     response->counter_id = counter_id;
 
     aeron_driver_conductor_client_transmit(
-        conductor, AERON_RESPONSE_ON_COUNTER_READY, response, sizeof(aeron_counter_ready_t));
+        conductor, AERON_RESPONSE_ON_COUNTER_READY, response, sizeof(aeron_counter_update_t));
+}
+
+void aeron_driver_conductor_on_unavailable_counter(
+    aeron_driver_conductor_t *conductor,
+    int64_t registration_id,
+    int32_t counter_id)
+{
+    char response_buffer[sizeof(aeron_counter_update_t)];
+    aeron_counter_update_t *response = (aeron_counter_update_t *)response_buffer;
+
+    response->correlation_id = registration_id;
+    response->counter_id = counter_id;
+
+    aeron_driver_conductor_client_transmit(
+        conductor, AERON_RESPONSE_ON_UNAVAILABLE_COUNTER, response, sizeof(aeron_counter_update_t));
 }
 
 void aeron_driver_conductor_on_operation_succeeded(
@@ -2304,13 +2319,14 @@ int aeron_driver_conductor_on_remove_counter(
 
             if (command->registration_id == link->registration_id)
             {
+                aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
+                aeron_driver_conductor_on_unavailable_counter(conductor, link->registration_id, link->counter_id);
+
                 aeron_counters_manager_free(&conductor->counters_manager, link->counter_id);
 
                 aeron_array_fast_unordered_remove(
                     (uint8_t *)client->counter_links.array, sizeof(aeron_counter_link_t), i, last_index);
                 client->counter_links.length--;
-
-                aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
                 return 0;
             }
         }

@@ -96,6 +96,10 @@ public class CmdInterceptor
                 LOGGER.log(CMD_OUT_COUNTER_READY, buffer, index, length);
                 break;
 
+            case ON_UNAVAILABLE_COUNTER:
+                LOGGER.log(CMD_OUT_ON_UNAVAILABLE_COUNTER, buffer, index, length);
+                break;
+
             case ADD_COUNTER:
                 LOGGER.log(CMD_IN_ADD_COUNTER, buffer, index, length);
                 break;

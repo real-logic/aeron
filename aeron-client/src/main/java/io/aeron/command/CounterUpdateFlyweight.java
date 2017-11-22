@@ -21,7 +21,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * Message to denote that a Counter has been successfully set up.
+ * Message to denote that a Counter has become available or unavailable.
  *
  * @see ControlProtocolEvents
  * <pre>
@@ -35,7 +35,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class CounterReadyFlyweight
+public class CounterUpdateFlyweight
 {
 
     private static final int CORRELATION_ID_OFFSET = 0;
@@ -53,7 +53,7 @@ public class CounterReadyFlyweight
      * @param offset at which the message begins.
      * @return for fluent API
      */
-    public final CounterReadyFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
+    public final CounterUpdateFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
     {
         this.buffer = buffer;
         this.offset = offset;
@@ -77,7 +77,7 @@ public class CounterReadyFlyweight
      * @param correlationId field value
      * @return flyweight
      */
-    public CounterReadyFlyweight correlationId(final long correlationId)
+    public CounterUpdateFlyweight correlationId(final long correlationId)
     {
         buffer.putLong(offset + CORRELATION_ID_OFFSET, correlationId);
 
@@ -100,7 +100,7 @@ public class CounterReadyFlyweight
      * @param counterId field value
      * @return flyweight
      */
-    public CounterReadyFlyweight counterId(final int counterId)
+    public CounterUpdateFlyweight counterId(final int counterId)
     {
         buffer.putInt(offset + COUNTER_ID_OFFSET, counterId);
 

@@ -38,7 +38,7 @@ TEST_F(DriverConductorCounterTest, shouldBeAbleToAddSingleCounter)
     {
         ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_COUNTER_READY);
 
-        const command::CounterReadyFlyweight response(buffer, offset);
+        const command::CounterUpdateFlyweight response(buffer, offset);
 
         EXPECT_EQ(response.correlationId(), reg_id);
         counter_id = response.counterId();
@@ -70,7 +70,7 @@ TEST_F(DriverConductorCounterTest, shouldRemoveSingleCounter)
     {
         ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_COUNTER_READY);
 
-        const command::CounterReadyFlyweight response(buffer, offset);
+        const command::CounterUpdateFlyweight response(buffer, offset);
 
         EXPECT_EQ(response.correlationId(), reg_id);
         counter_id = response.counterId();
@@ -83,16 +83,32 @@ TEST_F(DriverConductorCounterTest, shouldRemoveSingleCounter)
     ASSERT_EQ(removeCounter(client_id, remove_correlation_id, reg_id), 0);
     doWork();
 
+    size_t response_number = 0;
+
     auto remove_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {
-        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+        if (0 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
 
-        const command::OperationSucceededFlyweight response(buffer, offset);
+            const command::OperationSucceededFlyweight response(buffer, offset);
 
-        EXPECT_EQ(response.correlationId(), remove_correlation_id);
+            EXPECT_EQ(response.correlationId(), remove_correlation_id);
+        }
+        else if (1 == response_number)
+        {
+            ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_UNAVAILABLE_COUNTER);
+
+            const command::CounterUpdateFlyweight response(buffer, offset);
+
+            EXPECT_EQ(response.correlationId(), reg_id);
+            EXPECT_EQ(response.counterId(), counter_id);
+        }
+
+        response_number++;
     };
 
-    EXPECT_EQ(readAllBroadcastsFromConductor(remove_handler), 1u);
+    EXPECT_EQ(readAllBroadcastsFromConductor(remove_handler), 2u);
 
     auto counter_func = [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer& key, const std::string& label) {};
 
@@ -112,7 +128,7 @@ TEST_F(DriverConductorCounterTest, shouldRemoveCounterOnClientTimeout)
     {
         ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_COUNTER_READY);
 
-        const command::CounterReadyFlyweight response(buffer, offset);
+        const command::CounterUpdateFlyweight response(buffer, offset);
 
         EXPECT_EQ(response.correlationId(), reg_id);
         counter_id = response.counterId();
@@ -142,7 +158,7 @@ TEST_F(DriverConductorCounterTest, shouldNotRemoveCounterOnClientKeepalive)
     {
         ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_COUNTER_READY);
 
-        const command::CounterReadyFlyweight response(buffer, offset);
+        const command::CounterUpdateFlyweight response(buffer, offset);
 
         EXPECT_EQ(response.correlationId(), reg_id);
         counter_id = response.counterId();

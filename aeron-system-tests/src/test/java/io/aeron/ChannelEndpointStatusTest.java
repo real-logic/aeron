@@ -24,7 +24,6 @@ import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.StatusIndicatorReader;
 import org.junit.After;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -37,7 +36,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.*;
 
-public class ChannelEndpointErrorTest
+public class ChannelEndpointStatusTest
 {
     private static final String URI = "aeron:udp?endpoint=localhost:54326";
     private static final String URI_NO_CONFLICT = "aeron:udp?endpoint=localhost:54327";
@@ -70,7 +69,6 @@ public class ChannelEndpointErrorTest
     private ErrorHandler errorHandlerClientA = mock(ErrorHandler.class);
     private ErrorHandler errorHandlerClientB = mock(ErrorHandler.class);
     private ErrorHandler errorHandlerClientC = mock(ErrorHandler.class);
-    private ArgumentCaptor<Throwable> captorA = ArgumentCaptor.forClass(Throwable.class);
     private ArgumentCaptor<Throwable> captorB = ArgumentCaptor.forClass(Throwable.class);
     private ArgumentCaptor<Throwable> captorC = ArgumentCaptor.forClass(Throwable.class);
 
@@ -135,14 +133,12 @@ public class ChannelEndpointErrorTest
 
         subscriptionA = clientA.addSubscription(URI, STREAM_ID);
 
-        final StatusIndicatorReader statusIndicatorReader = subscriptionA.channelStatusIndicator();
-
-        while (statusIndicatorReader.getVolatile() != ChannelEndpointStatus.ACTIVE)
+        while (subscriptionA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
             Thread.sleep(1);
         }
 
-        assertThat(statusIndicatorReader.getVolatile(), is(ChannelEndpointStatus.ACTIVE));
+        assertThat(subscriptionA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
     }
 
     @Test(timeout = 2000)
@@ -152,14 +148,12 @@ public class ChannelEndpointErrorTest
 
         publicationA = clientA.addPublication(URI, STREAM_ID);
 
-        final StatusIndicatorReader statusIndicatorReader = publicationA.channelStatusIndicator();
-
-        while (statusIndicatorReader.getVolatile() != ChannelEndpointStatus.ACTIVE)
+        while (publicationA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
             Thread.sleep(1);
         }
 
-        assertThat(statusIndicatorReader.getVolatile(), is(ChannelEndpointStatus.ACTIVE));
+        assertThat(publicationA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
     }
 
     @Test(timeout = 2000)
@@ -178,7 +172,7 @@ public class ChannelEndpointErrorTest
         final long status = clientB.countersReader().getCounterValue(channelEndpointException.statusIndicatorId());
 
         assertThat(status, is(ChannelEndpointStatus.ERRORED));
-        assertThat(subscriptionB.channelStatusIndicator().id(), is(channelEndpointException.statusIndicatorId()));
+        assertThat(subscriptionB.channelStatusId(), is(channelEndpointException.statusIndicatorId()));
     }
 
     @Test(timeout = 2000)
@@ -197,7 +191,7 @@ public class ChannelEndpointErrorTest
         final long status = clientB.countersReader().getCounterValue(channelEndpointException.statusIndicatorId());
 
         assertThat(status, is(ChannelEndpointStatus.ERRORED));
-        assertThat(publicationB.channelStatusIndicator().id(), is(channelEndpointException.statusIndicatorId()));
+        assertThat(publicationB.channelStatusId(), is(channelEndpointException.statusIndicatorId()));
     }
 
     @Test(timeout = 2000)

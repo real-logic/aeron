@@ -18,7 +18,6 @@ package io.aeron;
 import io.aeron.logbuffer.*;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.LongHashSet;
-import org.agrona.concurrent.status.StatusIndicatorReader;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -40,11 +39,11 @@ class SubscriptionFields extends SubscriptionLhsPadding
 
     protected volatile Image[] images = EMPTY_ARRAY;
     protected final LongHashSet imageIdSet = new LongHashSet();
-    protected final ClientConductor clientConductor;
+    protected final ClientConductor conductor;
     protected final String channel;
     protected final AvailableImageHandler availableImageHandler;
     protected final UnavailableImageHandler unavailableImageHandler;
-    protected StatusIndicatorReader channelStatusIndicator;
+    protected int channelStatusId = 0;
 
     protected SubscriptionFields(
         final long registrationId,
@@ -52,16 +51,14 @@ class SubscriptionFields extends SubscriptionLhsPadding
         final ClientConductor clientConductor,
         final String channel,
         final AvailableImageHandler availableImageHandler,
-        final UnavailableImageHandler unavailableImageHandler,
-        final StatusIndicatorReader statusIndicatorReader)
+        final UnavailableImageHandler unavailableImageHandler)
     {
         this.registrationId = registrationId;
         this.streamId = streamId;
-        this.clientConductor = clientConductor;
+        this.conductor = clientConductor;
         this.channel = channel;
         this.availableImageHandler = availableImageHandler;
         this.unavailableImageHandler = unavailableImageHandler;
-        this.channelStatusIndicator = statusIndicatorReader;
     }
 }
 
@@ -96,8 +93,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         final int streamId,
         final long registrationId,
         final AvailableImageHandler availableImageHandler,
-        final UnavailableImageHandler unavailableImageHandler,
-        final StatusIndicatorReader statusIndicatorReader)
+        final UnavailableImageHandler unavailableImageHandler)
     {
         super(
             registrationId,
@@ -105,8 +101,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
             conductor,
             channel,
             availableImageHandler,
-            unavailableImageHandler,
-            statusIndicatorReader);
+            unavailableImageHandler);
     }
 
     /**
@@ -392,7 +387,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
      */
     public void close()
     {
-        clientConductor.clientLock().lock();
+        conductor.clientLock().lock();
         try
         {
             if (!isClosed)
@@ -401,12 +396,12 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
 
                 closeImages();
 
-                clientConductor.releaseSubscription(this);
+                conductor.releaseSubscription(this);
             }
         }
         finally
         {
-            clientConductor.clientLock().unlock();
+            conductor.clientLock().unlock();
         }
     }
 
@@ -421,18 +416,27 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
-     * Get the status indicator assigned to the channel of this {@link Publication}
+     * Get the status of the media channel for this Subscription.
+     * <p>
+     * The status will be {@link io.aeron.status.ChannelEndpointStatus#ERRORED} if a socket exception occurs on setup
+     * and {@link io.aeron.status.ChannelEndpointStatus#ACTIVE} if all is well.
      *
-     * @return status indicator reader for the channel
+     * @return status for the channel.
+     * @see io.aeron.status.ChannelEndpointStatus
      */
-    public StatusIndicatorReader channelStatusIndicator()
+    public long channelStatus()
     {
-        return channelStatusIndicator;
+        return conductor.channelStatus(channelStatusId);
     }
 
-    void statusIndicatorReader(final StatusIndicatorReader statusIndicatorReader)
+    void channelStatusId(final int id)
     {
-        this.channelStatusIndicator = statusIndicatorReader;
+        channelStatusId = id;
+    }
+
+    int channelStatusId()
+    {
+        return channelStatusId;
     }
 
     void forceClose()
@@ -441,7 +445,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
 
         closeImages();
 
-        clientConductor.asyncReleaseSubscription(this);
+        conductor.asyncReleaseSubscription(this);
     }
 
     boolean containsImage(final long correlationId)
@@ -453,7 +457,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     {
         if (isClosed)
         {
-            clientConductor.releaseImage(image);
+            conductor.releaseImage(image);
         }
         else
         {
@@ -484,7 +488,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
             }
 
             images = ArrayUtil.remove(oldArray, i);
-            clientConductor.releaseImage(removedImage);
+            conductor.releaseImage(removedImage);
         }
 
         return removedImage;
@@ -498,7 +502,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
 
         for (final Image image : images)
         {
-            clientConductor.releaseImage(image);
+            conductor.releaseImage(image);
 
             try
             {
@@ -509,7 +513,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
             }
             catch (final Throwable ex)
             {
-                clientConductor.handleError(ex);
+                conductor.handleError(ex);
             }
         }
     }

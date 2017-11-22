@@ -21,25 +21,65 @@ import org.agrona.concurrent.status.CountersReader;
 
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
+/**
+ * Readonly View of a {@link io.aeron.Counter}.
+ */
 public class ReadableCounter implements AutoCloseable
 {
-    private final CountersReader countersReader;
-    private final byte[] buffer;
-    private final int counterId;
     private final long addressOffset;
+    private final long registrationId;
+    private final int counterId;
     private volatile boolean isClosed = false;
+    private final byte[] buffer;
+    private final CountersReader countersReader;
 
-    public ReadableCounter(final CountersReader countersReader, final int counterId)
+    /**
+     * Construct a view of an existing counter.
+     *
+     * @param countersReader for getting access to the buffers.
+     * @param registrationId assigned by the driver for the counter or -1 if not known.
+     * @param counterId      for the counter to be viewed.
+     * @throws IllegalStateException if the id has for the counter has not been allocated.
+     */
+    public ReadableCounter(final CountersReader countersReader, final long registrationId, final int counterId)
     {
+        if (countersReader.getCounterState(counterId) != CountersReader.RECORD_ALLOCATED)
+        {
+            throw new IllegalStateException("Counter id has not been allocated: " + counterId);
+        }
+
         this.countersReader = countersReader;
         this.counterId = counterId;
+        this.registrationId = registrationId;
 
         final AtomicBuffer valuesBuffer = countersReader.valuesBuffer();
-
         final int counterOffset = CountersReader.counterOffset(counterId);
         valuesBuffer.boundsCheck(counterOffset, SIZE_OF_LONG);
+
         this.buffer = valuesBuffer.byteArray();
         this.addressOffset = valuesBuffer.addressOffset() + counterOffset;
+    }
+
+    /**
+     * Construct a view of an existing counter.
+     *
+     * @param countersReader for getting access to the buffers.
+     * @param counterId      for the counter to be viewed.
+     * @throws IllegalStateException if the id has for the counter has not been allocated.
+     */
+    public ReadableCounter(final CountersReader countersReader, final int counterId)
+    {
+        this(countersReader, -1, counterId);
+    }
+
+    /**
+     * Return the registration Id for the counter.
+     *
+     * @return registration Id.
+     */
+    public long registrationId()
+    {
+        return registrationId;
     }
 
     /**
@@ -98,7 +138,7 @@ public class ReadableCounter implements AutoCloseable
     }
 
     /**
-     * Close the counter.
+     * Close this counter. This has no impact on the {@link io.aeron.Counter} it is viewing.
      */
     public void close()
     {
@@ -106,20 +146,12 @@ public class ReadableCounter implements AutoCloseable
     }
 
     /**
-     * Has this object been closed and should no longer be used?
+     * Has this counters been closed and should no longer be used?
      *
      * @return true if it has been closed otherwise false.
      */
     public boolean isClosed()
     {
         return isClosed;
-    }
-
-    /**
-     * Forcibly close the counter.
-     */
-    void forceClose()
-    {
-        isClosed = true;
     }
 }

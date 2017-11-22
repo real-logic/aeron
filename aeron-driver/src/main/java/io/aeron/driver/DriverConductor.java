@@ -678,12 +678,16 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         if (null == counterLink)
         {
-            throw new ControlProtocolException(UNKNOWN_PUBLICATION, "Unknown counter: " + registrationId);
+            throw new ControlProtocolException(UNKNOWN_COUNTER, "Unknown counter: " + registrationId);
         }
 
-        counterLink.close();
-
+        // acknowledge remove counter request
         clientProxy.operationSucceeded(correlationId);
+
+        // inform all clients of counter being removed.
+        clientProxy.onUnavailableCounter(counterLink.registrationId(), counterLink.counterId());
+
+        counterLink.close();
     }
 
     private void heartbeatAndCheckTimers(final long nowNs)

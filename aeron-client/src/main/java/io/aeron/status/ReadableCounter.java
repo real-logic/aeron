@@ -21,23 +21,38 @@ import org.agrona.concurrent.status.CountersReader;
 
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
+/**
+ * Readonly View of a {@link io.aeron.Counter}.
+ */
 public class ReadableCounter implements AutoCloseable
 {
     private final CountersReader countersReader;
     private final byte[] buffer;
-    private final int counterId;
+    private final int id;
     private final long addressOffset;
     private volatile boolean isClosed = false;
 
-    public ReadableCounter(final CountersReader countersReader, final int counterId)
+    /**
+     * Construct a view of an existing counter.
+     *
+     * @param countersReader for getting access to the buffers.
+     * @param id             for the counter to be viewed.
+     * @throws IllegalStateException if the id has for the counter has not been allocated.
+     */
+    public ReadableCounter(final CountersReader countersReader, final int id)
     {
+        if (countersReader.getCounterState(id) != CountersReader.RECORD_ALLOCATED)
+        {
+            throw new IllegalStateException("Counter id has not been allocated: " + id);
+        }
+
         this.countersReader = countersReader;
-        this.counterId = counterId;
+        this.id = id;
 
         final AtomicBuffer valuesBuffer = countersReader.valuesBuffer();
-
-        final int counterOffset = CountersReader.counterOffset(counterId);
+        final int counterOffset = CountersReader.counterOffset(id);
         valuesBuffer.boundsCheck(counterOffset, SIZE_OF_LONG);
+
         this.buffer = valuesBuffer.byteArray();
         this.addressOffset = valuesBuffer.addressOffset() + counterOffset;
     }
@@ -47,9 +62,9 @@ public class ReadableCounter implements AutoCloseable
      *
      * @return counter Id.
      */
-    public int counterId()
+    public int id()
     {
-        return counterId;
+        return id;
     }
 
     /**
@@ -64,7 +79,7 @@ public class ReadableCounter implements AutoCloseable
      */
     public int state()
     {
-        return countersReader.getCounterState(counterId);
+        return countersReader.getCounterState(id);
     }
 
     /**
@@ -74,7 +89,7 @@ public class ReadableCounter implements AutoCloseable
      */
     public String label()
     {
-        return countersReader.getCounterLabel(counterId);
+        return countersReader.getCounterLabel(id);
     }
 
     /**
@@ -98,7 +113,7 @@ public class ReadableCounter implements AutoCloseable
     }
 
     /**
-     * Close the counter.
+     * Close this counter. This has no impact on the {@link io.aeron.Counter} it is viewing.
      */
     public void close()
     {
@@ -106,20 +121,12 @@ public class ReadableCounter implements AutoCloseable
     }
 
     /**
-     * Has this object been closed and should no longer be used?
+     * Has this counters been closed and should no longer be used?
      *
      * @return true if it has been closed otherwise false.
      */
     public boolean isClosed()
     {
         return isClosed;
-    }
-
-    /**
-     * Forcibly close the counter.
-     */
-    void forceClose()
-    {
-        isClosed = true;
     }
 }

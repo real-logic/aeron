@@ -405,6 +405,82 @@ public class ImageTest
         inOrder.verify(position).setOrdered(initialPosition + (ALIGNED_FRAME_LENGTH * 2));
     }
 
+    @Test
+    public void shouldPollNoFragmentsToBoundedControlledFragmentHandlerWithMaxPositionBeforeInitialPosition()
+    {
+        final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        final long maxPosition = initialPosition - HEADER_LENGTH;
+        position.setOrdered(initialPosition);
+        final Image image = createImage();
+
+        insertDataFrame(INITIAL_TERM_ID, offsetForFrame(0));
+        insertDataFrame(INITIAL_TERM_ID, offsetForFrame(1));
+
+        when(mockControlledFragmentHandler.onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class)))
+            .thenReturn(Action.CONTINUE);
+
+        final int fragmentsRead =
+            image.boundedControlledPoll(mockControlledFragmentHandler, maxPosition, Integer.MAX_VALUE);
+
+        assertThat(fragmentsRead, is(0));
+
+        assertThat(position.get(), is(initialPosition));
+        verify(mockControlledFragmentHandler, never()).onFragment(
+            any(UnsafeBuffer.class), anyInt(), anyInt(), any(Header.class));
+    }
+
+    @Test
+    public void shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPositionBeforeNextMessage()
+    {
+        final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        final long maxPosition = initialPosition + ALIGNED_FRAME_LENGTH;
+        position.setOrdered(initialPosition);
+        final Image image = createImage();
+
+        insertDataFrame(INITIAL_TERM_ID, offsetForFrame(0));
+        insertDataFrame(INITIAL_TERM_ID, offsetForFrame(1));
+
+        when(mockControlledFragmentHandler.onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class)))
+            .thenReturn(Action.CONTINUE);
+
+        final int fragmentsRead =
+            image.boundedControlledPoll(mockControlledFragmentHandler, maxPosition, Integer.MAX_VALUE);
+
+        assertThat(fragmentsRead, is(1));
+
+        final InOrder inOrder = Mockito.inOrder(position, mockControlledFragmentHandler);
+        inOrder.verify(mockControlledFragmentHandler).onFragment(
+            any(UnsafeBuffer.class), eq(HEADER_LENGTH), eq(DATA.length), any(Header.class));
+        inOrder.verify(position).setOrdered(initialPosition + ALIGNED_FRAME_LENGTH);
+    }
+
+    @Test
+    public void shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPositionAfterEndOfTerm()
+    {
+        final int initialOffset = TERM_BUFFER_LENGTH - (ALIGNED_FRAME_LENGTH * 2);
+        final long initialPosition =
+            computePosition(INITIAL_TERM_ID, initialOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        final long maxPosition = initialPosition + TERM_BUFFER_LENGTH;
+        position.setOrdered(initialPosition);
+        final Image image = createImage();
+
+        insertDataFrame(INITIAL_TERM_ID, initialOffset);
+        insertPaddingFrame(INITIAL_TERM_ID, initialOffset + ALIGNED_FRAME_LENGTH);
+
+        when(mockControlledFragmentHandler.onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class)))
+            .thenReturn(Action.CONTINUE);
+
+        final int fragmentsRead =
+            image.boundedControlledPoll(mockControlledFragmentHandler, maxPosition, Integer.MAX_VALUE);
+
+        assertThat(fragmentsRead, is(1));
+
+        final InOrder inOrder = Mockito.inOrder(position, mockControlledFragmentHandler);
+        inOrder.verify(mockControlledFragmentHandler).onFragment(
+            any(UnsafeBuffer.class), eq(initialOffset + HEADER_LENGTH), eq(DATA.length), any(Header.class));
+        inOrder.verify(position).setOrdered(TERM_BUFFER_LENGTH);
+    }
+
     private Image createImage()
     {
         return new Image(subscription, SESSION_ID, position, logBuffers, errorHandler, SOURCE_IDENTITY, CORRELATION_ID);
@@ -426,6 +502,21 @@ public class ImageTest
 
         final int activeIndex = indexByTerm(INITIAL_TERM_ID, activeTermId);
         TermRebuilder.insert(termBuffers[activeIndex], termOffset, rcvBuffer, ALIGNED_FRAME_LENGTH);
+    }
+
+    private void insertPaddingFrame(final int activeTermId, final int termOffset)
+    {
+        dataHeader
+            .termId(INITIAL_TERM_ID)
+            .streamId(STREAM_ID)
+            .sessionId(SESSION_ID)
+            .frameLength(TERM_BUFFER_LENGTH - termOffset)
+            .headerType(HeaderFlyweight.HDR_TYPE_PAD)
+            .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+            .version(HeaderFlyweight.CURRENT_VERSION);
+
+        final int activeIndex = indexByTerm(INITIAL_TERM_ID, activeTermId);
+        TermRebuilder.insert(termBuffers[activeIndex], termOffset, rcvBuffer, TERM_BUFFER_LENGTH - termOffset);
     }
 
     private static int offsetForFrame(final int index)

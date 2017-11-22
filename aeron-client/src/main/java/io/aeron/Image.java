@@ -373,6 +373,99 @@ public class Image
     }
 
     /**
+     * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
+     * will be delivered to the {@link ControlledFragmentHandler} up to a limited number of fragments as specified or
+     * the maximum position specified.
+     * <p>
+     * Use a {@link ControlledFragmentAssembler} to assemble messages which span multiple fragments.
+     *
+     * @param fragmentHandler to which message fragments are delivered.
+     * @param maxPosition     to consume messages up to.
+     * @param fragmentLimit   for the number of fragments to be consumed during one polling operation.
+     * @return the number of fragments that have been consumed.
+     * @see ControlledFragmentAssembler
+     * @see ImageControlledFragmentAssembler
+     */
+    public int boundedControlledPoll(
+        final ControlledFragmentHandler fragmentHandler, final long maxPosition, final int fragmentLimit)
+    {
+        if (isClosed)
+        {
+            return 0;
+        }
+
+        int fragmentsRead = 0;
+        long initialPosition = subscriberPosition.get();
+        int initialOffset = (int)initialPosition & termLengthMask;
+        int resultingOffset = initialOffset;
+        final UnsafeBuffer termBuffer = activeTermBuffer(initialPosition);
+        final int endOffset = Math.min(termBuffer.capacity(), (int)(maxPosition - initialPosition));
+        header.buffer(termBuffer);
+
+        try
+        {
+            while (fragmentsRead < fragmentLimit && resultingOffset < endOffset)
+            {
+                final int length = frameLengthVolatile(termBuffer, resultingOffset);
+                if (length <= 0)
+                {
+                    break;
+                }
+
+                final int frameOffset = resultingOffset;
+                final int alignedLength = BitUtil.align(length, FRAME_ALIGNMENT);
+                resultingOffset += alignedLength;
+
+                if (isPaddingFrame(termBuffer, frameOffset))
+                {
+                    continue;
+                }
+
+                header.offset(frameOffset);
+
+                final Action action = fragmentHandler.onFragment(
+                    termBuffer,
+                    frameOffset + HEADER_LENGTH,
+                    length - HEADER_LENGTH,
+                    header);
+
+                if (action == ABORT)
+                {
+                    resultingOffset -= alignedLength;
+                    break;
+                }
+
+                ++fragmentsRead;
+
+                if (action == BREAK)
+                {
+                    break;
+                }
+                else if (action == COMMIT)
+                {
+                    initialPosition += (resultingOffset - initialOffset);
+                    initialOffset = resultingOffset;
+                    subscriberPosition.setOrdered(initialPosition);
+                }
+            }
+        }
+        catch (final Throwable t)
+        {
+            errorHandler.onError(t);
+        }
+        finally
+        {
+            final long resultingPosition = initialPosition + (resultingOffset - initialOffset);
+            if (resultingPosition > initialPosition)
+            {
+                subscriberPosition.setOrdered(resultingPosition);
+            }
+        }
+
+        return fragmentsRead;
+    }
+
+    /**
      * Peek for new messages in a stream by scanning forward from an initial position. If new messages are found then
      * they will be delivered to the {@link ControlledFragmentHandler} up to a limited position.
      * <p>

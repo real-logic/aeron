@@ -308,6 +308,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
         final long registrationId = counter.registrationId();
         awaitResponse(driverProxy.removeCounter(registrationId));
+        resourceByRegIdMap.remove(registrationId);
     }
 
 

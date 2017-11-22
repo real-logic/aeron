@@ -113,4 +113,9 @@ public class ControlProtocolEvents
      * New counter is ready notification.
      */
     public static final int ON_COUNTER_READY = 0x0F08;
+
+    /**
+     * Inform clients of removal of counter.
+     */
+    public static final int ON_UNAVAILABLE_COUNTER = 0x0F09;
 }

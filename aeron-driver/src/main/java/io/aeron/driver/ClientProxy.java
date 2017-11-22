@@ -41,7 +41,7 @@ public class ClientProxy
     private final ImageBuffersReadyFlyweight imageReady = new ImageBuffersReadyFlyweight();
     private final OperationSucceededFlyweight operationSucceeded = new OperationSucceededFlyweight();
     private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
-    private final CounterReadyFlyweight counterReady = new CounterReadyFlyweight();
+    private final CounterUpdateFlyweight counterUpdate = new CounterUpdateFlyweight();
 
     public ClientProxy(final BroadcastTransmitter transmitter)
     {
@@ -53,7 +53,7 @@ public class ClientProxy
         subscriptionReady.wrap(buffer, 0);
         operationSucceeded.wrap(buffer, 0);
         imageMessage.wrap(buffer, 0);
-        counterReady.wrap(buffer, 0);
+        counterUpdate.wrap(buffer, 0);
     }
 
     public void onError(final long correlationId, final ErrorCode errorCode, final String errorMessage)
@@ -146,11 +146,20 @@ public class ClientProxy
 
     public void onCounterReady(final long correlationId, final int counterId)
     {
-        counterReady
+        counterUpdate
             .correlationId(correlationId)
             .counterId(counterId);
 
-        transmit(ON_COUNTER_READY, buffer, 0, CounterReadyFlyweight.LENGTH);
+        transmit(ON_COUNTER_READY, buffer, 0, CounterUpdateFlyweight.LENGTH);
+    }
+
+    public void onUnavailableCounter(final long registrationId, final int counterId)
+    {
+        counterUpdate
+            .correlationId(registrationId)
+            .counterId(counterId);
+
+        transmit(ON_UNAVAILABLE_COUNTER, buffer, 0, CounterUpdateFlyweight.LENGTH);
     }
 
     private void transmit(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)

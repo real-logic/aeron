@@ -46,7 +46,7 @@ public class EventDissector
     private static final DestinationMessageFlyweight DESTINATION_MSG = new DestinationMessageFlyweight();
     private static final ErrorResponseFlyweight ERROR_MSG = new ErrorResponseFlyweight();
     private static final CounterMessageFlyweight COUNTER_MSG = new CounterMessageFlyweight();
-    private static final CounterReadyFlyweight COUNTER_READY = new CounterReadyFlyweight();
+    private static final CounterUpdateFlyweight COUNTER_UPDATE = new CounterUpdateFlyweight();
     private static final OperationSucceededFlyweight OPERATION_SUCCEEDED = new OperationSucceededFlyweight();
     private static final SubscriptionReadyFlyweight SUBSCRIPTION_READY = new SubscriptionReadyFlyweight();
 
@@ -190,9 +190,10 @@ public class EventDissector
                 break;
 
             case CMD_OUT_COUNTER_READY:
-                final CounterReadyFlyweight counterReady = COUNTER_READY;
-                counterReady.wrap(buffer, offset + relativeOffset);
-                builder.append(dissect(counterReady));
+            case CMD_OUT_ON_UNAVAILABLE_COUNTER:
+                final CounterUpdateFlyweight counterUpdate = COUNTER_UPDATE;
+                counterUpdate.wrap(buffer, offset + relativeOffset);
+                builder.append(dissect(counterUpdate));
                 break;
 
             default:
@@ -469,7 +470,7 @@ public class EventDissector
             msg.correlationId());
     }
 
-    private static String dissect(final CounterReadyFlyweight msg)
+    private static String dissect(final CounterUpdateFlyweight msg)
     {
         return String.format(
             "%d %d",

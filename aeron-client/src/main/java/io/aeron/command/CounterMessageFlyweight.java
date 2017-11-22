@@ -107,7 +107,10 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
         final int keyLength)
     {
         buffer.putInt(KEY_LENGTH_OFFSET, keyLength);
-        buffer.putBytes(keyBufferOffset(), keyBuffer, keyOffset, keyLength);
+        if (null != keyBuffer && keyLength > 0)
+        {
+            buffer.putBytes(keyBufferOffset(), keyBuffer, keyOffset, keyLength);
+        }
 
         return this;
     }

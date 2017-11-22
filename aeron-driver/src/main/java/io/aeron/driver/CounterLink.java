@@ -44,6 +44,11 @@ public class CounterLink implements DriverManagedResource
         return registrationId;
     }
 
+    public int counterId()
+    {
+        return counter.id();
+    }
+
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
         if (client.hasTimedOut(timeNs))

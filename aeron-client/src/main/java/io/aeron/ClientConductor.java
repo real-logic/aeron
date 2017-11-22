@@ -20,6 +20,8 @@ import io.aeron.exceptions.ConductorServiceTimeoutException;
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.status.ChannelEndpointStatus;
+import io.aeron.status.ReadableCounter;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ManagedResource;
 import org.agrona.collections.ArrayListUtil;
@@ -70,6 +72,8 @@ class ClientConductor implements Agent, DriverEventsListener
     private final ArrayList<ManagedResource> lingeringResources = new ArrayList<>();
     private final UnavailableImageHandler defaultUnavailableImageHandler;
     private final AvailableImageHandler defaultAvailableImageHandler;
+    private final AvailableCounterHandler availableCounterHandler;
+    private final UnavailableCounterHandler unavailableCounterHandler;
     private final DriverProxy driverProxy;
     private final AgentInvoker driverAgentInvoker;
     private final UnsafeBuffer counterValuesBuffer;
@@ -90,6 +94,8 @@ class ClientConductor implements Agent, DriverEventsListener
         interServiceTimeoutNs = ctx.interServiceTimeout();
         defaultAvailableImageHandler = ctx.availableImageHandler();
         defaultUnavailableImageHandler = ctx.unavailableImageHandler();
+        availableCounterHandler = ctx.availableCounterHandler();
+        unavailableCounterHandler = ctx.unavailableCounterHandler();
         driverEventsAdapter = new DriverEventsAdapter(ctx.toClientBuffer(), this);
         driverAgentInvoker = ctx.driverAgentInvoker();
         counterValuesBuffer = ctx.countersValuesBuffer();
@@ -302,13 +308,20 @@ class ClientConductor implements Agent, DriverEventsListener
 
         final long registrationId = counter.registrationId();
         awaitResponse(driverProxy.removeCounter(registrationId));
-        resourceByRegIdMap.remove(registrationId);
     }
 
 
     void asyncReleaseCounter(final Counter counter)
     {
         driverProxy.removeCounter(counter.registrationId());
+    }
+
+    ReadableCounter addReadableCounter(final long registrationId, final int counterId)
+    {
+        final ReadableCounter counter = new ReadableCounter(countersReader, registrationId, counterId);
+
+        resourceByRegIdMap.put(registrationId, counter);
+        return counter;
     }
 
     public void onError(final long correlationId, final ErrorCode errorCode, final String message)
@@ -458,6 +471,29 @@ class ClientConductor implements Agent, DriverEventsListener
     public void onNewCounter(final long correlationId, final int counterId)
     {
         resourceByRegIdMap.put(correlationId, new Counter(correlationId, this, counterValuesBuffer, counterId));
+    }
+
+    public void onAvailableCounter(final long correlationId, final int counterId)
+    {
+        if (null != availableCounterHandler)
+        {
+            availableCounterHandler.onAvailableCounter(correlationId, counterId);
+        }
+    }
+
+    public void onUnavailableCounter(final long correlationId, final int counterId)
+    {
+        final AutoCloseable closeable = (AutoCloseable)resourceByRegIdMap.remove(correlationId);
+
+        if (null != closeable && closeable instanceof ReadableCounter)
+        {
+            if (null != unavailableCounterHandler)
+            {
+                unavailableCounterHandler.onUnavailableCounter(correlationId, counterId);
+            }
+
+            CloseHelper.quietClose(closeable);
+        }
     }
 
     void releaseImage(final Image image)

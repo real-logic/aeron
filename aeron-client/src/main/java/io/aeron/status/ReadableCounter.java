@@ -26,11 +26,11 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class ReadableCounter implements AutoCloseable
 {
-    private final CountersReader countersReader;
-    private final byte[] buffer;
-    private final int id;
     private final long addressOffset;
+    private final int id;
     private volatile boolean isClosed = false;
+    private final byte[] buffer;
+    private final CountersReader countersReader;
 
     /**
      * Construct a view of an existing counter.

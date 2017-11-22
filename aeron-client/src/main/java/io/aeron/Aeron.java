@@ -417,6 +417,7 @@ public final class Aeron implements AutoCloseable
         private ErrorHandler errorHandler;
         private AvailableImageHandler availableImageHandler;
         private UnavailableImageHandler unavailableImageHandler;
+        private AvailableCounterHandler availableCounterHandler;
         private long keepAliveInterval = KEEPALIVE_INTERVAL_NS;
         private long interServiceTimeout = 0;
         private ThreadFactory threadFactory = Thread::new;
@@ -816,6 +817,28 @@ public final class Aeron implements AutoCloseable
         public UnavailableImageHandler unavailableImageHandler()
         {
             return unavailableImageHandler;
+        }
+
+        /**
+         * Setup a callback for when a counter is available.
+         *
+         * @param handler to be called for handling available counter notifications.
+         * @return this Aeron.Context for fluent API.
+         */
+        public Context availableCounterHandler(final AvailableCounterHandler handler)
+        {
+            this.availableCounterHandler = handler;
+            return this;
+        }
+
+        /**
+         * Get the callback handler for when a counter is available.
+         *
+         * @return the callback handler for when a counter is available.
+         */
+        public AvailableCounterHandler availableCounterHandler()
+        {
+            return this.availableCounterHandler;
         }
 
         /**

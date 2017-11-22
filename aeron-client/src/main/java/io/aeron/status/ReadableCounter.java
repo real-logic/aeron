@@ -27,7 +27,8 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 public class ReadableCounter implements AutoCloseable
 {
     private final long addressOffset;
-    private final int id;
+    private final long registrationId;
+    private final int counterId;
     private volatile boolean isClosed = false;
     private final byte[] buffer;
     private final CountersReader countersReader;
@@ -36,21 +37,23 @@ public class ReadableCounter implements AutoCloseable
      * Construct a view of an existing counter.
      *
      * @param countersReader for getting access to the buffers.
-     * @param id             for the counter to be viewed.
+     * @param registrationId assigned by the driver for the counter or -1 if not known.
+     * @param counterId      for the counter to be viewed.
      * @throws IllegalStateException if the id has for the counter has not been allocated.
      */
-    public ReadableCounter(final CountersReader countersReader, final int id)
+    public ReadableCounter(final CountersReader countersReader, final long registrationId, final int counterId)
     {
-        if (countersReader.getCounterState(id) != CountersReader.RECORD_ALLOCATED)
+        if (countersReader.getCounterState(counterId) != CountersReader.RECORD_ALLOCATED)
         {
-            throw new IllegalStateException("Counter id has not been allocated: " + id);
+            throw new IllegalStateException("Counter id has not been allocated: " + counterId);
         }
 
         this.countersReader = countersReader;
-        this.id = id;
+        this.counterId = counterId;
+        this.registrationId = registrationId;
 
         final AtomicBuffer valuesBuffer = countersReader.valuesBuffer();
-        final int counterOffset = CountersReader.counterOffset(id);
+        final int counterOffset = CountersReader.counterOffset(counterId);
         valuesBuffer.boundsCheck(counterOffset, SIZE_OF_LONG);
 
         this.buffer = valuesBuffer.byteArray();
@@ -58,13 +61,35 @@ public class ReadableCounter implements AutoCloseable
     }
 
     /**
+     * Construct a view of an existing counter.
+     *
+     * @param countersReader for getting access to the buffers.
+     * @param counterId      for the counter to be viewed.
+     * @throws IllegalStateException if the id has for the counter has not been allocated.
+     */
+    public ReadableCounter(final CountersReader countersReader, final int counterId)
+    {
+        this(countersReader, -1, counterId);
+    }
+
+    /**
+     * Return the registration Id for the counter.
+     *
+     * @return registration Id.
+     */
+    public long registrationId()
+    {
+        return registrationId;
+    }
+
+    /**
      * Return the counter Id.
      *
      * @return counter Id.
      */
-    public int id()
+    public int counterId()
     {
-        return id;
+        return counterId;
     }
 
     /**
@@ -79,7 +104,7 @@ public class ReadableCounter implements AutoCloseable
      */
     public int state()
     {
-        return countersReader.getCounterState(id);
+        return countersReader.getCounterState(counterId);
     }
 
     /**
@@ -89,7 +114,7 @@ public class ReadableCounter implements AutoCloseable
      */
     public String label()
     {
-        return countersReader.getCounterLabel(id);
+        return countersReader.getCounterLabel(counterId);
     }
 
     /**

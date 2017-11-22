@@ -25,7 +25,7 @@
 #include <command/ErrorResponseFlyweight.h>
 #include <command/OperationSucceededFlyweight.h>
 #include <command/SubscriptionReadyFlyweight.h>
-#include <command/CounterReadyFlyweight.h>
+#include <command/CounterUpdateFlyweight.h>
 
 namespace aeron {
 
@@ -137,7 +137,7 @@ public:
 
                     case ControlProtocolEvents::ON_COUNTER_READY:
                     {
-                        const CounterReadyFlyweight response(buffer, offset);
+                        const CounterUpdateFlyweight response(buffer, offset);
 
                         m_driverListener.onCounterReady(response.correlationId(), response.counterId());
                     }

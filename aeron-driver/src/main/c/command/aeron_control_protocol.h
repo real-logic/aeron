@@ -39,6 +39,7 @@
 #define AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY (0x0F06)
 #define AERON_RESPONSE_ON_SUBSCRIPTION_READY (0x0F07)
 #define AERON_RESPONSE_ON_COUNTER_READY (0x0F08)
+#define AERON_RESPONSE_ON_UNAVAILABLE_COUNTER (0x0F09)
 
 /* error codes */
 #define AERON_ERROR_CODE_GENERIC_ERROR (0)
@@ -151,12 +152,12 @@ typedef struct aeron_counter_command_stct
 }
 aeron_counter_command_t;
 
-typedef struct aeron_counter_ready_stct
+typedef struct aeron_counter_update_stct
 {
     int64_t correlation_id;
     int32_t counter_id;
 }
-aeron_counter_ready_t;
+aeron_counter_update_t;
 
 #pragma pack(pop)
 

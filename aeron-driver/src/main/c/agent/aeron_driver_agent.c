@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-#if defined(__linux__)
+#if defined(__FreeBSD__ )
 #define _BSD_SOURCE
+#endif
+
+#if defined(__linux__)
 #define _GNU_SOURCE
 #endif
 
@@ -38,6 +41,7 @@ static pthread_once_t agent_is_initialized = PTHREAD_ONCE_INIT;
 #include "agent/aeron_driver_agent.h"
 #include "aeron_driver_context.h"
 #include "aeron_driver_agent.h"
+#include "aeron_dlsym.h"
 
 static aeron_mpsc_rb_t logging_mpsc_rb;
 static uint8_t *rb_buffer = NULL;
@@ -205,6 +209,7 @@ int aeron_driver_agent_map_raw_log_close_interceptor(aeron_mapped_raw_log_t *map
 
 static void *aeron_lib = NULL;
 
+
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
     static aeron_driver_context_init_t _original_func = NULL;
@@ -223,7 +228,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             exit(EXIT_FAILURE);
         }
 
-        if ((_original_func = (aeron_driver_context_init_t)dlsym(aeron_lib, "aeron_driver_context_init")) == NULL)
+        LOAD_SYMBOL(_original_func, aeron_lib, "aeron_driver_context_init");
+
+        if (NULL == _original_func)
         {
             fprintf(stderr, "%s\n", dlerror());
             exit(EXIT_FAILURE);
@@ -293,7 +300,9 @@ ssize_t sendmsg(int socket, const struct msghdr *message, int flags)
 
     if (NULL == _original_func)
     {
-        if ((_original_func = (aeron_driver_agent_sendmsg_func_t)dlsym(RTLD_NEXT, "sendmsg")) == NULL)
+        LOAD_SYMBOL(_original_func, RTLD_NEXT, "sendmsg");
+
+        if (NULL == _original_func)
         {
             fprintf(stderr, "%s\n", dlerror());
             exit(EXIT_FAILURE);
@@ -320,7 +329,9 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
 
     if (NULL == _original_func)
     {
-        if ((_original_func = (aeron_driver_agent_recvmsg_func_t)dlsym(RTLD_NEXT, "recvmsg")) == NULL)
+        LOAD_SYMBOL(_original_func, RTLD_NEXT, "recvmsg");
+
+        if (NULL == _original_func)
         {
             fprintf(stderr, "%s\n", dlerror());
             exit(EXIT_FAILURE);

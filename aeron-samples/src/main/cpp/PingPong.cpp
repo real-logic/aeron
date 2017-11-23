@@ -28,10 +28,7 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
-extern "C"
-{
-#include <hdr_histogram.h>
-}
+#include "Histogram.h"
 
 using namespace std::chrono;
 using namespace aeron::util;

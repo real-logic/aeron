@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-#if defined(__linux__)
+#if defined(__FreeBSD__ )
 #define _BSD_SOURCE
+#endif
+
+#if defined(__linux__)
 #define _GNU_SOURCE
 #endif
 
@@ -27,13 +30,16 @@
 #include "aeron_congestion_control.h"
 #include "aeron_alloc.h"
 #include "aeron_driver_context.h"
+#include "aeron_dlsym.h"
 
 aeron_congestion_control_strategy_supplier_func_t aeron_congestion_control_strategy_supplier_load(
     const char *strategy_name)
 {
     aeron_congestion_control_strategy_supplier_func_t func = NULL;
 
-    if ((func = (aeron_congestion_control_strategy_supplier_func_t)dlsym(RTLD_DEFAULT, strategy_name)) == NULL)
+    LOAD_SYMBOL(func, RTLD_DEFAULT, strategy_name);
+
+    if (NULL == func)
     {
         aeron_set_err(EINVAL, "could not find congestion control strategy %s: dlsym - %s", strategy_name, dlerror());
         return NULL;

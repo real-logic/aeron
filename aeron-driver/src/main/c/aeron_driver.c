@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-#if defined(__linux__)
+#if defined(__FreeBSD__ )
 #define _BSD_SOURCE
+#endif
+
+#if defined(__linux__)
 #define _GNU_SOURCE
 #ifdef HAVE_BSDSTDLIB_H
 #include <bsd/stdlib.h>
@@ -101,7 +104,12 @@ int32_t aeron_randomised_int32()
         }
     }
 
-    read(aeron_dev_random_fd, &result, sizeof(result));
+    if (0 == read(aeron_dev_random_fd, &result, sizeof(result)))
+    {
+        fprintf(stderr, "failed to read from /dev/urandom (%d): %s\n", errno, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
 #endif
     return result;
 }

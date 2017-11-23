@@ -393,11 +393,10 @@ public final class Aeron implements AutoCloseable
     /**
      * Add a {@link ReadableCounter} for the already allocated counter as identified by registration Id and counter Id.
      *
-     * @see Context#availableCounterHandler(AvailableCounterHandler)
-     *
-     * @param registrationId for the counter.
-     * @param counterId      for the counter.
+     * @param registrationId for the counter this read-only view will reference.
+     * @param counterId      for the counter this read-only view will reference.
      * @return the read-only counter.
+     * @see Context#availableCounterHandler(AvailableCounterHandler)
      */
     public ReadableCounter addReadableCounter(final long registrationId, final int counterId)
     {
@@ -535,6 +534,7 @@ public final class Aeron implements AutoCloseable
 
         /**
          * Get the client identity that has been allocated for communicating with the media driver.
+         *
          * @return the client identity that has been allocated for communicating with the media driver.
          */
         public long clientId()

@@ -20,6 +20,7 @@
 #include <atomic>
 #include <limits>
 #include <exception>
+#include <functional>
 
 #include <gtest/gtest.h>
 

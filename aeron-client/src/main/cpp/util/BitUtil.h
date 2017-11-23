@@ -21,6 +21,10 @@
 #include <type_traits>
 #include <util/Exceptions.h>
 
+#if defined(_MSC_VER)
+#include <intrin.h>
+#endif
+
 namespace aeron { namespace util {
 
 /**

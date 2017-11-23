@@ -15,6 +15,8 @@
  */
 package io.aeron;
 
+import org.agrona.concurrent.status.CountersReader;
+
 /**
  * Interface for notification of{@link Counter}s becoming available via a {@link Aeron} client.
  */
@@ -24,8 +26,9 @@ public interface AvailableCounterHandler
     /**
      * Method called by Aeron to deliver notification of a {@link Counter} being available.
      *
-     * @param registrationId for the counter
-     * @param counterId      that is available
+     * @param countersReader for more detail on the counter.
+     * @param registrationId for the counter.
+     * @param counterId      that is available.
      */
-    void onAvailableCounter(long registrationId, int counterId);
+    void onAvailableCounter(CountersReader countersReader, long registrationId, int counterId);
 }

@@ -316,7 +316,7 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             try
             {
-                availableCounterHandler.onAvailableCounter(registrationId, counterId);
+                availableCounterHandler.onAvailableCounter(countersReader, registrationId, counterId);
             }
             catch (final Exception ex)
             {
@@ -331,7 +331,7 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             try
             {
-                unavailableCounterHandler.onUnavailableCounter(registrationId, counterId);
+                unavailableCounterHandler.onUnavailableCounter(countersReader, registrationId, counterId);
             }
             catch (final Exception ex)
             {

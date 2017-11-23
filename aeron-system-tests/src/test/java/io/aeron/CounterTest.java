@@ -99,9 +99,9 @@ public class CounterTest
         assertFalse(counter.isClosed());
 
         verify(availableCounterHandlerClientA, timeout(1000))
-            .onAvailableCounter(counter.registrationId(), counter.id());
+            .onAvailableCounter(any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
         verify(availableCounterHandlerClientB, timeout(1000))
-            .onAvailableCounter(counter.registrationId(), counter.id());
+            .onAvailableCounter(any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
     }
 
     @Test(timeout = 2000)
@@ -165,12 +165,16 @@ public class CounterTest
         }
     }
 
-    private void createReadableCounter(final long registrationId, final int counterId)
+    private void createReadableCounter(
+        final CountersReader countersReader, final long registrationId, final int counterId)
     {
-        readableCounter = new ReadableCounter(clientB.countersReader(), registrationId, counterId);
+        readableCounter = new ReadableCounter(countersReader, registrationId, counterId);
     }
 
-    private void unavailableCounterHandler(final long registrationId, final int counterId)
+    private void unavailableCounterHandler(
+        @SuppressWarnings("unused") final CountersReader countersReader,
+        final long registrationId,
+        final int counterId)
     {
         assertThat(registrationId, is(readableCounter.registrationId()));
         assertThat(counterId, is(readableCounter.counterId()));

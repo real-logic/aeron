@@ -15,6 +15,8 @@
  */
 package io.aeron;
 
+import org.agrona.concurrent.status.CountersReader;
+
 /**
  * Interface for notification of {@link Counter}s being removed via an {@link Aeron} client.
  */
@@ -24,8 +26,9 @@ public interface UnavailableCounterHandler
     /**
      * Method called by Aeron to deliver notification of counter being removed.
      *
-     * @param registrationId for the counter
-     * @param counterId      that is unavailable
+     * @param countersReader for more counter details.
+     * @param registrationId for the counter.
+     * @param counterId      that is unavailable.
      */
-    void onUnavailableCounter(long registrationId, int counterId);
+    void onUnavailableCounter(CountersReader countersReader, long registrationId, int counterId);
 }

@@ -20,8 +20,6 @@ import io.aeron.exceptions.ConductorServiceTimeoutException;
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.status.ChannelEndpointStatus;
-import io.aeron.status.ReadableCounter;
-import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ManagedResource;
 import org.agrona.collections.ArrayListUtil;
@@ -160,6 +158,186 @@ class ClientConductor implements Agent, DriverEventsListener
     boolean isClosed()
     {
         return isClosed;
+    }
+
+    public void onError(final long correlationId, final ErrorCode errorCode, final String message)
+    {
+        driverException = new RegistrationException(errorCode, message);
+    }
+
+    public void onChannelEndpointError(final int statusIndicatorId, final String message)
+    {
+        for (final Object resource : resourceByRegIdMap.values())
+        {
+            if (resource instanceof Subscription)
+            {
+                final Subscription subscription = (Subscription)resource;
+
+                if (subscription.channelStatusId() == statusIndicatorId)
+                {
+                    handleError(new ChannelEndpointException(statusIndicatorId, message));
+                }
+            }
+            else if (resource instanceof Publication)
+            {
+                final Publication publication = (Publication)resource;
+
+                if (publication.channelStatusId() == statusIndicatorId)
+                {
+                    handleError(new ChannelEndpointException(statusIndicatorId, message));
+                }
+            }
+        }
+    }
+
+    public void onNewPublication(
+        final long correlationId,
+        final long registrationId,
+        final int streamId,
+        final int sessionId,
+        final int publicationLimitId,
+        final int statusIndicatorId,
+        final String logFileName)
+    {
+        resourceByRegIdMap.put(
+            correlationId,
+            new ConcurrentPublication(
+                this,
+                stashedChannel,
+                streamId,
+                sessionId,
+                new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
+                statusIndicatorId,
+                logBuffers(registrationId, logFileName),
+                registrationId,
+                correlationId));
+    }
+
+    public void onNewExclusivePublication(
+        final long correlationId,
+        final long registrationId,
+        final int streamId,
+        final int sessionId,
+        final int publicationLimitId,
+        final int statusIndicatorId,
+        final String logFileName)
+    {
+        resourceByRegIdMap.put(
+            correlationId,
+            new ExclusivePublication(
+                this,
+                stashedChannel,
+                streamId,
+                sessionId,
+                new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
+                statusIndicatorId,
+                logBuffers(registrationId, logFileName),
+                registrationId,
+                correlationId));
+    }
+
+    public void onNewSubscription(final long correlationId, final int statusIndicatorId)
+    {
+        final Subscription subscription = (Subscription)resourceByRegIdMap.get(correlationId);
+        subscription.channelStatusId(statusIndicatorId);
+    }
+
+    public void onAvailableImage(
+        final long correlationId,
+        final int streamId,
+        final int sessionId,
+        final long subscriptionRegistrationId,
+        final int subscriberPositionId,
+        final String logFileName,
+        final String sourceIdentity)
+    {
+        final Subscription subscription = (Subscription)resourceByRegIdMap.get(subscriptionRegistrationId);
+        if (null != subscription && !subscription.containsImage(correlationId))
+        {
+            final Image image = new Image(
+                subscription,
+                sessionId,
+                new UnsafeBufferPosition(counterValuesBuffer, subscriberPositionId),
+                logBuffers(correlationId, logFileName),
+                ctx.errorHandler(),
+                sourceIdentity,
+                correlationId);
+
+            final AvailableImageHandler handler = subscription.availableImageHandler();
+            if (null != handler)
+            {
+                try
+                {
+                    handler.onAvailableImage(image);
+                }
+                catch (final Throwable ex)
+                {
+                    handleError(ex);
+                }
+            }
+
+            subscription.addImage(image);
+        }
+    }
+
+    public void onUnavailableImage(final long correlationId, final long subscriptionRegistrationId, final int streamId)
+    {
+        final Subscription subscription = (Subscription)resourceByRegIdMap.get(subscriptionRegistrationId);
+        if (null != subscription)
+        {
+            final Image image = subscription.removeImage(correlationId);
+            if (null != image)
+            {
+                final UnavailableImageHandler handler = subscription.unavailableImageHandler();
+                if (null != handler)
+                {
+                    try
+                    {
+                        handler.onUnavailableImage(image);
+                    }
+                    catch (final Throwable ex)
+                    {
+                        handleError(ex);
+                    }
+                }
+            }
+        }
+    }
+
+    public void onNewCounter(final long correlationId, final int counterId)
+    {
+        resourceByRegIdMap.put(correlationId, new Counter(correlationId, this, counterValuesBuffer, counterId));
+        onAvailableCounter(correlationId, counterId);
+    }
+
+    public void onAvailableCounter(final long registrationId, final int counterId)
+    {
+        if (null != availableCounterHandler)
+        {
+            try
+            {
+                availableCounterHandler.onAvailableCounter(registrationId, counterId);
+            }
+            catch (final Exception ex)
+            {
+                handleError(ex);
+            }
+        }
+    }
+
+    public void onUnavailableCounter(final long registrationId, final int counterId)
+    {
+        if (null != unavailableCounterHandler)
+        {
+            try
+            {
+                unavailableCounterHandler.onUnavailableCounter(registrationId, counterId);
+            }
+            catch (final Exception ex)
+            {
+                handleError(ex);
+            }
+        }
     }
 
     CountersReader countersReader()
@@ -317,186 +495,6 @@ class ClientConductor implements Agent, DriverEventsListener
         driverProxy.removeCounter(counter.registrationId());
     }
 
-    ReadableCounter addReadableCounter(final long registrationId, final int counterId)
-    {
-        final ReadableCounter counter = new ReadableCounter(countersReader, registrationId, counterId);
-
-        resourceByRegIdMap.put(registrationId, counter);
-        return counter;
-    }
-
-    public void onError(final long correlationId, final ErrorCode errorCode, final String message)
-    {
-        driverException = new RegistrationException(errorCode, message);
-    }
-
-    public void onChannelEndpointError(final int statusIndicatorId, final String message)
-    {
-        for (final Object resource : resourceByRegIdMap.values())
-        {
-            if (resource instanceof Subscription)
-            {
-                final Subscription subscription = (Subscription)resource;
-
-                if (subscription.channelStatusId() == statusIndicatorId)
-                {
-                    handleError(new ChannelEndpointException(statusIndicatorId, message));
-                }
-            }
-            else if (resource instanceof Publication)
-            {
-                final Publication publication = (Publication)resource;
-
-                if (publication.channelStatusId() == statusIndicatorId)
-                {
-                    handleError(new ChannelEndpointException(statusIndicatorId, message));
-                }
-            }
-        }
-    }
-
-    public void onNewPublication(
-        final long correlationId,
-        final long registrationId,
-        final int streamId,
-        final int sessionId,
-        final int publicationLimitId,
-        final int statusIndicatorId,
-        final String logFileName)
-    {
-        resourceByRegIdMap.put(
-            correlationId,
-            new ConcurrentPublication(
-                this,
-                stashedChannel,
-                streamId,
-                sessionId,
-                new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
-                statusIndicatorId,
-                logBuffers(registrationId, logFileName),
-                registrationId,
-                correlationId));
-    }
-
-    public void onNewExclusivePublication(
-        final long correlationId,
-        final long registrationId,
-        final int streamId,
-        final int sessionId,
-        final int publicationLimitId,
-        final int statusIndicatorId,
-        final String logFileName)
-    {
-        resourceByRegIdMap.put(
-            correlationId,
-            new ExclusivePublication(
-                this,
-                stashedChannel,
-                streamId,
-                sessionId,
-                new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
-                statusIndicatorId,
-                logBuffers(registrationId, logFileName),
-                registrationId,
-                correlationId));
-    }
-
-    public void onNewSubscription(final long correlationId, final int statusIndicatorId)
-    {
-        final Subscription subscription = (Subscription)resourceByRegIdMap.get(correlationId);
-        subscription.channelStatusId(statusIndicatorId);
-    }
-
-    public void onAvailableImage(
-        final long correlationId,
-        final int streamId,
-        final int sessionId,
-        final long subscriptionRegistrationId,
-        final int subscriberPositionId,
-        final String logFileName,
-        final String sourceIdentity)
-    {
-        final Subscription subscription = (Subscription)resourceByRegIdMap.get(subscriptionRegistrationId);
-        if (null != subscription && !subscription.containsImage(correlationId))
-        {
-            final Image image = new Image(
-                subscription,
-                sessionId,
-                new UnsafeBufferPosition(counterValuesBuffer, subscriberPositionId),
-                logBuffers(correlationId, logFileName),
-                ctx.errorHandler(),
-                sourceIdentity,
-                correlationId);
-
-            try
-            {
-                final AvailableImageHandler handler = subscription.availableImageHandler();
-                if (null != handler)
-                {
-                    handler.onAvailableImage(image);
-                }
-            }
-            catch (final Throwable ex)
-            {
-                handleError(ex);
-            }
-
-            subscription.addImage(image);
-        }
-    }
-
-    public void onUnavailableImage(final long correlationId, final long subscriptionRegistrationId, final int streamId)
-    {
-        final Subscription subscription = (Subscription)resourceByRegIdMap.get(subscriptionRegistrationId);
-        if (null != subscription)
-        {
-            final Image image = subscription.removeImage(correlationId);
-            if (null != image)
-            {
-                try
-                {
-                    final UnavailableImageHandler handler = subscription.unavailableImageHandler();
-                    if (null != handler)
-                    {
-                        handler.onUnavailableImage(image);
-                    }
-                }
-                catch (final Throwable ex)
-                {
-                    handleError(ex);
-                }
-            }
-        }
-    }
-
-    public void onNewCounter(final long correlationId, final int counterId)
-    {
-        resourceByRegIdMap.put(correlationId, new Counter(correlationId, this, counterValuesBuffer, counterId));
-    }
-
-    public void onAvailableCounter(final long correlationId, final int counterId)
-    {
-        if (null != availableCounterHandler)
-        {
-            availableCounterHandler.onAvailableCounter(correlationId, counterId);
-        }
-    }
-
-    public void onUnavailableCounter(final long correlationId, final int counterId)
-    {
-        final AutoCloseable closeable = (AutoCloseable)resourceByRegIdMap.remove(correlationId);
-
-        if (null != closeable && closeable instanceof ReadableCounter)
-        {
-            if (null != unavailableCounterHandler)
-            {
-                unavailableCounterHandler.onUnavailableCounter(correlationId, counterId);
-            }
-
-            CloseHelper.quietClose(closeable);
-        }
-    }
-
     void releaseImage(final Image image)
     {
         image.close();
@@ -516,6 +514,21 @@ class ClientConductor implements Agent, DriverEventsListener
     DriverEventsAdapter driverListenerAdapter()
     {
         return driverEventsAdapter;
+    }
+
+    long channelStatus(final int channelStatusId)
+    {
+        switch (channelStatusId)
+        {
+            case 0:
+                return ChannelEndpointStatus.INITIALIZING;
+
+            case ChannelEndpointStatus.NO_ID_ALLOCATED:
+                return ChannelEndpointStatus.ACTIVE;
+
+            default:
+                return countersReader.getCounterValue(channelStatusId);
+        }
     }
 
     private void ensureOpen()
@@ -699,20 +712,5 @@ class ClientConductor implements Agent, DriverEventsListener
         }
 
         resourceByRegIdMap.clear();
-    }
-
-    long channelStatus(final int channelStatusId)
-    {
-        switch (channelStatusId)
-        {
-            case 0:
-                return ChannelEndpointStatus.INITIALIZING;
-
-            case ChannelEndpointStatus.NO_ID_ALLOCATED:
-                return ChannelEndpointStatus.ACTIVE;
-
-            default:
-                return countersReader.getCounterValue(channelStatusId);
-        }
     }
 }

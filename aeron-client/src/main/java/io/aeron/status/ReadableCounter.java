@@ -22,7 +22,7 @@ import org.agrona.concurrent.status.CountersReader;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * Readonly View of a {@link io.aeron.Counter}.
+ * Readonly View of an associated {@link io.aeron.Counter}.
  */
 public class ReadableCounter implements AutoCloseable
 {

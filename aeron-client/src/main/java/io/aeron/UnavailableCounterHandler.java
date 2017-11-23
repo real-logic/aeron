@@ -16,7 +16,7 @@
 package io.aeron;
 
 /**
- * Interface for notification of ounters being removed under a {@link Aeron}.
+ * Interface for notification of {@link Counter}s being removed via an {@link Aeron} client.
  */
 @FunctionalInterface
 public interface UnavailableCounterHandler

@@ -16,13 +16,13 @@
 package io.aeron;
 
 /**
- * Interface for notification of new counters becoming available under a {@link Aeron}.
+ * Interface for notification of{@link Counter}s becoming available via a {@link Aeron} client.
  */
 @FunctionalInterface
 public interface AvailableCounterHandler
 {
     /**
-     * Method called by Aeron to deliver notification of a new counter being available.
+     * Method called by Aeron to deliver notification of a {@link Counter} being available.
      *
      * @param registrationId for the counter
      * @param counterId      that is available

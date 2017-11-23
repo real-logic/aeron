@@ -17,7 +17,6 @@ package io.aeron;
 
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.status.ReadableCounter;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
@@ -383,27 +382,6 @@ public final class Aeron implements AutoCloseable
         try
         {
             return conductor.addCounter(typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
-        }
-        finally
-        {
-            clientLock.unlock();
-        }
-    }
-
-    /**
-     * Add a {@link ReadableCounter} for the already allocated counter as identified by registration Id and counter Id.
-     *
-     * @param registrationId for the counter this read-only view will reference.
-     * @param counterId      for the counter this read-only view will reference.
-     * @return the read-only counter.
-     * @see Context#availableCounterHandler(AvailableCounterHandler)
-     */
-    public ReadableCounter addReadableCounter(final long registrationId, final int counterId)
-    {
-        clientLock.lock();
-        try
-        {
-            return conductor.addReadableCounter(registrationId, counterId);
         }
         finally
         {

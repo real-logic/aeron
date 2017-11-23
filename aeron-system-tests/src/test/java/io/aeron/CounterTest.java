@@ -35,8 +35,6 @@ public class CounterTest
     private static final int COUNTER_TYPE_ID = 101;
     private static final String COUNTER_LABEL = "counter label";
 
-    private static final ThreadingMode THREADING_MODE = ThreadingMode.DEDICATED;
-
     private final UnsafeBuffer labelBuffer = new UnsafeBuffer(new byte[COUNTER_LABEL.length()]);
 
     private Aeron clientA;
@@ -57,7 +55,7 @@ public class CounterTest
 
         driverContext =
             new MediaDriver.Context()
-                .threadingMode(THREADING_MODE);
+                .threadingMode(ThreadingMode.SHARED);
 
         driver = MediaDriver.launch(driverContext);
 
@@ -100,9 +98,10 @@ public class CounterTest
 
         assertFalse(counter.isClosed());
 
+        verify(availableCounterHandlerClientA, timeout(1000))
+            .onAvailableCounter(counter.registrationId(), counter.id());
         verify(availableCounterHandlerClientB, timeout(1000))
             .onAvailableCounter(counter.registrationId(), counter.id());
-        verifyZeroInteractions(availableCounterHandlerClientA);
     }
 
     @Test(timeout = 2000)
@@ -124,18 +123,19 @@ public class CounterTest
 
         while (null == readableCounter)
         {
-            Thread.sleep(100);
+            Thread.sleep(1);
         }
 
         assertThat(readableCounter.state(), is(CountersReader.RECORD_ALLOCATED));
-
-        verifyZeroInteractions(availableCounterHandlerClientA);
+        assertThat(readableCounter.counterId(), is(counter.id()));
+        assertThat(readableCounter.registrationId(), is(counter.registrationId()));
     }
 
     @Test(timeout = 2000)
     public void shouldCloseReadableCounterOnUnavailableCounter() throws Exception
     {
         availableCounterHandlerClientB = this::createReadableCounter;
+        unavailableCounterHandlerClientB = this::unavailableCounterHandler;
 
         launch();
 
@@ -149,12 +149,9 @@ public class CounterTest
                 0,
                 COUNTER_LABEL.length());
 
-        final long registrationId = counter.registrationId();
-        final int counterId = counter.id();
-
         while (null == readableCounter)
         {
-            Thread.sleep(100);
+            Thread.sleep(1);
         }
 
         assertTrue(!readableCounter.isClosed());
@@ -164,16 +161,20 @@ public class CounterTest
 
         while (!readableCounter.isClosed())
         {
-            Thread.sleep(100);
+            Thread.sleep(1);
         }
-
-        verify(unavailableCounterHandlerClientB).onUnavailableCounter(registrationId, counterId);
-        verifyZeroInteractions(availableCounterHandlerClientA);
-        verifyZeroInteractions(unavailableCounterHandlerClientA);
     }
 
     private void createReadableCounter(final long registrationId, final int counterId)
     {
-        readableCounter = clientB.addReadableCounter(registrationId, counterId);
+        readableCounter = new ReadableCounter(clientB.countersReader(), registrationId, counterId);
+    }
+
+    private void unavailableCounterHandler(final long registrationId, final int counterId)
+    {
+        assertThat(registrationId, is(readableCounter.registrationId()));
+        assertThat(counterId, is(readableCounter.counterId()));
+
+        readableCounter.close();
     }
 }

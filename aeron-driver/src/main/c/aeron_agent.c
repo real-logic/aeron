@@ -30,9 +30,8 @@
 #include "aeron_agent.h"
 #include "aeron_alloc.h"
 #include "aeron_driver_context.h"
+#include "aeron_dlsym.h"
 #include "util/aeron_error.h"
-
-#define LOAD_SYMBOL(func, handle, name) *(void **)&func = dlsym(handle, name);
 
 static void aeron_idle_strategy_sleeping_idle(void *state, int work_count)
 {

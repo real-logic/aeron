@@ -41,6 +41,7 @@ static pthread_once_t agent_is_initialized = PTHREAD_ONCE_INIT;
 #include "agent/aeron_driver_agent.h"
 #include "aeron_driver_context.h"
 #include "aeron_driver_agent.h"
+#include "aeron_dlsym.h"
 
 static aeron_mpsc_rb_t logging_mpsc_rb;
 static uint8_t *rb_buffer = NULL;
@@ -48,8 +49,6 @@ static uint64_t mask = 0;
 static double receive_data_loss_rate = 0.0;
 static unsigned short receive_data_loss_xsubi[3];
 static pthread_t log_reader_thread;
-
-#define LOAD_SYMBOL(func, handle, name) *(void **)&func = dlsym(handle, name);
 
 int64_t aeron_agent_epochclock()
 {

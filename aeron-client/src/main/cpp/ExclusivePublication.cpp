@@ -35,7 +35,7 @@ ExclusivePublication::ExclusivePublication(
     m_channel(channel),
     m_registrationId(registrationId),
     m_originalRegistrationId(originalRegistrationId),
-    m_maxPossiblePosition(buffers->atomicBuffer(0).capacity() * (1L << 31L)),
+    m_maxPossiblePosition(static_cast<int64_t>(buffers->atomicBuffer(0).capacity()) << 31),
     m_streamId(streamId),
     m_sessionId(sessionId),
     m_initialTermId(LogBufferDescriptor::initialTermId(m_logMetaDataBuffer)),

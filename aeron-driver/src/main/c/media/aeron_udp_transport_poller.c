@@ -54,7 +54,8 @@ int aeron_udp_transport_poller_close(aeron_udp_transport_poller_t *poller)
 int aeron_udp_transport_poller_add(aeron_udp_transport_poller_t *poller, aeron_udp_channel_transport_t *transport)
 {
     int ensure_capacity_result = 0;
-    size_t old_capacity = poller->transports.capacity, index = poller->transports.length;
+//    size_t old_capacity = poller->transports.capacity;
+    size_t index = poller->transports.length;
 
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, poller->transports, aeron_udp_channel_transport_entry_t);
     if (ensure_capacity_result < 0)

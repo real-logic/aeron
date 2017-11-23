@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-#if defined(__linux__)
+#if defined(__FreeBSD__ )
 #define _BSD_SOURCE
+#endif
+
+#if defined(__linux__)
 #define _GNU_SOURCE
 #endif
 
@@ -27,6 +30,7 @@
 #include "aeron_agent.h"
 #include "aeron_alloc.h"
 #include "aeron_driver_context.h"
+#include "aeron_dlsym.h"
 #include "util/aeron_error.h"
 
 static void aeron_idle_strategy_sleeping_idle(void *state, int work_count)
@@ -140,7 +144,10 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
 aeron_agent_on_start_func_t aeron_agent_on_start_load(const char *name)
 {
     aeron_agent_on_start_func_t func = NULL;
-    if ((func = (aeron_agent_on_start_func_t)dlsym(RTLD_DEFAULT, name)) == NULL)
+
+    LOAD_SYMBOL(func, RTLD_DEFAULT, name);
+
+    if (NULL == func)
     {
         aeron_set_err(EINVAL, "could not find agent on_start func %s: dlsym - %s", name, dlerror());
         return NULL;

@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-#if defined(__linux__)
+#if defined(__FreeBSD__ )
 #define _BSD_SOURCE
+#endif
+
+#if defined(__linux__)
 #define _GNU_SOURCE
 #endif
 
@@ -91,7 +94,7 @@ int64_t aeron_loss_detector_nak_multicast_delay_generator()
 {
     static bool initialized = false;
     static double lambda;
-    static double calculated_n;
+//    static double calculated_n;
     static double rand_max;
     static double base_x;
     static double constant_t;
@@ -100,9 +103,9 @@ int64_t aeron_loss_detector_nak_multicast_delay_generator()
     if (!initialized)
     {
         lambda = log(AERON_LOSS_DETECTOR_NAK_MULTICAST_GROUPSIZE) + 1;
-        calculated_n =
-            exp(1.2 * lambda /
-                (2 * AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF / AERON_LOSS_DETECTOR_NAK_MULTICAST_GRTT));
+//        calculated_n =
+//            exp(1.2 * lambda /
+//                (2 * AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF / AERON_LOSS_DETECTOR_NAK_MULTICAST_GRTT));
         rand_max = lambda / AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF;
         base_x = lambda / (AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF * (exp(lambda) - 1));
         constant_t = AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF / lambda;

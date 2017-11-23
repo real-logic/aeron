@@ -47,6 +47,7 @@ public class ArchiveProxy
     private final CloseSessionRequestEncoder closeSessionRequestEncoder = new CloseSessionRequestEncoder();
     private final StartRecordingRequestEncoder startRecordingRequestEncoder = new StartRecordingRequestEncoder();
     private final ReplayRequestEncoder replayRequestEncoder = new ReplayRequestEncoder();
+    private final StopReplayRequestEncoder stopReplayRequestEncoder = new StopReplayRequestEncoder();
     private final StopRecordingRequestEncoder stopRecordingRequestEncoder = new StopRecordingRequestEncoder();
     private final ListRecordingsRequestEncoder listRecordingsRequestEncoder = new ListRecordingsRequestEncoder();
     private final ListRecordingsForUriRequestEncoder listRecordingsForUriRequestEncoder =
@@ -221,6 +222,28 @@ public class ArchiveProxy
             .length(length)
             .replayStreamId(replayStreamId)
             .replayChannel(replayChannel);
+
+        return offer(replayRequestEncoder.encodedLength());
+    }
+
+    /**
+     * Stop an existing replay session.
+     *
+     * @param replaySessionId  that should be stopped.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean stopReplay(
+        final long replaySessionId,
+        final long correlationId,
+        final long controlSessionId)
+    {
+        stopReplayRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .replaySessionId(replaySessionId);
 
         return offer(replayRequestEncoder.encodedLength());
     }

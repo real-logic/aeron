@@ -232,7 +232,7 @@ public class ReplaySessionTest
         replaySession.doWork();
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        verify(mockControlSession, times(1)).sendOkResponse(correlationId, proxy);
+        verify(mockControlSession).sendOkResponse(eq(correlationId), anyLong(), eq(proxy));
         verify(mockArchiveConductor).newReplayPublication(
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
@@ -298,7 +298,7 @@ public class ReplaySessionTest
         replaySession.doWork();
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        verify(mockControlSession, times(1)).sendOkResponse(correlationId, proxy);
+        verify(mockControlSession).sendOkResponse(eq(correlationId), anyLong(), eq(proxy));
         verify(mockArchiveConductor).newReplayPublication(
             REPLAY_CHANNEL,
             REPLAY_STREAM_ID,
@@ -341,7 +341,7 @@ public class ReplaySessionTest
 
         replaySession.doWork();
 
-        verify(mockControlSession, times(1)).sendOkResponse(correlationId, proxy);
+        verify(mockControlSession).sendOkResponse(eq(correlationId), anyLong(), eq(proxy));
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
         replaySession.abort();
@@ -425,7 +425,8 @@ public class ReplaySessionTest
             replaySession.doWork();
             assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-            verify(mockControlSession, times(1)).sendOkResponse(correlationId, proxy);
+            verify(mockControlSession).sendOkResponse(eq(correlationId), anyLong(), eq(proxy));
+
             verify(mockArchiveConductor).newReplayPublication(
                 REPLAY_CHANNEL,
                 REPLAY_STREAM_ID,

@@ -36,6 +36,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private long controlSessionId = -1;
     private long correlationId = -1;
+    private long relevantId = -1;
     private int templateId = -1;
     private ControlResponseCode code;
     private String errorMessage;
@@ -70,6 +71,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     {
         controlSessionId = -1;
         correlationId = -1;
+        relevantId = -1;
         templateId = -1;
         pollComplete = false;
 
@@ -94,6 +96,16 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     public long correlationId()
     {
         return correlationId;
+    }
+
+    /**
+     * Get the relevant id returned with the response, e.g. replay session id.
+     *
+     * @return the relevant id returned with the response.
+     */
+    public long relevantId()
+    {
+        return relevantId;
     }
 
     /**
@@ -153,6 +165,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
 
                 controlSessionId = controlResponseDecoder.controlSessionId();
                 correlationId = controlResponseDecoder.correlationId();
+                relevantId = controlResponseDecoder.relevantId();
                 code = controlResponseDecoder.code();
                 if (ControlResponseCode.ERROR == code)
                 {

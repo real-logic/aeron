@@ -184,6 +184,11 @@ class ControlSession implements Session
             replayChannel);
     }
 
+    public void onStopReplay(final long correlationId, final long replaySessionId)
+    {
+        conductor.stopReplay(correlationId, this, replaySessionId);
+    }
+
     void onListRecordingSessionClosed(final AbstractListRecordingsSession listRecordingsSession)
     {
         if (listRecordingsSession != listRecordingsSessions.poll())
@@ -199,7 +204,15 @@ class ControlSession implements Session
 
     void sendOkResponse(final long correlationId, final ControlResponseProxy proxy)
     {
-        if (!proxy.sendResponse(controlSessionId, correlationId, 0, OK, null, controlPublication))
+        if (!proxy.sendResponse(controlSessionId, correlationId, 0L, OK, null, controlPublication))
+        {
+            queueResponse(correlationId, 0, OK, null);
+        }
+    }
+
+    void sendOkResponse(final long correlationId, final long relevantId,  final ControlResponseProxy proxy)
+    {
+        if (!proxy.sendResponse(controlSessionId, correlationId, relevantId, OK, null, controlPublication))
         {
             queueResponse(correlationId, 0, OK, null);
         }

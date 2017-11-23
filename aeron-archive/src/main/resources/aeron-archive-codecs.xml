@@ -95,8 +95,16 @@
         <data  name="replayChannel"      id="7" type="varAsciiEncoding"/>
     </sbe:message>
 
-    <sbe:message name="ListRecordingsRequest"
+    <sbe:message name="StopReplayRequest"
                  id="7"
+                 description="Replay recording range request">
+        <field name="controlSessionId"   id="1" type="int64"/>
+        <field name="correlationId"      id="2" type="int64"/>
+        <field name="replaySessionId"    id="3" type="int64"/>
+    </sbe:message>
+
+    <sbe:message name="ListRecordingsRequest"
+                 id="8"
                  description="Request a range of recording descriptors">
         <field name="controlSessionId"   id="1" type="int64"/>
         <field name="correlationId"      id="2" type="int64"/>
@@ -105,7 +113,7 @@
     </sbe:message>
 
     <sbe:message name="ListRecordingsForUriRequest"
-                 id="8"
+                 id="9"
                  description="Request a range of recording descriptors">
         <field name="controlSessionId"   id="1" type="int64"/>
         <field name="correlationId"      id="2" type="int64"/>
@@ -118,14 +126,14 @@
     <!-- Archive Catalog Metadata -->
 
     <sbe:message name="CatalogHeader"
-                 id="9"
+                 id="20"
                  description="Used as first element in Catalog to set the version and length of entries">
         <field name="version"            id="1" type="int32"/>
         <field name="entryLength"        id="2" type="int32"/>
     </sbe:message>
 
     <sbe:message name="RecordingDescriptorHeader"
-                 id="10"
+                 id="21"
                  description="For use in the catalog to describe the recording descriptor entry">
         <field name="length"             id="1" type="int32"/>
         <field name="valid"              id="2" type="int8"/>
@@ -135,7 +143,7 @@
     <!-- Records in the Catalog which describing recordings that can be listed via the Control Protocol -->
 
     <sbe:message name="RecordingDescriptor"
-                 id="11"
+                 id="22"
                  description="Describes a recording in the catalog">
         <field name="controlSessionId"   id="1"  type="int64"/>
         <field name="correlationId"      id="2"  type="int64"/>

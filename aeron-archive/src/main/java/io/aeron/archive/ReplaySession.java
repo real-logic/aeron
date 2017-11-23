@@ -129,7 +129,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         }
 
         this.replayPublication = replayPublication;
-        controlSession.sendOkResponse(correlationId, threadLocalControlResponseProxy);
+        controlSession.sendOkResponse(correlationId, replaySessionId, threadLocalControlResponseProxy);
 
         connectDeadlineMs = epochClock.time() + CONNECT_TIMEOUT_MS;
     }
@@ -167,7 +167,10 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
 
     public void abort()
     {
-        state = State.INACTIVE;
+        if (State.CLOSED != state)
+        {
+            state = State.INACTIVE;
+        }
     }
 
     public boolean isDone()

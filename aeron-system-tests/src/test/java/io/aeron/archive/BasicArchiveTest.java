@@ -59,8 +59,11 @@ public class BasicArchiveTest
     @Before
     public void before() throws Exception
     {
+        final String aeronDirectoryName = CommonContext.generateRandomDirName();
+
         driver = MediaDriver.launch(
             new MediaDriver.Context()
+                .aeronDirectoryName(aeronDirectoryName)
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
@@ -68,6 +71,7 @@ public class BasicArchiveTest
 
         archive = Archive.launch(
             new Archive.Context()
+                .aeronDirectoryName(aeronDirectoryName)
                 .archiveDir(TestUtil.makeTempDir())
                 .fileSyncLevel(0)
                 .threadingMode(ArchiveThreadingMode.SHARED)
@@ -75,7 +79,7 @@ public class BasicArchiveTest
                 .errorHandler(driver.context().errorHandler())
                 .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS)));
 
-        aeron = Aeron.connect();
+        aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
 
         aeronArchive = AeronArchive.connect(
             new AeronArchive.Context()
@@ -121,6 +125,33 @@ public class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
             assertEquals(length, subscription.imageAtIndex(0).position());
         }
+    }
+
+    @Test(timeout = 10000)
+    public void shouldRecordReplayAndCancelReplayEarly()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long length;
+
+        try (Publication publication = aeronArchive.addRecordedPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
+             Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
+        {
+            offer(publication, messageCount, messagePrefix);
+            consume(subscription, messageCount, messagePrefix);
+
+            length = publication.position();
+        }
+
+        aeronArchive.stopRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID);
+
+        final long recordingId = findRecordingId(RECORDING_CHANNEL, RECORDING_STREAM_ID, length);
+        final long fromPosition = 0L;
+
+        final long replaySessionId = aeronArchive.startReplay(
+            recordingId, fromPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID);
+
+        aeronArchive.stopReplay(replaySessionId);
     }
 
     private long findRecordingId(final String expectedChannel, final int expectedStreamId, final long expectedPosition)

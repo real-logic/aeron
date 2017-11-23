@@ -154,6 +154,16 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
+     * The control session id allocated for this connection to the archive.
+     *
+     * @return control session id allocated for this connection to the archive.
+     */
+    public long controlSessionId()
+    {
+        return controlSessionId;
+    }
+
+    /**
      * The {@link ArchiveProxy} for send asynchronous messages to the connected archive.
      *
      * @return the {@link ArchiveProxy} for send asynchronous messages to the connected archive.
@@ -318,7 +328,75 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Replay a length in bytes of a recording from a position.
+     * Start a replay for a length in bytes of a recording from a position.
+     *
+     * @param recordingId    to be replayed.
+     * @param position       from which the replay should be started.
+     * @param length         of the stream to be replayed.
+     * @param replayChannel  to which the replay should be sent.
+     * @param replayStreamId to which the replay should be sent.
+     * @return the id of the replay session.
+     */
+    public long startReplay(
+        final long recordingId,
+        final long position,
+        final long length,
+        final String replayChannel,
+        final int replayStreamId)
+    {
+        lock.lock();
+        try
+        {
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.replay(
+                recordingId,
+                position,
+                length,
+                replayChannel,
+                replayStreamId,
+                correlationId,
+                controlSessionId))
+            {
+                throw new IllegalStateException("Failed to send replay request");
+            }
+
+            return pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Stop a replay session.
+     *
+     * @param replaySessionId to stop replay for.
+     */
+    public void stopReplay(final long replaySessionId)
+    {
+        lock.lock();
+        try
+        {
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.stopReplay(replaySessionId, correlationId, controlSessionId))
+            {
+                throw new IllegalStateException("Failed to send stop recording request");
+            }
+
+            pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Replay a length in bytes of a recording from a position and for convenience create a {@link Subscription}
+     * to receive the replay.
      *
      * @param recordingId    to be replayed.
      * @param position       from which the replay should be started.
@@ -362,7 +440,8 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Replay a length in bytes of a recording from a position.
+     * Replay a length in bytes of a recording from a position and for convenience create a {@link Subscription}
+     * to receive the replay.
      *
      * @param recordingId             to be replayed.
      * @param position                from which the replay should be started.
@@ -534,7 +613,7 @@ public final class AeronArchive implements AutoCloseable
         }
     }
 
-    private void pollForResponse(final long expectedCorrelationId)
+    private long pollForResponse(final long expectedCorrelationId)
     {
         final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
         final ControlResponsePoller poller = controlResponsePoller;
@@ -589,7 +668,7 @@ public final class AeronArchive implements AutoCloseable
 
             if (poller.correlationId() == expectedCorrelationId)
             {
-                return;
+                return poller.relevantId();
             }
         }
     }

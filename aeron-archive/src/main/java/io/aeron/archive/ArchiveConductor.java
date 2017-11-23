@@ -347,6 +347,21 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         replayer.addSession(replaySession);
     }
 
+    public void stopReplay(final long correlationId, final ControlSession controlSession, final long replaySessionId)
+    {
+        final ReplaySession replaySession = replaySessionByIdMap.get(replaySessionId);
+        if (null == replaySession)
+        {
+            controlSession.sendResponse(
+                correlationId, ERROR, "Replay session not known: id=" + replaySessionId, controlResponseProxy);
+        }
+        else
+        {
+            replaySession.abort();
+            controlSession.sendOkResponse(correlationId, controlResponseProxy);
+        }
+    }
+
     ControlSession newControlSession(
         final long correlationId,
         final int streamId,
